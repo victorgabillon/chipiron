@@ -1,0 +1,11 @@
+name: Unifrom
+type: TreeAndValue 
+tree_builder: 
+  type: Uniform
+  tree_move_limit: 2000
+#  depth_tree: 3
+  opening_type: all_children
+board_evaluator: 
+  type: BasicEvaluation
+  syzygy_evaluation: True
+syzygy_play: True

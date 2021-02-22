@@ -1,0 +1,10 @@
+name: RecurZipfresponsive
+type: TreeAndValue
+treeBuilder: 
+  type: RecurZipf
+  opening: Responsive
+  treeLeafLimit: 2000
+  zipfStyle: ZipfOne
+boardEvaluator:
+  type: BasicEvaluation
+  Syzygy: True

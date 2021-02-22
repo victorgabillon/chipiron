@@ -1,0 +1,10 @@
+displayPositionOption: False
+verbose: No
+secondsPerMoveWhite: 2
+secondsPerMoveBlack: 10
+#options: classic fromFile FEN
+startingPosition:
+  type: fromFile
+  options:
+    fileName: Board1.text
+

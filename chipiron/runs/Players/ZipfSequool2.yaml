@@ -1,0 +1,11 @@
+name: ZipfSequool2
+type: TreeAndValue
+tree_builder: 
+  type: ZipfSequool2
+  tree_move_limit: 200000
+  zipf_style: ZipfOne
+  opening_type: all_children
+board_evaluator:
+  type: BasicEvaluation
+  syzygy_evaluation: True
+syzygy_play: True

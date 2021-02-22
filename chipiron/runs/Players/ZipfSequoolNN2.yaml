@@ -1,0 +1,12 @@
+name: ZipfSequoolNN2
+type: TreeAndValue
+tree_builder: 
+  type: ZipfSequool
+  tree_move_limit: 250
+  zipf_style: ZipfOne
+  opening_type: all_children
+board_evaluator:
+  type: NN4Pytorch
+  nn_name: NN104
+  syzygy_evaluation: True
+syzygy_play: True
