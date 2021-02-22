@@ -19,16 +19,16 @@ start_time = time.time()
 #pr = cProfile.Profile()
 #pr.enable()
 
-with open(r'../runs/GameSettings/setting_navo.yaml') as fileGame:
+with open(r'../chipiron/runs/GameSettings/setting_navo.yaml') as fileGame:
     argsGame = yaml.load(fileGame, Loader=yaml.FullLoader)
     print(argsGame)
 
-with open(r'../runs/Players/Human.yaml') as filePlayerWhite:
+with open(r'../chipiron/runs/Players/Human.yaml') as filePlayerWhite:
     argsPlayerWhite = yaml.load(filePlayerWhite, Loader=yaml.FullLoader)
     print(argsPlayerWhite)
 
 #with open(r'runs/Players/RandomExplorer.yaml') as filePlayerBlack:
-with open(r'../runs/Players/RecurZipf.yaml') as filePlayerBlack:
+with open(r'../chipiron/runs/Players/RecurZipf.yaml') as filePlayerBlack:
     argsPlayerBlack = yaml.load(filePlayerBlack, Loader=yaml.FullLoader)
     print(argsPlayerBlack)
 

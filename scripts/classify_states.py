@@ -1,12 +1,10 @@
 import random
 import yaml
-from ../Games.play_one_game import PlayOneGame
+from games.play_one_game import PlayOneGame
 from Players.create_player import create_player
 from chessenvironment.chess_environment import ChessEnvironment
 from Players.BoardEvaluators.syzygy import Syzygy
 import settings
-from displays.gui import MainWindow
-from PyQt5.QtWidgets import *
 import pandas as pd
 
 settings.deterministic_behavior = False
@@ -19,8 +17,6 @@ path_player_one = 'runs/Players/' + file_name_player_one
 with open(path_player_one, 'r') as filePlayerOne:
     args_player_one = yaml.load(filePlayerOne, Loader=yaml.FullLoader)
     print(args_player_one)
-
-
 
 file_game_name = 'setting_navo.yaml'
 path_game_setting = 'runs/GameSettings/' + file_game_name
@@ -43,20 +39,18 @@ for i in range(1000):
     play = PlayOneGame(args_game, player_one, player_two, chess_simulator, syzygy)
     play.play_the_game()
     sample_board = random.choice(play.game.chess_board_sequence)
-    #sample_board = play.game.chess_board_sequence[-1]
+    # sample_board = play.game.chess_board_sequence[-1]
     new_row = {'board': sample_board}
     list_of_new_rows.append(new_row)
 
-data_frame_file_name = '../data/states.data'
+data_frame_file_name = '../chipiron/data/states.data'
 try:
     data_frame_states = pd.read_pickle(data_frame_file_name)
 except:
     data_frame_states = None
 
-
 print('old_data_frame_states', data_frame_states)
 new_data_frame_states = pd.DataFrame.from_dict(list_of_new_rows)
-
 
 if data_frame_states is None:
     new_data_frame_states.to_pickle(data_frame_file_name)
