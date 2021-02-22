@@ -15,7 +15,7 @@ class PlayOneGame:
     """
 
     def __init__(self, args, player_white, player_black, chess_simulator, syzygy, path_to_store_result=None):
-        self.game = Game(chess_simulator, args['startingPosition'], syzygy)
+        self.game = Game(chess_simulator, args['starting_position'], syzygy)
 
         self.seconds_per_move_white = float(args['secondsPerMoveWhite'])
         self.seconds_per_move_black = float(args['secondsPerMoveBlack'])

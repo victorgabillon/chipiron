@@ -10,10 +10,10 @@ class Game:
 
     GAME_RESULTS = [WIN_FOR_WHITE, WIN_FOR_BLACK, DRAW] = range(3)
 
-    def __init__(self, chess_simulator, starting_position, syzygy):
+    def __init__(self, chess_simulator, starting_position_arg, syzygy):
         self.moves = []
 
-        self.board = MyBoard(starting_position)
+        self.board = MyBoard(starting_position_arg=starting_position_arg)
         self.chessSimulator = chess_simulator
         self.syzygy = syzygy
         self.chess_board_sequence = [self.board.copy()]
