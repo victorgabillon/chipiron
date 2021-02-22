@@ -9,10 +9,10 @@ class ChessEnvironment:
     def step_create(self, board, move, depth):
         # todo : try to have a very lightweight copy
 
-        if depth < 2: #slow but to be alble to check 3 times repetition at small depth of the tree
-            next_board = MyBoard(None, board.chess_board.copy())
-        else: # faster
-            next_board = MyBoard(None, board.chess_board.copy(stack=False))
+        if depth < 2:  # slow but to be alble to check 3 times repetition at small depth of the tree
+            next_board = MyBoard(chess_board=board.chess_board.copy())
+        else:  # faster
+            next_board = MyBoard(chess_board=board.chess_board.copy(stack=False))
 
         next_board.chess_board.push(move)
         return next_board

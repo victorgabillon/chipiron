@@ -11,16 +11,20 @@ class MyBoard:
     but im not sure its really necessary.i keep it for potential usefulness
     """
 
-    def __init__(self, starting_position, chess_board=None):
-        if chess_board is None:
-            if starting_position['type'] == 'classic':
-                self.chess_board = chess.Board()
-            elif starting_position['type'] == 'fromFile':
+    def __init__(self, starting_position_arg=None, chess_board=None, fen=None):
 
-                file_name = starting_position['options']['fileName']
+        if starting_position_arg is not None:
+            if starting_position_arg['type'] == 'classic':
+                self.chess_board = chess.Board()
+            elif starting_position_arg['type'] == 'fromFile':
+                file_name = starting_position_arg['options']['file_name']
                 fen = self.load_from_file(file_name)
                 self.chess_board = chess.Board(fen)
-        else:
+
+        if fen is not None:
+            self.chess_board = chess.Board(fen)
+
+        if chess_board is not None:
             self.chess_board = chess_board
 
     def is_legal(self, move):
