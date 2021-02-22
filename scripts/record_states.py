@@ -1,11 +1,13 @@
+
 import random
-import yaml
-from games.play_one_game import PlayOneGame
-from Players.create_player import create_player
-from chessenvironment.chess_environment import ChessEnvironment
-from Players.BoardEvaluators.syzygy import Syzygy
-import settings
 import pandas as pd
+
+import yaml
+from chipiron.games.play_one_game import PlayOneGame
+from chipiron.Players.create_player import create_player
+from chipiron.chessenvironment.chess_environment import ChessEnvironment
+from chipiron.Players.BoardEvaluators.syzygy import Syzygy
+import chipiron.settings as settings
 
 settings.deterministic_behavior = False
 settings.profiling_bool = False
@@ -43,7 +45,7 @@ for i in range(1000):
     new_row = {'board': sample_board}
     list_of_new_rows.append(new_row)
 
-data_frame_file_name = '../data/states.data'
+data_frame_file_name = '../chipiron/data/states.data'
 try:
     data_frame_states = pd.read_pickle(data_frame_file_name)
 except:
