@@ -37,10 +37,11 @@ settings.init()  # global variables
 
 list_of_new_rows = []
 
-for i in range(1000):
+for i in range(10):
     play = PlayOneGame(args_game, player_one, player_two, chess_simulator, syzygy)
     play.play_the_game()
     sample_board = random.choice(play.game.chess_board_sequence)
+    print('**',type(sample_board))
     # sample_board = play.game.chess_board_sequence[-1]
     new_row = {'board': sample_board}
     list_of_new_rows.append(new_row)

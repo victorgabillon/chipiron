@@ -1,14 +1,14 @@
 import sys
-from players.treevaluebuilders.Uniform import Uniform
+from players.treevaluebuilders.uniform import Uniform
 from players.boardevaluators.create_board_evaluator import create_board_evaluator
 from players.treevaluebuilders.recur_zipf import RecurZipf
-from players.treevaluebuilders.VertiZipf import VertiZipf
+from players.treevaluebuilders.verti_zipf import VertiZipf
 from players.treevaluebuilders.recur_verti_zipf import RecurVertiZipf
 from players.treevaluebuilders.sequool import Sequool
 from players.treevaluebuilders.sequool2 import Sequool2
-from players.treevaluebuilders.ZipfSequool2 import ZipfSequool2
+from players.treevaluebuilders.zipf_sequool2 import ZipfSequool2
 
-from players.treevaluebuilders.ZipfSequool import ZipfSequool
+from players.treevaluebuilders.zipf_sequool import ZipfSequool
 
 
 def create_tree_and_value_builders(arg, chess_simulator,syzygy):

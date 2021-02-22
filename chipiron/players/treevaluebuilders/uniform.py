@@ -1,7 +1,7 @@
 from players.treevaluebuilders.tree_and_value import TreeAndValue
-from players.treevaluebuilders.Trees.move_and_value_tree import MoveAndValueTree
+from players.treevaluebuilders.trees.move_and_value_tree import MoveAndValueTree
 from sortedcollections import ValueSortedDict
-from players.treevaluebuilders.Trees.opening_instructions import OpeningInstructionsBatch
+from players.treevaluebuilders.trees.opening_instructions import OpeningInstructionsBatch
 
 
 class Uniform(TreeAndValue):

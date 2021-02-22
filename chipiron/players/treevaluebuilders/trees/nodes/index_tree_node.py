@@ -1,4 +1,4 @@
-from players.treevaluebuilders.Trees.Nodes.TreeNode import TreeNode
+from players.treevaluebuilders.trees.nodes.tree_node import TreeNode
 
 
 class IndexTreeNode(TreeNode):

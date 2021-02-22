@@ -1,4 +1,4 @@
-from players.treevaluebuilders.Trees.Nodes.tree_node_with_descendants import NodeWithDescendants
+from players.treevaluebuilders.trees.nodes.tree_node_with_descendants import NodeWithDescendants
 from players.treevaluebuilders.notations_and_statics import ZIPF, ZIPF_TWO, ZIPF_ONE
 import numba
 import numpy as np
