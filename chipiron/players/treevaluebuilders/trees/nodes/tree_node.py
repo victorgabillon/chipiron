@@ -3,7 +3,7 @@ from bidict import bidict
 from sortedcollections import ValueSortedDict
 import chess
 from players.boardevaluators.over_event import OverEvent
-from players.treevaluebuilders.Trees.updates import UpdateInstructions, BaseUpdateInstructionsBlock
+from players.treevaluebuilders.trees.updates import UpdateInstructions, BaseUpdateInstructionsBlock
 from players.treevaluebuilders.notations_and_statics import nth_key
 
 
