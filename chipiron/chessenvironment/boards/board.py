@@ -32,7 +32,7 @@ class MyBoard:
         self.chess_board.push(move1)
 
     def load_from_file(self, fileName):
-        with  open('runs/StartingBoards/' + fileName, "r") as f:
+        with  open('chipiron/runs/StartingBoards/' + fileName, "r") as f:
             asciiBoard = f.read()
             fen = convertToFen(asciiBoard)
         return fen
