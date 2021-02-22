@@ -23,7 +23,7 @@ class PlayOneMatch:
         self.path_directory = path_directory
         self.game_setting_file = args_math['game_setting_file']
 
-        with open('runs/GameSettings/' + self.game_setting_file, 'r') as fileGame:
+        with open('chipiron/runs/GameSettings/' + self.game_setting_file, 'r') as fileGame:
             self.argsGame = yaml.load(fileGame, Loader=yaml.FullLoader)
             print(self.argsGame)
 

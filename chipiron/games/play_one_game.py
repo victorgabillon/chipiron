@@ -25,9 +25,7 @@ class PlayOneGame:
             self.displayOneGame = DisplayOneGame()
 
         self.player_white = player_white
-        self.player_white.set_color(chess.WHITE)
         self.player_black = player_black
-        self.player_black.set_color(chess.BLACK)
         self.path_to_store_result = path_to_store_result
 
     def display(self, round_, color_to_play):

@@ -1,4 +1,4 @@
-from Players.TreeAndValueBuilders.Trees.NoisyValueTree import NoisyValueTree
+from players.treevaluebuilders.Trees.NoisyValueTree import NoisyValueTree
 
 
 class OpeningBook:

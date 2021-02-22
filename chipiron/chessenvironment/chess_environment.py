@@ -1,4 +1,4 @@
-from chess_environment.Boards.Board import MyBoard
+from chessenvironment.boards.board import MyBoard
 
 
 class ChessEnvironment:
