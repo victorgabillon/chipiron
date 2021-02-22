@@ -1,5 +1,5 @@
 from players.Player import Player
-from players.treevaluebuilders.Trees.opening_instructions import OpeningInstructor
+from players.treevaluebuilders.trees.opening_instructions import OpeningInstructor
 import random
 import settings
 from players.boardevaluators.NN4_pytorch import transform_board, real_f, real_l
@@ -43,9 +43,10 @@ class TreeAndValue(Player):
             print(' FIXED CHOICE FOR DEBUG')
             best_child = self.tree.root_node.get_all_of_the_best_moves(how_equal='considered_equal')[-1]
             print('We have as best: ', self.tree.root_node.moves_children.inverse[best_child])
+            best_move = self.tree.root_node.moves_children.inverse[best_child]
 
         else:  # normal behavior
-            print('~~', self.arg)
+            print('~~', self.arg['move_selection_rule']['type'])
             if self.arg['move_selection_rule']['type'] == 'softmax':
                 temperature = self.arg['move_selection_rule']['temperature']
                 values = [self.tree.root_node.subjective_value_of(node) for node in

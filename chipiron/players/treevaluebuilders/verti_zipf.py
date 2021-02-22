@@ -1,6 +1,6 @@
-from players.treevaluebuilders.Trees.move_and_value_tree import MoveAndValueTree
+from players.treevaluebuilders.trees.move_and_value_tree import MoveAndValueTree
 from players.treevaluebuilders.tree_and_value import TreeAndValue
-from players.treevaluebuilders.Trees.Nodes.proportion_tree_node import VisitsAndProportionsNode
+from players.treevaluebuilders.trees.nodes.proportion_tree_node import VisitsAndProportionsNode
 
 
 class VertiZipfTree(MoveAndValueTree):

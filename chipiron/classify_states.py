@@ -43,12 +43,16 @@ except:
 
 if 'explored' not in data_frame_states:
     data_frame_states['explored'] = 0
-        
+
+if 'final_value' not in data_frame_states:
+    data_frame_states['final_value'] = 'unknown'
+
 for index, row in data_frame_states.iterrows():
     if not row['explored'] >= classification_power:
 
         data_frame_states.loc[index, 'explored'] = 0
         board = row['board']
+        print(board)
         player_one.tree_explore(board)
         # sample_board = random.choice(play.game.chess_board_sequence)
         # # sample_board = play.game.chess_board_sequence[-1]

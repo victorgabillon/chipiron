@@ -10,13 +10,13 @@ class Game:
 
     GAME_RESULTS = [WIN_FOR_WHITE, WIN_FOR_BLACK, DRAW] = range(3)
 
-    def __init__(self, chess_simulator, starting_position,syzygy):
+    def __init__(self, chess_simulator, starting_position, syzygy):
         self.moves = []
 
         self.board = MyBoard(starting_position)
         self.chessSimulator = chess_simulator
         self.syzygy = syzygy
-        self.chess_board_sequence  = [self.board.chess_board.copy()]
+        self.chess_board_sequence = [self.board.copy()]
 
     def display_last_position(self):
         display = DisplayBoards()
@@ -28,8 +28,7 @@ class Game:
         self.moves.append(move1)
         if self.syzygy.fast_in_table(self.board):
             print('Theoretically finished with value for white: ', self.syzygy.sting_result(self.board))
-        self.chess_board_sequence.append(self.board.chess_board.copy())
-
+        self.chess_board_sequence.append(self.board.copy())
 
     def last_move(self):
         if len(self.moves) == 0:
@@ -68,7 +67,7 @@ class Game:
         if self.board.chess_board.result() == '*':
             if self.syzygy is None or not self.syzygy.fast_in_table(self.board):  # for debug i guess
                 return (-10000, -10000, -10000)
-            else: #todo what is happening here?
+            else:  # todo what is happening here?
                 val = self.syzygy.value_white(self.board, chess.WHITE)
                 print('rf', val)
                 if val == 0:

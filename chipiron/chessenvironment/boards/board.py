@@ -7,7 +7,8 @@ COLORS = [WHITE, BLACK] = [True, False]
 
 class MyBoard:
     """
-    object that describes the current board. it wraps the chess Board from the chess package so it has a lot more in it
+    object that describes the current board. it wraps the chess Board from the chess package so it can have more in it
+    but im not sure its really necessary.i keep it for potential usefulness
     """
 
     def __init__(self, starting_position, chess_board=None):
@@ -16,8 +17,8 @@ class MyBoard:
                 self.chess_board = chess.Board()
             elif starting_position['type'] == 'fromFile':
 
-                fileName = starting_position['options']['fileName']
-                fen = self.load_from_file(fileName)
+                file_name = starting_position['options']['fileName']
+                fen = self.load_from_file(file_name)
                 self.chess_board = chess.Board(fen)
         else:
             self.chess_board = chess_board
@@ -31,8 +32,8 @@ class MyBoard:
     def play(self, move1):
         self.chess_board.push(move1)
 
-    def load_from_file(self, fileName):
-        with  open('chipiron/runs/StartingBoards/' + fileName, "r") as f:
+    def load_from_file(self, file_name):
+        with  open('chipiron/runs/StartingBoards/' + file_name, "r") as f:
             asciiBoard = f.read()
             fen = convertToFen(asciiBoard)
         return fen
@@ -56,5 +57,12 @@ class MyBoard:
         print(self.chess_board)
         print(self.chess_board.fen())
 
+    def __str__(self):
+        return self.chess_board.__str__()
+
+
     def number_of_pieces_on_the_board(self):
         return bin(self.chess_board.occupied).count('1')
+
+    def copy(self):
+        return type(self)(None,self.chess_board.copy())

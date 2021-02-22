@@ -1,10 +1,10 @@
 from players.treevaluebuilders.tree_and_value import TreeAndValue
-from players.treevaluebuilders.Trees.move_and_value_tree import MoveAndValueTree
-from players.treevaluebuilders.Trees.Nodes.index_tree_node import IndexTreeNode
+from players.treevaluebuilders.trees.move_and_value_tree import MoveAndValueTree
+from players.treevaluebuilders.trees.nodes.index_tree_node import IndexTreeNode
 from players.treevaluebuilders.notations_and_statics import zipf_picks
-from players.treevaluebuilders.Trees.descendants import Descendants
-from players.treevaluebuilders.Trees.Nodes.proportion_tree_node import VisitsAndProportionsNode
-from players.treevaluebuilders.Trees.Nodes.tree_node_with_descendants import NodeWithDescendants
+from players.treevaluebuilders.trees.descendants import Descendants
+from players.treevaluebuilders.trees.nodes.proportion_tree_node import VisitsAndProportionsNode
+from players.treevaluebuilders.trees.nodes.tree_node_with_descendants import NodeWithDescendants
 import math
 
 

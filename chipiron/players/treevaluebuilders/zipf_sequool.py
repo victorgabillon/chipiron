@@ -1,11 +1,11 @@
 from players.treevaluebuilders.tree_and_value import TreeAndValue
-from players.treevaluebuilders.Trees.move_and_value_tree import MoveAndValueTree
-from players.treevaluebuilders.Trees.Nodes.index_tree_node import IndexTreeNode
+from players.treevaluebuilders.trees.move_and_value_tree import MoveAndValueTree
+from players.treevaluebuilders.trees.nodes.index_tree_node import IndexTreeNode
 from players.treevaluebuilders.notations_and_statics import zipf_picks
-from players.treevaluebuilders.Trees.Nodes.proportion_tree_node import VisitsAndProportionsNode
-from players.treevaluebuilders.Trees.descendants import SortedDescendants
-from players.treevaluebuilders.Trees.Nodes.tree_node_with_descendants import NodeWithDescendantsNoUpdate
-from players.treevaluebuilders.Trees.first_moves import FirstMoves
+from players.treevaluebuilders.trees.nodes.proportion_tree_node import VisitsAndProportionsNode
+from players.treevaluebuilders.trees.descendants import SortedDescendants
+from players.treevaluebuilders.trees.nodes.tree_node_with_descendants import NodeWithDescendantsNoUpdate
+from players.treevaluebuilders.trees.first_moves import FirstMoves
 import math
 
 
@@ -148,10 +148,10 @@ class ZipfSequool(TreeAndValue):
 
         self.count_refresh_index += 1
         if self.tree.root_node.are_all_moves_and_children_opened():
-            print('fg', self.count_refresh_index,self.next_update)
+            print('fg', self.count_refresh_index, self.next_update)
             if self.count_refresh_index < 10 or self.count_refresh_index == self.next_update:
                 if self.count_refresh_index == self.next_update:
-                     self.next_update = 2*self.next_update +1
+                    self.next_update = 2 * self.next_update + 1
                 print('fgeeee', self.count_refresh_index)
 
                 self.tree.update_all_indices()
@@ -171,31 +171,31 @@ class ZipfSequool(TreeAndValue):
 
         depth_picked, best_value = zipf_picks(list_elements=list(node_first_move.descendants.keys()),
                                               value_of_element=func)
-        #print('depthpicked', depth_picked)
-        #print('no_id', node_first_move.id)
+        # print('depthpicked', depth_picked)
+        # print('no_id', node_first_move.id)
         #  node_first_move.descendants.print_info()
         # node_first_move.descendants_not_opened.print_info()
 
-        #print('values', [func(i) for i in range(len(list(node_first_move.descendants.keys())))])
+        # print('values', [func(i) for i in range(len(list(node_first_move.descendants.keys())))])
 
         self.tree.count_visits_at_depth[depth_picked] += 1
-        #print('####', type(self.candidates_at_depth(node_first_move, depth_picked)))
+        # print('####', type(self.candidates_at_depth(node_first_move, depth_picked)))
 
         nodes_to_consider_dict = self.candidates_at_depth(node_first_move, depth_picked)
         nodes_to_consider_list = list(nodes_to_consider_dict.keys())  # todo loosing time in the list conversion?
 
-        #print('####', type(nodes_to_consider_list))
+        # print('####', type(nodes_to_consider_list))
         # for i in nodes_to_consider:
         #    print('nodes', i.id)
-        # todo chack if mixing depth improves results
+        # todo check if mixing depth improves results
 
         best_node = nodes_to_consider_list[0]
-        #print('op', type(best_node), best_node, type(nodes_to_consider_list[0]))
+        # print('op', type(best_node), best_node, type(nodes_to_consider_list[0]))
         index = best_node.index if best_node.index is not None else math.inf
         best_value = (index, best_node.half_move, best_node.id)
         for node_to_consider in nodes_to_consider_list:
             index = node_to_consider.index if node_to_consider.index is not None else math.inf
-          #  print('~',  node_to_consider.index, (index, node_to_consider.half_move, node_to_consider.id) , best_value)
+            #  print('~',  node_to_consider.index, (index, node_to_consider.half_move, node_to_consider.id) , best_value)
 
             if (index, node_to_consider.half_move, node_to_consider.id) < best_value:
                 best_node = node_to_consider
@@ -204,7 +204,7 @@ class ZipfSequool(TreeAndValue):
         # print('best_value',best_value)
         best_node_2 = min(nodes_to_consider_dict, key=nodes_to_consider_dict.get)  # next(iter(nodes_to_consider_dict))
         # print('~', nodes_to_consider_dict)
-       # print('best_node', best_node.id, best_node.index)
+        # print('best_node', best_node.id, best_node.index)
         assert (best_node == best_node_2)
         assert (not best_node.all_legal_moves_generated)
         #  self.tree.descendants.print_info()
@@ -213,12 +213,12 @@ class ZipfSequool(TreeAndValue):
 
         return self.opening_instructor.instructions_to_open_all_moves(best_node)
 
-    def get_move_from_player(self, board, timetoMove):
+    def tree_explore(self, board):
         print(board.chess_board)
         self.count_refresh_index = 0
-        self.next_update =10
+        self.next_update = 10
 
-        return super().get_move_from_player(board, timetoMove)
+        return super().tree_explore(board)
 
     def print_info(self):
         super().print_info()

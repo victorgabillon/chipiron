@@ -1,5 +1,5 @@
-from players.treevaluebuilders.Trees.Nodes.TreeNode import TreeNode
-from players.treevaluebuilders.Trees.descendants import RangedDescendants
+from players.treevaluebuilders.trees.nodes.tree_node import TreeNode
+from players.treevaluebuilders.trees.descendants import RangedDescendants
 
 
 class UpdateInstructionsDescendantsBlock:

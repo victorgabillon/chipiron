@@ -1,7 +1,7 @@
 from graphviz import Digraph
-from players.treevaluebuilders.Trees.Nodes.TreeNode import TreeNode
+from players.treevaluebuilders.trees.nodes.tree_node import TreeNode
 import pickle
-from players.treevaluebuilders.Trees.updates import UpdateInstructionsBatch
+from players.treevaluebuilders.trees.updates import UpdateInstructionsBatch
 import settings
 
 DISCOUNT = .999999999999  # todo play with this
@@ -176,12 +176,12 @@ class MoveAndValueTree:
         dot = self.display('pdf')
         round_ = len(self.root_node.board.chess_board.move_stack) + 2
         color = 'white' if self.root_node.player_to_move else 'black'
-        dot.render('runs/TreeDisplays/TreeVisual_' + str(int(round_ / 2)) + color + '.pdf')
+        dot.render('runs/treedisplays/TreeVisual_' + str(int(round_ / 2)) + color + '.pdf')
 
     def save_raw_data_to_file(self, count='#'):
         round_ = len(self.root_node.board.chess_board.move_stack) + 2
         color = 'white' if self.root_node.player_to_move else 'black'
-        filename = 'runs/TreeDisplays/TreeData_' + str(int(round_ / 2)) + color + '-' + str(count) + '.td'
+        filename = 'runs/treedisplays/TreeData_' + str(int(round_ / 2)) + color + '-' + str(count) + '.td'
 
         import sys
         sys.setrecursionlimit(100000)

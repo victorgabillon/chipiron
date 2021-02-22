@@ -6,7 +6,7 @@ from players.boardevaluators.NN2_pytorch import NN2Pytorch
 from players.boardevaluators.NN4_pytorch import NN4Pytorch
 
 from players.boardevaluators.syzygy import Syzygy
-from players.boardevaluators.BoardEvaluatorsWrapper import BoardEvaluatorsWrapper
+from players.boardevaluators.board_evaluators_wrapper import BoardEvaluatorsWrapper
 
 
 def create_board_evaluator(arg, syzygy):
