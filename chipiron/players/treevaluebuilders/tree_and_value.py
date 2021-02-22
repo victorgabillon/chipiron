@@ -6,6 +6,7 @@ from players.boardevaluators.NN4_pytorch import transform_board, real_f, real_l
 from players.treevaluebuilders.notations_and_statics import softmax
 import time
 
+
 class TreeAndValue(Player):
     # at the moment it look like i dont need this class i could go directly
     # for the tree builder no? think later bout that? maybe one is for multi round and the other is not?
@@ -56,7 +57,7 @@ class TreeAndValue(Player):
                 print('##', softmax_, len(softmax_), type(softmax_))
                 move_as_list = random.choices(list(self.tree.root_node.moves_children.keys()), weights=softmax_, k=1)
                 best_move = move_as_list[0]
-                print('$$',best_move)
+                print('$$', best_move)
             elif self.arg['move_selection_rule']['type'] == 'almost_equal':
                 # find best first move allowing for random choice for almost equally valued moves.
                 best_root_children = self.tree.root_node.get_all_of_the_best_moves(how_equal='almost_equal')
@@ -102,12 +103,11 @@ class TreeAndValue(Player):
 
         if self.tree_move_limit is not None:
             assert self.tree_move_limit == self.tree.move_count or self.tree.root_node.is_over()
-        #self.tree.save_raw_data_to_file()
+        # self.tree.save_raw_data_to_file()
         self.tree.print_some_stats()
         for move, child in self.tree.root_node.moves_children.items():
             print(move, self.tree.root_node.moves_children[move].value_white, child.over_event.simple_string())
         print('evaluation for white: ', self.tree.root_node.value_white)
-
 
     def get_move_from_player(self, board, time):
         self.tree_explore(board)
