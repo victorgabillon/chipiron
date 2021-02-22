@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 def load_replay_buffer(folder):
-    file_name = 'runs/Players/BoardEvaluators/NN1_pytorch/' + folder + '/replay_buffer.rbuf'
+    file_name = 'runs/players/boardevaluators/NN1_pytorch/' + folder + '/replay_buffer.rbuf'
     try:
         with open(file_name, 'rb') as fileNNR:
             print('%%%%%%', folder)
@@ -21,7 +21,7 @@ class ReplayBufferManager:
         self.replay_buffer = load_replay_buffer(folder)
 
     def save(self):
-        file_name = 'runs/Players/BoardEvaluators/NN1_pytorch/' + self.folder + '/replay_buffer.rbuf'
+        file_name = 'runs/players/boardevaluators/NN1_pytorch/' + self.folder + '/replay_buffer.rbuf'
         try:
             with open(file_name, 'wb') as fileNNW:
                 pickle.dump(self.replay_buffer, fileNNW)
