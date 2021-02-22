@@ -1,0 +1,11 @@
+name: RecurVertiZipf
+type: TreeAndValue
+tree_builder:
+ type: RecurVertiZipf
+ tree_move_limit: 2000
+ zipf_style: ZipfOne
+ opening_type: all_children
+board_evaluator:
+ type: BasicEvaluation
+ syzygy_evaluation: True
+syzygy_play: True

@@ -1,0 +1,15 @@
+name: ZipfSequool
+type: TreeAndValue
+tree_builder: 
+  type: ZipfSequool
+  tree_move_limit: 250
+  zipf_style: ZipfOne
+  opening_type: all_children
+  move_selection_rule: 
+   type: softmax
+   temperature: 50
+board_evaluator:
+  type: BasicEvaluation
+  syzygy_evaluation: True
+syzygy_play: True
+

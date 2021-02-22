@@ -1,0 +1,12 @@
+name: RecurZipf3
+type: TreeAndValue
+tree_builder: 
+  type: RecurZipf
+  tree_move_limit: 2000
+  zipf_style: ZipfTwo
+  opening_type: all_children
+  openingResponsive: False
+board_evaluator:
+  type: BasicEvaluation
+  syzygy_evaluation: True
+syzygy_play: True
