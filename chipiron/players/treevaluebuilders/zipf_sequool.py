@@ -148,11 +148,9 @@ class ZipfSequool(TreeAndValue):
 
         self.count_refresh_index += 1
         if self.tree.root_node.are_all_moves_and_children_opened():
-            print('fg', self.count_refresh_index, self.next_update)
             if self.count_refresh_index < 10 or self.count_refresh_index == self.next_update:
                 if self.count_refresh_index == self.next_update:
                     self.next_update = 2 * self.next_update + 1
-                print('fgeeee', self.count_refresh_index)
 
                 self.tree.update_all_indices()
 

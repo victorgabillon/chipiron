@@ -1,4 +1,4 @@
-from players.Player import Player
+from players.player import Player
 import chess
 import time
 import settings
