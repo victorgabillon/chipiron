@@ -44,7 +44,7 @@ class MoveAndValueTree:
 
     def add_root_node(self, board):
         self.root_node, haha = self.find_or_create_node(board, self.tree_root_half_move, None)
-        # using find_or_create_node to use al the updates functions propoerley
+        # using find_or_create_node to use al the updates functions properly
         #   print('@',self.root_node)
         self.descendants = self.root_node.descendants
 
