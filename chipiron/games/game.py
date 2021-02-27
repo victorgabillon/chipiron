@@ -16,7 +16,7 @@ class Game:
         self.board = MyBoard(starting_position_arg=starting_position_arg)
         self.chessSimulator = chess_simulator
         self.syzygy = syzygy
-        self.chess_board_sequence = [self.board.copy()]
+        self.board_sequence = [self.board.copy()]
 
     def display_last_position(self):
         display = DisplayBoards()
@@ -28,7 +28,7 @@ class Game:
         self.moves.append(move1)
         if self.syzygy.fast_in_table(self.board):
             print('Theoretically finished with value for white: ', self.syzygy.sting_result(self.board))
-        self.chess_board_sequence.append(self.board.copy())
+        self.board_sequence.append(self.board.copy())
 
     def last_move(self):
         if len(self.moves) == 0:

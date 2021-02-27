@@ -81,6 +81,11 @@ class MainWindow(QWidget):
         self.closeButton4.setStyleSheet('QPushButton {background-color: black; color: blue;}')
         self.closeButton4.setGeometry(650, 400, 150, 20)
 
+        self.closeButton5 = QPushButton(self)
+        self.closeButton5.setText("Score 0-0")  # text
+        self.closeButton5.setStyleSheet('QPushButton {background-color: black; color: blue;}')
+        self.closeButton5.setGeometry(650, 500, 150, 20)
+
         self.boardSize = min(self.widgetSvg.width(),
                              self.widgetSvg.height())
         self.coordinates = True
@@ -249,6 +254,9 @@ class MainWindow(QWidget):
                     'Score: ' + str(self.play.match_results.get_player_one_wins()) + '-'
                     + str(self.play.match_results.get_player_two_wins()) + '-'
                     + str(self.play.match_results.get_draws()))  # text
+
+                self.closeButton5.setText('Round: ' + self.play.play_one_game.game.board.chess_board.fullmove_number)  # text
+
 
 
             finally:

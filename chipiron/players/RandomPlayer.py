@@ -1,4 +1,4 @@
-from players.Player import Player
+from players.player import Player
 from random import choice
 
 

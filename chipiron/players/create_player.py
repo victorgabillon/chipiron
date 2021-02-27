@@ -1,7 +1,7 @@
 import sys
 from players.RandomPlayer import RandomPlayer
 from players.treevaluebuilders.create_tree_and_value import create_tree_and_value_builders
-from players.Human import Human
+from players.human import Human
 
 
 def create_player(arg, chess_simulator, syzygy):

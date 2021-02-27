@@ -41,12 +41,12 @@ class NN4Pytorch:
     def init_weights(self):
 
         try:
-            with open('chipiron/runs/players/boardevaluators/NN1_pytorch/' + self.folder + '/param.pt', 'rb') as fileNNR:
+            with open('chipiron/runs/players/boardevaluators/NN1_pytorch/' + self.folder + '/paramtest.pt', 'rb') as fileNNR:
                 print('%%%%%%', self.folder)
                 self.net.load_state_dict(torch.load(fileNNR))
 
         except EnvironmentError:
-            with open('chipiron/runs/players/boardevaluators/NN1_pytorch/' + self.folder + '/param.pt', 'wb') as fileNNW:
+            with open('chipiron/runs/players/boardevaluators/NN1_pytorch/' + self.folder + '/paramtest.pt', 'wb') as fileNNW:
                 with torch.no_grad():
                     print('!!!!!!!!')
                     ran = torch.rand(10) * 0.001 + 0.03
@@ -163,7 +163,7 @@ class NN4Pytorch:
         for key in old_state_dict:
             if not (old_state_dict[key] == new_state_dict[key]).all():
                 print('Diff in {}'.format(key))
-        with open('runs/players/boardevaluators/NN1_pytorch/' + self.folder + '/param.pt', 'wb') as fileNNW:
+        with open('runs/players/boardevaluators/NN1_pytorch/' + self.folder + '/paramtest.pt', 'wb') as fileNNW:
             print('ddfff', fileNNW)
             torch.save(self.net.state_dict(), fileNNW)
 
@@ -205,3 +205,8 @@ def real_f(x):
 
 def real_l(x):
     return x[0] * 1 + x[1] * 3 + x[2] * 3 + x[3] * 5 + x[4] * 9 + x[5] * 1 + x[6] * 3 + x[7] * 3 + x[8] * 5 + x[9] * 9
+
+
+
+if __name__ == "__main__":
+    nn = NN4Pytorch()

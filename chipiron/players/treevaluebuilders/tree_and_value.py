@@ -1,4 +1,4 @@
-from players.Player import Player
+from players.player import Player
 from players.treevaluebuilders.trees.opening_instructions import OpeningInstructor
 import random
 import settings
@@ -47,17 +47,17 @@ class TreeAndValue(Player):
             best_move = self.tree.root_node.moves_children.inverse[best_child]
 
         else:  # normal behavior
-            print('~~', self.arg['move_selection_rule']['type'])
+            #print('~~', self.arg['move_selection_rule']['type'])
             if self.arg['move_selection_rule']['type'] == 'softmax':
                 temperature = self.arg['move_selection_rule']['temperature']
                 values = [self.tree.root_node.subjective_value_of(node) for node in
                           self.tree.root_node.moves_children.values()]
                 softmax_ = softmax(values, temperature)
-                print('££!!', values, len(values), type(values))
-                print('##', softmax_, len(softmax_), type(softmax_))
+                #print('££!!', values, len(values), type(values))
+                #print('##', softmax_, len(softmax_), type(softmax_))
                 move_as_list = random.choices(list(self.tree.root_node.moves_children.keys()), weights=softmax_, k=1)
                 best_move = move_as_list[0]
-                print('$$', best_move)
+                #print('$$', best_move)
             elif self.arg['move_selection_rule']['type'] == 'almost_equal':
                 # find best first move allowing for random choice for almost equally valued moves.
                 best_root_children = self.tree.root_node.get_all_of_the_best_moves(how_equal='almost_equal')
@@ -66,6 +66,8 @@ class TreeAndValue(Player):
                     print(self.tree.root_node.moves_children.inverse[child], end=' ')
                 best_child = random.choice(best_root_children)
                 best_move = self.tree.root_node.moves_children.inverse[best_child]
+            else:
+                raise (Exception('move_selection_rule is not valid it seems'))
         return best_move
 
     def tree_explore(self, board):

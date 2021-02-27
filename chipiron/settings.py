@@ -1,7 +1,7 @@
 import threading
 
 global deterministic_behavior
-deterministic_behavior = True
+deterministic_behavior = False
 
 global profiling_bool
 profiling_bool = False
@@ -9,14 +9,6 @@ profiling_bool = False
 global testing_bool
 testing_bool = False
 
-global learning_nn_bool
-learning_nn_bool = False
-
-global nn_to_train
-nn_to_train = None
-
-global nn_replay_buffer_manager
-nn_replay_buffer_manager = None
 
 
 

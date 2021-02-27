@@ -23,12 +23,12 @@ if settings.profiling_bool:
     pr = cProfile.Profile()
     pr.enable()
 
-file_name_player_one = 'ZipfSequoolNN2.yaml'
+file_name_player_one = 'ZipfSequool.yaml'
 file_name_player_two = 'ZipfSequool.yaml'
 if settings.profiling_bool:
     file_name_match_setting = 'setting_jime.yaml'
 else:
-    file_name_match_setting = 'setting_kyan.yaml'
+    file_name_match_setting = 'setting_giri.yaml'
 path_player_one = 'chipiron/runs/players/' + file_name_player_one
 path_player_two = 'chipiron/runs/players/' + file_name_player_two
 path_match_setting = 'chipiron/runs/OneMatch/' + file_name_match_setting
@@ -67,7 +67,7 @@ chess_simulator = ChessEnvironment()
 syzygy = Syzygy(chess_simulator)
 
 player_one = create_player(args_player_one, chess_simulator, syzygy)
-player_two = create_player(args_player_two, chess_simulator, syzygy)
+player_two = create_player(args_player_one, chess_simulator, syzygy)
 
 play = PlayOneMatch(args_match, player_one, player_two, chess_simulator,  syzygy,pathDirectory)
 settings.init()  # global variables
