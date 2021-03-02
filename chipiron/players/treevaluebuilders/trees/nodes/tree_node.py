@@ -5,6 +5,7 @@ import chess
 from players.boardevaluators.over_event import OverEvent
 from players.treevaluebuilders.trees.updates import UpdateInstructions, BaseUpdateInstructionsBlock
 from players.treevaluebuilders.notations_and_statics import nth_key
+import math
 
 
 # todo check if the transfer to half move is done from depth
@@ -145,8 +146,9 @@ class TreeNode:
         return value_1[:2] == value_2[:2]
 
     def are_almost_equal_values(self, value_1, value_2):
+        #expect floats
         epsilon = 0.01
-        return value_1[0] > value_2[0] - epsilon and value_2[0] > value_1[0] - epsilon
+        return value_1 > value_2 - epsilon and value_2 > value_1 - epsilon
 
     def becoming_over_from_children(self):
         """ this nodes is asked to switch to over status"""
@@ -268,7 +270,7 @@ class TreeNode:
     def dot_description(self):
         value = "{:.3f}".format(self.value_white) if self.value_white is not None else 'None'
         return 'id:' + str(self.id) + ' dep: ' + str(self.half_move) + '\n wh_val: ' + value + '\n moves*' + \
-               self.description_best_move_sequence() + '\nover: ' + self.over_event.simple_string()
+               self.description_best_move_sequence() + '\nover: ' + self.over_event.get_over_tag()
 
     def description_best_move_sequence(self):
         res = ''
@@ -373,6 +375,10 @@ class TreeNode:
             parent_node = child
         print(' ')
 
+    def my_logit(self, x):
+        y = min(max(x,.000001),.999999)
+        return math.log(y / (1 - y))
+
     def get_all_of_the_best_moves(self, how_equal=None):
         # todo make it faster
         best_children = []
@@ -387,7 +393,13 @@ class TreeNode:
                 if self.are_considered_equal_values(self.children_sorted_by_value[child], best_value):
                     best_children.append(child)
             elif how_equal == 'almost_equal':
-                if self.are_almost_equal_values(self.children_sorted_by_value[child], best_value):
+                if self.are_almost_equal_values(self.children_sorted_by_value[child][0], best_value[0]):
+                    best_children.append(child)
+            elif how_equal == 'almost_equal_logistic':
+                print('$$',best_value,type(best_value))
+                best_value_logit = self.my_logit(best_value[0] * .5 + .5) #from [-1,1] to [0,1]
+                child_value_logit = self.my_logit(self.children_sorted_by_value[child][0] * .5 + .5)
+                if self.are_almost_equal_values(child_value_logit, best_value_logit):
                     best_children.append(child)
         return best_children
 
@@ -449,16 +461,16 @@ class TreeNode:
         return des
 
     def get_not_opened_descendants(self):
-        if not self.all_legal_moves_generated: # should use are_all_moves_and_children_opened() but its messy!
+        if not self.all_legal_moves_generated:  # should use are_all_moves_and_children_opened() but its messy!
             des = {self: None}  # include itself maybe
         else:
-            des={}
+            des = {}
         generation = set(self.moves_children.values())
         while generation:
             next_depth_generation = set()
             for node in generation:
                 if not node.all_legal_moves_generated:
-                   # print('67', node.id)
+                    # print('67', node.id)
                     des[node] = None
                 for move, next_generation_child in node.moves_children.items():
                     next_depth_generation.add(next_generation_child)

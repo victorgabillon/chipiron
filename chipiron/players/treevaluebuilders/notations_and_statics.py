@@ -10,7 +10,7 @@ def zipf_picks(list_elements, value_of_element):
     best_index = 0
     best_value = value_of_element(0)
     for index in range(length_list):
-        value = value_of_element(index) * (index + 1) * math.log(math.e * (index + 1))
+        value = value_of_element(index) * (index + 1) * (math.log(math.e * (index + 1)))**2
         if value < best_value:
             best_value = value
             best_index = index
