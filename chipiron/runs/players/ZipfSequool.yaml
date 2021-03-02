@@ -6,7 +6,7 @@ tree_builder:
   zipf_style: ZipfOne
   opening_type: all_children
   move_selection_rule: 
-   type: softmax
+   type: almost_equal
    temperature: 50
 board_evaluator:
   type: BasicEvaluation

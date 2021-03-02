@@ -12,7 +12,7 @@ def explore_and_update_df(data_frame_st, player, board_,index):
     player.tree_explore(board_)
     data_frame_st.loc[index, 'explored'] = classification_power
     if player.tree.root_node.is_over():
-        data_frame_st.loc[index, 'final_value'] = player.tree.root_node.over_event.simple_string()
+        data_frame_st.loc[index, 'final_value'] = player.tree.root_node.over_event.get_over_tag()
     if player.tree.root_node.board.chess_board.is_game_over():
         print('~~~~')
     else:
@@ -26,13 +26,20 @@ def explore_and_update_df(data_frame_st, player, board_,index):
             best_next_fen = best_child_node.board.chess_board.fen()
         data_frame_st.loc[index, 'best_next_fen'] = best_next_fen
 
+def syzygy_and_update_df(data_frame_st, board_,index):
+
+        if syzygy.fast_in_table(board_):
+            syzygy.val(board_)
+            data_frame_st.loc[index, 'explored'] = 'syzygy'
+            data_frame_st.loc[index, 'final_value'] = best_next_fen
+
 
 classification_power = 250
 settings.deterministic_behavior = False
 settings.profiling_bool = False
 settings.learning_nn_bool = True
 
-file_name_player_one = 'ZipfSequool.yaml'
+file_name_player_one = 'ZipfSequoolNN2.yaml'
 path_player_one = 'chipiron/runs/players/' + file_name_player_one
 
 with open(path_player_one, 'r') as filePlayerOne:
@@ -55,7 +62,7 @@ assert (player_one.arg['tree_move_limit'] == classification_power)
 
 settings.init()  # global variables
 
-data_frame_file_name = 'chipiron/data/states.data'
+data_frame_file_name = 'chipiron/data/states_from_png.data'
 try:
     data_frame_states = pd.read_pickle(data_frame_file_name)
 except:

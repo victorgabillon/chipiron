@@ -4,6 +4,7 @@ import chess
 class OverEvent:
     HOW_OVERS = [WIN, DRAW, DO_NOT_KNOW_OVER] = [1, 2, 3]
     WINNERS = [WHITE, BLACK, NO_KNOWN_WINNER] = [chess.WHITE, chess.BLACK, None]
+    OVER_TAGS = [TAG_WIN_WHITE, TAG_WIN_BLACK, TAG_DRAW, TAG_DO_NOT_KNOW] = ['Win-Wh', 'Win-Bl', 'Draw', '?']
 
     def __init__(self, how_over=DO_NOT_KNOW_OVER, who_is_winner=NO_KNOWN_WINNER):
         assert how_over in self.HOW_OVERS
@@ -21,18 +22,19 @@ class OverEvent:
         assert how_over in self.HOW_OVERS
         assert who_is_winner in self.WINNERS
 
-    def simple_string(self):
+    def get_over_tag(self):
+        """ returns a simple string that is used a tag in the databases"""
         if self.how_over == self.WIN:
             if self.who_is_winner == chess.WHITE:
-                return 'Win-Wh'
+                return self.TAG_WIN_WHITE
             elif self.who_is_winner == chess.BLACK:
-                return 'Win-Bl'
+                return self.TAG_WIN_BLACK
             else:
                 raise Exception('error: winner is not properly defined.')
         elif self.how_over == self.DRAW:
-            return 'Draw'
+            return self.TAG_DRAW
         elif self.how_over == self.DO_NOT_KNOW_OVER:
-            return '?'
+            return self.TAG_DO_NOT_KNOW
         else:
             raise Exception('error: over is not properly defined.')
 
@@ -60,7 +62,6 @@ class OverEvent:
         print('over_event:', 'how_over:', self.how_over, 'who_is_winner:', self.who_is_winner)
 
     def test(self):
-
         if self.how_over == self.WIN:
             assert (self.who_is_winner is not None)
             assert (self.who_is_winner is chess.WHITE or self.who_is_winner is chess.BLACK)

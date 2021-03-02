@@ -255,7 +255,7 @@ class MainWindow(QWidget):
                     + str(self.play.match_results.get_player_two_wins()) + '-'
                     + str(self.play.match_results.get_draws()))  # text
 
-                self.closeButton5.setText('Round: ' + self.play.play_one_game.game.board.chess_board.fullmove_number)  # text
+                self.closeButton5.setText('Round: ' + str(self.play.play_one_game.game.board.chess_board.fullmove_number))  # text
 
 
 

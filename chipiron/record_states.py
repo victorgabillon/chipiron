@@ -69,10 +69,10 @@ while True:
                 if player_best_move_searcher.tree.root_node.is_over():
                     print(board)
                     selection.append({'fen': board.chess_board.fen(),
-                                      'final_value': player_best_move_searcher.tree.root_node.over_event.simple_string(),
+                                      'final_value': player_best_move_searcher.tree.root_node.over_event.get_over_tag(),
                                       'explored': classification_power})
                     print({'fen': board.chess_board.fen(),
-                           'final_value': player_best_move_searcher.tree.root_node.over_event.simple_string(),
+                           'final_value': player_best_move_searcher.tree.root_node.over_event.get_over_tag(),
                            'explored': classification_power})
             new_row = random.choice(selection)
 
@@ -84,8 +84,10 @@ while True:
         list_of_new_rows.append(new_row)
 
     print('@@@@@@@@@', res)
-    data_frame_file_name = 'chipiron/data/states_game_over_softmax_50_num4.data'
-   #data_frame_file_name = 'chipiron/data/statestest0.data'
+    data_frame_file_name = 'chipiron/data/states_Zs_softmax_50_num1.data'
+    data_frame_file_name = 'chipiron/data/states_game_over_softmax_50_num2.data'
+
+    #data_frame_file_name = 'chipiron/data/statestest0.data'
 
     try:
         data_frame_states = pd.read_pickle(data_frame_file_name)

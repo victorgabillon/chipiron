@@ -1,6 +1,5 @@
 import chess.syzygy
-
-
+from players.boardevaluators.over_event import OverEvent
 
 class Syzygy:
 
@@ -33,7 +32,6 @@ class Syzygy:
         val = self.table_base.probe_wdl(board.chess_board)
         return val
 
-
     # def value_white(self, board):
     #     # tablebase.probe_wdl Returns 2 if the side to move is winning, 0 if the position is a draw and -2 if the side to move is losing.
     #     # so we need to convert to return absolute white value
@@ -46,6 +44,23 @@ class Syzygy:
     #     else:
     #         raise Exception('wrong color')
     #     return val
+
+    def get_over_tag(self,board):
+        val = self.table_base.probe_wdl(board.chess_board)
+        player_to_move = 'white' if board.chess_board.turn == chess.WHITE else 'black'
+        if val > 0:
+            if board.chess_board.turn == chess.WHITE:
+                return OverEvent.TAG_WIN_WHITE
+            else:
+                return OverEvent.TAG_WIN_BLACK
+        elif val == 0:
+            return OverEvent.TAG_DRAW
+        else:
+            if board.chess_board.turn == chess.WHITE:
+                return OverEvent.TAG_WIN_BLACK
+            else:
+                return OverEvent.TAG_WIN_WHITE
+
 
     def sting_result(self, board):
         val = self.table_base.probe_wdl(board.chess_board)

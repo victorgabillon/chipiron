@@ -38,7 +38,6 @@ class TreeAndValue(Player):
               self.tree.root_node.value_white)  # ,end='\r')
 
     def recommend_move_after_exploration(self):
-
         # for debug we fix the choice in the next lines
         if settings.deterministic_behavior:
             print(' FIXED CHOICE FOR DEBUG')
@@ -47,23 +46,17 @@ class TreeAndValue(Player):
             best_move = self.tree.root_node.moves_children.inverse[best_child]
 
         else:  # normal behavior
-            #print('~~', self.arg['move_selection_rule']['type'])
-            if self.arg['move_selection_rule']['type'] == 'softmax':
+            selection_rule = self.arg['move_selection_rule']['type']
+            if  selection_rule == 'softmax':
                 temperature = self.arg['move_selection_rule']['temperature']
                 values = [self.tree.root_node.subjective_value_of(node) for node in
                           self.tree.root_node.moves_children.values()]
                 softmax_ = softmax(values, temperature)
-                #print('££!!', values, len(values), type(values))
-                #print('##', softmax_, len(softmax_), type(softmax_))
                 move_as_list = random.choices(list(self.tree.root_node.moves_children.keys()), weights=softmax_, k=1)
                 best_move = move_as_list[0]
-                #print('$$', best_move)
-            elif self.arg['move_selection_rule']['type'] == 'almost_equal':
+            elif selection_rule == 'almost_equal' or selection_rule == 'almost_equal_logistic':
                 # find best first move allowing for random choice for almost equally valued moves.
-                best_root_children = self.tree.root_node.get_all_of_the_best_moves(how_equal='almost_equal')
-                print('We have', len(best_root_children), 'moves considered as equally best:', end='')
-                for child in best_root_children:
-                    print(self.tree.root_node.moves_children.inverse[child], end=' ')
+                best_root_children = self.tree.root_node.get_all_of_the_best_moves(how_equal=selection_rule )
                 best_child = random.choice(best_root_children)
                 best_move = self.tree.root_node.moves_children.inverse[best_child]
             else:
@@ -108,7 +101,7 @@ class TreeAndValue(Player):
         # self.tree.save_raw_data_to_file()
         self.tree.print_some_stats()
         for move, child in self.tree.root_node.moves_children.items():
-            print(move, self.tree.root_node.moves_children[move].value_white, child.over_event.simple_string())
+            print(move, self.tree.root_node.moves_children[move].value_white, child.over_event.get_over_tag())
         print('evaluation for white: ', self.tree.root_node.value_white)
 
     def get_move_from_player(self, board, time):
