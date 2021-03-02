@@ -5,6 +5,9 @@ tree_builder:
   tree_move_limit: 250
   zipf_style: ZipfOne
   opening_type: all_children
+  move_selection_rule: 
+   type: almost_equal_logistic
+   temperature: 50
 board_evaluator:
   type: NN4Pytorch
   nn_name: NN104
