@@ -2,7 +2,7 @@ name: ZipfSequoolNN2
 type: TreeAndValue
 tree_builder: 
   type: ZipfSequool
-  tree_move_limit: 250
+  tree_move_limit: 251
   zipf_style: ZipfOne
   opening_type: all_children
   move_selection_rule: 
@@ -10,6 +10,6 @@ tree_builder:
    temperature: 50
 board_evaluator:
   type: NN4Pytorch
-  nn_name: NN104
+  nn_param_file_name: 'NN104/param_class_learn_full_board.pt'
   syzygy_evaluation: True
 syzygy_play: True

@@ -2,8 +2,8 @@ from players.treevaluebuilders.trees.nodes.tree_node import TreeNode
 
 class NoisyValueTreeNode(TreeNode):
 
-    def __init__(self, board, half_move, count, father_node, last_move):
-        super().__init__(board, half_move, count, father_node, last_move)
+    def __init__(self, board, half_move, id_number, parent_node, last_move):
+        super().__init__(board, half_move, id_number, parent_node, last_move)
         self.number_of_samples = 0
         self.variance = 0
 

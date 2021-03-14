@@ -8,8 +8,8 @@ dicZStyle = {'Zipf': ZIPF, 'ZipfOne': ZIPF_ONE, 'ZipfTwo': ZIPF_TWO}
 
 class VisitsAndProportionsNode(NodeWithDescendants):
 
-    def __init__(self, board, half_move, count, father_node, zipf_style_str):
-        super().__init__(board, half_move, count, father_node)
+    def __init__(self, board, half_move, id_number, parent_node, zipf_style_str):
+        super().__init__(board, half_move, id_number, parent_node)
         self.proportions = {}
         self.zipf_style = dicZStyle[zipf_style_str]
 
@@ -49,7 +49,7 @@ class VisitsAndProportionsNode(NodeWithDescendants):
         assert (self.best_index_for_value == 0)  # todo make it ok to have ascending order too asome point
 
         for counter, child in enumerate(sorted_children[1:]):
-            gap[counter + 1] = float(best_children.value_white - child.value_white)
+            gap[counter + 1] = float(best_children.get_value_white() - child.get_value_white())
 
         gap[0] = gap[1]
         return np.array(gap)
@@ -88,8 +88,8 @@ class VisitsAndProportionsNode(NodeWithDescendants):
         min_child = None
         id_min = 100000000000000000000000000.
 
-      #  print('##',[ child.descendants.get_count() for counter, child in enumerate(self.children_not_over) ])
-      #  print('@@',[ float(self.proportions[child]) for counter, child in enumerate(self.children_not_over) ])
+        #print('##',[ child.descendants.get_count() for counter, child in enumerate(self.children_not_over) ])
+        #print('@@',[ float(self.proportions[child]) for counter, child in enumerate(self.children_not_over) ])
 
         for counter, child in enumerate(self.children_not_over):
             proportions[counter] = child.descendants.get_count() / float(self.proportions[child])
@@ -102,6 +102,9 @@ class VisitsAndProportionsNode(NodeWithDescendants):
                     min_ = proportions[counter]
                     min_child = child
                     id_min = child.id
+
+        #print('££',[ (float(proportions[counter]),child.id,child.descendants.get_count()) for counter, child in enumerate(self.children_not_over) ])
+        #print('$$',min_child,id_min)
 
         return min_child
 
