@@ -1,7 +1,7 @@
 import threading
 
 global deterministic_behavior
-deterministic_behavior = False
+deterministic_behavior = True
 
 global profiling_bool
 profiling_bool = False

@@ -138,10 +138,10 @@ class Window(QtWidgets.QWidget):
         VBlayout.addLayout(HBlayout)
 
         self.tree = MoveAndValueTree(None, None, None, None)
-        pic = pickle.load(open("../runs/treedisplays/TreeData_8black-#.td", "rb"))
+        pic = pickle.load(open("chipiron/runs/treedisplays/TreeData_1white-#.td", "rb"))
         self.tree.descendants = pic[0]
-        self.tree.color = pic[1]
-        self.tree.root_node = pic[2]
+        self.tree.root_node = pic[1]
+
 
         self.current_node = self.tree.root_node
         self.buildSubtree()
@@ -155,10 +155,10 @@ class Window(QtWidgets.QWidget):
 
     def displaySubtree(self):
         dot = self.tree.display_special(self.current_node, 'jpg', self.index)
-        dot.render('runs/treedisplays/TreeVisualtemp')
+        dot.render('chipiron/runs/treedisplays/TreeVisualtemp')
 
     def loadImage(self):
-        self.viewer.setPhoto(QtGui.QPixmap('../runs/treedisplays/TreeVisualtemp.jpg'))
+        self.viewer.setPhoto(QtGui.QPixmap('chipiron/runs/treedisplays/TreeVisualtemp.jpg'))
 
     def pixInfo(self):
         self.viewer.toggleDragMode()
@@ -182,7 +182,7 @@ class Window(QtWidgets.QWidget):
             #todo there is collision as these numbers are used for children too now...
 
     def father(self):
-        qq = list(self.current_node.parent_nodes.keys())
+        qq = list(self.current_node.parent_nodes)
         father_node = qq[0] #by default!
         if father_node is not None:
             self.current_node = father_node

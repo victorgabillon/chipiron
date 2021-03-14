@@ -1,17 +1,24 @@
 import chess.syzygy
 from players.boardevaluators.over_event import OverEvent
 
+
 class Syzygy:
 
-    def __init__(self, chess_simulator):
+    def __init__(self, chess_simulator,path_to_chipiron):
         self.chessSimulator = chess_simulator
-        self.table_base = chess.syzygy.open_tablebase("chipiron/syzygy-tables/")
+        self.table_base = chess.syzygy.open_tablebase(path_to_chipiron+"chipiron/syzygy-tables/")
 
     def fast_in_table(self, board):
         return board.number_of_pieces_on_the_board() < 6
 
+    def in_table(self, board):
+        try:
+            self.table_base.probe_wdl(board.chess_board)
+        except KeyError:
+            return False
+        return True
+
     def set_over_event(self, node):
-        """ returns absolute white value"""
         val = self.val(node.board)
 
         who_is_winner_ = node.over_event.NO_KNOWN_WINNER
@@ -32,22 +39,8 @@ class Syzygy:
         val = self.table_base.probe_wdl(board.chess_board)
         return val
 
-    # def value_white(self, board):
-    #     # tablebase.probe_wdl Returns 2 if the side to move is winning, 0 if the position is a draw and -2 if the side to move is losing.
-    #     # so we need to convert to return absolute white value
-    #     val = self.table_base.probe_wdl(board.chess_board)
-    #
-    #     if board.chess_board.turn == chess.WHITE:
-    #         return val
-    #     elif board.chess_board.turn == chess.BLACK:
-    #         return -val
-    #     else:
-    #         raise Exception('wrong color')
-    #     return val
-
-    def get_over_tag(self,board):
+    def get_over_tag(self, board):
         val = self.table_base.probe_wdl(board.chess_board)
-        player_to_move = 'white' if board.chess_board.turn == chess.WHITE else 'black'
         if val > 0:
             if board.chess_board.turn == chess.WHITE:
                 return OverEvent.TAG_WIN_WHITE
@@ -60,7 +53,6 @@ class Syzygy:
                 return OverEvent.TAG_WIN_BLACK
             else:
                 return OverEvent.TAG_WIN_WHITE
-
 
     def sting_result(self, board):
         val = self.table_base.probe_wdl(board.chess_board)

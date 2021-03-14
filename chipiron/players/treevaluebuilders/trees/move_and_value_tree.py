@@ -99,24 +99,17 @@ class MoveAndValueTree:
         if not child.is_over():  # if child is not over keep it in the list not over to explore them!!
             node.children_not_over.add(child)
 
-        # if settings.testing_bool and self.root_node is not None:
-        #  first_moves = self.root_node.moves_children.values()
-        #  for f in first_moves:
-        #       f.descendants.test_2(f)
-        #      f.descendants_not_opened.test_2_nod(f)
-
         return child, new
 
     def evaluate_board(self, node):
-        assert (node.value_white is None)
+        assert (node.value_white_evaluator is None)
         if node.is_over():
-            node.value_white = DISCOUNT ** node.half_move \
-                               * self.board_evaluator.value_white_from_over_event(node.over_event)
+            evaluation = DISCOUNT ** node.half_move * self.board_evaluator.value_white_from_over_event(node.over_event)
         elif not node.moves_children:  # todo what????????????????????????/
-            # node.over_event.print_info()
-            node.value_white = (1 / DISCOUNT) ** node.half_move * self.board_evaluator.value_white(node.board)
+            evaluation = (1 / DISCOUNT) ** node.half_move * self.board_evaluator.value_white(node.board)
         else:
             raise (Exception('@@@@@xx'))
+        node.set_evaluation(evaluation)
 
     def evaluate_new_move_in_node(self, parent_node, move):
         """ creates the new node according to the new moves and then evaluates the new board"""
@@ -176,17 +169,17 @@ class MoveAndValueTree:
         dot = self.display('pdf')
         round_ = len(self.root_node.board.chess_board.move_stack) + 2
         color = 'white' if self.root_node.player_to_move else 'black'
-        dot.render('runs/treedisplays/TreeVisual_' + str(int(round_ / 2)) + color + '.pdf')
+        dot.render('chipiron/runs/treedisplays/TreeVisual_' + str(int(round_ / 2)) + color + '.pdf')
 
     def save_raw_data_to_file(self, count='#'):
         round_ = len(self.root_node.board.chess_board.move_stack) + 2
         color = 'white' if self.root_node.player_to_move else 'black'
-        filename = 'runs/treedisplays/TreeData_' + str(int(round_ / 2)) + color + '-' + str(count) + '.td'
+        filename = 'chipiron/runs/treedisplays/TreeData_' + str(int(round_ / 2)) + color + '-' + str(count) + '.td'
 
         import sys
         sys.setrecursionlimit(100000)
         with open(filename, "wb") as f:
-            pickle.dump([self.descendants, self.color, self.root_node], f)
+            pickle.dump([self.descendants, self.root_node], f)
 
     def open_and_update(self,
                         opening_instructions_batch):  # set of nodes and moves to open
