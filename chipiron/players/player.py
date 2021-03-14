@@ -3,7 +3,7 @@ from players.boardevaluators.NN4_pytorch import transform_board
 
 
 class Player():
-    # the only difference between player and mover is the color? is this necessary and symplifiable?
+    #  difference between player and treebuilder includes the fact that now a player can be a mixture of multiple decision rulles
 
     def __init__(self):
         pass
@@ -21,38 +21,6 @@ class Player():
         if self.syzygy_play and self.syzygy_player.fast_in_table(board):
             print('Playing with Syzygy')
             best_move = self.syzygy_player.best_move(board)
-
-            if False:  # settings.learning_nn_bool:
-
-                input_layer = transform_board(board)
-
-                # target_value_0_1 = value_player_to_move(board)
-                target_value_0_1 = min(max(self.syzygy_player.val(board), -1), 1) * .5 + .5
-                print('**', target_value_0_1, input_layer)
-                assert (target_value_0_1 == 0. or target_value_0_1 == .5 or target_value_0_1 == 1.)
-                target_input_layer = None
-                print('!!', input_layer, target_value_0_1)
-
-                settings.nn_to_train.train_one_example(input_layer,
-                                                       target_value_0_1,
-                                                       target_input_layer)
-                replay_buffer = settings.nn_replay_buffer_manager.replay_buffer
-                replay_buffer.print_info()
-                replay_buffer.add_element((input_layer,
-                                           target_value_0_1,
-                                           target_input_layer))
-
-                for count, element in enumerate(replay_buffer.choose_random_element(1)):
-                    print('replay buffer element', count)
-                    input_layer_buffer = element[0]
-                    target_value_0_1_buffer = element[1]
-                    target_input_layer_buffer = element[2]
-                    settings.nn_to_train.train_one_example(input_layer_buffer, target_value_0_1_buffer,
-                                                           target_input_layer_buffer)
-                #
-                settings.nn_replay_buffer_manager.save()
-
-
 
         else:
             print('Playing with player (not Syzygy)')

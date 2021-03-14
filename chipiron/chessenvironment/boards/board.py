@@ -20,6 +20,10 @@ class MyBoard:
                 file_name = starting_position_arg['options']['file_name']
                 fen = self.load_from_file(file_name)
                 self.chess_board = chess.Board(fen)
+            elif starting_position_arg['type'] == 'fen':
+                fen = starting_position_arg['fen']
+                print(';fen', fen)
+                self.chess_board = chess.Board(fen)
 
         if fen is not None:
             self.chess_board = chess.Board(fen)

@@ -8,7 +8,7 @@ import pandas as pd
 from chessenvironment.boards.board import MyBoard
 
 
-def explore_and_update_df(data_frame_st, player, board_,index):
+def explore_and_update_df(data_frame_st, player, board_, index):
     player.tree_explore(board_)
     data_frame_st.loc[index, 'explored'] = classification_power
     if player.tree.root_node.is_over():
@@ -26,12 +26,13 @@ def explore_and_update_df(data_frame_st, player, board_,index):
             best_next_fen = best_child_node.board.chess_board.fen()
         data_frame_st.loc[index, 'best_next_fen'] = best_next_fen
 
-def syzygy_and_update_df(data_frame_st, board_,index):
 
-        if syzygy.fast_in_table(board_):
-            syzygy.val(board_)
-            data_frame_st.loc[index, 'explored'] = 'syzygy'
-            data_frame_st.loc[index, 'final_value'] = best_next_fen
+def syzygy_and_update_df(data_frame_st, board_, index_):
+    if syzygy.fast_in_table(board_):
+        # print('55',index_)
+        data_frame_st.loc[index_, 'explored'] = 'syzygy'
+        #print(board_,data_frame_st.loc[index_, 'fen'])
+        data_frame_st.loc[index_, 'final_value'] = syzygy.get_over_tag(board_)
 
 
 classification_power = 250
@@ -46,15 +47,9 @@ with open(path_player_one, 'r') as filePlayerOne:
     args_player_one = yaml.load(filePlayerOne, Loader=yaml.FullLoader)
     print(args_player_one)
 
-file_game_name = 'setting_navo.yaml'
-path_game_setting = 'chipiron/runs/GameSettings/' + file_game_name
-
-with open(path_game_setting, 'r') as fileGame:
-    args_game = yaml.load(fileGame, Loader=yaml.FullLoader)
-    print(args_game)
 
 chess_simulator = ChessEnvironment()
-syzygy = Syzygy(chess_simulator)
+syzygy = Syzygy(chess_simulator,'')
 
 player_one = create_player(args_player_one, chess_simulator, syzygy)
 assert (player_one.arg['tree_move_limit'] == classification_power)
@@ -62,31 +57,40 @@ assert (player_one.arg['tree_move_limit'] == classification_power)
 
 settings.init()  # global variables
 
-data_frame_file_name = 'chipiron/data/states_from_png.data'
-try:
-    data_frame_states = pd.read_pickle(data_frame_file_name)
-except:
-    data_frame_states = None
-
-if 'explored' not in data_frame_states:
-    data_frame_states['explored'] = np.NaN
-
-if 'final_value' not in data_frame_states:
-    data_frame_states['final_value'] = np.NaN
-
-if 'best_next_fen' not in data_frame_states:
-    data_frame_states['best_next_fen'] = np.NaN
-
 assert (not settings.deterministic_behavior)
 assert (not settings.profiling_bool)
 
-for index_, row_ in data_frame_states.iterrows():
-    if not row_['explored'] >= classification_power or (row_['best_next_fen'] == np.NaN and row_['final_value'] == np.NaN):
-        print('^^')
-        fen = row_['fen']
-        board = MyBoard(fen=fen)
-        explore_and_update_df(data_frame_states, player_one, board,index_)
+files = ['chipiron/data/states_good_from_png/subfile' + str(i) for i in range(10,50)]
+files = ['chipiron/data/states_good_from_png/game_over_states_balanced_2']
 
-print('old_data_frame_states', data_frame_states)
-print(data_frame_states.loc[1, 'fen'])
-data_frame_states.to_pickle(data_frame_file_name)
+
+for data_frame_file_name in files:
+    print('the files is', data_frame_file_name)
+    try:
+        data_frame_states = pd.read_pickle(data_frame_file_name)
+    except:
+        data_frame_states = None
+
+    if 'explored' not in data_frame_states:
+        data_frame_states['explored'] = np.NaN
+
+    if 'final_value' not in data_frame_states:
+        data_frame_states['final_value'] = np.NaN
+
+    if 'best_next_fen' not in data_frame_states:
+        data_frame_states['best_next_fen'] = np.NaN
+    count = 0
+    for index_, row_ in data_frame_states.iterrows():
+        count += 1
+        if not row_['explored'] == 'syzygy':
+            if not row_['explored'] >= classification_power or (
+                    row_['best_next_fen'] == np.NaN and row_['final_value'] == np.NaN):
+                if count % 100 == 0:
+                  print('^^', count, len(data_frame_states.index))
+                fen = row_['fen']
+                board = MyBoard(fen=fen)
+                #explore_and_update_df(data_frame_states, player_one, board, index_)
+                syzygy_and_update_df(data_frame_states,board,index_)
+
+    print('old_data_frame_states', data_frame_states)
+    data_frame_states.to_pickle(data_frame_file_name)

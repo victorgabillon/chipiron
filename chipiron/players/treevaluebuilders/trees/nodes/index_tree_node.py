@@ -1,10 +1,10 @@
-from players.treevaluebuilders.trees.nodes.tree_node import TreeNode
+from players.treevaluebuilders.trees.nodes.tree_node_with_values import TreeNodeWithValue
 
 
-class IndexTreeNode(TreeNode):
+class IndexTreeNode(TreeNodeWithValue):
 
-    def __init__(self, board, half_move, count, father_node):
-        super().__init__(board, half_move, count, father_node)
+    def __init__(self, board, half_move, id_number, parent_node):
+        super().__init__(board, half_move, id_number, parent_node)
         # the index is here to give information on how much we want to explore this node further
         self.index = None
 

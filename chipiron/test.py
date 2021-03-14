@@ -1,61 +1,22 @@
-class A:
-    def __init__(self):
-        super().__init__()
-        print('init A')
-        self.b = {}
+import chess.pgn
+import chess
+# entry point
+import os
+import sys
 
-    def x(self):
-        print('A')
+module_path = os.path.abspath(os.path.join('..'))
 
+if module_path not in sys.path:
+    sys.path.append(module_path)
 
-class B(A):
-    def __init__(self):
-        super().__init__()
-        print('init B')
-        self.b = {}
+import pandas as pd
+from players.boardevaluators.syzygy import Syzygy
+from chessenvironment.chess_environment import ChessEnvironment
+from chessenvironment.boards.board import MyBoard
 
-    def x(self):
-        print('B')
-        super().x()
+fen = '2B5/R1QRb3/1Qp3pp/2qnR2P/k6r/R2Pnrb1/1R1K4/4B1bQ b - - 0 1'
+my_board = MyBoard(fen=fen)
+print('^^', fen, my_board.chess_board.is_valid())
+print('^^', fen, my_board.chess_board.is_game_over())
 
-
-class C(A):
-    def __init__(self):
-        super().__init__()
-        print('init C')
-
-        self.b = {}
-
-    def x(self):
-        print('C')
-        super().x()
-
-
-class D(B, C):
-    pass
-    # def __init__(self):
-    # super().__init__()
-    #    print('init D')
-    #   self.b = {}
-
-
-class Hello:
-    pass
-
-
-a = 'D'
-
-d = D()
-d.x()
-print(D.mro())
-# from sortedcollections import ValueSortedDict, SortedDict
-#
-# def ValueS():
-#     a=SortedDict()
-#     a=ValueSortedDict()
-# def ValueA():
-#     a= {}
-#
-# import timeit
-# print(timeit.timeit('ValueS()', number=50000,setup="from __main__ import ValueS"))
-# print(timeit.timeit('ValueA()', number=103000,setup="from __main__ import ValueA"))
+print(my_board.chess_board)

@@ -6,5 +6,7 @@ secondsPerMoveBlack: 10
 starting_position:
   type: fromFile
   options:
-    file_name: Board1.text
-
+    file_name: Board2.text
+#starting_position:
+#  type: fen
+#  fen: 'r6r/pp1b1kp1/4pn2/q1bp3p/1n3Q2/2NBP3/PPP2PPP/R1B1K1R1 w Q - 4 12'

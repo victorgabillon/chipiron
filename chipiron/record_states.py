@@ -7,7 +7,7 @@ from chessenvironment.chess_environment import ChessEnvironment
 from players.boardevaluators.syzygy import Syzygy
 import settings
 import time
-print('*8dddddddddddddddddddddddddddddddddddddddddddddddddd')
+
 settings.deterministic_behavior = False
 settings.profiling_bool = False
 

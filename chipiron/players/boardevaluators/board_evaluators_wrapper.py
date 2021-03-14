@@ -1,6 +1,7 @@
 import chess
 from players.boardevaluators.syzygy import Syzygy
 
+
 class BoardEvaluatorsWrapper:
     # VALUE_WHITE_WHEN_OVER is the value_white default value when the node is over
     # set atm to be symmetric and high be be preferred
@@ -10,7 +11,7 @@ class BoardEvaluatorsWrapper:
     def __init__(self, board_evaluator, syzygy):
         self.board_evaluator = board_evaluator
         self.syzygy_evaluator = syzygy
-        assert(isinstance(syzygy,Syzygy))
+        assert (isinstance(syzygy, Syzygy))
 
     def value_white(self, board):
         value_white = self.syzygy_value_white(board)
@@ -44,6 +45,7 @@ class BoardEvaluatorsWrapper:
                                          who_is_winner=who_is_winner_)
 
         elif self.syzygy_evaluator and self.syzygy_evaluator.fast_in_table(node.board):
+            print('@@',node.board)
             self.syzygy_evaluator.set_over_event(node)
 
     def value_white_from_over_event(self, over_event):

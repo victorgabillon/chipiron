@@ -1,4 +1,4 @@
-from players.treevaluebuilders.trees.nodes.tree_node import TreeNode
+from players.treevaluebuilders.trees.nodes.tree_node_with_values import TreeNodeWithValue
 from players.treevaluebuilders.trees.descendants import RangedDescendants
 
 
@@ -21,10 +21,10 @@ class UpdateInstructionsDescendantsBlock:
         return self.new_descendants.empty()
 
 
-class NodeWithDescendants(TreeNode):
+class NodeWithDescendants(TreeNodeWithValue):
 
-    def __init__(self, board, half_move, count, father_node):
-        super().__init__(board, half_move, count, father_node)
+    def __init__(self, board, half_move, id_number, parent_node):
+        super().__init__(board, half_move, id_number, parent_node)
 
         # all the descendants as a list of set. one set per depth
         self.descendants = RangedDescendants()

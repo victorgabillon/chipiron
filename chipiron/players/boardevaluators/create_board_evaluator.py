@@ -18,11 +18,11 @@ def create_board_evaluator(arg, syzygy):
    # elif arg['type'] == 'NN1':
    #     board_evaluator = NN1(arg['nn_name'])
     elif arg['type'] == 'NN1Pytorch':
-        board_evaluator = NN1Pytorch(arg['nn_name'])
+        board_evaluator = NN1Pytorch(arg['nn_param_file_name'])
     elif arg['type'] == 'NN2Pytorch':
-        board_evaluator = NN2Pytorch(arg['nn_name'])
+        board_evaluator = NN2Pytorch(arg['nn_param_file_name'])
     elif arg['type'] == 'NN4Pytorch':
-        board_evaluator = NN4Pytorch(arg['nn_name'])
+        board_evaluator = NN4Pytorch('',arg['nn_param_file_name'])
     else:
         sys.exit('cant find ' + arg['type'])
 

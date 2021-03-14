@@ -21,8 +21,8 @@ class ZipfSequoolTree(MoveAndValueTree):
 
     def __init__(self, environment, board_evaluator, arg, board):
         super().__init__(environment, board_evaluator, arg, board)
-        self.count_visits_at_depth = []
         self.first_moves = FirstMoves()
+        self.count_visits_at_depth = {}
 
     def create_tree_node(self, board, half_move, count, father_node):
         if half_move == self.tree_root_half_move:
@@ -64,16 +64,20 @@ class ZipfSequoolTree(MoveAndValueTree):
         #         f.descendants.test_2(f)
 
     def update_after_node_creation(self, node, parent_node):
-        # print('############',node.id,node.half_move,parent_node)
-        # if parent_node is not None:
-        #   print('<>',parent_node.id)
-        #  for i in self.first_moves[parent_node]:
-        #     print('[]',i.id)
+
         self.first_moves.add_first_move(node, parent_node)
 
         root_node_half_move = self.tree_root_half_move
-        if node.half_move - root_node_half_move - 1 == len(self.count_visits_at_depth):
-            self.count_visits_at_depth.append(1)
+        node_depth = node.half_move - self.tree_root_half_move
+
+        if node_depth == 1:
+            if node not in self.count_visits_at_depth:
+                self.count_visits_at_depth[node] = []
+
+        if node_depth > 0:
+            for first_move in self.first_moves[node]:
+                if node.half_move - root_node_half_move - 1 == len(self.count_visits_at_depth[first_move]):
+                    self.count_visits_at_depth[first_move].append(1)
 
         node_depth = node.half_move - self.tree_root_half_move
 
@@ -104,7 +108,7 @@ class ZipfSequoolTree(MoveAndValueTree):
         for half_move in self.descendants:
             for node in self.descendants[half_move].values():
                 for child in node.moves_children.values():
-                    index = max(abs(child.value_white - node.value_white) / 2, node.index)
+                    index = max(abs(child.get_value_white() - node.get_value_white()) / 2, node.index)
                     if child.index is None:
                         child.index = index
                     else:
@@ -133,7 +137,7 @@ class ZipfSequool(TreeAndValue):
     def who_is_there_smth_to_open(self, node, half_move):
         if half_move not in node.descendants_not_opened:
             #  print('~~')
-            return set()
+            return {}
         else:
             # print('~s~', type(node.descendants_not_opened),
             #      type(node.descendants_not_opened.sorted_descendants_at_half_move[half_move]))
@@ -146,6 +150,7 @@ class ZipfSequool(TreeAndValue):
     def choose_node_and_move_to_open(self):
         # self.tree.update_all_indices()
 
+        # self.tree.root_node.print_proportions()
         self.count_refresh_index += 1
         if self.tree.root_node.are_all_moves_and_children_opened():
             if self.count_refresh_index < 10 or self.count_refresh_index == self.next_update:
@@ -163,11 +168,17 @@ class ZipfSequool(TreeAndValue):
         def func(depth_):
             candidates = len(self.candidates_at_depth(node_first_move, depth_))
             if candidates:
-                return self.tree.count_visits_at_depth[depth_]
+                return self.tree.count_visits_at_depth[node_first_move][depth_]
             else:
                 return math.inf
 
-        depth_picked, best_value = zipf_picks(list_elements=list(node_first_move.descendants.keys()),
+        best_line = self.tree.root_node.best_node_sequence
+        best_line_from_selected_first_move = node_first_move.best_node_sequence
+        list_elements_ = list(node_first_move.descendants.keys())[0: 1 + len(best_line_from_selected_first_move)]
+        # print('********', list_elements_, node_first_move.id,
+        #      self.tree.root_node.moves_children.inverse[node_first_move], best_line_from_selected_first_move,
+        #      best_line)
+        depth_picked, best_value = zipf_picks(list_elements=list_elements_,
                                               value_of_element=func)
         # print('depthpicked', depth_picked)
         # print('no_id', node_first_move.id)
@@ -176,7 +187,7 @@ class ZipfSequool(TreeAndValue):
 
         # print('values', [func(i) for i in range(len(list(node_first_move.descendants.keys())))])
 
-        self.tree.count_visits_at_depth[depth_picked] += 1
+        self.tree.count_visits_at_depth[node_first_move][depth_picked] += 1
         # print('####', type(self.candidates_at_depth(node_first_move, depth_picked)))
 
         nodes_to_consider_dict = self.candidates_at_depth(node_first_move, depth_picked)
@@ -202,7 +213,9 @@ class ZipfSequool(TreeAndValue):
         # print('best_value',best_value)
         best_node_2 = min(nodes_to_consider_dict, key=nodes_to_consider_dict.get)  # next(iter(nodes_to_consider_dict))
         # print('~', nodes_to_consider_dict)
-        # print('best_node', best_node.id, best_node.index)
+        # print('best_node', best_node.id, best_node.index,best_node.half_move)
+        assert (best_node.half_move == self.tree.root_node.half_move + 1 + depth_picked)
+        best_node.print_a_move_sequence_from_root()
         assert (best_node == best_node_2)
         assert (not best_node.all_legal_moves_generated)
         #  self.tree.descendants.print_info()
