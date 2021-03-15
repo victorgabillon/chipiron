@@ -51,8 +51,15 @@ class TreeNodeWithValue(TreeNode):
         self.value_white_evaluator = evaluation
         self.value_white_minmax = evaluation  # base value before knowing values of the children
 
+    def subjective_value(self, value_white):
+        """ return the value_white from the point of view of the self.player_to_move"""
+        # subjective value is so that from the point of view of the self.player_to_move if value_1> value_2 then value_1
+        # is preferable for self.player_to_move
+        subjective_value = value_white if self.player_to_move == chess.WHITE else -value_white
+        return subjective_value
+
     def subjective_value(self):
-        """ return the value from the point of view of the self.player_to_move"""
+        """ return the self.value_white from the point of view of the self.player_to_move"""
         subjective_value = self.value_white if self.player_to_move == chess.WHITE else -self.value_white
         return subjective_value
 
@@ -63,13 +70,19 @@ class TreeNodeWithValue(TreeNode):
 
     def best_child(self):
         # fast way to access first key with highest subjective value
-        best_child = next(iter(self.children_sorted_by_value))
+        if self.children_sorted_by_value:
+            best_child = next(iter(self.children_sorted_by_value))
+        else:
+            best_child = None
         return best_child
 
     def best_child_value(self):
         # fast way to access first key with highest subjective value
-        best_child = next(iter(self.children_sorted_by_value))
-        return best_child
+        if self.children_sorted_by_value:
+            best_value = next(iter(self.children_sorted_by_value.values()))
+        else:
+            best_value = None
+        return best_value
 
     def second_best_child(self):
         assert (len(self.children_sorted_by_value) >= 2)
@@ -213,7 +226,7 @@ class TreeNodeWithValue(TreeNode):
 
         return is_new_best_node_seq
 
-    def update_best_move(self):
+    def one_of_best_children_becomes_best_next_node(self):
         """ triggered when the value of the current best move does not match the best value"""
         how_equal_ = 'equal'
         best_children = self.get_all_of_the_best_moves(how_equal=how_equal_)
@@ -225,37 +238,72 @@ class TreeNodeWithValue(TreeNode):
         self.best_node_sequence = [best_child] + best_child.best_node_sequence
         assert self.best_node_sequence
 
-    def minmax_value_update_from_children(self, sons_nodes_to_consider):
+    def is_value_subjectively_better_than_evaluation(self, value_white):
+        subjective_value = self.subjective_value(value_white)
+        return subjective_value >= self.value_white_evaluator
+
+    def minmax_value_update_from_children(self, children_with_updated_value):
+        """ updates the values of children in self.sortedchildren
+        updates value minmax and updates the best move"""
+
+        #todo to be tested!!
 
         # updates value
-        old_value_white = self.get_value_white()
-        self.update_children_values(sons_nodes_to_consider)
+        value_white_before_update = self.get_value_white()
+        best_child_before_update = self.best_child()
+        self.update_children_values(children_with_updated_value)
         self.update_value_minmax()
-        has_value_changed = old_value_white != self.get_value_white()
-        is_new_best_node_seq = False
+        value_white_after_update = self.get_value_white()
+        has_value_changed = value_white_before_update != value_white_after_update
 
-        # updates best_move #todo maybe split in two functions but be careful one has to be done oft the other
-        if not self.best_node_sequence:  # initialisation of the best_node
-            self.update_best_move()
-            is_new_best_node_seq = True
+        # # updates best_move #todo maybe split in two functions but be careful one has to be done oft the other
+        if best_child_before_update is None:
+            best_child_before_update_not_the_best_anymore = True
         else:
-            best_child = self.best_child()
-            new_best_value = self.children_sorted_by_value[best_child]
-            old_best_child = self.best_node_sequence[0]
-            value_of_old_best_child = self.children_sorted_by_value[old_best_child]
-            # atm for debug and to ensure some very fixed behaviour we used equal instead of considered equal
-            has_best_value_changed = not self.are_equal_values(value_of_old_best_child, new_best_value)
-            if has_best_value_changed:  # test for the change of value of the best action
-                self.update_best_move()
-                is_new_best_node_seq = True
-                assert (old_best_child != self.best_node_sequence[0])
+            # here we compare the values in the self.children_sorted_by_value which might include more
+            # than just the basic values #todo make that more clear at some point maybe even createing a value object
+            updated_value_of_best_child_before_update = self.children_sorted_by_value[best_child_before_update]
+            best_value_children_after = self.best_child_value()
+            best_child_before_update_not_the_best_anymore = not self.are_equal_values(
+                updated_value_of_best_child_before_update,
+                best_value_children_after)
+
+        best_node_seq_before_update = self.best_node_sequence.copy()
+        if self.all_legal_moves_generated:
+            if best_child_before_update_not_the_best_anymore:
+                self.one_of_best_children_becomes_best_next_node()
+        else:
+            # we only consider a child as best if it is more promising than the evaluation of self
+            # in self.value_white_evaluator
+            if self.is_value_subjectively_better_than_evaluation(best_child_before_update.get_value_white()):
+                self.one_of_best_children_becomes_best_next_node()
+            else:
+                self.best_node_sequence = []
+        best_node_seq_after_update = self.best_node_sequence
+        is_new_best_node_seq = best_node_seq_before_update == best_node_seq_after_update
+
+        # is_new_best_node_seq = False
+        #
+        # if not self.best_node_sequence:  # initialisation of the best_node
+        #     self.update_best_move()
+        #     is_new_best_node_seq = True
+        # else:
+        #     new_best_value = self.best_child_value()
+        #     old_best_child = self.best_node_sequence[0]
+        #     value_of_old_best_child = self.children_sorted_by_value[old_best_child]
+        #     # atm for debug and to ensure some very fixed behaviour we used equal instead of considered equal
+        #     has_best_value_changed = not self.are_equal_values(value_of_old_best_child, new_best_value)
+        #     if has_best_value_changed:  # test for the change of value of the best action
+        #         self.update_best_move()
+        #         is_new_best_node_seq = True
+        #         assert (old_best_child != self.best_node_sequence[0])
 
         return has_value_changed, is_new_best_node_seq
 
     def dot_description(self):
         value_mm = "{:.3f}".format(self.value_white_minmax) if self.value_white_minmax is not None else 'None'
         value_eval = "{:.3f}".format(self.value_white_evaluator) if self.value_white_evaluator is not None else 'None'
-        return super().dot_description() + '\n wh_val_mm: ' + value_mm + + '\n wh_val_eval: ' \
+        return super().dot_description() + '\n wh_val_mm: ' + value_mm  + '\n wh_val_eval: ' \
                + value_eval + '\n moves*' + \
                self.description_best_move_sequence() + '\nover: ' + self.over_event.get_over_tag()
 
@@ -318,7 +366,8 @@ class TreeNodeWithValue(TreeNode):
 
     def test_best_node_sequence(self):
         # print ('testbestseq')
-        # todo test if the sequence is empty, does it make sense?
+        # todo test if the sequence is empty, does it make sense? now yes and test if it is when the opened children
+        #  ahve a value less promissing than the self.value_white_evaluator
         # todo test better for the weird value that are tuples!! with length and id
         if self.best_node_sequence:
             best_child = self.best_child()

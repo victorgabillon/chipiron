@@ -1,7 +1,3 @@
-import settings
-from players.boardevaluators.NN4_pytorch import transform_board
-
-
 class Player():
     #  difference between player and treebuilder includes the fact that now a player can be a mixture of multiple decision rulles
 
