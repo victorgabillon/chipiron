@@ -45,17 +45,21 @@ class TreeNode:
                 print(move, child.id, end=' ')
         print(' ')
 
-    def print_a_move_sequence_from_root(self):
-        list = []
+    def a_move_sequence_from_root(self):
+        move_sequence_from_root = []
         child = self
         parent = next(iter(child.parent_nodes))
         while parent is not None:
             parent = next(iter(child.parent_nodes))
-            list.append(parent.moves_children.inverse[child])
+            move_sequence_from_root.append(parent.moves_children.inverse[child])
             child = parent
             parent = next(iter(child.parent_nodes))
-        list.reverse()
-        print('a_move_sequence_from_root', [str(i) for i in list])
+        move_sequence_from_root.reverse()
+        return [str(i) for i in move_sequence_from_root]
+
+    def print_a_move_sequence_from_root(self):
+        move_sequence_from_root = self.a_move_sequence_from_root()
+        print('a_move_sequence_from_root', move_sequence_from_root)
 
     def are_all_moves_and_children_opened(self):
         return self.all_legal_moves_generated and self.non_opened_legal_moves == set()
@@ -65,7 +69,7 @@ class TreeNode:
         self.test_all_legal_moves_generated()
 
     def dot_description(self):
-        return 'id:' + str(self.id) + ' dep: ' + str(self.half_move)
+        return 'id:' + str(self.id) + ' dep: ' + str(self.half_move) + '\nfen:'+str(self.board.chess_board)
 
     def test_all_legal_moves_generated(self):
         # print('test_all_legal_moves_generated')

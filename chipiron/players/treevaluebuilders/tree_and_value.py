@@ -2,9 +2,7 @@ from players.player import Player
 from players.treevaluebuilders.trees.opening_instructions import OpeningInstructor
 import random
 import settings
-from players.boardevaluators.NN4_pytorch import transform_board
 from players.treevaluebuilders.notations_and_statics import softmax
-import time
 
 
 class TreeAndValue(Player):
