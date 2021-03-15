@@ -1,4 +1,4 @@
-from players.boardevaluators.NN4_pytorch import NN4Pytorch, transform_board
+from players.boardevaluators.neural_networks.NN4_pytorch import transform_board
 import pandas as pd
 from chessenvironment.boards.board import MyBoard
 import chess
@@ -33,7 +33,7 @@ assert (player.arg['tree_move_limit'] == classification_power)
 nn = player.board_evaluators_wrapper.board_evaluator
 
 # df = pd.read_pickle('chipiron/data/states_good_from_png/subsub0')
-df = pd.read_pickle('chipiron/data/states/random_games')
+df = pd.read_pickle('../data/states/random_games')
 if 'explored' not in df:
     df['explored'] = np.NaN
 if 'final_value' not in df:
@@ -42,7 +42,7 @@ if 'best_next_fen' not in df:
     df['best_next_fen'] = np.NaN
 df_dict = df.to_dict('index')
 
-df_over = pd.read_pickle('chipiron/data/states_random/game_over_states')
+df_over = pd.read_pickle('../data/states_random/game_over_states')
 df_over_2 = pd.read_pickle('/home/victor/oo')
 df_over_3 = pd.read_pickle('/home/victor/random_classify')
 

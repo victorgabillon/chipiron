@@ -109,6 +109,8 @@ class MoveAndValueTree:
             evaluation = (1 / DISCOUNT) ** node.half_move * self.board_evaluator.value_white(node.board)
         else:
             raise (Exception('@@@@@xx'))
+        if node.id ==22:
+            print('dddddddddddd',evaluation)
         node.set_evaluation(evaluation)
 
     def evaluate_new_move_in_node(self, parent_node, move):

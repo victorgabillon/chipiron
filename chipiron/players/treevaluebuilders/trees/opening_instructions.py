@@ -55,7 +55,6 @@ class OpeningInstructionsBatch:
     def print_info(self):
         print('OpeningInstructionsBatch: batch contains', len(self.batch), 'elements:')
         for key, opening_instructions in self.batch.items():
-            print('key:', key[0].id, key[1], end=' ')
             opening_instructions.print_info()
 
     def __len__(self):
@@ -70,7 +69,8 @@ class OpeningInstructions:
         self.move_to_play = move_to_play
 
     def print_info(self):
-        print('OpeningInstructions: nodes_to_open', self.node_to_open.id, 'self.move_to_play ', self.move_to_play)
+        print('OpeningInstructions: node_to_open', self.node_to_open.id, 'a path from root to node_to_open is ',
+              self.node_to_open.a_move_sequence_from_root(), 'self.move_to_play ', self.move_to_play)
 
 
 class OpeningInstructor:
