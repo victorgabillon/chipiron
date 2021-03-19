@@ -1,15 +1,13 @@
 import threading
 
 global deterministic_behavior
-deterministic_behavior = True
+deterministic_behavior = False
 
 global profiling_bool
 profiling_bool = False
 
 global testing_bool
 testing_bool = False
-
-
 
 
 class Locky():
