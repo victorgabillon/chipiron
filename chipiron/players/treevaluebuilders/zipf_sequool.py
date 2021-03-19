@@ -37,7 +37,15 @@ class ZipfSequoolTree(MoveAndValueTree):
         return new_node
 
     def update_after_either_node_or_link_creation(self, node, parent_node):
-        pass
+
+        root_node_half_move = self.tree_root_half_move
+        node_depth = node.half_move - self.tree_root_half_move
+        if node_depth > 0:
+            for first_move in self.first_moves[node]:
+                if node.half_move - root_node_half_move - 1 == len(self.count_visits_at_depth[first_move]):
+                    self.count_visits_at_depth[first_move].append(1)
+
+
 
     def update_after_link_creation(self, node, parent_node):
         #  print('#sdsdsd')
@@ -58,26 +66,14 @@ class ZipfSequoolTree(MoveAndValueTree):
                     value = (index, descendant_not_opened.half_move, descendant_not_opened.id)
                     new_first_move.descendants_not_opened.add_descendant(descendant_not_opened, value)
 
-        # if self.root_node is not None:
-        #     first_moves = self.root_node.moves_children.values()
-        #     for f in first_moves:
-        #         f.descendants.test_2(f)
-
     def update_after_node_creation(self, node, parent_node):
 
         self.first_moves.add_first_move(node, parent_node)
-
-        root_node_half_move = self.tree_root_half_move
         node_depth = node.half_move - self.tree_root_half_move
 
         if node_depth == 1:
             if node not in self.count_visits_at_depth:
                 self.count_visits_at_depth[node] = []
-
-        if node_depth > 0:
-            for first_move in self.first_moves[node]:
-                if node.half_move - root_node_half_move - 1 == len(self.count_visits_at_depth[first_move]):
-                    self.count_visits_at_depth[first_move].append(1)
 
         node_depth = node.half_move - self.tree_root_half_move
 
@@ -86,8 +82,9 @@ class ZipfSequoolTree(MoveAndValueTree):
 
         if node_depth >= 1:
             for first_move in self.first_moves[node]:
-                #    print(';',node.id,node.half_move)
                 first_move.descendants_not_opened.add_descendant(node, (math.inf, node.half_move, node.id))
+        #            node.print_a_move_sequence_from_root()
+        #            assert(node.id !=30)
 
         if node_depth >= 2:  # todo can we do this strategy without the descendnats at each first child?
             for first_move in self.first_moves[node]:
@@ -145,7 +142,16 @@ class ZipfSequool(TreeAndValue):
 
     def candidates_at_depth(self, node, depth_):
         root_node_half_move = self.tree.root_node.half_move
-        return self.who_is_there_smth_to_open(node, 1 + root_node_half_move + depth_)
+        return self.who_is_there_smth_to_open(node, 1 + root_node_half_move + depth_) #todo this +1 is a bit confusing
+
+    def how_many_opened_at_depth(self, node, depth_):
+        root_node_half_move = self.tree.root_node.half_move
+        half_move = 1 + root_node_half_move + depth_
+        if half_move not in node.descendants_not_opened:
+            return node.descendants.number_of_descendants_at_half_move[half_move]
+        else:
+            return node.descendants.number_of_descendants_at_half_move[half_move]
+            - node.descendants_not_opened.sorted_descendants_at_half_move[half_move]
 
     def choose_node_and_move_to_open(self):
         # self.tree.update_all_indices()
@@ -166,18 +172,27 @@ class ZipfSequool(TreeAndValue):
         node_first_move = node.choose_child_with_visits_and_proportions()
 
         def func(depth_):
+            #print('depth', depth_, self.tree.count_visits_at_depth[node_first_move])
             candidates = len(self.candidates_at_depth(node_first_move, depth_))
             if candidates:
-                return self.tree.count_visits_at_depth[node_first_move][depth_]
+                return self.how_many_opened_at_depth(node_first_move, depth_)
+                # return self.tree.count_visits_at_depth[node_first_move][depth_]
             else:
                 return math.inf
 
         best_line = self.tree.root_node.best_node_sequence
         best_line_from_selected_first_move = node_first_move.best_node_sequence
         list_elements_ = list(node_first_move.descendants.keys())[0: 1 + len(best_line_from_selected_first_move)]
+        # print('%%%',self.tree.count_visits_at_depth[node_first_move],node_first_move.descendants.keys(),
+        #       list(node_first_move.descendants.keys())[0: 1 + len(best_line_from_selected_first_move)],
+        #       best_line_from_selected_first_move)
+        #
         # print('********', list_elements_, node_first_move.id,
-        #      self.tree.root_node.moves_children.inverse[node_first_move], best_line_from_selected_first_move,
-        #      best_line)
+        #       self.tree.root_node.moves_children.inverse[node_first_move], best_line_from_selected_first_move,
+        #       best_line)
+
+
+        # print('@@',best_line[-1].moves_children,best_line[-1].are_all_moves_and_children_opened(),best_line[-1].all_legal_moves_generated,best_line[-1].best_node_sequence)
         depth_picked, best_value = zipf_picks(list_elements=list_elements_,
                                               value_of_element=func)
         # print('depthpicked', depth_picked)
@@ -187,7 +202,7 @@ class ZipfSequool(TreeAndValue):
 
         # print('values', [func(i) for i in range(len(list(node_first_move.descendants.keys())))])
 
-        self.tree.count_visits_at_depth[node_first_move][depth_picked] += 1
+      #  self.tree.count_visits_at_depth[node_first_move][depth_picked] += 1
         # print('####', type(self.candidates_at_depth(node_first_move, depth_picked)))
 
         nodes_to_consider_dict = self.candidates_at_depth(node_first_move, depth_picked)

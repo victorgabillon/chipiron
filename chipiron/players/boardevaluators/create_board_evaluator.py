@@ -13,7 +13,9 @@ def create_board_evaluator(arg, syzygy):
     if arg['type'] == 'BasicEvaluation':
         board_evaluator = BasicEvaluation()
     elif arg['type'] == 'nn_pp1':
+        print('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
         board_evaluator = NetPP1('', arg['nn_param_file_name'])
+        board_evaluator.load_or_init_weights()
     else:
         sys.exit('cant find ' + arg['type'])
 

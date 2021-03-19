@@ -1,51 +1,49 @@
+import random
+import torch
+import torch.optim as optim
+
 
 class NNPytorchTrainer:
 
-    def __init__(self, path_to_origin_folder, file_path, net, loss_criterion, optimizer):
-        self.param_file = file_path
-        self.path_to_origin_folder = path_to_origin_folder
+    def __init__(self, net):
         self.net = net
-        self.criterion = loss_criterion,
-        self.optimizer = optimizer
+        self.criterion = torch.nn.L1Loss()
+        self.optimizer = optim.SGD(self.net.parameters(), lr=.005, momentum=0.9)
 
-    def train_one_example(self, input_layer, target_value, target_input_layer):
+    def train(self, input_layer, target_value):
+        self.net.train()
+        self.optimizer.zero_grad()
+        prediction_with_player_to_move_as_white = self.net(input_layer)
+        loss = self.criterion(prediction_with_player_to_move_as_white, target_value)
+        loss.backward()
+        self.optimizer.step()
 
-        if target_value is None:
-            assert (target_input_layer is not None)
-            self.net.eval()
-            # print('**', target_input_layer)
-            real_target_value = 1 - self.net(target_input_layer)
-            self.net.train()
-        else:
-            assert (target_input_layer is None)
-            real_target_value = target_value
+        if random.random() < .001:
+            print('dinnnff', prediction_with_player_to_move_as_white, target_value, loss)
+            self.net.print_param()
+            self.net.safe_save()
+
+    def train_next_boards(self, input_layer, next_input_layer):
+
+        self.net.eval()
+        target_value = - self.net(next_input_layer)
 
         self.net.train()
         self.optimizer.zero_grad()
         prediction_with_player_to_move_as_white = self.net(input_layer)
-        target_min_max_value_player_to_move = torch.tensor([real_target_value])
-        loss = self.criterion(prediction_with_player_to_move_as_white, target_min_max_value_player_to_move)
+        #print('~~#',prediction_with_player_to_move_as_white, target_value)
+        #self.net.print_input(input_layer)
+        #self.net.print_input(next_input_layer)
+
+        #print('~~s#',input_layer, next_input_layer)
+        #print('sdsd',input_layer- next_input_layer)
+
+        loss = self.criterion(prediction_with_player_to_move_as_white, target_value)
         loss.backward()
         self.optimizer.step()
 
-        # Save new params
-        new_state_dict = {}
-        for key in self.net.state_dict():
-            new_state_dict[key] = self.net.state_dict()[key].clone()
-
-        # print('after')
-        if random.random() < 0.01:
-            self.print_param()
-        # print('after')
-
-        try:
-            with open('chipiron/runs/players/boardevaluators/NN1_pytorch/' + self.param_file, 'wb') as fileNNW:
-                # print('ddfff', fileNNW)
-                torch.save(self.net.state_dict(), fileNNW)
-        except KeyboardInterrupt:
-            with open('chipiron/runs/players/boardevaluators/NN1_pytorch/' + self.param_file, 'wb') as fileNNW:
-                # print('ddfff', fileNNW)
-                torch.save(self.net.state_dict(), fileNNW)
-            exit(-1)
-
-
+        if random.random() < .001:
+            pass
+            print('diff', prediction_with_player_to_move_as_white, target_value, loss)
+            self.net.print_param()
+            self.net.safe_save()

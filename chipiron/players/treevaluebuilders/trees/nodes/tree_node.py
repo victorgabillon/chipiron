@@ -51,6 +51,7 @@ class TreeNode:
         parent = next(iter(child.parent_nodes))
         while parent is not None:
             parent = next(iter(child.parent_nodes))
+           # print('~~',parent.moves_children)
             move_sequence_from_root.append(parent.moves_children.inverse[child])
             child = parent
             parent = next(iter(child.parent_nodes))
