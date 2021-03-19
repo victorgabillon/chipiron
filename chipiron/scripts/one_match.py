@@ -80,6 +80,7 @@ class OneMatchScript:
 
         play = PlayOneMatch(args_match, player_one, player_two, chess_simulator,  syzygy,pathDirectory)
         settings.init()  # global variables
+        print('deterministic_behavior',settings.deterministic_behavior)
 
         if settings.profiling_bool:
             play.play_the_match()

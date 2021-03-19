@@ -19,7 +19,7 @@ class TreeNodeWithValue(TreeNode):
         # absolute value wrt to white player as estimated by an evaluator
         self.value_white_evaluator = None
 
-        # absolute value wrt to white player as computed from the value_white_evaluator of the descendant
+        # absolute value wrt to white player as computed from the value_white_* of the descendants
         # of this node (self) by a minmax procedure.
         self.value_white_minmax = None
 
@@ -216,15 +216,14 @@ class TreeNodeWithValue(TreeNode):
                                   children_nodes_with_updated_best_move_seq):
         """ triggered if a children notifies an updated best node sequence
         returns boolean: True if self.best_node_sequence is modified, False otherwise"""
-        is_new_best_node_seq = False
+        has_best_node_seq_changed = False
         best_node = self.best_node_sequence[0]
 
         if best_node in children_nodes_with_updated_best_move_seq:
             self.best_node_sequence = [best_node] + best_node.best_node_sequence
-            # assert self.all_legal_moves_generated
-            is_new_best_node_seq = True
+            has_best_node_seq_changed = True
 
-        return is_new_best_node_seq
+        return has_best_node_seq_changed
 
     def one_of_best_children_becomes_best_next_node(self):
         """ triggered when the value of the current best move does not match the best value"""
@@ -248,9 +247,11 @@ class TreeNodeWithValue(TreeNode):
 
         #todo to be tested!!
 
+       # self.print_best_line()
         # updates value
         value_white_before_update = self.get_value_white()
         best_child_before_update = self.best_child()
+
         self.update_children_values(children_with_updated_value)
         self.update_value_minmax()
         value_white_after_update = self.get_value_white()
@@ -280,7 +281,7 @@ class TreeNodeWithValue(TreeNode):
             else:
                 self.best_node_sequence = []
         best_node_seq_after_update = self.best_node_sequence
-        is_new_best_node_seq = best_node_seq_before_update == best_node_seq_after_update
+        has_best_node_seq_changed = best_node_seq_before_update != best_node_seq_after_update
 
         # is_new_best_node_seq = False
         #
@@ -298,7 +299,8 @@ class TreeNodeWithValue(TreeNode):
         #         is_new_best_node_seq = True
         #         assert (old_best_child != self.best_node_sequence[0])
 
-        return has_value_changed, is_new_best_node_seq
+
+        return has_value_changed, has_best_node_seq_changed
 
     def dot_description(self):
         value_mm = "{:.3f}".format(self.value_white_minmax) if self.value_white_minmax is not None else 'None'
@@ -353,13 +355,13 @@ class TreeNodeWithValue(TreeNode):
         # todo test valuewhiteminmax is none iif not all children opened
         value_children = []
         for move, child in self.moves_children.items():
-            assert (self.children_sorted_by_value[child][0] * (1 - 2 * self.player_to_move) == child.value_white)
-            value_children.append(child.value_white)
+            assert (self.children_sorted_by_value[child][0] * (1 - 2 * self.player_to_move) == child.get_value_white())
+            value_children.append(child.get_value_white())
         if self.moves_children:
             if self.player_to_move == chess.WHITE:
-                assert (max(value_children) == self.value_white)
+                assert (max(value_children) == self.get_value_white())
             if self.player_to_move == chess.BLACK:
-                assert (min(value_children) == self.value_white)
+                assert (min(value_children) == self.get_value_white())
         else:
             pass
             # todo test board value
@@ -371,7 +373,7 @@ class TreeNodeWithValue(TreeNode):
         # todo test better for the weird value that are tuples!! with length and id
         if self.best_node_sequence:
             best_child = self.best_child()
-            assert (self.best_node_sequence[0].value_white ==
+            assert (self.best_node_sequence[0].get_value_white() ==
                     self.children_sorted_by_value[best_child][0] * (
                             1 - 2 * self.player_to_move))  # todo check the best index actually works=]
 
@@ -379,10 +381,8 @@ class TreeNodeWithValue(TreeNode):
             assert (self.best_child() == self.best_node_sequence[0])
         for node in self.best_node_sequence[1:]:
             assert (isinstance(node, TreeNode))
+            #print('@ss@',old_best_node, ':ddd' ,old_best_node.best_node_sequence[0].id,':ddd' ,node.id,':ddd' ,self.best_node_sequence)
             assert (old_best_node.best_node_sequence[0] == node)
-            # print ('plijko',old_best_node.best_node_sequence[0].value_white, old_best_node.best_child().value_white)
-            # print('best',self.get_all_of_the_best_moves('equal'))
-            # print (old_best_node.best_node_sequence[0] , old_best_node.best_child())
 
             assert (old_best_node.best_node_sequence[0] == old_best_node.best_child())
             old_best_node = node
@@ -391,7 +391,7 @@ class TreeNodeWithValue(TreeNode):
         print('Best line from node ' + str(self.id) + ':', end=' ')
         parent_node = self
         for child in self.best_node_sequence:
-            print(parent_node.moves_children.inverse[child], end=' ')
+            print(parent_node.moves_children.inverse[child], '('+str(child.id)+')', end=' ')
             parent_node = child
         print(' ')
 
@@ -445,13 +445,14 @@ class TreeNodeWithValue(TreeNode):
         updates_instructions_block = updates_instructions['base']  # todo create a variable for the tag
 
         # UPDATE VALUE
-        has_value_changed, is_new_best_node_seq_1 = self.minmax_value_update_from_children(
+        has_value_changed, has_best_node_seq_changed_1 = self.minmax_value_update_from_children(
             updates_instructions_block['children_with_updated_value'])
 
         # UPDATE BEST MOVE
-        is_new_best_node_seq_2 = self.update_best_move_sequence(
+        has_best_node_seq_changed_2 = self.update_best_move_sequence(
             updates_instructions_block['children_with_updated_best_move'])
-        is_new_best_node_seq = is_new_best_node_seq_1 or is_new_best_node_seq_2
+        #print('^&',has_best_node_seq_changed_2)
+        has_best_node_seq_changed = has_best_node_seq_changed_1 or has_best_node_seq_changed_2
 
         # UPDATE OVER
         is_newly_over = self.update_over(updates_instructions_block['children_with_updated_over'])
@@ -462,7 +463,9 @@ class TreeNodeWithValue(TreeNode):
         base_update_instructions_block = BaseUpdateInstructionsBlock(node_sending_update=self,
                                                                      is_node_newly_over=is_newly_over,
                                                                      new_value_for_node=has_value_changed,
-                                                                     new_best_move_for_node=is_new_best_node_seq)
+                                                                     new_best_move_for_node=has_best_node_seq_changed)
 
         new_instructions.all_instructions_blocks['base'] = base_update_instructions_block
         return new_instructions
+
+        #todo i dont understand anymore when the instructions stops beeing propagated back

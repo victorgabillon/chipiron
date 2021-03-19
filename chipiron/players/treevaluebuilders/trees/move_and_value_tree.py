@@ -109,8 +109,6 @@ class MoveAndValueTree:
             evaluation = (1 / DISCOUNT) ** node.half_move * self.board_evaluator.value_white(node.board)
         else:
             raise (Exception('@@@@@xx'))
-        if node.id ==22:
-            print('dddddddddddd',evaluation)
         node.set_evaluation(evaluation)
 
     def evaluate_new_move_in_node(self, parent_node, move):
@@ -211,9 +209,9 @@ class MoveAndValueTree:
         return all_extra_opening_instructions_batch
 
     def update_node(self, node_to_update, update_instructions):
-        bestnextnodeid = node_to_update.best_node_sequence[0].id if node_to_update.best_node_sequence else None
-        # print('-----------OL', node_to_update.id, node_to_update.value_white, node_to_update.half_move, bestnextnodeid, node_to_update.half_move)
-        # update_instructions.print_info()
+#        bestnextnodeid = node_to_update.best_node_sequence[0].id if node_to_update.best_node_sequence else None
+ #       print('-----------OL', node_to_update.id, node_to_update.get_value_white(), node_to_update.half_move, bestnextnodeid, node_to_update.half_move)
+  #      update_instructions.print_info()
 
         ##UPDATES
         new_update_instructions = node_to_update.perform_updates(update_instructions)

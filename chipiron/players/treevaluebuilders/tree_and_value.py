@@ -38,7 +38,6 @@ class TreeAndValue(Player):
               self.tree.root_node.value_white_minmax)  # ,end='\r')
         self.tree.print_best_line()
 
-
     def recommend_move_after_exploration(self):
         # for debug we fix the choice in the next lines
         if settings.deterministic_behavior:
@@ -49,7 +48,7 @@ class TreeAndValue(Player):
 
         else:  # normal behavior
             selection_rule = self.arg['move_selection_rule']['type']
-            if  selection_rule == 'softmax':
+            if selection_rule == 'softmax':
                 temperature = self.arg['move_selection_rule']['temperature']
                 values = [self.tree.root_node.subjective_value_of(node) for node in
                           self.tree.root_node.moves_children.values()]
@@ -58,8 +57,9 @@ class TreeAndValue(Player):
                 best_move = move_as_list[0]
             elif selection_rule == 'almost_equal' or selection_rule == 'almost_equal_logistic':
                 # find best first move allowing for random choice for almost equally valued moves.
-                best_root_children = self.tree.root_node.get_all_of_the_best_moves(how_equal=selection_rule )
-                print('We have as bests: ', [ self.tree.root_node.moves_children.inverse[best] for best in best_root_children])
+                best_root_children = self.tree.root_node.get_all_of_the_best_moves(how_equal=selection_rule)
+                print('We have as bests: ',
+                      [self.tree.root_node.moves_children.inverse[best] for best in best_root_children])
                 best_child = random.choice(best_root_children)
                 best_move = self.tree.root_node.moves_children.inverse[best_child]
             else:
@@ -77,10 +77,10 @@ class TreeAndValue(Player):
 
             opening_instructions_batch = self.choose_node_and_move_to_open()
 
-            self.tree.save_raw_data_to_file(self.count)
-            self.count += 1
-            input("Press Enter to continue...")
-            opening_instructions_batch.print_info()
+            # self.tree.save_raw_data_to_file(self.count)
+            #  self.count += 1
+            #   input("Press Enter to continue...")
+            #    opening_instructions_batch.print_info()
 
             while opening_instructions_batch and self.continue_exploring():
                 #  opening_instructions_batch.print_info()
@@ -100,7 +100,7 @@ class TreeAndValue(Player):
 
         if self.tree_move_limit is not None:
             assert self.tree_move_limit == self.tree.move_count or self.tree.root_node.is_over()
-        self.tree.save_raw_data_to_file()
+        # self.tree.save_raw_data_to_file()
         self.tree.print_some_stats()
         for move, child in self.tree.root_node.moves_children.items():
             print(move, self.tree.root_node.moves_children[move].get_value_white(), child.over_event.get_over_tag())
