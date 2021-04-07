@@ -2,7 +2,7 @@ from graphviz import Digraph
 from players.treevaluebuilders.trees.nodes.tree_node import TreeNode
 import pickle
 from players.treevaluebuilders.trees.updates import UpdateInstructionsBatch
-import settings
+import global_variables
 
 DISCOUNT = .999999999999  # todo play with this
 
@@ -71,6 +71,7 @@ class MoveAndValueTree:
         return node
 
     def find_or_create_node(self, board, half_move, parent_node):
+
         fast_rep = board.fast_representation()
         if self.root_node is not None:
             assert (self.root_node.descendants.is_in_the_acceptable_range(half_move))

@@ -68,9 +68,25 @@ class MyBoard:
     def __str__(self):
         return self.chess_board.__str__()
 
-
     def number_of_pieces_on_the_board(self):
         return bin(self.chess_board.occupied).count('1')
 
     def copy(self):
-        return type(self)(None,self.chess_board.copy())
+        return type(self)(None, self.chess_board.copy())
+
+    def is_attacked(self, a_color):
+        """ check if any piece of the color a_color is attacked"""
+        all_squares_of_color = chess.SquareSet()
+        for piece_type in [1, 2, 3, 4, 5, 6]:
+            new_squares = self.chess_board.pieces(piece_type=piece_type, color=a_color)
+            all_squares_of_color = all_squares_of_color.union(new_squares)
+       # print('%%', all_squares_of_color)
+        all_attackers = chess.SquareSet()
+        for square in all_squares_of_color:
+            new_attackers = self.chess_board.attackers(not a_color, square)
+            all_attackers = all_attackers.union(new_attackers)
+        if bool(all_attackers):
+            print(self)
+            print('attackers')
+            print(all_attackers)
+        return bool(all_attackers)

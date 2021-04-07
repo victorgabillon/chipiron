@@ -3,7 +3,7 @@ import yaml
 from players.create_player import create_player
 from chessenvironment.chess_environment import ChessEnvironment
 from players.boardevaluators.syzygy import Syzygy
-import settings
+import global_variables
 import pandas as pd
 from chessenvironment.boards.board import MyBoard
 
@@ -36,9 +36,9 @@ def syzygy_and_update_df(data_frame_st, board_, index_):
 
 
 classification_power = 250
-settings.deterministic_behavior = False
-settings.profiling_bool = False
-settings.learning_nn_bool = True
+global_variables.deterministic_behavior = False
+global_variables.profiling_bool = False
+global_variables.learning_nn_bool = True
 
 file_name_player_one = 'ZipfSequoolNN2.yaml'
 path_player_one = 'chipiron/runs/players/' + file_name_player_one
@@ -55,10 +55,10 @@ player_one = create_player(args_player_one, chess_simulator, syzygy)
 assert (player_one.arg['tree_move_limit'] == classification_power)
 # player_two = create_player(args_player_one, chess_simulator, syzygy)
 
-settings.init()  # global variables
+global_variables.init()  # global variables
 
-assert (not settings.deterministic_behavior)
-assert (not settings.profiling_bool)
+assert (not global_variables.deterministic_behavior)
+assert (not global_variables.profiling_bool)
 
 files = ['chipiron/data/states_good_from_png/subfile' + str(i) for i in range(10,50)]
 files = ['chipiron/data/states_good_from_png/game_over_states_balanced_2']

@@ -1,7 +1,7 @@
 from players.player import Player
 from players.treevaluebuilders.trees.opening_instructions import OpeningInstructor
 import random
-import settings
+import global_variables
 from players.treevaluebuilders.notations_and_statics import softmax
 
 
@@ -36,11 +36,14 @@ class TreeAndValue(Player):
               "{0:.0%}".format(self.tree.move_count / self.tree_move_limit),
               '| current best move:', current_best_move, '| current white value:',
               self.tree.root_node.value_white_minmax)  # ,end='\r')
+        self.tree.root_node.print_children_sorted_by_value()
         self.tree.print_best_line()
 
     def recommend_move_after_exploration(self):
+        #todo the preference for action that have been explored more is not super clear, is it weel implemented, ven for debug?
+
         # for debug we fix the choice in the next lines
-        if settings.deterministic_behavior:
+        if global_variables.deterministic_behavior:
             print(' FIXED CHOICE FOR DEBUG')
             best_child = self.tree.root_node.get_all_of_the_best_moves(how_equal='considered_equal')[-1]
             print('We have as best: ', self.tree.root_node.moves_children.inverse[best_child])
@@ -52,7 +55,12 @@ class TreeAndValue(Player):
                 temperature = self.arg['move_selection_rule']['temperature']
                 values = [self.tree.root_node.subjective_value_of(node) for node in
                           self.tree.root_node.moves_children.values()]
+
                 softmax_ = softmax(values, temperature)
+                print(values)
+                print([i/sum(softmax_) for i in softmax_],sum([i/sum(softmax_) for i in softmax_]))
+                #if random.random()<.1:
+                #   input()
                 move_as_list = random.choices(list(self.tree.root_node.moves_children.keys()), weights=softmax_, k=1)
                 best_move = move_as_list[0]
             elif selection_rule == 'almost_equal' or selection_rule == 'almost_equal_logistic':
@@ -92,10 +100,10 @@ class TreeAndValue(Player):
                     opening_instructions_subset = opening_instructions_batch
 
                 self.tree.open_and_update(opening_instructions_subset)
-                if settings.testing_bool:
+                if global_variables.testing_bool:
                     self.tree.test_the_tree()
 
-        if settings.testing_bool:
+        if global_variables.testing_bool:
             self.tree.test_the_tree()
 
         if self.tree_move_limit is not None:

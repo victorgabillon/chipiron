@@ -60,12 +60,12 @@ class TreeNodeWithValue(TreeNode):
 
     def subjective_value(self):
         """ return the self.value_white from the point of view of the self.player_to_move"""
-        subjective_value = self.value_white if self.player_to_move == chess.WHITE else -self.value_white
+        subjective_value = self.get_value_white() if self.player_to_move == chess.WHITE else -self.get_value_white()
         return subjective_value
 
     def subjective_value_of(self, another_node):
         # return the value from the point of view of the self.player_to_move of the value of another_node
-        subjective_value = another_node.value_white if self.player_to_move == chess.WHITE else -another_node.value_white
+        subjective_value = another_node.get_value_white() if self.player_to_move == chess.WHITE else -another_node.get_value_white()
         return subjective_value
 
     def best_child(self):
@@ -105,8 +105,8 @@ class TreeNodeWithValue(TreeNode):
     def print_children_sorted_by_value(self):
         print('here are the ', len(self.children_sorted_by_value), ' children sorted by value: ')
         for child_node, subjective_sort_value in self.children_sorted_by_value.items():
-            print(self.moves_children.inverse[child_node], child_node.id, 'subjective value for sorting ',
-                  subjective_sort_value)
+            print(self.moves_children.inverse[child_node],                 subjective_sort_value[0],end = ' $$ ')
+        print('')
 
     def print_children_not_over(self):
         print('here are the ', len(self.children_not_over), ' children not over: ', end=' ')
@@ -257,6 +257,12 @@ class TreeNodeWithValue(TreeNode):
         value_white_after_update = self.get_value_white()
         has_value_changed = value_white_before_update != value_white_after_update
 
+        #debug info
+     #   if has_value_changed:
+     #       print('val_changed', self.id, value_white_before_update ,'->', value_white_after_update)
+
+
+
         # # updates best_move #todo maybe split in two functions but be careful one has to be done oft the other
         if best_child_before_update is None:
             best_child_before_update_not_the_best_anymore = True
@@ -395,8 +401,8 @@ class TreeNodeWithValue(TreeNode):
             parent_node = child
         print(' ')
 
-    def my_logit(self, x):
-        y = min(max(x, .000001), .999999)
+    def my_logit(self, x): #todo look out for numerical problem with utmatic rounding to 0 or especillay to 1
+        y = min(max(x, .000000000000000000000001), .9999999999999999)
         return math.log(y / (1 - y))
 
     def get_all_of_the_best_moves(self, how_equal=None):
@@ -416,7 +422,6 @@ class TreeNodeWithValue(TreeNode):
                 if self.are_almost_equal_values(self.children_sorted_by_value[child][0], best_value[0]):
                     best_children.append(child)
             elif how_equal == 'almost_equal_logistic':
-                print('$$', best_value, type(best_value))
                 best_value_logit = self.my_logit(best_value[0] * .5 + .5)  # from [-1,1] to [0,1]
                 child_value_logit = self.my_logit(self.children_sorted_by_value[child][0] * .5 + .5)
                 if self.are_almost_equal_values(child_value_logit, best_value_logit):
@@ -447,6 +452,7 @@ class TreeNodeWithValue(TreeNode):
         # UPDATE VALUE
         has_value_changed, has_best_node_seq_changed_1 = self.minmax_value_update_from_children(
             updates_instructions_block['children_with_updated_value'])
+
 
         # UPDATE BEST MOVE
         has_best_node_seq_changed_2 = self.update_best_move_sequence(

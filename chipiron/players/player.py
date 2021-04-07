@@ -10,7 +10,7 @@ class Player():
 
         # if there is only one possible legal move in the position, do not think, choose it.
         all_legal_moves = list(board.get_legal_moves())
-        if len(all_legal_moves) == 1:
+        if len(all_legal_moves) == 1 and self.player_name != 'Human':
             return all_legal_moves[0]
 
         # if the play with syzygy option is on test if the position is in the database to play syzygy

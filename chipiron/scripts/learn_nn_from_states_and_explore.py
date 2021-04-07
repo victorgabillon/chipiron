@@ -5,20 +5,17 @@ from torch.utils.data import DataLoader
 import torch
 import random
 
-class LearnNNScript:
+class LearnNNExploreScript:
 
     def __init__(self):
         self.nn = NetPP1('', 'nn_pp1/param_class_learn_full_board_mix.pt')
         self.nn.load_or_init_weights()
         self.nn.print_param()
         self.nn_trainer = NNPytorchTrainer(self.nn)
-        self.classified_boards = ClassifiedBoards()
-        self.next_boards = NextBoards()
-
-        self.data_loader_next_boards = DataLoader(self.next_boards, batch_size=1,
+        self.states = ClassifiedBoards()
+        self.data_loader_states = DataLoader(self.states, batch_size=1,
                                                   shuffle=True, num_workers=0)
-        self.data_loader_classified_boards = DataLoader(self.classified_boards, batch_size=1,
-                                                       shuffle=True, num_workers= 0)
+
 
     def run(self):
         print('run')

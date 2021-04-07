@@ -1,4 +1,4 @@
-import settings
+import global_variables
 from sortedcollections import ValueSortedDict
 import time
 
@@ -12,9 +12,6 @@ class Descendants:
         self.min_half_move = None
         self.max_half_move = None
 
-        if settings.testing_bool:
-            pass
-        # self.test()
 
     def keys(self):
         return self.descendants_at_half_move.keys()
@@ -41,7 +38,7 @@ class Descendants:
         half_move = node.half_move
         fen = node.fast_rep
 
-        if settings.testing_bool:
+        if global_variables.testing_bool:
             self.test()
         # print('@')
         # self.print_info()
@@ -54,10 +51,6 @@ class Descendants:
             self.number_of_descendants_at_half_move.pop(half_move)
             self.descendants_at_half_move.pop(half_move)
 
-        if settings.testing_bool:
-            pass
-            # self.test()
-
     # self.print_info()
     def empty(self):
         return self.number_of_descendants == 0
@@ -65,7 +58,7 @@ class Descendants:
     def add_descendant(self, node):
         half_move = node.half_move
         fen = node.fast_rep
-        if settings.testing_bool:
+        if global_variables.testing_bool:
             self.test()
 
         if half_move in self.descendants_at_half_move:
@@ -77,11 +70,6 @@ class Descendants:
             self.number_of_descendants_at_half_move[half_move] = 1
         self.number_of_descendants += 1
 
-        # self.print_info()
-
-        if settings.testing_bool:
-            pass
-            # self.test()
 
     def __len__(self):
         return len(self.descendants_at_half_move)
@@ -188,7 +176,7 @@ class RangedDescendants(Descendants):
     def add_descendant(self, node):
         half_move = node.half_move
         fen = node.fast_rep
-        if settings.testing_bool:
+        if global_variables.testing_bool:
             self.test()
         assert (self.is_in_the_acceptable_range(half_move))
         if self.is_in_the_current_range(half_move):
@@ -208,14 +196,14 @@ class RangedDescendants(Descendants):
 
         # self.print_info()
 
-        if settings.testing_bool:
+        if global_variables.testing_bool:
             self.test()
 
     def remove_descendant(self, node):
         half_move = node.half_move
         fen = node.fast_rep
 
-        if settings.testing_bool:
+        if global_variables.testing_bool:
             self.test()
         # print('@')
         # self.print_info()
@@ -261,7 +249,7 @@ class RangedDescendants(Descendants):
                 really_new_descendants.add_descendant(new_descendants[half_move][key])
                 self.add_descendant(new_descendants[half_move][key])
 
-        if settings.testing_bool:
+        if global_variables.testing_bool:
             self.test()
             really_new_descendants.test()
         # really_new_descendants.print_info()
@@ -270,7 +258,7 @@ class RangedDescendants(Descendants):
 
     def merge(self, descendant_1, descendant_2):
 
-        if settings.testing_bool:
+        if global_variables.testing_bool:
             descendant_2.test()
             descendant_1.test()
 
@@ -297,7 +285,7 @@ class RangedDescendants(Descendants):
                     half_move]
             self.number_of_descendants += self.number_of_descendants_at_half_move[half_move]
 
-        if settings.testing_bool:
+        if global_variables.testing_bool:
             self.test()
 
     def test(self):
@@ -318,6 +306,7 @@ class RangedDescendants(Descendants):
 
 
 class SortedDescendants(Descendants):
+    #todo is there a difference between sorted descendant nd sorted value descendant? below?
     def __init__(self):
         super().__init__()
         self.sorted_descendants_at_half_move = {}
@@ -328,9 +317,10 @@ class SortedDescendants(Descendants):
         self.sorted_descendants_at_half_move[node.half_move][node] = value
 
     def add_descendant(self, node, value):
+        #print('%%%',node,value)
         super().add_descendant(node)
         half_move = node.half_move
-        if settings.testing_bool:
+        if global_variables.testing_bool:
             pass
         # self.test()
 
@@ -343,7 +333,7 @@ class SortedDescendants(Descendants):
         # print(type(self.sorted_descendants_at_half_move[half_move]))
         # self.print_info()
 
-        if settings.testing_bool:
+        if global_variables.testing_bool:
             self.test()
 
     def test(self):
@@ -362,24 +352,21 @@ class SortedDescendants(Descendants):
         for half_move in self:
             print('half_move: ', half_move, '| (', self.number_of_descendants_at_half_move[half_move],
                   'descendants)')  # ,                  end='| ')
-            for descendant in self.sorted_descendants_at_half_move[half_move].keys():
-                print(descendant.id, end=' ')
+            for descendant,value in self.sorted_descendants_at_half_move[half_move].items():
+                print(descendant.id, '('+str(value)+')', end=' ')
             print('')
 
     def remove_descendant(self, node):
         super().remove_descendant(node)
         half_move = node.half_move
 
-        if settings.testing_bool:
-            pass
-            # self.test()
 
         self.sorted_descendants_at_half_move[half_move].pop(node)
         if half_move not in self.number_of_descendants_at_half_move:
             self.sorted_descendants_at_half_move.pop(half_move)
         # self.print_info()
 
-        if settings.testing_bool:
+        if global_variables.testing_bool:
             self.test()
 
 
@@ -428,8 +415,8 @@ class SortedValueDescendants(Descendants):
         for half_move in self:
             print('half_move: ', half_move, '| (', self.number_of_descendants_at_half_move[half_move],
                   'descendants)')  # ,                  end='| ')
-            for descendant in self.sorted_descendants_at_half_move[half_move].keys():
-                print(descendant.id, end=' ')
+            for descendant,value in self.sorted_descendants_at_half_move[half_move].items():
+                print(descendant.id, +'('+value+')', end=' ')
             print('')
 
     def remove_descendant(self, node):

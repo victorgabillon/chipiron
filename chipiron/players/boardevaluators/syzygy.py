@@ -4,9 +4,9 @@ from players.boardevaluators.over_event import OverEvent
 
 class Syzygy:
 
-    def __init__(self, chess_simulator,path_to_chipiron):
+    def __init__(self, chess_simulator, path_to_chipiron):
         self.chessSimulator = chess_simulator
-        self.table_base = chess.syzygy.open_tablebase(path_to_chipiron+"chipiron/syzygy-tables/")
+        self.table_base = chess.syzygy.open_tablebase(path_to_chipiron + "chipiron/syzygy-tables/")
 
     def fast_in_table(self, board):
         return board.number_of_pieces_on_the_board() < 6
