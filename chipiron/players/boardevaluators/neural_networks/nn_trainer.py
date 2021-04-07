@@ -8,7 +8,7 @@ class NNPytorchTrainer:
     def __init__(self, net):
         self.net = net
         self.criterion = torch.nn.L1Loss()
-        self.optimizer = optim.SGD(self.net.parameters(), lr=.005, momentum=0.9)
+        self.optimizer = optim.SGD(self.net.parameters(), lr=.0001, momentum=0.9)
 
     def train(self, input_layer, target_value):
         self.net.train()

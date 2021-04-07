@@ -9,7 +9,7 @@ import sys
 import chess
 import threading
 
-import settings
+import global_variables
 from PyQt5.QtCore import pyqtSlot, Qt
 from PyQt5.QtSvg import QSvgWidget
 from PyQt5.QtWidgets import QApplication, QWidget

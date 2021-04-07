@@ -5,7 +5,7 @@ from games.play_one_match import PlayOneMatch
 from players.create_player import create_player
 from chessenvironment.chess_environment import ChessEnvironment
 from players.boardevaluators.syzygy import Syzygy
-import settings
+import global_variables
 
 try:
     with open('opening_book/opening_book.data', 'rb') as file_opening_book:
@@ -34,7 +34,7 @@ syzygy = Syzygy(chess_simulator)
 
 player_one = create_player(args_player_one, chess_simulator, syzygy)
 player_two = create_player(args_player_one, chess_simulator, syzygy)
-settings.init()  # global variables
+global_variables.init()  # global variables
 
 while True:
     starting_position = opening_book.get_opening_position_to_learn()

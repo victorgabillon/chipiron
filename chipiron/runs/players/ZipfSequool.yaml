@@ -7,7 +7,7 @@ tree_builder:
   opening_type: all_children
   move_selection_rule: 
    type: almost_equal
-   temperature: 50
+   temperature: 2
 board_evaluator:
   type: BasicEvaluation
   syzygy_evaluation: True

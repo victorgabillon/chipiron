@@ -3,7 +3,7 @@ from displays.display_one_game import DisplayOneGame
 import time
 import chess
 import pickle
-import settings
+import global_variables
 
 
 # todo a wrapper for chess.white chess.black
@@ -34,7 +34,7 @@ class PlayOneGame:
 
     def play_the_game(self):
         time.sleep(.1)
-        settings.global_lock.acquire()
+        global_variables.global_lock.acquire()
 
         self.allow_display()
         if not self.game.is_finished():
@@ -57,7 +57,7 @@ class PlayOneGame:
                 self.allow_display()
                 #  input("Press Enter to continue...")
 
-                if settings.profiling_bool:
+                if global_variables.profiling_bool:
                     break
 
                 if not self.game.is_finished():
@@ -70,13 +70,13 @@ class PlayOneGame:
         self.game.tell_results()
         self.print_to_file()
 
-        settings.global_lock.release()
+        global_variables.global_lock.release()
         return self.game.simple_results()
 
     def allow_display(self):
-        settings.global_lock.release()
+        global_variables.global_lock.release()
         time.sleep(.101)
-        settings.global_lock.acquire()
+        global_variables.global_lock.acquire()
 
     def white_play(self):
         print('white (' + self.player_white.player_name + ') to play now... ')

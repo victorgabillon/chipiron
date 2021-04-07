@@ -2,6 +2,7 @@ from players.treevaluebuilders.trees.nodes.tree_node_with_descendants import Nod
 from players.treevaluebuilders.notations_and_statics import ZIPF, ZIPF_TWO, ZIPF_ONE
 import numba
 import numpy as np
+import random
 
 dicZStyle = {'Zipf': ZIPF, 'ZipfOne': ZIPF_ONE, 'ZipfTwo': ZIPF_TWO}
 
@@ -76,6 +77,31 @@ class VisitsAndProportionsNode(NodeWithDescendants):
 
     # self.print_proportions()
 
+    def choose_child_with_proportions(self,
+                                      children_exception_set=set()):  # set of nodes that cannot be picked
+
+        assert (len(self.children_not_over) > len(children_exception_set))  # to be able to pick
+
+        # todo maybe proportions and proportions can be valuesorted dict with smart updates
+        proportions = []
+        children_candidates = []
+
+        print('##', [(child.descendants.get_count(), str(self.moves_children.inverse[child])) for counter, child in
+                     enumerate(self.children_not_over)])
+        print('@@', [(float(self.proportions[child]), str(self.moves_children.inverse[child])) for counter, child in
+                     enumerate(self.children_not_over)])
+
+        for counter, child in enumerate(self.children_not_over):
+            if child not in children_exception_set:
+                proportions.append(float(self.proportions[child]))
+                children_candidates.append(child)
+
+       # print('#s#', proportions)
+        #print('@s@', children_candidates)
+        min_child = random.choices(children_candidates, proportions, k=1)
+
+        return min_child[0]
+
     def choose_child_with_visits_and_proportions(self,
                                                  children_exception_set=set()):  # set of nodes that cannot be picked
 
@@ -88,8 +114,10 @@ class VisitsAndProportionsNode(NodeWithDescendants):
         min_child = None
         id_min = 100000000000000000000000000.
 
-        #print('##',[ child.descendants.get_count() for counter, child in enumerate(self.children_not_over) ])
-        #print('@@',[ float(self.proportions[child]) for counter, child in enumerate(self.children_not_over) ])
+        print('##', [(child.descendants.get_count(), str(self.moves_children.inverse[child])) for counter, child in
+                     enumerate(self.children_not_over)])
+        print('@@', [(float(self.proportions[child]), str(self.moves_children.inverse[child])) for counter, child in
+                     enumerate(self.children_not_over)])
 
         for counter, child in enumerate(self.children_not_over):
             proportions[counter] = child.descendants.get_count() / float(self.proportions[child])
@@ -102,9 +130,6 @@ class VisitsAndProportionsNode(NodeWithDescendants):
                     min_ = proportions[counter]
                     min_child = child
                     id_min = child.id
-
-        #print('££',[ (float(proportions[counter]),child.id,child.descendants.get_count()) for counter, child in enumerate(self.children_not_over) ])
-        #print('$$',min_child,id_min)
 
         return min_child
 

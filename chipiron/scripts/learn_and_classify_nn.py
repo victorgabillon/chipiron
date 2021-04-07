@@ -3,7 +3,7 @@ import numpy as np
 import yaml
 from chessenvironment.chess_environment import ChessEnvironment
 from players.boardevaluators.syzygy import Syzygy
-import settings
+import global_variables
 from players.create_player import create_player
 from players.boardevaluators.neural_networks.nn_trainer import NNPytorchTrainer
 import torch
@@ -13,9 +13,9 @@ class LearnAndClassifyScript:
 
     def __init__(self):
         self.classification_power = 250
-        settings.deterministic_behavior = False
-        settings.profiling_bool = False
-        settings.learning_nn_bool = True
+        global_variables.deterministic_behavior = False
+        global_variables.profiling_bool = False
+        global_variables.learning_nn_bool = True
 
         file_name_player_one = 'ZipfSequoolNN2.yaml'
         path_player_one = 'chipiron/runs/players/' + file_name_player_one

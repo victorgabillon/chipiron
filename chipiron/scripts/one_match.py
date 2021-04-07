@@ -1,39 +1,28 @@
 import yaml
-import time
 import os
 from datetime import datetime
 from shutil import copyfile
 import sys
-
 from games.play_one_match import PlayOneMatch
 from players.create_player import create_player
 from chessenvironment.chess_environment import ChessEnvironment
 from players.boardevaluators.syzygy import Syzygy
-
 from displays.gui import MainWindow
-import settings
-
+import global_variables
 from PyQt5.QtWidgets import *
-import cProfile, pstats, io
-from pstats import SortKey
+from scripts.script import Script
 
 
-class OneMatchScript:
+class OneMatchScript(Script):
 
     def __init__(self):
-        pass
+        super().__init__()
 
     def run(self):
-        start_time = time.time()
-
-        if settings.profiling_bool:
-            pr = cProfile.Profile()
-            pr.enable()
-
         file_name_player_one = 'best_0.yaml'
         file_name_player_one = 'ZipfSequoolNN2.yaml'
         file_name_player_two = 'Human.yaml'
-        if settings.profiling_bool:
+        if global_variables.profiling_bool:
             file_name_match_setting = 'setting_jime.yaml'
         else:
             file_name_match_setting = 'setting_giri.yaml'
@@ -73,29 +62,19 @@ class OneMatchScript:
         copyfile(path_match_setting, pathDirectory + '/' + file_name_match_setting)
 
         chess_simulator = ChessEnvironment()
-        syzygy = Syzygy(chess_simulator,'')
+        syzygy = Syzygy(chess_simulator, '')
 
         player_one = create_player(args_player_one, chess_simulator, syzygy)
         player_two = create_player(args_player_two, chess_simulator, syzygy)
 
-        play = PlayOneMatch(args_match, player_one, player_two, chess_simulator,  syzygy,pathDirectory)
-        settings.init()  # global variables
-        print('deterministic_behavior',settings.deterministic_behavior)
+        play = PlayOneMatch(args_match, player_one, player_two, chess_simulator, syzygy, pathDirectory)
+        print('deterministic_behavior', global_variables.deterministic_behavior)
 
-        if settings.profiling_bool:
+        if global_variables.profiling_bool:
             play.play_the_match()
 
-        if not settings.profiling_bool:
+        if not global_variables.profiling_bool:
             chessGui = QApplication(sys.argv)
             window = MainWindow(play)
             window.show()
             chessGui.exec_()
-
-        if settings.profiling_bool:
-            print("--- %s seconds ---" % (time.time() - start_time))
-            pr.disable()
-            s = io.StringIO()
-            sortby = SortKey.CUMULATIVE
-            ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-            ps.print_stats()
-            print(s.getvalue())
