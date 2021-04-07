@@ -34,7 +34,9 @@ class BoardNet(nn.Module):
 
     def value_white(self, board):
         self.eval()
-        x = self.transform_board(board, False)
+        x = self.transform_board_function(board, False)
+       # print(x,x.size())
+       # self.print_input(x)
 
         y_pred = self(x)
         prediction_with_player_to_move_as_white = y_pred[0].item()
@@ -44,6 +46,7 @@ class BoardNet(nn.Module):
         else:
             value_white = prediction_with_player_to_move_as_white
 
+        #print(board,value_white)
         #self.print_param()
         return value_white
 

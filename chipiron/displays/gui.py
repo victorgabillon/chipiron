@@ -5,10 +5,9 @@ This module is the execution point of the chess GUI application.
 """
 
 import sys
-
 import chess
 
-import settings
+import global_variables
 from PyQt5.QtCore import pyqtSlot, Qt
 from PyQt5.QtSvg import QSvgWidget
 
@@ -69,22 +68,28 @@ class MainWindow(QWidget):
         self.closeButton2.setText("Player")  # text
         # self.closeButton2.move(700, 200)
         self.closeButton2.setStyleSheet('QPushButton {background-color: white; color: blue;}')
-        self.closeButton2.setGeometry(650, 200, 150, 20)
+        self.closeButton2.setGeometry(620, 200, 170, 20)
 
         self.closeButton3 = QPushButton(self)
         self.closeButton3.setText("Player")  # text
         self.closeButton3.setStyleSheet('QPushButton {background-color: black; color: blue;}')
-        self.closeButton3.setGeometry(650, 300, 150, 20)
+        self.closeButton3.setGeometry(620, 300, 170, 20)
 
         self.closeButton4 = QPushButton(self)
         self.closeButton4.setText("Score 0-0")  # text
-        self.closeButton4.setStyleSheet('QPushButton {background-color: black; color: blue;}')
-        self.closeButton4.setGeometry(650, 400, 150, 20)
+        self.closeButton4.setStyleSheet('QPushButton {background-color: white; color: black;}')
+        self.closeButton4.setGeometry(620, 400, 170, 20)
 
         self.closeButton5 = QPushButton(self)
-        self.closeButton5.setText("Score 0-0")  # text
-        self.closeButton5.setStyleSheet('QPushButton {background-color: black; color: blue;}')
-        self.closeButton5.setGeometry(650, 500, 150, 20)
+        self.closeButton5.setText("Round")  # text
+        self.closeButton5.setStyleSheet('QPushButton {background-color: white; color: black;}')
+        self.closeButton5.setGeometry(620, 500, 170, 20)
+
+        self.closeButton6 = QPushButton(self)
+        self.closeButton6.setText("fen")  # text
+        self.closeButton6.setStyleSheet('QPushButton {background-color: white; color: black;}')
+        self.closeButton6.setGeometry(50, 700, 650, 20)
+
 
         self.boardSize = min(self.widgetSvg.width(),
                              self.widgetSvg.height())
@@ -148,7 +153,7 @@ class MainWindow(QWidget):
                             try:
                                 move = chess.Move.from_uci("{}{}".format(self.pieceToMove[1], self.coordinates))
                                 move_promote = chess.Move.from_uci("{}{}q".format(self.pieceToMove[1], self.coordinates))
-                                settings.global_lock.acquire()
+                                global_variables.global_lock.acquire()
                                 try:
                                     if move in self.board.legal_moves:
                                         # self.board.push(move)
@@ -164,8 +169,8 @@ class MainWindow(QWidget):
                                     else:
                                         print('Looks like a wrong move.', move, self.board.legal_moves)
                                 finally:
-                                    if settings.global_lock.locked():
-                                        settings.global_lock.release()
+                                    if global_variables.global_lock.locked():
+                                        global_variables.global_lock.release()
                             except ValueError:
                                 print("Oops!  Doubleclicked?  Try again...")
                             piece = None
@@ -241,8 +246,8 @@ class MainWindow(QWidget):
         Draw a chessboard with the starting position and then redraw
         it for every new move.
         """
-        if not settings.global_lock.locked():
-            settings.global_lock.acquire()
+        if not global_variables.global_lock.locked():
+            global_variables.global_lock.acquire()
             try:
                 self.board = self.play.play_one_game.game.board.chess_board
                 self.boardSvg = self.board._repr_svg_().encode("UTF-8")
@@ -256,12 +261,13 @@ class MainWindow(QWidget):
                     + str(self.play.match_results.get_draws()))  # text
 
                 self.closeButton5.setText('Round: ' + str(self.play.play_one_game.game.board.chess_board.fullmove_number))  # text
+                self.closeButton6.setText('fen: ' + str(self.play.play_one_game.game.board.chess_board.fen()))  # text
 
 
 
             finally:
-                if settings.global_lock.locked():
-                    settings.global_lock.release()
+                if global_variables.global_lock.locked():
+                    global_variables.global_lock.release()
             return self.drawBoardSvg
 
 

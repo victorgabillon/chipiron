@@ -10,6 +10,6 @@ tree_builder:
    temperature: 50
 board_evaluator:
   type: nn_pp1
-  nn_param_file_name: 'nn_pp1/param_class_learn_full_board_mix.pt'
+  nn_param_file_name: 'nn_pp1/param.pt'
   syzygy_evaluation: True
 syzygy_play: True

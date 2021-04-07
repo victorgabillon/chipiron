@@ -1,13 +1,5 @@
 import threading
-
-global deterministic_behavior
-deterministic_behavior = False
-
-global profiling_bool
-profiling_bool = False
-
-global testing_bool
-testing_bool = False
+import random
 
 
 class Locky():
@@ -27,9 +19,12 @@ class Locky():
         return self.lock.locked()
 
 
-def init():
-    global global_tree_count
-    global_tree_count = 10000
+deterministic_behavior = True
+profiling_bool = False
+testing_bool = False
+global_lock = Locky()
 
-    global global_lock
-    global_lock = Locky()
+
+def init():
+    if deterministic_behavior:
+        random.seed(22)
