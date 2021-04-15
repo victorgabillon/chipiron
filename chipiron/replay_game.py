@@ -1,7 +1,7 @@
 import pickle
 import sys
 from PyQt5.QtWidgets import *
-from displays.gui_replay_games import MainWindow
+from src.displays.gui_replay_games import MainWindow
 
 with open('runs/runsOutput/Saturday-02-13-2021--20:56:43:932784/games/Game3_W:ZipfSequool-vs-B:RecurZipf.obj',
           'rb') as fileGame:

@@ -2,11 +2,12 @@ name: RecurZipf
 type: TreeAndValue
 tree_builder: 
   type: RecurZipf
-  tree_move_limit: 5000
-  zipf_style: Zipf
+  tree_move_limit: 200000
+  move_explorer_priority: 'priority_best'
   opening_type: all_children
   openingResponsive: False
 board_evaluator:
-  type: BasicEvaluation
+  type: nn_pp1
+  nn_param_file_name: 'nn_pp1/param.pt'
   syzygy_evaluation: True
 syzygy_play: True

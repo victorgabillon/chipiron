@@ -2,7 +2,7 @@ name: ZipfSequoolNN2
 type: TreeAndValue
 tree_builder: 
   type: ZipfSequool
-  tree_move_limit: 200000
+  tree_move_limit: 20000
   zipf_style: ZipfOne
   opening_type: all_children
   move_selection_rule: 

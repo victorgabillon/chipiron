@@ -20,7 +20,7 @@ class Locky():
 
 
 deterministic_behavior = True
-profiling_bool = False
+profiling_bool = True
 testing_bool = False
 global_lock = Locky()
 
