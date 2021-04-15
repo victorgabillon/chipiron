@@ -1,11 +1,11 @@
 import numpy as np
 import yaml
-from players.create_player import create_player
-from chessenvironment.chess_environment import ChessEnvironment
-from players.boardevaluators.syzygy import Syzygy
+from src.players import create_player
+from src.chessenvironment.chess_environment import ChessEnvironment
+from src.players.boardevaluators.syzygy import Syzygy
 import global_variables
 import pandas as pd
-from chessenvironment.boards.board import MyBoard
+from src.chessenvironment.boards.board import MyBoard
 
 
 def explore_and_update_df(data_frame_st, player, board_, index):

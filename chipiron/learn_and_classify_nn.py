@@ -1,15 +1,15 @@
-from players.boardevaluators.neural_networks.NN4_pytorch import transform_board
+from src.players.boardevaluators.neural_networks.NN4_pytorch import transform_board
 import pandas as pd
-from chessenvironment.boards.board import MyBoard
+from src.chessenvironment.boards.board import MyBoard
 import chess
 import torch
 import numpy as np
 import math
 import yaml
-from chessenvironment.chess_environment import ChessEnvironment
-from players.boardevaluators.syzygy import Syzygy
+from src.chessenvironment.chess_environment import ChessEnvironment
+from src.players.boardevaluators.syzygy import Syzygy
 import global_variables
-from players.create_player import create_player
+from src.players import create_player
 import random
 
 classification_power = 250

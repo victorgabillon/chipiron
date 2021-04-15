@@ -1,12 +1,11 @@
-import random
 import pandas as pd
 import yaml
-from games.play_one_game import PlayOneGame
-from players.create_player import create_player
-from chessenvironment.chess_environment import ChessEnvironment
-from players.boardevaluators.syzygy import Syzygy
+from src.games.play_one_game import PlayOneGame
+from src.players import create_player
+from src.chessenvironment.chess_environment import ChessEnvironment
+from src.players.boardevaluators.syzygy import Syzygy
 import global_variables
-import time
+
 
 class RecordStates:
 

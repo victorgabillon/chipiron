@@ -1,6 +1,6 @@
-from players.boardevaluators.neural_networks.NN4_pytorch import NN4Pytorch, transform_board
+from src.players.boardevaluators.neural_networks.NN4_pytorch import NN4Pytorch, transform_board
 import pandas as pd
-from chessenvironment.boards.board import MyBoard
+from src.chessenvironment.boards.board import MyBoard
 import chess
 import torch
 import numpy as np

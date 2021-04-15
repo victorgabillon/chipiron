@@ -1,4 +1,4 @@
-from players.treevaluebuilders.trees.move_and_value_tree import MoveAndValueTree
+from src.players.treevaluebuilders.trees.move_and_value_tree import MoveAndValueTree
 import pickle
 
 # ! /usr/bin/env python
