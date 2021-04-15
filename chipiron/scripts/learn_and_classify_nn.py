@@ -1,11 +1,11 @@
 import pandas as pd
 import numpy as np
 import yaml
-from chessenvironment.chess_environment import ChessEnvironment
-from players.boardevaluators.syzygy import Syzygy
+from src.chessenvironment.chess_environment import ChessEnvironment
+from src.players.boardevaluators.syzygy import Syzygy
 import global_variables
-from players.create_player import create_player
-from players.boardevaluators.neural_networks.nn_trainer import NNPytorchTrainer
+from src.players import create_player
+from src.players.boardevaluators.neural_networks.nn_trainer import NNPytorchTrainer
 import torch
 
 

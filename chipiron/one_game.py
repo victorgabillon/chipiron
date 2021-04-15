@@ -2,17 +2,12 @@
 import yaml
 import time
 import sys
-from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
 
-import chess
-from games.play_one_game import PlayOneGame
-from players.create_player import create_player
-from chessenvironment.chess_environment import ChessEnvironment
-from displays.gui import MainWindow
-import cProfile, pstats, io
-from pstats import SortKey
+from src.games.play_one_game import PlayOneGame
+from src.players import create_player
+from src.chessenvironment.chess_environment import ChessEnvironment
+from src.displays.gui import MainWindow
 
 start_time = time.time()
 

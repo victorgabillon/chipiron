@@ -3,11 +3,11 @@ import os
 from datetime import datetime
 from shutil import copyfile
 import sys
-from games.play_one_match import PlayOneMatch
-from players.create_player import create_player
-from chessenvironment.chess_environment import ChessEnvironment
-from players.boardevaluators.syzygy import Syzygy
-from displays.gui import MainWindow
+from src.games.play_one_match import PlayOneMatch
+from src.players.create_player import create_player
+from src.chessenvironment.chess_environment import ChessEnvironment
+from src.players.boardevaluators.syzygy import Syzygy
+from src.displays.gui import MainWindow
 import global_variables
 from PyQt5.QtWidgets import *
 from scripts.script import Script
@@ -20,8 +20,8 @@ class OneMatchScript(Script):
 
     def run(self):
         file_name_player_one = 'best_0.yaml'
-        file_name_player_one = 'ZipfSequoolNN2.yaml'
-        file_name_player_two = 'Human.yaml'
+        file_name_player_one = 'RecurZipfBase.yaml'
+        file_name_player_two = 'RecurZipfBase.yaml'
         if global_variables.profiling_bool:
             file_name_match_setting = 'setting_jime.yaml'
         else:

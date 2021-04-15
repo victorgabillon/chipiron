@@ -1,6 +1,6 @@
-from players.boardevaluators.neural_networks.nn_trainer import NNPytorchTrainer
-from players.boardevaluators.neural_networks.nn_pp1 import NetPP1
-from players.boardevaluators.neural_networks.datasets import  NextBoards, ClassifiedBoards
+from src.players.boardevaluators.neural_networks.nn_trainer import NNPytorchTrainer
+from src.players.boardevaluators.neural_networks.nn_pp1 import NetPP1
+from src.players.boardevaluators.neural_networks.datasets import ClassifiedBoards
 from torch.utils.data import DataLoader
 import torch
 import random
