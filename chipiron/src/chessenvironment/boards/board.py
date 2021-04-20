@@ -213,8 +213,8 @@ class MyBoard:
         for square in all_squares_of_color:
             new_attackers = self.chess_board.attackers(not a_color, square)
             all_attackers = all_attackers.union(new_attackers)
-        if bool(all_attackers):
-            print(self)
-            print('attackers')
-            print(all_attackers)
+        #if bool(all_attackers):
+        #    print(self)
+        #    print('attackers')
+        #    print(all_attackers)
         return bool(all_attackers)

@@ -1,18 +1,7 @@
 from src.players.treevaluebuilders.trees.move_and_value_tree import MoveAndValueTree
 import pickle
-
-# ! /usr/bin/env python
-
-"""
-This module is the execution point of the chess GUI application.
-"""
-
-# if __name__ == "__main__":
-#     chessGui = QApplication(sys.argv)
-#     window = MainWindow(None)
-#     window.show()
-#     sys.exit(chessGui.exec_())
-
+from scripts.script import Script
+import sys
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -137,11 +126,10 @@ class Window(QtWidgets.QWidget):
         HBlayout.addWidget(self.editPixInfo)
         VBlayout.addLayout(HBlayout)
 
-        self.tree = MoveAndValueTree(None, None, None, None)
-        pic = pickle.load(open("chipiron/runs/treedisplays/TreeData_1white-#.td", "rb"))
+        self.tree = MoveAndValueTree(None, None, None)
+        pic = pickle.load(open("chipiron/runs/treedisplays/TreeData_9white-#.td", "rb"))
         self.tree.descendants = pic[0]
         self.tree.root_node = pic[1]
-
 
         self.current_node = self.tree.root_node
         self.buildSubtree()
@@ -179,11 +167,11 @@ class Window(QtWidgets.QWidget):
         if key == 'z':
             self.father()
 
-            #todo there is collision as these numbers are used for children too now...
+            # todo there is collision as these numbers are used for children too now...
 
     def father(self):
         qq = list(self.current_node.parent_nodes)
-        father_node = qq[0] #by default!
+        father_node = qq[0]  # by default!
         if father_node is not None:
             self.current_node = father_node
             self.buildSubtree()
@@ -202,11 +190,14 @@ class Window(QtWidgets.QWidget):
         self.loadImage()
 
 
-if __name__ == '__main__':
-    import sys
+class VisualizeTreeScript(Script):
 
-    app = QtWidgets.QApplication(sys.argv)
-    window = Window()
-    window.setGeometry(0, 0, 1800, 1600)
-    window.show()
-    sys.exit(app.exec_())
+    def __init__(self):
+        super().__init__()
+
+    def run(self):
+        app = QtWidgets.QApplication(sys.argv)
+        window = Window()
+        window.setGeometry(0, 0, 1800, 1600)
+        window.show()
+        sys.exit(app.exec_())

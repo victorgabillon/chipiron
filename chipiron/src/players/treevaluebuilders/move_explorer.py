@@ -58,7 +58,9 @@ class ProportionMoveExplorer(MoveExplorer):
                 proportions.append(child_proportion)
                 children_candidates.append(child)
 
+        print('&&',children_candidates, proportions)
         min_child = random.choices(children_candidates, proportions, k=1)
+        print('€€',min_child)
 
         return min_child[0]
 

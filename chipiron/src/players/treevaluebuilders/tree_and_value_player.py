@@ -3,10 +3,11 @@ from src.players.treevaluebuilders.trees.opening_instructions import OpeningInst
 import random
 import global_variables
 from src.players.treevaluebuilders.notations_and_statics import softmax
+from src.players.treevaluebuilders.stopping_criterion import create_stopping_criterion
 
 
 class TreeAndValuePlayer(Player):
-    # at the moment it look like i dont need this class i could go directly
+    # at the moment it look like i do not need this class i could go directly
     # for the tree builder no? think later bout that? maybe one is for multi round and the other is not?
 
     def __init__(self, arg):
@@ -14,14 +15,10 @@ class TreeAndValuePlayer(Player):
         self.arg = arg
         self.tree_move_limit = arg['tree_move_limit'] if 'tree_move_limit' in arg else None
         self.opening_instructor = OpeningInstructor(arg['opening_type']) if 'opening_type' in arg else None
+        self.stopping_criterion = create_stopping_criterion(self, arg['stopping_criterion'])
 
     def continue_exploring(self):
-        if self.tree.root_node.is_over():
-            return False
-        bool_ = True
-        if self.tree_move_limit is not None:
-            bool_ = self.tree.move_count < self.tree_move_limit
-        return bool_
+        return self.stopping_criterion.should_we_continue()
 
     def print_info_during_move_computation(self):
         if self.tree.root_node.best_node_sequence:
@@ -31,17 +28,18 @@ class TreeAndValuePlayer(Player):
 
         else:
             current_best_move = '?'
-        if random.random()<.1:
-            print('========= tree move counting:', self.tree.move_count, 'out of', self.tree_move_limit,
-              '|',
-              "{0:.0%}".format(self.tree.move_count / self.tree_move_limit),
-              '| current best move:', current_best_move, '| current white value:',
-              self.tree.root_node.value_white_minmax)  # ,end='\r')
+        print('random.random()',random.random())
+        if random.random() < .1:
+            print('========= tree move counting:', self.tree.move_count, 'out of', self.stopping_criterion.tree_move_limit,
+                  '|',
+                  "{0:.0%}".format(self.tree.move_count / self.stopping_criterion.tree_move_limit),
+                  '| current best move:', current_best_move, '| current white value:',
+                  self.tree.root_node.value_white_minmax)  # ,end='\r')
             self.tree.root_node.print_children_sorted_by_value()
             self.tree.print_best_line()
 
     def recommend_move_after_exploration(self):
-        #todo the preference for action that have been explored more is not super clear, is it weel implemented, ven for debug?
+        # todo the preference for action that have been explored more is not super clear, is it weel implemented, ven for debug?
 
         # for debug we fix the choice in the next lines
         if global_variables.deterministic_behavior:
@@ -59,8 +57,8 @@ class TreeAndValuePlayer(Player):
 
                 softmax_ = softmax(values, temperature)
                 print(values)
-                print([i/sum(softmax_) for i in softmax_],sum([i/sum(softmax_) for i in softmax_]))
-                #if random.random()<.1:
+                print([i / sum(softmax_) for i in softmax_], sum([i / sum(softmax_) for i in softmax_]))
+                # if random.random()<.1:
                 #   input()
                 move_as_list = random.choices(list(self.tree.root_node.moves_children.keys()), weights=softmax_, k=1)
                 best_move = move_as_list[0]
@@ -76,10 +74,13 @@ class TreeAndValuePlayer(Player):
         return best_move
 
     def tree_explore(self, board):
+        import time
+        time.sleep(1)
         self.tree = self.create_tree(board)
         self.tree.add_root_node(board)
 
         self.count = 0
+
         while self.continue_exploring():
             assert (not self.tree.root_node.is_over())
             self.print_info_during_move_computation()
@@ -89,27 +90,24 @@ class TreeAndValuePlayer(Player):
             # self.tree.save_raw_data_to_file(self.count)
             #  self.count += 1
             #   input("Press Enter to continue...")
-            #    opening_instructions_batch.print_info()
+            #opening_instructions_batch.print_info()
 
-            while opening_instructions_batch and self.continue_exploring():
-                #  opening_instructions_batch.print_info()
+            if self.arg['stopping_criterion'] == 'tree_move_limit':
+                opening_instructions_subset = opening_instructions_batch.pop_items(
+                    self.tree_move_limit - self.tree.move_count)
+            else:
+                opening_instructions_subset = opening_instructions_batch
 
-                if self.tree_move_limit is not None:
-                    opening_instructions_subset = opening_instructions_batch.pop_items(
-                        self.tree_move_limit - self.tree.move_count)
-                else:
-                    opening_instructions_subset = opening_instructions_batch
-
-                self.tree.open_and_update(opening_instructions_subset)
-                if global_variables.testing_bool:
-                    self.tree.test_the_tree()
+            self.tree.open_and_update(opening_instructions_subset)
+            if global_variables.testing_bool:
+                self.tree.test_the_tree()
 
         if global_variables.testing_bool:
             self.tree.test_the_tree()
 
         if self.tree_move_limit is not None:
             assert self.tree_move_limit == self.tree.move_count or self.tree.root_node.is_over()
-        # self.tree.save_raw_data_to_file()
+        #self.tree.save_raw_data_to_file()
         self.tree.print_some_stats()
         for move, child in self.tree.root_node.moves_children.items():
             print(move, self.tree.root_node.moves_children[move].get_value_white(), child.over_event.get_over_tag())
@@ -117,6 +115,7 @@ class TreeAndValuePlayer(Player):
 
     def get_move_from_player(self, board, time):
         self.tree_explore(board)
+
         best_move = self.recommend_move_after_exploration()
         self.tree.print_best_line()  # todo maybe almost best choosen line no?
 

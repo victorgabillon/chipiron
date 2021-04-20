@@ -102,7 +102,10 @@ class TreeNode:
             generation = next_depth_generation
         return des
 
-    def get_not_opened_descendants(self):
+    def get_descendants_candidate_to_open(self):
+        """ returns descendants that are both not opened and not over"""
+        if self.is_over(): #this is messy as over is defined in a child class!!!
+            return {}
         if not self.all_legal_moves_generated:  # should use are_all_moves_and_children_opened() but its messy!
             des = {self: None}  # include itself maybe
         else:
@@ -112,9 +115,9 @@ class TreeNode:
             next_depth_generation = set()
             for node in generation:
                 if not node.all_legal_moves_generated:
-                    # print('67', node.id)
                     des[node] = None
                 for move, next_generation_child in node.moves_children.items():
-                    next_depth_generation.add(next_generation_child)
+                    if not next_generation_child.is_over():
+                        next_depth_generation.add(next_generation_child)
             generation = next_depth_generation
         return des

@@ -135,9 +135,9 @@ class ZipfSequool2(TreeAndValuePlayer):
 
     def who_is_there_smth_to_open_old(self, half_move):
         res = set()
-        if half_move not in self.tree.descendants_not_opened:
+        if half_move not in self.tree.descendants_candidates_to_open:
             return set()
-        for node in self.tree.descendants_not_opened[half_move].values():
+        for node in self.tree.descendants_candidates_to_open[half_move].values():
             if node.index is not None:
                 res.add(node)
         return res
@@ -200,7 +200,7 @@ class ZipfSequool2(TreeAndValuePlayer):
         # print('best_value',best_value)
         print('best_node', best_node.id, best_node.half_move)
 
-        self.tree.descendants_not_opened.remove_descendant(best_node.half_move, best_node.fast_rep, best_node)
+        self.tree.descendants_candidates_to_open.remove_descendant(best_node.half_move, best_node.fast_rep, best_node)
         self.tree.descendants_not_opened_not_none.remove_descendant(best_node.half_move, best_node.fast_rep, best_node)
 
         assert (best_node.index is not None)

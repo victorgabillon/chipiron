@@ -46,7 +46,7 @@ class ProportionsNode(NodeWithDescendants):
         return np.array(gap)
 
     def compute_proportions(self):
-        sorted_children = self.sort_children()
+        sorted_children = self.sort_children_not_over()
         assert (len(sorted_children) == len(self.children_not_over))
         self.proportions = {}
 
