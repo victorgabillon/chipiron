@@ -1,6 +1,7 @@
 import threading
 import random
-
+import numpy as np
+import torch
 
 class Locky():
     def __init__(self):
@@ -20,11 +21,15 @@ class Locky():
 
 
 deterministic_behavior = True
-profiling_bool = True
+profiling_bool = False
 testing_bool = False
 global_lock = Locky()
 
 
 def init():
     if deterministic_behavior:
-        random.seed(22)
+        seed =2
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        print('seed ',seed)

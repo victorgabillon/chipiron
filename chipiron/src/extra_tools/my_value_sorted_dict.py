@@ -21,7 +21,7 @@ class MyValueSortedDict:
     def __iter__(self):
         return iter(self.dic)
 
-    def sort(self):
+    def sort_dic(self):
         self.dic = dict(sorted(self.dic.items(), key=lambda item: item[1]))
         # {k: v for k, v in sorted(x.items(), key=lambda item: item[1])}
 

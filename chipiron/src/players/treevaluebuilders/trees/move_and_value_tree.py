@@ -86,7 +86,7 @@ class MoveAndValueTree:
         return node, new
 
     def open_node_move(self, node, move):
-
+        assert(not node.is_over())
         next_board, board_modifications = self.environment.step_create(board=node.board,
                                                                        move=move,
                                                                        depth=self.node_depth(node))
@@ -99,7 +99,7 @@ class MoveAndValueTree:
         self.move_count += 1  # counting moves
 
         if not child.is_over():  # if child is not over keep it in the list not over to explore them!!
-            node.children_not_over.add(child)
+            node.children_not_over.append(child)
 
         return child, new
 
@@ -226,7 +226,7 @@ class MoveAndValueTree:
         update_instructions_batch = UpdateInstructionsBatch()
         for parent_node in node_to_update.parent_nodes:
             if parent_node is not None and not new_update_instructions.empty():  # todo is it ever empty?
-                assert ((parent_node.half_move, parent_node.id, parent_node) not in update_instructions_batch)
+                assert (parent_node not in update_instructions_batch)
                 update_instructions_batch[parent_node] = new_update_instructions
 
         return update_instructions_batch

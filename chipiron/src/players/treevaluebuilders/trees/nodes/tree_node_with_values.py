@@ -1,6 +1,6 @@
 from random import choice
 from src.players.treevaluebuilders.trees.nodes.tree_node import TreeNode
-from sortedcollections import ValueSortedDict,SortedList
+from sortedcollections import ValueSortedDict, SortedList
 import chess
 from src.players.boardevaluators.over_event import OverEvent
 from src.players.treevaluebuilders.trees.updates import UpdateInstructions, BaseUpdateInstructionsBlock
@@ -8,6 +8,7 @@ from src.players.treevaluebuilders.notations_and_statics import nth_key
 import math
 from src.extra_tools.my_value_sorted_dict import MyValueSortedDict
 import pandas as pd
+
 
 # todo maybe further split values from over?
 
@@ -38,17 +39,17 @@ class TreeNodeWithValue(TreeNode):
         # convention of descending order, careful if changing read above!!
         self.best_index_for_value = 0
 
-        # the set of children that have not yet be found to be over
-        self.children_not_over = set()
+        # the list of children that have not yet be found to be over
+        # using atm a list instaed of set as atm python set are not insertion ordered which adds randomness
+        # and makes debug harder
+        self.children_not_over = []
 
         # creating a base Over event that is set to None
         self.over_event = OverEvent()
 
     def iii(self):
-        #self.children_sorted_by_value_vsd = ValueSortedDict({})
+        # self.children_sorted_by_value_vsd = ValueSortedDict({})
         self.children_sorted_by_value = MyValueSortedDict()
-
-
 
     def get_value_white(self):
         """ returns the best estimation of the value white in this node."""
@@ -79,7 +80,6 @@ class TreeNodeWithValue(TreeNode):
     def best_child(self):
         # fast way to access first key with highest subjective value
         if self.children_sorted_by_value.dic:
-            #print('~~@',self.children_sorted_by_value.dic)
             best_child = next(iter(self.children_sorted_by_value.dic))
         else:
             best_child = None
@@ -114,7 +114,7 @@ class TreeNodeWithValue(TreeNode):
     def print_children_sorted_by_value(self):
         print('here are the ', len(self.children_sorted_by_value), ' children sorted by value: ')
         for child_node, subjective_sort_value in self.children_sorted_by_value.items():
-            print(self.moves_children.inverse[child_node],                 subjective_sort_value[0],end = ' $$ ')
+            print(self.moves_children.inverse[child_node], subjective_sort_value[0], end=' $$ ')
         print('')
 
     def print_children_not_over(self):
@@ -142,13 +142,12 @@ class TreeNodeWithValue(TreeNode):
         if self.is_over():
             # the shorter the check the better now
             self.children_sorted_by_value[child] = (subjective_value_of_child, -len(child.best_node_sequence), child.id)
-         #   self.children_sorted_by_value_vsd[child] = (subjective_value_of_child, -len(child.best_node_sequence), child.id)
+        #   self.children_sorted_by_value_vsd[child] = (subjective_value_of_child, -len(child.best_node_sequence), child.id)
 
         else:
             # the longer the line the better now
             self.children_sorted_by_value[child] = (subjective_value_of_child, len(child.best_node_sequence), child.id)
-          #  self.children_sorted_by_value_vsd[child] = (subjective_value_of_child, len(child.best_node_sequence), child.id)
-
+        #  self.children_sorted_by_value_vsd[child] = (subjective_value_of_child, len(child.best_node_sequence), child.id)
 
     def are_equal_values(self, value_1, value_2):
         return value_1 == value_2
@@ -187,10 +186,9 @@ class TreeNodeWithValue(TreeNode):
 
         for child in children_with_updated_over:
             assert child.is_over()
-
-            self.children_not_over.discard(child)
-            # discard does not raise error if child is not in children_not_over. remove does
-            # atm, it happens that child is already  not in children_not_over so we use discard,
+            if child in self.children_not_over:
+                self.children_not_over.remove(child)
+            # atm, it happens that child is already  not in children_not_over so we check,
             if not self.is_over() and child.is_winner(self.player_to_move):
                 self.becoming_over_from_children()
                 is_newly_over = True
@@ -205,7 +203,7 @@ class TreeNodeWithValue(TreeNode):
     def update_children_values(self, children_nodes_to_consider):
         for child in children_nodes_to_consider:
             self.record_sort_value_of_child(child)
-        self.children_sorted_by_value.sort()
+        self.children_sorted_by_value.sort_dic()
         # print('############',self.children_sorted_by_value.dic)
         # print('-###########',self.children_sorted_by_value_vsd)
         # for i in self.children_sorted_by_value_vsd:
@@ -263,7 +261,7 @@ class TreeNodeWithValue(TreeNode):
         """ updates the values of children in self.sortedchildren
         updates value minmax and updates the best move"""
 
-        #todo to be tested!!
+        # todo to be tested!!
 
         # updates value
         value_white_before_update = self.get_value_white()
@@ -273,7 +271,6 @@ class TreeNodeWithValue(TreeNode):
         self.update_value_minmax()
         value_white_after_update = self.get_value_white()
         has_value_changed = value_white_before_update != value_white_after_update
-
 
         # # updates best_move #todo maybe split in two functions but be careful one has to be done oft the other
         if best_child_before_update is None:
@@ -306,7 +303,7 @@ class TreeNodeWithValue(TreeNode):
     def dot_description(self):
         value_mm = "{:.3f}".format(self.value_white_minmax) if self.value_white_minmax is not None else 'None'
         value_eval = "{:.3f}".format(self.value_white_evaluator) if self.value_white_evaluator is not None else 'None'
-        return super().dot_description() + '\n wh_val_mm: ' + value_mm  + '\n wh_val_eval: ' \
+        return super().dot_description() + '\n wh_val_mm: ' + value_mm + '\n wh_val_eval: ' \
                + value_eval + '\n moves*' + \
                self.description_best_move_sequence() + '\nover: ' + self.over_event.get_over_tag()
 
@@ -352,7 +349,7 @@ class TreeNodeWithValue(TreeNode):
         # todo test the contrary is its over is it the right over
 
     def test_values(self):
-        #  print('testvalues')
+        # print('testvalues')
         # todo test valuewhiteminmax is none iif not all children opened
         value_children = []
         for move, child in self.moves_children.items():
@@ -363,6 +360,15 @@ class TreeNodeWithValue(TreeNode):
                 assert (max(value_children) == self.get_value_white())
             if self.player_to_move == chess.BLACK:
                 assert (min(value_children) == self.get_value_white())
+            for ind, child in enumerate(self.children_sorted_by_value):
+                if ind == 0:
+                    assert (child.get_value_white() == self.get_value_white())
+                    before = child
+                else:
+                    if self.player_to_move == chess.WHITE:
+                        assert (before.get_value_white() >= child.get_value_white())
+                    if self.player_to_move == chess.BLACK:
+                        assert (before.get_value_white() <= child.get_value_white())
         else:
             pass
             # todo test board value
@@ -382,7 +388,7 @@ class TreeNodeWithValue(TreeNode):
             assert (self.best_child() == self.best_node_sequence[0])
         for node in self.best_node_sequence[1:]:
             assert (isinstance(node, TreeNode))
-            #print('@ss@',old_best_node, ':ddd' ,old_best_node.best_node_sequence[0].id,':ddd' ,node.id,':ddd' ,self.best_node_sequence)
+            # print('@ss@',old_best_node, ':ddd' ,old_best_node.best_node_sequence[0].id,':ddd' ,node.id,':ddd' ,self.best_node_sequence)
             assert (old_best_node.best_node_sequence[0] == node)
 
             assert (old_best_node.best_node_sequence[0] == old_best_node.best_child())
@@ -392,11 +398,11 @@ class TreeNodeWithValue(TreeNode):
         print('Best line from node ' + str(self.id) + ':', end=' ')
         parent_node = self
         for child in self.best_node_sequence:
-            print(parent_node.moves_children.inverse[child], '('+str(child.id)+')', end=' ')
+            print(parent_node.moves_children.inverse[child], '(' + str(child.id) + ')', end=' ')
             parent_node = child
         print(' ')
 
-    def my_logit(self, x): #todo look out for numerical problem with utmatic rounding to 0 or especillay to 1
+    def my_logit(self, x):  # todo look out for numerical problem with utmatic rounding to 0 or especillay to 1
         y = min(max(x, .000000000000000000000001), .9999999999999999)
         return math.log(y / (1 - y))
 
@@ -448,11 +454,10 @@ class TreeNodeWithValue(TreeNode):
         has_value_changed, has_best_node_seq_changed_1 = self.minmax_value_update_from_children(
             updates_instructions_block['children_with_updated_value'])
 
-
         # UPDATE BEST MOVE
         has_best_node_seq_changed_2 = self.update_best_move_sequence(
             updates_instructions_block['children_with_updated_best_move'])
-        #print('^&',has_best_node_seq_changed_2)
+        # print('^&',has_best_node_seq_changed_2)
         has_best_node_seq_changed = has_best_node_seq_changed_1 or has_best_node_seq_changed_2
 
         # UPDATE OVER
@@ -467,6 +472,9 @@ class TreeNodeWithValue(TreeNode):
                                                                      new_best_move_for_node=has_best_node_seq_changed)
 
         new_instructions.all_instructions_blocks['base'] = base_update_instructions_block
+
+        #        self.test()
+
         return new_instructions
 
-        #todo i dont understand anymore when the instructions stops beeing propagated back
+        # todo i dont understand anymore when the instructions stops beeing propagated back

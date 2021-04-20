@@ -13,6 +13,7 @@ class NetPP1(BoardNet):
         self.fc1 = nn.Linear(384, 1)
         self.tanh = nn.Tanh()
 
+
     def forward(self, x):
         x = self.fc1(x)
         x = self.tanh(x)
@@ -64,16 +65,17 @@ class NetPP1(BoardNet):
         board_to_tensor_pieces_square_fast(node, parent_node, board_modifications, False)
 
     def compute_nn_input(self, node):
-        #transform = transform_board_pieces_square_old(node, False)
+        # transform = transform_board_pieces_square_old(node, False)
         if node.player_to_move == chess.WHITE:
             tensor = node.tensor_white - node.tensor_black
         else:
             tensor = node.tensor_black - node.tensor_white
-        #assert (torch.eq(transform, tensor).all())
-        #print(tensor)
+        # assert (torch.eq(transform, tensor).all())
+        # print(tensor)
 
         return tensor
-        #return transform
+        # return transform
+
 
 def print_piece_param(i, vec):
     for r in range(8):

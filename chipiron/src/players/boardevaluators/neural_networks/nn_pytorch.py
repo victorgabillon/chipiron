@@ -31,22 +31,7 @@ class BoardNet(nn.Module):
                 torch.save(self.state_dict(), fileNNW)
             exit(-1)
 
-    def value_white(self, node):
-        self.eval()
-        x = self.compute_nn_input(node)
-        torch.no_grad()
-        y_pred = self(x)
-        torch.no_grad()
-        prediction_with_player_to_move_as_white = y_pred[0].item()
 
-        if node.board.chess_board.turn == chess.BLACK:
-            value_white = -prediction_with_player_to_move_as_white
-        else:
-            value_white = prediction_with_player_to_move_as_white
-
-        #print(board,value_white)
-        #self.print_param()
-        return value_white
 
 
 
