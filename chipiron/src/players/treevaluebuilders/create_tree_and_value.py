@@ -3,6 +3,8 @@ from src.players.treevaluebuilders.uniform import Uniform
 from src.players.boardevaluators.create_board_evaluator import create_board_evaluator
 from src.players.treevaluebuilders.recur_zipf import RecurZipf
 from src.players.treevaluebuilders.recur_zipf_base import RecurZipfBase
+from src.players.treevaluebuilders.recur_zipf_base2 import RecurZipfBase2
+
 from src.players.treevaluebuilders.verti_zipf import VertiZipf
 from src.players.treevaluebuilders.recur_verti_zipf import RecurVertiZipf
 from src.players.treevaluebuilders.sequool import Sequool
@@ -21,6 +23,8 @@ def create_tree_and_value_builders(arg, chess_simulator,syzygy):
         tree_builder = RecurZipf(arg['tree_builder'])
     elif tree_builder_type == 'RecurZipfBase':
         tree_builder = RecurZipfBase(arg['tree_builder'])
+    elif tree_builder_type == 'RecurZipfBase2':
+        tree_builder = RecurZipfBase2(arg['tree_builder'])
     elif tree_builder_type == 'VertiZipf':
         tree_builder = VertiZipf(arg['tree_builder'])
     elif tree_builder_type == 'RecurVertiZipf':

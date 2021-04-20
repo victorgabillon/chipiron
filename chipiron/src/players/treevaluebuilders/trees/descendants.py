@@ -80,7 +80,7 @@ class Descendants:
             print('half_move: ', half_move, '| (', self.number_of_descendants_at_half_move[half_move],
                   'descendants)')  # ,                  end='| ')
             for descendant in self[half_move].values():
-                print(descendant.id, end=' ')
+                print(descendant.id, descendant.fast_rep, end=' ')
             print('')
 
     def print_stats(self):
@@ -313,7 +313,7 @@ class SortedDescendants(Descendants):
 
     def update_value(self, node, value):
         #    print('###lll',self.sorted_descendants_at_half_move[node.half_move],value)
-        #   print('xsx',value)
+        #print('xsx',value)
         self.sorted_descendants_at_half_move[node.half_move][node] = value
 
     def add_descendant(self, node, value):
@@ -336,6 +336,9 @@ class SortedDescendants(Descendants):
         if global_variables.testing_bool:
             self.test()
 
+        assert(self.contains_node( node))
+
+
     def test(self):
         super().test()
         # print('defge',len(self.sorted_descendants_at_half_move), len(self.descendants_at_half_move),self.sorted_descendants_at_half_move,self.descendants_at_half_move)
@@ -353,14 +356,12 @@ class SortedDescendants(Descendants):
             print('half_move: ', half_move, '| (', self.number_of_descendants_at_half_move[half_move],
                   'descendants)')  # ,                  end='| ')
             for descendant,value in self.sorted_descendants_at_half_move[half_move].items():
-                print(descendant.id, '('+str(value)+')', end=' ')
+                print(descendant.id, descendant.fast_rep,'('+str(value)+')', end=' ')
             print('')
 
     def remove_descendant(self, node):
         super().remove_descendant(node)
         half_move = node.half_move
-
-
         self.sorted_descendants_at_half_move[half_move].pop(node)
         if half_move not in self.number_of_descendants_at_half_move:
             self.sorted_descendants_at_half_move.pop(half_move)
@@ -368,7 +369,16 @@ class SortedDescendants(Descendants):
 
         if global_variables.testing_bool:
             self.test()
+        assert(not self.contains_node( node))
 
+    def contains_node(self, node):
+        reply_base = super().contains_node(node)
+        if node.half_move in self.descendants_at_half_move and node in self.sorted_descendants_at_half_move[node.half_move]:
+            rep = True
+        else:
+            rep = False
+        assert(reply_base == rep)
+        return rep
 
 class SortedValueDescendants(Descendants):
     def __init__(self):

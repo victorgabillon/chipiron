@@ -2,14 +2,18 @@ name: ZipfSequool
 type: TreeAndValue
 tree_builder: 
   type: ZipfSequool
-  tree_move_limit: 5000
-  zipf_style: ZipfOne
+  move_explorer_priority: priority_best
   opening_type: all_children
   move_selection_rule: 
-   type: almost_equal
-   temperature: 2
+    type: almost_equal
+    temperature: 2
+  stopping_criterion: 
+    name: tree_move_limit
+    tree_move_limit: 1000
 board_evaluator:
-  type: BasicEvaluation
+  type: basic_evaluation
+  subtype: pp1
+  nn_param_file_name: 'nn_pp1/param.pt'
   syzygy_evaluation: True
 syzygy_play: True
 

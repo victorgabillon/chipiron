@@ -1,34 +1,38 @@
 from sortedcontainers import SortedDict
+from src.extra_tools.dict_of_numbered_dict_with_pointer_on_max import DictOfNumberedDictWithPointerOnMax
 
 
 class UpdateInstructionsBatch:
+    # todo probably what we need to do is is that we should split the dic between half mmoves instaead of sorting it
 
     def __init__(self, dictionary={}):
         # batch is a dictionary of all the node from which a backward update should be started
         # it is a SortedDict where the keys involves the depth as the main sorting argument
         # this permits to easily give priority of update to the nodes with higher depth.
         # it should be less time consuming because and less a redundant update depth per depth from the back
-        self.batch = SortedDict()
+        # self.batch = MySortedDict()
+        self.batch = DictOfNumberedDictWithPointerOnMax()
+        for node in dictionary:
+            self.batch[node] = dictionary[node]
 
-        for key in dictionary:
-            self[key] = dictionary[key]
+    # self.batch.sort_dic()
 
-    def __setitem__(self, key, value):
-        if isinstance(key, tuple):
-            self.batch[key] = value
-        else:  # key is a node
-            self.batch[(key.half_move, key.id, key)] = value
+    def __setitem__(self, node, value):
+        self.batch[node] = value
 
     def __getitem__(self, key):
-        # assert(0==1)
         return self.batch[key]
 
+    def __contains__(self, node):
+        return node in self.batch
+
     def __iter__(self):
+        assert (0 == 2)
         return iter(self.batch)
 
     def popitem(self):
-        key, value = self.batch.popitem()
-        return key[2], value  # return the node
+        node, value = self.batch.popitem()
+        return node, value  # return the node
 
     def __bool__(self):
         return bool(self.batch)
@@ -41,13 +45,15 @@ class UpdateInstructionsBatch:
 
     def merge(self, update_instructions_batch):
         if update_instructions_batch is not None:
-            for key in update_instructions_batch:
-                if key in self.batch:
-                    new_update_information = UpdateInstructions()
-                    new_update_information.merge(self.batch[key], update_instructions_batch[key])
-                    self.batch[key] = new_update_information
-                else:
-                    self.batch[key] = update_instructions_batch[key]
+            for half_move in update_instructions_batch.batch.half_moves:
+                for node in update_instructions_batch.batch.half_moves[half_move]:
+                    if half_move in self.batch.half_moves and node in self.batch.half_moves[half_move]:
+                        new_update_information = UpdateInstructions()
+                        new_update_information.merge(self.batch.half_moves[half_move][node],
+                                                     update_instructions_batch.batch.half_moves[half_move][node])
+                        self.batch[node] = new_update_information
+                    else:
+                        self.batch[node] = update_instructions_batch[node]
 
 
 class UpdateInstructions:
@@ -72,8 +78,6 @@ class UpdateInstructions:
         self.all_instructions_blocks[key] = update_instructions_block
 
     def merge(self, an_update_instruction, another_update_instruction):
-        #an_update_instruction.print_info()
-        #another_update_instruction.print_info()
 
         an_keys = set(an_update_instruction.keys())
         another_keys = set(another_update_instruction.keys())
@@ -92,7 +96,7 @@ class UpdateInstructions:
     def print_info(self):
         print('printing info of update instructions')
         for block_key in self.all_instructions_blocks:
-            print('key',block_key)
+            print('key', block_key)
             self[block_key].print_info()
 
     def empty(self):
