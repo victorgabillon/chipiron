@@ -33,7 +33,7 @@ class VertiZipf(TreeAndValuePlayer):
         while not found:
             # print('+++++++++++++++++++++')
 
-            bestSeq = node.best_node_sequence_not_over()
+            bestSeq = node.best_node_sequence_filtered_from_over()
             K = len(bestSeq)
             zipf = self.zipfDistribution(K)
             #  print('p',zipf,K)

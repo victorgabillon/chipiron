@@ -34,7 +34,6 @@ def zipf_picks_random_bool(ordered_list_elements, bool_func):
     length_list = len(ordered_list_elements)
     assert (length_list > 0)
     weights = [float(bool_func(index)) / (index + 1) / (math.log(math.e * (index + 1))) ** 2 for index in range(length_list)]
-    print('@weights',weights)
 
     picked_element = random.choices(list(range(length_list)), weights=weights, k=1)
     return picked_element[0]

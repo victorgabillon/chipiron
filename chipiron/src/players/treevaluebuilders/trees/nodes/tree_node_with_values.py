@@ -1,6 +1,5 @@
 from random import choice
 from src.players.treevaluebuilders.trees.nodes.tree_node import TreeNode
-from sortedcollections import ValueSortedDict, SortedList
 import chess
 from src.players.boardevaluators.over_event import OverEvent
 from src.players.treevaluebuilders.trees.updates import UpdateInstructions, BaseUpdateInstructionsBlock
@@ -85,6 +84,12 @@ class TreeNodeWithValue(TreeNode):
             best_child = None
         return best_child
 
+    def best_child_not_over(self):
+        for child in self.children_sorted_by_value.dic:
+            if not child.is_over():
+                return child
+        assert(1==0)
+
     def best_child_value(self):
         # fast way to access first key with highest subjective value
         if self.children_sorted_by_value:
@@ -115,6 +120,12 @@ class TreeNodeWithValue(TreeNode):
         print('here are the ', len(self.children_sorted_by_value), ' children sorted by value: ')
         for child_node, subjective_sort_value in self.children_sorted_by_value.items():
             print(self.moves_children.inverse[child_node], subjective_sort_value[0], end=' $$ ')
+        print('')
+
+    def print_children_sorted_by_value_and_exploration(self):
+        print('here are the ', len(self.children_sorted_by_value), ' children sorted by value: ')
+        for child_node, subjective_sort_value in self.children_sorted_by_value.items():
+            pass #print('hahaha')#print(self.moves_children.inverse[child_node], subjective_sort_value[0],'('+str(child_node.descendants.number_of_descendants)+')', end=' $$ ')
         print('')
 
     def print_children_not_over(self):
@@ -269,6 +280,7 @@ class TreeNodeWithValue(TreeNode):
 
         self.update_children_values(children_with_updated_value)
         self.update_value_minmax()
+
         value_white_after_update = self.get_value_white()
         has_value_changed = value_white_before_update != value_white_after_update
 
@@ -429,13 +441,26 @@ class TreeNodeWithValue(TreeNode):
                     best_children.append(child)
         return best_children
 
-    def best_node_sequence_not_over(self):
+    def best_node_sequence_filtered_from_over(self):
         # todo investigate the case of having over in the best lines? does it make sense? what does it mean?
         res = [self]
         for best_child in self.best_node_sequence:
             if not best_child.is_over():
                 res.append(best_child)
         return res
+
+    def best_node_sequence_not_over(self):
+        """ computes and returns the best line that does not contains any over state"""
+        node = self
+        res = []
+        while node.are_all_moves_and_children_opened():
+            # not sure this is the right condition in the long run but will work for now. assumes opening all moves all the time
+            node = node.best_child_not_over()
+            res.append(node)
+        return res
+
+
+
 
     def create_update_instructions_after_node_birth(self):
         update_instructions = UpdateInstructions()

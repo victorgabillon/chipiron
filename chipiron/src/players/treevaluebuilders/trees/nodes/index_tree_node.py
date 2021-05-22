@@ -11,6 +11,14 @@ class IndexTreeNode(TreeNodeWithValue):
     def test(self):
         super().test()
 
+    def compute_index(self):
+        a_parent  = self.parent_nodes[0]
+        #print('###',self.id,self.half_move,a_parent)
+        if a_parent is None:
+            return 0
+        else:
+            return abs(a_parent.best_child().get_value_white()-self.get_value_white())\
+                   + self.parent_nodes[0].compute_index()
 
     def dot_description(self):
         super_description = super().dot_description()

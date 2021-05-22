@@ -5,15 +5,15 @@ tree_builder:
   move_explorer_priority: priority_best
   opening_type: all_children
   move_selection_rule: 
-    type: almost_equal
+    type: almost_equal_logistic
     temperature: 2
   stopping_criterion: 
     name: tree_move_limit
-    tree_move_limit: 1000
+    tree_move_limit: 400000
 board_evaluator:
-  type: basic_evaluation
+  type: neural_network
   subtype: pp1
-  nn_param_file_name: 'nn_pp1/param.pt'
+  nn_param_file_name: 'nn_pp1/param_bal.pt'
   syzygy_evaluation: True
 syzygy_play: True
 

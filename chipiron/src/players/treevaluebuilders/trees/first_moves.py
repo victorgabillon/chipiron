@@ -22,24 +22,18 @@ class FirstMoves:
         elif self.first_moves[parent_node] == set():
             self.first_moves[node] = {node}
         elif node in self.first_moves:
-            #            print('~s', self.first_moves[node])
-            previous_first_move = self.first_moves[node].copy()
-
             self.first_moves[node].update(self.first_moves[parent_node].copy())
             node_descendants = node.get_descendants()
             for descendant in node_descendants:
+                if descendant.id == 5857:
+                    print('## 5857--',[i.id for i in self.first_moves[parent_node].copy()])
+#                assert (descendant.id != 5857)
                 self.first_moves[descendant].update(self.first_moves[parent_node].copy())
-
-            new_first_moves = self.first_moves[node].difference(previous_first_move)
-        # print('@',new_first_moves,self.first_moves[node],previous_first_move)
-        # assert(new_first_moves == set())
         else:
-            # print('~as')
             self.first_moves[node] = self.first_moves[parent_node].copy()
 
         if global_variables.testing_bool:
             self.test_first_move_node(node)
-            # self.test_first_move()
 
     def test_first_move(self):
         for node in self.first_moves:

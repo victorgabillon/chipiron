@@ -21,7 +21,7 @@ class OneMatchScript(Script):
     def run(self):
         file_name_player_one = 'best_0.yaml'
         file_name_player_one = 'RecurZipfBase.yaml'
-        file_name_player_two = 'ZipfSequool.yaml'
+        file_name_player_two = 'Stockfish.yaml'
         if global_variables.profiling_bool:
             file_name_match_setting = 'setting_jime.yaml'
         else:

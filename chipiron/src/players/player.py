@@ -1,3 +1,5 @@
+import global_variables
+
 class Player():
     #  difference between player and treebuilder includes the fact that now a player can be a mixture of multiple decision rulles
 
@@ -7,6 +9,10 @@ class Player():
     def get_move(self, board, time):
         """ returns the best move computed by the player.
         The player has the option to ask the syzygy table to play it"""
+
+        if global_variables.deterministic_mode == global_variables.SEED_FIXED_EVERY_MOVE:
+            global_variables.init()
+
 
         # if there is only one possible legal move in the position, do not think, choose it.
         all_legal_moves = list(board.get_legal_moves())

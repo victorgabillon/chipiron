@@ -6,7 +6,6 @@ from scripts.record_states import RecordStates
 import sys
 import global_variables
 
-
 def main():
     global_variables.init()
     # print command line arguments

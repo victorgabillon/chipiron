@@ -29,7 +29,8 @@ class Game:
         if self.syzygy.fast_in_table(self.board):
             print('Theoretically finished with value for white: ', self.syzygy.sting_result(self.board))
         self.board_sequence.append(self.board.copy())
-      #  global_variables.init()
+
+
 
     def last_move(self):
         if len(self.moves) == 0:
