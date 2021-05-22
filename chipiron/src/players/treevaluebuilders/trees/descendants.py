@@ -1,6 +1,6 @@
 import global_variables
 from sortedcollections import ValueSortedDict
-import time
+import sys
 
 
 class Descendants:
@@ -38,11 +38,9 @@ class Descendants:
         half_move = node.half_move
         fen = node.fast_rep
 
-        if global_variables.testing_bool:
-            self.test()
-        # print('@')
-        # self.print_info()
-        # print('s@')
+ #       if global_variables.testing_bool:
+  #          self.test()
+
 
         self.number_of_descendants -= 1
         self[half_move].pop(fen)
@@ -313,16 +311,25 @@ class SortedDescendants(Descendants):
 
     def update_value(self, node, value):
         #    print('###lll',self.sorted_descendants_at_half_move[node.half_move],value)
-        #print('xsx',value)
+        #print('xsx',value,node,node.half_move)
+        #self.print_info()
+        #if node.half_move == 113:
+         #  print('^^',self.descendants_at_half_move[node.half_move])
+        if global_variables.testing_bool:
+            self.test()
         self.sorted_descendants_at_half_move[node.half_move][node] = value
 
+        if global_variables.testing_bool:
+            self.test()
+
+
     def add_descendant(self, node, value):
-        #print('%%%',node,value)
+
+        if global_variables.testing_bool:
+            self.test()
         super().add_descendant(node)
         half_move = node.half_move
-        if global_variables.testing_bool:
-            pass
-        # self.test()
+
 
         if half_move in self.sorted_descendants_at_half_move:
             assert (node not in self.sorted_descendants_at_half_move[half_move])
@@ -360,6 +367,9 @@ class SortedDescendants(Descendants):
             print('')
 
     def remove_descendant(self, node):
+
+        if global_variables.testing_bool:
+            self.test()
         super().remove_descendant(node)
         half_move = node.half_move
         self.sorted_descendants_at_half_move[half_move].pop(node)

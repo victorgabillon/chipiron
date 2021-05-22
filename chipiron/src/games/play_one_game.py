@@ -4,7 +4,7 @@ import time
 import chess
 import pickle
 import global_variables
-
+from src.players.boardevaluators.stockfish_evaluation import Stockfish
 
 # todo a wrapper for chess.white chess.black
 
@@ -28,9 +28,14 @@ class PlayOneGame:
         self.player_black = player_black
         self.path_to_store_result = path_to_store_result
 
+        self.board_evaluator = Stockfish()
+
     def display(self, round_, color_to_play):
         if self.display_option:
             self.displayOneGame.displayBoard(self.game.board, round_, self.game.last_move(), color_to_play)
+
+    def stockfish_eval(self):
+        return self.board_evaluator.score(self.game.board.chess_board)
 
     def play_the_game(self):
         time.sleep(.1)

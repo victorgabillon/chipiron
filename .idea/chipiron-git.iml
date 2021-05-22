@@ -6,8 +6,9 @@
       <sourceFolder url="file://$MODULE_DIR$/chipiron" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/scripts" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/venv/lib" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/venv3.9" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.8 (chipiron-git)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.9 (venv3.9)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="PyDocumentationSettings">

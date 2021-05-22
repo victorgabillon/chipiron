@@ -28,14 +28,13 @@ class TreeAndValuePlayer(Player):
 
         else:
             current_best_move = '?'
-        print('random.random()',random.random())
-        if random.random() < .1:
+        if random.random() < .05:
             print('========= tree move counting:', self.tree.move_count, 'out of', self.stopping_criterion.tree_move_limit,
                   '|',
                   "{0:.0%}".format(self.tree.move_count / self.stopping_criterion.tree_move_limit),
                   '| current best move:', current_best_move, '| current white value:',
                   self.tree.root_node.value_white_minmax)  # ,end='\r')
-            self.tree.root_node.print_children_sorted_by_value()
+            self.tree.root_node.print_children_sorted_by_value_and_exploration()
             self.tree.print_best_line()
 
     def recommend_move_after_exploration(self):

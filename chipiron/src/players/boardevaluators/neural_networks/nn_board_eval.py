@@ -15,7 +15,7 @@ class NNBoardEval:
 
     def value_white(self, node):
         self.my_scripted_model.eval()
-        x = self.net.compute_nn_input(node)
+        x = self.net.get_nn_input(node)
         torch.no_grad()
         y_pred = self.my_scripted_model(x)
        # y_pred = self.net(x)

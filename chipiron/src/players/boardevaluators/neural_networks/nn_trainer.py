@@ -8,20 +8,27 @@ class NNPytorchTrainer:
     def __init__(self, net):
         self.net = net
         self.criterion = torch.nn.L1Loss()
-        self.optimizer = optim.SGD(self.net.parameters(), lr=.0001, momentum=0.9)
+        self.optimizer = optim.SGD(self.net.parameters(), lr=.0005, momentum=0.9)
 
     def train(self, input_layer, target_value):
         self.net.train()
+       # print('inputlayer',input_layer)
         self.optimizer.zero_grad()
+
+
         prediction_with_player_to_move_as_white = self.net(input_layer)
+        #print('prediction_with_player_to_move_as_white, target_value',prediction_with_player_to_move_as_white, target_value)
         loss = self.criterion(prediction_with_player_to_move_as_white, target_value)
+        #print('loss',loss, type(loss))
+
         loss.backward()
         self.optimizer.step()
 
         if random.random() < .001:
-            print('dinnnff', prediction_with_player_to_move_as_white, target_value, loss)
+          #  print('dinnnff', prediction_with_player_to_move_as_white, target_value, loss)
             self.net.print_param()
             self.net.safe_save()
+        return loss
 
     def train_next_boards(self, input_layer, next_input_layer):
 

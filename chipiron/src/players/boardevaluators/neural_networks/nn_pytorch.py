@@ -26,8 +26,10 @@ class BoardNet(nn.Module):
         try:
             with open(self.path_to_param_file, 'wb') as fileNNW:
                 torch.save(self.state_dict(), fileNNW)
+            with open(self.path_to_param_file+'_save', 'wb') as fileNNW:
+                torch.save(self.state_dict(), fileNNW)
         except KeyboardInterrupt:
-            with open(self.path_to_param_file, 'wb') as fileNNW:
+            with open(self.path_to_param_file+'_save', 'wb') as fileNNW:
                 torch.save(self.state_dict(), fileNNW)
             exit(-1)
 

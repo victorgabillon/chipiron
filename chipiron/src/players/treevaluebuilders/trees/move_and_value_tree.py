@@ -87,6 +87,7 @@ class MoveAndValueTree:
 
     def open_node_move(self, node, move):
         assert(not node.is_over())
+        assert(move not in node.moves_children)
         next_board, board_modifications = self.environment.step_create(board=node.board,
                                                                        move=move,
                                                                        depth=self.node_depth(node))

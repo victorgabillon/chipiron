@@ -46,7 +46,7 @@ class RecurVertiZipf(TreeAndValuePlayer):
 
 
     def choose_node_in_best_line(self, node):
-        best_line = node.best_node_sequence_not_over()
+        best_line = node.best_node_sequence_filtered_from_over()
         best_k, best_value = zipf_picks(list_elements=best_line,
                                              value_of_element=lambda index: self.visits_depth[
                                                  index] if index in self.visits_depth else 1)

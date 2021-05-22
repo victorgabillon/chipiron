@@ -24,7 +24,7 @@ class TreeNode:
         self.moves_children = bidict({})
 
         # the set of parent nodes to this node. Note that a node can have multiple parents!
-        self.parent_nodes = {parent_node}
+        self.parent_nodes = [parent_node]
 
         # all_legal_moves_generated  is a boolean saying whether all moves have been generated.
         # If true the moves are either opened in which case the corresponding opened node is stored in
@@ -34,7 +34,7 @@ class TreeNode:
 
     def add_parent(self, new_parent_node):
         assert (new_parent_node not in self.parent_nodes)  # there cannot be two ways to link the same child-parent
-        self.parent_nodes.add(new_parent_node)
+        self.parent_nodes.append(new_parent_node)
 
     def print_moves_children(self):
         print('here are the ', len(self.moves_children), ' moves-children link of node', self.id, ': ', end=' ')
@@ -51,7 +51,7 @@ class TreeNode:
         parent = next(iter(child.parent_nodes))
         while parent is not None:
             parent = next(iter(child.parent_nodes))
-           # print('~~',parent.moves_children)
+            # print('~~',parent.moves_children)
             move_sequence_from_root.append(parent.moves_children.inverse[child])
             child = parent
             parent = next(iter(child.parent_nodes))
@@ -70,7 +70,7 @@ class TreeNode:
         self.test_all_legal_moves_generated()
 
     def dot_description(self):
-        return 'id:' + str(self.id) + ' dep: ' + str(self.half_move) + '\nfen:'+str(self.board.chess_board)
+        return 'id:' + str(self.id) + ' dep: ' + str(self.half_move) + '\nfen:' + str(self.board.chess_board)
 
     def test_all_legal_moves_generated(self):
         # print('test_all_legal_moves_generated')
@@ -104,9 +104,10 @@ class TreeNode:
 
     def get_descendants_candidate_to_open(self):
         """ returns descendants that are both not opened and not over"""
-        if self.is_over(): #this is messy as over is defined in a child class!!!
-            return {}
-        if not self.all_legal_moves_generated:  # should use are_all_moves_and_children_opened() but its messy!
+      #  print('tt', self.id, self.is_over())
+        if not self.all_legal_moves_generated and not self.is_over():
+            # should use are_all_moves_and_children_opened() but its messy!
+            # also using is_over is  messy as over_events are defined in a child class!!!
             des = {self: None}  # include itself maybe
         else:
             des = {}
@@ -114,10 +115,9 @@ class TreeNode:
         while generation:
             next_depth_generation = set()
             for node in generation:
-                if not node.all_legal_moves_generated:
+                if not node.all_legal_moves_generated and not node.is_over():
                     des[node] = None
                 for move, next_generation_child in node.moves_children.items():
-                    if not next_generation_child.is_over():
-                        next_depth_generation.add(next_generation_child)
+                    next_depth_generation.add(next_generation_child)
             generation = next_depth_generation
         return des

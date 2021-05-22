@@ -12,10 +12,12 @@ class NetP1(BoardNet):
         self.fc1 = nn.Linear(5, 1)
         self.tanh = nn.Tanh()
 
-
     def forward(self, x):
+       # print('weewwwww',x)
+
         x = self.fc1(x)
         x = self.tanh(x)
+     #   print('weew',x)
         return x
 
     def init_weights(self, file):
@@ -35,7 +37,7 @@ class NetP1(BoardNet):
                 print('bishops', param.data[0, 2])
                 print('rook', param.data[0, 3])
                 print('queen', param.data[0, 4])
-               # print('king', param.data[0, 5])
+            # print('king', param.data[0, 5])
             else:
                 print(param.data)
 
@@ -45,7 +47,5 @@ class NetP1(BoardNet):
         print('knights', input[1])
         print('bishops', input[2])
         print('rook', input[3])
-        print('queen',input[4])
-      #  print('king', input[5])
-
-
+        print('queen', input[4])
+    #  print('king', input[5])
