@@ -9,7 +9,7 @@ def create_player(arg, chess_simulator, syzygy):
     if arg['type'] == 'RandomPlayer':
         player = RandomPlayer()
     elif arg['type'] == 'TreeAndValue':
-        player = create_tree_and_value_builders(arg, chess_simulator,syzygy)
+        player = create_tree_and_value_builders(arg, chess_simulator, syzygy)
     elif arg['type'] == 'Human':
         player = Human(arg, chess_simulator)
     elif arg['type'] == 'Stockfish':

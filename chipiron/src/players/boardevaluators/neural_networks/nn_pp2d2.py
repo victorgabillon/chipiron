@@ -4,27 +4,26 @@ from src.players.boardevaluators.neural_networks.nn_pytorch import BoardNet
 from src.players.boardevaluators.neural_networks.board_to_tensor import board_to_tensor_pieces_square_two_sides, \
     node_to_tensors_pieces_square_fast, get_tensor_from_tensors_two_sides
 
-class NetPP2(BoardNet):
+
+class NetPP2D2(BoardNet):
     def __init__(self, path_to_main_folder, relative_path_file):
-        super(NetPP2, self).__init__(path_to_main_folder, relative_path_file)
+        super(NetPP2D2, self).__init__(path_to_main_folder, relative_path_file)
 
         self.transform_board_function = board_to_tensor_pieces_square_two_sides
-        self.fc1 = nn.Linear(772, 1)
+        self.fc1 = nn.Linear(772, 772)
+        self.relu_1 = nn.ReLU()
+        self.fc2 = nn.Linear(772, 1)
         self.tanh = nn.Tanh()
+        self.dropout = nn.Dropout(.5)
 
     def forward(self, x):
         x = self.fc1(x)
-        x = self.tanh(x)
+        x = self.relu_1(x)
+        x = self.tanh(self.fc2(x))
         return x
 
     def init_weights(self, file):
-        ran = torch.rand(772) * 0.001 + 0.03
-        ran = ran.unsqueeze(0)
-        self.fc1.weight = torch.nn.Parameter(ran)
-        nn.init.constant(self.fc1.bias, 0.0)
-        torch.save(self.state_dict(), file)
-        for param in self.parameters():
-            print(param.data)
+        pass
 
     def print_param(self):
         for layer, param in enumerate(self.parameters()):
@@ -53,10 +52,10 @@ class NetPP2(BoardNet):
                 print_piece_param(10, param.data)
                 print('king-opposite', sum(param.data[0, 64 * 11: 64 * 11 + 64]) / 64.)
                 print_piece_param(11, param.data)
-                print('castling',  param.data[0, 64 * 12: 64 * 12 + 2])
-                print('castlingopposite', param.data[0, 64 * 12+2: 64 * 12 + 4])
+                print('castling', param.data[0, 64 * 12: 64 * 12 + 2])
+                print('castlingopposite', param.data[0, 64 * 12 + 2: 64 * 12 + 4])
             else:
-                print(param.data)
+                print('other layer', layer, param.data)
 
     def print_input(self, input):
 
@@ -90,7 +89,8 @@ class NetPP2(BoardNet):
 
     def get_nn_input(self, node):
         return get_tensor_from_tensors_two_sides(node.tensor_white, node.tensor_black, node.tensor_castling_white,
-                                       node.tensor_castling_black, node.player_to_move)
+                                                 node.tensor_castling_black, node.player_to_move)
+
 
 def print_piece_param(i, vec):
     for r in range(8):

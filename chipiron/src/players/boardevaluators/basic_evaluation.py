@@ -1,5 +1,5 @@
 import chess
-import torch
+from src.players.boardevaluators.board_evaluator import BoardEvaluator
 
 
 def value_base(board, color):
@@ -51,7 +51,7 @@ def value_player_to_move(board):
         return sigmoid((value_black_pieces - value_white_pieces) * .2)
 
 
-class BasicEvaluation:
+class BasicEvaluation(BoardEvaluator):
 
     def __init__(self):
         pass
@@ -71,5 +71,3 @@ class BasicEvaluation:
       #      queen_atta = 0
         return value_white_pieces - value_black_pieces #+ 100 * board.chess_board.is_check() - 200 * queen_atta
 
-    def compute_representation(self, node,parent_node,board_modifications):
-        pass

@@ -68,27 +68,27 @@ class MainWindow(QWidget):
         self.closeButton2.setText("Player")  # text
         # self.closeButton2.move(700, 200)
         self.closeButton2.setStyleSheet('QPushButton {background-color: white; color: blue;}')
-        self.closeButton2.setGeometry(620, 200, 170, 30)
+        self.closeButton2.setGeometry(620, 200, 370, 30)
 
         self.closeButton3 = QPushButton(self)
         self.closeButton3.setText("Player")  # text
         self.closeButton3.setStyleSheet('QPushButton {background-color: black; color: blue;}')
-        self.closeButton3.setGeometry(620, 300, 170, 30)
+        self.closeButton3.setGeometry(620, 300, 370, 30)
 
         self.closeButton4 = QPushButton(self)
         self.closeButton4.setText("Score 0-0")  # text
         self.closeButton4.setStyleSheet('QPushButton {background-color: white; color: black;}')
-        self.closeButton4.setGeometry(620, 400, 170, 30)
+        self.closeButton4.setGeometry(620, 400, 370, 30)
 
         self.closeButton5 = QPushButton(self)
         self.closeButton5.setText("Round")  # text
         self.closeButton5.setStyleSheet('QPushButton {background-color: white; color: black;}')
-        self.closeButton5.setGeometry(620, 500, 170, 30)
+        self.closeButton5.setGeometry(620, 500, 370, 30)
 
         self.closeButton6 = QPushButton(self)
         self.closeButton6.setText("fen")  # text
         self.closeButton6.setStyleSheet('QPushButton {background-color: white; color: black;}')
-        self.closeButton6.setGeometry(50, 700, 650, 30)
+        self.closeButton6.setGeometry(50, 700, 850, 30)
 
         self.closeButton7 = QPushButton(self)
         self.closeButton7.setText("Stock Eval")  # text
@@ -106,7 +106,7 @@ class MainWindow(QWidget):
         self.threadpool = QThreadPool()
         print("Multithreading with maximum %d threads" % self.threadpool.maxThreadCount())
         self.startPlayThread()
-        time.sleep(.55)
+        time.sleep(1.55)
         # self.board = self.play.play_one_game.game.board.chessBoard
 
         self.checkThreadTimer = QTimer(self)

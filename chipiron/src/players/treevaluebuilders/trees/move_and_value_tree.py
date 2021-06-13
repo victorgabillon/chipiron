@@ -3,8 +3,6 @@ from src.players.treevaluebuilders.trees.nodes.tree_node import TreeNode
 import pickle
 from src.players.treevaluebuilders.trees.updates import UpdateInstructionsBatch
 
-DISCOUNT = .999999999999  # todo play with this
-
 
 # todo should we use a discount? and discounted per round reward?
 # todo maybe convenient to seperate this object into openner updater and dsiplayer
@@ -40,9 +38,10 @@ class MoveAndValueTree:
         return node.half_move - self.tree_root_half_move
 
     def add_root_node(self, board):
-        self.root_node, haha = self.find_or_create_node(board, None, self.tree_root_half_move, None)
-        # using find_or_create_node to use al the updates functions properly
-        self.evaluate_board(self.root_node)
+        # creates the node
+        self.root_node = self.find_or_create_node(board, None, self.tree_root_half_move, None)
+        # ask for its evaluation
+        self.board_evaluator.evaluate_all_queried_nodes()
         self.descendants = self.root_node.descendants
 
     def create_tree_node(self, board, half_move, count, parent_node):
@@ -61,69 +60,44 @@ class MoveAndValueTree:
         pass  # these are empty function for higher order object to do more sophisticated things upon node creation
 
     def create_tree_node_and_more(self, board, board_modifications, half_move, parent_node):
-        node = self.create_tree_node(board, half_move, self.nodes_count, parent_node)
+        new_node = self.create_tree_node(board, half_move, self.nodes_count, parent_node)
         self.nodes_count += 1
-        self.board_evaluator.check_obvious_over_events(node)
-        self.board_evaluator.compute_representation(node, parent_node, board_modifications)
-        self.update_after_node_creation(node, parent_node)
-        return node
+        self.board_evaluator.compute_representation(new_node, parent_node, board_modifications)
+        self.board_evaluator.add_evaluation_query(new_node)
+        self.update_after_node_creation(new_node, parent_node)
+        return new_node
 
     def find_or_create_node(self, board, board_modifications, half_move, parent_node):
         fast_rep = board.fast_representation()
         if self.root_node is not None:
-            # print('~~d',half_move)
             assert (self.root_node.descendants.is_in_the_acceptable_range(half_move))
         if self.root_node is None or self.root_node.descendants.is_new_generation(half_move) or fast_rep not in \
                 self.root_node.descendants.descendants_at_half_move[half_move]:
             node = self.create_tree_node_and_more(board, board_modifications, half_move, parent_node)
-            new = True
         else:  # the node already exists
             node = self.descendants[half_move][fast_rep]  # add it to the list of descendants
             node.add_parent(parent_node)
             self.update_after_link_creation(node, parent_node)
-            new = False
         self.update_after_either_node_or_link_creation(node, parent_node)
-        return node, new
+        return node
 
-    def open_node_move(self, node, move):
-        assert(not node.is_over())
-        assert(move not in node.moves_children)
-        next_board, board_modifications = self.environment.step_create(board=node.board,
+    def open_node_move(self, parent_node, move):
+        assert (not parent_node.is_over())
+        assert (move not in parent_node.moves_children)
+        next_board, board_modifications = self.environment.step_create(board=parent_node.board,
                                                                        move=move,
-                                                                       depth=self.node_depth(node))
-        child, new = self.find_or_create_node(next_board, board_modifications, node.half_move + 1, node)
+                                                                       depth=self.node_depth(parent_node))
+        child_node = self.find_or_create_node(next_board, board_modifications, parent_node.half_move + 1, parent_node)
 
         # add it to the list of opened move and out of the non-opened moves
-        node.moves_children[move] = child
-        node.non_opened_legal_moves.remove(move)
-
+        parent_node.moves_children[move] = child_node
+        parent_node.non_opened_legal_moves.remove(move)
         self.move_count += 1  # counting moves
+        parent_node.children_not_over.append(child_node)  # default action checks for over event are performed later
 
-        if not child.is_over():  # if child is not over keep it in the list not over to explore them!!
-            node.children_not_over.append(child)
-
-        return child, new
-
-    def evaluate_board(self, node):
-        assert (node.value_white_evaluator is None)
-        if node.is_over():
-            evaluation = DISCOUNT ** node.half_move * self.board_evaluator.value_white_from_over_event(node.over_event)
-        elif not node.moves_children:  # todo what????????????????????????/
-            evaluation = (1 / DISCOUNT) ** node.half_move * self.board_evaluator.value_white(node)
-        else:
-            raise (Exception('@@@@@xx'))
-        node.set_evaluation(evaluation)
-
-    def evaluate_new_move_in_node(self, parent_node, move):
-        """ creates the new node according to the new moves and then evaluates the new board"""
-        child_node, new = self.open_node_move(parent_node, move)
-        if new:
-            self.evaluate_board(child_node)
         update_instructions = child_node.create_update_instructions_after_node_birth()
-
         # update_instructions_batch is key sorted dict, sorted by depth to ensure proper backprop from the back
         update_instructions_batch = UpdateInstructionsBatch({parent_node: update_instructions})
-
         return update_instructions_batch
 
     def add_dot(self, dot, treenode):
@@ -200,10 +174,13 @@ class MoveAndValueTree:
 
         for opening_instructions in opening_instructions_batch.values():
             # open
-            new_update_instructions_batch = self.evaluate_new_move_in_node(opening_instructions.node_to_open,
-                                                                           opening_instructions.move_to_play)
+            new_update_instructions_batch = self.open_node_move(opening_instructions.node_to_open,
+                                                                opening_instructions.move_to_play)
+
             # concatenate the update instructions
             update_instructions_batch.merge(new_update_instructions_batch)
+
+        self.board_evaluator.evaluate_all_queried_nodes()
 
         return update_instructions_batch  # todo never new_nodes used no?
 
