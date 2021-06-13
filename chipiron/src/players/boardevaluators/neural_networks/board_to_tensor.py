@@ -28,7 +28,7 @@ def transform_board_pieces_one_side(board, requires_grad_):
 
     if requires_grad_:
         transform.requires_grad_(True)
-        
+
     return transform
 
 
@@ -74,8 +74,34 @@ def board_to_tensor_pieces_square(board, requires_grad_):
     tensor_white, tensor_black, tensor_castling_white, tensor_castling_black \
         = board_to_tensors_pieces_square(board, requires_grad_)
     side_to_move = board.chess_board.turn
-    tensor = get_tensor_from_tensors(tensor_white, tensor_black,tensor_castling_white, tensor_castling_black, side_to_move)
+    tensor = get_tensor_from_tensors(tensor_white, tensor_black, tensor_castling_white, tensor_castling_black,
+                                     side_to_move)
     return tensor
+
+
+def board_to_tensor_pieces_square_two_sides(board, requires_grad_):
+    tensor_white, tensor_black, tensor_castling_white, tensor_castling_black \
+        = board_to_tensors_pieces_square(board, requires_grad_)
+    side_to_move = board.chess_board.turn
+    tensor = get_tensor_from_tensors_two_sides(tensor_white, tensor_black, tensor_castling_white, tensor_castling_black,
+                                               side_to_move)
+    return tensor
+
+
+def get_tensor_from_tensors_two_sides(tensor_white, tensor_black, tensor_castling_white, tensor_castling_black,
+                                      color_to_play):
+    if color_to_play == chess.WHITE:
+        tensor = torch.cat((tensor_white, tensor_black), 0)
+    else:
+        tensor = torch.cat((tensor_black, tensor_white), 0)
+
+    if color_to_play == chess.WHITE:
+        tensor_castling = torch.cat((tensor_castling_white, tensor_castling_black), 0)
+    else:
+        tensor_castling = torch.cat((tensor_castling_black, tensor_castling_white), 0)
+
+    tensor_2 = torch.cat((tensor, tensor_castling), 0)
+    return tensor_2
 
 
 def get_tensor_from_tensors(tensor_white, tensor_black, tensor_castling_white, tensor_castling_black, color_to_play):

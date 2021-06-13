@@ -28,8 +28,8 @@ SEED_FIXING_TYPE = [NO_FIX_SEED, FIX_SEED_WITH_CONSTANT, FIX_SEED_WITH_TIME] = r
 
 deterministic_behavior = False
 deterministic_mode = SEED_FIXED_EVERY_MOVE
-seed_fixing_type = FIX_SEED_WITH_TIME
-profiling_bool = False
+seed_fixing_type = FIX_SEED_WITH_CONSTANT
+profiling_bool = True
 testing_bool = False
 global_lock = Locky()
 

@@ -1,7 +1,7 @@
 from scripts.one_match import OneMatchScript
 from scripts.replay_game import ReplayGameScript
 from scripts.tree_visualizer import VisualizeTreeScript
-from scripts.learn_nn_from_supervised_gameover_datasets import LearnNNScript
+from scripts.learn_nn_from_supervised_datasets import LearnNNScript
 from scripts.record_states import RecordStates
 import sys
 import global_variables

@@ -1,33 +1,56 @@
 import torch
 import chess
 from src.players.boardevaluators.neural_networks.nn_pp1 import NetPP1
+from src.players.boardevaluators.neural_networks.nn_pp2 import NetPP2
+from src.players.boardevaluators.neural_networks.nn_pp2d2 import NetPP2D2
+from src.players.boardevaluators.board_evaluator import BoardEvaluator
 
 
-class NNBoardEval:
+class NNBoardEval(BoardEvaluator):
     def __init__(self, arg):
         if arg['subtype'] == 'pp1':
             self.net = NetPP1('', arg['nn_param_file_name'])
-            self.net.load_or_init_weights()
-            self.my_scripted_model = torch.jit.script(self.net)
+        elif arg['subtype'] == 'pp2':
+            self.net = NetPP2('', arg['nn_param_file_name'])
+        elif arg['subtype'] == 'pp2d2':
+            self.net = NetPP2D2('', arg['nn_param_file_name'])
+        self.net.load_or_init_weights()
+        self.my_scripted_model = torch.jit.script(self.net)
 
     def compute_representation(self, node, parent_node, board_modifications):
         self.net.compute_representation(node, parent_node, board_modifications)
 
     def value_white(self, node):
+        # self.net.eval()
         self.my_scripted_model.eval()
-        x = self.net.get_nn_input(node)
+        input_layer = self.net.get_nn_input(node)
         torch.no_grad()
-        y_pred = self.my_scripted_model(x)
-       # y_pred = self.net(x)
-
+        output_layer = self.my_scripted_model(input_layer)
         torch.no_grad()
-        prediction_with_player_to_move_as_white = y_pred[0].item()
-
-        if node.board.chess_board.turn == chess.BLACK:
-            value_white = -prediction_with_player_to_move_as_white
-        else:
-            value_white = prediction_with_player_to_move_as_white
-
-        # print(board,value_white)
-        # self.print_param()
+        predicted_value_from_mover_view_point = output_layer.item()
+        value_white = self.convert_value_for_mover_viewpoint_to_value_white(node, predicted_value_from_mover_view_point)
         return value_white
+
+    def convert_value_for_mover_viewpoint_to_value_white(self, node, value_from_mover_view_point):
+        if node.board.chess_board.turn == chess.BLACK:
+            value_white = -value_from_mover_view_point
+        else:
+            value_white = value_from_mover_view_point
+        return value_white
+
+    def evaluate_all_not_over(self, not_over_nodes):
+        list_of_tensors = [0] * len(not_over_nodes)
+        for index, node_not_over in enumerate(not_over_nodes):
+            list_of_tensors[index] = self.net.get_nn_input(node_not_over)
+        input_layers = torch.stack(list_of_tensors, dim=0)
+        self.my_scripted_model.eval()
+        torch.no_grad()
+        output_layer = self.my_scripted_model(input_layers)
+      #  print('$$%%', output_layer, len(not_over_nodes))
+        for index, node_not_over in enumerate(not_over_nodes):
+            predicted_value_from_mover_view_point = output_layer[index].item()
+            #print('%%%##~', predicted_value_from_mover_view_point)
+            value_white_eval = self.convert_value_for_mover_viewpoint_to_value_white(node_not_over,
+                                                                                     predicted_value_from_mover_view_point)
+            processed_evaluation = self.process_evalution_not_over(value_white_eval, node_not_over)
+            node_not_over.set_evaluation(processed_evaluation)

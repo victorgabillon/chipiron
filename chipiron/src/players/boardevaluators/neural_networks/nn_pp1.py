@@ -2,8 +2,7 @@ import torch
 import torch.nn as nn
 from src.players.boardevaluators.neural_networks.nn_pytorch import BoardNet
 from src.players.boardevaluators.neural_networks.board_to_tensor import board_to_tensor_pieces_square, \
-    node_to_tensors_pieces_square_fast,get_tensor_from_tensors
-import chess
+    node_to_tensors_pieces_square_fast, get_tensor_from_tensors
 
 
 class NetPP1(BoardNet):
@@ -48,8 +47,6 @@ class NetPP1(BoardNet):
             else:
                 print(param.data)
 
-
-
     def compute_representation(self, node, parent_node, board_modifications):
         node_to_tensors_pieces_square_fast(node, parent_node, board_modifications, False)
 
@@ -57,20 +54,21 @@ class NetPP1(BoardNet):
         return get_tensor_from_tensors(node.tensor_white, node.tensor_black, node.tensor_castling_white,
                                        node.tensor_castling_black, node.player_to_move)
 
-def print_input(input):
 
-        print('pawns', sum(input[64 * 0 + 8: 64 * 0 + 64 - 8]) / (64. - 16.))
-        print_input_param(0, input)
-        print('knights', sum(input[64 * 1: 64 * 1 + 64]) / 64.)
-        print_input_param(1, input)
-        print('bishops', sum(input[64 * 2: 64 * 2 + 64]) / 64.)
-        print_input_param(2, input)
-        print('rook', sum(input[64 * 3: 64 * 3 + 64]) / 64.)
-        print_input_param(3, input)
-        print('queen', sum(input[64 * 4: 64 * 4 + 64]) / 64.)
-        print_input_param(4, input)
-        print('king', sum(input[64 * 5: 64 * 5 + 64]) / 64.)
-        print_input_param(5, input)
+def print_input(input):
+    print('pawns', sum(input[64 * 0 + 8: 64 * 0 + 64 - 8]) / (64. - 16.))
+    print_input_param(0, input)
+    print('knights', sum(input[64 * 1: 64 * 1 + 64]) / 64.)
+    print_input_param(1, input)
+    print('bishops', sum(input[64 * 2: 64 * 2 + 64]) / 64.)
+    print_input_param(2, input)
+    print('rook', sum(input[64 * 3: 64 * 3 + 64]) / 64.)
+    print_input_param(3, input)
+    print('queen', sum(input[64 * 4: 64 * 4 + 64]) / 64.)
+    print_input_param(4, input)
+    print('king', sum(input[64 * 5: 64 * 5 + 64]) / 64.)
+    print_input_param(5, input)
+
 
 def print_piece_param(i, vec):
     for r in range(8):

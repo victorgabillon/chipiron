@@ -3,64 +3,89 @@ import time
 from torch.utils.data import Dataset
 import pandas as pd
 import numpy as np
-import random
 import math
 import chess
 from src.chessenvironment.boards.board import MyBoard
 import torch
 
-class FenDataSet(Dataset):
 
-    def __init__(self, transform_function='identity'):
-        if transform_function == 'identity':
-            self.transform_function = lambda x: x
+
+class MyDataSet(Dataset):
+
+    def __init__(self, file_name, preprocessing):
+        self.file_name = file_name
+        self.preprocessing = preprocessing
+        self.data = None
+        self.len = None
+
+    def load(self):
+        print('Loading the dataset...')
+        raw_data = pd.read_pickle(self.file_name)
+        print('Dataset  loaded.')
+
+        # preprocessing
+        if self.preprocessing:
+            print('preprocessing dataset...')
+            processed_data = []
+            for idx in range(len(raw_data)):
+                print(idx, len(raw_data))
+                row = raw_data.iloc[idx % len(raw_data)]
+                processed_data.append(self.process_raw_row(row))
+            self.data = processed_data
+            print('preprocessing dataset done')
         else:
-            self.transform_function = transform_function
+            print('no preprocessing the dataset')
+            self.data = raw_data
 
 
-class StockfishEvalsBoards(FenDataSet):
-
-    def __init__(self, transform_function):
-        super().__init__(transform_function)
-        print('Loading the StockfishEvals dataset...')
-        self.df_over = pd.read_pickle('/home/victor/goodgames_plusvariation_stockfish_eval')
-        self.len = len(self.df_over)
-        print('Dataset StockfishEvals loaded.')
-        print('preprocessing dataset...')
-        self.processed_data = []
-        for idx in range(self.len):
-            print(idx,self.len)
-            row = self.df_over.iloc[idx % self.len]
-            self.processed_data.append(self.process_raw_row(row))
-            # print('##',len(self.processed_data),self.processed_data)
-            # time.sleep(1)
-        print('preprocessing dataset done')
+        self.len = len(self.data)
 
     def __len__(self):
-        return len(self.df_over)
-
-    def process_raw_row(self,row):
-        fen = row['fen']
-        # print('fen',fen)
-        board = MyBoard(fen=fen)
-        # print(board)
-        input_layer = self.transform_function(board, requires_grad_=False)
-        #print('34',row['stockfish_value'], np.tanh(row['stockfish_value']/1000.),type(row['stockfish_value']))
-        if board.chess_board.turn == chess.BLACK:
-            target_value = -np.tanh(row['stockfish_value']/500.)
-        else:
-            target_value = np.tanh(row['stockfish_value']/500.)
-        target_value = torch.tensor([target_value])
-        #print('$$',input_layer, target_value)
-        return input_layer, target_value
+        return len(self.data)
 
     def __getitem__(self, idx):
-        row = self.df_over.iloc[idx % self.len]
-       # return self.process_raw_row(row)
-        return self.processed_data[idx % self.len]
+        if self.preprocessing:
+            return self.data[idx % self.len]
+        else:
+            raw_row = self.data.iloc[idx % self.len]
+            return self.process_raw_row(raw_row)  # to be coded!
 
 
-class ClassifiedBoards(FenDataSet):
+def process_stockfish_value(board, row):
+    if board.chess_board.turn == chess.BLACK:
+        target_value = -np.tanh(row['stockfish_value'] / 500.)
+    else:
+        target_value = np.tanh(row['stockfish_value'] / 500.)
+    target_value = torch.tensor([target_value])
+    return target_value
+
+
+class FenAndValueDataSet(MyDataSet):
+
+    def __init__(self, file_name, preprocessing=False, transform_board_function='identity',
+                 transform_value_function=''):
+
+        super().__init__( file_name, preprocessing)
+        # transform function
+        if transform_board_function == 'identity':
+            assert (1 == 0)  # to be coded
+        else:
+            self.transform_board_function = transform_board_function
+
+        # transform function
+        if transform_value_function == 'stockfish':
+            self.transform_value_function = process_stockfish_value
+
+    def process_raw_row(self, row):
+        fen = row['fen']
+        board = MyBoard(fen=fen)
+        input_layer = self.transform_board_function(board, requires_grad_=False)
+        target_value = self.transform_value_function(board, row)
+        return input_layer, target_value
+
+
+
+class ClassifiedBoards(MyDataSet):
 
     def __init__(self, transform_function):
         super().__init__(transform_function)
@@ -116,7 +141,7 @@ class ClassifiedBoards(FenDataSet):
         return input_layer, target_value
 
 
-class NextBoards(FenDataSet):
+class NextBoards(MyDataSet):
 
     def __init__(self, transform_function):
         super().__init__(transform_function)
