@@ -31,6 +31,10 @@ class TreeMoveLimitCriterion(StoppingCriterion):
             return continue_base
         return self.player.tree.move_count < self.tree_move_limit
 
+    def get_string_of_progress(self):
+        return '========= tree move counting: ' + str(self.player.tree.move_count) + ' out of ' + str(
+            self.tree_move_limit) + ' | ' + "{0:.0%}".format(self.player.tree.move_count / self.tree_move_limit)
+
 
 class DepthLimitCriterion(StoppingCriterion):
     def __init__(self, depth_limit):
@@ -41,3 +45,7 @@ class DepthLimitCriterion(StoppingCriterion):
         if not continue_base:
             return continue_base
         return self.player.current_depth_to_expand < self.depth_limit
+
+    def get_string_of_progress(self):
+        return '========= tree move counting: ' + str(self.player.tree.move_count) + ' | Depth: ' + str(
+            self.player.current_depth_to_expand) + ' out of ' + str(self.depth_limit)

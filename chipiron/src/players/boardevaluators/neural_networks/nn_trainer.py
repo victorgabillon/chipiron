@@ -8,7 +8,10 @@ class NNPytorchTrainer:
     def __init__(self, net):
         self.net = net
         self.criterion = torch.nn.L1Loss()
-        self.optimizer = optim.SGD(self.net.parameters(), lr=.0001, momentum=0.9, weight_decay=.00001)
+        self.optimizer = optim.SGD(self.net.parameters(), lr=.1, momentum=0.9, weight_decay=.000)
+        self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=1, gamma=0.5)
+
+
 
     def train(self, input_layer, target_value):
         self.net.train()
@@ -27,6 +30,10 @@ class NNPytorchTrainer:
     def test(self, input_layer, target_value):
         self.net.eval()
         prediction_with_player_to_move_as_white = self.net(input_layer)
+       # print('input',input_layer)
+       # print('target',target_value)
+       # print('pred',prediction_with_player_to_move_as_white)
+
         loss = self.criterion(prediction_with_player_to_move_as_white, target_value)
         self.net.train()
         return loss
