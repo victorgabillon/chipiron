@@ -3,6 +3,8 @@ import chess
 from src.players.boardevaluators.neural_networks.nn_pp1 import NetPP1
 from src.players.boardevaluators.neural_networks.nn_pp2 import NetPP2
 from src.players.boardevaluators.neural_networks.nn_pp2d2 import NetPP2D2
+from src.players.boardevaluators.neural_networks.nn_pp2d2_2 import NetPP2D2_2
+
 from src.players.boardevaluators.board_evaluator import BoardEvaluator
 
 
@@ -14,7 +16,10 @@ class NNBoardEval(BoardEvaluator):
             self.net = NetPP2('', arg['nn_param_file_name'])
         elif arg['subtype'] == 'pp2d2':
             self.net = NetPP2D2('', arg['nn_param_file_name'])
+        elif arg['subtype'] == 'pp2d2_2':
+            self.net = NetPP2D2_2('', arg['nn_param_file_name'])
         self.net.load_or_init_weights()
+        self.net.eval()
         self.my_scripted_model = torch.jit.script(self.net)
 
     def compute_representation(self, node, parent_node, board_modifications):

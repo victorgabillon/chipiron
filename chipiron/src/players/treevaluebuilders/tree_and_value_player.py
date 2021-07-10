@@ -29,9 +29,8 @@ class TreeAndValuePlayer(Player):
         else:
             current_best_move = '?'
         if random.random() < .05:
-            print('========= tree move counting:', self.tree.move_count, 'out of', self.stopping_criterion.tree_move_limit,
-                  '|',
-                  "{0:.0%}".format(self.tree.move_count / self.stopping_criterion.tree_move_limit),
+            str_progress = self.stopping_criterion.get_string_of_progress()
+            print(str_progress,
                   '| current best move:', current_best_move, '| current white value:',
                   self.tree.root_node.value_white_minmax)  # ,end='\r')
             self.tree.root_node.print_children_sorted_by_value_and_exploration()
@@ -86,14 +85,16 @@ class TreeAndValuePlayer(Player):
 
             opening_instructions_batch = self.choose_node_and_move_to_open()
 
-            # self.tree.save_raw_data_to_file(self.count)
-            #  self.count += 1
+           # if self.count %1000 ==0:
+            #  self.tree.save_raw_data_to_file(self.count)
+            #self.count += 1
             #   input("Press Enter to continue...")
-            #opening_instructions_batch.print_info()
+            # opening_instructions_batch.print_info()
 
-            if self.arg['stopping_criterion'] == 'tree_move_limit':
+            if self.arg['stopping_criterion']['name'] == 'tree_move_limit':
+                tree_move_limit = self.arg['stopping_criterion']['tree_move_limit']
                 opening_instructions_subset = opening_instructions_batch.pop_items(
-                    self.tree_move_limit - self.tree.move_count)
+                    tree_move_limit - self.tree.move_count)
             else:
                 opening_instructions_subset = opening_instructions_batch
 
@@ -106,7 +107,7 @@ class TreeAndValuePlayer(Player):
 
         if self.tree_move_limit is not None:
             assert self.tree_move_limit == self.tree.move_count or self.tree.root_node.is_over()
-        #self.tree.save_raw_data_to_file()
+        # self.tree.save_raw_data_to_file()
         self.tree.print_some_stats()
         for move, child in self.tree.root_node.moves_children.items():
             print(move, self.tree.root_node.moves_children[move].get_value_white(), child.over_event.get_over_tag())

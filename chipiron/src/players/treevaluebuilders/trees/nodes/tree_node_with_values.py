@@ -125,7 +125,8 @@ class TreeNodeWithValue(TreeNode):
     def print_children_sorted_by_value_and_exploration(self):
         print('here are the ', len(self.children_sorted_by_value), ' children sorted by value: ')
         for child_node, subjective_sort_value in self.children_sorted_by_value.items():
-            pass #print('hahaha')#print(self.moves_children.inverse[child_node], subjective_sort_value[0],'('+str(child_node.descendants.number_of_descendants)+')', end=' $$ ')
+            print(self.moves_children.inverse[child_node], subjective_sort_value[0], end=' $$ ')
+            pass  # print(self.moves_children.inverse[child_node], subjective_sort_value[0],'('+str(child_node.descendants.number_of_descendants)+')', end=' $$ ')
         print('')
 
     def print_children_not_over(self):

@@ -5,20 +5,21 @@ from src.players.boardevaluators.neural_networks.board_to_tensor import board_to
     node_to_tensors_pieces_square_fast, get_tensor_from_tensors_two_sides
 
 
-class NetPP2D2(BoardNet):
+class NetPP2D2_2(BoardNet):
     def __init__(self, path_to_main_folder, relative_path_file):
-        super(NetPP2D2, self).__init__(path_to_main_folder, relative_path_file)
+        super(NetPP2D2_2, self).__init__(path_to_main_folder, relative_path_file)
 
         self.transform_board_function = board_to_tensor_pieces_square_two_sides
-        self.fc1 = nn.Linear(772, 772)
+        self.fc1 = nn.Linear(772, 20)
         self.relu_1 = nn.ReLU()
-        self.fc2 = nn.Linear(772, 1)
+        self.fc2 = nn.Linear(20, 1)
         self.tanh = nn.Tanh()
-        self.dropout = nn.Dropout(.5)
+        #self.dropout = nn.Dropout(.5)
 
     def forward(self, x):
         x = self.fc1(x)
-        x = self.dropout(self.relu_1(x))
+       # x = self.dropout(self.relu_1(x))
+        x = self.relu_1(x)
         x = self.tanh(self.fc2(x))
         return x
 

@@ -152,12 +152,28 @@ def node_to_tensors_pieces_square_fast(node, parent_node, board_modifications, r
     if parent_node is None:  # this is the root_node
         node_to_tensors_pieces_square(node, requires_grad_)
     else:
-        tensor_white = parent_node.tensor_white.detach().clone()
-        tensor_black = parent_node.tensor_black.detach().clone()
-        node_to_tensors_pieces_square_from_parent(node, board_modifications, tensor_white, tensor_black)
+        node_to_tensors_pieces_square_from_parent(node, board_modifications, parent_node)
 
 
-def node_to_tensors_pieces_square_from_parent(node, board_modifications, tensor_white, tensor_black):
+def node_to_tensors_pieces_square_from_parent(node, board_modifications, parent_node):
+    node_to_tensors_pieces_square_from_parent_0(node, board_modifications, parent_node)
+    node_to_tensors_pieces_square_from_parent_1(node, board_modifications)
+    node_to_tensors_pieces_square_from_parent_2(node, board_modifications)
+    node_to_tensors_pieces_square_from_parent_4(node, board_modifications)
+    node_to_tensors_pieces_square_from_parent_5(node, board_modifications)
+
+
+def node_to_tensors_pieces_square_from_parent_0(node, board_modifications, parent_node):
+   # node.tensor_white = parent_node.tensor_white.detach().clone()
+    #node.tensor_black = parent_node.tensor_black.detach().clone()
+
+    # copy the tensor of the parent node
+
+    node.tensor_white = torch.empty_like(parent_node.tensor_white).copy_(parent_node.tensor_white)
+    node.tensor_black = torch.empty_like(parent_node.tensor_black).copy_(parent_node.tensor_black)
+
+
+def node_to_tensors_pieces_square_from_parent_1(node, board_modifications):
     for removal in board_modifications.removals:
         piece_type = removal[1]
         piece_color = removal[2]
@@ -166,12 +182,14 @@ def node_to_tensors_pieces_square_from_parent(node, board_modifications, tensor_
         if piece_color == chess.BLACK:
             square_index = chess.square_mirror(square)
             index = 64 * piece_code + square_index
-            tensor_black[index] = 0
+            node.tensor_black[index] = 0
         else:
             square_index = square
             index = 64 * piece_code + square_index
-            tensor_white[index] = 0
+            node.tensor_white[index] = 0
 
+
+def node_to_tensors_pieces_square_from_parent_2(node, board_modifications):
     for appearance in board_modifications.appearances:
         # print('app',appearance)
         piece_type = appearance[1]
@@ -181,22 +199,24 @@ def node_to_tensors_pieces_square_from_parent(node, board_modifications, tensor_
         if piece_color == chess.BLACK:
             square_index = chess.square_mirror(square)
             index = 64 * piece_code + square_index
-            tensor_black[index] = 1
+            node.tensor_black[index] = 1
         else:
             square_index = square
             index = 64 * piece_code + square_index
-            tensor_white[index] = 1
+            node.tensor_white[index] = 1
 
-    node.tensor_white = tensor_white
-    node.tensor_black = tensor_black
 
-    board = node.board
+def node_to_tensors_pieces_square_from_parent_4(node, board_modifications):
     node.tensor_castling_white = torch.zeros(2, requires_grad=False)
     node.tensor_castling_black = torch.zeros(2, requires_grad=False)
-    node.tensor_castling_white[0] = board.chess_board.has_queenside_castling_rights(chess.WHITE)
-    node.tensor_castling_white[1] = board.chess_board.has_kingside_castling_rights(chess.WHITE)
-    node.tensor_castling_black[0] = board.chess_board.has_queenside_castling_rights(chess.BLACK)
-    node.tensor_castling_black[1] = board.chess_board.has_kingside_castling_rights(chess.BLACK)
+
+
+def node_to_tensors_pieces_square_from_parent_5(node, board_modifications):
+    board = node.board
+    node.tensor_castling_white[0] = bool(board.chess_board.castling_rights & chess.BB_A1)
+    node.tensor_castling_white[1] = bool(board.chess_board.castling_rights & chess.BB_H1)
+    node.tensor_castling_black[0] = bool(board.chess_board.castling_rights & chess.BB_A8)
+    node.tensor_castling_black[1] = bool(board.chess_board.castling_rights & chess.BB_H8)
 
 
 def transform_board_pieces_square_old(node, requires_grad_):

@@ -66,7 +66,7 @@ class TreeNode:
         return self.all_legal_moves_generated and self.non_opened_legal_moves == set()
 
     def test(self):
-        # print('testing node', self.id)
+        # print('testing node', selbestf.id)
         self.test_all_legal_moves_generated()
 
     def dot_description(self):

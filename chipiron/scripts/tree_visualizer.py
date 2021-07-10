@@ -127,7 +127,7 @@ class Window(QtWidgets.QWidget):
         VBlayout.addLayout(HBlayout)
 
         self.tree = MoveAndValueTree(None, None, None)
-        pic = pickle.load(open("chipiron/runs/treedisplays/TreeData_9white-#.td", "rb"))
+        pic = pickle.load(open("chipiron/runs/treedisplays/TreeData_1white-1000.td", "rb"))
         self.tree.descendants = pic[0]
         self.tree.root_node = pic[1]
 
@@ -200,4 +200,5 @@ class VisualizeTreeScript(Script):
         window = Window()
         window.setGeometry(0, 0, 1800, 1600)
         window.show()
+        print('34e3')
         sys.exit(app.exec_())

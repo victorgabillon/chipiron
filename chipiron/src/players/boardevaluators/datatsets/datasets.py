@@ -9,7 +9,6 @@ from src.chessenvironment.boards.board import MyBoard
 import torch
 
 
-
 class MyDataSet(Dataset):
 
     def __init__(self, file_name, preprocessing):
@@ -28,7 +27,9 @@ class MyDataSet(Dataset):
             print('preprocessing dataset...')
             processed_data = []
             for idx in range(len(raw_data)):
-                print(idx, len(raw_data))
+                #print(idx, type(idx),idx % 10 == 0)
+                if idx % 10 == 0:
+                    print('\r', str(idx / len(raw_data) * 100) + '%')
                 row = raw_data.iloc[idx % len(raw_data)]
                 processed_data.append(self.process_raw_row(row))
             self.data = processed_data
@@ -36,7 +37,6 @@ class MyDataSet(Dataset):
         else:
             print('no preprocessing the dataset')
             self.data = raw_data
-
 
         self.len = len(self.data)
 
@@ -65,7 +65,7 @@ class FenAndValueDataSet(MyDataSet):
     def __init__(self, file_name, preprocessing=False, transform_board_function='identity',
                  transform_value_function=''):
 
-        super().__init__( file_name, preprocessing)
+        super().__init__(file_name, preprocessing)
         # transform function
         if transform_board_function == 'identity':
             assert (1 == 0)  # to be coded
@@ -81,8 +81,7 @@ class FenAndValueDataSet(MyDataSet):
         board = MyBoard(fen=fen)
         input_layer = self.transform_board_function(board, requires_grad_=False)
         target_value = self.transform_value_function(board, row)
-        return input_layer, target_value
-
+        return input_layer.float(), target_value.float()
 
 
 class ClassifiedBoards(MyDataSet):
