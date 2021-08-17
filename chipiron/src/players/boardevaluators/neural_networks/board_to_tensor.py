@@ -5,8 +5,8 @@ import torch
 def transform_board_pieces_one_side(board, requires_grad_):
     # normalisation of the board so that it is white turn (possible color inversion if it was black's turn)
 
-    if board.chess_board.turn == chess.BLACK:
-        color_turn = board.chess_board.turn
+    if board.turn == chess.BLACK:
+        color_turn = board.turn
         color_not_turn = chess.WHITE
     else:
         color_turn = chess.WHITE
@@ -15,16 +15,16 @@ def transform_board_pieces_one_side(board, requires_grad_):
     transform = torch.zeros(5)
 
     # print('ol', board.chessBoard)
-    transform[0] = bin(board.chess_board.pawns & board.chess_board.occupied_co[color_turn]).count('1') \
-                   - bin(board.chess_board.pawns & board.chess_board.occupied_co[color_not_turn]).count('1')
-    transform[1] = bin(board.chess_board.knights & board.chess_board.occupied_co[color_turn]).count('1') \
-                   - bin(board.chess_board.knights & board.chess_board.occupied_co[color_not_turn]).count('1')
-    transform[2] = bin(board.chess_board.bishops & board.chess_board.occupied_co[color_turn]).count('1') \
-                   - bin(board.chess_board.bishops & board.chess_board.occupied_co[color_not_turn]).count('1')
-    transform[3] = bin(board.chess_board.rooks & board.chess_board.occupied_co[color_turn]).count('1') \
-                   - bin(board.chess_board.rooks & board.chess_board.occupied_co[color_not_turn]).count('1')
-    transform[4] = bin(board.chess_board.queens & board.chess_board.occupied_co[color_turn]).count('1') \
-                   - bin(board.chess_board.queens & board.chess_board.occupied_co[color_not_turn]).count('1')
+    transform[0] = bin(board.pawns & board.occupied_co[color_turn]).count('1') \
+                   - bin(board.pawns & board.occupied_co[color_not_turn]).count('1')
+    transform[1] = bin(board.knights & board.occupied_co[color_turn]).count('1') \
+                   - bin(board.knights & board.occupied_co[color_not_turn]).count('1')
+    transform[2] = bin(board.bishops & board.occupied_co[color_turn]).count('1') \
+                   - bin(board.bishops & board.occupied_co[color_not_turn]).count('1')
+    transform[3] = bin(board.rooks & board.occupied_co[color_turn]).count('1') \
+                   - bin(board.rooks & board.occupied_co[color_not_turn]).count('1')
+    transform[4] = bin(board.queens & board.occupied_co[color_turn]).count('1') \
+                   - bin(board.queens & board.occupied_co[color_not_turn]).count('1')
 
     if requires_grad_:
         transform.requires_grad_(True)
@@ -35,8 +35,8 @@ def transform_board_pieces_one_side(board, requires_grad_):
 def transform_board_pieces_two_sides(board, requires_grad_):
     # normalisation of the board so that it is white turn (possible color inversion if it was black's turn)
 
-    if board.chess_board.turn == chess.BLACK:
-        color_turn = board.chess_board.turn
+    if board.turn == chess.BLACK:
+        color_turn = board.turn
         color_not_turn = chess.WHITE
     else:
         color_turn = chess.WHITE
@@ -45,16 +45,16 @@ def transform_board_pieces_two_sides(board, requires_grad_):
     transform = torch.zeros(10, requires_grad=requires_grad_)
 
     # print('ol', board.chessBoard)
-    transform[0] = bin(board.chess_board.pawns & board.chess_board.occupied_co[color_turn]).count('1')
-    transform[1] = bin(board.chess_board.knights & board.chess_board.occupied_co[color_turn]).count('1')
-    transform[2] = bin(board.chess_board.bishops & board.chess_board.occupied_co[color_turn]).count('1')
-    transform[3] = bin(board.chess_board.rooks & board.chess_board.occupied_co[color_turn]).count('1')
-    transform[4] = bin(board.chess_board.queens & board.chess_board.occupied_co[color_turn]).count('1')
-    transform[5] = -bin(board.chess_board.pawns & board.chess_board.occupied_co[color_not_turn]).count('1')
-    transform[6] = -bin(board.chess_board.knights & board.chess_board.occupied_co[color_not_turn]).count('1')
-    transform[7] = -bin(board.chess_board.bishops & board.chess_board.occupied_co[color_not_turn]).count('1')
-    transform[8] = -bin(board.chess_board.rooks & board.chess_board.occupied_co[color_not_turn]).count('1')
-    transform[9] = -bin(board.chess_board.queens & board.chess_board.occupied_co[color_not_turn]).count('1')
+    transform[0] = bin(board.pawns & board.occupied_co[color_turn]).count('1')
+    transform[1] = bin(board.knights & board.occupied_co[color_turn]).count('1')
+    transform[2] = bin(board.bishops & board.occupied_co[color_turn]).count('1')
+    transform[3] = bin(board.rooks & board.occupied_co[color_turn]).count('1')
+    transform[4] = bin(board.queens & board.occupied_co[color_turn]).count('1')
+    transform[5] = -bin(board.pawns & board.occupied_co[color_not_turn]).count('1')
+    transform[6] = -bin(board.knights & board.occupied_co[color_not_turn]).count('1')
+    transform[7] = -bin(board.bishops & board.occupied_co[color_not_turn]).count('1')
+    transform[8] = -bin(board.rooks & board.occupied_co[color_not_turn]).count('1')
+    transform[9] = -bin(board.queens & board.occupied_co[color_not_turn]).count('1')
     return transform
 
 
@@ -73,7 +73,7 @@ def node_to_tensors_pieces_square(node, requires_grad_):
 def board_to_tensor_pieces_square(board, requires_grad_):
     tensor_white, tensor_black, tensor_castling_white, tensor_castling_black \
         = board_to_tensors_pieces_square(board, requires_grad_)
-    side_to_move = board.chess_board.turn
+    side_to_move = board.turn
     tensor = get_tensor_from_tensors(tensor_white, tensor_black, tensor_castling_white, tensor_castling_black,
                                      side_to_move)
     return tensor
@@ -82,7 +82,7 @@ def board_to_tensor_pieces_square(board, requires_grad_):
 def board_to_tensor_pieces_square_two_sides(board, requires_grad_):
     tensor_white, tensor_black, tensor_castling_white, tensor_castling_black \
         = board_to_tensors_pieces_square(board, requires_grad_)
-    side_to_move = board.chess_board.turn
+    side_to_move = board.turn
     tensor = get_tensor_from_tensors_two_sides(tensor_white, tensor_black, tensor_castling_white, tensor_castling_black,
                                                side_to_move)
     return tensor
@@ -126,7 +126,7 @@ def board_to_tensors_pieces_square(board, requires_grad_):
     tensor_castling_black = torch.zeros(2, requires_grad=requires_grad_)
 
     for square in range(64):
-        piece = board.chess_board.piece_at(square)
+        piece = board.piece_at(square)
         if piece:
             piece_code = piece.piece_type - 1
             if piece.color == chess.BLACK:
@@ -138,10 +138,10 @@ def board_to_tensors_pieces_square(board, requires_grad_):
                 index = 64 * piece_code + square_index
                 tensor_white[index] += 1
 
-    tensor_castling_white[0] = board.chess_board.has_queenside_castling_rights(chess.WHITE)
-    tensor_castling_white[1] = board.chess_board.has_kingside_castling_rights(chess.WHITE)
-    tensor_castling_black[0] = board.chess_board.has_queenside_castling_rights(chess.BLACK)
-    tensor_castling_black[1] = board.chess_board.has_kingside_castling_rights(chess.BLACK)
+    tensor_castling_white[0] = board.has_queenside_castling_rights(chess.WHITE)
+    tensor_castling_white[1] = board.has_kingside_castling_rights(chess.WHITE)
+    tensor_castling_black[0] = board.has_queenside_castling_rights(chess.BLACK)
+    tensor_castling_black[1] = board.has_kingside_castling_rights(chess.BLACK)
 
     return tensor_white, tensor_black, tensor_castling_white, tensor_castling_black
 
@@ -213,10 +213,10 @@ def node_to_tensors_pieces_square_from_parent_4(node, board_modifications):
 
 def node_to_tensors_pieces_square_from_parent_5(node, board_modifications):
     board = node.board
-    node.tensor_castling_white[0] = bool(board.chess_board.castling_rights & chess.BB_A1)
-    node.tensor_castling_white[1] = bool(board.chess_board.castling_rights & chess.BB_H1)
-    node.tensor_castling_black[0] = bool(board.chess_board.castling_rights & chess.BB_A8)
-    node.tensor_castling_black[1] = bool(board.chess_board.castling_rights & chess.BB_H8)
+    node.tensor_castling_white[0] = bool(board.castling_rights & chess.BB_A1)
+    node.tensor_castling_white[1] = bool(board.castling_rights & chess.BB_H1)
+    node.tensor_castling_black[0] = bool(board.castling_rights & chess.BB_A8)
+    node.tensor_castling_black[1] = bool(board.castling_rights & chess.BB_H8)
 
 
 def transform_board_pieces_square_old(node, requires_grad_):
@@ -224,14 +224,14 @@ def transform_board_pieces_square_old(node, requires_grad_):
     board = node.board
     # normalisation of the board so that it is white turn (possible color inversion if it was black's turn)
     inversion = 1
-    if board.chess_board.turn == chess.BLACK:
+    if board.turn == chess.BLACK:
         inversion = -1
 
     transform = torch.zeros(384, requires_grad=requires_grad_)
 
     for square in range(64):
-        piece_type = board.chess_board.piece_type_at(square)
-        piece_color = board.chess_board.color_at(square)
+        piece_type = board.piece_type_at(square)
+        piece_color = board.color_at(square)
         if piece_type is not None:
             # print('p', square, piece.color, type(piece.piece_type))
             piece_code = (piece_type - 1)
@@ -252,13 +252,13 @@ def transform_board_pieces_square_old2(node, requires_grad_):
     board = node.board
     # normalisation of the board so that it is white turn (possible color inversion if it was black's turn)
     inversion = 1
-    if board.chess_board.turn == chess.BLACK:
+    if board.turn == chess.BLACK:
         inversion = -1
 
     transform = torch.zeros(384, requires_grad=requires_grad_)
 
     for square in range(64):
-        piece = board.chess_board.piece_at(square)
+        piece = board.piece_at(square)
         if piece:
             # print('p', square, piece.color, type(piece.piece_type))
             piece_code = (piece.piece_type - 1)

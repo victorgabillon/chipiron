@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import math
 import chess
-from src.chessenvironment.boards.board import MyBoard
+from src.chessenvironment.boards.board import BoardChi
 import torch
 
 

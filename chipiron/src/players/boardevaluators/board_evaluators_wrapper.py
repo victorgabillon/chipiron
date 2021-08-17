@@ -49,9 +49,9 @@ class BoardEvaluatorsWrapper:
     def check_obvious_over_events(self, node):
         """ updates the node.over object
          if the game is obviously over"""
-        game_over = node.board.chess_board.is_game_over()
+        game_over = node.board.is_game_over()
         if game_over:
-            value_as_string = node.board.chess_board.result()
+            value_as_string = node.board.result()
             if value_as_string == '0-1':
                 how_over_ = node.over_event.WIN
                 who_is_winner_ = chess.BLACK

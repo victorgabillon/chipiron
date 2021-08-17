@@ -1,7 +1,7 @@
 import pickle
 import yaml
 from src.opening_book import OpeningBook
-from src.games.play_one_match import PlayOneMatch
+from src.games.match_manager import MatchManager
 from src.players import create_player
 from src.chessenvironment.chess_environment import ChessEnvironment
 from src.players.boardevaluators.syzygy import Syzygy
@@ -38,7 +38,7 @@ global_variables.init()  # global variables
 
 while True:
     starting_position = opening_book.get_opening_position_to_learn()
-    play = PlayOneMatch(args_match, player_one, player_two, chess_simulator, syzygy)
+    play = MatchManager(args_match, player_one, player_two, chess_simulator, syzygy)
     p1wins, p2wins, draws = play.play_the_match()
     opening_book.position_result(starting_position, p1wins, p2wins, draws)
     with open('src/opening_book/opening_book.data', 'rb') as file_opening_book:

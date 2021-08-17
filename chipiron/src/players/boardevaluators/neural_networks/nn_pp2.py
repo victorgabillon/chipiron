@@ -94,4 +94,32 @@ class NetPP2(BoardNet):
 
 def print_piece_param(i, vec):
     for r in range(8):
-        print(vec[0, 64 * i + 8 * r: 64 * i + 8 * (r + 1)])
+        print(vec[64 * i + 8 * r: 64 * i + 8 * (r + 1)])
+
+
+def print_input( input):
+
+        print('pawns', sum(input[ 64 * 0 + 8: 64 * 0 + 64 - 8]) / (64. - 16.))
+        print_piece_param(0, input)
+        print('knights', sum(input[ 64 * 1: 64 * 1 + 64]) / 64.)
+        print_piece_param(1, input)
+        print('bishops', sum(input[ 64 * 2: 64 * 2 + 64]) / 64.)
+        print_piece_param(2, input)
+        print('rook', sum(input[ 64 * 3: 64 * 3 + 64]) / 64.)
+        print_piece_param(3, input)
+        print('queen', sum(input[ 64 * 4: 64 * 4 + 64]) / 64.)
+        print_piece_param(4, input)
+        print('king', sum(input[ 64 * 5: 64 * 5 + 64]) / 64.)
+        print_piece_param(5, input)
+        print('pawns-opposite', sum(input[ 64 * 6 + 8: 64 * 6 + 64 - 8]) / (64. - 16.))
+        print_piece_param(6, input)
+        print('knights-opposite', sum(input[ 64 * 7: 64 * 7 + 64]) / 64.)
+        print_piece_param(7, input)
+        print('bishops-opposite', sum(input[ 64 * 8: 64 * 8 + 64]) / 64.)
+        print_piece_param(8, input)
+        print('rook-opposite', sum(input[ 64 * 9: 64 * 9 + 64]) / 64.)
+        print_piece_param(9, input)
+        print('queen-opposite', sum(input[ 64 * 10: 64 * 10 + 64]) / 64.)
+        print_piece_param(10, input)
+        print('king-opposite', sum(input[ 64 * 11: 64 * 11 + 64]) / 64.)
+        print_piece_param(11, input)

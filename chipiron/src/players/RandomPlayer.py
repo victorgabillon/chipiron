@@ -1,8 +1,7 @@
-from src.players.player import Player
 from random import choice
 
 
-class RandomPlayer(Player):
+class RandomPlayer:
 
     def __init__(self):
         pass
