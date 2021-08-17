@@ -1,4 +1,3 @@
-from src.players.player import Player
 from src.players.treevaluebuilders.trees.opening_instructions import OpeningInstructor
 import random
 import global_variables
@@ -6,7 +5,7 @@ from src.players.treevaluebuilders.notations_and_statics import softmax
 from src.players.treevaluebuilders.stopping_criterion import create_stopping_criterion
 
 
-class TreeAndValuePlayer(Player):
+class TreeAndValuePlayer:
     # at the moment it look like i do not need this class i could go directly
     # for the tree builder no? think later bout that? maybe one is for multi round and the other is not?
 
@@ -55,7 +54,7 @@ class TreeAndValuePlayer(Player):
 
                 softmax_ = softmax(values, temperature)
                 print(values)
-                print([i / sum(softmax_) for i in softmax_], sum([i / sum(softmax_) for i in softmax_]))
+                print('SOFTMAX',temperature, [i / sum(softmax_) for i in softmax_], sum([i / sum(softmax_) for i in softmax_]))
                 # if random.random()<.1:
                 #   input()
                 move_as_list = random.choices(list(self.tree.root_node.moves_children.keys()), weights=softmax_, k=1)
@@ -124,3 +123,5 @@ class TreeAndValuePlayer(Player):
     def print_info(self):
         super().print_info()
         print('type: Tree and Value')
+
+

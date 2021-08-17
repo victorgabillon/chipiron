@@ -15,11 +15,11 @@ class LearnNNScript(Script):
     def __init__(self):
         super().__init__()
         self.nn = NetPP2D2_2('', 'nn_pp2d2_2/param_1000000_movinglrTTTT.pt')
-        self.nn.load_or_init_weights()
+        self.nn.load_from_file_or_init_weights(authorisation_to_create_file = True)
         self.nn.print_param()
         self.nn_trainer = NNPytorchTrainer(self.nn)
         self.stockfish_boards_train = FenAndValueDataSet(
-            file_name='/home/victor/goodgames_plusvariation_stockfish_eval_train_1000000',
+            file_name='/home/victor/goodgames_plusvariation_stockfish_eval_train_10000000',
             preprocessing=True,
             transform_board_function=self.nn.transform_board_function,
             transform_value_function='stockfish')

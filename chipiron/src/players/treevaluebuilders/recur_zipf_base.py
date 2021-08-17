@@ -32,7 +32,7 @@ class RecurZipfBase(TreeAndValuePlayer):
         self.move_explorer = ZipfMoveExplorer(arg['move_explorer_priority'])
 
     def create_tree(self, board):
-        return RecurZipfBaseTree(self.environment, self.board_evaluators_wrapper, board)
+        return RecurZipfBaseTree(self.board_evaluators_wrapper, board)
 
     def choose_node_and_move_to_open(self):
         # todo maybe proportions and proportions can be valuesorted dict with smart updates

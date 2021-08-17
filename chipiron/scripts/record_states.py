@@ -1,11 +1,10 @@
 import pandas as pd
 import yaml
-from src.games.play_one_game import PlayOneGame
-from src.players import create_player
-from src.chessenvironment.chess_environment import ChessEnvironment
+from src.games.game_manager import GameManager
+from src.players.player import Player
 from src.players.boardevaluators.syzygy import Syzygy
 import global_variables
-
+import os
 
 class RecordStates:
 
@@ -13,15 +12,19 @@ class RecordStates:
         global_variables.deterministic_behavior = False
         global_variables.profiling_bool = False
 
-        file_name_player_state_explorer = 'ZipfSequool.yaml'
-        path_player_state_explorer = 'chipiron/runs/players/' + file_name_player_state_explorer
-        exploration_power = 1000
+        self.algo_name = 'RecurZipfBase'
+        self.tree_moves = 1000
+        self.temperature = 14
+
+        file_name_player_state_explorer = self.algo_name + '.yaml'
+        path_player_state_explorer = 'chipiron/runs/players/best_players/explore_bests/RecurZipfBase.yaml'# + file_name_player_state_explorer
 
         with open(path_player_state_explorer, 'r') as filePlayer_state_explorer:
             args_player_state_explorer = yaml.load(filePlayer_state_explorer, Loader=yaml.FullLoader)
             print('@~', args_player_state_explorer)
 
-        args_player_state_explorer['tree_builder']['tree_move_limit'] = exploration_power
+        args_player_state_explorer['tree_builder']['tree_move_limit'] = self.tree_moves
+        args_player_state_explorer['tree_builder']['move_selection_rule']['temperature'] = self.temperature
 
         file_game_name = 'setting_navo.yaml'
         path_game_setting = 'chipiron/runs/GameSettings/' + file_game_name
@@ -31,13 +34,20 @@ class RecordStates:
             print(self.args_game)
 
         self.chess_simulator = ChessEnvironment()
-        self.syzygy = Syzygy(self.chess_simulator,'')
+        self.syzygy = Syzygy(self.chess_simulator, '')
 
-        self.player_one = create_player(args_player_state_explorer, self.chess_simulator, self.syzygy)
-        self.player_two = create_player(args_player_state_explorer, self.chess_simulator, self.syzygy)
+        self.player_one = Player(args_player_state_explorer, self.chess_simulator, self.syzygy)
+        self.player_two = Player(args_player_state_explorer, self.chess_simulator, self.syzygy)
 
         global_variables.init()  # global variables
 
+        self.folder_name = 'chipiron/data/states/states_from_fixed_policy/' + self.algo_name + '-' + str(
+            self.tree_moves) + '-' + str(self.temperature)
+        os.mkdir(self.folder_name)
+        self.data_state_filname = self.folder_name + 'states.data'
+        player_filename = self.folder_name + '/player_info.yaml'
+        with open(player_filename, 'w') as out_file:
+            out_file.write(yaml.dump(self.player_one.arg))
         assert (not global_variables.deterministic_behavior)
         assert (not global_variables.profiling_bool)
 
@@ -58,11 +68,9 @@ class RecordStates:
                     list_of_new_rows.append(new_row)
 
             print('@@@@@@@@@', res)
-            data_frame_file_name = 'chipiron/data/states_from_given_policy/states_from_zipf_sequool.data'
-
 
             try:
-                data_frame_states = pd.read_pickle(data_frame_file_name)
+                data_frame_states = pd.read_pickle(self.data_state_filname)
             except:
                 data_frame_states = None
 
@@ -71,12 +79,12 @@ class RecordStates:
             print('new_data_frame_states', new_data_frame_states)
 
             if data_frame_states is None:
-                new_data_frame_states.to_pickle(data_frame_file_name)
+                new_data_frame_states.to_pickle(self.data_state_filname)
                 print('new_data_frame_states', new_data_frame_states)
             else:
                 frames = [data_frame_states, new_data_frame_states]
                 concat_data_frame_states = pd.concat(frames, ignore_index=True)
                 print('concat_data_frame_states', concat_data_frame_states)
                 print(type(concat_data_frame_states.iloc[0]['fen']))
-                concat_data_frame_states.to_pickle(data_frame_file_name)
+                concat_data_frame_states.to_pickle(self.data_state_filname)
 

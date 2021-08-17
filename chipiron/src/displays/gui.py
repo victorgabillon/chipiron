@@ -114,8 +114,8 @@ class MainWindow(QWidget):
         self.checkThreadTimer.timeout.connect(self.drawBoard)
         self.checkThreadTimer.start()
 
-        self.whiteishuman = self.play.play_one_game.player_white.player_name == 'Human'
-        self.blackishuman = self.play.play_one_game.player_black.player_name == 'Human'
+        self.whiteishuman = self.play.game_manager.player_white.player_name == 'Human'
+        self.blackishuman = self.play.game_manager.player_black.player_name == 'Human'
 
     def stopppy(self):
         self.threadpool.shutdown(self.worker)
@@ -160,17 +160,20 @@ class MainWindow(QWidget):
                                 global_variables.global_lock.acquire()
                                 try:
                                     if move in self.board.legal_moves:
+                                        print('66',self.board)
+
                                         # self.board.push(move)
                                         self.play.play_one_game.game.play(move)
                                         self.drawBoard()
-                                        player.human_played = True
-                                    if move_promote in self.board.legal_moves:
+                                        player.main_move_selector.human_played = True
+                                    elif move_promote in self.board.legal_moves:
                                         self.choicePromote()
                                         self.play.play_one_game.game.play(self.move_promote_asked)
                                         self.drawBoard()
-                                        player.human_played = True
+                                        player.main_move_selector.human_played = True
                                         print(move)
                                     else:
+                                        print('55',self.board)
                                         print('Looks like a wrong move.', move, self.board.legal_moves)
                                 finally:
                                     if global_variables.global_lock.locked():
@@ -233,7 +236,7 @@ class MainWindow(QWidget):
 
 
     def goplay(self):
-        self.play.play_the_match()
+        self.play.play_one_match()
     
     def startPlayThread(self):
         print('startPlayThread()')
@@ -253,21 +256,21 @@ class MainWindow(QWidget):
         if not global_variables.global_lock.locked():
             global_variables.global_lock.acquire()
             try:
-                self.board = self.play.play_one_game.game.board.chess_board
+                self.board = self.play.game_manager.board
                 self.boardSvg = self.board._repr_svg_().encode("UTF-8")
                 self.drawBoardSvg = self.widgetSvg.load(self.boardSvg)
 
-                self.closeButton2.setText('White: ' + self.play.play_one_game.player_white.player_name)  # text
-                self.closeButton3.setText('Black: ' + self.play.play_one_game.player_black.player_name)  # text
+                self.closeButton2.setText('White: ' + self.play.game_manager.player_white.player_name)  # text
+                self.closeButton3.setText('Black: ' + self.play.game_manager.player_black.player_name)  # text
                 self.closeButton4.setText(
                     'Score: ' + str(self.play.match_results.get_player_one_wins()) + '-'
                     + str(self.play.match_results.get_player_two_wins()) + '-'
                     + str(self.play.match_results.get_draws()))  # text
 
-                self.closeButton5.setText('Round: ' + str(self.play.play_one_game.game.board.chess_board.fullmove_number))  # text
-                self.closeButton6.setText('fen: ' + str(self.play.play_one_game.game.board.chess_board.fen()))  # text
+                self.closeButton5.setText('Round: ' + str(self.play.game_manager.board.fullmove_number))  # text
+                self.closeButton6.setText('fen: ' + str(self.play.game_manager.board.fen()))  # text
                 if not self.first:
-                    self.closeButton7.setText('eval: ' + str(self.play.play_one_game.stockfish_eval()))  # text
+                    self.closeButton7.setText('eval: ' + str(self.play.game_manager.stockfish_eval()))  # text
                 self.first =False
 
 

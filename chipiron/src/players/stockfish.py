@@ -1,8 +1,7 @@
-from src.players.player import Player
 import chess.engine
 
 
-class Stockfish(Player):
+class Stockfish:
 
     def __init__(self, options, environment):
         self.engine = chess.engine.SimpleEngine.popen_uci("/home/victor/stockfish_13_linux_x64/stockfish_13_linux_x64")

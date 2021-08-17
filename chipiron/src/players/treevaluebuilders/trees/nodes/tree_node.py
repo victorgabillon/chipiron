@@ -18,7 +18,7 @@ class TreeNode:
         assert (isinstance(half_move, int))
 
         # the color of the player that has to move in the board
-        self.player_to_move = self.board.chess_board.turn
+        self.player_to_move = self.board.turn
 
         # bijection dictionary between moves and children nodes. node is set to None is not created
         self.moves_children = bidict({})
@@ -70,7 +70,7 @@ class TreeNode:
         self.test_all_legal_moves_generated()
 
     def dot_description(self):
-        return 'id:' + str(self.id) + ' dep: ' + str(self.half_move) + '\nfen:' + str(self.board.chess_board)
+        return 'id:' + str(self.id) + ' dep: ' + str(self.half_move) + '\nfen:' + str(self.board)
 
     def test_all_legal_moves_generated(self):
         # print('test_all_legal_moves_generated')
@@ -86,7 +86,7 @@ class TreeNode:
             if move_not_in == []:
                 pass
                 # print('test', move_not_in, list(self.board.get_legal_moves()), self.moves_children)
-                # print(self.board.chess_board)
+                # print(self.board)
             assert (move_not_in != [] or legal_moves == [])
 
     def get_descendants(self):

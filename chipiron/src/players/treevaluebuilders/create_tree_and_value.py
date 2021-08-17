@@ -4,17 +4,15 @@ from src.players.boardevaluators.create_board_evaluator import create_board_eval
 from src.players.treevaluebuilders.recur_zipf import RecurZipf
 from src.players.treevaluebuilders.recur_zipf_base import RecurZipfBase
 from src.players.treevaluebuilders.recur_zipf_base2 import RecurZipfBase2
-
 from src.players.treevaluebuilders.verti_zipf import VertiZipf
 from src.players.treevaluebuilders.recur_verti_zipf import RecurVertiZipf
 from src.players.treevaluebuilders.sequool import Sequool
 from src.players.treevaluebuilders.sequool2 import Sequool2
 from src.players.treevaluebuilders.zipf_sequool2 import ZipfSequool2
-
 from src.players.treevaluebuilders.zipf_sequool import ZipfSequool
 
 
-def create_tree_and_value_builders(arg, chess_simulator,syzygy):
+def create_tree_and_value_builders(arg, syzygy):
     tree_builder_type = arg['tree_builder']['type']
 
     if tree_builder_type == 'Uniform':
@@ -40,7 +38,6 @@ def create_tree_and_value_builders(arg, chess_simulator,syzygy):
     else:
         sys.exit('tree builder: can not find ' + arg['tree_builder']['type'])
 
-    tree_builder.environment = chess_simulator
     tree_builder.board_evaluators_wrapper = create_board_evaluator(arg['board_evaluator'], syzygy)
 
     return tree_builder

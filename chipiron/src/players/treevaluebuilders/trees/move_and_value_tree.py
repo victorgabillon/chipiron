@@ -12,10 +12,10 @@ from src.players.treevaluebuilders.trees.updates import UpdateInstructionsBatch
 
 class MoveAndValueTree:
 
-    def __init__(self, environment, board_evaluator, starting_board=None):
+    def __init__(self,  board_evaluator, starting_board=None):
         if starting_board is not None:  # for treev isualizer...
             # the tree is built at half_move  self.half_move
-            self.tree_root_half_move = starting_board.chess_board.ply()
+            self.tree_root_half_move = starting_board.ply()
 
         # number of nodes in the tree
         self.nodes_count = 0
@@ -27,8 +27,6 @@ class MoveAndValueTree:
         self.move_count = 0
 
         self.board_evaluator = board_evaluator
-
-        self.environment = environment
 
         # to be defined later ...
         self.root_node = None
@@ -84,9 +82,8 @@ class MoveAndValueTree:
     def open_node_move(self, parent_node, move):
         assert (not parent_node.is_over())
         assert (move not in parent_node.moves_children)
-        next_board, board_modifications = self.environment.step_create(board=parent_node.board,
-                                                                       move=move,
-                                                                       depth=self.node_depth(parent_node))
+        next_board, board_modifications = parent_node.board.move_and_create(move=move,
+                                                                            depth=self.node_depth(parent_node))
         child_node = self.find_or_create_node(next_board, board_modifications, parent_node.half_move + 1, parent_node)
 
         # add it to the list of opened move and out of the non-opened moves

@@ -9,7 +9,7 @@ from src.players.boardevaluators.board_evaluator import BoardEvaluator
 
 
 class NNBoardEval(BoardEvaluator):
-    def __init__(self, arg):
+    def __init__(self, arg, create_file=False):
         if arg['subtype'] == 'pp1':
             self.net = NetPP1('', arg['nn_param_file_name'])
         elif arg['subtype'] == 'pp2':
@@ -18,7 +18,9 @@ class NNBoardEval(BoardEvaluator):
             self.net = NetPP2D2('', arg['nn_param_file_name'])
         elif arg['subtype'] == 'pp2d2_2':
             self.net = NetPP2D2_2('', arg['nn_param_file_name'])
-        self.net.load_or_init_weights()
+        self.net.load_from_file_or_init_weights(create_file)
+
+
         self.net.eval()
         self.my_scripted_model = torch.jit.script(self.net)
 
@@ -37,7 +39,7 @@ class NNBoardEval(BoardEvaluator):
         return value_white
 
     def convert_value_for_mover_viewpoint_to_value_white(self, node, value_from_mover_view_point):
-        if node.board.chess_board.turn == chess.BLACK:
+        if node.board.turn == chess.BLACK:
             value_white = -value_from_mover_view_point
         else:
             value_white = value_from_mover_view_point
@@ -51,10 +53,10 @@ class NNBoardEval(BoardEvaluator):
         self.my_scripted_model.eval()
         torch.no_grad()
         output_layer = self.my_scripted_model(input_layers)
-      #  print('$$%%', output_layer, len(not_over_nodes))
+        #  print('$$%%', output_layer, len(not_over_nodes))
         for index, node_not_over in enumerate(not_over_nodes):
             predicted_value_from_mover_view_point = output_layer[index].item()
-            #print('%%%##~', predicted_value_from_mover_view_point)
+            # print('%%%##~', predicted_value_from_mover_view_point)
             value_white_eval = self.convert_value_for_mover_viewpoint_to_value_white(node_not_over,
                                                                                      predicted_value_from_mover_view_point)
             processed_evaluation = self.process_evalution_not_over(value_white_eval, node_not_over)

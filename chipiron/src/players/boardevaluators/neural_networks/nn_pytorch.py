@@ -1,3 +1,5 @@
+import sys
+
 import torch
 import torch.nn as nn
 import chess
@@ -9,7 +11,7 @@ class BoardNet(nn.Module):
         self.path_to_param_file = path_to_main_folder + 'chipiron/runs/players/board_evaluators/nn_pytorch/' \
                                   + relative_path_file
 
-    def load_or_init_weights(self):
+    def load_from_file_or_init_weights(self, authorisation_to_create_file):
         print('load_or_init_weights')
         try:  # load
             with open(self.path_to_param_file, 'rb') as fileNNR:
@@ -17,10 +19,15 @@ class BoardNet(nn.Module):
                 self.load_state_dict(torch.load(fileNNR))
 
         except EnvironmentError:  # init
-            print('creating a new param file')
-            with open(self.path_to_param_file, 'wb') as fileNNW:
-                with torch.no_grad():
-                    self.init_weights(fileNNW)
+            print('no file',self.path_to_param_file)
+            if authorisation_to_create_file:
+                print('creating a new param file')
+                with open(self.path_to_param_file, 'wb') as fileNNW:
+                    with torch.no_grad():
+                        self.init_weights(fileNNW)
+            else:
+                sys.exit('Error: no NN weights file and no rights to create it')
+
 
     def safe_save(self):
         try:

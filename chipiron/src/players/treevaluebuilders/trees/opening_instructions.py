@@ -83,7 +83,7 @@ class OpeningInstructor:
         if self.opening_type == 'all_children':
             node_to_open.all_legal_moves_generated = True
             opening_instructions_batch = OpeningInstructionsBatch()
-            moves_to_play = list(node_to_open.board.get_legal_moves())
+            moves_to_play = list(node_to_open.board.legal_moves)
             if not global_variables.deterministic_behavior:
                 # this shuffling add randomness to the playing style
                 random.shuffle(moves_to_play)
