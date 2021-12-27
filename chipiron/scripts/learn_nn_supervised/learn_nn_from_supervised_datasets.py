@@ -1,21 +1,30 @@
 from src.players.boardevaluators.neural_networks.nn_trainer import NNPytorchTrainer
-from src.players.boardevaluators.neural_networks.nn_pp2 import NetPP2
-from src.players.boardevaluators.neural_networks.nn_pp2d2 import NetPP2D2
-from src.players.boardevaluators.neural_networks.nn_pp2d2_2 import NetPP2D2_2
-from src.players.boardevaluators.neural_networks.nn_pp1 import NetPP1
-
+from src.players.boardevaluators.neural_networks.factory import create_nn
+import time
 from scripts.script import Script
-from src.players.boardevaluators.datatsets.datasets import FenAndValueDataSet
+from src.players.boardevaluators.datasets.datasets import FenAndValueDataSet
 from torch.utils.data import DataLoader
 import copy
 
 
 class LearnNNScript(Script):
+    """
+    Script that learns a NN from a supervised dataset pairs of boards and evaluation
+
+    """
+    default_param_dict = Script.default_param_dict | \
+                         {'nn_type': 'NetPP2',
+                          'config_file_name': 'chipiron/scripts/one_match/exp_options.yaml',
+                           }
 
     def __init__(self):
         super().__init__()
-        self.nn = NetPP2D2_2('', 'nn_pp2d2_2/param_1000000_movinglrTTTT.pt')
-        self.nn.load_from_file_or_init_weights(authorisation_to_create_file = True)
+        nn = create_nn(arg=,create_file=)
+        nn = create_nn(args['nn_type'], args['nn_weights_path'])
+        script = LearnNNScript()
+
+        self.nn = NetPP2D2_2('', 'nn_pp2d2_2/paramTEST.pt')
+        self.nn.load_from_file_or_init_weights(authorisation_to_create_file=True)
         self.nn.print_param()
         self.nn_trainer = NNPytorchTrainer(self.nn)
         self.stockfish_boards_train = FenAndValueDataSet(
@@ -30,7 +39,9 @@ class LearnNNScript(Script):
             transform_board_function=self.nn.transform_board_function,
             transform_value_function='stockfish')
 
+        start_time = time.time()
         self.stockfish_boards_train.load()
+        print("--- LOAD %s seconds ---" % (time.time() - start_time))
         self.stockfish_boards_test.load()
 
         batch_size_train = 32
@@ -50,18 +61,23 @@ class LearnNNScript(Script):
         last_train_losses = [0] * size_last_losses
         for i in range(100):
             for i_batch, sample_batched in enumerate(self.data_loader_stockfish_boards_train):
-                print('rrrr',i_batch)
+                # print('rrrr',i_batch)
                 range_loss = 10000
-                if count % range_loss == 0 and count > 0 :
+                if count % range_loss == 0 and count > 0:
                     last_train_losses[big_count % size_last_losses] = sum_loss
                     big_count += 1
-                    big_count_loss +=1
+                    big_count_loss += 1
                     print('P', count)
                     print('training loss', sum_loss / range_loss, sum_loss)
                     print('last_train_losses', last_train_losses)
-                    print('decaying the learning rate to', self.nn_trainer.scheduler.get_last_lr(), big_count_loss > size_last_losses and sum_loss > last_train_losses[(big_count_loss + 1) % size_last_losses],big_count_loss > size_last_losses , sum_loss > last_train_losses[(big_count_loss + 1) % size_last_losses],big_count_loss , size_last_losses , sum_loss , last_train_losses[(big_count_loss + 1) % size_last_losses])
+                    print('decaying the learning rate to', self.nn_trainer.scheduler.get_last_lr(),
+                          big_count_loss > size_last_losses and sum_loss > last_train_losses[
+                              (big_count_loss + 1) % size_last_losses], big_count_loss > size_last_losses,
+                          sum_loss > last_train_losses[(big_count_loss + 1) % size_last_losses], big_count_loss,
+                          size_last_losses, sum_loss, last_train_losses[(big_count_loss + 1) % size_last_losses])
 
-                    if big_count_loss > size_last_losses and sum_loss > last_train_losses[(big_count_loss + 1) % size_last_losses]:
+                    if big_count_loss > size_last_losses and sum_loss > last_train_losses[
+                        (big_count_loss + 1) % size_last_losses]:
                         self.nn_trainer.scheduler.step()
                         print('decaying the learning rate to', self.nn_trainer.scheduler.get_last_lr())
                         big_count_loss = 0
@@ -82,7 +98,6 @@ class LearnNNScript(Script):
                         sum_loss_test += loss_test
                         count_test += 1
                     print('test error', float(sum_loss_test / float(count_test)))
-
 
                 count += 1
 

@@ -1,5 +1,5 @@
 import chess
-from src.players.boardevaluators.syzygy import Syzygy
+from src.players.boardevaluators.syzygy import SyzygyTable
 
 DISCOUNT = .999999999999  # todo play with this
 
@@ -24,7 +24,7 @@ class BoardEvaluatorsWrapper:
         self.board_evaluator = board_evaluator
         self.syzygy_evaluator = syzygy
         self.evaluation_queries = EvaluationQueries()
-        assert (isinstance(syzygy, Syzygy))
+        assert (isinstance(syzygy, SyzygyTable))
 
     def value_white(self, node):
         value_white = self.syzygy_value_white(node.board)

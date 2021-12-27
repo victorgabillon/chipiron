@@ -1,6 +1,6 @@
 import sys
 from src.players.treevaluebuilders.uniform import Uniform
-from src.players.boardevaluators.create_board_evaluator import create_board_evaluator
+from src.players.boardevaluators.factory import create_board_evaluator
 from src.players.treevaluebuilders.recur_zipf import RecurZipf
 from src.players.treevaluebuilders.recur_zipf_base import RecurZipfBase
 from src.players.treevaluebuilders.recur_zipf_base2 import RecurZipfBase2

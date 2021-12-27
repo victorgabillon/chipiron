@@ -1,18 +1,20 @@
-from scripts.one_match import OneMatchScript
+import sys
+from scripts.one_match.one_match import OneMatchScript
 from scripts.replay_game import ReplayGameScript
 from scripts.tree_visualizer import VisualizeTreeScript
-from scripts.learn_nn_from_supervised_datasets import LearnNNScript
+from scripts.learn_nn_supervised.learn_nn_from_supervised_datasets import LearnNNScript
 from scripts.record_states import RecordStates
 from scripts.record_states_eval_stockfish_1 import RecordStateEvalStockfish1
 from scripts.runtheleague import RuntheLeagueScript
 
-import sys
-import global_variables
 
 def main():
-    global_variables.init()
-    # print command line arguments
+
+    # capture and remove the first argument
     script = sys.argv[1:][0]
+    sys.argv = [sys.argv[0]] + sys.argv[2:]
+
+    # launch the relevant script
     if script == 'one_match':
         script_object = OneMatchScript()
     elif script == 'visualize_tree':
@@ -30,9 +32,11 @@ def main():
     else:
         raise Exception(' cannot find ', script)
 
+    # run the script
     script_object.run()
-    script_object.terminate()
 
+    # terminate the script
+    script_object.terminate()
 
 
 if __name__ == "__main__":

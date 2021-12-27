@@ -1,6 +1,6 @@
 from src.players.treevaluebuilders.trees.nodes.tree_node import TreeNode
 import chess
-import random
+import numpy as np
 import global_variables
 
 
@@ -40,7 +40,7 @@ class OpeningInstructionsBatch:
 
     def pop_items(self, how_many: int):
         how_many = min(how_many, len(self.batch))
-        popped = OpeningInstructionsBatch()  #todo is there a faster way to copy?
+        popped = OpeningInstructionsBatch()  # todo is there a faster way to copy?
         for pop in range(how_many):
             key, value = self.batch.popitem()
             popped[key] = value
@@ -75,8 +75,9 @@ class OpeningInstructions:
 
 class OpeningInstructor:
 
-    def __init__(self, opening_type):
+    def __init__(self, opening_type, seed=0):
         self.opening_type = opening_type
+        self.random_state = np.random.RandomState(seed=seed)
 
     def instructions_to_open_all_moves(self, node_to_open):
         assert (not node_to_open.all_legal_moves_generated)
@@ -84,9 +85,10 @@ class OpeningInstructor:
             node_to_open.all_legal_moves_generated = True
             opening_instructions_batch = OpeningInstructionsBatch()
             moves_to_play = list(node_to_open.board.legal_moves)
-            if not global_variables.deterministic_behavior:
-                # this shuffling add randomness to the playing style
-                random.shuffle(moves_to_play)
+
+            # this shuffling add randomness to the playing style
+            self.random_state.shuffle(moves_to_play)
+
             for move_to_play in moves_to_play:
                 # at the moment it looks redundant keys are almost the same as values but its clean
                 # the keys are here for fast and redundant proof insertion

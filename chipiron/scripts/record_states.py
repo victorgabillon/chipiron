@@ -2,14 +2,13 @@ import pandas as pd
 import yaml
 from src.games.game_manager import GameManager
 from src.players.player import Player
-from src.players.boardevaluators.syzygy import Syzygy
+from src.players.boardevaluators.syzygy import SyzygyTable
 import global_variables
 import os
 
 class RecordStates:
 
     def __init__(self):
-        global_variables.deterministic_behavior = False
         global_variables.profiling_bool = False
 
         self.algo_name = 'RecurZipfBase'
@@ -34,7 +33,7 @@ class RecordStates:
             print(self.args_game)
 
         self.chess_simulator = ChessEnvironment()
-        self.syzygy = Syzygy(self.chess_simulator, '')
+        self.syzygy = SyzygyTable(self.chess_simulator, '')
 
         self.player_one = Player(args_player_state_explorer, self.chess_simulator, self.syzygy)
         self.player_two = Player(args_player_state_explorer, self.chess_simulator, self.syzygy)

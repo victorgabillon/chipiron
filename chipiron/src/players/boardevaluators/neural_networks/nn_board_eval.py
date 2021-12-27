@@ -1,28 +1,14 @@
 import torch
 import chess
-from src.players.boardevaluators.neural_networks.nn_pp1 import NetPP1
-from src.players.boardevaluators.neural_networks.nn_pp2 import NetPP2
-from src.players.boardevaluators.neural_networks.nn_pp2d2 import NetPP2D2
-from src.players.boardevaluators.neural_networks.nn_pp2d2_2 import NetPP2D2_2
-
 from src.players.boardevaluators.board_evaluator import BoardEvaluator
 
 
 class NNBoardEval(BoardEvaluator):
-    def __init__(self, arg, create_file=False):
-        if arg['subtype'] == 'pp1':
-            self.net = NetPP1('', arg['nn_param_file_name'])
-        elif arg['subtype'] == 'pp2':
-            self.net = NetPP2('', arg['nn_param_file_name'])
-        elif arg['subtype'] == 'pp2d2':
-            self.net = NetPP2D2('', arg['nn_param_file_name'])
-        elif arg['subtype'] == 'pp2d2_2':
-            self.net = NetPP2D2_2('', arg['nn_param_file_name'])
-        self.net.load_from_file_or_init_weights(create_file)
+    """ The Generic Neural network class for board evaluation"""
 
-
-        self.net.eval()
-        self.my_scripted_model = torch.jit.script(self.net)
+    def __init__(self, net):
+        self.net = net
+        self.my_scripted_model = torch.jit.script(net)
 
     def compute_representation(self, node, parent_node, board_modifications):
         self.net.compute_representation(node, parent_node, board_modifications)
@@ -53,7 +39,7 @@ class NNBoardEval(BoardEvaluator):
         self.my_scripted_model.eval()
         torch.no_grad()
         output_layer = self.my_scripted_model(input_layers)
-        #  print('$$%%', output_layer, len(not_over_nodes))
+        print('$$%%', input_layers, output_layer, len(not_over_nodes))
         for index, node_not_over in enumerate(not_over_nodes):
             predicted_value_from_mover_view_point = output_layer[index].item()
             # print('%%%##~', predicted_value_from_mover_view_point)

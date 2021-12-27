@@ -126,8 +126,8 @@ class Window(QtWidgets.QWidget):
         HBlayout.addWidget(self.editPixInfo)
         VBlayout.addLayout(HBlayout)
 
-        self.tree = MoveAndValueTree(None, None, None)
-        pic = pickle.load(open("chipiron/runs/treedisplays/TreeData_1white-1000.td", "rb"))
+        self.tree = MoveAndValueTree( None, None)
+        pic = pickle.load(open("chipiron/runs/treedisplays/TreeData_3black-#.td", "rb"))
         self.tree.descendants = pic[0]
         self.tree.root_node = pic[1]
 

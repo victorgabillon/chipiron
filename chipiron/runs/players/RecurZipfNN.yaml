@@ -1,7 +1,0 @@
-name: RecurZipfNN
-type: TreeAndValue
-treeBuilder: RecurZipf
-opening: all
-boardEvaluator:
-  type: NN1
-  NNname: NN101

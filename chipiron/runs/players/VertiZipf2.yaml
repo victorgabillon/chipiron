@@ -1,4 +1,0 @@
-type: TreeAndValue
-treeBuilder: VertiZipf2
-opening: all
-boardEvaluator: BasicEvaluation

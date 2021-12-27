@@ -1,4 +1,0 @@
-type: TreeAndValue
-treeBuilder: RandomExplorer
-opening: one
-boardEvaluator: BasicEvaluation
