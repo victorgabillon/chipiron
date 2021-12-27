@@ -12,7 +12,7 @@ class Player:
     def __init__(self, arg, syzygy):
         print(arg)
         self.arg = arg
-        self.player_name = arg['name']
+        self.player_name_id = arg['name']
 
         self.main_move_selector = None
         if arg['type'] == 'RandomPlayer':
@@ -37,12 +37,9 @@ class Player:
         """ returns the best move computed by the player.
         The player has the option to ask the syzygy table to play it"""
 
-        if global_variables.deterministic_mode == global_variables.SEED_FIXED_EVERY_MOVE:
-            global_variables.init()
-
         # if there is only one possible legal move in the position, do not think, choose it.
         all_legal_moves = list(board.legal_moves)
-        if len(all_legal_moves) == 1 and self.player_name != 'Human':
+        if len(all_legal_moves) == 1 and self.player_name_id != 'Human':
             return all_legal_moves[0]
 
         # if the play with syzygy option is on test if the position is in the database to play syzygy

@@ -1,20 +1,23 @@
 from src.players.treevaluebuilders.trees.opening_instructions import OpeningInstructor
+import numpy as np
 import random
 import global_variables
 from src.players.treevaluebuilders.notations_and_statics import softmax
 from src.players.treevaluebuilders.stopping_criterion import create_stopping_criterion
-
+from src.players.boardevaluators.over_event import OverEvent
 
 class TreeAndValuePlayer:
     # at the moment it look like i do not need this class i could go directly
     # for the tree builder no? think later bout that? maybe one is for multi round and the other is not?
 
-    def __init__(self, arg):
+    def __init__(self, arg, seed):
         self.tree = None
         self.arg = arg
         self.tree_move_limit = arg['tree_move_limit'] if 'tree_move_limit' in arg else None
-        self.opening_instructor = OpeningInstructor(arg['opening_type']) if 'opening_type' in arg else None
+        self.opening_instructor = OpeningInstructor(arg['opening_type'],seed=seed) if 'opening_type' in arg else None
         self.stopping_criterion = create_stopping_criterion(self, arg['stopping_criterion'])
+        self.random_state = np.random.RandomState(seed=seed)
+
 
     def continue_exploring(self):
         return self.stopping_criterion.should_we_continue()
@@ -27,7 +30,7 @@ class TreeAndValuePlayer:
 
         else:
             current_best_move = '?'
-        if random.random() < .05:
+        if self.random_state.random_sample() < .05:
             str_progress = self.stopping_criterion.get_string_of_progress()
             print(str_progress,
                   '| current best move:', current_best_move, '| current white value:',
@@ -39,13 +42,13 @@ class TreeAndValuePlayer:
         # todo the preference for action that have been explored more is not super clear, is it weel implemented, ven for debug?
 
         # for debug we fix the choice in the next lines
-        if global_variables.deterministic_behavior:
-            print(' FIXED CHOICE FOR DEBUG')
-            best_child = self.tree.root_node.get_all_of_the_best_moves(how_equal='considered_equal')[-1]
-            print('We have as best: ', self.tree.root_node.moves_children.inverse[best_child])
-            best_move = self.tree.root_node.moves_children.inverse[best_child]
+        # if global_variables.deterministic_behavior:
+        #     print(' FIXED CHOICE FOR DEBUG')
+        #     best_child = self.tree.root_node.get_all_of_the_best_moves(how_equal='considered_equal')[-1]
+        #     print('We have as best: ', self.tree.root_node.moves_children.inverse[best_child])
+        #     best_move = self.tree.root_node.moves_children.inverse[best_child]
 
-        else:  # normal behavior
+        if True:  # normal behavior
             selection_rule = self.arg['move_selection_rule']['type']
             if selection_rule == 'softmax':
                 temperature = self.arg['move_selection_rule']['temperature']
@@ -65,14 +68,14 @@ class TreeAndValuePlayer:
                 print('We have as bests: ',
                       [self.tree.root_node.moves_children.inverse[best] for best in best_root_children])
                 best_child = random.choice(best_root_children)
+                if self.tree.root_node.over_event.how_over == OverEvent.WIN:
+                  assert(best_child.over_event.how_over == OverEvent.WIN)
                 best_move = self.tree.root_node.moves_children.inverse[best_child]
             else:
                 raise (Exception('move_selection_rule is not valid it seems'))
         return best_move
 
     def tree_explore(self, board):
-        import time
-        time.sleep(1)
         self.tree = self.create_tree(board)
         self.tree.add_root_node(board)
 
@@ -84,7 +87,7 @@ class TreeAndValuePlayer:
 
             opening_instructions_batch = self.choose_node_and_move_to_open()
 
-           # if self.count %1000 ==0:
+            #if self.count %100 ==0:
             #  self.tree.save_raw_data_to_file(self.count)
             #self.count += 1
             #   input("Press Enter to continue...")
@@ -106,7 +109,7 @@ class TreeAndValuePlayer:
 
         if self.tree_move_limit is not None:
             assert self.tree_move_limit == self.tree.move_count or self.tree.root_node.is_over()
-        # self.tree.save_raw_data_to_file()
+      #  self.tree.save_raw_data_to_file()
         self.tree.print_some_stats()
         for move, child in self.tree.root_node.moves_children.items():
             print(move, self.tree.root_node.moves_children[move].get_value_white(), child.over_event.get_over_tag())

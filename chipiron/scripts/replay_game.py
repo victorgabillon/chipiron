@@ -11,7 +11,7 @@ class ReplayGameScript(Script):
         super().__init__()
 
     def run(self):
-        with open('chipiron/runs/runsOutput/Friday-04-16-2021--17:09:50:556501/games/Game2_W:ZipfSequool-vs-B:RecurZipfBase.obj',
+        with open('chipiron/runs/match_outputs/Friday-04-16-2021--17:09:50:556501/games/Game2_W:ZipfSequool-vs-B:RecurZipfBase.obj',
                   'rb') as fileGame:
             chess_board = pickle.load(fileGame)
 

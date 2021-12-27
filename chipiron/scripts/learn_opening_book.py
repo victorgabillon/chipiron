@@ -2,9 +2,9 @@ import pickle
 import yaml
 from src.opening_book import OpeningBook
 from src.games.match_manager import MatchManager
-from src.players import create_player
+from src.players import factory
 from src.chessenvironment.chess_environment import ChessEnvironment
-from src.players.boardevaluators.syzygy import Syzygy
+from src.players.boardevaluators.syzygy import SyzygyTable
 import global_variables
 
 try:
@@ -30,7 +30,7 @@ fileGame = args_match['gameSettingFile']
 path_game_setting = 'runs/GameSettings/' + fileGame
 
 chess_simulator = ChessEnvironment()
-syzygy = Syzygy(chess_simulator)
+syzygy = SyzygyTable(chess_simulator)
 
 player_one = create_player(args_player_one, chess_simulator, syzygy)
 player_two = create_player(args_player_one, chess_simulator, syzygy)

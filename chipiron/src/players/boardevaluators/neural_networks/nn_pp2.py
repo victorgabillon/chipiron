@@ -5,8 +5,8 @@ from src.players.boardevaluators.neural_networks.board_to_tensor import board_to
     node_to_tensors_pieces_square_fast, get_tensor_from_tensors_two_sides
 
 class NetPP2(BoardNet):
-    def __init__(self, path_to_main_folder, relative_path_file):
-        super(NetPP2, self).__init__(path_to_main_folder, relative_path_file)
+    def __init__(self,  relative_path_file):
+        super(NetPP2, self).__init__( relative_path_file)
 
         self.transform_board_function = board_to_tensor_pieces_square_two_sides
         self.fc1 = nn.Linear(772, 1)

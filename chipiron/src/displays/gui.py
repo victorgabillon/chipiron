@@ -114,8 +114,8 @@ class MainWindow(QWidget):
         self.checkThreadTimer.timeout.connect(self.drawBoard)
         self.checkThreadTimer.start()
 
-        self.whiteishuman = self.play.game_manager.player_white.player_name == 'Human'
-        self.blackishuman = self.play.game_manager.player_black.player_name == 'Human'
+        self.whiteishuman = self.play.game_manager.player_white.player_name_id == 'Human'
+        self.blackishuman = self.play.game_manager.player_black.player_name_id == 'Human'
 
     def stopppy(self):
         self.threadpool.shutdown(self.worker)
@@ -260,8 +260,8 @@ class MainWindow(QWidget):
                 self.boardSvg = self.board._repr_svg_().encode("UTF-8")
                 self.drawBoardSvg = self.widgetSvg.load(self.boardSvg)
 
-                self.closeButton2.setText('White: ' + self.play.game_manager.player_white.player_name)  # text
-                self.closeButton3.setText('Black: ' + self.play.game_manager.player_black.player_name)  # text
+                self.closeButton2.setText('White: ' + self.play.game_manager.player_white.player_name_id)  # text
+                self.closeButton3.setText('Black: ' + self.play.game_manager.player_black.player_name_id)  # text
                 self.closeButton4.setText(
                     'Score: ' + str(self.play.match_results.get_player_one_wins()) + '-'
                     + str(self.play.match_results.get_player_two_wins()) + '-'

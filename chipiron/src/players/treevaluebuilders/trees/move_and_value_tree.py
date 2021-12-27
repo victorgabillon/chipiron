@@ -141,12 +141,12 @@ class MoveAndValueTree:
 
     def save_pdf_to_file(self):
         dot = self.display('pdf')
-        round_ = len(self.root_node.board.chess_board.move_stack) + 2
+        round_ = len(self.root_node.board.move_stack) + 2
         color = 'white' if self.root_node.player_to_move else 'black'
         dot.render('chipiron/runs/treedisplays/TreeVisual_' + str(int(round_ / 2)) + color + '.pdf')
 
     def save_raw_data_to_file(self, count='#'):
-        round_ = len(self.root_node.board.chess_board.move_stack) + 2
+        round_ = len(self.root_node.board.move_stack) + 2
         color = 'white' if self.root_node.player_to_move else 'black'
         filename = 'chipiron/runs/treedisplays/TreeData_' + str(int(round_ / 2)) + color + '-' + str(count) + '.td'
 

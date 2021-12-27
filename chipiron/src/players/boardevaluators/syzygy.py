@@ -2,7 +2,7 @@ import chess.syzygy
 from src.players.boardevaluators.over_event import OverEvent
 
 
-class Syzygy:
+class SyzygyTable:
 
     def __init__(self, path_to_chipiron):
         self.table_base = chess.syzygy.open_tablebase(path_to_chipiron + "chipiron/syzygy-tables/")
@@ -68,7 +68,7 @@ class Syzygy:
         return dtz
 
     def best_move(self, board):
-        all_moves = list(board.get_legal_moves())
+        all_moves = list(board.legal_moves)
 
         # avoid draws by 50 move rules in winning position, # otherwise look
         # for it to make it last and preserve pieces in case of mistake by opponent

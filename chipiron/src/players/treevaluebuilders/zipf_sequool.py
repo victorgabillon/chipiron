@@ -21,8 +21,8 @@ class IndexDescendantsTreeNode(NodeWithDescendantsNoUpdate, IndexTreeNode):
 
 class ZipfSequoolTree(MoveAndValueTree):
 
-    def __init__(self, environment, board_evaluator, board):
-        super().__init__(environment, board_evaluator, board)
+    def __init__(self,  board_evaluator, board):
+        super().__init__( board_evaluator, board)
         self.first_moves = FirstMoves()
         self.count_visits_at_depth = {}
 
@@ -138,7 +138,7 @@ class ZipfSequool(TreeAndValuePlayer):
         self.move_explorer = ProportionMoveExplorer(arg['move_explorer_priority'])
 
     def create_tree(self, board):
-        return ZipfSequoolTree(self.environment, self.board_evaluators_wrapper, board)
+        return ZipfSequoolTree(self.board_evaluators_wrapper, board)
 
     def who_is_there_smth_to_open(self, node, half_move):
         if half_move not in node.descendants_candidates_to_open:
@@ -289,7 +289,7 @@ class ZipfSequool(TreeAndValuePlayer):
         return opening_instructions
 
     def tree_explore(self, board):
-        print(board.chess_board)
+        print(board)
         self.count_refresh_index = 0
         self.next_update = 10
 

@@ -15,11 +15,13 @@ class GameManager:
 
     GAME_RESULTS = [WIN_FOR_WHITE, WIN_FOR_BLACK, DRAW] = range(3)
 
-    def __init__(self, board, syzygy, path_to_store_result, args=None, player_white=None,
+    def __init__(self, board, syzygy, output_folder_path=None, args=None, player_white=None,
                  player_black=None):
         self.board = board
         self.syzygy = syzygy
-        self.path_to_store_result = path_to_store_result
+
+        self.path_to_store_result = output_folder_path + '/games/' if output_folder_path is not None else None
+
         self.board_evaluator = Stockfish()
 
         self.args = args
@@ -59,21 +61,28 @@ class GameManager:
 
         self.allow_display()
         color_names = ['Black', 'White']
-        players = [self.player_white, self.player_black]
+        players = [self.player_black, self.player_white]
 
         half_move = self.board.ply()
-        while not self.board.is_game_over():
+        while not self.board.is_game_over() and self.game_continue_conditions():
             print('Half Move: ', half_move)
-            self.player_selects_move(players[self.board.turn], color_names[self.board.turn])
+            self.player_selects_move(player=players[self.board.turn], color_of_player_str=color_names[self.board.turn])
             self.allow_display()
             half_move += + 1
-
-            if global_variables.profiling_bool:
-                break
 
         self.tell_results()
         global_variables.global_lock.release()
         return self.simple_results()
+
+    def game_continue_conditions(self):
+        half_move = self.board.ply()
+        continue_bool = True
+        if 'max_half_move' in self.args and half_move >= self.args['max_half_move']:
+            continue_bool = False
+        return continue_bool
+
+
+
 
     def allow_display(self):
         # TODO mqke it nicer thqn thqt
@@ -82,10 +91,11 @@ class GameManager:
         global_variables.global_lock.acquire()
 
     def player_selects_move(self, player, color_of_player_str):
-        print('{} ({}) to play now...'.format(color_of_player_str, player.player_name))
+        assert(~((player == self.player_white) ^ (color_of_player_str == 'White'))+2) # xnor testting the colors
+        print('{} ({}) to play now...'.format(color_of_player_str, player.player_name_id))
         move = player.get_move(self.board, float(self.args['secondsPerMoveWhite']))
-        print('{}: {} plays {}'.format(color_of_player_str, player.player_name, move))
-        if player.player_name != 'Human':
+        print('{}: {} plays {}'.format(color_of_player_str, player.player_name_id, move))
+        if player.player_name_id != 'Human':
             if not self.board.is_legal(move):  # check if its a legal moves!!!!!!
                 raise Exception('illegal move from player white: ' + str(move))
             self.play_one_move(move)
@@ -94,7 +104,7 @@ class GameManager:
     def print_to_file(self, idx=0):
         if self.path_to_store_result is not None:
             path_file = self.path_to_store_result + '_' + str(
-                idx) + '_W:' + self.player_white.player_name + '-vs-B:' + self.player_black.player_name
+                idx) + '_W:' + self.player_white.player_name_id + '-vs-B:' + self.player_black.player_name_id
             path_file_txt = path_file + '.txt'
             path_file_obj = path_file + '.obj'
             with open(path_file_txt, 'a') as the_fileText:

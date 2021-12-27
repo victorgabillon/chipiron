@@ -417,7 +417,8 @@ class TreeNodeWithValue(TreeNode):
 
     def my_logit(self, x):  # todo look out for numerical problem with utmatic rounding to 0 or especillay to 1
         y = min(max(x, .000000000000000000000001), .9999999999999999)
-        return math.log(y / (1 - y))
+        print('rfgt',y,x)
+        return math.log(y / (1 - y)) * max(1,abs(x)) #the * min(1,x) is a hack to prioritize game over
 
     def get_all_of_the_best_moves(self, how_equal=None):
         # todo make it faster
@@ -438,6 +439,8 @@ class TreeNodeWithValue(TreeNode):
             elif how_equal == 'almost_equal_logistic':
                 best_value_logit = self.my_logit(best_value[0] * .5 + .5)  # from [-1,1] to [0,1]
                 child_value_logit = self.my_logit(self.children_sorted_by_value[child][0] * .5 + .5)
+                print('logit', child.a_move_sequence_from_root(), child_value_logit)
+
                 if self.are_almost_equal_values(child_value_logit, best_value_logit):
                     best_children.append(child)
         return best_children

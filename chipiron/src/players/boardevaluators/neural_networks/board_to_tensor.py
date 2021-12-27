@@ -120,10 +120,10 @@ def get_tensor_from_tensors(tensor_white, tensor_black, tensor_castling_white, t
 
 
 def board_to_tensors_pieces_square(board, requires_grad_):
-    tensor_white = torch.zeros(384, requires_grad=requires_grad_)
-    tensor_black = torch.zeros(384, requires_grad=requires_grad_)
-    tensor_castling_white = torch.zeros(2, requires_grad=requires_grad_)
-    tensor_castling_black = torch.zeros(2, requires_grad=requires_grad_)
+    tensor_white = torch.zeros(384, requires_grad=requires_grad_,dtype=torch.float)
+    tensor_black = torch.zeros(384, requires_grad=requires_grad_,dtype=torch.float)
+    tensor_castling_white = torch.zeros(2, requires_grad=requires_grad_,dtype=torch.float)
+    tensor_castling_black = torch.zeros(2, requires_grad=requires_grad_,dtype=torch.float)
 
     for square in range(64):
         piece = board.piece_at(square)
@@ -132,11 +132,11 @@ def board_to_tensors_pieces_square(board, requires_grad_):
             if piece.color == chess.BLACK:
                 square_index = chess.square_mirror(square)
                 index = 64 * piece_code + square_index
-                tensor_black[index] += 1
+                tensor_black[index] = 1.0
             else:
                 square_index = square
                 index = 64 * piece_code + square_index
-                tensor_white[index] += 1
+                tensor_white[index] = 1.0
 
     tensor_castling_white[0] = board.has_queenside_castling_rights(chess.WHITE)
     tensor_castling_white[1] = board.has_kingside_castling_rights(chess.WHITE)
@@ -207,16 +207,16 @@ def node_to_tensors_pieces_square_from_parent_2(node, board_modifications):
 
 
 def node_to_tensors_pieces_square_from_parent_4(node, board_modifications):
-    node.tensor_castling_white = torch.zeros(2, requires_grad=False)
-    node.tensor_castling_black = torch.zeros(2, requires_grad=False)
+    node.tensor_castling_white = torch.zeros(2, requires_grad=False,dtype=torch.float)
+    node.tensor_castling_black = torch.zeros(2, requires_grad=False,dtype=torch.float)
 
 
 def node_to_tensors_pieces_square_from_parent_5(node, board_modifications):
     board = node.board
     node.tensor_castling_white[0] = bool(board.castling_rights & chess.BB_A1)
-    node.tensor_castling_white[1] = bool(board.castling_rights & chess.BB_H1)
-    node.tensor_castling_black[0] = bool(board.castling_rights & chess.BB_A8)
-    node.tensor_castling_black[1] = bool(board.castling_rights & chess.BB_H8)
+    node.tensor_castling_white[1] =  bool(board.castling_rights & chess.BB_H1)
+    node.tensor_castling_black[0] =  bool(board.castling_rights & chess.BB_A8)
+    node.tensor_castling_black[1] =  bool(board.castling_rights & chess.BB_H8)
 
 
 def transform_board_pieces_square_old(node, requires_grad_):
