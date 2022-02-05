@@ -10,7 +10,6 @@ import chess
 import global_variables
 from PyQt5.QtCore import pyqtSlot, Qt
 from PyQt5.QtSvg import QSvgWidget
-
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
@@ -43,13 +42,14 @@ class MainWindow(QWidget):
     Create a surface for the chessboard.
     """
 
-    def __init__(self, play):
+    def __init__(self, gui_mailbox, main_thread_mailbox):
         """
         Initialize the chessboard.
         """
         super().__init__()
-        self.first = True
-        self.play = play
+        self.gui_mailbox = gui_mailbox
+        self.main_thread_mailbox = main_thread_mailbox
+
         self.setWindowTitle("Chess GUI")
         self.setGeometry(300, 300, 1400, 800)
 
@@ -95,30 +95,20 @@ class MainWindow(QWidget):
         self.closeButton7.setStyleSheet('QPushButton {background-color: white; color: black;}')
         self.closeButton7.setGeometry(620, 600, 370, 30)
 
-        self.boardSize = min(self.widgetSvg.width(),
-                             self.widgetSvg.height())
+        self.board_size = min(self.widgetSvg.width(),
+                              self.widgetSvg.height())
         self.coordinates = True
-        self.margin = 0.05 * self.boardSize if self.coordinates else 0
-        self.squareSize = (self.boardSize - 2 * self.margin) / 8.0
+        self.margin = 0.05 * self.board_size if self.coordinates else 0
+        self.squareSize = (self.board_size - 2 * self.margin) / 8.0
         self.pieceToMove = [None, None]
-
-        # print('333')
-        self.threadpool = QThreadPool()
-        print("Multithreading with maximum %d threads" % self.threadpool.maxThreadCount())
-        self.startPlayThread()
-        time.sleep(1.55)
-        # self.board = self.play.play_one_game.game.board.chessBoard
 
         self.checkThreadTimer = QTimer(self)
         self.checkThreadTimer.setInterval(5)  # .5 seconds
-        self.checkThreadTimer.timeout.connect(self.drawBoard)
+        self.checkThreadTimer.timeout.connect(self.process_message)
         self.checkThreadTimer.start()
 
-        self.whiteishuman = self.play.game_manager.player_white.player_name_id == 'Human'
-        self.blackishuman = self.play.game_manager.player_black.player_name_id == 'Human'
-
     def stopppy(self):
-        self.threadpool.shutdown(self.worker)
+        # should we send a kill message to the main thread?
         self.close()
 
     @pyqtSlot(QWidget)
@@ -130,67 +120,41 @@ class MainWindow(QWidget):
         Moves must be made according to the rules of chess because
         illegal moves are suppressed.
         """
+        if event.x() <= self.board_size and event.y() <= self.board_size:
+            if event.buttons() == Qt.LeftButton:
 
-        white_plays = self.play.play_one_game.game.who_plays()
-        humanwhitetoplay = white_plays and self.whiteishuman
-        humanblacktoplay = not white_plays and self.blackishuman
-        #  print('eee',white_plays,self.whiteishuman, self.blackishuman,humanwhitetoplay ,  humanblacktoplay)
+                if self.margin < event.x() < self.board_size - self.margin \
+                        and self.margin < event.y() < self.board_size - self.margin:
 
-        if humanblacktoplay or humanwhitetoplay:
-            if white_plays:
-                player = self.play.play_one_game.player_white
-            else:
-                player = self.play.play_one_game.player_black
+                    file = int((event.x() - self.margin) / self.squareSize)
+                    rank = 7 - int((event.y() - self.margin) / self.squareSize)
+                    square = chess.square(file, rank)
+                    piece = self.board.piece_at(square)
+                    self.coordinates = "{}{}".format(chr(file + 97), str(rank + 1))
+                    if self.pieceToMove[0] is not None:
+                        try:
+                            move = chess.Move.from_uci("{}{}".format(self.pieceToMove[1], self.coordinates))
+                            move_promote = chess.Move.from_uci("{}{}q".format(self.pieceToMove[1], self.coordinates))
+                            if move in self.board.legal_moves:
+                                self.send_move_to_main_thread(self.move)
+                            elif move_promote in self.board.legal_moves:
+                                self.choice_promote()
+                                self.send_move_to_main_thread(self.move_promote_asked)
+                            else:
+                                print('Looks like a wrong move.', move, self.board.legal_moves)
+                        except ValueError:
+                            print("Oops!  Doubleclicked?  Try again...")
+                        piece = None
+                    self.pieceToMove = [piece, self.coordinates]
 
-            if event.x() <= self.boardSize and event.y() <= self.boardSize:
-                if event.buttons() == Qt.LeftButton:
+    def send_move_to_main_thread(self, move):
+        self.main_thread_mailbox.put({'type': 'move', 'move': move})
 
-                    if self.margin < event.x() < self.boardSize - self.margin and self.margin < event.y() < self.boardSize - self.margin:
-
-                        file = int((event.x() - self.margin) / self.squareSize)
-                        rank = 7 - int((event.y() - self.margin) / self.squareSize)
-                        square = chess.square(file, rank)
-                        piece = self.board.piece_at(square)
-                        self.coordinates = "{}{}".format(chr(file + 97), str(rank + 1))
-                        # print('uuu',file,rank,square,piece,coordinates,self.pieceToMove[0])
-                        if self.pieceToMove[0] is not None:
-                            try:
-                                move = chess.Move.from_uci("{}{}".format(self.pieceToMove[1], self.coordinates))
-                                move_promote = chess.Move.from_uci("{}{}q".format(self.pieceToMove[1], self.coordinates))
-                                global_variables.global_lock.acquire()
-                                try:
-                                    if move in self.board.legal_moves:
-                                        print('66',self.board)
-
-                                        # self.board.push(move)
-                                        self.play.play_one_game.game.play(move)
-                                        self.drawBoard()
-                                        player.main_move_selector.human_played = True
-                                    elif move_promote in self.board.legal_moves:
-                                        self.choicePromote()
-                                        self.play.play_one_game.game.play(self.move_promote_asked)
-                                        self.drawBoard()
-                                        player.main_move_selector.human_played = True
-                                        print(move)
-                                    else:
-                                        print('55',self.board)
-                                        print('Looks like a wrong move.', move, self.board.legal_moves)
-                                finally:
-                                    if global_variables.global_lock.locked():
-                                        global_variables.global_lock.release()
-                            except ValueError:
-                                print("Oops!  Doubleclicked?  Try again...")
-                            piece = None
-                            coordinates = None
-                        self.pieceToMove = [piece, self.coordinates]
-
-    def choicePromote(self):
-
+    def choice_promote(self):
         self.d = QDialog()
-        d= self.d
+        d = self.d
         d.setWindowTitle("Promote to ?")
         d.setWindowModality(Qt.ApplicationModal)
-
 
         d.closeButtonQ = QPushButton(d)
         d.closeButtonQ.setText("Queen")  # text
@@ -219,25 +183,24 @@ class MainWindow(QWidget):
         d.exec_()
 
     def promoteQueen(self):
-       self.move_promote_asked =  chess.Move.from_uci("{}{}q".format(self.pieceToMove[1], self.coordinates))
-       self.d.close()
+        self.move_promote_asked = chess.Move.from_uci("{}{}q".format(self.pieceToMove[1], self.coordinates))
+        self.d.close()
 
     def promoteRook(self):
-       self.move_promote_asked =  chess.Move.from_uci("{}{}r".format(self.pieceToMove[1], self.coordinates))
-       self.d.close()
+        self.move_promote_asked = chess.Move.from_uci("{}{}r".format(self.pieceToMove[1], self.coordinates))
+        self.d.close()
 
     def promoteBishop(self):
-       self.move_promote_asked =  chess.Move.from_uci("{}{}b".format(self.pieceToMove[1], self.coordinates))
-       self.d.close()
+        self.move_promote_asked = chess.Move.from_uci("{}{}b".format(self.pieceToMove[1], self.coordinates))
+        self.d.close()
 
     def promoteKnight(self):
-       self.move_promote_asked =  chess.Move.from_uci("{}{}n".format(self.pieceToMove[1], self.coordinates))
-       self.d.close()
-
+        self.move_promote_asked = chess.Move.from_uci("{}{}n".format(self.pieceToMove[1], self.coordinates))
+        self.d.close()
 
     def goplay(self):
         self.play.play_one_match()
-    
+
     def startPlayThread(self):
         print('startPlayThread()')
         self.worker = Worker(self.goplay)
@@ -248,36 +211,53 @@ class MainWindow(QWidget):
         worker = Worker()
         self.threadpool.start(worker)
 
-    def drawBoard(self):
+    def process_message(self):
         """
         Draw a chessboard with the starting position and then redraw
         it for every new move.
         """
-        if not global_variables.global_lock.locked():
-            global_variables.global_lock.acquire()
-            try:
-                self.board = self.play.game_manager.board
-                self.boardSvg = self.board._repr_svg_().encode("UTF-8")
-                self.drawBoardSvg = self.widgetSvg.load(self.boardSvg)
 
-                self.closeButton2.setText('White: ' + self.play.game_manager.player_white.player_name_id)  # text
-                self.closeButton3.setText('Black: ' + self.play.game_manager.player_black.player_name_id)  # text
-                self.closeButton4.setText(
-                    'Score: ' + str(self.play.match_results.get_player_one_wins()) + '-'
-                    + str(self.play.match_results.get_player_two_wins()) + '-'
-                    + str(self.play.match_results.get_draws()))  # text
+        if not self.gui_mailbox.empty():
+            message = self.gui_mailbox.get()
 
-                self.closeButton5.setText('Round: ' + str(self.play.game_manager.board.fullmove_number))  # text
-                self.closeButton6.setText('fen: ' + str(self.play.game_manager.board.fen()))  # text
-                if not self.first:
-                    self.closeButton7.setText('eval: ' + str(self.play.game_manager.stockfish_eval()))  # text
-                self.first =False
+            if message['type'] == 'board':
+                self.board = message['board']
+                self.draw_board()
+            if message['type'] == 'evaluation':
+                evaluation = message['evaluation']
+                self.update_evaluation(evaluation)
+            if message['type'] == 'players_color_to_id':
+                players_color_to_id = message['players_color_to_id']
+                self.update_players_color_to_id(players_color_to_id)
+            if message['type'] == 'match_results':
+                match_results = message['match_results']
+                self.update_match_stats(match_results)
 
+    def draw_board(self):
+        """
+        Draw a chessboard with the starting position and then redraw
+        it for every new move.
+        """
 
-            finally:
-                if global_variables.global_lock.locked():
-                    global_variables.global_lock.release()
-            return self.drawBoardSvg
+        self.boardSvg = self.board._repr_svg_().encode("UTF-8")
+        self.drawBoardSvg = self.widgetSvg.load(self.boardSvg)
+        self.closeButton5.setText('Round: ' + str(self.board.fullmove_number))  # text
+        self.closeButton6.setText('fen: ' + str(self.board.fen()))  # text
+        return self.drawBoardSvg
+
+    def update_players_color_to_id(self, players_color_to_id):
+        self.closeButton2.setText('White: ' + players_color_to_id[chess.WHITE])  # text
+        self.closeButton3.setText('Black: ' + players_color_to_id[chess.BLACK])  # text
+
+    def update_evaluation(self, evaluation):
+        self.closeButton7.setText('eval: ' + str(evaluation))  # text
+
+    def update_match_stats(self, match_info):
+        player_one_wins, player_two_wins,draws = match_info.get_simple_result()
+        self.closeButton4.setText(
+            'Score: ' + str(player_one_wins) + '-'
+            + str(player_two_wins) + '-'
+            + str(draws))  # text
 
 
 if __name__ == "__main__":

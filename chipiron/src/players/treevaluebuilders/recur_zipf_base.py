@@ -27,9 +27,10 @@ class RecurZipfBaseTree(MoveAndValueTree):
 
 class RecurZipfBase(TreeAndValuePlayer):
 
-    def __init__(self, arg):
-        super().__init__(arg)
-        self.move_explorer = ZipfMoveExplorer(arg['move_explorer_priority'])
+    def __init__(self, arg, random_generator):
+        super().__init__(arg,random_generator)
+        self.move_explorer = ZipfMoveExplorer(arg['move_explorer_priority'],random_generator)
+        self.random_generator = random_generator
 
     def create_tree(self, board):
         return RecurZipfBaseTree(self.board_evaluators_wrapper, board)
@@ -42,7 +43,7 @@ class RecurZipfBase(TreeAndValuePlayer):
             last_node_in_best_line = self.tree.root_node.best_node_sequence[-1]
             if last_node_in_best_line.board.is_attacked(not last_node_in_best_line.player_to_move) and not last_node_in_best_line.is_over():
                 # print('best line is underattacked')
-                if random.random() > .5:
+                if self.random_generator.random() > .5:
                    # print('best line is underattacked and i do')
 
                     return self.opening_instructor.instructions_to_open_all_moves(last_node_in_best_line)

@@ -58,12 +58,12 @@ class RecurVertiZipf(TreeAndValuePlayer):
         return chosen_node
 
 
-    def get_move_from_player(self, board, timetoMove):
+    def get_move_from_player(self, board):
 
         print(board.chess_board)
         self.visits_depth = {0: 1}
 
-        return super().get_move_from_player(board, timetoMove)
+        return super().get_move_from_player(board)
 
     def print_info(self):
         super().print_info()

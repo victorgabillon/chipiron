@@ -1,5 +1,5 @@
 import chess
-from src.chessenvironment.boards.board_tools import convertToFen
+from src.chessenvironment.boards.board_tools import convert_to_fen
 import chess.polyglot
 from src.chessenvironment.boards.board_modification import BoardModification
 
@@ -44,6 +44,9 @@ class BoardChi(chess.Board):
 
     def play_move(self, move):
         self.push_and_return_modification(move)
+
+    def rewind_move(self):
+        self.pop()
 
     def push_and_return_modification(self, move):
         """
@@ -173,7 +176,7 @@ class BoardChi(chess.Board):
     def load_from_file(self, file_name):
         with  open('chipiron/data/starting_boards/' + file_name, "r") as f:
             asciiBoard = f.read()
-            fen = convertToFen(asciiBoard)
+            fen = convert_to_fen(asciiBoard)
         return fen
 
     def compute_key(self):

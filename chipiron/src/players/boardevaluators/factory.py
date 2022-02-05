@@ -1,7 +1,7 @@
 import sys
 from src.players.boardevaluators.basic_evaluation import BasicEvaluation
 from src.players.boardevaluators.neural_networks.factory import create_nn_board_eval
-from src.players.boardevaluators.syzygy import SyzygyTable
+from src.players.boardevaluators.table_base.syzygy import SyzygyTable
 from src.players.boardevaluators.board_evaluators_wrapper import BoardEvaluatorsWrapper
 
 

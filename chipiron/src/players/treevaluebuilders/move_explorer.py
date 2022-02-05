@@ -28,18 +28,21 @@ class MoveExplorer:
 
 
 class ZipfMoveExplorer(MoveExplorer):
-    def __init__(self, priority_sampling):
+    def __init__(self, priority_sampling,random_generator):
         super().__init__(priority_sampling)
+        self.random_generator=random_generator
+
 
     def sample_child_to_explore(self, tree_node_to_sample_from):
         sorted_not_over_children = tree_node_to_sample_from.sort_children_not_over()
-        return zipf_picks_random(ordered_list_elements=sorted_not_over_children)
+        return zipf_picks_random(ordered_list_elements=sorted_not_over_children,random_generator=self.random_generator)
 
 
 class ProportionMoveExplorer(MoveExplorer):
 
-    def __init__(self, priority_sampling):
+    def __init__(self, priority_sampling, random_generator):
         super().__init__(priority_sampling)
+        self.random_generator = random_generator
 
     def sample_child_to_explore(self, tree_node_to_sample_from,
                                 children_exception_set=set()):  # set of nodes that cannot be picked
@@ -58,7 +61,7 @@ class ProportionMoveExplorer(MoveExplorer):
                 proportions.append(child_proportion)
                 children_candidates.append(child)
 
-        min_child = random.choices(children_candidates, proportions, k=1)
+        min_child = self.random_generator.choices(children_candidates, proportions, k=1)
         return min_child[0]
 
 

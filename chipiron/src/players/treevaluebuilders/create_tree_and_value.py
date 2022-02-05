@@ -12,7 +12,7 @@ from src.players.treevaluebuilders.zipf_sequool2 import ZipfSequool2
 from src.players.treevaluebuilders.zipf_sequool import ZipfSequool
 
 
-def create_tree_and_value_builders(arg, syzygy):
+def create_tree_and_value_builders(arg, syzygy, random_generator):
     tree_builder_type = arg['tree_builder']['type']
 
     if tree_builder_type == 'Uniform':
@@ -20,7 +20,7 @@ def create_tree_and_value_builders(arg, syzygy):
     elif tree_builder_type == 'RecurZipf':
         tree_builder = RecurZipf(arg['tree_builder'])
     elif tree_builder_type == 'RecurZipfBase':
-        tree_builder = RecurZipfBase(arg['tree_builder'])
+        tree_builder = RecurZipfBase(arg['tree_builder'],random_generator)
     elif tree_builder_type == 'RecurZipfBase2':
         tree_builder = RecurZipfBase2(arg['tree_builder'])
     elif tree_builder_type == 'VertiZipf':

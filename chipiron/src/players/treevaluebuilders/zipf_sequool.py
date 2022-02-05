@@ -133,8 +133,9 @@ class ZipfSequoolTree(MoveAndValueTree):
 
 class ZipfSequool(TreeAndValuePlayer):
 
-    def __init__(self, arg):
+    def __init__(self, arg, random_generator):
         super().__init__(arg)
+        self.random_generator = random_generator
         self.move_explorer = ProportionMoveExplorer(arg['move_explorer_priority'])
 
     def create_tree(self, board):
@@ -188,7 +189,7 @@ class ZipfSequool(TreeAndValuePlayer):
         if last_node_in_best_line.board.is_attacked(not last_node_in_best_line.player_to_move) and not last_node_in_best_line.is_over():
             # print('best line is underattacked')
 
-            if random.random() > .5:
+            if self.random_generator.random() > .5:
                 # todo having to do this remove is ugle and needs to be repeated in all retrun please change!!
                 for nfm in self.tree.first_moves[last_node_in_best_line]:
                     nfm.descendants_candidates_to_open.remove_descendant(last_node_in_best_line)

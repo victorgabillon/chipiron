@@ -27,32 +27,11 @@ class MyDataSet(Dataset):
         print("--- LOAD READ PICKLE %s seconds ---" % (time.time() - start_time))
         print('Dataset  loaded with {} items'.format(len(raw_data)))
 
-        start_time = time.time()
-        pickle.dump([raw_data] ,open('/home/victor/testt','wb'))
-        print("--- LOAD FKFK READ PICKLE %s seconds ---" % (time.time() - start_time))
-        print('Dataset  loaded with {} items'.format(len(raw_data)))
-
-
-        start_time = time.time()
-        o= pickle.load(open('/home/victor/testt','rb'))
-        print("--- LOAD NNNNN READ PICKLE %s seconds ---" % (time.time() - start_time))
-        print('Dataset  loaded with {} items'.format(len(o)))
         # preprocessing
         if self.preprocessing:
             print('preprocessing dataset...')
             processed_data = []
-            # max_processes = 5
-            # raw_data_splits = np.array_split(raw_data, max_processes )
-            #
-            # pool = Pool(max_processes)
-            # for i in range(max_processes):
-            #     pool.apply_async(self.process_raw_rows, args=(raw_data_splits[i], ), callback=self.collect_results)
-            # print('56w')
-            #
-            # pool.close()
-            # pool.join()
-            #
-            # print('56')
+
             for idx in range(len(raw_data)):
                 # print(idx, type(idx),idx % 10 == 0)
                 if idx % 10 == 0:
@@ -148,14 +127,6 @@ class ClassifiedBoards(MyDataSet):
     def __getitem__(self, idx):
         row = self.df_over_4.iloc[idx % self.len_4]
 
-        #     if random.random() > .8:
-        #         row = self.df_over.iloc[idx % self.len]
-        #     elif random.random() > .4:
-        #         row = self.df_over_2.iloc[idx % self.len_2]
-        #     else:
-        #         row = self.df_over_3.iloc[idx % self.len_3]
-        # #        print('^^', idx % self.len_3, self.len_3,row)
-
         # row = self.df_over.iloc[idx]
         fen = row['fen']
         # print('fen',fen)
@@ -181,54 +152,3 @@ class ClassifiedBoards(MyDataSet):
             raise Exception('no!!!')
 
         return input_layer, target_value
-
-
-class NextBoards(MyDataSet):
-
-    def __init__(self, transform_function):
-        super().__init__(transform_function)
-        print('Loading the NextBoards dataset...')
-        self.df_next = pd.read_pickle('/home/victor/next_board_dataset_from good_games_0')
-        print('Dataset NextBoards loaded.')
-
-    def __len__(self):
-        return len(self.df_next)
-
-    def __getitem__(self, idx):
-        row = self.df_next.iloc[idx]
-        fen = row['fen']
-        next_fen = row['next_fen']
-        board = BoardChi(fen=fen)
-        input_layer = self.transform_function(board, requires_grad_=False)
-        next_board = MyBoard(fen=next_fen)
-        # print(fen)
-        # print(board)
-        # print(next_fen)
-        # print( next_board )
-        next_input_layer = self.transform_function(next_board, requires_grad_=False)
-        return input_layer, next_input_layer
-
-
-class States(Dataset):
-
-    def __init__(self):
-        print('Loading the States dataset...')
-        self.df_next = pd.read_pickle('chipiron/datat')
-        print('Dataset States loaded.')
-
-    def __len__(self):
-        return len(self.df_next)
-
-    def __getitem__(self, idx):
-        row = self.df_next.iloc[idx]
-        fen = row['fen']
-        next_fen = row['next_fen']
-        board = MyBoard(fen=fen)
-        input_layer = transform_board_pieces_square(board, requires_grad_=False)
-        next_board = MyBoard(fen=next_fen)
-        # print(fen)
-        # print(board)
-        # print(next_fen)
-        # print( next_board )
-        next_input_layer = transform_board_pieces_square(next_board, requires_grad_=False)
-        return input_layer, next_input_layer

@@ -1,8 +1,6 @@
-import time
+import copy
 import chess
 import pickle
-import global_variables
-from src.players.boardevaluators.stockfish_evaluation import Stockfish
 
 
 # todo a wrapper for chess.white chess.black
@@ -15,96 +13,107 @@ class GameManager:
 
     GAME_RESULTS = [WIN_FOR_WHITE, WIN_FOR_BLACK, DRAW] = range(3)
 
-    def __init__(self, board, syzygy, output_folder_path=None, args=None, player_white=None,
-                 player_black=None):
-        self.board = board
+    def __init__(self,
+                 observable_board,
+                 syzygy,
+                 display_board_evaluator,
+                 output_folder_path,
+                 args,
+                 player_color_to_id,
+                 main_thread_mailbox,
+                 player_threads):
+        """
+        Constructor for the GameManager Class. If the args, and players are not given a value it is set to None,
+         waiting for the set methods to be called. This is done like this so that the players can be changed
+          (often swapped) easily.
+
+        Args:
+            board:
+            syzygy:
+            display_board_evaluator:  the board evaluator to display an independent evaluation. (Stockfish like)
+            output_folder_path:
+            args:
+            player_white:
+            player_black:
+        """
+        self.observable_board = observable_board
+        self.board = observable_board.board # is it ugly? like to wrapping?
         self.syzygy = syzygy
-
         self.path_to_store_result = output_folder_path + '/games/' if output_folder_path is not None else None
-
-        self.board_evaluator = Stockfish()
-
+        self.display_board_evaluator = display_board_evaluator
         self.args = args
-        self.player_white = player_white
-        self.player_black = player_black
-
+        self.player_color_to_id = player_color_to_id
         self.board_history = []
-
-    def set(self, args, player_white, player_black):
-        self.args = args
-        self.player_white = player_white
-        self.player_black = player_black
-
-    def swap_players(self):
-        player_temp = self.player_black
-        self.player_black = self.player_white
-        self.player_white = player_temp
+        self.main_thread_mailbox = main_thread_mailbox
+        self.player_threads = player_threads
 
     def stockfish_eval(self):
-
-        return self.board_evaluator.score(self.board)
+        return self.display_board_evaluator.get_evaluation(self.observable_board.board)  # TODO DON'T LIKE THIS writing
 
     def play_one_move(self, move):
-        self.board.play_move(move)
-        if self.syzygy.fast_in_table(self.board):
-            print('Theoretically finished with value for white: ', self.syzygy.sting_result(self.board))
+        self.observable_board.play_move(move)
+        if self.syzygy.fast_in_table(self.observable_board.board):
+            print('Theoretically finished with value for white: ', self.syzygy.sting_result(self.observable_board.board))
 
     def set_new_game(self, starting_position_arg):
-        self.board.set_starting_position(starting_position_arg)
-        self.board_history = [self.board.copy()]
+        self.observable_board.set_starting_position(starting_position_arg)
+
+        self.board_history = [self.observable_board.board.copy()]
 
     def play_one_game(self):
 
         self.set_new_game(self.args['starting_position'])
-        time.sleep(.1)
-        global_variables.global_lock.acquire()
 
-        self.allow_display()
         color_names = ['Black', 'White']
-        players = [self.player_black, self.player_white]
+        half_move = self.observable_board.ply()
 
-        half_move = self.board.ply()
-        while not self.board.is_game_over() and self.game_continue_conditions():
+        while True:
             print('Half Move: ', half_move)
-            self.player_selects_move(player=players[self.board.turn], color_of_player_str=color_names[self.board.turn])
-            self.allow_display()
-            half_move += + 1
+            color_to_move = self.observable_board.board.turn
+            color_of_player_to_move_str = color_names[color_to_move]
+            print('{} ({}) to play now...'.format(color_of_player_to_move_str,
+                                                  self.player_color_to_id[color_to_move]))
+
+            # waiting for a message
+            mail = self.main_thread_mailbox.get()
+
+            self.processing_mail(mail)
+            eval = self.stockfish_eval()
+            print('Stockfish evaluation:', eval)
+
+            if self.observable_board.board.is_game_over() or not self.game_continue_conditions():
+                break
 
         self.tell_results()
-        global_variables.global_lock.release()
         return self.simple_results()
 
+    def processing_mail(self, message):
+        if message['type'] == 'move':
+            # play the move
+            move = message['move']
+            print('receiving the move', move, type(self))
+            #TODO CHECK IF THE MOVE CORESPNDS TO THE CURRENT BOARD OTHER WISE KEEP FOR LATER? THINK! HOW TO DEAL with premoves if we dont know the board in advance?
+            self.play_one_move(move)
+            # Print the board
+            self.observable_board.print_chess_board()
+        if message['type'] == 'move_syzygy': #TODO IS THIS CLEAN?
+            self.syzygy_player.best_move(self.observable_board.board)
+            self.play_one_move(move)
+
+        if message['type'] == 'back':
+            pass
+
     def game_continue_conditions(self):
-        half_move = self.board.ply()
+        half_move = self.observable_board.ply()
         continue_bool = True
         if 'max_half_move' in self.args and half_move >= self.args['max_half_move']:
             continue_bool = False
         return continue_bool
 
-
-
-
-    def allow_display(self):
-        # TODO mqke it nicer thqn thqt
-        global_variables.global_lock.release()
-        time.sleep(.101)
-        global_variables.global_lock.acquire()
-
-    def player_selects_move(self, player, color_of_player_str):
-        assert(~((player == self.player_white) ^ (color_of_player_str == 'White'))+2) # xnor testting the colors
-        print('{} ({}) to play now...'.format(color_of_player_str, player.player_name_id))
-        move = player.get_move(self.board, float(self.args['secondsPerMoveWhite']))
-        print('{}: {} plays {}'.format(color_of_player_str, player.player_name_id, move))
-        if player.player_name_id != 'Human':
-            if not self.board.is_legal(move):  # check if its a legal moves!!!!!!
-                raise Exception('illegal move from player white: ' + str(move))
-            self.play_one_move(move)
-        self.board.print_chess_board()
-
     def print_to_file(self, idx=0):
         if self.path_to_store_result is not None:
             path_file = self.path_to_store_result + '_' + str(
-                idx) + '_W:' + self.player_white.player_name_id + '-vs-B:' + self.player_black.player_name_id
+                idx) + '_W:' + self.player_color_to_id[chess.WHITE] + '-vs-B:' + self.player_color_to_id[chess.BLACK]
             path_file_txt = path_file + '.txt'
             path_file_obj = path_file + '.obj'
             with open(path_file_txt, 'a') as the_fileText:
@@ -151,3 +160,12 @@ class GameManager:
                 return self.WIN_FOR_BLACK
             if result == '1-0':
                 return self.WIN_FOR_WHITE
+
+    def terminate_threads(self):
+        for player_thread in self.player_threads:
+            player_thread.stop()
+            print('stopping the thread')
+            player_thread.join()
+            print('thread stopped')
+
+

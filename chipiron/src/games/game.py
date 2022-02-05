@@ -10,7 +10,6 @@ class Game:
 
     def __init__(self, fen=STARTING_FEN):
         self.board = BoardChi(fen=fen)
-        print('4444', self.board.occupied_co)
         self.board_sequence = [self.board.copy()]
 
 
@@ -25,8 +24,8 @@ class Game:
 
 
 
-    # def who_plays(self):
-    #     return self.board.chess_board.turn
+    def who_plays(self):
+         return self.board.chess_board.turn
 
     # def is_finished(self):
     #     return self.board.chess_board.is_game_over()

@@ -417,7 +417,6 @@ class TreeNodeWithValue(TreeNode):
 
     def my_logit(self, x):  # todo look out for numerical problem with utmatic rounding to 0 or especillay to 1
         y = min(max(x, .000000000000000000000001), .9999999999999999)
-        print('rfgt',y,x)
         return math.log(y / (1 - y)) * max(1,abs(x)) #the * min(1,x) is a hack to prioritize game over
 
     def get_all_of_the_best_moves(self, how_equal=None):

@@ -1,8 +1,5 @@
-deterministic_behavior: False
-deterministic_mode: 'SEED_FIXED_EVERY_MOVE'
-seed_fixing_type: 'FIX_SEED_WITH_CONSTANT'
-seed: 10
-
-file_name_player_one: 'RecurZipfBase3.yaml'
-file_name_player_two:  'RecurZipfBase4.yaml'
+seed: 11
+gui: True
+file_name_player_one: 'RecurZipfBase4.yaml'
+file_name_player_two:  'RecurZipfBase3.yaml'
 file_name_match_setting: 'setting_duda.yaml'
