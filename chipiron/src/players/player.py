@@ -1,30 +1,11 @@
-import global_variables
-from src.players.RandomPlayer import RandomPlayer
-from src.players.treevaluebuilders.create_tree_and_value import create_tree_and_value_builders
-from src.players.human import Human
-from src.players.stockfish import Stockfish
-import sys
-
-
 class Player:
     #  difference between player and treebuilder includes the fact that now a player can be a mixture of multiple decision rulles
 
-    def __init__(self, arg, syzygy):
+    def __init__(self, arg, syzygy, main_move_selector):
         print(arg)
         self.arg = arg
         self.player_name_id = arg['name']
-
-        self.main_move_selector = None
-        if arg['type'] == 'RandomPlayer':
-            self.main_move_selector = RandomPlayer()
-        elif arg['type'] == 'TreeAndValue':
-            self.main_move_selector = create_tree_and_value_builders(arg, syzygy)
-        elif arg['type'] == 'Human':
-            self.main_move_selector = Human(arg)
-        elif arg['type'] == 'Stockfish':
-            self.main_move_selector = Stockfish(arg)
-        else:
-            sys.exit('player creator: can not find ' + arg['type'])
+        self.main_move_selector = main_move_selector
 
         self.syzygy_player = None
         self.syzygy_play = arg['syzygy_play']
@@ -32,8 +13,9 @@ class Player:
             self.syzygy_player = syzygy
 
         self.print_info()
+        self.color = None
 
-    def get_move(self, board, time):
+    def select_move(self, board):
         """ returns the best move computed by the player.
         The player has the option to ask the syzygy table to play it"""
 
@@ -49,7 +31,7 @@ class Player:
 
         else:
             print('Playing with player (not Syzygy)')
-            best_move = self.main_move_selector.get_move_from_player(board, time)
+            best_move = self.main_move_selector.select_move(board)
 
         return best_move
 

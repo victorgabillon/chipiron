@@ -72,7 +72,6 @@ class MyParser():
         return self.merged_args
 
     def log_parser_info(self, output_folder):
-        print('yyhhh', output_folder + '/parser_ouput.txt')
         with open(output_folder + '/parser_output.txt', 'w') as parser_output:
             parser_output.write('This are the logs of the parsing.\n\n')
             parser_output.write(

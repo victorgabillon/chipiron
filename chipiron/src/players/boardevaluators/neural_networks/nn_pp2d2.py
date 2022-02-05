@@ -6,8 +6,8 @@ from src.players.boardevaluators.neural_networks.board_to_tensor import board_to
 
 
 class NetPP2D2(BoardNet):
-    def __init__(self,  relative_path_file):
-        super(NetPP2D2, self).__init__( relative_path_file)
+    def __init__(self):
+        super(NetPP2D2, self).__init__()
 
         self.transform_board_function = board_to_tensor_pieces_square_two_sides
         self.fc1 = nn.Linear(772, 772)

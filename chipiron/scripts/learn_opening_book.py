@@ -2,9 +2,8 @@ import pickle
 import yaml
 from src.opening_book import OpeningBook
 from src.games.match_manager import MatchManager
-from src.players import factory
 from src.chessenvironment.chess_environment import ChessEnvironment
-from src.players.boardevaluators.syzygy import SyzygyTable
+from src.players.boardevaluators.table_base.syzygy import SyzygyTable
 import global_variables
 
 try:

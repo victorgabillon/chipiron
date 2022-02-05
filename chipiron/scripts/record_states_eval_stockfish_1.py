@@ -18,6 +18,7 @@ class RecordStateEvalStockfish1(Script):
         self.engine = chess.engine.SimpleEngine.popen_uci(
             "/home/victor/stockfish_13_linux_x64/stockfish_13_linux_x64")
         self.the_dic = []
+        self.random_generator = random.Random(seed=0)
 
     def run(self):
 
@@ -69,7 +70,7 @@ class RecordStateEvalStockfish1(Script):
 
             if game_length < 5:
                 continue
-            random_length = random.randint(0, game_length - 2)
+            random_length = self.random_generator.randint(0, game_length - 2)
 
             for move in game.mainline_moves():
                 round_ += 1
@@ -81,7 +82,7 @@ class RecordStateEvalStockfish1(Script):
             if list(chess_board.legal_moves) == []:
                 continue
 
-            extra_move = random.choice(list(chess_board.legal_moves))
+            extra_move = self.random_generator.choice(list(chess_board.legal_moves))
             chess_board_copy = chess_board.copy()
             chess_board_copy.push(extra_move)
             my_board = chess_board_copy

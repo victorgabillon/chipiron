@@ -13,7 +13,7 @@ class Script:
     """
 
     default_param_dict = {'profiling': False}
-    base_experiment_output_folder = 'chipiron/runs/'
+    base_experiment_output_folder = 'chipiron/scripts/'
 
     def __init__(self):
         """

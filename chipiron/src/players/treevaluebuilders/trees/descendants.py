@@ -2,6 +2,7 @@ import global_variables
 from sortedcollections import ValueSortedDict
 import sys
 
+testing_bool = False
 
 class Descendants:
 
@@ -87,7 +88,7 @@ class Descendants:
             print('half_move: ', half_move, '| (', self.number_of_descendants_at_half_move[half_move], 'descendants)')
 
     def test(self):
-        assert (set(self.descendants_at_half_move.keys()), set(self.number_of_descendants_at_half_move))
+        assert (set(self.descendants_at_half_move.keys())== set(self.number_of_descendants_at_half_move))
         sum_ = 0
         for half_move in self:
             sum_ += len(self[half_move])
@@ -98,25 +99,13 @@ class Descendants:
 
     def test_2(self, root_node):
 
-        # print('root etst',root_node.id)
         all_descendants = root_node.get_descendants()
-        # print(':sssssssss')
-        # for i in all_descendants:
-        #    print(':',i.id,i)
 
         # self.print_info()
         for d in all_descendants:
             if d.half_move not in self.descendants_at_half_move:
-                # print('{{', d.id, root_node.id)
-                # for i in d.parent_nodes:
-                #     print('{ss{', i.id)
-                #     for j in i.parent_nodes:
-                #             print('sss', j.id)
-                #             for k in j.parent_nodes:
-                #                 print('aaa', k.id)
                 assert (d.half_move in self.descendants_at_half_move)
             if d.fast_rep not in self.descendants_at_half_move[d.half_move]:
-                ##print('{{', d.id, root_node.id)
                 assert (d.fast_rep in self.descendants_at_half_move[d.half_move])
 
         for half_move in self.descendants_at_half_move:
@@ -174,8 +163,7 @@ class RangedDescendants(Descendants):
     def add_descendant(self, node):
         half_move = node.half_move
         fen = node.fast_rep
-        if global_variables.testing_bool:
-            self.test()
+
         assert (self.is_in_the_acceptable_range(half_move))
         if self.is_in_the_current_range(half_move):
             assert (fen not in self.descendants_at_half_move[half_move])
@@ -192,20 +180,10 @@ class RangedDescendants(Descendants):
                 self.max_half_move = half_move
         self.number_of_descendants += 1
 
-        # self.print_info()
-
-        if global_variables.testing_bool:
-            self.test()
 
     def remove_descendant(self, node):
         half_move = node.half_move
         fen = node.fast_rep
-
-        if global_variables.testing_bool:
-            self.test()
-        # print('@')
-        # self.print_info()
-        # print('s@')
 
         self.number_of_descendants -= 1
         self[half_move].pop(fen)

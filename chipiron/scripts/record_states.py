@@ -1,8 +1,7 @@
 import pandas as pd
 import yaml
-from src.games.game_manager import GameManager
 from src.players.player import Player
-from src.players.boardevaluators.syzygy import SyzygyTable
+from src.players.boardevaluators.table_base.syzygy import SyzygyTable
 import global_variables
 import os
 

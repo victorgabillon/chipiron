@@ -2,8 +2,7 @@ import shutil
 import datetime
 import yaml
 import os
-import random
-from src.games.match_factories import create_match_manager
+from src.games.match_factories import MatchManagerFactory
 from src.extra_tools.small_tools import yaml_fetch_args_in_file
 from sortedcollections import ValueSortedDict
 from collections import deque
@@ -21,7 +20,7 @@ class League:
     K = 10
     ELO_HISTORY_LEMGTH = 500
 
-    def __init__(self, foldername):
+    def __init__(self, foldername, random_generator):
         print('init league from folder: ', foldername)
         self.folder_league = foldername
         self.players_elo = ValueSortedDict()
@@ -30,6 +29,7 @@ class League:
 
         self.id_for_next_player = 0
         self.check_for_players()
+        self.random_generator = random_generator
 
 
     def check_for_players(self):
@@ -131,7 +131,7 @@ class League:
         plt.savefig(self.folder_league + '/elo.plot.svg',format='svg')
 
     def select_two_players(self):
-        picked = random.sample(list(self.players_args.values()), k=2)
+        picked = self.random_generator.sample(list(self.players_args.values()), k=2)
         print('picked', picked)
         return picked[0], picked[1]
 

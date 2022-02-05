@@ -1,8 +1,6 @@
-import yaml
+import chess
 from src.games.game_manager import GameManager
-
-
-# todo a wrapper for chess.white chess.black
+import copy
 
 
 class MatchManager:
@@ -10,63 +8,61 @@ class MatchManager:
     Objet in charge of playing one game
     """
 
-
-    def __init__(self, args_match, player_one, player_two, game_manager, output_folder_path=None):
-
-        assert(player_one.player_name_id != player_two.player_name_id)
-        self.args_match = args_match
-        self.player_one = player_one
-        self.player_two = player_two
-        self.game_manager = game_manager
+    def __init__(self,
+                 player_one_id,
+                 player_two_id,
+                 game_manager_factory,
+                 game_args_factory,
+                 match_results_factory,
+                 output_folder_path=None):
+        assert (player_one_id != player_two_id)
+        self.player_one_id = player_one_id
+        self.player_two_id = player_two_id
+        self.game_manager_factory = game_manager_factory
         self.output_folder_path = output_folder_path
-
-        with open('chipiron/data/settings/GameSettings/' + self.args_match['game_setting_file'], 'r') as file_game:
-            self.args_game = yaml.load(file_game, Loader=yaml.FullLoader)
-            print(self.args_game)
-
-        self.match_results = MatchResults(self.player_one, self.player_two)
-
+        self.match_results_factory = match_results_factory
+        self.game_args_factory = game_args_factory
         self.print_info()
 
     def print_info(self):
-        print('player one is ', self.player_one.player_name_id)
-        print('player two is ', self.player_two.player_name_id)
+        print('player one is ', self.player_one_id)
+        print('player two is ', self.player_two_id)
 
     def play_one_match(self):
-        print('Playing the Match')
-        self.game_manager.set(self.args_game, self.player_one, self.player_two)
-        for game_number in range(self.args_match['number_of_games_player_one_white']):
-            game_result_p1w = self.game_manager.play_one_game()
-            self.match_results.add_result_one_game(white_player_name_id=self.player_one.player_name_id,
-                                                   game_result=game_result_p1w)
-            self.game_manager.print_to_file(idx=game_number)
+        print('Playing the match')
+        match_results = self.match_results_factory.create()
 
-        self.game_manager.swap_players()
-        for game_number in range(self.args_match['number_of_games_player_one_black']):
-            game_result_p2w = self.game_manager.play_one_game()
-            self.match_results.add_result_one_game(white_player_name_id=self.player_two.player_name_id,
-                                                   game_result=game_result_p2w)
-            self.game_manager.print_to_file(idx=game_number)
+        game_number = 0
+        while not self.game_args_factory.is_match_finished():
+            player_color_to_id, args_game = self.game_args_factory.generate_game_args(game_number)
+            game_results = self.launch_game(player_color_to_id, args_game, game_number)
+            match_results.add_result_one_game(white_player_name_id=player_color_to_id[chess.WHITE],
+                                              game_result=game_results)
+            game_number += 1
 
-        self.print_stats_to_screen()
-        self.print_stats_to_file()
-        return self.match_results
+        print(match_results)
+        self.print_stats_to_file(match_results)
+        return match_results
 
-    def print_stats_to_screen(self):
-        print(self.match_results)
+    def launch_game(self, player_color_to_id, args_game, game_number):
+        game_manager = self.game_manager_factory.create(args_game, player_color_to_id)
+        game_results = game_manager.play_one_game()
+        game_manager.print_to_file(idx=game_number)
+        game_manager.terminate_threads()  # TODO should this line be inside the play one game ?
+        return game_results
 
-    def print_stats_to_file(self):
+    def print_stats_to_file(self, match_results):
         if self.output_folder_path is not None:
             path_file = self.output_folder_path + '/gameStats.txt'
             with open(path_file, 'a') as the_file:
-                the_file.write(str(self.match_results))
+                the_file.write(str(match_results))
 
 
 class MatchResults:
 
-    def __init__(self,  player_one, player_two):
-        self.player_one_name_id = player_one.player_name_id
-        self.player_two_name_id = player_two.player_name_id
+    def __init__(self, player_one_id, player_two_id):
+        self.player_one_name_id = player_one_id
+        self.player_two_name_id = player_two_id
         self.number_of_games = 0
         self.player_one_is_white_white_wins = 0
         self.player_one_is_white_black_wins = 0
@@ -134,3 +130,34 @@ class MatchResults:
         str_ += ', Losses ' + str(self.player_one_is_white_white_wins)
         str_ += ', Draws ' + str(self.player_one_is_white_draws)
         return str_
+
+
+class ObservableMatchResults:
+    # TODO see if it is possible and desirable to  make a general Observable wrapper that goes all that automatically
+    # as i do the same for board and game info
+    def __init__(self, match_result):
+        self.match_result = match_result
+        self.mailboxes = []
+
+    def subscribe(self, mailbox):
+        self.mailboxes.append(mailbox)
+
+    def copy_match_result(self):
+        match_result_copy = copy.deepcopy(self.match_result)
+        return match_result_copy
+
+    # wrapped function
+    def add_result_one_game(self, white_player_name_id, game_result):
+        self.match_result.add_result_one_game(white_player_name_id, game_result)
+        self.notify_new_results()
+
+    def notify_new_results(self):
+        for mailbox in self.mailboxes:
+            match_result_copy = self.copy_match_result()
+            mailbox.put({'type': 'match_results', 'match_results': match_result_copy})
+
+    # forwarding
+    def get_simple_result(self):
+        return self.match_result.get_player_one_wins(), \
+               self.match_result.get_player_two_wins(), \
+               self.match_result.get_draws()

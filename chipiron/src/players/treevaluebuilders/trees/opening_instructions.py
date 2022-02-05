@@ -1,7 +1,6 @@
 from src.players.treevaluebuilders.trees.nodes.tree_node import TreeNode
 import chess
 import numpy as np
-import global_variables
 
 
 class OpeningInstructionsBatch:
@@ -75,9 +74,9 @@ class OpeningInstructions:
 
 class OpeningInstructor:
 
-    def __init__(self, opening_type, seed=0):
+    def __init__(self, opening_type, random_generator):
         self.opening_type = opening_type
-        self.random_state = np.random.RandomState(seed=seed)
+        self.random_generator = random_generator
 
     def instructions_to_open_all_moves(self, node_to_open):
         assert (not node_to_open.all_legal_moves_generated)
@@ -87,7 +86,7 @@ class OpeningInstructor:
             moves_to_play = list(node_to_open.board.legal_moves)
 
             # this shuffling add randomness to the playing style
-            self.random_state.shuffle(moves_to_play)
+            self.random_generator.shuffle(moves_to_play)
 
             for move_to_play in moves_to_play:
                 # at the moment it looks redundant keys are almost the same as values but its clean

@@ -1,5 +1,5 @@
 import chess
-from src.players.boardevaluators.syzygy import SyzygyTable
+from src.players.boardevaluators.table_base.syzygy import SyzygyTable
 
 DISCOUNT = .999999999999  # todo play with this
 
