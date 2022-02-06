@@ -76,7 +76,6 @@ class OneMatchScript(Script):
 
         self.match_manager = match_manager_factory.create()
 
-
     def fetch_args_and_create_output_folder(self, file_name_player_one, file_name_player_two, file_name_match_setting):
         """
         From the names of the config file for players and match setting, open the config files, loads the arguments
