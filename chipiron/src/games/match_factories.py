@@ -50,16 +50,14 @@ class MatchManagerFactory:
         self.match_results_factory.subscribe(subscriber)
 
 
-# TODO THERE IS ALREADY A class BoardEvaluator that was done before should we merge or name differently? atm i will note the one for gui display with a 2
+# TODO THERE IS ALREADY A class BoardEvaluator that was done before should we merge or name differently? atm I will note the one for gui display with a 2
 class BoardEvaluator2Factory:
     def __init__(self):
         self.subscribers = []
 
     def create(self):
-        print('ertt,', self.subscribers)
         board_evaluator = BoardEvaluator2()
         if self.subscribers:
-            print('UUUrtt,', self.subscribers)
 
             board_evaluator = ObservableBoardEvaluator2(board_evaluator)
             for subscriber in self.subscribers:
