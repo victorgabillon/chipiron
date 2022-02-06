@@ -4,9 +4,9 @@ Chipiron is a Python library that plays chess
 
 ## Installation
 
-
-
-
+```console
+pip -r ./requirements.txt
+```
 
 ## Usage
 
