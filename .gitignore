@@ -3,4 +3,5 @@ chipiron/.idea
 chipiron/.ipynb_checkpoints
 __pycache__
 chipiron/scripts/one_match/one_match_outputs/*
+chipiron/scripts/learn_nn_supervised/learn_nn_supervised_outputs/*
 chipiron/syzygy-tables/
