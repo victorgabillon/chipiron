@@ -4,36 +4,12 @@
 This module is the execution point of the chess GUI application.
 """
 
-import sys
 import chess
-
-from PyQt5.QtCore import pyqtSlot, Qt
+from PyQt5.QtCore import Qt
 from PyQt5.QtSvg import QSvgWidget
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
-
-import time
-
-
-class Worker(QRunnable):
-    '''
-    Worker thread
-    '''
-
-    def __init__(self, fn, *args, **kwargs):
-        super(Worker, self).__init__()
-        # Store constructor arguments (re-used for processing)
-        self.fn = fn
-        self.args = args
-        self.kwargs = kwargs
-
-    @pyqtSlot()
-    def run(self):
-        '''
-        Initialise the runner function with passed args, kwargs.
-        '''
-        self.fn(*self.args, **self.kwargs)
 
 
 class MainWindow(QWidget):
@@ -65,7 +41,6 @@ class MainWindow(QWidget):
 
         self.closeButton2 = QPushButton(self)
         self.closeButton2.setText("Player")  # text
-        # self.closeButton2.move(700, 200)
         self.closeButton2.setStyleSheet('QPushButton {background-color: white; color: blue;}')
         self.closeButton2.setGeometry(620, 200, 370, 30)
 
@@ -159,56 +134,43 @@ class MainWindow(QWidget):
         d.closeButtonQ.setText("Queen")  # text
         d.closeButtonQ.setStyleSheet('QPushButton {background-color: white; color: blue;}')
         d.closeButtonQ.setGeometry(150, 100, 150, 20)
-        d.closeButtonQ.clicked.connect(self.promoteQueen)
+        d.closeButtonQ.clicked.connect(self.promote_queen)
 
         d.closeButtonR = QPushButton(d)
         d.closeButtonR.setText("Rook")  # text
         d.closeButtonR.setStyleSheet('QPushButton {background-color: white; color: blue;}')
         d.closeButtonR.setGeometry(150, 200, 150, 20)
-        d.closeButtonR.clicked.connect(self.promoteRook)
+        d.closeButtonR.clicked.connect(self.promote_rook)
 
         d.closeButtonB = QPushButton(d)
         d.closeButtonB.setText("Bishop")  # text
         d.closeButtonB.setStyleSheet('QPushButton {background-color: white; color: blue;}')
         d.closeButtonB.setGeometry(150, 300, 150, 20)
-        d.closeButtonB.clicked.connect(self.promoteBishop)
+        d.closeButtonB.clicked.connect(self.promote_bishop)
 
         d.closeButtonK = QPushButton(d)
         d.closeButtonK.setText("Knight")  # text
         d.closeButtonK.setStyleSheet('QPushButton {background-color: white; color: blue;}')
         d.closeButtonK.setGeometry(150, 400, 150, 20)
-        d.closeButtonK.clicked.connect(self.promoteKnight)
+        d.closeButtonK.clicked.connect(self.promote_knight)
 
         d.exec_()
 
-    def promoteQueen(self):
+    def promote_queen(self):
         self.move_promote_asked = chess.Move.from_uci("{}{}q".format(self.pieceToMove[1], self.coordinates))
         self.d.close()
 
-    def promoteRook(self):
+    def promote_rook(self):
         self.move_promote_asked = chess.Move.from_uci("{}{}r".format(self.pieceToMove[1], self.coordinates))
         self.d.close()
 
-    def promoteBishop(self):
+    def promote_bishop(self):
         self.move_promote_asked = chess.Move.from_uci("{}{}b".format(self.pieceToMove[1], self.coordinates))
         self.d.close()
 
-    def promoteKnight(self):
+    def promote_knight(self):
         self.move_promote_asked = chess.Move.from_uci("{}{}n".format(self.pieceToMove[1], self.coordinates))
         self.d.close()
-
-    def goplay(self):
-        self.play.play_one_match()
-
-    def startPlayThread(self):
-        print('startPlayThread()')
-        self.worker = Worker(self.goplay)
-        self.threadpool.start(self.worker)
-
-    def computerMove(self):
-        print('computerMove')
-        worker = Worker()
-        self.threadpool.start(worker)
 
     def process_message(self):
         """
@@ -252,15 +214,10 @@ class MainWindow(QWidget):
         self.closeButton7.setText('eval: ' + str(evaluation))  # text
 
     def update_match_stats(self, match_info):
-        player_one_wins, player_two_wins,draws = match_info.get_simple_result()
+        player_one_wins, player_two_wins, draws = match_info.get_simple_result()
         self.closeButton4.setText(
             'Score: ' + str(player_one_wins) + '-'
             + str(player_two_wins) + '-'
             + str(draws))  # text
 
 
-if __name__ == "__main__":
-    chessGui = QApplication(sys.argv)
-    window = MainWindow(None)
-    window.show()
-    sys.exit(chessGui.exec_())
