@@ -5,21 +5,11 @@ This module is the execution point of the chess GUI application.
 """
 
 import sys
-
 import chess
-import threading
-
-import global_variables
-from PyQt5.QtCore import pyqtSlot, Qt
 from PyQt5.QtSvg import QSvgWidget
-from PyQt5.QtWidgets import QApplication, QWidget
-
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
-
-import time
-
 
 
 class MainWindow(QWidget):
@@ -81,7 +71,7 @@ class MainWindow(QWidget):
         print(event.text())
         key = event.text()
         if key == '1':
-            if self.count>0:
+            if self.count > 0:
                 self.chess_board.pop()
                 print(self.chess_board)
                 print(self.chess_board.fen())
@@ -97,7 +87,6 @@ class MainWindow(QWidget):
                 if self.count < len(self.chess_board_recorded.move_stack):
                     self.next_move = self.chess_board_recorded.move_stack[self.count]
                 self.drawBoard()
-
 
     def drawBoard(self):
         """

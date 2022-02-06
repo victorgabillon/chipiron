@@ -1,6 +1,3 @@
-import global_variables
-
-
 class FirstMoves:
 
     def __init__(self):
@@ -26,14 +23,11 @@ class FirstMoves:
             node_descendants = node.get_descendants()
             for descendant in node_descendants:
                 if descendant.id == 5857:
-                    print('## 5857--',[i.id for i in self.first_moves[parent_node].copy()])
-#                assert (descendant.id != 5857)
+                    print('## 5857--', [i.id for i in self.first_moves[parent_node].copy()])
+                #                assert (descendant.id != 5857)
                 self.first_moves[descendant].update(self.first_moves[parent_node].copy())
         else:
             self.first_moves[node] = self.first_moves[parent_node].copy()
-
-        if global_variables.testing_bool:
-            self.test_first_move_node(node)
 
     def test_first_move(self):
         for node in self.first_moves:

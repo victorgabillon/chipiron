@@ -5,7 +5,6 @@ from src.players.stockfish import Stockfish
 from src.players.player import Player
 from src.players.player_thread import PlayerProcess
 import multiprocessing
-from src.extra_tools.null_object import NullObject
 
 
 def create_main_move_selector(arg, syzygy, random_generator):

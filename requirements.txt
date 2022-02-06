@@ -1,2 +1,15 @@
-PyQt5
-chess
+###### Requirements without Version Specifiers ######
+PyQt5~=5.15.4
+
+###### Requirements with Version Specifiers ######
+chess >= 1.8.0
+PyYAML~=5.3.1
+matplotlib~=3.4.3
+sortedcollections~=2.1.0
+pandas~=1.2.4
+numpy~=1.19.5
+torch~=1.10.1
+bidict~=0.21.2
+numba~=0.53.1
+graphviz~=0.16
+psutil~=5.9.0
