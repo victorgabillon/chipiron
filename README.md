@@ -2,10 +2,17 @@
 
 Chipiron is a Python library that plays chess
 
+
+## Requirements
+
+* Python 3.9
+* pip
+
 ## Installation
 
+
 ```console
-pip -r ./requirements.txt
+pip install -r ./requirements.txt
 ```
 
 ## Usage
