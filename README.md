@@ -6,23 +6,20 @@ Chipiron is a Python library that plays chess
 
 
 
+
+
 ## Usage
 
-### one match
 
 
 ### one match
-```python
-import foobar
+```console
+python chipiron/main-chipiron.py one_match --config_file_name chipiron/scripts/one_match/exp_options.yaml
+```
 
-# returns 'words'
-foobar.pluralize('word')
-
-# returns 'geese'
-foobar.pluralize('goose')
-
-# returns 'phenomenon'
-foobar.singularize('phenomena')
+### learn nn from supervised datasets 
+```console
+python chipiron/main-chipiron.py learn_nn --config_file_name chipiron/scripts/learn_nn_supervised/exp_options.yaml
 ```
 
 ## Contributing
