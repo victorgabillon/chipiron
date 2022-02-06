@@ -96,7 +96,7 @@ class GameManager:
             self.play_one_move(move)
             # Print the board
             self.observable_board.print_chess_board()
-        if message['type'] == 'move_syzygy': #TODO IS THIS CLEAN?
+        if message['type'] == 'move_syzygy': # TODO IS THIS CLEAN?
             self.syzygy_player.best_move(self.observable_board.board)
             self.play_one_move(move)
 
