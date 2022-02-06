@@ -125,4 +125,4 @@ class OneMatchScript(Script):
         else:  # No GUI
             self.match_manager.play_one_match()
 
-        # TODO check the good closing of processes'
+        # TODO check the good closing of processes

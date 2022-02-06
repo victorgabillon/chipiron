@@ -1,6 +1,4 @@
 from src.players.treevaluebuilders.trees.opening_instructions import OpeningInstructor
-import random
-import global_variables
 from src.players.treevaluebuilders.notations_and_statics import softmax
 from src.players.treevaluebuilders.stopping_criterion import create_stopping_criterion
 from src.players.boardevaluators.over_event import OverEvent

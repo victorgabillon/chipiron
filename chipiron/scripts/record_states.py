@@ -2,13 +2,11 @@ import pandas as pd
 import yaml
 from src.players.player import Player
 from src.players.boardevaluators.table_base.syzygy import SyzygyTable
-import global_variables
 import os
 
 class RecordStates:
 
     def __init__(self):
-        global_variables.profiling_bool = False
 
         self.algo_name = 'RecurZipfBase'
         self.tree_moves = 1000

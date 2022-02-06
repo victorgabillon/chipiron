@@ -1,10 +1,10 @@
-import global_variables
 import cProfile, pstats, io
 from pstats import SortKey
 import time
 from scripts.parsers.parser import create_parser
 from datetime import datetime
 from src.extra_tools.small_tools import mkdir
+
 
 class Script:
     """
@@ -31,7 +31,7 @@ class Script:
         parser.log_parser_info(self.experiment_output_folder)
 
         # init global variables
-        #global_variables.init(self.args)
+        # global_variables.init(self.args)
 
         # activate profiling is if needed
         if self.args['profiling']:
@@ -41,7 +41,8 @@ class Script:
     def set_experiment_output_folder(self):
         if 'output_folder' not in self.args:
             now = datetime.now()  # current date and time
-            self.experiment_output_folder = self.base_experiment_output_folder + now.strftime("%A-%m-%d-%Y--%H:%M:%S:%f")
+            self.experiment_output_folder = self.base_experiment_output_folder + now.strftime(
+                "%A-%m-%d-%Y--%H:%M:%S:%f")
         else:
             self.experiment_output_folder = self.base_experiment_output_folder + self.args['output_folder']
 
