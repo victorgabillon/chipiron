@@ -1,5 +1,5 @@
 class Player:
-    #  difference between player and treebuilder includes the fact that now a player can be a mixture of multiple decision rulles
+    #  difference between player and treebuilder includes the fact that now a player can be a mixture of multiple decision rules
 
     def __init__(self, arg, syzygy, main_move_selector):
         print(arg)
