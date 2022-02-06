@@ -5,7 +5,7 @@ from src.players.stockfish import Stockfish
 from src.players.player import Player
 from src.players.player_thread import PlayerProcess
 import multiprocessing
-
+from src.extra_tools.null_object import NullObject
 
 def create_main_move_selector(arg, syzygy, random_generator):
     if arg['type'] == 'RandomPlayer':
@@ -14,6 +14,8 @@ def create_main_move_selector(arg, syzygy, random_generator):
         main_move_selector = create_tree_and_value_builders(arg, syzygy, random_generator)
     elif arg['type'] == 'Stockfish':
         main_move_selector = Stockfish(arg)
+    elif arg['type'] == 'Human':
+        main_move_selector = NullObject()
     else:
         sys.exit('player creator: can not find ' + arg['type'])
     return main_move_selector

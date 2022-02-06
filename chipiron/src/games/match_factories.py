@@ -182,8 +182,9 @@ class GameManagerFactory:
             player_id = player_color_to_id[player_color]
             player = self.player_id_to_player[player_id]
             game_player = GamePlayer(player, player_color)
-            player_process = launch_player_process(game_player, board, self.main_thread_mailbox)
-            player_processes.append(player_process)
+            if player_id != 'Human': # TODO COULD WE DO BETTER ? maybe with the null object
+                player_process = launch_player_process(game_player, board, self.main_thread_mailbox)
+                player_processes.append(player_process)
 
         game_manager = GameManager(board,
                                    self.syzygy_table,
