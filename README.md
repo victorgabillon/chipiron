@@ -12,7 +12,7 @@ Chipiron is a Python library that plays chess
 
 
 ```console
-pip install -r ./requirements.txt
+make init
 ```
 
 ## Usage
