@@ -7,7 +7,6 @@ This module is the execution point of the chess GUI application.
 import sys
 import chess
 
-import global_variables
 from PyQt5.QtCore import pyqtSlot, Qt
 from PyQt5.QtSvg import QSvgWidget
 from PyQt5.QtGui import *
