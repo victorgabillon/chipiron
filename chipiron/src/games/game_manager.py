@@ -92,7 +92,7 @@ class GameManager:
             # play the move
             move = message['move']
             print('receiving the move', move, type(self))
-            #TODO CHECK IF THE MOVE CORESPNDS TO THE CURRENT BOARD OTHER WISE KEEP FOR LATER? THINK! HOW TO DEAL with premoves if we dont know the board in advance?
+            #TODO CHECK IF THE MOVE CORRESPONDS TO THE CURRENT BOARD OTHER WISE KEEP FOR LATER? THINK! HOW TO DEAL with premoves if we dont know the board in advance?
             self.play_one_move(move)
             # Print the board
             self.observable_board.print_chess_board()
