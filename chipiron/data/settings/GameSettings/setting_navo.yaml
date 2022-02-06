@@ -1,0 +1,13 @@
+displayPositionOption: False
+verbose: No
+secondsPerMoveWhite: 2
+secondsPerMoveBlack: 10
+each_player_has_its_own_thread: True # allowing one player to think while it is not its turn
+#options: classic fromFile FEN
+starting_position:
+  type: fromFile
+  options:
+    file_name: Board1.text
+#starting_position:
+#  type: fen
+#  fen: 'r6r/pp1b1kp1/4pn2/q1bp3p/1n3Q2/2NBP3/PPP2PPP/R1B1K1R1 w Q - 4 12'
