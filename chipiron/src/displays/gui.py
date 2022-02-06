@@ -110,7 +110,7 @@ class MainWindow(QWidget):
                             move = chess.Move.from_uci("{}{}".format(self.pieceToMove[1], self.coordinates))
                             move_promote = chess.Move.from_uci("{}{}q".format(self.pieceToMove[1], self.coordinates))
                             if move in self.board.legal_moves:
-                                self.send_move_to_main_thread(self.move)
+                                self.send_move_to_main_thread(move)
                             elif move_promote in self.board.legal_moves:
                                 self.choice_promote()
                                 self.send_move_to_main_thread(self.move_promote_asked)
@@ -122,6 +122,7 @@ class MainWindow(QWidget):
                     self.pieceToMove = [piece, self.coordinates]
 
     def send_move_to_main_thread(self, move):
+        print('move',type(move),move)
         self.main_thread_mailbox.put({'type': 'move', 'move': move})
 
     def choice_promote(self):
