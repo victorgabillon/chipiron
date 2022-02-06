@@ -26,4 +26,4 @@ python chipiron/main-chipiron.py learn_nn --config_file_name chipiron/scripts/le
 
 
 ## License
-[MIT](https://choosealicense.com/licenses/mit/)
+[GPL-3.0](https://choosealicense.com/licenses/gpl-3.0/)
