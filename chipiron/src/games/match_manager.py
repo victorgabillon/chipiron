@@ -34,9 +34,9 @@ class MatchManager:
 
         game_number = 0
         while not self.game_args_factory.is_match_finished():
-            player_color_to_id, args_game = self.game_args_factory.generate_game_args(game_number)
-            game_results = self.launch_game(player_color_to_id, args_game, game_number)
-            match_results.add_result_one_game(white_player_name_id=player_color_to_id[chess.WHITE],
+            player_color_to_player, args_game = self.game_args_factory.generate_game_args(game_number)
+            game_results = self.launch_game(player_color_to_player, args_game, game_number)
+            match_results.add_result_one_game(white_player_name_id=player_color_to_player[chess.WHITE].id,
                                               game_result=game_results)
             game_number += 1
 
@@ -44,8 +44,8 @@ class MatchManager:
         self.print_stats_to_file(match_results)
         return match_results
 
-    def launch_game(self, player_color_to_id, args_game, game_number):
-        game_manager = self.game_manager_factory.create(args_game, player_color_to_id)
+    def launch_game(self, player_color_to_player, args_game, game_number):
+        game_manager = self.game_manager_factory.create(args_game, player_color_to_player)
         game_results = game_manager.play_one_game()
         game_manager.print_to_file(idx=game_number)
         game_manager.terminate_threads()  # TODO should this line be inside the play one game ?
