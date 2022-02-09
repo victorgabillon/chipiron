@@ -4,7 +4,7 @@ import chess.engine
 class Stockfish:
 
     def __init__(self):
-        self.engine = chess.engine.SimpleEngine.popen_uci("chipiron/stockfish/stockfish_13_linux_x64")
+        self.engine = chess.engine.SimpleEngine.popen_uci("chipiron/stockfish/stockfish_14.1_linux_x64/stockfish_14.1_linux_x64")
         self.depth = 20
 
     def value_white(self, node):
