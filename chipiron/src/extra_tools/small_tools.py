@@ -26,7 +26,7 @@ def dict_alphabetic_str(dic):
 
 
 def unique_int_from_list(a_list):
-    # only coded for a list of 2 atm
+    # only coded for a list of 2 atm probably van be done recursively for larger lists
     assert (len(a_list) == 2)
     x = a_list[0]
     y = a_list[1]
