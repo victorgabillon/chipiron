@@ -39,7 +39,6 @@ class OneMatchScript(Script):
 
         # taking care of random
         set_seeds(seed=self.args['seed'])
-        random_generator = random.Random(self.args['seed'])
 
         file_name_player_one = self.args['file_name_player_one']
         file_name_player_two = self.args['file_name_player_two']
@@ -63,7 +62,7 @@ class OneMatchScript(Script):
         main_thread_mailbox = multiprocessing.Manager().Queue()
 
         match_manager_factory = MatchManagerFactory(args_match, args_player_one, args_player_two, syzygy_mailbox,
-                                                    self.experiment_output_folder, random_generator,
+                                                    self.experiment_output_folder, self.args['seed'],
                                                     main_thread_mailbox)
 
         if self.args['gui']:

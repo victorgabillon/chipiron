@@ -7,37 +7,29 @@ from src.players.factory import create_player, launch_player_process
 import yaml
 from src.players.boardevaluators.table_base.syzygy import SyzygyTable
 from src.chessenvironment.boards.factory import create_board
-import copy
+import random
+from src.extra_tools.small_tools import unique_int_from_list
 
 
 class MatchManagerFactory:
     def __init__(self, args_match, args_player_one, args_player_two, syzygy_table, output_folder_path,
-                 random_generator, main_thread_mailbox):
+                 seed, main_thread_mailbox):
         self.output_folder_path = output_folder_path
-        self.args_player_one = args_player_one
-        self.args_player_two = args_player_two
-
-        # Creating the players
-        syzygy_table2 = SyzygyTable('') # TODO CHECK THERE SHOULD BE A RACE CONDITION HERE
-        player_one = create_player(args_player_one, syzygy_table, random_generator)
-        syzygy_table3 = SyzygyTable('')
-        player_two = create_player(args_player_two, syzygy_table, random_generator)
-
-        player_id_to_player = {args_player_one['name']: player_one,
-                               args_player_two['name']: player_two}
+        self.player_one_name = args_player_one['name']
+        self.player_two_name = args_player_two['name']
 
         game_manager_board_evaluator_factory = BoardEvaluator2Factory()
 
         self.game_manager_factory = GameManagerFactory(syzygy_table, game_manager_board_evaluator_factory,
-                                                       output_folder_path, main_thread_mailbox, player_id_to_player,
+                                                       output_folder_path, main_thread_mailbox
                                                        )
 
-        self.match_results_factory = MatchResultsFactory(args_player_one['name'], args_player_two['name'])
-        self.game_args_factory = GameArgsFactory(args_match, args_player_one['name'], args_player_two['name'])
+        self.match_results_factory = MatchResultsFactory(self.player_one_name, self.player_two_name)
+        self.game_args_factory = GameArgsFactory(args_match, args_player_one, args_player_two, seed)
 
     def create(self):
-        match_manager = MatchManager(self.args_player_one['name'],
-                                     self.args_player_two['name'],
+        match_manager = MatchManager(self.player_one_name,
+                                     self.player_two_name,
                                      self.game_manager_factory,
                                      self.game_args_factory,
                                      self.match_results_factory,
@@ -119,27 +111,42 @@ class MatchResultsFactory:
 
 
 class GameArgsFactory:
+    # TODO MAYBE CHANGE THE NAME, ALSO MIGHT BE SPLIT IN TWO (players and rules)?
     """
-    The GameArgsFactory decides the identity of the players and the rules.
+    The GameArgsFactory creates the players and decides the rules.
     So far quite simple
+    This class is supposed to be dependent of Match-related classes (contrarily to the GameArgsFactory)
+
     """
 
-    def __init__(self, args_match, player_one_id, player_two_id):
+    def __init__(self, args_match, args_player_one, args_player_two, seed):
         self.args_match = args_match
-        self.player_one_id = player_one_id
-        self.player_two_id = player_two_id
+        self.seed = seed
+        self.args_player_one = args_player_one
+        self.args_player_two = args_player_two
         with open('chipiron/data/settings/GameSettings/' + args_match['game_setting_file'], 'r') as file_game:
             self.args_game = yaml.load(file_game, Loader=yaml.FullLoader)
         self.game_number = 0
 
     def generate_game_args(self, game_number):
         print('args_game', self.args_game)
+
+        # Creating the players
+        syzygy_table = SyzygyTable('')  # TODO FIND OUT THE LOGICS OF MEMORY CONSUMPTION IMPORTANT!! (ALSO SHOULD BE GIBEN AS PARAM INPUT MAYBE)
+
+        syzygy_table2 = SyzygyTable('')  # TODO CHECK THERE SHOULD BE A RACE CONDITION HERE
+        random_generator = random.Random(unique_int_from_list([self.seed, game_number]))
+        player_one = create_player(self.args_player_one, syzygy_table, random_generator)
+        syzygy_table3 = SyzygyTable('')
+        player_two = create_player(self.args_player_two, syzygy_table, random_generator)
+
         if game_number < self.args_match['number_of_games_player_one_white']:
-            player_color_to_id = {chess.WHITE: self.player_one_id, chess.BLACK: self.player_two_id}
+            player_color_to_player = {chess.WHITE: player_one, chess.BLACK: player_two}
         else:
-            player_color_to_id = {chess.WHITE: self.player_two_id, chess.BLACK: self.player_one_id}
+            player_color_to_player = {chess.WHITE: player_two, chess.BLACK: player_one}
         self.game_number += 1
-        return player_color_to_id, self.args_game
+
+        return player_color_to_player, self.args_game
 
     def is_match_finished(self):
         return self.game_number >= self.args_match['number_of_games_player_one_white'] + self.args_match[
@@ -153,21 +160,20 @@ class GameManagerFactory:
     This class is supposed to be independent of Match-related classes (contrarily to the GameArgsFactory)
     """
 
-    def __init__(self, syzygy_table, game_manager_board_evaluator_factory, output_folder_path, main_thread_mailbox,
-                 player_id_to_player):
+    def __init__(self, syzygy_table, game_manager_board_evaluator_factory, output_folder_path, main_thread_mailbox):
         self.syzygy_table = syzygy_table
         self.output_folder_path = output_folder_path
         self.game_manager_board_evaluator_factory = game_manager_board_evaluator_factory
         self.main_thread_mailbox = main_thread_mailbox
-        self.player_id_to_player = player_id_to_player
         self.subscribers = []
 
-    def create(self, args_game_manager, player_color_to_id):
+    def create(self, args_game_manager, player_color_to_player):
         # maybe this factory is overkill at the moment but might be
         # useful if the logic of game generation gets more complex
 
         board = create_board(self.subscribers)
         if self.subscribers:
+            player_color_to_id = {color: player.id for color, player in player_color_to_player.items()}
             for subscriber in self.subscribers:
                 subscriber.put({'type': 'players_color_to_id', 'players_color_to_id': player_color_to_id})
         board_evaluator = self.game_manager_board_evaluator_factory.create()
@@ -176,13 +182,11 @@ class GameManagerFactory:
             self.main_thread_mailbox.get()
 
         player_processes = []
-
         # Creating and launching the player threads
         for player_color in chess.COLORS:
-            player_id = player_color_to_id[player_color]
-            player = self.player_id_to_player[player_id]
+            player = player_color_to_player[player_color]
             game_player = GamePlayer(player, player_color)
-            if player_id != 'Human': # TODO COULD WE DO BETTER ? maybe with the null object
+            if player.id != 'Human':  # TODO COULD WE DO BETTER ? maybe with the null object
                 player_process = launch_player_process(game_player, board, self.main_thread_mailbox)
                 player_processes.append(player_process)
 

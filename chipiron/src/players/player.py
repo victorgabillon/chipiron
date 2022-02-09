@@ -4,7 +4,7 @@ class Player:
     def __init__(self, arg, syzygy, main_move_selector):
         print(arg)
         self.arg = arg
-        self.player_name_id = arg['name']
+        self.id = arg['name']
         self.main_move_selector = main_move_selector
 
         self.syzygy_player = None
@@ -21,7 +21,7 @@ class Player:
 
         # if there is only one possible legal move in the position, do not think, choose it.
         all_legal_moves = list(board.legal_moves)
-        if len(all_legal_moves) == 1 and self.player_name_id != 'Human':
+        if len(all_legal_moves) == 1 and self.id != 'Human':
             return all_legal_moves[0]
 
         # if the play with syzygy option is on test if the position is in the database to play syzygy
