@@ -20,6 +20,7 @@ class MyParser:
         self.args_command_line = None
         self.args_config_file = None
         self.merged_args = None
+        print('oooo')
 
     def parse_command_line_arguments(self):
         args_obj = self.parser_no_default.parse_args() # TODO only working with argparse, no?
@@ -37,7 +38,7 @@ class MyParser:
                     print('Here are the yaml file arguments of the script', args_config_file)
                 except yaml.YAMLError as exc:
                     print(exc)
-        except IOError:
+        except IOError: #TODO weird things hapen here depending on where is execute the script and the type of error catched
             print("Could not read file:", config_file_path)
         self.args_config_file = args_config_file
 
