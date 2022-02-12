@@ -7,6 +7,7 @@ from src.players.player_thread import PlayerProcess
 import multiprocessing
 from src.extra_tools.null_object import NullObject
 
+
 def create_main_move_selector(arg, syzygy, random_generator):
     if arg['type'] == 'RandomPlayer':
         main_move_selector = RandomPlayer()

@@ -132,12 +132,9 @@ class GameArgsFactory:
         print('args_game', self.args_game)
 
         # Creating the players
-        syzygy_table = SyzygyTable('')  # TODO FIND OUT THE LOGICS OF MEMORY CONSUMPTION IMPORTANT!! (ALSO SHOULD BE GIBEN AS PARAM INPUT MAYBE)
-
-        syzygy_table2 = SyzygyTable('')  # TODO CHECK THERE SHOULD BE A RACE CONDITION HERE
+        syzygy_table = SyzygyTable('')
         random_generator = random.Random(unique_int_from_list([self.seed, game_number]))
         player_one = create_player(self.args_player_one, syzygy_table, random_generator)
-        syzygy_table3 = SyzygyTable('')
         player_two = create_player(self.args_player_two, syzygy_table, random_generator)
 
         if game_number < self.args_match['number_of_games_player_one_white']:
