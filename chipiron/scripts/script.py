@@ -15,7 +15,7 @@ class Script:
     default_param_dict = {'profiling': False}
     base_experiment_output_folder = 'chipiron/scripts/'
 
-    def __init__(self):
+    def __init__(self, gui_args=None):
         """
         Building the Script object, starts the clock, the profiling and parse arguments and deals with global variables
         """
@@ -24,14 +24,11 @@ class Script:
 
         # parse the arguments
         parser = create_parser(default_param_dict=self.default_param_dict)
-        self.args = parser.parse_arguments()
+        self.args = parser.parse_arguments(gui_args)
         self.experiment_output_folder = None
         self.set_experiment_output_folder()
         mkdir(self.experiment_output_folder)
         parser.log_parser_info(self.experiment_output_folder)
-
-        # init global variables
-        # global_variables.init(self.args)
 
         # activate profiling is if needed
         if self.args['profiling']:
