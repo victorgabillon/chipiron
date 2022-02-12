@@ -1,5 +1,5 @@
-import copy
 import multiprocessing
+import copy
 import queue
 
 
@@ -18,17 +18,12 @@ class PlayerProcess(multiprocessing.Process):
         print('Started player thread : ', self.game_player)
 
         while not self.stopped():
-            import time
-            try:
-                # print('is there SOMETHING?')
 
+            try:
                 message = self.queue_board.get(False)
             except queue.Empty:
-                #  print('Empty')
                 pass
             else:
-                # print('OOOOOOOOOOO SOMETHING')
-
                 # Handle task here and call q.task_done()
                 if message['type'] == 'board':
                     board = message['board']
