@@ -6,14 +6,14 @@ from src.extra_tools.small_tools import dict_alphabetic_str
 def create_parser(default_param_dict):
     parser = argparse.ArgumentParser()
     for key, value in default_param_dict.items():
-        parser.add_argument('--' + key, type=type(value), default=None, help='type of nn to learn')
+        parser.add_argument('--' + key, type=type(value), default=None, help='type of nn to learn') #TODO help seems wrong
     return MyParser(parser, default_param_dict)
 
 
-class MyParser():
+class MyParser:
 
     def __init__(self, parser, default_param_dict):
-        self.parser_no_default = parser
+        self.parser_no_default = parser # TODO not clear what it is, it always argparse?
         self.default_param_dict = default_param_dict
 
         # attributes to be set and saved at runtime
@@ -22,7 +22,7 @@ class MyParser():
         self.merged_args = None
 
     def parse_command_line_arguments(self):
-        args_obj = self.parser_no_default.parse_args()
+        args_obj = self.parser_no_default.parse_args() # TODO only working with argparse, no?
         args_command_line = vars(args_obj)  # converting into dictionary format
         self.args_command_line = {key: value for key, value in args_command_line.items() if value is not None}
         print('Here are the command line arguments of the script', self.args_command_line)
@@ -41,7 +41,10 @@ class MyParser():
             print("Could not read file:", config_file_path)
         self.args_config_file = args_config_file
 
-    def parse_arguments(self):
+    def parse_arguments(self, gui_args=None):
+        if gui_args is None:
+            gui_args = {}
+
         self.parse_command_line_arguments()
 
         config_file_path = None
@@ -55,19 +58,19 @@ class MyParser():
             self.parse_config_file_arguments(config_file_path)
 
         #  the command line arguments overwrite the config file arguments that overwrite the default arguments
-        self.merged_args = self.default_param_dict | self.args_config_file | self.args_command_line
+        self.merged_args = self.default_param_dict | self.args_config_file | self.args_command_line | gui_args
         print('Here are the merged arguments of the script', self.merged_args)
 
         try:
             assert (set(self.default_param_dict.keys()) == set(self.merged_args.keys()))
-        except AssertionError as e:
+        except AssertionError as error:
             raise Exception(
                 'Please have the set of defaults arguments equals the set of given arguments: {} and {}  || diffs {} {}'.format(
                     self.default_param_dict.keys(), self.merged_args.keys(),
                     set(self.default_param_dict.keys()).difference(set(self.merged_args.keys())),
                     set(self.merged_args.keys()).difference(set(self.default_param_dict.keys()))
                 )
-            ) from e
+            ) from error
 
         return self.merged_args
 

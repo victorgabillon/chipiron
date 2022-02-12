@@ -1,4 +1,3 @@
-import random
 import sys
 from src.displays.gui import MainWindow
 from PyQt5.QtWidgets import *
@@ -28,14 +27,14 @@ class OneMatchScript(Script):
                           'file_name_match_setting': 'setting_duda.yaml'}
     base_experiment_output_folder = Script.base_experiment_output_folder + 'one_match/one_match_outputs/'
 
-    def __init__(self):
+    def __init__(self, gui_args):
         """
         Builds the OneMatchScript object
         """
         # Getting % usage of virtual_memory ( 3rd field)
         print('RAM memory % used:', psutil.virtual_memory()[2])
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into self.args
-        super().__init__()
+        super().__init__(gui_args)
 
         # taking care of random
         set_seeds(seed=self.args['seed'])
