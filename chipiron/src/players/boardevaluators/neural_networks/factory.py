@@ -5,7 +5,7 @@ from src.players.boardevaluators.neural_networks.nn_pp2d2_2 import NetPP2D2_2
 from src.players.boardevaluators.neural_networks.nn_pp2d2_2leaky import NetPP2D2_2_LEAKY
 from src.players.boardevaluators.neural_networks.nn_pp2d2_2prelu import NetPP2D2_2_PRELU
 from src.players.boardevaluators.neural_networks.nn_pp2d2_2rrelu import NetPP2D2_2_RRELU
-from src.players.boardevaluators.neural_networks.nn_board_eval import NNBoardEval
+from src.players.boardevaluators.neural_networks.nn_board_evaluator import NNBoardEvaluator
 from src.extra_tools.small_tools import mkdir
 
 
@@ -48,4 +48,4 @@ def create_nn(args, create_file=False):
 
 def create_nn_board_eval(arg, create_file=False):
     net = create_nn(arg, create_file=create_file)
-    return NNBoardEval(net)
+    return NNBoardEvaluator(net)

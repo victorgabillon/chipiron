@@ -1,9 +1,9 @@
 import torch
 import chess
-from src.players.boardevaluators.board_evaluator import BoardEvaluator
+from src.players.boardevaluators.node_evaluator import NodeEvaluator
 
 
-class NNBoardEval(BoardEvaluator):
+class NNBoardEvaluator(NodeEvaluator):
     """ The Generic Neural network class for board evaluation"""
 
     def __init__(self, net):
@@ -48,7 +48,6 @@ class NNBoardEval(BoardEvaluator):
             processed_evaluation = self.process_evalution_not_over(value_white_eval, node_not_over)
             node_not_over.set_evaluation(processed_evaluation)
 
-        #import time
-        #time.sleep(10)
+
 
 

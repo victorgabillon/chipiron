@@ -1,20 +1,34 @@
-from src.players.boardevaluators.board_evaluators_wrapper import DISCOUNT
+from typing import Protocol
 
 
-class BoardEvaluator:
+class BoardEvaluator(Protocol):
+    """
+    This class evaluates a board
+    """
 
-    def __init__(self):
-        pass
+    def evaluate(self, board):
+        """Evaluates a board"""
+        ...
 
-    def compute_representation(self, node, parent_node, board_modifications):
-        pass
 
-    def evaluate_all_not_over(self, not_over_nodes):
-        for node_not_over in not_over_nodes:
-            evaluation = self.value_white(node_not_over)
-            processed_evaluation = self.process_evalution_not_over(evaluation, node_not_over)
-            node_not_over.set_evaluation(processed_evaluation)
+class ObservableBoardEvaluator:
+    # TODO see if it is possible and desirable to  make a general Observable wrapper that goes all that automatically
+    # as i do the same for board and game info
+    def __init__(self, board_evaluator):
+        self.board_evaluator = board_evaluator
+        self.mailboxes = []
 
-    def process_evalution_not_over(self, evaluation, node):
-        processed_evaluation = (1 / DISCOUNT) ** node.half_move * evaluation
-        return processed_evaluation
+    def subscribe(self, mailbox):
+        self.mailboxes.append(mailbox)
+
+    # wrapped function
+    def evaluate(self, board):
+        evaluation = self.board_evaluator.evaluate(board)
+        self.notify_new_results(evaluation)
+        return evaluation
+
+    def notify_new_results(self, evaluation):
+        for mailbox in self.mailboxes:
+            mailbox.put({'type': 'evaluation', 'evaluation': evaluation})
+
+    # forwarding

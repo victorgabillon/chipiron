@@ -29,7 +29,7 @@ class TreeNodeWithValue(TreeNode):
 
         # children_sorted_by_value records subjective values of children by descending order
         # subjective value means the values is from the point of view of player_to_move
-        # careful, i have hard coded in the self.best_child() function the descending order for
+        # careful, I have hard coded in the self.best_child() function the descending order for
         # fast access to best element, so please do not change!
         self.iii()
 
@@ -39,7 +39,7 @@ class TreeNodeWithValue(TreeNode):
         self.best_index_for_value = 0
 
         # the list of children that have not yet be found to be over
-        # using atm a list instaed of set as atm python set are not insertion ordered which adds randomness
+        # using atm a list instead of set as atm python set are not insertion ordered which adds randomness
         # and makes debug harder
         self.children_not_over = []
 
@@ -88,7 +88,7 @@ class TreeNodeWithValue(TreeNode):
         for child in self.children_sorted_by_value.dic:
             if not child.is_over():
                 return child
-        assert(1==0)
+        assert (1 == 0)
 
     def best_child_value(self):
         # fast way to access first key with highest subjective value
@@ -216,10 +216,6 @@ class TreeNodeWithValue(TreeNode):
         for child in children_nodes_to_consider:
             self.record_sort_value_of_child(child)
         self.children_sorted_by_value.sort_dic()
-        # print('############',self.children_sorted_by_value.dic)
-        # print('-###########',self.children_sorted_by_value_vsd)
-        # for i in self.children_sorted_by_value_vsd:
-        #     assert i
 
     def sort_children_not_over(self):
         # todo: looks like the deterministism of the sort induces some determinisin the play like always playing the same actions when a lot of them have equal value: introduce some randomness?
@@ -417,7 +413,7 @@ class TreeNodeWithValue(TreeNode):
 
     def my_logit(self, x):  # todo look out for numerical problem with utmatic rounding to 0 or especillay to 1
         y = min(max(x, .000000000000000000000001), .9999999999999999)
-        return math.log(y / (1 - y)) * max(1,abs(x)) #the * min(1,x) is a hack to prioritize game over
+        return math.log(y / (1 - y)) * max(1, abs(x))  # the * min(1,x) is a hack to prioritize game over
 
     def get_all_of_the_best_moves(self, how_equal=None):
         # todo make it faster
@@ -453,7 +449,7 @@ class TreeNodeWithValue(TreeNode):
         return res
 
     def best_node_sequence_not_over(self):
-        """ computes and returns the best line that does not contains any over state"""
+        """ computes and returns the best line that does not contain any over state"""
         node = self
         res = []
         while node.are_all_moves_and_children_opened():
@@ -461,9 +457,6 @@ class TreeNodeWithValue(TreeNode):
             node = node.best_child_not_over()
             res.append(node)
         return res
-
-
-
 
     def create_update_instructions_after_node_birth(self):
         update_instructions = UpdateInstructions()
