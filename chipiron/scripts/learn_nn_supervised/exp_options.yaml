@@ -3,8 +3,8 @@ neural_network:
     nn_param_folder_name: 'base'
 create_nn_file: True
 config_file_name: 'chipiron/scripts/learn_nn_supervised/exp_options.yaml'
-stockfish_boards_train_file_name: 'data/data_sets/goodgames_plusvariation_stockfish_eval_train_t.1_merge.pi'
-stockfish_boards_test_file_name: 'data/data_sets/goodgames_plusvariation_stockfish_eval_test'
+stockfish_boards_train_file_name: 'chipiron/data/datasets/goodgames_plusvariation_stockfish_eval_train_t.1_merge.pi'
+stockfish_boards_test_file_name: 'chipiron/data/datasets/goodgames_plusvariation_stockfish_eval_test'
 preprocessing_data_set: False
 batch_size_train: 32
 batch_size_test: 10
