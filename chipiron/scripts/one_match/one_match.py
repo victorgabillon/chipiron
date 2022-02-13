@@ -10,7 +10,6 @@ import multiprocessing
 from src.players.boardevaluators.table_base.factory import create_syzygy_thread
 
 # Importing the library
-import psutil
 
 
 class OneMatchScript(Script):
@@ -32,7 +31,6 @@ class OneMatchScript(Script):
         Builds the OneMatchScript object
         """
         # Getting % usage of virtual_memory ( 3rd field)
-        print('RAM memory % used:', psutil.virtual_memory()[2])
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into self.args
         super().__init__(gui_args)
 
@@ -51,12 +49,10 @@ class OneMatchScript(Script):
             file_name_player_one, file_name_player_two, file_name_match_setting)
 
         # Getting % usage of virtual_memory ( 3rd field)
-        print('RAM memory % used:', psutil.virtual_memory()[2])
         # Creation of the Syzygy table for perfect play in low pieces cases, needed by the GameManager
         # and can also be used by the players
         syzygy_mailbox = create_syzygy_thread()
         # Getting % usage of virtual_memory ( 3rd field)
-        print('RAM memory % used:', psutil.virtual_memory()[2])
 
         main_thread_mailbox = multiprocessing.Manager().Queue()
 
