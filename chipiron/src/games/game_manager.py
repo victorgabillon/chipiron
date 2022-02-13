@@ -47,7 +47,7 @@ class GameManager:
         self.player_threads = player_threads
 
     def stockfish_eval(self):
-        return self.display_board_evaluator.get_evaluation(self.observable_board.board)  # TODO DON'T LIKE THIS writing
+        return self.display_board_evaluator.evaluate(self.observable_board.board)  # TODO DON'T LIKE THIS writing
 
     def play_one_move(self, move):
         self.observable_board.play_move(move)

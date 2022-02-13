@@ -1,12 +1,12 @@
 import chess
 from src.players.game_player import GamePlayer
-from src.players.boardevaluators.stockfish_evaluation import Stockfish
 from src.games.game_manager import GameManager
 from src.games.match_manager import MatchManager, MatchResults, ObservableMatchResults
 from src.players.factory import create_player, launch_player_process
 import yaml
 from src.players.boardevaluators.table_base.syzygy import SyzygyTable
 from src.chessenvironment.boards.factory import create_board
+from src.players.boardevaluators.factory import ObservableBoardEvaluatorFactory
 import random
 from src.extra_tools.small_tools import unique_int_from_list
 
@@ -18,7 +18,7 @@ class MatchManagerFactory:
         self.player_one_name = args_player_one['name']
         self.player_two_name = args_player_two['name']
 
-        game_manager_board_evaluator_factory = BoardEvaluator2Factory()
+        game_manager_board_evaluator_factory = ObservableBoardEvaluatorFactory()
 
         self.game_manager_factory = GameManagerFactory(syzygy_table, game_manager_board_evaluator_factory,
                                                        output_folder_path, main_thread_mailbox
@@ -40,56 +40,6 @@ class MatchManagerFactory:
     def subscribe(self, subscriber):
         self.game_manager_factory.subscribe(subscriber)
         self.match_results_factory.subscribe(subscriber)
-
-
-# TODO THERE IS ALREADY A class BoardEvaluator that was done before should we merge or name differently? atm I will note the one for gui display with a 2
-class BoardEvaluator2Factory:
-    def __init__(self):
-        self.subscribers = []
-
-    def create(self):
-        board_evaluator = BoardEvaluator2()
-        if self.subscribers:
-
-            board_evaluator = ObservableBoardEvaluator2(board_evaluator)
-            for subscriber in self.subscribers:
-                board_evaluator.subscribe(subscriber)
-        return board_evaluator
-
-    def subscribe(self, subscriber):
-        self.subscribers.append(subscriber)
-
-
-class ObservableBoardEvaluator2:
-    # TODO see if it is possible and desirable to  make a general Observable wrapper that goes all that automatically
-    # as i do the same for board and game info
-    def __init__(self, board_evaluator):
-        self.board_evaluator = board_evaluator
-        self.mailboxes = []
-
-    def subscribe(self, mailbox):
-        self.mailboxes.append(mailbox)
-
-    # wrapped function
-    def get_evaluation(self, board):
-        evaluation = self.board_evaluator.get_evaluation(board)
-        self.notify_new_results(evaluation)
-        return evaluation
-
-    def notify_new_results(self, evaluation):
-        for mailbox in self.mailboxes:
-            mailbox.put({'type': 'evaluation', 'evaluation': evaluation})
-
-    # forwarding
-
-
-class BoardEvaluator2:
-    def __init__(self):
-        self.evaluation = Stockfish()
-
-    def get_evaluation(self, board):
-        evaluation = self.evaluation.score(board)
-        return evaluation
 
 
 class MatchResultsFactory:

@@ -1,6 +1,6 @@
 import sys
 from src.players.treevaluebuilders.uniform import Uniform
-from src.players.boardevaluators.factory import create_board_evaluator
+from src.players.boardevaluators.factory import create_node_evaluator
 from src.players.treevaluebuilders.recur_zipf import RecurZipf
 from src.players.treevaluebuilders.recur_zipf_base import RecurZipfBase
 from src.players.treevaluebuilders.recur_zipf_base2 import RecurZipfBase2
@@ -38,6 +38,6 @@ def create_tree_and_value_builders(arg, syzygy, random_generator):
     else:
         sys.exit('tree builder: can not find ' + arg['tree_builder']['type'])
 
-    tree_builder.board_evaluators_wrapper = create_board_evaluator(arg['board_evaluator'], syzygy)
+    tree_builder.board_evaluators_wrapper = create_node_evaluator(arg['board_evaluator'], syzygy)
 
     return tree_builder

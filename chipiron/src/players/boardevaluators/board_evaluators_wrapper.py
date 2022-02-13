@@ -14,9 +14,24 @@ class EvaluationQueries:
         self.not_over_nodes = []
 
 
-class BoardEvaluatorsWrapper:
+class BoardEvaluatorsAggregator:
+    """
+    This is the aggregation of several board evaluator.
+    Atm, the moment it is a simple aggregation of a main_board evaluator and syzygy evaluator
+    and game-over automatic checks
+    """
+
+    def __init__(self):
+        pass
+
+    def evaluate(self, board):
+        evaluation = '?'
+        return evaluation
+
+
+class NodeEvaluatorsWrapper:
     # VALUE_WHITE_WHEN_OVER is the value_white default value when the node is over
-    # set atm to be symmetric and high be be preferred
+    # set atm to be symmetric and high to be preferred
     VALUE_WHITE_WHEN_OVER = [VALUE_WHITE_WHEN_OVER_WHITE_WINS, VALUE_WHITE_WHEN_OVER_DRAW,
                              VALUE_WHITE_WHEN_OVER_BLACK_WINS, ] = [1000, 0, -1000]
 
@@ -32,10 +47,6 @@ class BoardEvaluatorsWrapper:
             value_white = self.board_evaluator.value_white(node)
         return value_white
 
-    def values_white(self):
-        print('44', self.evaluation_queries.dict)
-        pass
-
     def compute_representation(self, node, parent_node, board_modifications):
         self.board_evaluator.compute_representation(node, parent_node, board_modifications)
 
@@ -43,7 +54,6 @@ class BoardEvaluatorsWrapper:
         if self.syzygy_evaluator is None or not self.syzygy_evaluator.fast_in_table(board):
             return None
         else:
-            print('deed', self.syzygy_evaluator.fast_in_table(board))
             return self.syzygy_evaluator.value_white(board)
 
     def check_obvious_over_events(self, node):
@@ -65,7 +75,6 @@ class BoardEvaluatorsWrapper:
                                          who_is_winner=who_is_winner_)
 
         elif self.syzygy_evaluator and self.syzygy_evaluator.fast_in_table(node.board):
-            print('@@', node.board)
             self.syzygy_evaluator.set_over_event(node)
 
     def value_white_from_over_event(self, over_event):
@@ -80,17 +89,6 @@ class BoardEvaluatorsWrapper:
         else:  # draw
             assert (over_event.is_draw())
             return self.VALUE_WHITE_WHEN_OVER_DRAW
-
-    def evaluate_board(self, node):
-        """ evaluate (value white) the board associated to the node"""
-        assert (node.value_white_evaluator is None)
-        self.check_obvious_over_events(node)
-        if node.is_over():
-            self.evaluate_over(node)
-        elif not node.moves_children:  # todo what????????????????????????/
-            self.evaluate_not_over(node)
-        else:
-            raise (Exception('@@@@@xx'))
 
     def evaluate_over(self, node):
         evaluation = DISCOUNT ** node.half_move * self.value_white_from_over_event(node.over_event)

@@ -1,5 +1,5 @@
 import chess
-from src.players.boardevaluators.board_evaluator import BoardEvaluator
+from src.players.boardevaluators.node_evaluator import NodeEvaluator
 
 
 def value_base(board, color):
@@ -51,23 +51,16 @@ def value_player_to_move(board):
         return sigmoid((value_black_pieces - value_white_pieces) * .2)
 
 
-class BasicEvaluation(BoardEvaluator):
+class BasicEvaluation(NodeEvaluator):
 
     def __init__(self):
         pass
 
     def value_white(self, node):
-        board=node.board
+        board = node.board
         value_white_pieces = value_base(board, chess.WHITE)
         value_black_pieces = value_base(board, chess.BLACK)
         value_white_pieces += add_pawns_value_white(board)
         value_black_pieces += add_pawns_value_black(board)
-        #print('@@@@@@@#', board.chess_board.is_check())
 
-      #  piece_queen_squre = board.chess_board.pieces(piece_type=5,color=chess.WHITE)
-      #  if piece_queen_squre:
-      #      queen_atta = board.chess_board.is_attacked_by(color=chess.BLACK,square=list(piece_queen_squre)[0])
-      #  else:
-      #      queen_atta = 0
-        return value_white_pieces - value_black_pieces #+ 100 * board.chess_board.is_check() - 200 * queen_atta
-
+        return value_white_pieces - value_black_pieces  # + 100 * board.chess_board.is_check() - 200 * queen_atta
