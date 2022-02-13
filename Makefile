@@ -15,7 +15,7 @@ DATASET_DESTINATION=${ROOT_DIR}/chipiron/data/datasets/
 init: chipiron/requirements chipiron/syzygy-tables chipiron/stockfish chipiron/datasets
 
 chipiron/requirements:
-    pip install -r requirements.txt
+	pip install -r requirements.txt
 
 chipiron/syzygy-tables:
 	echo "downloading SYZYGY"
