@@ -13,7 +13,7 @@ from src.players.treevaluebuilders.trees.updates import UpdateInstructionsBatch
 class MoveAndValueTree:
 
     def __init__(self,  board_evaluator, starting_board=None):
-        if starting_board is not None:  # for treev isualizer...
+        if starting_board is not None:  # for tree visualizer...
             # the tree is built at half_move  self.half_move
             self.tree_root_half_move = starting_board.ply()
 
