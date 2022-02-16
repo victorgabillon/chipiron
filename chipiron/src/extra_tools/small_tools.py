@@ -1,3 +1,4 @@
+import copy
 import os
 import yaml
 
@@ -31,3 +32,17 @@ def unique_int_from_list(a_list):
     x = a_list[0]
     y = a_list[1]
     return int(.5 * (x + y) * (x + y + 1) + y)  # Cantor pairing function
+
+
+def rec_merge_dic(a, b):
+    """recursively merges two dictionaries"""
+    print(a, b)
+    merged = copy.deepcopy(b)
+    for key in a:
+        if key in merged:
+            if isinstance(a[key], dict) and isinstance(merged[key], dict):
+                merged[key] = rec_merge_dic(a[key], merged[key])
+        else:
+            merged[key] = a[key]
+
+    return merged

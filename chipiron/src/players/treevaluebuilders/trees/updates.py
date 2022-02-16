@@ -6,15 +6,13 @@ class UpdateInstructionsBatch:
 
     def __init__(self, dictionary={}):
         # batch is a dictionary of all the node from which a backward update should be started
-        # it is a SortedDict where the keys involves the depth as the main sorting argument
+        # it is a SortedDict where the keys involve the depth as the main sorting argument
         # this permits to easily give priority of update to the nodes with higher depth.
-        # it should be less time consuming because and less a redundant update depth per depth from the back
+        # it should be less time-consuming because and less a redundant update depth per depth from the back
         # self.batch = MySortedDict()
         self.batch = DictOfNumberedDictWithPointerOnMax()
         for node in dictionary:
             self.batch[node] = dictionary[node]
-
-    # self.batch.sort_dic()
 
     def __setitem__(self, node, value):
         self.batch[node] = value
