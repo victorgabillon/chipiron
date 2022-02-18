@@ -27,7 +27,7 @@ chipiron/stockfish:
 	mkdir -p ${STOCKFISH_DESTINATION}
 	wget ${STOCKFISH_SOURCE} -P ${STOCKFISH_DESTINATION}
 	unzip ${STOCKFISH_DESTINATION}${STOCKFISH_ZIP_FILE} -d ${STOCKFISH_DESTINATION}
-	chmod 777 chipiron/stockfish/stockfish_14.1_linux_x64/stockfish_14.1_linux_x64
+	chmod 777 stockfish/stockfish_14.1_linux_x64/stockfish_14.1_linux_x64
 
 chipiron/datasets:
 	echo "downloading Datasets"
