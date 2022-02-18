@@ -3,7 +3,7 @@ from pstats import SortKey
 import time
 from scripts.parsers.parser import create_parser
 from datetime import datetime
-from src.extra_tools.small_tools import mkdir
+from src.extra_tools import mkdir
 
 
 class Script:
@@ -13,7 +13,7 @@ class Script:
     """
 
     default_param_dict = {'profiling': False}
-    base_experiment_output_folder = 'chipiron/scripts/'
+    base_experiment_output_folder = 'scripts/'
 
     def __init__(self, gui_args=None):
         """

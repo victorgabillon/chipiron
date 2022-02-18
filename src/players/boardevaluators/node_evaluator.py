@@ -1,5 +1,14 @@
 from src.players.boardevaluators.board_evaluators_wrapper import DISCOUNT
 
+class BoardEvaluator:
+    """
+    """
+
+    def __init__(self):
+        pass
+
+    def evaluate(self, list_of_board_as_input_features):
+        pass
 
 class NodeEvaluator:
     """

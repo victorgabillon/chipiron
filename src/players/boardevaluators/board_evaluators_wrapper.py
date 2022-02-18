@@ -14,17 +14,18 @@ class EvaluationQueries:
         self.not_over_nodes = []
 
 
-class BoardEvaluatorsAggregator:
+class BoardEvaluatorsProxy:
     """
     This is the aggregation of several board evaluator.
     Atm, the moment it is a simple aggregation of a main_board evaluator and syzygy evaluator
     and game-over automatic checks
     """
 
-    def __init__(self):
-        pass
+    def __init__(self, board_evaluator, syzygy):
+        self.board_evaluator = board_evaluator
+        self.syzygy_evaluator = syzygy
 
-    def evaluate(self, board):
+    def evaluate(self, board_as_input_features):
         evaluation = '?'
         return evaluation
 
@@ -39,7 +40,6 @@ class NodeEvaluatorsWrapper:
         self.board_evaluator = board_evaluator
         self.syzygy_evaluator = syzygy
         self.evaluation_queries = EvaluationQueries()
-        assert (isinstance(syzygy, SyzygyTable))
 
     def value_white(self, node):
         value_white = self.syzygy_value_white(node.board)

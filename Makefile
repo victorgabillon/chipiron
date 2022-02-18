@@ -1,14 +1,14 @@
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
 SYZYGY_SOURCE="https://syzygy-tables.info/download.txt?source=sesse&max-pieces=5"
-SYZYGY_DESTINATION=${ROOT_DIR}/chipiron/syzygy-tables/
+SYZYGY_DESTINATION=${ROOT_DIR}/data/syzygy-tables/
 
 STOCKFISH_ZIP_FILE="stockfish_14.1_linux_x64.zip"
 STOCKFISH_SOURCE="https://stockfishchess.org/files/stockfish_14.1_linux_x64.zip"
-STOCKFISH_DESTINATION=${ROOT_DIR}/chipiron/stockfish/
+STOCKFISH_DESTINATION=${ROOT_DIR}/stockfish/
 
 DATASET_SOURCE="https://drive.google.com/drive/folders/1tvkuiaN-oXC7UAjUw-6cIl1PB0r2as7Y?usp=sharing"
-DATASET_DESTINATION=${ROOT_DIR}/chipiron/data/datasets/
+DATASET_DESTINATION=${ROOT_DIR}/data/datasets/
 
 
 .PHONY: init

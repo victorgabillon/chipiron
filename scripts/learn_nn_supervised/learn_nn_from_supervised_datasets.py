@@ -1,5 +1,5 @@
-from src.players.boardevaluators.neural_networks.factory import create_nn
-from src.learningprocesses.nn_trainer.factory import create_nn_trainer, safe_nn_param_save, safe_nn_trainer_save
+from src.players.boardevaluators import create_nn
+from src.learningprocesses.nn_trainer import create_nn_trainer, safe_nn_param_save, safe_nn_trainer_save
 import time
 from scripts.script import Script
 from src.players.boardevaluators.datasets.datasets import FenAndValueDataSet
@@ -16,10 +16,10 @@ class LearnNNScript(Script):
                          {'neural_network': {'nn_type': 'NetPP2',
                                              'nn_param_folder_name': 'foo'},
                           'create_nn_file': True,
-                          'config_file_name': 'chipiron/scripts/learn_nn_supervised/exp_options.yaml',
+                          'config_file_name': 'scripts/learn_nn_supervised/exp_options.yaml',
                         #  'stockfish_boards_train_file_name': '/home/victor/goodgames_plusvariation_stockfish_eval_train_10000000',
-                          'stockfish_boards_train_file_name': 'chipiron/data/datasets/goodgames_plusvariation_stockfish_eval_train_10000000',
-                          'stockfish_boards_test_file_name': 'chipiron/data/datasets/goodgames_plusvariation_stockfish_eval_test',
+                          'stockfish_boards_train_file_name': 'data/datasets/goodgames_plusvariation_stockfish_eval_train_10000000',
+                          'stockfish_boards_test_file_name': 'data/datasets/goodgames_plusvariation_stockfish_eval_test',
                           'preprocessing_data_set': False,
                           'batch_size_train': 32,
                           'batch_size_test': 10,

@@ -1,7 +1,7 @@
 from scripts.script import Script
 from src.players.factory import create_player
 import yaml
-from src.chessenvironment.chess_environment import ChessEnvironment
+from src.chessenvironment import ChessEnvironment
 from src.players.boardevaluators.table_base.syzygy import SyzygyTable
 
 class LearnNNTreeStrap(Script):

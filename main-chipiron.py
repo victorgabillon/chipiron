@@ -114,7 +114,7 @@ def script_gui():
     root.mainloop()
     if root.output['type'] == 'play_against_chipiron':
         tree_move_limit = 4 * 10 ** root.output['strength']
-        gui_args = {'config_file_name': 'chipiron/scripts/one_match/exp_options.yaml',
+        gui_args = {'config_file_name': 'scripts/one_match/exp_options.yaml',
                     'seed': 0,
                     'gui': True,
                     'file_name_player_one': 'RecurZipfBase3.yaml',
@@ -124,7 +124,7 @@ def script_gui():
         script = 'one_match'
 
     if root.output['type'] == 'watch_a_game':
-        gui_args = {'config_file_name': 'chipiron/scripts/one_match/exp_options.yaml',
+        gui_args = {'config_file_name': 'scripts/one_match/exp_options.yaml',
                     'seed': 0,
                     'gui': True,
                     'file_name_player_one': 'RecurZipfBase3.yaml',
