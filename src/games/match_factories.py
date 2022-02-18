@@ -74,7 +74,7 @@ class GameArgsFactory:
         self.seed = seed
         self.args_player_one = args_player_one
         self.args_player_two = args_player_two
-        with open('chipiron/data/settings/GameSettings/' + args_match['game_setting_file'], 'r') as file_game:
+        with open('data/settings/GameSettings/' + args_match['game_setting_file'], 'r') as file_game:
             self.args_game = yaml.load(file_game, Loader=yaml.FullLoader)
         self.game_number = 0
 

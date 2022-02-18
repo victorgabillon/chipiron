@@ -174,7 +174,7 @@ class BoardChi(chess.Board):
         return board_modifications
 
     def load_from_file(self, file_name):
-        with  open('chipiron/data/starting_boards/' + file_name, "r") as f:
+        with  open('data/starting_boards/' + file_name, "r") as f:
             asciiBoard = f.read()
             fen = convert_to_fen(asciiBoard)
         return fen
