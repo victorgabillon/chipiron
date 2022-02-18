@@ -1,7 +1,6 @@
 from scripts.script import Script
 from src.players.factory import create_player
 import yaml
-from src.chessenvironment import ChessEnvironment
 from src.players.boardevaluators.table_base.syzygy import SyzygyTable
 
 class LearnNNTreeStrap(Script):
@@ -15,11 +14,9 @@ class LearnNNTreeStrap(Script):
             args_player_one = yaml.load(filePlayerOne, Loader=yaml.FullLoader)
             print(args_player_one)
 
-        chess_simulator = ChessEnvironment()
-        syzygy = SyzygyTable(chess_simulator, '')
-        self.player_one = create_player(args_player_one, chess_simulator, syzygy)
+        syzygy = SyzygyTable()
+        self.player_one = create_player(args_player_one, syzygy)
 
     def run(self):
         print('run')
-        for
-        tree_strap_one_board(board, tree_value_builder):
+
