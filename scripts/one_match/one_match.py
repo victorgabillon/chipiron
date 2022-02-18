@@ -1,14 +1,14 @@
 import sys
-from src.displays.gui import MainWindow
+from src.displays import MainWindow
 from PyQt5.QtWidgets import *
 from scripts.script import Script
 from shutil import copyfile
-from src.extra_tools.small_tools import mkdir, yaml_fetch_args_in_file
-from src.games.match_factories import MatchManagerFactory
-from my_random import set_seeds
+from src.extra_tools import mkdir, yaml_fetch_args_in_file
+from src.games import MatchManagerFactory
+from src.my_random import set_seeds
 import multiprocessing
-from src.players.boardevaluators.table_base.factory import create_syzygy_thread
-from src.extra_tools.small_tools import rec_merge_dic
+from src.players.boardevaluators import create_syzygy_thread
+from src.extra_tools import rec_merge_dic
 
 
 class OneMatchScript(Script):
@@ -16,7 +16,7 @@ class OneMatchScript(Script):
     Script that plays a match between two players
 
     """
-    default_param_dict = Script.default_param_dict | {'config_file_name': 'chipiron/scripts/one_match/exp_options.yaml',
+    default_param_dict = Script.default_param_dict | {'config_file_name': 'scripts/one_match/exp_options.yaml',
                                                       'seed': 0,
                                                       'gui': True,
                                                       'file_name_player_one': 'RecurZipfBase3.yaml',
@@ -85,20 +85,18 @@ class OneMatchScript(Script):
         Returns:
 
         """
-        path_player_one = 'chipiron/data/players/' + file_name_player_one
+        path_player_one = 'data/players/' + file_name_player_one
         player_one_yaml = yaml_fetch_args_in_file(path_player_one)
         self.args['player_one'] = rec_merge_dic(player_one_yaml, self.args['player_one'])
-        print('33333333333ew33',self.args['player_one'])
-        path_player_two = 'chipiron/data/players/' + file_name_player_two
+        path_player_two = 'data/players/' + file_name_player_two
         player_two_yaml = yaml_fetch_args_in_file(path_player_two)
         self.args['player_two'] = rec_merge_dic(player_two_yaml, self.args['player_two'])
-        print('3333333333333',self.args['player_two'])
-        path_match_setting = 'chipiron/data/settings/OneMatch/' + file_name_match_setting
+        path_match_setting = 'data/settings/OneMatch/' + file_name_match_setting
         match_setting_yaml = yaml_fetch_args_in_file(path_match_setting)
         self.args['match'] = rec_merge_dic(match_setting_yaml, self.args['match'])
 
         file_game = self.args['match']['game_setting_file']
-        path_game_setting = 'chipiron/data/settings/GameSettings/' + file_game
+        path_game_setting = 'data/settings/GameSettings/' + file_game
 
         path_games = self.experiment_output_folder + '/games'
         mkdir(path_games)

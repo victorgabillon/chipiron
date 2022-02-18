@@ -3,7 +3,30 @@ import chess
 from src.players.boardevaluators.node_evaluator import NodeEvaluator
 
 
-class NNBoardEvaluator(NodeEvaluator):
+class NNBoardEvaluator(BoardEvaluator):
+    """ The Generic Neural network class for board evaluation"""
+
+    def __init__(self, net):
+        self.net = net
+        self.my_scripted_model = torch.jit.script(net)
+
+    def evaluate(self, list_of_boards_features):
+        list_of_tensors = [0] * len(list_of_boards_features)
+        for index, node_not_over in enumerate(list_of_boards_features):
+            list_of_tensors[index] = self.net.get_nn_input(node_not_over)
+        input_layers = torch.stack(list_of_tensors, dim=0)
+        self.my_scripted_model.eval()
+        torch.no_grad()
+
+        output_layer = self.my_scripted_model(input_layers)
+        for index, node_not_over in enumerate(not_over_nodes):
+            predicted_value_from_mover_view_point = output_layer[index].item()
+            value_white_eval = self.convert_value_for_mover_viewpoint_to_value_white(node_not_over,
+                                                                                     predicted_value_from_mover_view_point)
+            processed_evaluation = self.process_evalution_not_over(value_white_eval, node_not_over)
+            node_not_over.set_evaluation(processed_evaluation)
+
+class NNNodeEvaluator(NodeEvaluator):
     """ The Generic Neural network class for board evaluation"""
 
     def __init__(self, net):
@@ -22,7 +45,6 @@ class NNBoardEvaluator(NodeEvaluator):
         torch.no_grad()
         predicted_value_from_mover_view_point = output_layer.item()
         value_white = self.convert_value_for_mover_viewpoint_to_value_white(node, predicted_value_from_mover_view_point)
-        print('tghy',value_white)
         return value_white
 
     def convert_value_for_mover_viewpoint_to_value_white(self, node, value_from_mover_view_point):
