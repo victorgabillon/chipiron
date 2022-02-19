@@ -146,4 +146,8 @@ def watch_a_game(root):
 
 
 if __name__ == "__main__":
+
+    # checking if the version of python is high enough
+    assert sys.version_info >= (3, 9), "A version of Python higher than 3.9 is required to run chipiron"
+
     main()
