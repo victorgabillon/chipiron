@@ -3,7 +3,7 @@ import subprocess
 
 if __name__ == "__main__":
     # checking if the version of python is high enough
-    message = 'A version of Python higher than 3.9 is required to run chipiron\n.' + \
+    message = 'A version of Python higher than 3.9 is required to run chipiron.\n' + \
               ' Try using "python3 main_chipiron.py" instead'
 
     assert sys.version_info >= (3, 9), message
