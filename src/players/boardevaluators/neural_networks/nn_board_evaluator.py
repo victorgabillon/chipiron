@@ -1,6 +1,6 @@
 import torch
 import chess
-from src.players.boardevaluators.node_evaluator import NodeEvaluator
+from src.players.boardevaluators.node_evaluator import NodeEvaluator, BoardEvaluator
 
 
 class NNBoardEvaluator(BoardEvaluator):
