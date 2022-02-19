@@ -79,12 +79,12 @@ class MainWindow(QWidget):
         self.closeButton6 = QPushButton(self)
         self.closeButton6.setText("fen")  # text
         self.closeButton6.setStyleSheet('QPushButton { background-color: white; color: black;}')
-        self.closeButton6.setGeometry(50, 700, 850, 30)
+        self.closeButton6.setGeometry(50, 700, 1250, 30)
 
         self.closeButton7 = QPushButton(self)
         self.closeButton7.setText("Stock Eval")  # text
         self.closeButton7.setStyleSheet('QPushButton {background-color: white; color: black;}')
-        self.closeButton7.setGeometry(620, 600, 370, 30)
+        self.closeButton7.setGeometry(620, 600, 470, 30)
 
         self.board_size = min(self.widgetSvg.width(),
                               self.widgetSvg.height())
