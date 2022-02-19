@@ -30,5 +30,5 @@ chipiron/stockfish:
 	chmod 777 stockfish/stockfish_14.1_linux_x64/stockfish_14.1_linux_x64
 
 chipiron/data:
-	echo "downloading Datasets"
-	gdown --folder ${DATASET_SOURCE} -O ${DATASET_DESTINATION}
+	echo "downloading Data"
+	gdown --folder ${DATA_SOURCE} -O ${DATA_DESTINATION}
