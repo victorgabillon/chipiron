@@ -7,12 +7,12 @@ STOCKFISH_ZIP_FILE="stockfish_14.1_linux_x64.zip"
 STOCKFISH_SOURCE="https://stockfishchess.org/files/stockfish_14.1_linux_x64.zip"
 STOCKFISH_DESTINATION=${ROOT_DIR}/stockfish/
 
-DATASET_SOURCE="https://drive.google.com/drive/folders/1tvkuiaN-oXC7UAjUw-6cIl1PB0r2as7Y?usp=sharing"
-DATASET_DESTINATION=${ROOT_DIR}/data/datasets/
+DATA_SOURCE="https://drive.google.com/drive/folders/1tvkuiaN-oXC7UAjUw-6cIl1PB0r2as7Y?usp=sharing"
+DATA_DESTINATION=${ROOT_DIR}/data/
 
 
 .PHONY: init
-init: chipiron/requirements chipiron/syzygy-tables chipiron/stockfish chipiron/datasets
+init: chipiron/requirements chipiron/syzygy-tables chipiron/stockfish chipiron/data
 
 chipiron/requirements:
 	pip install -r requirements.txt
@@ -29,6 +29,6 @@ chipiron/stockfish:
 	unzip ${STOCKFISH_DESTINATION}${STOCKFISH_ZIP_FILE} -d ${STOCKFISH_DESTINATION}
 	chmod 777 stockfish/stockfish_14.1_linux_x64/stockfish_14.1_linux_x64
 
-chipiron/datasets:
+chipiron/data:
 	echo "downloading Datasets"
 	gdown --folder ${DATASET_SOURCE} -O ${DATASET_DESTINATION}
