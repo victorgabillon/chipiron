@@ -3,7 +3,7 @@ from pstats import SortKey
 import time
 from scripts.parsers.parser import create_parser
 from datetime import datetime
-from src.extra_tools import mkdir
+from src.extra_tools.small_tools import mkdir
 
 
 class Script:
