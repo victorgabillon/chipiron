@@ -1,14 +1,13 @@
 import sys
-from src.displays import MainWindow
+from src.displays.gui import MainWindow
 from PyQt5.QtWidgets import *
 from scripts.script import Script
 from shutil import copyfile
-from src.extra_tools import mkdir, yaml_fetch_args_in_file
-from src.games import MatchManagerFactory
+from src.extra_tools.small_tools import mkdir, yaml_fetch_args_in_file,rec_merge_dic
+from src.games.match_factories import MatchManagerFactory
 from src.my_random import set_seeds
 import multiprocessing
-from src.players.boardevaluators import create_syzygy_thread
-from src.extra_tools import rec_merge_dic
+from src.players.boardevaluators.table_base.factory import create_syzygy_thread
 
 
 class OneMatchScript(Script):
