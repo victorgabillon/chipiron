@@ -1,7 +1,7 @@
 import pickle
 import sys
 from PyQt5.QtWidgets import *
-from src.displays import MainWindow
+from src.displays.gui_replay_games import MainWindow
 from scripts.script import Script
 
 

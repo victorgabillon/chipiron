@@ -1,5 +1,5 @@
 from scripts.script import Script
-from src.league import League
+from src.league.league import League
 import os
 import pickle
 from src.players.boardevaluators.table_base.syzygy import SyzygyTable
