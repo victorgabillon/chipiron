@@ -56,12 +56,14 @@ class MainWindow(QWidget):
 
         self.player_white_button = QPushButton(self)
         self.player_white_button.setText("Player")  # text
-        self.player_white_button.setStyleSheet('QPushButton {background-color: white; color: blue;}')
+        self.player_white_button.setIcon(QIcon("data/gui/white_king.png"))  # icon
+        self.player_white_button.setStyleSheet('QPushButton {background-color: white; color: black;}')
         self.player_white_button.setGeometry(620, 250, 370, 30)
 
         self.player_black_button = QPushButton(self)
         self.player_black_button.setText("Player")  # text
-        self.player_black_button.setStyleSheet('QPushButton {background-color: black; color: blue;}')
+        self.player_black_button.setIcon(QIcon("data/gui/black_king.png"))  # icon
+        self.player_black_button.setStyleSheet('QPushButton {background-color: black; color: white;}')
         self.player_black_button.setGeometry(620, 300, 370, 30)
 
         self.closeButton4 = QPushButton(self)
@@ -76,7 +78,7 @@ class MainWindow(QWidget):
 
         self.closeButton6 = QPushButton(self)
         self.closeButton6.setText("fen")  # text
-        self.closeButton6.setStyleSheet('QPushButton {background-color: white; color: black;}')
+        self.closeButton6.setStyleSheet('QPushButton { background-color: white; color: black;}')
         self.closeButton6.setGeometry(50, 700, 850, 30)
 
         self.closeButton7 = QPushButton(self)
@@ -229,8 +231,8 @@ class MainWindow(QWidget):
         return self.drawBoardSvg
 
     def update_players_color_to_id(self, players_color_to_id):
-        self.player_white_button.setText('White: ' + players_color_to_id[chess.WHITE])  # text
-        self.player_black_button.setText('Black: ' + players_color_to_id[chess.BLACK])  # text
+        self.player_white_button.setText(' White: ' + players_color_to_id[chess.WHITE])  # text
+        self.player_black_button.setText(' Black: ' + players_color_to_id[chess.BLACK])  # text
 
     def update_evaluation(self, evaluation):
         self.closeButton7.setText('eval: ' + str(evaluation))  # text
