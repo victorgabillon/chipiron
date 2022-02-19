@@ -7,12 +7,14 @@ STOCKFISH_ZIP_FILE="stockfish_14.1_linux_x64.zip"
 STOCKFISH_SOURCE="https://stockfishchess.org/files/stockfish_14.1_linux_x64.zip"
 STOCKFISH_DESTINATION=${ROOT_DIR}/stockfish/
 
-DATA_SOURCE="https://drive.google.com/drive/folders/1tvkuiaN-oXC7UAjUw-6cIl1PB0r2as7Y?usp=sharing"
-DATA_DESTINATION=${ROOT_DIR}/data/
+DATASET_SOURCE="https://drive.google.com/drive/folders/1ttXfSxwd5MiWZYze9E3D3SWKvdLa35xe?usp=sharing"
+DATASET_DESTINATION=${ROOT_DIR}/data/datasets/
 
+DATA_GUI_SOURCE="https://drive.google.com/drive/folders/1Ir76d9oHj2IGKjyoSZ3Fc1qNDH7vt99z?usp=sharing"
+DATA_GUI_DESTINATION=${ROOT_DIR}/data/gui/
 
 .PHONY: init
-init: chipiron/requirements chipiron/syzygy-tables chipiron/stockfish chipiron/data
+init: chipiron/requirements chipiron/syzygy-tables chipiron/stockfish chipiron/datasets chipiron/data_gui
 
 chipiron/requirements:
 	pip install -r requirements.txt
@@ -29,6 +31,10 @@ chipiron/stockfish:
 	unzip ${STOCKFISH_DESTINATION}${STOCKFISH_ZIP_FILE} -d ${STOCKFISH_DESTINATION}
 	chmod 777 stockfish/stockfish_14.1_linux_x64/stockfish_14.1_linux_x64
 
-chipiron/data:
-	echo "downloading Data"
-	gdown --folder ${DATA_SOURCE} -O ${DATA_DESTINATION}
+chipiron/datasets:
+	echo "downloading DataSets"
+	gdown --folder ${DATASETS_SOURCE} -O ${DATASETS_DESTINATION}
+
+chipiron/data_gui:
+	echo "downloading Data for GUI"
+	gdown --folder ${DATA_GUI_SOURCE} -O ${DATA_GUI_DESTINATION}
