@@ -9,4 +9,4 @@ if __name__ == "__main__":
     # launching the real main python script.
     # this allows the to bypass the automatic full interpreter check of python that would raise a syntax error before
     # the assertion above in case of a wrong python version
-    subprocess.Popen(('python', 'src/main_chipiron.py') + tuple(sys.argv[1:]))
+    subprocess.Popen(('python3', 'src/main_chipiron.py') + tuple(sys.argv[1:]))
