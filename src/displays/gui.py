@@ -37,17 +37,32 @@ class MainWindow(QWidget):
         self.closeButton.setShortcut('Ctrl+D')  # shortcut key
         self.closeButton.clicked.connect(self.stopppy)
         self.closeButton.setToolTip("Close the widget")  # Tool tip
-        self.closeButton.move(700, 100)
+        self.closeButton.move(700, 0)
 
-        self.closeButton2 = QPushButton(self)
-        self.closeButton2.setText("Player")  # text
-        self.closeButton2.setStyleSheet('QPushButton {background-color: white; color: blue;}')
-        self.closeButton2.setGeometry(620, 200, 370, 30)
 
-        self.closeButton3 = QPushButton(self)
-        self.closeButton3.setText("Player")  # text
-        self.closeButton3.setStyleSheet('QPushButton {background-color: black; color: blue;}')
-        self.closeButton3.setGeometry(620, 300, 370, 30)
+        self.play_button = QPushButton(self)
+        self.play_button.setText("Play")  # text
+        self.play_button.setIcon(QIcon("data/gui/play.png"))  # icon
+        self.play_button.clicked.connect(self.play_button_clicked)
+        self.play_button.setToolTip("play the game")  # Tool tip
+        self.play_button.move(700, 100)
+
+        self.pause_button = QPushButton(self)
+        self.pause_button.setText("Pause")  # text
+        self.pause_button.setIcon(QIcon("data/gui/pause.png"))  # icon
+        self.pause_button.clicked.connect(self.pause_button_clicked)
+        self.pause_button.setToolTip("pause the game")  # Tool tip
+        self.pause_button.move(850, 100)
+
+        self.player_white_button = QPushButton(self)
+        self.player_white_button.setText("Player")  # text
+        self.player_white_button.setStyleSheet('QPushButton {background-color: white; color: blue;}')
+        self.player_white_button.setGeometry(620, 250, 370, 30)
+
+        self.player_black_button = QPushButton(self)
+        self.player_black_button.setText("Player")  # text
+        self.player_black_button.setStyleSheet('QPushButton {background-color: black; color: blue;}')
+        self.player_black_button.setGeometry(620, 300, 370, 30)
 
         self.closeButton4 = QPushButton(self)
         self.closeButton4.setText("Score 0-0")  # text
@@ -84,6 +99,12 @@ class MainWindow(QWidget):
     def stopppy(self):
         # should we send a kill message to the main thread?
         self.close()
+
+    def play_button_clicked(self):
+        pass
+
+    def pause_button_clicked(self):
+        pass
 
     @pyqtSlot(QWidget)
     def mousePressEvent(self, event):
@@ -208,8 +229,8 @@ class MainWindow(QWidget):
         return self.drawBoardSvg
 
     def update_players_color_to_id(self, players_color_to_id):
-        self.closeButton2.setText('White: ' + players_color_to_id[chess.WHITE])  # text
-        self.closeButton3.setText('Black: ' + players_color_to_id[chess.BLACK])  # text
+        self.player_white_button.setText('White: ' + players_color_to_id[chess.WHITE])  # text
+        self.player_black_button.setText('Black: ' + players_color_to_id[chess.BLACK])  # text
 
     def update_evaluation(self, evaluation):
         self.closeButton7.setText('eval: ' + str(evaluation))  # text
