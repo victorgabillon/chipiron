@@ -7,8 +7,8 @@ STOCKFISH_ZIP_FILE="stockfish_14.1_linux_x64.zip"
 STOCKFISH_SOURCE="https://stockfishchess.org/files/stockfish_14.1_linux_x64.zip"
 STOCKFISH_DESTINATION=${ROOT_DIR}/stockfish/
 
-DATASET_SOURCE="https://drive.google.com/drive/folders/1ttXfSxwd5MiWZYze9E3D3SWKvdLa35xe?usp=sharing"
-DATASET_DESTINATION=${ROOT_DIR}/data/datasets/
+DATASETS_SOURCE="https://drive.google.com/drive/folders/1ttXfSxwd5MiWZYze9E3D3SWKvdLa35xe?usp=sharing"
+DATASETS_DESTINATION=${ROOT_DIR}/data/datasets/
 
 DATA_GUI_SOURCE="https://drive.google.com/drive/folders/1Ir76d9oHj2IGKjyoSZ3Fc1qNDH7vt99z?usp=sharing"
 DATA_GUI_DESTINATION=${ROOT_DIR}/data/gui/
