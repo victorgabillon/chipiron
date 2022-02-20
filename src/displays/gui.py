@@ -39,7 +39,6 @@ class MainWindow(QWidget):
         self.closeButton.setToolTip("Close the widget")  # Tool tip
         self.closeButton.move(700, 0)
 
-
         self.play_button = QPushButton(self)
         self.play_button.setText("Play")  # text
         self.play_button.setIcon(QIcon("data/gui/play.png"))  # icon
@@ -66,25 +65,25 @@ class MainWindow(QWidget):
         self.player_black_button.setStyleSheet('QPushButton {background-color: black; color: white;}')
         self.player_black_button.setGeometry(620, 300, 370, 30)
 
-        self.closeButton4 = QPushButton(self)
-        self.closeButton4.setText("Score 0-0")  # text
-        self.closeButton4.setStyleSheet('QPushButton {background-color: white; color: black;}')
-        self.closeButton4.setGeometry(620, 400, 370, 30)
+        self.score_button = QPushButton(self)
+        self.score_button.setText("Score 0-0")  # text
+        self.score_button.setStyleSheet('QPushButton {background-color: white; color: black;}')
+        self.score_button.setGeometry(620, 400, 370, 30)
 
-        self.closeButton5 = QPushButton(self)
-        self.closeButton5.setText("Round")  # text
-        self.closeButton5.setStyleSheet('QPushButton {background-color: white; color: black;}')
-        self.closeButton5.setGeometry(620, 500, 370, 30)
+        self.round_button = QPushButton(self)
+        self.round_button.setText("Round")  # text
+        self.round_button.setStyleSheet('QPushButton {background-color: white; color: black;}')
+        self.round_button.setGeometry(620, 500, 370, 30)
 
-        self.closeButton6 = QPushButton(self)
-        self.closeButton6.setText("fen")  # text
-        self.closeButton6.setStyleSheet('QPushButton { background-color: white; color: black;}')
-        self.closeButton6.setGeometry(50, 700, 1250, 30)
+        self.fen_button = QPushButton(self)
+        self.fen_button.setText("fen")  # text
+        self.fen_button.setStyleSheet('QPushButton { background-color: white; color: black;}')
+        self.fen_button.setGeometry(50, 700, 1250, 30)
 
-        self.closeButton7 = QPushButton(self)
-        self.closeButton7.setText("Stock Eval")  # text
-        self.closeButton7.setStyleSheet('QPushButton {background-color: white; color: black;}')
-        self.closeButton7.setGeometry(620, 600, 470, 30)
+        self.eval_button = QPushButton(self)
+        self.eval_button.setText("Stock Eval")  # text
+        self.eval_button.setStyleSheet('QPushButton {background-color: white; color: black;}')
+        self.eval_button.setGeometry(620, 600, 470, 30)
 
         self.board_size = min(self.widgetSvg.width(),
                               self.widgetSvg.height())
@@ -145,7 +144,7 @@ class MainWindow(QWidget):
                     self.pieceToMove = [piece, self.coordinates]
 
     def send_move_to_main_thread(self, move):
-        print('move',type(move),move)
+        print('move', type(move), move)
         self.main_thread_mailbox.put({'type': 'move', 'move': move})
 
     def choice_promote(self):
@@ -226,8 +225,8 @@ class MainWindow(QWidget):
 
         self.boardSvg = self.board._repr_svg_().encode("UTF-8")
         self.drawBoardSvg = self.widgetSvg.load(self.boardSvg)
-        self.closeButton5.setText('Round: ' + str(self.board.fullmove_number))  # text
-        self.closeButton6.setText('fen: ' + str(self.board.fen()))  # text
+        self.round_button.setText('Round: ' + str(self.board.fullmove_number))  # text
+        self.fen_button.setText('fen: ' + str(self.board.fen()))  # text
         return self.drawBoardSvg
 
     def update_players_color_to_id(self, players_color_to_id):
@@ -235,13 +234,11 @@ class MainWindow(QWidget):
         self.player_black_button.setText(' Black: ' + players_color_to_id[chess.BLACK])  # text
 
     def update_evaluation(self, evaluation):
-        self.closeButton7.setText('eval: ' + str(evaluation))  # text
+        self.eval_button.setText('eval: ' + str(evaluation))  # text
 
     def update_match_stats(self, match_info):
         player_one_wins, player_two_wins, draws = match_info.get_simple_result()
-        self.closeButton4.setText(
+        self.score_button.setText(
             'Score: ' + str(player_one_wins) + '-'
             + str(player_two_wins) + '-'
             + str(draws))  # text
-
-

@@ -11,6 +11,7 @@ class GameManager:
     """
 
     GAME_RESULTS = [WIN_FOR_WHITE, WIN_FOR_BLACK, DRAW] = range(3)
+    GAME_STATUSES = [PLAY, PAUSE] = range(2)
 
     def __init__(self,
                  observable_board,
@@ -45,6 +46,7 @@ class GameManager:
         self.board_history = []
         self.main_thread_mailbox = main_thread_mailbox
         self.player_threads = player_threads
+        self.game_status = self.PLAY
 
     def stockfish_eval(self):
         return self.display_board_evaluator.evaluate(self.observable_board.board)  # TODO DON'T LIKE THIS writing
@@ -87,6 +89,13 @@ class GameManager:
         return self.simple_results()
 
     def processing_mail(self, message):
+        #TODO maybe implement a class for the message, look at the command pattern
+        if message['type'] == 'game_status':
+            # update game status
+            if message['status'] == 'play':
+                self.game_status = self.PLAY
+            if message['status'] == 'pause':
+                self.game_status = self.PAUSE
         if message['type'] == 'move':
             # play the move
             move = message['move']
