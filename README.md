@@ -9,12 +9,17 @@ Chipiron is a Python library that plays chess
 * pip
 
 ## Installation
-The following command will install the python packaged listed in requirements.txt, download syzygy tables, and install stockfish.
+The following command will install the python packaged listed in requirements.txt, download syzygy tables, install stockfish, retrieve datasets and gui images...
 
 ```console
 make init
 ```
+
 so you might want to git clone and create a virtual environment as follows:
+<details>
+<summary> click to see more </summary>
+<br>
+
 ```console
 git clone https://github.com/victorgabillon/chipiron.git
 cd chipiron
@@ -22,6 +27,10 @@ virtualenv chipiron_env_test
 source chipiron_env_test/bin/activate
 make init
 ```
+
+</details>
+
+
 ## Usage
 
 ### Base case with a gui to play against chipiron or watch it play 
