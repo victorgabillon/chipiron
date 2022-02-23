@@ -53,6 +53,14 @@ class MainWindow(QWidget):
         self.pause_button.setToolTip("pause the game")  # Tool tip
         self.pause_button.move(850, 100)
 
+        self.back_button = QPushButton(self)
+        self.back_button.setText("Back")  # text
+        self.back_button.setIcon(QIcon("data/gui/back.png"))  # icon
+        self.back_button.clicked.connect(self.back_button_clicked)
+        self.back_button.setToolTip("back one move")  # Tool tip
+        self.back_button.move(1000, 100)
+
+
         self.player_white_button = QPushButton(self)
         self.player_white_button.setText("Player")  # text
         self.player_white_button.setIcon(QIcon("data/gui/white_king.png"))  # icon
@@ -102,10 +110,16 @@ class MainWindow(QWidget):
         self.close()
 
     def play_button_clicked(self):
-        pass
+        message = {'type': 'game_status', 'status': 'play'}
+        self.main_thread_mailbox.put(message)
+
+    def back_button_clicked(self):
+        message = {'type': 'back'}
+        self.main_thread_mailbox.put(message)
 
     def pause_button_clicked(self):
-        pass
+        message = {'type': 'game_status', 'status': 'pause'}
+        self.main_thread_mailbox.put(message)
 
     @pyqtSlot(QWidget)
     def mousePressEvent(self, event):
@@ -145,7 +159,7 @@ class MainWindow(QWidget):
 
     def send_move_to_main_thread(self, move):
         print('move', type(move), move)
-        self.main_thread_mailbox.put({'type': 'move', 'move': move})
+        self.main_thread_mailbox.put({'type': 'move', 'move': move, 'corresponding_board': self.board.fen()})
 
     def choice_promote(self):
         self.d = QDialog()

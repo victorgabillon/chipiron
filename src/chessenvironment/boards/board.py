@@ -45,6 +45,7 @@ class BoardChi(chess.Board):
     def play_move(self, move):
         self.push_and_return_modification(move)
 
+
     def rewind_move(self):
         self.pop()
 
