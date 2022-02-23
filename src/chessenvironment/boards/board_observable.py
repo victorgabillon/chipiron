@@ -11,6 +11,10 @@ class BoardObservable:
         self.board.play_move(move)
         self.notify_new_board()
 
+    def back_one_move(self):
+        self.board.rewind_move()
+        self.notify_new_board()
+
     def rewind_one_move(self, move):
         self.board.rewind_one_move(move)
         self.notify_new_board()
