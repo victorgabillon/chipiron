@@ -1,10 +1,10 @@
 import torch
 import torch.nn as nn
-from src.players.boardevaluators.neural_networks.nn_pytorch import BoardNet
+from src.extra_tools.chi_nn import ChiNN
 from src.players.boardevaluators.neural_networks.board_to_tensor import transform_board_pieces_two_sides
 
 
-class NetP2(BoardNet):
+class NetP2(ChiNN):
     def __init__(self, path_to_main_folder, relative_path_file):
         super(NetP2, self).__init__(path_to_main_folder, relative_path_file)
 

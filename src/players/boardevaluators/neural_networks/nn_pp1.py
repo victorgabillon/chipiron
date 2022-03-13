@@ -1,11 +1,11 @@
 import torch
 import torch.nn as nn
-from src.players.boardevaluators.neural_networks.nn_pytorch import BoardNet
+from src.extra_tools.chi_nn import ChiNN
 from src.players.boardevaluators.neural_networks.board_to_tensor import board_to_tensor_pieces_square, \
     node_to_tensors_pieces_square_fast, get_tensor_from_tensors
 
 
-class NetPP1(BoardNet):
+class NetPP1(ChiNN):
     def __init__(self):
         super(NetPP1, self).__init__( )
 

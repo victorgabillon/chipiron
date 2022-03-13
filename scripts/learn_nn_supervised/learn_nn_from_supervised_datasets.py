@@ -9,7 +9,7 @@ import copy
 
 class LearnNNScript(Script):
     """
-    Script that learns a NN from a supervised dataset pairs of boards and evaluation
+    Script that learns a NN from a supervised dataset pairs of board and evaluation
 
     """
     default_param_dict = Script.default_param_dict | \

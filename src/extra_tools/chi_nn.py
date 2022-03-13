@@ -3,13 +3,13 @@ import torch
 import torch.nn as nn
 
 
-class BoardNet(nn.Module):
+class ChiNN(nn.Module):
     """
-    The Generic Neural network class
+    The Generic Neural network class of chipiron
     """
 
     def __init__(self):
-        super(BoardNet, self).__init__()
+        super(ChiNN, self).__init__()
 
 
     def load_from_file_or_init_weights(self, path_to_param_file, authorisation_to_create_file):
