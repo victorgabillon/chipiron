@@ -5,7 +5,7 @@ from src.games.match_manager import MatchManager, MatchResults, ObservableMatchR
 from src.players.factory import create_player, launch_player_process
 import yaml
 from src.players.boardevaluators.table_base.syzygy import SyzygyTable
-from src.chessenvironment.boards.factory import create_board
+from src.chessenvironment.board.factory import create_board
 from src.players.boardevaluators.factory import ObservableBoardEvaluatorFactory
 import random
 from src.extra_tools.small_tools import unique_int_from_list

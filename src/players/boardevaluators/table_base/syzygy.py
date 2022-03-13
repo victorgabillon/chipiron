@@ -76,7 +76,7 @@ class SyzygyTable:
         best_value = -1000000000000000000000
         best_move = None
         for move in all_moves:
-            next_board, board_modifications = board.move_and_create(move, 0)
+            next_board, board_modifications = board.move_with_next_board_creation(move, 0)
             val_player_next_board = self.val(next_board)
             val_player_node = -val_player_next_board
             dtz_player_next_board = self.dtz(next_board)

@@ -1,5 +1,6 @@
 from src.players.boardevaluators.board_evaluators_wrapper import DISCOUNT
 
+
 class BoardEvaluator:
     """
     """
@@ -10,11 +11,13 @@ class BoardEvaluator:
     def evaluate(self, list_of_board_as_input_features):
         pass
 
+
 class NodeEvaluator:
     """
     This class evaluates a node, see if this is need. Reformating the code atm to have board
      evaluator independent from the node business
     """
+
     def __init__(self):
         pass
 

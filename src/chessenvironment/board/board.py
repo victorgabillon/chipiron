@@ -1,7 +1,7 @@
 import chess
-from src.chessenvironment.boards.board_tools import convert_to_fen
+from src.chessenvironment.board.board_tools import convert_to_fen
 import chess.polyglot
-from src.chessenvironment.boards.board_modification import BoardModification
+from src.chessenvironment.board.board_modification import BoardModification
 
 COLORS = [WHITE, BLACK] = [True, False]
 
@@ -16,7 +16,7 @@ class BoardChi(chess.Board):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def set_starting_position(self, starting_position_arg=None,  fen=None):
+    def set_starting_position(self, starting_position_arg=None, fen=None):
         self.reset()
         if starting_position_arg is not None:
             if starting_position_arg['type'] == 'fromFile':
@@ -30,26 +30,13 @@ class BoardChi(chess.Board):
         elif fen is not None:
             self.set_fen(fen)
 
-    def move_and_create(self, move, depth):
-        # todo : try to have a very lightweight copy
-
-        if depth < 2:  # slow but to be able to check 3 times repetition at small depth of the tree
-            next_board = self.copy(stack=True)
-        else:  # faster
-            next_board = self.copy(stack=False)
-
-        board_modifications = next_board.push_and_return_modification(move)
-
-        return next_board, board_modifications
-
-    def play_move(self, move):
-        self.push_and_return_modification(move)
-
+    def play_move(self, move: chess.Move) -> BoardModification:
+        return self.push_and_return_modification(move)
 
     def rewind_move(self):
         self.pop()
 
-    def push_and_return_modification(self, move):
+    def push_and_return_modification(self, move: chess.Move) -> BoardModification:
         """
         Mostly reuse the push function of the chess library but records the modifications to the bitboard so that
         we can do the same with other parallel representations such as tensor in pytorch
@@ -62,7 +49,7 @@ class BoardChi(chess.Board):
         self.castling_rights = self.clean_castling_rights()  # Before pushing stack
         self.move_stack.append(
             self._from_chess960(self.chess960, move.from_square, move.to_square, move.promotion,
-                                            move.drop))
+                                move.drop))
         self._stack.append(board_state)
 
         # Reset en passant square.
@@ -94,7 +81,7 @@ class BoardChi(chess.Board):
         promoted = bool(self.promoted & from_bb)
         piece_type = self._remove_piece_at(move.from_square)
         board_modifications.add_removal((move.from_square, piece_type, self.turn))
-       # print('^&',(move.from_square, piece_type, self.turn),move)
+        # print('^&',(move.from_square, piece_type, self.turn),move)
         assert piece_type is not None, f"push() expects move to be pseudo-legal, but got {move} in {self.board_fen()}"
         capture_square = move.to_square
         captured_piece_type = self.piece_type_at(capture_square)
@@ -165,7 +152,6 @@ class BoardChi(chess.Board):
             self._set_piece_at(move.to_square, piece_type, self.turn, promoted)
             board_modifications.add_appearance((move.to_square, piece_type, self.turn))
 
-
             if captured_piece_type:
                 self._push_capture(move, capture_square, captured_piece_type, was_promoted)
 
@@ -200,10 +186,8 @@ class BoardChi(chess.Board):
         print(self)
         print(self.fen())
 
-
     def number_of_pieces_on_the_board(self):
         return bin(self.occupied).count('1')
-
 
     def is_attacked(self, a_color):
         """ check if any piece of the color a_color is attacked"""

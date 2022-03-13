@@ -5,7 +5,7 @@ from src.players.boardevaluators.neural_networks.nn_pp2d2_2 import NetPP2D2_2
 from src.players.boardevaluators.neural_networks.nn_pp2d2_2leaky import NetPP2D2_2_LEAKY
 from src.players.boardevaluators.neural_networks.nn_pp2d2_2prelu import NetPP2D2_2_PRELU
 from src.players.boardevaluators.neural_networks.nn_pp2d2_2rrelu import NetPP2D2_2_RRELU
-from src.players.boardevaluators.neural_networks.nn_board_evaluator import NNNodeEvaluator
+from src.players.boardevaluators.neural_networks.board_evaluator import NNNodeEvaluator
 from src.extra_tools.small_tools import mkdir
 
 

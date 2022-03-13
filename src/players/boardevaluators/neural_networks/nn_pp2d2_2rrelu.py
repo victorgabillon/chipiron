@@ -1,11 +1,10 @@
-import torch
 import torch.nn as nn
-from src.players.boardevaluators.neural_networks.nn_pytorch import BoardNet
+from src.extra_tools.chi_nn import ChiNN
 from src.players.boardevaluators.neural_networks.board_to_tensor import board_to_tensor_pieces_square_two_sides, \
     node_to_tensors_pieces_square_fast, get_tensor_from_tensors_two_sides
 
 
-class NetPP2D2_2_RRELU(BoardNet):
+class NetPP2D2_2_RRELU(ChiNN):
     def __init__(self  ):
         super(NetPP2D2_2_RRELU, self).__init__( )
 

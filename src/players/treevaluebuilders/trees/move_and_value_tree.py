@@ -1,5 +1,8 @@
+import chess
+from src.chessenvironment.board import BoardChi, BoardModification
 from graphviz import Digraph
 from src.players.treevaluebuilders.trees.nodes.tree_node import TreeNode
+from src.players.treevaluebuilders.trees.nodes.tree_node_with_values import TreeNodeWithValue
 import pickle
 from src.players.treevaluebuilders.trees.updates import UpdateInstructionsBatch
 
@@ -11,8 +14,15 @@ from src.players.treevaluebuilders.trees.updates import UpdateInstructionsBatch
 
 
 class MoveAndValueTree:
+    """
+    This class defines the Tree that is builds out of all the combinations of moves given a starting board position.
+    The root node contains the starting board.
+    Each node contains a board and has as many children node as there are legal move in the board.
+    A children node then contains the board that is obtained by playing a particular moves in the board of the parent
+    node.
+    """
 
-    def __init__(self,  board_evaluator, starting_board=None):
+    def __init__(self, board_evaluator, node_factory, starting_board=None):
         if starting_board is not None:  # for tree visualizer...
             # the tree is built at half_move  self.half_move
             self.tree_root_half_move = starting_board.ply()
@@ -27,6 +37,9 @@ class MoveAndValueTree:
         self.move_count = 0
 
         self.board_evaluator = board_evaluator
+
+        # the factory in charge of creating new nodes
+        self.node_factory = node_factory
 
         # to be defined later ...
         self.root_node = None
@@ -65,13 +78,16 @@ class MoveAndValueTree:
         self.update_after_node_creation(new_node, parent_node)
         return new_node
 
-    def find_or_create_node(self, board, board_modifications, half_move, parent_node):
+    def find_or_create_node(self, board: BoardChi,
+                            modifications: BoardModification,
+                            half_move: int,
+                            parent_node: TreeNode) -> TreeNode:
         fast_rep = board.fast_representation()
         if self.root_node is not None:
             assert (self.root_node.descendants.is_in_the_acceptable_range(half_move))
         if self.root_node is None or self.root_node.descendants.is_new_generation(half_move) or fast_rep not in \
                 self.root_node.descendants.descendants_at_half_move[half_move]:
-            node = self.create_tree_node_and_more(board, board_modifications, half_move, parent_node)
+            node = self.create_tree_node_and_more(board, modifications, half_move, parent_node)
         else:  # the node already exists
             node = self.descendants[half_move][fast_rep]  # add it to the list of descendants
             node.add_parent(parent_node)
@@ -79,12 +95,34 @@ class MoveAndValueTree:
         self.update_after_either_node_or_link_creation(node, parent_node)
         return node
 
-    def open_node_move(self, parent_node, move):
+    def open_node_move(self, parent_node: TreeNodeWithValue, move: chess.Move) -> object:
+        """
+        Opening a Node that contains a board following a move.
+        Args:
+            parent_node: The Parent node that we want to expand
+            move: the move to play to expend the Node
+
+        Returns:
+
+        """
         assert (not parent_node.is_over())
         assert (move not in parent_node.moves_children)
-        next_board, board_modifications = parent_node.board.move_and_create(move=move,
-                                                                            depth=self.node_depth(parent_node))
-        child_node = self.find_or_create_node(next_board, board_modifications, parent_node.half_move + 1, parent_node)
+
+        # The parent board is copied, we only copy the stack (history of previous board) if the depth is smaller than 2
+        # Having the stack information allows checking for draw by repetition.
+        # To limit computation we limit copying it all the time. The resulting policy will only be aware of immediate
+        # risk of draw by repetition
+        copy_stack: bool = (self.node_depth(parent_node) < 2)
+        board: BoardChi = parent_node.board.copy(stack=copy_stack)
+
+        # The move is played. The board is now a new board
+        modifications: BoardModification = board.play_move(move=move)
+
+        # Creation of the child node. If the board already exited in another node, that node is returned as child_node.
+        child_node: TreeNodeWithValue = self.find_or_create_node(board=board,
+                                                                 modifications=modifications,
+                                                                 half_move=parent_node.half_move + 1,
+                                                                 parent_node=parent_node)
 
         # add it to the list of opened move and out of the non-opened moves
         parent_node.moves_children[move] = child_node

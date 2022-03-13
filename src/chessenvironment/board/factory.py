@@ -1,5 +1,5 @@
-from src.chessenvironment.boards.board import BoardChi
-from src.chessenvironment.boards.board_observable import BoardObservable
+from src.chessenvironment.board.board import BoardChi
+from src.chessenvironment.board.board_observable import BoardObservable
 
 
 def create_board(subscribers):
