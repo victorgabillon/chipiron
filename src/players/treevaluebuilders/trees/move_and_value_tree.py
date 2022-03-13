@@ -22,7 +22,7 @@ class MoveAndValueTree:
     node.
     """
 
-    def __init__(self, board_evaluator, node_factory, starting_board=None):
+    def __init__(self, board_evaluator,  starting_board=None):
         if starting_board is not None:  # for tree visualizer...
             # the tree is built at half_move  self.half_move
             self.tree_root_half_move = starting_board.ply()
@@ -39,7 +39,7 @@ class MoveAndValueTree:
         self.board_evaluator = board_evaluator
 
         # the factory in charge of creating new nodes
-        self.node_factory = node_factory
+       # self.node_factory = node_factory
 
         # to be defined later ...
         self.root_node = None
