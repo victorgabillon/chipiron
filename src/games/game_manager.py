@@ -103,6 +103,8 @@ class GameManager:
                 break
 
         self.tell_results()
+        self.terminate_threads()  # TODO should this line be inside the play one game ?
+
         return self.simple_results()
 
     def processing_mail(self, message):

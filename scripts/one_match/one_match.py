@@ -49,11 +49,9 @@ class OneMatchScript(Script):
 
         self.fetch_args_and_create_output_folder(file_name_player_one, file_name_player_two, file_name_match_setting)
 
-        # Getting % usage of virtual_memory ( 3rd field)
         # Creation of the Syzygy table for perfect play in low pieces cases, needed by the GameManager
         # and can also be used by the players
         syzygy_mailbox = create_syzygy_thread()
-        # Getting % usage of virtual_memory ( 3rd field)
 
         main_thread_mailbox = multiprocessing.Manager().Queue()
 
