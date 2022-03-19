@@ -7,17 +7,27 @@ from scripts.record_states import RecordStates
 from scripts.record_states_eval_stockfish_1 import RecordStateEvalStockfish1
 from scripts.runtheleague import RuntheLeagueScript
 import tkinter as tk
+import argparse
 
 
 def main():
-    if len(sys.argv) == 1:
+    # Getting the command line arguments from the system
+    raw_command_line_arguments = sys.argv
+
+    # Whether command line arguments are provided or not we ask for more info through a GUI
+    if len(raw_command_line_arguments) == 1:  # No args provided
+        # use a gui to get user input
         script, gui_args = script_gui()
-        print('script, gui_args', script, gui_args)
     else:
-        # capture and remove the first argument
-        script = sys.argv[1:][0]
-        sys.argv = [sys.argv[0]] + sys.argv[2:]
+        # Capture  the script argument in the command line arguments
+        parser_default = argparse.ArgumentParser()
+        parser_default.add_argument('--script', type=str, default=None, help='name of the script')
+        args_obj, unknown = parser_default.parse_known_args()
+        args_command_line = vars(args_obj)  # converting into dictionary format
+        script = args_command_line['script']
         gui_args = None
+
+    print('script, gui_args', script, gui_args)
 
     # launch the relevant script
     if script == 'one_match':

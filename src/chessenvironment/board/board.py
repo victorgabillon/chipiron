@@ -13,7 +13,7 @@ class BoardChi(chess.Board):
     but im not sure its really necessary.i keep it for potential usefulness
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
     def set_starting_position(self, starting_position_arg=None, fen=None):
@@ -33,8 +33,11 @@ class BoardChi(chess.Board):
     def play_move(self, move: chess.Move) -> BoardModification:
         return self.push_and_return_modification(move)
 
-    def rewind_move(self):
-        self.pop()
+    def rewind_one_move(self) -> None:
+        if self.ply() > 0:
+            self.pop()
+        else:
+            print('Cannot rewind more as self.halfmove_clock equals {}'.format(self.ply()))
 
     def push_and_return_modification(self, move: chess.Move) -> BoardModification:
         """

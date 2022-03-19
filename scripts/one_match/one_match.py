@@ -8,7 +8,7 @@ from src.games.match_factories import MatchManagerFactory
 from src.my_random import set_seeds
 import multiprocessing
 from src.players.boardevaluators.table_base.factory import create_syzygy_thread
-
+import queue
 
 class OneMatchScript(Script):
     """
@@ -53,7 +53,7 @@ class OneMatchScript(Script):
         # and can also be used by the players
         syzygy_mailbox = create_syzygy_thread()
 
-        main_thread_mailbox = multiprocessing.Manager().Queue()
+        main_thread_mailbox: queue.Queue = multiprocessing.Manager().Queue()
 
         match_manager_factory = MatchManagerFactory(self.args['match'], self.args['player_one'],
                                                     self.args['player_two'], syzygy_mailbox,

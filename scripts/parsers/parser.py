@@ -23,7 +23,7 @@ class MyParser:
         print('oooo')
 
     def parse_command_line_arguments(self):
-        args_obj = self.parser_no_default.parse_args() # TODO only working with argparse, no?
+        args_obj, unknown = self.parser_no_default.parse_known_args()
         args_command_line = vars(args_obj)  # converting into dictionary format
         self.args_command_line = {key: value for key, value in args_command_line.items() if value is not None}
         print('Here are the command line arguments of the script', self.args_command_line)

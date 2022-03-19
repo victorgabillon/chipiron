@@ -34,6 +34,8 @@ class PlayerProcess(multiprocessing.Process):
                         deep_copy_message = copy.deepcopy(message)
                         print('sending ', message)
                         self.queue_move.put(deep_copy_message)
+                else:
+                    print('opopopopopopopopopdddddddddddddddddsssssssssss')
 
             # TODO here give option to continue working while the other is thinking
 
