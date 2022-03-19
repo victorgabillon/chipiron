@@ -1,5 +1,5 @@
 import chess
-from src.chessenvironment.board import BoardChi, BoardModification
+import src.chessenvironment.board as board_mod
 from graphviz import Digraph
 from src.players.treevaluebuilders.trees.nodes.tree_node import TreeNode
 from src.players.treevaluebuilders.trees.nodes.tree_node_with_values import TreeNodeWithValue
@@ -22,7 +22,14 @@ class MoveAndValueTree:
     node.
     """
 
-    def __init__(self, board_evaluator, starting_board=None):
+    def __init__(self,
+                 board_evaluator,
+                 starting_board: board_mod.IBoard = None) -> None:
+        """
+
+        Args:
+            board_evaluator (object):
+        """
         if starting_board is not None:  # for tree visualizer...
             # the tree is built at half_move  self.half_move
             self.tree_root_half_move = starting_board.ply()
@@ -78,8 +85,8 @@ class MoveAndValueTree:
         self.update_after_node_creation(new_node, parent_node)
         return new_node
 
-    def find_or_create_node(self, board: BoardChi,
-                            modifications: BoardModification,
+    def find_or_create_node(self, board: board_mod.IBoard,
+                            modifications: board_mod.BoardModification,
                             half_move: int,
                             parent_node: TreeNode) -> TreeNode:
         fast_rep = board.fast_representation()
@@ -113,10 +120,10 @@ class MoveAndValueTree:
         # To limit computation we limit copying it all the time. The resulting policy will only be aware of immediate
         # risk of draw by repetition
         copy_stack: bool = (self.node_depth(parent_node) < 2)
-        board: BoardChi = parent_node.board.copy(stack=copy_stack)
+        board: board_mod.BoardChi = parent_node.board.copy(stack=copy_stack)
 
         # The move is played. The board is now a new board
-        modifications: BoardModification = board.play_move(move=move)
+        modifications: board_mod.BoardModification = board.play_move(move=move)
 
         # Creation of the child node. If the board already exited in another node, that node is returned as child_node.
         child_node: TreeNodeWithValue = self.find_or_create_node(board=board,

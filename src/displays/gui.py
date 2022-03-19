@@ -10,6 +10,7 @@ from PyQt5.QtSvg import QSvgWidget
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
+from src.games.game_playing_status import GamePlayingStatus
 
 
 class MainWindow(QWidget):
@@ -39,12 +40,12 @@ class MainWindow(QWidget):
         self.closeButton.setToolTip("Close the widget")  # Tool tip
         self.closeButton.move(700, 0)
 
-        self.play_button = QPushButton(self)
-        self.play_button.setText("Play")  # text
-        self.play_button.setIcon(QIcon("data/gui/play.png"))  # icon
-        self.play_button.clicked.connect(self.play_button_clicked)
-        self.play_button.setToolTip("play the game")  # Tool tip
-        self.play_button.move(700, 100)
+        # self.play_button = QPushButton(self)
+        # self.play_button.setText("Play")  # text
+        # self.play_button.setIcon(QIcon("data/gui/play.png"))  # icon
+        # self.play_button.clicked.connect(self.play_button_clicked)
+        # self.play_button.setToolTip("play the game")  # Tool tip
+        # self.play_button.move(700, 100)
 
         self.pause_button = QPushButton(self)
         self.pause_button.setText("Pause")  # text
@@ -59,7 +60,6 @@ class MainWindow(QWidget):
         self.back_button.clicked.connect(self.back_button_clicked)
         self.back_button.setToolTip("back one move")  # Tool tip
         self.back_button.move(1000, 100)
-
 
         self.player_white_button = QPushButton(self)
         self.player_white_button.setText("Player")  # text
@@ -217,7 +217,6 @@ class MainWindow(QWidget):
 
         if not self.gui_mailbox.empty():
             message = self.gui_mailbox.get()
-
             if message['type'] == 'board':
                 self.board = message['board']
                 self.draw_board()
@@ -230,6 +229,9 @@ class MainWindow(QWidget):
             if message['type'] == 'match_results':
                 match_results = message['match_results']
                 self.update_match_stats(match_results)
+            if message['type'] == 'GamePlayingStatus':
+                game_play_status = message['GamePlayingStatus']
+                self.update_game_play_status(game_play_status)
 
     def draw_board(self):
         """
@@ -249,6 +251,20 @@ class MainWindow(QWidget):
 
     def update_evaluation(self, evaluation):
         self.eval_button.setText('eval: ' + str(evaluation))  # text
+
+    def update_game_play_status(self, game_play_status:GamePlayingStatus):
+        if game_play_status.is_paused():
+            self.pause_button.setText("Play")  # text
+            self.pause_button.setIcon(QIcon("data/gui/play.png"))  # icon
+            self.pause_button.clicked.connect(self.play_button_clicked)
+            self.pause_button.setToolTip("play the game")  # Tool tip
+            self.pause_button.move(850, 100)
+        elif game_play_status.is_play():
+            self.pause_button.setText("Pause")  # text
+            self.pause_button.setIcon(QIcon("data/gui/pause.png"))  # icon
+            self.pause_button.clicked.connect(self.pause_button_clicked)
+            self.pause_button.setToolTip("pause the game")  # Tool tip
+            self.pause_button.move(850, 100)
 
     def update_match_stats(self, match_info):
         player_one_wins, player_two_wins, draws = match_info.get_simple_result()

@@ -1,6 +1,9 @@
 import chess
 import pickle
 import logging
+import copy
+import src.chessenvironment.board as board_lib
+from src.games.game_playing_status import GamePlayingStatus, PlayingStatus
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -23,17 +26,17 @@ class GameManager:
     """
 
     GAME_RESULTS = [WIN_FOR_WHITE, WIN_FOR_BLACK, DRAW] = range(3)
-    GAME_STATUSES = [PLAY, PAUSE] = range(2)
 
     def __init__(self,
-                 observable_board,
+                 board: board_lib.IBoard,
                  syzygy,
                  display_board_evaluator,
                  output_folder_path,
                  args,
                  player_color_to_id,
                  main_thread_mailbox,
-                 player_threads):
+                 player_threads,
+                 game_playing_status: GamePlayingStatus):
         """
         Constructor for the GameManager Class. If the args, and players are not given a value it is set to None,
          waiting for the set methods to be called. This is done like this so that the players can be changed
@@ -48,8 +51,7 @@ class GameManager:
             player_white:
             player_black:
         """
-        self.observable_board = observable_board
-        self.board = observable_board.board  # is it ugly? like to wrapping?
+        self.board = board
         self.syzygy = syzygy
         self.path_to_store_result = output_folder_path + '/games/' if output_folder_path is not None else None
         self.display_board_evaluator = display_board_evaluator
@@ -58,38 +60,36 @@ class GameManager:
         self.board_history = []
         self.main_thread_mailbox = main_thread_mailbox
         self.player_threads = player_threads
-        self.game_status = self.PLAY
+        self.game_playing_status = game_playing_status
 
     def stockfish_eval(self):
-        return self.display_board_evaluator.evaluate(self.observable_board.board)  # TODO DON'T LIKE THIS writing
+        return self.display_board_evaluator.evaluate(self.board)  # TODO DON'T LIKE THIS writing
 
-    def play_one_move(self, move):
-        self.observable_board.play_move(move)
-        if self.syzygy.fast_in_table(self.observable_board.board):
+    def play_one_move(self, move: chess.Move) -> None:
+        self.board.play_move(move)
+        if self.syzygy.fast_in_table(self.board):
             print('Theoretically finished with value for white: ',
-                  self.syzygy.sting_result(self.observable_board.board))
+                  self.syzygy.sting_result(self.board))
 
-    def back_one_move(self):
-        self.observable_board.back_one_move()
-        if self.syzygy.fast_in_table(self.observable_board.board):
+    def rewind_one_move(self):
+        self.board.rewind_one_move()
+        if self.syzygy.fast_in_table(self.board):
             print('Theoretically finished with value for white: ',
-                  self.syzygy.sting_result(self.observable_board.board))
+                  self.syzygy.sting_result(self.board))
 
     def set_new_game(self, starting_position_arg):
-        self.observable_board.set_starting_position(starting_position_arg)
-
-        self.board_history = [self.observable_board.board.copy()]
+        self.board.set_starting_position(starting_position_arg)
+        self.board_history = [copy.copy(self.board)]
 
     def play_one_game(self):
-
         self.set_new_game(self.args['starting_position'])
 
         color_names = ['Black', 'White']
-        half_move = self.observable_board.ply()
 
         while True:
-            print('Half Move: ', half_move)
-            color_to_move = self.observable_board.board.turn
+            half_move = self.board.ply()
+            print('Half Move: {} playing status {} '.format(half_move, self.game_playing_status.status))
+            color_to_move = self.board.turn
             color_of_player_to_move_str = color_names[color_to_move]
             print('{} ({}) to play now...'.format(color_of_player_to_move_str,
                                                   self.player_color_to_id[color_to_move]))
@@ -99,11 +99,11 @@ class GameManager:
 
             self.processing_mail(mail)
 
-            if self.observable_board.board.is_game_over() or not self.game_continue_conditions():
+            if self.board.is_game_over() or not self.game_continue_conditions():
                 break
 
         self.tell_results()
-        self.terminate_threads()  # TODO should this line be inside the play one game ?
+        self.terminate_threads()
 
         return self.simple_results()
 
@@ -112,35 +112,38 @@ class GameManager:
         if message['type'] == 'game_status':
             # update game status
             if message['status'] == 'play':
-                self.game_status = self.PLAY
+                self.game_playing_status.play()
+                self.board.notify_board_play()
             if message['status'] == 'pause':
-                self.game_status = self.PAUSE
+                self.game_playing_status.pause()
         if message['type'] == 'move':
             # play the move
             move = message['move']
-            print('receiving the move', move, type(self))
-            if message['corresponding_board'] == self.board.fen() and self.game_status == self.PLAY:
+            print('receiving the move', move, type(self), self.game_playing_status, type(self.game_playing_status))
+            if message['corresponding_board'] == self.board.fen() and self.game_playing_status.is_play():
                 # TODO THINK! HOW TO DEAL with premoves if we dont know the board in advance?
                 self.play_one_move(move)
                 eval = self.stockfish_eval()
                 print('Stockfish evaluation:', eval)
                 # Print the board
-                self.observable_board.print_chess_board()
+                self.board.print_chess_board()
             else:
+                pass
                 # put back in the queue
-                self.main_thread_mailbox.put(message)
+                #self.main_thread_mailbox.put(message)
             logger.debug('len main tread mailbox {}'.format(self.main_thread_mailbox.qsize()))
 
         if message['type'] == 'move_syzygy':  # TODO IS THIS CLEAN?
-            self.syzygy_player.best_move(self.observable_board.board)
+            self.syzygy_player.best_move(self.board)
             self.play_one_move(move)
 
         if message['type'] == 'back':
-            self.back_one_move()
-            self.game_status = self.PAUSE
+            self.rewind_one_move()
+            self.game_playing_status.status = PlayingStatus.PAUSE
+            half_move = self.board.ply()
 
     def game_continue_conditions(self):
-        half_move = self.observable_board.ply()
+        half_move = self.board.ply()
         continue_bool = True
         if 'max_half_move' in self.args and half_move >= self.args['max_half_move']:
             continue_bool = False
