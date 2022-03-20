@@ -1,4 +1,6 @@
-import cProfile, pstats, io
+import cProfile
+import pstats
+import io
 from pstats import SortKey
 import time
 from scripts.parsers.parser import create_parser
@@ -48,8 +50,8 @@ class Script:
             print("--- %s seconds ---" % (time.time() - self.start_time))
             self.pr.disable()
             s = io.StringIO()
-            sortby = SortKey.CUMULATIVE
-            ps = pstats.Stats(self.pr, stream=s).sort_stats(sortby)
+            sort_by = SortKey.CUMULATIVE
+            ps = pstats.Stats(self.pr, stream=s).sort_stats(sort_by)
             ps.print_stats()
             print(s.getvalue())
 

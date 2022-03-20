@@ -79,8 +79,7 @@ def script_gui():
                     'file_name_match_setting': 'setting_duda.yaml',
                     'player_one': {'tree_builder': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}}
         script_name = 'one_match'
-
-    if root.output['type'] == 'watch_a_game':
+    elif root.output['type'] == 'watch_a_game':
         gui_args = {'config_file_name': 'scripts/one_match/exp_options.yaml',
                     'seed': 0,
                     'gui': True,
@@ -88,6 +87,8 @@ def script_gui():
                     'file_name_player_two': 'RecurZipfBase4.yaml',
                     'file_name_match_setting': 'setting_duda.yaml'}
         script_name = 'one_match'
+    else:
+        raise 'Not a good name'
 
     return script_name, gui_args
 
