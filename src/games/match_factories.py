@@ -1,13 +1,13 @@
 import chess
 from src.games.match_manager import MatchManager
 from src.games.game_manager_factory import GameManagerFactory
-from src.games.math_results import MatchResults, ObservableMatchResults
+from src.games.match_results_factory import MatchResultsFactory
 from src.players.factory import create_player
-import yaml
 from src.players.boardevaluators.table_base.syzygy import SyzygyTable
 from src.players.boardevaluators.factory import ObservableBoardEvaluatorFactory
 import random
 from src.extra_tools.small_tools import unique_int_from_list
+import queue
 
 
 class MatchManagerFactory:
@@ -18,18 +18,26 @@ class MatchManagerFactory:
                  syzygy_table: object,
                  output_folder_path: object,
                  seed: int,
-                 main_thread_mailbox: object) -> None:
+                 main_thread_mailbox: queue.Queue,
+                 args_game: dict) -> None:
         self.output_folder_path = output_folder_path
-        self.player_one_name = args_player_one['name']
-        self.player_two_name = args_player_two['name']
+        self.player_one_name: str = args_player_one['name']
+        self.player_two_name: str = args_player_two['name']
 
-        game_manager_board_evaluator_factory = ObservableBoardEvaluatorFactory()
+        game_manager_board_evaluator_factory: ObservableBoardEvaluatorFactory = ObservableBoardEvaluatorFactory()
 
-        self.game_manager_factory = GameManagerFactory(syzygy_table, game_manager_board_evaluator_factory,
-                                                             output_folder_path, main_thread_mailbox)
+        self.game_manager_factory: GameManagerFactory = GameManagerFactory(syzygy_table,
+                                                                           game_manager_board_evaluator_factory,
+                                                                           output_folder_path,
+                                                                           main_thread_mailbox)
 
-        self.match_results_factory = MatchResultsFactory(self.player_one_name, self.player_two_name)
-        self.game_args_factory = GameArgsFactory(args_match, args_player_one, args_player_two, seed)
+        self.match_results_factory: MatchResultsFactory = MatchResultsFactory(self.player_one_name,
+                                                                              self.player_two_name)
+        self.game_args_factory: GameArgsFactory = GameArgsFactory(args_match,
+                                                                  args_player_one,
+                                                                  args_player_two,
+                                                                  seed,
+                                                                  args_game)
 
     def create(self) -> MatchManager:
         match_manager: MatchManager
@@ -47,24 +55,6 @@ class MatchManagerFactory:
         self.match_results_factory.subscribe(subscriber)
 
 
-class MatchResultsFactory:
-    def __init__(self, player_one_name, player_two_name):
-        self.player_one_name = player_one_name
-        self.player_two_name = player_two_name
-        self.subscribers = []
-
-    def create(self):
-        match_result = MatchResults(self.player_one_name, self.player_two_name)
-        if self.subscribers:
-            match_result = ObservableMatchResults(match_result)
-            for subscriber in self.subscribers:
-                match_result.subscribe(subscriber)
-        return match_result
-
-    def subscribe(self, subscriber):
-        self.subscribers.append(subscriber)
-
-
 class GameArgsFactory:
     # TODO MAYBE CHANGE THE NAME, ALSO MIGHT BE SPLIT IN TWO (players and rules)?
     """
@@ -74,13 +64,17 @@ class GameArgsFactory:
 
     """
 
-    def __init__(self, args_match, args_player_one, args_player_two, seed):
+    def __init__(self,
+                 args_match,
+                 args_player_one,
+                 args_player_two,
+                 seed: int,
+                 args_game):
         self.args_match = args_match
         self.seed = seed
         self.args_player_one = args_player_one
         self.args_player_two = args_player_two
-        with open('data/settings/GameSettings/' + args_match['game_setting_file'], 'r') as file_game:
-            self.args_game = yaml.load(file_game, Loader=yaml.FullLoader)
+        self.args_game = args_game
         self.game_number = 0
 
     def generate_game_args(self, game_number):

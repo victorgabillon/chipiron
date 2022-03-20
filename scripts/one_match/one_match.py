@@ -9,6 +9,7 @@ from src.my_random import set_seeds
 import multiprocessing
 from src.players.boardevaluators.table_base.factory import create_syzygy_thread
 import queue
+import yaml
 
 
 class OneMatchScript(Script):
@@ -56,10 +57,18 @@ class OneMatchScript(Script):
 
         main_thread_mailbox: queue.Queue = multiprocessing.Manager().Queue()
 
-        match_manager_factory = MatchManagerFactory(self.args['match'], self.args['player_one'],
-                                                    self.args['player_two'], syzygy_mailbox,
-                                                    self.experiment_output_folder, self.args['seed'],
-                                                    main_thread_mailbox)
+        with open('data/settings/GameSettings/' + self.args['match']['game_setting_file'], 'r') as file_game:
+            args_game = yaml.load(file_game, Loader=yaml.FullLoader)
+
+        match_manager_factory: MatchManagerFactory
+        match_manager_factory = MatchManagerFactory(args_match=self.args['match'],
+                                                    args_player_one=self.args['player_one'],
+                                                    args_player_two=self.args['player_two'],
+                                                    syzygy_table=syzygy_mailbox,
+                                                    output_folder_path=self.experiment_output_folder,
+                                                    seed=self.args['seed'],
+                                                    main_thread_mailbox=main_thread_mailbox,
+                                                    args_game=args_game)
 
         if self.args['gui']:
             # if we use a graphic user interface (GUI) we create it its own thread and

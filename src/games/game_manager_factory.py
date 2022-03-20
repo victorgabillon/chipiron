@@ -3,8 +3,7 @@ from src.games.game_manager import GameManager
 import src.players as players
 import chess
 from src.players.factory import launch_player_process
-from src.games.game_playing_status import GamePlayingStatus,ObservableGamePlayingStatus
-from src.extra_tools.observer_wrapper import Observable
+from src.games.game_playing_status import GamePlayingStatus, ObservableGamePlayingStatus
 import queue
 
 
@@ -51,10 +50,8 @@ class GameManagerFactory:
 
         # creating the game playing status
         game_playing_status: GamePlayingStatus = GamePlayingStatus()
-        print('frkofkweweork',game_playing_status.status)
         game_playing_status: ObservableGamePlayingStatus = ObservableGamePlayingStatus(game_playing_status)
         game_playing_status.subscribe(self.subscribers)
-        print('frkofkork',game_playing_status.status)
 
         game_manager = GameManager(board=board,
                                    syzygy=self.syzygy_table,
