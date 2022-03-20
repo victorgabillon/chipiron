@@ -55,3 +55,6 @@ class Script:
 
         end_time = time.time()
         print('execution time', end_time - self.start_time)
+
+    def run(self):
+        pass

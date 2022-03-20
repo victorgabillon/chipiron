@@ -3,12 +3,13 @@ from src.displays.gui import MainWindow
 from PyQt5.QtWidgets import *
 from scripts.script import Script
 from shutil import copyfile
-from src.extra_tools.small_tools import mkdir, yaml_fetch_args_in_file,rec_merge_dic
+from src.extra_tools.small_tools import mkdir, yaml_fetch_args_in_file, rec_merge_dic
 from src.games.match_factories import MatchManagerFactory
 from src.my_random import set_seeds
 import multiprocessing
 from src.players.boardevaluators.table_base.factory import create_syzygy_thread
 import queue
+
 
 class OneMatchScript(Script):
     """
