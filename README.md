@@ -42,13 +42,13 @@ python3 main_chipiron.py
 ### Script: one match
 This allows to play a match between two players.
 ```console
-python3 main_chipiron.py one_match --config_file_name scripts/one_match/exp_options.yaml
+python3 main_chipiron.py --script_name one_match --config_file_name scripts/one_match/exp_options.yaml
 ```
 
 ### Script: learn nn from supervised datasets 
 This learns Neural Networks from a database of labelled boards.
 ```console
-python3 main_chipiron.py learn_nn --config_file_name scripts/learn_nn_supervised/exp_options.yaml
+python3 main_chipiron.py --script_name learn_nn --config_file_name scripts/learn_nn_supervised/exp_options.yaml
 ```
 
 ## Contributing
