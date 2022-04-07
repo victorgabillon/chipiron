@@ -7,6 +7,8 @@ Chipiron is a Python library that plays chess
 
 * Python 3.9
 * pip
+* curl
+* tkinter
 
 ## Installation
 The following command will install the python packaged listed in requirements.txt, download syzygy tables, install stockfish, retrieve datasets and gui images...
