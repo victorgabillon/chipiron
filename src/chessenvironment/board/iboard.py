@@ -26,3 +26,6 @@ class IBoard(Protocol):
 
     def is_game_over(self):
         ...
+
+    def fast_representation(self) -> str:
+        ...

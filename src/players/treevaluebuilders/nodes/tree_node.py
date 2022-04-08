@@ -1,3 +1,4 @@
+from __future__ import annotations  # To be removed in python 3.10 (helping with recursive type annocatation)
 from bidict import bidict
 
 
@@ -5,7 +6,11 @@ from bidict import bidict
 
 class TreeNode:
 
-    def __init__(self, board, half_move, id_number, parent_node):
+    def __init__(self,
+                 board,
+                 half_move: int,
+                 id_number: int,
+                 parent_node: TreeNode) -> None:
         # id is a number to identify this node for easier debug
         self.id = id_number
 
@@ -104,7 +109,7 @@ class TreeNode:
 
     def get_descendants_candidate_to_open(self):
         """ returns descendants that are both not opened and not over"""
-      #  print('tt', self.id, self.is_over())
+        #  print('tt', self.id, self.is_over())
         if not self.all_legal_moves_generated and not self.is_over():
             # should use are_all_moves_and_children_opened() but its messy!
             # also using is_over is  messy as over_events are defined in a child class!!!

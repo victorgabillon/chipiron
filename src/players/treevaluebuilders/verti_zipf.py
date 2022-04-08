@@ -1,6 +1,6 @@
 from src.players.treevaluebuilders.trees.move_and_value_tree import MoveAndValueTree
 from src.players.treevaluebuilders.tree_and_value_player import TreeAndValuePlayer
-from src.players.treevaluebuilders.trees.nodes.tree_node_with_proportions import ProportionsNode
+from src.players.treevaluebuilders.nodes.tree_node_with_proportions import ProportionsNode
 
 
 class VertiZipfTree(MoveAndValueTree):

@@ -1,6 +1,6 @@
 from src.players.treevaluebuilders.tree_and_value_player import TreeAndValuePlayer
 from src.players.treevaluebuilders.trees.move_and_value_tree import MoveAndValueTree
-from src.players.treevaluebuilders.trees.nodes.index_tree_node import IndexTreeNode
+from src.players.treevaluebuilders.nodes.index_tree_node import IndexTreeNode
 from src.players.treevaluebuilders.notations_and_statics import zipf_picks
 import math
 

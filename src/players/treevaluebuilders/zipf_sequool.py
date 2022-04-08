@@ -1,13 +1,12 @@
 from src.players.treevaluebuilders.tree_and_value_player import TreeAndValuePlayer
 from src.players.treevaluebuilders.trees.move_and_value_tree import MoveAndValueTree
-from src.players.treevaluebuilders.trees.nodes.index_tree_node import IndexTreeNode
+from src.players.treevaluebuilders.nodes.index_tree_node import IndexTreeNode
 from src.players.treevaluebuilders.notations_and_statics import zipf_picks_random_bool
-from src.players.treevaluebuilders.trees.nodes.tree_node_with_proportions import ProportionsNode
+from src.players.treevaluebuilders.nodes.tree_node_with_proportions import ProportionsNode
 from src.players.treevaluebuilders.trees.descendants import SortedDescendants
-from src.players.treevaluebuilders.trees.nodes.tree_node_with_descendants import NodeWithDescendantsNoUpdate
+from src.players.treevaluebuilders.nodes import NodeWithDescendantsNoUpdate
 from src.players.treevaluebuilders.trees.first_moves import FirstMoves
 import math
-import random
 from src.players.treevaluebuilders.move_explorer import ProportionMoveExplorer
 
 
@@ -289,12 +288,12 @@ class ZipfSequool(TreeAndValuePlayer):
         #    opening_instructions.print_info()
         return opening_instructions
 
-    def tree_explore(self, board):
+    def explore(self, board):
         print(board)
         self.count_refresh_index = 0
         self.next_update = 10
 
-        return super().tree_explore(board)
+        return super().explore(board)
 
     def print_info(self):
         super().print_info()

@@ -1,8 +1,8 @@
 import chess
 import src.chessenvironment.board as board_mod
 from graphviz import Digraph
-from src.players.treevaluebuilders.trees.nodes.tree_node import TreeNode
-from src.players.treevaluebuilders.trees.nodes.tree_node_with_values import TreeNodeWithValue
+from src.players.treevaluebuilders.nodes import TreeNode
+from src.players.treevaluebuilders.nodes import TreeNodeWithValue
 import pickle
 from src.players.treevaluebuilders.trees.updates import UpdateInstructionsBatch
 
@@ -24,6 +24,7 @@ class MoveAndValueTree:
 
     def __init__(self,
                  board_evaluator,
+                 node_factory,
                  starting_board: board_mod.IBoard = None) -> None:
         """
 
@@ -36,6 +37,8 @@ class MoveAndValueTree:
 
         # number of nodes in the tree
         self.nodes_count = 0
+
+        self.node_factory = node_factory
 
         # integer counting the number of moves in the tree.
         # the interest of self.move_count over the number of nodes in the descendants
@@ -89,11 +92,11 @@ class MoveAndValueTree:
                             modifications: board_mod.BoardModification,
                             half_move: int,
                             parent_node: TreeNode) -> TreeNode:
-        fast_rep = board.fast_representation()
-        if self.root_node is not None:
-            assert (self.root_node.descendants.is_in_the_acceptable_range(half_move))
-        if self.root_node is None or self.root_node.descendants.is_new_generation(half_move) or fast_rep not in \
-                self.root_node.descendants.descendants_at_half_move[half_move]:
+        fast_rep: str = board.fast_representation()
+        node: TreeNode
+        if self.root_node is None \
+                or self.root_node.descendants.is_new_generation(half_move) \
+                or fast_rep not in self.root_node.descendants.descendants_at_half_move[half_move]:
             node = self.create_tree_node_and_more(board, modifications, half_move, parent_node)
         else:  # the node already exists
             node = self.descendants[half_move][fast_rep]  # add it to the list of descendants
