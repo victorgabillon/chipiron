@@ -1,4 +1,4 @@
-from src.players.treevaluebuilders.trees.nodes.tree_node_with_values import TreeNodeWithValue
+from src.players.treevaluebuilders.nodes.tree_node_with_values import TreeNodeWithValue
 from src.players.treevaluebuilders.trees.descendants import RangedDescendants
 
 

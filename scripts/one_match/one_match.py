@@ -5,6 +5,7 @@ from scripts.script import Script
 from shutil import copyfile
 from src.extra_tools.small_tools import mkdir, yaml_fetch_args_in_file, rec_merge_dic
 from src.games.match_factories import MatchManagerFactory
+from src.games.match_manager import MatchManager
 from src.my_random import set_seeds
 import multiprocessing
 from src.players.boardevaluators.table_base.factory import create_syzygy_thread
@@ -30,7 +31,7 @@ class OneMatchScript(Script):
 
     base_experiment_output_folder = Script.base_experiment_output_folder + 'one_match/one_match_outputs/'
 
-    def __init__(self, gui_args):
+    def __init__(self, gui_args: dict) -> None:
         """
         Builds the OneMatchScript object
         """
@@ -41,8 +42,9 @@ class OneMatchScript(Script):
         # taking care of random
         set_seeds(seed=self.args['seed'])
 
-        file_name_player_one = self.args['file_name_player_one']
-        file_name_player_two = self.args['file_name_player_two']
+        file_name_player_one: str = self.args['file_name_player_one']
+        file_name_player_two: str = self.args['file_name_player_two']
+        file_name_match_setting: str
         if self.args['profiling']:
             self.args['max_half_move'] = 1
             file_name_match_setting = 'setting_jime.yaml'
@@ -73,14 +75,17 @@ class OneMatchScript(Script):
         if self.args['gui']:
             # if we use a graphic user interface (GUI) we create it its own thread and
             # create its mailbox to communicate with other threads
-            gui_thread_mailbox = multiprocessing.Manager().Queue()
+            gui_thread_mailbox: queue.Queue = multiprocessing.Manager().Queue()
             self.chess_gui = QApplication(sys.argv)
             self.window = MainWindow(gui_thread_mailbox, main_thread_mailbox)
             match_manager_factory.subscribe(gui_thread_mailbox)
 
-        self.match_manager = match_manager_factory.create()
+        self.match_manager: MatchManager = match_manager_factory.create()
 
-    def fetch_args_and_create_output_folder(self, file_name_player_one, file_name_player_two, file_name_match_setting):
+    def fetch_args_and_create_output_folder(self,
+                                            file_name_player_one: str,
+                                            file_name_player_two: str,
+                                            file_name_match_setting: str) -> None:
         """
         From the names of the config file for players and match setting, open the config files, loads the arguments
          and copy the config files in the experiment folder.
@@ -112,7 +117,7 @@ class OneMatchScript(Script):
         copyfile(path_player_two, self.experiment_output_folder + '/' + file_name_player_two)
         copyfile(path_match_setting, self.experiment_output_folder + '/' + file_name_match_setting)
 
-    def run(self):
+    def run(self) -> None:
         """
         Runs the match either with a GUI or not
         Returns:

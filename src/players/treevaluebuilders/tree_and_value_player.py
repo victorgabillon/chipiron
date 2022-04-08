@@ -2,14 +2,22 @@ from src.players.treevaluebuilders.trees.opening_instructions import OpeningInst
 from src.players.treevaluebuilders.notations_and_statics import softmax
 from src.players.treevaluebuilders.stopping_criterion import create_stopping_criterion
 from src.players.boardevaluators.over_event import OverEvent
+from src.players.treevaluebuilders.trees.move_and_value_tree import MoveAndValueTree
 
 
 class TreeAndValuePlayer:
-    # at the moment it look like i do not need this class i could go directly
+    # at the moment it looks like i do not need this class i could go directly
     # for the tree builder no? think later bout that? maybe one is for multi round and the other is not?
 
-    def __init__(self, arg, random_generator):
-        self.tree = None
+    def __init__(self,
+                 arg,
+                 random_generator,
+                 node_move_opening_selector,
+                 node_factory,
+                 board_evaluators_wrapper):
+        self.node_move_opening_selector = node_move_opening_selector
+        self.node_factory = node_factory
+        self.board_evaluators_wrapper = board_evaluators_wrapper
         self.arg = arg
         self.tree_move_limit = arg['tree_move_limit'] if 'tree_move_limit' in arg else None
         self.opening_instructor = OpeningInstructor(arg['opening_type'],
@@ -62,7 +70,7 @@ class TreeAndValuePlayer:
                                                              weights=softmax_, k=1)
                 best_move = move_as_list[0]
             elif selection_rule == 'almost_equal' or selection_rule == 'almost_equal_logistic':
-                # find best first move allowing for random choice for almost equally valued moves.
+                # find the best first move allowing for random choice for almost equally valued moves.
                 best_root_children = self.tree.root_node.get_all_of_the_best_moves(how_equal=selection_rule)
                 print('We have as bests: ',
                       [self.tree.root_node.moves_children.inverse[best] for best in best_root_children])
@@ -74,8 +82,8 @@ class TreeAndValuePlayer:
                 raise (Exception('move_selection_rule is not valid it seems'))
         return best_move
 
-    def tree_explore(self, board):
-        self.tree = self.create_tree(board)
+    def explore(self, board):
+        self.tree = MoveAndValueTree(self.board_evaluators_wrapper, board, self.node_factory)
         self.tree.add_root_node(board)
 
         self.count = 0
@@ -84,7 +92,7 @@ class TreeAndValuePlayer:
             assert (not self.tree.root_node.is_over())
             self.print_info_during_move_computation()
 
-            opening_instructions_batch = self.choose_node_and_move_to_open()
+            opening_instructions_batch = self.node_move_opening_selector.choose()
 
             # if self.count %100 ==0:
             #  self.tree.save_raw_data_to_file(self.count)
@@ -110,8 +118,7 @@ class TreeAndValuePlayer:
         print('evaluation for white: ', self.tree.root_node.get_value_white())
 
     def select_move(self, board):
-        self.tree_explore(board)
-
+        self.explore(board)
         best_move = self.recommend_move_after_exploration()
         self.tree.print_best_line()  # todo maybe almost best choosen line no?
 

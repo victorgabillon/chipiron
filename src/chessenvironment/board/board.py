@@ -169,7 +169,7 @@ class BoardChi(chess.Board):
             fen = convert_to_fen(asciiBoard)
         return fen
 
-    def compute_key(self):
+    def compute_key(self) -> str:
         string = str(self.pawns) + str(self.knights) \
                  + str(self.bishops) + str(self.rooks) \
                  + str(self.queens) + str(self.kings) \
@@ -180,9 +180,7 @@ class BoardChi(chess.Board):
                  + str(self.fullmove_number)
         return string
 
-    def fast_representation(self):
-        # fastRep = board.chessBoard.fen()
-        # return chess.polyglot.zobrist_hash(self)
+    def fast_representation(self) -> str:
         return self.compute_key()
 
     def print_chess_board(self):

@@ -1,4 +1,4 @@
-from src.players.treevaluebuilders.trees.nodes.tree_node_with_descendants import NodeWithDescendants
+from src.players.treevaluebuilders.nodes.tree_node_with_descendants import NodeWithDescendants
 import numba
 import numpy as np
 

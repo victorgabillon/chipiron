@@ -1,12 +1,11 @@
 from random import choice
-from src.players.treevaluebuilders.trees.nodes.tree_node import TreeNode
+from src.players.treevaluebuilders.nodes.tree_node import TreeNode
 import chess
 from src.players.boardevaluators.over_event import OverEvent
 from src.players.treevaluebuilders.trees.updates import UpdateInstructions, BaseUpdateInstructionsBlock
 from src.players.treevaluebuilders.notations_and_statics import nth_key
 import math
 from src.extra_tools.my_value_sorted_dict import MyValueSortedDict
-import pandas as pd
 
 
 # todo maybe further split values from over?
@@ -330,7 +329,6 @@ class TreeNodeWithValue(TreeNode):
 
     def test(self):
         super().test()
-        # print('testing node', self.id)
         self.test_values()
         self.test_over()
         self.test_children_not_over()
@@ -383,9 +381,8 @@ class TreeNodeWithValue(TreeNode):
             # todo test board value
 
     def test_best_node_sequence(self):
-        # print ('testbestseq')
         # todo test if the sequence is empty, does it make sense? now yes and test if it is when the opened children
-        #  ahve a value less promissing than the self.value_white_evaluator
+        #  have a value less promissing than the self.value_white_evaluator
         # todo test better for the weird value that are tuples!! with length and id
         if self.best_node_sequence:
             best_child = self.best_child()
@@ -397,7 +394,6 @@ class TreeNodeWithValue(TreeNode):
             assert (self.best_child() == self.best_node_sequence[0])
         for node in self.best_node_sequence[1:]:
             assert (isinstance(node, TreeNode))
-            # print('@ss@',old_best_node, ':ddd' ,old_best_node.best_node_sequence[0].id,':ddd' ,node.id,':ddd' ,self.best_node_sequence)
             assert (old_best_node.best_node_sequence[0] == node)
 
             assert (old_best_node.best_node_sequence[0] == old_best_node.best_child())
@@ -499,3 +495,21 @@ class TreeNodeWithValue(TreeNode):
         return new_instructions
 
         # todo i dont understand anymore when the instructions stops beeing propagated back
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

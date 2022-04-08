@@ -1,4 +1,4 @@
-from src.players.treevaluebuilders.trees.nodes.tree_node import TreeNode
+from src.players.treevaluebuilders.nodes.tree_node import TreeNode
 
 class NoisyValueTreeNode(TreeNode):
 

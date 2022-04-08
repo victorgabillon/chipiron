@@ -1,12 +1,10 @@
-import time
-
 from src.players.treevaluebuilders.trees.move_and_value_tree import MoveAndValueTree
 from src.players.treevaluebuilders.tree_and_value_player import TreeAndValuePlayer
-from src.players.treevaluebuilders.trees.nodes.tree_node_with_values import TreeNodeWithValue
-from src.players.treevaluebuilders.trees.nodes.tree_node_with_descendants import NodeWithDescendants
+from src.players.treevaluebuilders.nodes import TreeNodeWithValue
+from src.players.treevaluebuilders.nodes import NodeWithDescendants
 from src.players.treevaluebuilders.move_explorer import ZipfMoveExplorer
 
-import random
+
 # todo merge with the other recurzipf it seems we need to have otomatic tree node initiation
 
 class RecurZipfBaseTree2(MoveAndValueTree):

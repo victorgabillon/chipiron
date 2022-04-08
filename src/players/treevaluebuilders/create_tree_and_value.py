@@ -10,34 +10,40 @@ from src.players.treevaluebuilders.sequool import Sequool
 from src.players.treevaluebuilders.sequool2 import Sequool2
 from src.players.treevaluebuilders.zipf_sequool2 import ZipfSequool2
 from src.players.treevaluebuilders.zipf_sequool import ZipfSequool
+from src.players.treevaluebuilders.tree_and_value_player import TreeAndValuePlayer
 
 
 def create_tree_and_value_builders(arg, syzygy, random_generator):
+    board_evaluators_wrapper = create_node_evaluator(arg['board_evaluator'], syzygy)
     tree_builder_type = arg['tree_builder']['type']
 
     if tree_builder_type == 'Uniform':
-        tree_builder = Uniform(arg['tree_builder'])
+        node_move_opening_selectoboard_evaluators_wrapperr = Uniform(arg['tree_builder'], board_evaluators_wrapper)
     elif tree_builder_type == 'RecurZipf':
-        tree_builder = RecurZipf(arg['tree_builder'])
+        node_move_opening_selector = RecurZipf(arg['tree_builder'], board_evaluators_wrapper)
     elif tree_builder_type == 'RecurZipfBase':
-        tree_builder = RecurZipfBase(arg['tree_builder'],random_generator)
+        node_move_opening_selector = RecurZipfBase(arg['tree_builder'], random_generator)
+        node_factory =
     elif tree_builder_type == 'RecurZipfBase2':
-        tree_builder = RecurZipfBase2(arg['tree_builder'])
+        node_move_opening_selector = RecurZipfBase2(arg['tree_builder'])
     elif tree_builder_type == 'VertiZipf':
-        tree_builder = VertiZipf(arg['tree_builder'])
+        node_move_opening_selector = VertiZipf(arg['tree_builder'])
     elif tree_builder_type == 'RecurVertiZipf':
-        tree_builder = RecurVertiZipf(arg['tree_builder'])
+        node_move_opening_selector = RecurVertiZipf(arg['tree_builder'])
     elif tree_builder_type == 'Sequool':
-        tree_builder = Sequool(arg['tree_builder'])
+        node_move_opening_selector = Sequool(arg['tree_builder'])
     elif tree_builder_type == 'Sequool2':
-        tree_builder = Sequool2(arg['tree_builder'])
+        node_move_opening_selector = Sequool2(arg['tree_builder'])
     elif tree_builder_type == 'ZipfSequool':
-        tree_builder = ZipfSequool(arg['tree_builder'])
+        node_move_opening_selector = ZipfSequool(arg['tree_builder'])
     elif tree_builder_type == 'ZipfSequool2':
-        tree_builder = ZipfSequool2(arg['tree_builder'])
+        node_move_opening_selector = ZipfSequool2(arg['tree_builder'])
     else:
         sys.exit('tree builder: can not find ' + arg['tree_builder']['type'])
 
-    tree_builder.board_evaluators_wrapper = create_node_evaluator(arg['board_evaluator'], syzygy)
-
+    tree_builder = TreeAndValuePlayer(arg=arg,
+                                      random_generator=random_generator,
+                                      node_move_opening_selector=node_move_opening_selector,
+                                      node_factory=node_factory,
+                                      board_evaluators_wrapper=board_evaluators_wrapper)
     return tree_builder
