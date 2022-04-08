@@ -3,6 +3,7 @@ from src.players.treevaluebuilders.uniform import Uniform
 from src.players.boardevaluators.factory import create_node_evaluator
 from src.players.treevaluebuilders.recur_zipf import RecurZipf
 from src.players.treevaluebuilders.recur_zipf_base import RecurZipfBase
+from src.players.treevaluebuilders.node_factory. import RecurZipfBase
 from src.players.treevaluebuilders.recur_zipf_base2 import RecurZipfBase2
 from src.players.treevaluebuilders.verti_zipf import VertiZipf
 from src.players.treevaluebuilders.recur_verti_zipf import RecurVertiZipf
@@ -23,7 +24,7 @@ def create_tree_and_value_builders(arg, syzygy, random_generator):
         node_move_opening_selector = RecurZipf(arg['tree_builder'], board_evaluators_wrapper)
     elif tree_builder_type == 'RecurZipfBase':
         node_move_opening_selector = RecurZipfBase(arg['tree_builder'], random_generator)
-        node_factory =
+        node_factory = RecurZipfBase()
     elif tree_builder_type == 'RecurZipfBase2':
         node_move_opening_selector = RecurZipfBase2(arg['tree_builder'])
     elif tree_builder_type == 'VertiZipf':

@@ -1,6 +1,7 @@
 ###### Requirements without Version Specifiers ######
 PyYAML
 
+
 ###### Requirements with Version Specifiers ######
 PyQt5~=5.15.4
 chess >= 1.8.0

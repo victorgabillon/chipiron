@@ -1,5 +1,5 @@
 class FirstMoves:
-
+    """ A class that helps remember what are the first moves that can lead to any given node"""
     def __init__(self):
         self.first_moves = {}
 
@@ -22,9 +22,6 @@ class FirstMoves:
             self.first_moves[node].update(self.first_moves[parent_node].copy())
             node_descendants = node.get_descendants()
             for descendant in node_descendants:
-                if descendant.id == 5857:
-                    print('## 5857--', [i.id for i in self.first_moves[parent_node].copy()])
-                #                assert (descendant.id != 5857)
                 self.first_moves[descendant].update(self.first_moves[parent_node].copy())
         else:
             self.first_moves[node] = self.first_moves[parent_node].copy()
