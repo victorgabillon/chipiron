@@ -3,7 +3,7 @@ from src.players.treevaluebuilders.nodes.tree_node_with_values import TreeNodeWi
 from src.players.treevaluebuilders.nodes.tree_node_with_descendants import NodeWithDescendants
 
 
-class RecurZipfBaseTree(TreeNodeFactory):
+class RecurZipfBase(TreeNodeFactory):
     def create_tree_node(self, board, half_move, count, father_node):
         board_depth = half_move - self.tree_root_half_move
         if board_depth == 0:

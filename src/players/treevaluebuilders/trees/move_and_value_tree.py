@@ -25,6 +25,7 @@ class MoveAndValueTree:
     def __init__(self,
                  board_evaluator,
                  node_factory,
+                 updater,
                  starting_board: board_mod.IBoard = None) -> None:
         """
 
@@ -49,7 +50,8 @@ class MoveAndValueTree:
         self.board_evaluator = board_evaluator
 
         # the factory in charge of creating new nodes
-        # self.node_factory = node_factory
+        self.node_factory = node_factory
+        self.updater = updater
 
         # to be defined later ...
         self.root_node = None
@@ -161,11 +163,6 @@ class MoveAndValueTree:
         print(';;;', type(node))
         nd = node.dot_description()
         dot.node(str(node.id), nd)
-        # print('--------------')
-        # print('--------------')
-        # print('parent:', nd)
-        # print('--------------')
-        # print('dcvf', node.proportions)
         sorted_moves = [(str(move), move) for move in node.moves_children.keys()]
         sorted_moves.sort()
         for move_key in sorted_moves:

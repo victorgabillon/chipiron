@@ -1,11 +1,7 @@
-
-
 from src.players.treevaluebuilders.move_explorer import ZipfMoveExplorer
 
 
-
-# todo merge with the other recurzipf it seems we need to have otomatic tree node initiation
-
+# todo merge with the other recurzipf it seems we need to have automatic tree node initiation
 
 
 class RecurZipfBase:
@@ -27,7 +23,6 @@ class RecurZipfBase:
                 # print('best line is underattacked')
                 if self.random_generator.random() > .5:
                     # print('best line is underattacked and i do')
-
                     return self.opening_instructor.instructions_to_open_all_moves(last_node_in_best_line)
 
         wandering_node = self.tree.root_node
