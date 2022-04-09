@@ -4,12 +4,11 @@ from src.players.treevaluebuilders.nodes.tree_node_with_descendants import NodeW
 
 
 class RecurZipfBase(TreeNodeFactory):
-    def create_tree_node(self, board, half_move, count, father_node):
-        board_depth = half_move - self.tree_root_half_move
+    def create(self, board, half_move, count, parent_node, board_depth):
         if board_depth == 0:
-            return NodeWithDescendants(board, half_move, count, father_node)
+            return NodeWithDescendants(board, half_move, count, parent_node)
         else:
-            return TreeNodeWithValue(board, half_move, count, father_node)
+            return TreeNodeWithValue(board, half_move, count, parent_node)
 
     def update_after_node_creation(self, node, parent_node):
         node_depth = node.half_move - self.tree_root_half_move

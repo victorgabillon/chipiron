@@ -1,4 +1,4 @@
-from src.players.treevaluebuilders.nodes import TreeNode
+from src.players.treevaluebuilders.nodes.tree_node import TreeNode
 import chess
 
 

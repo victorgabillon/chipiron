@@ -6,9 +6,10 @@ from src.players.player import Player
 from src.players.player_thread import PlayerProcess
 import multiprocessing
 from src.extra_tools.null_object import NullObject
+import random
 
 
-def create_main_move_selector(arg, syzygy, random_generator):
+def create_main_move_selector(arg, syzygy, random_generator: random.Random):
     if arg['type'] == 'RandomPlayer':
         main_move_selector = RandomPlayer()
     elif arg['type'] == 'TreeAndValue':
@@ -22,7 +23,9 @@ def create_main_move_selector(arg, syzygy, random_generator):
     return main_move_selector
 
 
-def create_player(args, syzygy, random_generator):
+def create_player(args,
+                  syzygy,
+                  random_generator: random.Random):
     main_move_selector = create_main_move_selector(args, syzygy, random_generator)
     return Player(args, syzygy, main_move_selector)
 
@@ -37,7 +40,7 @@ def launch_player_process(game_player, observable_board, main_thread_mailbox):
     player_thread_mailbox = multiprocessing.Manager().Queue()
 
     # registering to the observable board to get notification when it changes
-    observable_board.register_mailbox(player_thread_mailbox,'board_to_play')
+    observable_board.register_mailbox(player_thread_mailbox, 'board_to_play')
 
     # creating and starting the thread for the player
     player_thread = PlayerProcess(game_player, player_thread_mailbox, main_thread_mailbox)
