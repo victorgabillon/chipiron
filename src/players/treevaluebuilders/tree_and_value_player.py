@@ -2,7 +2,7 @@ from src.players.treevaluebuilders.trees.opening_instructions import OpeningInst
 from src.players.treevaluebuilders.notations_and_statics import softmax
 from src.players.treevaluebuilders.stopping_criterion import create_stopping_criterion
 from src.players.boardevaluators.over_event import OverEvent
-from src.players.treevaluebuilders.trees.move_and_value_tree import MoveAndValueTree
+from src.players.treevaluebuilders.trees.factory import create_move_and_value_tree
 
 
 class TreeAndValuePlayer:
@@ -13,10 +13,8 @@ class TreeAndValuePlayer:
                  arg,
                  random_generator,
                  node_move_opening_selector,
-                 node_factory,
                  board_evaluators_wrapper):
         self.node_move_opening_selector = node_move_opening_selector
-        self.node_factory = node_factory
         self.board_evaluators_wrapper = board_evaluators_wrapper
         self.arg = arg
         self.tree_move_limit = arg['tree_move_limit'] if 'tree_move_limit' in arg else None
@@ -83,9 +81,11 @@ class TreeAndValuePlayer:
         return best_move
 
     def explore(self, board):
-        self.tree = MoveAndValueTree(self.board_evaluators_wrapper, board, self.node_factory)
-        self.tree.add_root_node(board)
 
+        self.tree = create_move_and_value_tree(args=self.arg,
+                                               board_evaluators_wrapper=self.board_evaluators_wrapper,
+                                               board=board)
+        self.tree.add_root_node(board)
         self.count = 0
 
         while self.continue_exploring():

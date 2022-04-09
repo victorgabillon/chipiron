@@ -1,10 +1,11 @@
 import chess
 import src.chessenvironment.board as board_mod
 from graphviz import Digraph
-from src.players.treevaluebuilders.nodes import TreeNode
-from src.players.treevaluebuilders.nodes import TreeNodeWithValue
+from src.players.treevaluebuilders.nodes.tree_node import TreeNode
+from src.players.treevaluebuilders.nodes.tree_node_with_values import TreeNodeWithValue
 import pickle
 from src.players.treevaluebuilders.trees.updates import UpdateInstructionsBatch
+from src.players.treevaluebuilders.node_factory.factory import TreeNodeFactory
 
 
 # todo should we use a discount? and discounted per round reward?
@@ -24,7 +25,7 @@ class MoveAndValueTree:
 
     def __init__(self,
                  board_evaluator,
-                 node_factory,
+                 node_factory: TreeNodeFactory,
                  updater,
                  starting_board: board_mod.IBoard = None) -> None:
         """
@@ -82,12 +83,21 @@ class MoveAndValueTree:
     def update_after_either_node_or_link_creation(self, node, parent_node):
         pass  # these are empty function for higher order object to do more sophisticated things upon node creation
 
-    def create_tree_node_and_more(self, board, board_modifications, half_move, parent_node):
-        new_node = self.create_tree_node(board, half_move, self.nodes_count, parent_node)
+    def create_tree_node_and_more(self,
+                                  board,
+                                  board_modifications,
+                                  half_move: int,
+                                  parent_node):
+        board_depth = half_move - self.tree_root_half_move
+        new_node = self.node_factory.create(board=board,
+                                            half_move=half_move,
+                                            count=self.nodes_count,
+                                            parent_node=parent_node,
+                                            board_depth=board_depth)
         self.nodes_count += 1
         self.board_evaluator.compute_representation(new_node, parent_node, board_modifications)
         self.board_evaluator.add_evaluation_query(new_node)
-        self.update_after_node_creation(new_node, parent_node)
+        self.updater.update_after_node_creation(new_node, parent_node)
         return new_node
 
     def find_or_create_node(self, board: board_mod.IBoard,
@@ -103,8 +113,8 @@ class MoveAndValueTree:
         else:  # the node already exists
             node = self.descendants[half_move][fast_rep]  # add it to the list of descendants
             node.add_parent(parent_node)
-            self.update_after_link_creation(node, parent_node)
-        self.update_after_either_node_or_link_creation(node, parent_node)
+            self.updater.update_after_link_creation(node, parent_node)
+        self.updater.update_after_either_node_or_link_creation(node, parent_node)
         return node
 
     def open_node_move(self, parent_node: TreeNodeWithValue, move: chess.Move) -> object:

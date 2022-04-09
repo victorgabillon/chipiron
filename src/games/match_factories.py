@@ -82,9 +82,14 @@ class GameArgsFactory:
 
         # Creating the players
         syzygy_table = SyzygyTable('')
-        random_generator = random.Random(unique_int_from_list([self.seed, game_number]))
-        player_one = create_player(self.args_player_one, syzygy_table, random_generator)
-        player_two = create_player(self.args_player_two, syzygy_table, random_generator)
+        merged_seed = unique_int_from_list([self.seed, game_number])
+        random_generator: random.Random = random.Random(merged_seed)
+        player_one = create_player(args=self.args_player_one,
+                                   syzygy=syzygy_table,
+                                   random_generator=random_generator)
+        player_two = create_player(args=self.args_player_two,
+                                   syzygy=syzygy_table,
+                                   random_generator=random_generator)
 
         if game_number < self.args_match['number_of_games_player_one_white']:
             player_color_to_player = {chess.WHITE: player_one, chess.BLACK: player_two}

@@ -4,7 +4,7 @@ from src.players.treevaluebuilders.nodes.index_tree_node import IndexTreeNode
 from src.players.treevaluebuilders.notations_and_statics import zipf_picks_random_bool
 from src.players.treevaluebuilders.nodes.tree_node_with_proportions import ProportionsNode
 from src.players.treevaluebuilders.trees.descendants import SortedDescendants
-from src.players.treevaluebuilders.nodes import NodeWithDescendantsNoUpdate
+from src.players.treevaluebuilders.nodes.tree_node_with_descendants import NodeWithDescendantsNoUpdate
 from src.players.treevaluebuilders.trees.first_moves import FirstMoves
 import math
 from src.players.treevaluebuilders.move_explorer import ProportionMoveExplorer

@@ -4,7 +4,12 @@ from abc import ABC, abstractmethod
 class TreeNodeFactory(ABC):
 
     @abstractmethod
-    def create_tree_node(self, board, half_move, count, father_node):
+    def create(self,
+               board,
+               half_move,
+               count,
+               parent_node,
+               board_depth):
         pass
 
     @abstractmethod
