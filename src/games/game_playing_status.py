@@ -37,6 +37,7 @@ class GamePlayingStatus:
     def is_play(self):
         return self.status == PlayingStatus.PLAY
 
+
 class ObservableGamePlayingStatus:
 
     def __init__(self, game_playing_status: GamePlayingStatus):

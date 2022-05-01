@@ -1,6 +1,6 @@
 import sys
 from src.players.random_player import RandomPlayer
-from src.players.treevaluebuilders.create_tree_and_value import create_tree_and_value_builders
+from src.players.treevalue.factory import create_tree_and_value_builders
 from src.players.stockfish import Stockfish
 from src.players.player import Player
 from src.players.player_thread import PlayerProcess
