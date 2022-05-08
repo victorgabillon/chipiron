@@ -57,6 +57,10 @@ class MoveAndValueTree:
         self.root_node = None
         self.descendants = None
 
+    @property
+    def root_node(self)     :
+        return self.root_node
+
     def node_depth(self, node):
         return node.half_move - self.tree_root_half_move
 

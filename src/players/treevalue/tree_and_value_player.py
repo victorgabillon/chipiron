@@ -3,6 +3,7 @@ from src.players.treevalue.stopping_criterion import create_stopping_criterion
 from src.players.boardevaluators.over_event import OverEvent
 from src.players.treevalue.trees.factory import create_move_and_value_tree
 from src.players.treevalue.node_selector.node_selector import NodeSelector
+from src.chessenvironment.board.iboard import IBoard
 
 
 class TreeAndValuePlayer:
@@ -78,12 +79,12 @@ class TreeAndValuePlayer:
                 raise (Exception('move_selection_rule is not valid it seems'))
         return best_move
 
-    def explore(self, board):
+    def explore(self, board: IBoard):
 
         self.tree = create_move_and_value_tree(args=self.arg,
                                                board_evaluators_wrapper=self.board_evaluators_wrapper,
                                                board=board,
-                                               suscribers=[self.node_move_opening_selector])
+                                               subscribers=[self.node_move_opening_selector])
         self.tree.add_root_node(board)
         self.count = 0
 
@@ -116,10 +117,10 @@ class TreeAndValuePlayer:
             print(move, self.tree.root_node.moves_children[move].get_value_white(), child.over_event.get_over_tag())
         print('evaluation for white: ', self.tree.root_node.get_value_white())
 
-    def select_move(self, board):
+    def select_move(self, board: IBoard):
         self.explore(board)
         best_move = self.recommend_move_after_exploration()
-        self.tree.print_best_line()  # todo maybe almost best choosen line no?
+        self.tree.print_best_line()  # todo maybe almost best chosen line no?
 
         return best_move
 

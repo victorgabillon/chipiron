@@ -1,22 +1,22 @@
 import tkinter as tk
 
 
-def script_gui():
+def script_gui() -> tuple[str, dict]:
     root = tk.Tk()
     root.output = None
     # place a label on the root window
     root.title('chipiron')
 
-    window_width = 800
-    window_height = 300
+    window_width: int = 800
+    window_height: int = 300
 
     # get the screen dimension
-    screen_width = root.winfo_screenwidth()
-    screen_height = root.winfo_screenheight()
+    screen_width: int = root.winfo_screenwidth()
+    screen_height: int = root.winfo_screenheight()
 
     # find the center point
-    center_x = int(screen_width / 2 - window_width / 2)
-    center_y = int(screen_height / 2 - window_height / 2)
+    center_x: int = int(screen_width / 2 - window_width / 2)
+    center_y: int = int(screen_height / 2 - window_height / 2)
 
     # set the position of the window to the center of the screen
     root.geometry(f'{window_width}x{window_height}+{center_x}+{center_y}')
@@ -69,26 +69,29 @@ def script_gui():
     exit_button.grid(row=6, column=0)
 
     root.mainloop()
-    if root.output['type'] == 'play_against_chipiron':
-        tree_move_limit = 4 * 10 ** root.output['strength']
-        gui_args = {'config_file_name': 'scripts/one_match/exp_options.yaml',
-                    'seed': 0,
-                    'gui': True,
-                    'file_name_player_one': 'RecurZipfBase3.yaml',
-                    'file_name_player_two': 'Human.yaml',
-                    'file_name_match_setting': 'setting_duda.yaml',
-                    'player_one': {'tree_builder': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}}
-        script_name = 'one_match'
-    elif root.output['type'] == 'watch_a_game':
-        gui_args = {'config_file_name': 'scripts/one_match/exp_options.yaml',
-                    'seed': 0,
-                    'gui': True,
-                    'file_name_player_one': 'RecurZipfBase3.yaml',
-                    'file_name_player_two': 'RecurZipfBase4.yaml',
-                    'file_name_match_setting': 'setting_duda.yaml'}
-        script_name = 'one_match'
-    else:
-        raise 'Not a good name'
+    gui_args: dict
+    script_name: str
+    match root.output['type']:
+        case 'play_against_chipiron':
+            tree_move_limit = 4 * 10 ** root.output['strength']
+            gui_args = {'config_file_name': 'scripts/one_match/exp_options.yaml',
+                        'seed': 0,
+                        'gui': True,
+                        'file_name_player_one': 'RecurZipfBase3.yaml',
+                        'file_name_player_two': 'Human.yaml',
+                        'file_name_match_setting': 'setting_duda.yaml',
+                        'player_one': {'tree_builder': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}}
+            script_name = 'one_match'
+        case 'watch_a_game':
+            gui_args = {'config_file_name': 'scripts/one_match/exp_options.yaml',
+                        'seed': 0,
+                        'gui': True,
+                        'file_name_player_one': 'RecurZipfBase3.yaml',
+                        'file_name_player_two': 'RecurZipfBase4.yaml',
+                        'file_name_match_setting': 'setting_duda.yaml'}
+            script_name = 'one_match'
+        case other:
+            raise f'Not a good name: {other}'
 
     return script_name, gui_args
 

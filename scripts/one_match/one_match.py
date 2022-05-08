@@ -1,16 +1,19 @@
+"""
+the one match script
+"""
 import sys
-from src.displays.gui import MainWindow
-from PyQt5.QtWidgets import *
-from scripts.script import Script
+import multiprocessing
+import queue
 from shutil import copyfile
+import yaml
+from PyQt5.QtWidgets import QApplication
+from scripts.script import Script
 from src.extra_tools.small_tools import mkdir, yaml_fetch_args_in_file, rec_merge_dic
 from src.games.match_factories import MatchManagerFactory
 from src.games.match_manager import MatchManager
 from src.my_random import set_seeds
-import multiprocessing
 from src.players.boardevaluators.table_base.factory import create_syzygy_thread
-import queue
-import yaml
+from src.displays.gui import MainWindow
 
 
 class OneMatchScript(Script):
@@ -59,7 +62,8 @@ class OneMatchScript(Script):
 
         main_thread_mailbox: queue.Queue = multiprocessing.Manager().Queue()
 
-        with open('data/settings/GameSettings/' + self.args['match']['game_setting_file'], 'r') as file_game:
+        file_path: str = 'data/settings/GameSettings/' + self.args['match']['game_setting_file']
+        with open(file_path, 'r', encoding="utf-8") as file_game:
             args_game = yaml.load(file_game, Loader=yaml.FullLoader)
 
         match_manager_factory: MatchManagerFactory

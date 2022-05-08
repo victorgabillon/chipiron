@@ -1,4 +1,5 @@
 from random import choice
+from src.chessenvironment.board.iboard import IBoard
 
 
 class RandomPlayer:
@@ -6,5 +7,5 @@ class RandomPlayer:
     def __init__(self):
         pass
 
-    def get_move_from_player(self, board, color):
+    def select_move(self, board: IBoard):
         return choice(list(board.chess_board.legal_moves))
