@@ -1,11 +1,15 @@
+"""
+The base script
+"""
+
 import cProfile
 import pstats
 import io
 from pstats import SortKey
 import time
-from scripts.parsers.parser import create_parser
 from datetime import datetime
 from src.extra_tools.small_tools import mkdir
+from scripts.parsers.parser import create_parser
 
 
 class Script:
@@ -19,7 +23,8 @@ class Script:
 
     def __init__(self, gui_args=None):
         """
-        Building the Script object, starts the clock, the profiling and parse arguments and deals with global variables
+        Building the Script object, starts the clock,
+        the profiling and parse arguments and deals with global variables
         """
         # start the clock
         self.start_time = time.time()
@@ -34,10 +39,13 @@ class Script:
 
         # activate profiling is if needed
         if self.args['profiling']:
-            self.pr = cProfile.Profile()
-            self.pr.enable()
+            self.profile = cProfile.Profile()
+            self.profile.enable()
 
-    def set_experiment_output_folder(self):
+    def set_experiment_output_folder(self) -> None:
+        """
+            computes the path to the experiment output folder
+        """
         if 'output_folder' not in self.args:
             now = datetime.now()  # current date and time
             self.experiment_output_folder = self.base_experiment_output_folder + now.strftime(
@@ -45,18 +53,21 @@ class Script:
         else:
             self.experiment_output_folder = self.base_experiment_output_folder + self.args['output_folder']
 
-    def terminate(self):
+    def terminate(self) -> None:
+        """
+        Finishing the script. Profiling or timing.
+        """
         if self.args['profiling']:
-            print("--- %s seconds ---" % (time.time() - self.start_time))
-            self.pr.disable()
-            s = io.StringIO()
+            print(f'--- {time.time() - self.start_time} seconds ---')
+            self.profile.disable()
+            string_io = io.StringIO()
             sort_by = SortKey.CUMULATIVE
-            ps = pstats.Stats(self.pr, stream=s).sort_stats(sort_by)
-            ps.print_stats()
-            print(s.getvalue())
+            stats = pstats.Stats(self.profile, stream=string_io).sort_stats(sort_by)
+            stats.print_stats()
+            print(string_io.getvalue())
 
         end_time = time.time()
         print('execution time', end_time - self.start_time)
 
-    def run(self):
-        pass
+    def run(self) -> None:
+        """ Running the script"""

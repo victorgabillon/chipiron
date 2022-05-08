@@ -1,6 +1,9 @@
-from src.players.treevalue.trees.move_and_value_tree import MoveAndValueTree
 from typing import List
 from src.players.treevalue.node_selector.node_selector import NodeSelector
+import src.players.treevalue.trees as trees
+import src.chessenvironment.board as chp_board
+import src.players.treevalue.nodes as nodes
+import chess
 
 
 class MoveAndValueTreeObservable:
@@ -10,7 +13,7 @@ class MoveAndValueTreeObservable:
     """
 
     def __init__(self,
-                 move_and_vale_tree: MoveAndValueTree,
+                 move_and_vale_tree: trees.MoveAndValueTree,
                  subscribers: List[NodeSelector]) -> None:
         self.move_and_vale_tree = move_and_vale_tree
         self.subscribers = subscribers
@@ -38,13 +41,13 @@ class MoveAndValueTreeObservable:
         for node_selector in self.subscribers:
             node_selector.update_after_node_creation()
 
-    def find_or_create_node(self, board: board_mod.IBoard,
-                            modifications: board_mod.BoardModification,
+    def find_or_create_node(self, board: chp_board.IBoard,
+                            modifications: chp_board.BoardModification,
                             half_move: int,
-                            parent_node: TreeNode) -> TreeNode:
+                            parent_node: nodes.TreeNode) -> nodes.TreeNode:
         ...
 
-    def open_node_move(self, parent_node: TreeNodeWithValue, move: chess.Move) -> object:
+    def open_node_move(self, parent_node: nodes.TreeNodeWithValue, move: chess.Move) -> object:
         ...
 
     def open_and_update(self,

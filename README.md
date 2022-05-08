@@ -1,3 +1,4 @@
+[![linting: pylint](https://img.shields.io/badge/linting-pylint-yellowgreen)](https://github.com/PyCQA/pylint)
 # Chipiron
 
 Chipiron is a Python library that plays chess

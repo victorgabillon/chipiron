@@ -7,6 +7,7 @@ from src.players.treevalue.node_selector.node_selector import NodeSelector
 from src.players.treevalue.node_factory.factory import TreeNodeFactory
 from typing import List
 
+
 def create_move_and_value_tree(args: dict,
                                board_evaluators_wrapper,
                                board: iboard,
@@ -21,10 +22,11 @@ def create_move_and_value_tree(args: dict,
             raise 'please implement your node factory!! no {}'.format(other)
 
     move_and_value_tree: IMoveAndValueTree = MoveAndValueTree(board_evaluator=board_evaluators_wrapper,
-                                                             starting_board=board,
-                                                             node_factory=node_factory)
+                                                              starting_board=board,
+                                                              node_factory=node_factory)
 
     if subscribers:
-        move_and_value_tree: IMoveAndValueTree = Observable(move_and_value_tree)
+        move_and_value_tree: IMoveAndValueTree = Observable(move_and_vale_tree=move_and_value_tree,
+                                                            subscribers=subscribers)
 
     return move_and_value_tree

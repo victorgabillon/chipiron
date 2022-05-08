@@ -13,7 +13,7 @@ from src.extra_tools.my_value_sorted_dict import MyValueSortedDict
 
 class NodeMinmaxEvaluation:
 
-    def __init__(self, tree_node : TreeNode):
+
 
 
     def __init__(self, board, half_move, id_number, parent_node):
