@@ -8,12 +8,7 @@ from shutil import copyfile
 import yaml
 from PyQt5.QtWidgets import QApplication
 from scripts.script import Script
-from src.extra_tools.small_tools import mkdir, yaml_fetch_args_in_file, rec_merge_dic
-from src.games.match_factories import MatchManagerFactory
-from src.games.match_manager import MatchManager
-from src.my_random import set_seeds
-from src.players.boardevaluators.table_base.factory import create_syzygy_thread
-from src.displays.gui import MainWindow
+import chipiron as ch
 
 
 class OneMatchScript(Script):
@@ -43,7 +38,7 @@ class OneMatchScript(Script):
         super().__init__(gui_args)
 
         # taking care of random
-        set_seeds(seed=self.args['seed'])
+        ch.set_seeds(seed=self.args['seed'])
 
         file_name_player_one: str = self.args['file_name_player_one']
         file_name_player_two: str = self.args['file_name_player_two']
@@ -58,33 +53,33 @@ class OneMatchScript(Script):
 
         # Creation of the Syzygy table for perfect play in low pieces cases, needed by the GameManager
         # and can also be used by the players
-        syzygy_mailbox = create_syzygy_thread()
+        syzygy_mailbox = ch.player.create_syzygy_thread()
 
         main_thread_mailbox: queue.Queue = multiprocessing.Manager().Queue()
 
         file_path: str = 'data/settings/GameSettings/' + self.args['match']['game_setting_file']
         with open(file_path, 'r', encoding="utf-8") as file_game:
-            args_game = yaml.load(file_game, Loader=yaml.FullLoader)
+            args_game: dict = yaml.load(file_game, Loader=yaml.FullLoader)
 
-        match_manager_factory: MatchManagerFactory
-        match_manager_factory = MatchManagerFactory(args_match=self.args['match'],
-                                                    args_player_one=self.args['player_one'],
-                                                    args_player_two=self.args['player_two'],
-                                                    syzygy_table=syzygy_mailbox,
-                                                    output_folder_path=self.experiment_output_folder,
-                                                    seed=self.args['seed'],
-                                                    main_thread_mailbox=main_thread_mailbox,
-                                                    args_game=args_game)
+        match_manager_factory: ch.game.MatchManagerFactory
+        match_manager_factory = ch.game.MatchManagerFactory(args_match=self.args['match'],
+                                                            args_player_one=self.args['player_one'],
+                                                            args_player_two=self.args['player_two'],
+                                                            syzygy_table=syzygy_mailbox,
+                                                            output_folder_path=self.experiment_output_folder,
+                                                            seed=self.args['seed'],
+                                                            main_thread_mailbox=main_thread_mailbox,
+                                                            args_game=args_game)
 
         if self.args['gui']:
             # if we use a graphic user interface (GUI) we create it its own thread and
             # create its mailbox to communicate with other threads
             gui_thread_mailbox: queue.Queue = multiprocessing.Manager().Queue()
             self.chess_gui = QApplication(sys.argv)
-            self.window = MainWindow(gui_thread_mailbox, main_thread_mailbox)
+            self.window = ch.disp.MainWindow(gui_thread_mailbox, main_thread_mailbox)
             match_manager_factory.subscribe(gui_thread_mailbox)
 
-        self.match_manager: MatchManager = match_manager_factory.create()
+        self.match_manager: ch.game.MatchManager = match_manager_factory.create()
 
     def fetch_args_and_create_output_folder(self,
                                             file_name_player_one: str,
@@ -101,21 +96,23 @@ class OneMatchScript(Script):
         Returns:
 
         """
-        path_player_one = 'data/players/' + file_name_player_one
-        player_one_yaml = yaml_fetch_args_in_file(path_player_one)
-        self.args['player_one'] = rec_merge_dic(player_one_yaml, self.args['player_one'])
-        path_player_two = 'data/players/' + file_name_player_two
-        player_two_yaml = yaml_fetch_args_in_file(path_player_two)
-        self.args['player_two'] = rec_merge_dic(player_two_yaml, self.args['player_two'])
-        path_match_setting = 'data/settings/OneMatch/' + file_name_match_setting
-        match_setting_yaml = yaml_fetch_args_in_file(path_match_setting)
-        self.args['match'] = rec_merge_dic(match_setting_yaml, self.args['match'])
+        path_player_one: str = 'data/players/' + file_name_player_one
+        player_one_yaml: dict = ch.tool.yaml_fetch_args_in_file(path_player_one)
+        self.args['player_one']: dict = ch.tool.rec_merge_dic(player_one_yaml, self.args['player_one'])
 
-        file_game = self.args['match']['game_setting_file']
-        path_game_setting = 'data/settings/GameSettings/' + file_game
+        path_player_two: str = 'data/players/' + file_name_player_two
+        player_two_yaml: dict = ch.tool.yaml_fetch_args_in_file(path_player_two)
+        self.args['player_two']: dict = ch.tool.rec_merge_dic(player_two_yaml, self.args['player_two'])
 
-        path_games = self.experiment_output_folder + '/games'
-        mkdir(path_games)
+        path_match_setting: str = 'data/settings/OneMatch/' + file_name_match_setting
+        match_setting_yaml: dict = ch.tool.yaml_fetch_args_in_file(path_match_setting)
+        self.args['match']: dict = ch.tool.rec_merge_dic(match_setting_yaml, self.args['match'])
+
+        file_game: str = self.args['match']['game_setting_file']
+        path_game_setting: str = 'data/settings/GameSettings/' + file_game
+
+        path_games: str = self.experiment_output_folder + '/games'
+        ch.tool.mkdir(path_games)
         copyfile(path_game_setting, self.experiment_output_folder + '/' + file_game)
         copyfile(path_player_one, self.experiment_output_folder + '/' + file_name_player_one)
         copyfile(path_player_two, self.experiment_output_folder + '/' + file_name_player_two)

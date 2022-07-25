@@ -1,7 +1,7 @@
 from scripts.script import Script
-from src.players.factory import create_player
+from chipiron.players.factory import create_player
 import yaml
-from src.players.boardevaluators.table_base.syzygy import SyzygyTable
+from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 
 class LearnNNTreeStrap(Script):
 

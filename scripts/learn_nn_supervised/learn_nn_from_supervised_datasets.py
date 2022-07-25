@@ -1,8 +1,8 @@
-from src.players.boardevaluators.neural_networks.factory import create_nn
-from src.learningprocesses.nn_trainer.factory import create_nn_trainer, safe_nn_param_save, safe_nn_trainer_save
+from chipiron.players.boardevaluators.neural_networks.factory import create_nn
+from chipiron.learningprocesses.nn_trainer.factory import create_nn_trainer, safe_nn_param_save, safe_nn_trainer_save
 import time
 from scripts.script import Script
-from src.players.boardevaluators.datasets.datasets import FenAndValueDataSet
+from chipiron.players.boardevaluators.datasets.datasets import FenAndValueDataSet
 from torch.utils.data import DataLoader
 import copy
 
