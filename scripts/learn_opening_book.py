@@ -1,13 +1,13 @@
 import pickle
 import yaml
-from src.opening_book import OpeningBook
-from src.games import MatchManager
-from src.chessenvironment import ChessEnvironment
-from src.players.boardevaluators.table_base.syzygy import SyzygyTable
+from chipiron.opening_book import OpeningBook
+from chipiron.games import MatchManager
+from chipiron.chessenvironment import ChessEnvironment
+from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 import global_variables
 
 try:
-    with open('src/opening_book/opening_book.data', 'rb') as file_opening_book:
+    with open('chipiron/opening_book/opening_book.data', 'rb') as file_opening_book:
         opening_book = pickle.load(file_opening_book)
 except EnvironmentError:  # parent of IOError, OSError *and* WindowsError where available
     opening_book = OpeningBook()
@@ -40,5 +40,5 @@ while True:
     play = MatchManager(args_match, player_one, player_two, chess_simulator, syzygy)
     p1wins, p2wins, draws = play.play_the_match()
     opening_book.position_result(starting_position, p1wins, p2wins, draws)
-    with open('src/opening_book/opening_book.data', 'rb') as file_opening_book:
+    with open('chipiron/opening_book/opening_book.data', 'rb') as file_opening_book:
         pickle.load(opening_book,file_opening_book)

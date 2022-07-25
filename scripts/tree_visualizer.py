@@ -1,4 +1,4 @@
-from src.players.treevalue.trees.move_and_value_tree import MoveAndValueTree
+from chipiron.players.treevalue.trees.move_and_value_tree import MoveAndValueTree
 import pickle
 from scripts.script import Script
 import sys

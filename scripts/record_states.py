@@ -1,7 +1,7 @@
 import pandas as pd
 import yaml
-from src.players.player import Player
-from src.players.boardevaluators.table_base.syzygy import SyzygyTable
+from chipiron.players.player import Player
+from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 import os
 
 class RecordStates:
