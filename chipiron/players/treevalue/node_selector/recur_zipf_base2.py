@@ -1,5 +1,4 @@
 from chipiron.players.treevalue.trees.move_and_value_tree import MoveAndValueTree
-from chipiron.players.treevalue.tree_and_value_player import TreeAndValuePlayer
 from chipiron.players.treevalue.nodes.tree_node_with_values import TreeNodeWithValue
 from chipiron.players.treevalue.nodes.tree_node_with_descendants import NodeWithDescendants
 from chipiron.players.treevalue.node_selector.move_explorer import ZipfMoveExplorer
@@ -21,7 +20,7 @@ class RecurZipfBaseTree2(MoveAndValueTree):
             self.root_node.descendants.add_descendant(node)
 
 
-class RecurZipfBase2(TreeAndValuePlayer):
+class RecurZipfBase2:
 
     def __init__(self, arg, random_generator):
         super().__init__(arg)

@@ -16,18 +16,19 @@ class OneMatchScript(Script):
     Script that plays a match between two players
 
     """
-    default_param_dict = Script.default_param_dict | {'config_file_name': 'scripts/one_match/exp_options.yaml',
-                                                      'seed': 0,
-                                                      'gui': True,
-                                                      'file_name_player_one': 'RecurZipfBase3.yaml',
-                                                      'player_one': {},
-                                                      'file_name_player_two': 'RecurZipfBase4.yaml',
-                                                      'player_two': {},
-                                                      'file_name_match_setting': 'setting_duda.yaml',
-                                                      'match': {},
-                                                      }
+    default_param_dict = Script.default_param_dict | {
+        'config_file_name': 'scripts/one_match/inputs/base/exp_options.yaml',
+        'seed': 0,
+        'gui': True,
+        'file_name_player_one': 'RecurZipfBase3.yaml',
+        'player_one': {},
+        'file_name_player_two': 'RecurZipfBase4.yaml',
+        'player_two': {},
+        'file_name_match_setting': 'setting_duda.yaml',
+        'match': {},
+        }
 
-    base_experiment_output_folder = Script.base_experiment_output_folder + 'one_match/one_match_outputs/'
+    base_experiment_output_folder = Script.base_experiment_output_folder + 'one_match/outputs/'
 
     def __init__(self, gui_args: dict) -> None:
         """

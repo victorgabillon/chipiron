@@ -1,6 +1,5 @@
 import chipiron.chessenvironment.board as board_mod
 from chipiron.players.treevalue.nodes.tree_node import TreeNode
-from chipiron.players.treevalue.node_factory.factory import TreeNodeFactory
 
 # todo should we use a discount? and discounted per round reward?
 # todo maybe convenient to seperate this object into openner updater and dsiplayer
@@ -19,7 +18,6 @@ class MoveAndValueTree:
 
     def __init__(self,
                  board_evaluator,
-                 node_factory: TreeNodeFactory,
                  starting_board: board_mod.IBoard = None) -> None:
         """
 
@@ -33,7 +31,6 @@ class MoveAndValueTree:
         # number of nodes in the tree
         self.nodes_count = 0
 
-        self.node_factory = node_factory
 
         # integer counting the number of moves in the tree.
         # the interest of self.move_count over the number of nodes in the descendants
@@ -42,9 +39,6 @@ class MoveAndValueTree:
         self.move_count = 0
 
         self.board_evaluator = board_evaluator
-
-        # the factory in charge of creating new nodes
-        self.node_factory = node_factory
 
         # to be defined later ...
         self._root_node = None

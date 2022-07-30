@@ -1,11 +1,8 @@
-from chipiron.players.treevalue.tree_and_value_player import TreeAndValuePlayer
-from chipiron.players.treevalue.trees.move_and_value_tree import MoveAndValueTree
-from chipiron.players.treevalue.nodes.index_tree_node import IndexTreeNode
 from chipiron.players.treevalue.node_selector.notations_and_statics import zipf_picks
 import math
 
 
-class SequoolTree(MoveAndValueTree):
+class SequoolTree:
 
     def __init__(self, environment, board_evaluator, color, arg, board):
         self.all_nodes_2_not_opened = []
@@ -64,7 +61,7 @@ class SequoolTree(MoveAndValueTree):
     #   self.print_some_stats()
 
 
-class Sequool(TreeAndValuePlayer):
+class Sequool:
 
     def __init__(self, arg):
         super().__init__(arg)

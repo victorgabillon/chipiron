@@ -2,7 +2,7 @@ from random import choice
 from chipiron.players.treevalue.nodes.tree_node import TreeNode
 import chess
 from chipiron.players.boardevaluators.over_event import OverEvent
-from chipiron.players.treevalue.trees.updates import UpdateInstructions, BaseUpdateInstructionsBlock
+from chipiron.players.treevalue.updates import UpdateInstructions, BaseUpdateInstructionsBlock
 from chipiron.players.treevalue.node_selector.notations_and_statics import nth_key
 import math
 from chipiron.extra_tools.my_value_sorted_dict import MyValueSortedDict

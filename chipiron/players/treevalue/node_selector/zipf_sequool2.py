@@ -1,4 +1,3 @@
-from chipiron.players.treevalue.tree_and_value_player import TreeAndValuePlayer
 from chipiron.players.treevalue.trees.move_and_value_tree import MoveAndValueTree
 from chipiron.players.treevalue.nodes.index_tree_node import IndexTreeNode
 from chipiron.players.treevalue.node_selector.notations_and_statics import zipf_picks
@@ -117,7 +116,7 @@ class ZipfSequoolTree2(MoveAndValueTree):
                 assert (child.best_node_sequence[-1].index is not None)
 
 
-class ZipfSequool2(TreeAndValuePlayer):
+class ZipfSequool2:
 
     def __init__(self, arg):
         super().__init__(arg)
