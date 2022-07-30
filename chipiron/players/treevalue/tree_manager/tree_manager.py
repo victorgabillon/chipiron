@@ -4,9 +4,9 @@ from graphviz import Digraph
 from chipiron.players.treevalue.nodes.tree_node import TreeNode
 from chipiron.players.treevalue.nodes.tree_node_with_values import TreeNodeWithValue
 import pickle
-from chipiron.players.treevalue.trees.updates import UpdateInstructionsBatch
+from chipiron.players.treevalue.updates import UpdateInstructionsBatch
 from chipiron.players.treevalue.trees.move_and_value_tree import MoveAndValueTree
-from chipiron.players.treevalue.trees.tree_expander import TreeExpander
+from chipiron.players.treevalue.tree_manager.tree_expander import TreeExpander
 
 
 # todo should we use a discount? and discounted per round reward?
@@ -43,7 +43,7 @@ class TreeManager:
             node = self.tree_expander.create_tree_node(board=board, board_modifications=modifications,
                                                        half_move=half_move, parent_node=parent_node)
         else:  # the node already exists
-
+            node = self.tree_expander.create_tree_move(board=board, half_move=half_move, fast_rep=fast_rep)
         return node
 
     def open_node_move(self, parent_node: TreeNodeWithValue, move: chess.Move) -> object:
@@ -63,22 +63,22 @@ class TreeManager:
         # Having the stack information allows checking for draw by repetition.
         # To limit computation we limit copying it all the time. The resulting policy will only be aware of immediate
         # risk of draw by repetition
-        copy_stack: bool = (self.node_depth(parent_node) < 2)
+        copy_stack: bool = (self.tree.node_depth(parent_node) < 2)
         board: board_mod.BoardChi = parent_node.board.copy(stack=copy_stack)
 
         # The move is played. The board is now a new board
         modifications: board_mod.BoardModification = board.play_move(move=move)
 
         # Creation of the child node. If the board already exited in another node, that node is returned as child_node.
-        child_node: TreeNodeWithValue = self.find_or_create_node(board=board,
-                                                                 modifications=modifications,
-                                                                 half_move=parent_node.half_move + 1,
-                                                                 parent_node=parent_node)
+        child_node: TreeNode = self.find_or_create_node(board=board,
+                                                        modifications=modifications,
+                                                        half_move=parent_node.half_move + 1,
+                                                        parent_node=parent_node)
 
         # add it to the list of opened move and out of the non-opened moves
         parent_node.moves_children[move] = child_node
         parent_node.non_opened_legal_moves.remove(move)
-        self.move_count += 1  # counting moves
+        self.tree.move_count += 1  # counting moves
         parent_node.children_not_over.append(child_node)  # default action checks for over event are performed later
 
         update_instructions = child_node.create_update_instructions_after_node_birth()
@@ -120,24 +120,24 @@ class TreeManager:
 
     def display(self, format):
         dot = Digraph(format=format)
-        self.add_dot(dot, self.root_node)
+        self.add_dot(dot, self.tree.root_node)
         return dot
 
     def save_pdf_to_file(self):
         dot = self.display('pdf')
-        round_ = len(self.root_node.board.move_stack) + 2
-        color = 'white' if self.root_node.player_to_move else 'black'
+        round_ = len(self.tree.root_node.board.move_stack) + 2
+        color = 'white' if self.tree.root_node.player_to_move else 'black'
         dot.render('chipiron/runs/treedisplays/TreeVisual_' + str(int(round_ / 2)) + color + '.pdf')
 
     def save_raw_data_to_file(self, count='#'):
-        round_ = len(self.root_node.board.move_stack) + 2
-        color = 'white' if self.root_node.player_to_move else 'black'
+        round_ = len(self.tree.root_node.board.move_stack) + 2
+        color = 'white' if self.tree.root_node.player_to_move else 'black'
         filename = 'chipiron/runs/treedisplays/TreeData_' + str(int(round_ / 2)) + color + '-' + str(count) + '.td'
 
         import sys
         sys.setrecursionlimit(100000)
         with open(filename, "wb") as f:
-            pickle.dump([self.descendants, self.root_node], f)
+            pickle.dump([self.tree.descendants, self.tree.root_node], f)
 
     def open_and_update(self,
                         opening_instructions_batch):  # set of nodes and moves to open
@@ -161,7 +161,7 @@ class TreeManager:
             # concatenate the update instructions
             update_instructions_batch.merge(new_update_instructions_batch)
 
-        self.board_evaluator.evaluate_all_queried_nodes()
+        self.tree.board_evaluator.evaluate_all_queried_nodes()
 
         return update_instructions_batch  # todo never new_nodes used no?
 
@@ -191,12 +191,13 @@ class TreeManager:
         return update_instructions_batch
 
     def print_some_stats(self):
-        print('Tree stats: move_count', self.move_count, ' node_count', self.root_node.descendants.get_count())
+        print('Tree stats: move_count', self.tree.move_count, ' node_count',
+              self.tree.root_node.descendants.get_count())
         sum_ = 0
-        self.root_node.descendants.print_stats()
-        for half_move in self.root_node.descendants:
-            sum_ += len(self.root_node.descendants[half_move])
-            print('half_move', half_move, len(self.root_node.descendants[half_move]), sum_)
+        self.tree.root_node.descendants.print_stats()
+        for half_move in self.tree.root_node.descendants:
+            sum_ += len(self.tree.root_node.descendants[half_move])
+            print('half_move', half_move, len(self.tree.root_node.descendants[half_move]), sum_)
 
     def print_parents(self, node):
         node_to_print = node
@@ -206,22 +207,22 @@ class TreeManager:
 
     def test_the_tree(self):
         self.test_count()
-        for half_move in self.descendants:
-            for fen in self.descendants[half_move]:
-                node = self.descendants[half_move][fen]
+        for half_move in self.tree.descendants:
+            for fen in self.tree.descendants[half_move]:
+                node = self.tree.descendants[half_move][fen]
                 node.test()
 
                 # todo add a test for testing if the over match what the board evaluator says!
 
     def test_count(self):
-        assert (self.root_node.descendants.get_count() == self.nodes_count)
+        assert (self.tree.root_node.descendants.get_count() == self.tree.nodes_count)
 
     def print_best_line(self):
         self.root_node.print_best_line()
 
     def add_root_node(self, board: board_mod.IBoard) -> None:
         # creates the node
-        self._root_node = self.find_or_create_node(board, None, self.tree_root_half_move, None)
+        self.tree._root_node = self.find_or_create_node(board, None, self.tree.tree_root_half_move, None)
         # ask for its evaluation
-        self.board_evaluator.evaluate_all_queried_nodes()
-        self.descendants = self.root_node.descendants
+        self.tree.board_evaluator.evaluate_all_queried_nodes()
+        self.tree.descendants = self.tree.root_node.descendants

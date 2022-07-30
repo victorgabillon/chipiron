@@ -1,5 +1,7 @@
 from chipiron.games.game_manager import GameManager
 import copy
+import queue
+import typing
 
 
 class MatchResults:
@@ -79,25 +81,29 @@ class MatchResults:
 class ObservableMatchResults:
     # TODO see if it is possible and desirable to  make a general Observable wrapper that goes all that automatically
     # as i do the same for board and game info
-    def __init__(self, match_result):
+
+    match_results: MatchResults
+    mailboxes: typing.List[queue.Queue]
+
+    def __init__(self, match_result: MatchResults) -> None:
         self.match_result = match_result
         self.mailboxes = []
 
-    def subscribe(self, mailbox):
+    def subscribe(self, mailbox: queue.Queue) -> None:
         self.mailboxes.append(mailbox)
 
-    def copy_match_result(self):
-        match_result_copy = copy.deepcopy(self.match_result)
+    def copy_match_result(self) -> MatchResults:
+        match_result_copy: MatchResults = copy.deepcopy(self.match_result)
         return match_result_copy
 
     # wrapped function
-    def add_result_one_game(self, white_player_name_id, game_result):
+    def add_result_one_game(self, white_player_name_id, game_result) -> None:
         self.match_result.add_result_one_game(white_player_name_id, game_result)
         self.notify_new_results()
 
-    def notify_new_results(self):
+    def notify_new_results(self) -> None:
         for mailbox in self.mailboxes:
-            match_result_copy = self.copy_match_result()
+            match_result_copy: MatchResults = self.copy_match_result()
             mailbox.put({'type': 'match_results', 'match_results': match_result_copy})
 
     # forwarding

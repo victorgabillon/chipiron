@@ -1,11 +1,9 @@
-from chipiron.players.treevalue.tree_and_value_player import TreeAndValuePlayer
-from chipiron.players.treevalue.trees.move_and_value_tree import MoveAndValueTree
-from chipiron.players.treevalue.trees.opening_instructions import OpeningInstructionsBatch
+from chipiron.players.treevalue.node_selector.opening_instructions import OpeningInstructionsBatch
 from chipiron.players.treevalue.nodes.tree_node_with_values import TreeNodeWithValue
 from chipiron.players.treevalue.nodes.tree_node_with_descendants import NodeWithDescendants
 
 
-class UniformTree(MoveAndValueTree):  # todo probably this is overkill as the tree s nothing special or does it?
+class UniformTree:  # todo probably this is overkill as the tree s nothing special or does it?
     def create_tree_node(self, board, half_move, count, father_node):
         board_depth = half_move - self.tree_root_half_move
         if board_depth == 0:
@@ -19,12 +17,11 @@ class UniformTree(MoveAndValueTree):  # todo probably this is overkill as the tr
             self.root_node.descendants.add_descendant(node)
 
 
-class Uniform(TreeAndValuePlayer):
+class Uniform:
 
     def __init__(self, arg):
         super().__init__(arg)
         self.current_half_move_to_expand = None
-
 
     def choose_node_and_move_to_open(self):
         opening_instructions_batch = OpeningInstructionsBatch()
@@ -32,11 +29,11 @@ class Uniform(TreeAndValuePlayer):
         # generate the nodes to expand
         self.current_half_move_to_expand = self.root_half_move + self.current_depth_to_expand
 
-        #self.tree.descendants.print_info()
-       # print('self.root_half_move ',self.root_half_move,self.current_depth_to_expand)
+        # self.tree.descendants.print_info()
+        # print('self.root_half_move ',self.root_half_move,self.current_depth_to_expand)
         nodes_to_consider = list(self.tree.descendants[self.current_half_move_to_expand].values())
 
-        #filter the game-over ones
+        # filter the game-over ones
         nodes_to_consider = [node for node in nodes_to_consider if not node.is_over()]
 
         # sort them by order of importance for the player

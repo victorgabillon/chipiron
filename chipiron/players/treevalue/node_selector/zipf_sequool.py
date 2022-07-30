@@ -1,4 +1,3 @@
-from chipiron.players.treevalue.tree_and_value_player import TreeAndValuePlayer
 from chipiron.players.treevalue.trees.move_and_value_tree import MoveAndValueTree
 from chipiron.players.treevalue.nodes.index_tree_node import IndexTreeNode
 from chipiron.players.treevalue.node_selector.notations_and_statics import zipf_picks_random_bool
@@ -126,7 +125,7 @@ class ZipfSequoolTree(MoveAndValueTree):
                     assert (child.index is not None)
 
 
-class ZipfSequool(TreeAndValuePlayer):
+class ZipfSequool:
 
     def __init__(self, arg, random_generator):
         super().__init__(arg)

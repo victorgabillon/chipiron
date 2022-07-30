@@ -12,20 +12,21 @@ from scripts.script import Script
 # instantiate relevant script
 def get_script_from_name(script_name: str, gui_args: object) -> Script:
     # launch the relevant script
-    if script_name == 'one_match':
-        script_object = OneMatchScript(gui_args)
-    elif script_name == 'visualize_tree':
-        script_object = VisualizeTreeScript()
-    elif script_name == 'learn_nn':
-        script_object = LearnNNScript()
-    elif script_name == 'record_states':
-        script_object = RecordStates()
-    elif script_name == 'record_state_eval_stockfish':
-        script_object = RecordStateEvalStockfish1()
-    elif script_name == 'replay_game':
-        script_object = ReplayGameScript()
-    elif script_name == 'run_the_league':
-        script_object = RuntheLeagueScript()
-    else:
-        raise Exception(' cannot find ', script_name)
+    match script_name:
+        case  'one_match':
+            script_object = OneMatchScript(gui_args)
+        case 'visualize_tree':
+            script_object = VisualizeTreeScript()
+        case 'learn_nn':
+            script_object = LearnNNScript()
+        case 'record_states':
+            script_object = RecordStates()
+        case 'record_state_eval_stockfish':
+            script_object = RecordStateEvalStockfish1()
+        case 'replay_game':
+            script_object = ReplayGameScript()
+        case 'run_the_league':
+            script_object = RuntheLeagueScript()
+        case other:
+            raise Exception(' cannot find ', other)
     return script_object

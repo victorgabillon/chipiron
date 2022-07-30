@@ -1,5 +1,4 @@
 from chipiron.players.treevalue.trees.move_and_value_tree import MoveAndValueTree
-from chipiron.players.treevalue.tree_and_value_player import TreeAndValuePlayer
 from chipiron.players.treevalue.nodes.tree_node_with_proportions import ProportionsNode
 
 
@@ -8,7 +7,7 @@ class VertiZipfTree(MoveAndValueTree):
         return ProportionsNode(board, half_move, count, father_node, self.zipf_style)
 
 
-class VertiZipf(TreeAndValuePlayer):
+class VertiZipf:
 
     def __init__(self, arg):
         super().__init__(arg)

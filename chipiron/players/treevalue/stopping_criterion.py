@@ -20,7 +20,7 @@ class StoppingCriterion:
         Returns:
             boolean of should we continue
         """
-        if self.player.tree.root_node.is_over():
+        if self.player.tree_manager.tree.root_node.is_over():
             return False
         return True
 
@@ -38,7 +38,7 @@ class TreeMoveLimit(StoppingCriterion):
         continue_base = super().should_we_continue()
         if not continue_base:
             return continue_base
-        return self.player.tree.move_count < self.tree_move_limit
+        return self.player.tree_manager.tree.move_count < self.tree_move_limit
 
     def get_string_of_progress(self) -> str:
         """
