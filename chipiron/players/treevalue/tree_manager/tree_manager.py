@@ -42,8 +42,9 @@ class TreeManager:
                 or fast_rep not in self.tree.root_node.descendants.descendants_at_half_move[half_move]:
             node = self.tree_expander.create_tree_node(board=board, board_modifications=modifications,
                                                        half_move=half_move, parent_node=parent_node)
+            self.tree.root_node.descendants.add_descendant(node)
         else:  # the node already exists
-            node = self.tree_expander.create_tree_move(board=board, half_move=half_move, fast_rep=fast_rep)
+            node = self.tree_expander.create_tree_move(half_move=half_move, fast_rep=fast_rep,parent_node=parent_node)
         return node
 
     def open_node_move(self, parent_node: TreeNodeWithValue, move: chess.Move) -> object:
@@ -161,7 +162,7 @@ class TreeManager:
             # concatenate the update instructions
             update_instructions_batch.merge(new_update_instructions_batch)
 
-        self.tree.board_evaluator.evaluate_all_queried_nodes()
+        self.tree_expander.board_evaluator.evaluate_all_queried_nodes()
 
         return update_instructions_batch  # todo never new_nodes used no?
 
@@ -175,9 +176,6 @@ class TreeManager:
         return all_extra_opening_instructions_batch
 
     def update_node(self, node_to_update, update_instructions):
-        #        bestnextnodeid = node_to_update.best_node_sequence[0].id if node_to_update.best_node_sequence else None
-        #       print('-----------OL', node_to_update.id, node_to_update.get_value_white(), node_to_update.half_move, bestnextnodeid, node_to_update.half_move)
-        #      update_instructions.print_info()
 
         ##UPDATES
         new_update_instructions = node_to_update.perform_updates(update_instructions)
@@ -218,11 +216,6 @@ class TreeManager:
         assert (self.tree.root_node.descendants.get_count() == self.tree.nodes_count)
 
     def print_best_line(self):
-        self.root_node.print_best_line()
+        self.tree.root_node.print_best_line()
 
-    def add_root_node(self, board: board_mod.IBoard) -> None:
-        # creates the node
-        self.tree._root_node = self.find_or_create_node(board, None, self.tree.tree_root_half_move, None)
-        # ask for its evaluation
-        self.tree.board_evaluator.evaluate_all_queried_nodes()
-        self.tree.descendants = self.tree.root_node.descendants
+

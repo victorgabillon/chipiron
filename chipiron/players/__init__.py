@@ -5,5 +5,6 @@ from .stockfish import Stockfish
 from .player_thread import PlayerProcess
 from .player import Player
 from .boardevaluators.table_base.factory import create_syzygy_thread
+from .factory import launch_player_process
 
 

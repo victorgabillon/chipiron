@@ -4,6 +4,7 @@ from chipiron.players.boardevaluators.factory import create_node_evaluator
 from .tree_and_value_player import TreeAndValuePlayer
 from chipiron.players.treevalue.node_selector.opening_instructions import OpeningInstructor
 from .node_selector.node_selector import NodeSelector
+from chipiron.players.treevalue.stopping_criterion import StoppingCriterion,create_stopping_criterion
 
 
 def create_tree_and_value_builders(arg: dict,
@@ -44,8 +45,14 @@ def create_tree_and_value_builders(arg: dict,
         case other:
             raise ('tree builder: can not find ' + other)
 
+    stopping_criterion: StoppingCriterion = create_stopping_criterion(arg['tree_builder']['stopping_criterion'])
+
     tree_builder: TreeAndValuePlayer = TreeAndValuePlayer(arg=arg['tree_builder'],
                                                           random_generator=random_generator,
                                                           node_move_opening_selector=node_move_opening_selector,
-                                                          board_evaluators_wrapper=board_evaluators_wrapper)
+                                                          board_evaluators_wrapper=board_evaluators_wrapper,
+                                                          stopping_criterion=stopping_criterion)
     return tree_builder
+
+
+

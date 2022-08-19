@@ -1,10 +1,12 @@
-from chipiron.chessenvironment.board.factory import create_board
-from chipiron.games.game_manager import GameManager
-import chipiron.players as players
 import chess
-from chipiron.players.factory import launch_player_process
-from chipiron.games.game_playing_status import GamePlayingStatus, ObservableGamePlayingStatus
 import queue
+
+import chipiron as ch
+from chipiron.chessenvironment.board.factory import create_board
+import chipiron.players as players
+from chipiron.players.factory import launch_player_process
+from .game_manager import GameManager
+from .game import Game, ObservableGame
 
 
 class GameManagerFactory:
@@ -39,29 +41,36 @@ class GameManagerFactory:
         while not self.main_thread_mailbox.empty():
             self.main_thread_mailbox.get()
 
+        # creating the game playing status
+        game_playing_status: ch.games.GamePlayingStatus = ch.games.GamePlayingStatus()
+
+        game: Game = ch.games.Game(playing_status=game_playing_status, board=board)
+        obs_game: ObservableGame = ch.games.ObservableGame(game)
+
+        if self.subscribers:
+            for subscriber in self.subscribers:
+                print('lplpl')
+                obs_game.register_mailbox(subscriber, 'board_to_display')
+
         player_processes = []
         # Creating and launching the player threads
         for player_color in chess.COLORS:
             player = player_color_to_player[player_color]
             game_player = players.GamePlayer(player, player_color)
             if player.id != 'Human':  # TODO COULD WE DO BETTER ? maybe with the null object
-                player_process = launch_player_process(game_player, board, self.main_thread_mailbox)
+                player_process = launch_player_process(game_player, obs_game, self.main_thread_mailbox)
                 player_processes.append(player_process)
 
-        # creating the game playing status
-        game_playing_status: GamePlayingStatus = GamePlayingStatus()
-        game_playing_status: ObservableGamePlayingStatus = ObservableGamePlayingStatus(game_playing_status)
-        game_playing_status.subscribe(self.subscribers)
-
-        game_manager: GameManager = GameManager(board=board,
-                                                syzygy=self.syzygy_table,
-                                                display_board_evaluator=board_evaluator,
-                                                output_folder_path=self.output_folder_path,
-                                                args=args_game_manager,
-                                                player_color_to_id=player_color_to_id,
-                                                main_thread_mailbox=self.main_thread_mailbox,
-                                                player_threads=player_processes,
-                                                game_playing_status=game_playing_status)
+        game_manager: GameManager
+        game_manager = GameManager(game=obs_game,
+                                   syzygy=self.syzygy_table,
+                                   display_board_evaluator=board_evaluator,
+                                   output_folder_path=self.output_folder_path,
+                                   args=args_game_manager,
+                                   player_color_to_id=player_color_to_id,
+                                   main_thread_mailbox=self.main_thread_mailbox,
+                                   player_threads=player_processes,
+                                   game_playing_status=game_playing_status)
 
         return game_manager
 

@@ -6,14 +6,15 @@ import copy
 
 
 class PlayingStatus(Enum):
-    PLAY = 0
-    PAUSE = 1
+    PLAY: int = 1
+    PAUSE: int = 0
 
 
 @dataclass
 class GamePlayingStatus:
     """
     Objet containing the playing status of a game
+    and the board
     """
     _status: PlayingStatus = PlayingStatus.PLAY
 
@@ -22,7 +23,7 @@ class GamePlayingStatus:
         return self._status
 
     @status.setter
-    def status(self, new_status: PlayingStatus.PLAY):
+    def status(self, new_status: PlayingStatus):
         self._status = new_status
 
     def play(self):
@@ -39,6 +40,10 @@ class GamePlayingStatus:
 
 
 class ObservableGamePlayingStatus:
+    """
+    observable version of GamePlayingStatus that notifies subscribers
+    players and gui, for instance, can then decide what to do with this info.
+    """
 
     def __init__(self, game_playing_status: GamePlayingStatus):
         self.game_playing_status = game_playing_status

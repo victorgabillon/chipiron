@@ -2,8 +2,8 @@ import chess
 import pickle
 import logging
 import copy
-import chipiron.chessenvironment.board as board_lib
-from chipiron.games.game_playing_status import GamePlayingStatus, PlayingStatus
+from .game_playing_status import GamePlayingStatus, PlayingStatus
+from .game import ObservableGame
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -27,8 +27,10 @@ class GameManager:
 
     GAME_RESULTS = [WIN_FOR_WHITE, WIN_FOR_BLACK, DRAW] = range(3)
 
+    game: ObservableGame
+
     def __init__(self,
-                 board: board_lib.IBoard,
+                 game: ObservableGame,
                  syzygy,
                  display_board_evaluator,
                  output_folder_path,
@@ -51,7 +53,7 @@ class GameManager:
             player_white:
             player_black:
         """
-        self.board = board
+        self.game = game
         self.syzygy = syzygy
         self.path_to_store_result = output_folder_path + '/games/' if output_folder_path is not None else None
         self.display_board_evaluator = display_board_evaluator
@@ -63,43 +65,42 @@ class GameManager:
         self.game_playing_status = game_playing_status
 
     def stockfish_eval(self):
-        return self.display_board_evaluator.evaluate(self.board)  # TODO DON'T LIKE THIS writing
+        return self.display_board_evaluator.evaluate(self.game.board)  # TODO DON'T LIKE THIS writing
 
     def play_one_move(self, move: chess.Move) -> None:
-        self.board.play_move(move)
-        if self.syzygy.fast_in_table(self.board):
+        self.game.play_move(move)
+        if self.syzygy.fast_in_table(self.game.board):
             print('Theoretically finished with value for white: ',
-                  self.syzygy.sting_result(self.board))
+                  self.syzygy.sting_result(self.game.board))
 
     def rewind_one_move(self):
-        self.board.rewind_one_move()
-        if self.syzygy.fast_in_table(self.board):
+        self.game.rewind_one_move()
+        if self.syzygy.fast_in_table(self.game.board):
             print('Theoretically finished with value for white: ',
-                  self.syzygy.sting_result(self.board))
+                  self.syzygy.sting_result(self.game.board))
 
     def set_new_game(self, starting_position_arg):
-        self.board.set_starting_position(starting_position_arg)
-        self.board_history = [copy.copy(self.board)]
+        self.game.set_starting_position(starting_position_arg)
 
     def play_one_game(self):
+        board = self.game.board
         self.set_new_game(self.args['starting_position'])
 
         color_names = ['Black', 'White']
 
         while True:
-            half_move = self.board.ply()
-            print('Half Move: {} playing status {} '.format(half_move, self.game_playing_status.status))
-            color_to_move = self.board.turn
+            half_move = board.ply()
+            print(f'Half Move: {half_move} playing status {self.game_playing_status.status} ')
+            color_to_move = board.turn
             color_of_player_to_move_str = color_names[color_to_move]
-            print('{} ({}) to play now...'.format(color_of_player_to_move_str,
-                                                  self.player_color_to_id[color_to_move]))
+            print(f'{color_of_player_to_move_str} ({self.player_color_to_id[color_to_move]}) to play now...')
 
             # waiting for a message
             mail = self.main_thread_mailbox.get()
 
             self.processing_mail(mail)
 
-            if self.board.is_game_over() or not self.game_continue_conditions():
+            if board.is_game_over() or not self.game_continue_conditions():
                 break
 
         self.tell_results()
@@ -108,42 +109,42 @@ class GameManager:
         return self.simple_results()
 
     def processing_mail(self, message):
+        board = self.game.board
+
         # TODO maybe implement a class for the message, look at the command pattern
         if message['type'] == 'game_status':
             # update game status
             if message['status'] == 'play':
                 self.game_playing_status.play()
-                self.board.notify_board_play()
             if message['status'] == 'pause':
                 self.game_playing_status.pause()
         if message['type'] == 'move':
             # play the move
             move = message['move']
             print('receiving the move', move, type(self), self.game_playing_status, type(self.game_playing_status))
-            if message['corresponding_board'] == self.board.fen() and self.game_playing_status.is_play():
+            if message['corresponding_board'] == board.fen() and self.game_playing_status.is_play():
                 # TODO THINK! HOW TO DEAL with premoves if we dont know the board in advance?
                 self.play_one_move(move)
                 eval = self.stockfish_eval()
                 print('Stockfish evaluation:', eval)
                 # Print the board
-                self.board.print_chess_board()
+                board.print_chess_board()
             else:
                 pass
                 # put back in the queue
-                #self.main_thread_mailbox.put(message)
-            logger.debug('len main tread mailbox {}'.format(self.main_thread_mailbox.qsize()))
+                # self.main_thread_mailbox.put(message)
+            logger.debug(f'len main tread mailbox {self.main_thread_mailbox.qsize()}')
 
-        if message['type'] == 'move_syzygy':  # TODO IS THIS CLEAN?
-            self.syzygy_player.best_move(self.board)
+        if message['type'] == 'move_syzygy':  # TODO IS THIS CLEAN? is this ever called?
+            move = self.syzygy.best_move(board)
             self.play_one_move(move)
 
         if message['type'] == 'back':
             self.rewind_one_move()
             self.game_playing_status.status = PlayingStatus.PAUSE
-            half_move = self.board.ply()
 
     def game_continue_conditions(self):
-        half_move = self.board.ply()
+        half_move = self.game.board.ply()
         continue_bool = True
         if 'max_half_move' in self.args and half_move >= self.args['max_half_move']:
             continue_bool = False
@@ -156,35 +157,38 @@ class GameManager:
             path_file_txt = path_file + '.txt'
             path_file_obj = path_file + '.obj'
             with open(path_file_txt, 'a') as the_fileText:
-                for counter, move in enumerate(self.board.move_stack):
+                for counter, move in enumerate(self.game.board.move_stack):
                     if counter % 2 == 0:
                         move_1 = move
                     else:
                         the_fileText.write(str(move_1) + ' ' + str(move) + '\n')
             with open(path_file_obj, "wb") as f:
-                pickle.dump(self.board, f)
+                pickle.dump(self.game.board, f)
 
     def tell_results(self):
-        if self.syzygy.fast_in_table(self.board):
-            print('Syzygy: Theoretical value for white', self.syzygy.sting_result(self.board))
-        if self.board.is_fivefold_repetition():
+        board = self.game.board
+        if self.syzygy.fast_in_table(board):
+            print('Syzygy: Theoretical value for white', self.syzygy.sting_result(board))
+        if board.is_fivefold_repetition():
             print('is_fivefold_repetition')
-        if self.board.is_seventyfive_moves():
+        if board.is_seventyfive_moves():
             print('is seventy five  moves')
-        if self.board.is_insufficient_material():
+        if board.is_insufficient_material():
             print('is_insufficient_material')
-        if self.board.is_stalemate():
+        if board.is_stalemate():
             print('is_stalemate')
-        if self.board.is_checkmate():
+        if board.is_checkmate():
             print('is_checkmate')
-        print(self.board.result())
+        print(board.result())
 
     def simple_results(self):
-        if self.board.result() == '*':
-            if self.syzygy is None or not self.syzygy.fast_in_table(self.board):  # TODO when is this case useful?
+        board = self.game.board
+
+        if board.result() == '*':
+            if self.syzygy is None or not self.syzygy.fast_in_table(board):  # TODO when is this case useful?
                 return (-10000, -10000, -10000)
             else:
-                val = self.syzygy.value_white(self.board, chess.WHITE)
+                val = self.syzygy.value_white(board, chess.WHITE)
                 if val == 0:
                     return self.DRAW
                 if val == -1000:
@@ -192,7 +196,7 @@ class GameManager:
                 if val == 1000:
                     return self.WIN_FOR_WHITE
         else:
-            result = self.board.result()
+            result = board.result()
             if result == '1/2-1/2':
                 return self.DRAW
             if result == '0-1':

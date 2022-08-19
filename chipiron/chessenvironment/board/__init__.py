@@ -1,3 +1,4 @@
-from chipiron.chessenvironment.board.board_modification import BoardModification
-from chipiron.chessenvironment.board.iboard import IBoard
-from chipiron.chessenvironment.board.board import BoardChi
+from .board_modification import BoardModification
+from .iboard import IBoard
+from .board import BoardChi
+from .factory import create_board
