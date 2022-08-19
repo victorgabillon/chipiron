@@ -45,13 +45,13 @@ def create_player_thread(args: dict,
 
 
 def launch_player_process(game_player,
-                          observable_board,
+                          observable_game,
                           main_thread_mailbox):
     # creating objects Queue that is the mailbox for the player thread
     player_thread_mailbox = multiprocessing.Manager().Queue()
 
     # registering to the observable board to get notification when it changes
-    observable_board.register_mailbox(player_thread_mailbox, 'board_to_play')
+    observable_game.register_mailbox(player_thread_mailbox, 'board_to_play')
 
     # creating and starting the thread for the player
     player_thread = players.PlayerProcess(game_player, player_thread_mailbox, main_thread_mailbox)

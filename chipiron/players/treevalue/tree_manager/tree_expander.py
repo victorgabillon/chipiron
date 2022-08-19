@@ -2,6 +2,25 @@ import chipiron as ch
 import chipiron.players.treevalue.nodes as node
 from chipiron.players.treevalue import node_factory as node_fact
 from chipiron.players.treevalue.trees.move_and_value_tree import MoveAndValueTree
+from typing import List
+from dataclasses import dataclass
+
+
+@dataclass
+class TreeExpansion:
+    """ the class describing TreeExpansion"""
+
+    child_node: node.TreeNode
+    parent_node: node.TreeNode | None
+    creation_child_node: bool
+
+
+class TreeExpansionHistory:
+    """ the class logging all the expansions of a tree"""
+    history: List[TreeExpansion]
+
+    def __init__(self, root_node: node.TreeNode):
+        self.history = [TreeExpansion(child_node=root_node, parent_node=None, creation_child_node=True)]
 
 
 class TreeExpander:
@@ -11,9 +30,13 @@ class TreeExpander:
     tree: MoveAndValueTree
     node_factory: node_fact.TreeNodeFactory
 
-    def __init__(self, tree: MoveAndValueTree, node_factory: node_fact.TreeNodeFactory) -> None:
+    def __init__(self, tree: MoveAndValueTree,
+                 node_factory: node_fact.TreeNodeFactory,
+                 tree_expansion_history: TreeExpansionHistory,
+                 board_evaluator) -> None:
         self.tree = tree
         self.node_factory = node_factory
+        self.board_evaluator = board_evaluator
 
     def create_tree_node(self,
                          board: ch.chess.IBoard,
@@ -27,12 +50,11 @@ class TreeExpander:
                                                            parent_node=parent_node,
                                                            board_depth=board_depth)
         self.tree.nodes_count += 1
-        self.tree.board_evaluator.compute_representation(new_node, parent_node, board_modifications)
-        self.tree.board_evaluator.add_evaluation_query(new_node)
+        self.board_evaluator.compute_representation(new_node, parent_node, board_modifications)
+        self.board_evaluator.add_evaluation_query(new_node)
         return new_node
 
     def create_tree_move(self,
-                         board: ch.chess.IBoard,
                          half_move: int,
                          fast_rep: str,
                          parent_node: node.TreeNode) -> node.TreeNode:

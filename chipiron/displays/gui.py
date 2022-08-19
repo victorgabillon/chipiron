@@ -252,7 +252,7 @@ class MainWindow(QWidget):
     def update_evaluation(self, evaluation):
         self.eval_button.setText('eval: ' + str(evaluation))  # text
 
-    def update_game_play_status(self, game_play_status:GamePlayingStatus):
+    def update_game_play_status(self, game_play_status: GamePlayingStatus):
         if game_play_status.is_paused():
             self.pause_button.setText("Play")  # text
             self.pause_button.setIcon(QIcon("data/gui/play.png"))  # icon

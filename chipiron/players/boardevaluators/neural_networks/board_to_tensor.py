@@ -152,6 +152,7 @@ def node_to_tensors_pieces_square_fast(node, parent_node, board_modifications, r
     if parent_node is None:  # this is the root_node
         node_to_tensors_pieces_square(node, requires_grad_)
     else:
+        print('ko',parent_node)
         node_to_tensors_pieces_square_from_parent(node, board_modifications, parent_node)
 
 

@@ -1,5 +1,7 @@
 import chipiron.chessenvironment.board as board_mod
 from chipiron.players.treevalue.nodes.tree_node import TreeNode
+from ..nodes.tree_node_with_descendants import NodeWithDescendants
+
 
 # todo should we use a discount? and discounted per round reward?
 # todo maybe convenient to seperate this object into openner updater and dsiplayer
@@ -14,23 +16,23 @@ class MoveAndValueTree:
     Each node contains a board and has as many children node as there are legal move in the board.
     A children node then contains the board that is obtained by playing a particular moves in the board of the parent
     node.
+
+    It is  pointer to the root node with some counters and keeping track of descendants.
     """
 
+    _root_node: NodeWithDescendants
+
     def __init__(self,
-                 board_evaluator,
-                 starting_board: board_mod.IBoard = None) -> None:
+                 root_node: NodeWithDescendants) -> None:
         """
 
         Args:
             board_evaluator (object):
         """
-        if starting_board is not None:  # for tree visualizer...
-            # the tree is built at half_move  self.half_move
-            self.tree_root_half_move = starting_board.ply()
+        self.tree_root_half_move = root_node.half_move
 
-        # number of nodes in the tree
-        self.nodes_count = 0
-
+        # number of nodes in the tree (already one as we have the root node provided)
+        self.nodes_count = 1
 
         # integer counting the number of moves in the tree.
         # the interest of self.move_count over the number of nodes in the descendants
@@ -38,11 +40,8 @@ class MoveAndValueTree:
         # while self.node_count can stay the same if the nodes already existed.
         self.move_count = 0
 
-        self.board_evaluator = board_evaluator
-
-        # to be defined later ...
-        self._root_node = None
-        self.descendants = None
+        self._root_node = root_node
+        self.descendants = root_node.descendants
 
     @property
     def root_node(self):
@@ -50,8 +49,3 @@ class MoveAndValueTree:
 
     def node_depth(self, node: TreeNode) -> int:
         return node.half_move - self.tree_root_half_move
-
-
-
-
-

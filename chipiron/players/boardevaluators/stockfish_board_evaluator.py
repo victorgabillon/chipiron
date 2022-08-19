@@ -8,5 +8,5 @@ class StockfishBoardEvaluator:
         self.depth = 20
 
     def evaluate(self, board):
-        info = self.engine.analyse(board.board, chess.engine.Limit(time=0.1))
+        info = self.engine.analyse(board, chess.engine.Limit(time=0.1))
         return info["score"]

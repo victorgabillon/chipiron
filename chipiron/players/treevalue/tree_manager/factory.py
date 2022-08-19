@@ -1,7 +1,7 @@
 import chipiron as ch
 from typing import List
 from chipiron.players.treevalue.tree_manager.tree_manager import TreeManager
-from chipiron.players.treevalue.tree_manager.tree_expander import TreeExpander
+from chipiron.players.treevalue.tree_manager.tree_expander import TreeExpander, TreeExpansionHistory
 import chipiron.players.treevalue.node_selector as nodeselector
 from chipiron.players.treevalue.trees.move_and_value_tree import MoveAndValueTree
 from chipiron.players.treevalue import node_factory
@@ -18,12 +18,17 @@ def create_tree_manager(args: dict,
         case 'RecurZipfBase':
             tree_node_factory = node_factory.RecurZipfBase()
         case other:
-            raise 'please implement your node factory!! no {}'.format(other)
+            raise f'please implement your node factory!! no {other}'
 
-    move_and_value_tree: MoveAndValueTree = MoveAndValueTree(board_evaluator=board_evaluators_wrapper,
-                                                             starting_board=board)
+    root_node = node_factory.create_root_node(board, board.ply(), board_evaluators_wrapper)
+    tree_expansion_history = TreeExpansionHistory(root_node=root_node)
 
-    tree_expander: TreeExpander = TreeExpander(tree=move_and_value_tree, node_factory=tree_node_factory)
+    move_and_value_tree: MoveAndValueTree = MoveAndValueTree(root_node=root_node)
+
+    tree_expander: TreeExpander = TreeExpander(tree=move_and_value_tree,
+                                               node_factory=tree_node_factory,
+                                               tree_expansion_history=tree_expansion_history,
+                                               board_evaluator=board_evaluators_wrapper)
 
     tree_manager: TreeManager = TreeManager(tree=move_and_value_tree, tree_expander=tree_expander)
 
