@@ -9,14 +9,14 @@ from chipiron.players.treevalue import node_factory
 
 def create_tree_manager(args: dict,
                         board_evaluators_wrapper,
-                        board: ch.chess.IBoard,
+                        board: ch.chess.BoardChi,
                         expander_subscribers: List[nodeselector.NodeSelector]) -> TreeManager:
-    tree_builder_type: str = args['type']
+    node_factory_name: str = args['node_factory_name'] if 'node_factory_name' in args else 'Base'
 
     tree_node_factory: node_factory.TreeNodeFactory
-    match tree_builder_type:
-        case 'RecurZipfBase':
-            tree_node_factory = node_factory.RecurZipfBase()
+    match node_factory_name:
+        case 'Base':
+            tree_node_factory = node_factory.Base()
         case other:
             raise f'please implement your node factory!! no {other}'
 

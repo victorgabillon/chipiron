@@ -124,6 +124,15 @@ class Descendants:
 
 class RangedDescendants(Descendants):
 
+    def __str__(self):
+        string: str = ''
+        for half_move in self:
+            string += f'half_move: {half_move} | ({self.number_of_descendants_at_half_move[half_move]} descendants)\n'
+            for descendant in self[half_move].values():
+                string += f'{descendant.id} '
+            string += '\n'
+        return string
+
     def __init__(self):
         super().__init__()
         self.min_half_move = None
@@ -190,9 +199,6 @@ class RangedDescendants(Descendants):
                 self.min_half_move = None
                 assert (self.number_of_descendants == 0)
 
-        if settings.testing_bool:
-            self.test()
-
     def range(self):
         return range(self.min_half_move, self.max_half_move + 1)
 
@@ -221,7 +227,6 @@ class RangedDescendants(Descendants):
 
     def merge(self, descendant_1, descendant_2):
 
-
         half_moves_range = set(descendant_1.keys()) | set(descendant_2.keys())
         assert (len(half_moves_range) > 0)
         self.min_half_move = min(half_moves_range)
@@ -244,8 +249,6 @@ class RangedDescendants(Descendants):
                 self.number_of_descendants_at_half_move[half_move] = descendant_2.number_of_descendants_at_half_move[
                     half_move]
             self.number_of_descendants += self.number_of_descendants_at_half_move[half_move]
-
-
 
     def test(self):
         super().test()
@@ -279,9 +282,7 @@ class SortedDescendants(Descendants):
 
         self.sorted_descendants_at_half_move[node.half_move][node] = value
 
-
     def add_descendant(self, node, value):
-
 
         super().add_descendant(node)
         half_move = node.half_move
@@ -289,13 +290,8 @@ class SortedDescendants(Descendants):
         if half_move in self.sorted_descendants_at_half_move:
             assert (node not in self.sorted_descendants_at_half_move[half_move])
             self.sorted_descendants_at_half_move[half_move][node] = value
-        #  print(type(self.sorted_descendants_at_half_move[half_move]))
         else:  # half_move == len(self.descendants_at_half_move)
             self.sorted_descendants_at_half_move[half_move] = {node: value}
-        # print(type(self.sorted_descendants_at_half_move[half_move]))
-        # self.print_info()
-
-
 
         assert (self.contains_node(node))
 
@@ -321,14 +317,12 @@ class SortedDescendants(Descendants):
 
     def remove_descendant(self, node):
 
-
         super().remove_descendant(node)
         half_move = node.half_move
         self.sorted_descendants_at_half_move[half_move].pop(node)
         if half_move not in self.number_of_descendants_at_half_move:
             self.sorted_descendants_at_half_move.pop(half_move)
         # self.print_info()
-
 
         assert (not self.contains_node(node))
 
@@ -356,9 +350,6 @@ class SortedValueDescendants(Descendants):
     def add_descendant(self, node, value):
         super().add_descendant(node)
         half_move = node.half_move
-        if settings.testing_bool:
-            pass
-        # self.test()
 
         if half_move in self.sorted_descendants_at_half_move:
             assert (node not in self.sorted_descendants_at_half_move[half_move])
@@ -368,9 +359,6 @@ class SortedValueDescendants(Descendants):
             self.sorted_descendants_at_half_move[half_move] = ValueSortedDict({node: value})
         # print(type(self.sorted_descendants_at_half_move[half_move]))
         # self.print_info()
-
-        if settings.testing_bool:
-            self.test()
 
     def test(self):
         super().test()
@@ -396,14 +384,6 @@ class SortedValueDescendants(Descendants):
         super().remove_descendant(node)
         half_move = node.half_move
 
-        if settings.testing_bool:
-            pass
-            # self.test()
-
         self.sorted_descendants_at_half_move[half_move].pop(node)
         if half_move not in self.number_of_descendants_at_half_move:
             self.sorted_descendants_at_half_move.pop(half_move)
-        # self.print_info()
-
-        if settings.testing_bool:
-            self.test()

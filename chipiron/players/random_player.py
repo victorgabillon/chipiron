@@ -1,5 +1,5 @@
 from random import choice
-from chipiron.chessenvironment.board.iboard import IBoard
+import chipiron as ch
 
 
 class RandomPlayer:
@@ -7,5 +7,5 @@ class RandomPlayer:
     def __init__(self):
         pass
 
-    def select_move(self, board: IBoard):
-        return choice(list(board.chess_board.legal_moves))
+    def select_move(self, board: ch.chess.board.BoardChi):
+        return choice(list(board.legal_moves))
