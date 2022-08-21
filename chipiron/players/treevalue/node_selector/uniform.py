@@ -1,6 +1,7 @@
-from chipiron.players.treevalue.node_selector.opening_instructions import OpeningInstructionsBatch
 from chipiron.players.treevalue.nodes.tree_node_with_values import TreeNodeWithValue
 from chipiron.players.treevalue.nodes.tree_node_with_descendants import NodeWithDescendants
+from .. import trees
+from chipiron.players.treevalue.node_selector.opening_instructions import OpeningInstructionsBatch, OpeningInstructor
 
 
 class UniformTree:  # todo probably this is overkill as the tree s nothing special or does it?
@@ -18,27 +19,36 @@ class UniformTree:  # todo probably this is overkill as the tree s nothing speci
 
 
 class Uniform:
+    """ The Uniform Node selector """
 
-    def __init__(self, arg):
-        super().__init__(arg)
-        self.current_half_move_to_expand = None
+    opening_instructor: OpeningInstructor
 
-    def choose_node_and_move_to_open(self):
+    def __init__(self,
+                 arg: dict,
+                 opening_instructor: OpeningInstructor):
+        self.opening_instructor = opening_instructor
+        self.current_depth_to_expand = 0
+
+    def choose_node_and_move_to_open(self, tree: trees.MoveAndValueTree) -> OpeningInstructionsBatch:
+
+        if tree.nodes_count <= 1:
+            self.current_depth_to_expand = 0
+
         opening_instructions_batch = OpeningInstructionsBatch()
 
         # generate the nodes to expand
-        self.current_half_move_to_expand = self.root_half_move + self.current_depth_to_expand
+        current_half_move_to_expand = tree.tree_root_half_move + self.current_depth_to_expand
 
         # self.tree.descendants.print_info()
         # print('self.root_half_move ',self.root_half_move,self.current_depth_to_expand)
-        nodes_to_consider = list(self.tree.descendants[self.current_half_move_to_expand].values())
+        nodes_to_consider = list(tree.descendants[current_half_move_to_expand].values())
 
         # filter the game-over ones
         nodes_to_consider = [node for node in nodes_to_consider if not node.is_over()]
 
         # sort them by order of importance for the player
         nodes_to_consider_sorted_by_value = sorted(nodes_to_consider,
-                                                   key=lambda x: self.tree.root_node.subjective_value_of(
+                                                   key=lambda x: tree.root_node.subjective_value_of(
                                                        x))  # best last
 
         for node in nodes_to_consider_sorted_by_value:
@@ -47,14 +57,6 @@ class Uniform:
 
         self.current_depth_to_expand += 1
         return opening_instructions_batch
-
-    def create_tree(self, board):
-        return UniformTree(self.environment, self.board_evaluators_wrapper, board)
-
-    def get_move_from_player(self, board, timetoMove):
-        self.current_depth_to_expand = 0
-        self.root_half_move = board.chess_board.ply()
-        return super().get_move_from_player(board, timetoMove)
 
     def print_info(self):
         super().print_info()

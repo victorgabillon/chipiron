@@ -1,1 +1,1 @@
-from .board import IBoard
+from .board import BoardChi

@@ -3,24 +3,24 @@ from chipiron.players.boardevaluators.node_evaluator import NodeEvaluator
 
 
 def value_base(board, color):
-    value_white = bin(board.chess_board.pawns & board.chess_board.occupied_co[color]).count('1') \
-                  + bin(board.chess_board.knights & board.chess_board.occupied_co[color]).count('1') * 3 \
-                  + bin(board.chess_board.bishops & board.chess_board.occupied_co[color]).count('1') * 3 \
-                  + bin(board.chess_board.rooks & board.chess_board.occupied_co[color]).count('1') * 5 \
-                  + bin(board.chess_board.queens & board.chess_board.occupied_co[color]).count('1') * 9
+    value_white = bin(board.pawns & board.occupied_co[color]).count('1') \
+                  + bin(board.knights & board.occupied_co[color]).count('1') * 3 \
+                  + bin(board.bishops & board.occupied_co[color]).count('1') * 3 \
+                  + bin(board.rooks & board.occupied_co[color]).count('1') * 5 \
+                  + bin(board.queens & board.occupied_co[color]).count('1') * 9
     return value_white
 
 
 def add_pawns_value_white(board):
     add_value = 0
-    for pawn in list(board.chess_board.pieces(chess.PAWN, chess.WHITE)):
+    for pawn in list(board.pieces(chess.PAWN, chess.WHITE)):
         add_value += int((pawn - 8) / 8) / 50. * 1
     return add_value
 
 
 def add_pawns_value_black(board):
     add_value = 0
-    for pawn in list(board.chess_board.pieces(chess.PAWN, chess.BLACK)):
+    for pawn in list(board.pieces(chess.PAWN, chess.BLACK)):
         add_value += int((63 - pawn - 8) / 8) / 50. * 1
     return add_value
 

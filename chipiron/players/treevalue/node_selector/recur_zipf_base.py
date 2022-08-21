@@ -10,7 +10,10 @@ class RecurZipfBase:
     """ The RecurZipfBase Node selector """
     opening_instructor: OpeningInstructor
 
-    def __init__(self, arg: dict, random_generator, opening_instructor: OpeningInstructor):
+    def __init__(self,
+                 arg: dict,
+                 random_generator,
+                 opening_instructor: OpeningInstructor):
         self.opening_instructor = opening_instructor
         self.move_explorer = ZipfMoveExplorer(arg['move_explorer_priority'], random_generator)
         self.random_generator = random_generator
@@ -33,15 +36,9 @@ class RecurZipfBase:
             assert (not wandering_node.is_over())
             wandering_node = self.move_explorer.sample_child_to_explore(tree_node_to_sample_from=wandering_node)
 
-        # print('I choose to open node', wandering_node.id, wandering_node.is_over())
         opening_instructions: OpeningInstructionsBatch = self.opening_instructor.instructions_to_open_all_moves(
             wandering_node)
         return opening_instructions
 
-    def update_after_node_creation(self, node, parent_node):
-        node_depth = node.half_move - self.tree_root_half_move
-        if node_depth >= 1:
-            self.root_node.descendants.add_descendant(node)
-
-    def print_info(self):
-        print('RecurZipfBase')
+    def __str__(self):
+        return 'RecurZipfBase'

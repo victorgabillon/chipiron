@@ -31,7 +31,7 @@ class GameManagerFactory:
         # maybe this factory is overkill at the moment but might be
         # useful if the logic of game generation gets more complex
 
-        board = create_board(self.subscribers)
+        board = create_board()
         player_color_to_id: dict = {color: player.id for color, player in player_color_to_player.items()}
         if self.subscribers:
             for subscriber in self.subscribers:

@@ -39,7 +39,7 @@ class TreeExpander:
         self.board_evaluator = board_evaluator
 
     def create_tree_node(self,
-                         board: ch.chess.IBoard,
+                         board: ch.chess.BoardChi,
                          board_modifications,
                          half_move: int,
                          parent_node) -> node.TreeNode:

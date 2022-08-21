@@ -31,7 +31,7 @@ class TreeManager:
         self.tree = tree
         self.tree_expander = tree_expander
 
-    def find_or_create_node(self, board: board_mod.IBoard,
+    def find_or_create_node(self, board: board_mod.BoardChi,
                             modifications: board_mod.BoardModification,
                             half_move: int,
                             parent_node: TreeNode) -> TreeNode:
@@ -40,11 +40,15 @@ class TreeManager:
         if self.tree.root_node is None \
                 or self.tree.root_node.descendants.is_new_generation(half_move) \
                 or fast_rep not in self.tree.root_node.descendants.descendants_at_half_move[half_move]:
-            node = self.tree_expander.create_tree_node(board=board, board_modifications=modifications,
-                                                       half_move=half_move, parent_node=parent_node)
+            node = self.tree_expander.create_tree_node(board=board,
+                                                       board_modifications=modifications,
+                                                       half_move=half_move,
+                                                       parent_node=parent_node)
             self.tree.root_node.descendants.add_descendant(node)
         else:  # the node already exists
-            node = self.tree_expander.create_tree_move(half_move=half_move, fast_rep=fast_rep,parent_node=parent_node)
+            node = self.tree_expander.create_tree_move(half_move=half_move,
+                                                       fast_rep=fast_rep,
+                                                       parent_node=parent_node)
         return node
 
     def open_node_move(self, parent_node: TreeNodeWithValue, move: chess.Move) -> object:
@@ -217,5 +221,3 @@ class TreeManager:
 
     def print_best_line(self):
         self.tree.root_node.print_best_line()
-
-

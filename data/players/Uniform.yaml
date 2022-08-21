@@ -1,0 +1,18 @@
+name: Uniform
+type: TreeAndValue 
+tree_builder: 
+  type: Uniform
+  move_selection_rule: 
+    type: almost_equal_logistic
+    temperature: 2
+  stopping_criterion: 
+    name: depth_limit
+    depth_limit: 3
+    # name: tree_move_limit
+    # tree_move_limit: 2000
+  depth_tree: 1
+  opening_type: all_children
+board_evaluator: 
+  type: basic_evaluation
+  syzygy_evaluation: True
+syzygy_play: True
