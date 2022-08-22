@@ -27,15 +27,21 @@ class GameManagerFactory:
         self.main_thread_mailbox = main_thread_mailbox
         self.subscribers = []
 
-    def create(self, args_game_manager: dict, player_color_to_player: dict) -> GameManager:
+    def create(
+            self,
+            args_game_manager: dict,
+            player_color_to_player: dict
+    ) -> GameManager:
         # maybe this factory is overkill at the moment but might be
         # useful if the logic of game generation gets more complex
 
-        board = create_board()
+        board: ch.chess.BoardChi = create_board()
         player_color_to_id: dict = {color: player.id for color, player in player_color_to_player.items()}
         if self.subscribers:
             for subscriber in self.subscribers:
-                subscriber.put({'type': 'players_color_to_id', 'players_color_to_id': player_color_to_id})
+                player_id_message: dict = {'type': 'players_color_to_id',
+                                           'players_color_to_id': player_color_to_id}
+                subscriber.put(player_id_message)
         board_evaluator = self.game_manager_board_evaluator_factory.create()
 
         while not self.main_thread_mailbox.empty():
@@ -58,7 +64,9 @@ class GameManagerFactory:
             player = player_color_to_player[player_color]
             game_player = players.GamePlayer(player, player_color)
             if player.id != 'Human':  # TODO COULD WE DO BETTER ? maybe with the null object
-                player_process = launch_player_process(game_player, obs_game, self.main_thread_mailbox)
+                player_process = launch_player_process(game_player,
+                                                       obs_game,
+                                                       self.main_thread_mailbox)
                 player_processes.append(player_process)
 
         game_manager: GameManager
@@ -69,8 +77,7 @@ class GameManagerFactory:
                                    args=args_game_manager,
                                    player_color_to_id=player_color_to_id,
                                    main_thread_mailbox=self.main_thread_mailbox,
-                                   player_threads=player_processes,
-                                   game_playing_status=game_playing_status)
+                                   player_threads=player_processes)
 
         return game_manager
 
