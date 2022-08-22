@@ -30,8 +30,9 @@ class Game:
         else:
             print(f'Cannot rewind move if the game status is PLAY')
 
-    def playing_status(self, new_status: GamePlayingStatus):
-        self._playing_status.status = new_status
+    @property
+    def playing_status(self):
+        return self._playing_status
 
     def play(self):
         self._playing_status.play()
@@ -99,10 +100,12 @@ class ObservableGame:
         self.game.play()
         self.notify_play()
         self.notify_display()
+        self.notify_status()
 
     def pause(self):
+        print('dedededde')
         self.game.pause()
-        self.notify_display()
+        self.notify_status()
 
     def is_paused(self):
         return self.game.is_paused()

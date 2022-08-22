@@ -5,7 +5,10 @@ import queue
 
 # A class that extends the Thread class
 class PlayerProcess(multiprocessing.Process):
-    def __init__(self, game_player, queue_board, queue_move):
+    def __init__(self,
+                 game_player,
+                 queue_board,
+                 queue_move):
         # Call the Thread class's init function
         multiprocessing.Process.__init__(self, daemon=False)
         self._stop_event = multiprocessing.Event()
@@ -30,7 +33,11 @@ class PlayerProcess(multiprocessing.Process):
                     print('player thread got ', board)
                     if board.turn == self.game_player.color:
                         move = self.game_player.select_move(board)
-                        message = {'type': 'move', 'move': move, 'corresponding_board': board.fen()}
+                        message = {'type': 'move',
+                                   'move': move,
+                                   'corresponding_board': board.fen(),
+                                   'player': self.game_player.player.id
+                                   }
                         deep_copy_message = copy.deepcopy(message)
                         print('sending ', message)
                         self.queue_move.put(deep_copy_message)

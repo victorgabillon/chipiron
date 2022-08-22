@@ -1,17 +1,23 @@
 import chess.engine
 import chipiron as ch
+import asyncio
 
 
 class Stockfish:
 
     def __init__(self, options):
-        self.engine = chess.engine.SimpleEngine.popen_uci("/home/victor/stockfish_13_linux_x64/stockfish_13_linux_x64")
         self.depth = options['depth']
 
     def select_move(self, board: ch.chess.board.BoardChi):
-        result = self.engine.play(board, chess.engine.Limit(depth=self.depth))
+        engine = chess.engine.SimpleEngine.popen_uci(r"/home/victor/stockfish_15_linux_x64/stockfish_15_x64")
+        result = engine.play(board, chess.engine.Limit(time=0.1))
         return result.move
 
     def print_info(self):
         super().print_info()
         print('type: Stockfish')
+
+
+async def pl(board, engine):
+    result = await engine.play(board, chess.engine.Limit(time=0.1))
+    return result

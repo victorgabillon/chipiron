@@ -140,7 +140,7 @@ class MainWindow(QWidget):
                     rank = 7 - int((event.y() - self.margin) / self.squareSize)
                     square = chess.square(file, rank)
                     piece = self.board.piece_at(square)
-                    self.coordinates = "{}{}".format(chr(file + 97), str(rank + 1))
+                    self.coordinates = f'{chr(file + 97)}{rank + 1}'
                     if self.pieceToMove[0] is not None:
                         try:
                             move = chess.Move.from_uci("{}{}".format(self.pieceToMove[1], self.coordinates))
@@ -151,7 +151,7 @@ class MainWindow(QWidget):
                                 self.choice_promote()
                                 self.send_move_to_main_thread(self.move_promote_asked)
                             else:
-                                print('Looks like a wrong move.', move, self.board.legal_moves)
+                                print(f'Looks like a wrong move. {move} {self.board.legal_moves}')
                         except ValueError:
                             print("Oops!  Doubleclicked?  Try again...")
                         piece = None
@@ -159,7 +159,11 @@ class MainWindow(QWidget):
 
     def send_move_to_main_thread(self, move):
         print('move', type(move), move)
-        self.main_thread_mailbox.put({'type': 'move', 'move': move, 'corresponding_board': self.board.fen()})
+        self.main_thread_mailbox.put({'type': 'move',
+                                      'move': move,
+                                      'corresponding_board': self.board.fen(),
+                                      'player': 'Human'
+                                      })
 
     def choice_promote(self):
         self.d = QDialog()

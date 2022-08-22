@@ -37,8 +37,7 @@ class GameManager:
                  args,
                  player_color_to_id,
                  main_thread_mailbox,
-                 player_threads,
-                 game_playing_status: GamePlayingStatus):
+                 player_threads):
         """
         Constructor for the GameManager Class. If the args, and players are not given a value it is set to None,
          waiting for the set methods to be called. This is done like this so that the players can be changed
@@ -62,7 +61,6 @@ class GameManager:
         self.board_history = []
         self.main_thread_mailbox = main_thread_mailbox
         self.player_threads = player_threads
-        self.game_playing_status = game_playing_status
 
     def stockfish_eval(self):
         return self.display_board_evaluator.evaluate(self.game.board)  # TODO DON'T LIKE THIS writing
@@ -90,7 +88,7 @@ class GameManager:
 
         while True:
             half_move = board.ply()
-            print(f'Half Move: {half_move} playing status {self.game_playing_status.status} ')
+            print(f'Half Move: {half_move} playing status {self.game.playing_status.status} ')
             color_to_move = board.turn
             color_of_player_to_move_str = color_names[color_to_move]
             print(f'{color_of_player_to_move_str} ({self.player_color_to_id[color_to_move]}) to play now...')
@@ -115,14 +113,16 @@ class GameManager:
         if message['type'] == 'game_status':
             # update game status
             if message['status'] == 'play':
-                self.game_playing_status.play()
+                self.game.play()
             if message['status'] == 'pause':
-                self.game_playing_status.pause()
+                self.game.pause()
         if message['type'] == 'move':
             # play the move
             move = message['move']
-            print('receiving the move', move, type(self), self.game_playing_status, type(self.game_playing_status))
-            if message['corresponding_board'] == board.fen() and self.game_playing_status.is_play():
+            print('receiving the move', move, type(self), self.game.playing_status, type(self.game.playing_status))
+            if message['corresponding_board'] == board.fen() and\
+                    self.game.playing_status.is_play() and\
+                    message['player'] == self.player_color_to_id[board.turn]:
                 # TODO THINK! HOW TO DEAL with premoves if we dont know the board in advance?
                 self.play_one_move(move)
                 eval = self.stockfish_eval()
@@ -141,7 +141,7 @@ class GameManager:
 
         if message['type'] == 'back':
             self.rewind_one_move()
-            self.game_playing_status.status = PlayingStatus.PAUSE
+            self.game.pause()
 
     def game_continue_conditions(self):
         half_move = self.game.board.ply()
