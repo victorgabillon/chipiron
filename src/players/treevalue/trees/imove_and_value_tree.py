@@ -8,7 +8,7 @@ from src.players.treevalue.trees.updates import UpdateInstructionsBatch
 from src.players.treevalue.node_factory.factory import TreeNodeFactory
 
 
-class IMoveAndValueTree:
+class ITreeBuilder:
     """
     This class is the interface for a MoveAndValueTree
     """

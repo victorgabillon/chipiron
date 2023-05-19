@@ -62,7 +62,11 @@ class NodeWithDescendants(TreeNodeWithValue):
     def perform_updates(self, updates_instructions):
         new_update_instructions = super().perform_updates(updates_instructions)
 
+        updates_instructions.print_info()
+
+        print('frgt',updates_instructions.all_instructions_blocks)
         if 'descendants' in updates_instructions:
+            print('ppppppppppppppppppppppppppppppppppppr')
             # get the base block
             updates_instructions_block = updates_instructions['descendants']  # todo create a variable for the tag
 

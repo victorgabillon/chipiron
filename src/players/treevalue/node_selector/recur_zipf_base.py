@@ -8,16 +8,16 @@ from src.players.treevalue.trees.opening_instructions import OpeningInstructions
 
 class RecurZipfBase(NodeSelector):
 
-    def __init__(self, arg :dict, random_generator, opening_instructor):
+    def __init__(self, arg: dict, random_generator, opening_instructor):
         self.opening_instructor = opening_instructor
         self.move_explorer = ZipfMoveExplorer(arg['move_explorer_priority'], random_generator)
         self.random_generator = random_generator
 
-    def choose_node_and_move_to_open(self)-> OpeningInstructionsBatch:
+    def choose_node_and_move_to_open(self, tree) -> OpeningInstructionsBatch:
         # todo maybe proportions and proportions can be valuesorted dict with smart updates
 
-        if self.tree.root_node.best_node_sequence:
-            last_node_in_best_line = self.tree.root_node.best_node_sequence[-1]
+        if tree.root_node.best_node_sequence:
+            last_node_in_best_line = tree.root_node.best_node_sequence[-1]
             if last_node_in_best_line.board.is_attacked(
                     not last_node_in_best_line.player_to_move) and not last_node_in_best_line.is_over():
                 # print('best line is underattacked')
@@ -25,7 +25,7 @@ class RecurZipfBase(NodeSelector):
                     # print('best line is underattacked and i do')
                     return self.opening_instructor.instructions_to_open_all_moves(last_node_in_best_line)
 
-        wandering_node = self.tree.root_node
+        wandering_node = tree.root_node
 
         while wandering_node.children_not_over:
             assert (not wandering_node.is_over())

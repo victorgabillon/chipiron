@@ -1,29 +1,28 @@
 from typing import List
 from src.players.treevalue.node_selector.node_selector import NodeSelector
-import src.players.treevalue.trees as trees
 import src.chessenvironment.board as chp_board
 import src.players.treevalue.nodes as nodes
 import chess
+from .move_and_value_tree import MoveAndValueTreeBuilder
 
 
-class MoveAndValueTreeObservable:
+class MoveAndValueTreeBuilderObservable:
     """
     This class makes an object of the class MoveAndValueTree observable by subscribers,
      notified whenever a node or a move is added.
     """
 
+    move_and_vale_tree: MoveAndValueTreeBuilder
+
     def __init__(self,
-                 move_and_vale_tree: trees.MoveAndValueTree,
+                 move_and_vale_tree: MoveAndValueTreeBuilder,
                  subscribers: List[NodeSelector]) -> None:
         self.move_and_vale_tree = move_and_vale_tree
         self.subscribers = subscribers
 
-    # forward
-    def node_depth(self, node):
-        self.move_and_vale_tree.node_depth(node)
 
-    def add_root_node(self, board):
-        ...
+    def add_root_node(self, board, tree):
+        self.move_and_vale_tree.add_root_node(board=board, tree=tree)
 
     def create_tree_node(self,
                          board,
@@ -41,7 +40,9 @@ class MoveAndValueTreeObservable:
         for node_selector in self.subscribers:
             node_selector.update_after_node_creation()
 
-    def find_or_create_node(self, board: chp_board.IBoard,
+    def find_or_create_node(self,
+                            tree,
+                            board: chp_board.IBoard,
                             modifications: chp_board.BoardModification,
                             half_move: int,
                             parent_node: nodes.TreeNode) -> nodes.TreeNode:
