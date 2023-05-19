@@ -1,4 +1,4 @@
-import sys
+import random
 from src.players.treevalue.node_selector.uniform import Uniform
 from src.players.boardevaluators.factory import create_node_evaluator
 from src.players.treevalue.node_selector.recur_zipf import RecurZipf
@@ -11,19 +11,23 @@ from src.players.treevalue.node_selector.sequool2 import Sequool2
 from src.players.treevalue.node_selector.zipf_sequool2 import ZipfSequool2
 from src.players.treevalue.node_selector.zipf_sequool import ZipfSequool
 from src.players.treevalue.tree_and_value_player import TreeAndValuePlayer
-import random
 from src.players.treevalue.trees.opening_instructions import OpeningInstructor
+from src.players.treevalue.trees.move_and_value_tree import MoveAndValueTreeBuilder
+from src.players.treevalue.trees.factory import create_move_and_value_tree_builder
 from src.players.treevalue.node_selector.node_selector import NodeSelector
+from src.players.treevalue.stopping_criterion import create_stopping_criterion, StoppingCriterion
 
 
-def create_tree_and_value_builders(arg: dict,
-                                   syzygy,
-                                   random_generator: random.Random) -> TreeAndValuePlayer:
+def create_tree_move_selector(arg: dict,
+                              syzygy,
+                              random_generator: random.Random) -> TreeAndValuePlayer:
     board_evaluators_wrapper = create_node_evaluator(arg['board_evaluator'], syzygy)
     tree_builder_type: str = arg['tree_builder']['type']
 
-    opening_instructor: OpeningInstructor = OpeningInstructor(arg['opening_type'],
-                                                              random_generator) if 'opening_type' in arg else None
+    opening_instructor: OpeningInstructor \
+        = OpeningInstructor(arg['tree_builder']['opening_type'], random_generator) if 'opening_type' in arg['tree_builder'] else None
+
+    print('pppppppppppp', opening_instructor, arg)
 
     node_move_opening_selector: NodeSelector
     match tree_builder_type:
@@ -50,10 +54,18 @@ def create_tree_and_value_builders(arg: dict,
         case 'ZipfSequool2':
             node_move_opening_selector = ZipfSequool2(arg['tree_builder'])
         case other:
-            raise('tree builder: can not find ' + other)
+            raise ('tree builder: can not find ' + other)
 
-    tree_builder: TreeAndValuePlayer = TreeAndValuePlayer(arg=arg['tree_builder'],
-                                                          random_generator=random_generator,
-                                                          node_move_opening_selector=node_move_opening_selector,
-                                                          board_evaluators_wrapper=board_evaluators_wrapper)
-    return tree_builder
+    stopping_criterion: StoppingCriterion = create_stopping_criterion(arg=arg['tree_builder']['stopping_criterion'],
+                                                                      node_selector=node_move_opening_selector)
+
+    tree_builder: MoveAndValueTreeBuilder = create_move_and_value_tree_builder(args=arg['tree_builder'])
+
+    tree_move_selector: TreeAndValuePlayer = TreeAndValuePlayer(arg=arg['tree_builder'],
+                                                                random_generator=random_generator,
+                                                                node_move_opening_selector=node_move_opening_selector,
+                                                                stopping_criterion=stopping_criterion,
+                                                                board_evaluators_wrapper=board_evaluators_wrapper,
+                                                                tree_builder=tree_builder)
+
+    return tree_move_selector

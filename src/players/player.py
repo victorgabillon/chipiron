@@ -1,11 +1,17 @@
+from .move_selector import MoveSelector
+import chess
+
 class Player:
     #  difference between player and treebuilder includes the fact that now a player can be a mixture of multiple decision rules
 
-    def __init__(self, arg, syzygy, main_move_selector):
+    def __init__(self,
+                 arg: dict,
+                 syzygy,
+                 main_move_selector: MoveSelector):
         print(arg)
-        self.arg = arg
+        self.arg: dict = arg
         self.id = arg['name']
-        self.main_move_selector = main_move_selector
+        self.main_move_selector: MoveSelector = main_move_selector
 
         self.syzygy_player = None
         self.syzygy_play = arg['syzygy_play']
@@ -31,7 +37,7 @@ class Player:
 
         else:
             print('Playing with player (not Syzygy)')
-            best_move = self.main_move_selector.select_move(board)
+            best_move: chess.Move = self.main_move_selector.select_move(board)
 
         return best_move
 

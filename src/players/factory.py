@@ -15,13 +15,13 @@ def create_main_move_selector(arg: dict,
         case 'RandomPlayer':
             main_move_selector = players.RandomPlayer()
         case 'TreeAndValue':
-            main_move_selector = treevalue.create_tree_and_value_builders(arg=arg,
-                                                                          syzygy=syzygy,
-                                                                          random_generator=random_generator)
+            main_move_selector = treevalue.create_tree_move_selector(arg=arg,
+                                                                     syzygy=syzygy,
+                                                                     random_generator=random_generator)
         case 'Stockfish':
             main_move_selector = players.Stockfish(arg)
         case 'Human':
-            main_move_selector = NullObject()  # TODO is it necessary
+            main_move_selector = NullObject()  # TODO is it necessary?
         case other:
             raise ('player creator: can not find {}'.format(other))
     return main_move_selector
