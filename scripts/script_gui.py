@@ -93,6 +93,7 @@ def script_gui() -> tuple[str, dict]:
         case other:
             raise f'Not a good name: {other}'
 
+    print(f'Gui choices: the script name is {script_name} and the args are {gui_args}')
     return script_name, gui_args
 
 
