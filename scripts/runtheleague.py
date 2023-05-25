@@ -1,8 +1,8 @@
 from scripts.script import Script
-from src.league.league import League
+from chipiron.league.league import League
 import os
 import pickle
-from src.players.boardevaluators.table_base.syzygy import SyzygyTable
+from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 
 
 class RuntheLeagueScript(Script):

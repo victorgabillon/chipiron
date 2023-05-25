@@ -20,7 +20,7 @@ make init
 
 so you might want to git clone and create a virtual environment as follows:
 <details>
-<summary> click to see more </summary>
+<summary> Click here to see more detailed instructions</summary>
 <br>
 
 ```console
@@ -45,7 +45,7 @@ python3 main_chipiron.py
 ### Script: one match
 This allows to play a match between two players.
 ```console
-python3 main_chipiron.py --script_name one_match --config_file_name scripts/one_match/exp_options.yaml
+python3 main_chipiron.py --script_name one_match --config_file_name scripts/one_match/inputs/base/exp_options.yaml
 ```
 
 ### Script: learn nn from supervised datasets 

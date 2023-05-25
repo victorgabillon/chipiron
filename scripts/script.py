@@ -8,7 +8,7 @@ import io
 from pstats import SortKey
 import time
 from datetime import datetime
-from src.extra_tools.small_tools import mkdir
+from chipiron.extra_tools.small_tools import mkdir
 from scripts.parsers.parser import create_parser
 
 
