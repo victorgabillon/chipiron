@@ -1,25 +1,27 @@
 from chipiron.players.treevalue.node_selector.notations_and_statics import softmax
 from chipiron.players.boardevaluators.over_event import OverEvent
 from chipiron.players.treevalue.trees.factory import create_tree
-from chipiron.players.treevalue.trees import MoveAndValueTree
 from . import node_selector as node_sel
 from . import trees
 from .tree_manager import TreeManager
+from chipiron.players.treevalue.tree_manager.tree_expander import TreeExpansions
+from .stopping_criterion import StoppingCriterion
+
 
 def create_tree_exploration(
-        arg,
+        arg: dict,
         random_generator,
         board,
         board_evaluators_wrapper,
-        tree_manager,
-        stopping_criterion,
+        tree_manager: TreeManager,
+        stopping_criterion: StoppingCriterion,
         node_selector
 ):
-    move_and_value_tree: MoveAndValueTree = create_tree(
+    move_and_value_tree: trees.MoveAndValueTree = create_tree(
         board_evaluators_wrapper,
         board)
 
-    tree_exploration = TreeExploration(
+    tree_exploration: TreeExploration = TreeExploration(
         tree=move_and_value_tree,
         tree_manager=tree_manager,
         stopping_criterion=stopping_criterion,
@@ -30,16 +32,20 @@ def create_tree_exploration(
 
 
 class TreeExploration:
+    tree: trees.MoveAndValueTree
+    tree_manager: TreeManager
+    node_selector: node_sel.NodeSelector
+    args: dict
 
     def __init__(
             self,
-            tree: MoveAndValueTree,
-            tree_manager:  TreeManager,
-            stopping_criterion,
-            node_selector,
+            tree: trees.MoveAndValueTree,
+            tree_manager: TreeManager,
+            stopping_criterion: StoppingCriterion,
+            node_selector: node_sel.NodeSelector,
             random_generator,
-            args):
-        self.arg = args
+            args: dict):
+        self.args = args
         self.tree = tree
         self.tree_manager = tree_manager
         self.stopping_criterion = stopping_criterion
@@ -75,9 +81,9 @@ class TreeExploration:
         #     best_move = self.tree.root_node.moves_children.inverse[best_child]
 
         if True:  # normal behavior
-            selection_rule = self.arg['move_selection_rule']['type']
+            selection_rule = self.args['move_selection_rule']['type']
             if selection_rule == 'softmax':
-                temperature = self.arg['move_selection_rule']['temperature']
+                temperature = self.args['move_selection_rule']['temperature']
                 values = [tree.root_node.subjective_value_of(node) for node in
                           tree.root_node.moves_children.values()]
 
@@ -108,22 +114,25 @@ class TreeExploration:
 
         while self.stopping_criterion.should_we_continue(tree=self.tree):
             assert (not self.tree.root_node.is_over())
+            # print info
             self.print_info_during_move_computation()
 
-            opening_instructions_batch: node_sel.OpeningInstructionsBatch
-            opening_instructions_batch = self.node_selector.choose_node_and_move_to_open(self.tree)
+            # choose the moves and nodes to open
+            opening_instructions: node_sel.OpeningInstructions
+            opening_instructions = self.node_selector.choose_node_and_move_to_open(self.tree)
 
-            if self.arg['stopping_criterion']['name'] == 'tree_move_limit':
-                tree_move_limit = self.arg['stopping_criterion']['tree_move_limit']
-                opening_instructions_subset = opening_instructions_batch.pop_items(
-                    tree_move_limit - self.tree.move_count)
-            else:
-                opening_instructions_subset = opening_instructions_batch
+            # make sure we do not break the stopping criterion
+            opening_instructions_subset: node_sel.OpeningInstructions
+            opening_instructions_subset = self.stopping_criterion.respectful_opening_instructions(opening_instructions=opening_instructions,
+                                                                                                  tree=self.tree)
+            # open the nodes
+            tree_expansions: TreeExpansions = self.tree_manager.open(tree=self.tree,
+                                                                     opening_instructions=opening_instructions_subset)
+            # self.node_selector.communicate_expansions()
+            self.tree_manager.update_backward(tree_expansions=tree_expansions)
 
-            self.tree_manager.open_and_update(tree=self.tree,
-                                              opening_instructions_batch=opening_instructions_subset)
-
-        #  self.tree.save_raw_data_to_file()
+           # trees.save_raw_data_to_file(tree=self.tree,
+            #                            args=self.args)
         self.tree_manager.print_some_stats(tree=self.tree)
         for move, child in self.tree.root_node.moves_children.items():
             print(f'{move} {self.tree.root_node.moves_children[move].get_value_white()}'

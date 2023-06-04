@@ -15,12 +15,38 @@ class TreeExpansion:
     creation_child_node: bool
 
 
+class TreeExpansions:
+    """ the class logging some expansions of a tree"""
+    history: List[TreeExpansion]
+
+    def __init__(self):
+        self.history = []
+
+    def __iter__(self):
+        return iter(self.history)
+
+    def add(self, tree_expansion: TreeExpansion):
+        self.history.append(tree_expansion)
+
 class TreeExpansionHistory:
     """ the class logging all the expansions of a tree"""
     history: List[TreeExpansion]
 
     def __init__(self, root_node: node.TreeNode):
         self.history = [TreeExpansion(child_node=root_node, parent_node=None, creation_child_node=True)]
+
+
+def create_tree_move(tree: MoveAndValueTree,
+                     half_move: int,
+                     fast_rep: str,
+                     parent_node: node.TreeNode) -> TreeExpansion:
+    child_node: node.TreeNode = tree.descendants[half_move][fast_rep]  # add it to the list of descendants
+    child_node.add_parent(parent_node)
+
+    tree_expansion: TreeExpansion = TreeExpansion(child_node=child_node,
+                                                  parent_node=parent_node,
+                                                  creation_child_node=False)
+    return tree_expansion
 
 
 class TreeExpander:
@@ -40,9 +66,7 @@ class TreeExpander:
                          board: ch.chess.BoardChi,
                          board_modifications,
                          half_move: int,
-                         parent_node) -> node.TreeNode:
-        #                 tree_expansion_history: TreeExpansionHistory,
-
+                         parent_node) -> TreeExpansion:
         board_depth: int = half_move - tree.tree_root_half_move
         new_node: node.TreeNode = self.node_factory.create(board=board,
                                                            half_move=half_move,
@@ -52,13 +76,9 @@ class TreeExpander:
         tree.nodes_count += 1
         self.board_evaluator.compute_representation(new_node, parent_node, board_modifications)
         self.board_evaluator.add_evaluation_query(new_node)
-        return new_node
 
-    def create_tree_move(self,
-                         tree: MoveAndValueTree,
-                         half_move: int,
-                         fast_rep: str,
-                         parent_node: node.TreeNode) -> node.TreeNode:
-        tree_node = tree.descendants[half_move][fast_rep]  # add it to the list of descendants
-        tree_node.add_parent(parent_node)
-        return tree_node
+        tree_expansion: TreeExpansion = TreeExpansion(child_node=new_node,
+                                                      parent_node=parent_node,
+                                                      creation_child_node=True)
+
+        return tree_expansion

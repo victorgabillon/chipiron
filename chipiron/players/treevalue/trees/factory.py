@@ -8,6 +8,7 @@ def create_tree(
         board: ch.chess.BoardChi) -> MoveAndValueTree:
 
     root_node = node_factory.create_root_node(board, board.ply(), board_evaluators_wrapper)
+    print('oo',root_node, root_node.sort_children_not_over())
 
     move_and_value_tree: MoveAndValueTree = MoveAndValueTree(root_node=root_node)
 

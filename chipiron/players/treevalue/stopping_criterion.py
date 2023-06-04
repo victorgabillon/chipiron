@@ -2,7 +2,7 @@
 stopping criterion
 """
 
-from .node_selector import NodeSelector
+from . import node_selector as node_sel
 from .trees import MoveAndValueTree
 
 
@@ -10,8 +10,7 @@ class StoppingCriterion:
     """
     The general stopping criterion
     """
-    node_selector: NodeSelector
-
+    node_selector: node_sel.NodeSelector
 
     def should_we_continue(self, tree: MoveAndValueTree) -> bool:
         """
@@ -23,6 +22,17 @@ class StoppingCriterion:
         if tree.root_node.is_over():
             return False
         return True
+
+    def respectful_opening_instructions(self,
+                                        opening_instructions: node_sel.OpeningInstructions,
+                                        tree: MoveAndValueTree
+                                        ) -> node_sel.OpeningInstructions:
+        """
+        Ensures the opening request do not exceed the stopping criterion
+
+
+        """
+        return opening_instructions
 
 
 class TreeMoveLimit(StoppingCriterion):
@@ -49,6 +59,19 @@ class TreeMoveLimit(StoppingCriterion):
         return f'========= tree move counting: {tree.move_count} out of {self.tree_move_limit}' \
                f' |  {tree.move_count / self.tree_move_limit:.0%}'
 
+    def respectful_opening_instructions(self,
+                                        opening_instructions: node_sel.OpeningInstructions,
+                                        tree: MoveAndValueTree
+                                        ) -> node_sel.OpeningInstructions:
+        """
+        Ensures the opening request do not exceed the stopping criterion
+
+
+        """
+        opening_instructions_subset = opening_instructions.pop_items(
+            self.tree_move_limit - tree.move_count)
+        return opening_instructions_subset
+
 
 class DepthLimit(StoppingCriterion):
     """
@@ -56,10 +79,10 @@ class DepthLimit(StoppingCriterion):
     """
 
     depth_limit: int
-    node_selector: NodeSelector
+    node_selector: node_sel.NodeSelector
 
     def __init__(self, depth_limit: int,
-                 node_selector: NodeSelector):
+                 node_selector: node_sel.NodeSelector):
         self.depth_limit = depth_limit
         self.node_selector = node_selector
 
@@ -69,19 +92,18 @@ class DepthLimit(StoppingCriterion):
             return continue_base
         return self.node_selector.current_depth_to_expand < self.depth_limit
 
-    def get_string_of_progress(self):
+    def get_string_of_progress(self, tree: MoveAndValueTree):
         """
         compute the string that display the progress in the terminal
         Returns:
             a string that display the progress in the terminal
         """
-        return '========= tree move counting: ' + str(self.tree.move_count) + ' | Depth: ' + str(
+        return '========= tree move counting: ' + str(tree.move_count) + ' | Depth: ' + str(
             self.node_selector.current_depth_to_expand) + ' out of ' + str(self.depth_limit)
 
 
-
 def create_stopping_criterion(arg: dict,
-                              node_selector:NodeSelector) -> StoppingCriterion:
+                              node_selector: node_sel.NodeSelector) -> StoppingCriterion:
     """
     creating the stopping criterion
     Args:

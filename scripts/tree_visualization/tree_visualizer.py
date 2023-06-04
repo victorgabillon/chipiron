@@ -2,6 +2,7 @@ from chipiron.players.treevalue.trees.move_and_value_tree import MoveAndValueTre
 import pickle
 from scripts.script import Script
 import sys
+from chipiron.players.treevalue.trees.tree_visualization import display_special
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -42,7 +43,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         #         self.scale(factor, factor)
         #     self._zoom = 0
 
-    def setPhoto(self, pixmap=None):
+    def set_photo(self, pixmap=None):
         self._zoom = 0
         if pixmap and not pixmap.isNull():
             self._empty = False
@@ -108,7 +109,7 @@ class Window(QtWidgets.QWidget):
         # 'Load image' button
         self.btnLoad = QtWidgets.QToolButton(self)
         self.btnLoad.setText('Load image')
-        self.btnLoad.clicked.connect(self.loadImage)
+        self.btnLoad.clicked.connect(self.load_image)
         # Button to change from drag/pan to getting pixel info
         self.btnPixInfo = QtWidgets.QToolButton(self)
         self.btnPixInfo.setText('Enter pixel info mode')
@@ -126,27 +127,30 @@ class Window(QtWidgets.QWidget):
         HBlayout.addWidget(self.editPixInfo)
         VBlayout.addLayout(HBlayout)
 
-        self.tree = MoveAndValueTree( None, None)
-        pic = pickle.load(open("chipiron/runs/treedisplays/TreeData_3black-#.td", "rb"))
+        pic = pickle.load(open("chipiron/debugTreeData_1white-#.td", "rb"))
+
+        self.tree : MoveAndValueTree = MoveAndValueTree(root_node=pic[1])
         self.tree.descendants = pic[0]
-        self.tree.root_node = pic[1]
+
 
         self.current_node = self.tree.root_node
-        self.buildSubtree()
-        self.displaySubtree()
-        self.loadImage()
+        self.build_subtree()
+        self.display_subtree()
+        self.load_image()
 
-    def buildSubtree(self):
+    def build_subtree(self):
         self.index = {}
         for ind, move in enumerate(self.current_node.moves_children):
             self.index[move] = chr(33 + ind)
 
-    def displaySubtree(self):
-        dot = self.tree.display_special(self.current_node, 'jpg', self.index)
+    def display_subtree(self):
+        dot = display_special(node=self.current_node,
+                              format='jpg',
+                              index=self.index)
         dot.render('chipiron/runs/treedisplays/TreeVisualtemp')
 
-    def loadImage(self):
-        self.viewer.setPhoto(QtGui.QPixmap('chipiron/runs/treedisplays/TreeVisualtemp.jpg'))
+    def load_image(self):
+        self.viewer.set_photo(QtGui.QPixmap('chipiron/runs/treedisplays/TreeVisualtemp.jpg'))
 
     def pixInfo(self):
         self.viewer.toggleDragMode()
@@ -174,9 +178,9 @@ class Window(QtWidgets.QWidget):
         father_node = qq[0]  # by default!
         if father_node is not None:
             self.current_node = father_node
-            self.buildSubtree()
-            self.displaySubtree()
-            self.loadImage()
+            self.build_subtree()
+            self.display_subtree()
+            self.load_image()
 
     def move_to_son(self, key):
         for move, ind in self.index.items():
@@ -185,12 +189,14 @@ class Window(QtWidgets.QWidget):
                 move_to_move = move
 
         self.current_node = self.current_node.moves_children[move_to_move]
-        self.buildSubtree()
-        self.displaySubtree()
-        self.loadImage()
+        self.build_subtree()
+        self.display_subtree()
+        self.load_image()
 
 
 class VisualizeTreeScript(Script):
+
+    base_experiment_output_folder = Script.base_experiment_output_folder + 'tree_visualization/outputs/'
 
     def __init__(self):
         super().__init__()
@@ -200,5 +206,4 @@ class VisualizeTreeScript(Script):
         window = Window()
         window.setGeometry(0, 0, 1800, 1600)
         window.show()
-        print('34e3')
         sys.exit(app.exec_())
