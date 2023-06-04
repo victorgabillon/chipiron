@@ -1,7 +1,7 @@
 from chipiron.players.treevalue.nodes.tree_node_with_values import TreeNodeWithValue
 from chipiron.players.treevalue.nodes.tree_node_with_descendants import NodeWithDescendants
 from .. import trees
-from chipiron.players.treevalue.node_selector.opening_instructions import OpeningInstructionsBatch, OpeningInstructor
+from chipiron.players.treevalue.node_selector.opening_instructions import OpeningInstructions, OpeningInstructor
 
 
 class UniformTree:  # todo probably this is overkill as the tree s nothing special or does it?
@@ -29,12 +29,12 @@ class Uniform:
         self.opening_instructor = opening_instructor
         self.current_depth_to_expand = 0
 
-    def choose_node_and_move_to_open(self, tree: trees.MoveAndValueTree) -> OpeningInstructionsBatch:
+    def choose_node_and_move_to_open(self, tree: trees.MoveAndValueTree) -> OpeningInstructions:
 
         if tree.nodes_count <= 1:
             self.current_depth_to_expand = 0
 
-        opening_instructions_batch = OpeningInstructionsBatch()
+        opening_instructions_batch = OpeningInstructions()
 
         # generate the nodes to expand
         current_half_move_to_expand = tree.tree_root_half_move + self.current_depth_to_expand

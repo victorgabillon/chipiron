@@ -50,23 +50,31 @@ def script_gui() -> tuple[str, dict]:
     strength_menu = tk.OptionMenu(root, strength_value, *options_list)
     strength_menu.grid(column=1, row=2)
 
-    # plat button
-    play_against_chipiron_button = tk.Button(
+    # play button
+    play_against_chipiron_button: tk.Button = tk.Button(
         root,
         text='!Play!',
         command=lambda: [play_against_chipiron(root, strength_value), root.destroy()]
     )
 
-    # exit button
-    watch_a_game_button = tk.Button(
+    # watch button
+    watch_a_game_button: tk.Button = tk.Button(
         root,
         text='Watch a game',
         command=lambda: [watch_a_game(root), root.destroy()]
     )
 
+    # visualize button
+    visualize_a_tree_button: tk.Button = tk.Button(
+        root,
+        text='Visualize a tree',
+        command=lambda: [visualize_a_tree(root), root.destroy()]
+    )
+
     play_against_chipiron_button.grid(row=2, column=3)
     watch_a_game_button.grid(row=4, column=0)
-    exit_button.grid(row=6, column=0)
+    visualize_a_tree_button.grid(row=6, column=0)
+    exit_button.grid(row=8, column=0)
 
     root.mainloop()
     gui_args: dict
@@ -90,6 +98,10 @@ def script_gui() -> tuple[str, dict]:
                         'file_name_player_two': 'RecurZipfBase4.yaml',
                         'file_name_match_setting': 'setting_duda.yaml'}
             script_name = 'one_match'
+        case 'tree_visualization':
+            gui_args = {'config_file_name': 'scripts/tree_visualization/exp_options.yaml',
+                        }
+            script_name = 'tree_visualization'
         case other:
             raise f'Not a good name: {other}'
 
@@ -103,3 +115,6 @@ def play_against_chipiron(root, strength_str):
 
 def watch_a_game(root):
     root.output = {'type': 'watch_a_game'}
+
+def visualize_a_tree(root):
+    root.output = {'type': 'tree_visualization'}

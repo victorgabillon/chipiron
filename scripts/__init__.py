@@ -1,6 +1,6 @@
 from scripts.one_match.one_match import OneMatchScript
 from scripts.replay_game import ReplayGameScript
-from scripts.tree_visualizer import VisualizeTreeScript
+from scripts.tree_visualization.tree_visualizer import VisualizeTreeScript
 from scripts.learn_nn_supervised.learn_nn_from_supervised_datasets import LearnNNScript
 from scripts.record_states import RecordStates
 from scripts.record_states_eval_stockfish_1 import RecordStateEvalStockfish1
@@ -15,7 +15,7 @@ def get_script_from_name(script_name: str, gui_args: object) -> Script:
     match script_name:
         case  'one_match':
             script_object = OneMatchScript(gui_args)
-        case 'visualize_tree':
+        case 'tree_visualization':
             script_object = VisualizeTreeScript()
         case 'learn_nn':
             script_object = LearnNNScript()
@@ -28,5 +28,5 @@ def get_script_from_name(script_name: str, gui_args: object) -> Script:
         case 'run_the_league':
             script_object = RuntheLeagueScript()
         case other:
-            raise Exception(' cannot find ', other)
+            raise Exception(' Cannot find ', other)
     return script_object

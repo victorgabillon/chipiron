@@ -2,7 +2,7 @@ from chipiron.players.treevalue.nodes.tree_node import TreeNode
 import chess
 
 
-class OpeningInstructionsBatch:
+class OpeningInstructions:
 
     def __init__(self, dictionary={}):
         # here i use a dictionary because they are insertion ordered until there is an ordered set in python
@@ -38,7 +38,7 @@ class OpeningInstructionsBatch:
 
     def pop_items(self, how_many: int):
         how_many = min(how_many, len(self.batch))
-        popped = OpeningInstructionsBatch()  # todo is there a faster way to copy?
+        popped = OpeningInstructions()  # todo is there a faster way to copy?
         for pop in range(how_many):
             key, value = self.batch.popitem()
             popped[key] = value
@@ -59,7 +59,7 @@ class OpeningInstructionsBatch:
         return len(self.batch)
 
 
-class OpeningInstructions:
+class OpeningInstruction:
     def __init__(self,
                  node_to_open,
                  move_to_play):
@@ -67,7 +67,7 @@ class OpeningInstructions:
         self.move_to_play = move_to_play
 
     def print_info(self):
-        print('OpeningInstructions: node_to_open', self.node_to_open.id, 'a path from root to node_to_open is ',
+        print('OpeningInstruction: node_to_open', self.node_to_open.id, 'a path from root to node_to_open is ',
               self.node_to_open.a_move_sequence_from_root(), 'self.move_to_play ', self.move_to_play)
 
 
@@ -81,7 +81,7 @@ class OpeningInstructor:
         assert (not node_to_open.all_legal_moves_generated)
         if self.opening_type == 'all_children':
             node_to_open.all_legal_moves_generated = True
-            opening_instructions_batch = OpeningInstructionsBatch()
+            opening_instructions_batch = OpeningInstructions()
             moves_to_play = list(node_to_open.board.legal_moves)
 
             # this shuffling add randomness to the playing style
@@ -91,8 +91,8 @@ class OpeningInstructor:
                 # at the moment it looks redundant keys are almost the same as values but its clean
                 # the keys are here for fast and redundant proof insertion
                 # and the values are here for clean data processing
-                opening_instructions_batch[(node_to_open, move_to_play)] = OpeningInstructions(node_to_open,
-                                                                                               move_to_play)
+                opening_instructions_batch[(node_to_open, move_to_play)] = OpeningInstruction(node_to_open,
+                                                                                              move_to_play)
                 node_to_open.non_opened_legal_moves.add(move_to_play)
             return opening_instructions_batch
         else:

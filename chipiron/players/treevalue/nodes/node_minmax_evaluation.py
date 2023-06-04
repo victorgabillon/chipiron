@@ -13,9 +13,6 @@ from chipiron.extra_tools.my_value_sorted_dict import MyValueSortedDict
 
 class NodeMinmaxEvaluation:
 
-
-
-
     def __init__(self, board, half_move, id_number, parent_node):
         super().__init__(board, half_move, id_number, parent_node)
 
@@ -315,8 +312,8 @@ class NodeMinmaxEvaluation:
         value_mm = "{:.3f}".format(self.value_white_minmax) if self.value_white_minmax is not None else 'None'
         value_eval = "{:.3f}".format(self.value_white_evaluator) if self.value_white_evaluator is not None else 'None'
         return super().dot_description() + '\n wh_val_mm: ' + value_mm + '\n wh_val_eval: ' \
-               + value_eval + '\n moves*' + \
-               self.description_best_move_sequence() + '\nover: ' + self.over_event.get_over_tag()
+            + value_eval + '\n moves*' + \
+            self.description_best_move_sequence() + '\nover: ' + self.over_event.get_over_tag()
 
     def description_best_move_sequence(self):
         res = ''
@@ -498,21 +495,3 @@ class NodeMinmaxEvaluation:
         return new_instructions
 
         # todo i dont understand anymore when the instructions stops beeing propagated back
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
