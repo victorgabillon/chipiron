@@ -28,7 +28,7 @@ class NodeEvaluator:
         for node_not_over in not_over_nodes:
             evaluation = self.value_white(node_not_over)
             processed_evaluation = self.process_evalution_not_over(evaluation, node_not_over)
-            node_not_over.set_evaluation(processed_evaluation)
+            node_not_over.minmax_evaluation.set_evaluation(processed_evaluation)
 
     def process_evalution_not_over(self, evaluation, node):
         processed_evaluation = (1 / DISCOUNT) ** node.half_move * evaluation
