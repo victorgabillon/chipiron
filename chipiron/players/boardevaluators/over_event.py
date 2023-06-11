@@ -41,7 +41,7 @@ class OverEvent:
     def __bool__(self):
         assert (1 == 0)
 
-    def is_over(self):
+    def is_over(self) -> bool:
         return self.how_over == self.WIN or self.how_over == self.DRAW
 
     def is_win(self):

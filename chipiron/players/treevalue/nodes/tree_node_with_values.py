@@ -2,7 +2,7 @@ from random import choice
 from chipiron.players.treevalue.nodes.tree_node import TreeNode
 import chess
 from chipiron.players.boardevaluators.over_event import OverEvent
-from chipiron.players.treevalue.updates import UpdateInstructions, BaseUpdateInstructionsBlock
+from players.treevalue.updates.updates import UpdateInstructions, ValueUpdateInstructionsBlock
 from chipiron.players.treevalue.node_selector.notations_and_statics import nth_key
 import math
 from chipiron.extra_tools.my_value_sorted_dict import MyValueSortedDict
@@ -30,7 +30,8 @@ class TreeNodeWithValue(TreeNode):
         # subjective value means the values is from the point of view of player_to_move
         # careful, I have hard coded in the self.best_child() function the descending order for
         # fast access to best element, so please do not change!
-        self.iii()
+        # self.children_sorted_by_value_vsd = ValueSortedDict({})
+        self.children_sorted_by_value = MyValueSortedDict()
 
         # self.children_sorted_by_value = {}
 
@@ -44,10 +45,6 @@ class TreeNodeWithValue(TreeNode):
 
         # creating a base Over event that is set to None
         self.over_event = OverEvent()
-
-    def iii(self):
-        # self.children_sorted_by_value_vsd = ValueSortedDict({})
-        self.children_sorted_by_value = MyValueSortedDict()
 
     def get_value_white(self):
         """ returns the best estimation of the value white in this node."""
@@ -103,7 +100,7 @@ class TreeNodeWithValue(TreeNode):
         second_best_child = nth_key(self.children_sorted_by_value, 1)
         return second_best_child
 
-    def is_over(self):
+    def is_over(self) -> bool:
         return self.over_event.is_over()
 
     def is_win(self):
@@ -312,8 +309,8 @@ class TreeNodeWithValue(TreeNode):
         value_mm = "{:.3f}".format(self.value_white_minmax) if self.value_white_minmax is not None else 'None'
         value_eval = "{:.3f}".format(self.value_white_evaluator) if self.value_white_evaluator is not None else 'None'
         return super().dot_description() + '\n wh_val_mm: ' + value_mm + '\n wh_val_eval: ' \
-               + value_eval + '\n moves*' + \
-               self.description_best_move_sequence() + '\nover: ' + self.over_event.get_over_tag()
+            + value_eval + '\n moves*' + \
+            self.description_best_move_sequence() + '\nover: ' + self.over_event.get_over_tag()
 
     def description_best_move_sequence(self):
         res = ''
@@ -456,10 +453,10 @@ class TreeNodeWithValue(TreeNode):
 
     def create_update_instructions_after_node_birth(self):
         update_instructions = UpdateInstructions()
-        base_update_instructions_block = BaseUpdateInstructionsBlock(node_sending_update=self,
-                                                                     is_node_newly_over=self.over_event.is_over(),
-                                                                     new_value_for_node=True,
-                                                                     new_best_move_for_node=False)
+        base_update_instructions_block = ValueUpdateInstructionsBlock(node_sending_update=self,
+                                                                      is_node_newly_over=self.over_event.is_over(),
+                                                                      new_value_for_node=True,
+                                                                      new_best_move_for_node=False)
         update_instructions.all_instructions_blocks['base'] = base_update_instructions_block
         return update_instructions
 
@@ -474,7 +471,6 @@ class TreeNodeWithValue(TreeNode):
         # UPDATE BEST MOVE
         has_best_node_seq_changed_2 = self.update_best_move_sequence(
             updates_instructions_block['children_with_updated_best_move'])
-        # print('^&',has_best_node_seq_changed_2)
         has_best_node_seq_changed = has_best_node_seq_changed_1 or has_best_node_seq_changed_2
 
         # UPDATE OVER
@@ -483,10 +479,10 @@ class TreeNodeWithValue(TreeNode):
 
         # create the new instructions for the parents
         new_instructions = UpdateInstructions()
-        base_update_instructions_block = BaseUpdateInstructionsBlock(node_sending_update=self,
-                                                                     is_node_newly_over=is_newly_over,
-                                                                     new_value_for_node=has_value_changed,
-                                                                     new_best_move_for_node=has_best_node_seq_changed)
+        base_update_instructions_block = ValueUpdateInstructionsBlock(node_sending_update=self,
+                                                                      is_node_newly_over=is_newly_over,
+                                                                      new_value_for_node=has_value_changed,
+                                                                      new_best_move_for_node=has_best_node_seq_changed)
 
         new_instructions.all_instructions_blocks['base'] = base_update_instructions_block
 
@@ -495,21 +491,3 @@ class TreeNodeWithValue(TreeNode):
         return new_instructions
 
         # todo i dont understand anymore when the instructions stops beeing propagated back
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

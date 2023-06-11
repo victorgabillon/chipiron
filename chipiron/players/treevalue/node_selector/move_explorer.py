@@ -32,8 +32,7 @@ class ZipfMoveExplorer(MoveExplorer):
         self.random_generator = random_generator
 
     def sample_child_to_explore(self, tree_node_to_sample_from):
-        sorted_not_over_children = tree_node_to_sample_from.sort_children_not_over()
-        print('rtrt',sorted_not_over_children,tree_node_to_sample_from)
+        sorted_not_over_children = tree_node_to_sample_from.minmax_evaluation.sort_children_not_over()
         return zipf_picks_random(ordered_list_elements=sorted_not_over_children, random_generator=self.random_generator)
 
 

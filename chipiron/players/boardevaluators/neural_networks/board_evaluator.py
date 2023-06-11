@@ -62,7 +62,7 @@ class NNNodeEvaluator(NodeEvaluator):
     def evaluate_all_not_over(self, not_over_nodes):
         list_of_tensors = [0] * len(not_over_nodes)
         for index, node_not_over in enumerate(not_over_nodes):
-            list_of_tensors[index] = self.net.get_nn_input(node_not_over)
+            list_of_tensors[index] = self.net.get_nn_input(node_not_over.tree_node)
         input_layers = torch.stack(list_of_tensors, dim=0)
         self.my_scripted_model.eval()
         torch.no_grad()
@@ -70,7 +70,7 @@ class NNNodeEvaluator(NodeEvaluator):
         output_layer = self.my_scripted_model(input_layers)
         for index, node_not_over in enumerate(not_over_nodes):
             predicted_value_from_mover_view_point = output_layer[index].item()
-            value_white_eval = self.convert_value_for_mover_viewpoint_to_value_white(node_not_over,
+            value_white_eval = self.convert_value_for_mover_viewpoint_to_value_white(node_not_over.tree_node,
                                                                                      predicted_value_from_mover_view_point)
             processed_evaluation = self.process_evalution_not_over(value_white_eval, node_not_over)
-            node_not_over.set_evaluation(processed_evaluation)
+            node_not_over.minmax_evaluation.set_evaluation(processed_evaluation)

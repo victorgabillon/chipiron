@@ -15,7 +15,7 @@ def create_main_move_selector(arg: dict,
         case 'RandomPlayer':
             main_move_selector = players.RandomPlayer()
         case 'TreeAndValue':
-            main_move_selector = players.treevalue.create_tree_and_value_builders(arg=arg,
+            main_move_selector = players.treevalue.create_tree_and_value_builders(args=arg,
                                                                                   syzygy=syzygy,
                                                                                   random_generator=random_generator)
         case 'Stockfish':

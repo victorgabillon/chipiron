@@ -45,7 +45,6 @@ class NodeWithDescendants(TreeNodeWithValue):
         self.test_visit()
 
     def test_visit(self):
-        #   print('testvisist')
         self.descendants.test()
         self.descendants.test_2(self)
 
@@ -64,9 +63,7 @@ class NodeWithDescendants(TreeNodeWithValue):
 
         updates_instructions.print_info()
 
-        print('frgt',updates_instructions.all_instructions_blocks)
         if 'descendants' in updates_instructions:
-            print('ppppppppppppppppppppppppppppppppppppr')
             # get the base block
             updates_instructions_block = updates_instructions['descendants']  # todo create a variable for the tag
 

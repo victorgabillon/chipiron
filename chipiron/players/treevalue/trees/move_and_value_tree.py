@@ -1,7 +1,5 @@
-import chipiron.chessenvironment.board as board_mod
-from chipiron.players.treevalue.nodes.tree_node import TreeNode
-from ..nodes.tree_node_with_descendants import NodeWithDescendants
-
+import chipiron.players.treevalue.nodes as nodes
+from .descendants import RangedDescendants
 
 # todo should we use a discount? and discounted per round reward?
 # todo maybe convenient to seperate this object into openner updater and dsiplayer
@@ -20,10 +18,13 @@ class MoveAndValueTree:
     It is  pointer to the root node with some counters and keeping track of descendants.
     """
 
-    _root_node: NodeWithDescendants
+    _root_node: nodes.AlgorithmNode
+    descendants: RangedDescendants
+    tree_root_half_move :int
 
     def __init__(self,
-                 root_node: NodeWithDescendants) -> None:
+                 root_node: nodes.AlgorithmNode,
+                 descendants: RangedDescendants) -> None:
         """
 
         Args:
@@ -41,11 +42,14 @@ class MoveAndValueTree:
         self.move_count = 0
 
         self._root_node = root_node
-        self.descendants = root_node.descendants
+        self.descendants = descendants
 
     @property
     def root_node(self):
         return self._root_node
 
-    def node_depth(self, node: TreeNode) -> int:
+    def node_depth(self, node: nodes.AlgorithmNode) -> int:
         return node.half_move - self.tree_root_half_move
+
+    def is_over(self)->bool:
+        return self._root_node.is_over()

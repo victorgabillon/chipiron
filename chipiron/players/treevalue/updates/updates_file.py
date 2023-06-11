@@ -103,7 +103,7 @@ class UpdateInstructions:
         return True
 
 
-class BaseUpdateInstructionsBlock:
+class ValueUpdateInstructionsBlock:
     def __init__(self,
                  node_sending_update=None,  # node(or None)
                  is_node_newly_over=None,  # boolean
@@ -113,8 +113,7 @@ class BaseUpdateInstructionsBlock:
         self.instruction_dict = {}
         self['children_with_updated_over'] = {node_sending_update} if is_node_newly_over else set()
         self['children_with_updated_value'] = {node_sending_update} if new_value_for_node else set()
-        self['children_with_updated_best_move'] = self.children_with_updated_best_move = {
-            node_sending_update} if new_best_move_for_node else set()
+        self['children_with_updated_best_move'] = {node_sending_update} if new_best_move_for_node else set()
 
     def __setitem__(self, key, value):
         self.instruction_dict[key] = value
