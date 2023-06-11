@@ -13,8 +13,8 @@ def create(arg: dict,
 
     match tree_builder_type:
         case 'Uniform':
-            node_move_opening_selector = Uniform(arg,
-                                                 opening_instructor=opening_instructor)
+            node_move_opening_selector = Uniform(
+                opening_instructor=opening_instructor)
         case 'RecurZipfBase':
             node_move_opening_selector = RecurZipfBase(arg=arg,
                                                        random_generator=random_generator,

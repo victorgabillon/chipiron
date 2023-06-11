@@ -67,12 +67,12 @@ class NodeMinmaxEvaluation:
 
     def subjective_value(self):
         """ return the self.value_white from the point of view of the self.player_to_move"""
-        subjective_value = self.get_value_white() if self.player_to_move == chess.WHITE else -self.get_value_white()
+        subjective_value = self.get_value_white() if self.tree_node.player_to_move == chess.WHITE else -self.get_value_white()
         return subjective_value
 
     def subjective_value_of(self, another_node):
         # return the value from the point of view of the self.player_to_move of the value of another_node
-        subjective_value = another_node.get_value_white() if self.player_to_move == chess.WHITE else -another_node.get_value_white()
+        subjective_value = another_node.minmax_evaluation.get_value_white() if self.tree_node.player_to_move == chess.WHITE else -another_node.get_value_white()
         return subjective_value
 
     def best_child(self):
@@ -161,7 +161,6 @@ class NodeMinmaxEvaluation:
             self.children_sorted_by_value[child] = (
                 subjective_value_of_child, len(child.minmax_evaluation.best_node_sequence), child.tree_node.id)
         #  self.children_sorted_by_value_vsd[child] = (subjective_value_of_child, len(child.best_node_sequence), child.id)
-        print()
 
     def are_equal_values(self, value_1, value_2):
         return value_1 == value_2

@@ -18,8 +18,4 @@ class NodeSelector(Protocol):
                                      ) -> OpeningInstructions:
         ...
 
-    def Communi(self,
-                                     tree: MoveAndValueTree,
-                                     node_selector_state: NodeSelectorState
-                                     ) -> OpeningInstructions:
-        ...
+

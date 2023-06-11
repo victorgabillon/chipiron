@@ -41,7 +41,6 @@ class RecurZipfBase:
             wandering_node = self.move_explorer.sample_child_to_explore(tree_node_to_sample_from=wandering_node)
 
         all_moves_to_open = self.opening_instructor.all_moves_to_open(node_to_open=wandering_node.tree_node)
-
         opening_instructions: OpeningInstructions = create_instructions_to_open_all_moves(moves_to_play=all_moves_to_open,
                                                                                           node_to_open=wandering_node)
 

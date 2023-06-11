@@ -18,6 +18,7 @@ def create_tree(
     board_evaluator.evaluate_all_queried_nodes()
 
     descendants: RangedDescendants = RangedDescendants()
+    descendants.add_descendant(root_node)
 
     move_and_value_tree: MoveAndValueTree = MoveAndValueTree(root_node=root_node,
                                                              descendants=descendants)
