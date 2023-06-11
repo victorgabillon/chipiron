@@ -1,21 +1,19 @@
-from chipiron.players.treevalue.nodes.tree_node_with_values import TreeNodeWithValue
-from chipiron.players.treevalue.nodes.tree_node_with_descendants import NodeWithDescendants
 from .. import trees
 from chipiron.players.treevalue.node_selector.opening_instructions import OpeningInstructions, OpeningInstructor
 
 
-class UniformTree:  # todo probably this is overkill as the tree s nothing special or does it?
-    def create_tree_node(self, board, half_move, count, father_node):
-        board_depth = half_move - self.tree_root_half_move
-        if board_depth == 0:
-            return NodeWithDescendants(board, half_move, count, father_node)
-        else:
-            return TreeNodeWithValue(board, half_move, count, father_node)
+#class UniformTree:  # todo probably this is overkill as the tree s nothing special or does it?
+#    def create_tree_node(self, board, half_move, count, father_node):
+#        board_depth = half_move - self.tree_root_half_move
+#        if board_depth == 0:
+#            return NodeWithDescendants(board, half_move, count, father_node)
+ #       else:
+ #           return TreeNodeWithValue(board, half_move, count, father_node)
 
-    def update_after_node_creation(self, node, parent_node):
-        node_depth = node.half_move - self.tree_root_half_move
-        if node_depth >= 1:
-            self.root_node.descendants.add_descendant(node)
+#    def update_after_node_creation(self, node, parent_node):
+ #       node_depth = node.half_move - self.tree_root_half_move
+  #      if node_depth >= 1:
+   #         self.root_node.descendants.add_descendant(node)
 
 
 class Uniform:

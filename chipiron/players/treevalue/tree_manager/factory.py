@@ -1,22 +1,20 @@
-from chipiron.players.treevalue.tree_manager.tree_manager import TreeManager
-from chipiron.players.treevalue.tree_manager.tree_expander import TreeExpander
+from .algorithm_node_tree_manager import AlgorithmNodeTreeManager, TreeManager
 from chipiron.players.treevalue import node_factory
+import chipiron.players.treevalue.updates as upda
 
 
-def create_tree_manager(args: dict,
-                        board_evaluators_wrapper) -> TreeManager:
-    node_factory_name: str = args['node_factory_name'] if 'node_factory_name' in args else 'Base'
+def create_algorithm_node_tree_manager(
+        board_evaluators_wrapper,
+        algorithm_node_factory: node_factory.AlgorithmNodeFactory) -> AlgorithmNodeTreeManager:
+    tree_manager: TreeManager = TreeManager(
+        node_factory=algorithm_node_factory)
 
-    tree_node_factory: node_factory.TreeNodeFactory
-    match node_factory_name:
-        case 'Base':
-            tree_node_factory = node_factory.Base()
-        case other:
-            raise f'please implement your node factory!! no {other}'
+    algorithm_node_updater: upda.AlgorithmNodeUpdater = upda.create_algorithm_node_updater()
 
-    tree_expander: TreeExpander = TreeExpander(node_factory=tree_node_factory,
-                                               board_evaluator=board_evaluators_wrapper)
 
-    tree_manager: TreeManager = TreeManager(tree_expander=tree_expander)
+    algorithm_node_tree_manager: AlgorithmNodeTreeManager
+    algorithm_node_tree_manager = AlgorithmNodeTreeManager(board_evaluators_wrapper=board_evaluators_wrapper,
+                                                           tree_manager=tree_manager,
+                                                           algorithm_node_updater=algorithm_node_updater)
 
-    return tree_manager
+    return algorithm_node_tree_manager

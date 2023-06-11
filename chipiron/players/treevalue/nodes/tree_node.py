@@ -1,7 +1,6 @@
 from __future__ import annotations  # To be removed in python 3.10 (helping with recursive type annocatation)
 from bidict import bidict
 
-
 # todo check if the transfer to half move is done from depth
 
 class TreeNode:
@@ -37,7 +36,7 @@ class TreeNode:
         self.all_legal_moves_generated = False
         self.non_opened_legal_moves = set()
 
-    def add_parent(self, new_parent_node):
+    def add_parent(self, new_parent_node ):
         assert (new_parent_node not in self.parent_nodes)  # there cannot be two ways to link the same child-parent
         self.parent_nodes.append(new_parent_node)
 

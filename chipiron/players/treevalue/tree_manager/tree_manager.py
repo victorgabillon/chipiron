@@ -1,13 +1,10 @@
 import chess
 import chipiron.chessenvironment.board as board_mod
-from chipiron.players.treevalue.nodes.tree_node_with_values import TreeNodeWithValue
-from chipiron.players.treevalue.updates import UpdateInstructionsBatch
-from chipiron.players.treevalue.tree_manager.tree_expander import TreeExpander, TreeExpansion, create_tree_move, \
-    TreeExpansions
-import chipiron.players.treevalue.nodes.tree_node as node
+from chipiron.players.treevalue.tree_manager.tree_expander import TreeExpansion,     TreeExpansions
+import chipiron.players.treevalue.nodes as node
 import chipiron.players.treevalue.trees as trees
 import chipiron.players.treevalue.node_selector as node_sel
-
+from chipiron.players.treevalue import node_factory as node_fact
 
 # todo should we use a discount? and discounted per round reward?
 # todo maybe convenient to seperate this object into openner updater and dsiplayer
@@ -20,44 +17,19 @@ class TreeManager:
 
     This class that and manages a tree by opening new nodes and updating the values and indexes on the nodes
     """
-    tree_expander: TreeExpander
+    node_factory: node_fact.AlgorithmNodeFactory
 
     def __init__(self,
-                 tree_expander: TreeExpander
+                 node_factory: node_fact.AlgorithmNodeFactory
+
                  ) -> None:
         """
         """
-        self.tree_expander = tree_expander
-
-    def find_or_create_node(self,
-                            board: board_mod.BoardChi,
-                            tree: trees.MoveAndValueTree,
-                            modifications: board_mod.BoardModification,
-                            half_move: int,
-                            parent_node: node.TreeNode) -> TreeExpansion:
-
-        fast_rep: str = board.fast_representation()
-        tree_expansion: TreeExpansion
-
-        if tree.root_node is None \
-                or tree.root_node.descendants.is_new_generation(half_move) \
-                or fast_rep not in tree.root_node.descendants.descendants_at_half_move[half_move]:
-            tree_expansion = self.tree_expander.create_tree_node(tree=tree,
-                                                                 board=board,
-                                                                 board_modifications=modifications,
-                                                                 half_move=half_move,
-                                                                 parent_node=parent_node)
-            tree.root_node.descendants.add_descendant(tree_expansion.child_node)
-        else:  # the node already exists
-            tree_expansion = create_tree_move(tree=tree,
-                                              half_move=half_move,
-                                              fast_rep=fast_rep,
-                                              parent_node=parent_node)
-        return tree_expansion
+        self.node_factory = node_factory
 
     def open_node_move(self,
                        tree: trees.MoveAndValueTree,
-                       parent_node: TreeNodeWithValue,
+                       parent_node: node.TreeNode,
                        move: chess.Move) -> TreeExpansion:
         """
         Opening a Node that contains a board following a move.
@@ -70,7 +42,6 @@ class TreeManager:
 
         """
         assert (not parent_node.is_over())
-        assert (move not in parent_node.moves_children)
 
         # The parent board is copied, we only copy the stack (history of previous board) if the depth is smaller than 2
         # Having the stack information allows checking for draw by repetition.
@@ -83,29 +54,39 @@ class TreeManager:
         modifications: board_mod.BoardModification = board.play_move(move=move)
 
         # Creation of the child node. If the board already exited in another node, that node is returned as child_node.
-        tree_expansion: TreeExpansion = self.find_or_create_node(board=board,
-                                                                 tree=tree,
-                                                                 modifications=modifications,
-                                                                 half_move=parent_node.half_move + 1,
-                                                                 parent_node=parent_node)
+        half_move: int = parent_node.half_move + 1
+        fast_rep: str = board.fast_representation()
+
+        child_node: node.AlgorithmNode
+        need_creation_child_node: bool = tree.root_node is None \
+                                         or tree.descendants.is_new_generation(half_move) \
+                                         or fast_rep not in tree.descendants.descendants_at_half_move[half_move]
+        if need_creation_child_node:
+            board_depth: int = half_move - tree.tree_root_half_move
+            child_node: node.AlgorithmNode = self.node_factory.create(board=board,
+                                                                      half_move=half_move,
+                                                                      count=tree.nodes_count,
+                                                                      parent_node=parent_node,
+                                                                      board_depth=board_depth)
+            tree.nodes_count += 1
+            tree.descendants.add_descendant(child_node)  # add it to the list of descendants
+        else:  # the node already exists
+            child_node: node.AlgorithmNode = tree.descendants[half_move][fast_rep]
+            child_node.add_parent(parent_node)
+
+        tree_expansion: TreeExpansion = TreeExpansion(child_node=child_node,
+                                                      parent_node=parent_node,
+                                                      board_modifications=modifications,
+                                                      creation_child_node=need_creation_child_node)
 
         # add it to the list of opened move and out of the non-opened moves
         parent_node.moves_children[move] = tree_expansion.child_node
-        parent_node.non_opened_legal_moves.remove(move)
+        #   parent_node.tree_node.non_opened_legal_moves.remove(move)
         tree.move_count += 1  # counting moves
-        parent_node.children_not_over.append(
-            tree_expansion.child_node)  # default action checks for over event are performed later
+
 
         return tree_expansion
 
-    def open_and_update(self,
-                        tree: trees.MoveAndValueTree,
-                        opening_instructions_batch):  # set of nodes and moves to open
-        # first open
-        update_instructions_batch = self.batch_opening(tree=tree,
-                                                       opening_instructions_batch=opening_instructions_batch)
-        # then updates
-        self.update_backward(update_instructions_batch)
 
     def open(self,
              tree: trees.MoveAndValueTree,
@@ -114,7 +95,7 @@ class TreeManager:
         # place to store the tree expansion logs generated by the openings
         tree_expansions: TreeExpansions = TreeExpansions()
 
-        opening_instruction : node_sel.OpeningInstruction
+        opening_instruction: node_sel.OpeningInstruction
         for opening_instruction in opening_instructions.values():
             # open
             tree_expansion: TreeExpansion = self.open_node_move(tree=tree,
@@ -124,57 +105,8 @@ class TreeManager:
             # concatenate the tree expansions
             tree_expansions.add(tree_expansion=tree_expansion)
 
-        self.tree_expander.board_evaluator.evaluate_all_queried_nodes()
-
         return tree_expansions
 
-        #    def batch_opening(self, tree, opening_instructions_batch):#
-
-        # update_instructions_batch is key sorted dict, sorted by depth to ensure proper backprop from the back
-
-        # place to store the update instructions generated by the openings
-        #      update_instructions_batch = UpdateInstructionsBatch()
-
-        #       for opening_instructions in opening_instructions_batch.values():
-        # open
-        #           new_update_instructions_batch \
-        #          tree_expansion =     TreeExpansion= self.open_node_move(tree=tree,
-        parent_node = opening_instructions.node_to_open,
-
-    #   move = opening_instructions.move_to_play)
-
-    # concatenate the update instructions
-    #         update_instructions_batch.merge(new_update_instructions_batch)
-
-    #     self.tree_expander.board_evaluator.evaluate_all_queried_nodes()
-
-    #     return update_instructions_batch  # todo never new_nodes used no?
-
-    def update_backward(self, tree_expansions: TreeExpansions):
-
-        update_instructions_batch: UpdateInstructionsBatch = generate_update_instructions(
-            tree_expansions=tree_expansions)
-
-
-        all_extra_opening_instructions_batch = set()
-        while update_instructions_batch:
-            node_to_update, update_instructions = update_instructions_batch.popitem()
-            extra_update_instructions_batch = self.update_node(node_to_update, update_instructions)
-            update_instructions_batch.merge(extra_update_instructions_batch)
-        return all_extra_opening_instructions_batch
-
-    def update_node(self, node_to_update, update_instructions):
-
-        ##UPDATES
-        new_update_instructions = node_to_update.perform_updates(update_instructions)
-
-        update_instructions_batch = UpdateInstructionsBatch()
-        for parent_node in node_to_update.parent_nodes:
-            if parent_node is not None and not new_update_instructions.empty():  # todo is it ever empty?
-                assert (parent_node not in update_instructions_batch)
-                update_instructions_batch[parent_node] = new_update_instructions
-
-        return update_instructions_batch
 
     def print_some_stats(self,
                          tree):
@@ -210,19 +142,3 @@ class TreeManager:
                         tree):
         tree.root_node.print_best_line()
 
-
-def generate_update_instructions(tree_expansions: TreeExpansions) -> UpdateInstructionsBatch:
-    # TODO is the way of merging now overkill?
-
-    update_instructions_batch: UpdateInstructionsBatch = UpdateInstructionsBatch()
-
-    tree_expansion: TreeExpansion
-    for tree_expansion in tree_expansions:
-        update_instructions = tree_expansion.child_node.create_update_instructions_after_node_birth()
-        # update_instructions_batch is key sorted dict, sorted by depth to ensure proper backprop from the back
-        new_update_instructions_batch = UpdateInstructionsBatch({tree_expansion.parent_node: update_instructions})
-
-        # concatenate the update instructions
-        update_instructions_batch.merge(new_update_instructions_batch)
-
-    return update_instructions_batch

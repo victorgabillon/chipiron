@@ -19,7 +19,7 @@ class StoppingCriterion:
         Returns:
             boolean of should we continue
         """
-        if tree.root_node.is_over():
+        if tree.is_over():
             return False
         return True
 

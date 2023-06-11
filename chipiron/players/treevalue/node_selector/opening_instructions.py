@@ -1,4 +1,4 @@
-from chipiron.players.treevalue.nodes.tree_node import TreeNode
+import chipiron.players.treevalue.nodes.algorithm_node as nodes
 import chess
 
 
@@ -16,7 +16,7 @@ class OpeningInstructions:
         # key is supposed to be a tuple with (node_to_open,  move_to_play)
         assert (len(key) == 2)
         assert (isinstance(key, tuple))
-        assert (isinstance(key[0], TreeNode))
+        assert (isinstance(key[0], nodes.AlgorithmNode))
         # print(key, type(key[1]))
         assert (isinstance(key[1], chess.Move))
         self.batch[key] = value
@@ -71,29 +71,33 @@ class OpeningInstruction:
               self.node_to_open.a_move_sequence_from_root(), 'self.move_to_play ', self.move_to_play)
 
 
+def create_instructions_to_open_all_moves(moves_to_play, node_to_open):
+    opening_instructions_batch = OpeningInstructions()
+
+    for move_to_play in moves_to_play:
+        # at the moment it looks redundant keys are almost the same as values but its clean
+        # the keys are here for fast and redundant proof insertion
+        # and the values are here for clean data processing
+        opening_instructions_batch[(node_to_open, move_to_play)] = OpeningInstruction(node_to_open,
+                                                                                      move_to_play)
+      #  node_to_open.non_opened_legal_moves.add(move_to_play)
+    return opening_instructions_batch
+
 class OpeningInstructor:
 
     def __init__(self, opening_type, random_generator):
         self.opening_type = opening_type
         self.random_generator = random_generator
 
-    def instructions_to_open_all_moves(self, node_to_open):
-        assert (not node_to_open.all_legal_moves_generated)
+    def all_moves_to_open(self, node_to_open):
         if self.opening_type == 'all_children':
             node_to_open.all_legal_moves_generated = True
-            opening_instructions_batch = OpeningInstructions()
             moves_to_play = list(node_to_open.board.legal_moves)
 
             # this shuffling add randomness to the playing style
             self.random_generator.shuffle(moves_to_play)
 
-            for move_to_play in moves_to_play:
-                # at the moment it looks redundant keys are almost the same as values but its clean
-                # the keys are here for fast and redundant proof insertion
-                # and the values are here for clean data processing
-                opening_instructions_batch[(node_to_open, move_to_play)] = OpeningInstruction(node_to_open,
-                                                                                              move_to_play)
-                node_to_open.non_opened_legal_moves.add(move_to_play)
-            return opening_instructions_batch
         else:
             raise Exception('Hello-la')
+        return moves_to_play
+

@@ -1,6 +1,6 @@
+from __future__ import annotations  # To be removed in python 3.10 (helping with recursive type annocatation)
 from chipiron.players.treevalue.nodes.tree_node import TreeNode
-from chipiron.players.treevalue.nodes.node_minmax_evaluation import NodeMinmaxEvaluation
-from chipiron.players.treevalue.nodes.node_exploration_manager import NodeExplorationManager
+from .node_minmax_evaluation import NodeMinmaxEvaluation
 
 
 class AlgorithmNode:
@@ -11,28 +11,35 @@ class AlgorithmNode:
 
     def __init__(self,
                  tree_node: TreeNode,
-                 minmax_evaluation: object,
+                 minmax_evaluation: NodeMinmaxEvaluation,
                  exploration_manager: object) -> None:
         self.tree_node = tree_node
         self.minmax_evaluation = minmax_evaluation
         self.exploration_manager = exploration_manager
 
+    @property
+    def half_move(self):
+        return self.tree_node.half_move
 
-class AlgorithmNodeFactory:
-    """
+    @property
+    def fast_rep(self):
+        return self.tree_node.fast_rep
 
-    """
+    @property
+    def moves_children(self):
+        return self.tree_node.moves_children
 
-    def __init__(self,
-                 minmax_evaluation: object,
-                 exploration_manager: object) -> None:
-        self.minmax_evaluation = minmax_evaluation
-        self.exploration_manager = exploration_manager
+    @property
+    def parent_nodes(self):
+        return self.tree_node.parent_nodes
 
-    def create(self, tree_node: TreeNode) -> AlgorithmNode:
-        minmax_evaluation: object = NodeMinmaxEvaluation(tree_node)
-        exploration_manager: object = NodeExplorationManager(tree_node)
+    @property
+    def board(self):
+        return self.tree_node.board
 
-        return AlgorithmNode(tree_node=tree_node,
-                             minmax_evaluation=minmax_evaluation,
-                             exploration_manager=exploration_manager)
+    def is_over(self) -> bool:
+        return self.minmax_evaluation.is_over()
+
+    def add_parent(self, new_parent_node: AlgorithmNode):
+        self.tree_node.add_parent(new_parent_node=new_parent_node)
+

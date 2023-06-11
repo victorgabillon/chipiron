@@ -59,22 +59,22 @@ class NodeEvaluatorsWrapper:
     def check_obvious_over_events(self, node):
         """ updates the node.over object
          if the game is obviously over"""
-        game_over = node.board.is_game_over()
+        game_over = node.tree_node.board.is_game_over()
         if game_over:
             value_as_string = node.board.result()
             if value_as_string == '0-1':
-                how_over_ = node.over_event.WIN
+                how_over_ = node.minmax_evaluation.over_event.WIN
                 who_is_winner_ = chess.BLACK
             elif value_as_string == '1-0':
-                how_over_ = node.over_event.WIN
+                how_over_ = node.minmax_evaluation.over_event.WIN
                 who_is_winner_ = chess.WHITE
             elif value_as_string == '1/2-1/2':
-                how_over_ = node.over_event.DRAW
-                who_is_winner_ = node.over_event.NO_KNOWN_WINNER
-            node.over_event.becomes_over(how_over=how_over_,
-                                         who_is_winner=who_is_winner_)
+                how_over_ = node.minmax_evaluation.over_event.DRAW
+                who_is_winner_ = node.minmax_evaluation.over_event.NO_KNOWN_WINNER
+            node.minmax_evaluation.over_event.becomes_over(how_over=how_over_,
+                                                           who_is_winner=who_is_winner_)
 
-        elif self.syzygy_evaluator and self.syzygy_evaluator.fast_in_table(node.board):
+        elif self.syzygy_evaluator and self.syzygy_evaluator.fast_in_table(node.tree_node.board):
             self.syzygy_evaluator.set_over_event(node)
 
     def value_white_from_over_event(self, over_event):
@@ -91,8 +91,8 @@ class NodeEvaluatorsWrapper:
             return self.VALUE_WHITE_WHEN_OVER_DRAW
 
     def evaluate_over(self, node):
-        evaluation = DISCOUNT ** node.half_move * self.value_white_from_over_event(node.over_event)
-        node.set_evaluation(evaluation)
+        evaluation = DISCOUNT ** node.half_move * self.value_white_from_over_event(node.minmax_evaluation.over_event)
+        node.minmax_evaluation.set_evaluation(evaluation)
 
     def evaluate_all_queried_nodes(self):
         for node_over in self.evaluation_queries.over_nodes:
@@ -102,7 +102,7 @@ class NodeEvaluatorsWrapper:
         self.evaluation_queries.clear_queries()
 
     def add_evaluation_query(self, node):
-        assert (node.value_white_evaluator is None)
+        assert (node.minmax_evaluation.value_white_evaluator is None)
         self.check_obvious_over_events(node)
         if node.is_over():
             self.evaluation_queries.over_nodes.append(node)

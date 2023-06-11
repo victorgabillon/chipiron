@@ -1,15 +1,25 @@
 import chipiron as ch
 from chipiron.players.treevalue.trees.move_and_value_tree import MoveAndValueTree
-from chipiron.players.treevalue import node_factory
+from .descendants import RangedDescendants
+import chipiron.players.treevalue.node_factory as nod_fac
 
 
 def create_tree(
-        board_evaluators_wrapper,
-        board: ch.chess.BoardChi) -> MoveAndValueTree:
+        board: ch.chess.BoardChi,
+        node_factory: nod_fac.AlgorithmNodeFactory,
+        board_evaluator) -> MoveAndValueTree:
 
-    root_node = node_factory.create_root_node(board, board.ply(), board_evaluators_wrapper)
-    print('oo',root_node, root_node.sort_children_not_over())
+    root_node = node_factory.create(board=board, half_move=board.ply(), count=0, parent_node=None, board_depth=0)
+    board_evaluator.compute_representation(root_node.tree_node,
+                                           None,
+                                           None)
+    board_evaluator.add_evaluation_query(root_node)
 
-    move_and_value_tree: MoveAndValueTree = MoveAndValueTree(root_node=root_node)
+    board_evaluator.evaluate_all_queried_nodes()
+
+    descendants: RangedDescendants = RangedDescendants()
+
+    move_and_value_tree: MoveAndValueTree = MoveAndValueTree(root_node=root_node,
+                                                             descendants=descendants)
 
     return move_and_value_tree
