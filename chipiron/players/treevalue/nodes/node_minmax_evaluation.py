@@ -4,7 +4,7 @@ import math
 from random import choice
 from .tree_node import TreeNode
 from chipiron.players.boardevaluators.over_event import OverEvent
-from chipiron.players.treevalue.node_selector.notations_and_statics import nth_key
+from chipiron.extra_tools.small_tools import nth_key
 from chipiron.extra_tools.my_value_sorted_dict import MyValueSortedDict
 from typing import List
 
@@ -34,7 +34,7 @@ class NodeMinmaxEvaluation:
         # careful, I have hard coded in the self.best_child() function the descending order for
         # fast access to best element, so please do not change!
         # self.children_sorted_by_value_vsd = ValueSortedDict({})
-        self.children_sorted_by_value = MyValueSortedDict()
+        self.children_sorted_by_value_ = MyValueSortedDict()
 
         # self.children_sorted_by_value = {}
 
@@ -48,6 +48,10 @@ class NodeMinmaxEvaluation:
 
         # creating a base Over event that is set to None
         self.over_event = OverEvent()
+
+    @property
+    def children_sorted_by_value(self):
+        return self.children_sorted_by_value_
 
     def get_value_white(self):
         """ returns the best estimation of the value white in this node."""

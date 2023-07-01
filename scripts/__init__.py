@@ -7,13 +7,13 @@ from scripts.record_states_eval_stockfish_1 import RecordStateEvalStockfish1
 from scripts.runtheleague import RuntheLeagueScript
 from scripts.script_gui import script_gui
 from scripts.script import Script
-
+from scripts.base_tree_exploration.base_tree_exploration import BaseTreeExplorationScript
 
 # instantiate relevant script
 def get_script_from_name(script_name: str, gui_args: object) -> Script:
     # launch the relevant script
     match script_name:
-        case  'one_match':
+        case 'one_match':
             script_object = OneMatchScript(gui_args)
         case 'tree_visualization':
             script_object = VisualizeTreeScript()
@@ -27,6 +27,8 @@ def get_script_from_name(script_name: str, gui_args: object) -> Script:
             script_object = ReplayGameScript()
         case 'run_the_league':
             script_object = RuntheLeagueScript()
+        case 'base_tree_exploration':
+            script_object = BaseTreeExplorationScript()
         case other:
             raise Exception(' Cannot find ', other)
     return script_object

@@ -1,5 +1,4 @@
 import chess
-from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 
 DISCOUNT = .999999999999  # todo play with this
 
@@ -39,16 +38,12 @@ class NodeEvaluatorsWrapper:
     def __init__(self, board_evaluator, syzygy):
         self.board_evaluator = board_evaluator
         self.syzygy_evaluator = syzygy
-        self.evaluation_queries = EvaluationQueries()
 
     def value_white(self, node):
         value_white = self.syzygy_value_white(node.board)
         if value_white is None:
             value_white = self.board_evaluator.value_white(node)
         return value_white
-
-    def compute_representation(self, node, parent_node, board_modifications):
-        self.board_evaluator.compute_representation(node, parent_node, board_modifications)
 
     def syzygy_value_white(self, board):
         if self.syzygy_evaluator is None or not self.syzygy_evaluator.fast_in_table(board):
@@ -94,17 +89,20 @@ class NodeEvaluatorsWrapper:
         evaluation = DISCOUNT ** node.half_move * self.value_white_from_over_event(node.minmax_evaluation.over_event)
         node.minmax_evaluation.set_evaluation(evaluation)
 
-    def evaluate_all_queried_nodes(self):
-        for node_over in self.evaluation_queries.over_nodes:
+    def evaluate_all_queried_nodes(self,
+                                   evaluation_queries: EvaluationQueries):
+        for node_over in evaluation_queries.over_nodes:
             self.evaluate_over(node_over)
-        if self.evaluation_queries.not_over_nodes:
-            self.board_evaluator.evaluate_all_not_over(self.evaluation_queries.not_over_nodes)
-        self.evaluation_queries.clear_queries()
+        if evaluation_queries.not_over_nodes:
+            self.board_evaluator.evaluate_all_not_over(evaluation_queries.not_over_nodes)
+        evaluation_queries.clear_queries()
 
-    def add_evaluation_query(self, node):
+    def add_evaluation_query(self,
+                             node,
+                             evaluation_queries: EvaluationQueries):
         assert (node.minmax_evaluation.value_white_evaluator is None)
         self.check_obvious_over_events(node)
         if node.is_over():
-            self.evaluation_queries.over_nodes.append(node)
+            evaluation_queries.over_nodes.append(node)
         else:
-            self.evaluation_queries.not_over_nodes.append(node)
+            evaluation_queries.not_over_nodes.append(node)

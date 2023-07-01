@@ -48,7 +48,7 @@ class MoveAndValueTree:
     def root_node(self):
         return self._root_node
 
-    def node_depth(self, node: nodes.AlgorithmNode) -> int:
+    def node_depth(self, node: nodes.ITreeNode) -> int:
         return node.half_move - self.tree_root_half_move
 
     def is_over(self)->bool:

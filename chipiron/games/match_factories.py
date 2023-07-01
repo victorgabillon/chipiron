@@ -11,12 +11,13 @@ import queue
 
 
 class MatchManagerFactory:
+
     def __init__(self,
                  args_match: dict,
                  args_player_one: dict,
                  args_player_two: dict,
-                 syzygy_table: object,
-                 output_folder_path: object,
+                 syzygy_table: SyzygyTable,
+                 output_folder_path: str,
                  seed: int,
                  main_thread_mailbox: queue.Queue,
                  args_game: dict) -> None:
@@ -26,13 +27,18 @@ class MatchManagerFactory:
 
         game_manager_board_evaluator_factory: ObservableBoardEvaluatorFactory = ObservableBoardEvaluatorFactory()
 
-        self.game_manager_factory: GameManagerFactory = GameManagerFactory(syzygy_table,
-                                                                           game_manager_board_evaluator_factory,
-                                                                           output_folder_path,
-                                                                           main_thread_mailbox)
+        self.game_manager_factory: GameManagerFactory = GameManagerFactory(
+            syzygy_table=syzygy_table,
+            game_manager_board_evaluator_factory=game_manager_board_evaluator_factory,
+            output_folder_path=output_folder_path,
+            main_thread_mailbox=main_thread_mailbox
+        )
 
-        self.match_results_factory: MatchResultsFactory = MatchResultsFactory(self.player_one_name,
-                                                                              self.player_two_name)
+        self.match_results_factory: MatchResultsFactory = MatchResultsFactory(
+            player_one_name=self.player_one_name,
+            player_two_name=self.player_two_name
+        )
+
         self.game_args_factory: GameArgsFactory = GameArgsFactory(args_match,
                                                                   args_player_one,
                                                                   args_player_two,

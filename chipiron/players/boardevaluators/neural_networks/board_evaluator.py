@@ -1,10 +1,11 @@
 import torch
 import chess
-from chipiron.players.boardevaluators.node_evaluator import NodeEvaluator, BoardEvaluator
+from chipiron.players.boardevaluators.node_evaluator import NodeEvaluator
 from chipiron.extra_tools.chi_nn import ChiNN
 from chipiron.players.boardevaluators.neural_networks.output_value_converter import OutputValueConverter
 from typing import List
-from chipiron.players.boardevaluators.board_evaluation.board_evaluation import BoardEvaluation, PointOfView
+from chipiron.players.boardevaluators.board_evaluation.board_evaluation import BoardEvaluation
+import chipiron.players.treevalue.nodes as nodes
 
 
 class NNBoardEvaluator:
@@ -38,13 +39,10 @@ class NNNodeEvaluator(NodeEvaluator):
         self.net = net
         self.my_scripted_model = torch.jit.script(net)
 
-    def compute_representation(self, node, parent_node, board_modifications):
-        self.net.compute_representation(node, parent_node, board_modifications)
-
-    def value_white(self, node):
+    def value_white(self, node: nodes.AlgorithmNode):
         # self.net.eval()
         self.my_scripted_model.eval()
-        input_layer = self.net.get_nn_input(node)
+        input_layer = node.board_representation.get_evaluator_input(color_to_play=node.player_to_move)
         torch.no_grad()
         output_layer = self.my_scripted_model(input_layer)
         torch.no_grad()
@@ -59,15 +57,20 @@ class NNNodeEvaluator(NodeEvaluator):
             value_white = value_from_mover_view_point
         return value_white
 
-    def evaluate_all_not_over(self, not_over_nodes):
+    def evaluate_all_not_over(self, not_over_nodes: List[nodes.AlgorithmNode]):
         list_of_tensors = [0] * len(not_over_nodes)
+        index: int
+        node_not_over: nodes.AlgorithmNode
         for index, node_not_over in enumerate(not_over_nodes):
-            list_of_tensors[index] = self.net.get_nn_input(node_not_over.tree_node)
+            list_of_tensors[index] = node_not_over.board_representation.get_evaluator_input(
+                color_to_play=node_not_over.player_to_move
+            )
         input_layers = torch.stack(list_of_tensors, dim=0)
         self.my_scripted_model.eval()
         torch.no_grad()
 
         output_layer = self.my_scripted_model(input_layers)
+
         for index, node_not_over in enumerate(not_over_nodes):
             predicted_value_from_mover_view_point = output_layer[index].item()
             value_white_eval = self.convert_value_for_mover_viewpoint_to_value_white(node_not_over.tree_node,

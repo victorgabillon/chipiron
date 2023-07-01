@@ -1,10 +1,11 @@
 import chess
 import chipiron.chessenvironment.board as board_mod
-from chipiron.players.treevalue.tree_manager.tree_expander import TreeExpansion,     TreeExpansions
+from chipiron.players.treevalue.tree_manager.tree_expander import TreeExpansion, TreeExpansions
 import chipiron.players.treevalue.nodes as node
 import chipiron.players.treevalue.trees as trees
 import chipiron.players.treevalue.node_selector as node_sel
 from chipiron.players.treevalue import node_factory as node_fact
+
 
 # todo should we use a discount? and discounted per round reward?
 # todo maybe convenient to seperate this object into openner updater and dsiplayer
@@ -21,7 +22,6 @@ class TreeManager:
 
     def __init__(self,
                  node_factory: node_fact.AlgorithmNodeFactory
-
                  ) -> None:
         """
         """
@@ -29,7 +29,7 @@ class TreeManager:
 
     def open_node_move(self,
                        tree: trees.MoveAndValueTree,
-                       parent_node: node.TreeNode,
+                       parent_node: node.ITreeNode,
                        move: chess.Move) -> TreeExpansion:
         """
         Opening a Node that contains a board following a move.
@@ -41,8 +41,6 @@ class TreeManager:
         Returns:
 
         """
-        assert (not parent_node.is_over())
-
         # The parent board is copied, we only copy the stack (history of previous board) if the depth is smaller than 2
         # Having the stack information allows checking for draw by repetition.
         # To limit computation we limit copying it all the time. The resulting policy will only be aware of immediate
@@ -57,17 +55,18 @@ class TreeManager:
         half_move: int = parent_node.half_move + 1
         fast_rep: str = board.fast_representation()
 
-        child_node: node.AlgorithmNode
+        child_node: node.ITreeNode
         need_creation_child_node: bool = tree.root_node is None \
                                          or tree.descendants.is_new_generation(half_move) \
                                          or fast_rep not in tree.descendants.descendants_at_half_move[half_move]
         if need_creation_child_node:
             board_depth: int = half_move - tree.tree_root_half_move
-            child_node: node.AlgorithmNode = self.node_factory.create(board=board,
-                                                                      half_move=half_move,
-                                                                      count=tree.nodes_count,
-                                                                      parent_node=parent_node,
-                                                                      board_depth=board_depth)
+            child_node: node.ITreeNode = self.node_factory.create(board=board,
+                                                                  half_move=half_move,
+                                                                  count=tree.nodes_count,
+                                                                  parent_node=parent_node,
+                                                                  board_depth=board_depth,
+                                                                  modifications=modifications)
             tree.nodes_count += 1
             tree.descendants.add_descendant(child_node)  # add it to the list of descendants
         else:  # the node already exists
@@ -84,9 +83,7 @@ class TreeManager:
         #   parent_node.tree_node.non_opened_legal_moves.remove(move)
         tree.move_count += 1  # counting moves
 
-
         return tree_expansion
-
 
     def open(self,
              tree: trees.MoveAndValueTree,
@@ -106,7 +103,6 @@ class TreeManager:
             tree_expansions.add(tree_expansion=tree_expansion)
 
         return tree_expansions
-
 
     def print_some_stats(self,
                          tree):
@@ -141,4 +137,3 @@ class TreeManager:
     def print_best_line(self,
                         tree):
         tree.root_node.print_best_line()
-

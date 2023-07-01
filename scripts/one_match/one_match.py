@@ -9,6 +9,7 @@ import yaml
 from PyQt5.QtWidgets import QApplication
 from scripts.script import Script
 import chipiron as ch
+from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 
 
 class OneMatchScript(Script):
@@ -54,7 +55,7 @@ class OneMatchScript(Script):
 
         # Creation of the Syzygy table for perfect play in low pieces cases, needed by the GameManager
         # and can also be used by the players
-        syzygy_mailbox = ch.player.create_syzygy_thread()
+        syzygy_mailbox: SyzygyTable = ch.player.create_syzygy_thread()
 
         main_thread_mailbox: queue.Queue = multiprocessing.Manager().Queue()
 

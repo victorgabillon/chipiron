@@ -8,8 +8,8 @@ import chipiron.chessenvironment.board as board_mod
 class TreeExpansion:
     """ the class describing TreeExpansion"""
 
-    child_node: node.AlgorithmNode
-    parent_node: node.AlgorithmNode | None
+    child_node: node.ITreeNode
+    parent_node: node.ITreeNode | None
     board_modifications: board_mod.BoardModification
     creation_child_node: bool
 

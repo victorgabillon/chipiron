@@ -1,6 +1,6 @@
-from chipiron.players.treevalue.node_selector.notations_and_statics import softmax
+from chipiron.extra_tools.small_tools import softmax
 from chipiron.players.boardevaluators.over_event import OverEvent
-from chipiron.players.treevalue.trees.factory import create_tree
+from chipiron.players.treevalue.trees.factory import MoveAndValueTreeFactory
 from . import trees
 from . import tree_manager as tree_man
 from chipiron.players.treevalue.tree_manager.tree_expander import TreeExpansions
@@ -8,42 +8,6 @@ from chipiron.players.treevalue.node_selector.opening_instructions import Openin
 from chipiron.players.treevalue.stopping_criterion import StoppingCriterion, create_stopping_criterion
 from . import node_selector as node_sel
 
-def create_tree_exploration(
-        args: dict,
-        random_generator,
-        board,
-        board_evaluators_wrapper,
-        tree_manager: tree_man.AlgorithmNodeTreeManager,
-
-        node_factory
-):
-
-    opening_instructor: OpeningInstructor \
-        = OpeningInstructor(args['opening_type'], random_generator) if 'opening_type' in args else None
-
-
-    move_and_value_tree: trees.MoveAndValueTree = create_tree(node_factory=node_factory,
-                                                              board_evaluator=board_evaluators_wrapper,
-                                                              board=board)
-
-
-    node_selector: node_sel.NodeSelector = node_sel.create(
-        arg=args,
-        opening_instructor=opening_instructor,
-        random_generator=random_generator)
-
-    stopping_criterion: StoppingCriterion = create_stopping_criterion(arg=args['stopping_criterion'],
-                                                                      node_selector=node_selector)
-
-    tree_exploration: TreeExploration = TreeExploration(
-        tree=move_and_value_tree,
-        tree_manager=tree_manager,
-        stopping_criterion=stopping_criterion,
-        node_selector=node_selector,
-        random_generator=random_generator,
-        args=args
-    )
-    return tree_exploration
 
 
 class TreeExploration:
@@ -128,11 +92,10 @@ class TreeExploration:
 
     def explore(self):
 
-
         while self.stopping_criterion.should_we_continue(tree=self.tree):
             assert (not self.tree.root_node.is_over())
             # print info
-            #self.print_info_during_move_computation()
+            # self.print_info_during_move_computation()
 
             # choose the moves and nodes to open
             opening_instructions: node_sel.OpeningInstructions
@@ -151,13 +114,43 @@ class TreeExploration:
 
         # trees.save_raw_data_to_file(tree=self.tree,
         #                            args=self.args)
-        #self.tree_manager.print_some_stats(tree=self.tree)
-        #for move, child in self.tree.root_node.moves_children.items():
+        # self.tree_manager.print_some_stats(tree=self.tree)
+        # for move, child in self.tree.root_node.moves_children.items():
         #    print(f'{move} {self.tree.root_node.moves_children[move].minmax_evaluation.get_value_white()}'
         #          f' {child.minmax_evaluation.over_event.get_over_tag()}')
-        #print(f'evaluation for white: {self.tree.root_node.minmax_evaluation.get_value_white()}')
+        # print(f'evaluation for white: {self.tree.root_node.minmax_evaluation.get_value_white()}')
 
         best_move = self.recommend_move_after_exploration(self.tree)
         self.tree_manager.print_best_line(tree=self.tree)  # todo maybe almost best chosen line no?
 
         return best_move
+
+
+def create_tree_exploration(
+        args: dict,
+        random_generator,
+        board,
+        tree_manager: tree_man.AlgorithmNodeTreeManager,
+        tree_factory: MoveAndValueTreeFactory) -> TreeExploration:
+    opening_instructor: OpeningInstructor \
+        = OpeningInstructor(args['opening_type'], random_generator) if 'opening_type' in args else None
+
+    move_and_value_tree: trees.MoveAndValueTree = tree_factory.create(board=board)
+
+    node_selector: node_sel.NodeSelector = node_sel.create(
+        arg=args,
+        opening_instructor=opening_instructor,
+        random_generator=random_generator)
+
+    stopping_criterion: StoppingCriterion = create_stopping_criterion(arg=args['stopping_criterion'],
+                                                                      node_selector=node_selector)
+
+    tree_exploration: TreeExploration = TreeExploration(
+        tree=move_and_value_tree,
+        tree_manager=tree_manager,
+        stopping_criterion=stopping_criterion,
+        node_selector=node_selector,
+        random_generator=random_generator,
+        args=args
+    )
+    return tree_exploration

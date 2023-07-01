@@ -1,31 +1,35 @@
-from __future__ import annotations  # To be removed in python 3.10 (helping with recursive type annocatation)
 from bidict import bidict
-
+from .itree_node import ITreeNode
+import chess
 # todo check if the transfer to half move is done from depth
 
 class TreeNode:
+
+    half_move_ :int
+    moves_children_ : bidict
+    player_to_move_: chess.Color
 
     def __init__(self,
                  board,
                  half_move: int,
                  id_number: int,
-                 parent_node: TreeNode) -> None:
+                 parent_node: ITreeNode) -> None:
         # id is a number to identify this node for easier debug
         self.id = id_number
 
         # the node represents a board position. we also store the fast representation of the board.
-        self.board = board
+        self.board_ = board
         self.fast_rep = board.fast_representation()
 
         # number of half-moves since the start of the game to get to the board position in self.board
-        self.half_move = half_move
+        self.half_move_ = half_move
         assert (isinstance(half_move, int))
 
         # the color of the player that has to move in the board
-        self.player_to_move = self.board.turn
+        self.player_to_move_ = self.board.turn
 
         # bijection dictionary between moves and children nodes. node is set to None is not created
-        self.moves_children = bidict({})
+        self.moves_children_ = bidict({})
 
         # the set of parent nodes to this node. Note that a node can have multiple parents!
         self.parent_nodes = [parent_node]
@@ -36,13 +40,30 @@ class TreeNode:
         self.all_legal_moves_generated = False
         self.non_opened_legal_moves = set()
 
+
+
+    @property
+    def player_to_move(self):
+        return self.player_to_move_
+
+    @property
+    def board(self):
+        return self.board_
+
+    @property
+    def half_move(self) -> int:
+        return self.half_move_
+    @property
+    def moves_children(self) -> bidict:
+        return self.moves_children_
+
     def add_parent(self, new_parent_node ):
         assert (new_parent_node not in self.parent_nodes)  # there cannot be two ways to link the same child-parent
         self.parent_nodes.append(new_parent_node)
 
     def print_moves_children(self):
-        print('here are the ', len(self.moves_children), ' moves-children link of node', self.id, ': ', end=' ')
-        for move, child in self.moves_children.items():
+        print('here are the ', len(self.moves_children_), ' moves-children link of node', self.id, ': ', end=' ')
+        for move, child in self.moves_children_.items():
             if child is None:
                 print(move, child, end=' ')
             else:
@@ -56,7 +77,7 @@ class TreeNode:
         while parent is not None:
             parent = next(iter(child.parent_nodes))
             # print('~~',parent.moves_children)
-            move_sequence_from_root.append(parent.moves_children.inverse[child])
+            move_sequence_from_root.append(parent.moves_children_.inverse[child])
             child = parent
             parent = next(iter(child.parent_nodes))
         move_sequence_from_root.reverse()
@@ -80,12 +101,12 @@ class TreeNode:
         # print('test_all_legal_moves_generated')
         if self.all_legal_moves_generated:
             for move in self.board.get_legal_moves():
-                assert (bool(move in self.moves_children) != bool(move in self.non_opened_legal_moves))
+                assert (bool(move in self.moves_children_) != bool(move in self.non_opened_legal_moves))
         else:
             move_not_in = []
             legal_moves = list(self.board.get_legal_moves())
             for move in legal_moves:
-                if move not in self.moves_children:
+                if move not in self.moves_children_:
                     move_not_in.append(move)
             if move_not_in == []:
                 pass
@@ -95,7 +116,7 @@ class TreeNode:
 
     def get_descendants(self):
         des = {self: None}  # include itself
-        generation = set(self.moves_children.values())
+        generation = set(self.moves_children_.values())
         while generation:
             next_depth_generation = set()
             for node in generation:
@@ -115,7 +136,7 @@ class TreeNode:
             des = {self: None}  # include itself maybe
         else:
             des = {}
-        generation = set(self.moves_children.values())
+        generation = set(self.moves_children_.values())
         while generation:
             next_depth_generation = set()
             for node in generation:

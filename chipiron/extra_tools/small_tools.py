@@ -1,6 +1,8 @@
 import copy
 import os
 import yaml
+from itertools import islice
+import numpy as np
 
 
 def mkdir(folder_path):
@@ -46,3 +48,19 @@ def rec_merge_dic(a, b):
             merged[key] = a[key]
 
     return merged
+
+
+def nth_key(dct, n):
+    it = iter(dct)
+    # Consume n elements.
+    next(islice(it, n, n), None)
+    # Return the value at the current position.
+    # This raises StopIteration if n is beyond the limits.
+    # Use next(it, None) to suppress that exception.
+    return next(it)
+
+
+def softmax(x, temperature):
+    """Compute softmax values for each sets of scores in x."""
+    e_x = np.exp((x - np.max(x)) * temperature)
+    return e_x / e_x.sum(axis=0)  # only difference
