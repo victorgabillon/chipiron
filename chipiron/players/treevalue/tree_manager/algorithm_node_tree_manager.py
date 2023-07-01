@@ -8,6 +8,8 @@ import chipiron.players.treevalue.updates as upda
 from .tree_expander import TreeExpansion, TreeExpansions
 from .tree_manager import TreeManager
 
+from .node_evaluators_wrapper import NodeEvaluatorsWrapper, EvaluationQueries
+
 
 # todo should we use a discount? and discounted per round reward?
 # todo maybe convenient to seperate this object into openner updater and dsiplayer
@@ -22,18 +24,21 @@ class AlgorithmNodeTreeManager:
     """
     tree_manager: TreeManager
     algorithm_node_updater: upda.AlgorithmNodeUpdater
+    evaluation_queries: EvaluationQueries
+    node_evaluators_wrapper: NodeEvaluatorsWrapper
 
     def __init__(self,
-                 board_evaluators_wrapper,
+                 node_evaluators_wrapper: NodeEvaluatorsWrapper,
                  tree_manager: TreeManager,
-                 algorithm_node_updater: upda.AlgorithmNodeUpdater
-
+                 algorithm_node_updater: upda.AlgorithmNodeUpdater,
+                 evaluation_queries: EvaluationQueries
                  ) -> None:
         """
         """
-        self.board_evaluator = board_evaluators_wrapper
+        self.node_evaluator = node_evaluators_wrapper
         self.tree_manager = tree_manager
         self.algorithm_node_updater = algorithm_node_updater
+        self.evaluation_queries = evaluation_queries
 
     def open_node_move(self,
                        tree: trees.MoveAndValueTree,
@@ -67,11 +72,10 @@ class AlgorithmNodeTreeManager:
         tree_expansion: TreeExpansion
         for tree_expansion in tree_expansions.expansions_with_node_creation:
             # TODO give the tree expansion to the function directly
-            self.board_evaluator.compute_representation(tree_expansion.child_node.tree_node,
-                                                        tree_expansion.parent_node.tree_node,
-                                                        tree_expansion.board_modifications)
-            self.board_evaluator.add_evaluation_query(tree_expansion.child_node)
-        self.board_evaluator.evaluate_all_queried_nodes()
+
+            self.node_evaluator.add_evaluation_query(node=tree_expansion.child_node,
+                                                     evaluation_queries=self.evaluation_queries)
+        self.node_evaluator.evaluate_all_queried_nodes(evaluation_queries=self.evaluation_queries)
 
         return tree_expansions
 

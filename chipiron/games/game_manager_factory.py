@@ -7,6 +7,8 @@ import chipiron.players as players
 from chipiron.players.factory import launch_player_process
 from .game_manager import GameManager
 from .game import Game, ObservableGame
+from chipiron.players.boardevaluators.factory import ObservableBoardEvaluatorFactory
+from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 
 
 class GameManagerFactory:
@@ -15,10 +17,12 @@ class GameManagerFactory:
     Calling create ask for the creation of a GameManager depending on args and players.
     This class is supposed to be independent of Match-related classes (contrarily to the GameArgsFactory)
     """
+    game_manager_board_evaluator_factory: ObservableBoardEvaluatorFactory
+    syzygy_table: SyzygyTable
 
     def __init__(self,
-                 syzygy_table: object,
-                 game_manager_board_evaluator_factory: object,
+                 syzygy_table: SyzygyTable,
+                 game_manager_board_evaluator_factory: ObservableBoardEvaluatorFactory,
                  output_folder_path: str,
                  main_thread_mailbox: queue.Queue) -> None:
         self.syzygy_table = syzygy_table
@@ -55,7 +59,6 @@ class GameManagerFactory:
 
         if self.subscribers:
             for subscriber in self.subscribers:
-                print('lplpl')
                 obs_game.register_mailbox(subscriber, 'board_to_display')
 
         player_processes = []

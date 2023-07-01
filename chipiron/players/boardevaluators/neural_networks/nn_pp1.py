@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from chipiron.extra_tools.chi_nn import ChiNN
 from chipiron.players.boardevaluators.neural_networks.board_to_tensor import board_to_tensor_pieces_square, \
-    node_to_tensors_pieces_square_fast, get_tensor_from_tensors
+    get_tensor_from_tensors
 
 
 class NetPP1(ChiNN):
@@ -47,8 +47,6 @@ class NetPP1(ChiNN):
             else:
                 print(param.data)
 
-    def compute_representation(self, node, parent_node, board_modifications):
-        node_to_tensors_pieces_square_fast(node, parent_node, board_modifications, False)
 
     def get_nn_input(self, node):
         return get_tensor_from_tensors(node.tensor_white, node.tensor_black, node.tensor_castling_white,

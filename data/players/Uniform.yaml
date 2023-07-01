@@ -6,13 +6,17 @@ tree_builder:
     type: almost_equal_logistic
     temperature: 2
   stopping_criterion: 
-    name: depth_limit
-    depth_limit: 3
-    # name: tree_move_limit
-    # tree_move_limit: 2000
+    #name: depth_limit
+    #depth_limit: 3
+    name: tree_move_limit
+    tree_move_limit: 1000
   depth_tree: 1
   opening_type: all_children
-board_evaluator: 
-  type: basic_evaluation
+board_evaluator:
+  type: neural_network
+  neural_network:
+      nn_type: pp2d2_2_prelu
+      nn_param_folder_name: 'param_prelu'
+      representation: '364'
   syzygy_evaluation: True
 syzygy_play: True

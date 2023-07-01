@@ -1,7 +1,5 @@
 import math
-from itertools import islice
 import numpy as np
-import random
 
 
 def zipf_picks(list_elements, value_of_element):
@@ -55,17 +53,3 @@ def zipf_picks_random_weird(list_elements, bool_func, random_generator):
     return best_index[0], None
 
 
-def nth_key(dct, n):
-    it = iter(dct)
-    # Consume n elements.
-    next(islice(it, n, n), None)
-    # Return the value at the current position.
-    # This raises StopIteration if n is beyond the limits.
-    # Use next(it, None) to suppress that exception.
-    return next(it)
-
-
-def softmax(x, temperature):
-    """Compute softmax values for each sets of scores in x."""
-    e_x = np.exp((x - np.max(x)) * temperature)
-    return e_x / e_x.sum(axis=0)  # only difference

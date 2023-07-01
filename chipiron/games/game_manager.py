@@ -95,7 +95,6 @@ class GameManager:
 
             # waiting for a message
             mail = self.main_thread_mailbox.get()
-
             self.processing_mail(mail)
 
             if board.is_game_over() or not self.game_continue_conditions():
@@ -146,7 +145,10 @@ class GameManager:
     def game_continue_conditions(self):
         half_move = self.game.board.ply()
         continue_bool = True
+        print('ooooooo','max_half_move' in self.args )
         if 'max_half_move' in self.args and half_move >= self.args['max_half_move']:
+            print('ooooooo')
+            assert(1==2)
             continue_bool = False
         return continue_bool
 
