@@ -93,6 +93,13 @@ class MainWindow(QWidget):
         self.eval_button.setStyleSheet('QPushButton {background-color: white; color: black;}')
         self.eval_button.setGeometry(620, 600, 470, 30)
 
+
+        self.eval_button_chi = QPushButton(self)
+        self.eval_button_chi.setText("Chi Eval")  # text
+        self.eval_button_chi.setStyleSheet('QPushButton {background-color: white; color: black;}')
+        self.eval_button_chi.setGeometry(620, 650, 470, 30)
+
+
         self.board_size = min(self.widgetSvg.width(),
                               self.widgetSvg.height())
         self.coordinates = True
@@ -225,8 +232,9 @@ class MainWindow(QWidget):
                 self.board = message['board']
                 self.draw_board()
             if message['type'] == 'evaluation':
-                evaluation = message['evaluation']
-                self.update_evaluation(evaluation)
+                evaluation_stock = message['evaluation_stock']
+                evaluation_chipiron = message['evaluation_chi']
+                self.update_evaluation(evaluation_stock,evaluation_chipiron)
             if message['type'] == 'players_color_to_id':
                 players_color_to_id = message['players_color_to_id']
                 self.update_players_color_to_id(players_color_to_id)
@@ -253,8 +261,10 @@ class MainWindow(QWidget):
         self.player_white_button.setText(' White: ' + players_color_to_id[chess.WHITE])  # text
         self.player_black_button.setText(' Black: ' + players_color_to_id[chess.BLACK])  # text
 
-    def update_evaluation(self, evaluation):
-        self.eval_button.setText('eval: ' + str(evaluation))  # text
+    def update_evaluation(self, evaluation_stock,evaluation_chipiron):
+        self.eval_button.setText('eval: ' + str(evaluation_stock))  # text
+        self.eval_button_chi.setText('eval: ' + str(evaluation_chipiron))  # text
+
 
     def update_game_play_status(self, game_play_status: GamePlayingStatus):
         if game_play_status.is_paused():

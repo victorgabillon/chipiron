@@ -62,7 +62,7 @@ class GameManager:
         self.main_thread_mailbox = main_thread_mailbox
         self.player_threads = player_threads
 
-    def stockfish_eval(self):
+    def external_eval(self):
         return self.display_board_evaluator.evaluate(self.game.board)  # TODO DON'T LIKE THIS writing
 
     def play_one_move(self, move: chess.Move) -> None:
@@ -119,13 +119,13 @@ class GameManager:
             # play the move
             move = message['move']
             print('receiving the move', move, type(self), self.game.playing_status, type(self.game.playing_status))
-            if message['corresponding_board'] == board.fen() and\
-                    self.game.playing_status.is_play() and\
+            if message['corresponding_board'] == board.fen() and \
+                    self.game.playing_status.is_play() and \
                     message['player'] == self.player_color_to_id[board.turn]:
                 # TODO THINK! HOW TO DEAL with premoves if we dont know the board in advance?
                 self.play_one_move(move)
-                eval = self.stockfish_eval()
-                print('Stockfish evaluation:', eval)
+                eval_sto, eval_chi = self.external_eval()
+                print(f'Stockfish evaluation:{eval_sto} and chipiron eval{eval_chi}')
                 # Print the board
                 board.print_chess_board()
             else:
@@ -145,10 +145,10 @@ class GameManager:
     def game_continue_conditions(self):
         half_move = self.game.board.ply()
         continue_bool = True
-        print('ooooooo','max_half_move' in self.args )
+        print('ooooooo', 'max_half_move' in self.args)
         if 'max_half_move' in self.args and half_move >= self.args['max_half_move']:
             print('ooooooo')
-            assert(1==2)
+            assert (1 == 2)
             continue_bool = False
         return continue_bool
 

@@ -5,7 +5,6 @@ from bidict import bidict
 
 class ITreeNode(Protocol):
 
-
     @property
     def board(self):
         ...

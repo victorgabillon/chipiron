@@ -4,13 +4,13 @@ PyYAML
 
 ###### Requirements with Version Specifiers ######
 PyQt5>=5.15.4
-chess >= 1.8.0
+chess >= 1.9.4
 matplotlib>=3.4.3
 sortedcollections>=2.1.0
 pandas>=1.2.4
-numpy>=1.19.5
-torch>=1.10.1
-bidict>=0.21.2
-numba>=0.53.1
+numpy>=1.20.0
+torch>=2.0.1
+bidict>=0.22.1
+numba>=0.57.1
 graphviz>=0.16
-gdown >= 4.3.0
+gdown >= 4.7.1

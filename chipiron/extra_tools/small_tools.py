@@ -17,7 +17,7 @@ def mkdir(folder_path):
 
 def yaml_fetch_args_in_file(path_file):
     with open(path_file, 'r') as file:
-        args = yaml.load(file, Loader=yaml.FullLoader)
+        args: dict = yaml.load(file, Loader=yaml.FullLoader)
     return args
 
 

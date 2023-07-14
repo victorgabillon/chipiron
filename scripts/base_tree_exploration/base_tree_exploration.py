@@ -9,6 +9,8 @@ import time
 import io
 from pstats import SortKey
 import pstats
+import os
+
 
 class BaseTreeExplorationScript(Script):
 
@@ -24,7 +26,7 @@ class BaseTreeExplorationScript(Script):
         file_name_player_one = 'RecurZipfBase3.yaml'
         file_name_player_one = 'Uniform.yaml'
 
-        path_player_one = 'data/players/' + file_name_player_one
+        path_player_one = os.path.join('data/players/player_config', file_name_player_one)
 
         with open(path_player_one, 'r') as filePlayerOne:
             args_player_one = yaml.load(filePlayerOne, Loader=yaml.FullLoader)

@@ -3,7 +3,7 @@ from chipiron.players.treevalue.nodes.tree_node import TreeNode
 from chipiron.players.treevalue.nodes.itree_node import ITreeNode
 from .node_minmax_evaluation import NodeMinmaxEvaluation
 from bidict import bidict
-from chipiron.players.boardevaluators.board_representations.board_representation import BoardRepresentation
+from players.boardevaluators.neural_networks.input_converters.board_representation import BoardRepresentation
 
 class AlgorithmNode:
     """

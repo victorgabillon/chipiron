@@ -1,25 +1,22 @@
 import torch.nn as nn
 from chipiron.extra_tools.chi_nn import ChiNN
-from chipiron.players.boardevaluators.neural_networks.board_to_tensor import board_to_tensor_pieces_square_two_sides
-import chipiron.players.treevalue.nodes as nodes
 
 
-class NetPP2D2_2_PRELU(ChiNN):
-    def __init__(self):
-        super(NetPP2D2_2_PRELU, self).__init__()
+class NetPP2D2_2_LEAKY(ChiNN):
+    def __init__(self  ):
+        super(NetPP2D2_2_LEAKY, self).__init__( )
 
-        self.transform_board_function = board_to_tensor_pieces_square_two_sides
         self.fc1 = nn.Linear(772, 20)
-        self.relu_1 = nn.PReLU()
+        self.relu_1 = nn.LeakyReLU()
         self.fc2 = nn.Linear(20, 1)
         self.tanh = nn.Tanh()
-        # self.dropout = nn.Dropout(.5)
+        #self.dropout = nn.Dropout(.5)
 
     def forward(self, x):
         x = self.fc1(x)
-        # x = self.dropout(self.relu_1(x))
+       # x = self.dropout(self.relu_1(x))
         x = self.relu_1(x)
-        x = self.fc2(x)
+        x=self.fc2(x)
         x = self.tanh(x)
         return x
 
@@ -84,6 +81,12 @@ class NetPP2D2_2_PRELU(ChiNN):
         print_piece_param(10, input)
         print('king-opposite', sum(input[0, 64 * 11: 64 * 11 + 64]) / 64.)
         print_piece_param(11, input)
+
+
+    def get_nn_input(self, node):
+        return get_tensor_from_tensors_two_sides(node.tensor_white, node.tensor_black, node.tensor_castling_white,
+                                                 node.tensor_castling_black, node.player_to_move)
+
 
 def print_piece_param(i, vec):
     for r in range(8):

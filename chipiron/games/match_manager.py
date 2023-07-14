@@ -16,7 +16,6 @@ class MatchManager:
                  game_args_factory,
                  match_results_factory,
                  output_folder_path=None):
-        assert (player_one_id != player_two_id)
         self.player_one_id = player_one_id
         self.player_two_id = player_two_id
         self.game_manager_factory = game_manager_factory

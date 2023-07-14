@@ -68,14 +68,6 @@ def board_to_tensor_pieces_square(board, requires_grad_):
     return tensor
 
 
-def board_to_tensor_pieces_square_two_sides(board, requires_grad_):
-    tensor_white, tensor_black, tensor_castling_white, tensor_castling_black \
-        = board_to_tensors_pieces_square(board, requires_grad_)
-    side_to_move = board.turn
-    tensor = get_tensor_from_tensors_two_sides(tensor_white, tensor_black, tensor_castling_white, tensor_castling_black,
-                                               side_to_move)
-    return tensor
-
 
 def get_tensor_from_tensors(tensor_white, tensor_black, tensor_castling_white, tensor_castling_black, color_to_play):
     if color_to_play == chess.WHITE:

@@ -1,5 +1,5 @@
 import chess
-from chipiron.players.boardevaluators.node_evaluator import NodeEvaluator
+from chipiron.players.boardevaluators.board_evaluator import BoardEvaluator
 
 
 def value_base(board, color):
@@ -51,13 +51,12 @@ def value_player_to_move(board):
         return sigmoid((value_black_pieces - value_white_pieces) * .2)
 
 
-class BasicEvaluation(NodeEvaluator):
+class BasicEvaluation(BoardEvaluator):
 
     def __init__(self):
         pass
 
-    def value_white(self, node):
-        board = node.board
+    def value_white(self, board):
         value_white_pieces = value_base(board, chess.WHITE)
         value_black_pieces = value_base(board, chess.BLACK)
         value_white_pieces += add_pawns_value_white(board)

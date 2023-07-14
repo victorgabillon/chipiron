@@ -3,8 +3,8 @@ from enum import Enum
 
 
 class PointOfView(Enum):
-    WHITE = chess.WHITE
-    BLACK = chess.BLACK
+    WHITE = 0
+    BLACK = 1
     PLAYER_TO_MOVE = 2
     NOT_PLAYER_TO_MOVE = 3
 

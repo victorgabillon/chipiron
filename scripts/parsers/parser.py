@@ -53,6 +53,7 @@ class MyParser:
             config_file_path = self.args_command_line['config_file_name']
         elif 'config_file_name' in self.default_param_dict:
             config_file_path = self.default_param_dict['config_file_name']
+
         if config_file_path is None:
             self.args_config_file = {}
         else:
