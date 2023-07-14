@@ -1,5 +1,5 @@
 import tkinter as tk
-
+#TODO switch to pygame
 
 def script_gui() -> tuple[str, dict]:
     root = tk.Tk()
@@ -85,7 +85,7 @@ def script_gui() -> tuple[str, dict]:
             gui_args = {'config_file_name': 'scripts/one_match/exp_options.yaml',
                         'seed': 0,
                         'gui': True,
-                        'file_name_player_one': 'Uniform.yaml',
+                        'file_name_player_one': 'RecurZipfBase3.yaml',
                         'file_name_player_two': 'Human.yaml',
                         'file_name_match_setting': 'setting_duda.yaml',
                         'player_one': {'tree_builder': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}}

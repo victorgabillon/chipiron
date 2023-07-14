@@ -2,16 +2,16 @@ import chipiron as ch
 from chipiron.players.treevalue.trees.move_and_value_tree import MoveAndValueTree
 from .descendants import RangedDescendants
 import chipiron.players.treevalue.node_factory as nod_fac
-from chipiron.players.treevalue.tree_manager.node_evaluators_wrapper import NodeEvaluatorsWrapper, EvaluationQueries
+from chipiron.players.treevalue.tree_manager.node_evaluator import NodeEvaluator, EvaluationQueries
 
 
 class MoveAndValueTreeFactory:
     node_factory: nod_fac.AlgorithmNodeFactory
-    node_evaluator: NodeEvaluatorsWrapper
+    node_evaluator: NodeEvaluator
 
     def __init__(self,
                  node_factory: nod_fac.AlgorithmNodeFactory,
-                 node_evaluator: NodeEvaluatorsWrapper):
+                 node_evaluator: NodeEvaluator):
         self.node_factory = node_factory
         self.node_evaluator = node_evaluator
 

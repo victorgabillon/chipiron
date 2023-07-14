@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import QApplication
 from scripts.script import Script
 import chipiron as ch
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
+import os
 
 
 class OneMatchScript(Script):
@@ -27,7 +28,7 @@ class OneMatchScript(Script):
         'player_two': {},
         'file_name_match_setting': 'setting_duda.yaml',
         'match': {},
-        }
+    }
 
     base_experiment_output_folder = Script.base_experiment_output_folder + 'one_match/outputs/'
 
@@ -98,15 +99,15 @@ class OneMatchScript(Script):
         Returns:
 
         """
-        path_player_one: str = 'data/players/' + file_name_player_one
+        path_player_one: str = os.path.join('data/players/player_config', file_name_player_one)
         player_one_yaml: dict = ch.tool.yaml_fetch_args_in_file(path_player_one)
         self.args['player_one']: dict = ch.tool.rec_merge_dic(player_one_yaml, self.args['player_one'])
 
-        path_player_two: str = 'data/players/' + file_name_player_two
+        path_player_two: str = os.path.join('data/players/player_config', file_name_player_two)
         player_two_yaml: dict = ch.tool.yaml_fetch_args_in_file(path_player_two)
         self.args['player_two']: dict = ch.tool.rec_merge_dic(player_two_yaml, self.args['player_two'])
 
-        path_match_setting: str = 'data/settings/OneMatch/' + file_name_match_setting
+        path_match_setting: str = os.path.join('data/settings/OneMatch', file_name_match_setting)
         match_setting_yaml: dict = ch.tool.yaml_fetch_args_in_file(path_match_setting)
         self.args['match']: dict = ch.tool.rec_merge_dic(match_setting_yaml, self.args['match'])
 

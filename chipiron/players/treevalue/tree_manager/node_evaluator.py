@@ -1,5 +1,5 @@
 import chess
-
+from chipiron.players.boardevaluators.board_evaluator import BoardEvaluator
 DISCOUNT = .999999999999  # todo play with this
 
 
@@ -29,20 +29,24 @@ class BoardEvaluatorsProxy:
         return evaluation
 
 
-class NodeEvaluatorsWrapper:
+class NodeEvaluator:
     # VALUE_WHITE_WHEN_OVER is the value_white default value when the node is over
     # set atm to be symmetric and high to be preferred
-    VALUE_WHITE_WHEN_OVER = [VALUE_WHITE_WHEN_OVER_WHITE_WINS, VALUE_WHITE_WHEN_OVER_DRAW,
-                             VALUE_WHITE_WHEN_OVER_BLACK_WINS, ] = [1000, 0, -1000]
 
-    def __init__(self, board_evaluator, syzygy):
+    ''' wrapping node evaluator with syzygy '''
+    board_evaluator: BoardEvaluator
+    syzygy_evaluator: object
+
+    def __init__(self,
+                 board_evaluator: BoardEvaluator,
+                 syzygy):
         self.board_evaluator = board_evaluator
         self.syzygy_evaluator = syzygy
 
     def value_white(self, node):
         value_white = self.syzygy_value_white(node.board)
         if value_white is None:
-            value_white = self.board_evaluator.value_white(node)
+            value_white = self.board_evaluator.value_white(node.board)
         return value_white
 
     def syzygy_value_white(self, board):
@@ -91,10 +95,11 @@ class NodeEvaluatorsWrapper:
 
     def evaluate_all_queried_nodes(self,
                                    evaluation_queries: EvaluationQueries):
+        print('self,self',self)
         for node_over in evaluation_queries.over_nodes:
             self.evaluate_over(node_over)
         if evaluation_queries.not_over_nodes:
-            self.board_evaluator.evaluate_all_not_over(evaluation_queries.not_over_nodes)
+            self.evaluate_all_not_over(evaluation_queries.not_over_nodes)
         evaluation_queries.clear_queries()
 
     def add_evaluation_query(self,
@@ -106,3 +111,13 @@ class NodeEvaluatorsWrapper:
             evaluation_queries.over_nodes.append(node)
         else:
             evaluation_queries.not_over_nodes.append(node)
+
+    def evaluate_all_not_over(self, not_over_nodes):
+        for node_not_over in not_over_nodes:
+            evaluation = self.value_white(node_not_over)
+            processed_evaluation = self.process_evalution_not_over(evaluation, node_not_over)
+            node_not_over.minmax_evaluation.set_evaluation(processed_evaluation)
+
+    def process_evalution_not_over(self, evaluation, node):
+        processed_evaluation = (1 / DISCOUNT) ** node.half_move * evaluation
+        return processed_evaluation

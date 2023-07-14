@@ -196,7 +196,7 @@ class Window(QtWidgets.QWidget):
 
 class VisualizeTreeScript(Script):
 
-    base_experiment_output_folder = Script.base_experiment_output_folder + 'tree_visualization/outputs/'
+    base_experiment_output_folder = Script.base_experiment_output_folder + 'tree_visualization/output_converters/'
 
     def __init__(self):
         super().__init__()

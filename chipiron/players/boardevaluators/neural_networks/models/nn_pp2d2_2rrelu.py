@@ -1,15 +1,13 @@
 import torch.nn as nn
 from chipiron.extra_tools.chi_nn import ChiNN
-from chipiron.players.boardevaluators.neural_networks.board_to_tensor import board_to_tensor_pieces_square_two_sides
 
 
-class NetPP2D2_2(ChiNN):
+class NetPP2D2_2_RRELU(ChiNN):
     def __init__(self  ):
-        super(NetPP2D2_2, self).__init__( )
+        super(NetPP2D2_2_RRELU, self).__init__( )
 
-        self.transform_board_function = board_to_tensor_pieces_square_two_sides
         self.fc1 = nn.Linear(772, 20)
-        self.relu_1 = nn.ReLU()
+        self.relu_1 = nn.RReLU()
         self.fc2 = nn.Linear(20, 1)
         self.tanh = nn.Tanh()
         #self.dropout = nn.Dropout(.5)
@@ -18,8 +16,6 @@ class NetPP2D2_2(ChiNN):
         x = self.fc1(x)
        # x = self.dropout(self.relu_1(x))
         x = self.relu_1(x)
-      #  print('tghy',x)
-
         x=self.fc2(x)
         x = self.tanh(x)
         return x
@@ -86,6 +82,8 @@ class NetPP2D2_2(ChiNN):
         print('king-opposite', sum(input[0, 64 * 11: 64 * 11 + 64]) / 64.)
         print_piece_param(11, input)
 
+    def compute_representation(self, node, parent_node, board_modifications):
+        node_to_tensors_pieces_square_fast(node, parent_node, board_modifications, False)
 
     def get_nn_input(self, node):
         return get_tensor_from_tensors_two_sides(node.tensor_white, node.tensor_black, node.tensor_castling_white,

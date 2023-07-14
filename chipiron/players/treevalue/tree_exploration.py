@@ -9,7 +9,6 @@ from chipiron.players.treevalue.stopping_criterion import StoppingCriterion, cre
 from . import node_selector as node_sel
 
 
-
 class TreeExploration:
     tree: trees.MoveAndValueTree
     tree_manager: tree_man.AlgorithmNodeTreeManager
@@ -132,8 +131,9 @@ def create_tree_exploration(
         board,
         tree_manager: tree_man.AlgorithmNodeTreeManager,
         tree_factory: MoveAndValueTreeFactory) -> TreeExploration:
-    opening_instructor: OpeningInstructor \
-        = OpeningInstructor(args['opening_type'], random_generator) if 'opening_type' in args else None
+    opening_instructor: OpeningInstructor = OpeningInstructor(
+        args['opening_type'], random_generator
+    ) if 'opening_type' in args else None
 
     move_and_value_tree: trees.MoveAndValueTree = tree_factory.create(board=board)
 
