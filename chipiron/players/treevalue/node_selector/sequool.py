@@ -1,5 +1,7 @@
 from chipiron.players.treevalue.node_selector.notations_and_statics import zipf_picks
 import math
+from .. import trees
+from chipiron.players.treevalue.node_selector.opening_instructions import OpeningInstructions
 
 
 class SequoolTree:
@@ -27,7 +29,6 @@ class SequoolTree:
         #   self.count_to_open_at_depth.append(1)
 
     def update_all_indices(self):
-        #  print('hhhhhhhhhhhhhhhhhhhhhhhhh')
         for depth in range(self.get_max_depth()):
             for node in self.all_nodes[depth].values():
                 for child in node.moves_children.values():
@@ -69,20 +70,20 @@ class Sequool:
     def create_tree(self, board):
         return SequoolTree(self.environment, self.board_evaluator, self.color_player, self.arg, board)
 
-    def choose_node_and_move_to_open(self):
-        self.tree.update_all_indices()
+    def choose_node_and_move_to_open(
+            self,
+            tree: trees.MoveAndValueTree
+    ) -> OpeningInstructions:
+        tree.update_all_indices()
 
         # todo remove the depths that are fully explored
 
-        depth_picked, best_value = zipf_picks(list_elements=self.tree.all_nodes_2_not_opened,
-                                              value_of_element=lambda depth: self.tree.count_visits_at_depth[
+        depth_picked, best_value = zipf_picks(list_elements=tree.all_nodes_2_not_opened,
+                                              value_of_element=lambda depth: tree.count_visits_at_depth[
                                                   depth] if self.tree.all_nodes_2_not_opened[depth] else math.inf)
-        # print('depthpicked', depth_picked)
 
         self.tree.count_visits_at_depth[depth_picked] += 1
-        # print('visit_at_depth', self.tree.count_visits_at_depth)
-        # for i in self.tree.all_nodes_2_not_opened:
-        # print('tr', len(i))
+
 
         nodes_to_consider = list(self.tree.all_nodes_2_not_opened[depth_picked])
 

@@ -219,29 +219,12 @@ class ZipfSequool:
 
         depth_picked = zipf_picks_random_bool(ordered_list_elements=list_elements_,
                                               bool_func=func_2)
-        # print('depth picked', depth_picked, list_elements_,self.tree.root_node.half_move)
-        # print('no_id', node_first_move.id)
-        #  node_first_move.descendants.print_info()
-        #   node_first_move.descendants_candidates_to_open.print_info()
-
-        # print('values', [func(i) for i in range(len(list(node_first_move.descendants.keys())))])
-
-        #  self.tree.count_visits_at_depth[node_first_move][depth_picked] += 1
-        # print('####', type(self.candidates_at_depth(node_first_move, depth_picked)))
 
         nodes_to_consider_dict = self.candidates_at_depth(node_first_move, depth_picked)
         nodes_to_consider_list = list(nodes_to_consider_dict.keys())  # todo loosing time in the list conversion?
 
-        # print('####',nodes_to_consider_list)
-        # for i in nodes_to_consider:
-        #    print('nodes', i.id)
-        # todo check if mixing depth improves results
-        # node_first_move.descendants_candidates_to_open.print_info()
-        # print(nodes_to_consider_dict)
-        # print('best_n4444', nodes_to_consider_dict)
 
         best_node = nodes_to_consider_list[0]
-        # print('op', type(best_node), best_node, type(nodes_to_consider_list[0]))
         index = best_node.index if best_node.index is not None else math.inf
         index = best_node.compute_index()
 
@@ -257,16 +240,11 @@ class ZipfSequool:
                 best_node = node_to_consider
                 best_value = (index, node_to_consider.half_move, node_to_consider.id)
 
-        # print('best_value',best_value)
-        # best_node_2 = min(nodes_to_consider_dict, key=nodes_to_consider_dict.get)  # next(iter(nodes_to_consider_dict))
-        # print('~', nodes_to_consider_dict)
-        # print('best_node', best_node.id, best_node.index, best_node.half_move)
+
         assert (best_node.half_move == self.tree.root_node.half_move + 1 + depth_picked)
-        # print('best_node2', best_node_2.id, best_node_2.index, best_node_2.half_move)
-        # assert (best_node == best_node_2)
+
         assert (not best_node.all_legal_moves_generated)
         assert (not node.is_over())
-        #  self.tree.descendants.print_info()
         for nfm in self.tree.first_moves[best_node]:
             nfm.descendants_candidates_to_open.remove_descendant(best_node)
 

@@ -1,15 +1,23 @@
+"""
+Tree Exploration
+"""
 from chipiron.extra_tools.small_tools import softmax
 from chipiron.players.boardevaluators.over_event import OverEvent
 from chipiron.players.treevalue.trees.factory import MoveAndValueTreeFactory
-from . import trees
-from . import tree_manager as tree_man
-from chipiron.players.treevalue.tree_manager.tree_expander import TreeExpansions
 from chipiron.players.treevalue.node_selector.opening_instructions import OpeningInstructor
 from chipiron.players.treevalue.stopping_criterion import StoppingCriterion, create_stopping_criterion
+import chessenvironment.board as boards
+
+from . import trees
+from . import tree_manager as tree_man
 from . import node_selector as node_sel
 
 
 class TreeExploration:
+    """
+    Tree Exploration is an object to manage one best move search
+    """
+    # TODO Not sure why this class is not simply the TreeAndValuePlayer Class
     tree: trees.MoveAndValueTree
     tree_manager: tree_man.AlgorithmNodeTreeManager
     node_selector: node_sel.NodeSelector
@@ -91,6 +99,16 @@ class TreeExploration:
 
     def explore(self):
 
+        # by default the first tree expansion is the creation of the tree node
+        tree_expansions: tree_man.TreeExpansions = tree_man.TreeExpansions()
+        tree_expansion:  tree_man.TreeExpansion = tree_man.TreeExpansion(
+            child_node=self.tree.root_node,
+            parent_node=None,
+            board_modifications=None,
+            creation_child_node=True
+        )
+        tree_expansions.add_creation(tree_expansion)
+
         while self.stopping_criterion.should_we_continue(tree=self.tree):
             assert (not self.tree.root_node.is_over())
             # print info
@@ -98,16 +116,22 @@ class TreeExploration:
 
             # choose the moves and nodes to open
             opening_instructions: node_sel.OpeningInstructions
-            opening_instructions = self.node_selector.choose_node_and_move_to_open(self.tree)
+            opening_instructions = self.node_selector.choose_node_and_move_to_open(
+                tree=self.tree,
+                latest_tree_expansions=tree_expansions
+            )
 
             # make sure we do not break the stopping criterion
             opening_instructions_subset: node_sel.OpeningInstructions
             opening_instructions_subset = self.stopping_criterion.respectful_opening_instructions(
                 opening_instructions=opening_instructions,
                 tree=self.tree)
+
             # open the nodes
-            tree_expansions: TreeExpansions = self.tree_manager.open(tree=self.tree,
-                                                                     opening_instructions=opening_instructions_subset)
+            tree_expansions: tree_man.TreeExpansions = self.tree_manager.open(
+                tree=self.tree,
+                opening_instructions=opening_instructions_subset
+            )
             # self.node_selector.communicate_expansions()
             self.tree_manager.update_backward(tree_expansions=tree_expansions)
 
@@ -128,19 +152,37 @@ class TreeExploration:
 def create_tree_exploration(
         args: dict,
         random_generator,
-        board,
+        starting_board: boards.BoardChi,
         tree_manager: tree_man.AlgorithmNodeTreeManager,
-        tree_factory: MoveAndValueTreeFactory) -> TreeExploration:
+        tree_factory: MoveAndValueTreeFactory
+) -> TreeExploration:
+    """
+    Creation of the tree exploration to init all object necessary
+     for a tree search to find one move in a given stating board
+    Args:
+        starting_board:
+        args:
+        random_generator:
+        tree_manager:
+        tree_factory:
+
+    Returns:
+
+    """
+    # creates the opening instructor
     opening_instructor: OpeningInstructor = OpeningInstructor(
         args['opening_type'], random_generator
     ) if 'opening_type' in args else None
 
-    move_and_value_tree: trees.MoveAndValueTree = tree_factory.create(board=board)
+    # creates the tree
+    move_and_value_tree: trees.MoveAndValueTree = tree_factory.create(starting_board=starting_board)
 
+    # creates the node selector
     node_selector: node_sel.NodeSelector = node_sel.create(
         arg=args,
         opening_instructor=opening_instructor,
-        random_generator=random_generator)
+        random_generator=random_generator,
+    )
 
     stopping_criterion: StoppingCriterion = create_stopping_criterion(arg=args['stopping_criterion'],
                                                                       node_selector=node_selector)

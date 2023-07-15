@@ -16,10 +16,11 @@ class BoardEvaluator(Protocol):
         ...
 
 
-class ObservableBoardEvaluator:
-    # TODO see if it is possible and desirable to  make a general Observable wrapper that goes all that automatically
-    # as i do the same for board and game info
-
+class GameBoardEvaluator:
+    """
+    This class is a collection of evaluator that display their analysis during the game.
+    They are not players just external analysis and display
+    """
     board_evaluator_stock: BoardEvaluator
     board_evaluator_chi: BoardEvaluator
 
@@ -30,6 +31,24 @@ class ObservableBoardEvaluator:
         self.board_evaluator_stock = board_evaluator_stock
         self.board_evaluator_chi = board_evaluator_chi
 
+    def evaluate(self, board):
+        evaluation_chi = self.board_evaluator_chi.value_white(board=board)
+        evaluation_stock = self.board_evaluator_stock.value_white(board=board)
+
+        return evaluation_stock, evaluation_chi
+
+
+class ObservableBoardEvaluator:
+    # TODO see if it is possible and desirable to  make a general Observable wrapper that goes all that automatically
+    # as i do the same for board and game info
+
+    game_board_evaluator: GameBoardEvaluator
+
+    def __init__(self,
+                 game_board_evaluator: GameBoardEvaluator
+                 ):
+        self.game_board_evaluator = game_board_evaluator
+
         self.mailboxes = []
 
     def subscribe(self, mailbox):
@@ -37,11 +56,10 @@ class ObservableBoardEvaluator:
 
     # wrapped function
     def evaluate(self, board):
-        evaluation_chi = self.board_evaluator_chi.value_white(board=board)
-        evaluation_stock = self.board_evaluator_stock.value_white(board=board)
+        evaluation_stock, evaluation_chi = self.game_board_evaluator.evaluate(board=board)
 
         self.notify_new_results(evaluation_chi, evaluation_stock)
-        return evaluation_chi, evaluation_stock
+        return evaluation_stock, evaluation_chi,
 
     def notify_new_results(self, evaluation_chi, evaluation_stock):
         for mailbox in self.mailboxes:
@@ -50,10 +68,7 @@ class ObservableBoardEvaluator:
     # forwarding
 
 
-
 class BoardEvaluatorWrapped:
-
-
     ''' wrapping board evaluator with syzygy '''
     node_evaluator: object
     syzygy_evaluator: object
@@ -107,4 +122,3 @@ class BoardEvaluatorWrapped:
         else:  # draw
             assert (over_event.is_draw())
             return self.VALUE_WHITE_WHEN_OVER_DRAW
-

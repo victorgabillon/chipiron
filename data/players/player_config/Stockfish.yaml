@@ -1,0 +1,4 @@
+type: Stockfish
+name: Stockfishu
+depth: 10
+syzygy_play: True

@@ -1,3 +1,6 @@
+""""
+AlgorithmNodeFactory
+"""
 from chipiron.players.treevalue.nodes.node_minmax_evaluation import NodeMinmaxEvaluation
 from chipiron.players.treevalue.nodes.node_exploration_manager import NodeExplorationManager
 import chipiron.players.treevalue.node_factory as node_fac
@@ -7,10 +10,9 @@ from players.boardevaluators.neural_networks.input_converters.board_representati
 from players.boardevaluators.neural_networks.input_converters.factory import Representation364Factory
 
 
-
 class AlgorithmNodeFactory:
     """
-
+    The classe creating Algorithm Nodes
     """
     tree_node_factory: node_fac.TreeNodeFactory
     board_representation_factory: Representation364Factory
@@ -35,8 +37,6 @@ class AlgorithmNodeFactory:
             half_move=half_move,
             count=count,
             parent_node=parent_node,
-            board_depth=board_depth,
-            modifications=modifications
         )
         minmax_evaluation: NodeMinmaxEvaluation = NodeMinmaxEvaluation(tree_node=tree_node)
         exploration_manager: NodeExplorationManager = NodeExplorationManager(tree_node=tree_node)

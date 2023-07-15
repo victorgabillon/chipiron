@@ -1,5 +1,9 @@
+"""
+MoveAndValueTree
+"""
 import chipiron.players.treevalue.nodes as nodes
 from .descendants import RangedDescendants
+
 
 # todo should we use a discount? and discounted per round reward?
 # todo maybe convenient to seperate this object into openner updater and dsiplayer
@@ -20,11 +24,13 @@ class MoveAndValueTree:
 
     _root_node: nodes.AlgorithmNode
     descendants: RangedDescendants
-    tree_root_half_move :int
+    tree_root_half_move: int
 
-    def __init__(self,
-                 root_node: nodes.AlgorithmNode,
-                 descendants: RangedDescendants) -> None:
+    def __init__(
+            self,
+            root_node: nodes.AlgorithmNode,
+            descendants: RangedDescendants
+    ) -> None:
         """
 
         Args:
@@ -51,5 +57,5 @@ class MoveAndValueTree:
     def node_depth(self, node: nodes.ITreeNode) -> int:
         return node.half_move - self.tree_root_half_move
 
-    def is_over(self)->bool:
+    def is_over(self) -> bool:
         return self._root_node.is_over()

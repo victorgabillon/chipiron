@@ -5,12 +5,12 @@ import sys
 import multiprocessing
 import queue
 from shutil import copyfile
+import os
 import yaml
 from PyQt5.QtWidgets import QApplication
 from scripts.script import Script
 import chipiron as ch
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
-import os
 
 
 class OneMatchScript(Script):
@@ -72,7 +72,8 @@ class OneMatchScript(Script):
                                                             output_folder_path=self.experiment_output_folder,
                                                             seed=self.args['seed'],
                                                             main_thread_mailbox=main_thread_mailbox,
-                                                            args_game=args_game)
+                                                            args_game=args_game,
+                                                            gui= self.args['gui'])
 
         if self.args['gui']:
             # if we use a graphic user interface (GUI) we create it its own thread and

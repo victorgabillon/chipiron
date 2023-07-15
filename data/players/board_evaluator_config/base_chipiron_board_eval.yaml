@@ -1,0 +1,9 @@
+type: neural_network
+neural_network:
+  nn_type: pp2d2_2_prelu
+  nn_param_folder_name: 'param_prelu'
+  representation: '364'
+syzygy_evaluation: True
+
+
+
