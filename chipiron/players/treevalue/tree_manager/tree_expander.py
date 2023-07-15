@@ -10,7 +10,7 @@ class TreeExpansion:
 
     child_node: node.ITreeNode
     parent_node: node.ITreeNode | None
-    board_modifications: board_mod.BoardModification
+    board_modifications: board_mod.BoardModification| None
     creation_child_node: bool
 
 

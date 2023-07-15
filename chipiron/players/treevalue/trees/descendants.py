@@ -44,7 +44,6 @@ class Descendants:
             self.number_of_descendants_at_half_move.pop(half_move)
             self.descendants_at_half_move.pop(half_move)
 
-    # self.print_info()
     def empty(self):
         return self.number_of_descendants == 0
 
@@ -124,6 +123,13 @@ class Descendants:
 
 class RangedDescendants(Descendants):
 
+    def __init__(
+            self
+    ) -> None:
+        super().__init__()
+        self.min_half_move = None
+        self.max_half_move = None
+
     def __str__(self):
         string: str = ''
         for half_move in self:
@@ -132,11 +138,6 @@ class RangedDescendants(Descendants):
                 string += f'{descendant.id} '
             string += '\n'
         return string
-
-    def __init__(self):
-        super().__init__()
-        self.min_half_move = None
-        self.max_half_move = None
 
     def is_new_generation(self, half_move):
         if self.min_half_move is not None:

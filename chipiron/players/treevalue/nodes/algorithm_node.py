@@ -5,6 +5,7 @@ from .node_minmax_evaluation import NodeMinmaxEvaluation
 from bidict import bidict
 from players.boardevaluators.neural_networks.input_converters.board_representation import BoardRepresentation
 
+
 class AlgorithmNode:
     """
     The generic Node used by the tree and value algorithm.
@@ -25,7 +26,6 @@ class AlgorithmNode:
         self.minmax_evaluation = minmax_evaluation
         self.exploration_manager = exploration_manager
         self.board_representation = board_representation
-
 
     @property
     def player_to_move(self):
@@ -56,3 +56,11 @@ class AlgorithmNode:
 
     def add_parent(self, new_parent_node: ITreeNode):
         self.tree_node.add_parent(new_parent_node=new_parent_node)
+
+    @property
+    def all_legal_moves_generated(self):
+            return self.tree_node.all_legal_moves_generated
+
+    @property
+    def non_opened_legal_moves(self):
+            return self.tree_node.non_opened_legal_moves

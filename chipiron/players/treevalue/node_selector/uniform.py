@@ -1,5 +1,6 @@
 from .. import trees
 from chipiron.players.treevalue.node_selector.opening_instructions import OpeningInstructions, OpeningInstructor,create_instructions_to_open_all_moves
+from .. import tree_manager as tree_man
 
 
 class Uniform:
@@ -12,7 +13,12 @@ class Uniform:
         self.opening_instructor = opening_instructor
         self.current_depth_to_expand = 0
 
-    def choose_node_and_move_to_open(self, tree: trees.MoveAndValueTree) -> OpeningInstructions:
+    def choose_node_and_move_to_open(
+            self,
+            tree: trees.MoveAndValueTree,
+            latest_tree_expansions: tree_man.TreeExpansions
+
+    ) -> OpeningInstructions:
 
         opening_instructions_batch = OpeningInstructions()
 

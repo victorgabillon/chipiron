@@ -13,7 +13,6 @@ class IndexTreeNode(TreeNodeWithValue):
 
     def compute_index(self):
         a_parent  = self.parent_nodes[0]
-        #print('###',self.id,self.half_move,a_parent)
         if a_parent is None:
             return 0
         else:

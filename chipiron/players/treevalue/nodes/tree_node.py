@@ -1,12 +1,13 @@
 from bidict import bidict
 from .itree_node import ITreeNode
 import chess
+
+
 # todo check if the transfer to half move is done from depth
 
 class TreeNode:
-
-    half_move_ :int
-    moves_children_ : bidict
+    half_move_: int
+    moves_children_: bidict
     player_to_move_: chess.Color
 
     def __init__(self,
@@ -40,8 +41,6 @@ class TreeNode:
         self.all_legal_moves_generated = False
         self.non_opened_legal_moves = set()
 
-
-
     @property
     def player_to_move(self):
         return self.player_to_move_
@@ -53,11 +52,12 @@ class TreeNode:
     @property
     def half_move(self) -> int:
         return self.half_move_
+
     @property
     def moves_children(self) -> bidict:
         return self.moves_children_
 
-    def add_parent(self, new_parent_node ):
+    def add_parent(self, new_parent_node):
         assert (new_parent_node not in self.parent_nodes)  # there cannot be two ways to link the same child-parent
         self.parent_nodes.append(new_parent_node)
 
@@ -86,9 +86,6 @@ class TreeNode:
     def print_a_move_sequence_from_root(self):
         move_sequence_from_root = self.a_move_sequence_from_root()
         print('a_move_sequence_from_root', move_sequence_from_root)
-
-    def are_all_moves_and_children_opened(self):
-        return self.all_legal_moves_generated and self.non_opened_legal_moves == set()
 
     def test(self):
         # print('testing node', selbestf.id)

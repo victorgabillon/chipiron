@@ -31,6 +31,7 @@ class MyParser:
     def parse_config_file_arguments(self, config_file_path: str) -> None:
 
         try:
+
             with open(config_file_path, "r") as exp_options_file:
                 try:
                     args_config_file = yaml.safe_load(exp_options_file)
@@ -38,7 +39,7 @@ class MyParser:
                     print('Here are the yaml file arguments of the script', args_config_file)
                 except yaml.YAMLError as exc:
                     print(exc)
-        except IOError:  # TODO weird things hapen here depending on where is execute the script and the type of error catched
+        except IOError:
             raise Exception("Could not read file:", config_file_path)
         self.args_config_file = args_config_file
 

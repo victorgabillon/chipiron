@@ -4,7 +4,7 @@ from chipiron.games.game_manager_factory import GameManagerFactory
 from chipiron.games.match_results_factory import MatchResultsFactory
 from chipiron.players.factory import create_player
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
-from chipiron.players.boardevaluators.factory import ObservableBoardEvaluatorFactory
+from chipiron.players.boardevaluators.factory import create_game_board_evaluator
 import random
 from chipiron.extra_tools.small_tools import unique_int_from_list
 import queue
@@ -20,16 +20,17 @@ class MatchManagerFactory:
                  output_folder_path: str,
                  seed: int,
                  main_thread_mailbox: queue.Queue,
-                 args_game: dict) -> None:
+                 args_game: dict,
+                 gui: bool) -> None:
         self.output_folder_path = output_folder_path
         self.player_one_name: str = args_player_one['name']
         self.player_two_name: str = args_player_two['name']
 
-        game_manager_board_evaluator_factory: ObservableBoardEvaluatorFactory = ObservableBoardEvaluatorFactory()
+        game_board_evaluator = create_game_board_evaluator(gui=gui)
 
         self.game_manager_factory: GameManagerFactory = GameManagerFactory(
             syzygy_table=syzygy_table,
-            game_manager_board_evaluator_factory=game_manager_board_evaluator_factory,
+            game_manager_board_evaluator=game_board_evaluator,
             output_folder_path=output_folder_path,
             main_thread_mailbox=main_thread_mailbox
         )

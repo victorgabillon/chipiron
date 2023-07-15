@@ -24,7 +24,7 @@ class TreeAndValuePlayer:
             tree_manager=self.tree_manager,
             args=self.args,
             random_generator=self.random_generator,
-            board=board,
+            starting_board=board,
             tree_factory=self.tree_factory)
         best_move = tree_exploration.explore()
 

@@ -7,7 +7,6 @@ import chipiron.players as players
 from chipiron.players.factory import launch_player_process
 from .game_manager import GameManager
 from .game import Game, ObservableGame
-from chipiron.players.boardevaluators.factory import ObservableBoardEvaluatorFactory
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 
 
@@ -17,17 +16,16 @@ class GameManagerFactory:
     Calling create ask for the creation of a GameManager depending on args and players.
     This class is supposed to be independent of Match-related classes (contrarily to the GameArgsFactory)
     """
-    game_manager_board_evaluator_factory: ObservableBoardEvaluatorFactory
     syzygy_table: SyzygyTable
 
     def __init__(self,
                  syzygy_table: SyzygyTable,
-                 game_manager_board_evaluator_factory: ObservableBoardEvaluatorFactory,
+                 game_manager_board_evaluator,
                  output_folder_path: str,
                  main_thread_mailbox: queue.Queue) -> None:
         self.syzygy_table = syzygy_table
         self.output_folder_path = output_folder_path
-        self.game_manager_board_evaluator_factory = game_manager_board_evaluator_factory
+        self.game_manager_board_evaluator = game_manager_board_evaluator
         self.main_thread_mailbox = main_thread_mailbox
         self.subscribers = []
 
@@ -46,7 +44,7 @@ class GameManagerFactory:
                 player_id_message: dict = {'type': 'players_color_to_id',
                                            'players_color_to_id': player_color_to_id}
                 subscriber.put(player_id_message)
-        board_evaluator = self.game_manager_board_evaluator_factory.create()
+
 
         while not self.main_thread_mailbox.empty():
             self.main_thread_mailbox.get()
@@ -75,7 +73,7 @@ class GameManagerFactory:
         game_manager: GameManager
         game_manager = GameManager(game=obs_game,
                                    syzygy=self.syzygy_table,
-                                   display_board_evaluator=board_evaluator,
+                                   display_board_evaluator=self.game_manager_board_evaluator,
                                    output_folder_path=self.output_folder_path,
                                    args=args_game_manager,
                                    player_color_to_id=player_color_to_id,
@@ -86,4 +84,4 @@ class GameManagerFactory:
 
     def subscribe(self, subscriber):
         self.subscribers.append(subscriber)
-        self.game_manager_board_evaluator_factory.subscribers.append(subscriber)
+        self.game_manager_board_evaluator.subscribe(subscriber)
