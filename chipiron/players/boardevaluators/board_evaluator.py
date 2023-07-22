@@ -116,9 +116,9 @@ class BoardEvaluatorWrapped:
         if over_event.is_win():
             assert (not over_event.is_draw())
             if over_event.is_winner(chess.WHITE):
-                return self.VALUE_WHITE_WHEN_OVER_WHITE_WINS
+                return VALUE_WHITE_WHEN_OVER_WHITE_WINS
             else:
-                return self.VALUE_WHITE_WHEN_OVER_BLACK_WINS
+                return VALUE_WHITE_WHEN_OVER_BLACK_WINS
         else:  # draw
             assert (over_event.is_draw())
-            return self.VALUE_WHITE_WHEN_OVER_DRAW
+            return VALUE_WHITE_WHEN_OVER_DRAW

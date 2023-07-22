@@ -1,9 +1,12 @@
 from sortedcollections import ValueSortedDict
 
-testing_bool = False
-
 
 class Descendants:
+    descendants_at_half_move: dict[int, dict]
+    number_of_descendants: int
+    number_of_descendants_at_half_move: dict
+    min_half_move: int | None
+    max_half_move: int | None
 
     def __init__(self):
         self.descendants_at_half_move = {}
@@ -205,12 +208,6 @@ class RangedDescendants(Descendants):
 
     def update(self, new_descendants):
         really_new_descendants = RangedDescendants()
-        # print('@@@@@@@@@@@@@@@@@@@@@@@@@')
-        # self.print_info()
-        # print('@w@')
-        # #
-        # new_descendants.print_info()
-        # print('@s@')
 
         for half_move in new_descendants.range():
             if half_move in self:

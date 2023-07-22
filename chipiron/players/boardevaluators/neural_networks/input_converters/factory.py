@@ -1,8 +1,8 @@
 from .board_representation import Representation364
 from typing import Optional, Protocol
-from chessenvironment.board import BoardChi
+from environments.chess.board import BoardChi
 import chipiron.players.treevalue.nodes as nodes
-import chipiron.chessenvironment.board as board_mod
+import chipiron.environments.chess.board as board_mod
 import chess
 import torch
 

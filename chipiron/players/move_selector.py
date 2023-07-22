@@ -1,8 +1,8 @@
 from typing import Protocol
-import chipiron as ch
+import environments.chess.board as boards
 
 
 class MoveSelector(Protocol):
 
-    def select_move(self, board: ch.chess.board.BoardChi):
+    def select_move(self, board: boards.BoardChi):
         ...

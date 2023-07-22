@@ -3,7 +3,7 @@ import datetime
 import yaml
 import os
 from chipiron.games.match_factories import MatchManagerFactory
-from chipiron.extra_tools.small_tools import yaml_fetch_args_in_file
+from chipiron.utils.small_tools import yaml_fetch_args_in_file
 from sortedcollections import ValueSortedDict
 from collections import deque
 import matplotlib.pyplot as plt

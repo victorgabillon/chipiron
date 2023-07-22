@@ -63,7 +63,6 @@ class GameManager:
         self.player_threads = player_threads
 
     def external_eval(self):
-        print('ooooooooo,',self.display_board_evaluator)
         return self.display_board_evaluator.evaluate(self.game.board)  # TODO DON'T LIKE THIS writing
 
     def play_one_move(self, move: chess.Move) -> None:
@@ -88,7 +87,7 @@ class GameManager:
         color_names = ['Black', 'White']
 
         while True:
-            half_move = board.ply()
+            half_move: int = board.ply()
             print(f'Half Move: {half_move} playing status {self.game.playing_status.status} ')
             color_to_move = board.turn
             color_of_player_to_move_str = color_names[color_to_move]

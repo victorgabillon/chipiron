@@ -1,5 +1,5 @@
 import torch.nn as nn
-from chipiron.extra_tools.chi_nn import ChiNN
+from chipiron.utils.chi_nn import ChiNN
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import PointOfView
 
 class NetPP2D2_2_PRELU(ChiNN):

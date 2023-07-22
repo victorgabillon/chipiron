@@ -1,9 +1,9 @@
-from __future__ import annotations  # To be removed in python 3.10 (helping with recursive type annocatation)
 from chipiron.players.treevalue.nodes.tree_node import TreeNode
 from chipiron.players.treevalue.nodes.itree_node import ITreeNode
 from .node_minmax_evaluation import NodeMinmaxEvaluation
 from bidict import bidict
 from players.boardevaluators.neural_networks.input_converters.board_representation import BoardRepresentation
+from chipiron.players.treevalue.nodes.node_exploration_manager import NodeExplorationManager
 
 
 class AlgorithmNode:
@@ -14,13 +14,13 @@ class AlgorithmNode:
 
     tree_node: TreeNode
     minmax_evaluation: NodeMinmaxEvaluation
-    exploration_manager: object
+    exploration_manager: NodeExplorationManager
     board_representation: BoardRepresentation
 
     def __init__(self,
                  tree_node: TreeNode,
                  minmax_evaluation: NodeMinmaxEvaluation,
-                 exploration_manager: object,
+                 exploration_manager: NodeExplorationManager,
                  board_representation: BoardRepresentation) -> None:
         self.tree_node = tree_node
         self.minmax_evaluation = minmax_evaluation
@@ -30,6 +30,10 @@ class AlgorithmNode:
     @property
     def player_to_move(self):
         return self.tree_node.player_to_move
+
+    @property
+    def id(self):
+        return self.tree_node.id
 
     @property
     def half_move(self) -> int:
@@ -64,3 +68,4 @@ class AlgorithmNode:
     @property
     def non_opened_legal_moves(self):
             return self.tree_node.non_opened_legal_moves
+

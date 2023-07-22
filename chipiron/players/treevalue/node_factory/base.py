@@ -3,7 +3,7 @@ Basic class for Creating Tree nodes
 """
 from chipiron.players.treevalue.node_factory.factory import TreeNodeFactory
 from chipiron.players.treevalue.nodes.tree_node import TreeNode
-import chipiron.chessenvironment.board as boards
+import chipiron.environments.chess.board as boards
 
 
 class Base(TreeNodeFactory):

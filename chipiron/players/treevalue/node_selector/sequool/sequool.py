@@ -1,6 +1,6 @@
 from chipiron.players.treevalue.node_selector.notations_and_statics import zipf_picks
 import math
-from .. import trees
+from players.treevalue import trees
 from chipiron.players.treevalue.node_selector.opening_instructions import OpeningInstructions
 
 
@@ -28,38 +28,6 @@ class SequoolTree:
 
         #   self.count_to_open_at_depth.append(1)
 
-    def update_all_indices(self):
-        for depth in range(self.get_max_depth()):
-            for node in self.all_nodes[depth].values():
-                for child in node.moves_children.values():
-                    child.index = None
-
-        for depth in range(self.get_max_depth()):
-            # print('depth',depth)
-            for node in self.all_nodes[depth].values():
-                #   print('node',node.id)
-                for child in node.moves_children.values():
-                    #      print('child', child.id)
-
-                    index = max(abs(child.value_white - node.value_white) / 2, node.index)
-                    #             print('----', index)
-
-                    if child.index is None:
-                        child.index = index
-                    #               print('#',child.index)
-                    else:
-                        #                print('mm', child.index,index)
-                        child.index = min(child.index, index)
-        #              print('dmm', child.index)
-
-        assert (self.get_max_depth() == len(self.all_nodes))
-        for depth in range(self.get_max_depth()):
-            # print('eee',self.get_max_depth())
-            for node in self.all_nodes[depth].values():
-                for child in node.moves_children.values():
-                    assert (child.index is not None)
-
-    #   self.print_some_stats()
 
 
 class Sequool:

@@ -5,10 +5,9 @@ import pandas as pd
 import numpy as np
 import math
 import chess
-from chipiron.chessenvironment.board.board import BoardChi
+from chipiron.environments.chess.board.board import BoardChi
 import torch
-from tempfile import NamedTemporaryFile
-import pickle
+
 
 self_data = []
 

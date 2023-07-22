@@ -1,4 +1,4 @@
-from chipiron.extra_tools.dict_of_numbered_dict_with_pointer_on_max import DictOfNumberedDictWithPointerOnMax
+from chipiron.utils.dict_of_numbered_dict_with_pointer_on_max import DictOfNumberedDictWithPointerOnMax
 
 
 class UpdateInstructionsBatch:

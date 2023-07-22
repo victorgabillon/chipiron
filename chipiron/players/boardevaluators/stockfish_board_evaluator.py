@@ -2,7 +2,7 @@
 Module where we define the Stockfish Board Evaluator
 """
 import chess.engine
-import chessenvironment.board as boards
+import environments.chess.board as boards
 
 
 class StockfishBoardEvaluator:
@@ -23,9 +23,10 @@ class StockfishBoardEvaluator:
             board: boards.BoardChi
     ):
         """ computes the value white of the board"""
-        self.engine = chess.engine.SimpleEngine.popen_uci(
-            "/home/victor_old/.pycharm/chipiron/stockfish/stockfish_14.1_linux_x64/stockfish_14.1_linux_x64")
-        info = self.engine.analyse(board, chess.engine.Limit(time=0.1))
+        #self.engine = chess.engine.SimpleEngine.popen_uci(
+        #    "/home/victor_old/.pycharm/chipiron/stockfish/stockfish_14.1_linux_x64/stockfish_14.1_linux_x64")
+        #info = self.engine.analyse(board, chess.engine.Limit(time=0.1))
 
 
-        return info["score"]
+       # return info["score"]
+        return 0

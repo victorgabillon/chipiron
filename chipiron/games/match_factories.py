@@ -6,7 +6,7 @@ from chipiron.players.factory import create_player
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 from chipiron.players.boardevaluators.factory import create_game_board_evaluator
 import random
-from chipiron.extra_tools.small_tools import unique_int_from_list
+from chipiron.utils.small_tools import unique_int_from_list
 import queue
 
 

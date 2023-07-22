@@ -1,5 +1,7 @@
 import chess
-from chipiron.players.boardevaluators.board_evaluator import BoardEvaluator
+import chipiron.players.boardevaluators as board_evals
+import chipiron.players.treevalue.nodes as nodes
+
 DISCOUNT = .999999999999  # todo play with this
 
 
@@ -34,11 +36,11 @@ class NodeEvaluator:
     # set atm to be symmetric and high to be preferred
 
     ''' wrapping node evaluator with syzygy '''
-    board_evaluator: BoardEvaluator
+    board_evaluator: board_evals.BoardEvaluator
     syzygy_evaluator: object
 
     def __init__(self,
-                 board_evaluator: BoardEvaluator,
+                 board_evaluator: board_evals.BoardEvaluator,
                  syzygy):
         self.board_evaluator = board_evaluator
         self.syzygy_evaluator = syzygy
@@ -55,7 +57,9 @@ class NodeEvaluator:
         else:
             return self.syzygy_evaluator.value_white(board)
 
-    def check_obvious_over_events(self, node):
+    def check_obvious_over_events(
+            self,
+            node: nodes.AlgorithmNode):
         """ updates the node.over object
          if the game is obviously over"""
         game_over = node.tree_node.board.is_game_over()
@@ -82,20 +86,21 @@ class NodeEvaluator:
         if over_event.is_win():
             assert (not over_event.is_draw())
             if over_event.is_winner(chess.WHITE):
-                return self.VALUE_WHITE_WHEN_OVER_WHITE_WINS
+                return board_evals.VALUE_WHITE_WHEN_OVER_WHITE_WINS
             else:
-                return self.VALUE_WHITE_WHEN_OVER_BLACK_WINS
+                return board_evals.VALUE_WHITE_WHEN_OVER_BLACK_WINS
         else:  # draw
             assert (over_event.is_draw())
-            return self.VALUE_WHITE_WHEN_OVER_DRAW
+            return board_evals.VALUE_WHITE_WHEN_OVER_DRAW
 
     def evaluate_over(self, node):
         evaluation = DISCOUNT ** node.half_move * self.value_white_from_over_event(node.minmax_evaluation.over_event)
         node.minmax_evaluation.set_evaluation(evaluation)
 
-    def evaluate_all_queried_nodes(self,
-                                   evaluation_queries: EvaluationQueries):
-        print('self,self',self)
+    def evaluate_all_queried_nodes(
+            self,
+            evaluation_queries: EvaluationQueries
+    ) -> None:
         for node_over in evaluation_queries.over_nodes:
             self.evaluate_over(node_over)
         if evaluation_queries.not_over_nodes:

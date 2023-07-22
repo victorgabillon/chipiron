@@ -1,5 +1,5 @@
 from typing import Callable
-from chessenvironment.board import BoardChi
+from environments.chess.board import BoardChi
 import torch
 import chess
 from .board_representation import Representation364

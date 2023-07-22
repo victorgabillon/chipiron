@@ -4,18 +4,30 @@ import math
 from random import choice
 from .tree_node import TreeNode
 from chipiron.players.boardevaluators.over_event import OverEvent
-from chipiron.extra_tools.small_tools import nth_key
-from chipiron.extra_tools.my_value_sorted_dict import MyValueSortedDict
+from chipiron.utils.small_tools import nth_key
+from chipiron.utils.my_value_sorted_dict import sort_dic
 from typing import List
+from typing import Protocol
 
 
 # todo maybe further split values from over?
 
+# Class created to avoid circular import and defines what is seen and needed by the NodeMinmaxEvaluation class
+class NodeWithValue(Protocol):
+    minmax_evaluation: NodeMinmaxEvaluation
+
 
 class NodeMinmaxEvaluation:
+    # a reference to the original tree node that is evaluated
     tree_node: TreeNode
 
-    def __init__(self, tree_node: TreeNode):
+    # the children of the tree node are kept in a dictionary that can be sorted by their evaluations ()
+    children_sorted_by_value_: dict[NodeWithValue, tuple]
+
+    def __init__(
+            self,
+            tree_node: TreeNode
+    ) -> None:
 
         self.tree_node = tree_node
 
@@ -32,9 +44,9 @@ class NodeMinmaxEvaluation:
         # children_sorted_by_value records subjective values of children by descending order
         # subjective value means the values is from the point of view of player_to_move
         # careful, I have hard coded in the self.best_child() function the descending order for
-        # fast access to best element, so please do not change!
+        # fast access to the best element, so please do not change!
         # self.children_sorted_by_value_vsd = ValueSortedDict({})
-        self.children_sorted_by_value_ = MyValueSortedDict()
+        self.children_sorted_by_value_ = {}
 
         # self.children_sorted_by_value = {}
 
@@ -76,34 +88,34 @@ class NodeMinmaxEvaluation:
 
     def subjective_value_of(self, another_node):
         # return the value from the point of view of the self.player_to_move of the value of another_node
-        subjective_value = another_node.minmax_evaluation.get_value_white() if self.tree_node.player_to_move == chess.WHITE else -another_node.get_value_white()
+        # subjective_value = another_node.minmax_evaluation.get_value_white() if self.tree_node.player_to_move == chess.WHITE else -another_node.get_value_white()
         return subjective_value
 
     def best_child(self):
-        # fast way to access first key with highest subjective value
-        if self.children_sorted_by_value.dic:
-            best_child = next(iter(self.children_sorted_by_value.dic))
+        # fast way to access first key with the highest subjective value
+        if self.children_sorted_by_value:
+            best_child = next(iter(self.children_sorted_by_value))
         else:
             best_child = None
         return best_child
 
     def best_child_not_over(self):
-        for child in self.children_sorted_by_value.dic:
+        for child in self.children_sorted_by_value:
             if not child.is_over():
                 return child
         assert (1 == 0)
 
     def best_child_value(self):
-        # fast way to access first key with highest subjective value
+        # fast way to access first key with the highest subjective value
         if self.children_sorted_by_value:
-            best_value = next(iter(self.children_sorted_by_value.dic.values()))
+            best_value = next(iter(self.children_sorted_by_value.values()))
         else:
             best_value = None
         return best_value
 
-    def second_best_child(self):
+    def second_best_child(self) -> NodeWithValue:
         assert (len(self.children_sorted_by_value) >= 2)
-        # fast way to access second first key with highest subjective value
+        # fast way to access second key with the highest subjective value
         second_best_child = nth_key(self.children_sorted_by_value, 1)
         return second_best_child
 
@@ -156,13 +168,13 @@ class NodeMinmaxEvaluation:
         subjective_value_of_child = -child_value_white if self.tree_node.player_to_move == chess.WHITE else child_value_white
         if self.is_over():
             # the shorter the check the better now
-            self.children_sorted_by_value[child] = (
+            self.children_sorted_by_value_[child] = (
                 subjective_value_of_child, -len(child.minmax_evaluation.best_node_sequence), child.tree_node.id)
         #   self.children_sorted_by_value_vsd[child] = (subjective_value_of_child, -len(child.best_node_sequence), child.id)
 
         else:
             # the longer the line the better now
-            self.children_sorted_by_value[child] = (
+            self.children_sorted_by_value_[child] = (
                 subjective_value_of_child, len(child.minmax_evaluation.best_node_sequence), child.tree_node.id)
         #  self.children_sorted_by_value_vsd[child] = (subjective_value_of_child, len(child.best_node_sequence), child.id)
 
@@ -178,7 +190,7 @@ class NodeMinmaxEvaluation:
         return value_1 > value_2 - epsilon and value_2 > value_1 - epsilon
 
     def becoming_over_from_children(self):
-        """ this nodes is asked to switch to over status"""
+        """ this node is asked to switch to over status"""
         assert (not self.is_over())
 
         # becoming over triggers a full update record_sort_value_of_child
@@ -187,7 +199,7 @@ class NodeMinmaxEvaluation:
         for child in self.tree_node.moves_children.values():
             self.record_sort_value_of_child(child)
 
-        # fast way to access first key with highest subjective value
+        # fast way to access first key with the highest subjective value
         best_child = self.best_child()
 
         self.over_event.becomes_over(how_over=best_child.minmax_evaluation.over_event.how_over,
@@ -220,7 +232,7 @@ class NodeMinmaxEvaluation:
     def update_children_values(self, children_nodes_to_consider):
         for child in children_nodes_to_consider:
             self.record_sort_value_of_child(child)
-        self.children_sorted_by_value.sort_dic()
+        self.children_sorted_by_value_ = sort_dic(self.children_sorted_by_value_)
 
     def sort_children_not_over(self):
         # todo: looks like the deterministism of the sort induces some determinisin the play like always playing the same actions when a lot of them have equal value: introduce some randomness?

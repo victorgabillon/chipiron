@@ -1,7 +1,7 @@
 from .algorithm_node_tree_manager import AlgorithmNodeTreeManager, TreeManager
 from chipiron.players.treevalue import node_factory
 import chipiron.players.treevalue.updates as upda
-from .node_evaluator import  NodeEvaluator, EvaluationQueries
+from players.treevalue.node_evaluator import  NodeEvaluator, EvaluationQueries
 
 
 def create_algorithm_node_tree_manager(

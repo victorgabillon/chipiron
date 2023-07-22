@@ -3,7 +3,7 @@ from chipiron.players.boardevaluators.basic_evaluation import BasicEvaluation
 from chipiron.players.boardevaluators.board_evaluator import BoardEvaluator
 from chipiron.players.boardevaluators.neural_networks.factory import create_nn_board_eval
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
-from .node_evaluator import NodeEvaluator
+from players.treevalue.node_evaluator import NodeEvaluator
 from .nn_node_evaluator import NNNodeEvaluator
 
 

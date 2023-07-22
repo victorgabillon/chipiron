@@ -3,7 +3,7 @@ from chipiron.players.factory import create_player
 from scripts.script import Script
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 import yaml
-from chipiron.chessenvironment.board import create_board
+from chipiron.environments.chess.board import create_board
 import cProfile
 import time
 import io

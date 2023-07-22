@@ -2,7 +2,7 @@ import chess
 import queue
 
 import chipiron as ch
-from chipiron.chessenvironment.board.factory import create_board
+from chipiron.environments.chess.board.factory import create_board
 import chipiron.players as players
 from chipiron.players.factory import launch_player_process
 from .game_manager import GameManager
