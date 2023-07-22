@@ -4,7 +4,7 @@ import queue
 import copy
 
 from .game_playing_status import GamePlayingStatus, PlayingStatus
-from chipiron.chessenvironment.board.board import BoardChi
+from chipiron.environments.chess.board.board import BoardChi
 
 
 class Game:
@@ -103,7 +103,6 @@ class ObservableGame:
         self.notify_status()
 
     def pause(self):
-        print('dedededde')
         self.game.pause()
         self.notify_status()
 
@@ -118,10 +117,12 @@ class ObservableGame:
             board_copy = copy.deepcopy(self.game.board)
             mailbox.put({'type': 'board', 'board': board_copy})
 
-    def notify_play(self):
-        for mailbox in self.mailboxes_play:
-            board_copy = copy.deepcopy(self.game.board)
-            mailbox.put({'type': 'board', 'board': board_copy})
+    def notify_play(self) -> None:
+        """ Notify the players to ask for a move"""
+        if not self.game.board.is_game_over():
+            for mailbox in self.mailboxes_play:
+                board_copy = copy.deepcopy(self.game.board)
+                mailbox.put({'type': 'board', 'board': board_copy})
 
     def notify_status(self):
         observable_copy = copy.copy(self.game.playing_status)

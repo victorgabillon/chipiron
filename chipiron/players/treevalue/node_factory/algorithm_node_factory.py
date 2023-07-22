@@ -5,7 +5,7 @@ from chipiron.players.treevalue.nodes.node_minmax_evaluation import NodeMinmaxEv
 from chipiron.players.treevalue.nodes.node_exploration_manager import NodeExplorationManager
 import chipiron.players.treevalue.node_factory as node_fac
 import chipiron.players.treevalue.nodes as node
-import chipiron.chessenvironment.board as board_mod
+import chipiron.environments.chess.board as board_mod
 from players.boardevaluators.neural_networks.input_converters.board_representation import BoardRepresentation
 from players.boardevaluators.neural_networks.input_converters.factory import Representation364Factory
 
@@ -46,7 +46,9 @@ class AlgorithmNodeFactory:
             modifications=modifications
         )
 
-        return node.AlgorithmNode(tree_node=tree_node,
-                                  minmax_evaluation=minmax_evaluation,
-                                  exploration_manager=exploration_manager,
-                                  board_representation=board_representation)
+        return node.AlgorithmNode(
+            tree_node=tree_node,
+            minmax_evaluation=minmax_evaluation,
+            exploration_manager=exploration_manager,
+            board_representation=board_representation
+        )

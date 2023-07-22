@@ -1,7 +1,7 @@
 import chess
-from chipiron.chessenvironment.board.board_tools import convert_to_fen
+from chipiron.environments.chess.board.board_tools import convert_to_fen
 import chess.polyglot
-from chipiron.chessenvironment.board.board_modification import BoardModification
+from chipiron.environments.chess.board.board_modification import BoardModification
 
 COLORS = [WHITE, BLACK] = [True, False]
 

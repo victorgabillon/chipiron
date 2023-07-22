@@ -1,5 +1,6 @@
 from .. import trees
-from chipiron.players.treevalue.node_selector.opening_instructions import OpeningInstructions, OpeningInstructor,create_instructions_to_open_all_moves
+from chipiron.players.treevalue.node_selector.opening_instructions import OpeningInstructions, OpeningInstructor, \
+    create_instructions_to_open_all_moves
 from .. import tree_manager as tree_man
 
 
@@ -8,8 +9,10 @@ class Uniform:
 
     opening_instructor: OpeningInstructor
 
-    def __init__(self,
-                 opening_instructor: OpeningInstructor):
+    def __init__(
+            self,
+            opening_instructor: OpeningInstructor
+    ) -> None:
         self.opening_instructor = opening_instructor
         self.current_depth_to_expand = 0
 
@@ -19,8 +22,7 @@ class Uniform:
             latest_tree_expansions: tree_man.TreeExpansions
 
     ) -> OpeningInstructions:
-
-        opening_instructions_batch = OpeningInstructions()
+        opening_instructions_batch: OpeningInstructions = OpeningInstructions()
 
         # generate the nodes to expand
         current_half_move_to_expand = tree.tree_root_half_move + self.current_depth_to_expand

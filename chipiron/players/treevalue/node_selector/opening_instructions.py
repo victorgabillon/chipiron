@@ -80,16 +80,24 @@ def create_instructions_to_open_all_moves(moves_to_play, node_to_open):
         # and the values are here for clean data processing
         opening_instructions_batch[(node_to_open, move_to_play)] = OpeningInstruction(node_to_open,
                                                                                       move_to_play)
-      #  node_to_open.non_opened_legal_moves.add(move_to_play)
+    #  node_to_open.non_opened_legal_moves.add(move_to_play)
     return opening_instructions_batch
+
 
 class OpeningInstructor:
 
-    def __init__(self, opening_type, random_generator):
+    def __init__(
+            self,
+            opening_type: str,
+            random_generator
+    ) -> None:
         self.opening_type = opening_type
         self.random_generator = random_generator
 
-    def all_moves_to_open(self, node_to_open):
+    def all_moves_to_open(
+            self,
+            node_to_open
+    ) -> list[chess.Move]:
         if self.opening_type == 'all_children':
             node_to_open.all_legal_moves_generated = True
             moves_to_play = list(node_to_open.board.legal_moves)
@@ -100,4 +108,3 @@ class OpeningInstructor:
         else:
             raise Exception('Hello-la')
         return moves_to_play
-

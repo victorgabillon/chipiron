@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from chipiron.extra_tools.chi_nn import ChiNN
+from chipiron.utils.chi_nn import ChiNN
 
 class NetPP2(ChiNN):
     def __init__(self ):

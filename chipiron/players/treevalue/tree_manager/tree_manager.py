@@ -1,5 +1,5 @@
 import chess
-import chipiron.chessenvironment.board as board_mod
+import chipiron.environments.chess.board as board_mod
 from chipiron.players.treevalue.tree_manager.tree_expander import TreeExpansion, TreeExpansions
 import chipiron.players.treevalue.nodes as node
 import chipiron.players.treevalue.trees as trees

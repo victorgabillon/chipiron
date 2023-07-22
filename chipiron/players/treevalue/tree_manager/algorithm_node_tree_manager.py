@@ -8,7 +8,7 @@ import chipiron.players.treevalue.updates as upda
 from .tree_expander import TreeExpansion, TreeExpansions
 from .tree_manager import TreeManager
 
-from .node_evaluator import NodeEvaluator, EvaluationQueries
+from players.treevalue.node_evaluator import NodeEvaluator, EvaluationQueries
 
 
 # todo should we use a discount? and discounted per round reward?

@@ -6,8 +6,8 @@ from players.boardevaluators.neural_networks.models.nn_pp2d2_2leaky import NetPP
 from players.boardevaluators.neural_networks.models.nn_pp2d2_2prelu import NetPP2D2_2_PRELU
 from players.boardevaluators.neural_networks.models.nn_pp2d2_2rrelu import NetPP2D2_2_RRELU
 from chipiron.players.boardevaluators.neural_networks.board_evaluator import NNBoardEvaluator
-from chipiron.extra_tools.small_tools import mkdir
-from chipiron.extra_tools.chi_nn import ChiNN
+from chipiron.utils.small_tools import mkdir
+from chipiron.utils.chi_nn import ChiNN
 import sys
 from players.boardevaluators.neural_networks.output_converters.output_value_converter import OutputValueConverter,OneDToValueWhite
 from players.boardevaluators.neural_networks.input_converters.board_to_input import Representation364BTI, BoardToInput

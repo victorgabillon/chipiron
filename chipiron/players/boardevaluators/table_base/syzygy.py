@@ -1,5 +1,9 @@
+import copy
+
 import chess.syzygy
 from chipiron.players.boardevaluators.over_event import OverEvent
+import chipiron.players.treevalue.nodes as nodes
+import environments.chess.board as boards
 
 
 class SyzygyTable:
@@ -17,25 +21,28 @@ class SyzygyTable:
             return False
         return True
 
-    def set_over_event(self, node):
-        val = self.val(node.board)
+    def set_over_event(
+            self,
+            node: nodes.AlgorithmNode
+    ) -> None:
+        val: int = self.val(node.board)
 
-        who_is_winner_ = node.over_event.NO_KNOWN_WINNER
+        who_is_winner_ = node.minmax_evaluation.over_event.NO_KNOWN_WINNER
         if val != 0:
-            how_over_ = node.over_event.WIN
+            how_over_ = node.minmax_evaluation.over_event.WIN
             if val > 0:
                 who_is_winner_ = node.player_to_move
             if val < 0:
                 who_is_winner_ = chess.WHITE if node.player_to_move == chess.BLACK else chess.BLACK
         else:
-            how_over_ = node.over_event.DRAW
+            how_over_ = node.minmax_evaluation.over_event.DRAW
 
-        node.over_event.becomes_over(how_over=how_over_,
-                                     who_is_winner=who_is_winner_)
+        node.minmax_evaluation.over_event.becomes_over(how_over=how_over_,
+                                                       who_is_winner=who_is_winner_)
 
-    def val(self, board):
+    def val(self, board) -> int:
         # tablebase.probe_wdl Returns 2 if the side to move is winning, 0 if the position is a draw and -2 if the side to move is losing.
-        val = self.table_base.probe_wdl(board)
+        val: int = self.table_base.probe_wdl(board)
         return val
 
     def get_over_tag(self, board):
@@ -67,7 +74,9 @@ class SyzygyTable:
         dtz = self.table_base.probe_dtz(board)
         return dtz
 
-    def best_move(self, board):
+    def best_move(
+            self,
+            board: boards.BoardChi):
         all_moves = list(board.legal_moves)
 
         # avoid draws by 50 move rules in winning position, # otherwise look
@@ -76,10 +85,11 @@ class SyzygyTable:
         best_value = -1000000000000000000000
         best_move = None
         for move in all_moves:
-            next_board, board_modifications = board.move_with_next_board_creation(move, 0)
-            val_player_next_board = self.val(next_board)
+            board_copy = board.copy()
+            board_copy.push(move)
+            val_player_next_board = self.val(board_copy)
             val_player_node = -val_player_next_board
-            dtz_player_next_board = self.dtz(next_board)
+            dtz_player_next_board = self.dtz(board_copy)
             dtz_player_node = -dtz_player_next_board
             if val_player_node > 0:  # winning position
                 new_value = board.is_zeroing(move) * 100 - dtz_player_node + 1000
@@ -93,4 +103,3 @@ class SyzygyTable:
                 best_value = new_value
                 best_move = move
         return best_move
-

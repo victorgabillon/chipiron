@@ -1,6 +1,6 @@
 import argparse
 import yaml
-from chipiron.extra_tools.small_tools import dict_alphabetic_str
+from chipiron.utils.small_tools import dict_alphabetic_str
 
 
 def create_parser(default_param_dict):

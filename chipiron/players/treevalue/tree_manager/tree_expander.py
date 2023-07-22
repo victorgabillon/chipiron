@@ -1,7 +1,7 @@
 import chipiron.players.treevalue.nodes as node
 from typing import List
 from dataclasses import dataclass
-import chipiron.chessenvironment.board as board_mod
+import chipiron.environments.chess.board as board_mod
 
 
 @dataclass

@@ -1,6 +1,6 @@
 import torch
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import BoardEvaluation
-from .node_evaluator import NodeEvaluator
+from players.treevalue.node_evaluator import NodeEvaluator
 from typing import List
 import chipiron.players.treevalue.nodes as nodes
 from chipiron.players.boardevaluators.neural_networks.board_evaluator import NNBoardEvaluator

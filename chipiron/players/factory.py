@@ -1,7 +1,7 @@
 import chipiron.players as players
 import chipiron.players.treevalue as treevalue
 
-from chipiron.extra_tools.null_object import NullObject
+from chipiron.utils.null_object import NullObject
 
 import multiprocessing
 import random

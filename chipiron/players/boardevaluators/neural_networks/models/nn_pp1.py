@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from chipiron.extra_tools.chi_nn import ChiNN
+from chipiron.utils.chi_nn import ChiNN
 from chipiron.players.boardevaluators.neural_networks.board_to_tensor import board_to_tensor_pieces_square, \
     get_tensor_from_tensors
 

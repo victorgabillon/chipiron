@@ -1,5 +1,7 @@
 import tkinter as tk
-#TODO switch to pygame
+
+
+# TODO switch to pygame
 
 def script_gui() -> tuple[str, dict]:
     root = tk.Tk()
@@ -32,8 +34,45 @@ def script_gui() -> tuple[str, dict]:
         command=lambda: root.quit()
     )
 
-    message = tk.Label(root, text="Play Black against chipiron strength:")
+    message = tk.Label(root, text="Play ")
     message.grid(column=0, row=2)
+
+    # Create the list of options
+    color_options_list: list[str] = ["White", "Black"]
+
+    # Variable to keep track of the option
+    # selected in OptionMenu
+    color_choice_human = tk.StringVar(root)
+
+    # Set the default value of the variable
+    color_choice_human.set("White")
+
+    # Create the option menu widget and passing
+    # the options_list and value_inside to it.
+    strength_menu = tk.OptionMenu(root, color_choice_human, *color_options_list)
+    strength_menu.grid(column=1, row=2)
+
+    message = tk.Label(root, text=" against ")
+    message.grid(column=2, row=2)
+
+    # Create the list of options
+    chipi_algo_options_list: list[str] = ["RecurZipfBase3", "Uniform", "Sequool"]
+
+    # Variable to keep track of the option
+    # selected in OptionMenu
+    chipi_algo_choice = tk.StringVar(root)
+
+    # Set the default value of the variable
+    chipi_algo_choice.set("RecurZipfBase3")
+
+    # Create the option menu widget and passing
+    # the options_list and value_inside to it.
+    strength_menu = tk.OptionMenu(root, chipi_algo_choice, *chipi_algo_options_list)
+    strength_menu.grid(column=1, row=2)
+
+    message = tk.Label(root, text="  strength: ")
+
+    message.grid(column=4, row=2)
 
     # Create the list of options
     options_list = ["1", "2", "3", "4"]
@@ -48,13 +87,20 @@ def script_gui() -> tuple[str, dict]:
     # Create the option menu widget and passing
     # the options_list and value_inside to it.
     strength_menu = tk.OptionMenu(root, strength_value, *options_list)
-    strength_menu.grid(column=1, row=2)
+    strength_menu.grid(column=5, row=2)
 
     # play button
     play_against_chipiron_button: tk.Button = tk.Button(
         root,
         text='!Play!',
-        command=lambda: [play_against_chipiron(root, strength_value), root.destroy()]
+        command=lambda: [
+            play_against_chipiron(
+                root,
+                strength=strength_value,
+                color=color_choice_human,
+            chipi_algo=chipi_algo_choice),
+            root.destroy()
+        ]
     )
 
     # watch button
@@ -71,7 +117,7 @@ def script_gui() -> tuple[str, dict]:
         command=lambda: [visualize_a_tree(root), root.destroy()]
     )
 
-    play_against_chipiron_button.grid(row=2, column=3)
+    play_against_chipiron_button.grid(row=2, column=6)
     watch_a_game_button.grid(row=4, column=0)
     visualize_a_tree_button.grid(row=6, column=0)
     exit_button.grid(row=8, column=0)
@@ -85,10 +131,16 @@ def script_gui() -> tuple[str, dict]:
             gui_args = {'config_file_name': 'scripts/one_match/exp_options.yaml',
                         'seed': 0,
                         'gui': True,
-                        'file_name_player_one': 'RecurZipfBase3.yaml',
-                        'file_name_player_two': 'Human.yaml',
                         'file_name_match_setting': 'setting_duda.yaml',
-                        'player_one': {'tree_builder': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}}
+                        }
+            if root.output['color_human'] == 'White':
+                gui_args['file_name_player_one']= 'Human.yaml'
+                gui_args['file_name_player_two']= f'{root.output["chipi_algo"]}.yaml'
+                gui_args['player_two']= {'tree_builder': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}
+            else:
+                gui_args['file_name_player_two']= 'Human.yaml'
+                gui_args['file_name_player_one']= f'{root.output["chipi_algo"]}.yaml'
+                gui_args['player_one']= {'tree_builder': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}
             script_name = 'one_match'
         case 'watch_a_game':
             gui_args = {'config_file_name': 'scripts/one_match/exp_options.yaml',
@@ -109,12 +161,17 @@ def script_gui() -> tuple[str, dict]:
     return script_name, gui_args
 
 
-def play_against_chipiron(root, strength_str):
-    root.output = {'type': 'play_against_chipiron', 'strength': int(strength_str.get())}
+def play_against_chipiron(root, strength, color,chipi_algo):
+    root.output = {'type': 'play_against_chipiron',
+                   'strength': int(strength.get()),
+                   'color_human': str(color.get()),
+                   'chipi_algo': str(chipi_algo.get()),
+                   }
 
 
 def watch_a_game(root):
     root.output = {'type': 'watch_a_game'}
+
 
 def visualize_a_tree(root):
     root.output = {'type': 'tree_visualization'}

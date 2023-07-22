@@ -3,7 +3,7 @@ from chipiron.players.boardevaluators.neural_networks.factory import get_folder_
 import torch.optim as optim
 import pickle
 import torch
-from chipiron.extra_tools.small_tools import mkdir
+from chipiron.utils.small_tools import mkdir
 from datetime import datetime
 
 

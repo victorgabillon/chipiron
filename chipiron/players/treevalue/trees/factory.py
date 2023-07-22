@@ -1,12 +1,12 @@
 """
 MoveAndValueTreeFactory
 """
-import chipiron as ch
+import chipiron.environments.chess.board as boards
 from chipiron.players.treevalue.trees.move_and_value_tree import MoveAndValueTree
-from .descendants import RangedDescendants
 import chipiron.players.treevalue.node_factory as nod_fac
-from chipiron.players.treevalue.tree_manager.node_evaluator import NodeEvaluator, EvaluationQueries
-import chipiron.players.treevalue.nodes as nodes
+from players.treevalue.node_evaluator import NodeEvaluator, EvaluationQueries
+import chipiron.players.treevalue as nodes
+from .descendants import RangedDescendants
 
 
 class MoveAndValueTreeFactory:
@@ -32,7 +32,7 @@ class MoveAndValueTreeFactory:
 
     def create(
             self,
-            starting_board: ch.chess.BoardChi
+            starting_board: boards.BoardChi
     ) -> MoveAndValueTree:
         """
         creates the tree

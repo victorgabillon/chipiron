@@ -1,12 +1,14 @@
 """
 Tree Exploration
 """
-from chipiron.extra_tools.small_tools import softmax
+import chess
+
+from chipiron.utils.small_tools import softmax
 from chipiron.players.boardevaluators.over_event import OverEvent
-from chipiron.players.treevalue.trees.factory import MoveAndValueTreeFactory
-from chipiron.players.treevalue.node_selector.opening_instructions import OpeningInstructor
-from chipiron.players.treevalue.stopping_criterion import StoppingCriterion, create_stopping_criterion
-import chessenvironment.board as boards
+from .trees.factory import MoveAndValueTreeFactory
+from .node_selector.opening_instructions import OpeningInstructor
+from .stopping_criterion import StoppingCriterion, create_stopping_criterion
+import chipiron.environments.chess.board as boards
 
 from . import trees
 from . import tree_manager as tree_man
@@ -57,7 +59,8 @@ class TreeExploration:
 
     def recommend_move_after_exploration(
             self,
-            tree: trees.MoveAndValueTree):
+            tree: trees.MoveAndValueTree
+    ):
         # todo the preference for action that have been explored more is not super clear, is it weel implemented, ven for debug?
 
         # for debug we fix the choice in the next lines
@@ -97,11 +100,11 @@ class TreeExploration:
                 raise (Exception('move_selection_rule is not valid it seems'))
         return best_move
 
-    def explore(self):
+    def explore(self) -> chess.Move:
 
         # by default the first tree expansion is the creation of the tree node
         tree_expansions: tree_man.TreeExpansions = tree_man.TreeExpansions()
-        tree_expansion:  tree_man.TreeExpansion = tree_man.TreeExpansion(
+        tree_expansion: tree_man.TreeExpansion = tree_man.TreeExpansion(
             child_node=self.tree.root_node,
             parent_node=None,
             board_modifications=None,
@@ -109,7 +112,11 @@ class TreeExploration:
         )
         tree_expansions.add_creation(tree_expansion)
 
+        calls_debug= 0
+
         while self.stopping_criterion.should_we_continue(tree=self.tree):
+            calls_debug +=1
+            print('callsdebug',calls_debug)
             assert (not self.tree.root_node.is_over())
             # print info
             # self.print_info_during_move_computation()
@@ -143,7 +150,7 @@ class TreeExploration:
         #          f' {child.minmax_evaluation.over_event.get_over_tag()}')
         # print(f'evaluation for white: {self.tree.root_node.minmax_evaluation.get_value_white()}')
 
-        best_move = self.recommend_move_after_exploration(self.tree)
+        best_move: chess.Move = self.recommend_move_after_exploration(self.tree)
         self.tree_manager.print_best_line(tree=self.tree)  # todo maybe almost best chosen line no?
 
         return best_move

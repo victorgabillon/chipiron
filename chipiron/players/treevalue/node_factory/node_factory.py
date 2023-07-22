@@ -4,7 +4,7 @@ TreeNodeFactory Protocol
 from typing import Protocol
 from chipiron.players.treevalue.nodes.tree_node import TreeNode
 from chipiron.players.treevalue.nodes.itree_node import ITreeNode
-import chipiron.chessenvironment.board as boards
+import chipiron.environments.chess.board as boards
 
 
 class TreeNodeFactory(Protocol):

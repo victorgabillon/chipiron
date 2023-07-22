@@ -2,7 +2,7 @@ import chipiron as ch
 from .tree_exploration import create_tree_exploration
 from . import tree_manager as tree_man
 from .trees.factory import MoveAndValueTreeFactory
-
+import chipiron.environments.chess.board as boards
 
 class TreeAndValuePlayer:
     # pretty empty class but might be useful when dealing with multi round and time , no?
@@ -19,7 +19,7 @@ class TreeAndValuePlayer:
         self.tree_manager = tree_manager
         self.tree_factory = tree_factory
 
-    def select_move(self, board: ch.chess.BoardChi):
+    def select_move(self, board: boards.BoardChi):
         tree_exploration = create_tree_exploration(
             tree_manager=self.tree_manager,
             args=self.args,

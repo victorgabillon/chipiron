@@ -1,16 +1,16 @@
 """
 Factory to build node selectors
 """
-from . import NodeSelector
+from .node_selector import NodeSelector
 from .uniform import Uniform
 from .recur_zipf_base import RecurZipfBase
-from .sequool2 import Sequool
-import chipiron.players.treevalue.trees as trees
+from .sequool import create_sequool
+from .opening_instructions import OpeningInstructor
 
 
 def create(
         arg: dict,
-        opening_instructor,
+        opening_instructor: OpeningInstructor,
         random_generator,
 ) -> NodeSelector:
     """
@@ -31,10 +31,9 @@ def create(
             )
 
         case 'Sequool':
-            node_move_opening_selector = Sequool(
-                opening_instructor=opening_instructor,
-                all_nodes_not_opened=trees.RangedDescendants()
-            )
+            node_move_opening_selector = create_sequool(opening_instructor=opening_instructor,
+                                                        args=arg['sequool'])
+
         case other:
             raise Exception('tree builder: can not find ' + other)
 

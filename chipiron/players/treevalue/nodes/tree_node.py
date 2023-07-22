@@ -1,17 +1,18 @@
 from bidict import bidict
-from .itree_node import ITreeNode
 import chess
+import environments.chess.board as boards
+from .itree_node import ITreeNode
 
 
 # todo check if the transfer to half move is done from depth
 
 class TreeNode:
     half_move_: int
-    moves_children_: bidict
+    moves_children_: bidict[chess.Move, ITreeNode]
     player_to_move_: chess.Color
 
     def __init__(self,
-                 board,
+                 board: boards.BoardChi,
                  half_move: int,
                  id_number: int,
                  parent_node: ITreeNode) -> None:
@@ -24,7 +25,6 @@ class TreeNode:
 
         # number of half-moves since the start of the game to get to the board position in self.board
         self.half_move_ = half_move
-        assert (isinstance(half_move, int))
 
         # the color of the player that has to move in the board
         self.player_to_move_ = self.board.turn

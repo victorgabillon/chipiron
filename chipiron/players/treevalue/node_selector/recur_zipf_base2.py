@@ -1,5 +1,4 @@
 from chipiron.players.treevalue.trees.move_and_value_tree import MoveAndValueTree
-from chipiron.players.treevalue.nodes.tree_node_with_values import TreeNodeWithValue
 from chipiron.players.treevalue.nodes.tree_node_with_descendants import NodeWithDescendants
 from chipiron.players.treevalue.node_selector.move_explorer import ZipfMoveExplorer
 
