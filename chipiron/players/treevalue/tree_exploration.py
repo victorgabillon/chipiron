@@ -112,11 +112,8 @@ class TreeExploration:
         )
         tree_expansions.add_creation(tree_expansion)
 
-        calls_debug= 0
 
         while self.stopping_criterion.should_we_continue(tree=self.tree):
-            calls_debug +=1
-            print('callsdebug',calls_debug)
             assert (not self.tree.root_node.is_over())
             # print info
             # self.print_info_during_move_computation()

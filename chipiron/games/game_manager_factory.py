@@ -8,7 +8,7 @@ from chipiron.players.factory import launch_player_process
 from .game_manager import GameManager
 from .game import Game, ObservableGame
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
-
+from utils import path
 
 class GameManagerFactory:
     """
@@ -21,7 +21,7 @@ class GameManagerFactory:
     def __init__(self,
                  syzygy_table: SyzygyTable,
                  game_manager_board_evaluator,
-                 output_folder_path: str,
+                 output_folder_path: path | None,
                  main_thread_mailbox: queue.Queue) -> None:
         self.syzygy_table = syzygy_table
         self.output_folder_path = output_folder_path
@@ -44,7 +44,6 @@ class GameManagerFactory:
                 player_id_message: dict = {'type': 'players_color_to_id',
                                            'players_color_to_id': player_color_to_id}
                 subscriber.put(player_id_message)
-
 
         while not self.main_thread_mailbox.empty():
             self.main_thread_mailbox.get()

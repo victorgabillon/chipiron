@@ -9,7 +9,7 @@ from pstats import SortKey
 import time
 from datetime import datetime
 from chipiron.utils.small_tools import mkdir
-from scripts.parsers.parser import create_parser
+from scripts.parsers.parser import create_parser, MyParser
 
 
 class Script:
@@ -18,19 +18,23 @@ class Script:
     Takes care of computing execution time, profiling, ang parsing arguments
     """
 
-    default_param_dict = {'profiling': False}
-    base_experiment_output_folder = 'scripts/'
+    default_param_dict: dict = {'profiling': False}
+    base_experiment_output_folder: str = 'scripts/'
+    start_time: float
 
-    def __init__(self, gui_args=None):
+    def __init__(
+            self,
+            gui_args: dict | None = None
+    ) -> None:
         """
         Building the Script object, starts the clock,
         the profiling and parse arguments and deals with global variables
         """
         # start the clock
-        self.start_time = time.time()
+        self.start_time: float = time.time()
 
         # parse the arguments
-        parser = create_parser(default_param_dict=self.default_param_dict)
+        parser: MyParser = create_parser(default_param_dict=self.default_param_dict)
         self.args = parser.parse_arguments(gui_args)
         self.experiment_output_folder = None
         self.set_experiment_output_folder()
@@ -46,6 +50,7 @@ class Script:
         """
             computes the path to the experiment output folder
         """
+
         if 'output_folder' not in self.args:
             now = datetime.now()  # current date and time
             self.experiment_output_folder = self.base_experiment_output_folder + now.strftime(

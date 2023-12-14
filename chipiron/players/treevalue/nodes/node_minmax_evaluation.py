@@ -88,7 +88,10 @@ class NodeMinmaxEvaluation:
 
     def subjective_value_of(self, another_node):
         # return the value from the point of view of the self.player_to_move of the value of another_node
-        # subjective_value = another_node.minmax_evaluation.get_value_white() if self.tree_node.player_to_move == chess.WHITE else -another_node.get_value_white()
+        if self.tree_node.player_to_move == chess.WHITE:
+            subjective_value = another_node.minmax_evaluation.get_value_white()
+        else:
+            subjective_value = -another_node.minmax_evaluation.get_value_white()
         return subjective_value
 
     def best_child(self):

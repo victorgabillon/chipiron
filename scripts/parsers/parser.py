@@ -3,14 +3,6 @@ import yaml
 from chipiron.utils.small_tools import dict_alphabetic_str
 
 
-def create_parser(default_param_dict):
-    parser = argparse.ArgumentParser()
-    for key, value in default_param_dict.items():
-        parser.add_argument('--' + key, type=type(value), default=None,
-                            help='type of nn to learn')  # TODO help seems wrong
-    return MyParser(parser, default_param_dict)
-
-
 class MyParser:
 
     def __init__(self, parser, default_param_dict):
@@ -82,12 +74,22 @@ class MyParser:
         with open(output_folder + '/parser_output.txt', 'w') as parser_output:
             parser_output.write('This are the logs of the parsing.\n\n')
             parser_output.write(
-                'Default parameters are:\n{}\n\n'.format(dict_alphabetic_str(self.default_param_dict))
+                f'Default parameters are:\n{dict_alphabetic_str(self.default_param_dict)}\n\n'
             )
             parser_output.write(
-                'Command line parameters are:\n{}\n\n'.format(dict_alphabetic_str(self.args_command_line))
+                f'Command line parameters are:\n{dict_alphabetic_str(self.args_command_line)}\n\n'
             )
             parser_output.write(
-                'Config file parameters are:\n{}\n\n'.format(dict_alphabetic_str(self.args_config_file))
+                f'Config file parameters are:\n{dict_alphabetic_str(self.args_config_file)}\n\n'
             )
-            parser_output.write('Merged parameters are:\n{}\n\n'.format(dict_alphabetic_str(self.merged_args)))
+            parser_output.write(f'Merged parameters are:\n{dict_alphabetic_str(self.merged_args)}\n\n')
+
+
+def create_parser(
+        default_param_dict: dict
+) -> MyParser:
+    parser: argparse.ArgumentParser = argparse.ArgumentParser()
+    for key, value in default_param_dict.items():
+        parser.add_argument('--' + key, type=type(value), default=None,
+                            help='type of nn to learn')  # TODO help seems wrong
+    return MyParser(parser, default_param_dict)

@@ -15,7 +15,6 @@ def zipf_picks(ranks: Iterable[int], values: Iterable[Comparable], shift: bool =
     best_rank: int | None = None
 
     for rank, value in zip(ranks, values):
-        print('rv', rank,value)
         shifted_rank = rank - shift_rank + 1
         log_term: float = (math.log(math.e * shifted_rank)) ** 2
         value: float = value * shifted_rank * log_term

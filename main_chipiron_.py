@@ -7,7 +7,9 @@ import sys
 import scripts
 
 
-def get_script_and_args(raw_command_line_arguments: list) -> tuple[str, dict]:
+def get_script_and_args(
+        raw_command_line_arguments: list
+) -> tuple[str, dict]:
     """
 
     Args:
@@ -18,20 +20,24 @@ def get_script_and_args(raw_command_line_arguments: list) -> tuple[str, dict]:
 
     """
     script_name: str
-    gui_args: Union[dict, None]
+    gui_args: dict | None
     # Whether command line arguments are provided or not we ask for more info through a GUI
     if len(raw_command_line_arguments) == 1:  # No args provided
         # use a gui to get user input
         script_name, gui_args = scripts.script_gui()
     else:
         # Capture  the script argument in the command line arguments
-        parser_default = argparse.ArgumentParser()
+        parser_default: argparse.ArgumentParser = argparse.ArgumentParser()
         parser_default.add_argument('--script_name',
                                     type=str,
                                     default=None,
                                     help='name of the script')
         args_obj, _ = parser_default.parse_known_args()
         args_command_line = vars(args_obj)  # converting into dictionary format
+        if args_command_line['script_name'] is None:
+            raise ValueError(
+                'Expecting command line arguments of the shape python chipiron.py --script_name **name_of script**')
+
         script_name = args_command_line['script_name']
         gui_args = None
     return script_name, gui_args
