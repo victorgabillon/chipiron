@@ -1,8 +1,7 @@
 import chess
 import pickle
 import logging
-import copy
-from .game_playing_status import GamePlayingStatus, PlayingStatus
+from utils import path
 from .game import ObservableGame
 
 logger = logging.getLogger(__name__)
@@ -33,7 +32,7 @@ class GameManager:
                  game: ObservableGame,
                  syzygy,
                  display_board_evaluator,
-                 output_folder_path,
+                 output_folder_path: path | None,
                  args,
                  player_color_to_id,
                  main_thread_mailbox,
@@ -65,7 +64,10 @@ class GameManager:
     def external_eval(self):
         return self.display_board_evaluator.evaluate(self.game.board)  # TODO DON'T LIKE THIS writing
 
-    def play_one_move(self, move: chess.Move) -> None:
+    def play_one_move(
+            self,
+            move: chess.Move
+    ) -> None:
         self.game.play_move(move)
         if self.syzygy.fast_in_table(self.game.board):
             print('Theoretically finished with value for white: ',
@@ -145,7 +147,6 @@ class GameManager:
     def game_continue_conditions(self):
         half_move = self.game.board.ply()
         continue_bool = True
-        print('ooooooo', 'max_half_move' in self.args)
         if 'max_half_move' in self.args and half_move >= self.args['max_half_move']:
             assert (1 == 2)
             continue_bool = False

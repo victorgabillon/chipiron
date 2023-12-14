@@ -55,3 +55,7 @@ class MatchManager:
             path_file = self.output_folder_path + '/gameStats.txt'
             with open(path_file, 'a') as the_file:
                 the_file.write(str(match_results))
+
+    def subscribe(self, subscriber):
+        self.game_manager_factory.subscribe(subscriber)
+        self.match_results_factory.subscribe(subscriber)

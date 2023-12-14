@@ -2,7 +2,6 @@
 the one match script
 """
 import sys
-import multiprocessing
 import queue
 from shutil import copyfile
 import os
@@ -10,8 +9,9 @@ import yaml
 from PyQt5.QtWidgets import QApplication
 from scripts.script import Script
 import chipiron as ch
-from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
-from chipiron.players.boardevaluators.table_base.factory import create_syzygy_thread
+from chipiron.games.match_factories import create_match_manager
+import multiprocessing
+from utils import path
 
 
 class OneMatchScript(Script):
@@ -31,9 +31,12 @@ class OneMatchScript(Script):
         'match': {},
     }
 
-    base_experiment_output_folder = Script.base_experiment_output_folder + 'one_match/outputs/'
+    base_experiment_output_folder = os.path.join(Script.base_experiment_output_folder, 'one_match/outputs/')
 
-    def __init__(self, gui_args: dict) -> None:
+    def __init__(
+            self,
+            gui_args: dict
+    ) -> None:
         """
         Builds the OneMatchScript object
         """
@@ -53,38 +56,36 @@ class OneMatchScript(Script):
         else:
             file_name_match_setting = self.args['file_name_match_setting']
 
-        self.fetch_args_and_create_output_folder(file_name_player_one, file_name_player_two, file_name_match_setting)
+        self.fetch_args_and_create_output_folder(
+            file_name_player_one=file_name_player_one,
+            file_name_player_two=file_name_player_two,
+            file_name_match_setting=file_name_match_setting
+        )
 
-        # Creation of the Syzygy table for perfect play in low pieces cases, needed by the GameManager
-        # and can also be used by the players
-        syzygy_mailbox: SyzygyTable = create_syzygy_thread()
-
-        main_thread_mailbox: queue.Queue = multiprocessing.Manager().Queue()
-
-        file_path: str = 'data/settings/GameSettings/' + self.args['match']['game_setting_file']
+        file_path: path = os.path.join('data/settings/GameSettings', self.args['match']['game_setting_file'])
         with open(file_path, 'r', encoding="utf-8") as file_game:
             args_game: dict = yaml.load(file_game, Loader=yaml.FullLoader)
 
-        match_manager_factory: ch.game.MatchManagerFactory
-        match_manager_factory = ch.game.MatchManagerFactory(args_match=self.args['match'],
-                                                            args_player_one=self.args['player_one'],
-                                                            args_player_two=self.args['player_two'],
-                                                            syzygy_table=syzygy_mailbox,
-                                                            output_folder_path=self.experiment_output_folder,
-                                                            seed=self.args['seed'],
-                                                            main_thread_mailbox=main_thread_mailbox,
-                                                            args_game=args_game,
-                                                            gui= self.args['gui'])
+        self.match_manager: ch.game.MatchManager = create_match_manager(
+            args_match=self.args['match'],
+            args_player_one=self.args['player_one'],
+            args_player_two=self.args['player_two'],
+            output_folder_path=self.experiment_output_folder,
+            seed=self.args['seed'],
+            args_game=args_game,
+            gui=self.args['gui']
+        )
 
         if self.args['gui']:
             # if we use a graphic user interface (GUI) we create it its own thread and
             # create its mailbox to communicate with other threads
             gui_thread_mailbox: queue.Queue = multiprocessing.Manager().Queue()
-            self.chess_gui = QApplication(sys.argv)
-            self.window = ch.disp.MainWindow(gui_thread_mailbox, main_thread_mailbox)
-            match_manager_factory.subscribe(gui_thread_mailbox)
-
-        self.match_manager: ch.game.MatchManager = match_manager_factory.create()
+            self.chess_gui: QApplication = QApplication(sys.argv)
+            self.window: ch.disp.MainWindow = ch.disp.MainWindow(
+                gui_mailbox=gui_thread_mailbox,
+                main_thread_mailbox=self.match_manager.game_manager_factory.main_thread_mailbox
+            )
+            self.match_manager.subscribe(gui_thread_mailbox)
 
     def fetch_args_and_create_output_folder(self,
                                             file_name_player_one: str,

@@ -80,8 +80,8 @@ class Sequool:
         # Update internal info with the latest tree expansions
         expansion: tree_man.TreeExpansion
         for expansion in latest_tree_expansions:
-            print('l', expansion.child_node.half_move)
-            self.all_nodes_not_opened.add_descendant(expansion.child_node)
+            if expansion.creation_child_node:
+                self.all_nodes_not_opened.add_descendant(expansion.child_node)
 
             # if a new half_move is being created then init the visits to 1
             # (0 would bug as it would automatically be selected with zipf computation)
@@ -96,7 +96,6 @@ class Sequool:
         #      __iter1=self.count_visits.values()
         #  )
 
-        print('kokk', list(self.all_nodes_not_opened.keys()))
         filtered_count_visits = filter(
             lambda hm: bool(hm in self.all_nodes_not_opened),
             self.count_visits
@@ -114,12 +113,11 @@ class Sequool:
 
         self.count_visits[half_move_picked] += 1
 
-        print('rf', half_move_picked, self.count_visits)
         nodes_to_consider = list(self.all_nodes_not_opened[half_move_picked])
 
         nodes_to_consider: list[nodes.AlgorithmNode] = []
         half_move: int
-        #considering all halfmove smaller than the half move picked
+        # considering all half-move smaller than the half move picked
         for half_move in filter(lambda hm: hm < half_move_picked + 1, self.all_nodes_not_opened):
             nodes_to_consider += list(self.all_nodes_not_opened[half_move].values())
 

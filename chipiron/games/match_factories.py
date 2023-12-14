@@ -3,63 +3,66 @@ from chipiron.games.match_manager import MatchManager
 from chipiron.games.game_manager_factory import GameManagerFactory
 from chipiron.games.match_results_factory import MatchResultsFactory
 from chipiron.players.factory import create_player
-from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
+import multiprocessing
 from chipiron.players.boardevaluators.factory import create_game_board_evaluator
 import random
 from chipiron.utils.small_tools import unique_int_from_list
 import queue
+from utils import path
+from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
+from chipiron.players.boardevaluators.table_base.factory import create_syzygy_thread
 
 
-class MatchManagerFactory:
+def create_match_manager(
+        args_match: dict,
+        args_player_one: dict,
+        args_player_two: dict,
+        output_folder_path: path,
+        seed: int | None,
+        args_game: dict,
+        gui: bool
+) -> MatchManager:
+    main_thread_mailbox: queue.Queue = multiprocessing.Manager().Queue()
 
-    def __init__(self,
-                 args_match: dict,
-                 args_player_one: dict,
-                 args_player_two: dict,
-                 syzygy_table: SyzygyTable,
-                 output_folder_path: str,
-                 seed: int,
-                 main_thread_mailbox: queue.Queue,
-                 args_game: dict,
-                 gui: bool) -> None:
-        self.output_folder_path = output_folder_path
-        self.player_one_name: str = args_player_one['name']
-        self.player_two_name: str = args_player_two['name']
+    # Creation of the Syzygy table for perfect play in low pieces cases, needed by the GameManager
+    # and can also be used by the players
+    syzygy_mailbox: SyzygyTable = create_syzygy_thread()
 
-        game_board_evaluator = create_game_board_evaluator(gui=gui)
+    player_one_name: str = args_player_one['name']
+    player_two_name: str = args_player_two['name']
 
-        self.game_manager_factory: GameManagerFactory = GameManagerFactory(
-            syzygy_table=syzygy_table,
-            game_manager_board_evaluator=game_board_evaluator,
-            output_folder_path=output_folder_path,
-            main_thread_mailbox=main_thread_mailbox
-        )
+    game_board_evaluator = create_game_board_evaluator(gui=gui)
 
-        self.match_results_factory: MatchResultsFactory = MatchResultsFactory(
-            player_one_name=self.player_one_name,
-            player_two_name=self.player_two_name
-        )
+    game_manager_factory: GameManagerFactory = GameManagerFactory(
+        syzygy_table=syzygy_mailbox,
+        game_manager_board_evaluator=game_board_evaluator,
+        output_folder_path=output_folder_path,
+        main_thread_mailbox=main_thread_mailbox
+    )
 
-        self.game_args_factory: GameArgsFactory = GameArgsFactory(args_match,
-                                                                  args_player_one,
-                                                                  args_player_two,
-                                                                  seed,
-                                                                  args_game)
+    match_results_factory: MatchResultsFactory = MatchResultsFactory(
+        player_one_name=player_one_name,
+        player_two_name=player_two_name
+    )
 
-    def create(self) -> MatchManager:
-        match_manager: MatchManager
-        match_manager = MatchManager(self.player_one_name,
-                                     self.player_two_name,
-                                     self.game_manager_factory,
-                                     self.game_args_factory,
-                                     self.match_results_factory,
-                                     self.output_folder_path)
+    game_args_factory: GameArgsFactory = GameArgsFactory(
+        args_match=args_match,
+        args_player_one=args_player_one,
+        args_player_two=args_player_two,
+        seed=seed,
+        args_game=args_game
+    )
 
-        return match_manager
+    match_manager: MatchManager = MatchManager(
+        player_one_id=player_one_name,
+        player_two_id=player_two_name,
+        game_manager_factory=game_manager_factory,
+        game_args_factory=game_args_factory,
+        match_results_factory=match_results_factory,
+        output_folder_path=output_folder_path
+    )
 
-    def subscribe(self, subscriber):
-        self.game_manager_factory.subscribe(subscriber)
-        self.match_results_factory.subscribe(subscriber)
+    return match_manager
 
 
 class GameArgsFactory:
@@ -75,7 +78,7 @@ class GameArgsFactory:
                  args_match,
                  args_player_one,
                  args_player_two,
-                 seed: int,
+                 seed: int |None,
                  args_game):
         self.args_match = args_match
         self.seed = seed

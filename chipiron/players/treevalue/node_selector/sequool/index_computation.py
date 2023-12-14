@@ -37,14 +37,13 @@ def update_all_indices_base(
 
 
 def update_all_indices(
-
-        tree: trees.MoveAndValueTree
+        all_nodes_not_opened: trees.RangedDescendants
 ) -> None:
-    tree.root_node.index = 0
     half_move: int
-    for half_move in self.all_nodes_not_opened:
+    for half_move in all_nodes_not_opened:
         node: nodes.AlgorithmNode
-        for node in self.all_nodes_not_opened.descendants_at_half_move[half_move].values():
+        node.index = None
+        for node in all_nodes_not_opened.descendants_at_half_move[half_move].values():
             for child in node.moves_children.values():
                 child.index = None
 
@@ -57,7 +56,6 @@ def update_all_indices(
     for depth in range(tree.get_max_depth()):
         # print('depth',depth)
         for node in tree.all_nodes[depth].values():
-            #   print('node',node.id)
             for child in node.moves_children.values():
                 #      print('child', child.id)
                 if node.index is None:
