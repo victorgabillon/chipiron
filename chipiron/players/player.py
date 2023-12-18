@@ -1,6 +1,7 @@
 from .move_selector import MoveSelector
 import chess
 
+
 class Player:
     #  difference between player and treebuilder includes the fact
     #  that now a player can be a mixture of multiple decision rules

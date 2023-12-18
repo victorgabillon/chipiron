@@ -1,4 +1,5 @@
 import chess
+import os
 from chipiron.games.match_manager import MatchManager
 from chipiron.games.game_manager_factory import GameManagerFactory
 from chipiron.games.match_results_factory import MatchResultsFactory
@@ -11,6 +12,15 @@ import queue
 from utils import path
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy_thread
+
+from dataclasses import dataclass
+
+
+@dataclass
+class MatchArgs:
+    number_of_games_player_one_white: int
+    number_of_games_player_one_black: int
+    game_setting_file: str | bytes | os.PathLike
 
 
 def create_match_manager(
@@ -78,7 +88,7 @@ class GameArgsFactory:
                  args_match,
                  args_player_one,
                  args_player_two,
-                 seed: int |None,
+                 seed: int | None,
                  args_game):
         self.args_match = args_match
         self.seed = seed

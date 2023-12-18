@@ -12,8 +12,7 @@ class LearnNNScript(Script):
     Script that learns a NN from a supervised dataset pairs of board and evaluation
 
     """
-    default_param_dict = Script.default_param_dict | \
-                         {'neural_network': {'nn_type': 'NetPP2',
+    default_param_dict =                           {'neural_network': {'nn_type': 'NetPP2',
                                              'nn_param_folder_name': 'foo'},
                           'create_nn_file': True,
                           'config_file_name': 'scripts/learn_nn_supervised/exp_options.yaml',

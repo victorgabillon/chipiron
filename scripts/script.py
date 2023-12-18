@@ -9,6 +9,12 @@ from pstats import SortKey
 import time
 from chipiron.utils.small_tools import mkdir
 from scripts.parsers.parser import MyParser
+from dataclasses import dataclass
+
+
+@dataclass
+class ScriptArgs:
+    profiling: bool = False
 
 
 class Script:
@@ -17,7 +23,6 @@ class Script:
     Takes care of computing execution time, profiling, ang parsing arguments
     """
 
-    default_param_dict: dict = {'profiling': False}
     base_experiment_output_folder: str = 'scripts/'
     start_time: float
     parser: MyParser
@@ -39,28 +44,20 @@ class Script:
         self.gui_args = gui_args
         self.profile = None
 
-    def parse(self,
-              default_param_dict: dict
-              ) -> dict:
+    def initiate(self) -> dict:
 
         # parse the arguments
-        args = self.parser.parse_arguments(default_param_dict=default_param_dict | self.default_param_dict,
-                                           base_experiment_output_folder=self.base_experiment_output_folder,
-                                           gui_args=self.gui_args)
+        args: dict = self.parser.parse_arguments(base_experiment_output_folder=self.base_experiment_output_folder,
+                                                 gui_args=self.gui_args)
+
+        mkdir(args['experiment_output_folder'])
+        self.parser.log_parser_info(args['experiment_output_folder'])
 
         # activate profiling is if needed
         if args['profiling']:
             self.profile = cProfile.Profile()
             self.profile.enable()
 
-        return args
-
-    def initiate(self,
-                 default_param_dict: dict
-                 ) -> dict:
-        args: dict = self.parse(default_param_dict=default_param_dict)
-        mkdir(args['experiment_output_folder'])
-        self.parser.log_parser_info(args['experiment_output_folder'])
         return args
 
     def terminate(self) -> None:
