@@ -36,13 +36,9 @@ class MyParser:
         self.args_config_file = args_config_file
 
     def parse_arguments(self,
-                        default_param_dict: dict,
                         base_experiment_output_folder,
                         gui_args=None,
                         ):
-        for key, value in default_param_dict.items():
-            self.parser.add_argument('--' + key, type=type(value), default=None,
-                                     help='type of nn to learn')  # TODO help seems wrong
 
         if gui_args is None:
             gui_args = {}
@@ -52,8 +48,6 @@ class MyParser:
         config_file_path = None
         if 'config_file_name' in self.args_command_line:
             config_file_path = self.args_command_line['config_file_name']
-        elif 'config_file_name' in default_param_dict:
-            config_file_path = default_param_dict['config_file_name']
 
         if config_file_path is None:
             self.args_config_file = {}
@@ -62,19 +56,8 @@ class MyParser:
 
         #  the gui input  overwrite  the command line arguments
         #  that overwrite the config file arguments that overwrite the default arguments
-        self.merged_args = default_param_dict | self.args_config_file | self.args_command_line | gui_args
+        self.merged_args = self.args_config_file | self.args_command_line | gui_args
         print('Here are the merged arguments of the script', self.merged_args)
-
-        try:
-            assert (set(default_param_dict.keys()) == set(self.merged_args.keys()))
-        except AssertionError as error:
-            raise Exception(
-                'Please have the set of defaults arguments equals the set of given arguments: {} and {}  || diffs {} {}'.format(
-                    default_param_dict.keys(), self.merged_args.keys(),
-                    set(default_param_dict.keys()).difference(set(self.merged_args.keys())),
-                    set(self.merged_args.keys()).difference(set(default_param_dict.keys()))
-                )
-            ) from error
 
         if 'output_folder' not in self.merged_args:
             now = datetime.now()  # current date and time

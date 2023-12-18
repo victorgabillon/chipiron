@@ -16,7 +16,7 @@ configs = [
 ]
 
 for config in configs:
-    script_object: scripts.Script = scripts.get_script_from_name(
+    script_object: scripts.Script = scripts.create_script(
         script_name='one_match',
         gui_args=config
     )

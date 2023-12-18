@@ -8,10 +8,35 @@ import os
 import multiprocessing
 import yaml
 from PyQt5.QtWidgets import QApplication
-from scripts.script import Script
+from scripts.script import Script, ScriptArgs
 import chipiron as ch
-from chipiron.games.match_factories import create_match_manager
+from chipiron.games.match_factories import create_match_manager, MatchArgs
 from utils import path
+from dataclasses import dataclass, field
+import dacite
+from players.factory import PlayerArgs
+
+
+@dataclass
+class OneMatchScriptArgs(ScriptArgs):
+    """
+    The input arguments needed by the one match script to run
+    """
+    # the seed
+    seed: int = 0
+
+    # whether to display the match in a GUI
+    gui: bool = True
+
+    # path to files with yaml config the players and the match setting.
+    config_file_name: str | bytes | os.PathLike = 'scripts/one_match/inputs/base/exp_options.yaml'
+    file_name_player_one: str | bytes | os.PathLike = 'RecurZipfBase3.yaml'
+    file_name_player_two: str | bytes | os.PathLike = 'RecurZipfBase4.yaml'
+    file_name_match_setting: str | bytes | os.PathLike = 'setting_duda.yaml'
+
+    # For players and match modification of the yaml file specified in a respective dict
+    player_one: dict = field(default_factory=dict)
+    player_two: dict = field(default_factory=dict)
 
 
 class OneMatchScript:
@@ -19,17 +44,6 @@ class OneMatchScript:
     Script that plays a match between two players
 
     """
-    default_param_dict = {
-        'config_file_name': 'scripts/one_match/inputs/base/exp_options.yaml',
-        'seed': 0,
-        'gui': True,
-        'file_name_player_one': 'RecurZipfBase3.yaml',
-        'player_one': {},
-        'file_name_player_two': 'RecurZipfBase4.yaml',
-        'player_two': {},
-        'file_name_match_setting': 'setting_duda.yaml',
-        'match': {},
-    }
 
     base_experiment_output_folder = os.path.join(Script.base_experiment_output_folder, 'one_match/outputs/')
     base_script: Script
@@ -45,23 +59,22 @@ class OneMatchScript:
         self.base_script = base_script
 
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into self.args
-        self.args: dict = self.base_script.initiate(default_param_dict=self.default_param_dict)
+        self.args: dict = self.base_script.initiate()
+        self.one_match_args: OneMatchScriptArgs = dacite.from_dict(data_class=OneMatchScriptArgs,
+                                                                   data=self.args)
 
         # taking care of random
-        ch.set_seeds(seed=self.args['seed'])
+        ch.set_seeds(seed=self.one_match_args.seed)
 
-        file_name_player_one: str = self.args['file_name_player_one']
-        file_name_player_two: str = self.args['file_name_player_two']
-        file_name_match_setting: str
-        if self.args['profiling']:
+        if self.one_match_args.profiling:
             self.args['max_half_move'] = 1
             file_name_match_setting = 'setting_jime.yaml'
         else:
             file_name_match_setting = self.args['file_name_match_setting']
 
         self.fetch_args_and_create_output_folder(
-            file_name_player_one=file_name_player_one,
-            file_name_player_two=file_name_player_two,
+            file_name_player_one=self.one_match_args.file_name_player_one,
+            file_name_player_two=self.one_match_args.file_name_player_two,
             file_name_match_setting=file_name_match_setting
         )
 
@@ -91,9 +104,9 @@ class OneMatchScript:
             self.match_manager.subscribe(gui_thread_mailbox)
 
     def fetch_args_and_create_output_folder(self,
-                                            file_name_player_one: str,
-                                            file_name_player_two: str,
-                                            file_name_match_setting: str) -> None:
+                                            file_name_player_one: str | bytes | os.PathLike,
+                                            file_name_player_two: str | bytes | os.PathLike,
+                                            file_name_match_setting: str | bytes | os.PathLike) -> None:
         """
         From the names of the config file for players and match setting, open the config files, loads the arguments
          and copy the config files in the experiment folder.
@@ -107,7 +120,11 @@ class OneMatchScript:
         """
         path_player_one: str = os.path.join('data/players/player_config', file_name_player_one)
         player_one_yaml: dict = ch.tool.yaml_fetch_args_in_file(path_player_one)
-        self.args['player_one']: dict = ch.tool.rec_merge_dic(player_one_yaml, self.args['player_one'])
+        merge_args_dict: dict = ch.tool.rec_merge_dic(player_one_yaml, self.one_match_args.player_one)
+
+        # formatting the dictionary into the corresponding dataclass
+        player_one_args: PlayerArgs = dacite.from_dict(data_class=PlayerArgs,
+                                                       data=merge_args_dict)
 
         path_player_two: str = os.path.join('data/players/player_config', file_name_player_two)
         player_two_yaml: dict = ch.tool.yaml_fetch_args_in_file(path_player_two)
@@ -124,7 +141,7 @@ class OneMatchScript:
         ch.tool.mkdir(path_games)
         copyfile(path_game_setting, self.args['experiment_output_folder'] + '/' + file_game)
         copyfile(path_player_one, self.args['experiment_output_folder'] + '/' + file_name_player_one)
-        copyfile(path_player_two, self.args['experiment_output_folder']+ '/' + file_name_player_two)
+        copyfile(path_player_two, self.args['experiment_output_folder'] + '/' + file_name_player_two)
         copyfile(path_match_setting, self.args['experiment_output_folder'] + '/' + file_name_match_setting)
 
     def run(self) -> None:

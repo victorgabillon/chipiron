@@ -6,6 +6,19 @@ from chipiron.utils.null_object import NullObject
 import multiprocessing
 import random
 
+from dataclasses import dataclass
+
+@dataclass
+class MoveSelectorArgs:
+    name: str
+
+@dataclass
+class PlayerArgs:
+    name: str
+    type: str
+    main_move_selector: MoveSelectorArgs
+
+
 
 def create_main_move_selector(arg: dict,
                               syzygy,

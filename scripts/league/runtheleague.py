@@ -13,8 +13,7 @@ class RunTheLeagueScript(Script):
     Running a league playing games between
     ers in the league and computing ELOs
     """
-    default_param_dict: dict = Script.default_param_dict | \
-                               {'config_file_name': None,
+    default_param_dict: dict = {'config_file_name': None,
                                 'deterministic_behavior': False,
                                 'deterministic_mode': 'SEED_FIXED_EVERY_MOVE',
                                 'seed_fixing_type': 'FIX_SEED_WITH_CONSTANT'
