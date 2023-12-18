@@ -8,9 +8,23 @@ class UpdateAllIndices(Protocol):
         ...
 
 
+#TODO their might be ways to optimize the computation such as not recomptuing for the whole tree
 def update_all_indices_base(
         all_nodes_not_opened: trees.RangedDescendants
 ) -> None:
+    """
+    The idea is to compute an index $ind(n)$ for a node $n$ that measures the minimum amount of change
+     in the value of all the nodes such that this node $n$ becomes the best.
+
+    This can be computed recursively as :
+    ind(n) = max( ind(parent(n),.5*abs(value(n)-value(parent(n))))
+
+    Args:
+        all_nodes_not_opened: a tree composed only of the nodes not yer opened by the algorithm
+
+    Returns:
+
+    """
     half_move: int
     for half_move in all_nodes_not_opened:
         parent_node: nodes.AlgorithmNode
@@ -34,6 +48,44 @@ def update_all_indices_base(
                     child_node.exploration_manager.index = child_index
                 else:
                     child_node.exploration_manager.index = min(child_node.exploration_manager.index, child_index)
+
+def update_all_indices_yoshio(
+        all_nodes_not_opened: trees.RangedDescendants
+) -> None:
+    """
+    The idea is to compute an index $ind(n)$ for a node $n$ that measures
+
+    Args:
+        all_nodes_not_opened: a tree composed only of the nodes not yer opened by the algorithm
+
+    Returns:
+
+    """
+    half_move: int
+    for half_move in all_nodes_not_opened:
+        parent_node: nodes.AlgorithmNode
+        for parent_node in all_nodes_not_opened[half_move].values():
+            child_node: nodes.AlgorithmNode
+            for child_node in parent_node.moves_children.values():
+                parent_index: float = parent_node.exploration_manager.index
+                child_value: float = child_node.minmax_evaluation.get_value_white()
+                parent_value: float = parent_node.minmax_evaluation.get_value_white()
+
+                # computes local_child_index the amount of change for the child node to become better than its parent
+                sorted_not_over_children = parent_node.minmax_evaluation.sort_children_not_over()
+                local_child_index: float = abs(child_value - parent_value) / 2
+
+                # the amount of change for the child to become better than any of its ancestor
+                # and become the overall best bode, the max is computed with the parent index
+                child_index: float = max(local_child_index, parent_index)
+
+                # the index of the child node is updated now
+                # as a child node can have multiple parents we take the min if an index was previously computed
+                if child_node.exploration_manager.index is None:
+                    child_node.exploration_manager.index = child_index
+                else:
+                    child_node.exploration_manager.index = min(child_node.exploration_manager.index, child_index)
+
 
 
 def update_all_indices(

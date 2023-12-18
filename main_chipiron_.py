@@ -54,7 +54,8 @@ def main() -> None:
     script_name, gui_args = get_script_and_args(raw_command_line_arguments)
 
     # creating the script object from its name and arguments
-    script_object: scripts.Script = scripts.get_script_from_name(script_name, gui_args)
+    script_object: scripts.Script = scripts.create_script(script_name=script_name,
+                                                          gui_args=gui_args)
 
     # run the script
     script_object.run()

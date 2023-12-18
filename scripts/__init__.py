@@ -11,26 +11,32 @@ from scripts.league.runtheleague import RunTheLeagueScript
 from .script_gui import script_gui
 from .script import Script
 from .base_tree_exploration.base_tree_exploration import BaseTreeExplorationScript
+from scripts.parsers.parser import create_parser, MyParser
 
 
 # instantiate relevant script
-def get_script_from_name(
+def create_script(
         script_name: str,
-        gui_args: object
+        gui_args: dict | None
 ) -> Script:
     """
-    Looks at the script name and starts the corresponding script
+    create the corresponding script
     Args:
-        script_name:
+        script_name: name of the script to create
         gui_args:
 
     Returns:
 
     """
-    # launch the relevant script
+
+    # create the relevant script
+    parser: MyParser = create_parser()
+    base_script: Script = Script(parser=parser,
+                                 gui_args=gui_args)
+
     match script_name:
         case 'one_match':
-            script_object = OneMatchScript(gui_args)
+            script_object = OneMatchScript(base_script=base_script)
         case 'tree_visualization':
             script_object = VisualizeTreeScript()
         case 'learn_nn':

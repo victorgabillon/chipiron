@@ -28,6 +28,7 @@ def create_tree_and_value_builders(args: dict,
 
     algorithm_node_factory: node_factory.AlgorithmNodeFactory
     algorithm_node_factory = node_factory.AlgorithmNodeFactory(
+        args=args['tree_builder'],
         tree_node_factory=tree_node_factory,
         board_representation_factory=board_representation_factory)
 

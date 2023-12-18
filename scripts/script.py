@@ -7,9 +7,8 @@ import pstats
 import io
 from pstats import SortKey
 import time
-from datetime import datetime
 from chipiron.utils.small_tools import mkdir
-from scripts.parsers.parser import create_parser, MyParser
+from scripts.parsers.parser import MyParser
 
 
 class Script:
@@ -21,9 +20,12 @@ class Script:
     default_param_dict: dict = {'profiling': False}
     base_experiment_output_folder: str = 'scripts/'
     start_time: float
+    parser: MyParser
+    gui_args: dict | None
 
     def __init__(
             self,
+            parser: MyParser,
             gui_args: dict | None = None
     ) -> None:
         """
@@ -31,38 +33,41 @@ class Script:
         the profiling and parse arguments and deals with global variables
         """
         # start the clock
-        self.start_time: float = time.time()
+        self.start_time = time.time()
+        self.parser = parser
+        self.experiment_output_folder = None
+        self.gui_args = gui_args
+        self.profile = None
+
+    def parse(self,
+              default_param_dict: dict
+              ) -> dict:
 
         # parse the arguments
-        parser: MyParser = create_parser(default_param_dict=self.default_param_dict)
-        self.args = parser.parse_arguments(gui_args)
-        self.experiment_output_folder = None
-        self.set_experiment_output_folder()
-        mkdir(self.experiment_output_folder)
-        parser.log_parser_info(self.experiment_output_folder)
+        args = self.parser.parse_arguments(default_param_dict=default_param_dict | self.default_param_dict,
+                                           base_experiment_output_folder=self.base_experiment_output_folder,
+                                           gui_args=self.gui_args)
 
         # activate profiling is if needed
-        if self.args['profiling']:
+        if args['profiling']:
             self.profile = cProfile.Profile()
             self.profile.enable()
 
-    def set_experiment_output_folder(self) -> None:
-        """
-            computes the path to the experiment output folder
-        """
+        return args
 
-        if 'output_folder' not in self.args:
-            now = datetime.now()  # current date and time
-            self.experiment_output_folder = self.base_experiment_output_folder + now.strftime(
-                "%A-%m-%d-%Y--%H:%M:%S:%f")
-        else:
-            self.experiment_output_folder = self.base_experiment_output_folder + self.args['output_folder']
+    def initiate(self,
+                 default_param_dict: dict
+                 ) -> dict:
+        args: dict = self.parse(default_param_dict=default_param_dict)
+        mkdir(args['experiment_output_folder'])
+        self.parser.log_parser_info(args['experiment_output_folder'])
+        return args
 
     def terminate(self) -> None:
         """
         Finishing the script. Profiling or timing.
         """
-        if self.args['profiling']:
+        if self.profile is not None:
             print(f'--- {time.time() - self.start_time} seconds ---')
             self.profile.disable()
             string_io = io.StringIO()

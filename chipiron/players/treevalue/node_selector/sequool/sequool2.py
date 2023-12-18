@@ -4,13 +4,10 @@ Sequool
 from chipiron.players.treevalue.node_selector.notations_and_statics import zipf_picks
 from players.treevalue import trees
 from players.treevalue import tree_manager as tree_man
-from chipiron.players.treevalue.nodes.utils import are_all_moves_and_children_opened
 from chipiron.players.treevalue.trees.descendants import RangedDescendants
 from chipiron.environments import HALF_MOVE
 from .index_computation import UpdateAllIndices
-import math
 from players.treevalue import nodes
-from utils.comparable import Comparable
 
 from chipiron.players.treevalue.node_selector.opening_instructions import OpeningInstructions, OpeningInstructor, \
     create_instructions_to_open_all_moves
@@ -91,11 +88,6 @@ class Sequool:
 
         self.update_all_indices(all_nodes_not_opened=self.all_nodes_not_opened)
 
-        # mapped_count_visits = map(
-        #      __func=lambda hm: self.count_visits[hm] if self.is_there_smth_to_open(hm) else math.inf,
-        #      __iter1=self.count_visits.values()
-        #  )
-
         filtered_count_visits = filter(
             lambda hm: bool(hm in self.all_nodes_not_opened),
             self.count_visits
@@ -108,12 +100,7 @@ class Sequool:
             shift=True
         )
 
-        # value_of_element = lambda depth_: self.count_visits[
-        #    depth_] if self.is_there_smth_to_open(depth_) else math.inf)
-
         self.count_visits[half_move_picked] += 1
-
-        nodes_to_consider = list(self.all_nodes_not_opened[half_move_picked])
 
         nodes_to_consider: list[nodes.AlgorithmNode] = []
         half_move: int

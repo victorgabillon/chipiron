@@ -5,21 +5,21 @@ import sys
 import queue
 from shutil import copyfile
 import os
+import multiprocessing
 import yaml
 from PyQt5.QtWidgets import QApplication
 from scripts.script import Script
 import chipiron as ch
 from chipiron.games.match_factories import create_match_manager
-import multiprocessing
 from utils import path
 
 
-class OneMatchScript(Script):
+class OneMatchScript:
     """
     Script that plays a match between two players
 
     """
-    default_param_dict = Script.default_param_dict | {
+    default_param_dict = {
         'config_file_name': 'scripts/one_match/inputs/base/exp_options.yaml',
         'seed': 0,
         'gui': True,
@@ -32,17 +32,20 @@ class OneMatchScript(Script):
     }
 
     base_experiment_output_folder = os.path.join(Script.base_experiment_output_folder, 'one_match/outputs/')
+    base_script: Script
 
     def __init__(
             self,
-            gui_args: dict
+            base_script: Script,
     ) -> None:
         """
         Builds the OneMatchScript object
         """
-        # Getting % usage of virtual_memory ( 3rd field)
+
+        self.base_script = base_script
+
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into self.args
-        super().__init__(gui_args)
+        self.args: dict = self.base_script.initiate(default_param_dict=self.default_param_dict)
 
         # taking care of random
         ch.set_seeds(seed=self.args['seed'])
@@ -70,7 +73,7 @@ class OneMatchScript(Script):
             args_match=self.args['match'],
             args_player_one=self.args['player_one'],
             args_player_two=self.args['player_two'],
-            output_folder_path=self.experiment_output_folder,
+            output_folder_path=self.args['experiment_output_folder'],
             seed=self.args['seed'],
             args_game=args_game,
             gui=self.args['gui']
@@ -117,12 +120,12 @@ class OneMatchScript(Script):
         file_game: str = self.args['match']['game_setting_file']
         path_game_setting: str = 'data/settings/GameSettings/' + file_game
 
-        path_games: str = self.experiment_output_folder + '/games'
+        path_games: str = self.args['experiment_output_folder'] + '/games'
         ch.tool.mkdir(path_games)
-        copyfile(path_game_setting, self.experiment_output_folder + '/' + file_game)
-        copyfile(path_player_one, self.experiment_output_folder + '/' + file_name_player_one)
-        copyfile(path_player_two, self.experiment_output_folder + '/' + file_name_player_two)
-        copyfile(path_match_setting, self.experiment_output_folder + '/' + file_name_match_setting)
+        copyfile(path_game_setting, self.args['experiment_output_folder'] + '/' + file_game)
+        copyfile(path_player_one, self.args['experiment_output_folder'] + '/' + file_name_player_one)
+        copyfile(path_player_two, self.args['experiment_output_folder']+ '/' + file_name_player_two)
+        copyfile(path_match_setting, self.args['experiment_output_folder'] + '/' + file_name_match_setting)
 
     def run(self) -> None:
         """
