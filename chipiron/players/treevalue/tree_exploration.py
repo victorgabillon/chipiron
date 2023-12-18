@@ -61,7 +61,8 @@ class TreeExploration:
             self,
             tree: trees.MoveAndValueTree
     ):
-        # todo the preference for action that have been explored more is not super clear, is it weel implemented, ven for debug?
+        # todo the preference for action that have been explored more is not super clear,
+        #  is it weel implemented, ven for debug?
 
         # for debug we fix the choice in the next lines
         # if global_variables.deterministic_behavior:
@@ -95,10 +96,10 @@ class TreeExploration:
                 best_child = self.random_generator.choice(best_root_children)
                 if tree.root_node.minmax_evaluation.over_event.how_over == OverEvent.WIN:
                     assert (best_child.minmax_evaluation.over_event.how_over == OverEvent.WIN)
-                best_move = tree.root_node.moves_children.inverse[best_child]
+                    best_move = tree.root_node.moves_children.inverse[best_child]
             else:
-                raise (Exception('move_selection_rule is not valid it seems'))
-        return best_move
+                raise (ValueError('move_selection_rule is not valid it seems'))
+                return best_move
 
     def explore(self) -> chess.Move:
 
@@ -111,7 +112,6 @@ class TreeExploration:
             creation_child_node=True
         )
         tree_expansions.add_creation(tree_expansion)
-
 
         while self.stopping_criterion.should_we_continue(tree=self.tree):
             assert (not self.tree.root_node.is_over())
@@ -132,7 +132,7 @@ class TreeExploration:
                 tree=self.tree)
 
             # open the nodes
-            tree_expansions: tree_man.TreeExpansions = self.tree_manager.open(
+            tree_expansions: tree_man.TreeExpansions = self.tree_manager.open_instructions(
                 tree=self.tree,
                 opening_instructions=opening_instructions_subset
             )

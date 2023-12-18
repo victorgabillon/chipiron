@@ -239,7 +239,6 @@ class NodeMinmaxEvaluation:
 
     def sort_children_not_over(self):
         # todo: looks like the deterministism of the sort induces some determinisin the play like always playing the same actions when a lot of them have equal value: introduce some randomness?
-
         return [child for child in self.children_sorted_by_value if
                 child in self.children_not_over]  # todo is this a fast way to do it?
 

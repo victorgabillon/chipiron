@@ -12,9 +12,16 @@ class AlgorithmNode:
     It wraps tree nodes with values, minimax computation and exploration tools
     """
 
+    # the reference to the tree node that is wrapped
     tree_node: TreeNode
+
+    # the object computing the value
     minmax_evaluation: NodeMinmaxEvaluation
+
+    # the object storing the information to help the algorithm decide the next nodes to explore
     exploration_manager: NodeExplorationManager
+
+    # the board representation
     board_representation: BoardRepresentation
 
     def __init__(self,

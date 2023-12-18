@@ -14,13 +14,17 @@ class AlgorithmNodeFactory:
     """
     The classe creating Algorithm Nodes
     """
+    args:dict
     tree_node_factory: node_fac.TreeNodeFactory
     board_representation_factory: Representation364Factory
 
     def __init__(self,
+                 args :dict,
                  tree_node_factory: node_fac.TreeNodeFactory,
                  board_representation_factory: Representation364Factory
-                 ) -> None:
+                 ) \
+            -> None:
+        self.args =args
         self.tree_node_factory = tree_node_factory
         self.board_representation_factory = board_representation_factory
 
@@ -39,7 +43,7 @@ class AlgorithmNodeFactory:
             parent_node=parent_node,
         )
         minmax_evaluation: NodeMinmaxEvaluation = NodeMinmaxEvaluation(tree_node=tree_node)
-        exploration_manager: NodeExplorationManager = NodeExplorationManager(tree_node=tree_node)
+        exploration_manager: NodeExplorationManager = create_node_exploration_manager()
         board_representation: BoardRepresentation = self.board_representation_factory.create_from_transition(
             tree_node=tree_node,
             parent_node=parent_node,
