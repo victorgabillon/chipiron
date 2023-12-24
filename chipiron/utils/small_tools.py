@@ -1,5 +1,7 @@
 import copy
 import os
+import sys
+
 import yaml
 from itertools import islice
 import numpy as np
@@ -8,11 +10,12 @@ import numpy as np
 def mkdir(folder_path):
     try:
         os.mkdir(folder_path)
-    except OSError as error:
-        print(error)
-        print("Creation of the directory %s failed" % folder_path)
+    except FileNotFoundError as error:
+        sys.exit(f"Creation of the directory {folder_path} failed with error {error}")
+    except FileExistsError as error:
+        print(f'the file already exists so no creation needed for {folder_path} ')
     else:
-        print("Successfully created the directory %s " % folder_path)
+        print(f"Successfully created the directory {folder_path} ")
 
 
 def yaml_fetch_args_in_file(path_file: str) -> dict:

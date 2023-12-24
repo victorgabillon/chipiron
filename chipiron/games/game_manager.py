@@ -83,6 +83,7 @@ class GameManager:
         self.game.set_starting_position(starting_position_arg)
 
     def play_one_game(self):
+        print('okok')
         board = self.game.board
         self.set_new_game(self.args['starting_position'])
 

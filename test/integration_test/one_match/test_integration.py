@@ -7,6 +7,8 @@ print(os.getcwd())
 configs = [
     {'seed': 11, 'gui': False, 'file_name_player_one': 'RecurZipfBase3.yaml',
      'file_name_player_two': 'RecurZipfBase3.yaml', 'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
+    {'seed': 11, 'gui': False, 'file_name_player_one': 'RecurZipfBase3.yaml',
+     'file_name_player_two': 'RecurZipfBase3.yaml', 'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
     {'seed': 11, 'gui': False, 'file_name_player_one': 'Uniform.yaml', 'file_name_player_two': 'RecurZipfBase3.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
     {'seed': 11, 'gui': False, 'file_name_player_one': 'RecurZipfBase4.yaml',

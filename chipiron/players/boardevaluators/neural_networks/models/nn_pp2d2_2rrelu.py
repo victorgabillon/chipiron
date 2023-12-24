@@ -5,7 +5,6 @@ from chipiron.utils.chi_nn import ChiNN
 class NetPP2D2_2_RRELU(ChiNN):
     def __init__(self  ):
         super(NetPP2D2_2_RRELU, self).__init__( )
-
         self.fc1 = nn.Linear(772, 20)
         self.relu_1 = nn.RReLU()
         self.fc2 = nn.Linear(20, 1)

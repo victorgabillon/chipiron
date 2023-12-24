@@ -1,6 +1,6 @@
-import chipiron.players as players
-import chipiron.players.treevalue as treevalue
-
+import players.move_selector.treevalue as treevalue
+from .player import Player
+from .player_thread import PlayerProcess
 from chipiron.utils.null_object import NullObject
 
 import multiprocessing
@@ -8,53 +8,58 @@ import random
 
 from dataclasses import dataclass
 
-@dataclass
-class MoveSelectorArgs:
-    name: str
+import move_selector
+
 
 @dataclass
 class PlayerArgs:
     name: str
-    type: str
-    main_move_selector: MoveSelectorArgs
+    main_move_selector: move_selector.AllMoveSelectorArgs
+    # whether to play with syzygy when possible
+    syzygy_play: bool
 
 
-
-def create_main_move_selector(arg: dict,
-                              syzygy,
-                              random_generator: random.Random) -> players.MoveSelector:
-    main_move_selector: players.MoveSelector
-    match arg['type']:
+def create_main_move_selector(
+        arg: treevalue.TreeAndValuePlayerArgs,
+        syzygy,
+        random_generator: random.Random
+) -> move_selector.MoveSelector:
+    main_move_selector: move_selector.MoveSelector
+    print('create main move')
+    match arg:
         case 'RandomPlayer':
-            main_move_selector = players.RandomPlayer()
-        case 'TreeAndValue':
-            main_move_selector = players.treevalue.create_tree_and_value_builders(args=arg,
-                                                                                  syzygy=syzygy,
-                                                                                  random_generator=random_generator)
+            main_move_selector = move_selector.Random()
+        case treevalue.TreeAndValuePlayerArgs():
+            main_move_selector = treevalue.create_tree_and_value_builders(args=arg,
+                                                                          syzygy=syzygy,
+                                                                          random_generator=random_generator)
         case 'Stockfish':
-            main_move_selector = players.Stockfish(arg)
+            main_move_selector = move_selector.Stockfish(arg)
         case 'Human':
             main_move_selector = NullObject()  # TODO is it necessary?
         case other:
-            raise Exception(f'player creator: can not find {other}')
+            raise Exception(f'player creator: can not find {other} {type(other)}')
     return main_move_selector
 
 
-def create_player(args: dict,
+def create_player(args: PlayerArgs,
                   syzygy,
-                  random_generator: random.Random) -> players.Player:
-    main_move_selector: players.MoveSelector = create_main_move_selector(arg=args, syzygy=syzygy,
-                                                                         random_generator=random_generator)
-    return players.Player(arg=args,
-                          syzygy=syzygy,
-                          main_move_selector=main_move_selector)
+                  random_generator: random.Random) -> Player:
+    print('create player')
+    main_move_selector: move_selector.MoveSelector = create_main_move_selector(arg=args.main_move_selector,
+                                                                               syzygy=syzygy,
+                                                                               random_generator=random_generator)
+    return Player(name=args.name,
+                  syzygy_play=args.syzygy_play,  # looks like double arguments change?
+                  syzygy=syzygy,
+                  main_move_selector=main_move_selector)
 
 
 def create_player_thread(args: dict,
                          syzygy,
                          random_generator: random.Random):
     player = create_player(args, syzygy, random_generator)
-    return players.PlayerProcess(player)
+    return PlayerProcess(player)
 
 
 def launch_player_process(game_player,
@@ -67,7 +72,7 @@ def launch_player_process(game_player,
     observable_game.register_mailbox(player_thread_mailbox, 'board_to_play')
 
     # creating and starting the thread for the player
-    player_thread = players.PlayerProcess(game_player, player_thread_mailbox, main_thread_mailbox)
+    player_thread = PlayerProcess(game_player, player_thread_mailbox, main_thread_mailbox)
     player_thread.start()
 
     return player_thread

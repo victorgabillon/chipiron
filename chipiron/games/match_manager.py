@@ -32,9 +32,13 @@ class MatchManager:
         print('Playing the match')
         match_results = self.match_results_factory.create()
 
-        game_number = 0
+        game_number: int = 0
         while not self.game_args_factory.is_match_finished():
+            print('Plasssying the match')
+
             player_color_to_player, args_game = self.game_args_factory.generate_game_args(game_number)
+            print('Playing thsssssse match')
+
             game_results = self.play_one_game(player_color_to_player, args_game, game_number)
             match_results.add_result_one_game(white_player_name_id=player_color_to_player[chess.WHITE].id,
                                               game_result=game_results)
@@ -45,7 +49,9 @@ class MatchManager:
         return match_results
 
     def play_one_game(self, player_color_to_player, args_game, game_number):
+        print('okoddk')
         game_manager: GameManager = self.game_manager_factory.create(args_game, player_color_to_player)
+        print('okodsdk')
         game_results = game_manager.play_one_game()
         game_manager.print_to_file(idx=game_number)
         return game_results
