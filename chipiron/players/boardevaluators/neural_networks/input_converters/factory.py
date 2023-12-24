@@ -1,21 +1,19 @@
 from .board_representation import Representation364
-from typing import Optional, Protocol
+from typing import Optional
 from environments.chess.board import BoardChi
-import chipiron.players.treevalue.nodes as nodes
+import players.move_selector.treevalue.nodes as nodes
 import chipiron.environments.chess.board as board_mod
 import chess
 import torch
 
-def create_board_representation(args: dict) -> object:
-    board_representation: object
-    print('args', args)
-    if args['neural_network']['representation'] == '364':
+
+def create_board_representation(board_representation: str) -> object:
+    if board_representation == '364':
         board_representation = Representation364Factory()
     else:
-        raise Exception(f'trying to create {args["representation"]}')
+        raise Exception(f'trying to create {board_representation}')
 
     return board_representation
-
 
 
 def node_to_tensors_pieces_square_from_parent(node, board_modifications, parent_node):
@@ -68,9 +66,6 @@ def node_to_tensors_pieces_square_from_parent(node, board_modifications, parent_
                                        tensor_castling_white=tensor_castling_white)
 
     return representation
-
-
-
 
 
 class Representation364Factory:

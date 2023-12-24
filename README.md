@@ -6,7 +6,7 @@ Chipiron is a Python library that plays chess
 
 ## Requirements
 
-* Python 3.10
+* Python 3.12
 * pip
 * curl
 * tkinter

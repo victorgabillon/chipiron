@@ -10,6 +10,7 @@ from .game import Game, ObservableGame
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 from utils import path
 
+
 class GameManagerFactory:
     """
     The GameManagerFactory creates GameManager once the players and rules have been decided.

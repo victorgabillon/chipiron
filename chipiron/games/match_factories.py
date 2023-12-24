@@ -12,6 +12,7 @@ import queue
 from utils import path
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy_thread
+from players.factory import PlayerArgs
 
 from dataclasses import dataclass
 
@@ -23,10 +24,25 @@ class MatchArgs:
     game_setting_file: str | bytes | os.PathLike
 
 
+@dataclass
+class FenStaringPositionArgs:
+    fen: str
+
+
+@dataclass
+class FileStaringPositionArgs:
+    file_name: str
+
+
+@dataclass
+class GameArgs:
+    starting_position: FenStaringPositionArgs | FileStaringPositionArgs
+
+
 def create_match_manager(
-        args_match: dict,
-        args_player_one: dict,
-        args_player_two: dict,
+        args_match: MatchArgs,
+        args_player_one: PlayerArgs,
+        args_player_two: PlayerArgs,
         output_folder_path: path,
         seed: int | None,
         args_game: dict,
@@ -38,8 +54,8 @@ def create_match_manager(
     # and can also be used by the players
     syzygy_mailbox: SyzygyTable = create_syzygy_thread()
 
-    player_one_name: str = args_player_one['name']
-    player_two_name: str = args_player_two['name']
+    player_one_name: str = args_player_one.name
+    player_two_name: str = args_player_two.name
 
     game_board_evaluator = create_game_board_evaluator(gui=gui)
 
@@ -71,7 +87,6 @@ def create_match_manager(
         match_results_factory=match_results_factory,
         output_folder_path=output_folder_path
     )
-
     return match_manager
 
 
@@ -84,12 +99,19 @@ class GameArgsFactory:
 
     """
 
+    args_match: MatchArgs
+    seed: int | None
+    args_player_one: PlayerArgs
+    args_player_two: PlayerArgs
+    args_game: GameArgs
+    game_number: int
+
     def __init__(self,
-                 args_match,
-                 args_player_one,
-                 args_player_two,
+                 args_match: MatchArgs,
+                 args_player_one: PlayerArgs,
+                 args_player_two: PlayerArgs,
                  seed: int | None,
-                 args_game):
+                 args_game: GameArgs):
         self.args_match = args_match
         self.seed = seed
         self.args_player_one = args_player_one
@@ -97,7 +119,8 @@ class GameArgsFactory:
         self.args_game = args_game
         self.game_number = 0
 
-    def generate_game_args(self, game_number):
+    def generate_game_args(self,
+                           game_number: int):
         print('args_game', self.args_game)
 
         # Creating the players
@@ -111,7 +134,7 @@ class GameArgsFactory:
                                    syzygy=syzygy_table,
                                    random_generator=random_generator)
 
-        if game_number < self.args_match['number_of_games_player_one_white']:
+        if game_number < self.args_match.number_of_games_player_one_white:
             player_color_to_player = {chess.WHITE: player_one, chess.BLACK: player_two}
         else:
             player_color_to_player = {chess.WHITE: player_two, chess.BLACK: player_one}
@@ -120,5 +143,5 @@ class GameArgsFactory:
         return player_color_to_player, self.args_game
 
     def is_match_finished(self):
-        return self.game_number >= self.args_match['number_of_games_player_one_white'] + self.args_match[
-            'number_of_games_player_one_black']
+        return (self.game_number >= self.args_match.number_of_games_player_one_white
+                + self.args_match.number_of_games_player_one_black)

@@ -1,4 +1,4 @@
-from .move_selector import MoveSelector
+from .move_selector.move_selector import MoveSelector
 import chess
 
 
@@ -8,15 +8,15 @@ class Player:
 
     def __init__(
             self,
-            arg: dict,
+            name: str,
+            syzygy_play,
             syzygy,
-                 main_move_selector: MoveSelector):
-        self.arg: dict = arg
-        self.id = arg['name']
+            main_move_selector: MoveSelector):
+        self.id = name
         self.main_move_selector: MoveSelector = main_move_selector
 
         self.syzygy_player = None
-        self.syzygy_play = arg['syzygy_play']
+        self.syzygy_play = syzygy_play
         if self.syzygy_play:
             self.syzygy_player = syzygy
 
