@@ -1,4 +1,4 @@
-import players.move_selector.treevalue.nodes as node
+import chipiron.players.move_selector.treevalue.nodes as node
 from typing import List
 from dataclasses import dataclass
 import chipiron.environments.chess.board as board_mod

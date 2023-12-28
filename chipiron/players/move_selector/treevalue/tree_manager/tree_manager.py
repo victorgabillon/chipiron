@@ -1,10 +1,10 @@
 import chess
 import chipiron.environments.chess.board as board_mod
-from players.move_selector.treevalue.tree_manager.tree_expander import TreeExpansion, TreeExpansions
-import players.move_selector.treevalue.nodes as node
-import players.move_selector.treevalue.trees as trees
-import players.move_selector.treevalue.node_selector as node_sel
-from players.move_selector.treevalue import node_factory as node_fact
+from chipiron.players.move_selector.treevalue.tree_manager.tree_expander import TreeExpansion, TreeExpansions
+import chipiron.players.move_selector.treevalue.nodes as node
+import chipiron.players.move_selector.treevalue.trees as trees
+import chipiron.players.move_selector.treevalue.node_selector as node_sel
+from chipiron.players.move_selector.treevalue import node_factory as node_fact
 
 
 # todo should we use a discount? and discounted per round reward?

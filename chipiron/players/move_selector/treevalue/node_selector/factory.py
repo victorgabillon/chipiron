@@ -3,26 +3,16 @@ Factory to build node selectors
 """
 from .node_selector import NodeSelector
 from .uniform import Uniform
-from .recur_zipf_base import RecurZipfBase
+from .recurzipf.recur_zipf_base import RecurZipfBase, RecurZipfBaseArgs
 from .sequool import create_sequool
 from .opening_instructions import OpeningInstructor
-from dataclasses import dataclass
-from enum import Enum
+from .node_selector_types import NodeSelectorType
 
-
-class NodeSelectorType(Enum):
-    RecurZipfBase: str = 'RecurZipfBase'
-    Sequool: str = 'Sequool'
-    Uniform: str = 'Uniform'
-
-
-@dataclass
-class NodeSelectorArgs:
-    type: NodeSelectorType
+AllNodeSelectorArgs = RecurZipfBaseArgs
 
 
 def create(
-        arg: NodeSelectorArgs,
+        args: AllNodeSelectorArgs,
         opening_instructor: OpeningInstructor,
         random_generator,
 ) -> NodeSelector:
@@ -30,15 +20,15 @@ def create(
     Creation of a node selector
     """
 
-    tree_builder_type: str = arg['type']
     node_move_opening_selector: NodeSelector
 
-    match tree_builder_type:
+    match args.type:
         case 'Uniform':
             node_move_opening_selector = Uniform(opening_instructor=opening_instructor)
-        case 'RecurZipfBase':
+        case NodeSelectorType.RecurZipfBase:
+            print('yy',type(args))
             node_move_opening_selector = RecurZipfBase(
-                arg=arg,
+                args=args,
                 random_generator=random_generator,
                 opening_instructor=opening_instructor
             )
@@ -48,6 +38,6 @@ def create(
                                                         args=arg['sequool'])
 
         case other:
-            raise Exception('tree builder: can not find ' + other)
+            raise ValueError(f'node selector construction: can not find {other}  {args} in file {__name__}')
 
     return node_move_opening_selector

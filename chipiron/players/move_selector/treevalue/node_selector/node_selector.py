@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 from .opening_instructions import OpeningInstructions
 from ..trees import MoveAndValueTree
-import players.move_selector.treevalue.tree_manager as tree_man
+import chipiron.players.move_selector.treevalue.tree_manager as tree_man
 
 
 @dataclass

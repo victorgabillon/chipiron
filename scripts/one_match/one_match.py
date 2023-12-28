@@ -15,8 +15,10 @@ from utils import path
 from dataclasses import dataclass, field
 import dacite
 from chipiron.players.factory import PlayerArgs
-from utils.is_dataclass import IsDataclass, DataClass
-from typing import Type, LiteralString
+from utils.is_dataclass import IsDataclass
+from typing import Type
+from enum import Enum
+
 
 
 @dataclass
@@ -54,7 +56,8 @@ def fetch_args_modify_and_convert[ADataclass: IsDataclass](
 
     # formatting the dictionary into the corresponding dataclass
     dataclass_args: ADataclass = dacite.from_dict(data_class=dataclass_name,
-                                                  data=merged_args_dict)
+                                                  data=merged_args_dict,
+                                                  config=dacite.Config(cast=[Enum]))
 
     return dataclass_args
 

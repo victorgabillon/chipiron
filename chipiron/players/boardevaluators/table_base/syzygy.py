@@ -1,6 +1,6 @@
 import chess.syzygy
 from chipiron.players.boardevaluators.over_event import OverEvent
-import players.move_selector.treevalue.nodes as nodes
+import chipiron.players.move_selector.treevalue.nodes as nodes
 import environments.chess.board as boards
 
 

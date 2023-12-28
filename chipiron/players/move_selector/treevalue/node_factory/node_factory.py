@@ -2,8 +2,8 @@
 TreeNodeFactory Protocol
 """
 from typing import Protocol
-from players.move_selector.treevalue.nodes.tree_node import TreeNode
-from players.move_selector.treevalue.nodes.itree_node import ITreeNode
+from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
+from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 import chipiron.environments.chess.board as boards
 
 

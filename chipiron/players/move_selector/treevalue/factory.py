@@ -1,7 +1,8 @@
 import random
 
-from .tree_and_value_player import TreeAndValuePlayer
+from .tree_and_value_player import TreeAndValueMoveSelector
 from . import tree_manager as tree_man
+from . import node_evaluator as node_eval
 from players.move_selector.treevalue import node_factory
 
 from .trees.factory import MoveAndValueTreeFactory
@@ -10,25 +11,30 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.factory i
 
 from dataclasses import dataclass
 
-TreeAndValueType = 'TreeAndValue'
+from chipiron.players.move_selector.move_selector_args import MoveSelectorArgs
+from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
+
+from . import node_selector
+from .stopping_criterion import AllStoppingCriterionArgs
 
 
 @dataclass
-class TreeAndValuePlayerArgs:
-    type: str
-    move_explorer_priority: str
-    opening_type: str
-    board_evaluator: tree_man.NodeEvaluatorsArgs
+class TreeAndValuePlayerArgs(MoveSelectorArgs):
+    node_selector: node_selector.AllNodeSelectorArgs
+    opening_type: node_selector.OpeningType
+    board_evaluator: node_eval.AllNodeEvaluatorArgs
+    stopping_criterion: AllStoppingCriterionArgs
+    recommander_rule : recommand.AllRecommandFunctionsArgs
 
     def __post_init__(self):
-        if self.type != TreeAndValueType:
-            raise ValueError('Expecting TreeAndValue as name')
+        if self.type != MoveSelectorTypes.TreeAndValue:
+            raise ValueError(f'Expecting TreeAndValue as name, got {self.type}')
 
 
 def create_tree_and_value_builders(args: TreeAndValuePlayerArgs,
                                    syzygy,
-                                   random_generator: random.Random) -> TreeAndValuePlayer:
-    node_evaluator: tree_man.NodeEvaluator = tree_man.create_node_evaluator(
+                                   random_generator: random.Random) -> TreeAndValueMoveSelector:
+    node_evaluator: node_eval.NodeEvaluator = node_eval.create_node_evaluator(
         arg_board_evaluator=args.board_evaluator,
         syzygy=syzygy
     )
@@ -60,8 +66,10 @@ def create_tree_and_value_builders(args: TreeAndValuePlayerArgs,
         node_evaluator=node_evaluator,
     )
 
-    tree_move_selector: TreeAndValuePlayer = TreeAndValuePlayer(opening_type=args.opening_type,
-                                                                tree_manager=tree_manager,
-                                                                random_generator=random_generator,
-                                                                tree_factory=tree_factory)
+    tree_move_selector: TreeAndValueMoveSelector = TreeAndValueMoveSelector(opening_type=args.opening_type,
+                                                                            tree_manager=tree_manager,
+                                                                            random_generator=random_generator,
+                                                                            tree_factory=tree_factory,
+                                                                            node_selector_args=args.node_selector,
+                                                                            stopping_criterion_args=args.stopping_criterion)
     return tree_move_selector

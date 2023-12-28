@@ -25,10 +25,10 @@ class NeuralNetBoardEvalArgs:
     nn_param_folder_name: str
 
 
-def get_folder_path_from(nn_type :str,
+def get_folder_path_from(nn_type: str,
                          nn_param_folder_name):
-    print('nn_type',nn_type)
-    folder_path = os.path.join('data/players/board_evaluators/nn_pytorch/nn_'+ nn_type, nn_param_folder_name)
+    print('nn_type', nn_type)
+    folder_path = os.path.join('data/players/board_evaluators/nn_pytorch/nn_' + nn_type, nn_param_folder_name)
     return folder_path
 
 
@@ -41,13 +41,11 @@ def create_nn(
         args: NeuralNetBoardEvalArgs,
         create_file=False
 ) -> ChiNN:
-    nn_type: str = args.nn_type
-    folder_path = get_folder_path_from(nn_type=nn_type, nn_param_folder_name=args.nn_param_folder_name)
+    folder_path = get_folder_path_from(nn_type=args.nn_type, nn_param_folder_name=args.nn_param_folder_name)
     mkdir(folder_path)
 
-
     net: ChiNN
-    match nn_type:
+    match args.nn_type:
         case 'pp1':
             net = NetPP1()
         case 'pp2':
@@ -63,7 +61,7 @@ def create_nn(
         case 'pp2d2_2_prelu':
             net = NetPP2D2_2_PRELU()
         case other:
-            sys.exit(f'Create NN: can not find {other}')
+            sys.exit(f'Create NN: can not find {other} in file {__name__}')
 
     nn_param_file_path = get_nn_param_file_path_from(folder_path)
     net.load_from_file_or_init_weights(nn_param_file_path, create_file)

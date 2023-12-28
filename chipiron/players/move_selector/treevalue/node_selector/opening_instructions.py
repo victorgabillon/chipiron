@@ -1,17 +1,19 @@
-import players.move_selector.treevalue.nodes.algorithm_node as nodes
+import chipiron.players.move_selector.treevalue.nodes.algorithm_node as nodes
 import chess
 from enum import Enum
 
 
 class OpeningInstructions:
 
-    def __init__(self, dictionary={}):
+    def __init__(self, dictionary=None):
+
         # here i use a dictionary because they are insertion ordered until there is an ordered set in python
         # order is important because some method give a batch where the last element in the batch are prioritary
         self.batch = {}
 
-        for key in dictionary:
-            self[key] = dictionary[key]
+        if dictionary is not None:
+            for key in dictionary:
+                self[key] = dictionary[key]
 
     def __setitem__(self, key, value):
         # key is supposed to be a tuple with (node_to_open,  move_to_play)

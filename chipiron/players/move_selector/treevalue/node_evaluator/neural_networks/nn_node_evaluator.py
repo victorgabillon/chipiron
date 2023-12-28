@@ -1,16 +1,15 @@
 import torch
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import BoardEvaluation
-from players.move_selector.treevalue.node_evaluator import NodeEvaluator
-from typing import List
-import players.move_selector.treevalue.nodes as nodes
-from chipiron.players.boardevaluators.neural_networks.board_evaluator import NNBoardEvaluator
+from chipiron.players.move_selector.treevalue.node_evaluator import NodeEvaluator
+import chipiron.players.move_selector.treevalue.nodes as nodes
+import chipiron.players.boardevaluators.neural_networks as board_nn
 
 
 class NNNodeEvaluator(NodeEvaluator):
     """ The Generic Neural network class for board evaluation"""
 
     def __init__(self,
-                 nn_board_evaluator: NNBoardEvaluator,
+                 nn_board_evaluator: board_nn.NNBoardEvaluator,
                  syzygy: object
                  ) -> None:
         super().__init__(
@@ -21,7 +20,7 @@ class NNNodeEvaluator(NodeEvaluator):
 
     def evaluate_all_not_over(
             self,
-            not_over_nodes: List[nodes.AlgorithmNode]
+            not_over_nodes: list[nodes.AlgorithmNode]
     ):
         list_of_tensors = [0] * len(not_over_nodes)
         index: int

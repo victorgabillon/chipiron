@@ -1,7 +1,7 @@
-import players.move_selector.treevalue.nodes as nodes
+import chipiron.players.move_selector.treevalue.nodes as nodes
 from .minmax_evaluation_updater import MinMaxEvaluationUpdater
 from .updates_file import UpdateInstructions, UpdateInstructionsBatch,ValueUpdateInstructionsBlock
-import players.move_selector.treevalue.tree_manager as tree_man
+import chipiron.players.move_selector.treevalue.tree_manager as tree_man
 
 class AlgorithmNodeUpdater:
     minmax_evaluation_updater: MinMaxEvaluationUpdater

@@ -1,11 +1,20 @@
 """
 RecurZipfBase
 """
-from players.move_selector.treevalue.node_selector.move_explorer import ZipfMoveExplorer
-from players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructions, OpeningInstructor, \
+from chipiron.players.move_selector.treevalue.node_selector.move_explorer import ZipfMoveExplorer
+from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructions, \
+    OpeningInstructor, \
     create_instructions_to_open_all_moves
-from .. import trees
-from .. import tree_manager as tree_man
+from chipiron.players.move_selector.treevalue import trees
+from chipiron.players.move_selector.treevalue import tree_manager as tree_man
+from dataclasses import dataclass
+from ..move_explorer import SamplingPriorities
+from ..node_selector_args import NodeSelectorArgs
+
+
+@dataclass
+class RecurZipfBaseArgs(NodeSelectorArgs):
+    move_explorer_priority: SamplingPriorities
 
 
 class RecurZipfBase:
@@ -14,12 +23,12 @@ class RecurZipfBase:
 
     def __init__(
             self,
-            arg: dict,
+            args: RecurZipfBaseArgs,
             random_generator,
             opening_instructor: OpeningInstructor
     ) -> None:
         self.opening_instructor = opening_instructor
-        self.move_explorer = ZipfMoveExplorer(arg['move_explorer_priority'], random_generator)
+        self.move_explorer = ZipfMoveExplorer(args.move_explorer_priority, random_generator)
         self.random_generator = random_generator
 
     def choose_node_and_move_to_open(
