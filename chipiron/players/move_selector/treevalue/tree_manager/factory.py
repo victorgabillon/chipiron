@@ -1,7 +1,7 @@
 from .algorithm_node_tree_manager import AlgorithmNodeTreeManager, TreeManager
-from players.move_selector.treevalue import node_factory
-import players.move_selector.treevalue.updates as upda
-from players.move_selector.treevalue.node_evaluator import NodeEvaluator, EvaluationQueries
+from chipiron.players.move_selector.treevalue import node_factory
+import chipiron.players.move_selector.treevalue.updates as upda
+from chipiron.players.move_selector.treevalue.node_evaluator import NodeEvaluator, EvaluationQueries
 
 
 def create_algorithm_node_tree_manager(

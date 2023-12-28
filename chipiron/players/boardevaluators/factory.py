@@ -33,10 +33,9 @@ def create_board_evaluator(
         case NeuralNetBoardEvalArgs():
             board_evaluator = create_nn_board_eval(args_board_evaluator)
         case TableBaseArgs():
-
             board_evaluator = None
         case other:
-            sys.exit(f'Board Eval: cannot find {other}')
+            sys.exit(f'Board Eval: cannot find {other} in file {__name__}')
 
     return board_evaluator
 

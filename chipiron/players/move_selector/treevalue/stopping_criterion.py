@@ -4,6 +4,18 @@ stopping criterion
 
 from . import node_selector as node_sel
 from .trees import MoveAndValueTree
+from dataclasses import dataclass
+from enum import Enum
+
+
+class StoppingCriterionTypes(str, Enum):
+    DepthLimit: str = 'depth_limit'
+    TreeMoveLimit: str = 'tree_move_limit'
+
+
+@dataclass
+class StoppingCriterionArgs:
+    type: StoppingCriterionTypes
 
 
 class StoppingCriterion:
@@ -12,7 +24,10 @@ class StoppingCriterion:
     """
     node_selector: node_sel.NodeSelector
 
-    def should_we_continue(self, tree: MoveAndValueTree) -> bool:
+    def should_we_continue(
+            self,
+            tree: MoveAndValueTree
+    ) -> bool:
         """
         Asking should we continue
 
@@ -33,6 +48,11 @@ class StoppingCriterion:
 
         """
         return opening_instructions
+
+
+@dataclass
+class TreeMoveLimitArgs(StoppingCriterionArgs):
+    tree_move_limit: int
 
 
 class TreeMoveLimit(StoppingCriterion):
@@ -73,6 +93,11 @@ class TreeMoveLimit(StoppingCriterion):
         return opening_instructions_subset
 
 
+@dataclass
+class DepthLimitArgs(StoppingCriterionArgs):
+    depth_limit: int
+
+
 class DepthLimit(StoppingCriterion):
     """
     The stopping criterion based on a depth limit
@@ -102,12 +127,18 @@ class DepthLimit(StoppingCriterion):
             self.node_selector.current_depth_to_expand) + ' out of ' + str(self.depth_limit)
 
 
-def create_stopping_criterion(arg: dict,
-                              node_selector: node_sel.NodeSelector) -> StoppingCriterion:
+AllStoppingCriterionArgs = TreeMoveLimitArgs | DepthLimitArgs
+
+
+def create_stopping_criterion(
+        args: AllStoppingCriterionArgs,
+        node_selector: node_sel.NodeSelector
+) -> StoppingCriterion:
     """
     creating the stopping criterion
     Args:
-        arg: arguments
+        args:
+        node_selector:
 
     Returns:
         A stopping criterion
@@ -115,12 +146,12 @@ def create_stopping_criterion(arg: dict,
     """
     stopping_criterion: StoppingCriterion
 
-    match arg['name']:
-        case 'depth_limit':
-            stopping_criterion = DepthLimit(depth_limit=arg['depth_limit'], node_selector=node_selector)
-        case 'tree_move_limit':
-            stopping_criterion = TreeMoveLimit(tree_move_limit=arg['tree_move_limit'])
+    match args.type:
+        case StoppingCriterionTypes.DepthLimit:
+            stopping_criterion = DepthLimit(depth_limit=args.depth_limit, node_selector=node_selector)
+        case StoppingCriterionTypes.TreeMoveLimit:
+            stopping_criterion = TreeMoveLimit(tree_move_limit=args.tree_move_limit)
         case other:
-            raise Exception(f'stopping criterion builder: can not find {other}')
+            raise ValueError(f'stopping criterion builder: can not find {other} in file {__name__}')
 
     return stopping_criterion

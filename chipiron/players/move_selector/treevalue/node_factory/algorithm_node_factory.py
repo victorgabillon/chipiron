@@ -1,10 +1,10 @@
 """"
 AlgorithmNodeFactory
 """
-from players.move_selector.treevalue.nodes.node_minmax_evaluation import NodeMinmaxEvaluation
-from players.move_selector.treevalue.nodes.node_exploration_manager import NodeExplorationManager, create_node_exploration_manager
-import players.move_selector.treevalue.node_factory as node_fac
-import players.move_selector.treevalue.nodes as node
+from chipiron.players.move_selector.treevalue.nodes.node_minmax_evaluation import NodeMinmaxEvaluation
+from chipiron.players.move_selector.treevalue.nodes.node_exploration_manager import NodeExplorationManager, create_node_exploration_manager
+import chipiron.players.move_selector.treevalue.node_factory as node_fac
+import chipiron.players.move_selector.treevalue.nodes as node
 import chipiron.environments.chess.board as board_mod
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import BoardRepresentation
 from chipiron.players.boardevaluators.neural_networks.input_converters.factory import Representation364Factory

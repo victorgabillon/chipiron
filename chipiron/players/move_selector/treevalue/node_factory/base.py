@@ -1,8 +1,8 @@
 """
 Basic class for Creating Tree nodes
 """
-from players.move_selector.treevalue.node_factory.factory import TreeNodeFactory
-from players.move_selector.treevalue.nodes.tree_node import TreeNode
+from chipiron.players.move_selector.treevalue.node_factory.factory import TreeNodeFactory
+from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 import chipiron.environments.chess.board as boards
 
 

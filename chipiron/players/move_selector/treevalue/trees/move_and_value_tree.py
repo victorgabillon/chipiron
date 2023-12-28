@@ -1,7 +1,7 @@
 """
 MoveAndValueTree
 """
-import players.move_selector.treevalue.nodes as nodes
+import chipiron.players.move_selector.treevalue.nodes as nodes
 from .descendants import RangedDescendants
 
 

@@ -1,8 +1,15 @@
 import chess
 import chipiron.players.boardevaluators as board_evals
-import players.move_selector.treevalue.nodes as nodes
+import chipiron.players.move_selector.treevalue.nodes as nodes
+from enum import Enum
+
 
 DISCOUNT = .999999999999  # todo play with this
+
+
+
+class NodeEvaluatorTypes(str, Enum):
+    NeuralNetwork: str = 'neural_network'
 
 
 class EvaluationQueries:
@@ -35,13 +42,19 @@ class NodeEvaluator:
     # VALUE_WHITE_WHEN_OVER is the value_white default value when the node is over
     # set atm to be symmetric and high to be preferred
 
-    ''' wrapping node evaluator with syzygy '''
+    """ Wrapping node evaluator with syzygy and obvious over event. I think the idea is this class builds
+     on top of BoardEvaluator which is th elementary class to build something more complex
+      (similar to the relation between player and move selector)
+       it also manages the evaluation querrys it seems"""
+
     board_evaluator: board_evals.BoardEvaluator
     syzygy_evaluator: object
 
-    def __init__(self,
-                 board_evaluator: board_evals.BoardEvaluator,
-                 syzygy):
+    def __init__(
+            self,
+            board_evaluator: board_evals.BoardEvaluator,
+            syzygy: object
+    ) -> None:
         self.board_evaluator = board_evaluator
         self.syzygy_evaluator = syzygy
 
@@ -62,18 +75,19 @@ class NodeEvaluator:
             node: nodes.AlgorithmNode):
         """ updates the node.over object
          if the game is obviously over"""
-        game_over = node.tree_node.board.is_game_over()
+        game_over: bool = node.tree_node.board.is_game_over()
         if game_over:
-            value_as_string = node.board.result()
-            if value_as_string == '0-1':
-                how_over_ = node.minmax_evaluation.over_event.WIN
-                who_is_winner_ = chess.BLACK
-            elif value_as_string == '1-0':
-                how_over_ = node.minmax_evaluation.over_event.WIN
-                who_is_winner_ = chess.WHITE
-            elif value_as_string == '1/2-1/2':
-                how_over_ = node.minmax_evaluation.over_event.DRAW
-                who_is_winner_ = node.minmax_evaluation.over_event.NO_KNOWN_WINNER
+            value_as_string: str = node.board.result()
+            match value_as_string:
+                case '0-1':
+                    how_over_ = node.minmax_evaluation.over_event.WIN
+                    who_is_winner_ = chess.BLACK
+                case '1-0':
+                    how_over_ = node.minmax_evaluation.over_event.WIN
+                    who_is_winner_ = chess.WHITE
+                case '1/2-1/2':
+                    how_over_ = node.minmax_evaluation.over_event.DRAW
+                    who_is_winner_ = node.minmax_evaluation.over_event.NO_KNOWN_WINNER
             node.minmax_evaluation.over_event.becomes_over(how_over=how_over_,
                                                            who_is_winner=who_is_winner_)
 

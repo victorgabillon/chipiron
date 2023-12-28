@@ -1,29 +1,44 @@
 from players.move_selector.treevalue.node_selector.notations_and_statics import zipf_picks_random
+from enum import Enum
 
-PRIORITIES = [NO_PRIORITY, PRIORITY_BEST, PRIORITY_TWO_BEST] = range(3)
-dicPriorities_Sampling = {'no_priority': NO_PRIORITY, 'priority_best': PRIORITY_BEST,
-                          'priority_two_best': PRIORITY_TWO_BEST}
+
+class SamplingPriorities(str, Enum):
+    NO_PRIORITY: str = 'no_priority'
+    PRIORITY_BEST: str = 'priority_best'
+    PRIORITY_TWO_BEST: str = 'priority_two_best'
+
+
+# PRIORITIES = [NO_PRIORITY, PRIORITY_BEST, PRIORITY_TWO_BEST] = range(3)
+# dicPriorities_Sampling = {'no_priority': NO_PRIORITY, 'priority_best': PRIORITY_BEST,
+#                         'priority_two_best': PRIORITY_TWO_BEST}
 
 
 class MoveExplorer:
-    def __init__(self, priority_sampling):
-        self.priority_sampling = dicPriorities_Sampling[priority_sampling]
+    priority_sampling: SamplingPriorities
 
-    def alter_with_priorities(self, parent_node, child_node, proportion):
-        if self.priority_sampling == NO_PRIORITY:
-            return proportion
-        if self.priority_sampling == PRIORITY_BEST:
-            if child_node == parent_node.best_child():
-                return 1
-            else:
+    def __init__(self, priority_sampling: SamplingPriorities):
+        self.priority_sampling = priority_sampling
+
+    def alter_with_priorities(
+            self,
+            parent_node,
+            child_node,
+            proportion):
+        match self.priority_sampling:
+            case SamplingPriorities.NO_PRIORITY:
                 return proportion
-        if self.priority_sampling == PRIORITY_TWO_BEST:
-            if child_node == parent_node.best_child():
-                return .5
-            elif child_node == parent_node.second_best_child():
-                return .5
-            else:
-                return proportion
+            case SamplingPriorities.PRIORITY_BEST:
+                if child_node == parent_node.best_child():
+                    return 1
+                else:
+                    return proportion
+            case SamplingPriorities.PRIORITY_TWO_BEST:
+                if child_node == parent_node.best_child():
+                    return .5
+                elif child_node == parent_node.second_best_child():
+                    return .5
+                else:
+                    return proportion
 
 
 class ZipfMoveExplorer(MoveExplorer):

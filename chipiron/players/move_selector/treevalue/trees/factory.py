@@ -2,10 +2,10 @@
 MoveAndValueTreeFactory
 """
 import chipiron.environments.chess.board as boards
-from players.move_selector.treevalue.trees.move_and_value_tree import MoveAndValueTree
-import players.move_selector.treevalue.node_factory as nod_fac
-from players.move_selector.treevalue.node_evaluator import NodeEvaluator, EvaluationQueries
-import players.move_selector.treevalue as nodes
+from chipiron.players.move_selector.treevalue.trees.move_and_value_tree import MoveAndValueTree
+import chipiron.players.move_selector.treevalue.node_factory as nod_fac
+from chipiron.players.move_selector.treevalue.node_evaluator import NodeEvaluator, EvaluationQueries
+import chipiron.players.move_selector.treevalue as nodes
 from .descendants import RangedDescendants
 
 

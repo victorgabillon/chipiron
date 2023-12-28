@@ -435,7 +435,10 @@ class NodeMinmaxEvaluation:
         y = min(max(x, .000000000000000000000001), .9999999999999999)
         return math.log(y / (1 - y)) * max(1, abs(x))  # the * min(1,x) is a hack to prioritize game over
 
-    def get_all_of_the_best_moves(self, how_equal=None):
+    def get_all_of_the_best_moves(
+            self,
+            how_equal=None
+    ):
         # todo make it faster
         best_children = []
         best_child = self.best_child()

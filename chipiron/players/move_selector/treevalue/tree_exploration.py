@@ -7,7 +7,7 @@ from chipiron.utils.small_tools import softmax
 from chipiron.players.boardevaluators.over_event import OverEvent
 from .trees.factory import MoveAndValueTreeFactory
 from .node_selector.opening_instructions import OpeningInstructor, OpeningType
-from .stopping_criterion import StoppingCriterion, create_stopping_criterion
+from .stopping_criterion import StoppingCriterion, create_stopping_criterion, StoppingCriterionArgs
 import chipiron.environments.chess.board as boards
 
 from . import trees
@@ -24,6 +24,7 @@ class TreeExploration:
     tree_manager: tree_man.AlgorithmNodeTreeManager
     node_selector: node_sel.NodeSelector
     move_selection_rule: dict
+    recommend_move_after_exploration: RecommanderFunction
 
     def __init__(
             self,
@@ -31,13 +32,16 @@ class TreeExploration:
             tree_manager: tree_man.AlgorithmNodeTreeManager,
             stopping_criterion: StoppingCriterion,
             node_selector: node_sel.NodeSelector,
-            random_generator):
+            random_generator,
+            recommend_move_after_exploration: RecommanderFunction
+    ):
 
         self.tree = tree
         self.tree_manager = tree_manager
         self.stopping_criterion = stopping_criterion
         self.node_selector = node_selector
         self.random_generator = random_generator
+        self.recommend_move_after_exploration: recommend_move_after_exploration
 
     def print_info_during_move_computation(self):
         if self.tree.root_node.minmax_evaluation.best_node_sequence:
@@ -50,9 +54,9 @@ class TreeExploration:
             current_best_move = '?'
         if self.random_generator.random() < 5:
             str_progress = self.stopping_criterion.get_string_of_progress(self.tree)
-            print(str_progress,
-                  '| current best move:', current_best_move, '| current white value:',
-                  self.tree.root_node.minmax_evaluation.value_white_minmax)  # ,end='\r')
+            print(
+                f'{str_progress} | current best move:  {current_best_move} | current white value: {self.tree.root_node.minmax_evaluation.value_white_minmax})')
+                  # ,end='\r')
             self.tree.root_node.minmax_evaluation.print_children_sorted_by_value_and_exploration()
             self.tree_manager.print_best_line(tree=self.tree)
 
@@ -70,35 +74,34 @@ class TreeExploration:
         #     print('We have as best: ', self.tree.root_node.moves_children.inverse[best_child])
         #     best_move = self.tree.root_node.moves_children.inverse[best_child]
 
-        if True:  # normal behavior
-            selection_rule = self.move_selection_rule.type
-            if selection_rule == 'softmax':
-                temperature = self.move_selection_rule.temperature
-                values = [tree.root_node.subjective_value_of(node) for node in
-                          tree.root_node.moves_children.values()]
+        selection_rule = self.move_selection_rule.type
+        if selection_rule == 'softmax':
+            temperature = self.move_selection_rule.temperature
+            values = [tree.root_node.subjective_value_of(node) for node in
+                      tree.root_node.moves_children.values()]
 
-                softmax_ = softmax(values, temperature)
-                print(values)
-                print('SOFTMAX', temperature, [i / sum(softmax_) for i in softmax_],
-                      sum([i / sum(softmax_) for i in softmax_]))
+            softmax_ = softmax(values, temperature)
+            print(values)
+            print('SOFTMAX', temperature, [i / sum(softmax_) for i in softmax_],
+                  sum([i / sum(softmax_) for i in softmax_]))
 
-                move_as_list = self.random_generator.choices(
-                    list(tree.root_node.moves_children.keys()),
-                    weights=softmax_, k=1)
-                best_move = move_as_list[0]
-            elif selection_rule == 'almost_equal' or selection_rule == 'almost_equal_logistic':
-                # find the best first move allowing for random choice for almost equally valued moves.
-                best_root_children = tree.root_node.minmax_evaluation.get_all_of_the_best_moves(
-                    how_equal=selection_rule)
-                print('We have as bests: ',
-                      [tree.root_node.moves_children.inverse[best] for best in best_root_children])
-                best_child = self.random_generator.choice(best_root_children)
-                if tree.root_node.minmax_evaluation.over_event.how_over == OverEvent.WIN:
-                    assert (best_child.minmax_evaluation.over_event.how_over == OverEvent.WIN)
-                    best_move = tree.root_node.moves_children.inverse[best_child]
-            else:
-                raise (ValueError('move_selection_rule is not valid it seems'))
-                return best_move
+            move_as_list = self.random_generator.choices(
+                list(tree.root_node.moves_children.keys()),
+                weights=softmax_, k=1)
+            best_move = move_as_list[0]
+        elif selection_rule == 'almost_equal' or selection_rule == 'almost_equal_logistic':
+            # find the best first move allowing for random choice for almost equally valued moves.
+            best_root_children = tree.root_node.minmax_evaluation.get_all_of_the_best_moves(
+                how_equal=selection_rule)
+            print('We have as bests: ',
+                  [tree.root_node.moves_children.inverse[best] for best in best_root_children])
+            best_child = self.random_generator.choice(best_root_children)
+            if tree.root_node.minmax_evaluation.over_event.how_over == OverEvent.WIN:
+                assert (best_child.minmax_evaluation.over_event.how_over == OverEvent.WIN)
+                best_move = tree.root_node.moves_children.inverse[best_child]
+        else:
+            raise (ValueError('move_selection_rule is not valid it seems'))
+            return best_move
 
     def explore(self) -> chess.Move:
 
@@ -155,15 +158,19 @@ class TreeExploration:
 def create_tree_exploration(
         random_generator,
         opening_type: OpeningType,
-        node_selector_args: NodeSelectorArgs,
+        node_selector_args: node_sel.AllNodeSelectorArgs,
         starting_board: boards.BoardChi,
         tree_manager: tree_man.AlgorithmNodeTreeManager,
-        tree_factory: MoveAndValueTreeFactory
+        tree_factory: MoveAndValueTreeFactory,
+        stopping_criterion_args: StoppingCriterionArgs
+
 ) -> TreeExploration:
     """
     Creation of the tree exploration to init all object necessary
      for a tree search to find one move in a given stating board
     Args:
+        node_selector_args:
+        opening_type:
         starting_board:
         random_generator:
         tree_manager:
@@ -182,20 +189,21 @@ def create_tree_exploration(
 
     # creates the node selector
     node_selector: node_sel.NodeSelector = node_sel.create(
-        arg=node_selector_args,
+        args=node_selector_args,
         opening_instructor=opening_instructor,
         random_generator=random_generator,
     )
 
-    stopping_criterion: StoppingCriterion = create_stopping_criterion(arg=args['stopping_criterion'],
+    stopping_criterion: StoppingCriterion = create_stopping_criterion(args=stopping_criterion_args,
                                                                       node_selector=node_selector)
 
+    recommend_move_after_exploration : RecommanderFunction = create_recommander_after_exploration()
     tree_exploration: TreeExploration = TreeExploration(
         tree=move_and_value_tree,
         tree_manager=tree_manager,
         stopping_criterion=stopping_criterion,
         node_selector=node_selector,
         random_generator=random_generator,
-        args=args
+        recommend_move_after_exploration=recommend_move_after_exploration
     )
     return tree_exploration
