@@ -5,8 +5,9 @@ import random
 
 from . import move_selector
 from . import treevalue
+from . import human
 
-AllMoveSelectorArgs = treevalue.TreeAndValuePlayerArgs
+AllMoveSelectorArgs = treevalue.TreeAndValuePlayerArgs | human.HumanPlayerArgs
 
 
 def create_main_move_selector(
@@ -14,7 +15,6 @@ def create_main_move_selector(
         syzygy,
         random_generator: random.Random
 ) -> move_selector.MoveSelector:
-
     main_move_selector: move_selector.MoveSelector
     print('create main move')
 
@@ -30,5 +30,5 @@ def create_main_move_selector(
         case 'Human':
             main_move_selector = NullObject()  # TODO is it necessary?
         case other:
-            raise Exception(f'player creator: can not find {other} of type {type(other)}')
+            raise ValueError(f'player creator: can not find {other} of type {type(other)}')
     return main_move_selector

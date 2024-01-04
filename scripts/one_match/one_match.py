@@ -20,7 +20,6 @@ from typing import Type
 from enum import Enum
 
 
-
 @dataclass
 class OneMatchScriptArgs(ScriptArgs):
     """
@@ -54,6 +53,7 @@ def fetch_args_modify_and_convert[ADataclass: IsDataclass](
     file_args: dict = ch.tool.yaml_fetch_args_in_file(path_to_file)
     merged_args_dict: dict = ch.tool.rec_merge_dic(file_args, modification)
 
+    print("de", merged_args_dict, dataclass_name)
     # formatting the dictionary into the corresponding dataclass
     dataclass_args: ADataclass = dacite.from_dict(data_class=dataclass_name,
                                                   data=merged_args_dict,
@@ -82,7 +82,7 @@ class OneMatchScript:
         self.base_script = base_script
 
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into self.args
-        args_dict: dict = self.base_script.initiate()
+        args_dict: dict = self.base_script.initiate(self.base_experiment_output_folder)
 
         # Converting the args in the standardized dataclass
         self.args: OneMatchScriptArgs = dacite.from_dict(data_class=OneMatchScriptArgs,
@@ -102,6 +102,7 @@ class OneMatchScript:
         # taking care of random
         ch.set_seeds(seed=self.args.seed)
 
+        print('self.args.experiment_output_folder', self.args.experiment_output_folder)
         self.match_manager: ch.game.MatchManager = create_match_manager(
             args_match=match_args,
             args_player_one=player_one_args,
@@ -218,3 +219,6 @@ class OneMatchScript:
             self.match_manager.play_one_match()
 
         # TODO check the good closing of processes
+
+    def terminate(self) -> None:
+        self.base_script.terminate()

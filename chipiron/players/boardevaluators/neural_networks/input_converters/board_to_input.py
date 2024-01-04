@@ -1,10 +1,8 @@
-from typing import Callable
 from environments.chess.board import BoardChi
 import torch
-import chess
 from .board_representation import Representation364
 from .factory import Representation364Factory
-from typing import Optional, Protocol
+from typing import  Protocol
 
 
 class BoardToInput(Protocol):

@@ -1,1 +1,1 @@
-from .factory import create_sequool
+from .factory import create_sequool, SequoolArgs

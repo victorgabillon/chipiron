@@ -10,6 +10,7 @@ import time
 from chipiron.utils.small_tools import mkdir
 from scripts.parsers.parser import MyParser
 from dataclasses import dataclass
+import dacite
 
 
 @dataclass
@@ -23,10 +24,10 @@ class Script:
     Takes care of computing execution time, profiling, ang parsing arguments
     """
 
-    base_experiment_output_folder: str = 'scripts/'
     start_time: float
     parser: MyParser
     gui_args: dict | None
+    base_experiment_output_folder: str = 'scripts'
 
     def __init__(
             self,
@@ -44,21 +45,29 @@ class Script:
         self.gui_args = gui_args
         self.profile = None
 
-    def initiate(self) -> dict:
+    def initiate(self,
+                 base_experiment_output_folder=None) -> dict:
+
+        if base_experiment_output_folder is None:
+            base_experiment_output_folder = self.base_experiment_output_folder
 
         # parse the arguments
-        args: dict = self.parser.parse_arguments(base_experiment_output_folder=self.base_experiment_output_folder,
-                                                 gui_args=self.gui_args)
+        args_dict: dict = self.parser.parse_arguments(base_experiment_output_folder=base_experiment_output_folder,
+                                                      gui_args=self.gui_args)
 
-        mkdir(args['experiment_output_folder'])
-        self.parser.log_parser_info(args['experiment_output_folder'])
+        # Converting the args in the standardized dataclass
+        args: ScriptArgs = dacite.from_dict(data_class=ScriptArgs,
+                                            data=args_dict)
+
+        mkdir(args_dict['experiment_output_folder'])
+        self.parser.log_parser_info(args_dict['experiment_output_folder'])
 
         # activate profiling is if needed
-        if args['profiling']:
+        if args.profiling:
             self.profile = cProfile.Profile()
             self.profile.enable()
 
-        return args
+        return args_dict
 
     def terminate(self) -> None:
         """

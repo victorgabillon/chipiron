@@ -34,10 +34,7 @@ class MatchManager:
 
         game_number: int = 0
         while not self.game_args_factory.is_match_finished():
-            print('Plasssying the match')
-
             player_color_to_player, args_game = self.game_args_factory.generate_game_args(game_number)
-            print('Playing thsssssse match')
 
             game_results = self.play_one_game(player_color_to_player, args_game, game_number)
             match_results.add_result_one_game(white_player_name_id=player_color_to_player[chess.WHITE].id,

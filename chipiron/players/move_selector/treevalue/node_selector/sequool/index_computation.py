@@ -8,7 +8,7 @@ class UpdateAllIndices(Protocol):
         ...
 
 
-#TODO their might be ways to optimize the computation such as not recomptuing for the whole tree
+# TODO their might be ways to optimize the computation such as not recomptuing for the whole tree
 def update_all_indices_base(
         all_nodes_not_opened: trees.RangedDescendants
 ) -> None:
@@ -49,6 +49,7 @@ def update_all_indices_base(
                 else:
                     child_node.exploration_manager.index = min(child_node.exploration_manager.index, child_index)
 
+
 def update_all_indices_yoshio(
         all_nodes_not_opened: trees.RangedDescendants
 ) -> None:
@@ -85,7 +86,6 @@ def update_all_indices_yoshio(
                     child_node.exploration_manager.index = child_index
                 else:
                     child_node.exploration_manager.index = min(child_node.exploration_manager.index, child_index)
-
 
 
 def update_all_indices(

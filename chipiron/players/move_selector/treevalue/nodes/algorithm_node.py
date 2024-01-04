@@ -1,6 +1,6 @@
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
-from .node_minmax_evaluation import NodeMinmaxEvaluation
+from chipiron.players.move_selector.treevalue.nodes.node_minmax_evaluation import NodeMinmaxEvaluation
 from bidict import bidict
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import BoardRepresentation
 from chipiron.players.move_selector.treevalue.nodes.node_exploration_manager import NodeExplorationManager

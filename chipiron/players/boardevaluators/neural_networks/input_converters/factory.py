@@ -1,10 +1,10 @@
 from .board_representation import Representation364
 from typing import Optional
 from environments.chess.board import BoardChi
-import chipiron.players.move_selector.treevalue.nodes as nodes
 import chipiron.environments.chess.board as board_mod
 import chess
 import torch
+import chipiron.players.move_selector.treevalue.nodes as nodes
 
 
 def create_board_representation(board_representation: str) -> object:
@@ -71,7 +71,7 @@ def node_to_tensors_pieces_square_from_parent(node, board_modifications, parent_
 class Representation364Factory:
     def create_from_transition(self,
                                tree_node: nodes.TreeNode,
-                               parent_node: nodes.AlgorithmNode,
+                               parent_node: 'nodes.AlgorithmNode',
                                modifications: board_mod.BoardModification
                                ) -> Representation364:
 

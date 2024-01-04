@@ -9,26 +9,24 @@ from .trees.factory import MoveAndValueTreeFactory
 
 from chipiron.players.boardevaluators.neural_networks.input_converters.factory import create_board_representation
 
-from dataclasses import dataclass
-
-from chipiron.players.move_selector.move_selector_args import MoveSelectorArgs
-from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
-
 from . import node_selector
 from .stopping_criterion import AllStoppingCriterionArgs
+from . import recommender_rule
+
+from typing import Literal
+from dataclasses import dataclass
+
+Tree_Value_Name_Literal: str = 'TreeAndValue'
 
 
 @dataclass
-class TreeAndValuePlayerArgs(MoveSelectorArgs):
+class TreeAndValuePlayerArgs:
+    type: Literal[Tree_Value_Name_Literal]  # for serialization
     node_selector: node_selector.AllNodeSelectorArgs
     opening_type: node_selector.OpeningType
     board_evaluator: node_eval.AllNodeEvaluatorArgs
     stopping_criterion: AllStoppingCriterionArgs
-    recommander_rule : recommand.AllRecommandFunctionsArgs
-
-    def __post_init__(self):
-        if self.type != MoveSelectorTypes.TreeAndValue:
-            raise ValueError(f'Expecting TreeAndValue as name, got {self.type}')
+    recommender_rule: recommender_rule.AllRecommendFunctionsArgs
 
 
 def create_tree_and_value_builders(args: TreeAndValuePlayerArgs,
@@ -71,5 +69,6 @@ def create_tree_and_value_builders(args: TreeAndValuePlayerArgs,
                                                                             random_generator=random_generator,
                                                                             tree_factory=tree_factory,
                                                                             node_selector_args=args.node_selector,
-                                                                            stopping_criterion_args=args.stopping_criterion)
+                                                                            stopping_criterion_args=args.stopping_criterion,
+                                                                            recommend_move_after_exploration=args.recommender_rule)
     return tree_move_selector

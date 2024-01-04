@@ -5,10 +5,10 @@ main_move_selector:
     type: RecurZipfBase
     move_explorer_priority: priority_best
   opening_type: all_children
-  move_selection_rule: 
+  recommender_rule:
     type: almost_equal_logistic
     temperature: 2
-  stopping_criterion: 
+  stopping_criterion:
       type: tree_move_limit
       tree_move_limit: 1000
   board_evaluator:
@@ -19,5 +19,3 @@ main_move_selector:
     representation: '364'
     syzygy_evaluation: True
 syzygy_play: True
-
-
