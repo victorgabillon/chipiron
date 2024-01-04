@@ -2,7 +2,7 @@ import argparse
 import yaml
 from chipiron.utils.small_tools import dict_alphabetic_str
 from datetime import datetime
-
+import os
 
 class MyParser:
 
@@ -61,11 +61,11 @@ class MyParser:
 
         if 'output_folder' not in self.merged_args:
             now = datetime.now()  # current date and time
-            self.merged_args['experiment_output_folder'] = base_experiment_output_folder + now.strftime(
-                "%A-%m-%d-%Y--%H:%M:%S:%f")
+            self.merged_args['experiment_output_folder'] = os.path.join(base_experiment_output_folder , now.strftime(
+                "%A-%m-%d-%Y--%H:%M:%S:%f"))
         else:
-            self.merged_args['experiment_output_folder'] = base_experiment_output_folder + self.merged_args[
-                'output_folder']
+            self.merged_args['experiment_output_folder'] = os.path.join(base_experiment_output_folder, self.merged_args[
+                'output_folder'])
 
         return self.merged_args
 

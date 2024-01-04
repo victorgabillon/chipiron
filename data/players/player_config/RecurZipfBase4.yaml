@@ -1,19 +1,21 @@
 name: RecurZipfBase4
-type: TreeAndValue
-tree_builder: 
-  type: RecurZipfBase
-  move_explorer_priority: priority_best
+main_move_selector:
+  type: TreeAndValue
+  node_selector:
+    type: RecurZipfBase
+    move_explorer_priority: priority_best
   opening_type: all_children
-  move_selection_rule: 
+  recommender_rule:
     type: almost_equal_logistic
     temperature: 2
-  stopping_criterion: 
-    name: tree_move_limit
-    tree_move_limit: 300
-board_evaluator:
-  type: neural_network
-  neural_network:
+  stopping_criterion:
+      type: tree_move_limit
+      tree_move_limit: 1000
+  board_evaluator:
+    type: neural_network
+    neural_network:
       nn_type: pp2d2_2
       nn_param_folder_name: 'base'
-  syzygy_evaluation: True
+    representation: '364'
+    syzygy_evaluation: True
 syzygy_play: True

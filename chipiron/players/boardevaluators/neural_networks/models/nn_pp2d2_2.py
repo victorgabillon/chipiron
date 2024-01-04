@@ -1,10 +1,13 @@
 import torch.nn as nn
 from chipiron.utils.chi_nn import ChiNN
+from chipiron.players.boardevaluators.board_evaluation.board_evaluation import PointOfView
 
 
 class NetPP2D2_2(ChiNN):
     def __init__(self  ):
         super(NetPP2D2_2, self).__init__( )
+        self.evaluation_point_of_view = PointOfView.PLAYER_TO_MOVE
+
 
         self.fc1 = nn.Linear(772, 20)
         self.relu_1 = nn.ReLU()

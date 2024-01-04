@@ -1,10 +1,11 @@
 from .tree_exploration import create_tree_exploration, TreeExploration
-from . import tree_manager as tree_man
 from .trees.factory import MoveAndValueTreeFactory
 import chipiron.environments.chess.board as boards
 import chess
-from . import node_selector
 from .stopping_criterion import AllStoppingCriterionArgs
+from . import recommender_rule
+from . import tree_manager as tree_man
+from . import node_selector
 
 
 class TreeAndValueMoveSelector:
@@ -20,7 +21,8 @@ class TreeAndValueMoveSelector:
                  node_selector_args: node_selector.AllNodeSelectorArgs,
                  tree_manager: tree_man.AlgorithmNodeTreeManager,
                  tree_factory: MoveAndValueTreeFactory,
-                 stopping_criterion_args: AllStoppingCriterionArgs
+                 stopping_criterion_args: AllStoppingCriterionArgs,
+                 recommend_move_after_exploration: recommender_rule.RecommenderRule
                  ) -> None:
         self.random_generator = random_generator
         self.tree_manager = tree_manager
@@ -28,6 +30,7 @@ class TreeAndValueMoveSelector:
         self.opening_type = opening_type
         self.node_selector_args = node_selector_args
         self.stopping_criterion_args = stopping_criterion_args
+        self.recommend_move_after_exploration = recommend_move_after_exploration
 
     def select_move(
             self,
@@ -40,7 +43,8 @@ class TreeAndValueMoveSelector:
             starting_board=board,
             tree_factory=self.tree_factory,
             opening_type=self.opening_type,
-            stopping_criterion_args=self.stopping_criterion_args
+            stopping_criterion_args=self.stopping_criterion_args,
+            recommend_move_after_exploration=self.recommend_move_after_exploration
         )
         best_move: chess.Move = tree_exploration.explore()
 

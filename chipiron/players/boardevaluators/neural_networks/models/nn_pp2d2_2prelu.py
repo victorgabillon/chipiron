@@ -2,6 +2,7 @@ import torch.nn as nn
 from chipiron.utils.chi_nn import ChiNN
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import PointOfView
 
+
 class NetPP2D2_2_PRELU(ChiNN):
     def __init__(self):
         super(NetPP2D2_2_PRELU, self).__init__()
@@ -82,6 +83,7 @@ class NetPP2D2_2_PRELU(ChiNN):
         print_piece_param(10, input)
         print('king-opposite', sum(input[0, 64 * 11: 64 * 11 + 64]) / 64.)
         print_piece_param(11, input)
+
 
 def print_piece_param(i, vec):
     for r in range(8):
