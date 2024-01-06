@@ -1,5 +1,5 @@
 from random import choice
-import environments.chess.board as boards
+import chipiron.environments.chess.board as boards
 import chess
 
 

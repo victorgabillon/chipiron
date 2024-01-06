@@ -1,17 +1,23 @@
 import copy
-import os
 import sys
-
 import yaml
 from itertools import islice
 import numpy as np
+from chipiron.utils.is_dataclass import IsDataclass
+from typing import Type
+from enum import Enum
+import dacite
+import chipiron as ch
+import os
 
 
 def mkdir(folder_path):
+    a=os.getcwd()
+    print('os.getcwd()',os.getcwd())
     try:
         os.mkdir(folder_path)
     except FileNotFoundError as error:
-        sys.exit(f"Creation of the directory {folder_path} failed with error {error}")
+        sys.exit(f"Creation of the directory {folder_path} failed with error {error} in file {__name__}")
     except FileExistsError as error:
         print(f'the file already exists so no creation needed for {folder_path} ')
     else:
@@ -19,7 +25,7 @@ def mkdir(folder_path):
 
 
 def yaml_fetch_args_in_file(path_file: str) -> dict:
-    with open(path_file, 'r') as file:
+    with open(path_file, 'r', encoding="utf-8") as file:
         args: dict = yaml.load(file, Loader=yaml.FullLoader)
     return args
 
@@ -70,3 +76,22 @@ def softmax(x, temperature):
     """Compute softmax values for each sets of scores in x."""
     e_x = np.exp((x - np.max(x)) * temperature)
     return e_x / e_x.sum(axis=0)  # only difference
+
+
+def fetch_args_modify_and_convert[ADataclass: IsDataclass](
+        path_to_file: str | bytes | os.PathLike,  # path to a yaml file
+        dataclass_name: Type[ADataclass],  # the dataclass into which the dictionary will be converted
+        modification: dict | None = None,  # modification to the dict extracted from the yaml file
+) -> ADataclass:
+    if modification is None:
+        modification = {}
+    file_args: dict = ch.tool.yaml_fetch_args_in_file(path_to_file)
+    merged_args_dict: dict = ch.tool.rec_merge_dic(file_args, modification)
+
+    print('merged_args_dict', merged_args_dict)
+    # formatting the dictionary into the corresponding dataclass
+    dataclass_args: ADataclass = dacite.from_dict(data_class=dataclass_name,
+                                                  data=merged_args_dict,
+                                                  config=dacite.Config(cast=[Enum]))
+
+    return dataclass_args

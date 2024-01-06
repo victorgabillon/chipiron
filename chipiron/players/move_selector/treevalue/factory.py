@@ -3,7 +3,7 @@ import random
 from .tree_and_value_player import TreeAndValueMoveSelector
 from . import tree_manager as tree_man
 from . import node_evaluator as node_eval
-from players.move_selector.treevalue import node_factory
+from chipiron.players.move_selector.treevalue import node_factory
 
 from .trees.factory import MoveAndValueTreeFactory
 

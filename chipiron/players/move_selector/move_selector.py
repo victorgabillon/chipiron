@@ -1,5 +1,5 @@
 from typing import Protocol
-import environments.chess.board as boards
+import chipiron.environments.chess.board as boards
 
 
 class MoveSelector(Protocol):

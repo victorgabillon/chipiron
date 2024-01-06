@@ -3,7 +3,7 @@ main_move_selector:
   type: TreeAndValue
   node_selector:
     type: Sequool
-    index_computation : base
+    index_computation : min_global_change
   opening_type: all_children
   recommender_rule:
     type: almost_equal_logistic
@@ -16,7 +16,7 @@ main_move_selector:
     neural_network:
       nn_type: pp2d2_2_prelu
       nn_param_folder_name: 'param_prelu'
-      representation: '364'
+    representation: '364'
     syzygy_evaluation: True
 syzygy_play: True
 

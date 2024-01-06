@@ -1,8 +1,9 @@
 import chess
 import pickle
 import logging
-from utils import path
+from chipiron.utils import path
 from .game import ObservableGame
+from .game_args import GameArgs
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -33,7 +34,7 @@ class GameManager:
                  syzygy,
                  display_board_evaluator,
                  output_folder_path: path | None,
-                 args,
+                 args: GameArgs,
                  player_color_to_id,
                  main_thread_mailbox,
                  player_threads):
@@ -83,9 +84,8 @@ class GameManager:
         self.game.set_starting_position(starting_position_arg)
 
     def play_one_game(self):
-        print('okok')
         board = self.game.board
-        self.set_new_game(self.args['starting_position'])
+        self.set_new_game(self.args.starting_position)
 
         color_names = ['Black', 'White']
 
@@ -148,7 +148,7 @@ class GameManager:
     def game_continue_conditions(self):
         half_move = self.game.board.ply()
         continue_bool = True
-        if 'max_half_move' in self.args and half_move >= self.args['max_half_move']:
+        if self.args.max_half_moves is not None and half_move >= self.args.max_half_moves:
             assert (1 == 2)
             continue_bool = False
         return continue_bool

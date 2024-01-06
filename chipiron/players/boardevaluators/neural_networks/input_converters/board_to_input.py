@@ -1,4 +1,4 @@
-from environments.chess.board import BoardChi
+from chipiron.environments.chess.board import BoardChi
 import torch
 from .board_representation import Representation364
 from .factory import Representation364Factory

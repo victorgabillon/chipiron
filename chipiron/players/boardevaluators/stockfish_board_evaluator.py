@@ -2,10 +2,11 @@
 Module where we define the Stockfish Board Evaluator
 """
 import chess.engine
-import environments.chess.board as boards
+import chipiron.environments.chess.board as boards
 from dataclasses import dataclass
 
- # TODO are we calling this?
+
+# TODO are we calling this?
 @dataclass
 class StockfishBoardEvalArgs:
     depth: int = 20
@@ -21,7 +22,6 @@ class StockfishBoardEvaluator:
                  args: StockfishBoardEvalArgs):
         self.engine = chess.engine.SimpleEngine.popen_uci(
             "/home/victor_old/.pycharm/chipiron/stockfish/stockfish_14.1_linux_x64/stockfish_14.1_linux_x64")
-
 
         # is this doing anything???
         self.depth = args.depth

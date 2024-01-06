@@ -1,15 +1,15 @@
 """
 Sequool
 """
-from players.move_selector.treevalue.node_selector.notations_and_statics import zipf_picks
-from players.move_selector.treevalue import trees
-from players.move_selector.treevalue import tree_manager as tree_man
-from players.move_selector.treevalue.trees.descendants import RangedDescendants
+from chipiron.players.move_selector.treevalue.node_selector.notations_and_statics import zipf_picks
+from chipiron.players.move_selector.treevalue import trees
+from chipiron.players.move_selector.treevalue import tree_manager as tree_man
+from chipiron.players.move_selector.treevalue.trees.descendants import RangedDescendants
 from chipiron.environments import HALF_MOVE
 from .index_computation import UpdateAllIndices
 from ... import nodes
 
-from players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructions, OpeningInstructor, \
+from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructions, OpeningInstructor, \
     create_instructions_to_open_all_moves
 
 

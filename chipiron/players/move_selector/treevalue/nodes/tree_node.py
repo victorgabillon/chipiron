@@ -1,6 +1,6 @@
 from bidict import bidict
 import chess
-import environments.chess.board as boards
+import chipiron.environments.chess.board as boards
 from .itree_node import ITreeNode
 
 

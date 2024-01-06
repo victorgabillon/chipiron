@@ -1,4 +1,4 @@
-from chipiron.games.game_manager import GameManager
+from chipiron.games.game.game_manager import GameManager
 import copy
 import queue
 import typing

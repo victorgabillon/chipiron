@@ -1,7 +1,6 @@
 """
 Launching the main chipiron
 """
-from typing import Union
 import argparse
 import sys
 import scripts
@@ -9,7 +8,7 @@ import scripts
 
 def get_script_and_args(
         raw_command_line_arguments: list
-) -> tuple[str, dict]:
+) -> tuple[scripts.ScriptType, dict]:
     """
 
     Args:
@@ -19,12 +18,12 @@ def get_script_and_args(
         A string for the name of script and a dictionary of parameters
 
     """
-    script_name: str
+    script_type: scripts.ScriptType
     gui_args: dict | None
     # Whether command line arguments are provided or not we ask for more info through a GUI
     if len(raw_command_line_arguments) == 1:  # No args provided
         # use a gui to get user input
-        script_name, gui_args = scripts.script_gui()
+        script_type, gui_args = scripts.script_gui()
     else:
         # Capture  the script argument in the command line arguments
         parser_default: argparse.ArgumentParser = argparse.ArgumentParser()
@@ -38,9 +37,10 @@ def get_script_and_args(
             raise ValueError(
                 'Expecting command line arguments of the shape python chipiron.py --script_name **name_of script**')
 
-        script_name = args_command_line['script_name']
+        script_type_str: str = args_command_line['script_name']
+        script_type = scripts.ScriptType(script_type_str)
         gui_args = None
-    return script_name, gui_args
+    return script_type, gui_args
 
 
 def main() -> None:
@@ -50,11 +50,13 @@ def main() -> None:
     # Getting the command line arguments from the system
     raw_command_line_arguments: list = sys.argv
 
+    script_type: scripts.ScriptType
+    gui_args: dict
     # extracting the script_name and possibly some gui input arguments
-    script_name, gui_args = get_script_and_args(raw_command_line_arguments)
+    script_type, gui_args = get_script_and_args(raw_command_line_arguments)
 
     # creating the script object from its name and arguments
-    script_object: scripts.Script = scripts.create_script(script_name=script_name,
+    script_object: scripts.Script = scripts.create_script(script_type=script_type,
                                                           gui_args=gui_args)
 
     # run the script
@@ -65,5 +67,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-
     main()
