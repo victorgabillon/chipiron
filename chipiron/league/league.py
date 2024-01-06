@@ -2,13 +2,18 @@ import shutil
 import datetime
 import yaml
 import os
-from chipiron.utils.small_tools import yaml_fetch_args_in_file
 from sortedcollections import ValueSortedDict
 from collections import deque
 import matplotlib.pyplot as plt
 import chipiron as ch
-from chipiron.games.match_factories import create_match_manager
-from utils import path
+from chipiron.games.match.match_factories import create_match_manager
+import chipiron.games.game as game
+import chipiron.games.match as match
+from chipiron.games.match.utils import fetch_match_games_args_convert_and_save
+from chipiron.players.utils import fetch_player_args_convert_and_save
+from dataclasses import dataclass, field
+import chipiron.players as players
+import random
 
 
 def new_player_joins(player):
@@ -18,20 +23,19 @@ def new_player_joins(player):
         out_file.write(yaml.dump(player.arg))
 
 
+@dataclass
 class League:
-    K = 10
-    ELO_HISTORY_LENGTH = 500
+    folder_league: str
+    players_elo: ValueSortedDict = field(default_factory=ValueSortedDict)
+    players_args: dict[str, players.PlayerArgs] = field(default_factory=dict)
+    players_number_of_games_played: dict[str, int] = field(default_factory=dict)
+    id_for_next_player: int = 0
+    K: int = 10
+    ELO_HISTORY_LENGTH: int = 500
 
-    def __init__(self, foldername, random_generator):
-        print('init league from folder: ', foldername)
-        self.folder_league = foldername
-        self.players_elo = ValueSortedDict()
-        self.players_args = {}
-        self.players_number_of_games_played = {}
-
-        self.id_for_next_player = 0
+    def __post_init__(self):
+        print(f'init league from folder: {self.folder_league}')
         self.check_for_players()
-        self.random_generator = random_generator
 
     def check_for_players(self):
         path: str = os.path.join(self.folder_league, 'new_players/')
@@ -42,54 +46,59 @@ class League:
                     path_file = os.path.join(self.folder_league, 'new_players/', file)
                     self.new_player_joins(path_file)
 
-    def new_player_joins(self, file_player):
-        print('adding player:', file_player)
-        with open(file_player, 'r') as filePlayerOne:
-            args_player = yaml.load(filePlayerOne, Loader=yaml.FullLoader)
-            print(args_player)
+    def new_player_joins(
+            self,
+            file_player: str | bytes | os.PathLike
+    ) -> None:
 
-        args_player['name'] = args_player['name'] + '_' + str(self.id_for_next_player)
+        print('adding player:', file_player)
+        args_player: players.PlayerArgs = fetch_player_args_convert_and_save(
+            file_name_player=file_player,
+            from_data_folder=False)
+        print(args_player)
+
+        args_player.name = f'{args_player.name}_{self.id_for_next_player}'
         self.id_for_next_player += 1
 
-        self.players_elo[args_player['name']] = deque([1200], maxlen=self.ELO_HISTORY_LENGTH)
-        self.players_args[args_player['name']] = args_player
-        self.players_number_of_games_played[args_player['name']] = 0
+        self.players_elo[args_player.name] = deque([1200], maxlen=self.ELO_HISTORY_LENGTH)
+        self.players_args[args_player.name] = args_player
+        self.players_number_of_games_played[args_player.name] = 0
 
-        shutil.move(file_player, self.folder_league + '/current_players')
+        shutil.move(file_player, os.path.join(self.folder_league, 'current_players'))
 
         print('elo', self.players_elo)
         print('args', self.players_args)
 
-    def run(self):
+    def run(self) -> None:
         self.print_info()
         self.update_elo_graph()
 
         args_player_one, args_player_two = self.select_two_players()
 
         #  play
-        path_match_setting: str = 'data/settings/OneMatch/setting_jime.yaml'
-        args_match: dict = yaml_fetch_args_in_file(path_file=path_match_setting)
+        file_match_setting: str = 'setting_jime.yaml'
 
-        file_path: path = 'data/settings/GameSettings/setting_navo.yaml'
-        with open(file_path, 'r', encoding="utf-8") as file_game:
-            args_game: dict = yaml.load(file_game, Loader=yaml.FullLoader)
+        # Recovering args from yaml file for match and game and merging with extra args and converting
+        # to standardized dataclass
+        match_args: match.MatchArgs
+        game_args: game.GameArgs
+        match_args, game_args = fetch_match_games_args_convert_and_save(
+            file_name_match_setting=file_match_setting,
+        )
 
         match_manager: ch.game.MatchManager = create_match_manager(
-            args_match=args_match,
+            args_match=match_args,
             args_player_one=args_player_one,
             args_player_two=args_player_two,
-            output_folder_path=None,
-            seed=None,
-            args_game=args_game,
-            gui=False
+            args_game=game_args
         )
 
         match_results = match_manager.play_one_match()
         with open(self.folder_league + '/log_results.txt', 'a') as log_file:
             log_file.write(
-                f'{args_player_one["name"]} vs {args_player_two["name"]}: {match_results.get_player_one_wins()}-{match_results.get_player_two_wins()}-{match_results.get_draws()}\n')
-        self.players_number_of_games_played[args_player_one['name']] += 1
-        self.players_number_of_games_played[args_player_two['name']] += 1
+                f'{args_player_one.name} vs {args_player_two.name}: {match_results.get_player_one_wins()}-{match_results.get_player_two_wins()}-{match_results.get_draws()}\n')
+        self.players_number_of_games_played[args_player_one.name] += 1
+        self.players_number_of_games_played[args_player_two.name] += 1
 
         # tobecodedupdate
         self.update_elo(match_results)
@@ -144,7 +153,7 @@ class League:
         if len(self.players_args) < 2:
             raise ValueError(
                 'Not enough players in the league. To add players put the yaml files in the folder "new players"')
-        picked = self.random_generator.sample(list(self.players_args.values()), k=2)
+        picked = random.sample(list(self.players_args.values()), k=2)
         print('picked', picked)
         return picked[0], picked[1]
 

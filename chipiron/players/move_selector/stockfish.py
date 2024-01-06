@@ -1,7 +1,5 @@
 import chess.engine
-import chipiron as ch
-import asyncio
-import environments.chess.board as boards
+import chipiron.environments.chess.board as boards
 
 
 class Stockfish:

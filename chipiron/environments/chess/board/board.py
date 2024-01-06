@@ -2,6 +2,7 @@ import chess
 from chipiron.environments.chess.board.board_tools import convert_to_fen
 import chess.polyglot
 from chipiron.environments.chess.board.board_modification import BoardModification
+from .starting_position import StaringPositionArgs, StaringPositionArgsType
 
 COLORS = [WHITE, BLACK] = [True, False]
 
@@ -16,16 +17,19 @@ class BoardChi(chess.Board):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-    def set_starting_position(self, starting_position_arg=None, fen=None):
+    def set_starting_position(self,
+                              starting_position_arg: StaringPositionArgs = None,
+                              fen=None):
         self.reset()
         if starting_position_arg is not None:
-            if starting_position_arg['type'] == 'fromFile':
-                file_name = starting_position_arg['options']['file_name']
-                fen = self.load_from_file(file_name)
-                self.set_fen(fen)
-            elif starting_position_arg['type'] == 'fen':
-                fen = starting_position_arg['fen']
-                self.set_fen(fen)
+            match starting_position_arg.type:
+                case StaringPositionArgsType.fromFile:
+                    file_name = starting_position_arg.file_name
+                    fen = self.load_from_file(file_name)
+                    self.set_fen(fen)
+                case StaringPositionArgsType.fromFile:
+                    fen = starting_position_arg.fen
+                    self.set_fen(fen)
 
         elif fen is not None:
             self.set_fen(fen)

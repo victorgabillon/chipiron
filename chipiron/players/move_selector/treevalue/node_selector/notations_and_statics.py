@@ -1,5 +1,5 @@
 import math
-from utils.comparable import Comparable
+from chipiron.utils.comparable import Comparable
 from typing import Iterable
 
 

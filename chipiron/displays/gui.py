@@ -10,7 +10,7 @@ from PyQt5.QtSvg import QSvgWidget
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
-from chipiron.games.game_playing_status import GamePlayingStatus
+from chipiron.games.game.game_playing_status import GamePlayingStatus
 
 
 class MainWindow(QWidget):

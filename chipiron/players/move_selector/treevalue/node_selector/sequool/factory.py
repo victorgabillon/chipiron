@@ -4,14 +4,14 @@ factory for sequool node selector
 import chipiron.players.move_selector.treevalue.trees as trees
 from .sequool2 import Sequool
 from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructor
-from .index_computation import UpdateAllIndices, update_all_indices_base
+from .index_computation import UpdateAllIndices, update_all_indices_base, IndexComputationType
 from dataclasses import dataclass
 from ..node_selector_args import NodeSelectorArgs
 
 
 @dataclass
 class SequoolArgs(NodeSelectorArgs):
-    index_computation: SamplingPriorities
+    index_computation: IndexComputationType
 
 
 def create_sequool(
@@ -29,7 +29,7 @@ def create_sequool(
     """
     update_all_indices: UpdateAllIndices
     match args.index_computation:
-        case 'base':
+        case IndexComputationType.MinGlobalChange:
             update_all_indices = update_all_indices_base
         case other:
             raise ValueError(f'player creator: can not find {other}')

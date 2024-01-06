@@ -1,7 +1,7 @@
-from players.move_selector.treevalue import trees
-from players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructions, OpeningInstructor, \
+from chipiron.players.move_selector.treevalue import trees
+from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructions, OpeningInstructor, \
     create_instructions_to_open_all_moves
-from players.move_selector.treevalue import tree_manager as tree_man
+from chipiron.players.move_selector.treevalue import tree_manager as tree_man
 
 
 class Uniform:

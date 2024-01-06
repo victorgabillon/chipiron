@@ -8,24 +8,25 @@ import pickle
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 import random
 
-class RunTheLeagueScript(Script):
+
+class RunTheLeagueScript:
     """
     Running a league playing games between
     ers in the league and computing ELOs
     """
     default_param_dict: dict = {'config_file_name': None,
-                                'deterministic_behavior': False,
-                                'deterministic_mode': 'SEED_FIXED_EVERY_MOVE',
-                                'seed_fixing_type': 'FIX_SEED_WITH_CONSTANT'
                                 }
     base_experiment_output_folder: str = os.path.join(Script.base_experiment_output_folder, 'league/outputs/')
 
-    folder_league: str = os.path.join(Script.base_experiment_output_folder, 'league/league_data/league_10_000')
+    folder_league: str = os.path.join(Script.base_experiment_output_folder, 'league/league_data/league_10_001')
+    base_script: Script
 
     def __init__(
-            self
+            self,
+            base_script: Script
     ) -> None:
-        super().__init__()
+
+        self.base_script = base_script
 
         try:
             with (open(self.folder_league + '/players.pickle', "rb")) as openfile:
@@ -33,12 +34,12 @@ class RunTheLeagueScript(Script):
                 self.league = pickle.load(openfile)
         except:
             random_generator: random.Random = random.Random(0)
-            self.league: League = League(foldername=self.folder_league,
-                                         random_generator=random_generator)
+            self.league: League = League(folder_league=self.folder_league)
 
         self.league.print_info()
 
     def run(self):
+        print('run the league')
         while True:
             self.league.run()
             # save

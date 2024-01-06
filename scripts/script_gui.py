@@ -1,9 +1,11 @@
 import tkinter as tk
+import scripts
 
 
 # TODO switch to pygame
 
-def script_gui() -> tuple[str, dict]:
+def script_gui(
+) -> tuple[scripts.ScriptType, dict]:
     root = tk.Tk()
     root.output = None
     # place a label on the root window
@@ -98,7 +100,7 @@ def script_gui() -> tuple[str, dict]:
                 root,
                 strength=strength_value,
                 color=color_choice_human,
-            chipi_algo=chipi_algo_choice),
+                chipi_algo=chipi_algo_choice),
             root.destroy()
         ]
     )
@@ -124,7 +126,7 @@ def script_gui() -> tuple[str, dict]:
 
     root.mainloop()
     gui_args: dict
-    script_name: str
+    script_type: scripts.ScriptType
     match root.output['type']:
         case 'play_against_chipiron':
             tree_move_limit = 4 * 10 ** root.output['strength']
@@ -134,14 +136,14 @@ def script_gui() -> tuple[str, dict]:
                         'file_name_match_setting': 'setting_duda.yaml',
                         }
             if root.output['color_human'] == 'White':
-                gui_args['file_name_player_one']= 'Human.yaml'
-                gui_args['file_name_player_two']= f'{root.output["chipi_algo"]}.yaml'
-                gui_args['player_two']= {'tree_builder': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}
+                gui_args['file_name_player_one'] = 'Human.yaml'
+                gui_args['file_name_player_two'] = f'{root.output["chipi_algo"]}.yaml'
+                gui_args['player_two'] = {'tree_builder': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}
             else:
-                gui_args['file_name_player_two']= 'Human.yaml'
-                gui_args['file_name_player_one']= f'{root.output["chipi_algo"]}.yaml'
-                gui_args['player_one']= {'tree_builder': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}
-            script_name = 'one_match'
+                gui_args['file_name_player_two'] = 'Human.yaml'
+                gui_args['file_name_player_one'] = f'{root.output["chipi_algo"]}.yaml'
+                gui_args['player_one'] = {'tree_builder': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}
+            script_type = scripts.ScriptType.OneMatch
         case 'watch_a_game':
             gui_args = {'config_file_name': 'scripts/one_match/exp_options.yaml',
                         'seed': 0,
@@ -149,19 +151,19 @@ def script_gui() -> tuple[str, dict]:
                         'file_name_player_one': 'RecurZipfBase3.yaml',
                         'file_name_player_two': 'RecurZipfBase4.yaml',
                         'file_name_match_setting': 'setting_duda.yaml'}
-            script_name = 'one_match'
+            script_type = scripts.ScriptType.OneMatch
         case 'tree_visualization':
             gui_args = {'config_file_name': 'scripts/tree_visualization/exp_options.yaml',
                         }
-            script_name = 'tree_visualization'
+            script_type = 'tree_visualization'
         case other:
             raise f'Not a good name: {other}'
 
-    print(f'Gui choices: the script name is {script_name} and the args are {gui_args}')
-    return script_name, gui_args
+    print(f'Gui choices: the script name is {script_type} and the args are {gui_args}')
+    return script_type, gui_args
 
 
-def play_against_chipiron(root, strength, color,chipi_algo):
+def play_against_chipiron(root, strength, color, chipi_algo):
     root.output = {'type': 'play_against_chipiron',
                    'strength': int(strength.get()),
                    'color_human': str(color.get()),

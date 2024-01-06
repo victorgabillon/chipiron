@@ -5,7 +5,7 @@ from chipiron.players.boardevaluators.neural_networks.output_converters.output_v
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_input import BoardToInput
 from typing import List
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import BoardEvaluation
-import environments.chess.board as boards
+import chipiron.environments.chess.board as boards
 
 
 class NNBoardEvaluator:

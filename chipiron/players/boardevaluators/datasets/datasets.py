@@ -8,8 +8,8 @@ import chess
 from chipiron.environments.chess.board.board import BoardChi
 import torch
 
-
 self_data = []
+
 
 class MyDataSet(Dataset):
 
@@ -96,7 +96,7 @@ class FenAndValueDataSet(MyDataSet):
 
     def process_raw_rows(self, dataframe):
 
-        print('£',len(dataframe))
+        print('£', len(dataframe))
         processed_data = []
         for row in dataframe.iloc:
             processed_data.append(self.process_raw_row(row))

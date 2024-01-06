@@ -1,4 +1,4 @@
-from chipiron.games.math_results import MatchResults, ObservableMatchResults
+from chipiron.games.match.math_results import MatchResults, ObservableMatchResults
 
 
 class MatchResultsFactory:

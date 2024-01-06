@@ -4,24 +4,23 @@ from chipiron.players.boardevaluators.board_evaluation.board_evaluation import P
 
 
 class NetPP2D2_2(ChiNN):
-    def __init__(self  ):
-        super(NetPP2D2_2, self).__init__( )
+    def __init__(self):
+        super(NetPP2D2_2, self).__init__()
         self.evaluation_point_of_view = PointOfView.PLAYER_TO_MOVE
-
 
         self.fc1 = nn.Linear(772, 20)
         self.relu_1 = nn.ReLU()
         self.fc2 = nn.Linear(20, 1)
         self.tanh = nn.Tanh()
-        #self.dropout = nn.Dropout(.5)
+        # self.dropout = nn.Dropout(.5)
 
     def forward(self, x):
         x = self.fc1(x)
-       # x = self.dropout(self.relu_1(x))
+        # x = self.dropout(self.relu_1(x))
         x = self.relu_1(x)
-      #  print('tghy',x)
+        #  print('tghy',x)
 
-        x=self.fc2(x)
+        x = self.fc2(x)
         x = self.tanh(x)
         return x
 
@@ -86,7 +85,6 @@ class NetPP2D2_2(ChiNN):
         print_piece_param(10, input)
         print('king-opposite', sum(input[0, 64 * 11: 64 * 11 + 64]) / 64.)
         print_piece_param(11, input)
-
 
     def get_nn_input(self, node):
         return get_tensor_from_tensors_two_sides(node.tensor_white, node.tensor_black, node.tensor_castling_white,

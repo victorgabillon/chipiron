@@ -1,7 +1,8 @@
 import chess
-from chipiron.games.game_manager_factory import GameManagerFactory
-from chipiron.games.game_manager import GameManager
-from chipiron.games.math_results import MatchResults
+from chipiron.games.game.game_manager_factory import GameManagerFactory
+from chipiron.games.game.game_manager import GameManager
+from chipiron.games.match.math_results import MatchResults
+from chipiron.games.game.game_args import GameArgs
 
 
 class MatchManager:
@@ -34,6 +35,7 @@ class MatchManager:
 
         game_number: int = 0
         while not self.game_args_factory.is_match_finished():
+            args_game: GameArgs
             player_color_to_player, args_game = self.game_args_factory.generate_game_args(game_number)
 
             game_results = self.play_one_game(player_color_to_player, args_game, game_number)
@@ -46,9 +48,7 @@ class MatchManager:
         return match_results
 
     def play_one_game(self, player_color_to_player, args_game, game_number):
-        print('okoddk')
         game_manager: GameManager = self.game_manager_factory.create(args_game, player_color_to_player)
-        print('okodsdk')
         game_results = game_manager.play_one_game()
         game_manager.print_to_file(idx=game_number)
         return game_results

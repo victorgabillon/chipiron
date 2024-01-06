@@ -8,7 +8,7 @@ from chipiron.players.factory import launch_player_process
 from .game_manager import GameManager
 from .game import Game, ObservableGame
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
-from utils import path
+from chipiron.utils import path
 
 
 class GameManagerFactory:
@@ -52,8 +52,8 @@ class GameManagerFactory:
         # creating the game playing status
         game_playing_status: ch.games.GamePlayingStatus = ch.games.GamePlayingStatus()
 
-        game: Game = ch.games.Game(playing_status=game_playing_status, board=board)
-        obs_game: ObservableGame = ch.games.ObservableGame(game)
+        game: Game = Game(playing_status=game_playing_status, board=board)
+        obs_game: ObservableGame = ObservableGame(game)
 
         if self.subscribers:
             for subscriber in self.subscribers:

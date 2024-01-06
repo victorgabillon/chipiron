@@ -1,4 +1,4 @@
-from players.move_selector.treevalue.node_selector.notations_and_statics import zipf_picks_random
+from chipiron.players.move_selector.treevalue.node_selector.notations_and_statics import zipf_picks_random
 from enum import Enum
 
 

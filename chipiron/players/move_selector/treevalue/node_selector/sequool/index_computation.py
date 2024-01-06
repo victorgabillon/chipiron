@@ -1,6 +1,13 @@
-import players.move_selector.treevalue.trees as trees
-import players.move_selector.treevalue.nodes as nodes
+import chipiron.players.move_selector.treevalue.trees as trees
+import chipiron.players.move_selector.treevalue.nodes as nodes
 from typing import Protocol
+from enum import Enum
+
+
+class IndexComputationType(str, Enum):
+    MinGlobalChange = 'min_global_change'
+    MinLocalChange = 'min_local_change'
+    RecurZipf = 'recurzipf'
 
 
 class UpdateAllIndices(Protocol):
