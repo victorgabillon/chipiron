@@ -5,7 +5,7 @@ from chipiron.players.move_selector.treevalue.node_selector.notations_and_static
 from chipiron.players.move_selector.treevalue import trees
 from chipiron.players.move_selector.treevalue import tree_manager as tree_man
 from chipiron.players.move_selector.treevalue.trees.descendants import RangedDescendants
-from chipiron.environments import HALF_MOVE
+from chipiron.environments import HalfMove
 from .index_computation import UpdateAllIndices
 from ... import nodes
 
@@ -44,7 +44,7 @@ class Sequool:
     all_nodes_not_opened: RangedDescendants
 
     # counting the visits for each half_move
-    count_visits: dict[HALF_MOVE, int]
+    count_visits: dict[HalfMove, int]
 
     # the function that updates the indices
     update_all_indices: UpdateAllIndices

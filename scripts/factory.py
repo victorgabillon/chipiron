@@ -23,13 +23,13 @@ class ScriptType(Enum):
 # instantiate relevant script
 def create_script(
         script_type: ScriptType,
-        gui_args: dict | None
+        extra_args: dict | None
 ) -> Script:
     """
     create the corresponding script
     Args:
         script_type: name of the script to create
-        gui_args:
+        extra_args:
 
     Returns:
 
@@ -38,7 +38,7 @@ def create_script(
     # create the relevant script
     parser: MyParser = create_parser()
     base_script: Script = Script(parser=parser,
-                                 gui_args=gui_args)
+                                 extra_args=extra_args)
 
     match script_type:
         case ScriptType.OneMatch:

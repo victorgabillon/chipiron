@@ -32,7 +32,7 @@ class Script:
     def __init__(
             self,
             parser: MyParser,
-            gui_args: dict | None = None
+            extra_args: dict | None = None
     ) -> None:
         """
         Building the Script object, starts the clock,
@@ -42,18 +42,20 @@ class Script:
         self.start_time = time.time()
         self.parser = parser
         self.experiment_output_folder = None
-        self.gui_args = gui_args
+        self.extra_args = extra_args
         self.profile = None
 
-    def initiate(self,
-                 base_experiment_output_folder=None) -> dict:
+    def initiate(
+            self,
+            base_experiment_output_folder=None
+    ) -> dict:
 
         if base_experiment_output_folder is None:
             base_experiment_output_folder = self.base_experiment_output_folder
 
         # parse the arguments
         args_dict: dict = self.parser.parse_arguments(base_experiment_output_folder=base_experiment_output_folder,
-                                                      gui_args=self.gui_args)
+                                                      extra_args=self.extra_args)
 
         # Converting the args in the standardized dataclass
         args: ScriptArgs = dacite.from_dict(data_class=ScriptArgs,
@@ -73,6 +75,7 @@ class Script:
         """
         Finishing the script. Profiling or timing.
         """
+        print('terminate')
         if self.profile is not None:
             print(f'--- {time.time() - self.start_time} seconds ---')
             self.profile.disable()

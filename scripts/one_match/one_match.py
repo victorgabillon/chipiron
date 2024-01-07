@@ -11,7 +11,7 @@ import chipiron as ch
 from dataclasses import dataclass, field
 import dacite
 from chipiron.players.factory import PlayerArgs
-from chipiron.players.utils import  fetch_two_players_args_convert_and_save
+from chipiron.players.utils import fetch_two_players_args_convert_and_save
 from chipiron.games.match.utils import fetch_match_games_args_convert_and_save
 import chipiron.games.match as match
 import chipiron.games.game as game
@@ -64,9 +64,13 @@ class OneMatchScript:
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into self.args
         args_dict: dict = self.base_script.initiate(self.base_experiment_output_folder)
 
+        print('args_dict',args_dict)
         # Converting the args in the standardized dataclass
         args: OneMatchScriptArgs = dacite.from_dict(data_class=OneMatchScriptArgs,
                                                     data=args_dict)
+
+        if args.gui and args.profiling:
+            raise ValueError('Profiling does not work well atm with gui on')
 
         # Recovering args from yaml file for player and merging with extra args and converting to standardized dataclass
         player_one_args: PlayerArgs
@@ -136,6 +140,8 @@ class OneMatchScript:
             self.chess_gui.exec_()
         else:  # No GUI
             self.match_manager.play_one_match()
+
+        print("finish the run of the match")
 
         # TODO check the good closing of processes
 

@@ -4,6 +4,7 @@ import logging
 from chipiron.utils import path
 from .game import ObservableGame
 from .game_args import GameArgs
+from chipiron.environments import HalfMove
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -90,7 +91,7 @@ class GameManager:
         color_names = ['Black', 'White']
 
         while True:
-            half_move: int = board.ply()
+            half_move: HalfMove = board.ply()
             print(f'Half Move: {half_move} playing status {self.game.playing_status.status} ')
             color_to_move = board.turn
             color_of_player_to_move_str = color_names[color_to_move]
@@ -105,7 +106,7 @@ class GameManager:
 
         self.tell_results()
         self.terminate_threads()
-
+        print('end play_one_game')
         return self.simple_results()
 
     def processing_mail(self, message):
@@ -145,12 +146,11 @@ class GameManager:
             self.rewind_one_move()
             self.game.pause()
 
-    def game_continue_conditions(self):
-        half_move = self.game.board.ply()
-        continue_bool = True
+    def game_continue_conditions(self) -> bool:
+        half_move: HalfMove = self.game.board.ply()
+        continue_bool: bool = True
         if self.args.max_half_moves is not None and half_move >= self.args.max_half_moves:
-            assert (1 == 2)
-            continue_bool = False
+            continue_bool: bool = False
         return continue_bool
 
     def print_to_file(self, idx=0):

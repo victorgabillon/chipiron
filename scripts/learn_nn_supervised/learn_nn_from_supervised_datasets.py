@@ -9,6 +9,7 @@ from chipiron.players.boardevaluators.neural_networks import NeuralNetBoardEvalA
 from dataclasses import dataclass, field
 import dacite
 import os
+from chipiron.players.boardevaluators.neural_networks.input_converters.factory import Representation364Factory
 
 
 @dataclass
@@ -20,7 +21,7 @@ class LearnNNScriptArgs(ScriptArgs):
     create_nn_file: bool = True
     config_file_name: str = 'scripts/learn_nn_supervised/exp_options.yaml',
     #  'stockfish_boards_train_file_name': '/home/victor/goodgames_plusvariation_stockfish_eval_train_10000000',
-    stockfish_boards_train_file_name: str = 'data/datasets/goodgames_plusvariation_stockfish_eval_train_10000000'
+    stockfish_boards_train_file_name: str = 'data/datasets/goodgames_plusvariation_stockfish_eval_train_t.1_merge'
     stockfish_boards_test_file_name: str = 'data/datasets/goodgames_plusvariation_stockfish_eval_test'
     preprocessing_data_set: bool = False
     batch_size_train: int = 32
@@ -68,21 +69,24 @@ class LearnNNScript:
         self.nn.print_param()
         self.nn_trainer = create_nn_trainer(args=args,
                                             nn=self.nn)
+
+        board_representation_factory = Representation364Factory()
+
         self.stockfish_boards_train = FenAndValueDataSet(
             file_name=args.stockfish_boards_train_file_name,
             preprocessing=args.preprocessing_data_set,
-            transform_board_function=self.nn.transform_board_function,
+            transform_board_function=board_representation_factory.create_from_board,
             transform_value_function='stockfish')
 
         self.stockfish_boards_test = FenAndValueDataSet(
             file_name=args.stockfish_boards_test_file_name,
             preprocessing=args.preprocessing_data_set,
-            transform_board_function=self.nn.transform_board_function,
+            transform_board_function=board_representation_factory.create_from_board,
             transform_value_function='stockfish')
 
         start_time = time.time()
         self.stockfish_boards_train.load()
-        print("--- LOAD %s seconds ---" % (time.time() - start_time))
+        print("--- LOADdd %s seconds ---" % (time.time() - start_time))
         self.stockfish_boards_test.load()
 
         self.data_loader_stockfish_boards_train = DataLoader(self.stockfish_boards_train,

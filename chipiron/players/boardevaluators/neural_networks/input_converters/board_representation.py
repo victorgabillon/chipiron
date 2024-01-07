@@ -1,7 +1,6 @@
 import torch
 import chess
-from typing import  Protocol
-
+from typing import Protocol
 
 
 class BoardRepresentation(Protocol):
@@ -28,7 +27,10 @@ class Representation364:
         self.tensor_castling_white = tensor_castling_white
         self.tensor_castling_black = tensor_castling_black
 
-    def get_evaluator_input(self, color_to_play: chess.Color):
+    def get_evaluator_input(
+            self,
+            color_to_play: chess.Color
+    ) -> torch.Tensor:
 
         if color_to_play == chess.WHITE:
             tensor = torch.cat((self.tensor_white, self.tensor_black), 0)
@@ -41,5 +43,5 @@ class Representation364:
             tensor_castling = torch.cat((self.tensor_castling_black, self.tensor_castling_white), 0)
 
         tensor_2 = torch.cat((tensor, tensor_castling), 0)
-        return tensor_2
 
+        return tensor_2

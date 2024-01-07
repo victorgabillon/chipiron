@@ -19,11 +19,13 @@ class GameManagerFactory:
     """
     syzygy_table: SyzygyTable
 
-    def __init__(self,
-                 syzygy_table: SyzygyTable,
-                 game_manager_board_evaluator,
-                 output_folder_path: path | None,
-                 main_thread_mailbox: queue.Queue) -> None:
+    def __init__(
+            self,
+            syzygy_table: SyzygyTable,
+            game_manager_board_evaluator,
+            output_folder_path: path | None,
+            main_thread_mailbox: queue.Queue
+    ) -> None:
         self.syzygy_table = syzygy_table
         self.output_folder_path = output_folder_path
         self.game_manager_board_evaluator = game_manager_board_evaluator
@@ -63,11 +65,11 @@ class GameManagerFactory:
         # Creating and launching the player threads
         for player_color in chess.COLORS:
             player = player_color_to_player[player_color]
-            game_player = players.GamePlayer(player, player_color)
+            game_player: players.GamePlayer = players.GamePlayer(player, player_color)
             if player.id != 'Human':  # TODO COULD WE DO BETTER ? maybe with the null object
-                player_process = launch_player_process(game_player,
-                                                       obs_game,
-                                                       self.main_thread_mailbox)
+                player_process = launch_player_process(game_player=game_player,
+                                                       observable_game=obs_game,
+                                                       main_thread_mailbox=self.main_thread_mailbox)
                 player_processes.append(player_process)
 
         game_manager: GameManager

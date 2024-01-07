@@ -4,6 +4,7 @@ from chipiron.utils.small_tools import dict_alphabetic_str
 from datetime import datetime
 import os
 
+
 class MyParser:
 
     def __init__(self, parser):
@@ -37,11 +38,11 @@ class MyParser:
 
     def parse_arguments(self,
                         base_experiment_output_folder,
-                        gui_args=None,
+                        extra_args=None,
                         ):
 
-        if gui_args is None:
-            gui_args = {}
+        if extra_args is None:
+            extra_args = {}
 
         self.parse_command_line_arguments()
 
@@ -56,12 +57,13 @@ class MyParser:
 
         #  the gui input  overwrite  the command line arguments
         #  that overwrite the config file arguments that overwrite the default arguments
-        self.merged_args = self.args_config_file | self.args_command_line | gui_args
+        print('oo',extra_args)
+        self.merged_args = self.args_config_file | self.args_command_line | extra_args
         print('Here are the merged arguments of the script', self.merged_args)
 
         if 'output_folder' not in self.merged_args:
             now = datetime.now()  # current date and time
-            self.merged_args['experiment_output_folder'] = os.path.join(base_experiment_output_folder , now.strftime(
+            self.merged_args['experiment_output_folder'] = os.path.join(base_experiment_output_folder, now.strftime(
                 "%A-%m-%d-%Y--%H:%M:%S:%f"))
         else:
             self.merged_args['experiment_output_folder'] = os.path.join(base_experiment_output_folder, self.merged_args[

@@ -11,6 +11,7 @@ import chipiron.games.game as game
 import multiprocessing
 import queue
 
+
 def create_match_manager(
         args_match: MatchArgs,
         args_player_one: PlayerArgs,
@@ -35,7 +36,7 @@ def create_match_manager(
         syzygy_table=syzygy_mailbox,
         game_manager_board_evaluator=game_board_evaluator,
         output_folder_path=output_folder_path,
-        main_thread_mailbox=main_thread_mailbox
+        main_thread_mailbox=main_thread_mailbox,
     )
 
     match_results_factory: MatchResultsFactory = MatchResultsFactory(

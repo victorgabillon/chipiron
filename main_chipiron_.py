@@ -4,6 +4,7 @@ Launching the main chipiron
 import argparse
 import sys
 import scripts
+from chipiron.utils.small_tools import yaml_fetch_args_in_file
 
 
 def get_script_and_args(
@@ -19,11 +20,13 @@ def get_script_and_args(
 
     """
     script_type: scripts.ScriptType
-    gui_args: dict | None
+    extra_args: dict | None = None
     # Whether command line arguments are provided or not we ask for more info through a GUI
     if len(raw_command_line_arguments) == 1:  # No args provided
         # use a gui to get user input
-        script_type, gui_args = scripts.script_gui()
+        gui_extra_args: dict | None
+        script_type, gui_extra_args = scripts.script_gui()
+        extra_args = gui_extra_args
     else:
         # Capture  the script argument in the command line arguments
         parser_default: argparse.ArgumentParser = argparse.ArgumentParser()
@@ -31,6 +34,10 @@ def get_script_and_args(
                                     type=str,
                                     default=None,
                                     help='name of the script')
+        parser_default.add_argument('--config_file_name',
+                                    type=str,
+                                    default=None,
+                                    help='path to a yaml file with arguments for the script')
         args_obj, _ = parser_default.parse_known_args()
         args_command_line = vars(args_obj)  # converting into dictionary format
         if args_command_line['script_name'] is None:
@@ -39,8 +46,10 @@ def get_script_and_args(
 
         script_type_str: str = args_command_line['script_name']
         script_type = scripts.ScriptType(script_type_str)
-        gui_args = None
-    return script_type, gui_args
+        if args_command_line['config_file_name'] is not None:
+            command_line_extra_args: dict = yaml_fetch_args_in_file(path_file=args_command_line['config_file_name'])
+            extra_args = command_line_extra_args
+    return script_type, extra_args
 
 
 def main() -> None:
@@ -51,13 +60,13 @@ def main() -> None:
     raw_command_line_arguments: list = sys.argv
 
     script_type: scripts.ScriptType
-    gui_args: dict
-    # extracting the script_name and possibly some gui input arguments
-    script_type, gui_args = get_script_and_args(raw_command_line_arguments)
+    extra_args: dict
+    # extracting the script_name and possibly some input arguments from either the gui or a yaml file
+    script_type, extra_args = get_script_and_args(raw_command_line_arguments)
 
     # creating the script object from its name and arguments
     script_object: scripts.Script = scripts.create_script(script_type=script_type,
-                                                          gui_args=gui_args)
+                                                          extra_args=extra_args)
 
     # run the script
     script_object.run()
