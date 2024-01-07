@@ -19,7 +19,6 @@ class OpeningInstructions:
         # key is supposed to be a tuple with (node_to_open,  move_to_play)
         assert (len(key) == 2)
         assert (isinstance(key, tuple))
-        assert (isinstance(key[0], nodes.AlgorithmNode))
         # print(key, type(key[1]))
         assert (isinstance(key[1], chess.Move))
         self.batch[key] = value
@@ -81,7 +80,7 @@ def create_instructions_to_open_all_moves(moves_to_play, node_to_open):
         # at the moment it looks redundant keys are almost the same as values but its clean
         # the keys are here for fast and redundant proof insertion
         # and the values are here for clean data processing
-        opening_instructions_batch[(node_to_open, move_to_play)] = OpeningInstruction(node_to_open,
+        opening_instructions_batch[(node_to_open.id, move_to_play)] = OpeningInstruction(node_to_open,
                                                                                       move_to_play)
     #  node_to_open.non_opened_legal_moves.add(move_to_play)
     return opening_instructions_batch
