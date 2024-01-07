@@ -138,11 +138,11 @@ def script_gui(
             if root.output['color_human'] == 'White':
                 gui_args['file_name_player_one'] = 'Human.yaml'
                 gui_args['file_name_player_two'] = f'{root.output["chipi_algo"]}.yaml'
-                gui_args['player_two'] = {'tree_builder': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}
+                gui_args['player_two'] = {'main_move_selector': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}
             else:
                 gui_args['file_name_player_two'] = 'Human.yaml'
                 gui_args['file_name_player_one'] = f'{root.output["chipi_algo"]}.yaml'
-                gui_args['player_one'] = {'tree_builder': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}
+                gui_args['player_one'] = {'main_move_selector': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}
             script_type = scripts.ScriptType.OneMatch
         case 'watch_a_game':
             gui_args = {'config_file_name': 'scripts/one_match/exp_options.yaml',

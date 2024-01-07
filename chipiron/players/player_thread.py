@@ -8,7 +8,8 @@ class PlayerProcess(multiprocessing.Process):
     def __init__(self,
                  game_player,
                  queue_board,
-                 queue_move):
+                 queue_move,
+                 ):
         # Call the Thread class's init function
         multiprocessing.Process.__init__(self, daemon=False)
         self._stop_event = multiprocessing.Event()

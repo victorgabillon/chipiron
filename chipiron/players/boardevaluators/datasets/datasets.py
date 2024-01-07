@@ -86,6 +86,7 @@ class FenAndValueDataSet(MyDataSet):
     def process_raw_row(self, row):
         fen = row['fen']
         board = BoardChi(fen=fen)
+        print('uu')
         input_layer = self.transform_board_function(board, requires_grad_=False)
         target_value = self.transform_value_function(board, row)
         return input_layer.float(), target_value.float()

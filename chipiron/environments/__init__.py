@@ -1,3 +1,3 @@
+from typing import Annotated
 
-
-HALF_MOVE = int
+HalfMove = Annotated[int, "half move"]

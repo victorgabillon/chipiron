@@ -1,5 +1,6 @@
 from .player import Player
 from .player_thread import PlayerProcess
+from .game_player import GamePlayer
 
 import multiprocessing
 import random
@@ -39,9 +40,11 @@ def create_player_thread(args: dict,
     return PlayerProcess(player)
 
 
-def launch_player_process(game_player,
-                          observable_game,
-                          main_thread_mailbox):
+def launch_player_process(
+        game_player: GamePlayer,
+        observable_game,
+        main_thread_mailbox
+) -> PlayerProcess:
     # creating objects Queue that is the mailbox for the player thread
     player_thread_mailbox = multiprocessing.Manager().Queue()
 
@@ -49,7 +52,9 @@ def launch_player_process(game_player,
     observable_game.register_mailbox(player_thread_mailbox, 'board_to_play')
 
     # creating and starting the thread for the player
-    player_thread = PlayerProcess(game_player, player_thread_mailbox, main_thread_mailbox)
+    player_thread: PlayerProcess = PlayerProcess(game_player=game_player,
+                                                 queue_board=player_thread_mailbox,
+                                                 queue_move=main_thread_mailbox)
     player_thread.start()
 
     return player_thread
