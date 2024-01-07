@@ -18,6 +18,7 @@ class ScriptType(Enum):
     OneMatch = 'one_match'
     League = 'league'
     LearnNN = 'learn_nn'
+    BaseTreeExploration = 'base_tree_exploration'
 
 
 # instantiate relevant script
@@ -55,8 +56,8 @@ def create_script(
             script_object = ReplayGameScript()
         case ScriptType.League:
             script_object = RunTheLeagueScript(base_script=base_script)
-        case 'base_tree_exploration':
-            script_object = BaseTreeExplorationScript()
+        case ScriptType.BaseTreeExploration:
+            script_object = BaseTreeExplorationScript(base_script=base_script)
         case other:
-            raise Exception(f'Cannot find {other}')
+            raise Exception(f'Cannot find {other} in file {__name__}')
     return script_object

@@ -10,12 +10,18 @@ import io
 from pstats import SortKey
 import pstats
 import os
+from chipiron.utils import path
+from chipiron.players.factory import PlayerArgs
+from chipiron.players.utils import fetch_player_args_convert_and_save
 
 
-class BaseTreeExplorationScript(Script):
+class BaseTreeExplorationScript:
 
-    def __init__(self):
-        super().__init__()
+    def __init__(
+            self,
+            base_script: Script
+    ) -> None:
+        self.base_script = base_script
 
     def run(self):
         syzygy = SyzygyTable('')
@@ -23,25 +29,19 @@ class BaseTreeExplorationScript(Script):
         profile = cProfile.Profile()
         profile.enable()
 
-        file_name_player_one = 'RecurZipfBase3.yaml'
-        file_name_player_one = 'Uniform.yaml'
+        # file_name_player_one = 'RecurZipfBase3.yaml'
+        file_name_player: str = 'Uniform.yaml'
 
-        path_player_one = os.path.join('data/players/player_config', file_name_player_one)
+        player_one_args: PlayerArgs = fetch_player_args_convert_and_save(
+            file_name_player=file_name_player
+        )
 
-        with open(path_player_one, 'r') as filePlayerOne:
-            args_player_one = yaml.load(filePlayerOne, Loader=yaml.FullLoader)
-            print(args_player_one)
-
+        player_one_args.main_move_selector.stopping_criterion.tree_move_limit = 100000
         random_generator = random.Random()
-        player = create_player(args=args_player_one, syzygy=syzygy, random_generator=random_generator)
+        player = create_player(args=player_one_args, syzygy=syzygy, random_generator=random_generator)
 
         board = create_board()
         player.select_move(board=board)
 
-        print(f'--- {time.time() - self.start_time} seconds ---')
-        profile.disable()
-        string_io = io.StringIO()
-        sort_by = SortKey.CUMULATIVE
-        stats = pstats.Stats(profile, stream=string_io).sort_stats(sort_by)
-        stats.print_stats()
-        print(string_io.getvalue())
+    def terminate(self) -> None:
+        self.base_script.terminate()

@@ -64,7 +64,6 @@ class OneMatchScript:
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into self.args
         args_dict: dict = self.base_script.initiate(self.base_experiment_output_folder)
 
-        print('args_dict',args_dict)
         # Converting the args in the standardized dataclass
         args: OneMatchScriptArgs = dacite.from_dict(data_class=OneMatchScriptArgs,
                                                     data=args_dict)
