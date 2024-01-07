@@ -10,22 +10,15 @@ class BoardRepresentation(Protocol):
         ...
 
 
+from dataclasses import dataclass, field
+
+
+@dataclass(slots=True)
 class Representation364:
     tensor_white: torch.Tensor
     tensor_black: torch.Tensor
     tensor_castling_white: torch.Tensor
     tensor_castling_black: torch.Tensor
-
-    def __init__(self,
-                 tensor_white: torch.Tensor,
-                 tensor_black: torch.Tensor,
-                 tensor_castling_white: torch.Tensor,
-                 tensor_castling_black: torch.Tensor
-                 ) -> None:
-        self.tensor_white = tensor_white
-        self.tensor_black = tensor_black
-        self.tensor_castling_white = tensor_castling_white
-        self.tensor_castling_black = tensor_castling_black
 
     def get_evaluator_input(
             self,

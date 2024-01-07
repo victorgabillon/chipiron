@@ -36,7 +36,7 @@ class BaseTreeExplorationScript:
             file_name_player=file_name_player
         )
 
-        player_one_args.main_move_selector.stopping_criterion.tree_move_limit = 100000
+        player_one_args.main_move_selector.stopping_criterion.tree_move_limit = 1000000
         random_generator = random.Random()
         player = create_player(args=player_one_args, syzygy=syzygy, random_generator=random_generator)
 
