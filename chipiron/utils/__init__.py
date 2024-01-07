@@ -2,4 +2,4 @@ from .small_tools import mkdir, yaml_fetch_args_in_file, dict_alphabetic_str, un
 
 import os
 
-path = str | os.PathLike
+path = str | bytes | os.PathLike
