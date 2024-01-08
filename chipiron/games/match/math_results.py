@@ -1,4 +1,4 @@
-from chipiron.games.game.game_manager import GameManager
+from chipiron.games.game.game_manager import GameManager, FinalGameResult
 import copy
 import queue
 import typing
@@ -32,21 +32,21 @@ class MatchResults:
     def add_result_one_game(self, white_player_name_id, game_result):
         self.number_of_games += 1
         if white_player_name_id == self.player_one_name_id:
-            if game_result == GameManager.WIN_FOR_WHITE:
+            if game_result == FinalGameResult.WIN_FOR_WHITE:
                 self.player_one_is_white_white_wins += 1
-            elif game_result == GameManager.WIN_FOR_BLACK:
+            elif game_result == FinalGameResult.WIN_FOR_BLACK:
                 self.player_one_is_white_black_wins += 1
-            elif game_result == GameManager.DRAW:
+            elif game_result == FinalGameResult.DRAW:
                 self.player_one_is_white_draws += 1
             else:
                 pass
                 # raise Exception('#')
         elif white_player_name_id == self.player_two_name_id:
-            if game_result == GameManager.WIN_FOR_WHITE:
+            if game_result == FinalGameResult.WIN_FOR_WHITE:
                 self.player_two_is_white_white_wins += 1
-            elif game_result == GameManager.WIN_FOR_BLACK:
+            elif game_result == FinalGameResult.WIN_FOR_BLACK:
                 self.player_two_is_white_black_wins += 1
-            elif game_result == GameManager.DRAW:
+            elif game_result == FinalGameResult.DRAW:
                 self.player_two_is_white_draws += 1
             else:
                 raise Exception('!')

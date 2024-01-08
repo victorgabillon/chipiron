@@ -21,7 +21,7 @@ class PlayerProcess(multiprocessing.Process):
     def run(self):
         print('Started player thread : ', self.game_player)
 
-        while not self.stopped():
+        while True:
 
             try:
                 message = self.queue_board.get(False)
@@ -47,8 +47,8 @@ class PlayerProcess(multiprocessing.Process):
 
             # TODO here give option to continue working while the other is thinking
 
-    def stop(self):
-        self._stop_event.set()
+   # def stop(self): from the thread time
+   #     self._stop_event.set()
 
-    def stopped(self):
-        return self._stop_event.is_set()
+   # def stopped(self):
+   #     return self._stop_event.is_set()

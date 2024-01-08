@@ -5,6 +5,8 @@ from chipiron.utils import path
 from .game import ObservableGame
 from .game_args import GameArgs
 from chipiron.environments import HalfMove
+from enum import Enum
+import chipiron.players as players
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -20,13 +22,16 @@ logger.addHandler(stream_handler)
 
 # todo a wrapper for chess.white chess.black
 
+class FinalGameResult(Enum):
+    WIN_FOR_WHITE = 0
+    WIN_FOR_BLACK = 1
+    DRAW = 2
+
 
 class GameManager:
     """
     Objet in charge of playing one game
     """
-
-    GAME_RESULTS = [WIN_FOR_WHITE, WIN_FOR_BLACK, DRAW] = range(3)
 
     game: ObservableGame
 
@@ -38,7 +43,7 @@ class GameManager:
                  args: GameArgs,
                  player_color_to_id,
                  main_thread_mailbox,
-                 player_threads):
+                 player_processes: list[players.PlayerProcess]):
         """
         Constructor for the GameManager Class. If the args, and players are not given a value it is set to None,
          waiting for the set methods to be called. This is done like this so that the players can be changed
@@ -61,7 +66,7 @@ class GameManager:
         self.player_color_to_id = player_color_to_id
         self.board_history = []
         self.main_thread_mailbox = main_thread_mailbox
-        self.player_threads = player_threads
+        self.player_processes = player_processes
 
     def external_eval(self):
         return self.display_board_evaluator.evaluate(self.game.board)  # TODO DON'T LIKE THIS writing
@@ -84,7 +89,7 @@ class GameManager:
     def set_new_game(self, starting_position_arg):
         self.game.set_starting_position(starting_position_arg)
 
-    def play_one_game(self):
+    def play_one_game(self) -> FinalGameResult:
         board = self.game.board
         self.set_new_game(self.args.starting_position)
 
@@ -184,7 +189,7 @@ class GameManager:
             print('is_checkmate')
         print(board.result())
 
-    def simple_results(self):
+    def simple_results(self) -> FinalGameResult:
         board = self.game.board
 
         if board.result() == '*':
@@ -193,23 +198,24 @@ class GameManager:
             else:
                 val = self.syzygy.value_white(board, chess.WHITE)
                 if val == 0:
-                    return self.DRAW
+                    return FinalGameResult.DRAW
                 if val == -1000:
-                    return self.WIN_FOR_BLACK
+                    return FinalGameResult.WIN_FOR_BLACK
                 if val == 1000:
-                    return self.WIN_FOR_WHITE
+                    return FinalGameResult.WIN_FOR_WHITE
         else:
             result = board.result()
             if result == '1/2-1/2':
-                return self.DRAW
+                return FinalGameResult.DRAW
             if result == '0-1':
-                return self.WIN_FOR_BLACK
+                return FinalGameResult.WIN_FOR_BLACK
             if result == '1-0':
-                return self.WIN_FOR_WHITE
+                return FinalGameResult.WIN_FOR_WHITE
 
     def terminate_threads(self):
-        for player_thread in self.player_threads:
-            player_thread.stop()
+        player_thread: players.PlayerProcess
+        for player_thread in self.player_processes:
+            player_thread.terminate()
             print('stopping the thread')
-            player_thread.join()
+            #player_thread.join()
             print('thread stopped')

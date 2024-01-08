@@ -1,13 +1,13 @@
 import chess
 from chipiron.games.game.game_manager_factory import GameManagerFactory
-from chipiron.games.game.game_manager import GameManager
+from chipiron.games.game.game_manager import GameManager, FinalGameResult
 from chipiron.games.match.math_results import MatchResults
 from chipiron.games.game.game_args import GameArgs
 
 
 class MatchManager:
     """
-    Objet in charge of playing one game
+    Objet in charge of playing one match
     """
 
     def __init__(self,
@@ -38,7 +38,7 @@ class MatchManager:
             args_game: GameArgs
             player_color_to_player, args_game = self.game_args_factory.generate_game_args(game_number)
 
-            game_results = self.play_one_game(player_color_to_player, args_game, game_number)
+            game_results: FinalGameResult = self.play_one_game(player_color_to_player, args_game, game_number)
             match_results.add_result_one_game(white_player_name_id=player_color_to_player[chess.WHITE].id,
                                               game_result=game_results)
             game_number += 1
@@ -47,9 +47,15 @@ class MatchManager:
         self.print_stats_to_file(match_results)
         return match_results
 
-    def play_one_game(self, player_color_to_player, args_game, game_number):
-        game_manager: GameManager = self.game_manager_factory.create(args_game, player_color_to_player)
-        game_results = game_manager.play_one_game()
+    def play_one_game(
+            self,
+            player_color_to_player,
+            args_game,
+            game_number
+    ) -> FinalGameResult:
+        game_manager: GameManager = self.game_manager_factory.create(args_game_manager=args_game,
+                                                                     player_color_to_player=player_color_to_player)
+        game_results: FinalGameResult = game_manager.play_one_game()
         game_manager.print_to_file(idx=game_number)
         return game_results
 
