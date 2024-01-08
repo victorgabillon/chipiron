@@ -14,6 +14,7 @@ from chipiron.players.utils import fetch_player_args_convert_and_save
 from dataclasses import dataclass, field
 import chipiron.players as players
 import random
+from memory_profiler import profile
 
 
 def new_player_joins(player):
@@ -23,7 +24,7 @@ def new_player_joins(player):
         out_file.write(yaml.dump(player.arg))
 
 
-@dataclass
+@dataclass(slots=True)
 class League:
     folder_league: str
     players_elo: ValueSortedDict = field(default_factory=ValueSortedDict)
@@ -69,6 +70,7 @@ class League:
         print('elo', self.players_elo)
         print('args', self.players_args)
 
+    @profile
     def run(self) -> None:
         self.print_info()
         self.update_elo_graph()
@@ -140,10 +142,11 @@ class League:
         self.update_elo_graph()
 
     def update_elo_graph(self):
-        plt.clf()
+        fig = plt.figure(num=1, clear=True)
+        ax = fig.add_subplot()
         for player_name, elo in self.players_elo.items():
             elo.reverse()
-            plt.plot(elo, label=player_name)
+            ax.plot(elo, label=player_name)
             elo.reverse()
         # plt.axis([0, 6, 0, 20])
         plt.legend()

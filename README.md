@@ -48,6 +48,13 @@ This allows to play a match between two players.
 python3 main_chipiron.py --script_name one_match --config_file_name scripts/one_match/inputs/base/exp_options.yaml
 ```
 
+### Script: league
+This allows to run a league of selected players and compute their Elo ratings.
+```console
+python3 main_chipiron.py --script_name league
+```
+
+
 <!---### Script: learn nn from supervised datasets 
 This learns Neural Networks from a database of labelled boards.
 ```console

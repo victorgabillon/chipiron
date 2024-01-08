@@ -1,3 +1,3 @@
-number_of_games_player_one_white: 10000
+number_of_games_player_one_white: 10
 number_of_games_player_one_black: 1
 game_setting_file: setting_navo.yaml

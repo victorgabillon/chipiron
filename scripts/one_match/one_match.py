@@ -15,6 +15,7 @@ from chipiron.players.utils import fetch_two_players_args_convert_and_save
 from chipiron.games.match.utils import fetch_match_games_args_convert_and_save
 import chipiron.games.match as match
 import chipiron.games.game as game
+from chipiron.utils import path
 
 
 @dataclass
@@ -26,15 +27,15 @@ class OneMatchScriptArgs(ScriptArgs):
     seed: int = 0
 
     # whether to display the match in a GUI
-    gui: bool = True
+    gui: bool = False
 
-    experiment_output_folder: str | bytes | os.PathLike = None
+    experiment_output_folder: path = None
 
     # path to files with yaml config the players and the match setting.
-    config_file_name: str | bytes | os.PathLike = 'scripts/one_match/inputs/base/exp_options.yaml'
-    file_name_player_one: str | bytes | os.PathLike = 'RecurZipfBase3.yaml'
-    file_name_player_two: str | bytes | os.PathLike = 'RecurZipfBase4.yaml'
-    file_name_match_setting: str | bytes | os.PathLike = 'setting_duda.yaml'
+    config_file_name: path = 'scripts/one_match/inputs/base/exp_options.yaml'
+    file_name_player_one: path = 'RecurZipfBase3.yaml'
+    file_name_player_two: path = 'RecurZipfBase4.yaml'
+    file_name_match_setting: path = 'setting_duda.yaml'
 
     # For players and match modification of the yaml file specified in a respective dict
     player_one: dict = field(default_factory=dict)

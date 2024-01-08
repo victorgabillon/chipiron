@@ -61,15 +61,17 @@ class GameManagerFactory:
             for subscriber in self.subscribers:
                 obs_game.register_mailbox(subscriber, 'board_to_display')
 
-        player_processes = []
+        player_processes: list[players.PlayerProcess] = []
         # Creating and launching the player threads
         for player_color in chess.COLORS:
             player = player_color_to_player[player_color]
             game_player: players.GamePlayer = players.GamePlayer(player, player_color)
             if player.id != 'Human':  # TODO COULD WE DO BETTER ? maybe with the null object
-                player_process = launch_player_process(game_player=game_player,
-                                                       observable_game=obs_game,
-                                                       main_thread_mailbox=self.main_thread_mailbox)
+                player_process: players.PlayerProcess = launch_player_process(
+                    game_player=game_player,
+                    observable_game=obs_game,
+                    main_thread_mailbox=self.main_thread_mailbox
+                )
                 player_processes.append(player_process)
 
         game_manager: GameManager
@@ -80,7 +82,7 @@ class GameManagerFactory:
                                    args=args_game_manager,
                                    player_color_to_id=player_color_to_id,
                                    main_thread_mailbox=self.main_thread_mailbox,
-                                   player_threads=player_processes)
+                                   player_processes=player_processes)
 
         return game_manager
 

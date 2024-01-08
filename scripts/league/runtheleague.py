@@ -5,7 +5,6 @@ from scripts.script import Script
 from chipiron.league.league import League
 import os
 import pickle
-from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 import random
 
 
@@ -44,3 +43,6 @@ class RunTheLeagueScript:
             self.league.run()
             # save
             pickle.dump(self.league, open(self.folder_league + '/players.pickle', "wb"))
+
+    def terminate(self) -> None:
+        self.base_script.terminate()
