@@ -8,6 +8,7 @@ from chipiron.utils.small_tools import nth_key
 from chipiron.utils.my_value_sorted_dict import sort_dic
 from typing import List
 from typing import Protocol
+from dataclasses import dataclass, field
 
 
 # todo maybe further split values from over?
@@ -17,49 +18,42 @@ class NodeWithValue(Protocol):
     minmax_evaluation: NodeMinmaxEvaluation
 
 
+@dataclass(slots=True)
 class NodeMinmaxEvaluation:
     # a reference to the original tree node that is evaluated
     tree_node: TreeNode
 
+    # absolute value wrt to white player as estimated by an evaluator
+    value_white_evaluator: float | None = None
+
+    # absolute value wrt to white player as computed from the value_white_* of the descendants
+    # of this node (self) by a minmax procedure.
+    value_white_minmax: float | None = None
+
+    # self.best_move_sequence = []
+    best_node_sequence: list = field(default_factory=list)
+
     # the children of the tree node are kept in a dictionary that can be sorted by their evaluations ()
-    children_sorted_by_value_: dict[NodeWithValue, tuple]
 
-    def __init__(
-            self,
-            tree_node: TreeNode
-    ) -> None:
+    # children_sorted_by_value records subjective values of children by descending order
+    # subjective value means the values is from the point of view of player_to_move
+    # careful, I have hard coded in the self.best_child() function the descending order for
+    # fast access to the best element, so please do not change!
+    # self.children_sorted_by_value_vsd = ValueSortedDict({})
+    children_sorted_by_value_: dict[NodeWithValue, tuple] = field(default_factory=dict)
 
-        self.tree_node = tree_node
+    # self.children_sorted_by_value = {}
 
-        # absolute value wrt to white player as estimated by an evaluator
-        self.value_white_evaluator = None
+    # convention of descending order, careful if changing read above!!
+    best_index_for_value: int = 0
 
-        # absolute value wrt to white player as computed from the value_white_* of the descendants
-        # of this node (self) by a minmax procedure.
-        self.value_white_minmax = None
+    # the list of children that have not yet be found to be over
+    # using atm a list instead of set as atm python set are not insertion ordered which adds randomness
+    # and makes debug harder
+    children_not_over: list = field(default_factory=list)
 
-        # self.best_move_sequence = []
-        self.best_node_sequence = []
-
-        # children_sorted_by_value records subjective values of children by descending order
-        # subjective value means the values is from the point of view of player_to_move
-        # careful, I have hard coded in the self.best_child() function the descending order for
-        # fast access to the best element, so please do not change!
-        # self.children_sorted_by_value_vsd = ValueSortedDict({})
-        self.children_sorted_by_value_ = {}
-
-        # self.children_sorted_by_value = {}
-
-        # convention of descending order, careful if changing read above!!
-        self.best_index_for_value = 0
-
-        # the list of children that have not yet be found to be over
-        # using atm a list instead of set as atm python set are not insertion ordered which adds randomness
-        # and makes debug harder
-        self.children_not_over = []
-
-        # creating a base Over event that is set to None
-        self.over_event = OverEvent()
+    # creating a base Over event that is set to None
+    over_event: OverEvent = field(default_factory=OverEvent)
 
     @property
     def children_sorted_by_value(self):

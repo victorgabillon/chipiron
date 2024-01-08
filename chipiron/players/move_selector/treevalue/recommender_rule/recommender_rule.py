@@ -5,7 +5,7 @@ from enum import Enum
 import chess
 
 from chipiron.utils.small_tools import softmax
-from chipiron.players.boardevaluators.over_event import OverEvent
+from chipiron.players.boardevaluators.over_event import HowOver
 
 import chipiron.players.move_selector.treevalue.trees as trees
 
@@ -33,8 +33,8 @@ class AlmostEqualLogistic:
         print('We have as bests: ',
               [tree.root_node.moves_children.inverse[best] for best in best_root_children])
         best_child = random_generator.choice(best_root_children)
-        if tree.root_node.minmax_evaluation.over_event.how_over == OverEvent.WIN:
-            assert (best_child.minmax_evaluation.over_event.how_over == OverEvent.WIN)
+        if tree.root_node.minmax_evaluation.over_event.how_over == HowOver.WIN:
+            assert (best_child.minmax_evaluation.over_event.how_over == HowOver.WIN)
         best_move = tree.root_node.moves_children.inverse[best_child]
 
         return best_move
@@ -95,8 +95,8 @@ def recommend_move_after_exploration(
         print('We have as bests: ',
               [tree.root_node.moves_children.inverse[best] for best in best_root_children])
         best_child = self.random_generator.choice(best_root_children)
-        if tree.root_node.minmax_evaluation.over_event.how_over == OverEvent.WIN:
-            assert (best_child.minmax_evaluation.over_event.how_over == OverEvent.WIN)
+        if tree.root_node.minmax_evaluation.over_event.how_over == HowOver.WIN:
+            assert (best_child.minmax_evaluation.over_event.how_over == HowOver.WIN)
         best_move = tree.root_node.moves_children.inverse[best_child]
     else:
         raise (ValueError('move_selection_rule is not valid it seems'))
