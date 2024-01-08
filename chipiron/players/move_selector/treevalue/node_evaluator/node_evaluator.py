@@ -2,10 +2,9 @@ import chess
 import chipiron.players.boardevaluators as board_evals
 import chipiron.players.move_selector.treevalue.nodes as nodes
 from enum import Enum
-
+from chipiron.players.boardevaluators.over_event import HowOver, Winner
 
 DISCOUNT = .999999999999  # todo play with this
-
 
 
 class NodeEvaluatorTypes(str, Enum):
@@ -80,14 +79,14 @@ class NodeEvaluator:
             value_as_string: str = node.board.result()
             match value_as_string:
                 case '0-1':
-                    how_over_ = node.minmax_evaluation.over_event.WIN
+                    how_over_ = HowOver.WIN
                     who_is_winner_ = chess.BLACK
                 case '1-0':
-                    how_over_ = node.minmax_evaluation.over_event.WIN
+                    how_over_ = HowOver.WIN
                     who_is_winner_ = chess.WHITE
                 case '1/2-1/2':
-                    how_over_ = node.minmax_evaluation.over_event.DRAW
-                    who_is_winner_ = node.minmax_evaluation.over_event.NO_KNOWN_WINNER
+                    how_over_ = HowOver.DRAW
+                    who_is_winner_ = Winner.NO_KNOWN_WINNER
             node.minmax_evaluation.over_event.becomes_over(how_over=how_over_,
                                                            who_is_winner=who_is_winner_)
 

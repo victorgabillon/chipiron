@@ -1,16 +1,12 @@
 import chipiron.players.move_selector.treevalue.nodes as nodes
 
+from dataclasses import dataclass, field
 
+
+@dataclass(slots=True)
 class NodeExplorationManager:
     tree_node: nodes.TreeNode
-    index: float | None
-
-    def __init__(
-            self,
-            tree_node: nodes.TreeNode
-    ) -> None:
-        self.tree_node = tree_node
-        self.index = None
+    index: float | None = None
 
 
 def create_node_exploration_manager(

@@ -2,7 +2,7 @@
 Basic class for Creating Tree nodes
 """
 from chipiron.players.move_selector.treevalue.node_factory.factory import TreeNodeFactory
-from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
+from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode, ITreeNode
 import chipiron.environments.chess.board as boards
 
 
@@ -15,15 +15,15 @@ class Base(TreeNodeFactory):
                board: boards.BoardChi,
                half_move: int,
                count: int,
-               parent_node
+               parent_node: ITreeNode
                ) -> TreeNode:
         """
         creating a Tree Node
         """
         tree_node: TreeNode = TreeNode(
-            board=board,
-            half_move=half_move,
-            id_number=count,
-            parent_node=parent_node,
+            board_=board,
+            half_move_=half_move,
+            id=count,
+            parent_nodes=[parent_node],
         )
         return tree_node

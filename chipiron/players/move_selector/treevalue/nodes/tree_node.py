@@ -2,44 +2,40 @@ from bidict import bidict
 import chess
 import chipiron.environments.chess.board as boards
 from .itree_node import ITreeNode
+from dataclasses import dataclass, field
 
 
-# todo check if the transfer to half move is done from depth
-
+@dataclass(slots=True)
 class TreeNode:
+    # id is a number to identify this node for easier debug
+    id: int
+
+    # number of half-moves since the start of the game to get to the board position in self.board
     half_move_: int
-    moves_children_: bidict[chess.Move, ITreeNode]
-    player_to_move_: chess.Color
 
-    def __init__(self,
-                 board: boards.BoardChi,
-                 half_move: int,
-                 id_number: int,
-                 parent_node: ITreeNode) -> None:
-        # id is a number to identify this node for easier debug
-        self.id = id_number
+    # the node represents a board position. we also store the fast representation of the board.
+    board_: boards.BoardChi
 
-        # the node represents a board position. we also store the fast representation of the board.
-        self.board_ = board
-        self.fast_rep = board.fast_representation()
+    # the set of parent nodes to this node. Note that a node can have multiple parents!
+    parent_nodes: list[ITreeNode]
 
-        # number of half-moves since the start of the game to get to the board position in self.board
-        self.half_move_ = half_move
+    # all_legal_moves_generated  is a boolean saying whether all moves have been generated.
+    # If true the moves are either opened in which case the corresponding opened node is stored in
+    # the dictionary self.moves_children, otherwise it is stored in self.non_opened_legal_moves
+    all_legal_moves_generated: bool = False
+    non_opened_legal_moves: set = field(default_factory=set)
 
-        # the color of the player that has to move in the board
-        self.player_to_move_ = self.board.turn
+    # bijection dictionary between moves and children nodes. node is set to None is not created
+    moves_children_: bidict[chess.Move, ITreeNode] = field(default_factory=bidict)
 
-        # bijection dictionary between moves and children nodes. node is set to None is not created
-        self.moves_children_ = bidict({})
+    fast_rep: str = field(default_factory=str)
 
-        # the set of parent nodes to this node. Note that a node can have multiple parents!
-        self.parent_nodes = [parent_node]
+    # the color of the player that has to move in the board
+    player_to_move_: chess.Color = field(default_factory=chess.Color)
 
-        # all_legal_moves_generated  is a boolean saying whether all moves have been generated.
-        # If true the moves are either opened in which case the corresponding opened node is stored in
-        # the dictionary self.moves_children, otherwise it is stored in self.non_opened_legal_moves
-        self.all_legal_moves_generated = False
-        self.non_opened_legal_moves = set()
+    def __post_init__(self):
+        self.fast_rep = self.board_.fast_representation()
+        self.player_to_move_: chess.Color = self.board_.turn
 
     @property
     def player_to_move(self):
