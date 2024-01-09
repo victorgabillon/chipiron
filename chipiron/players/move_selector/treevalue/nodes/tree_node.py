@@ -122,7 +122,6 @@ class TreeNode:
 
     def get_descendants_candidate_to_open(self):
         """ returns descendants that are both not opened and not over"""
-        #  print('tt', self.id, self.is_over())
         if not self.all_legal_moves_generated and not self.is_over():
             # should use are_all_moves_and_children_opened() but its messy!
             # also using is_over is  messy as over_events are defined in a child class!!!

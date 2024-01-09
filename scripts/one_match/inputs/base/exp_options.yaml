@@ -3,4 +3,4 @@ gui: False
 file_name_player_one: 'RecurZipfBase3.yaml'
 file_name_player_two:  'RecurZipfBase3.yaml'
 file_name_match_setting: 'setting_duda.yaml'
-profiling: True
+profiling: False
