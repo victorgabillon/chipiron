@@ -6,7 +6,7 @@ from .game import ObservableGame
 from .game_args import GameArgs
 from chipiron.environments import HalfMove
 from enum import Enum
-import chipiron.players as players
+import chipiron.players as players_m
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -43,7 +43,7 @@ class GameManager:
                  args: GameArgs,
                  player_color_to_id,
                  main_thread_mailbox,
-                 player_processes: list[players.PlayerProcess]):
+                 players: list[players_m.PlayerProcess | players_m.Player]):
         """
         Constructor for the GameManager Class. If the args, and players are not given a value it is set to None,
          waiting for the set methods to be called. This is done like this so that the players can be changed
@@ -66,7 +66,7 @@ class GameManager:
         self.player_color_to_id = player_color_to_id
         self.board_history = []
         self.main_thread_mailbox = main_thread_mailbox
-        self.player_processes = player_processes
+        self.players = players
 
     def external_eval(self):
         return self.display_board_evaluator.evaluate(self.game.board)  # TODO DON'T LIKE THIS writing
@@ -110,7 +110,7 @@ class GameManager:
                 break
 
         self.tell_results()
-        self.terminate_threads()
+        self.terminate_processes()
         print('end play_one_game')
         return self.simple_results()
 
@@ -158,7 +158,7 @@ class GameManager:
             continue_bool: bool = False
         return continue_bool
 
-    def print_to_file(self, idx=0):
+    def print_to_file(self, idx: int = 0):
         if self.path_to_store_result is not None:
             path_file = self.path_to_store_result + '_' + str(
                 idx) + '_W:' + self.player_color_to_id[chess.WHITE] + '-vs-B:' + self.player_color_to_id[chess.BLACK]
@@ -212,10 +212,11 @@ class GameManager:
             if result == '1-0':
                 return FinalGameResult.WIN_FOR_WHITE
 
-    def terminate_threads(self):
-        player_thread: players.PlayerProcess
-        for player_thread in self.player_processes:
-            player_thread.terminate()
-            print('stopping the thread')
-            #player_thread.join()
-            print('thread stopped')
+    def terminate_processes(self):
+        player: players_m.PlayerProcess | players_m.Player
+        for player in self.players:
+            if isinstance(player, players_m.PlayerProcess):
+                player.terminate()
+                print('stopping the thread')
+                # player_thread.join()
+                print('thread stopped')

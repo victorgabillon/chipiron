@@ -38,7 +38,9 @@ class MatchManager:
             args_game: GameArgs
             player_color_to_player, args_game = self.game_args_factory.generate_game_args(game_number)
 
-            game_results: FinalGameResult = self.play_one_game(player_color_to_player, args_game, game_number)
+            game_results: FinalGameResult = self.play_one_game(player_color_to_player=player_color_to_player,
+                                                               args_game=args_game,
+                                                               game_number=game_number)
             match_results.add_result_one_game(white_player_name_id=player_color_to_player[chess.WHITE].id,
                                               game_result=game_results)
             game_number += 1
@@ -50,8 +52,8 @@ class MatchManager:
     def play_one_game(
             self,
             player_color_to_player,
-            args_game,
-            game_number
+            args_game: GameArgs,
+            game_number: int
     ) -> FinalGameResult:
         game_manager: GameManager = self.game_manager_factory.create(args_game_manager=args_game,
                                                                      player_color_to_player=player_color_to_player)

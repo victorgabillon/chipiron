@@ -7,6 +7,7 @@ from chipiron.players.factory import PlayerArgs
 from enum import Enum
 from dataclasses import dataclass
 import typing
+from .game_args import GameArgs
 
 if typing.TYPE_CHECKING:
     import chipiron.games.match as match
@@ -30,11 +31,6 @@ class FenStaringPositionArgs(StaringPositionArgs):
 @dataclass
 class FileStaringPositionArgs(StaringPositionArgs):
     file_name: str
-
-
-@dataclass
-class GameArgs:
-    starting_position: FenStaringPositionArgs | FileStaringPositionArgs
 
 
 class GameArgsFactory:

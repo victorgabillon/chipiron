@@ -6,6 +6,9 @@ import copy
 from .game_playing_status import GamePlayingStatus, PlayingStatus
 from chipiron.environments.chess.board.board import BoardChi
 
+from typing import Callable
+from chipiron.environments.chess.board import BoardChi
+
 
 class Game:
     """
@@ -51,6 +54,11 @@ class Game:
         return self._board
 
 
+# function that will be called by the observable game when the board is updated, which should query at least one player
+# to compute a move
+MoveFunction = Callable[[BoardChi], None]
+
+
 class ObservableGame:
     """
     observable version of Game
@@ -58,30 +66,33 @@ class ObservableGame:
 
     game: Game
     mailboxes_display: List[queue.Queue]
-    mailboxes_play: List[queue.Queue]
+
+    # function that will be called by the observable game when the board is updated, which should query
+    # at least one player to compute a move
+    move_functions: List[MoveFunction]
 
     def __init__(self, game: Game):
         self.game = game
         self.mailboxes_display = []  # mailboxes for board to be displayed
-        self.mailboxes_play = []  # mailboxes for board to be played
+        self.move_functions = []  # mailboxes for board to be played
         # the difference between the two is that board can be modified without asking the player to play
         # (for instance when using the button back)
 
-    def register_mailbox(self, mailbox: queue.Queue, type_registration: str):
-        if type_registration == 'board_to_display':
-            self.mailboxes_display.append(mailbox)
-        if type_registration == 'board_to_play':
-            self.mailboxes_play.append(mailbox)
+    def register_display(self, mailbox: queue.Queue):
+        self.mailboxes_display.append(mailbox)
+
+    def register_player(self, move_function: MoveFunction):
+        self.move_functions.append(move_function)
 
     def set_starting_position(self, starting_position_arg=None, fen=None):
         self.board.set_starting_position(starting_position_arg, fen)
         self.notify_display()
-        self.notify_play()
+        self.notify_players()
 
     def play_move(self, move: chess.Move):
         self.game.play_move(move)
         self.notify_display()
-        self.notify_play()
+        self.notify_players()
 
     def rewind_one_move(self):
         self.game.rewind_one_move()
@@ -98,7 +109,7 @@ class ObservableGame:
 
     def play(self):
         self.game.play()
-        self.notify_play()
+        self.notify_players()
         self.notify_display()
         self.notify_status()
 
@@ -117,12 +128,13 @@ class ObservableGame:
             board_copy = copy.deepcopy(self.game.board)
             mailbox.put({'type': 'board', 'board': board_copy})
 
-    def notify_play(self) -> None:
+    def notify_players(self) -> None:
         """ Notify the players to ask for a move"""
         if not self.game.board.is_game_over():
-            for mailbox in self.mailboxes_play:
-                board_copy = copy.deepcopy(self.game.board)
-                mailbox.put({'type': 'board', 'board': board_copy})
+            move_function: MoveFunction
+            for move_function in self.move_functions:
+                board_copy: BoardChi = copy.deepcopy(self.game.board)
+                move_function(board_copy)
 
     def notify_status(self):
         observable_copy = copy.copy(self.game.playing_status)

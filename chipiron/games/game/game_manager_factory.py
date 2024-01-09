@@ -3,12 +3,13 @@ import queue
 
 import chipiron as ch
 from chipiron.environments.chess.board.factory import create_board
-import chipiron.players as players
-from chipiron.players.factory import launch_player_process
+import chipiron.players as players_m
+from chipiron.players.factory import create_player_observer
 from .game_manager import GameManager
-from .game import Game, ObservableGame
+from .game import Game, ObservableGame, MoveFunction
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 from chipiron.utils import path
+from chipiron.games.game.game_args import GameArgs
 
 
 class GameManagerFactory:
@@ -34,7 +35,7 @@ class GameManagerFactory:
 
     def create(
             self,
-            args_game_manager: dict,
+            args_game_manager: GameArgs,
             player_color_to_player: dict
     ) -> GameManager:
         # maybe this factory is overkill at the moment but might be
@@ -55,34 +56,39 @@ class GameManagerFactory:
         game_playing_status: ch.games.GamePlayingStatus = ch.games.GamePlayingStatus()
 
         game: Game = Game(playing_status=game_playing_status, board=board)
-        obs_game: ObservableGame = ObservableGame(game)
+        observable_game: ObservableGame = ObservableGame(game)
 
         if self.subscribers:
             for subscriber in self.subscribers:
-                obs_game.register_mailbox(subscriber, 'board_to_display')
+                observable_game.register_display(subscriber)
 
-        player_processes: list[players.PlayerProcess] = []
+        players: list[players_m.PlayerProcess] = []
         # Creating and launching the player threads
         for player_color in chess.COLORS:
-            player = player_color_to_player[player_color]
-            game_player: players.GamePlayer = players.GamePlayer(player, player_color)
+            player: players_m.Player = player_color_to_player[player_color]
+            game_player: players_m.GamePlayer = players_m.GamePlayer(player, player_color)
             if player.id != 'Human':  # TODO COULD WE DO BETTER ? maybe with the null object
-                player_process: players.PlayerProcess = launch_player_process(
+                generic_player: players_m.GamePlayer | players_m.PlayerProcess
+                move_function: MoveFunction
+                generic_player, move_function = create_player_observer(
                     game_player=game_player,
-                    observable_game=obs_game,
+                    distributed_players=args_game_manager.each_player_has_its_own_thread,
                     main_thread_mailbox=self.main_thread_mailbox
                 )
-                player_processes.append(player_process)
+                players.append(generic_player)
+
+                # registering to the observable board to get notification when it changes
+                observable_game.register_player(move_function=move_function)
 
         game_manager: GameManager
-        game_manager = GameManager(game=obs_game,
+        game_manager = GameManager(game=observable_game,
                                    syzygy=self.syzygy_table,
                                    display_board_evaluator=self.game_manager_board_evaluator,
                                    output_folder_path=self.output_folder_path,
                                    args=args_game_manager,
                                    player_color_to_id=player_color_to_id,
                                    main_thread_mailbox=self.main_thread_mailbox,
-                                   player_processes=player_processes)
+                                   players=players)
 
         return game_manager
 

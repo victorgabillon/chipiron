@@ -7,3 +7,4 @@ from chipiron.environments.chess.board.starting_position import FenStaringPositi
 class GameArgs:
     starting_position: FenStaringPositionArgs | FileStaringPositionArgs
     max_half_moves: int | None = None
+    each_player_has_its_own_thread: bool = False

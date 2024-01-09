@@ -1,14 +1,15 @@
 import multiprocessing
 import copy
 import queue
+from .game_player import GamePlayer, send_board_to_game_player
 
 
 # A class that extends the Thread class
 class PlayerProcess(multiprocessing.Process):
     def __init__(self,
-                 game_player,
-                 queue_board,
-                 queue_move,
+                 game_player: GamePlayer,
+                 queue_board: queue.Queue,
+                 queue_move: queue.Queue,
                  ):
         # Call the Thread class's init function
         multiprocessing.Process.__init__(self, daemon=False)
@@ -32,23 +33,19 @@ class PlayerProcess(multiprocessing.Process):
                 if message['type'] == 'board':
                     board = message['board']
                     print('player thread got ', board)
-                    if board.turn == self.game_player.color:
-                        move = self.game_player.select_move(board)
-                        message = {'type': 'move',
-                                   'move': move,
-                                   'corresponding_board': board.fen(),
-                                   'player': self.game_player.player.id
-                                   }
-                        deep_copy_message = copy.deepcopy(message)
-                        print('sending ', message)
-                        self.queue_move.put(deep_copy_message)
+
+                    send_board_to_game_player(
+                        board=board,
+                        game_player=self.game_player,
+                        queue_move=self.queue_move)
+
                 else:
                     print('opopopopopopopopopdddddddddddddddddsssssssssss')
 
             # TODO here give option to continue working while the other is thinking
 
-   # def stop(self): from the thread time
-   #     self._stop_event.set()
+# def stop(self): from the thread time
+#     self._stop_event.set()
 
-   # def stopped(self):
-   #     return self._stop_event.is_set()
+# def stopped(self):
+#     return self._stop_event.is_set()

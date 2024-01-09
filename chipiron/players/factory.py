@@ -1,13 +1,18 @@
 from .player import Player
 from .player_thread import PlayerProcess
-from .game_player import GamePlayer
+from .game_player import GamePlayer, send_board_to_game_player
 
 import multiprocessing
 import random
+import queue
 
 from dataclasses import dataclass
+from functools import partial
 
 from . import move_selector
+
+from chipiron.environments.chess import BoardChi
+from typing import Callable
 
 
 @dataclass
@@ -33,28 +38,36 @@ def create_player(args: PlayerArgs,
                   main_move_selector=main_move_selector)
 
 
-def create_player_thread(args: dict,
-                         syzygy,
-                         random_generator: random.Random):
-    player = create_player(args, syzygy, random_generator)
-    return PlayerProcess(player)
+def send_board_to_player_process_mailbox(board: BoardChi, player_process_mailbox: queue.Queue):
+    player_process_mailbox.put({'type': 'board', 'board': board})
 
 
-def launch_player_process(
+MoveFunction = Callable[[BoardChi], None]
+
+
+def create_player_observer(
         game_player: GamePlayer,
-        observable_game,
-        main_thread_mailbox
-) -> PlayerProcess:
-    # creating objects Queue that is the mailbox for the player thread
-    player_thread_mailbox = multiprocessing.Manager().Queue()
+        distributed_players: bool,
+        main_thread_mailbox: queue.Queue
+) -> tuple[GamePlayer | PlayerProcess, MoveFunction]:
+    generic_player: GamePlayer | PlayerProcess
+    if distributed_players:
+        # creating objects Queue that is the mailbox for the player thread
+        player_process_mailbox = multiprocessing.Manager().Queue()
 
-    # registering to the observable board to get notification when it changes
-    observable_game.register_mailbox(player_thread_mailbox, 'board_to_play')
+        # creating and starting the thread for the player
+        player_process: PlayerProcess = PlayerProcess(game_player=game_player,
+                                                      queue_board=player_process_mailbox,
+                                                      queue_move=main_thread_mailbox)
+        player_process.start()
+        generic_player = player_process
 
-    # creating and starting the thread for the player
-    player_thread: PlayerProcess = PlayerProcess(game_player=game_player,
-                                                 queue_board=player_thread_mailbox,
-                                                 queue_move=main_thread_mailbox)
-    player_thread.start()
+        move_function = partial(send_board_to_player_process_mailbox, player_process_mailbox=player_process_mailbox)
 
-    return player_thread
+    else:
+        generic_player = game_player
+        move_function = partial(send_board_to_game_player, game_player=game_player, queue_move=main_thread_mailbox)
+
+    return generic_player, move_function
+
+
