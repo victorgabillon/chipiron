@@ -1,11 +1,10 @@
 from chipiron.players.boardevaluators.stockfish_board_evaluator import StockfishBoardEvaluator, StockfishBoardEvalArgs
-from .board_evaluator import BoardEvaluator, ObservableBoardEvaluator, BoardEvaluatorWrapped, GameBoardEvaluator
+from .board_evaluator import BoardEvaluator, ObservableBoardEvaluator, GameBoardEvaluator
 import sys
 from chipiron.players.boardevaluators.basic_evaluation import BasicEvaluation
 from chipiron.players.boardevaluators.neural_networks.factory import create_nn_board_eval, NeuralNetBoardEvalArgs
 import yaml
 import dacite
-from typing import Union
 from dataclasses import dataclass
 
 
@@ -66,10 +65,13 @@ def create_game_board_evaluator_not_observable() -> GameBoardEvaluator:
     return game_board_evaluator
 
 
-def create_game_board_evaluator(gui: bool):
+def create_game_board_evaluator(
+        gui: bool
+) -> ObservableBoardEvaluator | GameBoardEvaluator:
+    game_board_evaluator: ObservableBoardEvaluator | GameBoardEvaluator
     game_board_evaluator = create_game_board_evaluator_not_observable()
     if gui:
-        game_board_evaluator = ObservableBoardEvaluator(
+        game_board_evaluator: ObservableBoardEvaluator = ObservableBoardEvaluator(
             game_board_evaluator=game_board_evaluator
         )
 

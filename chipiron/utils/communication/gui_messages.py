@@ -1,6 +1,5 @@
 from dataclasses import dataclass
-import chess
-from chipiron.environments.chess.board import fen
+from typing import Any
 from chipiron.games.game.game_playing_status import PlayingStatus
 
 
@@ -12,3 +11,29 @@ class GameStatusMessage:
 @dataclass
 class BackMessage:
     ...
+
+
+@dataclass
+class EvaluationMessage:
+    evaluation_stock: Any
+    evaluation_chipiron: Any
+    evaluation_player_one: Any = None
+    evaluation__player_two: Any = None
+
+
+@dataclass
+class EvaluationMessage:
+    evaluation_stock: Any
+    evaluation_chipiron: Any
+    evaluation_player_one: Any = None
+    evaluation__player_two: Any = None
+
+
+@dataclass
+class PlayersColorToIdMessage:
+    players_color_to_id: dict
+
+
+@dataclass
+class MatchResultsMessage:
+    match_results: dict

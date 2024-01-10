@@ -11,7 +11,9 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from chipiron.games.game.game_playing_status import PlayingStatus, GamePlayingStatus
-from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMessage
+from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMessage, EvaluationMessage, \
+    PlayersColorToIdMessage, MatchResultsMessage
+from chipiron.utils.communication.player_game_messages import BoardMessage, MoveMessage
 
 
 class MainWindow(QWidget):
@@ -165,11 +167,8 @@ class MainWindow(QWidget):
 
     def send_move_to_main_thread(self, move):
         print('move', type(move), move)
-        self.main_thread_mailbox.put({'type': 'move',
-                                      'move': move,
-                                      'corresponding_board': self.board.fen(),
-                                      'player': 'Human'
-                                      })
+        message: MoveMessage = MoveMessage(move=move, corresponding_board=self.board.fen(), player_name='Human')
+        self.main_thread_mailbox.put(item=message)
 
     def choice_promote(self):
         self.d = QDialog()
@@ -227,22 +226,31 @@ class MainWindow(QWidget):
 
         if not self.gui_mailbox.empty():
             message = self.gui_mailbox.get()
-            if message['type'] == 'board':
-                self.board = message['board']
-                self.draw_board()
-            if message['type'] == 'evaluation':
-                evaluation_stock = message['evaluation_stock']
-                evaluation_chipiron = message['evaluation_chi']
-                self.update_evaluation(evaluation_stock, evaluation_chipiron)
-            if message['type'] == 'players_color_to_id':
-                players_color_to_id = message['players_color_to_id']
-                self.update_players_color_to_id(players_color_to_id)
-            if message['type'] == 'match_results':
-                match_results = message['match_results']
-                self.update_match_stats(match_results)
-            if message['type'] == 'GamePlayingStatus':
-                game_play_status = message['GamePlayingStatus']
-                self.update_game_play_status(game_play_status)
+            match message:
+                case BoardMessage():
+                    message: BoardMessage
+                    self.board = message.board
+                    self.draw_board()
+                case EvaluationMessage():
+                    message: EvaluationMessage
+                    evaluation_stock = message.evaluation_stock
+                    evaluation_chipiron = message.evaluation_chipiron
+                    self.update_evaluation(evaluation_stock=evaluation_stock,
+                                           evaluation_chipiron=evaluation_chipiron)
+                case PlayersColorToIdMessage():
+                    message: PlayersColorToIdMessage
+                    players_color_to_id: dict = message.players_color_to_id
+                    self.update_players_color_to_id(players_color_to_id)
+                case MatchResultsMessage():
+                    message: MatchResultsMessage
+                    match_results = message.match_results
+                    self.update_match_stats(match_results)
+                case GameStatusMessage():
+                    message: GameStatusMessage
+                    play_status: PlayingStatus = message.status
+                    self.update_game_play_status(play_status)
+                case other:
+                    raise ValueError(f'unknown type of message received by gui {other} in {__name__}')
 
     def draw_board(self):
         """
@@ -261,17 +269,18 @@ class MainWindow(QWidget):
         self.player_black_button.setText(' Black: ' + players_color_to_id[chess.BLACK])  # text
 
     def update_evaluation(self, evaluation_stock, evaluation_chipiron):
+        print('rgrgr', evaluation_stock, evaluation_chipiron)
         self.eval_button.setText('eval: ' + str(evaluation_stock))  # text
         self.eval_button_chi.setText('eval: ' + str(evaluation_chipiron))  # text
 
-    def update_game_play_status(self, game_play_status: GamePlayingStatus):
-        if game_play_status.is_paused():
+    def update_game_play_status(self, play_status: PlayingStatus):
+        if play_status == PlayingStatus.PAUSE:
             self.pause_button.setText("Play")  # text
             self.pause_button.setIcon(QIcon("data/gui/play.png"))  # icon
             self.pause_button.clicked.connect(self.play_button_clicked)
             self.pause_button.setToolTip("play the game")  # Tool tip
             self.pause_button.move(850, 100)
-        elif game_play_status.is_play():
+        elif play_status == PlayingStatus.PLAY:
             self.pause_button.setText("Pause")  # text
             self.pause_button.setIcon(QIcon("data/gui/pause.png"))  # icon
             self.pause_button.clicked.connect(self.pause_button_clicked)

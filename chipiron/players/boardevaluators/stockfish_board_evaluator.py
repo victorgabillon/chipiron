@@ -13,6 +13,10 @@ class StockfishBoardEvalArgs:
     time_limit: float = 0.1
 
 
+engine = chess.engine.SimpleEngine.popen_uci(
+    "/home/victor_old/.pycharm/chipiron/stockfish/stockfish_14.1_linux_x64/stockfish_14.1_linux_x64")
+
+
 class StockfishBoardEvaluator:
     """
     A board evaluator powered by stockfish
@@ -20,22 +24,20 @@ class StockfishBoardEvaluator:
 
     def __init__(self,
                  args: StockfishBoardEvalArgs):
-        self.engine = chess.engine.SimpleEngine.popen_uci(
-            "/home/victor_old/.pycharm/chipiron/stockfish/stockfish_14.1_linux_x64/stockfish_14.1_linux_x64")
-
+        ...
         # is this doing anything???
-        self.depth = args.depth
-        board = chess.Board()
-        a = self.engine.analyse(board, chess.engine.Limit(time=args.time_limit))
+        # self.depth = args.depth
+        # board = chess.Board()
+        # a = self.engine.analyse(board, chess.engine.Limit(time=args.time_limit))
 
     def value_white(
             self,
             board: boards.BoardChi
     ):
-        """ computes the value white of the board"""
-        # self.engine = chess.engine.SimpleEngine.popen_uci(
-        #    "/home/victor_old/.pycharm/chipiron/stockfish/stockfish_14.1_linux_x64/stockfish_14.1_linux_x64")
-        # info = self.engine.analyse(board, chess.engine.Limit(time=0.1))
+        print('infos')
 
-        # return info["score"]
-        return 0
+        """ computes the value white of the board"""
+        # self.engine = chess.engine.SimpleEngine.popen_uci("/home/victor_old/.pycharm/chipiron/stockfish/stockfish_14.1_linux_x64/stockfish_14.1_linux_x64")
+        # looks like the engine dos not work when the gui is on ???!!!???
+        # info = engine.analyse(board, chess.engine.Limit(time=0.1))
+        return 0  # info["score"]

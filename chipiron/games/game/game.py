@@ -8,6 +8,8 @@ from .game_playing_status import GamePlayingStatus, PlayingStatus
 from typing import Callable
 from chipiron.environments.chess.board import BoardChi
 
+from chipiron.utils.communication.player_game_messages import BoardMessage
+
 
 class Game:
     """
@@ -125,7 +127,8 @@ class ObservableGame:
     def notify_display(self):
         for mailbox in self.mailboxes_display:
             board_copy = copy.deepcopy(self.game.board)
-            mailbox.put({'type': 'board', 'board': board_copy})
+            message: BoardMessage = BoardMessage(board=board_copy)
+            mailbox.put(item=message)
 
     def notify_players(self) -> None:
         """ Notify the players to ask for a move"""

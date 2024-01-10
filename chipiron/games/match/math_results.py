@@ -1,7 +1,8 @@
-from chipiron.games.game.game_manager import GameManager, FinalGameResult
+from chipiron.games.game.game_manager import FinalGameResult
 import copy
 import queue
 import typing
+from chipiron.utils.communication.gui_messages import MatchResultsMessage
 
 
 class MatchResults:
@@ -104,10 +105,11 @@ class ObservableMatchResults:
     def notify_new_results(self) -> None:
         for mailbox in self.mailboxes:
             match_result_copy: MatchResults = self.copy_match_result()
-            mailbox.put({'type': 'match_results', 'match_results': match_result_copy})
+            message: MatchResultsMessage = MatchResultsMessage(match_results=match_result_copy)
+            mailbox.put(item=message)
 
     # forwarding
     def get_simple_result(self):
         return self.match_result.get_player_one_wins(), \
-               self.match_result.get_player_two_wins(), \
-               self.match_result.get_draws()
+            self.match_result.get_player_two_wins(), \
+            self.match_result.get_draws()
