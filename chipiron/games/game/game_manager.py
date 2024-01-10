@@ -8,6 +8,10 @@ from chipiron.environments import HalfMove
 from enum import Enum
 import chipiron.players as players_m
 
+from chipiron.utils.communication.player_game_messages import MoveMessage
+from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMessage
+from chipiron.games.game.game_playing_status import PlayingStatus
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s:%(name)s:%(message)s')
@@ -117,39 +121,36 @@ class GameManager:
     def processing_mail(self, message):
         board = self.game.board
 
-        # TODO maybe implement a class for the message, look at the command pattern
-        if message['type'] == 'game_status':
-            # update game status
-            if message['status'] == 'play':
-                self.game.play()
-            if message['status'] == 'pause':
+        match message:
+            case MoveMessage():
+                message: MoveMessage
+                # play the move
+                move = message.move
+                print('receiving the move', move, type(self), self.game.playing_status, type(self.game.playing_status))
+                if message.corresponding_board == board.fen() and \
+                        self.game.playing_status.is_play() and \
+                        message.player_name == self.player_color_to_id[board.turn]:
+                    # TODO THINK! HOW TO DEAL with premoves if we dont know the board in advance?
+                    self.play_one_move(move)
+                    eval_sto, eval_chi = self.external_eval()
+                    print(f'Stockfish evaluation:{eval_sto} and chipiron eval{eval_chi}')
+                    # Print the board
+                    board.print_chess_board()
+                else:
+                    pass
+                    # put back in the queue
+                    # self.main_thread_mailbox.put(message)
+                logger.debug(f'len main tread mailbox {self.main_thread_mailbox.qsize()}')
+            case GameStatusMessage():
+                message: GameStatusMessage
+                # update game status
+                if message.status == PlayingStatus.PLAY:
+                    self.game.play()
+                if message.status == PlayingStatus.PAUSE:
+                    self.game.pause()
+            case BackMessage():
+                self.rewind_one_move()
                 self.game.pause()
-        if message['type'] == 'move':
-            # play the move
-            move = message['move']
-            print('receiving the move', move, type(self), self.game.playing_status, type(self.game.playing_status))
-            if message['corresponding_board'] == board.fen() and \
-                    self.game.playing_status.is_play() and \
-                    message['player'] == self.player_color_to_id[board.turn]:
-                # TODO THINK! HOW TO DEAL with premoves if we dont know the board in advance?
-                self.play_one_move(move)
-                eval_sto, eval_chi = self.external_eval()
-                print(f'Stockfish evaluation:{eval_sto} and chipiron eval{eval_chi}')
-                # Print the board
-                board.print_chess_board()
-            else:
-                pass
-                # put back in the queue
-                # self.main_thread_mailbox.put(message)
-            logger.debug(f'len main tread mailbox {self.main_thread_mailbox.qsize()}')
-
-        if message['type'] == 'move_syzygy':  # TODO IS THIS CLEAN? is this ever called?
-            move = self.syzygy.best_move(board)
-            self.play_one_move(move)
-
-        if message['type'] == 'back':
-            self.rewind_one_move()
-            self.game.pause()
 
     def game_continue_conditions(self) -> bool:
         half_move: HalfMove = self.game.board.ply()

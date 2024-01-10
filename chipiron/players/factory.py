@@ -1,6 +1,6 @@
 from .player import Player
 from .player_thread import PlayerProcess
-from .game_player import GamePlayer, send_board_to_game_player
+from .game_player import GamePlayer, game_player_computes_move_on_board_and_send_move_in_queue
 
 import multiprocessing
 import random
@@ -51,6 +51,7 @@ def create_player_observer(
         main_thread_mailbox: queue.Queue
 ) -> tuple[GamePlayer | PlayerProcess, MoveFunction]:
     generic_player: GamePlayer | PlayerProcess
+    move_function: MoveFunction
     if distributed_players:
         # creating objects Queue that is the mailbox for the player thread
         player_process_mailbox = multiprocessing.Manager().Queue()
@@ -66,8 +67,10 @@ def create_player_observer(
 
     else:
         generic_player = game_player
-        move_function = partial(send_board_to_game_player, game_player=game_player, queue_move=main_thread_mailbox)
+        move_function = partial(
+            game_player_computes_move_on_board_and_send_move_in_queue,
+            game_player=game_player,
+            queue_move=main_thread_mailbox
+        )
 
     return generic_player, move_function
-
-
