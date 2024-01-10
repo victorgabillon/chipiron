@@ -4,7 +4,6 @@ import queue
 import copy
 
 from .game_playing_status import GamePlayingStatus, PlayingStatus
-from chipiron.environments.chess.board.board import BoardChi
 
 from typing import Callable
 from chipiron.environments.chess.board import BoardChi

@@ -10,7 +10,8 @@ from PyQt5.QtSvg import QSvgWidget
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
-from chipiron.games.game.game_playing_status import GamePlayingStatus
+from chipiron.games.game.game_playing_status import PlayingStatus, GamePlayingStatus
+from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMessage
 
 
 class MainWindow(QWidget):
@@ -93,12 +94,10 @@ class MainWindow(QWidget):
         self.eval_button.setStyleSheet('QPushButton {background-color: white; color: black;}')
         self.eval_button.setGeometry(620, 600, 470, 30)
 
-
         self.eval_button_chi = QPushButton(self)
         self.eval_button_chi.setText("Chi Eval")  # text
         self.eval_button_chi.setStyleSheet('QPushButton {background-color: white; color: black;}')
         self.eval_button_chi.setGeometry(620, 650, 470, 30)
-
 
         self.board_size = min(self.widgetSvg.width(),
                               self.widgetSvg.height())
@@ -112,20 +111,20 @@ class MainWindow(QWidget):
         self.checkThreadTimer.timeout.connect(self.process_message)
         self.checkThreadTimer.start()
 
-    def stopppy(self):
+    def stopppy(self) -> None:
         # should we send a kill message to the main thread?
         self.close()
 
-    def play_button_clicked(self):
-        message = {'type': 'game_status', 'status': 'play'}
+    def play_button_clicked(self) -> None:
+        message: GameStatusMessage = GameStatusMessage(status=PlayingStatus.PLAY)
         self.main_thread_mailbox.put(message)
 
-    def back_button_clicked(self):
-        message = {'type': 'back'}
+    def back_button_clicked(self) -> None:
+        message: BackMessage = BackMessage()
         self.main_thread_mailbox.put(message)
 
-    def pause_button_clicked(self):
-        message = {'type': 'game_status', 'status': 'pause'}
+    def pause_button_clicked(self) -> None:
+        message: GameStatusMessage = GameStatusMessage(status=PlayingStatus.PAUSE)
         self.main_thread_mailbox.put(message)
 
     @pyqtSlot(QWidget)
@@ -234,7 +233,7 @@ class MainWindow(QWidget):
             if message['type'] == 'evaluation':
                 evaluation_stock = message['evaluation_stock']
                 evaluation_chipiron = message['evaluation_chi']
-                self.update_evaluation(evaluation_stock,evaluation_chipiron)
+                self.update_evaluation(evaluation_stock, evaluation_chipiron)
             if message['type'] == 'players_color_to_id':
                 players_color_to_id = message['players_color_to_id']
                 self.update_players_color_to_id(players_color_to_id)
@@ -261,10 +260,9 @@ class MainWindow(QWidget):
         self.player_white_button.setText(' White: ' + players_color_to_id[chess.WHITE])  # text
         self.player_black_button.setText(' Black: ' + players_color_to_id[chess.BLACK])  # text
 
-    def update_evaluation(self, evaluation_stock,evaluation_chipiron):
+    def update_evaluation(self, evaluation_stock, evaluation_chipiron):
         self.eval_button.setText('eval: ' + str(evaluation_stock))  # text
         self.eval_button_chi.setText('eval: ' + str(evaluation_chipiron))  # text
-
 
     def update_game_play_status(self, game_play_status: GamePlayingStatus):
         if game_play_status.is_paused():

@@ -1,7 +1,7 @@
 import multiprocessing
 import copy
 import queue
-from .game_player import GamePlayer, send_board_to_game_player
+from .game_player import GamePlayer, game_player_computes_move_on_board_and_send_move_in_queue
 
 
 # A class that extends the Thread class
@@ -34,10 +34,12 @@ class PlayerProcess(multiprocessing.Process):
                     board = message['board']
                     print('player thread got ', board)
 
-                    send_board_to_game_player(
+                    # the game_player computes the move for the board and sends the move in the move queue
+                    game_player_computes_move_on_board_and_send_move_in_queue(
                         board=board,
                         game_player=self.game_player,
-                        queue_move=self.queue_move)
+                        queue_move=self.queue_move
+                    )
 
                 else:
                     print('opopopopopopopopopdddddddddddddddddsssssssssss')
