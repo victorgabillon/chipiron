@@ -1,11 +1,16 @@
 import multiprocessing
-import copy
 import queue
 from .game_player import GamePlayer, game_player_computes_move_on_board_and_send_move_in_queue
+from chipiron.utils.communication.player_game_messages import BoardMessage
+from chipiron.environments.chess.board import BoardChi
 
 
 # A class that extends the Thread class
 class PlayerProcess(multiprocessing.Process):
+    game_player: GamePlayer
+    queue_board: queue.Queue
+    queue_move: queue.Queue
+
     def __init__(self,
                  game_player: GamePlayer,
                  queue_board: queue.Queue,
@@ -30,8 +35,9 @@ class PlayerProcess(multiprocessing.Process):
                 pass
             else:
                 # Handle task here and call q.task_done()
-                if message['type'] == 'board':
-                    board = message['board']
+                if isinstance(message, BoardMessage):
+                    message: BoardMessage
+                    board: BoardChi = message.board
                     print('player thread got ', board)
 
                     # the game_player computes the move for the board and sends the move in the move queue

@@ -43,6 +43,11 @@ class MatchManager:
                                                                game_number=game_number)
             match_results.add_result_one_game(white_player_name_id=player_color_to_player[chess.WHITE].id,
                                               game_result=game_results)
+
+            if player_color_to_player[chess.WHITE].id == 'Human' or player_color_to_player[chess.BLACK].id == 'Human':
+                import time
+                time.sleep(30)
+
             game_number += 1
 
         print(match_results)

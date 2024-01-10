@@ -12,6 +12,9 @@ from chipiron.utils.communication.player_game_messages import MoveMessage
 from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMessage
 from chipiron.games.game.game_playing_status import PlayingStatus
 
+from chipiron.utils.is_dataclass import DataClass
+from chipiron.environments.chess.board import BoardChi
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s:%(name)s:%(message)s')
@@ -118,8 +121,8 @@ class GameManager:
         print('end play_one_game')
         return self.simple_results()
 
-    def processing_mail(self, message):
-        board = self.game.board
+    def processing_mail(self, message: DataClass) -> None:
+        board: BoardChi = self.game.board
 
         match message:
             case MoveMessage():
@@ -151,6 +154,8 @@ class GameManager:
             case BackMessage():
                 self.rewind_one_move()
                 self.game.pause()
+            case other:
+                raise ValueError(f'type of message received is not recognized {other} in file {__name__}')
 
     def game_continue_conditions(self) -> bool:
         half_move: HalfMove = self.game.board.ply()
@@ -159,7 +164,8 @@ class GameManager:
             continue_bool: bool = False
         return continue_bool
 
-    def print_to_file(self, idx: int = 0):
+    def print_to_file(self,
+                      idx: int = 0) -> None:
         if self.path_to_store_result is not None:
             path_file = self.path_to_store_result + '_' + str(
                 idx) + '_W:' + self.player_color_to_id[chess.WHITE] + '-vs-B:' + self.player_color_to_id[chess.BLACK]

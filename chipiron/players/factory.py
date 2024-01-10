@@ -14,6 +14,8 @@ from . import move_selector
 from chipiron.environments.chess import BoardChi
 from typing import Callable
 
+from chipiron.utils.communication.player_game_messages import BoardMessage
+
 
 @dataclass
 class PlayerArgs:
@@ -38,8 +40,12 @@ def create_player(args: PlayerArgs,
                   main_move_selector=main_move_selector)
 
 
-def send_board_to_player_process_mailbox(board: BoardChi, player_process_mailbox: queue.Queue):
-    player_process_mailbox.put({'type': 'board', 'board': board})
+def send_board_to_player_process_mailbox(
+        board: BoardChi,
+        player_process_mailbox: queue.Queue
+) -> None:
+    message: BoardMessage = BoardMessage(board=board)
+    player_process_mailbox.put(item=message)
 
 
 MoveFunction = Callable[[BoardChi], None]

@@ -10,6 +10,7 @@ from .game import Game, ObservableGame, MoveFunction
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 from chipiron.utils import path
 from chipiron.games.game.game_args import GameArgs
+from chipiron.utils.communication.gui_messages import PlayersColorToIdMessage
 
 
 class GameManagerFactory:
@@ -45,8 +46,8 @@ class GameManagerFactory:
         player_color_to_id: dict = {color: player.id for color, player in player_color_to_player.items()}
         if self.subscribers:
             for subscriber in self.subscribers:
-                player_id_message: dict = {'type': 'players_color_to_id',
-                                           'players_color_to_id': player_color_to_id}
+                player_id_message: PlayersColorToIdMessage
+                player_id_message = PlayersColorToIdMessage(players_color_to_id=player_color_to_id)
                 subscriber.put(player_id_message)
 
         while not self.main_thread_mailbox.empty():
