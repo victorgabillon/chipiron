@@ -12,8 +12,8 @@ import os
 
 
 def mkdir(folder_path):
-    a=os.getcwd()
-    print('os.getcwd()',os.getcwd())
+    a = os.getcwd()
+    print('os.getcwd()', os.getcwd())
     try:
         os.mkdir(folder_path)
     except FileNotFoundError as error:
@@ -78,11 +78,17 @@ def softmax(x, temperature):
     return e_x / e_x.sum(axis=0)  # only difference
 
 
-def fetch_args_modify_and_convert[ADataclass: IsDataclass](
+# before 3.12
+from typing import TypeVar
+
+_T_co = TypeVar("_T_co", covariant=True, bound=IsDataclass)
+
+
+def fetch_args_modify_and_convert(
         path_to_file: str | bytes | os.PathLike,  # path to a yaml file
-        dataclass_name: Type[ADataclass],  # the dataclass into which the dictionary will be converted
+        dataclass_name: Type[_T_co],  # the dataclass into which the dictionary will be converted
         modification: dict | None = None,  # modification to the dict extracted from the yaml file
-) -> ADataclass:
+) -> _T_co:
     if modification is None:
         modification = {}
     file_args: dict = ch.tool.yaml_fetch_args_in_file(path_to_file)
@@ -90,8 +96,29 @@ def fetch_args_modify_and_convert[ADataclass: IsDataclass](
 
     print('merged_args_dict', merged_args_dict)
     # formatting the dictionary into the corresponding dataclass
-    dataclass_args: ADataclass = dacite.from_dict(data_class=dataclass_name,
-                                                  data=merged_args_dict,
-                                                  config=dacite.Config(cast=[Enum]))
+    dataclass_args: _T_co = dacite.from_dict(data_class=dataclass_name,
+                                             data=merged_args_dict,
+                                             config=dacite.Config(cast=[Enum]))
 
     return dataclass_args
+
+# after 3.12
+
+
+# def fetch_args_modify_and_convert[ADataclass: IsDataclass](
+#         path_to_file: str | bytes | os.PathLike,  # path to a yaml file
+#         dataclass_name: Type[ADataclass],  # the dataclass into which the dictionary will be converted
+#         modification: dict | None = None,  # modification to the dict extracted from the yaml file
+# ) -> ADataclass:
+#     if modification is None:
+#         modification = {}
+#     file_args: dict = ch.tool.yaml_fetch_args_in_file(path_to_file)
+#     merged_args_dict: dict = ch.tool.rec_merge_dic(file_args, modification)
+#
+#     print('merged_args_dict', merged_args_dict)
+#     # formatting the dictionary into the corresponding dataclass
+#     dataclass_args: ADataclass = dacite.from_dict(data_class=dataclass_name,
+#                                                   data=merged_args_dict,
+#                                                   config=dacite.Config(cast=[Enum]))
+#
+#     return dataclass_args

@@ -1,6 +1,7 @@
 import torch
 import chess
 from typing import Protocol
+from dataclasses import dataclass
 
 
 class BoardRepresentation(Protocol):
@@ -8,9 +9,6 @@ class BoardRepresentation(Protocol):
     def get_evaluator_input(self,
                             color_to_play: chess.Color):
         ...
-
-
-from dataclasses import dataclass, field
 
 
 @dataclass(slots=True)
