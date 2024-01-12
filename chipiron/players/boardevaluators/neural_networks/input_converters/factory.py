@@ -2,9 +2,9 @@ from .board_representation import Representation364
 from typing import Optional
 from chipiron.environments.chess.board import BoardChi
 import chipiron.environments.chess.board as board_mod
+import chipiron.players.move_selector.treevalue.nodes as nodes
 import chess
 import torch
-import chipiron.players.move_selector.treevalue.nodes as nodes
 
 
 def create_board_representation(board_representation: str) -> object:
@@ -122,3 +122,4 @@ class Representation364Factory:
         )
 
         return representation
+

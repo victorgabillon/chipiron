@@ -49,7 +49,7 @@ def create_nn_trainer(args, nn):
 
 
 def safe_nn_param_save(nn, args, training_copy=False):
-    folder_path = get_folder_path_from(args['nn_type'], args['nn_param_folder_name'])
+    folder_path = get_folder_path_from(args.nn_type, args.nn_param_folder_name)
     folder_path_training_copies = get_folder_training_copies_path_from(folder_path)
     nn_file_path = get_nn_param_file_path_from(folder_path)
     if training_copy:
@@ -69,7 +69,7 @@ def safe_nn_param_save(nn, args, training_copy=False):
 
 
 def safe_nn_trainer_save(nn_trainer, args):
-    nn_folder_path = get_folder_path_from(args['nn_type'], args['nn_param_folder_name'])
+    nn_folder_path = get_folder_path_from(args.nn_type, args.nn_param_folder_name)
     file_optimizer_path = get_optimizer_file_path_from(nn_folder_path)
     file_scheduler_path = get_scheduler_file_path_from(nn_folder_path)
     try:

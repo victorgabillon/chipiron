@@ -1,4 +1,3 @@
-from multiprocessing import Pool
 import time
 from torch.utils.data import Dataset
 import pandas as pd
@@ -23,6 +22,7 @@ class MyDataSet(Dataset):
         print('Loading the dataset...')
         start_time = time.time()
         raw_data = pd.read_pickle(self.file_name)
+        raw_data = raw_data.copy()  # gets read of compatibility problem between various version of panda and pickle
         print("--- LOAD READ PICKLE %s seconds ---" % (time.time() - start_time))
         print('Dataset  loaded with {} items'.format(len(raw_data)))
 
@@ -86,8 +86,7 @@ class FenAndValueDataSet(MyDataSet):
     def process_raw_row(self, row):
         fen = row['fen']
         board = BoardChi(fen=fen)
-        print('uu')
-        input_layer = self.transform_board_function(board, requires_grad_=False)
+        input_layer = self.transform_board_function(board)
         target_value = self.transform_value_function(board, row)
         return input_layer.float(), target_value.float()
 

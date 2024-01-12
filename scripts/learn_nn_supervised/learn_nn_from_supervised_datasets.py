@@ -9,6 +9,7 @@ from chipiron.players.boardevaluators.neural_networks import NeuralNetBoardEvalA
 from dataclasses import dataclass, field
 import dacite
 import os
+from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_input import Representation364BTI
 from chipiron.players.boardevaluators.neural_networks.input_converters.factory import Representation364Factory
 
 
@@ -61,27 +62,29 @@ class LearnNNScript:
         args_dict: dict = self.base_script.initiate(self.base_experiment_output_folder)
 
         # Converting the args in the standardized dataclass
-        args: LearnNNScriptArgs = dacite.from_dict(data_class=LearnNNScriptArgs,
+        self.args: LearnNNScriptArgs = dacite.from_dict(data_class=LearnNNScriptArgs,
                                                    data=args_dict)
 
-        self.nn = create_nn(args=args.neural_network,
-                            create_file=args.create_nn_file)
+        self.nn = create_nn(args=self.args.neural_network,
+                            create_file=self.args.create_nn_file)
         self.nn.print_param()
-        self.nn_trainer = create_nn_trainer(args=args,
+        self.nn_trainer = create_nn_trainer(args=self.args,
                                             nn=self.nn)
 
         board_representation_factory = Representation364Factory()
+        board_to_input = Representation364BTI(representation_factory=board_representation_factory)
+
 
         self.stockfish_boards_train = FenAndValueDataSet(
-            file_name=args.stockfish_boards_train_file_name,
-            preprocessing=args.preprocessing_data_set,
-            transform_board_function=board_representation_factory.create_from_board,
+            file_name=self.args.stockfish_boards_train_file_name,
+            preprocessing=self.args.preprocessing_data_set,
+            transform_board_function=board_to_input.convert,
             transform_value_function='stockfish')
 
         self.stockfish_boards_test = FenAndValueDataSet(
-            file_name=args.stockfish_boards_test_file_name,
-            preprocessing=args.preprocessing_data_set,
-            transform_board_function=board_representation_factory.create_from_board,
+            file_name=self.args.stockfish_boards_test_file_name,
+            preprocessing=self.args.preprocessing_data_set,
+            transform_board_function=board_to_input.convert,
             transform_value_function='stockfish')
 
         start_time = time.time()
@@ -90,11 +93,11 @@ class LearnNNScript:
         self.stockfish_boards_test.load()
 
         self.data_loader_stockfish_boards_train = DataLoader(self.stockfish_boards_train,
-                                                             batch_size=args.batch_size_train,
+                                                             batch_size=self.args.batch_size_train,
                                                              shuffle=True, num_workers=1)
 
         self.data_loader_stockfish_boards_test = DataLoader(self.stockfish_boards_test,
-                                                            batch_size=args.batch_size_test,
+                                                            batch_size=self.args.batch_size_test,
                                                             shuffle=True, num_workers=1)
 
     def run(self):
@@ -116,16 +119,16 @@ class LearnNNScript:
                     self.compute_test_error()
 
                 # every self.args['min_interval_lr_change'] steps we check for possibly decreasing the learning rate
-                if count_train_step % self.args['min_interval_lr_change'] == 0 and count_train_step > 0:
+                if count_train_step % self.args.min_interval_lr_change == 0 and count_train_step > 0:
 
                     # condition to decrease the learning rate
                     if previous_train_loss is not None and sum_loss_train > previous_train_loss \
-                            and self.nn_trainer.scheduler.get_last_lr() > self.args['min_lr']:
+                            and self.nn_trainer.scheduler.get_last_lr() > self.args.min_lr:
                         self.nn_trainer.scheduler.step()
                         print('decaying the learning rate to', self.nn_trainer.scheduler.get_last_lr())
 
                     print('count_train_step', count_train_step)
-                    print('training loss', sum_loss_train / self.args['min_interval_lr_change'], sum_loss_train)
+                    print('training loss', sum_loss_train / self.args.min_interval_lr_change, sum_loss_train)
                     print('previous_train_loss', previous_train_loss)
                     print('learning rate', self.nn_trainer.scheduler.get_last_lr())
 
@@ -158,9 +161,9 @@ class LearnNNScript:
         print('test error', float(sum_loss_test / float(count_test)))
 
     def saving_things_to_file(self, count_train_step):
-        if count_train_step % self.args['saving_interval'] == 0:
-            safe_nn_param_save(self.nn, self.args['neural_network'])
-            safe_nn_trainer_save(self.nn_trainer, self.args['neural_network'])
-        if self.args['saving_intermediate_copy'] \
-                and count_train_step % self.args['saving_intermediate_copy_interval'] == 0:
-            safe_nn_param_save(self.nn, self.args['neural_network'], training_copy=True)
+        if count_train_step % self.args.saving_interval == 0:
+            safe_nn_param_save(self.nn, self.args.neural_network)
+            safe_nn_trainer_save(self.nn_trainer, self.args.neural_network)
+        if self.args.saving_intermediate_copy \
+                and count_train_step % self.args.saving_intermediate_copy_interval == 0:
+            safe_nn_param_save(self.nn, self.args.neural_network, training_copy=True)

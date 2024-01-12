@@ -13,7 +13,7 @@ class ChiNN(nn.Module):
 
 
     def load_from_file_or_init_weights(self, path_to_param_file, authorisation_to_create_file):
-        print('load_or_init_weights')
+        print(f'load_or_init_weights from {path_to_param_file}')
         try:  # load
             with open(path_to_param_file, 'rb') as fileNNR:
                 print('loading the existing param file')

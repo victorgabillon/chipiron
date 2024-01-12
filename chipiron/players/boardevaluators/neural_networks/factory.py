@@ -33,7 +33,7 @@ def get_folder_path_from(nn_type: str,
 
 
 def get_nn_param_file_path_from(folder_path):
-    nn_param_file_path = os.path.join(folder_path, 'param.pt')
+    nn_param_file_path = os.path.join(folder_path, 'param-new.pt')
     return nn_param_file_path
 
 
