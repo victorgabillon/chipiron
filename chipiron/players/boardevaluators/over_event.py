@@ -39,8 +39,7 @@ class OverEvent:
     def becomes_over(self, how_over, who_is_winner=Winner.NO_KNOWN_WINNER):
         self.how_over = how_over
         self.who_is_winner = who_is_winner
-        assert how_over in HowOver
-        assert who_is_winner in Winner
+
 
     def get_over_tag(self):
         """ returns a simple string that is used a tag in the databases"""

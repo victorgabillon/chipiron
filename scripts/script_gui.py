@@ -77,7 +77,7 @@ def script_gui(
     message.grid(column=4, row=2)
 
     # Create the list of options
-    options_list = ["1", "2", "3", "4"]
+    options_list = ["1", "2", "3", "4","5"]
 
     # Variable to keep track of the option
     # selected in OptionMenu

@@ -30,7 +30,7 @@ def create_player(args: PlayerArgs,
                   random_generator: random.Random) -> Player:
     print('create player')
     main_move_selector: move_selector.MoveSelector = move_selector.create_main_move_selector(
-        args=args.main_move_selector,
+        move_selector_instance_or_args=args.main_move_selector,
         syzygy=syzygy,
         random_generator=random_generator
     )

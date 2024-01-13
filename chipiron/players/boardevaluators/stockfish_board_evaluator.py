@@ -24,20 +24,21 @@ class StockfishBoardEvaluator:
 
     def __init__(self,
                  args: StockfishBoardEvalArgs):
-        ...
-        # is this doing anything???
-        # self.depth = args.depth
-        # board = chess.Board()
-        # a = self.engine.analyse(board, chess.engine.Limit(time=args.time_limit))
+        self.engine = None
 
     def value_white(
             self,
             board: boards.BoardChi
     ):
         print('infos')
-
+        # todo make a large reformat so that the players are created after the launch of process
         """ computes the value white of the board"""
-        # self.engine = chess.engine.SimpleEngine.popen_uci("/home/victor_old/.pycharm/chipiron/stockfish/stockfish_14.1_linux_x64/stockfish_14.1_linux_x64")
+        if self.engine is None:
+            # if this object is created in the init then seending the object
+
+            self.engine = chess.engine.SimpleEngine.popen_uci("/home/victor_old/.pycharm/chipiron/stockfish/stockfish_14.1_linux_x64/stockfish_14.1_linux_x64")
         # looks like the engine dos not work when the gui is on ???!!!???
         # info = engine.analyse(board, chess.engine.Limit(time=0.1))
-        return 0  # info["score"]
+        info = self.engine.analyse(board, chess.engine.Limit(time=0.1))
+
+        return info["score"]
