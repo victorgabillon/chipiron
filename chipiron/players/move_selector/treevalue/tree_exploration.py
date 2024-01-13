@@ -74,7 +74,7 @@ class TreeExploration:
         while self.stopping_criterion.should_we_continue(tree=self.tree):
             assert (not self.tree.root_node.is_over())
             # print info
-            # self.print_info_during_move_computation()
+            self.print_info_during_move_computation()
 
             # choose the moves and nodes to open
             opening_instructions: node_sel.OpeningInstructions

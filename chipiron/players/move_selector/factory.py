@@ -6,27 +6,27 @@ import random
 from . import move_selector
 from . import treevalue
 from . import human
-
-AllMoveSelectorArgs = treevalue.TreeAndValuePlayerArgs | human.HumanPlayerArgs
+from . import stockfish
+AllMoveSelectorArgs = treevalue.TreeAndValuePlayerArgs | human.HumanPlayerArgs| stockfish.StockfishPlayer
 
 
 def create_main_move_selector(
-        args: AllMoveSelectorArgs,
+        move_selector_instance_or_args: AllMoveSelectorArgs,
         syzygy,
         random_generator: random.Random
 ) -> move_selector.MoveSelector:
     main_move_selector: move_selector.MoveSelector
     print('create main move')
 
-    match args.type:
+    match move_selector_instance_or_args.type:
         case 'RandomPlayer':
             main_move_selector = move_selector.Random()
         case MoveSelectorTypes.TreeAndValue:
-            main_move_selector = treevalue.create_tree_and_value_builders(args=args,
+            main_move_selector = treevalue.create_tree_and_value_builders(args=move_selector_instance_or_args,
                                                                           syzygy=syzygy,
                                                                           random_generator=random_generator)
         case 'Stockfish':
-            main_move_selector = move_selector.Stockfish(arg)
+            main_move_selector = move_selector_instance_or_args
         case 'Human':
             main_move_selector = NullObject()  # TODO is it necessary?
         case other:

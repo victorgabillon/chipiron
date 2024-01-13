@@ -1,4 +1,6 @@
-type: Stockfish
+main_move_selector:
+  type: Stockfish
+  depth: 10
 name: Stockfishu
-depth: 10
+
 syzygy_play: True
