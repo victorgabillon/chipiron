@@ -3,6 +3,7 @@ from typing import Any
 from chipiron.games.game.game_playing_status import PlayingStatus
 
 
+
 @dataclass
 class GameStatusMessage:
     status: PlayingStatus
@@ -29,9 +30,6 @@ class EvaluationMessage:
     evaluation__player_two: Any = None
 
 
-@dataclass
-class PlayersColorToIdMessage:
-    players_color_to_id: dict
 
 
 @dataclass

@@ -10,7 +10,8 @@ from .game import Game, ObservableGame, MoveFunction
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 from chipiron.utils import path
 from chipiron.games.game.game_args import GameArgs
-from chipiron.utils.communication.gui_messages import PlayersColorToIdMessage
+from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage, extract_message_from_players
+from chipiron.players import Player
 
 
 class GameManagerFactory:
@@ -37,17 +38,17 @@ class GameManagerFactory:
     def create(
             self,
             args_game_manager: GameArgs,
-            player_color_to_player: dict
+            player_color_to_player: dict[chess.COLORS, Player]
     ) -> GameManager:
         # maybe this factory is overkill at the moment but might be
         # useful if the logic of game generation gets more complex
 
         board: ch.chess.BoardChi = create_board()
-        player_color_to_id: dict = {color: player.id for color, player in player_color_to_player.items()}
         if self.subscribers:
             for subscriber in self.subscribers:
-                player_id_message: PlayersColorToIdMessage
-                player_id_message = PlayersColorToIdMessage(players_color_to_id=player_color_to_id)
+                player_id_message: PlayersColorToPlayerMessage = extract_message_from_players(
+                    player_color_to_player=player_color_to_player
+                )
                 subscriber.put(player_id_message)
 
         while not self.main_thread_mailbox.empty():
@@ -80,6 +81,8 @@ class GameManagerFactory:
 
                 # registering to the observable board to get notification when it changes
                 observable_game.register_player(move_function=move_function)
+
+        player_color_to_id: dict = {color: player.id for color, player in player_color_to_player.items()}
 
         game_manager: GameManager
         game_manager = GameManager(game=observable_game,

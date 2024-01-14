@@ -13,36 +13,26 @@ from . import tree_manager as tree_man
 from . import node_selector as node_sel
 from . import recommender_rule
 
+from dataclasses import dataclass
 
+
+@dataclass
 class TreeExploration:
     """
     Tree Exploration is an object to manage one best move search
     """
     # TODO Not sure why this class is not simply the TreeAndValuePlayer Class
+    #  but might be useful when dealing with multi round and time , no?
+
     tree: trees.MoveAndValueTree
     tree_manager: tree_man.AlgorithmNodeTreeManager
     node_selector: node_sel.NodeSelector
-    move_selection_rule: dict
     recommend_move_after_exploration: recommender_rule.RecommenderRule
+    stopping_criterion: StoppingCriterion
 
-    def __init__(
-            self,
-            tree: trees.MoveAndValueTree,
-            tree_manager: tree_man.AlgorithmNodeTreeManager,
-            stopping_criterion: StoppingCriterion,
-            node_selector: node_sel.NodeSelector,
-            random_generator,
-            recommend_move_after_exploration: recommender_rule.RecommenderRule
-    ):
-
-        self.tree = tree
-        self.tree_manager = tree_manager
-        self.stopping_criterion = stopping_criterion
-        self.node_selector = node_selector
-        self.random_generator = random_generator
-        self.recommend_move_after_exploration = recommend_move_after_exploration
-
-    def print_info_during_move_computation(self):
+    def print_info_during_move_computation(self,
+                                           random_generator
+                                           ):
         if self.tree.root_node.minmax_evaluation.best_node_sequence:
             current_best_child = self.tree.root_node.minmax_evaluation.best_node_sequence[0]
             current_best_move = self.tree.root_node.moves_children.inverse[current_best_child]
@@ -51,7 +41,7 @@ class TreeExploration:
 
         else:
             current_best_move = '?'
-        if self.random_generator.random() < 5:
+        if random_generator.random() < 5:
             str_progress = self.stopping_criterion.get_string_of_progress(self.tree)
             print(
                 f'{str_progress} | current best move:  {current_best_move} | current white value: {self.tree.root_node.minmax_evaluation.value_white_minmax})')
@@ -59,7 +49,9 @@ class TreeExploration:
             self.tree.root_node.minmax_evaluation.print_children_sorted_by_value_and_exploration()
             self.tree_manager.print_best_line(tree=self.tree)
 
-    def explore(self) -> chess.Move:
+    def explore(self,
+                random_generator
+                ) -> chess.Move:
 
         # by default the first tree expansion is the creation of the tree node
         tree_expansions: tree_man.TreeExpansions = tree_man.TreeExpansions()
@@ -74,7 +66,7 @@ class TreeExploration:
         while self.stopping_criterion.should_we_continue(tree=self.tree):
             assert (not self.tree.root_node.is_over())
             # print info
-            self.print_info_during_move_computation()
+            self.print_info_during_move_computation(random_generator=random_generator)
 
             # choose the moves and nodes to open
             opening_instructions: node_sel.OpeningInstructions
@@ -106,7 +98,7 @@ class TreeExploration:
         # print(f'evaluation for white: {self.tree.root_node.minmax_evaluation.get_value_white()}')
 
         best_move: chess.Move = self.recommend_move_after_exploration(tree=self.tree,
-                                                                      random_generator=self.random_generator)
+                                                                      random_generator=random_generator)
         self.tree_manager.print_best_line(tree=self.tree)  # todo maybe almost best chosen line no?
 
         return best_move
@@ -161,7 +153,6 @@ def create_tree_exploration(
         tree_manager=tree_manager,
         stopping_criterion=stopping_criterion,
         node_selector=node_selector,
-        random_generator=random_generator,
         recommend_move_after_exploration=recommend_move_after_exploration
     )
     return tree_exploration

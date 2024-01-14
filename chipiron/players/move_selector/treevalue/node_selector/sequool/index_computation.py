@@ -11,13 +11,13 @@ class IndexComputationType(str, Enum):
 
 
 class UpdateAllIndices(Protocol):
-    def __call__(self, all_nodes_not_opened: trees.RangedDescendants) -> None:
+    def __call__(self, tree: trees.move_and_value_tree) -> None:
         ...
 
 
 # TODO their might be ways to optimize the computation such as not recomptuing for the whole tree
 def update_all_indices_base(
-        all_nodes_not_opened: trees.RangedDescendants
+        tree: trees.move_and_value_tree,
 ) -> None:
     """
     The idea is to compute an index $ind(n)$ for a node $n$ that measures the minimum amount of change
@@ -27,17 +27,26 @@ def update_all_indices_base(
     ind(n) = max( ind(parent(n),.5*abs(value(n)-value(parent(n))))
 
     Args:
-        all_nodes_not_opened: a tree composed only of the nodes not yer opened by the algorithm
+        tree: a tree
 
     Returns:
 
     """
+    tree_nodes: trees.RangedDescendants = tree.descendants
+
+    start = True
     half_move: int
-    for half_move in all_nodes_not_opened:
+    for half_move in tree_nodes:
+        # print('hmv', half_move)
         parent_node: nodes.AlgorithmNode
-        for parent_node in all_nodes_not_opened[half_move].values():
+        for parent_node in tree_nodes[half_move].values():
+            if start:
+                parent_node.exploration_manager.index = 0  # very dirty hack to put the root node to zero (improve please!!)
+            # print('parent_node', parent_node.tree_node.id)
             child_node: nodes.AlgorithmNode
             for child_node in parent_node.moves_children.values():
+                # print('child_node', child_node.tree_node.id)
+
                 parent_index: float = parent_node.exploration_manager.index
                 child_value: float = child_node.minmax_evaluation.get_value_white()
                 parent_value: float = parent_node.minmax_evaluation.get_value_white()
@@ -47,6 +56,8 @@ def update_all_indices_base(
 
                 # the amount of change for the child to become better than any of its ancestor
                 # and become the overall best bode, the max is computed with the parent index
+                #   print('child_node', child_node.tree_node.id, local_child_index, parent_index)
+
                 child_index: float = max(local_child_index, parent_index)
 
                 # the index of the child node is updated now
@@ -55,37 +66,43 @@ def update_all_indices_base(
                     child_node.exploration_manager.index = child_index
                 else:
                     child_node.exploration_manager.index = min(child_node.exploration_manager.index, child_index)
+            # print('child_node', child_node.tree_node.id, child_node.exploration_manager.index)
 
 
-def update_all_indices_yoshio(
-        all_nodes_not_opened: trees.RangedDescendants
+# import time
+# time.sleep(1)
+#  print('-------------------------')
+
+
+def update_all_indices_recurzipfsequool(
+        tree: trees.move_and_value_tree
 ) -> None:
     """
     The idea is to compute an index $ind(n)$ for a node $n$ that measures
 
     Args:
-        all_nodes_not_opened: a tree composed only of the nodes not yer opened by the algorithm
+        tree: a tree
 
     Returns:
 
     """
+    tree_nodes: trees.RangedDescendants = tree.descendants
+    start = True
     half_move: int
-    for half_move in all_nodes_not_opened:
+    for half_move in tree_nodes:
         parent_node: nodes.AlgorithmNode
-        for parent_node in all_nodes_not_opened[half_move].values():
+        for parent_node in tree_nodes[half_move].values():
+
+            if start:
+                parent_node.exploration_manager.index = 0  # very dirty hack to put the root node to zero (improve please!!)
+                parent_node.exploration_manager.zipf_factored_proba = 1
             child_node: nodes.AlgorithmNode
-            for child_node in parent_node.moves_children.values():
-                parent_index: float = parent_node.exploration_manager.index
-                child_value: float = child_node.minmax_evaluation.get_value_white()
-                parent_value: float = parent_node.minmax_evaluation.get_value_white()
-
-                # computes local_child_index the amount of change for the child node to become better than its parent
-                sorted_not_over_children = parent_node.minmax_evaluation.sort_children_not_over()
-                local_child_index: float = abs(child_value - parent_value) / 2
-
-                # the amount of change for the child to become better than any of its ancestor
-                # and become the overall best bode, the max is computed with the parent index
-                child_index: float = max(local_child_index, parent_index)
+            for child_rank, child_node in enumerate(parent_node.minmax_evaluation.children_sorted_by_value_):
+                parent_zipf_factored_proba: float = parent_node.exploration_manager.zipf_factored_proba
+                child_zipf_proba = 1 / (child_rank + 1)
+                child_zipf_factored_proba = child_zipf_proba * parent_zipf_factored_proba
+                inverse_depth = 1 / (tree.node_depth(child_node) + 1)
+                child_index = child_zipf_factored_proba * inverse_depth
 
                 # the index of the child node is updated now
                 # as a child node can have multiple parents we take the min if an index was previously computed

@@ -9,31 +9,9 @@ from chipiron.environments import HalfMove
 from .index_computation import UpdateAllIndices
 from ... import nodes
 
-from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructions, OpeningInstructor, \
+from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructions, \
+    OpeningInstructor, \
     create_instructions_to_open_all_moves
-
-
-class SequoolTree2:
-
-    def __init__(self, environment, board_evaluator, color, arg, board):
-
-        #   self.count_to_open_at_depth=[1]
-        self.count_visits_at_depth = []
-        super().__init__(environment, board_evaluator, color, arg, board)
-        self.root_node.index = 0
-
-    def add_to_dic(self, depth, fen, node):  # todo to be changed!! to descendants no?
-        super().add_to_dic(depth, fen, node)
-        if depth < len(self.all_nodes_2_not_opened):
-            self.all_nodes_2_not_opened[depth].add(node)
-        #    self.count_to_open_at_depth[node.depth] += 1
-        else:  # depth == len(self.all_nodes_2_not_opened)
-            assert (depth == len(self.all_nodes_2_not_opened))
-            self.all_nodes_2_not_opened.append({node})
-            if depth == len(self.count_visits_at_depth):
-                self.count_visits_at_depth.append(1)
-
-        #   self.count_to_open_at_depth.append(1)
 
 
 class Sequool:
@@ -86,7 +64,7 @@ class Sequool:
             if half_move not in self.count_visits:
                 self.count_visits[half_move] = 1
 
-        self.update_all_indices(all_nodes_not_opened=self.all_nodes_not_opened)
+        self.update_all_indices(tree=tree)
 
         filtered_count_visits = filter(
             lambda hm: bool(hm in self.all_nodes_not_opened),
@@ -113,6 +91,7 @@ class Sequool:
         node: nodes.AlgorithmNode
         for node in nodes_to_consider:
             if node.exploration_manager.index is not None:
+
                 if best_node.exploration_manager.index is None \
                         or (node.exploration_manager.index, node.half_move) < best_value:
                     best_node = node

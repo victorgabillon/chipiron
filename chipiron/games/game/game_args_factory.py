@@ -8,6 +8,7 @@ from enum import Enum
 from dataclasses import dataclass
 import typing
 from .game_args import GameArgs
+from chipiron.players import Player
 
 if typing.TYPE_CHECKING:
     import chipiron.games.match as match
@@ -65,19 +66,20 @@ class GameArgsFactory:
     def generate_game_args(
             self,
             game_number: int
-    ) -> tuple[dict, GameArgs]:
+    ) -> tuple[dict[chess.COLORS, Player], GameArgs]:
 
         # Creating the players
         syzygy_table = SyzygyTable('')
         merged_seed = unique_int_from_list([self.seed, game_number])
         random_generator: random.Random = random.Random(merged_seed)
-        player_one = create_player(args=self.args_player_one,
-                                   syzygy=syzygy_table,
-                                   random_generator=random_generator)
-        player_two = create_player(args=self.args_player_two,
-                                   syzygy=syzygy_table,
-                                   random_generator=random_generator)
+        player_one: Player = create_player(args=self.args_player_one,
+                                           syzygy=syzygy_table,
+                                           random_generator=random_generator)
+        player_two: Player = create_player(args=self.args_player_two,
+                                           syzygy=syzygy_table,
+                                           random_generator=random_generator)
 
+        player_color_to_player: dict[chess.COLORS, Player]
         if game_number < self.args_match.number_of_games_player_one_white:
             player_color_to_player = {chess.WHITE: player_one, chess.BLACK: player_two}
         else:
