@@ -5,14 +5,16 @@ This module is the execution point of the chess GUI application.
 """
 
 import chess
-from PyQt5.QtCore import Qt
-from PyQt5.QtSvg import QSvgWidget
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
-from chipiron.games.game.game_playing_status import PlayingStatus, GamePlayingStatus
+from PySide6.QtCore import Qt
+from PySide6.QtSvgWidgets import QSvgWidget
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
+from PySide6.QtCore import *
+from chipiron.games.game.game_playing_status import PlayingStatus
+from chipiron.environments.chess.board import BoardChi
 from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMessage, EvaluationMessage, \
-    PlayersColorToIdMessage, MatchResultsMessage
+    MatchResultsMessage
+from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage
 from chipiron.utils.communication.player_game_messages import BoardMessage, MoveMessage
 
 
@@ -76,6 +78,9 @@ class MainWindow(QWidget):
         self.player_black_button.setStyleSheet('QPushButton {background-color: black; color: white;}')
         self.player_black_button.setGeometry(620, 300, 370, 30)
 
+        self.tablewidget = QTableWidget(1, 2, self)
+        self.tablewidget.setGeometry(1100, 250, 260, 330)
+
         self.score_button = QPushButton(self)
         self.score_button.setText("Score 0-0")  # text
         self.score_button.setStyleSheet('QPushButton {background-color: white; color: black;}')
@@ -129,7 +134,7 @@ class MainWindow(QWidget):
         message: GameStatusMessage = GameStatusMessage(status=PlayingStatus.PAUSE)
         self.main_thread_mailbox.put(message)
 
-    @pyqtSlot(QWidget)
+    @Slot(QWidget)
     def mousePressEvent(self, event):
         """
         Handle left mouse clicks and enable moving chess pieces by
@@ -229,18 +234,19 @@ class MainWindow(QWidget):
             match message:
                 case BoardMessage():
                     message: BoardMessage
-                    self.board = message.board
+                    self.board: BoardChi = message.board
                     self.draw_board()
+                    self.display_move_history()
                 case EvaluationMessage():
                     message: EvaluationMessage
                     evaluation_stock = message.evaluation_stock
                     evaluation_chipiron = message.evaluation_chipiron
                     self.update_evaluation(evaluation_stock=evaluation_stock,
                                            evaluation_chipiron=evaluation_chipiron)
-                case PlayersColorToIdMessage():
-                    message: PlayersColorToIdMessage
-                    players_color_to_id: dict = message.players_color_to_id
-                    self.update_players_color_to_id(players_color_to_id)
+                case PlayersColorToPlayerMessage():
+                    message: PlayersColorToPlayerMessage
+                    players_color_to_player: dict = message.player_color_to_gui_info
+                    self.update_players_color_to_id(players_color_to_player)
                 case MatchResultsMessage():
                     message: MatchResultsMessage
                     match_results = message.match_results
@@ -251,6 +257,17 @@ class MainWindow(QWidget):
                     self.update_game_play_status(play_status)
                 case other:
                     raise ValueError(f'unknown type of message received by gui {other} in {__name__}')
+
+    def display_move_history(self):
+        import math
+        num_rounds: int = int(math.ceil(len(self.board.move_stack) / 2))
+        self.tablewidget.setRowCount(num_rounds)
+        self.tablewidget.setHorizontalHeaderLabels(['White', 'Black'])
+        for player in range(2):
+            for round in range(num_rounds):
+                hm = round * 2 + player
+                item = QTableWidgetItem(str(self.board.move_stack[hm]))
+                self.tablewidget.setItem(round, player, item)
 
     def draw_board(self):
         """
@@ -264,9 +281,9 @@ class MainWindow(QWidget):
         self.fen_button.setText('fen: ' + str(self.board.fen()))  # text
         return self.drawBoardSvg
 
-    def update_players_color_to_id(self, players_color_to_id):
-        self.player_white_button.setText(' White: ' + players_color_to_id[chess.WHITE])  # text
-        self.player_black_button.setText(' Black: ' + players_color_to_id[chess.BLACK])  # text
+    def update_players_color_to_id(self, players_color_to_player: dict[chess.COLORS, str]):
+        self.player_white_button.setText(' White: ' + players_color_to_player[chess.WHITE])  # text
+        self.player_black_button.setText(' Black: ' + players_color_to_player[chess.BLACK])  # text
 
     def update_evaluation(self, evaluation_stock, evaluation_chipiron):
         print('rgrgr', evaluation_stock, evaluation_chipiron)

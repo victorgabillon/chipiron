@@ -5,7 +5,7 @@ import sys
 import queue
 import os
 import multiprocessing
-from PyQt5.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 from scripts.script import Script, ScriptArgs
 import chipiron as ch
 from dataclasses import dataclass, field
@@ -34,7 +34,7 @@ class OneMatchScriptArgs(ScriptArgs):
     # path to files with yaml config the players and the match setting.
     config_file_name: path = 'scripts/one_match/inputs/base/exp_options.yaml'
     file_name_player_one: path = 'RecurZipfBase3.yaml'
-    file_name_player_two: path = 'RecurZipfBase4.yaml'
+    file_name_player_two: path = 'Sequool.yaml'
     file_name_match_setting: path = 'setting_duda.yaml'
 
     # For players and match modification of the yaml file specified in a respective dict

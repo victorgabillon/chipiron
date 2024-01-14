@@ -14,6 +14,9 @@ class NetPP2D2_2_PRELU(ChiNN):
         self.tanh = nn.Tanh()
         # self.dropout = nn.Dropout(.5)
 
+    def __getstate__(self):
+        return None
+
     def forward(self, x):
         x = self.fc1(x)
         # x = self.dropout(self.relu_1(x))

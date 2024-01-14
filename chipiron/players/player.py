@@ -6,7 +6,7 @@ class Player:
     #  difference between player and treebuilder includes the fact
     #  that now a player can be a mixture of multiple decision rules
 
-    name: str
+    id: str
 
     def __init__(
             self,

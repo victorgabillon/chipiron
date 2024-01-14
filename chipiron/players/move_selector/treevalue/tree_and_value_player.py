@@ -14,6 +14,7 @@ class TreeAndValueMoveSelector:
     tree_manager: tree_man.AlgorithmNodeTreeManager
     opening_type: node_selector.OpeningType
     tree_factory: MoveAndValueTreeFactory
+    stopping_criterion_args: AllStoppingCriterionArgs
 
     def __init__(self,
                  random_generator,
@@ -46,7 +47,7 @@ class TreeAndValueMoveSelector:
             stopping_criterion_args=self.stopping_criterion_args,
             recommend_move_after_exploration=self.recommend_move_after_exploration
         )
-        best_move: chess.Move = tree_exploration.explore()
+        best_move: chess.Move = tree_exploration.explore(random_generator=self.random_generator)
 
         return best_move
 

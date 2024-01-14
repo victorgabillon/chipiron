@@ -3,6 +3,7 @@ from chipiron.games.game.game_manager_factory import GameManagerFactory
 from chipiron.games.game.game_manager import GameManager, FinalGameResult
 from chipiron.games.match.math_results import MatchResults
 from chipiron.games.game.game_args import GameArgs
+from chipiron.players import Player
 
 
 class MatchManager:
@@ -36,6 +37,7 @@ class MatchManager:
         game_number: int = 0
         while not self.game_args_factory.is_match_finished():
             args_game: GameArgs
+            player_color_to_player: dict[chess.COLORS, Player]
             player_color_to_player, args_game = self.game_args_factory.generate_game_args(game_number)
 
             game_results: FinalGameResult = self.play_one_game(player_color_to_player=player_color_to_player,
@@ -56,7 +58,7 @@ class MatchManager:
 
     def play_one_game(
             self,
-            player_color_to_player,
+            player_color_to_player: dict[chess.COLORS, Player],
             args_game: GameArgs,
             game_number: int
     ) -> FinalGameResult:

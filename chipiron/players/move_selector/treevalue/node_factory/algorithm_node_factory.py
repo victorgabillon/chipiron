@@ -2,28 +2,25 @@
 AlgorithmNodeFactory
 """
 from chipiron.players.move_selector.treevalue.nodes.node_minmax_evaluation import NodeMinmaxEvaluation
-from chipiron.players.move_selector.treevalue.nodes.node_exploration_manager import NodeExplorationManager, create_node_exploration_manager
+from chipiron.players.move_selector.treevalue.nodes.node_exploration_manager import NodeExplorationManager, \
+    create_node_exploration_manager
 import chipiron.players.move_selector.treevalue.node_factory as node_fac
 import chipiron.players.move_selector.treevalue.nodes as node
 import chipiron.environments.chess.board as board_mod
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import BoardRepresentation
 from chipiron.players.boardevaluators.neural_networks.input_converters.factory import Representation364Factory
+from dataclasses import dataclass
+from typing import Any
 
 
+@dataclass
 class AlgorithmNodeFactory:
     """
     The classe creating Algorithm Nodes
     """
     tree_node_factory: node_fac.TreeNodeFactory
     board_representation_factory: Representation364Factory
-
-    def __init__(
-            self,
-            tree_node_factory: node_fac.TreeNodeFactory,
-            board_representation_factory: Representation364Factory
-    ) -> None:
-        self.tree_node_factory = tree_node_factory
-        self.board_representation_factory = board_representation_factory
+    index_computation: Any = None
 
     def create(self,
                board,
@@ -40,7 +37,10 @@ class AlgorithmNodeFactory:
             parent_node=parent_node,
         )
         minmax_evaluation: NodeMinmaxEvaluation = NodeMinmaxEvaluation(tree_node=tree_node)
-        exploration_manager: NodeExplorationManager = create_node_exploration_manager(tree_node=tree_node)
+        exploration_manager: NodeExplorationManager = create_node_exploration_manager(
+            tree_node=tree_node,
+            index_computation=self.index_computation
+        )
         board_representation: BoardRepresentation = self.board_representation_factory.create_from_transition(
             tree_node=tree_node,
             parent_node=parent_node,

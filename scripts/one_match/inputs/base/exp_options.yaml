@@ -1,7 +1,7 @@
 seed: 11
 gui: True
 file_name_player_one: 'RecurZipfBase3.yaml'
-file_name_player_two:  'Stockfish.yaml'
+file_name_player_two:  'RecurZipfSequool.yaml'
 file_name_player_twos:  'RecurZipfBase3.yaml'
 file_name_match_setting: 'setting_duda.yaml'
 profiling: False
