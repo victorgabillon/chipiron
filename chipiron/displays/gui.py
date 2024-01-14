@@ -260,14 +260,16 @@ class MainWindow(QWidget):
 
     def display_move_history(self):
         import math
-        num_rounds: int = int(math.ceil(len(self.board.move_stack) / 2))
+        num_half_move: int = len(self.board.move_stack)
+        num_rounds: int = int(math.ceil(num_half_move / 2))
         self.tablewidget.setRowCount(num_rounds)
         self.tablewidget.setHorizontalHeaderLabels(['White', 'Black'])
         for player in range(2):
-            for round in range(num_rounds):
-                hm = round * 2 + player
-                item = QTableWidgetItem(str(self.board.move_stack[hm]))
-                self.tablewidget.setItem(round, player, item)
+            for round_ in range(num_rounds):
+                half_move = round_ * 2 + player
+                if half_move < num_half_move:
+                    item = QTableWidgetItem(str(self.board.move_stack[half_move]))
+                    self.tablewidget.setItem(round_, player, item)
 
     def draw_board(self):
         """

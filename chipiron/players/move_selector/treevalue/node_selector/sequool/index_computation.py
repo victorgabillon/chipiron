@@ -34,17 +34,25 @@ def update_all_indices_base(
     """
     tree_nodes: trees.RangedDescendants = tree.descendants
 
+    for half_move in tree_nodes:
+        for node in tree_nodes[half_move].values():
+            for child in node.moves_children.values():
+                child.exploration_manager.index = None  # rootnode is not set to zero haha
+
     start = True
     half_move: int
     for half_move in tree_nodes:
+        # todo how are we sure that the hm comes in order?
         # print('hmv', half_move)
         parent_node: nodes.AlgorithmNode
         for parent_node in tree_nodes[half_move].values():
             if start:
                 parent_node.exploration_manager.index = 0  # very dirty hack to put the root node to zero (improve please!!)
+                start = False
             # print('parent_node', parent_node.tree_node.id)
             child_node: nodes.AlgorithmNode
             for child_node in parent_node.moves_children.values():
+
                 # print('child_node', child_node.tree_node.id)
 
                 parent_index: float = parent_node.exploration_manager.index
@@ -58,7 +66,10 @@ def update_all_indices_base(
                 # and become the overall best bode, the max is computed with the parent index
                 #   print('child_node', child_node.tree_node.id, local_child_index, parent_index)
 
+                # print('local_child_index', child_node.tree_node.id, local_child_index)
+
                 child_index: float = max(local_child_index, parent_index)
+                # print('child_index', child_node.tree_node.id, child_index)
 
                 # the index of the child node is updated now
                 # as a child node can have multiple parents we take the min if an index was previously computed
@@ -66,11 +77,10 @@ def update_all_indices_base(
                     child_node.exploration_manager.index = child_index
                 else:
                     child_node.exploration_manager.index = min(child_node.exploration_manager.index, child_index)
-            # print('child_node', child_node.tree_node.id, child_node.exploration_manager.index)
 
 
-# import time
-# time.sleep(1)
+#  import time
+#  time.sleep(1)
 #  print('-------------------------')
 
 
@@ -87,6 +97,12 @@ def update_all_indices_recurzipfsequool(
 
     """
     tree_nodes: trees.RangedDescendants = tree.descendants
+
+    for half_move in tree_nodes:
+        for node in tree_nodes[half_move].values():
+            for child in node.moves_children.values():
+                child.exploration_manager.index = None  # rootnode is not set to zero haha
+
     start = True
     half_move: int
     for half_move in tree_nodes:
@@ -96,6 +112,7 @@ def update_all_indices_recurzipfsequool(
             if start:
                 parent_node.exploration_manager.index = 0  # very dirty hack to put the root node to zero (improve please!!)
                 parent_node.exploration_manager.zipf_factored_proba = 1
+                start = False
             child_node: nodes.AlgorithmNode
             for child_rank, child_node in enumerate(parent_node.minmax_evaluation.children_sorted_by_value_):
                 parent_zipf_factored_proba: float = parent_node.exploration_manager.zipf_factored_proba
@@ -108,8 +125,14 @@ def update_all_indices_recurzipfsequool(
                 # as a child node can have multiple parents we take the min if an index was previously computed
                 if child_node.exploration_manager.index is None:
                     child_node.exploration_manager.index = child_index
+                    child_node.exploration_manager.zipf_factored_proba = child_zipf_factored_proba
+
                 else:
                     child_node.exploration_manager.index = min(child_node.exploration_manager.index, child_index)
+                    child_node.exploration_manager.zipf_factored_proba = min(
+                        child_node.exploration_manager.zipf_factored_proba, child_zipf_factored_proba)
+
+            # print('child_node', child_node.tree_node.id, child_node.exploration_manager.index)
 
 
 def update_all_indices(
