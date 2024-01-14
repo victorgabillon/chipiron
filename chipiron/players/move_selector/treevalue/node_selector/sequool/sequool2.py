@@ -41,7 +41,7 @@ class Sequool:
     def is_there_smth_to_open(self, depth):
         res = False
         for node in self.all_nodes_not_opened[depth]:
-            if node.index is not None:
+            if node.exploration_manager.index is not None:
                 res = True
                 break
         return res
@@ -58,6 +58,7 @@ class Sequool:
             if expansion.creation_child_node:
                 self.all_nodes_not_opened.add_descendant(expansion.child_node)
 
+
             # if a new half_move is being created then init the visits to 1
             # (0 would bug as it would automatically be selected with zipf computation)
             half_move: int = expansion.child_node.half_move
@@ -65,6 +66,8 @@ class Sequool:
                 self.count_visits[half_move] = 1
 
         self.update_all_indices(tree=tree)
+
+
 
         filtered_count_visits = filter(
             lambda hm: bool(hm in self.all_nodes_not_opened),
@@ -88,6 +91,7 @@ class Sequool:
 
         best_node: nodes.AlgorithmNode = nodes_to_consider[0]
         best_value = (best_node.exploration_manager.index, best_node.half_move)
+
         node: nodes.AlgorithmNode
         for node in nodes_to_consider:
             if node.exploration_manager.index is not None:
