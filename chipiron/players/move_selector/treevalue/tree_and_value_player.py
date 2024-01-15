@@ -1,7 +1,7 @@
 from .tree_exploration import create_tree_exploration, TreeExploration
 from .trees.factory import MoveAndValueTreeFactory
 import chipiron.environments.chess.board as boards
-import chess
+from chipiron.players.move_selector.move_selector import MoveRecommendation
 from .stopping_criterion import AllStoppingCriterionArgs
 from . import recommender_rule
 from . import tree_manager as tree_man
@@ -36,7 +36,7 @@ class TreeAndValueMoveSelector:
     def select_move(
             self,
             board: boards.BoardChi
-    ) -> chess.Move:
+    ) -> MoveRecommendation:
         tree_exploration: TreeExploration = create_tree_exploration(
             tree_manager=self.tree_manager,
             node_selector_args=self.node_selector_args,
@@ -47,9 +47,9 @@ class TreeAndValueMoveSelector:
             stopping_criterion_args=self.stopping_criterion_args,
             recommend_move_after_exploration=self.recommend_move_after_exploration
         )
-        best_move: chess.Move = tree_exploration.explore(random_generator=self.random_generator)
+        move_recommendation: MoveRecommendation = tree_exploration.explore(random_generator=self.random_generator)
 
-        return best_move
+        return move_recommendation
 
     def print_info(self):
         super().print_info()

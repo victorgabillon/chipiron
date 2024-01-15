@@ -8,6 +8,8 @@ class MoveMessage:
     move: chess.Move
     corresponding_board: fen
     player_name: str
+    color_to_play : chess.COLORS
+    evaluation: float = None
 
 
 @dataclass

@@ -16,6 +16,17 @@ from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMes
     MatchResultsMessage
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage
 from chipiron.utils.communication.player_game_messages import BoardMessage, MoveMessage
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from matplotlib.figure import Figure
+import pyqtgraph as pg
+
+
+class MplCanvas(FigureCanvasQTAgg):
+
+    def __init__(self, parent=None, width=5, height=4, dpi=100):
+        fig = Figure(figsize=(width, height), dpi=dpi)
+        self.axes = fig.add_subplot(111)
+        super(MplCanvas, self).__init__(fig)
 
 
 class MainWindow(QWidget):
@@ -105,6 +116,16 @@ class MainWindow(QWidget):
         self.eval_button_chi.setText("Chi Eval")  # text
         self.eval_button_chi.setStyleSheet('QPushButton {background-color: white; color: black;}')
         self.eval_button_chi.setGeometry(620, 650, 470, 30)
+
+        self.eval_button_white = QPushButton(self)
+        self.eval_button_white.setText("White Eval")  # text
+        self.eval_button_white.setStyleSheet('QPushButton {background-color: white; color: black;}')
+        self.eval_button_white.setGeometry(620, 700, 470, 30)
+
+        self.eval_button_black = QPushButton(self)
+        self.eval_button_black.setText("Black Eval")  # text
+        self.eval_button_black.setStyleSheet('QPushButton {background-color: white; color: black;}')
+        self.eval_button_black.setGeometry(620, 750, 470, 30)
 
         self.board_size = min(self.widgetSvg.width(),
                               self.widgetSvg.height())
@@ -241,8 +262,12 @@ class MainWindow(QWidget):
                     message: EvaluationMessage
                     evaluation_stock = message.evaluation_stock
                     evaluation_chipiron = message.evaluation_chipiron
+                    evaluation_black = message.evaluation_player_black
+                    evaluation_white = message.evaluation_player_white
                     self.update_evaluation(evaluation_stock=evaluation_stock,
-                                           evaluation_chipiron=evaluation_chipiron)
+                                           evaluation_chipiron=evaluation_chipiron,
+                                           evaluation_white=evaluation_white,
+                                           evaluation_black=evaluation_black)
                 case PlayersColorToPlayerMessage():
                     message: PlayersColorToPlayerMessage
                     players_color_to_player: dict = message.player_color_to_gui_info
@@ -287,11 +312,13 @@ class MainWindow(QWidget):
         self.player_white_button.setText(' White: ' + players_color_to_player[chess.WHITE])  # text
         self.player_black_button.setText(' Black: ' + players_color_to_player[chess.BLACK])  # text
 
-    def update_evaluation(self, evaluation_stock, evaluation_chipiron):
-        print('rgrgr', evaluation_stock, evaluation_chipiron)
+    def update_evaluation(self, evaluation_stock, evaluation_chipiron, evaluation_white,
+                          evaluation_black):
+        print('rgrgr', evaluation_stock, evaluation_chipiron, evaluation_white,evaluation_black)
         self.eval_button.setText('eval: ' + str(evaluation_stock))  # text
         self.eval_button_chi.setText('eval: ' + str(evaluation_chipiron))  # text
-
+        self.eval_button_black.setText('eval: ' + str(evaluation_white))  # text
+        self.eval_button_white.setText('eval: ' + str(evaluation_black))  # text
     def update_game_play_status(self, play_status: PlayingStatus):
         if play_status == PlayingStatus.PAUSE:
             self.pause_button.setText("Play")  # text
