@@ -8,10 +8,13 @@ import torch
 
 
 def create_board_representation(board_representation: str) -> object:
-    if board_representation == '364':
-        board_representation = Representation364Factory()
-    else:
-        raise Exception(f'trying to create {board_representation}')
+    match board_representation:
+        case '364':
+            board_representation = Representation364Factory()
+        case 'no':
+            board_representation = None
+        case other:
+            raise Exception(f'trying to create {other} in file {__name__}')
 
     return board_representation
 
@@ -122,4 +125,3 @@ class Representation364Factory:
         )
 
         return representation
-

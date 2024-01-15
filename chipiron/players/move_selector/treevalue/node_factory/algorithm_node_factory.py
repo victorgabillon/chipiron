@@ -19,7 +19,7 @@ class AlgorithmNodeFactory:
     The classe creating Algorithm Nodes
     """
     tree_node_factory: node_fac.TreeNodeFactory
-    board_representation_factory: Representation364Factory
+    board_representation_factory: Representation364Factory | None
     index_computation: Any = None
 
     def create(self,
@@ -41,11 +41,13 @@ class AlgorithmNodeFactory:
             tree_node=tree_node,
             index_computation=self.index_computation
         )
-        board_representation: BoardRepresentation = self.board_representation_factory.create_from_transition(
-            tree_node=tree_node,
-            parent_node=parent_node,
-            modifications=modifications
-        )
+        board_representation: BoardRepresentation | None = None
+        if self.board_representation_factory is not None:
+            board_representation: BoardRepresentation = self.board_representation_factory.create_from_transition(
+                tree_node=tree_node,
+                parent_node=parent_node,
+                modifications=modifications
+            )
 
         return node.AlgorithmNode(
             tree_node=tree_node,

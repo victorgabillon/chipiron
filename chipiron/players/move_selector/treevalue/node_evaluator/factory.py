@@ -5,10 +5,11 @@ from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 from chipiron.players.move_selector.treevalue.node_evaluator import NodeEvaluator
 from chipiron.players.move_selector.treevalue.node_evaluator.neural_networks.nn_node_evaluator import NNNodeEvaluator
 from .all_node_evaluators import NodeEvaluatorTypes
+from chipiron.players.move_selector.treevalue.node_evaluator import NodeEvaluatorArgs
 
 from . import neural_networks
 
-AllNodeEvaluatorArgs = neural_networks.NeuralNetNodeEvalArgs
+AllNodeEvaluatorArgs = neural_networks.NeuralNetNodeEvalArgs | NodeEvaluatorArgs
 
 
 def create_node_evaluator(
