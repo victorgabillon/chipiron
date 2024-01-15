@@ -5,7 +5,7 @@ import sys
 from chipiron.players.move_selector.treevalue.trees.tree_visualization import display_special
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-
+import os
 
 class PhotoViewer(QtWidgets.QGraphicsView):
     photoClicked = QtCore.pyqtSignal(QtCore.QPoint)
@@ -129,9 +129,8 @@ class Window(QtWidgets.QWidget):
 
         pic = pickle.load(open("chipiron/debugTreeData_1white-#.td", "rb"))
 
-        self.tree : MoveAndValueTree = MoveAndValueTree(root_node=pic[1])
+        self.tree: MoveAndValueTree = MoveAndValueTree(root_node=pic[1],descendants=pic[0])
         self.tree.descendants = pic[0]
-
 
         self.current_node = self.tree.root_node
         self.build_subtree()
@@ -194,12 +193,16 @@ class Window(QtWidgets.QWidget):
         self.load_image()
 
 
-class VisualizeTreeScript(Script):
+class VisualizeTreeScript:
+    base_experiment_output_folder = os.path.join(Script.base_experiment_output_folder , 'tree_visualization/outputs/')
+    base_script: Script
 
-    base_experiment_output_folder = Script.base_experiment_output_folder + 'tree_visualization/output_converters/'
-
-    def __init__(self):
-        super().__init__()
+    def __init__(self,
+                 base_script: Script,
+                 ):
+        self.base_script = base_script
+        # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into self.args
+        args_dict: dict = self.base_script.initiate(self.base_experiment_output_folder)
 
     def run(self):
         app = QtWidgets.QApplication(sys.argv)

@@ -314,11 +314,11 @@ class MainWindow(QWidget):
 
     def update_evaluation(self, evaluation_stock, evaluation_chipiron, evaluation_white,
                           evaluation_black):
-        print('rgrgr', evaluation_stock, evaluation_chipiron, evaluation_white,evaluation_black)
         self.eval_button.setText('eval: ' + str(evaluation_stock))  # text
         self.eval_button_chi.setText('eval: ' + str(evaluation_chipiron))  # text
-        self.eval_button_black.setText('eval: ' + str(evaluation_white))  # text
-        self.eval_button_white.setText('eval: ' + str(evaluation_black))  # text
+        self.eval_button_black.setText('eval White: ' + str(evaluation_white))  # text
+        self.eval_button_white.setText('eval Black: ' + str(evaluation_black))  # text
+
     def update_game_play_status(self, play_status: PlayingStatus):
         if play_status == PlayingStatus.PAUSE:
             self.pause_button.setText("Play")  # text

@@ -19,6 +19,7 @@ class ScriptType(Enum):
     League = 'league'
     LearnNN = 'learn_nn'
     BaseTreeExploration = 'base_tree_exploration'
+    TreeVisualization = 'tree_visualization'
 
 
 # instantiate relevant script
@@ -44,8 +45,8 @@ def create_script(
     match script_type:
         case ScriptType.OneMatch:
             script_object = OneMatchScript(base_script=base_script)
-        case 'tree_visualization':
-            script_object = VisualizeTreeScript()
+        case ScriptType.TreeVisualization:
+            script_object = VisualizeTreeScript(base_script=base_script)
         case ScriptType.LearnNN:
             script_object = LearnNNScript(base_script=base_script)
         case 'record_states':

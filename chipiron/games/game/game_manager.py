@@ -144,7 +144,7 @@ class GameManager:
                     # put back in the queue
                     # self.main_thread_mailbox.put(message)
                 if message.evaluation is not None:
-                    self.display_board_evaluator.add_evaluation(player_name=message.player_name,
+                    self.display_board_evaluator.add_evaluation(
                                                                 player_color=message.color_to_play,
                                                                 evaluation=message.evaluation)
                 logger.debug(f'len main tread mailbox {self.main_thread_mailbox.qsize()}')
