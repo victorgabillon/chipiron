@@ -70,9 +70,11 @@ class AlgorithmNode:
 
     @property
     def all_legal_moves_generated(self):
-            return self.tree_node.all_legal_moves_generated
+        return self.tree_node.all_legal_moves_generated
 
     @property
     def non_opened_legal_moves(self):
-            return self.tree_node.non_opened_legal_moves
+        return self.tree_node.non_opened_legal_moves
 
+    def dot_description(self):
+        return self.tree_node.dot_description() + '\n' + self.minmax_evaluation.dot_description() + '\n' + self.exploration_manager.dot_description()

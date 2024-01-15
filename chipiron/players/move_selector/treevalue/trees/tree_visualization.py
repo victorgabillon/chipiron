@@ -28,7 +28,7 @@ def display_special(node, format, index):
             child = node.moves_children[move]
             cdd = str(child.id)
             edge_description = index[move] + '|' + str(
-                move.uci()) + '|' + node.description_tree_visualizer_move(
+                move.uci()) + '|' + node.minmax_evaluation.description_tree_visualizer_move(
                 child)
             dot.edge(str(node.id), cdd, edge_description)
             dot.node(str(child.id), child.dot_description())
@@ -52,11 +52,9 @@ def save_pdf_to_file(tree: MoveAndValueTree):
 
 def save_raw_data_to_file(
         tree: MoveAndValueTree,
-        args: dict,
         count='#'):
     round_ = len(tree.root_node.board.move_stack) + 2
     color = 'white' if tree.root_node.player_to_move else 'black'
-    filename = 'chipiron/runs/treedisplays/TreeData_' + str(int(round_ / 2)) + color + '-' + str(count) + '.td'
     filename = 'chipiron/debugTreeData_' + str(int(round_ / 2)) + color + '-' + str(count) + '.td'
 
     import sys

@@ -329,7 +329,7 @@ class NodeMinmaxEvaluation:
     def dot_description(self):
         value_mm = "{:.3f}".format(self.value_white_minmax) if self.value_white_minmax is not None else 'None'
         value_eval = "{:.3f}".format(self.value_white_evaluator) if self.value_white_evaluator is not None else 'None'
-        return super().dot_description() + '\n wh_val_mm: ' + value_mm + '\n wh_val_eval: ' \
+        return '\n wh_val_mm: ' + value_mm + '\n wh_val_eval: ' \
             + value_eval + '\n moves*' + \
             self.description_best_move_sequence() + '\nover: ' + self.over_event.get_over_tag()
 
@@ -337,7 +337,7 @@ class NodeMinmaxEvaluation:
         res = ''
         parent_node = self
         for child_node in self.best_node_sequence:
-            move = parent_node.moves_children.inverse[child_node]
+            move = parent_node.tree_node.moves_children.inverse[child_node]
             parent_node = child_node
             res += '_' + str(move)
         return res

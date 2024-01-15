@@ -120,6 +120,7 @@ def update_all_indices_recurzipfsequool(
                 child_zipf_factored_proba = child_zipf_proba * parent_zipf_factored_proba
                 inverse_depth = 1 / (tree.node_depth(child_node) + 1)
                 child_index = child_zipf_factored_proba * inverse_depth
+                child_index = -child_index
 
                 # the index of the child node is updated now
                 # as a child node can have multiple parents we take the min if an index was previously computed

@@ -39,11 +39,14 @@ class GameBoardEvaluator:
         self.board_evaluator_chi = board_evaluator_chi
 
     def evaluate(self, board: BoardChi):
-        print('game evallll')
         evaluation_chi = self.board_evaluator_chi.value_white(board=board)
         evaluation_stock = self.board_evaluator_stock.value_white(board=board)
-        print('d', evaluation_stock, evaluation_chi)
         return evaluation_stock, evaluation_chi
+
+    def add_evaluation(self,            player_color: chess.COLORS,
+            evaluation: float):
+        # clean at some point!
+        ...
 
 
 class ObservableBoardEvaluator:
@@ -64,9 +67,9 @@ class ObservableBoardEvaluator:
         self.game_board_evaluator = game_board_evaluator
         self.mailboxes = []
         self.evaluation_stock: Any = None
-        self.evaluation_chi: Any= None
-        self.evaluation_player_black: Any= None
-        self.evaluation_player_white: Any= None
+        self.evaluation_chi: Any = None
+        self.evaluation_player_black: Any = None
+        self.evaluation_player_white: Any = None
 
     def subscribe(self, mailbox):
         self.mailboxes.append(mailbox)
@@ -80,7 +83,6 @@ class ObservableBoardEvaluator:
 
     def add_evaluation(
             self,
-            player_name: str,
             player_color: chess.COLORS,
             evaluation: float
     ) -> None:
@@ -90,7 +92,7 @@ class ObservableBoardEvaluator:
             self.evaluation_player_white = evaluation
         self.notify_new_results()
 
-    def notify_new_results(self                           ):
+    def notify_new_results(self):
         for mailbox in self.mailboxes:
             message: EvaluationMessage = EvaluationMessage(evaluation_stock=self.evaluation_stock,
                                                            evaluation_chipiron=self.evaluation_chi,
