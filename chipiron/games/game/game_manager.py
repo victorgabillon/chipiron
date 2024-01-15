@@ -128,7 +128,7 @@ class GameManager:
             case MoveMessage():
                 message: MoveMessage
                 # play the move
-                move = message.move
+                move: chess.Move = message.move
                 print('receiving the move', move, type(self), self.game.playing_status, type(self.game.playing_status))
                 if message.corresponding_board == board.fen() and \
                         self.game.playing_status.is_play() and \
@@ -143,6 +143,10 @@ class GameManager:
                     pass
                     # put back in the queue
                     # self.main_thread_mailbox.put(message)
+                if message.evaluation is not None:
+                    self.display_board_evaluator.add_evaluation(player_name=message.player_name,
+                                                                player_color=message.color_to_play,
+                                                                evaluation=message.evaluation)
                 logger.debug(f'len main tread mailbox {self.main_thread_mailbox.qsize()}')
             case GameStatusMessage():
                 message: GameStatusMessage

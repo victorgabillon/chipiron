@@ -20,7 +20,6 @@ def create_node_exploration_manager(
         tree_node: nodes.TreeNode,
         index_computation: Any = None
 ) -> NodeExplorationManager:
-    #print('index_computation',index_computation)
 
     if index_computation is None:
         node_exploration_manager: NodeExplorationManager = NodeExplorationManager(tree_node=tree_node)

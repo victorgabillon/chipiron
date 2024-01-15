@@ -4,6 +4,7 @@ from chipiron.environments.chess.board import BoardChi
 import queue
 import copy
 from chipiron.utils.communication.player_game_messages import MoveMessage
+from chipiron.players.move_selector.move_selector import MoveRecommendation
 
 
 class GamePlayer:
@@ -29,10 +30,17 @@ class GamePlayer:
 def game_player_computes_move_on_board_and_send_move_in_queue(
         board: BoardChi,
         game_player: GamePlayer,
-        queue_move: queue.Queue) -> None:
+        queue_move: queue.Queue
+) -> None:
     if board.turn == game_player.color:
-        move: chess.Move = game_player.select_move(board=board)
-        message = MoveMessage(move=move, corresponding_board=board.fen(), player_name=game_player.player.id)
+        move_recommendation: MoveRecommendation = game_player.select_move(board=board)
+        message = MoveMessage(
+            move=move_recommendation.move,
+            corresponding_board=board.fen(),
+            player_name=game_player.player.id,
+            evaluation=move_recommendation.evaluation,
+            color_to_play=game_player.color
+        )
         deep_copy_message = copy.deepcopy(message)
         print('sending ', message)
         queue_move.put(deep_copy_message)

@@ -30,7 +30,7 @@ def create_match_manager(
     player_one_name: str = args_player_one.name
     player_two_name: str = args_player_two.name
 
-    game_board_evaluator = create_game_board_evaluator(gui=gui)
+    game_board_evaluator  = create_game_board_evaluator(gui=gui)
 
     game_manager_factory: GameManagerFactory = GameManagerFactory(
         syzygy_table=syzygy_mailbox,

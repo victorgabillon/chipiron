@@ -14,6 +14,7 @@ from . import node_selector as node_sel
 from . import recommender_rule
 
 from dataclasses import dataclass
+from chipiron.players.move_selector.move_selector import MoveRecommendation
 
 
 @dataclass
@@ -101,7 +102,10 @@ class TreeExploration:
                                                                       random_generator=random_generator)
         self.tree_manager.print_best_line(tree=self.tree)  # todo maybe almost best chosen line no?
 
-        return best_move
+        move_recommendation: MoveRecommendation = MoveRecommendation(
+            move=best_move,
+            evaluation=self.tree.root_node.minmax_evaluation.get_value_white())
+        return move_recommendation
 
 
 def create_tree_exploration(
