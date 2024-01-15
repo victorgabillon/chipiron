@@ -8,9 +8,9 @@ from chipiron.players.move_selector.treevalue import node_factory
 from .trees.factory import MoveAndValueTreeFactory
 
 from chipiron.players.boardevaluators.neural_networks.input_converters.factory import create_board_representation
+from chipiron.players.boardevaluators.neural_networks import NeuralNetBoardEvalArgs
 
 from . import node_selector
-from .node_selector.sequool.factory import SequoolArgs
 from .node_selector.sequool.factory import SequoolArgs
 
 from .stopping_criterion import AllStoppingCriterionArgs
@@ -46,8 +46,9 @@ def create_tree_and_value_builders(args: TreeAndValuePlayerArgs,
         node_factory_name=node_factory_name
     )
 
-    board_representation_factory: object = create_board_representation(
-        board_representation=args.board_evaluator.representation
+    board_representation_factory: object | None = None
+    board_representation_factory = create_board_representation(
+            board_representation=args.board_evaluator.representation
     )
 
     match args.node_selector:
@@ -56,13 +57,11 @@ def create_tree_and_value_builders(args: TreeAndValuePlayerArgs,
         case other:
             index_computation = None
 
-   # print('index_computation,,,',index_computation)
-
     algorithm_node_factory: node_factory.AlgorithmNodeFactory
     algorithm_node_factory = node_factory.AlgorithmNodeFactory(
         tree_node_factory=tree_node_factory,
         board_representation_factory=board_representation_factory,
-        index_computation= index_computation
+        index_computation=index_computation
     )
 
     tree_factory = MoveAndValueTreeFactory(

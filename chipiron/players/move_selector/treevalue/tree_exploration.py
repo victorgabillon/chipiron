@@ -90,7 +90,7 @@ class TreeExploration:
             # self.node_selector.communicate_expansions()
             self.tree_manager.update_backward(tree_expansions=tree_expansions)
 
-        trees.save_raw_data_to_file(tree=self.tree)
+        #trees.save_raw_data_to_file(tree=self.tree)
         # self.tree_manager.print_some_stats(tree=self.tree)
         # for move, child in self.tree.root_node.moves_children.items():
         #    print(f'{move} {self.tree.root_node.moves_children[move].minmax_evaluation.get_value_white()}'

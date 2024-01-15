@@ -24,11 +24,13 @@ class AlgorithmNode:
     # the board representation
     board_representation: BoardRepresentation
 
-    def __init__(self,
-                 tree_node: TreeNode,
-                 minmax_evaluation: NodeMinmaxEvaluation,
-                 exploration_manager: NodeExplorationManager,
-                 board_representation: BoardRepresentation) -> None:
+    def __init__(
+            self,
+            tree_node: TreeNode,
+            minmax_evaluation: NodeMinmaxEvaluation,
+            exploration_manager: NodeExplorationManager,
+            board_representation: BoardRepresentation
+    ) -> None:
         self.tree_node = tree_node
         self.minmax_evaluation = minmax_evaluation
         self.exploration_manager = exploration_manager

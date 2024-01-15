@@ -7,7 +7,8 @@ from . import move_selector
 from . import treevalue
 from . import human
 from . import stockfish
-AllMoveSelectorArgs = treevalue.TreeAndValuePlayerArgs | human.HumanPlayerArgs| stockfish.StockfishPlayer
+
+AllMoveSelectorArgs = treevalue.TreeAndValuePlayerArgs | human.HumanPlayerArgs | stockfish.StockfishPlayer
 
 
 def create_main_move_selector(
