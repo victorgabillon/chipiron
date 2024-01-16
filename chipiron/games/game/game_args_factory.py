@@ -70,7 +70,10 @@ class GameArgsFactory:
 
         # Creating the players
         syzygy_table = SyzygyTable('')
+
         merged_seed = unique_int_from_list([self.seed, game_number])
+
+        # if seed is None random uses the current system time as seed
         random_generator: random.Random = random.Random(merged_seed)
         player_one: Player = create_player(args=self.args_player_one,
                                            syzygy=syzygy_table,
