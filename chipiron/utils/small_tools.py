@@ -9,11 +9,14 @@ from enum import Enum
 import dacite
 import chipiron as ch
 import os
+import typing
+
+path = typing.Annotated[str | bytes | os.PathLike, 'path']
 
 
-def mkdir(folder_path):
-    a = os.getcwd()
-    print('os.getcwd()', os.getcwd())
+def mkdir(
+        folder_path: path
+) -> None:
     try:
         os.mkdir(folder_path)
     except FileNotFoundError as error:

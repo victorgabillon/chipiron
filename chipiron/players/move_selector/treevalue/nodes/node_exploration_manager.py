@@ -8,9 +8,10 @@ from typing import Any
 class NodeExplorationManager:
     tree_node: nodes.TreeNode
     index: float | None = None
+    should_node_be_considered: bool | None = None
 
     def dot_description(self):
-        return f'index:{self.index}'
+        return f'index:{self.index} should_consider{self.should_node_be_considered}'
 
 
 @dataclass(slots=True)

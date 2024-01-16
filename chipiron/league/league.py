@@ -14,7 +14,7 @@ from chipiron.players.utils import fetch_player_args_convert_and_save
 from dataclasses import dataclass, field
 import chipiron.players as players
 import random
-from memory_profiler import profile
+from chipiron.utils.small_tools import mkdir, path
 
 
 def new_player_joins(player):
@@ -27,16 +27,22 @@ def new_player_joins(player):
 @dataclass(slots=True)
 class League:
     folder_league: str
+    seed: int
     players_elo: ValueSortedDict = field(default_factory=ValueSortedDict)
     players_args: dict[str, players.PlayerArgs] = field(default_factory=dict)
     players_number_of_games_played: dict[str, int] = field(default_factory=dict)
     id_for_next_player: int = 0
     K: int = 10
     ELO_HISTORY_LENGTH: int = 500
+    games_already_played: int = 0
 
     def __post_init__(self):
         print(f'init league from folder: {self.folder_league}')
         self.check_for_players()
+        path_logs_folder: path = os.path.join(self.folder_league, 'logs')
+        mkdir(path_logs_folder)
+        path_logs_games_folder: path = os.path.join(path_logs_folder, 'games')
+        mkdir(path_logs_games_folder)
 
     def check_for_players(self):
         path: str = os.path.join(self.folder_league, 'new_players/')
@@ -65,12 +71,13 @@ class League:
         self.players_args[args_player.name] = args_player
         self.players_number_of_games_played[args_player.name] = 0
 
-        shutil.move(file_player, os.path.join(self.folder_league, 'current_players'))
+        current_player_folder: path = os.path.join(self.folder_league, 'current_players')
+        mkdir(current_player_folder)
+        shutil.move(file_player, current_player_folder)
 
         print('elo', self.players_elo)
         print('args', self.players_args)
 
-    @profile
     def run(self) -> None:
         self.print_info()
         self.update_elo_graph()
@@ -88,24 +95,43 @@ class League:
             file_name_match_setting=file_match_setting,
         )
 
+        path_logs_game_folder: path = os.path.join(self.folder_league, f'logs/games/game{self.games_already_played}')
+        mkdir(path_logs_game_folder)
+        path_logs_game_folder_temp: path = os.path.join(self.folder_league,
+                                                        f'logs/games/game{self.games_already_played}/games')
+        mkdir(path_logs_game_folder_temp)
+
+        match_seed = self.seed + self.games_already_played
         match_manager: ch.game.MatchManager = create_match_manager(
             args_match=match_args,
             args_player_one=args_player_one,
             args_player_two=args_player_two,
-            args_game=game_args
+            args_game=game_args,
+            seed=match_seed,
+            output_folder_path=path_logs_game_folder
         )
 
+        # Play the match
         match_results = match_manager.play_one_match()
-        with open(self.folder_league + '/log_results.txt', 'a') as log_file:
+
+        # Logs the results
+        path_logs_file: path = os.path.join(self.folder_league, 'logs/log_results.txt')
+        with open(path_logs_file, 'a') as log_file:
             log_file.write(
-                f'{args_player_one.name} vs {args_player_two.name}: {match_results.get_player_one_wins()}-{match_results.get_player_two_wins()}-{match_results.get_draws()}\n')
+                f'Game #{self.games_already_played} || '
+                f'{args_player_one.name} vs {args_player_two.name}: {match_results.get_player_one_wins()}-'
+                f'{match_results.get_player_two_wins()}-{match_results.get_draws()}'
+                f' with seed {match_seed}\n'
+            )
         self.players_number_of_games_played[args_player_one.name] += 1
         self.players_number_of_games_played[args_player_two.name] += 1
 
-        # tobecodedupdate
-        self.update_elo(match_results)
+        # update the ELO
+        self.update_elo(match_results, path_logs_file)
 
-    def update_elo(self, match_results):
+        self.games_already_played += 1
+
+    def update_elo(self, match_results, path_logs_file):
         # coded for one single game!!
         player_one_name_id = match_results.player_one_name_id
         elo_player_one = self.players_elo[player_one_name_id][0]
@@ -133,7 +159,7 @@ class League:
             if player != player_one_name_id and player != player_two_name_id:
                 self.players_elo[player].appendleft(self.players_elo[player][0])
 
-        with open(self.folder_league + '/log_results.txt', 'a') as log_file:
+        with open(path_logs_file, 'a') as log_file:
             log_file.write(
                 f'{player_one_name_id} increments its elo by {increment_one}: {old_elo_player_one} -> {new_elo_one}\n')
             log_file.write(

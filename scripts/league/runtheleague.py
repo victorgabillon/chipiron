@@ -31,9 +31,15 @@ class RunTheLeagueScript:
             with (open(self.folder_league + '/players.pickle', "rb")) as openfile:
                 # TODO not use pickle make somehting human readbale and moidifiable
                 self.league = pickle.load(openfile)
+            print('Previous league loaded successfully')
         except:
-            random_generator: random.Random = random.Random(0)
-            self.league: League = League(folder_league=self.folder_league)
+            print('Creation of a new league')
+            new_random = random.Random(x=None)
+            seed_run: int = new_random.randrange(0, 10 ** 10)
+            self.league: League = League(
+                folder_league=self.folder_league,
+                seed=seed_run
+            )
 
         self.league.print_info()
 

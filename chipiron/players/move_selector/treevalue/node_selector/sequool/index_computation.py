@@ -16,6 +16,64 @@ class UpdateAllIndices(Protocol):
 
 
 # TODO their might be ways to optimize the computation such as not recomptuing for the whole tree
+def update_all_indices(
+        tree: trees.move_and_value_tree,
+) -> None:
+    """
+    The idea is to compute an index $ind(n)$ for a node $n$ that measures the minimum amount of change
+     in the value of all the nodes such that this node $n$ becomes the best.
+
+    This can be computed recursively as :
+    ind(n) = max( ind(parent(n),.5*abs(value(n)-value(parent(n))))
+
+    Args:
+        tree: a tree
+
+    Returns:
+
+    """
+    tree_nodes: trees.RangedDescendants = tree.descendants
+
+    for half_move in tree_nodes:
+        for node in tree_nodes[half_move].values():
+            for child in node.moves_children.values():
+                child.exploration_manager.index = None  # rootnode is not set to zero haha
+
+    tree.root_node.exploration_manager.index = 0
+    half_move: int
+    for half_move in tree_nodes:
+        # todo how are we sure that the hm comes in order?
+        # print('hmv', half_move)
+        parent_node: nodes.AlgorithmNode
+        for parent_node in tree_nodes[half_move].values():
+            # print('parent_node', parent_node.tree_node.id)
+            child_node: nodes.AlgorithmNode
+            for child_node in parent_node.moves_children.values():
+
+                # print('child_node', child_node.tree_node.id)
+
+                parent_index: float = parent_node.exploration_manager.index
+                child_value: float = child_node.minmax_evaluation.get_value_white()
+                parent_value: float = parent_node.minmax_evaluation.get_value_white()
+
+                # computes local_child_index the amount of change for the child node to become better than its parent
+                local_child_index: float = abs(child_value - parent_value) / 2
+
+                # the amount of change for the child to become better than any of its ancestor
+                # and become the overall best bode, the max is computed with the parent index
+                #   print('child_node', child_node.tree_node.id, local_child_index, parent_index)
+
+                child_index: float = max(local_child_index, parent_index)
+
+                # the index of the child node is updated now
+                # as a child node can have multiple parents we take the min if an index was previously computed
+                if child_node.exploration_manager.index is None:
+                    child_node.exploration_manager.index = child_index
+                else:
+                    child_node.exploration_manager.index = min(child_node.exploration_manager.index, child_index)
+
+
+# TODO their might be ways to optimize the computation such as not recomptuing for the whole tree
 def update_all_indices_base(
         tree: trees.move_and_value_tree,
 ) -> None:
@@ -136,16 +194,15 @@ def update_all_indices_recurzipfsequool(
             # print('child_node', child_node.tree_node.id, child_node.exploration_manager.index)
 
 
-def update_all_indices(
-        all_nodes_not_opened: trees.RangedDescendants
+def update_all_indices_min_local_change(
+        tree: trees.move_and_value_tree
 ) -> None:
-    half_move: int
-    for half_move in all_nodes_not_opened:
-        node: nodes.AlgorithmNode
-        node.index = None
-        for node in all_nodes_not_opened.descendants_at_half_move[half_move].values():
+    tree_nodes: trees.RangedDescendants = tree.descendants
+
+    for half_move in tree_nodes:
+        for node in tree_nodes[half_move].values():
             for child in node.moves_children.values():
-                child.index = None
+                child.exploration_manager.index = None  # rootnode is not set to zero haha
 
     if not tree.root_node.moves_children:
         return
@@ -158,7 +215,7 @@ def update_all_indices(
         for node in tree.all_nodes[depth].values():
             for child in node.moves_children.values():
                 #      print('child', child.id)
-                if node.index is None:
+                if node.exploration_manager.index is None:
                     index = None
                 else:
                     if depth % 2 == 0:
@@ -170,7 +227,7 @@ def update_all_indices(
                         else:
                             index = abs(child.value_white - root_node_value_white) / 2
                     else:  # depth %2 ==1
-                        if self.root_node.best_child() in child.first_moves:
+                        if tree.root_node.best_child() in child.first_moves:
                             index = abs(child.value_white - root_node_second_value_white) / 2
                         else:  # not the best line
                             if child == node.best_child():
@@ -178,14 +235,14 @@ def update_all_indices(
                             else:  # not the best child response
                                 index = None
                 if index is not None:
-                    if child.index is None:  # if the index has beene initiated already by another parent node
-                        child.index = index
+                    if child.exploration_manager.index is None:  # if the index has beene initiated already by another parent node
+                        child.exploration_manager.index = index
                         if child.id == tree.root_node.best_node_sequence[-1].id:
-                            assert (tree.root_node.best_node_sequence[-1].index is not None)
+                            assert (tree.root_node.best_node_sequence[-1].exploration_manager.index is not None)
 
                     else:
-                        child.index = min(child.index, index)
+                        child.exploration_manager.index = min(child.exploration_manager.index, index)
                         if child.id == tree.root_node.best_node_sequence[-1].id:
-                            assert (tree.root_node.best_node_sequence[-1].index is not None)
+                            assert (tree.root_node.best_node_sequence[-1].exploration_manager.index is not None)
 
     assert (tree.root_node.best_node_sequence[-1].index is not None)

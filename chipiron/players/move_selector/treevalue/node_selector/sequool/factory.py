@@ -33,6 +33,8 @@ def create_sequool(
             update_all_indices = update_all_indices_base
         case IndexComputationType.RecurZipf:
             update_all_indices = update_all_indices_recurzipfsequool
+        case IndexComputationType.MinLocalChange:
+            update_all_indices = update_all_indices_recurzipfsequool
         case other:
             raise ValueError(f'player creator: can not find {other} in {__name__}')
 
