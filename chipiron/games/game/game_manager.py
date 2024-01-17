@@ -15,6 +15,8 @@ from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.utils.is_dataclass import DataClass
 from chipiron.environments.chess.board import BoardChi
 
+from dataclasses import dataclass
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s:%(name)s:%(message)s')
@@ -27,12 +29,17 @@ logger.addHandler(file_handler)
 logger.addHandler(stream_handler)
 
 
-# todo a wrapper for chess.white chess.black
-
 class FinalGameResult(Enum):
     WIN_FOR_WHITE = 0
     WIN_FOR_BLACK = 1
     DRAW = 2
+
+
+# todo a wrapper for chess.white chess.black
+@dataclass
+class GameReport:
+    final_game_result: FinalGameResult
+    move_history: list[chess.Move]
 
 
 class GameManager:
@@ -96,7 +103,9 @@ class GameManager:
     def set_new_game(self, starting_position_arg):
         self.game.set_starting_position(starting_position_arg)
 
-    def play_one_game(self) -> FinalGameResult:
+    def play_one_game(
+            self
+    ) -> GameReport:
         board = self.game.board
         self.set_new_game(self.args.starting_position)
 
@@ -105,7 +114,7 @@ class GameManager:
         while True:
             half_move: HalfMove = board.ply()
             print(f'Half Move: {half_move} playing status {self.game.playing_status.status} ')
-            color_to_move = board.turn
+            color_to_move: chess.COLORS = board.turn
             color_of_player_to_move_str = color_names[color_to_move]
             print(f'{color_of_player_to_move_str} ({self.player_color_to_id[color_to_move]}) to play now...')
 
@@ -119,7 +128,12 @@ class GameManager:
         self.tell_results()
         self.terminate_processes()
         print('end play_one_game')
-        return self.simple_results()
+
+        game_results: FinalGameResult = self.simple_results()
+        game_report: GameReport = GameReport(
+            final_game_result=game_results,
+            move_history=board.move_stack)
+        return game_report
 
     def processing_mail(self, message: DataClass) -> None:
         board: BoardChi = self.game.board
@@ -145,8 +159,8 @@ class GameManager:
                     # self.main_thread_mailbox.put(message)
                 if message.evaluation is not None:
                     self.display_board_evaluator.add_evaluation(
-                                                                player_color=message.color_to_play,
-                                                                evaluation=message.evaluation)
+                        player_color=message.color_to_play,
+                        evaluation=message.evaluation)
                 logger.debug(f'len main tread mailbox {self.main_thread_mailbox.qsize()}')
             case GameStatusMessage():
                 message: GameStatusMessage

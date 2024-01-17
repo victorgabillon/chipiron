@@ -3,20 +3,21 @@ import copy
 import queue
 import typing
 from chipiron.utils.communication.gui_messages import MatchResultsMessage
+from dataclasses import dataclass
+import chess
 
 
+@dataclass
 class MatchResults:
-
-    def __init__(self, player_one_id, player_two_id):
-        self.player_one_name_id = player_one_id
-        self.player_two_name_id = player_two_id
-        self.number_of_games = 0
-        self.player_one_is_white_white_wins = 0
-        self.player_one_is_white_black_wins = 0
-        self.player_one_is_white_draws = 0
-        self.player_two_is_white_white_wins = 0
-        self.player_two_is_white_black_wins = 0
-        self.player_two_is_white_draws = 0
+    player_one_name_id: str
+    player_two_name_id: str
+    number_of_games: int = 0
+    player_one_is_white_white_wins: int = 0
+    player_one_is_white_black_wins: int = 0
+    player_one_is_white_draws: int = 0
+    player_two_is_white_white_wins: int = 0
+    player_two_is_white_black_wins: int = 0
+    player_two_is_white_draws: int = 0
 
     def get_player_one_wins(self):
         return self.player_one_is_white_white_wins + self.player_two_is_white_black_wins
@@ -113,3 +114,9 @@ class ObservableMatchResults:
         return self.match_result.get_player_one_wins(), \
             self.match_result.get_player_two_wins(), \
             self.match_result.get_draws()
+
+
+@dataclass
+class MatchReport:
+    match_results: MatchResults
+    match_move_history: dict[int, list[chess.Move]]
