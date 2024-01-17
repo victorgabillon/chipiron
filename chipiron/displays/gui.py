@@ -18,7 +18,7 @@ from chipiron.utils.communication.gui_player_message import PlayersColorToPlayer
 from chipiron.utils.communication.player_game_messages import BoardMessage, MoveMessage
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
-import pyqtgraph as pg
+from chipiron.games.match.math_results import MatchResults
 
 
 class MplCanvas(FigureCanvasQTAgg):
@@ -274,7 +274,7 @@ class MainWindow(QWidget):
                     self.update_players_color_to_id(players_color_to_player)
                 case MatchResultsMessage():
                     message: MatchResultsMessage
-                    match_results = message.match_results
+                    match_results: MatchResults = message.match_results
                     self.update_match_stats(match_results)
                 case GameStatusMessage():
                     message: GameStatusMessage
@@ -333,9 +333,15 @@ class MainWindow(QWidget):
             self.pause_button.setToolTip("pause the game")  # Tool tip
             self.pause_button.move(850, 100)
 
-    def update_match_stats(self, match_info):
-        player_one_wins, player_two_wins, draws = match_info.get_simple_result()
+    def update_match_stats(self, match_result: MatchResults):
+        player_one_wins, player_two_wins, draws = match_result.get_simple_result()
         self.score_button.setText(
             'Score: ' + str(player_one_wins) + '-'
             + str(player_two_wins) + '-'
             + str(draws))  # text
+
+        print('update', match_result.match_finished)
+        # if the match is over we kill th gui
+        if match_result.match_finished:
+            print('finishing the widget')
+            self.close()

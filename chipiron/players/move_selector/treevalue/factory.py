@@ -8,7 +8,6 @@ from chipiron.players.move_selector.treevalue import node_factory
 from .trees.factory import MoveAndValueTreeFactory
 
 from chipiron.players.boardevaluators.neural_networks.input_converters.factory import create_board_representation
-from chipiron.players.boardevaluators.neural_networks import NeuralNetBoardEvalArgs
 
 from . import node_selector
 from .node_selector.sequool.factory import SequoolArgs

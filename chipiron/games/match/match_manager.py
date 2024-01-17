@@ -1,7 +1,8 @@
 import chess
 from chipiron.games.game.game_manager_factory import GameManagerFactory
-from chipiron.games.game.game_manager import GameManager, FinalGameResult, GameReport
-from chipiron.games.match.math_results import MatchReport, MatchResults
+from chipiron.games.game.game_manager import GameManager, GameReport
+from chipiron.games.match.math_results import MatchResults
+from chipiron.games.match.observable_match_result import MatchReport
 from chipiron.games.game.game_args import GameArgs
 from chipiron.players import Player
 from chipiron.games.match.match_results_factory import MatchResultsFactory
@@ -31,11 +32,17 @@ class MatchManager:
         print('player one is ', self.player_one_id)
         print('player two is ', self.player_two_id)
 
-    def play_one_match(self) -> MatchReport:
+    def play_one_match(
+            self
+    ) -> MatchReport:
+        """Playing one game"""
         print('Playing the match')
+
+        # creating object for reporting the result of the match and the move history
         match_results: MatchResults = self.match_results_factory.create()
         match_move_history: dict[int, list[chess.Move]] = {}
 
+        # Main loop of playing various games
         game_number: int = 0
         while not self.game_args_factory.is_match_finished():
             args_game: GameArgs
@@ -66,8 +73,14 @@ class MatchManager:
 
         print(match_results)
         self.print_stats_to_file(match_results)
+
+        # setting  officially the game to finished state (some subscribers might receive this event as a message,
+        # when a gui is present it might action it to close itself)
+        match_results.finish()
+
         match_report: MatchReport = MatchReport(match_move_history=match_move_history,
                                                 match_results=match_results)
+
         return match_report
 
     def play_one_game(

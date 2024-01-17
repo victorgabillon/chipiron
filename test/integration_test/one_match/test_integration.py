@@ -5,6 +5,10 @@ os.chdir('../../')
 print(os.getcwd())
 configs = [
 
+    # checking gui
+    {'seed': 11, 'gui': True, 'file_name_player_one': 'Sequool.yaml', 'file_name_player_two': 'Random.yaml',
+     'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
+
     # random Player first to have a fast game
     {'seed': 11, 'gui': False, 'file_name_player_one': 'Sequool.yaml', 'file_name_player_two': 'Random.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
@@ -22,10 +26,6 @@ configs = [
     {'seed': 11, 'gui': False, 'file_name_player_one': 'Sequool.yaml', 'file_name_player_two': 'Random.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': True},
 
-    # checking gui
-    {'seed': 11, 'gui': True, 'file_name_player_one': 'Sequool.yaml', 'file_name_player_two': 'Random.yaml',
-     'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
-
     # checking another seed haha
     {'seed': 12, 'gui': False, 'file_name_player_one': 'Sequool.yaml', 'file_name_player_two': 'Random.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
@@ -35,21 +35,20 @@ configs = [
      'file_name_match_setting': 'setting_tron.yaml', 'profiling': False},
 
 ]
-if False:
-    for config in configs:
-        script_object: scripts.Script = scripts.create_script(
-            script_type=scripts.ScriptType.OneMatch,
-            gui_args=config
-        )
 
-        # run the script
-        script_object.run()
+for config in configs:
+    script_object: scripts.Script = scripts.create_script(
+        script_type=scripts.ScriptType.OneMatch,
+        extra_args=config
+    )
 
-        # terminate the script
-        script_object.terminate()
+    # run the script
+    script_object.run()
 
-    # test randomness
+    # terminate the script
+    script_object.terminate()
 
+# test randomness
 import chipiron as ch
 
 from chipiron.players.factory import PlayerArgs
@@ -57,7 +56,7 @@ from chipiron.players.utils import fetch_two_players_args_convert_and_save
 from chipiron.games.match.utils import fetch_match_games_args_convert_and_save
 import chipiron.games.match as match
 import chipiron.games.game as game
-from chipiron.games.match.math_results import MatchResults, MatchReport
+from chipiron.games.match.observable_match_result import MatchReport
 from scripts.one_match.one_match import OneMatchScriptArgs
 
 args = OneMatchScriptArgs()
