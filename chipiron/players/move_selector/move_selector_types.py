@@ -5,7 +5,7 @@ from . import human
 
 
 class MoveSelectorTypes(str, Enum):
-    RandomPlayer: str = 'RandomPlayer'
+    Random: str = 'Random'
     TreeAndValue: str = treevalue.Tree_Value_Name_Literal
     Stockfish: str = 'Stockfish'
     Human: str = human.Human_Name_Literal

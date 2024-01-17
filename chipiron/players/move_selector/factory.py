@@ -7,8 +7,11 @@ from . import move_selector
 from . import treevalue
 from . import human
 from . import stockfish
+from .random import Random, create_random
 
-AllMoveSelectorArgs = treevalue.TreeAndValuePlayerArgs | human.HumanPlayerArgs | stockfish.StockfishPlayer
+AllMoveSelectorArgs = (treevalue.TreeAndValuePlayerArgs
+                       | human.HumanPlayerArgs | Random |
+                       stockfish.StockfishPlayer)
 
 
 def create_main_move_selector(
@@ -20,15 +23,17 @@ def create_main_move_selector(
     print('create main move')
 
     match move_selector_instance_or_args.type:
-        case 'RandomPlayer':
-            main_move_selector = move_selector.Random()
+        case MoveSelectorTypes.Random:
+            main_move_selector = create_random()
         case MoveSelectorTypes.TreeAndValue:
-            main_move_selector = treevalue.create_tree_and_value_builders(args=move_selector_instance_or_args,
-                                                                          syzygy=syzygy,
-                                                                          random_generator=random_generator)
+            main_move_selector = treevalue.create_tree_and_value_builders(
+                args=move_selector_instance_or_args,
+                syzygy=syzygy,
+                random_generator=random_generator
+            )
         case 'Stockfish':
             main_move_selector = move_selector_instance_or_args
-        case 'Human':
+        case MoveSelectorTypes.Human:
             main_move_selector = NullObject()  # TODO is it necessary?
         case other:
             raise ValueError(f'player creator: can not find {other} of type {type(other)}')

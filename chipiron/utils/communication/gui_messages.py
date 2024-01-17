@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Any
 from chipiron.games.game.game_playing_status import PlayingStatus
 
+#from chipiron.games.match.math_results import MatchResults
 
 @dataclass
 class GameStatusMessage:
@@ -31,4 +32,4 @@ class EvaluationMessage:
 
 @dataclass
 class MatchResultsMessage:
-    match_results: dict
+    match_results: 'MatchResults'

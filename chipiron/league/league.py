@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 import chipiron.players as players
 import random
 from chipiron.utils.small_tools import mkdir, path
+from chipiron.games.match.observable_match_result import MatchReport
 
 
 def new_player_joins(player):
@@ -112,22 +113,22 @@ class League:
         )
 
         # Play the match
-        match_results = match_manager.play_one_match()
+        match_report: MatchReport = match_manager.play_one_match()
 
         # Logs the results
         path_logs_file: path = os.path.join(self.folder_league, 'logs/log_results.txt')
         with open(path_logs_file, 'a') as log_file:
             log_file.write(
                 f'Game #{self.games_already_played} || '
-                f'{args_player_one.name} vs {args_player_two.name}: {match_results.get_player_one_wins()}-'
-                f'{match_results.get_player_two_wins()}-{match_results.get_draws()}'
+                f'{args_player_one.name} vs {args_player_two.name}: {match_report.match_results.get_player_one_wins()}-'
+                f'{match_report.match_results.get_player_two_wins()}-{match_report.match_results.get_draws()}'
                 f' with seed {match_seed}\n'
             )
         self.players_number_of_games_played[args_player_one.name] += 1
         self.players_number_of_games_played[args_player_two.name] += 1
 
         # update the ELO
-        self.update_elo(match_results, path_logs_file)
+        self.update_elo(match_report.match_results, path_logs_file)
 
         self.games_already_played += 1
 
