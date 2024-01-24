@@ -2,8 +2,8 @@
 AlgorithmNodeFactory
 """
 from chipiron.players.move_selector.treevalue.nodes.node_minmax_evaluation import NodeMinmaxEvaluation
-from chipiron.players.move_selector.treevalue.nodes.node_exploration_manager import NodeExplorationManager, \
-    create_node_exploration_manager
+from chipiron.players.move_selector.treevalue.node_indices.factory import NodeExplorationData, \
+    create_exploration_index_data
 import chipiron.players.move_selector.treevalue.node_factory as node_fac
 import chipiron.players.move_selector.treevalue.nodes as node
 import chipiron.environments.chess.board as board_mod
@@ -18,7 +18,7 @@ class AlgorithmNodeFactory:
     """
     The classe creating Algorithm Nodes
     """
-    tree_node_factory: node_fac.TreeNodeFactory
+    tree_node_factory: node_fac.Base
     board_representation_factory: Representation364Factory | None
     index_computation: Any = None
 
@@ -26,7 +26,7 @@ class AlgorithmNodeFactory:
                board,
                half_move: int,
                count: int,
-               parent_node: node.AlgorithmNode,
+               parent_node: node.AlgorithmNode | None,
                board_depth: int,
                modifications: board_mod.BoardModification
                ) -> node.AlgorithmNode:
@@ -37,7 +37,7 @@ class AlgorithmNodeFactory:
             parent_node=parent_node,
         )
         minmax_evaluation: NodeMinmaxEvaluation = NodeMinmaxEvaluation(tree_node=tree_node)
-        exploration_manager: NodeExplorationManager = create_node_exploration_manager(
+        exploration_index_data: NodeExplorationData = create_exploration_index_data(
             tree_node=tree_node,
             index_computation=self.index_computation
         )
@@ -52,6 +52,6 @@ class AlgorithmNodeFactory:
         return node.AlgorithmNode(
             tree_node=tree_node,
             minmax_evaluation=minmax_evaluation,
-            exploration_manager=exploration_manager,
+            exploration_index_data=exploration_index_data,
             board_representation=board_representation
         )

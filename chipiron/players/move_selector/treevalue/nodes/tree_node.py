@@ -53,6 +53,9 @@ class TreeNode:
     def moves_children(self) -> bidict:
         return self.moves_children_
 
+    def is_root_node(self) -> bool:
+        return not self.parent_nodes
+
     def add_parent(self, new_parent_node):
         assert (new_parent_node not in self.parent_nodes)  # there cannot be two ways to link the same child-parent
         self.parent_nodes.append(new_parent_node)

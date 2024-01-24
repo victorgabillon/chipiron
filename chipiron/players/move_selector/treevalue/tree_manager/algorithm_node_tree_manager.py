@@ -7,11 +7,14 @@ import chipiron.players.move_selector.treevalue.nodes as node
 import chipiron.players.move_selector.treevalue.trees as trees
 import chipiron.players.move_selector.treevalue.node_selector as node_sel
 import chipiron.players.move_selector.treevalue.updates as upda
+from chipiron.players.move_selector.treevalue.node_indices.factory import NodeExplorationIndexManager
+from chipiron.players.move_selector.treevalue.node_indices.node_exploration_manager import update_all_indices
 
 from .tree_expander import TreeExpansion, TreeExpansions
 from .tree_manager import TreeManager
 
 from chipiron.players.move_selector.treevalue.node_evaluator import NodeEvaluator, EvaluationQueries
+from dataclasses import dataclass
 
 
 # todo should we use a discount? and discounted per round reward?
@@ -19,7 +22,7 @@ from chipiron.players.move_selector.treevalue.node_evaluator import NodeEvaluato
 # todo have the reward with a discount
 # DISCOUNT = 1/.99999
 
-
+@dataclass
 class AlgorithmNodeTreeManager:
     """
     This class that and manages a tree by opening new nodes and updating the values and indexes on the nodes.
@@ -31,21 +34,7 @@ class AlgorithmNodeTreeManager:
     algorithm_node_updater: upda.AlgorithmNodeUpdater
     evaluation_queries: EvaluationQueries
     node_evaluator: NodeEvaluator
-
-    def __init__(
-            self,
-            node_evaluator: NodeEvaluator,
-            tree_manager: TreeManager,
-            algorithm_node_updater: upda.AlgorithmNodeUpdater,
-            evaluation_queries: EvaluationQueries
-    ) -> None:
-        """
-        init the class and setting the members
-        """
-        self.node_evaluator = node_evaluator
-        self.tree_manager = tree_manager
-        self.algorithm_node_updater = algorithm_node_updater
-        self.evaluation_queries = evaluation_queries
+    index_manager: NodeExplorationIndexManager
 
     def open_node_move(
             self,
@@ -110,6 +99,16 @@ class AlgorithmNodeTreeManager:
         self.node_evaluator.evaluate_all_queried_nodes(evaluation_queries=self.evaluation_queries)
 
         return tree_expansions
+
+    def update_indices(
+            self,
+            tree: trees.MoveAndValueTree
+    ) -> None:
+
+        update_all_indices(
+            index_manager=self.index_manager,
+            tree=tree
+        )
 
     def update_backward(self, tree_expansions: TreeExpansions):
 

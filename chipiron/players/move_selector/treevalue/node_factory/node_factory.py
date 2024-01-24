@@ -12,12 +12,13 @@ class TreeNodeFactory(Protocol):
     Interface for Tree Node Factories
     """
 
-    def create(self,
-               board: boards.BoardChi,
-               half_move: int,
-               count: int,
-               parent_node: ITreeNode
-               ) -> TreeNode:
+    def create(
+            self,
+            board: boards.BoardChi,
+            half_move: int,
+            count: int,
+            parent_node: ITreeNode
+    ) -> ITreeNode:
         """
         The main method to create a Tree Node
         Args:
