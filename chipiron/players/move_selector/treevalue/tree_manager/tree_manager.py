@@ -5,6 +5,7 @@ import chipiron.players.move_selector.treevalue.nodes as node
 import chipiron.players.move_selector.treevalue.trees as trees
 import chipiron.players.move_selector.treevalue.node_selector as node_sel
 from chipiron.players.move_selector.treevalue import node_factory as node_fact
+from dataclasses import dataclass
 
 
 # todo should we use a discount? and discounted per round reward?
@@ -12,25 +13,20 @@ from chipiron.players.move_selector.treevalue import node_factory as node_fact
 # todo have the reward with a discount
 # DISCOUNT = 1/.99999
 
-
+@dataclass
 class TreeManager:
     """
 
     This class that and manages a tree by opening new nodes and updating the values and indexes on the nodes
     """
-    node_factory: node_fact.AlgorithmNodeFactory
+    node_factory: node_fact.TreeNodeFactory
 
-    def __init__(self,
-                 node_factory: node_fact.AlgorithmNodeFactory
-                 ) -> None:
-        """
-        """
-        self.node_factory = node_factory
-
-    def open_node_move(self,
-                       tree: trees.MoveAndValueTree,
-                       parent_node: node.ITreeNode,
-                       move: chess.Move) -> TreeExpansion:
+    def open_node_move(
+            self,
+            tree: trees.MoveAndValueTree,
+            parent_node: node.ITreeNode,
+            move: chess.Move
+    ) -> TreeExpansion:
         """
         Opening a Node that contains a board following a move.
         Args:

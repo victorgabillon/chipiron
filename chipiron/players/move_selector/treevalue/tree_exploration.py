@@ -67,7 +67,7 @@ class TreeExploration:
         while self.stopping_criterion.should_we_continue(tree=self.tree):
             assert (not self.tree.root_node.is_over())
             # print info
-            #self.print_info_during_move_computation(random_generator=random_generator)
+            # self.print_info_during_move_computation(random_generator=random_generator)
 
             # choose the moves and nodes to open
             opening_instructions: node_sel.OpeningInstructions
@@ -89,8 +89,9 @@ class TreeExploration:
             )
             # self.node_selector.communicate_expansions()
             self.tree_manager.update_backward(tree_expansions=tree_expansions)
+            self.tree_manager.update_indices(tree=self.tree)
 
-        #trees.save_raw_data_to_file(tree=self.tree)
+        # trees.save_raw_data_to_file(tree=self.tree)
         # self.tree_manager.print_some_stats(tree=self.tree)
         # for move, child in self.tree.root_node.moves_children.items():
         #    print(f'{move} {self.tree.root_node.moves_children[move].minmax_evaluation.get_value_white()}'
@@ -148,8 +149,10 @@ def create_tree_exploration(
         random_generator=random_generator,
     )
 
-    stopping_criterion: StoppingCriterion = create_stopping_criterion(args=stopping_criterion_args,
-                                                                      node_selector=node_selector)
+    stopping_criterion: StoppingCriterion = create_stopping_criterion(
+        args=stopping_criterion_args,
+        node_selector=node_selector
+    )
 
     tree_exploration: TreeExploration = TreeExploration(
         tree=move_and_value_tree,

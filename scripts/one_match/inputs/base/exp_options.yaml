@@ -1,8 +1,8 @@
 seed: 11
 gui: True
-file_name_player_one: 'Sequool.yaml'
-file_name_player_ones: 'RecurZipfSequool.yaml'
-file_name_player_two:  'RecurZipfSequool.yaml'
+file_name_player_ones: 'Sequool.yaml'
+file_name_player_one: 'RecurZipfSequool.yaml'
+file_name_player_two:  'Uniform.yaml'
 file_name_player_twos:  'RecurZipfBase3.yaml'
 file_name_match_setting: 'setting_duda.yaml'
 profiling: False

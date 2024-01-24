@@ -9,7 +9,7 @@ from .opening_instructions import OpeningInstructor
 from .node_selector_types import NodeSelectorType
 from .node_selector_args import NodeSelectorArgs
 
-AllNodeSelectorArgs = RecurZipfBaseArgs | SequoolArgs | NodeSelectorArgs
+AllNodeSelectorArgs = RecurZipfBaseArgs | NodeSelectorArgs
 
 
 def create(

@@ -1,7 +1,8 @@
 import chipiron.players.move_selector.treevalue.nodes as nodes
 from .minmax_evaluation_updater import MinMaxEvaluationUpdater
-from .updates_file import UpdateInstructions, UpdateInstructionsBatch,ValueUpdateInstructionsBlock
+from .updates_file import UpdateInstructions, UpdateInstructionsBatch, ValueUpdateInstructionsBlock
 import chipiron.players.move_selector.treevalue.tree_manager as tree_man
+
 
 class AlgorithmNodeUpdater:
     minmax_evaluation_updater: MinMaxEvaluationUpdater
@@ -11,15 +12,20 @@ class AlgorithmNodeUpdater:
                  ):
         self.minmax_evaluation_updater = minmax_evaluation_updater
 
-    def create_update_instructions_after_node_birth(self, new_node: nodes.AlgorithmNode) -> UpdateInstructions:
+    def create_update_instructions_after_node_birth(
+            self,
+            new_node: nodes.AlgorithmNode
+    ) -> UpdateInstructions:
         update_instructions: UpdateInstructions = UpdateInstructions()
         value_update_instructions_block = self.minmax_evaluation_updater.create_update_instructions_after_node_birth(
             new_node=new_node)
         update_instructions.all_instructions_blocks['base'] = value_update_instructions_block
         return update_instructions
 
-    def generate_update_instructions(self,
-                                     tree_expansions: tree_man.TreeExpansions) -> UpdateInstructionsBatch:
+    def generate_update_instructions(
+            self,
+            tree_expansions: tree_man.TreeExpansions
+    ) -> UpdateInstructionsBatch:
         # TODO is the way of merging now overkill?
 
         update_instructions_batch: UpdateInstructionsBatch = UpdateInstructionsBatch()
@@ -39,8 +45,9 @@ class AlgorithmNodeUpdater:
     def perform_updates(self, node_to_update: nodes.AlgorithmNode,
                         update_instructions: UpdateInstructions) -> UpdateInstructions:
         new_instructions: UpdateInstructions = UpdateInstructions()
-        base_update_instructions_block: ValueUpdateInstructionsBlock  = self.minmax_evaluation_updater.perform_updates(node_to_update,
-                                                                          updates_instructions=update_instructions)
+        base_update_instructions_block: ValueUpdateInstructionsBlock = self.minmax_evaluation_updater.perform_updates(
+            node_to_update,
+            updates_instructions=update_instructions)
 
         new_instructions.all_instructions_blocks['base'] = base_update_instructions_block
 

@@ -19,6 +19,7 @@ class GamePlayingStatus:
         return self._status
 
     @status.setter
+    # what is the point?
     def status(self, new_status: PlayingStatus):
         self._status = new_status
 
