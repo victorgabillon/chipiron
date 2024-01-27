@@ -193,7 +193,10 @@ class MainWindow(QWidget):
 
     def send_move_to_main_thread(self, move):
         print('move', type(move), move)
-        message: MoveMessage = MoveMessage(move=move, corresponding_board=self.board.fen(), player_name='Human')
+        message: MoveMessage = MoveMessage(move=move,
+                                           corresponding_board=self.board.fen(),
+                                           player_name='Human',
+                                           color_to_play=self.board.turn)
         self.main_thread_mailbox.put(item=message)
 
     def choice_promote(self):

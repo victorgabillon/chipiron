@@ -128,7 +128,7 @@ class OneMatchScript:
 
         """
 
-        print(' Scipt One MAtch go')
+        print(' Script One MAtch go')
         # Qt Application needs to be in the main Thread, so we need to distinguish between GUI and no GUI
         if self.gui:  # case with GUI
             # Launching the Match Manager in a Thread

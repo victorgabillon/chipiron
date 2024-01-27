@@ -25,19 +25,23 @@ class PlayerArgs:
     syzygy_play: bool
 
 
-def create_player(args: PlayerArgs,
-                  syzygy,
-                  random_generator: random.Random) -> Player:
+def create_player(
+        args: PlayerArgs,
+        syzygy,
+        random_generator: random.Random
+) -> Player:
     print('create player')
     main_move_selector: move_selector.MoveSelector = move_selector.create_main_move_selector(
         move_selector_instance_or_args=args.main_move_selector,
         syzygy=syzygy,
         random_generator=random_generator
     )
-    return Player(name=args.name,
-                  syzygy_play=args.syzygy_play,  # looks like double arguments change?
-                  syzygy=syzygy,
-                  main_move_selector=main_move_selector)
+    return Player(
+        name=args.name,
+        syzygy_play=args.syzygy_play,  # looks like double arguments change?
+        syzygy=syzygy,
+        main_move_selector=main_move_selector
+    )
 
 
 def send_board_to_player_process_mailbox(

@@ -167,13 +167,11 @@ class NodeMinmaxEvaluation:
             # the shorter the check the better now
             self.children_sorted_by_value_[child] = (
                 subjective_value_of_child, -len(child.minmax_evaluation.best_node_sequence), child.tree_node.id)
-        #   self.children_sorted_by_value_vsd[child] = (subjective_value_of_child, -len(child.best_node_sequence), child.id)
 
         else:
             # the longer the line the better now
             self.children_sorted_by_value_[child] = (
                 subjective_value_of_child, len(child.minmax_evaluation.best_node_sequence), child.tree_node.id)
-        #  self.children_sorted_by_value_vsd[child] = (subjective_value_of_child, len(child.best_node_sequence), child.id)
 
     def are_equal_values(self, value_1, value_2):
         return value_1 == value_2

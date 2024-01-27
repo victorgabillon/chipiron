@@ -5,14 +5,13 @@ os.chdir('../../')
 print(os.getcwd())
 configs = [
 
-    # checking gui
-    {'seed': 11, 'gui': True, 'file_name_player_one': 'Sequool.yaml', 'file_name_player_two': 'Random.yaml',
-     'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
 
     # random Player first to have a fast game
     {'seed': 11, 'gui': False, 'file_name_player_one': 'Sequool.yaml', 'file_name_player_two': 'Random.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
 
+    {'seed': 11, 'gui': False, 'file_name_player_one': 'Sequool.yaml', 'file_name_player_two': 'RecurZipfSequool.yaml',
+     'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
     {'seed': 11, 'gui': False, 'file_name_player_one': 'Sequool.yaml', 'file_name_player_two': 'RecurZipfBase3.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
     {'seed': 11, 'gui': False, 'file_name_player_one': 'RecurZipfBase4.yaml',
@@ -34,9 +33,14 @@ configs = [
     {'seed': 11, 'gui': False, 'file_name_player_one': 'Sequool.yaml', 'file_name_player_two': 'Random.yaml',
      'file_name_match_setting': 'setting_tron.yaml', 'profiling': False},
 
+    # checking gui
+    {'seed': 11, 'gui': True, 'file_name_player_one': 'Sequool.yaml', 'file_name_player_two': 'Random.yaml',
+     'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
+
 ]
 
 for config in configs:
+    print(f'Running the SCRIPT with config {config}')
     script_object: scripts.Script = scripts.create_script(
         script_type=scripts.ScriptType.OneMatch,
         extra_args=config
@@ -48,6 +52,7 @@ for config in configs:
     # terminate the script
     script_object.terminate()
 
+print('test randomness')
 # test randomness
 import chipiron as ch
 

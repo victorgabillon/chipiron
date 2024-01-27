@@ -4,7 +4,7 @@ Factory to build node selectors
 from .node_selector import NodeSelector
 from .uniform import Uniform
 from .recurzipf.recur_zipf_base import RecurZipfBase, RecurZipfBaseArgs
-from .sequool import create_sequool, SequoolArgs
+from .sequool import create_sequool
 from .opening_instructions import OpeningInstructor
 from .node_selector_types import NodeSelectorType
 from .node_selector_args import NodeSelectorArgs
@@ -35,7 +35,7 @@ def create(
 
         case NodeSelectorType.Sequool:
             node_move_opening_selector = create_sequool(opening_instructor=opening_instructor,
-                                                        args=args)
+                                                        )
 
         case other:
             raise ValueError(f'node selector construction: can not find {other}  {args} in file {__name__}')
