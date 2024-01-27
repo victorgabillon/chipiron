@@ -1,7 +1,7 @@
 import chipiron.players.move_selector.treevalue.trees as trees
 import chipiron.players.move_selector.treevalue.nodes as nodes
-from .index_data import NodeExplorationData, RecurZipfQuoolExplorationData
-from .types import IndexComputationType
+from .index_data import NodeExplorationData, RecurZipfQuoolExplorationData, MinMaxPathValue
+from .index_types import IndexComputationType
 from .node_exploration_manager import UpdateIndexZipfFactoredProba, UpdateIndexGlobalMinChange, \
     UpdateIndexLocalMinChange, NodeExplorationIndexManager, NullNodeExplorationIndexManager
 
@@ -20,7 +20,7 @@ def create_exploration_index_manager(
             case IndexComputationType.RecurZipf:
                 node_exploration_manager = UpdateIndexZipfFactoredProba()
             case IndexComputationType.MinLocalChange:
-                node_exploration_manager = UpdateIndexLocalMinChange
+                node_exploration_manager = UpdateIndexLocalMinChange()
             case other:
                 raise ValueError(f'player creator: can not find {other} in {__name__}')
 
@@ -35,15 +35,12 @@ def create_exploration_index_data(
     match index_computation:
         case None:
             exploration_index_data = None
+
         case IndexComputationType.MinLocalChange | IndexComputationType.MinGlobalChange:
-            exploration_index_data = NodeExplorationData(tree_node=tree_node)
-            if tree_node.is_root_node():
-                exploration_index_data.index = 0
+            exploration_index_data: MinMaxPathValue = MinMaxPathValue(tree_node=tree_node)
+
         case IndexComputationType.RecurZipf:
             exploration_index_data = RecurZipfQuoolExplorationData(tree_node=tree_node)
-            if tree_node.is_root_node():
-                exploration_index_data.index = 0
-                exploration_index_data.zipf_factored_proba = 1
 
         case other:
             raise ValueError(f'not finding good case for {other} in file {__name__}')

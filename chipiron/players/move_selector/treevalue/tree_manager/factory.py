@@ -5,7 +5,7 @@ from chipiron.players.move_selector.treevalue.node_evaluator import NodeEvaluato
 from chipiron.players.move_selector.treevalue.node_indices.factory import NodeExplorationIndexManager, \
     create_exploration_index_manager
 
-from chipiron.players.move_selector.treevalue.node_indices.types import IndexComputationType
+from chipiron.players.move_selector.treevalue.node_indices.index_types import IndexComputationType
 
 
 def create_algorithm_node_tree_manager(

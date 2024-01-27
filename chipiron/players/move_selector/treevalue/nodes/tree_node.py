@@ -34,8 +34,9 @@ class TreeNode:
     player_to_move_: chess.Color = field(default_factory=chess.Color)
 
     def __post_init__(self):
-        self.fast_rep = self.board_.fast_representation()
-        self.player_to_move_: chess.Color = self.board_.turn
+        if self.board_:
+            self.fast_rep = self.board_.fast_representation()
+            self.player_to_move_: chess.Color = self.board_.turn
 
     @property
     def player_to_move(self):

@@ -52,11 +52,14 @@ class AlgorithmNodeTreeManager:
         Returns: the tree expansions
 
         """
-        tree_expansion: TreeExpansion = self.tree_manager.open_node_move(tree=tree,
-                                                                         parent_node=parent_node,
-                                                                         move=move)
+        tree_expansion: TreeExpansion = self.tree_manager.open_node_move(
+            tree=tree,
+            parent_node=parent_node,
+            move=move
+        )
         parent_node.minmax_evaluation.children_not_over.append(
-            tree_expansion.child_node)  # default action checks for over event are performed later
+            tree_expansion.child_node
+        )  # default action checks for over event are performed later
 
         return tree_expansion
 

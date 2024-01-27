@@ -10,7 +10,7 @@ from .trees.factory import MoveAndValueTreeFactory
 from chipiron.players.boardevaluators.neural_networks.input_converters.factory import create_board_representation
 
 from . import node_selector
-from .node_indices.types import IndexComputationType
+from .node_indices.index_types import IndexComputationType
 from .stopping_criterion import AllStoppingCriterionArgs
 from . import recommender_rule
 from typing import Literal

@@ -19,3 +19,12 @@ class RecurZipfQuoolExplorationData(NodeExplorationData):
 
     def dot_description(self):
         return f'index:{self.index} zipf_factored_proba:{self.zipf_factored_proba}'
+
+
+@dataclass(slots=True)
+class MinMaxPathValue(NodeExplorationData):
+    min_path_value: float | None = None
+    max_path_value: float | None = None
+
+    def dot_description(self):
+        return f'min_path_value: {self.min_path_value}, max_path_value: {self.max_path_value}'
