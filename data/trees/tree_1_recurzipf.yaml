@@ -34,4 +34,10 @@ nodes:
   - id: 8
     parents : 3
     value: 0
-    index: -0.0625  
+    index: -0.0625
+  - id: 9
+    parents : 7
+    index: -0.1
+  - id: 10
+    parents : 7
+    index: -0.05  

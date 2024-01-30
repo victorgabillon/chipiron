@@ -25,4 +25,10 @@ nodes:
     value: 1
   - id: 8
     parents : 3
-    value: 0  
+    value: 0
+  - id: 9
+    parents : 7
+    value: 1
+  - id: 10
+    parents : 7
+    value: 2    

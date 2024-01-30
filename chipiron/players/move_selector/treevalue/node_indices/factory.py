@@ -1,6 +1,5 @@
-import chipiron.players.move_selector.treevalue.trees as trees
 import chipiron.players.move_selector.treevalue.nodes as nodes
-from .index_data import NodeExplorationData, RecurZipfQuoolExplorationData, MinMaxPathValue
+from .index_data import NodeExplorationData, RecurZipfQuoolExplorationData, MinMaxPathValue, IntervalExplo
 from .index_types import IndexComputationType
 from .node_exploration_manager import UpdateIndexZipfFactoredProba, UpdateIndexGlobalMinChange, \
     UpdateIndexLocalMinChange, NodeExplorationIndexManager, NullNodeExplorationIndexManager
@@ -36,7 +35,9 @@ def create_exploration_index_data(
         case None:
             exploration_index_data = None
 
-        case IndexComputationType.MinLocalChange | IndexComputationType.MinGlobalChange:
+        case IndexComputationType.MinLocalChange:
+            exploration_index_data: IntervalExplo = IntervalExplo(tree_node=tree_node)
+        case IndexComputationType.MinGlobalChange:
             exploration_index_data: MinMaxPathValue = MinMaxPathValue(tree_node=tree_node)
 
         case IndexComputationType.RecurZipf:

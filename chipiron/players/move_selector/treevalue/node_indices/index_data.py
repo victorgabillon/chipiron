@@ -1,6 +1,6 @@
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
-
-from dataclasses import dataclass
+from chipiron.utils.small_tools import Interval
+from dataclasses import dataclass, field
 
 
 @dataclass(slots=True)
@@ -28,3 +28,11 @@ class MinMaxPathValue(NodeExplorationData):
 
     def dot_description(self):
         return f'min_path_value: {self.min_path_value}, max_path_value: {self.max_path_value}'
+
+
+@dataclass(slots=True)
+class IntervalExplo(NodeExplorationData):
+    interval: Interval = field(default_factory=Interval)
+
+    def dot_description(self):
+        return f'min_interval_value: {self.min_path_value}, max_interval_value: {self.max_path_value}'

@@ -105,6 +105,7 @@ def fetch_args_modify_and_convert(
 
     return dataclass_args
 
+
 # after 3.12
 
 
@@ -125,3 +126,36 @@ def fetch_args_modify_and_convert(
 #                                                   config=dacite.Config(cast=[Enum]))
 #
 #     return dataclass_args
+
+from dataclasses import dataclass
+
+
+@dataclass
+class Interval:
+    min_value: float = None
+    max_value: float = None
+
+
+def intersect_intervals(
+        interval_1: Interval,
+        interval_2: Interval
+) -> Interval | None:
+    min_value: float = max(interval_1.min_value, interval_2.min_value)
+    max_value: float = min(interval_1.max_value, interval_2.max_value)
+    if max_value < min_value:
+        return None
+    else:
+        interval_res = Interval(max_value=max_value, min_value=min_value)
+        return interval_res
+
+
+def distance_number_to_interval(
+        value: float,
+        interval: Interval
+) -> float:
+    if value < interval.min_value:
+        return interval.min_value - value
+    elif value > interval.max_value:
+        return value - interval.max_value
+    else:
+        return 0

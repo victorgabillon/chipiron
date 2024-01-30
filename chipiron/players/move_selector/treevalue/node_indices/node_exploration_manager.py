@@ -1,6 +1,10 @@
+import chess
+
 import chipiron.players.move_selector.treevalue.trees as trees
 import chipiron.players.move_selector.treevalue.nodes as nodes
 from typing import Protocol
+import math
+from chipiron.utils.small_tools import Interval, intersect_intervals, distance_number_to_interval
 
 
 class NodeExplorationIndexManager(Protocol):
@@ -58,17 +62,17 @@ class UpdateIndexGlobalMinChange:
             tree: trees.MoveAndValueTree,
             child_rank: int,
     ) -> None:
-       # print('child_node.id', child_node.id)
+        # print('child_node.id', child_node.id)
         parent_index: float = parent_node.exploration_index_data.index
         child_value: float = child_node.minmax_evaluation.get_value_white()
         parent_value: float = parent_node.minmax_evaluation.get_value_white()
 
-        child_node.exploration_index_data.min_path_value = min(
+        child_node_min_path_value = min(
             child_value,
             parent_node.exploration_index_data.min_path_value
         )
 
-        child_node.exploration_index_data.max_path_value = max(
+        child_node_max_path_value = max(
             child_value,
             parent_node.exploration_index_data.max_path_value
         )
@@ -76,10 +80,10 @@ class UpdateIndexGlobalMinChange:
         # computes local_child_index the amount of change for the child node to become better than its parent
         root_value = tree.root_node.minmax_evaluation.get_value_white()
         child_index: float = abs(
-            child_node.exploration_index_data.max_path_value - child_node.exploration_index_data.min_path_value) / 2
+            child_node_max_path_value - child_node_min_path_value) / 2
         # local_child_index: float = abs(child_value - root_value) / 2
 
-     #   print('child_index', child_index)
+        #   print('child_index', child_index)
         # the amount of change for the child to become better than any of its ancestor
         # and become the overall best bode, the max is computed with the parent index
         # child_index: float = max(local_child_index, parent_index)
@@ -89,18 +93,22 @@ class UpdateIndexGlobalMinChange:
         # as a child node can have multiple parents we take the min if an index was previously computed
         if child_node.exploration_index_data.index is None:
             child_node.exploration_index_data.index = child_index
+            child_node.exploration_index_data.max_path_value = child_node_max_path_value
+            child_node.exploration_index_data.min_path_value = child_node_min_path_value
         else:
             child_node.exploration_index_data.index = min(child_node.exploration_index_data.index, child_index)
+            child_node.exploration_index_data.max_path_value = min(child_node_max_path_value,
+                                                                   child_node.exploration_index_data.max_path_value)
+            child_node.exploration_index_data.min_path_value = max(child_node_min_path_value,
+                                                                   child_node.exploration_index_data.min_path_value)
 
 
 class UpdateIndexZipfFactoredProba:
-
 
     def update_root_node_index(
             self,
             root_node: nodes.AlgorithmNode,
     ) -> None:
-        root_value: float = root_node.minmax_evaluation.get_value_white()
 
         root_node.exploration_index_data.zipf_factored_proba = 1
         root_node.exploration_index_data.index = 0
@@ -133,6 +141,14 @@ class UpdateIndexZipfFactoredProba:
 
 class UpdateIndexLocalMinChange:
 
+    def update_root_node_index(
+            self,
+            root_node: nodes.AlgorithmNode,
+    ) -> None:
+
+        root_node.exploration_index_data.index = 0
+        root_node.exploration_index_data.interval = Interval(min_value=-math.inf, max_value=math.inf)
+
     def update_node_indices(
             self,
             child_node: nodes.AlgorithmNode,
@@ -145,66 +161,55 @@ class UpdateIndexLocalMinChange:
         if parent_node.exploration_index_data.index is None:
             child_node.exploration_index_data.index = None
         else:
-            min_local_change = (tree.root_node.minmax_evaluation.get_value_white()
-                                - child_node.minmax_evaluation.get_value_white())
-            max_local_change = None
-            if depth % 2 == 0:  # MIN
-                best_child = parent_node.minmax_evaluation.best_child()
-                if child_node == best_child:
-                    if len(parent_node.moves_children) > 1:
-                        second_best_child = parent_node.minmax_evaluation.second_best_child()
-                        max_local_change = (child_node.minmax_evaluation.get_value_white()
-                                            - second_best_child.minmax_evaluation.get_value_white())
+            if len(parent_node.tree_node.moves_children) == 1:
+                local_index = parent_node.exploration_index_data.index
+                inter_level_interval = parent_node.exploration_index_data.interval
+            else:
+                if parent_node.tree_node.board.turn == chess.WHITE:
+                    best_child = parent_node.minmax_evaluation.best_child()
+                    second_best_child = parent_node.minmax_evaluation.second_best_child()
+                    child_white_value = child_node.minmax_evaluation.get_value_white()
+                    local_interval = Interval()
+                    if child_node == best_child:
+                        local_interval.max_value = math.inf
+                        local_interval.min_value = second_best_child.minmax_evaluation.get_value_white()
                     else:
-                        max_local_change = 10 * 10
-                else:
-                    max_local_change = 0  # making it impossible
-            if max_local_change is None or min_local_change < max_local_change:
-                child_node.exploration_index_data.index = min_local_change
-            else:
-                child_node.exploration_index_data.index = None
+                        local_interval.max_value = math.inf
+                        local_interval.min_value = best_child.minmax_evaluation.get_value_white()
+                    print('intersectWHITE', parent_node.id, parent_node.tree_node.board.turn, local_interval, parent_node.exploration_index_data.interval)
 
+                    inter_level_interval = intersect_intervals(local_interval, parent_node.exploration_index_data.interval)
+                    if inter_level_interval is not None:
+                        local_index = distance_number_to_interval(value=child_white_value, interval=inter_level_interval)
+                    else:
+                        local_index = None
+                if parent_node.tree_node.board.turn == chess.BLACK:
+                    best_child = parent_node.minmax_evaluation.best_child()
+                    second_best_child = parent_node.minmax_evaluation.second_best_child()
+                    child_white_value = child_node.minmax_evaluation.get_value_white()
+                    local_interval = Interval()
+                    if child_node == best_child:
+                        local_interval.max_value = second_best_child.minmax_evaluation.get_value_white()
+                        local_interval.min_value = -math.inf
+                    else:
+                        local_interval.max_value = best_child.minmax_evaluation.get_value_white()
+                        local_interval.min_value = -math.inf
+                    print('intersect', local_interval, parent_node.exploration_index_data.interval)
 
-class UpdateLocalGlobalMinChangeDead:
-    def init_root_node_indices(
-            self,
-            root_node: nodes.AlgorithmNode
-    ) -> None:
-        root_node.exploration_manager.index = 0
+                    inter_level_interval = intersect_intervals(local_interval, parent_node.exploration_index_data.interval)
+                    if inter_level_interval is not None:
+                        local_index = distance_number_to_interval(value=child_white_value, interval=inter_level_interval)
+                    else:
+                        local_index = None
+            print('t',child_node.id,local_index,inter_level_interval)
+            if child_node.exploration_index_data.index is None:
+                child_node.exploration_index_data.index = local_index
+                child_node.exploration_index_data.interval = inter_level_interval
 
-    def update_node_indices(
-            self,
-            child_node: nodes.AlgorithmNode,
-            parent_node: nodes.AlgorithmNode,
-            tree: trees.MoveAndValueTree,
-            child_rank: int,
-    ) -> None:
-
-        depth: int = tree.node_depth(child_node)
-        # TODO the algorithm is not clear if a node is both in best first move and the not in it, can it happen?
-        child_value: float = child_node.minmax_evaluation.get_value_white()
-        parent_value: float = parent_node.minmax_evaluation.get_value_white()
-
-        if parent_node.exploration_manager.should_node_be_considered:
-            child_node.exploration_manager.should_node_be_considered = True
-            child_index = 10 ** 10
-        else:
-            # computes local_child_index the amount of change for the child node to become better than its parent
-            if parent_node.exploration_manager.value_needs_to_go is None:
-                child_index: float = abs(child_value - parent_value) / 2
-                if child_node == parent_node.best_child():
-                    child_node.exploration_manager.value_needs_to_go = UpOrDown.Down
-                else:
-                    child_node.exploration_manager.value_needs_to_go = UpOrDown.Up
-            else:
-                child_node.exploration_manager.value_needs_to_go = parent_node.exploration_manager.value_needs_to_go
-
-        # the index of the child node is updated now
-        # as a child node can have multiple parents we take the min if an index was previously computed
-        if child_node.exploration_manager.index is None:
-            child_node.exploration_manager.index = child_index
-        else:
-            child_node.exploration_manager.index = min(child_node.exploration_manager.index, child_index)
+            elif local_index is not None:
+                if local_index <child_node.exploration_index_data.index :
+                    child_node.exploration_index_data.interval = inter_level_interval
+                child_node.exploration_index_data.index = min(child_node.exploration_index_data.index, local_index)
 
 
 # TODO their might be ways to optimize the computation such as not recomptuing for the whole tree
