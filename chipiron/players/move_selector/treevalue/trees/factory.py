@@ -63,7 +63,7 @@ class MoveAndValueTreeFactory:
         )
 
         self.node_evaluator.evaluate_all_queried_nodes(evaluation_queries=evaluation_queries)
-        # todo this use of the node evaluator looks weird no?
+        # todo this use of the node evaluator looks weird no?  is the nodeevlauator used outside?
 
         descendants: RangedDescendants = RangedDescendants()
         descendants.add_descendant(root_node)

@@ -35,6 +35,10 @@ class AlgorithmNodeUpdater:
             update_instructions = self.create_update_instructions_after_node_birth(
                 new_node=tree_expansion.child_node)
             # update_instructions_batch is key sorted dict, sorted by depth to ensure proper backprop from the back
+
+            assert (tree_expansion.parent_node is not None)
+            # looks like we should not update from the root node backward!
+
             new_update_instructions_batch = UpdateInstructionsBatch({tree_expansion.parent_node: update_instructions})
 
             # concatenate the update instructions

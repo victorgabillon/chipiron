@@ -1,3 +1,5 @@
+from chipiron.players.move_selector.treevalue.tree_manager import create_algorithm_node_tree_manager, TreeExpansions, \
+    TreeExpansion
 from chipiron.players.move_selector.treevalue.node_indices.node_exploration_manager import update_all_indices, \
     NodeExplorationIndexManager, print_all_indices
 from chipiron.players.move_selector.treevalue.node_indices.factory import create_exploration_index_manager
@@ -9,10 +11,16 @@ from chipiron.utils.small_tools import path
 import yaml
 import chipiron.players.move_selector.treevalue.node_factory as node_factory
 from chipiron.players.move_selector.treevalue.trees.move_and_value_tree import MoveAndValueTree
-from chipiron.utils.my_value_sorted_dict import sort_dic
 from chipiron.environments.chess.board import BoardChi
 from chipiron.players.move_selector.treevalue.trees.descendants import RangedDescendants
 import chess
+from enum import Enum
+
+
+class TestResult(Enum):
+    PASSED = 0
+    FAILED = 1
+    WARNING = 2
 
 
 def make_tree_from_file(
@@ -37,10 +45,20 @@ def make_tree_from_file(
         index_computation=index_computation
     )
     descendants: RangedDescendants = RangedDescendants()
+
+    algo_tree_manager = create_algorithm_node_tree_manager(
+        node_evaluator=None,
+        algorithm_node_factory=algorithm_node_factory,
+        index_computation=index_computation
+    )
+
     half_moves = {}
     id_nodes = {}
     for yaml_node in yaml_nodes:
+        #print('yaml_node[id] ',yaml_node['id'] )
         if yaml_node['id'] == 0:
+            tree_expansions = TreeExpansions()
+
             board = BoardChi.from_chess960_pos(yaml_node['id'])
             board.turn = chess.WHITE
             root_node: nodes.AlgorithmNode = algorithm_node_factory.create(
@@ -56,31 +74,52 @@ def make_tree_from_file(
             id_nodes[yaml_node['id']] = root_node
 
             descendants.add_descendant(root_node)
+            move_and_value_tree: MoveAndValueTree = MoveAndValueTree(root_node=root_node,
+                                                                     descendants=descendants)
+            tree_expansions.add(
+                TreeExpansion(
+                    child_node=root_node,
+                    parent_node=None,
+                    board_modifications=None,
+                    creation_child_node=True
+                )
+            )
+            root_node.tree_node.all_legal_moves_generated=True
+            #algo_tree_manager.update_backward(tree_expansions=tree_expansions)
+
         else:
+            tree_expansions = TreeExpansions()
             first_parent = yaml_node['parents']
             half_move = half_moves[first_parent] + 1
             half_moves[yaml_node['id']] = half_move
             parent_node = id_nodes[first_parent]
             board = BoardChi.from_chess960_pos(yaml_node['id'])
             board.turn = not parent_node.tree_node.board_.turn
-            node: nodes.AlgorithmNode = algorithm_node_factory.create(
+
+            tree_expansion: TreeExpansion = algo_tree_manager.tree_manager.open_node(
+                tree=move_and_value_tree,
+                parent_node=parent_node,
                 board=board,
-                half_move=half_move,
-                count=yaml_node['id'],
-                parent_node=id_nodes[first_parent],
-                board_depth=0,
-                modifications=None
+                modifications=None,
+                move=yaml_node['id']
             )
-            id_nodes[yaml_node['id']] = node
-            node.minmax_evaluation.value_white_minmax = yaml_node['value']
-            parent_node.minmax_evaluation.children_sorted_by_value_[node] = ((-1) ** half_move) * yaml_node['value']
-            parent_node.minmax_evaluation.children_sorted_by_value_ = sort_dic(
-                parent_node.minmax_evaluation.children_sorted_by_value_)
-            descendants.add_descendant(node)
+            tree_expansions.add(
+                TreeExpansion(
+                    child_node=tree_expansion.child_node,
+                    parent_node=tree_expansion.parent_node,
+                    board_modifications=tree_expansion.board_modifications,
+                    creation_child_node=tree_expansion.creation_child_node
+                )
+            )
+            tree_expansion.child_node.tree_node.all_legal_moves_generated=True
+            id_nodes[yaml_node['id']] = tree_expansion.child_node
+            tree_expansion.child_node.minmax_evaluation.value_white_minmax = yaml_node['value']
+            tree_expansion.child_node.minmax_evaluation.value_white_evaluator = yaml_node['value']
+            parent_node.minmax_evaluation.children_not_over.append(tree_expansion.child_node)
+            algo_tree_manager.update_backward(tree_expansions=tree_expansions)
 
-    move_and_value_tree: MoveAndValueTree = MoveAndValueTree(root_node=root_node,
-                                                             descendants=descendants)
 
+   # print('move_and_value_tree', move_and_value_tree.descendants)
     return move_and_value_tree
 
 
@@ -110,31 +149,52 @@ def check_from_file(file, tree):
                                abs_tol=1e-8)
 
 
-def check_index(index_computation):
+def check_index(index_computation,
+                tree_file
+                ) -> TestResult:
+    try:
+        tree_path = f'data/trees/{tree_file}/{tree_file}_{index_computation.value}.yaml'
+        file = open(tree_path, 'r')
+    except:
+        print(f'!!!!!!Warning!!!!! : no testing file {tree_path}')
+        return TestResult.WARNING
+
+    tree_path = f'data/trees/{tree_file}/{tree_file}.yaml'
     tree = make_tree_from_file(
         index_computation=index_computation,
-        file='data/trees/tree_1.yaml'
+        file=tree_path
     )
 
     index_manager: NodeExplorationIndexManager = create_exploration_index_manager(index_computation=index_computation)
 
+    print('index_manager', index_manager)
     update_all_indices(
         tree,
         index_manager
     )
-    print_all_indices(
-        tree
-    )
-    file = f'data/trees/tree_1_{index_computation.value}.yaml'
+    #print_all_indices(
+    #    tree
+    #)
+    file = f'data/trees/{tree_file}/{tree_file}_{index_computation.value}.yaml'
     check_from_file(file=file, tree=tree)
+
+    return TestResult.PASSED
 
 
 index_computations = [IndexComputationType.MinGlobalChange,
                       IndexComputationType.RecurZipf,
                       IndexComputationType.MinLocalChange]
 
-for index_computation in index_computations:
-    print(f'---testing {index_computation}')
-    check_index(index_computation)
+tree_files = ['tree_1', 'tree_2']
 
-    print('end ALL OK')
+results = {}
+for index_computation in index_computations:
+    for tree_file in tree_files:
+        print(f'---testing {index_computation} on {tree_file}')
+        res = check_index(index_computation, tree_file)
+        if res in results:
+            results[res] += 1
+        else:
+            results[res] = 1
+
+print(f'finished TEst: {results}')
