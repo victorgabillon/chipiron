@@ -30,8 +30,11 @@ class MinMaxEvaluationUpdater:
             updates_instructions_block['children_with_updated_value'])
 
         # UPDATE BEST MOVE
-        has_best_node_seq_changed_2 = node_to_update.minmax_evaluation.update_best_move_sequence(
+        if updates_instructions_block['children_with_updated_best_move']:
+            has_best_node_seq_changed_2 = node_to_update.minmax_evaluation.update_best_move_sequence(
             updates_instructions_block['children_with_updated_best_move'])
+        else:
+            has_best_node_seq_changed_2 = False
         has_best_node_seq_changed = has_best_node_seq_changed_1 or has_best_node_seq_changed_2
 
         # UPDATE OVER

@@ -113,7 +113,10 @@ class AlgorithmNodeTreeManager:
             tree=tree
         )
 
-    def update_backward(self, tree_expansions: TreeExpansions):
+    def update_backward(
+            self,
+            tree_expansions: TreeExpansions
+    ) -> set:
 
         update_instructions_batch: upda.UpdateInstructionsBatch
         update_instructions_batch = self.algorithm_node_updater.generate_update_instructions(

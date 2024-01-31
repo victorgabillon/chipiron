@@ -16,10 +16,7 @@ class Observable:
         self._mailboxes += mailboxes
 
     def __setattr__(self, key, value):
-        print('rrrr',value)
         self._observable.key = value
-        print('rrssrrs',self._observable.key)
-        print('rrssrr',value)
 
         self.notify()
 

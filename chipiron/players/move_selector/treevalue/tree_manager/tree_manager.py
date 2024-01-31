@@ -47,6 +47,33 @@ class TreeManager:
         # The move is played. The board is now a new board
         modifications: board_mod.BoardModification = board.play_move(move=move)
 
+        return self.open_node(
+            tree=tree,
+            parent_node=parent_node,
+            board=board,
+            modifications=modifications,
+            move=move
+        )
+
+    def open_node(
+            self,
+            tree: trees.MoveAndValueTree,
+            parent_node: node.ITreeNode,
+            board: board_mod.BoardChi,
+            modifications: board_mod.BoardModification,
+            move: chess.Move
+    ) -> TreeExpansion:
+        """
+        Opening a Node that contains a board given the modifications.
+        Args:
+            tree:
+            parent_node: The Parent node that we want to expand
+            move: the move to play to expend the Node
+
+        Returns:
+
+        """
+
         # Creation of the child node. If the board already exited in another node, that node is returned as child_node.
         half_move: int = parent_node.half_move + 1
         fast_rep: str = board.fast_representation()

@@ -247,11 +247,13 @@ class NodeMinmaxEvaluation:
         else:
             self.value_white_minmax = min(best_child.minmax_evaluation.get_value_white(), self.value_white_evaluator)
 
-    def update_best_move_sequence(self,
-                                  children_nodes_with_updated_best_move_seq: List[NodeMinmaxEvaluation]):
+    def update_best_move_sequence(
+            self,
+            children_nodes_with_updated_best_move_seq: List[NodeMinmaxEvaluation]
+    ) -> bool:
         """ triggered if a children notifies an updated best node sequence
         returns boolean: True if self.best_node_sequence is modified, False otherwise"""
-        has_best_node_seq_changed = False
+        has_best_node_seq_changed: bool = False
         best_node = self.best_node_sequence[0]
 
         # returns the bestnode if it is in children_nodes_with_updated_best_move_seq else None
