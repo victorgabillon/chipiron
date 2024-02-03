@@ -24,7 +24,9 @@ def create_main_move_selector(
 
     match move_selector_instance_or_args.type:
         case MoveSelectorTypes.Random:
-            main_move_selector = create_random()
+            main_move_selector = create_random(
+                random_generator=random_generator
+            )
         case MoveSelectorTypes.TreeAndValue:
             main_move_selector = treevalue.create_tree_and_value_builders(
                 args=move_selector_instance_or_args,

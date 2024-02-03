@@ -1,6 +1,28 @@
+from .itree_node import ITreeNode
+from .tree_node import TreeNode
 
-def are_all_moves_and_children_opened(tree_node)-> bool:
-    print('rf',tree_node.all_legal_moves_generated )
-    print('ml',tree_node.non_opened_legal_moves == set(),tree_node.parent_nodes)
 
+def are_all_moves_and_children_opened(
+        tree_node: TreeNode
+) -> bool:
     return tree_node.all_legal_moves_generated and tree_node.non_opened_legal_moves == set()
+
+
+def a_move_sequence_from_root(
+        tree_node: ITreeNode
+) -> list[str]:
+    move_sequence_from_root: list[ITreeNode] = []
+    child: ITreeNode = tree_node
+    while child.parent_nodes:
+        parent: ITreeNode = next(iter(child.parent_nodes))
+        move_sequence_from_root.append(parent.moves_children.inverse[child])
+        child = parent
+    move_sequence_from_root.reverse()
+    return [str(i) for i in move_sequence_from_root]
+
+
+def print_a_move_sequence_from_root(
+        tree_node: TreeNode
+) -> None:
+    move_sequence_from_root: list[str] = a_move_sequence_from_root(tree_node=tree_node)
+    print(f'a_move_sequence_from_root{move_sequence_from_root}')

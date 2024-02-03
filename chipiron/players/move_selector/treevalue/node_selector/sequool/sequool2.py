@@ -1,45 +1,52 @@
 """
 Sequool
 """
-from chipiron.players.move_selector.treevalue.node_selector.notations_and_statics import zipf_picks
+from chipiron.players.move_selector.treevalue.node_selector.notations_and_statics import zipf_picks, zipf_picks_random
 from chipiron.players.move_selector.treevalue import trees
 from chipiron.players.move_selector.treevalue import tree_manager as tree_man
-from chipiron.players.move_selector.treevalue.trees.descendants import RangedDescendants
+from chipiron.players.move_selector.treevalue.trees.descendants import Descendants, RangedDescendants
 from chipiron.environments import HalfMove
-from ... import nodes
 
 from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructions, \
     OpeningInstructor, \
     create_instructions_to_open_all_moves
 
 from dataclasses import dataclass, field
+import random
+import chipiron.players.move_selector.treevalue.nodes as nodes
+from typing import Protocol
+
+
+# NodeCandidatesSelector = Callable[[random.Random], list[nodes.AlgorithmNode]]
+
+
+class ExplorationNodeSelector(Protocol):
+    def update_from_expansions(
+            self,
+            latest_tree_expansions: tree_man.TreeExpansions
+    ) -> None:
+        ...
+
+    def select(
+            self,
+            random_generator
+    ) -> list[nodes.AlgorithmNode]:
+        ...
 
 
 @dataclass
-class Sequool:
-    """
-    Sequool Node selector
-    """
-    opening_instructor: OpeningInstructor
-    all_nodes_not_opened: RangedDescendants
+class StaticNotOpenedSelector:
+    all_nodes_not_opened: Descendants
 
     # counting the visits for each half_move
     count_visits: dict[HalfMove, int] = field(default_factory=dict)
 
-    def is_there_smth_to_open(self, depth):
-        res = False
-        for node in self.all_nodes_not_opened[depth]:
-            if node.exploration_manager.index is not None:
-                res = True
-                break
-        return res
-
-    def choose_node_and_move_to_open(
+    def update_from_expansions(
             self,
-            tree: trees.MoveAndValueTree,
             latest_tree_expansions: tree_man.TreeExpansions
-    ) -> OpeningInstructions:
+    ) -> None:
 
+        # print('updating the all_nodes_not_opened')
         # Update internal info with the latest tree expansions
         expansion: tree_man.TreeExpansion
         for expansion in latest_tree_expansions:
@@ -52,7 +59,12 @@ class Sequool:
             if half_move not in self.count_visits:
                 self.count_visits[half_move] = 1
 
-        filtered_count_visits = filter(
+    def select(
+            self,
+            random_generator
+    ) -> list[nodes.AlgorithmNode]:
+
+        filtered_count_visits: dict[HalfMove, int] = filter(
             lambda hm: bool(hm in self.all_nodes_not_opened),
             self.count_visits
         )
@@ -61,7 +73,9 @@ class Sequool:
         half_move_picked: int = zipf_picks(
             ranks=self.all_nodes_not_opened,
             values=filtered_count_visits,
-            shift=True
+            random_generator=random_generator,
+            shift=True,
+            random_pick=True
         )
 
         self.count_visits[half_move_picked] += 1
@@ -71,6 +85,73 @@ class Sequool:
         # considering all half-move smaller than the half move picked
         for half_move in filter(lambda hm: hm < half_move_picked + 1, self.all_nodes_not_opened):
             nodes_to_consider += list(self.all_nodes_not_opened[half_move].values())
+
+        return nodes_to_consider
+
+
+@dataclass
+class RandomAllSelector:
+    all_nodes: RangedDescendants
+
+    # counting the visits for each half_move
+    count_visits: dict[HalfMove, int] = field(default_factory=dict)
+
+    def update_from_expansions(
+            self,
+            latest_tree_expansions: tree_man.TreeExpansions
+    ) -> None:
+        ...
+
+    def select(
+            self,
+            random_generator
+    ) -> list[nodes.AlgorithmNode]:
+        # choose a half move based on zipf
+        half_move_picked: int = zipf_picks(
+            ranks=self.all_nodes_not_opened,
+            values=filtered_count_visits,
+            random_generator=random_generator,
+            shift=True,
+            random_pick=True
+        )
+
+        self.count_visits[half_move_picked] += 1
+
+        nodes_to_consider: list[nodes.AlgorithmNode] = []
+        half_move: int
+        # considering all half-move smaller than the half move picked
+        for half_move in filter(lambda hm: hm < half_move_picked + 1, self.all_nodes_not_opened):
+            nodes_to_consider += list(self.all_nodes_not_opened[half_move].values())
+
+        return nodes_to_consider
+
+
+@dataclass
+class Sequool:
+    """
+    Sequool Node selector
+    """
+    opening_instructor: OpeningInstructor
+    all_nodes_not_opened: RangedDescendants
+    recursif: bool
+    random_depth_pick: bool
+    node_candidates_selector: ExplorationNodeSelector
+    random_generator: random.Random
+
+    def choose_node_and_move_to_open(
+            self,
+            tree: trees.MoveAndValueTree,
+            latest_tree_expansions: tree_man.TreeExpansions
+    ) -> OpeningInstructions:
+
+        # print('rrrtttr',latest_tree_expansions)
+        self.node_candidates_selector.update_from_expansions(
+            latest_tree_expansions=latest_tree_expansions
+        )
+
+        nodes_to_consider: list[nodes.AlgorithmNode] = self.node_candidates_selector.select(
+            random_generator=self.random_generator
+        )
 
         best_node: nodes.AlgorithmNode = nodes_to_consider[0]
         best_value = (best_node.exploration_index_data.index, best_node.half_move)
@@ -84,11 +165,16 @@ class Sequool:
                     best_node = node
                     best_value = (node.exploration_index_data.index, node.half_move)
 
-        self.all_nodes_not_opened.remove_descendant(best_node)
+        if not self.recursif:
+            self.all_nodes_not_opened.remove_descendant(best_node)
 
         all_moves_to_open = self.opening_instructor.all_moves_to_open(node_to_open=best_node.tree_node)
         opening_instructions: OpeningInstructions = create_instructions_to_open_all_moves(
             moves_to_play=all_moves_to_open,
             node_to_open=best_node)
 
-        return opening_instructions
+        if self.recursif and best_node.tree_node.all_legal_moves_generated:
+            return self.choose_node_and_move_to_open(tree=tree,
+                                                     latest_tree_expansions=[])
+        else:
+            return opening_instructions

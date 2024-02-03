@@ -17,7 +17,7 @@ class TreeNode:
     board_: boards.BoardChi
 
     # the set of parent nodes to this node. Note that a node can have multiple parents!
-    parent_nodes: list[ITreeNode]
+    parent_nodes: set[ITreeNode]
 
     # all_legal_moves_generated  is a boolean saying whether all moves have been generated.
     # If true the moves are either opened in which case the corresponding opened node is stored in
@@ -43,7 +43,7 @@ class TreeNode:
         return self.player_to_move_
 
     @property
-    def board(self):
+    def board(self) -> boards.BoardChi:
         return self.board_
 
     @property
@@ -59,7 +59,7 @@ class TreeNode:
 
     def add_parent(self, new_parent_node):
         assert (new_parent_node not in self.parent_nodes)  # there cannot be two ways to link the same child-parent
-        self.parent_nodes.append(new_parent_node)
+        self.parent_nodes.add(new_parent_node)
 
     def print_moves_children(self):
         print('here are the ', len(self.moves_children_), ' moves-children link of node', self.id, ': ', end=' ')
@@ -70,22 +70,6 @@ class TreeNode:
                 print(move, child.id, end=' ')
         print(' ')
 
-    def a_move_sequence_from_root(self):
-        move_sequence_from_root = []
-        child = self
-        parent = next(iter(child.parent_nodes))
-        while parent is not None:
-            parent = next(iter(child.parent_nodes))
-            # print('~~',parent.moves_children)
-            move_sequence_from_root.append(parent.moves_children_.inverse[child])
-            child = parent
-            parent = next(iter(child.parent_nodes))
-        move_sequence_from_root.reverse()
-        return [str(i) for i in move_sequence_from_root]
-
-    def print_a_move_sequence_from_root(self):
-        move_sequence_from_root = self.a_move_sequence_from_root()
-        print('a_move_sequence_from_root', move_sequence_from_root)
 
     def test(self):
         # print('testing node', selbestf.id)

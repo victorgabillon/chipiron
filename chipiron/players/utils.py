@@ -32,8 +32,11 @@ def fetch_player_args_convert_and_save(
     )
 
     if experiment_output_folder is not None:
-        copyfile(src=path_player,
-                 dst=os.path.join(experiment_output_folder, file_name_player))
+        file_name_player = file_name_player.replace('/','')
+        copyfile(
+            src=path_player,
+            dst=os.path.join(experiment_output_folder, file_name_player)
+        )
 
     return player_args
 
