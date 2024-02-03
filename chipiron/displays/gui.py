@@ -81,13 +81,13 @@ class MainWindow(QWidget):
         self.player_white_button.setText("Player")  # text
         self.player_white_button.setIcon(QIcon("data/gui/white_king.png"))  # icon
         self.player_white_button.setStyleSheet('QPushButton {background-color: white; color: black;}')
-        self.player_white_button.setGeometry(620, 250, 370, 30)
+        self.player_white_button.setGeometry(620, 250, 470, 30)
 
         self.player_black_button = QPushButton(self)
         self.player_black_button.setText("Player")  # text
         self.player_black_button.setIcon(QIcon("data/gui/black_king.png"))  # icon
         self.player_black_button.setStyleSheet('QPushButton {background-color: black; color: white;}')
-        self.player_black_button.setGeometry(620, 300, 370, 30)
+        self.player_black_button.setGeometry(620, 300, 470, 30)
 
         self.tablewidget = QTableWidget(1, 2, self)
         self.tablewidget.setGeometry(1100, 250, 260, 330)

@@ -3,6 +3,7 @@ from .index_data import NodeExplorationData, RecurZipfQuoolExplorationData, MinM
 from .index_types import IndexComputationType
 from .node_exploration_manager import UpdateIndexZipfFactoredProba, UpdateIndexGlobalMinChange, \
     UpdateIndexLocalMinChange, NodeExplorationIndexManager, NullNodeExplorationIndexManager
+from typing import Callable
 
 
 def create_exploration_index_manager(
@@ -24,6 +25,9 @@ def create_exploration_index_manager(
                 raise ValueError(f'player creator: can not find {other} in {__name__}')
 
     return node_exploration_manager
+
+
+ExplorationIndexDataFactory = Callable[[nodes.TreeNode], NodeExplorationData | None]
 
 
 def create_exploration_index_data(

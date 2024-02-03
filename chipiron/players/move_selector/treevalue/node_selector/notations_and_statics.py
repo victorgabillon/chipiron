@@ -1,9 +1,20 @@
 import math
 from chipiron.utils.comparable import Comparable
 from typing import Iterable
+import random
 
 
-def zipf_picks(ranks: Iterable[int], values: Iterable[Comparable], shift: bool = False) -> int:
+def zipf_picks(
+        ranks: Iterable[int],
+        values: Iterable[Comparable],
+        random_generator,
+        shift: bool = False,
+        random_pick: bool = False
+
+) -> int:
+
+
+
     shift_rank: int
 
     if shift:
@@ -11,18 +22,25 @@ def zipf_picks(ranks: Iterable[int], values: Iterable[Comparable], shift: bool =
     else:
         shift_rank = 0
 
-    best_value: float | None = None
+    best_weight: float | None = None
     best_rank: int | None = None
 
+    weights = []
     for rank, value in zip(ranks, values):
         shifted_rank = rank - shift_rank + 1
         log_term: float = (math.log(math.e * shifted_rank)) ** 2
-        value: float = value * shifted_rank * log_term
-        if best_value is None or value < best_value:
-            best_value = value
+        weight: float = value * shifted_rank * log_term+.0001
+        weights.append(weight)
+        if best_weight is None or weight < best_weight:
+            best_weight = weight
             best_rank = rank
 
-    return best_rank
+    if random_pick:
+        choices = random_generator.choices(list(ranks.keys()), weights=weights, k=1)
+
+        return choices[0]
+    else:
+        return best_rank
 
 
 def zipf_picks_random(ordered_list_elements, random_generator):

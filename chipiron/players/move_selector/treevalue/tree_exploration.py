@@ -1,6 +1,8 @@
 """
 Tree Exploration
 """
+import random
+from chipiron.players.move_selector.treevalue.search_factory import NodeSelectorFactory
 import chess
 
 from .trees.factory import MoveAndValueTreeFactory
@@ -50,9 +52,10 @@ class TreeExploration:
             self.tree.root_node.minmax_evaluation.print_children_sorted_by_value_and_exploration()
             self.tree_manager.print_best_line(tree=self.tree)
 
-    def explore(self,
-                random_generator
-                ) -> chess.Move:
+    def explore(
+            self,
+            random_generator: random.Random
+    ) -> MoveRecommendation:
 
         # by default the first tree expansion is the creation of the tree node
         tree_expansions: tree_man.TreeExpansions = tree_man.TreeExpansions()
@@ -76,12 +79,14 @@ class TreeExploration:
                 latest_tree_expansions=tree_expansions
             )
 
+
             # make sure we do not break the stopping criterion
             opening_instructions_subset: node_sel.OpeningInstructions
             opening_instructions_subset = self.stopping_criterion.respectful_opening_instructions(
                 opening_instructions=opening_instructions,
                 tree=self.tree)
 
+          #  opening_instructions_subset.print_info()
             # open the nodes
             tree_expansions: tree_man.TreeExpansions = self.tree_manager.open_instructions(
                 tree=self.tree,
@@ -109,9 +114,7 @@ class TreeExploration:
 
 
 def create_tree_exploration(
-        random_generator,
-        opening_type: OpeningType,
-        node_selector_args: node_sel.AllNodeSelectorArgs,
+        node_selector_create: NodeSelectorFactory,
         starting_board: boards.BoardChi,
         tree_manager: tree_man.AlgorithmNodeTreeManager,
         tree_factory: MoveAndValueTreeFactory,
@@ -122,32 +125,22 @@ def create_tree_exploration(
     Creation of the tree exploration to init all object necessary
      for a tree search to find one move in a given stating board
     Args:
+        node_selector_create:
         stopping_criterion_args:
         recommend_move_after_exploration:
-        node_selector_args:
-        opening_type:
         starting_board:
-        random_generator:
         tree_manager:
         tree_factory:
 
     Returns:
 
     """
-    # creates the opening instructor
-    opening_instructor: OpeningInstructor = OpeningInstructor(
-        opening_type, random_generator
-    ) if opening_type is not None else None
 
     # creates the tree
     move_and_value_tree: trees.MoveAndValueTree = tree_factory.create(starting_board=starting_board)
 
     # creates the node selector
-    node_selector: node_sel.NodeSelector = node_sel.create(
-        args=node_selector_args,
-        opening_instructor=opening_instructor,
-        random_generator=random_generator,
-    )
+    node_selector: node_sel.NodeSelector = node_selector_create()
 
     stopping_criterion: StoppingCriterion = create_stopping_criterion(
         args=stopping_criterion_args,

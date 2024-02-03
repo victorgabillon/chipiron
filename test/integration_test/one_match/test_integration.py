@@ -7,34 +7,34 @@ configs = [
 
 
     # random Player first to have a fast game
-    {'seed': 11, 'gui': False, 'file_name_player_one': 'Sequool.yaml', 'file_name_player_two': 'Random.yaml',
+    {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml', 'file_name_player_two': 'Random.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
 
-    {'seed': 11, 'gui': False, 'file_name_player_one': 'Sequool.yaml', 'file_name_player_two': 'RecurZipfSequool.yaml',
+    {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml', 'file_name_player_two': 'players_for_test_purposes/RecurZipfSequool.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
-    {'seed': 11, 'gui': False, 'file_name_player_one': 'Sequool.yaml', 'file_name_player_two': 'RecurZipfBase3.yaml',
+    {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml', 'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
-    {'seed': 11, 'gui': False, 'file_name_player_one': 'RecurZipfBase4.yaml',
-     'file_name_player_two': 'RecurZipfBase3.yaml', 'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
-    {'seed': 11, 'gui': False, 'file_name_player_one': 'Uniform.yaml', 'file_name_player_two': 'RecurZipfBase3.yaml',
+    {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/RecurZipfBase4.yaml',
+     'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml', 'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
+    {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Uniform.yaml', 'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
-    {'seed': 11, 'gui': False, 'file_name_player_one': 'RecurZipfBase3.yaml',
-     'file_name_player_two': 'RecurZipfBase3.yaml', 'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
+    {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/RecurZipfBase3.yaml',
+     'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml', 'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
 
     # checking profiling
-    {'seed': 11, 'gui': False, 'file_name_player_one': 'Sequool.yaml', 'file_name_player_two': 'Random.yaml',
+    {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml', 'file_name_player_two': 'Random.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': True},
 
     # checking another seed haha
-    {'seed': 12, 'gui': False, 'file_name_player_one': 'Sequool.yaml', 'file_name_player_two': 'Random.yaml',
+    {'seed': 12, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml', 'file_name_player_two': 'Random.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
 
     # need a check with two games
-    {'seed': 11, 'gui': False, 'file_name_player_one': 'Sequool.yaml', 'file_name_player_two': 'Random.yaml',
+    {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml', 'file_name_player_two': 'Random.yaml',
      'file_name_match_setting': 'setting_tron.yaml', 'profiling': False},
 
     # checking gui
-    {'seed': 11, 'gui': True, 'file_name_player_one': 'Sequool.yaml', 'file_name_player_two': 'Random.yaml',
+    {'seed': 11, 'gui': True, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml', 'file_name_player_two': 'Random.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
 
 ]
@@ -68,6 +68,8 @@ args = OneMatchScriptArgs()
 args.seed = 0
 args.file_name_player_one = 'players_for_test_purposes/RecurZipfSequool.yaml'
 args.file_name_player_two = 'players_for_test_purposes/Sequool.yaml'
+args.file_name_player_two = 'Random.yaml'
+
 args.file_name_match_setting = 'setting_tron.yaml'
 
 player_one_args: PlayerArgs

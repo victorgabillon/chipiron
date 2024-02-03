@@ -5,6 +5,7 @@ from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.node_minmax_evaluation import NodeMinmaxEvaluation
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import BoardRepresentation
 from chipiron.players.move_selector.treevalue.node_indices.index_data import NodeExplorationData
+from chipiron.environments.chess.board.board import BoardChi
 
 
 class AlgorithmNode:
@@ -42,7 +43,7 @@ class AlgorithmNode:
         return self.tree_node.player_to_move
 
     @property
-    def id(self):
+    def id(self) -> int:
         return self.tree_node.id
 
     @property
@@ -58,11 +59,11 @@ class AlgorithmNode:
         return self.tree_node.moves_children
 
     @property
-    def parent_nodes(self):
+    def parent_nodes(self) -> set[ITreeNode]:
         return self.tree_node.parent_nodes
 
     @property
-    def board(self):
+    def board(self) -> BoardChi:
         return self.tree_node.board
 
     def is_over(self) -> bool:

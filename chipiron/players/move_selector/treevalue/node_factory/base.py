@@ -28,11 +28,11 @@ class Base(TreeNodeFactory):
             parent_node: the parent node that can be None if no parent which means it is the rootnode
         """
 
-        parent_nodes: list[ITreeNode]
+        parent_nodes: set[ITreeNode]
         if parent_node is None:
-            parent_nodes = []
+            parent_nodes = set()
         else:
-            parent_nodes = [parent_node]
+            parent_nodes = {parent_node}
 
         tree_node: TreeNode = TreeNode(
             board_=board,

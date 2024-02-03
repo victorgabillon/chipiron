@@ -15,6 +15,7 @@ from .stopping_criterion import AllStoppingCriterionArgs
 from . import recommender_rule
 from typing import Literal
 from dataclasses import dataclass
+import chipiron.players.move_selector.treevalue.search_factory as search_factories
 
 Tree_Value_Name_Literal: str = 'TreeAndValue'
 
@@ -50,11 +51,18 @@ def create_tree_and_value_builders(args: TreeAndValuePlayerArgs,
         board_representation=args.board_evaluator.representation
     )
 
+    search_factory: search_factories.SearchFactoryP = search_factories.SearchFactory(
+        node_selector_args=args.node_selector,
+        opening_type=args.opening_type,
+        random_generator=random_generator,
+        index_computation=args.index_computation
+    )
+
     algorithm_node_factory: node_factory.AlgorithmNodeFactory
     algorithm_node_factory = node_factory.AlgorithmNodeFactory(
         tree_node_factory=tree_node_factory,
         board_representation_factory=board_representation_factory,
-        index_computation=args.index_computation
+        exploration_index_data_create=search_factory.node_index_create
     )
 
     tree_factory = MoveAndValueTreeFactory(
@@ -69,11 +77,12 @@ def create_tree_and_value_builders(args: TreeAndValuePlayerArgs,
         index_computation=args.index_computation
     )
 
-    tree_move_selector: TreeAndValueMoveSelector = TreeAndValueMoveSelector(opening_type=args.opening_type,
-                                                                            tree_manager=tree_manager,
-                                                                            random_generator=random_generator,
-                                                                            tree_factory=tree_factory,
-                                                                            node_selector_args=args.node_selector,
-                                                                            stopping_criterion_args=args.stopping_criterion,
-                                                                            recommend_move_after_exploration=args.recommender_rule)
+    tree_move_selector: TreeAndValueMoveSelector = TreeAndValueMoveSelector(
+        tree_manager=tree_manager,
+        random_generator=random_generator,
+        tree_factory=tree_factory,
+        node_selector_create=search_factory.create_node_selector_factory(),
+        stopping_criterion_args=args.stopping_criterion,
+        recommend_move_after_exploration=args.recommender_rule
+    )
     return tree_move_selector
