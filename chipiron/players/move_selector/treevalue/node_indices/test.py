@@ -15,7 +15,7 @@ from chipiron.environments.chess.board import BoardChi
 from chipiron.players.move_selector.treevalue.trees.descendants import RangedDescendants
 import chess
 from enum import Enum
-
+import chipiron.players.move_selector.treevalue.search_factory as search_factories
 
 class TestResult(Enum):
     PASSED = 0
@@ -38,11 +38,18 @@ def make_tree_from_file(
         node_factory_name=node_factory_name
     )
 
+    search_factory: search_factories.SearchFactoryP = search_factories.SearchFactory(
+        node_selector_args=None,
+        opening_type=None,
+        random_generator=None,
+        index_computation=index_computation
+    )
+
     algorithm_node_factory: node_factory.AlgorithmNodeFactory
     algorithm_node_factory = node_factory.AlgorithmNodeFactory(
         tree_node_factory=tree_node_factory,
         board_representation_factory=None,
-        index_computation=index_computation
+        exploration_index_data_create=search_factory.node_index_create
     )
     descendants: RangedDescendants = RangedDescendants()
 
