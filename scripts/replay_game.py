@@ -3,15 +3,16 @@ import sys
 from PyQt5.QtWidgets import *
 from chipiron.displays.gui_replay_games import MainWindow
 from scripts.script import Script
-
+import os
 
 class ReplayGameScript(Script):
 
     def __init__(self):
-        super().__init__()
+        base_experiment_output_folder = None
+        base_script: Script
 
     def run(self):
-        with open('chipiron/runs/match_outputs/Friday-04-16-2021--17:09:50:556501/games/Game2_W:ZipfSequool-vs-B:RecurZipfBase.obj',
+        with open('scripts/one_match/outputs/Wednesday-01-31-2024--21:03:54:357326/games/_0_W:Sequool-vs-B:SequoolOnlyPromosing.obj',
                   'rb') as fileGame:
             chess_board = pickle.load(fileGame)
 
