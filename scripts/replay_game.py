@@ -1,6 +1,6 @@
 import pickle
 import sys
-from PyQt5.QtWidgets import *
+from PySide6.QtWidgets import *
 from chipiron.displays.gui_replay_games import MainWindow
 from scripts.script import Script
 import os
