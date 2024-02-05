@@ -66,8 +66,10 @@ class OneMatchScript:
         args_dict: dict = self.base_script.initiate(self.base_experiment_output_folder)
 
         # Converting the args in the standardized dataclass
-        args: OneMatchScriptArgs = dacite.from_dict(data_class=OneMatchScriptArgs,
-                                                    data=args_dict)
+        args: OneMatchScriptArgs = dacite.from_dict(
+            data_class=OneMatchScriptArgs,
+            data=args_dict
+        )
 
         if args.gui and args.profiling:
             raise ValueError('Profiling does not work well atm with gui on')

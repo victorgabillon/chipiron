@@ -5,6 +5,49 @@ import random
 
 
 def zipf_picks(
+        ranks_values: dict[int, float],
+        random_generator,
+        shift: bool = False,
+        random_pick: bool = False
+) -> int:
+    shift_rank: int
+
+    if shift:
+        shift_rank: int = min(ranks_values.keys())
+    else:
+        shift_rank = 0
+
+    best_weight: float | None = None
+    best_rank: int | None = None
+
+    weights = []
+    for rank, value in ranks_values.items():
+
+        shifted_rank = rank - shift_rank + 1
+        log_term: float = (math.log(math.e * shifted_rank)) ** 2
+        weight: float = value * shifted_rank * log_term + .0001
+        weights.append(weight)
+      #  print('value', weight, value, shifted_rank, log_term)
+      #  print('wegith', best_weight, weight, best_weight, best_rank)
+
+        if best_weight is None or weight < best_weight:
+       #     print('rrrr')
+            best_weight = weight
+            best_rank = rank
+    #print('bestrank', best_rank)
+
+    if random_pick:
+        choices = random_generator.choices(list(ranks.keys()), weights=weights, k=1)
+        print('bestrankzz')
+
+        return choices[0]
+    else:
+     #   print('bestrank', best_rank)
+
+        return best_rank
+
+
+def zipf_picks_old(
         ranks: Iterable[int],
         values: Iterable[Comparable],
         random_generator,
@@ -12,9 +55,6 @@ def zipf_picks(
         random_pick: bool = False
 
 ) -> int:
-
-
-
     shift_rank: int
 
     if shift:
@@ -27,19 +67,28 @@ def zipf_picks(
 
     weights = []
     for rank, value in zip(ranks, values):
+
         shifted_rank = rank - shift_rank + 1
         log_term: float = (math.log(math.e * shifted_rank)) ** 2
-        weight: float = value * shifted_rank * log_term+.0001
+        weight: float = value * shifted_rank * log_term + .0001
         weights.append(weight)
+        print('value', weight, value, shifted_rank, log_term)
+        print('wegith', best_weight, weight, best_weight, best_rank)
+
         if best_weight is None or weight < best_weight:
+            print('rrrr')
             best_weight = weight
             best_rank = rank
+    print('bestrank', best_rank)
 
     if random_pick:
         choices = random_generator.choices(list(ranks.keys()), weights=weights, k=1)
+        print('bestrankzz')
 
         return choices[0]
     else:
+        print('bestrank', best_rank)
+
         return best_rank
 
 

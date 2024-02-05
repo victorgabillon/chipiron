@@ -96,7 +96,10 @@ class MatchManager:
 
         return game_report
 
-    def print_stats_to_file(self, match_results):
+    def print_stats_to_file(
+            self,
+            match_results: MatchResults
+    ) -> None:
         if self.output_folder_path is not None:
             path_file = self.output_folder_path + '/gameStats.txt'
             with open(path_file, 'a') as the_file:
