@@ -64,20 +64,22 @@ class StaticNotOpenedSelector:
             random_generator
     ) -> list[nodes.AlgorithmNode]:
 
-        filtered_count_visits: dict[HalfMove, int] = filter(
-            lambda hm: bool(hm in self.all_nodes_not_opened),
-            self.count_visits
-        )
+        filtered_count_visits = {hm: value for hm, value in self.count_visits.items() if hm in self.all_nodes_not_opened}
+
+        #print('tt', self.count_visits,
+       #       filtered_count_visits)
 
         # choose a half move based on zipf
         half_move_picked: int = zipf_picks(
-            ranks=self.all_nodes_not_opened,
-            values=filtered_count_visits,
+            ranks_values=filtered_count_visits,
             random_generator=random_generator,
             shift=True,
-            random_pick=True
+            random_pick=False
         )
-
+        #print('half_move_picked', half_move_picked, list(filtered_count_visits), self.count_visits,
+       #       self.all_nodes_not_opened)
+        import time
+        #time.sleep(2)
         self.count_visits[half_move_picked] += 1
 
         nodes_to_consider: list[nodes.AlgorithmNode] = []
@@ -159,12 +161,17 @@ class Sequool:
         node: nodes.AlgorithmNode
         for node in nodes_to_consider:
             if node.exploration_index_data.index is not None:
+               # print('index', node.id, node.exploration_index_data.index)
 
                 if best_node.exploration_index_data.index is None \
                         or (node.exploration_index_data.index, node.half_move) < best_value:
                     best_node = node
                     best_value = (node.exploration_index_data.index, node.half_move)
 
+       # print('defrs', best_node.id, self.recursif)
+
+        import time
+        # time.sleep(2)
         if not self.recursif:
             self.all_nodes_not_opened.remove_descendant(best_node)
 
