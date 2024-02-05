@@ -16,6 +16,7 @@ from chipiron.games.match.utils import fetch_match_games_args_convert_and_save
 import chipiron.games.match as match
 import chipiron.games.game as game
 from chipiron.utils import path
+import yaml
 
 
 @dataclass
@@ -63,13 +64,19 @@ class OneMatchScript:
         self.base_script = base_script
 
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into self.args
-        args_dict: dict = self.base_script.initiate(self.base_experiment_output_folder)
+        args_dict: dict = self.base_script.initiate(
+            base_experiment_output_folder=self.base_experiment_output_folder
+        )
 
         # Converting the args in the standardized dataclass
         args: OneMatchScriptArgs = dacite.from_dict(
             data_class=OneMatchScriptArgs,
             data=args_dict
         )
+
+        with open(os.path.join(args.experiment_output_folder, 'inputs_and_parsing/one_match_script_merge.yaml'),
+                  'w') as one_match_script:
+            yaml.dump(args, one_match_script, default_flow_style=False)
 
         if args.gui and args.profiling:
             raise ValueError('Profiling does not work well atm with gui on')

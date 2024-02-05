@@ -3,6 +3,7 @@ import yaml
 from chipiron.utils.small_tools import dict_alphabetic_str
 from datetime import datetime
 import os
+import yaml
 
 
 class MyParser:
@@ -57,9 +58,9 @@ class MyParser:
 
         #  the gui input  overwrite  the command line arguments
         #  that overwrite the config file arguments that overwrite the default arguments
-        print('oo',extra_args)
         self.merged_args = self.args_config_file | self.args_command_line | extra_args
-        print('Here are the merged arguments of the script', self.merged_args)
+        print(
+            f'Here are the merged arguments of the script {self.merged_args}\n{self.args_config_file}\n{self.args_command_line}\n{extra_args}')
 
         if 'output_folder' not in self.merged_args:
             now = datetime.now()  # current date and time
@@ -71,16 +72,13 @@ class MyParser:
 
         return self.merged_args
 
-    def log_parser_info(self, output_folder):
-        with open(output_folder + '/parser_output.txt', 'w') as parser_output:
-            parser_output.write('This are the logs of the parsing.\n\n')
-            parser_output.write(
-                f'Command line parameters are:\n{dict_alphabetic_str(self.args_command_line)}\n\n'
-            )
-            parser_output.write(
-                f'Config file parameters are:\n{dict_alphabetic_str(self.args_config_file)}\n\n'
-            )
-            parser_output.write(f'Merged parameters are:\n{dict_alphabetic_str(self.merged_args)}\n\n')
+    def log_parser_info(
+            self,
+            output_folder: str
+    ):
+
+        with open(os.path.join(output_folder, 'inputs_and_parsing/base_script_merge.yaml'), 'w') as base_merge:
+            yaml.dump(self.merged_args, base_merge, default_flow_style=False)
 
 
 def create_parser() -> MyParser:
