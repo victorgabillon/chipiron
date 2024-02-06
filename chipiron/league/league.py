@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 import chipiron.players as players
 import random
 from chipiron.utils.small_tools import mkdir, path
-from chipiron.games.match.observable_match_result import MatchReport
+from chipiron.games.match.match_results import MatchReport
 
 
 def new_player_joins(player):
@@ -90,7 +90,7 @@ class League:
 
         # Recovering args from yaml file for match and game and merging with extra args and converting
         # to standardized dataclass
-        match_args: match.MatchArgs
+        match_args: match.MatchSettingsArgs
         game_args: game.GameArgs
         match_args, game_args = fetch_match_games_args_convert_and_save(
             file_name_match_setting=file_match_setting,

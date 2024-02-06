@@ -2,7 +2,7 @@ from chipiron.utils import path
 import chipiron as ch
 import os
 from shutil import copyfile
-import chipiron.games.match as match
+from .match_settings_args import MatchSettingsArgs
 import chipiron.games.game as game
 from chipiron.utils.small_tools import fetch_args_modify_and_convert
 
@@ -12,7 +12,7 @@ def fetch_match_games_args_convert_and_save(
         profiling: bool = False,
         experiment_output_folder: str | None = None,
         modification: dict | None = None,
-) -> tuple[match.MatchArgs, game.GameArgs]:
+) -> tuple[MatchSettingsArgs, game.GameArgs]:
     file_name_match_setting: str | bytes | os.PathLike
 
     if profiling:
@@ -21,10 +21,10 @@ def fetch_match_games_args_convert_and_save(
         file_name_match_setting = file_name_match_setting
 
     path_match_setting: str = os.path.join('data/settings/OneMatch', file_name_match_setting)
-    match_args: match.MatchArgs = fetch_args_modify_and_convert(
+    match_args: MatchSettingsArgs = fetch_args_modify_and_convert(
         path_to_file=path_match_setting,
         modification=modification,
-        dataclass_name=match.MatchArgs  # pycharm raises a warning here(hoping its beacause p
+        dataclass_name=MatchSettingsArgs  # pycharm raises a warning here(hoping its beacause p
         # ycharm does not understand well annoation in 3.12 yet)
     )
 

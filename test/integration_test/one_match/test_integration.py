@@ -5,36 +5,45 @@ os.chdir('../../')
 print(os.getcwd())
 configs = [
 
-
     # random Player first to have a fast game
-    {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml', 'file_name_player_two': 'Random.yaml',
+    {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
+     'file_name_player_two': 'Random.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
 
-    {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml', 'file_name_player_two': 'players_for_test_purposes/RecurZipfSequool.yaml',
+    {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
+     'file_name_player_two': 'players_for_test_purposes/RecurZipfSequool.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
-    {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml', 'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml',
+    {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
+     'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
     {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/RecurZipfBase4.yaml',
-     'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml', 'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
-    {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Uniform.yaml', 'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml',
+     'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml',
+     'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
+    {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Uniform.yaml',
+     'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
     {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/RecurZipfBase3.yaml',
-     'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml', 'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
+     'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml',
+     'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
 
     # checking profiling
-    {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml', 'file_name_player_two': 'Random.yaml',
+    {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
+     'file_name_player_two': 'Random.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': True},
 
     # checking another seed haha
-    {'seed': 12, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml', 'file_name_player_two': 'Random.yaml',
+    {'seed': 12, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
+     'file_name_player_two': 'Random.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
 
     # need a check with two games
-    {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml', 'file_name_player_two': 'Random.yaml',
+    {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
+     'file_name_player_two': 'Random.yaml',
      'file_name_match_setting': 'setting_tron.yaml', 'profiling': False},
 
     # checking gui
-    {'seed': 11, 'gui': True, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml', 'file_name_player_two': 'Random.yaml',
+    {'seed': 11, 'gui': True, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
+     'file_name_player_two': 'Random.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
 
 ]
@@ -55,72 +64,25 @@ for config in configs:
 print('test randomness')
 # test randomness
 import chipiron as ch
+from chipiron.games.match.match_factories import create_match_manager_from_args
+from chipiron.games.match.match_results import MatchReport
+from chipiron.games.match.match_args import MatchArgs
 
-from chipiron.players.factory import PlayerArgs
-from chipiron.players.utils import fetch_two_players_args_convert_and_save
-from chipiron.games.match.utils import fetch_match_games_args_convert_and_save
-import chipiron.games.match as match
-import chipiron.games.game as game
-from chipiron.games.match.observable_match_result import MatchReport
-from scripts.one_match.one_match import OneMatchScriptArgs
-
-args = OneMatchScriptArgs()
+args: MatchArgs = MatchArgs()
 args.seed = 0
 args.file_name_player_one = 'players_for_test_purposes/RecurZipfSequool.yaml'
 args.file_name_player_two = 'players_for_test_purposes/Sequool.yaml'
 args.file_name_player_two = 'Random.yaml'
-
 args.file_name_match_setting = 'setting_tron.yaml'
 
-player_one_args: PlayerArgs
-player_two_args: PlayerArgs
-player_one_args, player_two_args = fetch_two_players_args_convert_and_save(
-    file_name_player_one=args.file_name_player_one,
-    file_name_player_two=args.file_name_player_two,
-    modification_player_one=args.player_one,
-    modification_player_two=args.player_two,
-    experiment_output_folder=args.experiment_output_folder
-)
-
-# Recovering args from yaml file for match and game and merging with extra args and converting
-# to standardized dataclass
-match_args: match.MatchArgs
-game_args: game.GameArgs
-match_args, game_args = fetch_match_games_args_convert_and_save(
-    profiling=args.profiling,
-    file_name_match_setting=args.file_name_match_setting,
-    modification=args.match,
-    experiment_output_folder=args.experiment_output_folder
-)
-
-# taking care of random
-ch.set_seeds(seed=args.seed)
-
-print('self.args.experiment_output_folder', args.experiment_output_folder)
-match_manager: ch.game.MatchManager = match.create_match_manager(
-    args_match=match_args,
-    args_player_one=player_one_args,
-    args_player_two=player_two_args,
-    output_folder_path=args.experiment_output_folder,
-    seed=args.seed,
-    args_game=game_args,
-    gui=args.gui
-)
+match_manager: ch.game.MatchManager = create_match_manager_from_args(args=args)
 match_report_base: MatchReport = match_manager.play_one_match()
 
 test_passed: bool = True
 number_test: int = 1
 
 for ind in range(number_test):
-    match_manager: ch.game.MatchManager = match.create_match_manager(
-        args_match=match_args,
-        args_player_one=player_one_args,
-        args_player_two=player_two_args,
-        output_folder_path=args.experiment_output_folder,
-        seed=args.seed,
-        args_game=game_args,
-        gui=args.gui
-    )
+    match_manager: ch.game.MatchManager = create_match_manager_from_args(args=args)
     match_report: MatchReport = match_manager.play_one_match()
 
     # checking if two matches launched with the same fixed seed returns the same game moves.

@@ -1,19 +1,23 @@
 from chipiron.games.match.match_manager import MatchManager
+from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.game.game_manager_factory import GameManagerFactory
 from chipiron.games.match.match_results_factory import MatchResultsFactory
+from chipiron.games.match.utils import fetch_match_games_args_convert_and_save
+from chipiron.players.utils import fetch_two_players_args_convert_and_save
 from chipiron.players.boardevaluators.factory import create_game_board_evaluator
 from chipiron.utils import path
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy_thread
 from chipiron.players.factory import PlayerArgs
-from .match_args import MatchArgs
+from .match_settings_args import MatchSettingsArgs
 import chipiron.games.game as game
 import multiprocessing
 import queue
+import chipiron as ch
 
 
 def create_match_manager(
-        args_match: MatchArgs,
+        args_match: MatchSettingsArgs,
         args_player_one: PlayerArgs,
         args_player_two: PlayerArgs,
         args_game: game.GameArgs,
@@ -30,7 +34,7 @@ def create_match_manager(
     player_one_name: str = args_player_one.name
     player_two_name: str = args_player_two.name
 
-    game_board_evaluator  = create_game_board_evaluator(gui=gui)
+    game_board_evaluator = create_game_board_evaluator(gui=gui)
 
     game_manager_factory: GameManagerFactory = GameManagerFactory(
         syzygy_table=syzygy_mailbox,
@@ -60,4 +64,47 @@ def create_match_manager(
         match_results_factory=match_results_factory,
         output_folder_path=output_folder_path
     )
+    return match_manager
+
+
+def create_match_manager_from_args(
+        args: MatchArgs,
+        profiling: bool = False,
+        gui: bool = False
+) -> MatchManager:
+    player_one_args: PlayerArgs
+    player_two_args: PlayerArgs
+    player_one_args, player_two_args = fetch_two_players_args_convert_and_save(
+        file_name_player_one=args.file_name_player_one,
+        file_name_player_two=args.file_name_player_two,
+        modification_player_one=args.player_one,
+        modification_player_two=args.player_two,
+        experiment_output_folder=args.experiment_output_folder
+    )
+
+    # Recovering args from yaml file for match and game and merging with extra args and converting
+    # to standardized dataclass
+    match_args: MatchSettingsArgs
+    game_args: game.GameArgs
+    match_args, game_args = fetch_match_games_args_convert_and_save(
+        profiling=profiling,
+        file_name_match_setting=args.file_name_match_setting,
+        modification=args.match,
+        experiment_output_folder=args.experiment_output_folder
+    )
+
+    # taking care of random
+    ch.set_seeds(seed=args.seed)
+
+    print('self.args.experiment_output_folder', args.experiment_output_folder)
+    match_manager: MatchManager = create_match_manager(
+        args_match=match_args,
+        args_player_one=player_one_args,
+        args_player_two=player_two_args,
+        output_folder_path=args.experiment_output_folder,
+        seed=args.seed,
+        args_game=game_args,
+        gui=gui
+    )
+
     return match_manager

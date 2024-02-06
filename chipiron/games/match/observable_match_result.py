@@ -1,10 +1,8 @@
 import copy
 import queue
-import typing
 from chipiron.utils.communication.gui_messages import MatchResultsMessage
 from dataclasses import dataclass, field
-import chess
-from .math_results import MatchResults
+from .match_results import MatchResults
 
 
 @dataclass
@@ -65,8 +63,3 @@ class ObservableMatchResults:
     ) -> str:
         return str(self.match_results)
 
-
-@dataclass
-class MatchReport:
-    match_results: MatchResults
-    match_move_history: dict[int, list[chess.Move]]

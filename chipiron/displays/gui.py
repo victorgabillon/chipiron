@@ -18,7 +18,7 @@ from chipiron.utils.communication.gui_player_message import PlayersColorToPlayer
 from chipiron.utils.communication.player_game_messages import BoardMessage, MoveMessage
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
-from chipiron.games.match.math_results import MatchResults
+from chipiron.games.match.match_results import MatchResults
 
 
 class MplCanvas(FigureCanvasQTAgg):

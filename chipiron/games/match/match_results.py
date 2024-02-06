@@ -1,5 +1,6 @@
 from chipiron.games.game.game_manager import FinalGameResult
 from dataclasses import dataclass
+import chess
 
 
 @dataclass
@@ -77,3 +78,9 @@ class MatchResults:
         str_ += ', Losses ' + str(self.player_one_is_white_white_wins)
         str_ += ', Draws ' + str(self.player_one_is_white_draws)
         return str_
+
+
+@dataclass
+class MatchReport:
+    match_results: MatchResults
+    match_move_history: dict[int, list[chess.Move]]

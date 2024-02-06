@@ -1,11 +1,13 @@
 import chess
 from chipiron.games.game.game_manager_factory import GameManagerFactory
 from chipiron.games.game.game_manager import GameManager, GameReport
-from chipiron.games.match.math_results import MatchResults
-from chipiron.games.match.observable_match_result import MatchReport
+from chipiron.games.match.match_results import MatchResults, MatchReport
 from chipiron.games.game.game_args import GameArgs
 from chipiron.players import Player
 from chipiron.games.match.match_results_factory import MatchResultsFactory
+from chipiron.utils import path
+import pickle
+import os
 
 
 class MatchManager:
@@ -72,14 +74,18 @@ class MatchManager:
             game_number += 1
 
         print(match_results)
-        self.print_stats_to_file(match_results)
+        self.print_stats_to_file(match_results=match_results)
 
         # setting  officially the game to finished state (some subscribers might receive this event as a message,
         # when a gui is present it might action it to close itself)
         match_results.finish()
 
-        match_report: MatchReport = MatchReport(match_move_history=match_move_history,
-                                                match_results=match_results)
+        match_report: MatchReport = MatchReport(
+            match_move_history=match_move_history,
+            match_results=match_results
+        )
+
+        self.save_match_report_to_file(match_report)
 
         return match_report
 
@@ -89,8 +95,10 @@ class MatchManager:
             args_game: GameArgs,
             game_number: int
     ) -> GameReport:
-        game_manager: GameManager = self.game_manager_factory.create(args_game_manager=args_game,
-                                                                     player_color_to_player=player_color_to_player)
+        game_manager: GameManager = self.game_manager_factory.create(
+            args_game_manager=args_game,
+            player_color_to_player=player_color_to_player
+        )
         game_report: GameReport = game_manager.play_one_game()
         game_manager.print_to_file(idx=game_number)
 
@@ -101,9 +109,18 @@ class MatchManager:
             match_results: MatchResults
     ) -> None:
         if self.output_folder_path is not None:
-            path_file = self.output_folder_path + '/gameStats.txt'
+            path_file: path = os.path.join(self.output_folder_path, 'gameStats.txt')
             with open(path_file, 'a') as the_file:
                 the_file.write(str(match_results))
+
+    def save_match_report_to_file(
+            self,
+            match_report: MatchReport
+    ) -> None:
+        if self.output_folder_path is not None:
+            path_file: path = os.path.join(self.output_folder_path, 'match_report.obj')
+            with open(path_file, 'wb') as the_file:
+                pickle.dump(match_report, the_file)
 
     def subscribe(self, subscriber):
         self.game_manager_factory.subscribe(subscriber)
