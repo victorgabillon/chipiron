@@ -1,2 +1,2 @@
 from .match_factories import create_match_manager
-from .match_args import MatchArgs
+from .match_settings_args import MatchSettingsArgs

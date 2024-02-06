@@ -6,42 +6,25 @@ import queue
 import os
 import multiprocessing
 from PySide6.QtWidgets import QApplication
-from scripts.script import Script, ScriptArgs
+from scripts.script import Script
 import chipiron as ch
-from dataclasses import dataclass, field
+from dataclasses import asdict
 import dacite
-from chipiron.players.factory import PlayerArgs
-from chipiron.players.utils import fetch_two_players_args_convert_and_save
-from chipiron.games.match.utils import fetch_match_games_args_convert_and_save
-import chipiron.games.match as match
-import chipiron.games.game as game
-from chipiron.utils import path
+from chipiron.games.match.match_args import MatchArgs
 import yaml
+from chipiron.games.match.match_factories import create_match_manager_from_args
+from dataclasses import dataclass
+from scripts.script import ScriptArgs
 
 
 @dataclass
-class OneMatchScriptArgs(ScriptArgs):
+class MatchScriptArgs(ScriptArgs, MatchArgs):
     """
     The input arguments needed by the one match script to run
     """
-    # the seed
-    seed: int = 0
 
     # whether to display the match in a GUI
     gui: bool = False
-
-    experiment_output_folder: path = None
-
-    # path to files with yaml config the players and the match setting.
-    config_file_name: path = 'scripts/one_match/inputs/base/exp_options.yaml'
-    file_name_player_one: path = 'RecurZipfBase3.yaml'
-    file_name_player_two: path = 'Sequool.yaml'
-    file_name_match_setting: path = 'setting_duda.yaml'
-
-    # For players and match modification of the yaml file specified in a respective dict
-    player_one: dict = field(default_factory=dict)
-    player_two: dict = field(default_factory=dict)
-    match: dict = field(default_factory=dict)
 
 
 class OneMatchScript:
@@ -69,54 +52,28 @@ class OneMatchScript:
         )
 
         # Converting the args in the standardized dataclass
-        args: OneMatchScriptArgs = dacite.from_dict(
-            data_class=OneMatchScriptArgs,
+        args: MatchScriptArgs = dacite.from_dict(
+            data_class=MatchScriptArgs,
             data=args_dict
         )
 
-        with open(os.path.join(args.experiment_output_folder, 'inputs_and_parsing/one_match_script_merge.yaml'),
-                  'w') as one_match_script:
-            yaml.dump(args, one_match_script, default_flow_style=False)
-
-        if args.gui and args.profiling:
-            raise ValueError('Profiling does not work well atm with gui on')
-
-        # Recovering args from yaml file for player and merging with extra args and converting to standardized dataclass
-        player_one_args: PlayerArgs
-        player_two_args: PlayerArgs
-        player_one_args, player_two_args = fetch_two_players_args_convert_and_save(
-            file_name_player_one=args.file_name_player_one,
-            file_name_player_two=args.file_name_player_two,
-            modification_player_one=args.player_one,
-            modification_player_two=args.player_two,
-            experiment_output_folder=args.experiment_output_folder
-        )
-
-        # Recovering args from yaml file for match and game and merging with extra args and converting
-        # to standardized dataclass
-        match_args: match.MatchArgs
-        game_args: game.GameArgs
-        match_args, game_args = fetch_match_games_args_convert_and_save(
+        # creating the match manager
+        self.match_manager: ch.game.MatchManager = create_match_manager_from_args(
+            args=args,
             profiling=args.profiling,
-            file_name_match_setting=args.file_name_match_setting,
-            modification=args.match,
-            experiment_output_folder=args.experiment_output_folder
-        )
-
-        # taking care of random
-        ch.set_seeds(seed=args.seed)
-
-        print('self.args.experiment_output_folder', args.experiment_output_folder)
-        self.match_manager: ch.game.MatchManager = match.create_match_manager(
-            args_match=match_args,
-            args_player_one=player_one_args,
-            args_player_two=player_two_args,
-            output_folder_path=args.experiment_output_folder,
-            seed=args.seed,
-            args_game=game_args,
             gui=args.gui
         )
 
+        # saving the arguments of the script
+        with open(os.path.join(args.experiment_output_folder, 'inputs_and_parsing/one_match_script_merge.yaml'),
+                  'w') as one_match_script:
+            yaml.dump(asdict(args), one_match_script, default_flow_style=False)
+
+        # checking for some incompatibility
+        if args.gui and args.profiling:
+            raise ValueError('Profiling does not work well atm with gui on')
+
+        # If we need a GUI
         if args.gui:
             # if we use a graphic user interface (GUI) we create it its own thread and
             # create its mailbox to communicate with other threads

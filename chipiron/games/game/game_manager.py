@@ -16,6 +16,7 @@ from chipiron.utils.is_dataclass import DataClass
 from chipiron.environments.chess.board import BoardChi
 
 from dataclasses import dataclass
+from chipiron.utils import path
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -175,20 +176,24 @@ class GameManager:
             case other:
                 raise ValueError(f'type of message received is not recognized {other} in file {__name__}')
 
-    def game_continue_conditions(self) -> bool:
+    def game_continue_conditions(
+            self
+    ) -> bool:
         half_move: HalfMove = self.game.board.ply()
         continue_bool: bool = True
         if self.args.max_half_moves is not None and half_move >= self.args.max_half_moves:
             continue_bool: bool = False
         return continue_bool
 
-    def print_to_file(self,
-                      idx: int = 0) -> None:
+    def print_to_file(
+            self,
+            idx: int = 0
+    ) -> None:
         if self.path_to_store_result is not None:
-            path_file = self.path_to_store_result + '_' + str(
-                idx) + '_W:' + self.player_color_to_id[chess.WHITE] + '-vs-B:' + self.player_color_to_id[chess.BLACK]
-            path_file_txt = path_file + '.txt'
-            path_file_obj = path_file + '.obj'
+            path_file: path = (f'{self.path_to_store_result}_{idx}_W:{self.player_color_to_id[chess.WHITE]}'
+                               f'-vs-B:{self.player_color_to_id[chess.BLACK]}')
+            path_file_txt = f'{path_file}.txt'
+            path_file_obj = f'{path_file}.obj'
             with open(path_file_txt, 'a') as the_fileText:
                 for counter, move in enumerate(self.game.board.move_stack):
                     if counter % 2 == 0:

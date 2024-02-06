@@ -43,7 +43,7 @@ class GameArgsFactory:
 
     """
 
-    args_match: 'match.MatchArgs'
+    args_match: 'match.MatchSettingsArgs'
     seed: int | None
     args_player_one: PlayerArgs
     args_player_two: PlayerArgs
@@ -51,7 +51,7 @@ class GameArgsFactory:
     game_number: int
 
     def __init__(self,
-                 args_match: 'match.MatchArgs',
+                 args_match: 'match.MatchSettingsArgs',
                  args_player_one: PlayerArgs,
                  args_player_two: PlayerArgs,
                  seed: int | None,
