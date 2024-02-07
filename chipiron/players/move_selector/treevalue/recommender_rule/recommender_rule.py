@@ -7,7 +7,11 @@ import chess
 from chipiron.utils.small_tools import softmax
 from chipiron.players.boardevaluators.over_event import HowOver
 
+import random
+from chipiron.players.move_selector.treevalue.nodes.utils import is_winning
 import chipiron.players.move_selector.treevalue.trees as trees
+from chipiron.players.boardevaluators.basic_evaluation import value_base
+from chipiron.players.move_selector.treevalue.nodes import AlgorithmNode
 
 AlmostEqualLogistic_Literal = 'almost_equal_logistic'
 
@@ -101,3 +105,47 @@ def recommend_move_after_exploration(
     else:
         raise (ValueError('move_selection_rule is not valid it seems'))
     return best_move
+
+
+def recommend_move_after_exploration_generic(
+        recommend_move_after_exploration: RecommenderRule,
+        tree: trees.MoveAndValueTree,
+        random_generator: random.Random
+) -> chess.Move:
+    # if the situation is winning, we ask to play the move that is the most likely
+    # to end the game fast by capturing pieces if possible
+    is_winning_situation: bool = is_winning(
+        node_minmax_evaluation=tree.root_node.minmax_evaluation,
+        color=tree.root_node.board.turn
+    )
+    over: bool = tree.root_node.is_over()
+    if is_winning_situation and not over:
+        # value of pieces of the opponent before the move
+        value_father: int = value_base(
+            board=tree.root_node.board,
+            color=not tree.root_node.board.turn
+        )
+
+        child: AlgorithmNode
+        best_value = None
+        best_move = None
+        for move, child in tree.root_node.moves_children.items():
+            # value of pieces of the opponent after that move
+            value_child: int = value_base(
+                board=child.board,
+                color=child.board.turn
+            )
+            value = value_father - value_child
+
+            still_wining_after_move: bool = is_winning(
+                node_minmax_evaluation=child.minmax_evaluation,
+                color=tree.root_node.board.turn
+            )
+            if still_wining_after_move and (best_value is None or best_value < value):
+                best_value = value
+                best_move = move
+        if best_value > 0:
+            return best_move
+
+    # base case
+    return recommend_move_after_exploration(tree=tree, random_generator=random_generator)

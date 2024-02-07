@@ -322,7 +322,10 @@ class MainWindow(QWidget):
         self.eval_button_black.setText('eval White: ' + str(evaluation_white))  # text
         self.eval_button_white.setText('eval Black: ' + str(evaluation_black))  # text
 
-    def update_game_play_status(self, play_status: PlayingStatus):
+    def update_game_play_status(
+            self,
+            play_status: PlayingStatus
+    ) -> None:
         if play_status == PlayingStatus.PAUSE:
             self.pause_button.setText("Play")  # text
             self.pause_button.setIcon(QIcon("data/gui/play.png"))  # icon

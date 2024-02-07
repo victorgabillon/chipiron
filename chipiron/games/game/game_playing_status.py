@@ -1,6 +1,7 @@
 from enum import Enum
 from dataclasses import dataclass
 
+
 class PlayingStatus(Enum):
     PLAY: int = 1
     PAUSE: int = 0
@@ -34,4 +35,3 @@ class GamePlayingStatus:
 
     def is_play(self):
         return self.status == PlayingStatus.PLAY
-

@@ -1,14 +1,18 @@
 import chess
 from chipiron.players.boardevaluators.board_evaluator import BoardEvaluator
+from chipiron.environments.chess.board.board import BoardChi
 
 
-def value_base(board, color):
-    value_white = bin(board.pawns & board.occupied_co[color]).count('1') \
-                  + bin(board.knights & board.occupied_co[color]).count('1') * 3 \
-                  + bin(board.bishops & board.occupied_co[color]).count('1') * 3 \
-                  + bin(board.rooks & board.occupied_co[color]).count('1') * 5 \
-                  + bin(board.queens & board.occupied_co[color]).count('1') * 9
-    return value_white
+def value_base(
+        board: BoardChi,
+        color: chess.COLORS
+) -> int:
+    value_white_: int = bin(board.pawns & board.occupied_co[color]).count('1') \
+                        + bin(board.knights & board.occupied_co[color]).count('1') * 3 \
+                        + bin(board.bishops & board.occupied_co[color]).count('1') * 3 \
+                        + bin(board.rooks & board.occupied_co[color]).count('1') * 5 \
+                        + bin(board.queens & board.occupied_co[color]).count('1') * 9
+    return value_white_
 
 
 def add_pawns_value_white(board):
