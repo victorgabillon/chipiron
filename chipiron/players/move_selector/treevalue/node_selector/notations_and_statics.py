@@ -10,6 +10,7 @@ def zipf_picks(
         shift: bool = False,
         random_pick: bool = False
 ) -> int:
+    """ this function returns the min of the index times the rank times log terms"""
     shift_rank: int
 
     if shift:
@@ -27,14 +28,13 @@ def zipf_picks(
         log_term: float = (math.log(math.e * shifted_rank)) ** 2
         weight: float = value * shifted_rank * log_term + .0001
         weights.append(weight)
-      #  print('value', weight, value, shifted_rank, log_term)
-      #  print('wegith', best_weight, weight, best_weight, best_rank)
+        #  print('value', weight, value, shifted_rank, log_term)
+        #  print('wegith', best_weight, weight, best_weight, best_rank)
 
         if best_weight is None or weight < best_weight:
-       #     print('rrrr')
             best_weight = weight
             best_rank = rank
-    #print('bestrank', best_rank)
+    # print('bestrank', best_rank)
 
     if random_pick:
         choices = random_generator.choices(list(ranks.keys()), weights=weights, k=1)
@@ -42,7 +42,7 @@ def zipf_picks(
 
         return choices[0]
     else:
-     #   print('bestrank', best_rank)
+       # print('bestrank', weights)
 
         return best_rank
 
@@ -79,7 +79,7 @@ def zipf_picks_old(
             print('rrrr')
             best_weight = weight
             best_rank = rank
-    print('bestrank', best_rank)
+   # print('bestrank', best_rank)
 
     if random_pick:
         choices = random_generator.choices(list(ranks.keys()), weights=weights, k=1)
@@ -87,7 +87,7 @@ def zipf_picks_old(
 
         return choices[0]
     else:
-        print('bestrank', best_rank)
+      #  print('bestrank', best_rank)
 
         return best_rank
 
@@ -125,3 +125,14 @@ def zipf_picks_random_weird(list_elements, bool_func, random_generator):
     best_index = random_generator.choices(list(range(length_list)), weights=weights, k=1)
 
     return best_index[0], None
+
+if __name__ == '__main__':
+    import random
+
+    randomg = random.Random()
+    r = {1: 2, 2: 3, 3: 4}
+    res = zipf_picks(random_generator=randomg,
+                     ranks_values=r,
+                     random_pick=False,
+                     shift=False)
+    print(res)

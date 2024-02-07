@@ -1,5 +1,8 @@
+import chess
+
 from .itree_node import ITreeNode
 from .tree_node import TreeNode
+from .node_minmax_evaluation import NodeMinmaxEvaluation
 
 
 def are_all_moves_and_children_opened(
@@ -26,3 +29,14 @@ def print_a_move_sequence_from_root(
 ) -> None:
     move_sequence_from_root: list[str] = a_move_sequence_from_root(tree_node=tree_node)
     print(f'a_move_sequence_from_root{move_sequence_from_root}')
+
+
+def is_winning(
+        node_minmax_evaluation: NodeMinmaxEvaluation,
+        color: chess.COLORS
+) -> bool:
+    """ return if the color to play in the node is winning """
+    winning_if_color_white: bool = node_minmax_evaluation.value_white_minmax > .98 and color
+    winning_if_color_black: bool = node_minmax_evaluation.value_white_minmax < -.98 and not color
+
+    return winning_if_color_white or winning_if_color_black

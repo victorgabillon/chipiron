@@ -6,7 +6,6 @@ from chipiron.players.move_selector.treevalue.search_factory import NodeSelector
 import chess
 
 from .trees.factory import MoveAndValueTreeFactory
-from .node_selector.opening_instructions import OpeningInstructor, OpeningType
 from .stopping_criterion import StoppingCriterion, create_stopping_criterion, StoppingCriterionArgs
 import chipiron.environments.chess.board as boards
 
@@ -17,7 +16,7 @@ from . import recommender_rule
 
 from dataclasses import dataclass
 from chipiron.players.move_selector.move_selector import MoveRecommendation
-
+from chipiron.players.move_selector.treevalue.recommender_rule.recommender_rule import recommend_move_after_exploration_generic
 
 @dataclass
 class TreeExploration:
@@ -103,8 +102,11 @@ class TreeExploration:
         #          f' {child.minmax_evaluation.over_event.get_over_tag()}')
         # print(f'evaluation for white: {self.tree.root_node.minmax_evaluation.get_value_white()}')
 
-        best_move: chess.Move = self.recommend_move_after_exploration(tree=self.tree,
-                                                                      random_generator=random_generator)
+        best_move: chess.Move = recommend_move_after_exploration_generic(
+            self.recommend_move_after_exploration,
+            tree=self.tree,
+            random_generator=random_generator)
+
         self.tree_manager.print_best_line(tree=self.tree)  # todo maybe almost best chosen line no?
 
         move_recommendation: MoveRecommendation = MoveRecommendation(

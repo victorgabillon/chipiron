@@ -9,6 +9,8 @@ from typing import Callable
 from chipiron.environments.chess.board import BoardChi
 
 from chipiron.utils.communication.player_game_messages import BoardMessage
+from chipiron.utils.communication.gui_messages import GameStatusMessage
+
 
 
 class Game:
@@ -140,10 +142,7 @@ class ObservableGame:
 
     def notify_status(self):
         observable_copy = copy.copy(self.game.playing_status)
-        message: dict = {
-            'type': 'GamePlayingStatus',
-            'GamePlayingStatus': observable_copy
-        }
+        message: GameStatusMessage = GameStatusMessage(status=observable_copy)
         for mailbox in self.mailboxes_display:
             mailbox.put(message)
 
