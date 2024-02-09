@@ -15,6 +15,7 @@ from chipiron.environments.chess import BoardChi
 from typing import Callable
 
 from chipiron.utils.communication.player_game_messages import BoardMessage
+from chipiron.utils import seed
 
 
 @dataclass
@@ -46,13 +47,17 @@ def create_player(
 
 def send_board_to_player_process_mailbox(
         board: BoardChi,
+        seed: int,
         player_process_mailbox: queue.Queue
 ) -> None:
-    message: BoardMessage = BoardMessage(board=board)
+    message: BoardMessage = BoardMessage(
+        board=board,
+        seed=seed
+    )
     player_process_mailbox.put(item=message)
 
 
-MoveFunction = Callable[[BoardChi], None]
+MoveFunction = Callable[[BoardChi, seed], None]
 
 
 def create_player_observer(
@@ -62,19 +67,28 @@ def create_player_observer(
 ) -> tuple[GamePlayer | PlayerProcess, MoveFunction]:
     generic_player: GamePlayer | PlayerProcess
     move_function: MoveFunction
+
+    # case with multiprocessing when each player is a separate process
     if distributed_players:
         # creating objects Queue that is the mailbox for the player thread
         player_process_mailbox = multiprocessing.Manager().Queue()
 
         # creating and starting the thread for the player
-        player_process: PlayerProcess = PlayerProcess(game_player=game_player,
-                                                      queue_board=player_process_mailbox,
-                                                      queue_move=main_thread_mailbox)
+        player_process: PlayerProcess = PlayerProcess(
+            game_player=game_player,
+            queue_board=player_process_mailbox,
+            queue_move=main_thread_mailbox
+        )
         player_process.start()
         generic_player = player_process
 
-        move_function = partial(send_board_to_player_process_mailbox, player_process_mailbox=player_process_mailbox)
+        move_function = partial(
+            send_board_to_player_process_mailbox,
+            player_process_mailbox=player_process_mailbox
 
+        )
+
+    # case without multiprocessing all players and match manager in the same process
     else:
         generic_player = game_player
         move_function = partial(

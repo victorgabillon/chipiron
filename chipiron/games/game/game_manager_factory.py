@@ -12,7 +12,7 @@ from chipiron.utils import path
 from chipiron.games.game.game_args import GameArgs
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage, extract_message_from_players
 from chipiron.players import Player
-
+from chipiron.utils import seed
 
 class GameManagerFactory:
     """
@@ -38,7 +38,8 @@ class GameManagerFactory:
     def create(
             self,
             args_game_manager: GameArgs,
-            player_color_to_player: dict[chess.COLORS, Player]
+            player_color_to_player: dict[chess.COLORS, Player],
+            game_seed:seed
     ) -> GameManager:
         # maybe this factory is overkill at the moment but might be
         # useful if the logic of game generation gets more complex
@@ -57,8 +58,12 @@ class GameManagerFactory:
         # creating the game playing status
         game_playing_status: ch.games.GamePlayingStatus = ch.games.GamePlayingStatus()
 
-        game: Game = Game(playing_status=game_playing_status, board=board)
-        observable_game: ObservableGame = ObservableGame(game)
+        game: Game = Game(
+            playing_status=game_playing_status,
+            board=board,
+            seed=game_seed
+        )
+        observable_game: ObservableGame = ObservableGame(game=game)
 
         if self.subscribers:
             for subscriber in self.subscribers:
@@ -85,14 +90,16 @@ class GameManagerFactory:
         player_color_to_id: dict = {color: player.id for color, player in player_color_to_player.items()}
 
         game_manager: GameManager
-        game_manager = GameManager(game=observable_game,
-                                   syzygy=self.syzygy_table,
-                                   display_board_evaluator=self.game_manager_board_evaluator,
-                                   output_folder_path=self.output_folder_path,
-                                   args=args_game_manager,
-                                   player_color_to_id=player_color_to_id,
-                                   main_thread_mailbox=self.main_thread_mailbox,
-                                   players=players)
+        game_manager = GameManager(
+            game=observable_game,
+            syzygy=self.syzygy_table,
+            display_board_evaluator=self.game_manager_board_evaluator,
+            output_folder_path=self.output_folder_path,
+            args=args_game_manager,
+            player_color_to_id=player_color_to_id,
+            main_thread_mailbox=self.main_thread_mailbox,
+            players=players
+        )
 
         return game_manager
 

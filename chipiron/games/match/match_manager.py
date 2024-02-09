@@ -8,6 +8,7 @@ from chipiron.games.match.match_results_factory import MatchResultsFactory
 from chipiron.utils import path
 import pickle
 import os
+from chipiron.utils import seed
 
 
 class MatchManager:
@@ -49,13 +50,15 @@ class MatchManager:
         while not self.game_args_factory.is_match_finished():
             args_game: GameArgs
             player_color_to_player: dict[chess.COLORS, Player]
-            player_color_to_player, args_game = self.game_args_factory.generate_game_args(game_number)
+            game_seed: seed
+            player_color_to_player, args_game, game_seed = self.game_args_factory.generate_game_args(game_number)
 
             # Play one game
             game_report: GameReport = self.play_one_game(
                 player_color_to_player=player_color_to_player,
                 args_game=args_game,
-                game_number=game_number
+                game_number=game_number,
+                game_seed=game_seed
             )
 
             # Update the reporting of the ongoing match with the report of the finished game
@@ -93,11 +96,13 @@ class MatchManager:
             self,
             player_color_to_player: dict[chess.COLORS, Player],
             args_game: GameArgs,
-            game_number: int
+            game_number: int,
+            game_seed: seed
     ) -> GameReport:
         game_manager: GameManager = self.game_manager_factory.create(
             args_game_manager=args_game,
-            player_color_to_player=player_color_to_player
+            player_color_to_player=player_color_to_player,
+            game_seed=game_seed
         )
         game_report: GameReport = game_manager.play_one_game()
         game_manager.print_to_file(idx=game_number)

@@ -11,6 +11,7 @@ from chipiron.environments.chess.board import BoardChi
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.communication.gui_messages import GameStatusMessage
 
+from chipiron.utils import seed, unique_int_from_list
 
 
 class Game:
@@ -19,10 +20,17 @@ class Game:
     """
     _playing_status: GamePlayingStatus
     _board: BoardChi
+    _seed: seed | None
 
-    def __init__(self, board: BoardChi, playing_status: GamePlayingStatus):
+    def __init__(
+            self,
+            board: BoardChi,
+            playing_status: GamePlayingStatus,
+            seed:seed
+    ):
         self._board = board
         self._playing_status = playing_status
+        self._seed = seed
 
     def play_move(self, move: chess.Move):
         if self._playing_status.is_play():
@@ -59,7 +67,7 @@ class Game:
 
 # function that will be called by the observable game when the board is updated, which should query at least one player
 # to compute a move
-MoveFunction = Callable[[BoardChi], None]
+MoveFunction = Callable[[BoardChi, seed], None]
 
 
 class ObservableGame:
@@ -138,10 +146,11 @@ class ObservableGame:
             move_function: MoveFunction
             for move_function in self.move_functions:
                 board_copy: BoardChi = copy.deepcopy(self.game.board)
-                move_function(board_copy)
+                merged_seed = unique_int_from_list([self.game._seed, board_copy.ply()])
+                move_function(board_copy, merged_seed)
 
     def notify_status(self):
-        observable_copy = copy.copy(self.game.playing_status)
+        observable_copy = copy.copy(self.game.playing_status.status)
         message: GameStatusMessage = GameStatusMessage(status=observable_copy)
         for mailbox in self.mailboxes_display:
             mailbox.put(message)

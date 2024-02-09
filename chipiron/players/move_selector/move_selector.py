@@ -2,6 +2,7 @@ from typing import Protocol
 import chipiron.environments.chess.board as boards
 import chess
 from dataclasses import dataclass
+from chipiron.utils import seed
 
 
 @dataclass
@@ -14,6 +15,8 @@ class MoveSelector(Protocol):
 
     def select_move(
             self,
-            board: boards.BoardChi
+            board: boards.BoardChi,
+            move_seed: seed
+
     ) -> MoveRecommendation:
         ...

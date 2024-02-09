@@ -34,7 +34,10 @@ class BoardChi(chess.Board):
         elif fen is not None:
             self.set_fen(fen)
 
-    def play_move(self, move: chess.Move) -> BoardModification:
+    def play_move(
+            self,
+            move: chess.Move
+    ) -> BoardModification:
         return self.push_and_return_modification(move)
 
     def rewind_one_move(self) -> None:
