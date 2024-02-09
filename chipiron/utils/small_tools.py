@@ -12,6 +12,7 @@ import os
 import typing
 
 path = typing.Annotated[str | bytes | os.PathLike, 'path']
+seed = typing.Annotated[int, "seed"]
 
 
 def mkdir(
@@ -40,7 +41,7 @@ def dict_alphabetic_str(dic):
     return string
 
 
-def unique_int_from_list(a_list) -> int | None:
+def unique_int_from_list(a_list: list) -> int | None:
     # only coded for a list of 2 atm probably can be done recursively for larger lists
     assert (len(a_list) == 2)
     x = a_list[0]

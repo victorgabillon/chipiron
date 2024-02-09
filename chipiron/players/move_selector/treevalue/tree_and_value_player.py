@@ -10,6 +10,7 @@ from . import recommender_rule
 from . import tree_manager as tree_man
 from dataclasses import dataclass
 from chipiron.players.move_selector.treevalue.search_factory import NodeSelectorFactory
+from chipiron.utils import seed
 
 
 @dataclass
@@ -25,7 +26,8 @@ class TreeAndValueMoveSelector:
 
     def select_move(
             self,
-            board: boards.BoardChi
+            board: boards.BoardChi,
+            move_seed: seed
     ) -> MoveRecommendation:
         tree_exploration: TreeExploration = create_tree_exploration(
             tree_manager=self.tree_manager,
@@ -35,6 +37,7 @@ class TreeAndValueMoveSelector:
             stopping_criterion_args=self.stopping_criterion_args,
             recommend_move_after_exploration=self.recommend_move_after_exploration
         )
+        self.random_generator.seed(move_seed)
         move_recommendation: MoveRecommendation = tree_exploration.explore(
             random_generator=self.random_generator
         )

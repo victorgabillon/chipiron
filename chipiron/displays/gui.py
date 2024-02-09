@@ -151,7 +151,9 @@ class MainWindow(QWidget):
         message: BackMessage = BackMessage()
         self.main_thread_mailbox.put(message)
 
-    def pause_button_clicked(self) -> None:
+    def pause_button_clicked(
+            self
+    ) -> None:
         message: GameStatusMessage = GameStatusMessage(status=PlayingStatus.PAUSE)
         self.main_thread_mailbox.put(message)
 

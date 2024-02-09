@@ -38,13 +38,15 @@ class PlayerProcess(multiprocessing.Process):
                 if isinstance(message, BoardMessage):
                     message: BoardMessage
                     board: BoardChi = message.board
+                    seed: int = message.seed
                     print('player thread got ', board)
 
                     # the game_player computes the move for the board and sends the move in the move queue
                     game_player_computes_move_on_board_and_send_move_in_queue(
                         board=board,
                         game_player=self.game_player,
-                        queue_move=self.queue_move
+                        queue_move=self.queue_move,
+                        seed=seed
                     )
 
                 else:

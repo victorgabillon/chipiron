@@ -11,9 +11,12 @@ class GamePlayer:
     """A class that wraps a player for a game purposes
     it adds the color information and probably stuff to continue the computation when the opponent is computing"""
 
+    player: Player
+    color: chess.COLORS
+
     def __init__(self,
                  player: Player,
-                 color):
+                 color: chess.COLORS):
         self.color = color
         self._player = player
 
@@ -21,19 +24,29 @@ class GamePlayer:
     def player(self):
         return self._player
 
-    def select_move(self,
-                    board: BoardChi):
-        best_move = self._player.select_move(board)
+    def select_move(
+            self,
+            board: BoardChi,
+            seed: int | None = None
+    ) -> MoveRecommendation:
+        best_move: MoveRecommendation = self._player.select_move(
+            board=board,
+            seed=seed
+        )
         return best_move
 
 
 def game_player_computes_move_on_board_and_send_move_in_queue(
         board: BoardChi,
         game_player: GamePlayer,
-        queue_move: queue.Queue
+        queue_move: queue.Queue,
+        seed: int
 ) -> None:
     if board.turn == game_player.color:
-        move_recommendation: MoveRecommendation = game_player.select_move(board=board)
+        move_recommendation: MoveRecommendation = game_player.select_move(
+            board=board,
+            seed=seed
+        )
         message = MoveMessage(
             move=move_recommendation.move,
             corresponding_board=board.fen(),
