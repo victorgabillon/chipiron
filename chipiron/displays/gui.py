@@ -39,6 +39,9 @@ class MainWindow(QWidget):
         Initialize the chessboard.
         """
         super().__init__()
+
+        self.playing_status = PlayingStatus.PLAY
+
         self.gui_mailbox = gui_mailbox
         self.main_thread_mailbox = main_thread_mailbox
 
@@ -144,16 +147,19 @@ class MainWindow(QWidget):
         self.close()
 
     def play_button_clicked(self) -> None:
+        print('play_button_clicked')
         message: GameStatusMessage = GameStatusMessage(status=PlayingStatus.PLAY)
         self.main_thread_mailbox.put(message)
 
     def back_button_clicked(self) -> None:
+        print('back_button_clicked')
         message: BackMessage = BackMessage()
         self.main_thread_mailbox.put(message)
 
     def pause_button_clicked(
             self
     ) -> None:
+        print('pause_button_clicked')
         message: GameStatusMessage = GameStatusMessage(status=PlayingStatus.PAUSE)
         self.main_thread_mailbox.put(message)
 
@@ -282,6 +288,7 @@ class MainWindow(QWidget):
                     match_results: MatchResults = message.match_results
                     self.update_match_stats(match_results)
                 case GameStatusMessage():
+                    print('GameStatusMessage',message)
                     message: GameStatusMessage
                     play_status: PlayingStatus = message.status
                     self.update_game_play_status(play_status)
@@ -328,18 +335,23 @@ class MainWindow(QWidget):
             self,
             play_status: PlayingStatus
     ) -> None:
-        if play_status == PlayingStatus.PAUSE:
-            self.pause_button.setText("Play")  # text
-            self.pause_button.setIcon(QIcon("data/gui/play.png"))  # icon
-            self.pause_button.clicked.connect(self.play_button_clicked)
-            self.pause_button.setToolTip("play the game")  # Tool tip
-            self.pause_button.move(850, 100)
-        elif play_status == PlayingStatus.PLAY:
-            self.pause_button.setText("Pause")  # text
-            self.pause_button.setIcon(QIcon("data/gui/pause.png"))  # icon
-            self.pause_button.clicked.connect(self.pause_button_clicked)
-            self.pause_button.setToolTip("pause the game")  # Tool tip
-            self.pause_button.move(850, 100)
+        print('update_game_play_status', play_status)
+
+        if self.playing_status != play_status:
+            self.playing_status = play_status
+            print('real update_game_play_status',play_status)
+            if play_status == PlayingStatus.PAUSE:
+                self.pause_button.setText("Play")  # text
+                self.pause_button.setIcon(QIcon("data/gui/play.png"))  # icon
+                self.pause_button.clicked.connect(self.play_button_clicked)
+                self.pause_button.setToolTip("play the game")  # Tool tip
+                self.pause_button.move(850, 100)
+            elif play_status == PlayingStatus.PLAY:
+                self.pause_button.setText("Pause")  # text
+                self.pause_button.setIcon(QIcon("data/gui/pause.png"))  # icon
+                self.pause_button.clicked.connect(self.pause_button_clicked)
+                self.pause_button.setToolTip("pause the game")  # Tool tip
+                self.pause_button.move(850, 100)
 
     def update_match_stats(self, match_result: MatchResults):
         player_one_wins, player_two_wins, draws = match_result.get_simple_result()

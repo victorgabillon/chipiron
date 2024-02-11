@@ -7,6 +7,7 @@ from functools import partial
 import chipiron.players.move_selector.treevalue.node_indices as node_indices
 from chipiron.players.move_selector.treevalue.node_indices.factory import create_exploration_index_data
 import chipiron.players.move_selector.treevalue.nodes as nodes
+from chipiron.players.move_selector.treevalue.node_selector.sequool.factory import SequoolArgs
 
 NodeSelectorFactory = Callable[[], node_selectors.NodeSelector]
 
@@ -56,7 +57,6 @@ class SearchFactory:
     def create_node_selector_factory(
             self
     ) -> NodeSelectorFactory:
-
         # creates the opening instructor
         opening_instructor: OpeningInstructor = OpeningInstructor(
             self.opening_type, self.random_generator
@@ -80,10 +80,15 @@ class SearchFactory:
             self,
             tree_node: nodes.TreeNode
     ) -> node_indices.NodeExplorationData:
+        if isinstance(self.node_selector_args, SequoolArgs):
+            a: SequoolArgs = self.node_selector_args
+            depth_index:bool = a.recursive_selection_on_all_nodes
+        else:
+            depth_index: bool = False
         exploration_index_data: node_indices.NodeExplorationData = create_exploration_index_data(
             tree_node=tree_node,
-            index_computation=self.index_computation
+            index_computation=self.index_computation,
+            depth_index=depth_index
         )
-
 
         return exploration_index_data

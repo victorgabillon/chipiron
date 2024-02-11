@@ -150,6 +150,8 @@ class ObservableGame:
                 move_function(board_copy, merged_seed)
 
     def notify_status(self):
+        print('notify game',self.game.playing_status.status)
+
         observable_copy = copy.copy(self.game.playing_status.status)
         message: GameStatusMessage = GameStatusMessage(status=observable_copy)
         for mailbox in self.mailboxes_display:
