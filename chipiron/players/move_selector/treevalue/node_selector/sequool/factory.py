@@ -4,16 +4,20 @@ factory for sequool node selector
 import random
 
 import chipiron.players.move_selector.treevalue.trees as trees
-from .sequool2 import Sequool, StaticNotOpenedSelector, ExplorationNodeSelector
+from .sequool import Sequool, StaticNotOpenedSelector, HalfMoveSelector, ConsiderNodesFromHalfMoves, \
+    consider_nodes_only_from_half_moves_in_descendants, consider_nodes_from_all_lesser_half_moves_in_descendants, \
+    RandomAllSelector,consider_nodes_from_all_lesser_half_moves_in_sub_stree
 from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructor
 from dataclasses import dataclass
 from ..node_selector_args import NodeSelectorArgs
+from functools import partial
 
 
 @dataclass
 class SequoolArgs(NodeSelectorArgs):
     recursive_selection_on_all_nodes: bool
     random_depth_pick: bool
+    consider_all_lesser_half_move: bool
 
 
 def create_sequool(
@@ -31,21 +35,36 @@ def create_sequool(
 
     """
     all_nodes_not_opened = trees.Descendants()
-    node_candidates_selector: ExplorationNodeSelector
+    half_move_selector: HalfMoveSelector
     if args.recursive_selection_on_all_nodes:
-        node_candidates_selector
+        half_move_selector: HalfMoveSelector = RandomAllSelector()
     else:
-        node_candidates_selector: ExplorationNodeSelector = StaticNotOpenedSelector(
+        half_move_selector: HalfMoveSelector = StaticNotOpenedSelector(
             all_nodes_not_opened=all_nodes_not_opened
         )
+
+    consider_nodes_from_half_moves: ConsiderNodesFromHalfMoves
+    if args.recursive_selection_on_all_nodes:
+        consider_nodes_from_half_moves = consider_nodes_from_all_lesser_half_moves_in_sub_stree
+    else:
+        if args.consider_all_lesser_half_move:
+            consider_nodes_from_all_lesser_half_moves = partial(
+                consider_nodes_from_all_lesser_half_moves_in_descendants,
+                descendants=all_nodes_not_opened)
+            consider_nodes_from_half_moves: ConsiderNodesFromHalfMoves = consider_nodes_from_all_lesser_half_moves
+        else:
+            consider_nodes_only_from_half_moves = partial(consider_nodes_only_from_half_moves_in_descendants,
+                                                          descendants=all_nodes_not_opened)
+            consider_nodes_from_half_moves: ConsiderNodesFromHalfMoves = consider_nodes_only_from_half_moves
 
     sequool: Sequool = Sequool(
         opening_instructor=opening_instructor,
         all_nodes_not_opened=all_nodes_not_opened,
         recursif=args.recursive_selection_on_all_nodes,
-        node_candidates_selector=node_candidates_selector,
+        half_move_selector=half_move_selector,
         random_depth_pick=args.random_depth_pick,
-        random_generator=random_generator
+        random_generator=random_generator,
+        consider_nodes_from_half_moves=consider_nodes_from_half_moves
     )
 
     return sequool

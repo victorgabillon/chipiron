@@ -41,6 +41,7 @@ class ObservableGamePlayingStatus:
         return self.game_playing_status.is_play()
 
     def notify(self):
+        print('notify observable game playing')
         message: GameStatusMessage = GameStatusMessage(status=self.game_playing_status.status)
         for mailbox in self._mailboxes:
             mailbox.put(item=message)
