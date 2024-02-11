@@ -106,6 +106,8 @@ def consider_nodes_from_all_lesser_half_moves_in_sub_stree(
         half_move_picked: HalfMove,
         from_node: nodes.AlgorithmNode,
 ) -> list[nodes.AlgorithmNode]:
+    """ consider all the nodes that are in smaller half moves than the picked half-move"""
+
 
     nodes_to_consider: list[nodes.AlgorithmNode] = get_descendants_candidate_not_over(
         from_tree_node=from_node,
