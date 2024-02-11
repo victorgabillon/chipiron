@@ -119,6 +119,7 @@ def consider_nodes_only_from_half_moves_in_descendants(
         descendants: Descendants,
         from_node: nodes.AlgorithmNode,
 ) -> list[nodes.AlgorithmNode]:
+    """ consider only the nodes at the picked depth"""
     return list(descendants[half_move_picked].values())
 
 
