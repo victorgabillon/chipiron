@@ -2,8 +2,8 @@ name: test
 on:
   push:
     branches:
-      -main
-      -newtreealgos
+      - main
+      - newtreealgos
 jobs:
   update:
     name: Update Channel API
