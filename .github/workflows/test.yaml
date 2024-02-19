@@ -23,6 +23,8 @@ jobs:
       - name: Install libegl1
         run: sudo apt install libegl1
 
+      - name: Install libxcb-cursor0
+        run: sudo apt install libxcb-cursor0
 
       - name: path
         run: |
