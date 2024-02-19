@@ -20,5 +20,5 @@ jobs:
       - name: Install
         run: make init
 
-      - name: Run tests
+      - name: Run tests  
         run: python test/integration_test/one_match/test_integration.py
