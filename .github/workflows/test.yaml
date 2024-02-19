@@ -19,9 +19,10 @@ jobs:
 
 
       - name: path
-        run: export PYTHONPATH=$PWD
-             echo "PYTHONPATH=$PYTHONPATH"
-             echo "PYTHONPATH=$PYTHONPATH" >> $GITHUB_ENV
+        run: |
+          export PYTHONPATH=$PWD
+          echo "PYTHONPATH=$PYTHONPATH"
+          echo "PYTHONPATH=$PYTHONPATH" >> $GITHUB_ENV
 
       - name: Install
         run: make init
