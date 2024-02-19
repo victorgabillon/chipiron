@@ -17,6 +17,9 @@ jobs:
           python-version:  3.11
           cache: pip
 
+      - name: Install libegl1
+        run: sudo apt install libegl1
+
 
       - name: path
         run: |
