@@ -35,7 +35,7 @@ class StockfishBoardEvaluator:
             self.engine = chess.engine.SimpleEngine.popen_uci(
                 # TODO: should we remove the hardcoding
                 r"stockfish/stockfish/stockfish-ubuntu-x86-64-avx2")
-            #self.engine = chess.engine.SimpleEngine.popen_uci("/home/victor_old/.pycharm/chipiron/stockfish/stockfish_14.1_linux_x64/stockfish_14.1_linux_x64")
+            #self.engine = chess.engine.SimpleEngine.popen_uci("/home/victor_old/.pycharm/chipiron/stockfish/stockfish/stockfish_14.1_linux_x64")
         # looks like the engine dos not work when the gui is on ???!!!???
         # info = engine.analyse(board, chess.engine.Limit(time=0.1))
         info = self.engine.analyse(board, chess.engine.Limit(time=0.1))
