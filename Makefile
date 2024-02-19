@@ -27,8 +27,7 @@ chipiron/stockfish:
 	mkdir -p ${STOCKFISH_DESTINATION}
 	wget --no-check-certificate 'https://docs.google.com/uc?export=download&id=1kqmgrZ2_1RwyUjAl6BOktkJx9mcSW3xG' -P ${STOCKFISH_DESTINATION} -O ${STOCKFISH_DESTINATION}${STOCKFISH_ZIP_FILE}
 	tar -xf  ${STOCKFISH_DESTINATION}${STOCKFISH_ZIP_FILE} -C ${STOCKFISH_DESTINATION}
-	chmod 777 stockfish/stockfish_14.1_linux_x64/stockfish_14.1_linux_x64
-
+	chmod 777 stockfish/stockfish/stockfish-ubuntu-x86-64-avx2
 
 chipiron/data:
 	echo "downloading Data"
