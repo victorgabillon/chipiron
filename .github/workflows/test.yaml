@@ -17,8 +17,16 @@ jobs:
           python-version:  3.11
           cache: pip
 
+
+      - name: path
+        run: export PYTHONPATH=$PWD
+             echo "PYTHONPATH=$PYTHONPATH"
+             echo "PYTHONPATH=$PYTHONPATH" >> $GITHUB_ENV
+
       - name: Install
         run: make init
 
-      - name: Run tests  
+
+
+      - name: Run tests
         run: python test/integration_test/one_match/test_integration.py
