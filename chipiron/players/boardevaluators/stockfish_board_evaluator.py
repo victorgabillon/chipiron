@@ -13,9 +13,6 @@ class StockfishBoardEvalArgs:
     time_limit: float = 0.1
 
 
-engine = chess.engine.SimpleEngine.popen_uci(
-    "/home/victor_old/.pycharm/chipiron/stockfish/stockfish_14.1_linux_x64/stockfish_14.1_linux_x64")
-
 
 class StockfishBoardEvaluator:
     """
@@ -35,8 +32,10 @@ class StockfishBoardEvaluator:
         """ computes the value white of the board"""
         if self.engine is None:
             # if this object is created in the init then seending the object
-
-            self.engine = chess.engine.SimpleEngine.popen_uci("/home/victor_old/.pycharm/chipiron/stockfish/stockfish_14.1_linux_x64/stockfish_14.1_linux_x64")
+            self.engine = chess.engine.SimpleEngine.popen_uci(
+                # TODO: should we remove the hardcoding
+                r"stockfish/stockfish/stockfish-ubuntu-x86-64-avx2")
+            #self.engine = chess.engine.SimpleEngine.popen_uci("/home/victor_old/.pycharm/chipiron/stockfish/stockfish_14.1_linux_x64/stockfish_14.1_linux_x64")
         # looks like the engine dos not work when the gui is on ???!!!???
         # info = engine.analyse(board, chess.engine.Limit(time=0.1))
         info = self.engine.analyse(board, chess.engine.Limit(time=0.1))
