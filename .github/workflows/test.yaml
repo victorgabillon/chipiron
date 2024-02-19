@@ -37,4 +37,6 @@ jobs:
 
 
       - name: Run tests
+
         run: python test/integration_test/one_match/test_integration.py
+        working-directory: test/integration_test
