@@ -74,7 +74,8 @@ def create_tree_and_value_builders(args: TreeAndValuePlayerArgs,
     tree_manager = tree_man.create_algorithm_node_tree_manager(
         algorithm_node_factory=algorithm_node_factory,
         node_evaluator=node_evaluator,
-        index_computation=args.index_computation
+        index_computation=args.index_computation,
+        index_updater=search_factory.create_node_index_updater()
     )
 
     tree_move_selector: TreeAndValueMoveSelector = TreeAndValueMoveSelector(

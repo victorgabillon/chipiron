@@ -10,6 +10,11 @@ configs = [
      'file_name_player_two': 'Random.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
 
+    {'seed': 11, 'gui': False, 'file_name_player_one': 'Stockfish.yaml',
+     'file_name_player_two': 'Random.yaml',
+     'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
+
+
     {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
      'file_name_player_two': 'players_for_test_purposes/RecurZipfSequool.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},

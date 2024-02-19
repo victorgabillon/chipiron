@@ -1,4 +1,7 @@
 from chipiron.utils.dict_of_numbered_dict_with_pointer_on_max import DictOfNumberedDictWithPointerOnMax
+from dataclasses import dataclass
+from .value_block import ValueUpdateInstructionsBlock
+from .index_block import IndexUpdateInstructionsBlock
 
 
 class UpdateInstructionsBatch:
@@ -46,112 +49,55 @@ class UpdateInstructionsBatch:
                 for node in update_instructions_batch.batch.half_moves[half_move]:
                     if half_move in self.batch.half_moves and node in self.batch.half_moves[half_move]:
                         new_update_information = UpdateInstructions()
-                        new_update_information.merge(self.batch.half_moves[half_move][node],
-                                                     update_instructions_batch.batch.half_moves[half_move][node])
+                        new_update_information.merge(
+                            self.batch.half_moves[half_move][node],
+                            update_instructions_batch.batch.half_moves[half_move][node]
+                        )
                         self.batch[node] = new_update_information
                     else:
                         self.batch[node] = update_instructions_batch[node]
 
 
+@dataclass(slots=True)
 class UpdateInstructions:
+    value_block: ValueUpdateInstructionsBlock | None = None
+    index_block: IndexUpdateInstructionsBlock | None = None
 
-    def __init__(self):
-        # all the instructions
-        self.all_instructions_blocks = {}
+    def merge(
+            self,
+            an_update_instruction,
+            another_update_instruction
+    ):
 
-    def __setitem__(self, key, value):
-        self.all_instructions_blocks[key] = value
-
-    def __getitem__(self, key):
-        return self.all_instructions_blocks[key]
-
-    def __iter__(self):
-        return iter(self.all_instructions_blocks)
-
-    def keys(self):
-        return self.all_instructions_blocks.keys()
-
-    def add_update_instructions_block(self, key, update_instructions_block):
-        self.all_instructions_blocks[key] = update_instructions_block
-
-    def merge(self, an_update_instruction, another_update_instruction):
-
-        an_keys = set(an_update_instruction.keys())
-        another_keys = set(another_update_instruction.keys())
-        all_keys = an_keys | another_keys
-        for key in all_keys:
-            if key in an_keys:
-                if key in another_keys:
-                    new_update_block_type = type(an_update_instruction[key])
-                    self[key] = new_update_block_type()
-                    self[key].merge(an_update_instruction[key], another_update_instruction[key])
-                else:
-                    self[key] = an_update_instruction[key]
+        if an_update_instruction.value_block:
+            if another_update_instruction.value_block:
+                self.value_block = ValueUpdateInstructionsBlock()
+                self.value_block.merge(
+                    an_update_instruction.value_block,
+                    another_update_instruction.value_block
+                )
             else:
-                self[key] = another_update_instruction[key]
+                self.value_block = an_update_instruction.value_block
+        else:
+            self.value_block = another_update_instruction.value_block
+
+
+        if an_update_instruction.index_block:
+            if another_update_instruction.index_block:
+                self.index_block = IndexUpdateInstructionsBlock()
+                self.index_block.merge(
+                    an_update_instruction.index_block,
+                    another_update_instruction.index_block
+                )
+            else:
+                self.index_block = an_update_instruction.index_block
+        else:
+            self.index_block = another_update_instruction.index_block
 
     def print_info(self):
         print('printing info of update instructions')
-        for block_key in self.all_instructions_blocks:
-            print('key', block_key)
-            self[block_key].print_info()
+        self.value_block.print_info()
+        self.index_block.print_info()
 
     def empty(self):
-        for block_key in self.all_instructions_blocks:
-            if not self[block_key].empty():
-                return False
-        return True
-
-
-class ValueUpdateInstructionsBlock:
-    def __init__(self,
-                 node_sending_update=None,  # node(or None)
-                 is_node_newly_over=None,  # boolean
-                 new_value_for_node=None,  # boolean
-                 new_best_move_for_node=None):  # boolean
-
-        self.instruction_dict = {}
-        self['children_with_updated_over'] = {node_sending_update} if is_node_newly_over else set()
-        self['children_with_updated_value'] = {node_sending_update} if new_value_for_node else set()
-        self['children_with_updated_best_move'] = {node_sending_update} if new_best_move_for_node else set()
-
-    def __setitem__(self, key, value):
-        self.instruction_dict[key] = value
-
-    def __getitem__(self, key):
-        return self.instruction_dict[key]
-
-    def __iter__(self):
-        return iter(self.instruction_dict)
-
-    def merge(self, an_update_instruction, another_update_instruction):
-        self.instruction_dict = {}
-        self['children_with_updated_value'] = \
-            an_update_instruction['children_with_updated_value'] | another_update_instruction[
-                'children_with_updated_value']
-        self['children_with_updated_best_move'] = \
-            an_update_instruction['children_with_updated_best_move'] | another_update_instruction[
-                'children_with_updated_best_move']
-        self['children_with_updated_over'] = \
-            an_update_instruction['children_with_updated_over'] | another_update_instruction[
-                'children_with_updated_over']
-
-    def print_info(self):
-        print('upInstructions printing')
-        print(len(self['children_with_updated_value']), 'children_with_updated_value', end=' ')
-        for child in self['children_with_updated_value']:
-            print(child.id, end=' ')
-        print('\n', len(self['children_with_updated_best_move']), 'children_with_updated_best_move:', end=' ')
-        for child in self['children_with_updated_best_move']:
-            print(child.id, end=' ')
-        print('\n', len(self['children_with_updated_over']), 'children_with_updated_over', end=' ')
-        for child in self['children_with_updated_over']:
-            print(child.id, end=' ')
-        print()
-
-    def empty(self):
-        """ returns if all the components are simultaneously empty"""
-        empty_bool = not bool(self['children_with_updated_value']) \
-                     and not bool(self['children_with_updated_best_move']) \
-                     and not bool(self['children_with_updated_over'])
-        return empty_bool
+        return self.value_block.empty() and (self.index_block is None or self.index_block.empty())

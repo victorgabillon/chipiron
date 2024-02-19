@@ -1,25 +1,35 @@
 import chipiron.players.move_selector.treevalue.nodes as nodes
-from .minmax_evaluation_updater import MinMaxEvaluationUpdater
-from .updates_file import UpdateInstructions, UpdateInstructionsBatch, ValueUpdateInstructionsBlock
+from .minmax_evaluation_updater import MinMaxEvaluationUpdater, ValueUpdateInstructionsBlock
+from .updates_file import UpdateInstructions, UpdateInstructionsBatch
 import chipiron.players.move_selector.treevalue.tree_manager as tree_man
+from dataclasses import dataclass
+from .index_updater import IndexUpdater, IndexUpdateInstructionsBlock
 
 
+@dataclass
 class AlgorithmNodeUpdater:
     minmax_evaluation_updater: MinMaxEvaluationUpdater
-
-    def __init__(self,
-                 minmax_evaluation_updater: MinMaxEvaluationUpdater
-                 ):
-        self.minmax_evaluation_updater = minmax_evaluation_updater
+    index_updater: IndexUpdater | None = None
 
     def create_update_instructions_after_node_birth(
             self,
             new_node: nodes.AlgorithmNode
     ) -> UpdateInstructions:
-        update_instructions: UpdateInstructions = UpdateInstructions()
         value_update_instructions_block = self.minmax_evaluation_updater.create_update_instructions_after_node_birth(
-            new_node=new_node)
-        update_instructions.all_instructions_blocks['base'] = value_update_instructions_block
+            new_node=new_node
+        )
+        if self.index_updater is not None:
+            index_update_instructions_block = self.index_updater.create_update_instructions_after_node_birth(
+                new_node=new_node
+            )
+        else:
+            index_update_instructions_block = None
+
+        update_instructions: UpdateInstructions = UpdateInstructions(
+            value_block=value_update_instructions_block,
+            index_block=index_update_instructions_block
+        )
+
         return update_instructions
 
     def generate_update_instructions(
@@ -46,13 +56,28 @@ class AlgorithmNodeUpdater:
 
         return update_instructions_batch
 
-    def perform_updates(self, node_to_update: nodes.AlgorithmNode,
-                        update_instructions: UpdateInstructions) -> UpdateInstructions:
-        new_instructions: UpdateInstructions = UpdateInstructions()
-        base_update_instructions_block: ValueUpdateInstructionsBlock = self.minmax_evaluation_updater.perform_updates(
+    def perform_updates(
+            self,
+            node_to_update: nodes.AlgorithmNode,
+            update_instructions: UpdateInstructions
+    ) -> UpdateInstructions:
+
+        value_update_instructions_block: ValueUpdateInstructionsBlock = self.minmax_evaluation_updater.perform_updates(
             node_to_update,
-            updates_instructions=update_instructions)
+            updates_instructions=update_instructions
+        )
 
-        new_instructions.all_instructions_blocks['base'] = base_update_instructions_block
+        if self.index_updater is not None:
+            index_update_instructions_block: IndexUpdateInstructionsBlock = self.index_updater.perform_updates(
+                node_to_update,
+                updates_instructions=update_instructions
+            )
+        else:
+            index_update_instructions_block = None
 
-        return new_instructions
+        new_update_instructions: UpdateInstructions = UpdateInstructions(
+            value_block=value_update_instructions_block,
+            index_block=index_update_instructions_block
+        )
+
+        return new_update_instructions
