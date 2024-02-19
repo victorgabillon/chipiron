@@ -26,9 +26,7 @@ jobs:
 
       - name: path
         run: |
-          ls
           export PYTHONPATH=$PWD
-          echo "PYTHONPATH=$PYTHONPATH"
           echo "PYTHONPATH=$PYTHONPATH" >> $GITHUB_ENV
 
       - name: Install
@@ -38,5 +36,5 @@ jobs:
 
       - name: Run tests
 
-        run: python test/integration_test/one_match/test_integration.py
+        run: python one_match/test_integration.py
         working-directory: test/integration_test
