@@ -28,6 +28,7 @@ def create_sequool(
     """
 
     Args:
+        random_generator:
         opening_instructor: an opening instructor object
         args: dictionary of arguments
 

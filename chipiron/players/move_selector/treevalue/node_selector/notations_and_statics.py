@@ -52,7 +52,7 @@ def zipf_picks_random(
     length_list = len(ordered_list_elements)
     assert (length_list > 0)
     weights = [1 / (index + 1) / (math.log(math.e * (index + 1))) ** 0 for index in range(length_list)]
-    # print('44',weights)
+   # print('44',weights, ordered_list_elements)
     picked_element = random_generator.choices(ordered_list_elements, weights=weights, k=1)
     return picked_element[0]
 

@@ -5,7 +5,6 @@ from .trees.factory import MoveAndValueTreeFactory
 import chipiron.environments.chess.board as boards
 from chipiron.players.move_selector.move_selector import MoveRecommendation
 from .stopping_criterion import AllStoppingCriterionArgs
-from chipiron.players.move_selector.treevalue.search_factory import SearchFactoryP
 from . import recommender_rule
 from . import tree_manager as tree_man
 from dataclasses import dataclass

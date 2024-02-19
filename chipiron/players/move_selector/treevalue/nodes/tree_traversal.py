@@ -46,13 +46,15 @@ def get_descendants_candidate_not_over(
     """ returns descendants that are not over
     returns himself if not opened"""
     assert(not from_tree_node.is_over())
-
     if not from_tree_node.moves_children:
         return [from_tree_node]
     des = {}
     generation = set(from_tree_node.tree_node.moves_children_.values())
+
     depth: int = 1
+
     while generation and depth <= max_depth:
+
         next_depth_generation = set()
         for node in generation:
             if not node.is_over():

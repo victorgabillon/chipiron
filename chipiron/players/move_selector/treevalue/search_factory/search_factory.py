@@ -8,6 +8,7 @@ import chipiron.players.move_selector.treevalue.node_indices as node_indices
 from chipiron.players.move_selector.treevalue.node_indices.factory import create_exploration_index_data
 import chipiron.players.move_selector.treevalue.nodes as nodes
 from chipiron.players.move_selector.treevalue.node_selector.sequool.factory import SequoolArgs
+from chipiron.players.move_selector.treevalue.updates.index_updater import IndexUpdater
 
 NodeSelectorFactory = Callable[[], node_selectors.NodeSelector]
 
@@ -53,6 +54,14 @@ class SearchFactory:
     opening_type: OpeningType
     random_generator: random.Random
     index_computation: node_indices.IndexComputationType | None
+    depth_index: bool = False
+
+    def __post_init__(self):
+        if isinstance(self.node_selector_args, SequoolArgs):
+            a: SequoolArgs = self.node_selector_args
+            self.depth_index: bool = a.recursive_selection_on_all_nodes
+        else:
+            self.depth_index: bool = False
 
     def create_node_selector_factory(
             self
@@ -71,24 +80,23 @@ class SearchFactory:
         return node_selector_create
 
     def create_node_index_updater(self):
-        create_exploration_index_data(
-            tree_node=tree_node,
-            index_computation=self.index_computation
-        )
+
+        index_updater: IndexUpdater | None
+        if self.depth_index:
+            index_updater: IndexUpdater = IndexUpdater()
+        else:
+            index_updater = None
+        return index_updater
 
     def node_index_create(
             self,
             tree_node: nodes.TreeNode
     ) -> node_indices.NodeExplorationData:
-        if isinstance(self.node_selector_args, SequoolArgs):
-            a: SequoolArgs = self.node_selector_args
-            depth_index:bool = a.recursive_selection_on_all_nodes
-        else:
-            depth_index: bool = False
+
         exploration_index_data: node_indices.NodeExplorationData = create_exploration_index_data(
             tree_node=tree_node,
             index_computation=self.index_computation,
-            depth_index=depth_index
+            depth_index=self.depth_index
         )
 
         return exploration_index_data

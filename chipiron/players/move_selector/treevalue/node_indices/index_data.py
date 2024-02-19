@@ -42,5 +42,19 @@ class IntervalExplo(NodeExplorationData):
 class MaxDepthDescendants(NodeExplorationData):
     max_depth_descendants: int = 0
 
+    def update_from_child(
+            self,
+            child_max_depth_descendants: int
+    ) -> bool:
+        previous_index = self.max_depth_descendants
+        new_index: int = max(
+            self.max_depth_descendants,
+            child_max_depth_descendants + 1
+        )
+        self.max_depth_descendants = new_index
+        has_index_changed: bool = new_index != previous_index
+
+        return has_index_changed
+
     def dot_description(self):
         return f'max_depth_descendants: {self.max_depth_descendants}'

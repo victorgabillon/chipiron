@@ -224,7 +224,10 @@ class NodeMinmaxEvaluation:
 
         return is_newly_over
 
-    def update_children_values(self, children_nodes_to_consider):
+    def update_children_values(
+            self,
+            children_nodes_to_consider
+    ) -> None:
         for child in children_nodes_to_consider:
             self.record_sort_value_of_child(child)
         self.children_sorted_by_value_ = sort_dic(self.children_sorted_by_value_)
@@ -282,7 +285,10 @@ class NodeMinmaxEvaluation:
         subjective_value = self.subjective_value(value_white)
         return subjective_value >= self.value_white_evaluator
 
-    def minmax_value_update_from_children(self, children_with_updated_value):
+    def minmax_value_update_from_children(
+            self,
+            children_with_updated_value
+    ):
         """ updates the values of children in self.sortedchildren
         updates value minmax and updates the best move"""
 

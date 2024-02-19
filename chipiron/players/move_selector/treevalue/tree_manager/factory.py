@@ -6,18 +6,24 @@ from chipiron.players.move_selector.treevalue.node_indices.factory import NodeEx
     create_exploration_index_manager
 
 from chipiron.players.move_selector.treevalue.node_indices.index_types import IndexComputationType
+from chipiron.players.move_selector.treevalue.updates.index_updater import IndexUpdater
 
 
 def create_algorithm_node_tree_manager(
         node_evaluator: NodeEvaluator,
         algorithm_node_factory: node_factory.AlgorithmNodeFactory,
-        index_computation: IndexComputationType
+        index_computation: IndexComputationType,
+        index_updater: IndexUpdater
 ) -> AlgorithmNodeTreeManager:
+
+
     tree_manager: TreeManager = TreeManager(
         node_factory=algorithm_node_factory
     )
 
-    algorithm_node_updater: upda.AlgorithmNodeUpdater = upda.create_algorithm_node_updater()
+    algorithm_node_updater: upda.AlgorithmNodeUpdater = upda.create_algorithm_node_updater(
+        index_updater=index_updater
+    )
 
     evaluation_queries: EvaluationQueries = EvaluationQueries()
 

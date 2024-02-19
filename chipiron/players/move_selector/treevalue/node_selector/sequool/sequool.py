@@ -120,8 +120,8 @@ def consider_nodes_from_all_lesser_half_moves_in_sub_stree(
 
 def consider_nodes_only_from_half_moves_in_descendants(
         half_move_picked: HalfMove,
-        descendants: Descendants,
         from_node: nodes.AlgorithmNode,
+        descendants: Descendants,
 ) -> list[nodes.AlgorithmNode]:
     """ consider only the nodes at the picked depth"""
     return list(descendants[half_move_picked].values())
@@ -145,10 +145,11 @@ class RandomAllSelector:
         # choose a half move based on zipf
         max_descendants_depth: int = from_node.exploration_index_data.max_depth_descendants
         if max_descendants_depth:
-            half_move_picked: int = zipf_picks_random(
-                ordered_list_elements=list(range(max_descendants_depth)),
+            depth_picked: int = zipf_picks_random(
+                ordered_list_elements=list(range(1, max_descendants_depth + 1)),
                 random_generator=random_generator
             )
+            half_move_picked: int = from_node.half_move + depth_picked
         else:
             half_move_picked: int = from_node.half_move
         return half_move_picked
@@ -188,7 +189,6 @@ class Sequool:
             tree: trees.MoveAndValueTree,
             latest_tree_expansions: tree_man.TreeExpansions
     ) -> OpeningInstructions:
-        print('TT')
 
         self.half_move_selector.update_from_expansions(
             latest_tree_expansions=latest_tree_expansions
@@ -197,7 +197,7 @@ class Sequool:
         opening_instructions: OpeningInstructions = self.choose_node_and_move_to_open_recur(
             from_node=tree.root_node
         )
-        print('opening_instruction', opening_instructions)
+        # print('opening_instruction', opening_instructions)
         return opening_instructions
 
     def choose_node_and_move_to_open_recur(
@@ -215,17 +215,16 @@ class Sequool:
             half_move_selected,
             from_node
         )
-        print('nodes_to_consider', nodes_to_consider)
+        # print('nodes_to_consider', nodes_to_consider)
 
         best_node: nodes.AlgorithmNode = get_best_node_from_candidates(nodes_to_consider=nodes_to_consider)
 
         if not self.recursif:
             self.all_nodes_not_opened.remove_descendant(best_node)
 
-
-
-        print('grn',best_node.tree_node.all_legal_moves_generated,best_node.tree_node.moves_children)
+        # print('grn', best_node.tree_node.all_legal_moves_generated, best_node.tree_node.moves_children)
         if self.recursif and best_node.tree_node.all_legal_moves_generated:
+            print('RECUUUUR', best_node.half_move)
             return self.choose_node_and_move_to_open_recur(from_node=best_node)
         else:
             all_moves_to_open = self.opening_instructor.all_moves_to_open(node_to_open=best_node.tree_node)
