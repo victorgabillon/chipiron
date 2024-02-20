@@ -1,6 +1,6 @@
 ###### Requirements without Version Specifiers ######
 PyYAML
-
+opencv-python-headless
 
 ###### Requirements with Version Specifiers ######
 PySide6>=6.6.1
