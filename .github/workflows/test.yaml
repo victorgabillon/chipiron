@@ -21,7 +21,7 @@ jobs:
         run: sudo apt update
 
       - name: Install libegl1
-        run: sudo apt install libegl1 
+        run: sudo apt install libegl1
 
       - name: Install libxcb-cursor0
         run: sudo apt install libxcb-cursor0  libxcb-xinerama0  '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev
@@ -29,7 +29,9 @@ jobs:
       - name: path
         run: |
           export PYTHONPATH=$PWD
+          export QT_QPA_PLATFORM=offscreen
           echo "PYTHONPATH=$PYTHONPATH" >> $GITHUB_ENV
+          echo "QT_QPA_PLATFORM=offscreen" >> $GITHUB_ENV
 
       - name: Install
         run: make init
