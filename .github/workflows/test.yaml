@@ -24,7 +24,7 @@ jobs:
         run: sudo apt install libegl1
 
       - name: Install libxcb-cursor0
-        run: sudo apt install libxcb-cursor0
+        run: sudo apt install libxcb-cursor0  libxcb-xinerama0
 
       - name: path
         run: |
