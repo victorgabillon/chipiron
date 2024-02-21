@@ -2,9 +2,7 @@
 FROM ubuntu:22.04
 
 # Allow statements and log messages to immediately appear in the logs
-ENV PYTHONUNBUFFERED True
 ENV PYTHONPATH "${PYTHONPATH}:."
-ENV  DISPLAY=host.docker.interal:0.0
 # Copy local code to the container image.
 WORKDIR .
 
@@ -41,7 +39,6 @@ RUN apt install libxcb-cursor0  libxcb-xinerama0  '^libxcb.*-dev' libx11-xcb-dev
 # For environments with multiple CPU cores, increase the number of workers
 # to be equal to the cores available.
 # Timeout is set to 0 to disable the timeouts of the workers to allow Cloud Run to handle instance scaling.
-RUN chmod +x main_chipiron_.py
 
 
 CMD ["main_chipiron_.py"]
