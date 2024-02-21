@@ -13,10 +13,10 @@ RUN set -xe \
     && apt-get install python3-pip -y
 
 
-RUN sudo rm -rf /usr/share/dotnet
-RUN sudo rm -rf /opt/ghc
-RUN sudo rm -rf "/usr/local/share/boost"
-RUN sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+RUN rm -rf /usr/share/dotnet
+RUN rm -rf /opt/ghc
+RUN rm -rf "/usr/local/share/boost"
+RUN rm -rf "$AGENT_TOOLSDIRECTORY"
 
 RUN apt install libegl1 -y
 RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt install python3-opencv -y
