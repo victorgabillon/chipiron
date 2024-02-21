@@ -6,7 +6,7 @@ README.md
 __pycache__
 .pytest_cache
 
-data/
+data/syzygy-tables/
 stockfish/
 
 .idea
