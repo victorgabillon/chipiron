@@ -12,6 +12,12 @@ RUN set -xe \
     && apt-get install python3.11 -y \
     && apt-get install python3-pip -y
 
+
+RUN sudo rm -rf /usr/share/dotnet
+RUN sudo rm -rf /opt/ghc
+RUN sudo rm -rf "/usr/local/share/boost"
+RUN sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
 RUN apt install libegl1 -y
 RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt install python3-opencv -y
 RUN pip install gdown
