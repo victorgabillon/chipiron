@@ -20,6 +20,9 @@ jobs:
      #     # This token requires the "repo" scope.
      #     GITHUB_TOKEN: ${{ secrets.ACTION_CLEAR_CACHES_TOKEN }}
 
+      - name: echo
+        run: docker -ps -a\
+            ls /var/cache/apt/archives/
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
         with:
