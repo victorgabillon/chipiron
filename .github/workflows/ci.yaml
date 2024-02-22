@@ -29,7 +29,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile.test
+          dockerfile: ./Dockerfile.test
           load: true
           tags: ${{ env.TEST_TAG }}
       - name: Test
@@ -39,7 +39,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile.test
+          dockerfile: ./Dockerfile.test
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ env.LATEST_TAG }}
