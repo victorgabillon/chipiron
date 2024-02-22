@@ -15,7 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: remove cache
-        run: gh cache delete --all
+        run: gh cache delete --all --repo victorgabillon/chipiron
+
+
         env:
           # This token requires the "repo" scope.
           GITHUB_TOKEN: ${{ secrets.ACTION_CLEAR_CACHES_TOKEN }}
