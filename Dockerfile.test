@@ -30,7 +30,7 @@ RUN apt install libxcb-cursor0  libxcb-xinerama0  '^libxcb.*-dev' libx11-xcb-dev
 
 
 ADD ./requirements.txt requirements.txt
-ADD ./Makefile Makefile
+ADD ./MakefileForTest.mk Makefile
 
 RUN make init
 

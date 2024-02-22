@@ -7,7 +7,7 @@ from chipiron.players.utils import fetch_two_players_args_convert_and_save
 from chipiron.players.boardevaluators.factory import create_game_board_evaluator
 from chipiron.utils import path
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
-from chipiron.players.boardevaluators.table_base.factory import create_syzygy_thread
+from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.players.factory import PlayerArgs
 from .match_settings_args import MatchSettingsArgs
 import chipiron.games.game as game
@@ -29,7 +29,7 @@ def create_match_manager(
 
     # Creation of the Syzygy table for perfect play in low pieces cases, needed by the GameManager
     # and can also be used by the players
-    syzygy_mailbox: SyzygyTable = create_syzygy_thread()
+    syzygy_mailbox: SyzygyTable | None = create_syzygy()
 
     player_one_name: str = args_player_one.name
     player_two_name: str = args_player_two.name

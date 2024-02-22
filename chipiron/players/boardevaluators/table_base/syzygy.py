@@ -2,12 +2,16 @@ import chess.syzygy
 from chipiron.players.boardevaluators.over_event import Winner, HowOver, OverTags
 import chipiron.players.move_selector.treevalue.nodes as nodes
 import chipiron.environments.chess.board as boards
+from chipiron.utils import path
 
 
 class SyzygyTable:
 
-    def __init__(self, path_to_chipiron):
-        self.table_base = chess.syzygy.open_tablebase(path_to_chipiron + "data/syzygy-tables/")
+    def __init__(
+            self,
+            path_to_table: path
+    ):
+        self.table_base = chess.syzygy.open_tablebase(path_to_table)
 
     def fast_in_table(self, board):
         return board.number_of_pieces_on_the_board() < 6
