@@ -42,7 +42,7 @@ jobs:
           df -h
           
       - name: Build the Docker image
-        run: docker build --no-cache --force-rm --file ./Dockerfile.test .
+        run: docker build . --no-cache --force-rm --file Dockerfile.test
 
       - name: Test
         run: |
