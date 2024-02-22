@@ -14,6 +14,8 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
+      - name: remove cache
+        run: gh cache delete --all
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
         with:
@@ -28,6 +30,7 @@ jobs:
           echo "Free space:"
           df -h
           
+      
 
       - name: Checkout
         uses: actions/checkout@v4
