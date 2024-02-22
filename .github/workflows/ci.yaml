@@ -29,7 +29,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          dockerfile: ./Dockerfile.test
+          dockerfile: Dockerfile.test
+          file: Dockerfile.test
           load: true
           tags: ${{ env.TEST_TAG }}
       - name: Test
