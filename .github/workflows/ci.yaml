@@ -35,7 +35,8 @@ jobs:
           tags: ${{ env.TEST_TAG }}
       - name: Test
         run: |
-          docker run --rm ${{ env.TEST_TAG }}  --entrypoint [python test/integration_test/one_match/test_integration.py]        
+          docker run --rm ${{ env.TEST_TAG }}  --entrypoint [python test/integration_test/one_match/test_integration.py]   
+
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
