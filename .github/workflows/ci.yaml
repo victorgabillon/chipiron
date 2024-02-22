@@ -24,7 +24,7 @@ jobs:
         run: |
           docker ps -a
           ls /var/cache/apt/archives/
-          apt-get autoclean
+          sudo apt-get autoclean
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
         with:
