@@ -12,7 +12,6 @@ RUN set -xe \
     && apt-get install python3.11 -y \
     && apt-get install python3-pip -y
 
-
 RUN rm -rf /usr/share/dotnet
 RUN rm -rf /opt/ghc
 RUN rm -rf "/usr/local/share/boost"
@@ -27,6 +26,7 @@ RUN apt-get install python3-tk -y
 
 RUN apt-get install wget
 RUN apt-get install curl
+RUN apt install libxcb-cursor0  libxcb-xinerama0  '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev -y  && rm -rf /var/lib/apt/lists/*
 
 
 ADD ./requirements.txt requirements.txt
@@ -38,7 +38,6 @@ ADD . .
 
 RUN chmod -R 777 scripts
 
-RUN apt install libxcb-cursor0  libxcb-xinerama0  '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev -y
 
 # Run the web service on container startup. Here we use the gunicorn
 # webserver, with one worker process and 8 threads.
