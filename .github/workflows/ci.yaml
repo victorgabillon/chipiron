@@ -25,9 +25,7 @@ jobs:
           docker ps -a
           ls /var/cache/apt/archives/
           sudo apt-get autoclean
-          sudo docker rmi $(sudo docker images -f "dangling=true" -q) -f
-          sudo docker rm $(sudo docker ps -a -q)
-          sudo docker image rm $(sudo docker image ls -f 'dangling=true' -q)
+          docker system prune
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
         with:
