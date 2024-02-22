@@ -2,7 +2,7 @@ import chess
 from chipiron.players.factory import create_player
 import random
 from chipiron.utils.small_tools import unique_int_from_list
-from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
+from chipiron.players.boardevaluators.table_base.factory import create_syzygy, SyzygyTable
 from chipiron.players.factory import PlayerArgs
 from enum import Enum
 from dataclasses import dataclass
@@ -72,7 +72,7 @@ class GameArgsFactory:
     ) -> tuple[dict[chess.COLORS, Player], GameArgs, seed]:
 
         # Creating the players
-        syzygy_table = SyzygyTable('')
+        syzygy_table : SyzygyTable | None = create_syzygy()
 
         merged_seed: seed | None = unique_int_from_list([self.seed, game_number])
 
