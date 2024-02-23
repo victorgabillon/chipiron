@@ -41,6 +41,7 @@ ADD . .
 
 RUN chmod -R 777 scripts
 RUN chmod -R 777 test
+RUN chmod -R 777 chipiron
 
 
 # Run the web service on container startup. Here we use the gunicorn
