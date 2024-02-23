@@ -13,16 +13,12 @@ class Player:
     def __init__(
             self,
             name: str,
-            syzygy_play: bool,
             syzygy,
             main_move_selector: MoveSelector):
         self.id = name
         self.main_move_selector: MoveSelector = main_move_selector
 
-        self.syzygy_player = None
-        self.syzygy_play = syzygy_play
-        if self.syzygy_play:
-            self.syzygy_player = syzygy
+        self.syzygy_player = syzygy
 
     def select_move(
             self,
@@ -39,7 +35,7 @@ class Player:
             move_recommendation = MoveRecommendation(move=all_legal_moves[0])
         else:
             # if the play with syzygy option is on test if the position is in the database to play syzygy
-            if self.syzygy_play and self.syzygy_player.fast_in_table(board):
+            if self.syzygy_player is not None and self.syzygy_player.fast_in_table(board):
                 print('Playing with Syzygy')
                 best_move = self.syzygy_player.best_move(board)
                 move_recommendation = MoveRecommendation(move=best_move)

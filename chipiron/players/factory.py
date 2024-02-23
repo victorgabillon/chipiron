@@ -39,7 +39,6 @@ def create_player(
     )
     return Player(
         name=args.name,
-        syzygy_play=args.syzygy_play,  # looks like double arguments change?
         syzygy=syzygy,
         main_move_selector=main_move_selector
     )
