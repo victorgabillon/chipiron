@@ -91,7 +91,7 @@ class GameManager:
             move: chess.Move
     ) -> None:
         self.game.play_move(move)
-        if self.syzygy.fast_in_table(self.game.board):
+        if self.syzygy is not None and self.syzygy.fast_in_table(self.game.board):
             print('Theoretically finished with value for white: ',
                   self.syzygy.sting_result(self.game.board))
 
