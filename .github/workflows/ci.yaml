@@ -37,5 +37,4 @@ jobs:
 
       - name: Test
         run: |
-          docker run --rm ${{ env.TEST_TAG }} \
-            python3 -u=$(id -u $USER):$(id -g $USER) -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw test/integration_test/one_match/test_integration.py
+          docker run --rm ${{ env.TEST_TAG }} python3 -u=$(id -u $USER):$(id -g $USER) -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw test/integration_test/one_match/test_integration.py
