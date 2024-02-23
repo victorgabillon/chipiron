@@ -21,7 +21,7 @@ def mkdir(
     try:
         os.mkdir(folder_path)
     except FileNotFoundError as error:
-        sys.exit(f"Creation of the directory {folder_path} failed with error {error} in file {__name__}")
+        sys.exit(f"Creation of the directory {folder_path} failed with error {error} in file {__name__}\n with pwd {os.getcwd()}")
     except FileExistsError as error:
         print(f'the file already exists so no creation needed for {folder_path} ')
     else:

@@ -33,8 +33,9 @@ jobs:
           file: Dockerfile.test
           dockerfile: Dockerfile.test
           push: true
-          tags: victorgabillon/chipiron
+          tags: ${{ env.TEST_TAG }}
 
       - name: Test
         run: |
-          docker run --rm ${{ env.TEST_TAG }}
+          docker run --rm ${{ env.TEST_TAG }} \
+            python3 test/integration_test/one_match/test_integration.py
