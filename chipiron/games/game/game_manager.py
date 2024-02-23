@@ -205,7 +205,7 @@ class GameManager:
 
     def tell_results(self):
         board = self.game.board
-        if self.syzygy.fast_in_table(board):
+        if self.syzygy is not None and self.syzygy.fast_in_table(board):
             print('Syzygy: Theoretical value for white', self.syzygy.sting_result(board))
         if board.is_fivefold_repetition():
             print('is_fivefold_repetition')
