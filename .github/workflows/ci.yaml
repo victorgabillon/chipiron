@@ -6,6 +6,10 @@ on:
       - 'main'
       - 'newtreealgos'
 
+env:
+  TEST_TAG: victorgabillon/chipiron:test
+  LATEST_TAG: victorgabillon/chipiron:latest
+
 jobs:
   docker:
     runs-on: ubuntu-latest
@@ -30,3 +34,7 @@ jobs:
           dockerfile: Dockerfile.test
           push: true
           tags: victorgabillon/chipiron
+
+      - name: Test
+        run: |
+          docker run --rm ${{ env.TEST_TAG }}
