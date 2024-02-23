@@ -3,10 +3,6 @@ import os
 
 configs = [
 
-    # checking gui
-    {'seed': 11, 'gui': True, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
-     'file_name_player_two': 'Random.yaml',
-     'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
 
 
     # random Player first to have a fast game
