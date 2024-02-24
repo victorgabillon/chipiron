@@ -14,6 +14,7 @@ from chipiron.utils.communication.gui_player_message import PlayersColorToPlayer
 from chipiron.players import Player
 from chipiron.utils import seed
 
+
 class GameManagerFactory:
     """
     The GameManagerFactory creates GameManager once the players and rules have been decided.
@@ -39,7 +40,7 @@ class GameManagerFactory:
             self,
             args_game_manager: GameArgs,
             player_color_to_player: dict[chess.COLORS, Player],
-            game_seed:seed
+            game_seed: seed
     ) -> GameManager:
         # maybe this factory is overkill at the moment but might be
         # useful if the logic of game generation gets more complex

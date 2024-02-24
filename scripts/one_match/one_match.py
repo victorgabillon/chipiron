@@ -98,8 +98,8 @@ class OneMatchScript:
         # Qt Application needs to be in the main Thread, so we need to distinguish between GUI and no GUI
         if self.gui:  # case with GUI
             # Launching the Match Manager in a Thread
-            process_match_manager = multiprocessing.Process(target=self.match_manager.play_one_match)
-            process_match_manager.start()
+            self.process_match_manager = multiprocessing.Process(target=self.match_manager.play_one_match)
+            self.process_match_manager.start()
 
             # Qt Application launched in the main thread
             self.window.show()
@@ -112,4 +112,7 @@ class OneMatchScript:
         # TODO check the good closing of processes
 
     def terminate(self) -> None:
+        print('terminating script')
         self.base_script.terminate()
+        if self.gui:
+            self.process_match_manager.terminate()
