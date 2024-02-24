@@ -29,6 +29,8 @@ class StockfishPlayer:
                 r"stockfish/stockfish/stockfish-ubuntu-x86-64-avx2")
 
         result = self.engine.play(board, chess.engine.Limit(self.time_limit))
+        self.engine.quit()
+        self.engine =None
         return MoveRecommendation(move=result.move)
 
     def print_info(self):

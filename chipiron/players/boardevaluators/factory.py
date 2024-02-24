@@ -39,7 +39,8 @@ def create_board_evaluator(
     return board_evaluator
 
 
-def create_game_board_evaluator_not_observable() -> GameBoardEvaluator:
+def create_game_board_evaluator_not_observable(
+) -> GameBoardEvaluator:
     board_evaluator_stock: BoardEvaluator = create_board_evaluator(
         args_board_evaluator=StockfishBoardEvalArgs()
     )
