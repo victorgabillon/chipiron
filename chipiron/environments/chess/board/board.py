@@ -17,9 +17,12 @@ class BoardChi(chess.Board):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-    def set_starting_position(self,
-                              starting_position_arg: StaringPositionArgs = None,
-                              fen=None):
+    def set_starting_position(
+            self,
+            starting_position_arg: StaringPositionArgs = None,
+            fen=None
+    ) -> None:
+
         self.reset()
         if starting_position_arg is not None:
             match starting_position_arg.type:

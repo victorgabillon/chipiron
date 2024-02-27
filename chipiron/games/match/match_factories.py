@@ -23,7 +23,8 @@ def create_match_manager(
         args_game: game.GameArgs,
         seed: int | None = None,
         output_folder_path: path = None,
-        gui: bool = False
+        gui: bool = False,
+        print_svg_board_to_file: bool = False
 ) -> MatchManager:
     main_thread_mailbox: queue.Queue = multiprocessing.Manager().Queue()
 
@@ -41,6 +42,7 @@ def create_match_manager(
         game_manager_board_evaluator=game_board_evaluator,
         output_folder_path=output_folder_path,
         main_thread_mailbox=main_thread_mailbox,
+        print_svg_board_to_file=print_svg_board_to_file
     )
 
     match_results_factory: MatchResultsFactory = MatchResultsFactory(
@@ -104,7 +106,8 @@ def create_match_manager_from_args(
         output_folder_path=args.experiment_output_folder,
         seed=args.seed,
         args_game=game_args,
-        gui=gui
+        gui=gui,
+        print_svg_board_to_file=args.print_svg_board_to_file
     )
 
     return match_manager

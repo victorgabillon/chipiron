@@ -6,7 +6,6 @@ import multiprocessing
 import random
 import queue
 
-from dataclasses import dataclass
 from functools import partial
 
 from . import move_selector
@@ -16,14 +15,33 @@ from typing import Callable
 
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils import seed
+from chipiron.players.boardevaluators.table_base.factory import create_syzygy, SyzygyTable
+
+from chipiron.players.utils import fetch_player_args_convert_and_save
+from .player_args import PlayerArgs
 
 
-@dataclass
-class PlayerArgs:
-    name: str
-    main_move_selector: move_selector.AllMoveSelectorArgs
-    # whether to play with syzygy when possible
-    syzygy_play: bool
+def create_chipiron_player(
+        depth: int
+) -> Player:
+    syzygy_table: SyzygyTable | None = create_syzygy()
+    random_generator = random.Random()
+
+    args_player: PlayerArgs = fetch_player_args_convert_and_save(
+        file_name_player='data/players/player_config/chipiron/chipiron.yaml',
+        from_data_folder=False)
+
+    main_move_selector: move_selector.MoveSelector = move_selector.create_main_move_selector(
+        move_selector_instance_or_args=args_player.main_move_selector,
+        syzygy=syzygy_table,
+        random_generator=random_generator
+    )
+
+    return Player(
+        name='chipiron',
+        syzygy=syzygy_table,
+        main_move_selector=main_move_selector
+    )
 
 
 def create_player(

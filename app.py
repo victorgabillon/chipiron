@@ -10,7 +10,7 @@ CORS(app)  # Enable CORS for all routes and origins
 @app.route("/")
 def hello_world():
     """Example Hello World route."""
-    name = os.environ.get("NAME", "World")
+    name = os.environ.get("NAME", "WorldS")
     return f"Hello {name}!"
 
 

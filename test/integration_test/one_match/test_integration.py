@@ -1,5 +1,4 @@
 import scripts
-import os
 
 configs = [
 

@@ -22,3 +22,5 @@ class MatchArgs:
     player_one: dict = field(default_factory=dict)
     player_two: dict = field(default_factory=dict)
     match: dict = field(default_factory=dict)
+
+    print_svg_board_to_file: bool = False  # hardcode atm for webserver
