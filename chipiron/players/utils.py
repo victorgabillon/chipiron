@@ -1,6 +1,6 @@
 import os
 from shutil import copyfile
-from chipiron.players.factory import PlayerArgs
+from chipiron.players.player_args import PlayerArgs
 from chipiron.utils.small_tools import fetch_args_modify_and_convert
 
 

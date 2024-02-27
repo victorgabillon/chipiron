@@ -21,12 +21,12 @@ from chipiron.utils import path
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s:%(name)s:%(message)s')
-#file_handler = logging.FileHandler('sample.log')
-#file_handler.setLevel(logging.DEBUG)
-#file_handler.setFormatter(formatter)
+# file_handler = logging.FileHandler('sample.log')
+# file_handler.setLevel(logging.DEBUG)
+# file_handler.setFormatter(formatter)
 stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(formatter)
-#logger.addHandler(file_handler)
+# logger.addHandler(file_handler)
 logger.addHandler(stream_handler)
 
 
@@ -58,7 +58,9 @@ class GameManager:
                  args: GameArgs,
                  player_color_to_id,
                  main_thread_mailbox,
-                 players: list[players_m.PlayerProcess | players_m.Player]):
+                 players: list[players_m.PlayerProcess | players_m.Player],
+                 print_svg_board_to_file: bool = False
+                 ):
         """
         Constructor for the GameManager Class. If the args, and players are not given a value it is set to None,
          waiting for the set methods to be called. This is done like this so that the players can be changed
@@ -82,6 +84,7 @@ class GameManager:
         self.board_history = []
         self.main_thread_mailbox = main_thread_mailbox
         self.players = players
+        self.print_svg_board_to_file = print_svg_board_to_file
 
     def external_eval(self):
         return self.display_board_evaluator.evaluate(self.game.board)  # TODO DON'T LIKE THIS writing
@@ -154,6 +157,18 @@ class GameManager:
                     print(f'Stockfish evaluation:{eval_sto} and chipiron eval{eval_chi}')
                     # Print the board
                     board.print_chess_board()
+                    print(self.print_svg_board_to_file)
+                    import time
+                    time.sleep(2)
+
+
+
+                    if self.print_svg_board_to_file:
+                        mySvg = board._repr_svg_()
+                        with open('myapp/static/images/my0.svg', 'w') as f:
+                            f.write(mySvg)
+
+
                 else:
                     pass
                     # put back in the queue

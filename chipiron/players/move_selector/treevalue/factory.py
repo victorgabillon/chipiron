@@ -31,9 +31,11 @@ class TreeAndValuePlayerArgs:
     index_computation: IndexComputationType | None = None
 
 
-def create_tree_and_value_builders(args: TreeAndValuePlayerArgs,
-                                   syzygy,
-                                   random_generator: random.Random) -> TreeAndValueMoveSelector:
+def create_tree_and_value_builders(
+        args: TreeAndValuePlayerArgs,
+        syzygy,
+        random_generator: random.Random
+) -> TreeAndValueMoveSelector:
     node_evaluator: node_eval.NodeEvaluator = node_eval.create_node_evaluator(
         arg_board_evaluator=args.board_evaluator,
         syzygy=syzygy

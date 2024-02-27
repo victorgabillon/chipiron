@@ -28,13 +28,15 @@ class GameManagerFactory:
             syzygy_table: SyzygyTable,
             game_manager_board_evaluator,
             output_folder_path: path | None,
-            main_thread_mailbox: queue.Queue
+            main_thread_mailbox: queue.Queue,
+            print_svg_board_to_file: bool = False
     ) -> None:
         self.syzygy_table = syzygy_table
         self.output_folder_path = output_folder_path
         self.game_manager_board_evaluator = game_manager_board_evaluator
         self.main_thread_mailbox = main_thread_mailbox
         self.subscribers = []
+        self.print_svg_board_to_file=print_svg_board_to_file
 
     def create(
             self,
@@ -99,7 +101,8 @@ class GameManagerFactory:
             args=args_game_manager,
             player_color_to_id=player_color_to_id,
             main_thread_mailbox=self.main_thread_mailbox,
-            players=players
+            players=players,
+            print_svg_board_to_file = self.print_svg_board_to_file
         )
 
         return game_manager
