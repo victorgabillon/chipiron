@@ -1,8 +1,10 @@
-def sort_dic(dic: dict) -> dict:
-    """ sorting a dictionary by ascending order"""
+from typing import Any
 
-    sorted_dic: dict = dict(sorted(dic.items(), key=lambda item: item[1]))
+
+# todo 3.12 vartype
+def sort_dic(
+        dic: dict[Any, Any]
+):
+    """ sorting a dic   tionary by ascending order"""
+    sorted_dic = dict(sorted(dic.items(), key=lambda item: item[1]))
     return sorted_dic
-
-
-

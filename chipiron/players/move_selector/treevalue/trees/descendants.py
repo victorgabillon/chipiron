@@ -1,8 +1,10 @@
 from sortedcollections import ValueSortedDict
+from chipiron.environments import HalfMove
+from chipiron.players.move_selector.treevalue.nodes import ITreeNode
 
 
 class Descendants:
-    descendants_at_half_move: dict[int, dict]
+    descendants_at_half_move: dict[HalfMove, dict[str, ITreeNode]]
     number_of_descendants: int
     number_of_descendants_at_half_move: dict
     min_half_move: int | None
@@ -51,8 +53,8 @@ class Descendants:
         return self.number_of_descendants == 0
 
     def add_descendant(self, node):
-        half_move = node.half_move
-        fen = node.fast_rep
+        half_move: HalfMove = node.half_move
+        fen: str = node.fast_rep
 
         if half_move in self.descendants_at_half_move:
             assert (fen not in self.descendants_at_half_move[half_move])
@@ -170,7 +172,7 @@ class RangedDescendants(Descendants):
 
         assert (self.is_in_the_acceptable_range(half_move))
         if self.is_in_the_current_range(half_move):
-            #print('half move',half_move, self.max_half_move, self.min_half_move,
+            # print('half move',half_move, self.max_half_move, self.min_half_move,
             #      [(len(self.descendants_at_half_move[half_move]),half_move) for half_move in self.descendants_at_half_move])
             if half_move in self.descendants_at_half_move[half_move]:
                 assert (fen not in self.descendants_at_half_move[half_move])

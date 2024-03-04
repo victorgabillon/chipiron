@@ -56,7 +56,7 @@ class League:
 
     def new_player_joins(
             self,
-            file_player: str | bytes | os.PathLike
+            file_player: str | os.PathLike[str]
     ) -> None:
 
         print('adding player:', file_player)
