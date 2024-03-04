@@ -49,7 +49,7 @@ class MatchManager:
         game_number: int = 0
         while not self.game_args_factory.is_match_finished():
             args_game: GameArgs
-            player_color_to_player: dict[chess.COLORS, Player]
+            player_color_to_player: dict[chess.Color, Player]
             game_seed: seed
             player_color_to_player, args_game, game_seed = self.game_args_factory.generate_game_args(game_number)
 
@@ -94,7 +94,7 @@ class MatchManager:
 
     def play_one_game(
             self,
-            player_color_to_player: dict[chess.COLORS, Player],
+            player_color_to_player: dict[chess.Color, Player],
             args_game: GameArgs,
             game_number: int,
             game_seed: seed

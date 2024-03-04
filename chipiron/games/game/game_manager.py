@@ -106,7 +106,7 @@ class GameManager:
         while True:
             half_move: HalfMove = board.ply()
             print(f'Half Move: {half_move} playing status {self.game.playing_status.status} ')
-            color_to_move: chess.COLORS = board.turn
+            color_to_move: chess.Color = board.turn
             color_of_player_to_move_str = color_names[color_to_move]
             print(f'{color_of_player_to_move_str} ({self.player_color_to_id[color_to_move]}) to play now...')
 

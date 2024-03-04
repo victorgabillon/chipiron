@@ -43,7 +43,9 @@ class GameBoardEvaluator:
         evaluation_stock = self.board_evaluator_stock.value_white(board=board)
         return evaluation_stock, evaluation_chi
 
-    def add_evaluation(self,            player_color: chess.COLORS,
+    def add_evaluation(
+            self,
+            player_color: chess.Color,
             evaluation: float):
         # clean at some point!
         ...
@@ -83,7 +85,7 @@ class ObservableBoardEvaluator:
 
     def add_evaluation(
             self,
-            player_color: chess.COLORS,
+            player_color: chess.Color,
             evaluation: float
     ) -> None:
         if player_color == chess.BLACK:

@@ -33,7 +33,7 @@ def print_a_move_sequence_from_root(
 
 def is_winning(
         node_minmax_evaluation: NodeMinmaxEvaluation,
-        color: chess.COLORS
+        color: chess.Color
 ) -> bool:
     """ return if the color to play in the node is winning """
     winning_if_color_white: bool = node_minmax_evaluation.value_white_minmax > .98 and color

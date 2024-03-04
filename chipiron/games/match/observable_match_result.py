@@ -11,11 +11,11 @@ class ObservableMatchResults:
     # as i do the same for board and game info
 
     match_results: MatchResults
-    mailboxes: list[queue.Queue] = field(default_factory=list)
+    mailboxes: list[queue.Queue[MatchResultsMessage]] = field(default_factory=list)
 
     def subscribe(
             self,
-            mailbox: queue.Queue
+            mailbox: queue.Queue[MatchResultsMessage]
     ) -> None:
         self.mailboxes.append(mailbox)
 
@@ -62,4 +62,3 @@ class ObservableMatchResults:
             self
     ) -> str:
         return str(self.match_results)
-

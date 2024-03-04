@@ -1,7 +1,8 @@
-from __future__ import annotations  # To be removed in python 3.10 (helping with recursive type annocatation)
+from __future__ import annotations  # (helping with recursive type annotation)
 from typing import Protocol
 from bidict import bidict
 from chipiron.environments.chess.board.board import BoardChi
+import chess
 
 
 class ITreeNode(Protocol):
@@ -19,7 +20,7 @@ class ITreeNode(Protocol):
         ...
 
     @property
-    def moves_children(self) -> bidict:
+    def moves_children(self) -> bidict[chess.Move, ITreeNode]:
         ...
 
     @property

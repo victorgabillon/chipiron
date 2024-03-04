@@ -4,7 +4,7 @@ from chipiron.players import Player
 
 @dataclass
 class PlayersColorToPlayerMessage:
-    player_color_to_gui_info: dict[chess.COLORS, str]
+    player_color_to_gui_info: dict[chess.Color, str]
 
 
 from chipiron.players.move_selector.treevalue.tree_and_value_player import TreeAndValueMoveSelector
@@ -12,7 +12,7 @@ from chipiron.players.move_selector.treevalue.stopping_criterion import TreeMove
 
 
 def extract_message_from_players(
-        player_color_to_player: dict[chess.COLORS, Player]
+        player_color_to_player: dict[chess.Color, Player]
 ) -> PlayersColorToPlayerMessage:
     player_color_to_gui_info: dict = {color: extract_message_from_player(player) for color, player in
                                       player_color_to_player.items()}

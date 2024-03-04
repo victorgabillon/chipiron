@@ -37,7 +37,7 @@ class StockfishBoardEvaluator:
             # self.engine = chess.engine.SimpleEngine.popen_uci("/home/victor_old/.pycharm/chipiron/stockfish/stockfish/stockfish_14.1_linux_x64")
         # looks like the engine dos not work when the gui is on ???!!!???
         # info = engine.analyse(board, chess.engine.Limit(time=0.1))
-        info = self.engine.analyse(board, chess.engine.Limit(time=0.1))
+        info = self.engine.analyse(board.board, chess.engine.Limit(time=0.1))
         self.engine.quit()
         self.engine = None
         return info["score"]

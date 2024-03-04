@@ -5,7 +5,7 @@ from chipiron.environments.chess.board.board import BoardChi
 
 def value_base(
         board: BoardChi,
-        color: chess.COLORS
+        color: chess.Color
 ) -> int:
     value_white_: int = bin(board.pawns & board.occupied_co[color]).count('1') \
                         + bin(board.knights & board.occupied_co[color]).count('1') * 3 \
