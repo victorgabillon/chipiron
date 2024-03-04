@@ -1,8 +1,8 @@
 from typing import Literal
 from dataclasses import dataclass
+from .move_selector_types import MoveSelectorTypes
 
-Human_Name_Literal = 'Human'
 
 @dataclass
 class HumanPlayerArgs:
-    type: Literal[Human_Name_Literal]  # for serialization
+    type: Literal[MoveSelectorTypes.Human]  # for serialization

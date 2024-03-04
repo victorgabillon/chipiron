@@ -9,5 +9,7 @@ __pycache__
 data/syzygy-tables/
 stockfish/
 
+**/*outputs*
+
 .idea
 .git

@@ -11,7 +11,7 @@ import chipiron as ch
 import os
 import typing
 
-path = typing.Annotated[str | bytes | os.PathLike, 'path']
+path = typing.Annotated[str | os.PathLike[str], 'path']
 seed = typing.Annotated[int, "seed"]
 
 
@@ -21,7 +21,8 @@ def mkdir(
     try:
         os.mkdir(folder_path)
     except FileNotFoundError as error:
-        sys.exit(f"Creation of the directory {folder_path} failed with error {error} in file {__name__}\n with pwd {os.getcwd()}")
+        sys.exit(
+            f"Creation of the directory {folder_path} failed with error {error} in file {__name__}\n with pwd {os.getcwd()}")
     except FileExistsError as error:
         print(f'the file already exists so no creation needed for {folder_path} ')
     else:
@@ -54,7 +55,6 @@ def unique_int_from_list(a_list: list) -> int | None:
 
 def rec_merge_dic(a, b):
     """recursively merges two dictionaries"""
-    print(a, b)
     merged = copy.deepcopy(b)
     for key in a:
         if key in merged:

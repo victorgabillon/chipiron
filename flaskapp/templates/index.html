@@ -1,8 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
+{% extends "layout.html" %}
+{% block head_content %}
         <meta charset="UTF-8">
-        <title>ChessBot</title>
+        <title>Chipiron</title>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.10.1/bootstrap-table.min.js"></script>
 
@@ -26,14 +25,8 @@
         <script type="text/javascript" src="{{ url_for('static',filename='libs/chessboard/js/chessboard-0.3.0.js') }}"></script>
         <script type="text/javascript" src="{{ url_for('static',filename='libs/chessboard/js/chessboard-0.3.0.min.js') }}"></script>
         <script type="text/javascript" src="{{ url_for('static',filename='scripts.js') }}"></script>
-    </head>
-
-    <body>
-        <nav class="navbar navbar-default navbar-fixed-top">
-          <div class="container-fluid">
-              <h1 id="logo">ChessBot</h1>
-          </div>
-        </nav>
+{% endblock head_content %}
+{% block content %}
         <div class="container">
             <div class="row">
                 <div class="col-xs-12 col-sm-6">
@@ -74,5 +67,4 @@
                 </div>
             </div>
         </div>
-    </body>
-</html>
+{% endblock content %}
