@@ -7,8 +7,6 @@ import chess
 from chipiron.environments.chess.board.board import BoardChi
 import torch
 
-self_data = []
-
 
 class MyDataSet(Dataset):
 
@@ -39,7 +37,6 @@ class MyDataSet(Dataset):
                 processed_data.append(self.process_raw_row(row))
             self.data = processed_data
 
-            print('##', len(self_data))
             print('preprocessing dataset done')
         else:
             print('no preprocessing the dataset')
@@ -89,10 +86,6 @@ class FenAndValueDataSet(MyDataSet):
         input_layer = self.transform_board_function(board)
         target_value = self.transform_value_function(board, row)
         return input_layer.float(), target_value.float()
-
-    def collect_results(self, result):
-        """Uses apply_async's callback to setup up a separate Queue for each process"""
-        self_data.extend(result)
 
     def process_raw_rows(self, dataframe):
 

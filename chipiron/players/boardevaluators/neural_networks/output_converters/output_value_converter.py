@@ -54,5 +54,8 @@ class OneDToValueWhite(OutputValueConverter):
         board_evaluation: BoardEvaluation = BoardEvaluation(value_white=value_white)
         return board_evaluation
 
-    def to_nn_outputs(self, board_evaluation: BoardEvaluation) -> torch.Tensor:
-        ...
+    def to_nn_outputs(
+            self,
+            board_evaluation: BoardEvaluation
+    ) -> torch.Tensor:
+        raise Exception('Not implemented in output_value_converter.py')
