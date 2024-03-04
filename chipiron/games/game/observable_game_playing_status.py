@@ -15,11 +15,11 @@ class ObservableGamePlayingStatus:
             game_playing_status: GamePlayingStatus
     ) -> None:
         self.game_playing_status = game_playing_status
-        self._mailboxes: list = []
+        self._mailboxes: list[queue.Queue[GameStatusMessage]] = []
 
     def subscribe(
             self,
-            mailboxes: List[queue.Queue[GameStatusMessage]]
+            mailboxes: list[queue.Queue[GameStatusMessage]]
     ) -> None:
         self._mailboxes += mailboxes
 
@@ -28,7 +28,10 @@ class ObservableGamePlayingStatus:
         return self.game_playing_status.status
 
     @status.setter
-    def status(self, new_status: PlayingStatus.PLAY):
+    def status(
+            self,
+            new_status: PlayingStatus
+    ) -> None:
         self.game_playing_status.status = new_status
         self.notify()
 
