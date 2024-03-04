@@ -1,11 +1,9 @@
 import chess
 import pickle
 import logging
-from chipiron.utils import path
 from .game import ObservableGame
 from .game_args import GameArgs
 from chipiron.environments import HalfMove
-from enum import Enum
 import chipiron.players as players_m
 
 from chipiron.utils.communication.player_game_messages import MoveMessage
@@ -15,8 +13,8 @@ from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.utils.is_dataclass import DataClass
 from chipiron.environments.chess.board import BoardChi
 
-from dataclasses import dataclass
 from chipiron.utils import path
+from .final_game_result import GameReport, FinalGameResult
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -30,17 +28,7 @@ stream_handler.setFormatter(formatter)
 logger.addHandler(stream_handler)
 
 
-class FinalGameResult(Enum):
-    WIN_FOR_WHITE = 0
-    WIN_FOR_BLACK = 1
-    DRAW = 2
-
-
 # todo a wrapper for chess.white chess.black
-@dataclass
-class GameReport:
-    final_game_result: FinalGameResult
-    move_history: list[chess.Move]
 
 
 class GameManager:
@@ -160,8 +148,6 @@ class GameManager:
                     print(self.print_svg_board_to_file)
                     import time
                     time.sleep(2)
-
-
 
                     if self.print_svg_board_to_file:
                         mySvg = board._repr_svg_()

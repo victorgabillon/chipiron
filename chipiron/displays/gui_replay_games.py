@@ -7,9 +7,9 @@ This module is the execution point of the chess GUI application.
 import sys
 import chess
 from PySide6.QtSvgWidgets import QSvgWidget
-from PySide6.QtGui import *
-from PySide6.QtWidgets import *
-from PySide6.QtCore import *
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QWidget, QPushButton, QApplication
+from PySide6.QtCore import Slot
 
 
 class MainWindow(QWidget):
