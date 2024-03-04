@@ -12,11 +12,11 @@ class GamePlayer:
     it adds the color information and probably stuff to continue the computation when the opponent is computing"""
 
     player: Player
-    color: chess.COLORS
+    color: chess.Color
 
     def __init__(self,
                  player: Player,
-                 color: chess.COLORS):
+                 color: chess.Color):
         self.color = color
         self._player = player
 

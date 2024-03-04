@@ -1,2 +1,2 @@
-from .board import BoardChi
+from .board.board import BoardChi
 

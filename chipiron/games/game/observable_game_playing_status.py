@@ -10,11 +10,17 @@ class ObservableGamePlayingStatus:
     players and gui, for instance, can then decide what to do with this info.
     """
 
-    def __init__(self, game_playing_status: GamePlayingStatus):
+    def __init__(
+            self,
+            game_playing_status: GamePlayingStatus
+    ) -> None:
         self.game_playing_status = game_playing_status
-        self._mailboxes = []
+        self._mailboxes: list = []
 
-    def subscribe(self, mailboxes: List[queue.Queue]):
+    def subscribe(
+            self,
+            mailboxes: List[queue.Queue[GameStatusMessage]]
+    ) -> None:
         self._mailboxes += mailboxes
 
     @property

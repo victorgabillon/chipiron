@@ -297,7 +297,7 @@ class MainWindow(QWidget):
 
     def display_move_history(self):
         import math
-        num_half_move: int = len(self.board.move_stack)
+        num_half_move: int = len(self.board.board.move_stack)
         num_rounds: int = int(math.ceil(num_half_move / 2))
         self.tablewidget.setRowCount(num_rounds)
         self.tablewidget.setHorizontalHeaderLabels(['White', 'Black'])
@@ -305,7 +305,7 @@ class MainWindow(QWidget):
             for round_ in range(num_rounds):
                 half_move = round_ * 2 + player
                 if half_move < num_half_move:
-                    item = QTableWidgetItem(str(self.board.move_stack[half_move]))
+                    item = QTableWidgetItem(str(self.board.board.move_stack[half_move]))
                     self.tablewidget.setItem(round_, player, item)
 
     def draw_board(self):
@@ -314,13 +314,13 @@ class MainWindow(QWidget):
         it for every new move.
         """
 
-        self.boardSvg = self.board._repr_svg_().encode("UTF-8")
+        self.boardSvg = self.board.board._repr_svg_().encode("UTF-8")
         self.drawBoardSvg = self.widgetSvg.load(self.boardSvg)
-        self.round_button.setText('Round: ' + str(self.board.fullmove_number))  # text
+        self.round_button.setText('Round: ' + str(self.board.board.fullmove_number))  # text
         self.fen_button.setText('fen: ' + str(self.board.fen()))  # text
         return self.drawBoardSvg
 
-    def update_players_color_to_id(self, players_color_to_player: dict[chess.COLORS, str]):
+    def update_players_color_to_id(self, players_color_to_player: dict[chess.Color, str]):
         self.player_white_button.setText(' White: ' + players_color_to_player[chess.WHITE])  # text
         self.player_black_button.setText(' Black: ' + players_color_to_player[chess.BLACK])  # text
 

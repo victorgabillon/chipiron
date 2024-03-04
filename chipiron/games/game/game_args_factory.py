@@ -69,7 +69,7 @@ class GameArgsFactory:
     def generate_game_args(
             self,
             game_number: int
-    ) -> tuple[dict[chess.COLORS, Player], GameArgs, seed]:
+    ) -> tuple[dict[chess.Color, Player], GameArgs, seed]:
 
         # Creating the players
         syzygy_table : SyzygyTable | None = create_syzygy()
@@ -89,7 +89,7 @@ class GameArgsFactory:
             random_generator=random_generator
         )
 
-        player_color_to_player: dict[chess.COLORS, Player]
+        player_color_to_player: dict[chess.Color, Player]
         if game_number < self.args_match.number_of_games_player_one_white:
             player_color_to_player = {chess.WHITE: player_one, chess.BLACK: player_two}
         else:

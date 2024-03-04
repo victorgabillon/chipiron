@@ -41,7 +41,7 @@ class GameManagerFactory:
     def create(
             self,
             args_game_manager: GameArgs,
-            player_color_to_player: dict[chess.COLORS, Player],
+            player_color_to_player: dict[chess.Color, Player],
             game_seed: seed
     ) -> GameManager:
         # maybe this factory is overkill at the moment but might be

@@ -2,21 +2,24 @@ from dataclasses import dataclass
 from enum import Enum
 
 
-class StaringPositionArgsType(str, Enum):
+class StartingPositionArgsType(str, Enum):
     fromFile = 'from_file'
     fen = 'fen'
 
 
 @dataclass
-class StaringPositionArgs:
-    type: StaringPositionArgsType
+class StartingPositionArgs:
+    type: StartingPositionArgsType
 
 
 @dataclass
-class FenStaringPositionArgs(StaringPositionArgs):
+class FenStartingPositionArgs(StartingPositionArgs):
     fen: str
 
 
 @dataclass
-class FileStaringPositionArgs(StaringPositionArgs):
+class FileStartingPositionArgs(StartingPositionArgs):
     file_name: str
+
+
+AllStartingPositionArgs = FenStartingPositionArgs | FileStartingPositionArgs
