@@ -14,6 +14,21 @@ class Winner(Enum):
     BLACK = chess.BLACK
     NO_KNOWN_WINNER = None
 
+    def is_none(self) -> bool:
+        return self is None
+
+    def is_white(self) -> bool:
+        if not self.is_none():
+            return bool(self) is chess.WHITE
+        else:
+            return False
+
+    def is_black(self) -> bool:
+        if not self.is_none():
+            return bool(self) is chess.BLACK
+        else:
+            return False
+
 
 class OverTags(str, Enum):
     TAG_WIN_WHITE = 'Win-Wh'
@@ -40,13 +55,12 @@ class OverEvent:
         self.how_over = how_over
         self.who_is_winner = who_is_winner
 
-
     def get_over_tag(self):
         """ returns a simple string that is used a tag in the databases"""
         if self.how_over == HowOver.WIN:
-            if self.who_is_winner == chess.WHITE:
+            if self.who_is_winner.is_white():
                 return OverTags.TAG_WIN_WHITE
-            elif self.who_is_winner == chess.BLACK:
+            elif self.who_is_winner.is_black():
                 return OverTags.TAG_WIN_BLACK
             else:
                 raise Exception('error: winner is not properly defined.')
@@ -58,7 +72,7 @@ class OverEvent:
             raise Exception('error: over is not properly defined.')
 
     def __bool__(self):
-        assert (1 == 0)
+        raise Exception('Nooooooooooo  in over ebvent.py')
 
     def is_over(self) -> bool:
         return self.how_over == HowOver.WIN or self.how_over == HowOver.DRAW
@@ -83,6 +97,6 @@ class OverEvent:
     def test(self):
         if self.how_over == HowOver.WIN:
             assert (self.who_is_winner is not None)
-            assert (self.who_is_winner is chess.WHITE or self.who_is_winner is chess.BLACK)
+            assert (self.who_is_winner.is_white() or self.who_is_winner.is_black())
         if self.how_over == HowOver.DRAW:
             assert (self.who_is_winner is None)

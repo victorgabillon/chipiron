@@ -1,4 +1,4 @@
-from chipiron.games.game.game_manager import FinalGameResult
+from chipiron.games.game.final_game_result import FinalGameResult
 from dataclasses import dataclass
 import chess
 

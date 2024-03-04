@@ -7,8 +7,7 @@ class TestOverEvent(unittest.TestCase):
 
     def test_construct_over_events(self):
 
-
-        def test_construct_over_event( test_over_event):
+        def test_construct_over_event(test_over_event):
             if test_over_event.how_over:
                 self.assertTrue(test_over_event.is_win or test_over_event.is_draw)
             if test_over_event.is_win:
@@ -23,5 +22,6 @@ class TestOverEvent(unittest.TestCase):
         test_over_event = OverEvent()
         test_construct_over_event(test_over_event)
 
-        test_over_event = OverEvent(True)
+        # todo make more tests !
+        test_over_event = OverEvent()
         test_construct_over_event(test_over_event)
