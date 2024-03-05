@@ -23,7 +23,7 @@ class TreeNode:
     # If true the moves are either opened in which case the corresponding opened node is stored in
     # the dictionary self.moves_children, otherwise it is stored in self.non_opened_legal_moves
     all_legal_moves_generated: bool = False
-    non_opened_legal_moves: set = field(default_factory=set)
+    non_opened_legal_moves: set[chess.Move] = field(default_factory=set)
 
     # bijection dictionary between moves and children nodes. node is set to None is not created
     moves_children_: bidict[chess.Move, ITreeNode] = field(default_factory=bidict)
@@ -51,7 +51,7 @@ class TreeNode:
         return self.half_move_
 
     @property
-    def moves_children(self) -> bidict:
+    def moves_children(self) -> bidict[chess.Move, ITreeNode]:
         return self.moves_children_
 
     def is_root_node(self) -> bool:
@@ -69,7 +69,6 @@ class TreeNode:
             else:
                 print(move, child.id, end=' ')
         print(' ')
-
 
     def test(self):
         # print('testing node', selbestf.id)
@@ -108,21 +107,3 @@ class TreeNode:
             generation = next_depth_generation
         return des
 
-    def get_descendants_candidate_to_open(self):
-        """ returns descendants that are both not opened and not over"""
-        if not self.all_legal_moves_generated and not self.is_over():
-            # should use are_all_moves_and_children_opened() but its messy!
-            # also using is_over is  messy as over_events are defined in a child class!!!
-            des = {self: None}  # include itself maybe
-        else:
-            des = {}
-        generation = set(self.moves_children_.values())
-        while generation:
-            next_depth_generation = set()
-            for node in generation:
-                if not node.all_legal_moves_generated and not node.is_over():
-                    des[node] = None
-                for move, next_generation_child in node.moves_children.items():
-                    next_depth_generation.add(next_generation_child)
-            generation = next_depth_generation
-        return des

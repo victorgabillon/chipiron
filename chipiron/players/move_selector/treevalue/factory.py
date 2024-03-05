@@ -16,13 +16,12 @@ from . import recommender_rule
 from typing import Literal
 from dataclasses import dataclass
 import chipiron.players.move_selector.treevalue.search_factory as search_factories
-
-Tree_Value_Name_Literal: str = 'TreeAndValue'
+from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 
 
 @dataclass
 class TreeAndValuePlayerArgs:
-    type: Literal[Tree_Value_Name_Literal]  # for serialization
+    type: Literal[MoveSelectorTypes.TreeAndValue]  # for serialization
     node_selector: node_selector.AllNodeSelectorArgs
     opening_type: node_selector.OpeningType
     board_evaluator: node_eval.AllNodeEvaluatorArgs

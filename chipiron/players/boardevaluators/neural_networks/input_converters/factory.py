@@ -1,14 +1,17 @@
 from .board_representation import Representation364
 from typing import Optional
-from chipiron.environments.chess.board import BoardChi
+from chipiron.environments.chess.board.board import BoardChi
 import chipiron.environments.chess.board as board_mod
 import chipiron.players.move_selector.treevalue.nodes as nodes
 import chess
 import torch
 
 
-def create_board_representation(board_representation: str) -> object:
-    match board_representation:
+def create_board_representation(
+        board_representation_str: str
+) -> object:
+    board_representation: Representation364Factory | None
+    match board_representation_str:
         case '364':
             board_representation = Representation364Factory()
         case 'no':

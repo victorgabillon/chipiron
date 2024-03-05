@@ -7,24 +7,27 @@ def value_base(
         board: BoardChi,
         color: chess.Color
 ) -> int:
-    value_white_: int = bin(board.pawns & board.occupied_co[color]).count('1') \
-                        + bin(board.knights & board.occupied_co[color]).count('1') * 3 \
-                        + bin(board.bishops & board.occupied_co[color]).count('1') * 3 \
-                        + bin(board.rooks & board.occupied_co[color]).count('1') * 5 \
-                        + bin(board.queens & board.occupied_co[color]).count('1') * 9
+    value_white_: int = bin(board.board.pawns & board.board.occupied_co[color]).count('1') \
+                        + bin(board.board.knights & board.board.occupied_co[color]).count('1') * 3 \
+                        + bin(board.board.bishops & board.board.occupied_co[color]).count('1') * 3 \
+                        + bin(board.board.rooks & board.board.occupied_co[color]).count('1') * 5 \
+                        + bin(board.board.queens & board.board.occupied_co[color]).count('1') * 9
     return value_white_
 
 
 def add_pawns_value_white(board):
-    add_value = 0
-    for pawn in list(board.pieces(chess.PAWN, chess.WHITE)):
+    # code to push the pawns to advance by giving more value to the  pawns that are advanced
+    add_value: float = 0
+    for pawn in list(board.board.pieces(chess.PAWN, chess.WHITE)):
         add_value += int((pawn - 8) / 8) / 50. * 1
     return add_value
 
 
 def add_pawns_value_black(board):
-    add_value = 0
-    for pawn in list(board.pieces(chess.PAWN, chess.BLACK)):
+    # code to push the pawns to advance by giving more value to the  pawns that are advanced
+
+    add_value: float = 0
+    for pawn in list(board.board.pieces(chess.PAWN, chess.BLACK)):
         add_value += int((63 - pawn - 8) / 8) / 50. * 1
     return add_value
 

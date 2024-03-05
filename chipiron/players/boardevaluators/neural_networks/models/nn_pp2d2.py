@@ -81,8 +81,9 @@ class NetPP2D2(ChiNN):
         print_piece_param(11, input)
 
     def get_nn_input(self, node):
-        return get_tensor_from_tensors_two_sides(node.tensor_white, node.tensor_black, node.tensor_castling_white,
-                                                 node.tensor_castling_black, node.player_to_move)
+        raise Exception(f'to be recoded in {__name__}')
+#        return get_tensor_from_tensors_two_sides(node.tensor_white, node.tensor_black, node.tensor_castling_white,
+   #                                              node.tensor_castling_black, node.player_to_move)
 
 
 def print_piece_param(i, vec):

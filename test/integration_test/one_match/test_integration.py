@@ -7,12 +7,12 @@ configs = [
      'file_name_player_two': 'Random.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
 
-
     # random Player first to have a fast game
     {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
      'file_name_player_two': 'Random.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
 
+    # stockfish
     {'seed': 11, 'gui': False, 'file_name_player_one': 'Stockfish.yaml',
      'file_name_player_two': 'Random.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
@@ -48,7 +48,7 @@ configs = [
      'file_name_player_two': 'Random.yaml',
      'file_name_match_setting': 'setting_tron.yaml', 'profiling': False},
 
-
+    # todo add basic eval (no neural nets)
 ]
 
 for config in configs:

@@ -2,11 +2,13 @@ import os
 from shutil import copyfile
 from chipiron.players.player_args import PlayerArgs
 from chipiron.utils.small_tools import fetch_args_modify_and_convert
+from chipiron.utils import path
+from typing import Any
 
 
 def fetch_player_args_convert_and_save(
-        file_name_player: str | bytes | os.PathLike,
-        modification_player: dict | None = None,
+        file_name_player: path,
+        modification_player: dict[Any, Any] | None = None,
         experiment_output_folder: str | bytes | os.PathLike | None = None,
         from_data_folder: bool = True
 ) -> PlayerArgs:

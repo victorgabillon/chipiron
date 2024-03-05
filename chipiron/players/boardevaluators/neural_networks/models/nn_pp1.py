@@ -1,15 +1,14 @@
 import torch
 import torch.nn as nn
 from chipiron.utils.chi_nn import ChiNN
-from chipiron.players.boardevaluators.neural_networks.board_to_tensor import board_to_tensor_pieces_square, \
-    get_tensor_from_tensors
+from chipiron.players.boardevaluators.neural_networks.board_to_tensor import get_tensor_from_tensors
 
 
 class NetPP1(ChiNN):
     def __init__(self):
-        super(NetPP1, self).__init__( )
+        super(NetPP1, self).__init__()
 
-        self.transform_board_function = board_to_tensor_pieces_square
+        self.transform_board_function = None
         self.fc1 = nn.Linear(384 + 2, 1)
         self.tanh = nn.Tanh()
 
@@ -46,7 +45,6 @@ class NetPP1(ChiNN):
                 print(param.data[0, 64 * 6:64 * 6 + 2])
             else:
                 print(param.data)
-
 
     def get_nn_input(self, node):
         return get_tensor_from_tensors(node.tensor_white, node.tensor_black, node.tensor_castling_white,

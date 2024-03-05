@@ -6,11 +6,17 @@ import math
 import chess
 from chipiron.environments.chess.board.board import BoardChi
 import torch
+from typing import Any
+from chipiron.environments.chess.board.factory import create_board
 
 
-class MyDataSet(Dataset):
+class MyDataSet(Dataset[Any]):
 
-    def __init__(self, file_name, preprocessing):
+    def __init__(
+            self,
+            file_name,
+            preprocessing
+    ):
         self.file_name = file_name
         self.preprocessing = preprocessing
         self.data = None
@@ -45,9 +51,12 @@ class MyDataSet(Dataset):
         self.len = len(self.data)
 
     def __len__(self):
+        assert (self.data is not None)
         return len(self.data)
 
     def __getitem__(self, idx):
+        assert (self.data is not None)
+
         if self.preprocessing:
             return self.data[idx % self.len]
         else:
@@ -72,7 +81,7 @@ class FenAndValueDataSet(MyDataSet):
         super().__init__(file_name, preprocessing)
         # transform function
         if transform_board_function == 'identity':
-            assert (1 == 0)  # to be coded
+            raise Exception(f'tobe coded in {__name__}')
         else:
             self.transform_board_function = transform_board_function
 
@@ -82,7 +91,7 @@ class FenAndValueDataSet(MyDataSet):
 
     def process_raw_row(self, row):
         fen = row['fen']
-        board = BoardChi(fen=fen)
+        board = create_board(fen=fen)
         input_layer = self.transform_board_function(board)
         target_value = self.transform_value_function(board, row)
         return input_layer.float(), target_value.float()
@@ -101,7 +110,7 @@ class FenAndValueDataSet(MyDataSet):
 class ClassifiedBoards(MyDataSet):
 
     def __init__(self, transform_function):
-        super().__init__(transform_function)
+        super().__init__(transform_function, False)
         print('Loading the ClassifiedBoards dataset...')
         self.df_over = pd.read_pickle('chipiron/data/states_random/game_over_states')
         self.df_over_2 = pd.read_pickle('/home/victor/good_games_classified_stock_withmoredraws')
@@ -123,7 +132,7 @@ class ClassifiedBoards(MyDataSet):
         fen = row['fen']
         # print('fen',fen)
         final_value = row['final_value']
-        board = BoardChi(fen=fen)
+        board = create_board(fen=fen)
         # print(board)
         input_layer = self.transform_function(board, requires_grad_=False)
         if final_value == 'Win-Wh':

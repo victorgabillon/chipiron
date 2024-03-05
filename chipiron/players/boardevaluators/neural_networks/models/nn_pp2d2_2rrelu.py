@@ -82,12 +82,16 @@ class NetPP2D2_2_RRELU(ChiNN):
         print_piece_param(11, input)
 
     def compute_representation(self, node, parent_node, board_modifications):
-        node_to_tensors_pieces_square_fast(node, parent_node, board_modifications, False)
+        ...
+        raise Exception(f'to be recoded in {__name__}')
+        #node_to_tensors_pieces_square_fast(node, parent_node, board_modifications, False)
 
     def get_nn_input(self, node):
-        return get_tensor_from_tensors_two_sides(node.tensor_white, node.tensor_black, node.tensor_castling_white,
-                                                 node.tensor_castling_black, node.player_to_move)
+        raise Exception(f'to be recoded in {__name__}')
 
+        #return get_tensor_from_tensors_two_sides(node.tensor_white, node.tensor_black, node.tensor_castling_white,
+            #                                     node.tensor_castling_black, node.player_to_move)
+#
 
 def print_piece_param(i, vec):
     for r in range(8):

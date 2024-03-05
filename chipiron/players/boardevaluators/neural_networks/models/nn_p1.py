@@ -6,7 +6,7 @@ from chipiron.players.boardevaluators.neural_networks.board_to_tensor import tra
 
 class NetP1(ChiNN):
     def __init__(self, path_to_main_folder, relative_path_file):
-        super(NetP1, self).__init__(path_to_main_folder, relative_path_file)
+        super(NetP1, self).__init__()
 
         self.transform_board_function = transform_board_pieces_one_side
         self.fc1 = nn.Linear(5, 1)

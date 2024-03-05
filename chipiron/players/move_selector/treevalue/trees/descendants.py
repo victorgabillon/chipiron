@@ -6,7 +6,7 @@ from chipiron.players.move_selector.treevalue.nodes import ITreeNode
 class Descendants:
     descendants_at_half_move: dict[HalfMove, dict[str, ITreeNode]]
     number_of_descendants: int
-    number_of_descendants_at_half_move: dict
+    number_of_descendants_at_half_move: dict[HalfMove, int]
     min_half_move: int | None
     max_half_move: int | None
 
@@ -144,7 +144,10 @@ class RangedDescendants(Descendants):
             string += '\n'
         return string
 
-    def is_new_generation(self, half_move):
+    def is_new_generation(
+            self,
+            half_move: HalfMove
+    ) -> bool:
         if self.min_half_move is not None:
             return half_move == self.max_half_move + 1
         else:

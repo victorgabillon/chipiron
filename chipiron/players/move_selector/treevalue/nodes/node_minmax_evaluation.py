@@ -3,12 +3,14 @@ import chess
 import math
 from random import choice
 from .tree_node import TreeNode
+from .itree_node import ITreeNode
 from chipiron.players.boardevaluators.over_event import OverEvent
 from chipiron.utils.small_tools import nth_key
 from chipiron.utils.my_value_sorted_dict import sort_dic
 from typing import List
 from typing import Protocol
 from dataclasses import dataclass, field
+from typing import Any
 
 
 # todo maybe further split values from over?
@@ -31,7 +33,7 @@ class NodeMinmaxEvaluation:
     value_white_minmax: float | None = None
 
     # self.best_move_sequence = []
-    best_node_sequence: list = field(default_factory=list)
+    best_node_sequence: list[ITreeNode] = field(default_factory=list)
 
     # the children of the tree node are kept in a dictionary that can be sorted by their evaluations ()
 
@@ -40,7 +42,7 @@ class NodeMinmaxEvaluation:
     # careful, I have hard coded in the self.best_child() function the descending order for
     # fast access to the best element, so please do not change!
     # self.children_sorted_by_value_vsd = ValueSortedDict({})
-    children_sorted_by_value_: dict[NodeWithValue, tuple] = field(default_factory=dict)
+    children_sorted_by_value_: dict[NodeWithValue, Any] = field(default_factory=dict)
 
     # self.children_sorted_by_value = {}
 
@@ -50,7 +52,7 @@ class NodeMinmaxEvaluation:
     # the list of children that have not yet be found to be over
     # using atm a list instead of set as atm python set are not insertion ordered which adds randomness
     # and makes debug harder
-    children_not_over: list = field(default_factory=list)
+    children_not_over: list[ITreeNode] = field(default_factory=list)
 
     # creating a base Over event that is set to None
     over_event: OverEvent = field(default_factory=OverEvent)
