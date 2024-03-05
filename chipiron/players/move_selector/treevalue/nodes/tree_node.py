@@ -4,6 +4,8 @@ import chipiron.environments.chess.board as boards
 from .itree_node import ITreeNode
 from dataclasses import dataclass, field
 
+import chipiron
+
 
 @dataclass(slots=True)
 class TreeNode:
@@ -80,11 +82,11 @@ class TreeNode:
     def test_all_legal_moves_generated(self):
         # print('test_all_legal_moves_generated')
         if self.all_legal_moves_generated:
-            for move in self.board.get_legal_moves():
+            for move in self.board.legal_moves():
                 assert (bool(move in self.moves_children_) != bool(move in self.non_opened_legal_moves))
         else:
             move_not_in = []
-            legal_moves = list(self.board.get_legal_moves())
+            legal_moves = list(self.board.legal_moves())
             for move in legal_moves:
                 if move not in self.moves_children_:
                     move_not_in.append(move)

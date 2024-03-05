@@ -4,3 +4,8 @@ from .factory import create_board
 import typing
 
 fen = typing.Annotated[str, 'fen']
+
+__all__ = [
+    "BoardModification",
+    "BoardChi"
+]

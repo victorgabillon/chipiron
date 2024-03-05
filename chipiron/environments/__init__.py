@@ -1,7 +1,3 @@
-from typing import Annotated, TypeAlias
-
-import chess
+from typing import Annotated
 
 HalfMove = Annotated[int, "half move"]
-
-

@@ -12,6 +12,9 @@ import os
 import typing
 from typing import Any
 
+import chipiron
+
+
 path = typing.Annotated[str | os.PathLike[str], 'path']
 seed = typing.Annotated[int, "seed"]
 
@@ -30,7 +33,7 @@ def mkdir(
         print(f"Successfully created the directory {folder_path} ")
 
 
-def yaml_fetch_args_in_file(path_file: str) -> dict[Any, Any]:
+def yaml_fetch_args_in_file(path_file: path) -> dict[Any, Any]:
     with open(path_file, 'r', encoding="utf-8") as file:
         args: dict[Any, Any] = yaml.load(file, Loader=yaml.FullLoader)
     return args
@@ -96,7 +99,7 @@ def fetch_args_modify_and_convert(
 ) -> _T_co:
     if modification is None:
         modification = {}
-    file_args: dict[Any, Any] = ch.tool.yaml_fetch_args_in_file(path_to_file)
+    file_args: dict[Any, Any] = chipiron.utils.yaml_fetch_args_in_file(path_to_file)
     merged_args_dict: dict[Any, Any] = ch.tool.rec_merge_dic(file_args, modification)
 
     print('merged_args_dict', merged_args_dict)

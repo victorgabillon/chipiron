@@ -8,10 +8,11 @@ from . import treevalue
 from . import human
 from . import stockfish
 from .random import Random, create_random
+from typing import TypeAlias
 
-AllMoveSelectorArgs = (treevalue.TreeAndValuePlayerArgs
-                       | human.HumanPlayerArgs | Random |
-                       stockfish.StockfishPlayer)
+AllMoveSelectorArgs: TypeAlias = (treevalue.TreeAndValuePlayerArgs
+                                  | human.HumanPlayerArgs | Random |
+                                  stockfish.StockfishPlayer)
 
 
 def create_main_move_selector(

@@ -49,7 +49,7 @@ def create_tree_and_value_builders(
 
     board_representation_factory: object | None = None
     board_representation_factory = create_board_representation(
-        board_representation=args.board_evaluator.representation
+        board_representation_str=args.board_evaluator.representation
     )
 
     search_factory: search_factories.SearchFactoryP = search_factories.SearchFactory(

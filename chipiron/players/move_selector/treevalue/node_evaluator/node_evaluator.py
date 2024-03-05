@@ -3,6 +3,7 @@ import chipiron.players.boardevaluators as board_evals
 import chipiron.players.move_selector.treevalue.nodes as nodes
 from enum import Enum
 from chipiron.players.boardevaluators.over_event import HowOver, Winner
+from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 
 DISCOUNT = .999999999999  # todo play with this
 
@@ -47,12 +48,12 @@ class NodeEvaluator:
        it also manages the evaluation querrys it seems"""
 
     board_evaluator: board_evals.BoardEvaluator
-    syzygy_evaluator: object
+    syzygy_evaluator: SyzygyTable
 
     def __init__(
             self,
             board_evaluator: board_evals.BoardEvaluator,
-            syzygy: object
+            syzygy: SyzygyTable
     ) -> None:
         self.board_evaluator = board_evaluator
         self.syzygy_evaluator = syzygy
