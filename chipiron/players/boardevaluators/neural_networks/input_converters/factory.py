@@ -66,29 +66,35 @@ def node_to_tensors_pieces_square_from_parent(node, board_modifications, parent_
     tensor_castling_black[0] = bool(board.castling_rights & chess.BB_A8)
     tensor_castling_black[1] = bool(board.castling_rights & chess.BB_H8)
 
-    representation = Representation364(tensor_white=tensor_white,
-                                       tensor_black=tensor_black,
-                                       tensor_castling_black=tensor_castling_black,
-                                       tensor_castling_white=tensor_castling_white)
+    representation = Representation364(
+        tensor_white=tensor_white,
+        tensor_black=tensor_black,
+        tensor_castling_black=tensor_castling_black,
+        tensor_castling_white=tensor_castling_white
+    )
 
     return representation
 
 
+# todo remove the quotes around  'nodes.AlgorithmNode' in the type hont below and the related circular import
 class Representation364Factory:
-    def create_from_transition(self,
-                               tree_node: nodes.TreeNode,
-                               parent_node: 'nodes.AlgorithmNode',
-                               modifications: board_mod.BoardModification
-                               ) -> Representation364:
+    def create_from_transition(
+            self,
+            tree_node: nodes.TreeNode,
+            parent_node: 'nodes.AlgorithmNode | None',
+            modifications: board_mod.BoardModification
+    ) -> Representation364:
 
         """  this version is supposed to be faster as it only modifies the parent
         representation with the last move and does not scan fully the new board"""
         if parent_node is None:  # this is the root_node
             representation = self.create_from_board(board=tree_node.board)
         else:
-            representation = node_to_tensors_pieces_square_from_parent(node=tree_node,
-                                                                       board_modifications=modifications,
-                                                                       parent_node=parent_node)
+            representation = node_to_tensors_pieces_square_from_parent(
+                node=tree_node,
+                board_modifications=modifications,
+                parent_node=parent_node
+            )
 
         return representation
 
@@ -106,13 +112,15 @@ class Representation364Factory:
             piece: Optional[chess.Piece] = board.piece_at(square)
             if piece:
                 piece_code: int = piece.piece_type - 1
+                square_index: chess.Square
+                index: int
                 if piece.color == chess.BLACK:
-                    square_index: chess.Square = chess.square_mirror(square)
-                    index: int = 64 * piece_code + square_index
+                    square_index = chess.square_mirror(square)
+                    index = 64 * piece_code + square_index
                     black[index] = 1.0
                 else:
-                    square_index: chess.Square = square
-                    index: int = 64 * piece_code + square_index
+                    square_index = square
+                    index = 64 * piece_code + square_index
                     white[index] = 1.0
 
         castling_white[0] = board.has_queenside_castling_rights(chess.WHITE)

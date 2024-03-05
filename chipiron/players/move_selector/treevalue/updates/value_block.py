@@ -1,5 +1,7 @@
-import chipiron.players.move_selector.treevalue.nodes as nodes
 from dataclasses import dataclass, field
+import typing
+
+import chipiron.players.move_selector.treevalue.nodes as nodes
 
 
 @dataclass(slots=True)

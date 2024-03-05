@@ -27,8 +27,7 @@ class UpdateInstructionsBatch:
         return node in self.batch
 
     def __iter__(self):
-        assert (0 == 2)
-        return iter(self.batch)
+        raise Exception(f'fail in {__name__}')
 
     def popitem(self):
         node, value = self.batch.popitem()
@@ -39,9 +38,11 @@ class UpdateInstructionsBatch:
 
     def print_info(self):
         print('UpdateInstructionsBatch: batch contains')
-        for key, update_information in self.batch:
-            key.print_info()
-            update_information.print_info()
+        raise Exception(f'not implemented in {__name__}')
+
+        #for key, update_information in self.batch:
+        #    key.print_info()
+        #    update_information.print_info()
 
     def merge(self, update_instructions_batch):
         if update_instructions_batch is not None:

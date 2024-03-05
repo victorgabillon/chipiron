@@ -54,4 +54,9 @@ class TreeExpansionHistory:
     history: List[TreeExpansion]
 
     def __init__(self, root_node: node.TreeNode):
-        self.history = [TreeExpansion(child_node=root_node, parent_node=None, creation_child_node=True)]
+        self.history = [TreeExpansion(
+            child_node=root_node,
+            parent_node=None,
+            creation_child_node=True,
+            board_modifications=None
+        )]
