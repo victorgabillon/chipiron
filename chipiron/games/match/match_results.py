@@ -1,6 +1,29 @@
 from chipiron.games.game.final_game_result import FinalGameResult
 from dataclasses import dataclass
 import chess
+from typing import Protocol
+
+
+class IMatchResults(Protocol):
+
+    # wrapped function
+    def add_result_one_game(
+            self,
+            white_player_name_id,
+            game_result
+    ) -> None:
+        ...
+
+    # forwarding
+    def get_simple_result(
+            self
+    ):
+        ...
+
+    def __str__(
+            self
+    ) -> str:
+        ...
 
 
 @dataclass

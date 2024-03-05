@@ -3,7 +3,7 @@ import pickle
 from .factory import MoveAndValueTree
 
 
-def add_dot(dot: object, treenode: object) -> object:
+def add_dot(dot: object, treenode: object):
     nd = treenode.dot_description()
     dot.node(str(treenode.id), nd)
     for ind, move in enumerate(treenode.moves_children):

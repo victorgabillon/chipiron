@@ -64,12 +64,12 @@ def create_player(
 
 def send_board_to_player_process_mailbox(
         board: BoardChi,
-        seed: int,
-        player_process_mailbox: queue.Queue
+        seed_: int,
+        player_process_mailbox: queue.Queue[BoardMessage]
 ) -> None:
     message: BoardMessage = BoardMessage(
         board=board,
-        seed=seed
+        seed=seed_
     )
     player_process_mailbox.put(item=message)
 

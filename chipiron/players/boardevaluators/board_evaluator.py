@@ -4,7 +4,7 @@ import chess
 
 from chipiron.utils.communication.gui_messages import EvaluationMessage
 import queue
-from chipiron.environments.chess.board import BoardChi
+from chipiron.environments.chess.board.board import BoardChi
 from typing import Any
 
 # VALUE_WHITE_WHEN_OVER is the value_white default value when the node is over
@@ -18,7 +18,10 @@ class BoardEvaluator(Protocol):
     This class evaluates a board
     """
 
-    def value_white(self, board: BoardChi):
+    def value_white(
+            self,
+            board: BoardChi
+    ):
         """Evaluates a board"""
         ...
 
@@ -38,7 +41,10 @@ class GameBoardEvaluator:
         self.board_evaluator_stock = board_evaluator_stock
         self.board_evaluator_chi = board_evaluator_chi
 
-    def evaluate(self, board: BoardChi):
+    def evaluate(
+            self,
+                 board: BoardChi
+    ):
         evaluation_chi = self.board_evaluator_chi.value_white(board=board)
         evaluation_stock = self.board_evaluator_stock.value_white(board=board)
         return evaluation_stock, evaluation_chi
@@ -46,7 +52,8 @@ class GameBoardEvaluator:
     def add_evaluation(
             self,
             player_color: chess.Color,
-            evaluation: float):
+            evaluation: float
+    ):
         # clean at some point!
         ...
 
@@ -57,15 +64,16 @@ class ObservableBoardEvaluator:
     # todo its becoming hacky...
 
     game_board_evaluator: GameBoardEvaluator
-    mailboxes: list[queue.Queue]
+    mailboxes: list[queue.Queue[EvaluationMessage]]
     evaluation_stock: Any
     evaluation_chi: Any
     evaluation_player_black: Any
     evaluation_player_white: Any
 
-    def __init__(self,
-                 game_board_evaluator: GameBoardEvaluator
-                 ):
+    def __init__(
+            self,
+            game_board_evaluator: GameBoardEvaluator
+    ):
         self.game_board_evaluator = game_board_evaluator
         self.mailboxes = []
         self.evaluation_stock: Any = None

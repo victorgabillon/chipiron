@@ -1,10 +1,13 @@
 from typing import Any
+from .comparable import CT
 
 
 # todo 3.12 vartype
 def sort_dic(
-        dic: dict[Any, Any]
+        dic: dict[Any, CT]
 ):
-    """ sorting a dic   tionary by ascending order"""
-    sorted_dic = dict(sorted(dic.items(), key=lambda item: item[1]))
+    """ sorting a dictionary by ascending order"""
+    z = dic.items()
+    a = sorted(z, key=lambda item: item[1])
+    sorted_dic = dict(a)
     return sorted_dic

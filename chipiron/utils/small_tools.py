@@ -10,6 +10,7 @@ import dacite
 import chipiron as ch
 import os
 import typing
+from typing import Any
 
 path = typing.Annotated[str | os.PathLike[str], 'path']
 seed = typing.Annotated[int, "seed"]
@@ -29,9 +30,9 @@ def mkdir(
         print(f"Successfully created the directory {folder_path} ")
 
 
-def yaml_fetch_args_in_file(path_file: str) -> dict:
+def yaml_fetch_args_in_file(path_file: str) -> dict[Any, Any]:
     with open(path_file, 'r', encoding="utf-8") as file:
-        args: dict = yaml.load(file, Loader=yaml.FullLoader)
+        args: dict[Any, Any] = yaml.load(file, Loader=yaml.FullLoader)
     return args
 
 
@@ -42,7 +43,7 @@ def dict_alphabetic_str(dic):
     return string
 
 
-def unique_int_from_list(a_list: list) -> int | None:
+def unique_int_from_list(a_list: list[int | None]) -> int | None:
     # only coded for a list of 2 atm probably can be done recursively for larger lists
     assert (len(a_list) == 2)
     x = a_list[0]
@@ -89,14 +90,14 @@ _T_co = TypeVar("_T_co", covariant=True, bound=IsDataclass)
 
 
 def fetch_args_modify_and_convert(
-        path_to_file: str | bytes | os.PathLike,  # path to a yaml file
+        path_to_file: path,  # path to a yaml file
         dataclass_name: Type[_T_co],  # the dataclass into which the dictionary will be converted
-        modification: dict | None = None,  # modification to the dict extracted from the yaml file
+        modification: dict[Any, Any] | None = None,  # modification to the dict extracted from the yaml file
 ) -> _T_co:
     if modification is None:
         modification = {}
-    file_args: dict = ch.tool.yaml_fetch_args_in_file(path_to_file)
-    merged_args_dict: dict = ch.tool.rec_merge_dic(file_args, modification)
+    file_args: dict[Any, Any] = ch.tool.yaml_fetch_args_in_file(path_to_file)
+    merged_args_dict: dict[Any, Any] = ch.tool.rec_merge_dic(file_args, modification)
 
     print('merged_args_dict', merged_args_dict)
     # formatting the dictionary into the corresponding dataclass
@@ -133,14 +134,16 @@ from dataclasses import dataclass
 
 @dataclass
 class Interval:
-    min_value: float = None
-    max_value: float = None
+    min_value: float | None = None
+    max_value: float | None = None
 
 
 def intersect_intervals(
         interval_1: Interval,
         interval_2: Interval
 ) -> Interval | None:
+    assert (interval_1.max_value is not None and interval_1.min_value is not None)
+    assert (interval_2.max_value is not None and interval_2.min_value is not None)
     min_value: float = max(interval_1.min_value, interval_2.min_value)
     max_value: float = min(interval_1.max_value, interval_2.max_value)
     if max_value < min_value:
@@ -154,6 +157,7 @@ def distance_number_to_interval(
         value: float,
         interval: Interval
 ) -> float:
+    assert (interval.max_value is not None and interval.min_value is not None)
     if value < interval.min_value:
         return interval.min_value - value
     elif value > interval.max_value:

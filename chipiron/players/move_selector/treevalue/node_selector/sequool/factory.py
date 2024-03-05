@@ -38,9 +38,9 @@ def create_sequool(
     all_nodes_not_opened = trees.Descendants()
     half_move_selector: HalfMoveSelector
     if args.recursive_selection_on_all_nodes:
-        half_move_selector: HalfMoveSelector = RandomAllSelector()
+        half_move_selector = RandomAllSelector()
     else:
-        half_move_selector: HalfMoveSelector = StaticNotOpenedSelector(
+        half_move_selector = StaticNotOpenedSelector(
             all_nodes_not_opened=all_nodes_not_opened
         )
 
