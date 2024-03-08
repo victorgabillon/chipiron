@@ -26,17 +26,23 @@ class Game:
             self,
             board: BoardChi,
             playing_status: GamePlayingStatus,
-            seed:seed
+            seed: seed
     ):
         self._board = board
         self._playing_status = playing_status
         self._seed = seed
 
     def play_move(self, move: chess.Move):
+        assert(self._board.board.is_valid())
         if self._playing_status.is_play():
+            print('ddddds', move, self._board.legal_moves, self._board.fen(), move in self._board.legal_moves,self._board.board.is_legal(move),list(self._board.board.legal_moves))
+            print('frgtfrgtf', self._board.board.status(),type(self._board.board.status()),self._board.board.castling_rights , self._board.board.clean_castling_rights())
+
+            assert (move in self._board.legal_moves)
             self._board.play_move(move)
         else:
             print(f'Cannot play move if the game status is PAUSE {self._playing_status.status}')
+        assert (self._board.board.is_valid())
 
     def rewind_one_move(self):
         if self._playing_status.is_paused():
@@ -150,7 +156,7 @@ class ObservableGame:
                 move_function(board_copy, merged_seed)
 
     def notify_status(self):
-        print('notify game',self.game.playing_status.status)
+        print('notify game', self.game.playing_status.status)
 
         observable_copy = copy.copy(self.game.playing_status.status)
         message: GameStatusMessage = GameStatusMessage(status=observable_copy)

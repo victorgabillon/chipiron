@@ -116,6 +116,8 @@ class GameManager:
 
             if board.is_game_over() or not self.game_continue_conditions():
                 break
+            else:
+                print(f'not game over at {board}')
 
         self.tell_results()
         self.terminate_processes()
@@ -124,7 +126,7 @@ class GameManager:
         game_results: FinalGameResult = self.simple_results()
         game_report: GameReport = GameReport(
             final_game_result=game_results,
-            move_history=board.move_stack)
+            move_history=board.board.move_stack)
         return game_report
 
     def processing_mail(self, message: DataClass) -> None:
@@ -140,14 +142,16 @@ class GameManager:
                         self.game.playing_status.is_play() and \
                         message.player_name == self.player_color_to_id[board.turn]:
                     # TODO THINK! HOW TO DEAL with premoves if we dont know the board in advance?
+                    print(f'play a move {move} at {board} {self.game.board.board.fen()}')
                     self.play_one_move(move)
+                    print(f'now board is  {self.game.board}')
+
                     eval_sto, eval_chi = self.external_eval()
                     print(f'Stockfish evaluation:{eval_sto} and chipiron eval{eval_chi}')
                     # Print the board
                     board.print_chess_board()
                     print(self.print_svg_board_to_file)
                     import time
-                    time.sleep(2)
 
                     if self.print_svg_board_to_file:
                         mySvg = board._repr_svg_()
@@ -196,7 +200,7 @@ class GameManager:
             path_file_txt = f'{path_file}.txt'
             path_file_obj = f'{path_file}.obj'
             with open(path_file_txt, 'a') as the_fileText:
-                for counter, move in enumerate(self.game.board.move_stack):
+                for counter, move in enumerate(self.game.board.board.move_stack):
                     if counter % 2 == 0:
                         move_1 = move
                     else:
@@ -208,22 +212,22 @@ class GameManager:
         board = self.game.board
         if self.syzygy is not None and self.syzygy.fast_in_table(board):
             print('Syzygy: Theoretical value for white', self.syzygy.sting_result(board))
-        if board.is_fivefold_repetition():
+        if board.board.is_fivefold_repetition():
             print('is_fivefold_repetition')
-        if board.is_seventyfive_moves():
+        if board.board.is_seventyfive_moves():
             print('is seventy five  moves')
-        if board.is_insufficient_material():
+        if board.board.is_insufficient_material():
             print('is_insufficient_material')
-        if board.is_stalemate():
+        if board.board.is_stalemate():
             print('is_stalemate')
-        if board.is_checkmate():
+        if board.board.is_checkmate():
             print('is_checkmate')
-        print(board.result())
+        print(board.board.result())
 
     def simple_results(self) -> FinalGameResult:
         board = self.game.board
 
-        if board.result() == '*':
+        if board.board.result() == '*':
             if self.syzygy is None or not self.syzygy.fast_in_table(board):  # TODO when is this case useful?
                 return (-10000, -10000, -10000)
             else:
@@ -235,7 +239,7 @@ class GameManager:
                 if val == 1000:
                     return FinalGameResult.WIN_FOR_WHITE
         else:
-            result = board.result()
+            result = board.board.result()
             if result == '1/2-1/2':
                 return FinalGameResult.DRAW
             if result == '0-1':

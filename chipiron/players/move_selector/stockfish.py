@@ -21,22 +21,17 @@ class StockfishPlayer:
     ):
         if self.engine is None:
             # if this object is created in the init then seending the object
-            #self.engine = chess.engine.SimpleEngine.popen_uci(
+            # self.engine = chess.engine.SimpleEngine.popen_uci(
             #    # TODO: should we remove the hardcoding
             #    r"stockfish/stockfish_14.1_linux_x64/stockfish_14.1_linux_x64")
             self.engine = chess.engine.SimpleEngine.popen_uci(
                 # TODO: should we remove the hardcoding
                 r"stockfish/stockfish/stockfish-ubuntu-x86-64-avx2")
 
-        result = self.engine.play(board, chess.engine.Limit(self.time_limit))
+        result = self.engine.play(board.board, chess.engine.Limit(self.time_limit))
         self.engine.quit()
-        self.engine =None
+        self.engine = None
         return MoveRecommendation(move=result.move)
 
     def print_info(self):
         print(self.type)
-
-
-async def pl(board, engine):
-    result = await engine.play(board, chess.engine.Limit(time=0.1))
-    return result

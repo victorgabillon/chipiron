@@ -10,7 +10,6 @@ import chipiron.environments.chess.board as board_mod
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import BoardRepresentation
 from chipiron.players.boardevaluators.neural_networks.input_converters.factory import Representation364Factory
 from dataclasses import dataclass
-from typing import Any
 
 
 @dataclass
@@ -27,7 +26,6 @@ class AlgorithmNodeFactory:
                half_move: int,
                count: int,
                parent_node: node.AlgorithmNode | None,
-               board_depth: int,
                modifications: board_mod.BoardModification
                ) -> node.AlgorithmNode:
 
@@ -36,6 +34,7 @@ class AlgorithmNodeFactory:
             half_move=half_move,
             count=count,
             parent_node=parent_node,
+            modifications=modifications
         )
         minmax_evaluation: NodeMinmaxEvaluation = NodeMinmaxEvaluation(tree_node=tree_node)
 

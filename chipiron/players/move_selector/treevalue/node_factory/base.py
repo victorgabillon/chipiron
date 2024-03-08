@@ -5,7 +5,7 @@ from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.node_factory.node_factory import TreeNodeFactory
 import chipiron.environments.chess.board as boards
-
+import chipiron.environments.chess.board as board_mod
 
 class Base(TreeNodeFactory):
     """
@@ -17,12 +17,14 @@ class Base(TreeNodeFactory):
             board: boards.BoardChi,
             half_move: int,
             count: int,
-            parent_node: ITreeNode | None
+            parent_node: ITreeNode | None,
+            modifications: board_mod.BoardModification
     ) -> TreeNode:
         """
         creating a Tree Node
 
         Args:
+            modifications:
             board:
             half_move:
             count:

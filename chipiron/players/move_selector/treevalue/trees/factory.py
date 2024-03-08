@@ -51,7 +51,6 @@ class MoveAndValueTreeFactory:
             half_move=starting_board.ply(),
             count=0,
             parent_node=None,
-            board_depth=0,
             modifications=None
         )
 

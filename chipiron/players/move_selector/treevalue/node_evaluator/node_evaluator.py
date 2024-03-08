@@ -77,7 +77,7 @@ class NodeEvaluator:
          if the game is obviously over"""
         game_over: bool = node.tree_node.board.is_game_over()
         if game_over:
-            value_as_string: str = node.board.result()
+            value_as_string: str = node.board.board.result()
             match value_as_string:
                 case '0-1':
                     how_over_ = HowOver.WIN
