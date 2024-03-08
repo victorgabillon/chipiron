@@ -5,5 +5,6 @@ __all__ = [
     "yaml_fetch_args_in_file",
     "rec_merge_dic",
     "seed",
-    "path"
+    "path",
+    "mkdir"
 ]

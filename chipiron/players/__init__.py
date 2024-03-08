@@ -5,5 +5,6 @@ from .player import Player
 from .factory import PlayerArgs
 
 __all__ = [
-    "PlayerArgs"
+    "PlayerArgs",
+    "Player"
 ]

@@ -55,7 +55,7 @@ def create_match_manager(
         args_match=args_match,
         args_player_one=args_player_one,
         args_player_two=args_player_two,
-        seed=seed,
+        seed_=seed,
         args_game=args_game
     )
 
