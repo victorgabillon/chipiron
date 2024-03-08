@@ -46,7 +46,10 @@ class BoardChi:
             self,
             move: chess.Move
     ) -> BoardModification:
+        # print('ff',self)
+        assert (move in self.legal_moves)
         board_modif: BoardModification | None = self.push_and_return_modification(move)
+        #  print('fsf', self)
         if board_modif is None:
             raise Exception('None Modif looks not good in board.py')
         else:
@@ -226,8 +229,8 @@ class BoardChi:
             all_attackers = all_attackers.union(new_attackers)
         return bool(all_attackers)
 
-    def is_game_over(self):
-        self.board.is_game_over()
+    def is_game_over(self) -> bool:
+        return self.board.is_game_over()
 
     def ply(self):
         return self.board.ply()
@@ -255,6 +258,13 @@ class BoardChi:
     def has_kingside_castling_rights(self, color: chess.Color):
         return self.board.has_kingside_castling_rights(color)
 
-    def copy(self, stack: bool):
+    def copy(
+            self,
+            stack: bool
+    ):
+      #  print('stack', stack)
         board = self.board.copy(stack=stack)
         return BoardChi(board=board)
+
+    def __str__(self) -> str:
+        return self.board.__str__()

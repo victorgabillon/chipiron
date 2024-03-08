@@ -97,8 +97,10 @@ class UpdateInstructions:
 
     def print_info(self):
         print('printing info of update instructions')
+        assert(self.index_block is not None and self.value_block is not None)
         self.value_block.print_info()
         self.index_block.print_info()
 
     def empty(self):
+        assert(self.value_block is not None)
         return self.value_block.empty() and (self.index_block is None or self.index_block.empty())

@@ -50,7 +50,7 @@ class PlayerProcess(multiprocessing.Process):
                     )
 
                 else:
-                    print('opopopopopopopopopdddddddddddddddddsssssssssss')
+                    print(f'opopopopopopopopopdddddddddddddddddsssssssssss, {message}')
 
             # TODO here give option to continue working while the other is thinking
 

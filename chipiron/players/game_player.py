@@ -29,6 +29,9 @@ class GamePlayer:
             board: BoardChi,
             seed: int | None = None
     ) -> MoveRecommendation:
+        all_legal_moves = list(board.legal_moves)
+        if not all_legal_moves:
+            raise Exception('No legal moves in this position')
         best_move: MoveRecommendation = self._player.select_move(
             board=board,
             seed=seed
@@ -42,7 +45,7 @@ def game_player_computes_move_on_board_and_send_move_in_queue(
         queue_move: queue.Queue,
         seed: int
 ) -> None:
-    if board.turn == game_player.color:
+    if board.turn == game_player.color and not board.board.is_game_over():
         move_recommendation: MoveRecommendation = game_player.select_move(
             board=board,
             seed=seed

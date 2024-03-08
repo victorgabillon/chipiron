@@ -14,7 +14,6 @@ from typing import Any
 
 import chipiron
 
-
 path = typing.Annotated[str | os.PathLike[str], 'path']
 seed = typing.Annotated[int, "seed"]
 
@@ -70,7 +69,15 @@ def rec_merge_dic(a, b):
     return merged
 
 
-def nth_key(dct, n):
+from typing import TypeVar
+
+_T = TypeVar("_T", covariant=True, bound=IsDataclass)
+
+
+def nth_key(
+        dct: dict[_T, Any],
+        n: int
+) -> _T:
     it = iter(dct)
     # Consume n elements.
     next(islice(it, n, n), None)

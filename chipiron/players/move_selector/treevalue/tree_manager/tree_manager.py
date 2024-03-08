@@ -66,6 +66,8 @@ class TreeManager:
         """
         Opening a Node that contains a board given the modifications.
         Args:
+            modifications:
+            board:
             tree:
             parent_node: The Parent node that we want to expand
             move: the move to play to expend the Node
@@ -83,23 +85,25 @@ class TreeManager:
                                          or tree.descendants.is_new_generation(half_move) \
                                          or fast_rep not in tree.descendants.descendants_at_half_move[half_move]
         if need_creation_child_node:
-            board_depth: int = half_move - tree.tree_root_half_move
-            child_node: node.ITreeNode = self.node_factory.create(board=board,
-                                                                  half_move=half_move,
-                                                                  count=tree.nodes_count,
-                                                                  parent_node=parent_node,
-                                                                  board_depth=board_depth,
-                                                                  modifications=modifications)
+            child_node = self.node_factory.create(
+                board=board,
+                half_move=half_move,
+                count=tree.nodes_count,
+                parent_node=parent_node,
+                modifications=modifications
+            )
             tree.nodes_count += 1
             tree.descendants.add_descendant(child_node)  # add it to the list of descendants
         else:  # the node already exists
-            child_node: node.AlgorithmNode = tree.descendants[half_move][fast_rep]
+            child_node = tree.descendants[half_move][fast_rep]
             child_node.add_parent(parent_node)
 
-        tree_expansion: TreeExpansion = TreeExpansion(child_node=child_node,
-                                                      parent_node=parent_node,
-                                                      board_modifications=modifications,
-                                                      creation_child_node=need_creation_child_node)
+        tree_expansion: TreeExpansion = TreeExpansion(
+            child_node=child_node,
+            parent_node=parent_node,
+            board_modifications=modifications,
+            creation_child_node=need_creation_child_node
+        )
 
         # add it to the list of opened move and out of the non-opened moves
         parent_node.moves_children[move] = tree_expansion.child_node
@@ -156,7 +160,7 @@ class TreeManager:
 
     def test_the_tree(self,
                       tree):
-        self.test_count()
+        self.test_count(tree)
         for half_move in tree.descendants:
             for fen in tree.descendants[half_move]:
                 node = tree.descendants[half_move][fen]
