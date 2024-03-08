@@ -8,25 +8,26 @@ from chipiron.players.boardevaluators.factory import create_game_board_evaluator
 from chipiron.utils import path
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy
-from chipiron.players.factory import PlayerArgs
+import chipiron.players as players
 from .match_settings_args import MatchSettingsArgs
 import chipiron.games.game as game
 import multiprocessing
 import queue
 import chipiron as ch
+from chipiron.utils.is_dataclass import DataClass
 
 
 def create_match_manager(
         args_match: MatchSettingsArgs,
-        args_player_one: PlayerArgs,
-        args_player_two: PlayerArgs,
+        args_player_one: players.PlayerArgs,
+        args_player_two: players.PlayerArgs,
         args_game: game.GameArgs,
         seed: int | None = None,
-        output_folder_path: path = None,
+        output_folder_path: path | None = None,
         gui: bool = False,
         print_svg_board_to_file: bool = False
 ) -> MatchManager:
-    main_thread_mailbox: queue.Queue = multiprocessing.Manager().Queue()
+    main_thread_mailbox: queue.Queue[DataClass] = multiprocessing.Manager().Queue()
 
     # Creation of the Syzygy table for perfect play in low pieces cases, needed by the GameManager
     # and can also be used by the players
@@ -74,8 +75,8 @@ def create_match_manager_from_args(
         profiling: bool = False,
         gui: bool = False
 ) -> MatchManager:
-    player_one_args: PlayerArgs
-    player_two_args: PlayerArgs
+    player_one_args: players.PlayerArgs
+    player_two_args: players.PlayerArgs
     player_one_args, player_two_args = fetch_two_players_args_convert_and_save(
         file_name_player_one=args.file_name_player_one,
         file_name_player_two=args.file_name_player_two,

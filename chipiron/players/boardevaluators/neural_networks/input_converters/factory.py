@@ -61,10 +61,10 @@ def node_to_tensors_pieces_square_from_parent(node, board_modifications, parent_
     tensor_castling_black = torch.zeros(2, requires_grad=False, dtype=torch.float)
 
     board = node.board
-    tensor_castling_white[0] = bool(board.castling_rights & chess.BB_A1)
-    tensor_castling_white[1] = bool(board.castling_rights & chess.BB_H1)
-    tensor_castling_black[0] = bool(board.castling_rights & chess.BB_A8)
-    tensor_castling_black[1] = bool(board.castling_rights & chess.BB_H8)
+    tensor_castling_white[0] = bool(board.board.castling_rights & chess.BB_A1)
+    tensor_castling_white[1] = bool(board.board.castling_rights & chess.BB_H1)
+    tensor_castling_black[0] = bool(board.board.castling_rights & chess.BB_A8)
+    tensor_castling_black[1] = bool(board.board.castling_rights & chess.BB_H8)
 
     representation = Representation364(
         tensor_white=tensor_white,

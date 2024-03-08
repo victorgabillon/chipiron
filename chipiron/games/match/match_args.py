@@ -10,7 +10,7 @@ class MatchArgs:
     # the seed
     seed: int = 0
 
-    experiment_output_folder: path = None
+    experiment_output_folder: path | None = None
 
     # path to files with yaml config the players and the match setting.
     config_file_name: path = 'scripts/one_match/inputs/base/exp_options.yaml'

@@ -92,13 +92,15 @@ def softmax(x, temperature):
     e_x = np.exp((x - np.max(x)) * temperature)
     return e_x / e_x.sum(axis=0)  # only difference
 
-
 # before 3.12
+
+import typing
 from typing import TypeVar
 
 _T_co = TypeVar("_T_co", covariant=True, bound=IsDataclass)
 
 
+@typing.dataclass_transform()
 def fetch_args_modify_and_convert(
         path_to_file: path,  # path to a yaml file
         dataclass_name: Type[_T_co],  # the dataclass into which the dictionary will be converted

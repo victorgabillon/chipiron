@@ -46,10 +46,8 @@ class BoardChi:
             self,
             move: chess.Move
     ) -> BoardModification:
-        # print('ff',self)
         assert (move in self.legal_moves)
         board_modif: BoardModification | None = self.push_and_return_modification(move)
-        #  print('fsf', self)
         if board_modif is None:
             raise Exception('None Modif looks not good in board.py')
         else:
@@ -75,7 +73,7 @@ class BoardChi:
         # Push move and remember board state.
         move = self.board._to_chess960(move)
         board_state = self.board._board_state()
-        self.castling_rights = self.board.clean_castling_rights()  # Before pushing stack
+        self.board.castling_rights = self.board.clean_castling_rights()  # Before pushing stack
         self.board.move_stack.append(
             self.board._from_chess960(self.board.chess960, move.from_square, move.to_square, move.promotion,
                                       move.drop))
@@ -84,7 +82,7 @@ class BoardChi:
 
         # Reset en passant square.
         ep_square = self.board.ep_square
-        self.ep_square = None
+        self.board.ep_square = None
 
         # Increment move counters.
         self.board.halfmove_clock += 1
@@ -104,7 +102,7 @@ class BoardChi:
 
         # Zero the half-move clock.
         if self.board.is_zeroing(move):
-            self.halfmove_clock = 0
+            self.board.halfmove_clock = 0
 
         from_bb = chess.BB_SQUARES[move.from_square]
         to_bb = chess.BB_SQUARES[move.to_square]
@@ -119,26 +117,26 @@ class BoardChi:
             board_modifications.add_removal((capture_square, captured_piece_type, not self.board.turn))
 
         # Update castling rights.
-        self.castling_rights &= ~to_bb & ~from_bb
+        self.board.castling_rights &= ~to_bb & ~from_bb
         if piece_type == chess.KING and not promoted:
             if self.board.turn == WHITE:
-                self.castling_rights &= ~chess.BB_RANK_1
+                self.board.castling_rights &= ~chess.BB_RANK_1
             else:
-                self.castling_rights &= ~chess.BB_RANK_8
+                self.board.castling_rights &= ~chess.BB_RANK_8
         elif captured_piece_type == chess.KING and not self.board.promoted & to_bb:
             if self.board.turn == WHITE and chess.square_rank(move.to_square) == 7:
-                self.castling_rights &= ~chess.BB_RANK_8
+                self.board.castling_rights &= ~chess.BB_RANK_8
             elif self.board.turn == BLACK and chess.square_rank(move.to_square) == 0:
-                self.castling_rights &= ~chess.BB_RANK_1
+                self.board.castling_rights &= ~chess.BB_RANK_1
 
         # Handle special pawn moves.
         if piece_type == chess.PAWN:
             diff = move.to_square - move.from_square
 
             if diff == 16 and chess.square_rank(move.from_square) == 1:
-                self.ep_square = move.from_square + 8
+                self.board.ep_square = move.from_square + 8
             elif diff == -16 and chess.square_rank(move.from_square) == 6:
-                self.ep_square = move.from_square - 8
+                self.board.ep_square = move.from_square - 8
             elif move.to_square == ep_square and abs(diff) in [7, 9] and not captured_piece_type:
                 # Remove pawns captured en passant.
                 down = -8 if self.board.turn == WHITE else 8
@@ -262,7 +260,6 @@ class BoardChi:
             self,
             stack: bool
     ):
-      #  print('stack', stack)
         board = self.board.copy(stack=stack)
         return BoardChi(board=board)
 

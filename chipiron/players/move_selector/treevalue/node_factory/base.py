@@ -40,7 +40,7 @@ class Base(TreeNodeFactory):
         tree_node: TreeNode = TreeNode(
             board_=board,
             half_move_=half_move,
-            id=count,
-            parent_nodes=parent_nodes,
+            id_=count,
+            parent_nodes_=parent_nodes,
         )
         return tree_node
