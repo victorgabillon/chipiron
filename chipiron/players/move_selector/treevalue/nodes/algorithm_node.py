@@ -38,6 +38,8 @@ class AlgorithmNode:
         self.exploration_index_data = exploration_index_data
         self.board_representation = board_representation
 
+
+
     @property
     def player_to_move(self):
         return self.tree_node.player_to_move

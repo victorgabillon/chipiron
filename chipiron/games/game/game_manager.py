@@ -84,13 +84,13 @@ class GameManager:
         self.game.play_move(move)
         if self.syzygy is not None and self.syzygy.fast_in_table(self.game.board):
             print('Theoretically finished with value for white: ',
-                  self.syzygy.sting_result(self.game.board))
+                  self.syzygy.string_result(self.game.board))
 
     def rewind_one_move(self):
         self.game.rewind_one_move()
         if self.syzygy.fast_in_table(self.game.board):
             print('Theoretically finished with value for white: ',
-                  self.syzygy.sting_result(self.game.board))
+                  self.syzygy.string_result(self.game.board))
 
     def set_new_game(self, starting_position_arg):
         self.game.set_starting_position(starting_position_arg)
@@ -211,7 +211,7 @@ class GameManager:
     def tell_results(self):
         board = self.game.board
         if self.syzygy is not None and self.syzygy.fast_in_table(board):
-            print('Syzygy: Theoretical value for white', self.syzygy.sting_result(board))
+            print('Syzygy: Theoretical value for white', self.syzygy.string_result(board))
         if board.board.is_fivefold_repetition():
             print('is_fivefold_repetition')
         if board.board.is_seventyfive_moves():

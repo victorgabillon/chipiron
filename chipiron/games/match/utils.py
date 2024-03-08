@@ -8,12 +8,12 @@ from chipiron.utils.small_tools import fetch_args_modify_and_convert
 
 
 def fetch_match_games_args_convert_and_save(
-        file_name_match_setting: str,
+        file_name_match_setting: path,
         profiling: bool = False,
-        experiment_output_folder: str | None = None,
+        experiment_output_folder: path | None = None,
         modification: dict | None = None,
 ) -> tuple[MatchSettingsArgs, game.GameArgs]:
-    file_name_match_setting: str | bytes | os.PathLike
+    file_name_match_setting: path
 
     if profiling:
         file_name_match_setting = 'setting_jime.yaml'

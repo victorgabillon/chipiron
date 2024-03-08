@@ -1,15 +1,14 @@
 import os
 from shutil import copyfile
 from chipiron.players.player_args import PlayerArgs
-from chipiron.utils.small_tools import fetch_args_modify_and_convert
-from chipiron.utils import path
+from chipiron.utils.small_tools import fetch_args_modify_and_convert, path
 from typing import Any
 
 
 def fetch_player_args_convert_and_save(
         file_name_player: path,
         modification_player: dict[Any, Any] | None = None,
-        experiment_output_folder: str | bytes | os.PathLike | None = None,
+        experiment_output_folder: path | None = None,
         from_data_folder: bool = True
 ) -> PlayerArgs:
     """
@@ -20,7 +19,7 @@ def fetch_player_args_convert_and_save(
     Returns:
 
     """
-    path_player: str
+    path_player: path
     if from_data_folder:
         path_player = os.path.join('data/players/player_config', file_name_player)
     else:
@@ -34,7 +33,7 @@ def fetch_player_args_convert_and_save(
     )
 
     if experiment_output_folder is not None:
-        file_name_player = file_name_player.split('/')[-1]
+        file_name_player = str(file_name_player).split('/')[-1]
         copyfile(
             src=path_player,
             dst=os.path.join(experiment_output_folder, file_name_player)

@@ -13,12 +13,18 @@ class SyzygyTable:
     ):
         self.table_base = chess.syzygy.open_tablebase(path_to_table)
 
-    def fast_in_table(self, board):
+    def fast_in_table(
+            self,
+            board: boards.BoardChi
+    ) -> bool:
         return board.number_of_pieces_on_the_board() < 6
 
-    def in_table(self, board):
+    def in_table(
+            self,
+            board: boards.BoardChi
+    ) -> bool:
         try:
-            self.table_base.probe_wdl(board)
+            self.table_base.probe_wdl(board.board)
         except KeyError:
             return False
         return True
@@ -39,16 +45,24 @@ class SyzygyTable:
         else:
             how_over_ = HowOver.DRAW
 
-        node.minmax_evaluation.over_event.becomes_over(how_over=how_over_,
-                                                       who_is_winner=who_is_winner_)
+        node.minmax_evaluation.over_event.becomes_over(
+            how_over=how_over_,
+            who_is_winner=who_is_winner_
+        )
 
-    def val(self, board) -> int:
+    def val(
+            self,
+            board: boards.BoardChi
+    ) -> int:
         # tablebase.probe_wdl Returns 2 if the side to move is winning, 0 if the position is a draw and -2 if the side to move is losing.
-        val: int = self.table_base.probe_wdl(board)
+        val: int = self.table_base.probe_wdl(board.board)
         return val
 
-    def get_over_tag(self, board):
-        val = self.table_base.probe_wdl(board)
+    def get_over_tag(
+            self,
+            board: boards.BoardChi
+    ) -> OverTags:
+        val = self.table_base.probe_wdl(board.board)
         if val > 0:
             if board.turn == chess.WHITE:
                 return OverTags.TAG_WIN_WHITE
@@ -62,8 +76,11 @@ class SyzygyTable:
             else:
                 return OverTags.TAG_WIN_WHITE
 
-    def sting_result(self, board):
-        val = self.table_base.probe_wdl(board)
+    def string_result(
+            self,
+            board: boards.BoardChi
+    ) -> str:
+        val = self.table_base.probe_wdl(board.board)
         player_to_move = 'white' if board.turn == chess.WHITE else 'black'
         if val > 0:
             return 'WIN for player ' + player_to_move
@@ -72,13 +89,17 @@ class SyzygyTable:
         else:
             return 'LOSS for player ' + player_to_move
 
-    def dtz(self, board):
-        dtz = self.table_base.probe_dtz(board)
+    def dtz(
+            self,
+            board: boards.BoardChi
+    ) -> int:
+        dtz: int = self.table_base.probe_dtz(board.board)
         return dtz
 
     def best_move(
             self,
-            board: boards.BoardChi):
+            board: boards.BoardChi
+    ) -> chess.Move:
         all_moves = list(board.legal_moves)
 
         # avoid draws by 50 move rules in winning position, # otherwise look
@@ -87,18 +108,18 @@ class SyzygyTable:
         best_value = -1000000000000000000000
         best_move = None
         for move in all_moves:
-            board_copy = board.copy()
-            board_copy.push(move)
+            board_copy: boards.BoardChi = board.copy(stack=True)
+            board_copy.board.push(move)
             val_player_next_board = self.val(board_copy)
             val_player_node = -val_player_next_board
             dtz_player_next_board = self.dtz(board_copy)
             dtz_player_node = -dtz_player_next_board
             if val_player_node > 0:  # winning position
-                new_value = board.is_zeroing(move) * 100 - dtz_player_node + 1000
+                new_value = board.board.is_zeroing(move) * 100 - dtz_player_node + 1000
             elif val_player_node == 0:
-                new_value = - board.is_zeroing(move) * 100 + dtz_player_node
+                new_value = - board.board.is_zeroing(move) * 100 + dtz_player_node
             elif val_player_node < 0:
-                new_value = - board.is_zeroing(move) * 100 + dtz_player_node - 1000
+                new_value = - board.board.is_zeroing(move) * 100 + dtz_player_node - 1000
             # print('edeswswswaqq',str(move),val_player_node,new_value ,node.board.is_zeroing(move) ,self.dtz(next_board))
 
             if new_value > best_value:

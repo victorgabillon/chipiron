@@ -3,5 +3,7 @@ from .small_tools import mkdir, yaml_fetch_args_in_file, dict_alphabetic_str, un
 
 __all__ = [
     "yaml_fetch_args_in_file",
-    "rec_merge_dic"
+    "rec_merge_dic",
+    "seed",
+    "path"
 ]

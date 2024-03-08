@@ -1,7 +1,8 @@
-from chipiron.players.move_selector.treevalue.tree_manager import create_algorithm_node_tree_manager, TreeExpansions, \
-    TreeExpansion
+from chipiron.players.move_selector.treevalue.tree_manager.factory import create_algorithm_node_tree_manager, \
+    AlgorithmNodeTreeManager
+from chipiron.players.move_selector.treevalue.tree_manager.tree_expander import TreeExpansions, TreeExpansion
 from chipiron.players.move_selector.treevalue.node_indices.node_exploration_manager import update_all_indices, \
-    NodeExplorationIndexManager, print_all_indices
+    NodeExplorationIndexManager
 from chipiron.players.move_selector.treevalue.node_indices.factory import create_exploration_index_manager
 from chipiron.players.move_selector.treevalue.node_indices.index_types import IndexComputationType
 import chipiron.players.move_selector.treevalue.trees as trees
@@ -54,7 +55,7 @@ def make_tree_from_file(
     )
     descendants: RangedDescendants = RangedDescendants()
 
-    algo_tree_manager = create_algorithm_node_tree_manager(
+    algo_tree_manager: AlgorithmNodeTreeManager = create_algorithm_node_tree_manager(
         node_evaluator=None,
         algorithm_node_factory=algorithm_node_factory,
         index_computation=index_computation
@@ -82,8 +83,10 @@ def make_tree_from_file(
             id_nodes[yaml_node['id']] = root_node
 
             descendants.add_descendant(root_node)
-            move_and_value_tree: MoveAndValueTree = MoveAndValueTree(root_node=root_node,
-                                                                     descendants=descendants)
+            move_and_value_tree: MoveAndValueTree = MoveAndValueTree(
+                root_node=root_node,
+                descendants=descendants
+            )
             tree_expansions.add(
                 TreeExpansion(
                     child_node=root_node,
@@ -152,6 +155,7 @@ def check_from_file(file, tree):
             if yaml_index is None:
                 assert (parent_node.exploration_index_data.index is None)
             else:
+                assert parent_node.exploration_index_data.index is not None
                 assert isclose(yaml_index, parent_node.exploration_index_data.index,
                                abs_tol=1e-8)
 
@@ -183,8 +187,8 @@ def check_index(
     # print_all_indices(
     #    tree
     # )
-    file = f'data/trees/{tree_file}/{tree_file}_{index_computation.value}.yaml'
-    check_from_file(file=file, tree=tree)
+    file_index = f'data/trees/{tree_file}/{tree_file}_{index_computation.value}.yaml'
+    check_from_file(file=file_index, tree=tree)
 
     return TestResult.PASSED
 
@@ -196,11 +200,11 @@ def test_indices():
 
     tree_files = ['tree_1', 'tree_2']
 
-    results = {}
+    results: dict[TestResult, int] = {}
     for index_computation in index_computations:
         for tree_file in tree_files:
             print(f'---testing {index_computation} on {tree_file}')
-            res = check_index(index_computation, tree_file)
+            res: TestResult = check_index(index_computation, tree_file)
             if res in results:
                 results[res] += 1
             else:

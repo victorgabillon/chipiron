@@ -14,7 +14,7 @@ def are_all_moves_and_children_opened(
 def a_move_sequence_from_root(
         tree_node: ITreeNode
 ) -> list[str]:
-    move_sequence_from_root: list[ITreeNode] = []
+    move_sequence_from_root: list[chess.Move] = []
     child: ITreeNode = tree_node
     while child.parent_nodes:
         parent: ITreeNode = next(iter(child.parent_nodes))

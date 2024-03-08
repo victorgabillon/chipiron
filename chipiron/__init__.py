@@ -5,3 +5,8 @@ from . import displays as disp
 
 
 from .my_random import set_seeds
+
+__all__ = [
+    "set_seeds"
+]
+

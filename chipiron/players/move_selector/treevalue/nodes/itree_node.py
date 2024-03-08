@@ -20,12 +20,17 @@ class ITreeNode(Protocol):
         ...
 
     @property
-    def moves_children(self) -> bidict[chess.Move, ITreeNode]:
+    def moves_children(self) -> bidict[chess.Move, ITreeNode | None]:
         ...
 
     @property
-    def parent_nodes(self) -> set[ITreeNode]:
+    def parent_nodes(
+            self
+    ) -> set[ITreeNode]:
         ...
 
-    def add_parent(self, new_parent_node: ITreeNode):
+    def add_parent(
+            self,
+            new_parent_node: ITreeNode
+    ) -> None:
         ...

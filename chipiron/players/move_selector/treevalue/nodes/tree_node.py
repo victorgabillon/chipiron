@@ -4,13 +4,11 @@ import chipiron.environments.chess.board as boards
 from .itree_node import ITreeNode
 from dataclasses import dataclass, field
 
-import chipiron
-
 
 @dataclass(slots=True)
 class TreeNode:
     # id is a number to identify this node for easier debug
-    id: int
+    id_: int
 
     # number of half-moves since the start of the game to get to the board position in self.board
     half_move_: int
@@ -19,7 +17,7 @@ class TreeNode:
     board_: boards.BoardChi
 
     # the set of parent nodes to this node. Note that a node can have multiple parents!
-    parent_nodes: set[ITreeNode]
+    parent_nodes_: set[ITreeNode]
 
     # all_legal_moves_generated  is a boolean saying whether all moves have been generated.
     # If true the moves are either opened in which case the corresponding opened node is stored in
@@ -28,7 +26,7 @@ class TreeNode:
     non_opened_legal_moves: set[chess.Move] = field(default_factory=set)
 
     # bijection dictionary between moves and children nodes. node is set to None is not created
-    moves_children_: bidict[chess.Move, ITreeNode] = field(default_factory=bidict)
+    moves_children_: bidict[chess.Move, ITreeNode | None] = field(default_factory=bidict)
 
     fast_rep: str = field(default_factory=str)
 
@@ -39,6 +37,10 @@ class TreeNode:
         if self.board_:
             self.fast_rep = self.board_.fast_representation()
             self.player_to_move_: chess.Color = self.board_.turn
+
+    @property
+    def id(self) -> int:
+        return self.id_
 
     @property
     def player_to_move(self):
@@ -53,13 +55,20 @@ class TreeNode:
         return self.half_move_
 
     @property
-    def moves_children(self) -> bidict[chess.Move, ITreeNode]:
+    def moves_children(self) -> bidict[chess.Move, ITreeNode | None]:
         return self.moves_children_
+
+    @property
+    def parent_nodes(self) -> set[ITreeNode]:
+        return self.parent_nodes_
 
     def is_root_node(self) -> bool:
         return not self.parent_nodes
 
-    def add_parent(self, new_parent_node):
+    def add_parent(
+            self,
+            new_parent_node: ITreeNode
+    ) -> None:
         assert (new_parent_node not in self.parent_nodes)  # there cannot be two ways to link the same child-parent
         self.parent_nodes.add(new_parent_node)
 
@@ -97,15 +106,15 @@ class TreeNode:
             assert (move_not_in != [] or legal_moves == [])
 
     def get_descendants(self):
-        des = {self: None}  # include itself
+
+        des: dict[ITreeNode | None, None] = {self: None}  # include itself
         generation = set(self.moves_children_.values())
         while generation:
             next_depth_generation = set()
             for node in generation:
-
-                des[node] = None
-                for move, next_generation_child in node.moves_children.items():
-                    next_depth_generation.add(next_generation_child)
+                if node is not None:
+                    des[node] = None
+                    for move, next_generation_child in node.moves_children.items():
+                        next_depth_generation.add(next_generation_child)
             generation = next_depth_generation
         return des
-
