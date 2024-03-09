@@ -9,7 +9,7 @@ WORKDIR .
 
 RUN set -xe \
     && apt-get update \
-    && apt-get install python3.11 -y \
+    && apt-get install python3-full -y \
     && apt-get install python3-pip -y
 
 RUN rm -rf /usr/share/dotnet
