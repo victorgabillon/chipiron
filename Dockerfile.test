@@ -10,7 +10,8 @@ WORKDIR .
 RUN set -xe \
     && apt-get update \
     && apt-get install python3-full -y \
-    && apt-get install python3-pip -y
+    && apt-get install python3-pip -y \
+    && pip install --upgrade pip
 
 RUN rm -rf /usr/share/dotnet
 RUN rm -rf /opt/ghc
