@@ -56,4 +56,4 @@ USER testuser:test
 # Timeout is set to 0 to disable the timeouts of the workers to allow Cloud Run to handle instance scaling.
 
 
-CMD ["python3.11, "main_chipiron_.py"]
+CMD ["python3, "main_chipiron_.py"]
