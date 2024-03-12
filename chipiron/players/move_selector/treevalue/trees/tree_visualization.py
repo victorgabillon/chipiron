@@ -1,17 +1,22 @@
 from graphviz import Digraph
 import pickle
 from .factory import MoveAndValueTree
+from chipiron.players.move_selector.treevalue.nodes import ITreeNode
 
 
-def add_dot(dot: object, treenode: object):
+def add_dot(
+        dot: Digraph,
+        treenode: ITreeNode
+) -> None:
     nd = treenode.dot_description()
     dot.node(str(treenode.id), nd)
-    for ind, move in enumerate(treenode.moves_children):
+    for _, move in enumerate(treenode.moves_children):
         if treenode.moves_children[move] is not None:
             child = treenode.moves_children[move]
-            cdd = str(child.id)
-            dot.edge(str(treenode.id), cdd, str(move.uci()))
-            add_dot(dot, child)
+            if child is not None:
+                cdd = str(child.id)
+                dot.edge(str(treenode.id), cdd, str(move.uci()))
+                add_dot(dot, child)
 
 
 def display_special(node, format, index):
@@ -37,14 +42,16 @@ def display_special(node, format, index):
     return dot
 
 
-def display(tree: MoveAndValueTree, format):
-    dot = Digraph(format=format)
+def display(tree: MoveAndValueTree, format_):
+    dot = Digraph(format=format_)
     add_dot(dot, tree.root_node)
     return dot
 
 
-def save_pdf_to_file(tree: MoveAndValueTree):
-    dot = display('pdf')
+def save_pdf_to_file(
+        tree: MoveAndValueTree
+) -> None:
+    dot = display(tree=tree, format_='pdf')
     round_ = len(tree.root_node.board.move_stack) + 2
     color = 'white' if tree.root_node.player_to_move else 'black'
     dot.render('chipiron/runs/treedisplays/TreeVisual_' + str(int(round_ / 2)) + color + '.pdf')
@@ -53,7 +60,7 @@ def save_pdf_to_file(tree: MoveAndValueTree):
 def save_raw_data_to_file(
         tree: MoveAndValueTree,
         count='#'):
-    round_ = len(tree.root_node.board.move_stack) + 2
+    round_ = len(tree.root_node.board.board.move_stack) + 2
     color = 'white' if tree.root_node.player_to_move else 'black'
     filename = 'chipiron/debugTreeData_' + str(int(round_ / 2)) + color + '-' + str(count) + '.td'
 

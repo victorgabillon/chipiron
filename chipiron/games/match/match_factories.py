@@ -14,7 +14,7 @@ import chipiron.games.game as game
 import multiprocessing
 import queue
 import chipiron as ch
-from chipiron.utils.is_dataclass import DataClass
+from chipiron.utils.is_dataclass import IsDataclass
 
 
 def create_match_manager(
@@ -27,7 +27,7 @@ def create_match_manager(
         gui: bool = False,
         print_svg_board_to_file: bool = False
 ) -> MatchManager:
-    main_thread_mailbox: queue.Queue[DataClass] = multiprocessing.Manager().Queue()
+    main_thread_mailbox: queue.Queue[IsDataclass] = multiprocessing.Manager().Queue()
 
     # Creation of the Syzygy table for perfect play in low pieces cases, needed by the GameManager
     # and can also be used by the players

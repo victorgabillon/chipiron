@@ -2,14 +2,18 @@ import chipiron.players.move_selector.treevalue.nodes as node
 from typing import List
 from dataclasses import dataclass, field
 import chipiron.environments.chess.board as board_mod
+from typing import TypeVar, Generic
+
+T_extendsITreenode = TypeVar("T_extendsITreenode", bound=node.ITreeNode)
 
 
+# todo transition to 3.12
 @dataclass(slots=True)
-class TreeExpansion:
+class TreeExpansion(Generic[T_extendsITreenode]):
     """ the class describing TreeExpansion"""
 
-    child_node: node.ITreeNode
-    parent_node: node.ITreeNode | None
+    child_node: T_extendsITreenode
+    parent_node: T_extendsITreenode | None
     board_modifications: board_mod.BoardModification | None
     creation_child_node: bool
 
@@ -23,25 +27,31 @@ class TreeExpansion:
 class TreeExpansions:
     """ the class logging some expansions of a tree"""
 
-    expansions_with_node_creation: List[TreeExpansion] = field(default_factory=list)
-    expansions_without_node_creation: List[TreeExpansion] = field(default_factory=list)
+    expansions_with_node_creation: List[TreeExpansion[node.ITreeNode]] = field(default_factory=list)
+    expansions_without_node_creation: List[TreeExpansion[node.ITreeNode]] = field(default_factory=list)
 
     def __iter__(self):
         return iter(self.expansions_with_node_creation + self.expansions_without_node_creation)
 
     def add(
             self,
-            tree_expansion: TreeExpansion
+            tree_expansion: TreeExpansion[node.ITreeNode]
     ) -> None:
         if tree_expansion.creation_child_node:
             self.add_creation(tree_expansion=tree_expansion)
         else:
             self.add_connection(tree_expansion=tree_expansion)
 
-    def add_creation(self, tree_expansion: TreeExpansion):
+    def add_creation(
+            self,
+            tree_expansion: TreeExpansion[node.ITreeNode]
+    ) -> None:
         self.expansions_with_node_creation.append(tree_expansion)
 
-    def add_connection(self, tree_expansion: TreeExpansion):
+    def add_connection(
+            self,
+            tree_expansion: TreeExpansion[node.ITreeNode]
+    ) -> None:
         self.expansions_without_node_creation.append(tree_expansion)
 
     def __str__(self):

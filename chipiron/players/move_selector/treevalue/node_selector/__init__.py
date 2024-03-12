@@ -6,5 +6,9 @@ from .node_selector_types import NodeSelectorType
 
 __all__ = [
     "OpeningInstructions",
-    "OpeningInstruction"
+    "OpeningInstruction",
+    "AllNodeSelectorArgs",
+    "OpeningType",
+    "NodeSelector",
+    "create"
 ]

@@ -7,8 +7,8 @@ import chipiron.players.move_selector.treevalue.nodes as node
 import chipiron.players.move_selector.treevalue.trees as trees
 import chipiron.players.move_selector.treevalue.node_selector as node_sel
 import chipiron.players.move_selector.treevalue.updates as upda
-from chipiron.players.move_selector.treevalue.node_indices.factory import NodeExplorationIndexManager
-from chipiron.players.move_selector.treevalue.node_indices.node_exploration_manager import update_all_indices
+from chipiron.players.move_selector.treevalue.indices.index_manager import NodeExplorationIndexManager
+from chipiron.players.move_selector.treevalue.indices.index_manager.node_exploration_manager import update_all_indices
 
 from .tree_expander import TreeExpansion, TreeExpansions
 from .tree_manager import TreeManager

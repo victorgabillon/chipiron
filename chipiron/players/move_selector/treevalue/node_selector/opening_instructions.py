@@ -40,7 +40,10 @@ class OpeningInstructions:
             if opening_instruction_key not in self.batch:
                 self.batch[opening_instruction_key] = opening_instruction
 
-    def pop_items(self, how_many: int):
+    def pop_items(
+            self,
+            how_many: int
+    ):
         how_many = min(how_many, len(self.batch))
         popped = OpeningInstructions()  # todo is there a faster way to copy?
         for pop in range(how_many):

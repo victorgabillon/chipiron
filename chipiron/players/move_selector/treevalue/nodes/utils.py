@@ -36,6 +36,7 @@ def is_winning(
         color: chess.Color
 ) -> bool:
     """ return if the color to play in the node is winning """
+    assert node_minmax_evaluation.value_white_minmax is not None
     winning_if_color_white: bool = node_minmax_evaluation.value_white_minmax > .98 and color
     winning_if_color_black: bool = node_minmax_evaluation.value_white_minmax < -.98 and not color
 

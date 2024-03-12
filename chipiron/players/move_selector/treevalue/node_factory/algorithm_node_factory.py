@@ -2,8 +2,7 @@
 AlgorithmNodeFactory
 """
 from chipiron.players.move_selector.treevalue.nodes.node_minmax_evaluation import NodeMinmaxEvaluation
-from chipiron.players.move_selector.treevalue.node_indices.factory import NodeExplorationData, \
-    create_exploration_index_data,ExplorationIndexDataFactory
+import chipiron.players.move_selector.treevalue.indices.node_indices as node_indices
 import chipiron.players.move_selector.treevalue.node_factory as node_fac
 import chipiron.players.move_selector.treevalue.nodes as node
 import chipiron.environments.chess.board as board_mod
@@ -19,16 +18,18 @@ class AlgorithmNodeFactory:
     """
     tree_node_factory: node_fac.Base
     board_representation_factory: Representation364Factory | None
-    exploration_index_data_create: ExplorationIndexDataFactory
+    exploration_index_data_create: node_indices.ExplorationIndexDataFactory
 
-    def create(self,
-               board,
-               half_move: int,
-               count: int,
-               parent_node: node.AlgorithmNode | None,
-               modifications: board_mod.BoardModification
-               ) -> node.AlgorithmNode:
 
+
+    def create(
+            self,
+            board : board_mod.BoardChi,
+            half_move: int,
+            count: int,
+            parent_node: node.AlgorithmNode | None,
+            modifications: board_mod.BoardModification | None
+    ) -> node.AlgorithmNode:
         tree_node: node.TreeNode = self.tree_node_factory.create(
             board=board,
             half_move=half_move,

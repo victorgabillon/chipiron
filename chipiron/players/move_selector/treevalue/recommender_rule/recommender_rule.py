@@ -13,7 +13,9 @@ import chipiron.players.move_selector.treevalue.trees as trees
 from chipiron.players.boardevaluators.basic_evaluation import value_base
 from chipiron.players.move_selector.treevalue.nodes import AlgorithmNode
 
-AlmostEqualLogistic_Literal = 'almost_equal_logistic'
+
+class RecommenderRuleTypes(str, Enum):
+    AlmostEqualLogistic: str = 'almost_equal_logistic'
 
 
 # theses are functions but i still use dataclasses instead
@@ -21,7 +23,7 @@ AlmostEqualLogistic_Literal = 'almost_equal_logistic'
 
 @dataclass
 class AlmostEqualLogistic:
-    type: Literal[AlmostEqualLogistic_Literal]
+    type: Literal[RecommenderRuleTypes.AlmostEqualLogistic]
     temperature: int
 
     def __call__(
@@ -45,10 +47,6 @@ class AlmostEqualLogistic:
 
 
 AllRecommendFunctionsArgs = AlmostEqualLogistic
-
-
-class RecommenderRuleTypes(str, Enum):
-    AlmostEqualLogistic: str = AlmostEqualLogistic_Literal
 
 
 @dataclass
@@ -108,7 +106,7 @@ def recommend_move_after_exploration(
 
 
 def recommend_move_after_exploration_generic(
-        recommend_move_after_exploration: RecommenderRule,
+        recommend_move_after_exploration: AllRecommendFunctionsArgs,
         tree: trees.MoveAndValueTree,
         random_generator: random.Random
 ) -> chess.Move:

@@ -1,8 +1,11 @@
+"""
+players utils
+"""
 import os
+from typing import Any
 from shutil import copyfile
 from chipiron.players.player_args import PlayerArgs
 from chipiron.utils.small_tools import fetch_args_modify_and_convert, path
-from typing import Any
 
 
 def fetch_player_args_convert_and_save(
@@ -33,7 +36,7 @@ def fetch_player_args_convert_and_save(
     )
 
     if experiment_output_folder is not None:
-        file_name_player = str(file_name_player).split('/')[-1]
+        file_name_player = str(file_name_player).rsplit('/', maxsplit=1)[-1]
         copyfile(
             src=path_player,
             dst=os.path.join(experiment_output_folder, file_name_player)

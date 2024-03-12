@@ -8,8 +8,9 @@ from .all_node_evaluators import NodeEvaluatorTypes
 from chipiron.players.move_selector.treevalue.node_evaluator import NodeEvaluatorArgs
 
 from . import neural_networks
+from typing import TypeAlias
 
-AllNodeEvaluatorArgs = neural_networks.NeuralNetNodeEvalArgs | NodeEvaluatorArgs
+AllNodeEvaluatorArgs: TypeAlias = neural_networks.NeuralNetNodeEvalArgs | NodeEvaluatorArgs
 
 
 def create_node_evaluator(

@@ -1,6 +1,8 @@
 """
 Factory to build node selectors
 """
+
+import random
 from .node_selector import NodeSelector
 from .uniform import Uniform
 from .recurzipf.recur_zipf_base import RecurZipfBase, RecurZipfBaseArgs
@@ -8,7 +10,7 @@ from .sequool import create_sequool, SequoolArgs
 from .opening_instructions import OpeningInstructor
 from .node_selector_types import NodeSelectorType
 from .node_selector_args import NodeSelectorArgs
-import random
+
 
 AllNodeSelectorArgs = RecurZipfBaseArgs | SequoolArgs | NodeSelectorArgs
 

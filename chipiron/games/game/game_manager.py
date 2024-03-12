@@ -15,6 +15,7 @@ from chipiron.environments.chess.board import BoardChi
 
 from chipiron.utils import path
 from .final_game_result import GameReport, FinalGameResult
+import os
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -46,7 +47,7 @@ class GameManager:
                  args: GameArgs,
                  player_color_to_id,
                  main_thread_mailbox,
-                 players: list[players_m.PlayerProcess | players_m.Player],
+                 players: list[players_m.PlayerProcess | players_m.GamePlayer],
                  print_svg_board_to_file: bool = False
                  ):
         """
@@ -65,11 +66,11 @@ class GameManager:
         """
         self.game = game
         self.syzygy = syzygy
-        self.path_to_store_result = output_folder_path + '/games/' if output_folder_path is not None else None
+        self.path_to_store_result = os.path.join(output_folder_path,
+                                                 'games') if output_folder_path is not None else None
         self.display_board_evaluator = display_board_evaluator
         self.args = args
         self.player_color_to_id = player_color_to_id
-        self.board_history = []
         self.main_thread_mailbox = main_thread_mailbox
         self.players = players
         self.print_svg_board_to_file = print_svg_board_to_file
@@ -129,7 +130,10 @@ class GameManager:
             move_history=board.board.move_stack)
         return game_report
 
-    def processing_mail(self, message: DataClass) -> None:
+    def processing_mail(
+            self,
+            message: DataClass
+    ) -> None:
         board: BoardChi = self.game.board
 
         match message:

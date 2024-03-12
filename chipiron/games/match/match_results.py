@@ -25,6 +25,11 @@ class IMatchResults(Protocol):
     ) -> str:
         ...
 
+    def finish(
+            self
+    ) -> None:
+        ...
+
 
 @dataclass
 class MatchResults:
@@ -75,7 +80,7 @@ class MatchResults:
         else:
             raise Exception('?')
 
-    def finish(self):
+    def finish(self) -> None:
         self.match_finished = True
 
     def __str__(self):

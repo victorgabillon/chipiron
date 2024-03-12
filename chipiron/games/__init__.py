@@ -4,5 +4,6 @@ from .game.observable_game_playing_status import ObservableGamePlayingStatus
 
 
 __all__ = [
-    "MatchManager"
+    "MatchManager",
+    "GamePlayingStatus"
 ]

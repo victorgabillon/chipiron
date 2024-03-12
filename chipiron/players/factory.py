@@ -1,30 +1,41 @@
-from .player import Player
-from .player_thread import PlayerProcess
-from .game_player import GamePlayer, game_player_computes_move_on_board_and_send_move_in_queue
+"""
+player factory
+"""
 
 import multiprocessing
 import random
 import queue
-
 from functools import partial
-
-from . import move_selector
-
-from chipiron.environments.chess import BoardChi
 from typing import Callable
 
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils import seed
-from chipiron.players.boardevaluators.table_base.factory import create_syzygy, SyzygyTable
-
+import chipiron.players.boardevaluators.table_base as table_base
 from chipiron.players.utils import fetch_player_args_convert_and_save
+from chipiron.environments.chess.board import BoardChi
+from chipiron.utils.communication.player_game_messages import MoveMessage
+
+from .player import Player
+from .player_thread import PlayerProcess
+from .game_player import GamePlayer, game_player_computes_move_on_board_and_send_move_in_queue
 from .player_args import PlayerArgs
+
+from . import move_selector
 
 
 def create_chipiron_player(
         depth: int
 ) -> Player:
-    syzygy_table: SyzygyTable | None = create_syzygy()
+    """
+    Creates the chipiron champion/representative/standard/default player
+
+    Args:
+        depth: int, the depth at which computation should be made.
+
+    Returns: the player
+
+    """
+    syzygy_table: table_base.SyzygyTable | None = table_base.create_syzygy()
     random_generator = random.Random()
 
     args_player: PlayerArgs = fetch_player_args_convert_and_save(
@@ -49,6 +60,17 @@ def create_player(
         syzygy,
         random_generator: random.Random
 ) -> Player:
+    """
+    Creates a player
+
+    Args:
+        args:  players args
+        syzygy:
+        random_generator: the random generator
+
+    Returns: the player
+
+    """
     print('create player')
     main_move_selector: move_selector.MoveSelector = move_selector.create_main_move_selector(
         move_selector_instance_or_args=args.main_move_selector,
@@ -67,6 +89,13 @@ def send_board_to_player_process_mailbox(
         seed_: int,
         player_process_mailbox: queue.Queue[BoardMessage]
 ) -> None:
+    """
+
+    Args:
+        board:
+        seed_:
+        player_process_mailbox:
+    """
     message: BoardMessage = BoardMessage(
         board=board,
         seed=seed_
@@ -80,8 +109,18 @@ MoveFunction = Callable[[BoardChi, seed], None]
 def create_player_observer(
         game_player: GamePlayer,
         distributed_players: bool,
-        main_thread_mailbox: queue.Queue
+        main_thread_mailbox: queue.Queue[MoveMessage]
 ) -> tuple[GamePlayer | PlayerProcess, MoveFunction]:
+    """
+
+    Args:
+        game_player:
+        distributed_players:
+        main_thread_mailbox:
+
+    Returns:
+
+    """
     generic_player: GamePlayer | PlayerProcess
     move_function: MoveFunction
 

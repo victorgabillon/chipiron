@@ -1,11 +1,18 @@
-from .move_selector.move_selector import MoveSelector, MoveRecommendation
+"""
+player
+"""
+
 from chipiron.environments.chess.board.board import BoardChi
 from chipiron.utils import seed
+from .move_selector.move_selector import MoveSelector, MoveRecommendation
 
 
 class Player:
     #  difference between player and treebuilder includes the fact
     #  that now a player can be a mixture of multiple decision rules
+    """
+    Player selects moves on a given board
+    """
 
     name: str
     main_move_selector: MoveSelector
@@ -17,13 +24,12 @@ class Player:
             main_move_selector: MoveSelector):
         self.id = name
         self.main_move_selector: MoveSelector = main_move_selector
-
         self.syzygy_player = syzygy
 
     def select_move(
             self,
             board: BoardChi,
-            seed: seed
+            seed_: seed
     ) -> MoveRecommendation:
         """ returns the best move computed by the player.
         The player has the option to ask the syzygy table to play it"""
@@ -44,7 +50,7 @@ class Player:
                 print('Playing with player (not Syzygy)')
                 move_recommendation = self.main_move_selector.select_move(
                     board=board,
-                    move_seed=seed
+                    move_seed=seed_
                 )
 
         return move_recommendation

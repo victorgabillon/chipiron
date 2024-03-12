@@ -8,11 +8,15 @@ import chess
 class ITreeNode(Protocol):
 
     @property
-    def id(self) -> int:
+    def id(
+            self
+    ) -> int:
         ...
 
     @property
-    def board(self) -> BoardChi:
+    def board(
+            self
+    ) -> BoardChi:
         ...
 
     @property
@@ -20,7 +24,9 @@ class ITreeNode(Protocol):
         ...
 
     @property
-    def moves_children(self) -> bidict[chess.Move, ITreeNode | None]:
+    def moves_children(
+            self
+    ) -> bidict[chess.Move, ITreeNode | None]:
         ...
 
     @property
@@ -33,4 +39,7 @@ class ITreeNode(Protocol):
             self,
             new_parent_node: ITreeNode
     ) -> None:
+        ...
+
+    def dot_description(self) -> str:
         ...

@@ -3,18 +3,20 @@ import queue
 from .game_player import GamePlayer, game_player_computes_move_on_board_and_send_move_in_queue
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.environments.chess.board import BoardChi
+from chipiron.utils.is_dataclass import DataClass
+from chipiron.utils.communication.player_game_messages import MoveMessage
 
 
 # A class that extends the Thread class
 class PlayerProcess(multiprocessing.Process):
     game_player: GamePlayer
-    queue_board: queue.Queue
-    queue_move: queue.Queue
+    queue_board: queue.Queue[DataClass]
+    queue_move: queue.Queue[MoveMessage]
 
     def __init__(self,
                  game_player: GamePlayer,
-                 queue_board: queue.Queue,
-                 queue_move: queue.Queue,
+                 queue_board: queue.Queue[DataClass],
+                 queue_move: queue.Queue[MoveMessage],
                  ):
         # Call the Thread class's init function
         multiprocessing.Process.__init__(self, daemon=False)
