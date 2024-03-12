@@ -52,11 +52,11 @@ def create_sequool(
             consider_nodes_from_all_lesser_half_moves = partial(
                 consider_nodes_from_all_lesser_half_moves_in_descendants,
                 descendants=all_nodes_not_opened)
-            consider_nodes_from_half_moves: ConsiderNodesFromHalfMoves = consider_nodes_from_all_lesser_half_moves
+            consider_nodes_from_half_moves = consider_nodes_from_all_lesser_half_moves
         else:
             consider_nodes_only_from_half_moves = partial(consider_nodes_only_from_half_moves_in_descendants,
                                                           descendants=all_nodes_not_opened)
-            consider_nodes_from_half_moves: ConsiderNodesFromHalfMoves = consider_nodes_only_from_half_moves
+            consider_nodes_from_half_moves = consider_nodes_only_from_half_moves
 
     sequool: Sequool = Sequool(
         opening_instructor=opening_instructor,

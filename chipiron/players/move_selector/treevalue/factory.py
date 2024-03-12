@@ -7,10 +7,11 @@ from chipiron.players.move_selector.treevalue import node_factory
 
 from .trees.factory import MoveAndValueTreeFactory
 
-from chipiron.players.boardevaluators.neural_networks.input_converters.factory import create_board_representation
+from chipiron.players.boardevaluators.neural_networks.input_converters.factory import create_board_representation, \
+    Representation364Factory
 
-from . import node_selector
-from .node_indices.index_types import IndexComputationType
+from . import node_selector as node_selector_m
+from .indices.node_indices.index_types import IndexComputationType
 from .stopping_criterion import AllStoppingCriterionArgs
 from . import recommender_rule
 from typing import Literal
@@ -22,8 +23,8 @@ from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 @dataclass
 class TreeAndValuePlayerArgs:
     type: Literal[MoveSelectorTypes.TreeAndValue]  # for serialization
-    node_selector: node_selector.AllNodeSelectorArgs
-    opening_type: node_selector.OpeningType
+    node_selector: node_selector_m.AllNodeSelectorArgs
+    opening_type: node_selector_m.OpeningType
     board_evaluator: node_eval.AllNodeEvaluatorArgs
     stopping_criterion: AllStoppingCriterionArgs
     recommender_rule: recommender_rule.AllRecommendFunctionsArgs
@@ -47,7 +48,7 @@ def create_tree_and_value_builders(
         node_factory_name=node_factory_name
     )
 
-    board_representation_factory: object | None = None
+    board_representation_factory: Representation364Factory | None
     board_representation_factory = create_board_representation(
         board_representation_str=args.board_evaluator.representation
     )

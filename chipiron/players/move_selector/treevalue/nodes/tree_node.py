@@ -85,7 +85,7 @@ class TreeNode:
         # print('testing node', selbestf.id)
         self.test_all_legal_moves_generated()
 
-    def dot_description(self):
+    def dot_description(self) -> str:
         return 'id:' + str(self.id) + ' dep: ' + str(self.half_move) + '\nfen:' + str(self.board)
 
     def test_all_legal_moves_generated(self):

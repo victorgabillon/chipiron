@@ -21,7 +21,7 @@ class TreeAndValueMoveSelector:
     stopping_criterion_args: AllStoppingCriterionArgs
     node_selector_create: NodeSelectorFactory
     random_generator: random.Random
-    recommend_move_after_exploration: recommender_rule.RecommenderRule
+    recommend_move_after_exploration: recommender_rule.AllRecommendFunctionsArgs
 
     def select_move(
             self,

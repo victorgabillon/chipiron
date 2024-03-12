@@ -8,7 +8,9 @@ class MatchResultsFactory:
         self.player_two_name = player_two_name
         self.subscribers = []
 
-    def create(self) -> IMatchResults:
+    def create(
+            self
+    ) -> IMatchResults:
         match_result: MatchResults = MatchResults(self.player_one_name, self.player_two_name)
         if self.subscribers:
             obs_match_result: ObservableMatchResults = ObservableMatchResults(match_result)

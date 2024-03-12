@@ -1,5 +1,4 @@
-from chipiron.players.move_selector.treevalue.tree_manager.factory import create_algorithm_node_tree_manager, \
-    AlgorithmNodeTreeManager
+import chipiron.players.move_selector.treevalue.tree_manager as tree_manager
 from chipiron.players.move_selector.treevalue.tree_manager.tree_expander import TreeExpansions, TreeExpansion
 from chipiron.players.move_selector.treevalue.node_indices.node_exploration_manager import update_all_indices, \
     NodeExplorationIndexManager
@@ -12,7 +11,7 @@ from chipiron.utils.small_tools import path
 import yaml
 import chipiron.players.move_selector.treevalue.node_factory as node_factory
 from chipiron.players.move_selector.treevalue.trees.move_and_value_tree import MoveAndValueTree
-from chipiron.environments.chess.board import BoardChi
+import chipiron.environments.chess.board as boards
 from chipiron.players.move_selector.treevalue.trees.descendants import RangedDescendants
 import chess
 from enum import Enum
@@ -26,11 +25,11 @@ class TestResult(Enum):
 
 
 def make_tree_from_file(
-        file: path,
+        file_path: path,
         index_computation
 ) -> MoveAndValueTree:
-    # atm it is very ad hoc to test index so takes a lots of short cut, will be made more general when needed
-    with open(file, 'r') as file:
+    # atm it is very ad hoc to test index so takes a lots of shortcut, will be made more general when needed
+    with open(file_path, 'r') as file:
         tree_yaml = yaml.safe_load(file)
     print('tree', tree_yaml)
     yaml_nodes = tree_yaml['nodes']
@@ -55,10 +54,11 @@ def make_tree_from_file(
     )
     descendants: RangedDescendants = RangedDescendants()
 
-    algo_tree_manager: AlgorithmNodeTreeManager = create_algorithm_node_tree_manager(
+    algo_tree_manager: tree_manager.AlgorithmNodeTreeManager = tree_manager.create_algorithm_node_tree_manager(
         node_evaluator=None,
         algorithm_node_factory=algorithm_node_factory,
-        index_computation=index_computation
+        index_computation=index_computation,
+        index_updater=None
     )
 
     half_moves = {}
@@ -68,14 +68,13 @@ def make_tree_from_file(
         if yaml_node['id'] == 0:
             tree_expansions = TreeExpansions()
 
-            board = BoardChi.from_chess960_pos(yaml_node['id'])
+            board = chess.Board.from_chess960_pos(yaml_node['id'])
             board.turn = chess.WHITE
             root_node: nodes.AlgorithmNode = algorithm_node_factory.create(
                 board=board,
                 half_move=0,
                 count=yaml_node['id'],
                 parent_node=None,
-                board_depth=0,
                 modifications=None
             )
             root_node.minmax_evaluation.value_white_minmax = yaml_node['value']
@@ -104,13 +103,14 @@ def make_tree_from_file(
             half_move = half_moves[first_parent] + 1
             half_moves[yaml_node['id']] = half_move
             parent_node = id_nodes[first_parent]
-            board = BoardChi.from_chess960_pos(yaml_node['id'])
+            board = chess.Board.from_chess960_pos(yaml_node['id'])
             board.turn = not parent_node.tree_node.board_.turn
+            board_chi = boards.BoardChi(board=board)
 
-            tree_expansion: TreeExpansion = algo_tree_manager.tree_manager.open_node(
+            tree_expansion: TreeExpansion[nodes.AlgorithmNode] = algo_tree_manager.tree_manager.open_node(
                 tree=move_and_value_tree,
                 parent_node=parent_node,
-                board=board,
+                board=board_chi,
                 modifications=None,
                 move=yaml_node['id']
             )
@@ -174,7 +174,7 @@ def check_index(
     tree_path = f'data/trees/{tree_file}/{tree_file}.yaml'
     tree = make_tree_from_file(
         index_computation=index_computation,
-        file=tree_path
+        file_path=tree_path
     )
 
     index_manager: NodeExplorationIndexManager = create_exploration_index_manager(index_computation=index_computation)

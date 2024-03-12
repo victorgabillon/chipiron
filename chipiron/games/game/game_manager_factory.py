@@ -2,7 +2,7 @@ import chess
 import queue
 
 import chipiron as ch
-from chipiron.environments.chess.board.factory import create_board
+import chipiron.environments.chess.board as boards
 import chipiron.players as players_m
 from chipiron.players.factory import create_player_observer
 from .game_manager import GameManager
@@ -13,6 +13,8 @@ from chipiron.games.game.game_args import GameArgs
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage, extract_message_from_players
 from chipiron.players import Player
 from chipiron.utils import seed
+from chipiron.utils.is_dataclass import IsDataclass
+from chipiron.utils.communication.player_game_messages import MoveMessage
 
 
 class GameManagerFactory:
@@ -21,14 +23,15 @@ class GameManagerFactory:
     Calling create ask for the creation of a GameManager depending on args and players.
     This class is supposed to be independent of Match-related classes (contrarily to the GameArgsFactory)
     """
-    syzygy_table: SyzygyTable
+    syzygy_table: SyzygyTable | None
+    subscribers: list[queue.Queue[IsDataclass]]
 
     def __init__(
             self,
             syzygy_table: SyzygyTable | None,
             game_manager_board_evaluator,
             output_folder_path: path | None,
-            main_thread_mailbox: queue.Queue,
+            main_thread_mailbox: queue.Queue[MoveMessage],
             print_svg_board_to_file: bool = False
     ) -> None:
         self.syzygy_table = syzygy_table
@@ -47,7 +50,7 @@ class GameManagerFactory:
         # maybe this factory is overkill at the moment but might be
         # useful if the logic of game generation gets more complex
 
-        board: ch.chess.BoardChi = create_board()
+        board: boards.BoardChi = boards.create_board()
         if self.subscribers:
             for subscriber in self.subscribers:
                 player_id_message: PlayersColorToPlayerMessage = extract_message_from_players(
@@ -72,7 +75,7 @@ class GameManagerFactory:
             for subscriber in self.subscribers:
                 observable_game.register_display(subscriber)
 
-        players: list[players_m.PlayerProcess] = []
+        players: list[players_m.GamePlayer | players_m.PlayerProcess] = []
         # Creating and launching the player threads
         for player_color in chess.COLORS:
             player: players_m.Player = player_color_to_player[player_color]
@@ -90,7 +93,8 @@ class GameManagerFactory:
                 # registering to the observable board to get notification when it changes
                 observable_game.register_player(move_function=move_function)
 
-        player_color_to_id: dict = {color: player.id for color, player in player_color_to_player.items()}
+        player_color_to_id: dict[chess.Color, str] = {color: player.id for color, player in
+                                                      player_color_to_player.items()}
 
         game_manager: GameManager
         game_manager = GameManager(
@@ -107,6 +111,9 @@ class GameManagerFactory:
 
         return game_manager
 
-    def subscribe(self, subscriber):
+    def subscribe(
+            self,
+            subscriber: queue.Queue[IsDataclass]
+    ) -> None:
         self.subscribers.append(subscriber)
         self.game_manager_board_evaluator.subscribe(subscriber)

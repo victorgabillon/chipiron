@@ -1,22 +1,25 @@
 """
 Tree Exploration
 """
+
 import random
-from chipiron.players.move_selector.treevalue.search_factory import NodeSelectorFactory
 import chess
+from dataclasses import dataclass
+
+import chipiron.environments.chess.board as boards
+from chipiron.players.move_selector.move_selector import MoveRecommendation
+from chipiron.players.move_selector.treevalue.recommender_rule.recommender_rule import \
+    recommend_move_after_exploration_generic
+from chipiron.players.move_selector.treevalue.search_factory import NodeSelectorFactory
+import chipiron.players.move_selector.treevalue.nodes as nodes
 
 from .trees.factory import MoveAndValueTreeFactory
-from .stopping_criterion import StoppingCriterion, create_stopping_criterion, StoppingCriterionArgs
-import chipiron.environments.chess.board as boards
-
+from .stopping_criterion import StoppingCriterion, create_stopping_criterion, AllStoppingCriterionArgs
 from . import trees
 from . import tree_manager as tree_man
 from . import node_selector as node_sel
 from . import recommender_rule
 
-from dataclasses import dataclass
-from chipiron.players.move_selector.move_selector import MoveRecommendation
-from chipiron.players.move_selector.treevalue.recommender_rule.recommender_rule import recommend_move_after_exploration_generic
 
 @dataclass
 class TreeExploration:
@@ -29,12 +32,13 @@ class TreeExploration:
     tree: trees.MoveAndValueTree
     tree_manager: tree_man.AlgorithmNodeTreeManager
     node_selector: node_sel.NodeSelector
-    recommend_move_after_exploration: recommender_rule.RecommenderRule
+    recommend_move_after_exploration: recommender_rule.AllRecommendFunctionsArgs
     stopping_criterion: StoppingCriterion
 
-    def print_info_during_move_computation(self,
-                                           random_generator
-                                           ):
+    def print_info_during_move_computation(
+            self,
+            random_generator
+    ):
         if self.tree.root_node.minmax_evaluation.best_node_sequence:
             current_best_child = self.tree.root_node.minmax_evaluation.best_node_sequence[0]
             current_best_move = self.tree.root_node.moves_children.inverse[current_best_child]
@@ -58,18 +62,19 @@ class TreeExploration:
 
         # by default the first tree expansion is the creation of the tree node
         tree_expansions: tree_man.TreeExpansions = tree_man.TreeExpansions()
-        tree_expansion: tree_man.TreeExpansion = tree_man.TreeExpansion(
+
+        tree_expansion: tree_man.TreeExpansion[nodes.AlgorithmNode] = tree_man.TreeExpansion(
             child_node=self.tree.root_node,
             parent_node=None,
             board_modifications=None,
             creation_child_node=True
         )
-        tree_expansions.add_creation(tree_expansion)
+        tree_expansions.add_creation(tree_expansion=tree_expansion)
 
         while self.stopping_criterion.should_we_continue(tree=self.tree):
             assert (not self.tree.root_node.is_over())
             # print info
-            #self.print_info_during_move_computation(random_generator=random_generator)
+            # self.print_info_during_move_computation(random_generator=random_generator)
 
             # choose the moves and nodes to open
             opening_instructions: node_sel.OpeningInstructions
@@ -78,16 +83,15 @@ class TreeExploration:
                 latest_tree_expansions=tree_expansions
             )
 
-
             # make sure we do not break the stopping criterion
             opening_instructions_subset: node_sel.OpeningInstructions
             opening_instructions_subset = self.stopping_criterion.respectful_opening_instructions(
                 opening_instructions=opening_instructions,
                 tree=self.tree)
 
-          #  opening_instructions_subset.print_info()
+            #  opening_instructions_subset.print_info()
             # open the nodes
-            tree_expansions: tree_man.TreeExpansions = self.tree_manager.open_instructions(
+            tree_expansions = self.tree_manager.open_instructions(
                 tree=self.tree,
                 opening_instructions=opening_instructions_subset
             )
@@ -95,7 +99,7 @@ class TreeExploration:
             self.tree_manager.update_backward(tree_expansions=tree_expansions)
             self.tree_manager.update_indices(tree=self.tree)
 
-        # trees.save_raw_data_to_file(tree=self.tree)
+        #trees.save_raw_data_to_file(tree=self.tree)
         # self.tree_manager.print_some_stats(tree=self.tree)
         # for move, child in self.tree.root_node.moves_children.items():
         #    print(f'{move} {self.tree.root_node.moves_children[move].minmax_evaluation.get_value_white()}'
@@ -120,8 +124,8 @@ def create_tree_exploration(
         starting_board: boards.BoardChi,
         tree_manager: tree_man.AlgorithmNodeTreeManager,
         tree_factory: MoveAndValueTreeFactory,
-        stopping_criterion_args: StoppingCriterionArgs,
-        recommend_move_after_exploration: recommender_rule.RecommenderRule
+        stopping_criterion_args: AllStoppingCriterionArgs,
+        recommend_move_after_exploration: recommender_rule.AllRecommendFunctionsArgs
 ) -> TreeExploration:
     """
     Creation of the tree exploration to init all object necessary

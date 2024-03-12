@@ -18,8 +18,8 @@ class TreeNodeFactory(Protocol):
             board: boards.BoardChi,
             half_move: int,
             count: int,
-            parent_node: ITreeNode,
-            modifications: board_mod.BoardModification
+            parent_node: ITreeNode | None,
+            modifications: board_mod.BoardModification | None
     ) -> ITreeNode:
         """
         The main method to create a Tree Node

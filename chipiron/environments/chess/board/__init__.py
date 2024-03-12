@@ -7,5 +7,6 @@ fen = typing.Annotated[str, 'fen']
 
 __all__ = [
     "BoardModification",
-    "BoardChi"
+    "BoardChi",
+    "create_board"
 ]

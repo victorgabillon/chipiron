@@ -7,21 +7,6 @@ import chess
 import torch
 
 
-def create_board_representation(
-        board_representation_str: str
-) -> object:
-    board_representation: Representation364Factory | None
-    match board_representation_str:
-        case '364':
-            board_representation = Representation364Factory()
-        case 'no':
-            board_representation = None
-        case other:
-            raise Exception(f'trying to create {other} in file {__name__}')
-
-    return board_representation
-
-
 def node_to_tensors_pieces_square_from_parent(node, board_modifications, parent_node):
     tensor_white = torch.empty_like(parent_node.board_representation.tensor_white).copy_(
         parent_node.board_representation.tensor_white)
@@ -136,3 +121,18 @@ class Representation364Factory:
         )
 
         return representation
+
+
+def create_board_representation(
+        board_representation_str: str
+) -> Representation364Factory | None:
+    board_representation: Representation364Factory | None
+    match board_representation_str:
+        case '364':
+            board_representation = Representation364Factory()
+        case 'no':
+            board_representation = None
+        case other:
+            raise Exception(f'trying to create {other} in file {__name__}')
+
+    return board_representation

@@ -1,7 +1,8 @@
 import chess
 from chipiron.games.game.game_manager_factory import GameManagerFactory
-from chipiron.games.game.game_manager import GameManager, GameReport
-from chipiron.games.match.match_results import MatchResults, MatchReport
+from chipiron.games.game.game_manager import GameManager
+from chipiron.games.game.final_game_result import GameReport
+from chipiron.games.match.match_results import MatchResults, MatchReport, IMatchResults
 from chipiron.games.game.game_args import GameArgs
 from chipiron.players import Player
 from chipiron.games.match.match_results_factory import MatchResultsFactory
@@ -42,7 +43,7 @@ class MatchManager:
         print('Playing the match')
 
         # creating object for reporting the result of the match and the move history
-        match_results: MatchResults = self.match_results_factory.create()
+        match_results: IMatchResults = self.match_results_factory.create()
         match_move_history: dict[int, list[chess.Move]] = {}
 
         # Main loop of playing various games
@@ -111,7 +112,7 @@ class MatchManager:
 
     def print_stats_to_file(
             self,
-            match_results: MatchResults
+            match_results: IMatchResults
     ) -> None:
         if self.output_folder_path is not None:
             path_file: path = os.path.join(self.output_folder_path, 'gameStats.txt')
@@ -127,6 +128,9 @@ class MatchManager:
             with open(path_file, 'wb') as the_file:
                 pickle.dump(match_report, the_file)
 
-    def subscribe(self, subscriber):
+    def subscribe(
+            self,
+            subscriber
+    ) -> None:
         self.game_manager_factory.subscribe(subscriber)
         self.match_results_factory.subscribe(subscriber)

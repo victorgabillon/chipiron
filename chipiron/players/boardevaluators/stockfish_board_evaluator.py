@@ -17,6 +17,7 @@ class StockfishBoardEvaluator:
     """
     A board evaluator powered by stockfish
     """
+    engine: chess.engine.SimpleEngine | None
 
     def __init__(self,
                  args: StockfishBoardEvalArgs):
@@ -41,5 +42,3 @@ class StockfishBoardEvaluator:
         self.engine.quit()
         self.engine = None
         return info["score"]
-
-

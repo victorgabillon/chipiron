@@ -14,14 +14,18 @@ class GamePlayer:
     player: Player
     color: chess.Color
 
-    def __init__(self,
-                 player: Player,
-                 color: chess.Color):
+    def __init__(
+            self,
+            player: Player,
+            color: chess.Color
+    ) -> None:
         self.color = color
         self._player = player
 
     @property
-    def player(self):
+    def player(
+            self
+    ) -> Player:
         return self._player
 
     def select_move(
@@ -34,7 +38,7 @@ class GamePlayer:
             raise Exception('No legal moves in this position')
         best_move: MoveRecommendation = self._player.select_move(
             board=board,
-            seed=seed
+            seed_=seed
         )
         return best_move
 

@@ -1,33 +1,10 @@
 import chipiron.players.move_selector.treevalue.nodes as nodes
-from .index_data import NodeExplorationData, RecurZipfQuoolExplorationData, MinMaxPathValue, IntervalExplo, \
+from chipiron.players.move_selector.treevalue.indices.node_indices.index_data import NodeExplorationData, \
+    RecurZipfQuoolExplorationData, MinMaxPathValue, IntervalExplo, \
     MaxDepthDescendants
-from .index_types import IndexComputationType
-from .node_exploration_manager import UpdateIndexZipfFactoredProba, UpdateIndexGlobalMinChange, \
-    UpdateIndexLocalMinChange, NodeExplorationIndexManager, NullNodeExplorationIndexManager
+from chipiron.players.move_selector.treevalue.indices.node_indices.index_types import IndexComputationType
 from typing import Callable
 from dataclasses import make_dataclass
-
-
-def create_exploration_index_manager(
-        index_computation: IndexComputationType | None = None
-) -> NodeExplorationIndexManager:
-    if index_computation is None:
-        node_exploration_manager: NodeExplorationIndexManager = NullNodeExplorationIndexManager()
-    else:
-
-        node_exploration_manager: NodeExplorationIndexManager
-        match index_computation:
-            case IndexComputationType.MinGlobalChange:
-                node_exploration_manager = UpdateIndexGlobalMinChange()
-            case IndexComputationType.RecurZipf:
-                node_exploration_manager = UpdateIndexZipfFactoredProba()
-            case IndexComputationType.MinLocalChange:
-                node_exploration_manager = UpdateIndexLocalMinChange()
-            case other:
-                raise ValueError(f'player creator: can not find {other} in {__name__}')
-
-    return node_exploration_manager
-
 
 ExplorationIndexDataFactory = Callable[[nodes.TreeNode], NodeExplorationData | None]
 

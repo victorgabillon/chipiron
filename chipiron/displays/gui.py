@@ -16,10 +16,10 @@ from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMes
     MatchResultsMessage
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage
 from chipiron.utils.communication.player_game_messages import BoardMessage, MoveMessage
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from chipiron.games.match.match_results import MatchResults
-
+import typing
 
 class MplCanvas(FigureCanvasQTAgg):
 
@@ -163,6 +163,7 @@ class MainWindow(QWidget):
         message: GameStatusMessage = GameStatusMessage(status=PlayingStatus.PAUSE)
         self.main_thread_mailbox.put(message)
 
+    @typing.no_type_check
     @Slot(QWidget)
     def mousePressEvent(self, event):
         """
@@ -174,7 +175,6 @@ class MainWindow(QWidget):
         """
         if event.x() <= self.board_size and event.y() <= self.board_size:
             if event.buttons() == Qt.LeftButton:
-
                 if self.margin < event.x() < self.board_size - self.margin \
                         and self.margin < event.y() < self.board_size - self.margin:
 
@@ -207,6 +207,7 @@ class MainWindow(QWidget):
                                            color_to_play=self.board.turn)
         self.main_thread_mailbox.put(item=message)
 
+    @typing.no_type_check
     def choice_promote(self):
         self.d = QDialog()
         d = self.d
@@ -239,18 +240,22 @@ class MainWindow(QWidget):
 
         d.exec_()
 
+    @typing.no_type_check
     def promote_queen(self):
         self.move_promote_asked = chess.Move.from_uci("{}{}q".format(self.pieceToMove[1], self.coordinates))
         self.d.close()
 
+    @typing.no_type_check
     def promote_rook(self):
         self.move_promote_asked = chess.Move.from_uci("{}{}r".format(self.pieceToMove[1], self.coordinates))
         self.d.close()
 
+    @typing.no_type_check
     def promote_bishop(self):
         self.move_promote_asked = chess.Move.from_uci("{}{}b".format(self.pieceToMove[1], self.coordinates))
         self.d.close()
 
+    @typing.no_type_check
     def promote_knight(self):
         self.move_promote_asked = chess.Move.from_uci("{}{}n".format(self.pieceToMove[1], self.coordinates))
         self.d.close()
@@ -265,32 +270,34 @@ class MainWindow(QWidget):
             message = self.gui_mailbox.get()
             match message:
                 case BoardMessage():
-                    message: BoardMessage
-                    self.board: BoardChi = message.board
+                    board_message: BoardMessage = message
+                    self.board: BoardChi = board_message.board
                     self.draw_board()
                     self.display_move_history()
                 case EvaluationMessage():
-                    message: EvaluationMessage
-                    evaluation_stock = message.evaluation_stock
-                    evaluation_chipiron = message.evaluation_chipiron
-                    evaluation_black = message.evaluation_player_black
-                    evaluation_white = message.evaluation_player_white
-                    self.update_evaluation(evaluation_stock=evaluation_stock,
-                                           evaluation_chipiron=evaluation_chipiron,
-                                           evaluation_white=evaluation_white,
-                                           evaluation_black=evaluation_black)
+                    evaluation_message: EvaluationMessage = message
+                    evaluation_stock = evaluation_message.evaluation_stock
+                    evaluation_chipiron = evaluation_message.evaluation_chipiron
+                    evaluation_black = evaluation_message.evaluation_player_black
+                    evaluation_white = evaluation_message.evaluation_player_white
+                    self.update_evaluation(
+                        evaluation_stock=evaluation_stock,
+                        evaluation_chipiron=evaluation_chipiron,
+                        evaluation_white=evaluation_white,
+                        evaluation_black=evaluation_black
+                    )
                 case PlayersColorToPlayerMessage():
-                    message: PlayersColorToPlayerMessage
-                    players_color_to_player: dict = message.player_color_to_gui_info
+                    player_color_message: PlayersColorToPlayerMessage = message
+                    players_color_to_player: dict[chess.Color, str] = player_color_message.player_color_to_gui_info
                     self.update_players_color_to_id(players_color_to_player)
                 case MatchResultsMessage():
-                    message: MatchResultsMessage
-                    match_results: MatchResults = message.match_results
+                    match_message: MatchResultsMessage = message
+                    match_results: MatchResults = match_message.match_results
                     self.update_match_stats(match_results)
                 case GameStatusMessage():
-                    print('GameStatusMessage',message)
-                    message: GameStatusMessage
-                    play_status: PlayingStatus = message.status
+                    print('GameStatusMessage', message)
+                    game_status_message: GameStatusMessage = message
+                    play_status: PlayingStatus = game_status_message.status
                     self.update_game_play_status(play_status)
                 case other:
                     raise ValueError(f'unknown type of message received by gui {other} in {__name__}')
@@ -339,7 +346,7 @@ class MainWindow(QWidget):
 
         if self.playing_status != play_status:
             self.playing_status = play_status
-            print('real update_game_play_status',play_status)
+            print('real update_game_play_status', play_status)
             if play_status == PlayingStatus.PAUSE:
                 self.pause_button.setText("Play")  # text
                 self.pause_button.setIcon(QIcon("data/gui/play.png"))  # icon

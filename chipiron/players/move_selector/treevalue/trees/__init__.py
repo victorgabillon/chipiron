@@ -4,5 +4,6 @@ from .tree_visualization import save_raw_data_to_file
 
 __all__ = [
     "MoveAndValueTree",
-    "RangedDescendants"
+    "RangedDescendants",
+    "Descendants"
 ]

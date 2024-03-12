@@ -4,8 +4,8 @@ from chipiron.players.move_selector.treevalue.node_selector.opening_instructions
 from dataclasses import dataclass
 import random
 from functools import partial
-import chipiron.players.move_selector.treevalue.node_indices as node_indices
-from chipiron.players.move_selector.treevalue.node_indices.factory import create_exploration_index_data
+import chipiron.players.move_selector.treevalue.indices.node_indices as node_indices
+from chipiron.players.move_selector.treevalue.indices.node_indices.factory import create_exploration_index_data
 import chipiron.players.move_selector.treevalue.nodes as nodes
 from chipiron.players.move_selector.treevalue.node_selector.sequool.factory import SequoolArgs
 from chipiron.players.move_selector.treevalue.updates.index_updater import IndexUpdater
@@ -36,7 +36,7 @@ class SearchFactoryP(Protocol):
     def node_index_create(
             self,
             tree_node: nodes.TreeNode
-    ) -> node_indices.NodeExplorationData:
+    ) -> node_indices.NodeExplorationData | None:
         ...
 
 
@@ -50,9 +50,9 @@ class SearchFactory:
     These three classes needs to operate on the same data, so they need to be created in a coherent way
     """
 
-    node_selector_args: node_selectors.AllNodeSelectorArgs
-    opening_type: OpeningType
-    random_generator: random.Random
+    node_selector_args: node_selectors.AllNodeSelectorArgs | None
+    opening_type: OpeningType | None
+    random_generator: random.Random | None
     index_computation: node_indices.IndexComputationType | None
     depth_index: bool = False
 
@@ -83,7 +83,7 @@ class SearchFactory:
 
         index_updater: IndexUpdater | None
         if self.depth_index:
-            index_updater: IndexUpdater = IndexUpdater()
+            index_updater = IndexUpdater()
         else:
             index_updater = None
         return index_updater
@@ -91,9 +91,9 @@ class SearchFactory:
     def node_index_create(
             self,
             tree_node: nodes.TreeNode
-    ) -> node_indices.NodeExplorationData:
+    ) -> node_indices.NodeExplorationData | None:
 
-        exploration_index_data: node_indices.NodeExplorationData = create_exploration_index_data(
+        exploration_index_data: node_indices.NodeExplorationData | None = create_exploration_index_data(
             tree_node=tree_node,
             index_computation=self.index_computation,
             depth_index=self.depth_index
