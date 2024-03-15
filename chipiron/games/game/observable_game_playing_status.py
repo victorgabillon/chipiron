@@ -1,5 +1,5 @@
-from typing import List
 import queue
+
 from chipiron.utils.communication.gui_messages import GameStatusMessage
 from .game_playing_status import GamePlayingStatus, PlayingStatus
 

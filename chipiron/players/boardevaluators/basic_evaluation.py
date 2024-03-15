@@ -1,6 +1,9 @@
+import math
+
 import chess
-from chipiron.players.boardevaluators.board_evaluator import BoardEvaluator
+
 from chipiron.environments.chess.board.board import BoardChi
+from chipiron.players.boardevaluators.board_evaluator import BoardEvaluator
 
 
 def value_base(
@@ -38,9 +41,6 @@ def value_white(board):
     # value_white_pieces += add_pawns_value_white(board)
     # value_black_pieces += add_pawns_value_black(board)
     return value_white_pieces - value_black_pieces
-
-
-import math
 
 
 def sigmoid(x):

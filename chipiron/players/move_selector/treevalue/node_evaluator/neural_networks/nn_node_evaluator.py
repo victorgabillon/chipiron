@@ -1,9 +1,10 @@
 import torch
-from chipiron.players.boardevaluators.board_evaluation.board_evaluation import BoardEvaluation
-from chipiron.players.move_selector.treevalue.node_evaluator import NodeEvaluator
-import chipiron.players.move_selector.treevalue.nodes as nodes
+
 import chipiron.players.boardevaluators.neural_networks as board_nn
+import chipiron.players.move_selector.treevalue.nodes as nodes
+from chipiron.players.boardevaluators.board_evaluation.board_evaluation import BoardEvaluation
 from chipiron.players.boardevaluators.table_base import SyzygyTable
+from chipiron.players.move_selector.treevalue.node_evaluator import NodeEvaluator
 
 
 class NNNodeEvaluator(NodeEvaluator):
@@ -19,7 +20,7 @@ class NNNodeEvaluator(NodeEvaluator):
             syzygy=syzygy)
         self.net = nn_board_evaluator.net
         self.my_scripted_model = torch.jit.script(self.net)
-        self.nn_board_evaluator=nn_board_evaluator
+        self.nn_board_evaluator = nn_board_evaluator
 
     def evaluate_all_not_over(
             self,

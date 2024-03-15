@@ -2,11 +2,12 @@
 stopping criterion
 """
 
-from . import node_selector as node_sel
-from .trees import MoveAndValueTree
 from dataclasses import dataclass
 from enum import Enum
 from typing import Protocol, runtime_checkable
+
+from . import node_selector as node_sel
+from .trees import MoveAndValueTree
 
 
 @runtime_checkable

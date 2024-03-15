@@ -1,13 +1,11 @@
 """
 MoveAndValueTreeFactory
 """
-import chess
 
 import chipiron.environments.chess.board as boards
-from chipiron.players.move_selector.treevalue.trees.move_and_value_tree import MoveAndValueTree
 import chipiron.players.move_selector.treevalue.node_factory as nod_fac
-from chipiron.players.move_selector.treevalue.node_evaluator import NodeEvaluator, EvaluationQueries
 import chipiron.players.move_selector.treevalue.nodes as nodes
+from chipiron.players.move_selector.treevalue.node_evaluator import NodeEvaluator, EvaluationQueries
 from .descendants import RangedDescendants
 from .move_and_value_tree import MoveAndValueTree
 
@@ -63,7 +61,6 @@ class MoveAndValueTreeFactory:
 
         self.node_evaluator.evaluate_all_queried_nodes(evaluation_queries=evaluation_queries)
         # is this needed? used outside?
-
 
         descendants: RangedDescendants = RangedDescendants()
         descendants.add_descendant(root_node)

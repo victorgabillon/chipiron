@@ -1,7 +1,9 @@
-from typing import Protocol
-import chipiron.environments.chess.board as boards
-import chess
 from dataclasses import dataclass
+from typing import Protocol
+
+import chess
+
+import chipiron.environments.chess.board as boards
 from chipiron.utils import seed
 
 

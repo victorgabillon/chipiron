@@ -1,14 +1,12 @@
-from .move_selector_types import MoveSelectorTypes
-from chipiron.utils.null_object import NullObject
-
 import random
-
-from . import move_selector
-from . import treevalue
-from . import human
-from . import stockfish
-from .random import Random, create_random
 from typing import TypeAlias
+
+from chipiron.utils.null_object import NullObject
+from . import human
+from . import move_selector
+from . import stockfish
+from . import treevalue
+from .random import Random, create_random
 
 AllMoveSelectorArgs: TypeAlias = (treevalue.TreeAndValuePlayerArgs
                                   | human.HumanPlayerArgs | Random |
@@ -29,7 +27,7 @@ def create_main_move_selector(
                 random_generator=random_generator
             )
         case treevalue.TreeAndValuePlayerArgs():
-            tree_args : treevalue.TreeAndValuePlayerArgs = move_selector_instance_or_args
+            tree_args: treevalue.TreeAndValuePlayerArgs = move_selector_instance_or_args
             main_move_selector = treevalue.create_tree_and_value_builders(
                 args=tree_args,
                 syzygy=syzygy,

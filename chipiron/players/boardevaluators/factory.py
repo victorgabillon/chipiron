@@ -1,12 +1,14 @@
-from chipiron.players.boardevaluators.stockfish_board_evaluator import StockfishBoardEvaluator, StockfishBoardEvalArgs
-from .board_evaluator import BoardEvaluator, ObservableBoardEvaluator, GameBoardEvaluator
 import sys
-from chipiron.players.boardevaluators.basic_evaluation import BasicEvaluation
-from chipiron.players.boardevaluators.neural_networks.factory import create_nn_board_eval, NeuralNetBoardEvalArgs
-import yaml
-import dacite
 from dataclasses import dataclass
 from typing import Any
+
+import dacite
+import yaml
+
+from chipiron.players.boardevaluators.basic_evaluation import BasicEvaluation
+from chipiron.players.boardevaluators.neural_networks.factory import create_nn_board_eval, NeuralNetBoardEvalArgs
+from chipiron.players.boardevaluators.stockfish_board_evaluator import StockfishBoardEvaluator, StockfishBoardEvalArgs
+from .board_evaluator import BoardEvaluator, ObservableBoardEvaluator, GameBoardEvaluator
 
 
 class TableBaseArgs:

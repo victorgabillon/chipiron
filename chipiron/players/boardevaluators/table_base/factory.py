@@ -1,6 +1,7 @@
+import os
+
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 from chipiron.utils import path
-import os
 
 
 def create_syzygy() -> SyzygyTable | None:

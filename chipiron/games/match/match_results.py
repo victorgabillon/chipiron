@@ -1,7 +1,9 @@
-from chipiron.games.game.final_game_result import FinalGameResult
 from dataclasses import dataclass
-import chess
 from typing import Protocol
+
+import chess
+
+from chipiron.games.game.final_game_result import FinalGameResult
 
 
 class IMatchResults(Protocol):

@@ -7,5 +7,6 @@ __all__ = [
     "seed",
     "path",
     "mkdir",
-    "unique_int_from_list"
+    "unique_int_from_list",
+    "dict_alphabetic_str"
 ]

@@ -1,14 +1,16 @@
-import chess
-from chipiron.players.factory import create_player
 import random
-from chipiron.utils.small_tools import unique_int_from_list
-from chipiron.players.boardevaluators.table_base import create_syzygy, SyzygyTable
-import chipiron.players as players
-from enum import Enum
-from dataclasses import dataclass
 import typing
-from .game_args import GameArgs
+from dataclasses import dataclass
+from enum import Enum
+
+import chess
+
+import chipiron.players as players
+from chipiron.players.boardevaluators.table_base import create_syzygy, SyzygyTable
+from chipiron.players.factory import create_player
 from chipiron.utils import seed
+from chipiron.utils.small_tools import unique_int_from_list
+from .game_args import GameArgs
 
 if typing.TYPE_CHECKING:
     import chipiron.games.match as match

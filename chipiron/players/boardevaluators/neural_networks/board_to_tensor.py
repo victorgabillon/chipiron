@@ -2,7 +2,7 @@ import chess
 import torch
 
 
-# This code is supposed to slowly be turnred into the cmasses fro board and node represenatition
+# This code is supposed to slowly be turned into the cmasses fro board and node represenatition
 def transform_board_pieces_one_side(board, requires_grad_):
     # normalisation of the board so that it is white turn (possible color inversion if it was black's turn)
 
@@ -16,16 +16,16 @@ def transform_board_pieces_one_side(board, requires_grad_):
     transform = torch.zeros(5)
 
     # print('ol', board.chessBoard)
-    transform[0] = bin(board.pawns & board.occupied_co[color_turn]).count('1') \
-                   - bin(board.pawns & board.occupied_co[color_not_turn]).count('1')
-    transform[1] = bin(board.knights & board.occupied_co[color_turn]).count('1') \
-                   - bin(board.knights & board.occupied_co[color_not_turn]).count('1')
-    transform[2] = bin(board.bishops & board.occupied_co[color_turn]).count('1') \
-                   - bin(board.bishops & board.occupied_co[color_not_turn]).count('1')
-    transform[3] = bin(board.rooks & board.occupied_co[color_turn]).count('1') \
-                   - bin(board.rooks & board.occupied_co[color_not_turn]).count('1')
-    transform[4] = bin(board.queens & board.occupied_co[color_turn]).count('1') \
-                   - bin(board.queens & board.occupied_co[color_not_turn]).count('1')
+    transform[0] = bin(board.pawns & board.occupied_co[color_turn]).count('1') - bin(
+        board.pawns & board.occupied_co[color_not_turn]).count('1')
+    transform[1] = bin(board.knights & board.occupied_co[color_turn]).count('1') - bin(
+        board.knights & board.occupied_co[color_not_turn]).count('1')
+    transform[2] = bin(board.bishops & board.occupied_co[color_turn]).count('1') - bin(
+        board.bishops & board.occupied_co[color_not_turn]).count('1')
+    transform[3] = bin(board.rooks & board.occupied_co[color_turn]).count('1') - bin(
+        board.rooks & board.occupied_co[color_not_turn]).count('1')
+    transform[4] = bin(board.queens & board.occupied_co[color_turn]).count('1') - bin(
+        board.queens & board.occupied_co[color_not_turn]).count('1')
 
     if requires_grad_:
         transform.requires_grad_(True)

@@ -1,10 +1,11 @@
+from dataclasses import make_dataclass
+from typing import Callable, Type, Any
+
 import chipiron.players.move_selector.treevalue.nodes as nodes
 from chipiron.players.move_selector.treevalue.indices.node_indices.index_data import NodeExplorationData, \
     RecurZipfQuoolExplorationData, MinMaxPathValue, IntervalExplo, \
     MaxDepthDescendants
 from chipiron.players.move_selector.treevalue.indices.node_indices.index_types import IndexComputationType
-from typing import Callable, Type, Any
-from dataclasses import make_dataclass
 
 ExplorationIndexDataFactory = Callable[[nodes.TreeNode], NodeExplorationData | None]
 

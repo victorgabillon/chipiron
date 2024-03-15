@@ -2,12 +2,12 @@
 Interface
 """
 
-from typing import Protocol
 from dataclasses import dataclass
+from typing import Protocol
 
+import chipiron.players.move_selector.treevalue.tree_manager as tree_man
 from .opening_instructions import OpeningInstructions
 from ..trees import MoveAndValueTree
-import chipiron.players.move_selector.treevalue.tree_manager as tree_man
 
 
 @dataclass
@@ -23,6 +23,6 @@ class NodeSelector(Protocol):
     def choose_node_and_move_to_open(
             self,
             tree: MoveAndValueTree,
-            latest_tree_expansions : tree_man.TreeExpansions
+            latest_tree_expansions: tree_man.TreeExpansions
     ) -> OpeningInstructions:
         ...

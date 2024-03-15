@@ -1,4 +1,5 @@
 import sys
+
 import torch
 import torch.nn as nn
 
@@ -13,7 +14,6 @@ class ChiNN(nn.Module):
 
     def __getstate__(self):
         return None
-
 
     def load_from_file_or_init_weights(self, path_to_param_file, authorisation_to_create_file):
         print(f'load_or_init_weights from {path_to_param_file}')
@@ -33,5 +33,3 @@ class ChiNN(nn.Module):
                 sys.exit(
                     'Error: no NN weights file and no rights to create it for file {} with authorisation {}'.format(
                         path_to_param_file, authorisation_to_create_file))
-
-

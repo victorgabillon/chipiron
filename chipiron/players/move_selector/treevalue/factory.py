@@ -1,23 +1,20 @@
 import random
+from dataclasses import dataclass
+from typing import Literal
 
-from .tree_and_value_player import TreeAndValueMoveSelector
-from . import tree_manager as tree_man
-from . import node_evaluator as node_eval
-from chipiron.players.move_selector.treevalue import node_factory
-
-from .trees.factory import MoveAndValueTreeFactory
-
+import chipiron.players.move_selector.treevalue.search_factory as search_factories
 from chipiron.players.boardevaluators.neural_networks.input_converters.factory import create_board_representation, \
     Representation364Factory
-
+from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
+from chipiron.players.move_selector.treevalue import node_factory
+from . import node_evaluator as node_eval
 from . import node_selector as node_selector_m
+from . import recommender_rule
+from . import tree_manager as tree_man
 from .indices.node_indices.index_types import IndexComputationType
 from .stopping_criterion import AllStoppingCriterionArgs
-from . import recommender_rule
-from typing import Literal
-from dataclasses import dataclass
-import chipiron.players.move_selector.treevalue.search_factory as search_factories
-from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
+from .tree_and_value_player import TreeAndValueMoveSelector
+from .trees.factory import MoveAndValueTreeFactory
 
 
 @dataclass

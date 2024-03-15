@@ -1,6 +1,8 @@
-import chess
-from chipiron.players.boardevaluators.over_event import OverEvent
 import unittest
+
+import chess
+
+from chipiron.players.boardevaluators.over_event import OverEvent
 
 
 class TestOverEvent(unittest.TestCase):

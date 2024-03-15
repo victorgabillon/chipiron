@@ -1,10 +1,12 @@
+import typing
+
 import chess
-from chipiron.environments.chess.board.board_tools import convert_to_fen
 import chess.polyglot
+
 from chipiron.environments.chess.board.board_modification import BoardModification
+from chipiron.environments.chess.board.board_tools import convert_to_fen
 from .starting_position import AllStartingPositionArgs, FenStartingPositionArgs, \
     FileStartingPositionArgs
-import typing
 
 COLORS = [WHITE, BLACK] = [True, False]
 
@@ -189,7 +191,7 @@ class BoardChi:
         return board_modifications
 
     def load_from_file(self, file_name):
-        with  open('data/starting_boards/' + file_name, "r") as f:
+        with open('data/starting_boards/' + file_name, "r") as f:
             asciiBoard = f.read()
             fen = convert_to_fen(asciiBoard)
         return fen

@@ -1,12 +1,13 @@
-import chipiron.environments.chess.board as boards
-from .move_selector import MoveRecommendation
-import chess
-from typing import Literal
-from dataclasses import dataclass, field
 import random
-from chipiron.utils import seed
-from .move_selector_types import MoveSelectorTypes
+from dataclasses import dataclass, field
+from typing import Literal
 
+import chess
+
+import chipiron.environments.chess.board as boards
+from chipiron.utils import seed
+from .move_selector import MoveRecommendation
+from .move_selector_types import MoveSelectorTypes
 
 
 @dataclass

@@ -1,14 +1,16 @@
-import chess
 import math
-from random import choice
-from .tree_node import TreeNode
-from .itree_node import ITreeNode
-from chipiron.players.boardevaluators.over_event import OverEvent
-from chipiron.utils.small_tools import nth_key
-from chipiron.utils.my_value_sorted_dict import sort_dic
-from typing import Protocol, Any
-from dataclasses import dataclass, field
 import typing
+from dataclasses import dataclass, field
+from random import choice
+from typing import Protocol, Any
+
+import chess
+
+from chipiron.players.boardevaluators.over_event import OverEvent
+from chipiron.utils.my_value_sorted_dict import sort_dic
+from chipiron.utils.small_tools import nth_key
+from .itree_node import ITreeNode
+from .tree_node import TreeNode
 
 if typing.TYPE_CHECKING:
     from .algorithm_node import AlgorithmNode
@@ -119,7 +121,7 @@ class NodeMinmaxEvaluation:
     ) -> NodeWithValue:
         assert (len(self.children_sorted_by_value) >= 2)
         # fast way to access second key with the highest subjective value
-        second_best_child: NodeWithValue= nth_key(self.children_sorted_by_value, 1)
+        second_best_child: NodeWithValue = nth_key(self.children_sorted_by_value, 1)
         return second_best_child
 
     def is_over(self) -> bool:
@@ -144,7 +146,7 @@ class NodeMinmaxEvaluation:
         print('here are the ', len(self.children_sorted_by_value), ' children sorted by value: ')
         for child_node, subjective_sort_value in self.children_sorted_by_value.items():
             print(self.tree_node.moves_children.inverse[child_node], subjective_sort_value[0], end=' $$ ')
-            pass  # print(self.moves_children.inverse[child_node], subjective_sort_value[0],'('+str(child_node.descendants.number_of_descendants)+')', end=' $$ ')
+            # print(self.moves_children.inverse[child_node], subjective_sort_value[0],'('+str(child_node.descendants.number_of_descendants)+')', end=' $$ ')
         print('')
 
     def print_children_not_over(self):
@@ -239,7 +241,8 @@ class NodeMinmaxEvaluation:
         self.children_sorted_by_value_ = sort_dic(self.children_sorted_by_value_)
 
     def sort_children_not_over(self):
-        # todo: looks like the deterministism of the sort induces some determinisin the play like always playing the same actions when a lot of them have equal value: introduce some randomness?
+        # todo: looks like the deterministism of the sort induces some determinisin the play like always
+        #  playing the same actions when a lot of them have equal value: introduce some randomness?
         return [child for child in self.children_sorted_by_value if
                 child in self.children_not_over]  # todo is this a fast way to do it?
 
@@ -365,7 +368,7 @@ class NodeMinmaxEvaluation:
         self.test_best_node_sequence()
 
     def test_children_not_over(self):
-        child: ITreeNode |None
+        child: ITreeNode | None
         for _, child in self.tree_node.moves_children.items():
             assert isinstance(child, AlgorithmNode)
             if child.is_over():

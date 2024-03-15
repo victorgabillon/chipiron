@@ -1,10 +1,12 @@
-import chess
-from .player import Player
-from chipiron.environments.chess.board import BoardChi
-import queue
 import copy
-from chipiron.utils.communication.player_game_messages import MoveMessage
+import queue
+
+import chess
+
+from chipiron.environments.chess.board import BoardChi
 from chipiron.players.move_selector.move_selector import MoveRecommendation
+from chipiron.utils.communication.player_game_messages import MoveMessage
+from .player import Player
 
 
 class GamePlayer:

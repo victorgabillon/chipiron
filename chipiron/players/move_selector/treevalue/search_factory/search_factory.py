@@ -1,12 +1,13 @@
-from typing import Protocol, Callable
-import chipiron.players.move_selector.treevalue.node_selector as node_selectors
-from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningType, OpeningInstructor
-from dataclasses import dataclass
 import random
+from dataclasses import dataclass
 from functools import partial
+from typing import Protocol, Callable
+
 import chipiron.players.move_selector.treevalue.indices.node_indices as node_indices
-from chipiron.players.move_selector.treevalue.indices.node_indices.factory import create_exploration_index_data
+import chipiron.players.move_selector.treevalue.node_selector as node_selectors
 import chipiron.players.move_selector.treevalue.nodes as nodes
+from chipiron.players.move_selector.treevalue.indices.node_indices.factory import create_exploration_index_data
+from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningType, OpeningInstructor
 from chipiron.players.move_selector.treevalue.node_selector.sequool.factory import SequoolArgs
 from chipiron.players.move_selector.treevalue.updates.index_updater import IndexUpdater
 

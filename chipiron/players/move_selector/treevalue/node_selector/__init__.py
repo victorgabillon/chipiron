@@ -1,8 +1,8 @@
-from .opening_instructions import OpeningInstructions, OpeningInstruction, OpeningType
+from .factory import create, AllNodeSelectorArgs
 from .node_selector import NodeSelector
 from .node_selector_args import NodeSelectorArgs
-from .factory import create, AllNodeSelectorArgs
 from .node_selector_types import NodeSelectorType
+from .opening_instructions import OpeningInstructions, OpeningInstruction, OpeningType
 
 __all__ = [
     "OpeningInstructions",
@@ -10,5 +10,7 @@ __all__ = [
     "AllNodeSelectorArgs",
     "OpeningType",
     "NodeSelector",
-    "create"
+    "create",
+    "NodeSelectorArgs",
+    "NodeSelectorType"
 ]

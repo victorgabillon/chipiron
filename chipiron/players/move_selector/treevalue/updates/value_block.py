@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-import typing
 
 import chipiron.players.move_selector.treevalue.nodes as nodes
 
@@ -16,9 +15,12 @@ class ValueUpdateInstructionsBlock:
             another_update_instruction
     ) -> None:
 
-        self.children_with_updated_value = an_update_instruction.children_with_updated_value | another_update_instruction.children_with_updated_value
-        self.children_with_updated_best_move = an_update_instruction.children_with_updated_best_move | another_update_instruction.children_with_updated_best_move
-        self.children_with_updated_over = an_update_instruction.children_with_updated_over | another_update_instruction.children_with_updated_over
+        self.children_with_updated_value = (an_update_instruction.children_with_updated_value
+                                            | another_update_instruction.children_with_updated_value)
+        self.children_with_updated_best_move = (an_update_instruction.children_with_updated_best_move
+                                                | another_update_instruction.children_with_updated_best_move)
+        self.children_with_updated_over = (an_update_instruction.children_with_updated_over
+                                           | another_update_instruction.children_with_updated_over)
 
     def print_info(self):
         print('upInstructions printing')

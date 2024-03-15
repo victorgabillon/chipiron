@@ -1,4 +1,3 @@
-import chess
 from enum import Enum
 
 

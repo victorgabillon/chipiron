@@ -1,22 +1,24 @@
-import chipiron.players.move_selector.treevalue.tree_manager as tree_manager
-from chipiron.players.move_selector.treevalue.tree_manager.tree_expander import TreeExpansions, TreeExpansion
-from chipiron.players.move_selector.treevalue.node_indices.node_exploration_manager import update_all_indices, \
-    NodeExplorationIndexManager
+from enum import Enum
+from math import isclose
+
+import chess
+import yaml
 from chipiron.players.move_selector.treevalue.node_indices.factory import create_exploration_index_manager
 from chipiron.players.move_selector.treevalue.node_indices.index_types import IndexComputationType
-import chipiron.players.move_selector.treevalue.trees as trees
-import chipiron.players.move_selector.treevalue.nodes as nodes
-from math import isclose
-from chipiron.utils.small_tools import path
-import yaml
-import chipiron.players.move_selector.treevalue.node_factory as node_factory
-from chipiron.players.move_selector.treevalue.trees.move_and_value_tree import MoveAndValueTree
+from chipiron.players.move_selector.treevalue.node_indices.node_exploration_manager import update_all_indices, \
+    NodeExplorationIndexManager
+
 import chipiron.environments.chess.board as boards
-from chipiron.players.move_selector.treevalue.trees.descendants import RangedDescendants
-import chess
-from enum import Enum
+import chipiron.players.move_selector.treevalue.node_factory as node_factory
+import chipiron.players.move_selector.treevalue.nodes as nodes
 import chipiron.players.move_selector.treevalue.search_factory as search_factories
+import chipiron.players.move_selector.treevalue.tree_manager as tree_manager
+import chipiron.players.move_selector.treevalue.trees as trees
 from chipiron.environments.chess.board.board import BoardChi
+from chipiron.players.move_selector.treevalue.tree_manager.tree_expander import TreeExpansions, TreeExpansion
+from chipiron.players.move_selector.treevalue.trees.descendants import RangedDescendants
+from chipiron.players.move_selector.treevalue.trees.move_and_value_tree import MoveAndValueTree
+from chipiron.utils.small_tools import path
 
 
 class TestResult(Enum):
@@ -124,7 +126,7 @@ def make_tree_from_file(
                     creation_child_node=tree_expansion.creation_child_node
                 )
             )
-            assert isinstance(tree_expansion.child_node , nodes.AlgorithmNode)
+            assert isinstance(tree_expansion.child_node, nodes.AlgorithmNode)
             tree_expansion.child_node.tree_node.all_legal_moves_generated = True
             id_nodes[yaml_node['id']] = tree_expansion.child_node
             tree_expansion.child_node.minmax_evaluation.value_white_minmax = yaml_node['value']
@@ -153,7 +155,9 @@ def check_from_file(file, tree):
             yaml_index = eval(str(yaml_nodes[parent_node.id]['index']))
             assert parent_node.exploration_index_data is not None
             print(
-                f'id {parent_node.id} expected value {yaml_index} || computed value {parent_node.exploration_index_data.index} {type(yaml_nodes[parent_node.id]["index"])}'
+                f'id {parent_node.id} expected value {yaml_index} '
+                f'|| computed value {parent_node.exploration_index_data.index}'
+                f' {type(yaml_nodes[parent_node.id]["index"])}'
                 f' {type(parent_node.exploration_index_data.index)}'
                 f'{(yaml_index == parent_node.exploration_index_data.index)}')
             if yaml_index is None:
@@ -170,8 +174,7 @@ def check_index(
 ) -> TestResult:
     try:
         tree_path = f'data/trees/{tree_file}/{tree_file}_{index_computation.value}.yaml'
-        file = open(tree_path, 'r')
-    except:
+    except Exception:
         print(f'!!!!!!Warning!!!!! : no testing file {tree_path}')
         return TestResult.WARNING
 

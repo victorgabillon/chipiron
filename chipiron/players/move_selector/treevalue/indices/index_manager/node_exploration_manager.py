@@ -1,12 +1,13 @@
+import math
+from typing import Protocol
+
 import chess
 
-import chipiron.players.move_selector.treevalue.trees as trees
 import chipiron.players.move_selector.treevalue.nodes as nodes
-from typing import Protocol
-import math
-from chipiron.utils.small_tools import Interval, intersect_intervals, distance_number_to_interval
+import chipiron.players.move_selector.treevalue.trees as trees
 from chipiron.players.move_selector.treevalue.indices.node_indices.index_data import MinMaxPathValue, \
     RecurZipfQuoolExplorationData, IntervalExplo
+from chipiron.utils.small_tools import Interval, intersect_intervals, distance_number_to_interval
 
 
 class NodeExplorationIndexManager(Protocol):

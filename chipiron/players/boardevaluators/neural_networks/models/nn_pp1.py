@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
-from chipiron.utils.chi_nn import ChiNN
+
 from chipiron.players.boardevaluators.neural_networks.board_to_tensor import get_tensor_from_tensors
+from chipiron.utils.chi_nn import ChiNN
 
 
 class NetPP1(ChiNN):

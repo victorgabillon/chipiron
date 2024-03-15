@@ -1,11 +1,13 @@
-import time
-from torch.utils.data import Dataset
-import pandas as pd
-import numpy as np
 import math
-import chess
-import torch
+import time
 from typing import Any
+
+import chess
+import numpy as np
+import pandas as pd
+import torch
+from torch.utils.data import Dataset
+
 from chipiron.environments.chess.board.factory import create_board
 
 
@@ -123,7 +125,7 @@ class ClassifiedBoards(MyDataSet):
         self.len_2 = len(self.df_over_2)
         self.len_3 = len(self.df_over_3)
         self.len_4 = len(self.df_over_4)
-        self.transform_function=transform_function
+        self.transform_function = transform_function
 
     def __len__(self):
         return len(self.df_over)  # + len(self.df_over_2)  # + len(self.df_over_3)

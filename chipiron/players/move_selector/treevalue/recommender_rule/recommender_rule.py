@@ -1,17 +1,16 @@
+import random
 from dataclasses import dataclass
-from typing import Protocol, Literal
 from enum import Enum
+from typing import Protocol, Literal
 
 import chess
 
-from chipiron.utils.small_tools import softmax
-from chipiron.players.boardevaluators.over_event import HowOver
-
-import random
-from chipiron.players.move_selector.treevalue.nodes.utils import is_winning
 import chipiron.players.move_selector.treevalue.trees as trees
 from chipiron.players.boardevaluators.basic_evaluation import value_base
+from chipiron.players.boardevaluators.over_event import HowOver
 from chipiron.players.move_selector.treevalue.nodes import AlgorithmNode
+from chipiron.players.move_selector.treevalue.nodes.utils import is_winning
+from chipiron.utils.small_tools import softmax
 
 
 class RecommenderRuleTypes(str, Enum):
@@ -144,7 +143,7 @@ def recommend_move_after_exploration_generic(
                 best_move = move
         assert best_value is not None
         if best_value > 0:
-            assert isinstance(best_move,chess.Move)
+            assert isinstance(best_move, chess.Move)
             return best_move
 
     # base case

@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
-from chipiron.utils.chi_nn import ChiNN
+
 from chipiron.players.boardevaluators.neural_networks.board_to_tensor import transform_board_pieces_two_sides
+from chipiron.utils.chi_nn import ChiNN
 
 
 class NetP2(ChiNN):
@@ -50,7 +51,7 @@ def print_input(self, input):
     print('bishops', input[2])
     print('rook', input[3])
     print('queen', input[4])
-#  print('king', input[5])
+    #  print('king', input[5])
     print('pawns-opp', input[5])
     print('knights-opp', input[6])
     print('bishops-opp', input[7])

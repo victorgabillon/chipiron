@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
-from chipiron.utils.chi_nn import ChiNN
+
 from chipiron.players.boardevaluators.neural_networks.board_to_tensor import transform_board_pieces_one_side
+from chipiron.utils.chi_nn import ChiNN
 
 
 class NetP1(ChiNN):
@@ -13,11 +14,11 @@ class NetP1(ChiNN):
         self.tanh = nn.Tanh()
 
     def forward(self, x):
-       # print('weewwwww',x)
+        # print('weewwwww',x)
 
         x = self.fc1(x)
         x = self.tanh(x)
-     #   print('weew',x)
+        #   print('weew',x)
         return x
 
     def init_weights(self, file):

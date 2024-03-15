@@ -1,11 +1,12 @@
-from .comparable import CT,Comparable
-from typing import Any, Generic, Protocol
+from typing import Any
+
+from .comparable import Comparable
 
 
 class MySortedDict:
 
     def __init__(self):
-        self.dic: dict[Comparable,Any ] = {}
+        self.dic: dict[Comparable, Any] = {}
 
     def __setitem__(self, key, value):
         self.dic[key] = value

@@ -1,13 +1,12 @@
-from bidict import bidict
 import chess
-
-from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
-from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
-from chipiron.players.move_selector.treevalue.nodes.node_minmax_evaluation import NodeMinmaxEvaluation
-from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import BoardRepresentation
-from chipiron.environments.chess.board.board import BoardChi
+from bidict import bidict
 
 import chipiron.players.move_selector.treevalue.indices.node_indices as node_indices
+from chipiron.environments.chess.board.board import BoardChi
+from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import BoardRepresentation
+from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
+from chipiron.players.move_selector.treevalue.nodes.node_minmax_evaluation import NodeMinmaxEvaluation
+from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 
 
 class AlgorithmNode:
@@ -26,7 +25,7 @@ class AlgorithmNode:
     exploration_index_data: node_indices.NodeExplorationData | None
 
     # the board representation
-    board_representation: BoardRepresentation| None
+    board_representation: BoardRepresentation | None
 
     def __init__(
             self,
@@ -86,7 +85,7 @@ class AlgorithmNode:
         self.tree_node.add_parent(new_parent_node=new_parent_node)
 
     @property
-    def all_legal_moves_generated(self)-> bool:
+    def all_legal_moves_generated(self) -> bool:
         return self.tree_node.all_legal_moves_generated
 
     @property

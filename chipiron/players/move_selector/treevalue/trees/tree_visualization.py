@@ -1,7 +1,9 @@
-from graphviz import Digraph
 import pickle
-from .move_and_value_tree import MoveAndValueTree
+
+from graphviz import Digraph
+
 from chipiron.players.move_selector.treevalue.nodes import ITreeNode
+from .move_and_value_tree import MoveAndValueTree
 
 
 def add_dot(

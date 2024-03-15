@@ -1,6 +1,6 @@
-from .move_selector_types import MoveSelectorTypes
-from dataclasses import dataclass
 from typing import Protocol
+
+from .move_selector_types import MoveSelectorTypes
 
 
 class MoveSelectorArgs(Protocol):
