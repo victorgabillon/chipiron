@@ -5,6 +5,8 @@ import chipiron.players.move_selector.treevalue.nodes as nodes
 from typing import Protocol
 import math
 from chipiron.utils.small_tools import Interval, intersect_intervals, distance_number_to_interval
+from chipiron.players.move_selector.treevalue.indices.node_indices.index_data import MinMaxPathValue, \
+    RecurZipfQuoolExplorationData, IntervalExplo
 
 
 class NodeExplorationIndexManager(Protocol):
@@ -25,9 +27,9 @@ class NodeExplorationIndexManager(Protocol):
         ...
 
 
-class NullNodeExplorationIndexManager:
+class NullNodeExplorationIndexManager(NodeExplorationIndexManager):
 
-    def update_root_node(
+    def update_root_node_index(
             self,
             root_node: nodes.AlgorithmNode,
     ) -> None:
@@ -50,6 +52,7 @@ class UpdateIndexGlobalMinChange:
             root_node: nodes.AlgorithmNode,
     ) -> None:
 
+        assert isinstance(root_node.exploration_index_data, MinMaxPathValue)
         root_value: float = root_node.minmax_evaluation.get_value_white()
 
         root_node.exploration_index_data.min_path_value = root_value
@@ -63,6 +66,13 @@ class UpdateIndexGlobalMinChange:
             tree: trees.MoveAndValueTree,
             child_rank: int,
     ) -> None:
+        assert isinstance(parent_node.exploration_index_data, MinMaxPathValue)
+        assert isinstance(child_node.exploration_index_data, MinMaxPathValue)
+
+        assert parent_node.exploration_index_data is not None
+        assert parent_node.exploration_index_data.min_path_value is not None
+        assert parent_node.exploration_index_data.max_path_value is not None
+        assert child_node.exploration_index_data is not None
 
         child_value: float = child_node.minmax_evaluation.get_value_white()
 
@@ -91,6 +101,8 @@ class UpdateIndexGlobalMinChange:
             child_node.exploration_index_data.max_path_value = child_node_max_path_value
             child_node.exploration_index_data.min_path_value = child_node_min_path_value
         else:
+            assert child_node.exploration_index_data.max_path_value is not None
+            assert child_node.exploration_index_data.min_path_value is not None
             child_node.exploration_index_data.index = min(child_node.exploration_index_data.index, child_index)
             child_node.exploration_index_data.max_path_value = min(child_node_max_path_value,
                                                                    child_node.exploration_index_data.max_path_value)
@@ -105,6 +117,8 @@ class UpdateIndexZipfFactoredProba:
             root_node: nodes.AlgorithmNode,
     ) -> None:
 
+        assert isinstance(root_node.exploration_index_data, RecurZipfQuoolExplorationData)
+
         root_node.exploration_index_data.zipf_factored_proba = 1
         root_node.exploration_index_data.index = 0
 
@@ -115,12 +129,19 @@ class UpdateIndexZipfFactoredProba:
             tree: trees.MoveAndValueTree,
             child_rank: int,
     ) -> None:
-        parent_zipf_factored_proba: float = parent_node.exploration_index_data.zipf_factored_proba
-        child_zipf_proba = 1 / (child_rank + 1)
-        child_zipf_factored_proba = child_zipf_proba * parent_zipf_factored_proba
-        inverse_depth = 1 / (tree.node_depth(child_node) + 1)
-        child_index = child_zipf_factored_proba * inverse_depth
+        assert isinstance(parent_node.exploration_index_data, RecurZipfQuoolExplorationData)
+
+        parent_zipf_factored_proba: float | None = parent_node.exploration_index_data.zipf_factored_proba
+        assert parent_zipf_factored_proba is not None
+
+        child_zipf_proba: float = 1 / (child_rank + 1)
+        child_zipf_factored_proba: float = child_zipf_proba * parent_zipf_factored_proba
+        inverse_depth: float = 1 / (tree.node_depth(child_node) + 1)
+        child_index: float = child_zipf_factored_proba * inverse_depth
         child_index = -child_index
+
+        assert child_node.exploration_index_data is not None
+        assert isinstance(child_node.exploration_index_data, RecurZipfQuoolExplorationData)
 
         # the index of the child node is updated now
         # as a child node can have multiple parents we take the min if an index was previously computed
@@ -129,6 +150,7 @@ class UpdateIndexZipfFactoredProba:
             child_node.exploration_index_data.zipf_factored_proba = child_zipf_factored_proba
 
         else:
+            assert child_node.exploration_index_data.zipf_factored_proba is not None
             child_node.exploration_index_data.index = min(child_node.exploration_index_data.index, child_index)
             child_node.exploration_index_data.zipf_factored_proba = min(
                 child_node.exploration_index_data.zipf_factored_proba, child_zipf_factored_proba)
@@ -141,8 +163,13 @@ class UpdateIndexLocalMinChange:
             root_node: nodes.AlgorithmNode,
     ) -> None:
 
+        assert isinstance(root_node.exploration_index_data, IntervalExplo)
+
         root_node.exploration_index_data.index = 0
-        root_node.exploration_index_data.interval = Interval(min_value=-math.inf, max_value=math.inf)
+        root_node.exploration_index_data.interval = Interval(
+            min_value=-math.inf,
+            max_value=math.inf
+        )
 
     def update_node_indices(
             self,
@@ -152,9 +179,17 @@ class UpdateIndexLocalMinChange:
             child_rank: int,
     ) -> None:
 
+        assert isinstance(parent_node.exploration_index_data, IntervalExplo)
+
+        assert parent_node.exploration_index_data is not None
+        assert child_node.exploration_index_data is not None
+
+        inter_level_interval: Interval | None = None
+
         if parent_node.exploration_index_data.index is None:
             child_node.exploration_index_data.index = None
         else:
+            assert parent_node.exploration_index_data.interval is not None
             if len(parent_node.tree_node.moves_children) == 1:
                 local_index = parent_node.exploration_index_data.index
                 inter_level_interval = parent_node.exploration_index_data.interval
@@ -170,11 +205,13 @@ class UpdateIndexLocalMinChange:
                     else:
                         local_interval.max_value = math.inf
                         local_interval.min_value = best_child.minmax_evaluation.get_value_white()
-                    #print('intersectWHITE', parent_node.id, parent_node.tree_node.board.turn, local_interval,
+                    # print('intersectWHITE', parent_node.id, parent_node.tree_node.board.turn, local_interval,
                     #      parent_node.exploration_index_data.interval)
 
-                    inter_level_interval = intersect_intervals(local_interval,
-                                                               parent_node.exploration_index_data.interval)
+                    inter_level_interval = intersect_intervals(
+                        local_interval,
+                        parent_node.exploration_index_data.interval
+                    )
                     if inter_level_interval is not None:
                         local_index = distance_number_to_interval(value=child_white_value,
                                                                   interval=inter_level_interval)
@@ -182,7 +219,7 @@ class UpdateIndexLocalMinChange:
                         local_index = None
                 if parent_node.tree_node.board.turn == chess.BLACK:
                     best_child = parent_node.minmax_evaluation.best_child()
-                   # print('parent_nodess', parent_node.id, child_node.id)
+                    # print('parent_nodess', parent_node.id, child_node.id)
 
                     second_best_child = parent_node.minmax_evaluation.second_best_child()
                     child_white_value = child_node.minmax_evaluation.get_value_white()
@@ -193,16 +230,20 @@ class UpdateIndexLocalMinChange:
                     else:
                         local_interval.max_value = best_child.minmax_evaluation.get_value_white()
                         local_interval.min_value = -math.inf
-                  #  print('intersect', local_interval, parent_node.exploration_index_data.interval)
+                    #  print('intersect', local_interval, parent_node.exploration_index_data.interval)
 
                     inter_level_interval = intersect_intervals(local_interval,
                                                                parent_node.exploration_index_data.interval)
                     if inter_level_interval is not None:
-                        local_index = distance_number_to_interval(value=child_white_value,
-                                                                  interval=inter_level_interval)
+                        local_index = distance_number_to_interval(
+                            value=child_white_value,
+                            interval=inter_level_interval
+                        )
                     else:
                         local_index = None
-            #print('t', child_node.id, local_index, inter_level_interval)
+            # print('t', child_node.id, local_index, inter_level_interval)
+            assert isinstance(child_node.exploration_index_data, IntervalExplo)
+
             if child_node.exploration_index_data.index is None:
                 child_node.exploration_index_data.index = local_index
                 child_node.exploration_index_data.interval = inter_level_interval
@@ -215,7 +256,7 @@ class UpdateIndexLocalMinChange:
 
 # TODO their might be ways to optimize the computation such as not recomptuing for the whole tree
 def update_all_indices(
-        tree: trees.move_and_value_tree,
+        tree: trees.MoveAndValueTree,
         index_manager: NodeExplorationIndexManager
 ) -> None:
     """
@@ -264,8 +305,7 @@ def update_all_indices(
 
 
 def print_all_indices(
-        tree: trees.move_and_value_tree,
-
+        tree: trees.MoveAndValueTree,
 ) -> None:
     tree_nodes: trees.RangedDescendants = tree.descendants
 
@@ -275,4 +315,5 @@ def print_all_indices(
         # print('hmv', half_move)
         parent_node: nodes.AlgorithmNode
         for parent_node in tree_nodes[half_move].values():
-            print('parent_node', parent_node.tree_node.id, parent_node.exploration_index_data.index)
+            if parent_node.exploration_index_data is not None:
+                print('parent_node', parent_node.tree_node.id, parent_node.exploration_index_data.index)

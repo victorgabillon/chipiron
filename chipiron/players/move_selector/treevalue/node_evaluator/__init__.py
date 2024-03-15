@@ -6,5 +6,6 @@ __all__ = [
     "AllNodeEvaluatorArgs",
     "NodeEvaluator",
     "create_node_evaluator",
-    "EvaluationQueries"
+    "EvaluationQueries",
+    "NodeEvaluatorArgs"
 ]

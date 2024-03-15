@@ -23,17 +23,17 @@ class AlgorithmNode:
     minmax_evaluation: NodeMinmaxEvaluation
 
     # the object storing the information to help the algorithm decide the next nodes to explore
-    exploration_index_data: node_indices.NodeExplorationData
+    exploration_index_data: node_indices.NodeExplorationData | None
 
     # the board representation
-    board_representation: BoardRepresentation
+    board_representation: BoardRepresentation| None
 
     def __init__(
             self,
             tree_node: TreeNode,
             minmax_evaluation: NodeMinmaxEvaluation,
-            exploration_index_data: node_indices.NodeExplorationData,
-            board_representation: BoardRepresentation
+            exploration_index_data: node_indices.NodeExplorationData | None,
+            board_representation: BoardRepresentation | None
     ) -> None:
         self.tree_node = tree_node
         self.minmax_evaluation = minmax_evaluation
@@ -86,7 +86,7 @@ class AlgorithmNode:
         self.tree_node.add_parent(new_parent_node=new_parent_node)
 
     @property
-    def all_legal_moves_generated(self):
+    def all_legal_moves_generated(self)-> bool:
         return self.tree_node.all_legal_moves_generated
 
     @property

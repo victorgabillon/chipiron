@@ -84,6 +84,7 @@ class MatchManager:
         # when a gui is present it might action it to close itself)
         match_results.finish()
 
+        assert isinstance(match_results,MatchResults)
         match_report: MatchReport = MatchReport(
             match_move_history=match_move_history,
             match_results=match_results

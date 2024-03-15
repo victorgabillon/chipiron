@@ -6,5 +6,6 @@ __all__ = [
     "rec_merge_dic",
     "seed",
     "path",
-    "mkdir"
+    "mkdir",
+    "unique_int_from_list"
 ]

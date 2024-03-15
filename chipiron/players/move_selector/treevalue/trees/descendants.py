@@ -127,6 +127,8 @@ class Descendants:
 
 
 class RangedDescendants(Descendants):
+    min_half_move: int | None
+    max_half_move: int | None
 
     def __init__(
             self
@@ -149,6 +151,7 @@ class RangedDescendants(Descendants):
             half_move: HalfMove
     ) -> bool:
         if self.min_half_move is not None:
+            assert self.max_half_move is not None
             return half_move == self.max_half_move + 1
         else:
             return True
@@ -192,8 +195,10 @@ class RangedDescendants(Descendants):
                 self.max_half_move = half_move
         self.number_of_descendants += 1
 
-    def remove_descendant(self, node):
-        half_move = node.half_move
+    def remove_descendant(
+            self,
+            node):
+        half_move : int  = node.half_move
         fen = node.fast_rep
 
         self.number_of_descendants -= 1
@@ -206,12 +211,16 @@ class RangedDescendants(Descendants):
                 self.max_half_move -= 1
             if half_move == self.min_half_move:
                 self.min_half_move += 1
+            assert self.max_half_move is not None
+            assert self.min_half_move is not None
             if self.max_half_move < self.min_half_move:
                 self.max_half_move = None
                 self.min_half_move = None
                 assert (self.number_of_descendants == 0)
 
     def range(self):
+        assert self.max_half_move is not None
+        assert self.min_half_move is not None
         return range(self.min_half_move, self.max_half_move + 1)
 
     def update(self, new_descendants):
@@ -262,6 +271,8 @@ class RangedDescendants(Descendants):
             assert (self.max_half_move is None)
             assert (self.number_of_descendants == 0)
         else:
+            assert self.max_half_move is not None
+            assert self.min_half_move is not None
             for i in range(self.min_half_move, self.max_half_move + 1):
                 assert (i in self.descendants_at_half_move.keys())
         for half_move in self:
@@ -383,7 +394,7 @@ class SortedValueDescendants(Descendants):
             print('half_move: ', half_move, '| (', self.number_of_descendants_at_half_move[half_move],
                   'descendants)')  # ,                  end='| ')
             for descendant, value in self.sorted_descendants_at_half_move[half_move].items():
-                print(descendant.id, +'(' + value + ')', end=' ')
+                print(str(descendant.id) +'(' + str(value) + ')', end=' ')
             print('')
 
     def remove_descendant(self, node):

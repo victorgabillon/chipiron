@@ -49,5 +49,4 @@ class Uniform:
         return opening_instructions_batch
 
     def print_info(self):
-        super().print_info()
         print('Uniform')

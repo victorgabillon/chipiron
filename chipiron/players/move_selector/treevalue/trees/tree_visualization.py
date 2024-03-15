@@ -1,6 +1,6 @@
 from graphviz import Digraph
 import pickle
-from .factory import MoveAndValueTree
+from .move_and_value_tree import MoveAndValueTree
 from chipiron.players.move_selector.treevalue.nodes import ITreeNode
 
 

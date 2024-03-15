@@ -28,7 +28,8 @@ class MinMaxEvaluationUpdater:
             updates_instructions: UpdateInstructions
     ) -> ValueUpdateInstructionsBlock:
         # get the base block
-        updates_instructions_block: ValueUpdateInstructionsBlock = updates_instructions.value_block
+        updates_instructions_block: ValueUpdateInstructionsBlock | None = updates_instructions.value_block
+        assert updates_instructions_block is not None
 
         # UPDATE VALUE
         has_value_changed, has_best_node_seq_changed_1 = node_to_update.minmax_evaluation.minmax_value_update_from_children(

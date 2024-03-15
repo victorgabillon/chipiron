@@ -51,7 +51,11 @@ class OverEvent:
         elif self.how_over == HowOver.DRAW:
             assert (self.who_is_winner is Winner.NO_KNOWN_WINNER)
 
-    def becomes_over(self, how_over, who_is_winner=Winner.NO_KNOWN_WINNER):
+    def becomes_over(
+            self,
+            how_over: HowOver,
+            who_is_winner: Winner = Winner.NO_KNOWN_WINNER
+    ) -> None:
         self.how_over = how_over
         self.who_is_winner = who_is_winner
 

@@ -138,11 +138,11 @@ class GameManager:
 
         match message:
             case MoveMessage():
-                message: MoveMessage
+                move_message: MoveMessage = message
                 # play the move
-                move: chess.Move = message.move
+                move: chess.Move = move_message.move
                 print('receiving the move', move, type(self), self.game.playing_status, type(self.game.playing_status))
-                if message.corresponding_board == board.fen() and \
+                if move_message.corresponding_board == board.fen() and \
                         self.game.playing_status.is_play() and \
                         message.player_name == self.player_color_to_id[board.turn]:
                     # TODO THINK! HOW TO DEAL with premoves if we dont know the board in advance?
@@ -155,10 +155,9 @@ class GameManager:
                     # Print the board
                     board.print_chess_board()
                     print(self.print_svg_board_to_file)
-                    import time
 
                     if self.print_svg_board_to_file:
-                        mySvg = board._repr_svg_()
+                        mySvg = board.board._repr_svg_()
                         with open('myapp/static/images/my0.svg', 'w') as f:
                             f.write(mySvg)
 
@@ -173,11 +172,11 @@ class GameManager:
                         evaluation=message.evaluation)
                 logger.debug(f'len main tread mailbox {self.main_thread_mailbox.qsize()}')
             case GameStatusMessage():
-                message: GameStatusMessage
+                game_status_message: GameStatusMessage = message
                 # update game status
-                if message.status == PlayingStatus.PLAY:
+                if game_status_message.status == PlayingStatus.PLAY:
                     self.game.play()
-                if message.status == PlayingStatus.PAUSE:
+                if game_status_message.status == PlayingStatus.PAUSE:
                     self.game.pause()
             case BackMessage():
                 self.rewind_one_move()
@@ -191,7 +190,7 @@ class GameManager:
         half_move: HalfMove = self.game.board.ply()
         continue_bool: bool = True
         if self.args.max_half_moves is not None and half_move >= self.args.max_half_moves:
-            continue_bool: bool = False
+            continue_bool = False
         return continue_bool
 
     def print_to_file(
@@ -231,28 +230,31 @@ class GameManager:
     def simple_results(self) -> FinalGameResult:
         board = self.game.board
 
+        res: FinalGameResult | None = None
         if board.board.result() == '*':
             if self.syzygy is None or not self.syzygy.fast_in_table(board):  # TODO when is this case useful?
-                return (-10000, -10000, -10000)
+                raise ValueError(f'Problem with figuring our game results in {__name__}')
             else:
                 val = self.syzygy.value_white(board, chess.WHITE)
                 if val == 0:
-                    return FinalGameResult.DRAW
+                    res = FinalGameResult.DRAW
                 if val == -1000:
-                    return FinalGameResult.WIN_FOR_BLACK
+                    res = FinalGameResult.WIN_FOR_BLACK
                 if val == 1000:
-                    return FinalGameResult.WIN_FOR_WHITE
+                    res = FinalGameResult.WIN_FOR_WHITE
         else:
             result = board.board.result()
             if result == '1/2-1/2':
-                return FinalGameResult.DRAW
+                res = FinalGameResult.DRAW
             if result == '0-1':
-                return FinalGameResult.WIN_FOR_BLACK
+                res = FinalGameResult.WIN_FOR_BLACK
             if result == '1-0':
-                return FinalGameResult.WIN_FOR_WHITE
+                res = FinalGameResult.WIN_FOR_WHITE
+        assert isinstance(res, FinalGameResult)
+        return res
 
     def terminate_processes(self):
-        player: players_m.PlayerProcess | players_m.Player
+        player: players_m.PlayerProcess | players_m.GamePlayer
         for player in self.players:
             if isinstance(player, players_m.PlayerProcess):
                 player.terminate()

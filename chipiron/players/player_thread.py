@@ -38,10 +38,11 @@ class PlayerProcess(multiprocessing.Process):
             else:
                 # Handle task here and call q.task_done()
                 if isinstance(message, BoardMessage):
-                    message: BoardMessage
-                    board: BoardChi = message.board
-                    seed: int = message.seed
+                    board_message: BoardMessage = message
+                    board: BoardChi = board_message.board
+                    seed: int |None = board_message.seed
                     print('player thread got ', board)
+                    assert seed is not None
 
                     # the game_player computes the move for the board and sends the move in the move queue
                     game_player_computes_move_on_board_and_send_move_in_queue(

@@ -9,7 +9,7 @@ def create_syzygy() -> SyzygyTable | None:
     is_exist: bool = os.path.exists(path_to_table)
 
     if is_exist:
-        syzygy_table: SyzygyTable = SyzygyTable(path_to_table=path_to_table)
+        syzygy_table = SyzygyTable(path_to_table=path_to_table)
     else:
         print('WARNING: no folder found for syzygy tables so NOT using it')
         syzygy_table = None

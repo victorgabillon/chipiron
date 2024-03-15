@@ -67,7 +67,7 @@ class GameManagerFactory:
         game: Game = Game(
             playing_status=game_playing_status,
             board=board,
-            seed=game_seed
+            seed_=game_seed
         )
         observable_game: ObservableGame = ObservableGame(game=game)
 

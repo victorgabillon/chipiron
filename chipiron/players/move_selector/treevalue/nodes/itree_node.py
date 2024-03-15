@@ -43,3 +43,7 @@ class ITreeNode(Protocol):
 
     def dot_description(self) -> str:
         ...
+
+    @property
+    def all_legal_moves_generated(self) -> bool:  # todo looks not clean, more like a hack no?
+        ...

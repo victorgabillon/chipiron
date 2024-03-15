@@ -4,7 +4,7 @@ from .index_updater import IndexUpdater
 
 
 def create_algorithm_node_updater(
-        index_updater: IndexUpdater
+        index_updater: IndexUpdater |None
 ) -> AlgorithmNodeUpdater:
     minmax_evaluation_updater: MinMaxEvaluationUpdater = MinMaxEvaluationUpdater()
 

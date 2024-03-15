@@ -3,7 +3,7 @@ import random
 
 
 def zipf_picks(
-        ranks_values: dict[int, float | int],
+        ranks_values: dict[int,  int|float],
         random_generator,
         shift: bool = False,
         random_pick: bool = False

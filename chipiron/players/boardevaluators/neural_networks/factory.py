@@ -7,7 +7,7 @@ from chipiron.players.boardevaluators.neural_networks.models.nn_pp2d2_2 import N
 from chipiron.players.boardevaluators.neural_networks.models.nn_pp2d2_2leaky import NetPP2D2_2_LEAKY
 from chipiron.players.boardevaluators.neural_networks.models.nn_pp2d2_2prelu import NetPP2D2_2_PRELU
 from chipiron.players.boardevaluators.neural_networks.models.nn_pp2d2_2rrelu import NetPP2D2_2_RRELU
-from chipiron.players.boardevaluators.neural_networks.board_evaluator import NNBoardEvaluator
+from chipiron.players.boardevaluators.neural_networks.nn_board_evaluator import NNBoardEvaluator
 from chipiron.utils.small_tools import mkdir
 from chipiron.utils.chi_nn import ChiNN
 import sys

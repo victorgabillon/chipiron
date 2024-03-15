@@ -32,10 +32,13 @@ class MinMaxPathValue(NodeExplorationData):
 
 @dataclass
 class IntervalExplo(NodeExplorationData):
-    interval: Interval = field(default_factory=Interval)
+    interval: Interval |None = field(default_factory=Interval)
 
     def dot_description(self):
-        return f'min_interval_value: {self.interval.min_value}, max_interval_value: {self.interval.max_value}'
+        if self.interval is None:
+            return 'None'
+        else:
+            return f'min_interval_value: {self.interval.min_value}, max_interval_value: {self.interval.max_value}'
 
 
 @dataclass

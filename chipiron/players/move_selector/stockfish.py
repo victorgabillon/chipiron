@@ -3,13 +3,12 @@ import chipiron.environments.chess.board as boards
 from dataclasses import dataclass
 from typing import Literal, Any
 from .move_selector import MoveRecommendation
-
-Human_Name_Literal = 'Stockfish'
+from .move_selector_types import MoveSelectorTypes
 
 
 @dataclass
 class StockfishPlayer:
-    type: Literal[Human_Name_Literal]  # for serialization
+    type: Literal[MoveSelectorTypes.Stockfish]  # for serialization
     depth: int = 20
     time_limit: float = 0.1
     engine: Any = None
