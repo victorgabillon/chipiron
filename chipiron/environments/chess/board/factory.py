@@ -1,5 +1,6 @@
-from chipiron.environments.chess.board.board import BoardChi
 import chess
+
+from chipiron.environments.chess.board.board import BoardChi
 
 
 def create_board(

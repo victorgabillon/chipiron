@@ -1,8 +1,11 @@
 from __future__ import annotations  # (helping with recursive type annotation)
+
 from typing import Protocol
-from bidict import bidict
-from chipiron.environments.chess.board.board import BoardChi
+
 import chess
+from bidict import bidict
+
+from chipiron.environments.chess.board.board import BoardChi
 
 
 class ITreeNode(Protocol):

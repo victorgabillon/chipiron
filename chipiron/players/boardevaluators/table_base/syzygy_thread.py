@@ -1,6 +1,6 @@
+import copy
 import multiprocessing
 import queue
-import copy
 
 
 # A class that extends the Thread class
@@ -17,7 +17,7 @@ class SyzygyProcess(multiprocessing.Process):
         print('Started Syzygy thread : ', self.syzygy_table)
 
         while not self.stopped():
-            import time
+
             try:
                 # print('is there SOMETHING?')
 

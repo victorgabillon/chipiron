@@ -1,5 +1,6 @@
-from .all_node_evaluators import NodeEvaluatorTypes
 from dataclasses import dataclass
+
+from .all_node_evaluators import NodeEvaluatorTypes
 
 
 @dataclass

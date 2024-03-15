@@ -4,22 +4,25 @@
 This module is the execution point of the chess GUI application.
 """
 
+import typing
+
 import chess
-from PySide6.QtCore import Qt
-from PySide6.QtSvgWidgets import QSvgWidget
-from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QPushButton, QTableWidget, QWidget, QDialog, QTableWidgetItem
 from PySide6.QtCore import QTimer, Slot
-from chipiron.games.game.game_playing_status import PlayingStatus
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon
+from PySide6.QtSvgWidgets import QSvgWidget
+from PySide6.QtWidgets import QPushButton, QTableWidget, QWidget, QDialog, QTableWidgetItem
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
+from matplotlib.figure import Figure
+
 from chipiron.environments.chess.board import BoardChi
+from chipiron.games.game.game_playing_status import PlayingStatus
+from chipiron.games.match.match_results import MatchResults
 from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMessage, EvaluationMessage, \
     MatchResultsMessage
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage
 from chipiron.utils.communication.player_game_messages import BoardMessage, MoveMessage
-from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
-from matplotlib.figure import Figure
-from chipiron.games.match.match_results import MatchResults
-import typing
+
 
 class MplCanvas(FigureCanvasQTAgg):
 

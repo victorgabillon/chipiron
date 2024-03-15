@@ -1,7 +1,7 @@
 import chipiron.players.move_selector.treevalue.nodes as nodes
-from .updates_file import UpdateInstructions
-from .index_block import IndexUpdateInstructionsBlock
 from chipiron.players.move_selector.treevalue.indices.node_indices.index_data import MaxDepthDescendants
+from .index_block import IndexUpdateInstructionsBlock
+from .updates_file import UpdateInstructions
 
 
 class IndexUpdater:

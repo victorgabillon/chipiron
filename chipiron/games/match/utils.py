@@ -1,11 +1,12 @@
-from chipiron.utils import path
-import chipiron as ch
 import os
 from shutil import copyfile
-from .match_settings_args import MatchSettingsArgs
-import chipiron.games.game as game
-from chipiron.utils.small_tools import fetch_args_modify_and_convert
 from typing import Any
+
+import chipiron as ch
+import chipiron.games.game as game
+from chipiron.utils import path
+from chipiron.utils.small_tools import fetch_args_modify_and_convert
+from .match_settings_args import MatchSettingsArgs
 
 
 def fetch_match_games_args_convert_and_save(

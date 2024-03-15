@@ -1,8 +1,8 @@
 import chess
 
 from .itree_node import ITreeNode
-from .tree_node import TreeNode
 from .node_minmax_evaluation import NodeMinmaxEvaluation
+from .tree_node import TreeNode
 
 
 def are_all_moves_and_children_opened(

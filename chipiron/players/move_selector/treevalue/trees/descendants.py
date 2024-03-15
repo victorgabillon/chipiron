@@ -1,4 +1,5 @@
 from sortedcollections import ValueSortedDict
+
 from chipiron.environments import HalfMove
 from chipiron.players.move_selector.treevalue.nodes import ITreeNode
 
@@ -198,7 +199,7 @@ class RangedDescendants(Descendants):
     def remove_descendant(
             self,
             node):
-        half_move : int  = node.half_move
+        half_move: int = node.half_move
         fen = node.fast_rep
 
         self.number_of_descendants -= 1
@@ -314,7 +315,8 @@ class SortedDescendants(Descendants):
 
     def test(self):
         super().test()
-        # print('defge',len(self.sorted_descendants_at_half_move), len(self.descendants_at_half_move),self.sorted_descendants_at_half_move,self.descendants_at_half_move)
+        # print('defge',len(self.sorted_descendants_at_half_move),
+        # len(self.descendants_at_half_move),self.sorted_descendants_at_half_move,self.descendants_at_half_move)
         assert (len(self.sorted_descendants_at_half_move) == len(self.descendants_at_half_move))
 
         assert (self.sorted_descendants_at_half_move.keys() == self.descendants_at_half_move.keys())
@@ -346,7 +348,7 @@ class SortedDescendants(Descendants):
     def contains_node(self, node):
         reply_base = super().contains_node(node)
         if node.half_move in self.descendants_at_half_move and node in self.sorted_descendants_at_half_move[
-            node.half_move]:
+              node.half_move]:
             rep = True
         else:
             rep = False
@@ -379,7 +381,8 @@ class SortedValueDescendants(Descendants):
 
     def test(self):
         super().test()
-        # print('defge',len(self.sorted_descendants_at_half_move), len(self.descendants_at_half_move),self.sorted_descendants_at_half_move,self.descendants_at_half_move)
+        # print('defge',len(self.sorted_descendants_at_half_move),
+        # len(self.descendants_at_half_move),self.sorted_descendants_at_half_move,self.descendants_at_half_move)
         assert (len(self.sorted_descendants_at_half_move) == len(self.descendants_at_half_move))
 
         assert (self.sorted_descendants_at_half_move.keys() == self.descendants_at_half_move.keys())
@@ -394,7 +397,7 @@ class SortedValueDescendants(Descendants):
             print('half_move: ', half_move, '| (', self.number_of_descendants_at_half_move[half_move],
                   'descendants)')  # ,                  end='| ')
             for descendant, value in self.sorted_descendants_at_half_move[half_move].items():
-                print(str(descendant.id) +'(' + str(value) + ')', end=' ')
+                print(str(descendant.id) + '(' + str(value) + ')', end=' ')
             print('')
 
     def remove_descendant(self, node):

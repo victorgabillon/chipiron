@@ -1,8 +1,9 @@
-from typing import List
-from chipiron.players.boardevaluators.board_evaluation.board_evaluation import BoardEvaluation, PointOfView
-import torch
-import chess
 from abc import ABC, abstractmethod
+
+import chess
+import torch
+
+from chipiron.players.boardevaluators.board_evaluation.board_evaluation import BoardEvaluation, PointOfView
 
 
 class OutputValueConverter(ABC):

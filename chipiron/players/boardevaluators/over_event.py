@@ -1,6 +1,7 @@
-import chess
 from dataclasses import dataclass
 from enum import Enum
+
+import chess
 
 
 class HowOver(Enum):

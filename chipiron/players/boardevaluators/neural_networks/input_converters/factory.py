@@ -1,10 +1,12 @@
-from .board_representation import Representation364
 from typing import Optional
-from chipiron.environments.chess.board.board import BoardChi
-import chipiron.environments.chess.board as board_mod
-import chipiron.players.move_selector.treevalue.nodes as nodes
+
 import chess
 import torch
+
+import chipiron.environments.chess.board as board_mod
+import chipiron.players.move_selector.treevalue.nodes as nodes
+from chipiron.environments.chess.board.board import BoardChi
+from .board_representation import Representation364
 
 
 def node_to_tensors_pieces_square_from_parent(node, board_modifications, parent_node):

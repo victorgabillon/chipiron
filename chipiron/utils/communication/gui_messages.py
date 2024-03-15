@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Any
-from chipiron.games.game.game_playing_status import PlayingStatus
 
+from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.games.match.match_results import MatchResults
 
 

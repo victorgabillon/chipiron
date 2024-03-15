@@ -1,7 +1,9 @@
-import chess.engine
-import chipiron.environments.chess.board as boards
 from dataclasses import dataclass
 from typing import Literal, Any
+
+import chess.engine
+
+import chipiron.environments.chess.board as boards
 from .move_selector import MoveRecommendation
 from .move_selector_types import MoveSelectorTypes
 

@@ -1,8 +1,10 @@
 from dataclasses import dataclass
+
 import chess
+
 from chipiron.players import Player
-from chipiron.players.move_selector.treevalue.tree_and_value_player import TreeAndValueMoveSelector
 from chipiron.players.move_selector.treevalue.stopping_criterion import TreeMoveLimitArgs
+from chipiron.players.move_selector.treevalue.tree_and_value_player import TreeAndValueMoveSelector
 
 
 @dataclass

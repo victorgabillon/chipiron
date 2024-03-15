@@ -1,14 +1,12 @@
-from .algorithm_node_tree_manager import AlgorithmNodeTreeManager
-from .tree_manager import TreeManager
-from chipiron.players.move_selector.treevalue import node_factory
 import chipiron.players.move_selector.treevalue.updates as upda
-from chipiron.players.move_selector.treevalue.node_evaluator import NodeEvaluator, EvaluationQueries
+from chipiron.players.move_selector.treevalue import node_factory
 from chipiron.players.move_selector.treevalue.indices.index_manager import NodeExplorationIndexManager, \
     create_exploration_index_manager
-
 from chipiron.players.move_selector.treevalue.indices.node_indices.index_types import IndexComputationType
+from chipiron.players.move_selector.treevalue.node_evaluator import NodeEvaluator, EvaluationQueries
 from chipiron.players.move_selector.treevalue.updates.index_updater import IndexUpdater
-import chipiron.players.move_selector.treevalue.nodes as nodes
+from .algorithm_node_tree_manager import AlgorithmNodeTreeManager
+from .tree_manager import TreeManager
 
 
 def create_algorithm_node_tree_manager(

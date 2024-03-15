@@ -1,22 +1,22 @@
 """
 Sequool
 """
-from chipiron.players.move_selector.treevalue.node_selector.notations_and_statics import zipf_picks, zipf_picks_random
-from chipiron.players.move_selector.treevalue import trees
-from chipiron.players.move_selector.treevalue import tree_manager as tree_man
-from chipiron.players.move_selector.treevalue.trees.descendants import Descendants
+import random
+from dataclasses import dataclass, field
+from typing import Callable
+from typing import Protocol
+
+import chipiron.players.move_selector.treevalue.nodes as nodes
 from chipiron.environments import HalfMove
+from chipiron.players.move_selector.treevalue import tree_manager as tree_man
+from chipiron.players.move_selector.treevalue import trees
 from chipiron.players.move_selector.treevalue.indices.node_indices.index_data import MaxDepthDescendants
+from chipiron.players.move_selector.treevalue.node_selector.notations_and_statics import zipf_picks, zipf_picks_random
 from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructions, \
     OpeningInstructor, \
     create_instructions_to_open_all_moves
-
-from dataclasses import dataclass, field
-import random
-import chipiron.players.move_selector.treevalue.nodes as nodes
-from typing import Protocol
-from typing import Callable
 from chipiron.players.move_selector.treevalue.nodes.tree_traversal import get_descendants_candidate_not_over
+from chipiron.players.move_selector.treevalue.trees.descendants import Descendants
 
 
 # NodeCandidatesSelector = Callable[[random.Random], list[nodes.AlgorithmNode]]

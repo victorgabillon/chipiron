@@ -1,21 +1,23 @@
-import shutil
 import datetime
-import yaml
 import os
-from sortedcollections import ValueSortedDict
+import random
+import shutil
 from collections import deque
+from dataclasses import dataclass, field
+
 import matplotlib.pyplot as plt
+import yaml
+from sortedcollections import ValueSortedDict
+
 import chipiron as ch
-from chipiron.games.match.match_factories import create_match_manager
 import chipiron.games.game as game
 import chipiron.games.match as match
+import chipiron.players as players
+from chipiron.games.match.match_factories import create_match_manager
+from chipiron.games.match.match_results import MatchReport
 from chipiron.games.match.utils import fetch_match_games_args_convert_and_save
 from chipiron.players.utils import fetch_player_args_convert_and_save
-from dataclasses import dataclass, field
-import chipiron.players as players
-import random
 from chipiron.utils.small_tools import mkdir, path
-from chipiron.games.match.match_results import MatchReport
 
 
 def new_player_joins(player):

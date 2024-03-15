@@ -1,10 +1,11 @@
 import multiprocessing
 import queue
-from .game_player import GamePlayer, game_player_computes_move_on_board_and_send_move_in_queue
-from chipiron.utils.communication.player_game_messages import BoardMessage
+
 from chipiron.environments.chess.board import BoardChi
-from chipiron.utils.is_dataclass import DataClass
+from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.communication.player_game_messages import MoveMessage
+from chipiron.utils.is_dataclass import DataClass
+from .game_player import GamePlayer, game_player_computes_move_on_board_and_send_move_in_queue
 
 
 # A class that extends the Thread class
@@ -40,7 +41,7 @@ class PlayerProcess(multiprocessing.Process):
                 if isinstance(message, BoardMessage):
                     board_message: BoardMessage = message
                     board: BoardChi = board_message.board
-                    seed: int |None = board_message.seed
+                    seed: int | None = board_message.seed
                     print('player thread got ', board)
                     assert seed is not None
 

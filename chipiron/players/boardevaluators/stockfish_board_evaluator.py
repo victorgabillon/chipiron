@@ -1,9 +1,11 @@
 """
 Module where we define the Stockfish Board Evaluator
 """
-import chess.engine
-import chipiron.environments.chess.board as boards
 from dataclasses import dataclass
+
+import chess.engine
+
+import chipiron.environments.chess.board as boards
 
 
 # TODO are we calling this?

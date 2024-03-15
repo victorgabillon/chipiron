@@ -1,7 +1,8 @@
-from chipiron.utils.dict_of_numbered_dict_with_pointer_on_max import DictOfNumberedDictWithPointerOnMax
 from dataclasses import dataclass
-from .value_block import ValueUpdateInstructionsBlock
+
+from chipiron.utils.dict_of_numbered_dict_with_pointer_on_max import DictOfNumberedDictWithPointerOnMax
 from .index_block import IndexUpdateInstructionsBlock
+from .value_block import ValueUpdateInstructionsBlock
 
 
 class UpdateInstructionsBatch:
@@ -40,7 +41,7 @@ class UpdateInstructionsBatch:
         print('UpdateInstructionsBatch: batch contains')
         raise Exception(f'not implemented in {__name__}')
 
-        #for key, update_information in self.batch:
+        # for key, update_information in self.batch:
         #    key.print_info()
         #    update_information.print_info()
 
@@ -82,7 +83,6 @@ class UpdateInstructions:
         else:
             self.value_block = another_update_instruction.value_block
 
-
         if an_update_instruction.index_block:
             if another_update_instruction.index_block:
                 self.index_block = IndexUpdateInstructionsBlock()
@@ -97,10 +97,10 @@ class UpdateInstructions:
 
     def print_info(self):
         print('printing info of update instructions')
-        assert(self.index_block is not None and self.value_block is not None)
+        assert (self.index_block is not None and self.value_block is not None)
         self.value_block.print_info()
         self.index_block.print_info()
 
     def empty(self):
-        assert(self.value_block is not None)
+        assert (self.value_block is not None)
         return self.value_block.empty() and (self.index_block is None or self.index_block.empty())

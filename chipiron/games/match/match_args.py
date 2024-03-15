@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
-from chipiron.utils import path
 from typing import Any
+
+from chipiron.utils import path
+
 
 @dataclass
 class MatchArgs:

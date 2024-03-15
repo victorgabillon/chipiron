@@ -1,21 +1,20 @@
-import chess
-import pickle
 import logging
+import os
+import pickle
+
+import chess
+
+import chipiron.players as players_m
+from chipiron.environments import HalfMove
+from chipiron.environments.chess.board import BoardChi
+from chipiron.games.game.game_playing_status import PlayingStatus
+from chipiron.utils import path
+from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMessage
+from chipiron.utils.communication.player_game_messages import MoveMessage
+from chipiron.utils.is_dataclass import DataClass
+from .final_game_result import GameReport, FinalGameResult
 from .game import ObservableGame
 from .game_args import GameArgs
-from chipiron.environments import HalfMove
-import chipiron.players as players_m
-
-from chipiron.utils.communication.player_game_messages import MoveMessage
-from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMessage
-from chipiron.games.game.game_playing_status import PlayingStatus
-
-from chipiron.utils.is_dataclass import DataClass
-from chipiron.environments.chess.board import BoardChi
-
-from chipiron.utils import path
-from .final_game_result import GameReport, FinalGameResult
-import os
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -160,8 +159,6 @@ class GameManager:
                         mySvg = board.board._repr_svg_()
                         with open('myapp/static/images/my0.svg', 'w') as f:
                             f.write(mySvg)
-
-
                 else:
                     pass
                     # put back in the queue

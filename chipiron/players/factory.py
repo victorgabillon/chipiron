@@ -3,24 +3,22 @@ player factory
 """
 
 import multiprocessing
-import random
 import queue
+import random
 from functools import partial
 from typing import Callable
 
-from chipiron.utils.communication.player_game_messages import BoardMessage
-from chipiron.utils import seed
 import chipiron.players.boardevaluators.table_base as table_base
-from chipiron.players.utils import fetch_player_args_convert_and_save
 from chipiron.environments.chess.board import BoardChi
+from chipiron.players.utils import fetch_player_args_convert_and_save
+from chipiron.utils import seed
+from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.communication.player_game_messages import MoveMessage
-
-from .player import Player
-from .player_thread import PlayerProcess
-from .game_player import GamePlayer, game_player_computes_move_on_board_and_send_move_in_queue
-from .player_args import PlayerArgs
-
 from . import move_selector
+from .game_player import GamePlayer, game_player_computes_move_on_board_and_send_move_in_queue
+from .player import Player
+from .player_args import PlayerArgs
+from .player_thread import PlayerProcess
 
 
 def create_chipiron_player(

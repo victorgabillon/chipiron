@@ -1,10 +1,10 @@
 from .algorithm_node_updater import AlgorithmNodeUpdater
-from .minmax_evaluation_updater import MinMaxEvaluationUpdater
 from .index_updater import IndexUpdater
+from .minmax_evaluation_updater import MinMaxEvaluationUpdater
 
 
 def create_algorithm_node_updater(
-        index_updater: IndexUpdater |None
+        index_updater: IndexUpdater | None
 ) -> AlgorithmNodeUpdater:
     minmax_evaluation_updater: MinMaxEvaluationUpdater = MinMaxEvaluationUpdater()
 

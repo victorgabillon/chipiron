@@ -1,14 +1,16 @@
-import chess
-from chipiron.games.game.game_manager_factory import GameManagerFactory
-from chipiron.games.game.game_manager import GameManager
-from chipiron.games.game.final_game_result import GameReport
-from chipiron.games.match.match_results import MatchResults, MatchReport, IMatchResults
-from chipiron.games.game.game_args import GameArgs
-from chipiron.players import Player
-from chipiron.games.match.match_results_factory import MatchResultsFactory
-from chipiron.utils import path
-import pickle
 import os
+import pickle
+
+import chess
+
+from chipiron.games.game.final_game_result import GameReport
+from chipiron.games.game.game_args import GameArgs
+from chipiron.games.game.game_manager import GameManager
+from chipiron.games.game.game_manager_factory import GameManagerFactory
+from chipiron.games.match.match_results import MatchResults, MatchReport, IMatchResults
+from chipiron.games.match.match_results_factory import MatchResultsFactory
+from chipiron.players import Player
+from chipiron.utils import path
 from chipiron.utils import seed
 
 
@@ -84,7 +86,7 @@ class MatchManager:
         # when a gui is present it might action it to close itself)
         match_results.finish()
 
-        assert isinstance(match_results,MatchResults)
+        assert isinstance(match_results, MatchResults)
         match_report: MatchReport = MatchReport(
             match_move_history=match_move_history,
             match_results=match_results

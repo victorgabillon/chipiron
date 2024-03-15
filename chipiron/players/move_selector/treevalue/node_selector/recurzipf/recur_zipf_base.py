@@ -1,13 +1,14 @@
 """
 RecurZipfBase
 """
+from dataclasses import dataclass
+
+from chipiron.players.move_selector.treevalue import tree_manager as tree_man
+from chipiron.players.move_selector.treevalue import trees
 from chipiron.players.move_selector.treevalue.node_selector.move_explorer import ZipfMoveExplorer
 from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructions, \
     OpeningInstructor, \
     create_instructions_to_open_all_moves
-from chipiron.players.move_selector.treevalue import trees
-from chipiron.players.move_selector.treevalue import tree_manager as tree_man
-from dataclasses import dataclass
 from ..move_explorer import SamplingPriorities
 from ..node_selector_args import NodeSelectorArgs
 

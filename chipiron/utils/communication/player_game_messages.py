@@ -1,5 +1,7 @@
 from dataclasses import dataclass
+
 import chess
+
 from chipiron.environments.chess.board import fen
 from chipiron.environments.chess.board.board import BoardChi
 

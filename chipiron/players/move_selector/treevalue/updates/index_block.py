@@ -1,5 +1,6 @@
-import chipiron.players.move_selector.treevalue.nodes as nodes
 from dataclasses import dataclass, field
+
+import chipiron.players.move_selector.treevalue.nodes as nodes
 
 
 @dataclass(slots=True)
@@ -11,7 +12,6 @@ class IndexUpdateInstructionsBlock:
             an_update_instruction,
             another_update_instruction
     ) -> None:
-
         self.children_with_updated_index = an_update_instruction.children_with_updated_index | another_update_instruction.children_with_updated_index
 
     def print_info(self):
@@ -25,6 +25,3 @@ class IndexUpdateInstructionsBlock:
         """ returns if all the components are simultaneously empty"""
         empty_bool = not bool(self.children_with_updated_index)
         return empty_bool
-
-
-

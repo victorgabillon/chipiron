@@ -1,8 +1,10 @@
-from bidict import bidict
+from dataclasses import dataclass, field
+
 import chess
+from bidict import bidict
+
 import chipiron.environments.chess.board as boards
 from .itree_node import ITreeNode
-from dataclasses import dataclass, field
 
 
 @dataclass(slots=True)
@@ -65,10 +67,9 @@ class TreeNode:
     def is_root_node(self) -> bool:
         return not self.parent_nodes
 
-    #@property
-    #def all_legal_moves_generated(self) -> bool:
+    # @property
+    # def all_legal_moves_generated(self) -> bool:
     #    return self.all_legal_moves_generated
-
 
     def add_parent(
             self,

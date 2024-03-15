@@ -1,17 +1,15 @@
-import chess
-import queue
 import copy
-
-from .game_playing_status import GamePlayingStatus, PlayingStatus
-
+import queue
 from typing import Callable
+
+import chess
+
 from chipiron.environments.chess.board import BoardChi
-
-from chipiron.utils.communication.player_game_messages import BoardMessage
-from chipiron.utils.communication.gui_messages import GameStatusMessage
-
 from chipiron.utils import seed, unique_int_from_list
+from chipiron.utils.communication.gui_messages import GameStatusMessage
+from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.is_dataclass import IsDataclass
+from .game_playing_status import GamePlayingStatus, PlayingStatus
 
 
 class Game:
@@ -45,7 +43,7 @@ class Game:
         if self._playing_status.is_paused():
             self._board.rewind_one_move()
         else:
-            print(f'Cannot rewind move if the game status is PLAY')
+            print('Cannot rewind move if the game status is PLAY')
 
     @property
     def playing_status(self):
@@ -159,7 +157,6 @@ class ObservableGame:
                 merged_seed: int | None = unique_int_from_list([self.game._seed, board_copy.ply()])
                 if merged_seed is not None:
                     move_function(board_copy, merged_seed)
-
 
     def notify_status(self):
         print('notify game', self.game.playing_status.status)

@@ -1,5 +1,5 @@
-from enum import Enum
 from dataclasses import dataclass
+
 from chipiron.environments.chess.board.starting_position import AllStartingPositionArgs
 
 

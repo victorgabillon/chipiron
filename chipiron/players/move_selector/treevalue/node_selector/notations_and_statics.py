@@ -1,9 +1,8 @@
 import math
-import random
 
 
 def zipf_picks(
-        ranks_values: dict[int,  int|float],
+        ranks_values: dict[int, int | float],
         random_generator,
         shift: bool = False,
         random_pick: bool = False

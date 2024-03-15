@@ -1,7 +1,8 @@
-import chipiron.players.move_selector.treevalue.nodes as node
-from typing import List
 from dataclasses import dataclass, field
+from typing import List
+
 import chipiron.environments.chess.board as board_mod
+import chipiron.players.move_selector.treevalue.nodes as node
 
 
 @dataclass(slots=True)

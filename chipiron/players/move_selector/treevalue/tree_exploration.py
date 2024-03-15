@@ -3,22 +3,21 @@ Tree Exploration
 """
 
 import random
-import chess
 from dataclasses import dataclass
+
+import chess
 
 import chipiron.environments.chess.board as boards
 from chipiron.players.move_selector.move_selector import MoveRecommendation
 from chipiron.players.move_selector.treevalue.recommender_rule.recommender_rule import \
     recommend_move_after_exploration_generic
 from chipiron.players.move_selector.treevalue.search_factory import NodeSelectorFactory
-import chipiron.players.move_selector.treevalue.nodes as nodes
-
-from .trees.factory import MoveAndValueTreeFactory
-from .stopping_criterion import StoppingCriterion, create_stopping_criterion, AllStoppingCriterionArgs
-from . import trees
-from . import tree_manager as tree_man
 from . import node_selector as node_sel
 from . import recommender_rule
+from . import tree_manager as tree_man
+from . import trees
+from .stopping_criterion import StoppingCriterion, create_stopping_criterion, AllStoppingCriterionArgs
+from .trees.factory import MoveAndValueTreeFactory
 
 
 @dataclass
@@ -99,7 +98,7 @@ class TreeExploration:
             self.tree_manager.update_backward(tree_expansions=tree_expansions)
             self.tree_manager.update_indices(tree=self.tree)
 
-        #trees.save_raw_data_to_file(tree=self.tree)
+        # trees.save_raw_data_to_file(tree=self.tree)
         # self.tree_manager.print_some_stats(tree=self.tree)
         # for move, child in self.tree.root_node.moves_children.items():
         #    print(f'{move} {self.tree.root_node.moves_children[move].minmax_evaluation.get_value_white()}'

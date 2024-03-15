@@ -1,20 +1,21 @@
-import chess
 import queue
+
+import chess
 
 import chipiron as ch
 import chipiron.environments.chess.board as boards
 import chipiron.players as players_m
-from chipiron.players.factory import create_player_observer
-from .game_manager import GameManager
-from .game import Game, ObservableGame, MoveFunction
-from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
-from chipiron.utils import path
 from chipiron.games.game.game_args import GameArgs
-from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage, extract_message_from_players
 from chipiron.players import Player
+from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
+from chipiron.players.factory import create_player_observer
+from chipiron.utils import path
 from chipiron.utils import seed
-from chipiron.utils.is_dataclass import IsDataclass
+from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage, extract_message_from_players
 from chipiron.utils.communication.player_game_messages import MoveMessage
+from chipiron.utils.is_dataclass import IsDataclass
+from .game import Game, ObservableGame, MoveFunction
+from .game_manager import GameManager
 
 
 class GameManagerFactory:

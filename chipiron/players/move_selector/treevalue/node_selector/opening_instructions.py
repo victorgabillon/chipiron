@@ -1,8 +1,10 @@
-from chipiron.players.move_selector.treevalue.nodes.utils import a_move_sequence_from_root
-import chess
-from enum import Enum
-import chipiron.players.move_selector.treevalue.nodes as nodes
 from dataclasses import dataclass
+from enum import Enum
+
+import chess
+
+import chipiron.players.move_selector.treevalue.nodes as nodes
+from chipiron.players.move_selector.treevalue.nodes.utils import a_move_sequence_from_root
 
 
 class OpeningInstructions:

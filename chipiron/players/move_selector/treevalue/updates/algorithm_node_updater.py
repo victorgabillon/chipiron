@@ -2,12 +2,11 @@ from dataclasses import dataclass
 
 import chipiron.players.move_selector.treevalue.nodes as nodes
 import chipiron.players.move_selector.treevalue.tree_manager as tree_man
-
-from .minmax_evaluation_updater import MinMaxEvaluationUpdater
-from .value_block import ValueUpdateInstructionsBlock
-from .updates_file import UpdateInstructions, UpdateInstructionsBatch
-from .index_updater import IndexUpdater
 from .index_block import IndexUpdateInstructionsBlock
+from .index_updater import IndexUpdater
+from .minmax_evaluation_updater import MinMaxEvaluationUpdater
+from .updates_file import UpdateInstructions, UpdateInstructionsBatch
+from .value_block import ValueUpdateInstructionsBlock
 
 
 @dataclass

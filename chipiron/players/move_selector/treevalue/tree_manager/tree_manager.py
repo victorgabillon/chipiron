@@ -1,11 +1,10 @@
 import chess
+
 import chipiron.environments.chess.board as board_mod
-from chipiron.players.move_selector.treevalue.tree_manager.tree_expander import TreeExpansion, TreeExpansions
+import chipiron.players.move_selector.treevalue.node_selector as node_sel
 import chipiron.players.move_selector.treevalue.nodes as node
 import chipiron.players.move_selector.treevalue.trees as trees
-import chipiron.players.move_selector.treevalue.node_selector as node_sel
-from chipiron.players.move_selector.treevalue import node_factory as node_fact
-from dataclasses import dataclass
+from chipiron.players.move_selector.treevalue.tree_manager.tree_expander import TreeExpansion, TreeExpansions
 
 
 # todo should we use a discount? and discounted per round reward?
@@ -14,14 +13,14 @@ from dataclasses import dataclass
 # DISCOUNT = 1/.99999
 
 
-
 class TreeManager:
     """
 
     This class that and manages a tree by opening new nodes and updating the values and indexes on the nodes
     """
+
     def __init__(self, node_factory):
-        self.node_factory =node_factory
+        self.node_factory = node_factory
 
     def open_node_move(
             self,
@@ -83,9 +82,8 @@ class TreeManager:
         fast_rep: str = board.fast_representation()
 
         child_node: node.ITreeNode
-        need_creation_child_node: bool = tree.root_node is None \
-                                         or tree.descendants.is_new_generation(half_move) \
-                                         or fast_rep not in tree.descendants.descendants_at_half_move[half_move]
+        need_creation_child_node: bool = tree.root_node is None or tree.descendants.is_new_generation(
+            half_move) or fast_rep not in tree.descendants.descendants_at_half_move[half_move]
         if need_creation_child_node:
             child_node = self.node_factory.create(
                 board=board,

@@ -1,5 +1,5 @@
 from .uniform import Uniform
 
-__all__ =[
+__all__ = [
     "Uniform"
 ]

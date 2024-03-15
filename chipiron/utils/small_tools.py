@@ -1,18 +1,21 @@
 import copy
-import sys
-import yaml
-from itertools import islice
-import numpy as np
-from chipiron.utils.is_dataclass import IsDataclass
-from typing import Type
-from enum import Enum
-import dacite
-import chipiron as ch
 import os
+import sys
 import typing
+from dataclasses import dataclass
+from enum import Enum
+from itertools import islice
 from typing import Any
+from typing import Type
+from typing import TypeVar
+
+import dacite
+import numpy as np
+import yaml
 
 import chipiron
+import chipiron as ch
+from chipiron.utils.is_dataclass import IsDataclass
 
 path = typing.Annotated[str | os.PathLike[str], 'path']
 seed = typing.Annotated[int, "seed"]
@@ -27,7 +30,7 @@ def mkdir(
         sys.exit(
             f"Creation of the directory {folder_path} failed with error {error} in file {__name__}\n with pwd {os.getcwd()}")
     except FileExistsError as error:
-        print(f'the file already exists so no creation needed for {folder_path} ')
+        print(f'the file already exists so no creation needed for {folder_path}, with error {error}  ')
     else:
         print(f"Successfully created the directory {folder_path} ")
 
@@ -69,8 +72,6 @@ def rec_merge_dic(a, b):
     return merged
 
 
-from typing import TypeVar
-
 _T = TypeVar("_T", covariant=True, bound=IsDataclass)
 
 
@@ -92,10 +93,9 @@ def softmax(x, temperature):
     e_x = np.exp((x - np.max(x)) * temperature)
     return e_x / e_x.sum(axis=0)  # only difference
 
+
 # before 3.12
 
-import typing
-from typing import TypeVar
 
 _T_co = TypeVar("_T_co", covariant=True, bound=IsDataclass)
 
@@ -140,8 +140,6 @@ def fetch_args_modify_and_convert(
 #                                                   config=dacite.Config(cast=[Enum]))
 #
 #     return dataclass_args
-
-from dataclasses import dataclass
 
 
 @dataclass

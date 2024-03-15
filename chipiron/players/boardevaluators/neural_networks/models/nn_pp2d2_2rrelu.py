@@ -1,21 +1,22 @@
 import torch.nn as nn
+
 from chipiron.utils.chi_nn import ChiNN
 
 
 class NetPP2D2_2_RRELU(ChiNN):
-    def __init__(self  ):
-        super(NetPP2D2_2_RRELU, self).__init__( )
+    def __init__(self):
+        super(NetPP2D2_2_RRELU, self).__init__()
         self.fc1 = nn.Linear(772, 20)
         self.relu_1 = nn.RReLU()
         self.fc2 = nn.Linear(20, 1)
         self.tanh = nn.Tanh()
-        #self.dropout = nn.Dropout(.5)
+        # self.dropout = nn.Dropout(.5)
 
     def forward(self, x):
         x = self.fc1(x)
-       # x = self.dropout(self.relu_1(x))
+        # x = self.dropout(self.relu_1(x))
         x = self.relu_1(x)
-        x=self.fc2(x)
+        x = self.fc2(x)
         x = self.tanh(x)
         return x
 
@@ -84,13 +85,15 @@ class NetPP2D2_2_RRELU(ChiNN):
     def compute_representation(self, node, parent_node, board_modifications):
         ...
         raise Exception(f'to be recoded in {__name__}')
-        #node_to_tensors_pieces_square_fast(node, parent_node, board_modifications, False)
+        # node_to_tensors_pieces_square_fast(node, parent_node, board_modifications, False)
 
     def get_nn_input(self, node):
         raise Exception(f'to be recoded in {__name__}')
 
-        #return get_tensor_from_tensors_two_sides(node.tensor_white, node.tensor_black, node.tensor_castling_white,
-            #                                     node.tensor_castling_black, node.player_to_move)
+        # return get_tensor_from_tensors_two_sides(node.tensor_white, node.tensor_black, node.tensor_castling_white,
+        #                                     node.tensor_castling_black, node.player_to_move)
+
+
 #
 
 def print_piece_param(i, vec):
