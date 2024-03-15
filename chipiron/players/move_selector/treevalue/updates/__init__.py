@@ -5,5 +5,7 @@ from .factory import create_algorithm_node_updater
 
 __all__ =[
     "create_algorithm_node_updater",
-    "AlgorithmNodeUpdater"
+    "AlgorithmNodeUpdater",
+    "UpdateInstructionsBatch",
+    "UpdateInstructions"
 ]

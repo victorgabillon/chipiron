@@ -1,5 +1,6 @@
 from chipiron.players.move_selector.treevalue.indices.node_indices.index_types import IndexComputationType
-from chipiron.players.move_selector.treevalue.indices.index_manager.node_exploration_manager import UpdateIndexZipfFactoredProba, \
+from chipiron.players.move_selector.treevalue.indices.index_manager.node_exploration_manager import \
+    UpdateIndexZipfFactoredProba, \
     UpdateIndexGlobalMinChange, \
     UpdateIndexLocalMinChange, NodeExplorationIndexManager, NullNodeExplorationIndexManager
 
@@ -7,11 +8,10 @@ from chipiron.players.move_selector.treevalue.indices.index_manager.node_explora
 def create_exploration_index_manager(
         index_computation: IndexComputationType | None = None
 ) -> NodeExplorationIndexManager:
+    node_exploration_manager: NodeExplorationIndexManager
     if index_computation is None:
-        node_exploration_manager: NodeExplorationIndexManager = NullNodeExplorationIndexManager()
+        node_exploration_manager = NullNodeExplorationIndexManager()
     else:
-
-        node_exploration_manager: NodeExplorationIndexManager
         match index_computation:
             case IndexComputationType.MinGlobalChange:
                 node_exploration_manager = UpdateIndexGlobalMinChange()

@@ -3,7 +3,7 @@ from chipiron.players.move_selector.treevalue.indices.node_indices.index_data im
     RecurZipfQuoolExplorationData, MinMaxPathValue, IntervalExplo, \
     MaxDepthDescendants
 from chipiron.players.move_selector.treevalue.indices.node_indices.index_types import IndexComputationType
-from typing import Callable
+from typing import Callable, Type, Any
 from dataclasses import make_dataclass
 
 ExplorationIndexDataFactory = Callable[[nodes.TreeNode], NodeExplorationData | None]
@@ -15,6 +15,7 @@ def create_exploration_index_data(
         depth_index: bool = False
 ) -> NodeExplorationData | None:
     exploration_index_data: NodeExplorationData | None
+    base_index_dataclass_name: Type[NodeExplorationData] | None
     match index_computation:
         case None:
             base_index_dataclass_name = None
@@ -30,7 +31,9 @@ def create_exploration_index_data(
         case other:
             raise ValueError(f'not finding good case for {other} in file {__name__}')
 
+    index_dataclass_name: Any
     if depth_index:
+        assert base_index_dataclass_name is not None
         # adding a field to the dataclass for keeping track of the depth
         index_dataclass_name = make_dataclass('DepthExtendedDataclass',
                                               fields=[],

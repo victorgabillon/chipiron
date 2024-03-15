@@ -6,3 +6,6 @@ transformer
 more complex board value, not just one idmension
 make a large reformat so that the players are created after the launch of process 
 opening book
+diminish th eamount of assert and make the type be compatible natively, a lot of None and alforithmic node test that might be removed with different architecture
+mypy script
+

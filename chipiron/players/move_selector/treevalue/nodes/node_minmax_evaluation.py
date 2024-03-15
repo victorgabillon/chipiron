@@ -6,10 +6,12 @@ from .itree_node import ITreeNode
 from chipiron.players.boardevaluators.over_event import OverEvent
 from chipiron.utils.small_tools import nth_key
 from chipiron.utils.my_value_sorted_dict import sort_dic
-from typing import List
-from typing import Protocol
+from typing import Protocol, Any
 from dataclasses import dataclass, field
-from typing import Any
+import typing
+
+if typing.TYPE_CHECKING:
+    from .algorithm_node import AlgorithmNode
 
 
 # todo maybe further split values from over?
@@ -33,7 +35,7 @@ class NodeMinmaxEvaluation:
     value_white_minmax: float | None = None
 
     # self.best_move_sequence = []
-    best_node_sequence: list[NodeWithValue] = field(default_factory=list)
+    best_node_sequence: 'list[AlgorithmNode]' = field(default_factory=list)
 
     # the children of the tree node are kept in a dictionary that can be sorted by their evaluations ()
 
@@ -42,7 +44,7 @@ class NodeMinmaxEvaluation:
     # careful, I have hard coded in the self.best_child() function the descending order for
     # fast access to the best element, so please do not change!
     # self.children_sorted_by_value_vsd = ValueSortedDict({})
-    children_sorted_by_value_: dict[ITreeNode, Any] = field(default_factory=dict)
+    children_sorted_by_value_: 'dict[AlgorithmNode, Any]' = field(default_factory=dict)
 
     # self.children_sorted_by_value = {}
 
@@ -114,13 +116,13 @@ class NodeMinmaxEvaluation:
 
     def second_best_child(
             self
-    ) -> ITreeNode:
+    ) -> NodeWithValue:
         assert (len(self.children_sorted_by_value) >= 2)
         # fast way to access second key with the highest subjective value
-        second_best_child: ITreeNode = nth_key(self.children_sorted_by_value, 1)
+        second_best_child: NodeWithValue= nth_key(self.children_sorted_by_value, 1)
         return second_best_child
 
-    def is_over(self):
+    def is_over(self) -> bool:
         return self.over_event.is_over()
 
     def is_win(self):
@@ -256,12 +258,12 @@ class NodeMinmaxEvaluation:
 
     def update_best_move_sequence(
             self,
-            children_nodes_with_updated_best_move_seq: List[NodeWithValue]
+            children_nodes_with_updated_best_move_seq: 'set[AlgorithmNode]'
     ) -> bool:
         """ triggered if a children notifies an updated best node sequence
         returns boolean: True if self.best_node_sequence is modified, False otherwise"""
         has_best_node_seq_changed: bool = False
-        best_node: NodeWithValue = self.best_node_sequence[0]
+        best_node: 'AlgorithmNode' = self.best_node_sequence[0]
 
         # returns the bestnode if it is in children_nodes_with_updated_best_move_seq else None
         # best_node_in_update = next((x for x in children_nodes_with_updated_best_move_seq
@@ -363,7 +365,9 @@ class NodeMinmaxEvaluation:
         self.test_best_node_sequence()
 
     def test_children_not_over(self):
-        for move, child in self.tree_node.moves_children.items():
+        child: ITreeNode |None
+        for _, child in self.tree_node.moves_children.items():
+            assert isinstance(child, AlgorithmNode)
             if child.is_over():
                 assert (child not in self.children_not_over)
             else:
@@ -377,9 +381,10 @@ class NodeMinmaxEvaluation:
         # print('testvalues')
         # todo test valuewhiteminmax is none iif not all children opened
         value_children = []
-        for move, child in self.tree_node.moves_children.items():
+        for _, child in self.tree_node.moves_children.items():
+            assert isinstance(child, AlgorithmNode)
             assert (self.children_sorted_by_value[child][0] * (
-                    1 - 2 * self.tree_node.player_to_move) == child.minmax_evaluation.minmax_evaluation.get_value_white())
+                    1 - 2 * self.tree_node.player_to_move) == child.minmax_evaluation.get_value_white())
             value_children.append(child.minmax_evaluation.get_value_white())
         if self.tree_node.moves_children:
             if self.tree_node.player_to_move == chess.WHITE:
@@ -387,14 +392,16 @@ class NodeMinmaxEvaluation:
             if self.tree_node.player_to_move == chess.BLACK:
                 assert (min(value_children) == self.get_value_white())
             for ind, child in enumerate(self.children_sorted_by_value):
+                assert isinstance(child, AlgorithmNode)
+
                 if ind == 0:
-                    assert (child.get_value_white() == self.get_value_white())
+                    assert (child.minmax_evaluation.get_value_white() == self.get_value_white())
                     before = child
                 else:
                     if self.tree_node.player_to_move == chess.WHITE:
-                        assert (before.get_value_white() >= child.get_value_white())
+                        assert (before.minmax_evaluation.get_value_white() >= child.minmax_evaluation.get_value_white())
                     if self.tree_node.player_to_move == chess.BLACK:
-                        assert (before.get_value_white() <= child.get_value_white())
+                        assert (before.minmax_evaluation.get_value_white() <= child.minmax_evaluation.get_value_white())
         else:
             pass
             # todo test board value
@@ -456,7 +463,3 @@ class NodeMinmaxEvaluation:
                 if self.are_almost_equal_values(child_value_logit, best_value_logit):
                     best_children.append(child)
         return best_children
-
-
-
-

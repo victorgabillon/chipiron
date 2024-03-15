@@ -67,7 +67,7 @@ class SearchFactory:
             self
     ) -> NodeSelectorFactory:
         # creates the opening instructor
-        opening_instructor: OpeningInstructor = OpeningInstructor(
+        opening_instructor: OpeningInstructor | None = OpeningInstructor(
             self.opening_type, self.random_generator
         ) if self.opening_type is not None else None
 

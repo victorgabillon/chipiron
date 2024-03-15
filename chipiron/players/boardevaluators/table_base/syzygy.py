@@ -11,7 +11,8 @@ class SyzygyTable:
             self,
             path_to_table: path
     ):
-        self.table_base = chess.syzygy.open_tablebase(path_to_table)
+        path_to_table_str: str = str(path_to_table)
+        self.table_base = chess.syzygy.open_tablebase(path_to_table_str)
 
     def fast_in_table(
             self,
@@ -41,7 +42,7 @@ class SyzygyTable:
             if val > 0:
                 who_is_winner_ = node.player_to_move
             if val < 0:
-                who_is_winner_ = chess.WHITE if node.player_to_move == chess.BLACK else chess.BLACK
+                who_is_winner_ = Winner.WHITE if node.player_to_move == chess.BLACK else Winner.BLACK
         else:
             how_over_ = HowOver.DRAW
 
@@ -100,13 +101,15 @@ class SyzygyTable:
             self,
             board: boards.BoardChi
     ) -> chess.Move:
-        all_moves = list(board.legal_moves)
+        all_moves: list[chess.Move] = list(board.legal_moves)
 
         # avoid draws by 50 move rules in winning position, # otherwise look
         # for it to make it last and preserve pieces in case of mistake by opponent
 
         best_value = -1000000000000000000000
-        best_move = None
+
+        assert all_moves
+        best_move: chess.Move = all_moves[0]
         for move in all_moves:
             board_copy: boards.BoardChi = board.copy(stack=True)
             board_copy.board.push(move)

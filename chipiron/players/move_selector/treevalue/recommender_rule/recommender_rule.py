@@ -32,7 +32,6 @@ class AlmostEqualLogistic:
             random_generator
     ) -> chess.Move:
         # TODO this should be given at construction but postponed for now because of dataclasses
-        from random import Random
         # find the best first move allowing for random choice for almost equally valued moves.
         best_root_children = tree.root_node.minmax_evaluation.get_all_of_the_best_moves(
             how_equal='almost_equal_logistic')
@@ -43,6 +42,7 @@ class AlmostEqualLogistic:
             assert (best_child.minmax_evaluation.over_event.how_over == HowOver.WIN)
         best_move = tree.root_node.moves_children.inverse[best_child]
 
+        assert isinstance(best_move, chess.Move)
         return best_move
 
 
@@ -125,15 +125,15 @@ def recommend_move_after_exploration_generic(
         )
 
         child: AlgorithmNode
-        best_value = None
-        best_move = None
+        best_value: int | None = None
+        best_move: chess.Move | None = None
         for move, child in tree.root_node.moves_children.items():
             # value of pieces of the opponent after that move
             value_child: int = value_base(
                 board=child.board,
                 color=child.board.turn
             )
-            value = value_father - value_child
+            value: int = value_father - value_child
 
             still_wining_after_move: bool = is_winning(
                 node_minmax_evaluation=child.minmax_evaluation,
@@ -142,7 +142,9 @@ def recommend_move_after_exploration_generic(
             if still_wining_after_move and (best_value is None or best_value < value):
                 best_value = value
                 best_move = move
+        assert best_value is not None
         if best_value > 0:
+            assert isinstance(best_move,chess.Move)
             return best_move
 
     # base case

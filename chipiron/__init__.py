@@ -10,4 +10,8 @@ from .my_random import set_seeds
 
 __all__ = [
     "set_seeds",
+    "tool",
+    "game",
+    "player",
+    "disp"
 ]

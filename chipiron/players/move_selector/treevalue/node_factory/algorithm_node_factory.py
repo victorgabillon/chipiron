@@ -20,11 +20,9 @@ class AlgorithmNodeFactory:
     board_representation_factory: Representation364Factory | None
     exploration_index_data_create: node_indices.ExplorationIndexDataFactory
 
-
-
     def create(
             self,
-            board : board_mod.BoardChi,
+            board: board_mod.BoardChi,
             half_move: int,
             count: int,
             parent_node: node.AlgorithmNode | None,
@@ -39,11 +37,11 @@ class AlgorithmNodeFactory:
         )
         minmax_evaluation: NodeMinmaxEvaluation = NodeMinmaxEvaluation(tree_node=tree_node)
 
-        exploration_index_data: NodeExplorationData = self.exploration_index_data_create(tree_node)
+        exploration_index_data: node_indices.NodeExplorationData | None = self.exploration_index_data_create(tree_node)
 
         board_representation: BoardRepresentation | None = None
         if self.board_representation_factory is not None:
-            board_representation: BoardRepresentation = self.board_representation_factory.create_from_transition(
+            board_representation = self.board_representation_factory.create_from_transition(
                 tree_node=tree_node,
                 parent_node=parent_node,
                 modifications=modifications

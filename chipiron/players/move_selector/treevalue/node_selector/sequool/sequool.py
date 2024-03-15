@@ -4,9 +4,9 @@ Sequool
 from chipiron.players.move_selector.treevalue.node_selector.notations_and_statics import zipf_picks, zipf_picks_random
 from chipiron.players.move_selector.treevalue import trees
 from chipiron.players.move_selector.treevalue import tree_manager as tree_man
-from chipiron.players.move_selector.treevalue.trees.descendants import Descendants, RangedDescendants
+from chipiron.players.move_selector.treevalue.trees.descendants import Descendants
 from chipiron.environments import HalfMove
-
+from chipiron.players.move_selector.treevalue.indices.node_indices.index_data import MaxDepthDescendants
 from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructions, \
     OpeningInstructor, \
     create_instructions_to_open_all_moves
@@ -68,8 +68,8 @@ class StaticNotOpenedSelector:
             random_generator
     ) -> HalfMove:
 
-        filtered_count_visits = {hm: value for hm, value in self.count_visits.items() if
-                                 hm in self.all_nodes_not_opened}
+        filtered_count_visits: dict[int, int | float] = {hm: value for hm, value in self.count_visits.items() if
+                                                         hm in self.all_nodes_not_opened}
 
         # choose a half move based on zipf
         half_move_picked: int = zipf_picks(
@@ -143,15 +143,16 @@ class RandomAllSelector:
     ) -> HalfMove:
         half_move_picked: int
         # choose a half move based on zipf
+        assert isinstance(from_node.exploration_index_data, MaxDepthDescendants)
         max_descendants_depth: int = from_node.exploration_index_data.max_depth_descendants
         if max_descendants_depth:
             depth_picked: int = zipf_picks_random(
                 ordered_list_elements=list(range(1, max_descendants_depth + 1)),
                 random_generator=random_generator
             )
-            half_move_picked: int = from_node.half_move + depth_picked
+            half_move_picked = from_node.half_move + depth_picked
         else:
-            half_move_picked: int = from_node.half_move
+            half_move_picked = from_node.half_move
         return half_move_picked
 
 
@@ -159,10 +160,12 @@ def get_best_node_from_candidates(
         nodes_to_consider: list[nodes.AlgorithmNode]
 ) -> nodes.AlgorithmNode:
     best_node: nodes.AlgorithmNode = nodes_to_consider[0]
+    assert best_node.exploration_index_data is not None
     best_value = (best_node.exploration_index_data.index, best_node.half_move)
 
     node: nodes.AlgorithmNode
     for node in nodes_to_consider:
+        assert node.exploration_index_data is not None
         if node.exploration_index_data.index is not None:
             if best_node.exploration_index_data.index is None \
                     or (node.exploration_index_data.index, node.half_move) < best_value:

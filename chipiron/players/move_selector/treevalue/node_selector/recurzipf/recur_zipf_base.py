@@ -39,6 +39,7 @@ class RecurZipfBase:
     ) -> OpeningInstructions:
         # todo maybe proportions and proportions can be valuesorted dict with smart updates
 
+        opening_instructions: OpeningInstructions
         if tree.root_node.minmax_evaluation.best_node_sequence:
             last_node_in_best_line = tree.root_node.minmax_evaluation.best_node_sequence[-1]
             if last_node_in_best_line.board.is_attacked(
@@ -48,7 +49,7 @@ class RecurZipfBase:
                     # print('best line is underattacked and i do')
                     all_moves_to_open = self.opening_instructor.all_moves_to_open(
                         node_to_open=last_node_in_best_line.tree_node)
-                    opening_instructions: OpeningInstructions = create_instructions_to_open_all_moves(
+                    opening_instructions = create_instructions_to_open_all_moves(
                         moves_to_play=all_moves_to_open,
                         node_to_open=last_node_in_best_line)
                     return opening_instructions
@@ -60,7 +61,7 @@ class RecurZipfBase:
             wandering_node = self.move_explorer.sample_child_to_explore(tree_node_to_sample_from=wandering_node)
 
         all_moves_to_open = self.opening_instructor.all_moves_to_open(node_to_open=wandering_node.tree_node)
-        opening_instructions: OpeningInstructions = create_instructions_to_open_all_moves(
+        opening_instructions = create_instructions_to_open_all_moves(
             moves_to_play=all_moves_to_open,
             node_to_open=wandering_node)
 

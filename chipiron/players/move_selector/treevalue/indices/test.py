@@ -16,6 +16,7 @@ from chipiron.players.move_selector.treevalue.trees.descendants import RangedDes
 import chess
 from enum import Enum
 import chipiron.players.move_selector.treevalue.search_factory as search_factories
+from chipiron.environments.chess.board.board import BoardChi
 
 
 class TestResult(Enum):
@@ -70,8 +71,9 @@ def make_tree_from_file(
 
             board = chess.Board.from_chess960_pos(yaml_node['id'])
             board.turn = chess.WHITE
+            board_chi = BoardChi(board=board)
             root_node: nodes.AlgorithmNode = algorithm_node_factory.create(
-                board=board,
+                board=board_chi,
                 half_move=0,
                 count=yaml_node['id'],
                 parent_node=None,
@@ -107,7 +109,7 @@ def make_tree_from_file(
             board.turn = not parent_node.tree_node.board_.turn
             board_chi = boards.BoardChi(board=board)
 
-            tree_expansion: TreeExpansion[nodes.AlgorithmNode] = algo_tree_manager.tree_manager.open_node(
+            tree_expansion: TreeExpansion = algo_tree_manager.tree_manager.open_node(
                 tree=move_and_value_tree,
                 parent_node=parent_node,
                 board=board_chi,
@@ -122,6 +124,7 @@ def make_tree_from_file(
                     creation_child_node=tree_expansion.creation_child_node
                 )
             )
+            assert isinstance(tree_expansion.child_node , nodes.AlgorithmNode)
             tree_expansion.child_node.tree_node.all_legal_moves_generated = True
             id_nodes[yaml_node['id']] = tree_expansion.child_node
             tree_expansion.child_node.minmax_evaluation.value_white_minmax = yaml_node['value']
@@ -148,6 +151,7 @@ def check_from_file(file, tree):
         parent_node: nodes.AlgorithmNode
         for parent_node in tree_nodes[half_move].values():
             yaml_index = eval(str(yaml_nodes[parent_node.id]['index']))
+            assert parent_node.exploration_index_data is not None
             print(
                 f'id {parent_node.id} expected value {yaml_index} || computed value {parent_node.exploration_index_data.index} {type(yaml_nodes[parent_node.id]["index"])}'
                 f' {type(parent_node.exploration_index_data.index)}'

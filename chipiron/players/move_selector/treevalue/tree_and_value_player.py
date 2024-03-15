@@ -44,5 +44,4 @@ class TreeAndValueMoveSelector:
         return move_recommendation
 
     def print_info(self):
-        super().print_info()
         print('type: Tree and Value')

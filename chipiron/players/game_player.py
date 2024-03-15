@@ -11,7 +11,7 @@ class GamePlayer:
     """A class that wraps a player for a game purposes
     it adds the color information and probably stuff to continue the computation when the opponent is computing"""
 
-    player: Player
+    _player: Player
     color: chess.Color
 
     def __init__(
@@ -36,6 +36,7 @@ class GamePlayer:
         all_legal_moves = list(board.legal_moves)
         if not all_legal_moves:
             raise Exception('No legal moves in this position')
+        assert seed is not None
         best_move: MoveRecommendation = self._player.select_move(
             board=board,
             seed_=seed
@@ -46,7 +47,7 @@ class GamePlayer:
 def game_player_computes_move_on_board_and_send_move_in_queue(
         board: BoardChi,
         game_player: GamePlayer,
-        queue_move: queue.Queue,
+        queue_move: queue.Queue[MoveMessage],
         seed: int
 ) -> None:
     if board.turn == game_player.color and not board.board.is_game_over():

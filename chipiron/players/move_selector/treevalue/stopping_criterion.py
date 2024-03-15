@@ -6,9 +6,10 @@ from . import node_selector as node_sel
 from .trees import MoveAndValueTree
 from dataclasses import dataclass
 from enum import Enum
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 
+@runtime_checkable
 class DepthToExpendP(Protocol):
 
     def get_current_depth_to_expand(self) -> int:
@@ -29,7 +30,6 @@ class StoppingCriterion:
     """
     The general stopping criterion
     """
-    node_selector: node_sel.NodeSelector
 
     def should_we_continue(
             self,
@@ -56,6 +56,9 @@ class StoppingCriterion:
 
         """
         return opening_instructions
+
+    def get_string_of_progress(self, tree: MoveAndValueTree) -> str:
+        return ''
 
 
 @dataclass
@@ -135,7 +138,7 @@ class DepthLimit(StoppingCriterion):
             return continue_base
         return self.node_selector.get_current_depth_to_expand() < self.depth_limit
 
-    def get_string_of_progress(self, tree: MoveAndValueTree):
+    def get_string_of_progress(self, tree: MoveAndValueTree) -> str:
         """
         compute the string that display the progress in the terminal
         Returns:
@@ -167,11 +170,14 @@ def create_stopping_criterion(
     match args.type:
         case StoppingCriterionTypes.DepthLimit:
             assert (isinstance(node_selector, DepthToExpendP))
+            assert isinstance(args, DepthLimitArgs)
             stopping_criterion = DepthLimit(
                 depth_limit=args.depth_limit,
                 node_selector=node_selector
             )
         case StoppingCriterionTypes.TreeMoveLimit:
+            assert isinstance(args, TreeMoveLimitArgs)
+
             stopping_criterion = TreeMoveLimit(tree_move_limit=args.tree_move_limit)
         case other:
             raise ValueError(f'stopping criterion builder: can not find {other} in file {__name__}')

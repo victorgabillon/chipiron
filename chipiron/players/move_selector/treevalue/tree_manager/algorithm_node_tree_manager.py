@@ -33,7 +33,7 @@ class AlgorithmNodeTreeManager:
     tree_manager: TreeManager
     algorithm_node_updater: upda.AlgorithmNodeUpdater
     evaluation_queries: EvaluationQueries
-    node_evaluator: NodeEvaluator
+    node_evaluator: NodeEvaluator | None
     index_manager: NodeExplorationIndexManager
 
     def open_node_move(
@@ -82,9 +82,11 @@ class AlgorithmNodeTreeManager:
         tree_expansions: TreeExpansions = TreeExpansions()
 
         opening_instruction: node_sel.OpeningInstruction
+        tree_expansion: TreeExpansion
         for opening_instruction in opening_instructions.values():
             # open
-            tree_expansion: TreeExpansion = self.open_node_move(
+            assert isinstance(opening_instruction.node_to_open, node.AlgorithmNode)
+            tree_expansion = self.open_node_move(
                 tree=tree,
                 parent_node=opening_instruction.node_to_open,
                 move=opening_instruction.move_to_play
@@ -93,12 +95,13 @@ class AlgorithmNodeTreeManager:
             # concatenate the tree expansions
             tree_expansions.add(tree_expansion=tree_expansion)
 
-        tree_expansion: TreeExpansion
+        assert self.node_evaluator is not None
         for tree_expansion in tree_expansions.expansions_with_node_creation:
             # TODO give the tree expansion to the function directly
-
-            self.node_evaluator.add_evaluation_query(node=tree_expansion.child_node,
-                                                     evaluation_queries=self.evaluation_queries)
+            self.node_evaluator.add_evaluation_query(
+                node=tree_expansion.child_node,
+                evaluation_queries=self.evaluation_queries
+            )
         self.node_evaluator.evaluate_all_queried_nodes(evaluation_queries=self.evaluation_queries)
 
         return tree_expansions
@@ -116,27 +119,33 @@ class AlgorithmNodeTreeManager:
     def update_backward(
             self,
             tree_expansions: TreeExpansions
-    ) -> set:
+    ):
 
         update_instructions_batch: upda.UpdateInstructionsBatch
         update_instructions_batch = self.algorithm_node_updater.generate_update_instructions(
             tree_expansions=tree_expansions)
 
-        all_extra_opening_instructions_batch = set()
         while update_instructions_batch:
             node_to_update, update_instructions = update_instructions_batch.popitem()
-            extra_update_instructions_batch = self.update_node(node_to_update, update_instructions)
+            extra_update_instructions_batch: upda.UpdateInstructionsBatch
+            extra_update_instructions_batch = self.update_node(
+                node_to_update=node_to_update,
+                update_instructions=update_instructions
+            )
             update_instructions_batch.merge(extra_update_instructions_batch)
-        return all_extra_opening_instructions_batch
 
-    def update_node(self, node_to_update, update_instructions):
+    def update_node(
+            self,
+            node_to_update,
+            update_instructions
+    ) -> upda.UpdateInstructionsBatch:
 
-        ##UPDATES
+        # UPDATES
         new_update_instructions: upda.UpdateInstructions = self.algorithm_node_updater.perform_updates(
             node_to_update=node_to_update,
             update_instructions=update_instructions)
 
-        update_instructions_batch = upda.UpdateInstructionsBatch()
+        update_instructions_batch: upda.UpdateInstructionsBatch = upda.UpdateInstructionsBatch()
         for parent_node in node_to_update.parent_nodes:
             if parent_node is not None and not new_update_instructions.empty():  # todo is it ever empty?
                 assert (parent_node not in update_instructions_batch)
@@ -162,7 +171,7 @@ class AlgorithmNodeTreeManager:
 
     def test_the_tree(self,
                       tree):
-        self.test_count()
+        self.test_count(tree=tree)
         for half_move in tree.descendants:
             for fen in tree.descendants[half_move]:
                 node = tree.descendants[half_move][fen]

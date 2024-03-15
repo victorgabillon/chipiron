@@ -1,9 +1,13 @@
-import chipiron.players.move_selector.treevalue.nodes as nodes
-from .minmax_evaluation_updater import MinMaxEvaluationUpdater, ValueUpdateInstructionsBlock
-from .updates_file import UpdateInstructions, UpdateInstructionsBatch
-import chipiron.players.move_selector.treevalue.tree_manager as tree_man
 from dataclasses import dataclass
-from .index_updater import IndexUpdater, IndexUpdateInstructionsBlock
+
+import chipiron.players.move_selector.treevalue.nodes as nodes
+import chipiron.players.move_selector.treevalue.tree_manager as tree_man
+
+from .minmax_evaluation_updater import MinMaxEvaluationUpdater
+from .value_block import ValueUpdateInstructionsBlock
+from .updates_file import UpdateInstructions, UpdateInstructionsBatch
+from .index_updater import IndexUpdater
+from .index_block import IndexUpdateInstructionsBlock
 
 
 @dataclass
@@ -42,6 +46,7 @@ class AlgorithmNodeUpdater:
 
         tree_expansion: tree_man.TreeExpansion
         for tree_expansion in tree_expansions:
+            assert isinstance(tree_expansion.child_node, nodes.AlgorithmNode)
             update_instructions = self.create_update_instructions_after_node_birth(
                 new_node=tree_expansion.child_node)
             # update_instructions_batch is key sorted dict, sorted by depth to ensure proper backprop from the back
@@ -67,8 +72,9 @@ class AlgorithmNodeUpdater:
             updates_instructions=update_instructions
         )
 
+        index_update_instructions_block: IndexUpdateInstructionsBlock | None
         if self.index_updater is not None:
-            index_update_instructions_block: IndexUpdateInstructionsBlock = self.index_updater.perform_updates(
+            index_update_instructions_block = self.index_updater.perform_updates(
                 node_to_update,
                 updates_instructions=update_instructions
             )

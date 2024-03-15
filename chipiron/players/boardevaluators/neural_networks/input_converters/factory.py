@@ -67,7 +67,7 @@ class Representation364Factory:
             self,
             tree_node: nodes.TreeNode,
             parent_node: 'nodes.AlgorithmNode | None',
-            modifications: board_mod.BoardModification
+            modifications: board_mod.BoardModification | None
     ) -> Representation364:
 
         """  this version is supposed to be faster as it only modifies the parent

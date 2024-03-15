@@ -6,28 +6,27 @@ import chipiron.players.move_selector.treevalue.trees as trees
 import chipiron.players.move_selector.treevalue.node_selector as node_sel
 from chipiron.players.move_selector.treevalue import node_factory as node_fact
 from dataclasses import dataclass
-from typing import Generic, TypeVar
+
 
 # todo should we use a discount? and discounted per round reward?
 # todo maybe convenient to seperate this object into openner updater and dsiplayer
 # todo have the reward with a discount
 # DISCOUNT = 1/.99999
 
-NodeType = TypeVar('NodeType', bound=node.ITreeNode)
 
 
-@dataclass
-class TreeManager(Generic[NodeType]):
+class TreeManager:
     """
 
     This class that and manages a tree by opening new nodes and updating the values and indexes on the nodes
     """
-    node_factory: node_fact.TreeNodeFactory
+    def __init__(self, node_factory):
+        self.node_factory =node_factory
 
     def open_node_move(
             self,
             tree: trees.MoveAndValueTree,
-            parent_node: NodeType,
+            parent_node: node.ITreeNode,
             move: chess.Move
     ) -> TreeExpansion:
         """
@@ -136,9 +135,11 @@ class TreeManager(Generic[NodeType]):
         opening_instruction: node_sel.OpeningInstruction
         for opening_instruction in opening_instructions.values():
             # open
-            tree_expansion: TreeExpansion = self.open_node_move(tree=tree,
-                                                                parent_node=opening_instruction.node_to_open,
-                                                                move=opening_instruction.move_to_play)
+            tree_expansion: TreeExpansion = self.open_node_move(
+                tree=tree,
+                parent_node=opening_instruction.node_to_open,
+                move=opening_instruction.move_to_play
+            )
 
             # concatenate the tree expansions
             tree_expansions.add(tree_expansion=tree_expansion)

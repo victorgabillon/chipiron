@@ -63,7 +63,7 @@ class TreeExploration:
         # by default the first tree expansion is the creation of the tree node
         tree_expansions: tree_man.TreeExpansions = tree_man.TreeExpansions()
 
-        tree_expansion: tree_man.TreeExpansion[nodes.AlgorithmNode] = tree_man.TreeExpansion(
+        tree_expansion: tree_man.TreeExpansion = tree_man.TreeExpansion(
             child_node=self.tree.root_node,
             parent_node=None,
             board_modifications=None,

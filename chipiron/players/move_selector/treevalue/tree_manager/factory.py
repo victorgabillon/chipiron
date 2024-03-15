@@ -17,7 +17,7 @@ def create_algorithm_node_tree_manager(
         index_computation: IndexComputationType | None,
         index_updater: IndexUpdater | None
 ) -> AlgorithmNodeTreeManager:
-    tree_manager: TreeManager[nodes.AlgorithmNode] = TreeManager(
+    tree_manager: TreeManager = TreeManager(
         node_factory=algorithm_node_factory
     )
 

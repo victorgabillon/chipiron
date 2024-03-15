@@ -5,13 +5,13 @@ from typing import Literal
 from dataclasses import dataclass, field
 import random
 from chipiron.utils import seed
+from .move_selector_types import MoveSelectorTypes
 
-Random_Name_Literal: str = 'Random'
 
 
 @dataclass
 class Random:
-    type: Literal[Random_Name_Literal]  # for serialization
+    type: Literal[MoveSelectorTypes.Random]  # for serialization
     random_generator: random.Random = field(default_factory=random.Random)
 
     def select_move(
@@ -28,6 +28,6 @@ def create_random(
         random_generator: random.Random
 ) -> Random:
     return Random(
-        type=Random_Name_Literal,
+        type=MoveSelectorTypes.Random,
         random_generator=random_generator
     )

@@ -65,6 +65,11 @@ class TreeNode:
     def is_root_node(self) -> bool:
         return not self.parent_nodes
 
+    #@property
+    #def all_legal_moves_generated(self) -> bool:
+    #    return self.all_legal_moves_generated
+
+
     def add_parent(
             self,
             new_parent_node: ITreeNode

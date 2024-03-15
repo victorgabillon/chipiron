@@ -1,4 +1,3 @@
-from typing import List
 import chess
 import queue
 import copy
@@ -12,6 +11,7 @@ from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.communication.gui_messages import GameStatusMessage
 
 from chipiron.utils import seed, unique_int_from_list
+from chipiron.utils.is_dataclass import IsDataclass
 
 
 class Game:
@@ -26,18 +26,15 @@ class Game:
             self,
             board: BoardChi,
             playing_status: GamePlayingStatus,
-            seed: seed
+            seed_: seed
     ):
         self._board = board
         self._playing_status = playing_status
-        self._seed = seed
+        self._seed = seed_
 
     def play_move(self, move: chess.Move):
-        assert(self._board.board.is_valid())
+        assert (self._board.board.is_valid())
         if self._playing_status.is_play():
-            print('ddddds', move, self._board.legal_moves, self._board.fen(), move in self._board.legal_moves,self._board.board.is_legal(move),list(self._board.board.legal_moves))
-            print('frgtfrgtf', self._board.board.status(),type(self._board.board.status()),self._board.board.castling_rights , self._board.board.clean_castling_rights())
-
             assert (move in self._board.legal_moves)
             self._board.play_move(move)
         else:
@@ -53,6 +50,10 @@ class Game:
     @property
     def playing_status(self):
         return self._playing_status
+
+    @playing_status.setter
+    def playing_status(self, value):
+        self._playing_status = value
 
     def play(self):
         self._playing_status.play()
@@ -82,11 +83,11 @@ class ObservableGame:
     """
 
     game: Game
-    mailboxes_display: List[queue.Queue]
+    mailboxes_display: list[queue.Queue[IsDataclass]]
 
     # function that will be called by the observable game when the board is updated, which should query
     # at least one player to compute a move
-    move_functions: List[MoveFunction]
+    move_functions: list[MoveFunction]
 
     def __init__(self, game: Game):
         self.game = game
@@ -95,7 +96,7 @@ class ObservableGame:
         # the difference between the two is that board can be modified without asking the player to play
         # (for instance when using the button back)
 
-    def register_display(self, mailbox: queue.Queue):
+    def register_display(self, mailbox: queue.Queue[IsDataclass]):
         self.mailboxes_display.append(mailbox)
 
     def register_player(self, move_function: MoveFunction):
@@ -120,9 +121,12 @@ class ObservableGame:
         return self.game.playing_status
 
     @playing_status.setter
-    def playing_status(self, new_status: PlayingStatus.PLAY):
+    def playing_status(
+            self,
+            new_status: PlayingStatus
+    ) -> None:
         self.game.playing_status = new_status
-        self.notify()
+        raise Exception('problem no notificaiton implemented. Maybe this function is deadcode?')
 
     def play(self):
         self.game.play()
@@ -152,8 +156,10 @@ class ObservableGame:
             move_function: MoveFunction
             for move_function in self.move_functions:
                 board_copy: BoardChi = copy.deepcopy(self.game.board)
-                merged_seed = unique_int_from_list([self.game._seed, board_copy.ply()])
-                move_function(board_copy, merged_seed)
+                merged_seed: int | None = unique_int_from_list([self.game._seed, board_copy.ply()])
+                if merged_seed is not None:
+                    move_function(board_copy, merged_seed)
+
 
     def notify_status(self):
         print('notify game', self.game.playing_status.status)

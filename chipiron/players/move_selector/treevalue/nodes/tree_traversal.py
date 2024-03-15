@@ -1,13 +1,16 @@
 from .algorithm_node import AlgorithmNode
+from .itree_node import ITreeNode
 
 
-def get_descendants():
-    des = {self: None}  # include itself
-    generation = set(self.moves_children_.values())
+def get_descendants(
+        from_tree_node: ITreeNode
+):
+    des = {from_tree_node: None}  # include itself
+    generation = set(from_tree_node.moves_children.values())
     while generation:
         next_depth_generation = set()
         for node in generation:
-
+            assert node is not None
             des[node] = None
             for move, next_generation_child in node.moves_children.items():
                 next_depth_generation.add(next_generation_child)
@@ -28,9 +31,11 @@ def get_descendants_candidate_to_open(
         des = {}
     generation = set(from_tree_node.tree_node.moves_children_.values())
     depth: int = 1
+    assert max_depth is not None
     while generation and depth <= max_depth:
         next_depth_generation = set()
         for node in generation:
+            assert isinstance(node, AlgorithmNode)
             if not node.all_legal_moves_generated and not node.is_over():
                 des[node] = None
             for move, next_generation_child in node.moves_children.items():
@@ -45,18 +50,19 @@ def get_descendants_candidate_not_over(
 ) -> list[AlgorithmNode]:
     """ returns descendants that are not over
     returns himself if not opened"""
-    assert(not from_tree_node.is_over())
+    assert (not from_tree_node.is_over())
     if not from_tree_node.moves_children:
         return [from_tree_node]
-    des = {}
+    des: dict[AlgorithmNode, None] = {}
     generation = set(from_tree_node.tree_node.moves_children_.values())
 
     depth: int = 1
-
+    assert max_depth is not None
     while generation and depth <= max_depth:
 
         next_depth_generation = set()
         for node in generation:
+            assert isinstance(node, AlgorithmNode)
             if not node.is_over():
                 des[node] = None
             for move, next_generation_child in node.moves_children.items():

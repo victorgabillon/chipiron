@@ -4,5 +4,6 @@ from .factory import create_exploration_index_data, ExplorationIndexDataFactory
 
 __all__ = [
     "NodeExplorationData",
-    "ExplorationIndexDataFactory"
+    "ExplorationIndexDataFactory",
+    "IndexComputationType"
 ]

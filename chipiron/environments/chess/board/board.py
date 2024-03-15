@@ -212,7 +212,7 @@ class BoardChi:
         print(self)
         print(self.board.fen())
 
-    def number_of_pieces_on_the_board(self):
+    def number_of_pieces_on_the_board(self) -> int:
         return bin(self.board.occupied).count('1')
 
     def is_attacked(self, a_color):

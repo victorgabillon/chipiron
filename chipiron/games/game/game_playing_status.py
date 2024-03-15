@@ -21,7 +21,10 @@ class GamePlayingStatus:
 
     @status.setter
     # what is the point?
-    def status(self, new_status: PlayingStatus):
+    def status(
+            self,
+            new_status: PlayingStatus
+    ):
         self._status = new_status
 
     def play(self):

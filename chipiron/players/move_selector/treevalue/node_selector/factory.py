@@ -30,6 +30,7 @@ def create(
         case NodeSelectorType.Uniform:
             node_move_opening_selector = Uniform(opening_instructor=opening_instructor)
         case NodeSelectorType.RecurZipfBase:
+            assert isinstance(args,RecurZipfBaseArgs)
             node_move_opening_selector = RecurZipfBase(
                 args=args,
                 random_generator=random_generator,
@@ -37,6 +38,7 @@ def create(
             )
 
         case NodeSelectorType.Sequool:
+            assert isinstance(args,SequoolArgs)
             node_move_opening_selector = create_sequool(
                 opening_instructor=opening_instructor,
                 random_generator=random_generator,
