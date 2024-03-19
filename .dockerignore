@@ -1,0 +1,15 @@
+Dockerfile
+README.md
+*.pyc
+*.pyo
+*.pyd
+__pycache__
+.pytest_cache
+
+data/syzygy-tables/
+stockfish/
+
+**/*outputs*
+
+.idea
+.git

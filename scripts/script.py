@@ -3,6 +3,7 @@ The base script
 """
 
 import cProfile
+import os.path
 import pstats
 import io
 from pstats import SortKey
@@ -54,14 +55,20 @@ class Script:
             base_experiment_output_folder = self.base_experiment_output_folder
 
         # parse the arguments
-        args_dict: dict = self.parser.parse_arguments(base_experiment_output_folder=base_experiment_output_folder,
-                                                      extra_args=self.extra_args)
+        args_dict: dict = self.parser.parse_arguments(
+            base_experiment_output_folder=base_experiment_output_folder,
+            extra_args=self.extra_args
+        )
 
         # Converting the args in the standardized dataclass
-        args: ScriptArgs = dacite.from_dict(data_class=ScriptArgs,
-                                            data=args_dict)
+        args: ScriptArgs = dacite.from_dict(
+            data_class=ScriptArgs,
+            data=args_dict
+        )
 
         mkdir(args_dict['experiment_output_folder'])
+        mkdir(os.path.join(args_dict['experiment_output_folder'], 'inputs_and_parsing'))
+
         self.parser.log_parser_info(args_dict['experiment_output_folder'])
 
         # activate profiling is if needed

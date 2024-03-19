@@ -1,0 +1,40 @@
+{% from "macros/fields.html" import render_text_field %}
+{% import 'bootstrap/wtf.html' as wtf %}
+{% extends "layout.html" %}
+{% block content %}
+<div class="content-section">
+    <form method="POST" action="">
+        <fieldset class="form-group">
+            {{ watch_form.hidden_tag() }}
+            <legend class="border-bottom mb-4">Watch a Game</legend>
+            <div class="watch_form__container">
+                {{ render_text_field(watch_form.white_player) }}
+                <br>
+                {{ render_text_field(watch_form.black_player) }}
+                <br>
+                {{ render_text_field(watch_form.strength) }}
+                <br>
+                <div>
+                    {{ watch_form.submit(class="btn btn-outline-info") }}
+                </div>
+            </div>
+            <br> <br>
+
+        </fieldset>
+        <fieldset class="form-group">
+            <legend class="border-bottom mb-4">Play against chipiron</legend>
+            <div class="play_form__container">
+                {{ render_text_field(play_form.color) }}
+                <br>
+                {{ render_text_field(play_form.player) }}
+                <br>
+                {{ render_text_field(play_form.strength) }}
+                <br>
+                <div>
+                    {{ play_form.submit(class_="btn btn-outline-info") }}
+                </div>
+            </div>
+        </fieldset>
+    </form>
+</div>
+{% endblock content %}

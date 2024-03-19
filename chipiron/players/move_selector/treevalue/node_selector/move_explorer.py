@@ -1,5 +1,6 @@
-from chipiron.players.move_selector.treevalue.node_selector.notations_and_statics import zipf_picks_random
 from enum import Enum
+
+from chipiron.players.move_selector.treevalue.node_selector.notations_and_statics import zipf_picks_random
 
 
 class SamplingPriorities(str, Enum):
@@ -16,7 +17,10 @@ class SamplingPriorities(str, Enum):
 class MoveExplorer:
     priority_sampling: SamplingPriorities
 
-    def __init__(self, priority_sampling: SamplingPriorities):
+    def __init__(
+            self,
+            priority_sampling: SamplingPriorities
+    ):
         self.priority_sampling = priority_sampling
 
     def alter_with_priorities(
@@ -83,13 +87,15 @@ class VisitProportionMoveExplorer(MoveExplorer):
     def __init__(self, priority_sampling):
         super().__init__(priority_sampling)
 
-    def sample_child_to_explore(self, tree_node_to_sample_from,
-                                children_exception_set=set()):  # set of nodes that cannot be picked
+    def sample_child_to_explore(
+            self,
+            tree_node_to_sample_from,
+            children_exception_set=set()
+    ):  # set of nodes that cannot be picked
 
         assert (len(tree_node_to_sample_from.children_not_over) > len(children_exception_set))  # to be able to pick
 
         # todo maybe proportions and proportions can be valuesorted dict with smart updates
-        proportions = [0] * len(tree_node_to_sample_from.children_not_over)
 
         min_index = 100000000000000000000000000000000000000000000000.
         min_child = None

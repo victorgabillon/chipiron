@@ -1,6 +1,7 @@
 import torch.nn as nn
-from chipiron.utils.chi_nn import ChiNN
+
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import PointOfView
+from chipiron.utils.chi_nn import ChiNN
 
 
 class NetPP2D2_2_PRELU(ChiNN):
@@ -13,6 +14,9 @@ class NetPP2D2_2_PRELU(ChiNN):
         self.fc2 = nn.Linear(20, 1)
         self.tanh = nn.Tanh()
         # self.dropout = nn.Dropout(.5)
+
+    def __getstate__(self):
+        return None
 
     def forward(self, x):
         x = self.fc1(x)

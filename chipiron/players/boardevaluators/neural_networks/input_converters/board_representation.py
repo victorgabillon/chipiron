@@ -1,13 +1,16 @@
-import torch
-import chess
-from typing import Protocol
 from dataclasses import dataclass
+from typing import Protocol
+
+import chess
+import torch
 
 
 class BoardRepresentation(Protocol):
 
-    def get_evaluator_input(self,
-                            color_to_play: chess.Color):
+    def get_evaluator_input(
+            self,
+            color_to_play: chess.Color
+    ) -> torch.Tensor:
         ...
 
 

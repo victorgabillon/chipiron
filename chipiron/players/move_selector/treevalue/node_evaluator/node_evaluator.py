@@ -1,8 +1,11 @@
-import chess
-import chipiron.players.boardevaluators as board_evals
-import chipiron.players.move_selector.treevalue.nodes as nodes
 from enum import Enum
+
+import chess
+
+import chipiron.players.boardevaluators as board_evals
 from chipiron.players.boardevaluators.over_event import HowOver, Winner
+from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 
 DISCOUNT = .999999999999  # todo play with this
 
@@ -47,12 +50,12 @@ class NodeEvaluator:
        it also manages the evaluation querrys it seems"""
 
     board_evaluator: board_evals.BoardEvaluator
-    syzygy_evaluator: object
+    syzygy_evaluator: SyzygyTable | None
 
     def __init__(
             self,
             board_evaluator: board_evals.BoardEvaluator,
-            syzygy: object
+            syzygy: SyzygyTable | None
     ) -> None:
         self.board_evaluator = board_evaluator
         self.syzygy_evaluator = syzygy
@@ -67,28 +70,35 @@ class NodeEvaluator:
         if self.syzygy_evaluator is None or not self.syzygy_evaluator.fast_in_table(board):
             return None
         else:
-            return self.syzygy_evaluator.value_white(board)
+            raise Exception('looks like the commented funvtion below does not exists. Is this called ever?')
+            # return self.syzygy_evaluator.value_white(board)
 
     def check_obvious_over_events(
             self,
-            node: nodes.AlgorithmNode):
+            node: AlgorithmNode):
         """ updates the node.over object
          if the game is obviously over"""
         game_over: bool = node.tree_node.board.is_game_over()
         if game_over:
-            value_as_string: str = node.board.result()
+            value_as_string: str = node.board.board.result()
+            how_over_: HowOver
+            who_is_winner_: Winner
             match value_as_string:
                 case '0-1':
                     how_over_ = HowOver.WIN
-                    who_is_winner_ = chess.BLACK
+                    who_is_winner_ = Winner.BLACK
                 case '1-0':
                     how_over_ = HowOver.WIN
-                    who_is_winner_ = chess.WHITE
+                    who_is_winner_ = Winner.WHITE
                 case '1/2-1/2':
                     how_over_ = HowOver.DRAW
                     who_is_winner_ = Winner.NO_KNOWN_WINNER
-            node.minmax_evaluation.over_event.becomes_over(how_over=how_over_,
-                                                           who_is_winner=who_is_winner_)
+                case other:
+                    raise ValueError(f'value {other} not expected in {__name__}')
+            node.minmax_evaluation.over_event.becomes_over(
+                how_over=how_over_,
+                who_is_winner=who_is_winner_
+            )
 
         elif self.syzygy_evaluator and self.syzygy_evaluator.fast_in_table(node.tree_node.board):
             self.syzygy_evaluator.set_over_event(node)
@@ -120,9 +130,11 @@ class NodeEvaluator:
             self.evaluate_all_not_over(evaluation_queries.not_over_nodes)
         evaluation_queries.clear_queries()
 
-    def add_evaluation_query(self,
-                             node,
-                             evaluation_queries: EvaluationQueries):
+    def add_evaluation_query(
+            self,
+            node,
+            evaluation_queries: EvaluationQueries
+    ) -> None:
         assert (node.minmax_evaluation.value_white_evaluator is None)
         self.check_obvious_over_events(node)
         if node.is_over():

@@ -1,10 +1,10 @@
-from typing import Protocol,TypeVar
+from abc import ABCMeta, abstractmethod
+from typing import Any, TypeVar
 
-T= TypeVar("T")
 
-class Comparable(Protocol[T]):
-    def __eq__(self : T, other:T):
-        ...
+class Comparable(metaclass=ABCMeta):
+    @abstractmethod
+    def __lt__(self, other: Any) -> bool: ...
 
-    def __lt__(self: T, other: T):
-        ...
+
+CT = TypeVar('CT', bound=Comparable)

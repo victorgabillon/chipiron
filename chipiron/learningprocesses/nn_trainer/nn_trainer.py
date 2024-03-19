@@ -1,4 +1,3 @@
-import random
 import torch
 
 
@@ -37,5 +36,3 @@ class NNPytorchTrainer:
         loss = self.criterion(prediction_with_player_to_move_as_white, target_value)
         loss.backward()
         self.optimizer.step()
-
-

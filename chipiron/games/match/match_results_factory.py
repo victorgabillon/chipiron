@@ -1,4 +1,5 @@
-from chipiron.games.match.math_results import MatchResults, ObservableMatchResults
+from chipiron.games.match.match_results import MatchResults, IMatchResults
+from chipiron.games.match.observable_match_result import ObservableMatchResults
 
 
 class MatchResultsFactory:
@@ -7,13 +8,17 @@ class MatchResultsFactory:
         self.player_two_name = player_two_name
         self.subscribers = []
 
-    def create(self):
-        match_result = MatchResults(self.player_one_name, self.player_two_name)
+    def create(
+            self
+    ) -> IMatchResults:
+        match_result: MatchResults = MatchResults(self.player_one_name, self.player_two_name)
         if self.subscribers:
-            match_result = ObservableMatchResults(match_result)
+            obs_match_result: ObservableMatchResults = ObservableMatchResults(match_result)
             for subscriber in self.subscribers:
-                match_result.subscribe(subscriber)
-        return match_result
+                obs_match_result.subscribe(subscriber)
+            return obs_match_result
+        else:
+            return match_result
 
     def subscribe(self, subscriber):
         self.subscribers.append(subscriber)

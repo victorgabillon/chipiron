@@ -19,6 +19,8 @@ class ScriptType(Enum):
     League = 'league'
     LearnNN = 'learn_nn'
     BaseTreeExploration = 'base_tree_exploration'
+    TreeVisualization = 'tree_visualization'
+    ReplayMatch = 'replay_match'
 
 
 # instantiate relevant script
@@ -41,18 +43,19 @@ def create_script(
     base_script: Script = Script(parser=parser,
                                  extra_args=extra_args)
 
+    print('r',script_type,script_type)
     match script_type:
         case ScriptType.OneMatch:
             script_object = OneMatchScript(base_script=base_script)
-        case 'tree_visualization':
-            script_object = VisualizeTreeScript()
+        case ScriptType.TreeVisualization:
+            script_object = VisualizeTreeScript(base_script=base_script)
         case ScriptType.LearnNN:
             script_object = LearnNNScript(base_script=base_script)
         case 'record_states':
             script_object = RecordStates()
         case 'record_state_eval_stockfish':
             script_object = RecordStateEvalStockfish1()
-        case 'replay_game':
+        case ScriptType.ReplayMatch:
             script_object = ReplayGameScript()
         case ScriptType.League:
             script_object = RunTheLeagueScript(base_script=base_script)

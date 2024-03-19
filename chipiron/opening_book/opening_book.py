@@ -15,5 +15,3 @@
 #
 #     def position_result(self,starting_position, p1wins, p2wins, draws):
 #         pass
-
-

@@ -1,6 +1,12 @@
-from .small_tools import mkdir, yaml_fetch_args_in_file, dict_alphabetic_str, unique_int_from_list, rec_merge_dic
+from .small_tools import mkdir, yaml_fetch_args_in_file, dict_alphabetic_str, unique_int_from_list, rec_merge_dic, path, \
+    seed
 
-import os
-import typing
-
-path = typing.Annotated[str | bytes | os.PathLike, 'path']
+__all__ = [
+    "yaml_fetch_args_in_file",
+    "rec_merge_dic",
+    "seed",
+    "path",
+    "mkdir",
+    "unique_int_from_list",
+    "dict_alphabetic_str"
+]

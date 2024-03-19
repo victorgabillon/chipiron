@@ -1,23 +1,24 @@
 import torch
 import torch.nn as nn
-from chipiron.utils.chi_nn import ChiNN
+
 from chipiron.players.boardevaluators.neural_networks.board_to_tensor import transform_board_pieces_one_side
+from chipiron.utils.chi_nn import ChiNN
 
 
 class NetP1(ChiNN):
     def __init__(self, path_to_main_folder, relative_path_file):
-        super(NetP1, self).__init__(path_to_main_folder, relative_path_file)
+        super(NetP1, self).__init__()
 
         self.transform_board_function = transform_board_pieces_one_side
         self.fc1 = nn.Linear(5, 1)
         self.tanh = nn.Tanh()
 
     def forward(self, x):
-       # print('weewwwww',x)
+        # print('weewwwww',x)
 
         x = self.fc1(x)
         x = self.tanh(x)
-     #   print('weew',x)
+        #   print('weew',x)
         return x
 
     def init_weights(self, file):

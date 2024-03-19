@@ -1,18 +1,23 @@
-import time
-from torch.utils.data import Dataset
-import pandas as pd
-import numpy as np
 import math
+import time
+from typing import Any
+
 import chess
-from chipiron.environments.chess.board.board import BoardChi
+import numpy as np
+import pandas as pd
 import torch
+from torch.utils.data import Dataset
 
-self_data = []
+from chipiron.environments.chess.board.factory import create_board
 
 
-class MyDataSet(Dataset):
+class MyDataSet(Dataset[Any]):
 
-    def __init__(self, file_name, preprocessing):
+    def __init__(
+            self,
+            file_name,
+            preprocessing
+    ):
         self.file_name = file_name
         self.preprocessing = preprocessing
         self.data = None
@@ -39,7 +44,6 @@ class MyDataSet(Dataset):
                 processed_data.append(self.process_raw_row(row))
             self.data = processed_data
 
-            print('##', len(self_data))
             print('preprocessing dataset done')
         else:
             print('no preprocessing the dataset')
@@ -47,10 +51,16 @@ class MyDataSet(Dataset):
 
         self.len = len(self.data)
 
+    def process_raw_row(self, row):
+        raise Exception('should not be called')
+
     def __len__(self):
+        assert (self.data is not None)
         return len(self.data)
 
     def __getitem__(self, idx):
+        assert (self.data is not None)
+
         if self.preprocessing:
             return self.data[idx % self.len]
         else:
@@ -75,7 +85,7 @@ class FenAndValueDataSet(MyDataSet):
         super().__init__(file_name, preprocessing)
         # transform function
         if transform_board_function == 'identity':
-            assert (1 == 0)  # to be coded
+            raise Exception(f'tobe coded in {__name__}')
         else:
             self.transform_board_function = transform_board_function
 
@@ -85,14 +95,10 @@ class FenAndValueDataSet(MyDataSet):
 
     def process_raw_row(self, row):
         fen = row['fen']
-        board = BoardChi(fen=fen)
+        board = create_board(fen=fen)
         input_layer = self.transform_board_function(board)
         target_value = self.transform_value_function(board, row)
         return input_layer.float(), target_value.float()
-
-    def collect_results(self, result):
-        """Uses apply_async's callback to setup up a separate Queue for each process"""
-        self_data.extend(result)
 
     def process_raw_rows(self, dataframe):
 
@@ -108,7 +114,7 @@ class FenAndValueDataSet(MyDataSet):
 class ClassifiedBoards(MyDataSet):
 
     def __init__(self, transform_function):
-        super().__init__(transform_function)
+        super().__init__(transform_function, False)
         print('Loading the ClassifiedBoards dataset...')
         self.df_over = pd.read_pickle('chipiron/data/states_random/game_over_states')
         self.df_over_2 = pd.read_pickle('/home/victor/good_games_classified_stock_withmoredraws')
@@ -119,6 +125,7 @@ class ClassifiedBoards(MyDataSet):
         self.len_2 = len(self.df_over_2)
         self.len_3 = len(self.df_over_3)
         self.len_4 = len(self.df_over_4)
+        self.transform_function = transform_function
 
     def __len__(self):
         return len(self.df_over)  # + len(self.df_over_2)  # + len(self.df_over_3)
@@ -130,7 +137,7 @@ class ClassifiedBoards(MyDataSet):
         fen = row['fen']
         # print('fen',fen)
         final_value = row['final_value']
-        board = BoardChi(fen=fen)
+        board = create_board(fen=fen)
         # print(board)
         input_layer = self.transform_function(board, requires_grad_=False)
         if final_value == 'Win-Wh':

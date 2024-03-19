@@ -1,10 +1,12 @@
-from bidict import bidict
+from typing import Any
+
+from .comparable import Comparable
 
 
 class MySortedDict:
 
     def __init__(self):
-        self.dic = {}
+        self.dic: dict[Comparable, Any] = {}
 
     def __setitem__(self, key, value):
         self.dic[key] = value
@@ -27,5 +29,3 @@ class MySortedDict:
     def sort_dic(self):
         self.dic = dict(sorted(self.dic.items(), key=lambda item: item[0]))
         # {k: v for k, v in sorted(x.items(), key=lambda item: item[1])}
-
-
