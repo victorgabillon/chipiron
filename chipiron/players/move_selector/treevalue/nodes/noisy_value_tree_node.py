@@ -1,5 +1,6 @@
 from players.move_selector.treevalue.nodes.tree_node import TreeNode
 
+
 class NoisyValueTreeNode(TreeNode):
 
     def __init__(self, board, half_move, id_number, parent_node, last_move):

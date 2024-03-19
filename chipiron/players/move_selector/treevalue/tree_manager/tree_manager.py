@@ -1,16 +1,18 @@
+import typing
+
 import chess
+
 import chipiron.environments.chess.board as board_mod
-from chipiron.players.move_selector.treevalue.tree_manager.tree_expander import TreeExpansion, TreeExpansions
 import chipiron.players.move_selector.treevalue.nodes as node
 import chipiron.players.move_selector.treevalue.trees as trees
-import chipiron.players.move_selector.treevalue.node_selector as node_sel
-from chipiron.players.move_selector.treevalue import node_factory as node_fact
-
+from chipiron.players.move_selector.treevalue.tree_manager.tree_expander import TreeExpansion, TreeExpansions
 
 # todo should we use a discount? and discounted per round reward?
 # todo maybe convenient to seperate this object into openner updater and dsiplayer
 # todo have the reward with a discount
 # DISCOUNT = 1/.99999
+if typing.TYPE_CHECKING:
+    import chipiron.players.move_selector.treevalue.node_selector as node_sel
 
 
 class TreeManager:
@@ -18,19 +20,16 @@ class TreeManager:
 
     This class that and manages a tree by opening new nodes and updating the values and indexes on the nodes
     """
-    node_factory: node_fact.AlgorithmNodeFactory
 
-    def __init__(self,
-                 node_factory: node_fact.AlgorithmNodeFactory
-                 ) -> None:
-        """
-        """
+    def __init__(self, node_factory):
         self.node_factory = node_factory
 
-    def open_node_move(self,
-                       tree: trees.MoveAndValueTree,
-                       parent_node: node.ITreeNode,
-                       move: chess.Move) -> TreeExpansion:
+    def open_node_move(
+            self,
+            tree: trees.MoveAndValueTree,
+            parent_node: node.ITreeNode,
+            move: chess.Move
+    ) -> TreeExpansion:
         """
         Opening a Node that contains a board following a move.
         Args:
@@ -51,32 +50,63 @@ class TreeManager:
         # The move is played. The board is now a new board
         modifications: board_mod.BoardModification = board.play_move(move=move)
 
+        return self.open_node(
+            tree=tree,
+            parent_node=parent_node,
+            board=board,
+            modifications=modifications,
+            move=move
+        )
+
+    def open_node(
+            self,
+            tree: trees.MoveAndValueTree,
+            parent_node: node.ITreeNode,
+            board: board_mod.BoardChi,
+            modifications: board_mod.BoardModification | None,
+            move: chess.Move
+    ) -> TreeExpansion:
+        """
+        Opening a Node that contains a board given the modifications.
+        Args:
+            modifications:
+            board:
+            tree:
+            parent_node: The Parent node that we want to expand
+            move: the move to play to expend the Node
+
+        Returns:
+
+        """
+
         # Creation of the child node. If the board already exited in another node, that node is returned as child_node.
         half_move: int = parent_node.half_move + 1
         fast_rep: str = board.fast_representation()
 
         child_node: node.ITreeNode
-        need_creation_child_node: bool = tree.root_node is None \
-                                         or tree.descendants.is_new_generation(half_move) \
-                                         or fast_rep not in tree.descendants.descendants_at_half_move[half_move]
+        need_creation_child_node: bool = (tree.root_node is None
+                                          or tree.descendants.is_new_generation(half_move)
+                                          or fast_rep not in tree.descendants.descendants_at_half_move[half_move])
         if need_creation_child_node:
-            board_depth: int = half_move - tree.tree_root_half_move
-            child_node: node.ITreeNode = self.node_factory.create(board=board,
-                                                                  half_move=half_move,
-                                                                  count=tree.nodes_count,
-                                                                  parent_node=parent_node,
-                                                                  board_depth=board_depth,
-                                                                  modifications=modifications)
+            child_node = self.node_factory.create(
+                board=board,
+                half_move=half_move,
+                count=tree.nodes_count,
+                parent_node=parent_node,
+                modifications=modifications
+            )
             tree.nodes_count += 1
             tree.descendants.add_descendant(child_node)  # add it to the list of descendants
         else:  # the node already exists
-            child_node: node.AlgorithmNode = tree.descendants[half_move][fast_rep]
+            child_node = tree.descendants[half_move][fast_rep]
             child_node.add_parent(parent_node)
 
-        tree_expansion: TreeExpansion = TreeExpansion(child_node=child_node,
-                                                      parent_node=parent_node,
-                                                      board_modifications=modifications,
-                                                      creation_child_node=need_creation_child_node)
+        tree_expansion: TreeExpansion = TreeExpansion(
+            child_node=child_node,
+            parent_node=parent_node,
+            board_modifications=modifications,
+            creation_child_node=need_creation_child_node
+        )
 
         # add it to the list of opened move and out of the non-opened moves
         parent_node.moves_children[move] = tree_expansion.child_node
@@ -88,7 +118,7 @@ class TreeManager:
     def open_instructions(
             self,
             tree: trees.MoveAndValueTree,
-            opening_instructions: node_sel.OpeningInstructions
+            opening_instructions: 'node_sel.OpeningInstructions'
     ) -> TreeExpansions:
         """
 
@@ -106,9 +136,11 @@ class TreeManager:
         opening_instruction: node_sel.OpeningInstruction
         for opening_instruction in opening_instructions.values():
             # open
-            tree_expansion: TreeExpansion = self.open_node_move(tree=tree,
-                                                                parent_node=opening_instruction.node_to_open,
-                                                                move=opening_instruction.move_to_play)
+            tree_expansion: TreeExpansion = self.open_node_move(
+                tree=tree,
+                parent_node=opening_instruction.node_to_open,
+                move=opening_instruction.move_to_play
+            )
 
             # concatenate the tree expansions
             tree_expansions.add(tree_expansion=tree_expansion)
@@ -133,7 +165,7 @@ class TreeManager:
 
     def test_the_tree(self,
                       tree):
-        self.test_count()
+        self.test_count(tree)
         for half_move in tree.descendants:
             for fen in tree.descendants[half_move]:
                 node = tree.descendants[half_move][fen]

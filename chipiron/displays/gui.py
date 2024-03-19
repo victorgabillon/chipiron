@@ -4,16 +4,32 @@
 This module is the execution point of the chess GUI application.
 """
 
+import typing
+
 import chess
-from PyQt5.QtCore import Qt
-from PyQt5.QtSvg import QSvgWidget
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
-from chipiron.games.game.game_playing_status import PlayingStatus, GamePlayingStatus
-from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMessage, EvaluationMessage, \
-    PlayersColorToIdMessage, MatchResultsMessage
+from PySide6.QtCore import QTimer, Slot
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon
+from PySide6.QtSvgWidgets import QSvgWidget
+from PySide6.QtWidgets import QPushButton, QTableWidget, QWidget, QDialog, QTableWidgetItem
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
+from matplotlib.figure import Figure
+
+from chipiron.environments.chess.board import BoardChi
+from chipiron.games.game.game_playing_status import PlayingStatus
+from chipiron.games.match.match_results import MatchResults
+from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMessage, EvaluationMessage
+from chipiron.utils.communication.gui_messages.gui_messages import MatchResultsMessage
+from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage
 from chipiron.utils.communication.player_game_messages import BoardMessage, MoveMessage
+
+
+class MplCanvas(FigureCanvasQTAgg):
+
+    def __init__(self, parent=None, width=5, height=4, dpi=100):
+        fig = Figure(figsize=(width, height), dpi=dpi)
+        self.axes = fig.add_subplot(111)
+        super(MplCanvas, self).__init__(fig)
 
 
 class MainWindow(QWidget):
@@ -26,6 +42,9 @@ class MainWindow(QWidget):
         Initialize the chessboard.
         """
         super().__init__()
+
+        self.playing_status = PlayingStatus.PLAY
+
         self.gui_mailbox = gui_mailbox
         self.main_thread_mailbox = main_thread_mailbox
 
@@ -68,13 +87,16 @@ class MainWindow(QWidget):
         self.player_white_button.setText("Player")  # text
         self.player_white_button.setIcon(QIcon("data/gui/white_king.png"))  # icon
         self.player_white_button.setStyleSheet('QPushButton {background-color: white; color: black;}')
-        self.player_white_button.setGeometry(620, 250, 370, 30)
+        self.player_white_button.setGeometry(620, 250, 470, 30)
 
         self.player_black_button = QPushButton(self)
         self.player_black_button.setText("Player")  # text
         self.player_black_button.setIcon(QIcon("data/gui/black_king.png"))  # icon
         self.player_black_button.setStyleSheet('QPushButton {background-color: black; color: white;}')
-        self.player_black_button.setGeometry(620, 300, 370, 30)
+        self.player_black_button.setGeometry(620, 300, 470, 30)
+
+        self.tablewidget = QTableWidget(1, 2, self)
+        self.tablewidget.setGeometry(1100, 250, 260, 330)
 
         self.score_button = QPushButton(self)
         self.score_button.setText("Score 0-0")  # text
@@ -101,6 +123,16 @@ class MainWindow(QWidget):
         self.eval_button_chi.setStyleSheet('QPushButton {background-color: white; color: black;}')
         self.eval_button_chi.setGeometry(620, 650, 470, 30)
 
+        self.eval_button_white = QPushButton(self)
+        self.eval_button_white.setText("White Eval")  # text
+        self.eval_button_white.setStyleSheet('QPushButton {background-color: white; color: black;}')
+        self.eval_button_white.setGeometry(620, 700, 470, 30)
+
+        self.eval_button_black = QPushButton(self)
+        self.eval_button_black.setText("Black Eval")  # text
+        self.eval_button_black.setStyleSheet('QPushButton {background-color: white; color: black;}')
+        self.eval_button_black.setGeometry(620, 750, 470, 30)
+
         self.board_size = min(self.widgetSvg.width(),
                               self.widgetSvg.height())
         self.coordinates = True
@@ -118,18 +150,24 @@ class MainWindow(QWidget):
         self.close()
 
     def play_button_clicked(self) -> None:
+        print('play_button_clicked')
         message: GameStatusMessage = GameStatusMessage(status=PlayingStatus.PLAY)
         self.main_thread_mailbox.put(message)
 
     def back_button_clicked(self) -> None:
+        print('back_button_clicked')
         message: BackMessage = BackMessage()
         self.main_thread_mailbox.put(message)
 
-    def pause_button_clicked(self) -> None:
+    def pause_button_clicked(
+            self
+    ) -> None:
+        print('pause_button_clicked')
         message: GameStatusMessage = GameStatusMessage(status=PlayingStatus.PAUSE)
         self.main_thread_mailbox.put(message)
 
-    @pyqtSlot(QWidget)
+    @typing.no_type_check
+    @Slot(QWidget)
     def mousePressEvent(self, event):
         """
         Handle left mouse clicks and enable moving chess pieces by
@@ -140,7 +178,6 @@ class MainWindow(QWidget):
         """
         if event.x() <= self.board_size and event.y() <= self.board_size:
             if event.buttons() == Qt.LeftButton:
-
                 if self.margin < event.x() < self.board_size - self.margin \
                         and self.margin < event.y() < self.board_size - self.margin:
 
@@ -167,9 +204,13 @@ class MainWindow(QWidget):
 
     def send_move_to_main_thread(self, move):
         print('move', type(move), move)
-        message: MoveMessage = MoveMessage(move=move, corresponding_board=self.board.fen(), player_name='Human')
+        message: MoveMessage = MoveMessage(move=move,
+                                           corresponding_board=self.board.fen(),
+                                           player_name='Human',
+                                           color_to_play=self.board.turn)
         self.main_thread_mailbox.put(item=message)
 
+    @typing.no_type_check
     def choice_promote(self):
         self.d = QDialog()
         d = self.d
@@ -202,18 +243,22 @@ class MainWindow(QWidget):
 
         d.exec_()
 
+    @typing.no_type_check
     def promote_queen(self):
         self.move_promote_asked = chess.Move.from_uci("{}{}q".format(self.pieceToMove[1], self.coordinates))
         self.d.close()
 
+    @typing.no_type_check
     def promote_rook(self):
         self.move_promote_asked = chess.Move.from_uci("{}{}r".format(self.pieceToMove[1], self.coordinates))
         self.d.close()
 
+    @typing.no_type_check
     def promote_bishop(self):
         self.move_promote_asked = chess.Move.from_uci("{}{}b".format(self.pieceToMove[1], self.coordinates))
         self.d.close()
 
+    @typing.no_type_check
     def promote_knight(self):
         self.move_promote_asked = chess.Move.from_uci("{}{}n".format(self.pieceToMove[1], self.coordinates))
         self.d.close()
@@ -228,29 +273,50 @@ class MainWindow(QWidget):
             message = self.gui_mailbox.get()
             match message:
                 case BoardMessage():
-                    message: BoardMessage
-                    self.board = message.board
+                    board_message: BoardMessage = message
+                    self.board: BoardChi = board_message.board
                     self.draw_board()
+                    self.display_move_history()
                 case EvaluationMessage():
-                    message: EvaluationMessage
-                    evaluation_stock = message.evaluation_stock
-                    evaluation_chipiron = message.evaluation_chipiron
-                    self.update_evaluation(evaluation_stock=evaluation_stock,
-                                           evaluation_chipiron=evaluation_chipiron)
-                case PlayersColorToIdMessage():
-                    message: PlayersColorToIdMessage
-                    players_color_to_id: dict = message.players_color_to_id
-                    self.update_players_color_to_id(players_color_to_id)
+                    evaluation_message: EvaluationMessage = message
+                    evaluation_stock = evaluation_message.evaluation_stock
+                    evaluation_chipiron = evaluation_message.evaluation_chipiron
+                    evaluation_black = evaluation_message.evaluation_player_black
+                    evaluation_white = evaluation_message.evaluation_player_white
+                    self.update_evaluation(
+                        evaluation_stock=evaluation_stock,
+                        evaluation_chipiron=evaluation_chipiron,
+                        evaluation_white=evaluation_white,
+                        evaluation_black=evaluation_black
+                    )
+                case PlayersColorToPlayerMessage():
+                    player_color_message: PlayersColorToPlayerMessage = message
+                    players_color_to_player: dict[chess.Color, str] = player_color_message.player_color_to_gui_info
+                    self.update_players_color_to_id(players_color_to_player)
                 case MatchResultsMessage():
-                    message: MatchResultsMessage
-                    match_results = message.match_results
+                    match_message: MatchResultsMessage = message
+                    match_results: MatchResults = match_message.match_results
                     self.update_match_stats(match_results)
                 case GameStatusMessage():
-                    message: GameStatusMessage
-                    play_status: PlayingStatus = message.status
+                    print('GameStatusMessage', message)
+                    game_status_message: GameStatusMessage = message
+                    play_status: PlayingStatus = game_status_message.status
                     self.update_game_play_status(play_status)
                 case other:
                     raise ValueError(f'unknown type of message received by gui {other} in {__name__}')
+
+    def display_move_history(self):
+        import math
+        num_half_move: int = len(self.board.board.move_stack)
+        num_rounds: int = int(math.ceil(num_half_move / 2))
+        self.tablewidget.setRowCount(num_rounds)
+        self.tablewidget.setHorizontalHeaderLabels(['White', 'Black'])
+        for player in range(2):
+            for round_ in range(num_rounds):
+                half_move = round_ * 2 + player
+                if half_move < num_half_move:
+                    item = QTableWidgetItem(str(self.board.board.move_stack[half_move]))
+                    self.tablewidget.setItem(round_, player, item)
 
     def draw_board(self):
         """
@@ -258,38 +324,54 @@ class MainWindow(QWidget):
         it for every new move.
         """
 
-        self.boardSvg = self.board._repr_svg_().encode("UTF-8")
+        self.boardSvg = self.board.board._repr_svg_().encode("UTF-8")
         self.drawBoardSvg = self.widgetSvg.load(self.boardSvg)
-        self.round_button.setText('Round: ' + str(self.board.fullmove_number))  # text
+        self.round_button.setText('Round: ' + str(self.board.board.fullmove_number))  # text
         self.fen_button.setText('fen: ' + str(self.board.fen()))  # text
         return self.drawBoardSvg
 
-    def update_players_color_to_id(self, players_color_to_id):
-        self.player_white_button.setText(' White: ' + players_color_to_id[chess.WHITE])  # text
-        self.player_black_button.setText(' Black: ' + players_color_to_id[chess.BLACK])  # text
+    def update_players_color_to_id(self, players_color_to_player: dict[chess.Color, str]):
+        self.player_white_button.setText(' White: ' + players_color_to_player[chess.WHITE])  # text
+        self.player_black_button.setText(' Black: ' + players_color_to_player[chess.BLACK])  # text
 
-    def update_evaluation(self, evaluation_stock, evaluation_chipiron):
-        print('rgrgr', evaluation_stock, evaluation_chipiron)
+    def update_evaluation(self, evaluation_stock, evaluation_chipiron, evaluation_white,
+                          evaluation_black):
         self.eval_button.setText('eval: ' + str(evaluation_stock))  # text
         self.eval_button_chi.setText('eval: ' + str(evaluation_chipiron))  # text
+        self.eval_button_black.setText('eval White: ' + str(evaluation_white))  # text
+        self.eval_button_white.setText('eval Black: ' + str(evaluation_black))  # text
 
-    def update_game_play_status(self, play_status: PlayingStatus):
-        if play_status == PlayingStatus.PAUSE:
-            self.pause_button.setText("Play")  # text
-            self.pause_button.setIcon(QIcon("data/gui/play.png"))  # icon
-            self.pause_button.clicked.connect(self.play_button_clicked)
-            self.pause_button.setToolTip("play the game")  # Tool tip
-            self.pause_button.move(850, 100)
-        elif play_status == PlayingStatus.PLAY:
-            self.pause_button.setText("Pause")  # text
-            self.pause_button.setIcon(QIcon("data/gui/pause.png"))  # icon
-            self.pause_button.clicked.connect(self.pause_button_clicked)
-            self.pause_button.setToolTip("pause the game")  # Tool tip
-            self.pause_button.move(850, 100)
+    def update_game_play_status(
+            self,
+            play_status: PlayingStatus
+    ) -> None:
+        print('update_game_play_status', play_status)
 
-    def update_match_stats(self, match_info):
-        player_one_wins, player_two_wins, draws = match_info.get_simple_result()
+        if self.playing_status != play_status:
+            self.playing_status = play_status
+            print('real update_game_play_status', play_status)
+            if play_status == PlayingStatus.PAUSE:
+                self.pause_button.setText("Play")  # text
+                self.pause_button.setIcon(QIcon("data/gui/play.png"))  # icon
+                self.pause_button.clicked.connect(self.play_button_clicked)
+                self.pause_button.setToolTip("play the game")  # Tool tip
+                self.pause_button.move(850, 100)
+            elif play_status == PlayingStatus.PLAY:
+                self.pause_button.setText("Pause")  # text
+                self.pause_button.setIcon(QIcon("data/gui/pause.png"))  # icon
+                self.pause_button.clicked.connect(self.pause_button_clicked)
+                self.pause_button.setToolTip("pause the game")  # Tool tip
+                self.pause_button.move(850, 100)
+
+    def update_match_stats(self, match_result: MatchResults):
+        player_one_wins, player_two_wins, draws = match_result.get_simple_result()
         self.score_button.setText(
             'Score: ' + str(player_one_wins) + '-'
             + str(player_two_wins) + '-'
             + str(draws))  # text
+
+        print('update', match_result.match_finished)
+        # if the match is over we kill th gui
+        if match_result.match_finished:
+            print('finishing the widget')
+            self.close()

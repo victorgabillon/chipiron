@@ -1,4 +1,3 @@
-
 def tree_strap_one_board(board, tree_value_builder):
     tree_value_builder.explore(board)
     dic_values = get_dic_all_values_of_tree(tree_value_builder.tree)

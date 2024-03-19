@@ -1,5 +1,6 @@
-from enum import Enum
 from dataclasses import dataclass
+from enum import Enum
+
 
 class PlayingStatus(Enum):
     PLAY: int = 1
@@ -19,7 +20,11 @@ class GamePlayingStatus:
         return self._status
 
     @status.setter
-    def status(self, new_status: PlayingStatus):
+    # what is the point?
+    def status(
+            self,
+            new_status: PlayingStatus
+    ):
         self._status = new_status
 
     def play(self):
@@ -33,4 +38,3 @@ class GamePlayingStatus:
 
     def is_play(self):
         return self.status == PlayingStatus.PLAY
-

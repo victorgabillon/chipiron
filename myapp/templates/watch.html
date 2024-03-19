@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+{% block head_content %}
+          <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+{% endblock head_content %}
+{% block content %}
+        <img  class="image" src="{{ image_file }}">
+
+<script>
+setInterval(myTimer, 1000);
+function myTimer() {
+  let imgs = document.getElementsByTagName( 'img');
+  let src = imgs.item(0).getAttribute('data-src')
+  imgs.item(0).setAttribute('src', "/static/images/my0.svg?" + new Date().getTime());
+}
+</script>
+{% endblock content %}

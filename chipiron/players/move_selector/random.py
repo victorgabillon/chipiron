@@ -1,12 +1,34 @@
-from random import choice
-import chipiron.environments.chess.board as boards
+import random
+from dataclasses import dataclass, field
+from typing import Literal
+
 import chess
 
+import chipiron.environments.chess.board as boards
+from chipiron.utils import seed
+from .move_selector import MoveRecommendation
+from .move_selector_types import MoveSelectorTypes
 
+
+@dataclass
 class Random:
+    type: Literal[MoveSelectorTypes.Random]  # for serialization
+    random_generator: random.Random = field(default_factory=random.Random)
 
-    def __init__(self):
-        pass
+    def select_move(
+            self,
+            board: boards.BoardChi,
+            move_seed: seed
+    ) -> MoveRecommendation:
+        self.random_generator.seed(move_seed)
+        random_move: chess.Move = self.random_generator.choice(list(board.legal_moves))
+        return MoveRecommendation(move=random_move)
 
-    def select_move(self, board: boards.BoardChi) -> chess.Move:
-        return choice(list(board.legal_moves))
+
+def create_random(
+        random_generator: random.Random
+) -> Random:
+    return Random(
+        type=MoveSelectorTypes.Random,
+        random_generator=random_generator
+    )

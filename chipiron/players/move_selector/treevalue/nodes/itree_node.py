@@ -1,12 +1,25 @@
-from __future__ import annotations  # To be removed in python 3.10 (helping with recursive type annocatation)
+from __future__ import annotations  # (helping with recursive type annotation)
+
 from typing import Protocol
+
+import chess
 from bidict import bidict
+
+from chipiron.environments.chess.board.board import BoardChi
 
 
 class ITreeNode(Protocol):
 
     @property
-    def board(self):
+    def id(
+            self
+    ) -> int:
+        ...
+
+    @property
+    def board(
+            self
+    ) -> BoardChi:
         ...
 
     @property
@@ -14,8 +27,26 @@ class ITreeNode(Protocol):
         ...
 
     @property
-    def moves_children(self) -> bidict:
+    def moves_children(
+            self
+    ) -> bidict[chess.Move, ITreeNode | None]:
         ...
 
-    def add_parent(self, new_parent_node: ITreeNode):
+    @property
+    def parent_nodes(
+            self
+    ) -> set[ITreeNode]:
+        ...
+
+    def add_parent(
+            self,
+            new_parent_node: ITreeNode
+    ) -> None:
+        ...
+
+    def dot_description(self) -> str:
+        ...
+
+    @property
+    def all_legal_moves_generated(self) -> bool:  # todo looks not clean, more like a hack no?
         ...

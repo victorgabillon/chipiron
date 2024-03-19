@@ -1,0 +1,22 @@
+###### Requirements without Version Specifiers ######
+PyYAML
+
+###### Requirements with Version Specifiers ######
+PySide6>=6.6.1
+chess >= 1.10.0
+matplotlib>=3.8.2
+sortedcollections>=2.1.0
+pandas>=2.1.4
+numpy>=1.26.0
+bidict>=0.22.1
+numba>=0.59.0rc1
+graphviz>=0.20.1
+dacite >= 1.8.1
+customtkinter
+
+# for the web app
+flask
+flask_cors
+gunicorn
+werkzeug
+bootstrap-flask

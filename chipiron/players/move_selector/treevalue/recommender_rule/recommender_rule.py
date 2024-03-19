@@ -1,15 +1,20 @@
+import random
 from dataclasses import dataclass
-from typing import Protocol, Literal
 from enum import Enum
+from typing import Protocol, Literal
 
 import chess
 
-from chipiron.utils.small_tools import softmax
-from chipiron.players.boardevaluators.over_event import HowOver
-
 import chipiron.players.move_selector.treevalue.trees as trees
+from chipiron.players.boardevaluators.basic_evaluation import value_base
+from chipiron.players.boardevaluators.over_event import HowOver
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
+from chipiron.players.move_selector.treevalue.nodes.utils import is_winning
+from chipiron.utils.small_tools import softmax
 
-AlmostEqualLogistic_Literal = 'almost_equal_logistic'
+
+class RecommenderRuleTypes(str, Enum):
+    AlmostEqualLogistic: str = 'almost_equal_logistic'
 
 
 # theses are functions but i still use dataclasses instead
@@ -17,7 +22,7 @@ AlmostEqualLogistic_Literal = 'almost_equal_logistic'
 
 @dataclass
 class AlmostEqualLogistic:
-    type: Literal[AlmostEqualLogistic_Literal]
+    type: Literal[RecommenderRuleTypes.AlmostEqualLogistic]
     temperature: int
 
     def __call__(
@@ -26,7 +31,6 @@ class AlmostEqualLogistic:
             random_generator
     ) -> chess.Move:
         # TODO this should be given at construction but postponed for now because of dataclasses
-        from random import Random
         # find the best first move allowing for random choice for almost equally valued moves.
         best_root_children = tree.root_node.minmax_evaluation.get_all_of_the_best_moves(
             how_equal='almost_equal_logistic')
@@ -37,14 +41,11 @@ class AlmostEqualLogistic:
             assert (best_child.minmax_evaluation.over_event.how_over == HowOver.WIN)
         best_move = tree.root_node.moves_children.inverse[best_child]
 
+        assert isinstance(best_move, chess.Move)
         return best_move
 
 
 AllRecommendFunctionsArgs = AlmostEqualLogistic
-
-
-class RecommenderRuleTypes(str, Enum):
-    AlmostEqualLogistic: str = AlmostEqualLogistic_Literal
 
 
 @dataclass
@@ -101,3 +102,49 @@ def recommend_move_after_exploration(
     else:
         raise (ValueError('move_selection_rule is not valid it seems'))
     return best_move
+
+
+def recommend_move_after_exploration_generic(
+        recommend_move_after_exploration: AllRecommendFunctionsArgs,
+        tree: trees.MoveAndValueTree,
+        random_generator: random.Random
+) -> chess.Move:
+    # if the situation is winning, we ask to play the move that is the most likely
+    # to end the game fast by capturing pieces if possible
+    is_winning_situation: bool = is_winning(
+        node_minmax_evaluation=tree.root_node.minmax_evaluation,
+        color=tree.root_node.board.turn
+    )
+    over: bool = tree.root_node.is_over()
+    if is_winning_situation and not over:
+        # value of pieces of the opponent before the move
+        value_father: int = value_base(
+            board=tree.root_node.board,
+            color=not tree.root_node.board.turn
+        )
+
+        child: AlgorithmNode
+        best_value: int | None = None
+        best_move: chess.Move | None = None
+        for move, child in tree.root_node.moves_children.items():
+            # value of pieces of the opponent after that move
+            value_child: int = value_base(
+                board=child.board,
+                color=child.board.turn
+            )
+            value: int = value_father - value_child
+
+            still_wining_after_move: bool = is_winning(
+                node_minmax_evaluation=child.minmax_evaluation,
+                color=tree.root_node.board.turn
+            )
+            if still_wining_after_move and (best_value is None or best_value < value):
+                best_value = value
+                best_move = move
+        assert best_value is not None
+        if best_value > 0:
+            assert isinstance(best_move, chess.Move)
+            return best_move
+
+    # base case
+    return recommend_move_after_exploration(tree=tree, random_generator=random_generator)

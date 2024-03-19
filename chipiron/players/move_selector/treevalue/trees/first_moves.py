@@ -1,5 +1,6 @@
 class FirstMoves:
     """ A class that helps remember what are the first moves that can lead to any given node"""
+
     def __init__(self):
         self.first_moves = {}
 

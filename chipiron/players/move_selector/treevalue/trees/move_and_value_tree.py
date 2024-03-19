@@ -2,6 +2,7 @@
 MoveAndValueTree
 """
 import chipiron.players.move_selector.treevalue.nodes as nodes
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node import AlgorithmNode
 from .descendants import RangedDescendants
 
 
@@ -22,13 +23,13 @@ class MoveAndValueTree:
     It is  pointer to the root node with some counters and keeping track of descendants.
     """
 
-    _root_node: nodes.AlgorithmNode
+    _root_node: AlgorithmNode
     descendants: RangedDescendants
     tree_root_half_move: int
 
     def __init__(
             self,
-            root_node: nodes.AlgorithmNode,
+            root_node: AlgorithmNode,
             descendants: RangedDescendants
     ) -> None:
         """

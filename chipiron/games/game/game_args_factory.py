@@ -1,12 +1,15 @@
-import chess
-from chipiron.players.factory import create_player
 import random
-from chipiron.utils.small_tools import unique_int_from_list
-from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
-from chipiron.players.factory import PlayerArgs
-from enum import Enum
-from dataclasses import dataclass
 import typing
+from dataclasses import dataclass
+from enum import Enum
+
+import chess
+
+import chipiron.players as players
+from chipiron.players.boardevaluators.table_base import create_syzygy, SyzygyTable
+from chipiron.players.factory import create_player
+from chipiron.utils import seed
+from chipiron.utils.small_tools import unique_int_from_list
 from .game_args import GameArgs
 
 if typing.TYPE_CHECKING:
@@ -42,21 +45,23 @@ class GameArgsFactory:
 
     """
 
-    args_match: 'match.MatchArgs'
-    seed: int | None
-    args_player_one: PlayerArgs
-    args_player_two: PlayerArgs
+    args_match: 'match.MatchSettingsArgs'
+    seed_: int | None
+    args_player_one: players.PlayerArgs
+    args_player_two: players.PlayerArgs
     args_game: GameArgs
     game_number: int
 
-    def __init__(self,
-                 args_match: 'match.MatchArgs',
-                 args_player_one: PlayerArgs,
-                 args_player_two: PlayerArgs,
-                 seed: int | None,
-                 args_game: GameArgs):
+    def __init__(
+            self,
+            args_match: 'match.MatchSettingsArgs',
+            args_player_one: players.PlayerArgs,
+            args_player_two: players.PlayerArgs,
+            seed_: int | None,
+            args_game: GameArgs
+    ):
         self.args_match = args_match
-        self.seed = seed
+        self.seed_ = seed_
         self.args_player_one = args_player_one
         self.args_player_two = args_player_two
         self.args_game = args_game
@@ -65,26 +70,34 @@ class GameArgsFactory:
     def generate_game_args(
             self,
             game_number: int
-    ) -> tuple[dict, GameArgs]:
+    ) -> tuple[dict[chess.Color, players.Player], GameArgs, seed | None]:
 
         # Creating the players
-        syzygy_table = SyzygyTable('')
-        merged_seed = unique_int_from_list([self.seed, game_number])
-        random_generator: random.Random = random.Random(merged_seed)
-        player_one = create_player(args=self.args_player_one,
-                                   syzygy=syzygy_table,
-                                   random_generator=random_generator)
-        player_two = create_player(args=self.args_player_two,
-                                   syzygy=syzygy_table,
-                                   random_generator=random_generator)
+        syzygy_table: SyzygyTable | None = create_syzygy()
 
+        merged_seed: seed | None = unique_int_from_list([self.seed_, game_number])
+
+        # if seed is None random uses the current system time as seed
+        random_generator: random.Random = random.Random(merged_seed)
+        player_one: players.Player = create_player(
+            args=self.args_player_one,
+            syzygy=syzygy_table,
+            random_generator=random_generator
+        )
+        player_two: players.Player = create_player(
+            args=self.args_player_two,
+            syzygy=syzygy_table,
+            random_generator=random_generator
+        )
+
+        player_color_to_player: dict[chess.Color, players.Player]
         if game_number < self.args_match.number_of_games_player_one_white:
             player_color_to_player = {chess.WHITE: player_one, chess.BLACK: player_two}
         else:
             player_color_to_player = {chess.WHITE: player_two, chess.BLACK: player_one}
         self.game_number += 1
 
-        return player_color_to_player, self.args_game
+        return player_color_to_player, self.args_game, merged_seed
 
     def is_match_finished(self):
         return (self.game_number >= self.args_match.number_of_games_player_one_white

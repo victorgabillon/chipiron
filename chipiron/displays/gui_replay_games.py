@@ -5,11 +5,12 @@ This module is the execution point of the chess GUI application.
 """
 
 import sys
+
 import chess
-from PyQt5.QtSvg import QSvgWidget
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
+from PySide6.QtCore import Slot
+from PySide6.QtGui import QIcon
+from PySide6.QtSvgWidgets import QSvgWidget
+from PySide6.QtWidgets import QWidget, QPushButton, QApplication
 
 
 class MainWindow(QWidget):
@@ -66,7 +67,7 @@ class MainWindow(QWidget):
 
         self.drawBoard()
 
-    @pyqtSlot(QWidget)
+    @Slot(QWidget)
     def keyPressEvent(self, event):
         print(event.text())
         key = event.text()

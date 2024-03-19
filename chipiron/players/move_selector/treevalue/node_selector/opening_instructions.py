@@ -1,6 +1,10 @@
-import chipiron.players.move_selector.treevalue.nodes.algorithm_node as nodes
-import chess
+from dataclasses import dataclass
 from enum import Enum
+
+import chess
+
+import chipiron.players.move_selector.treevalue.nodes as nodes
+from chipiron.players.move_selector.treevalue.nodes.utils import a_move_sequence_from_root
 
 
 class OpeningInstructions:
@@ -38,7 +42,10 @@ class OpeningInstructions:
             if opening_instruction_key not in self.batch:
                 self.batch[opening_instruction_key] = opening_instruction
 
-    def pop_items(self, how_many: int):
+    def pop_items(
+            self,
+            how_many: int
+    ):
         how_many = min(how_many, len(self.batch))
         popped = OpeningInstructions()  # todo is there a faster way to copy?
         for pop in range(how_many):
@@ -61,19 +68,21 @@ class OpeningInstructions:
         return len(self.batch)
 
 
+@dataclass(slots=True)
 class OpeningInstruction:
-    def __init__(self,
-                 node_to_open,
-                 move_to_play):
-        self.node_to_open = node_to_open
-        self.move_to_play = move_to_play
+    node_to_open: nodes.ITreeNode
+    move_to_play: chess.Move
 
     def print_info(self):
-        print('OpeningInstruction: node_to_open', self.node_to_open.id, 'a path from root to node_to_open is ',
-              self.node_to_open.a_move_sequence_from_root(), 'self.move_to_play ', self.move_to_play)
+        print(f'OpeningInstruction: node_to_open {self.node_to_open.id} at hm {self.node_to_open.half_move} | '
+              f'a path from root to node_to_open is {a_move_sequence_from_root(self.node_to_open)} | '
+              f'self.move_to_play {self.move_to_play}')
 
 
-def create_instructions_to_open_all_moves(moves_to_play, node_to_open):
+def create_instructions_to_open_all_moves(
+        moves_to_play,
+        node_to_open
+):
     opening_instructions_batch = OpeningInstructions()
 
     for move_to_play in moves_to_play:
@@ -81,7 +90,7 @@ def create_instructions_to_open_all_moves(moves_to_play, node_to_open):
         # the keys are here for fast and redundant proof insertion
         # and the values are here for clean data processing
         opening_instructions_batch[(node_to_open.id, move_to_play)] = OpeningInstruction(node_to_open,
-                                                                                      move_to_play)
+                                                                                         move_to_play)
     #  node_to_open.non_opened_legal_moves.add(move_to_play)
     return opening_instructions_batch
 
@@ -94,7 +103,7 @@ class OpeningInstructor:
 
     def __init__(
             self,
-            opening_type: str,
+            opening_type: OpeningType,
             random_generator
     ) -> None:
         self.opening_type = opening_type
