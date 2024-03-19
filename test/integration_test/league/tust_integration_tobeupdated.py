@@ -13,7 +13,7 @@ configs = [
 for config in configs:
     script_object: scripts.Script = scripts.create_script(
         script_type=scripts.ScriptType.League,
-        gui_args=config
+        extra_args=config
     )
 
     # run the script

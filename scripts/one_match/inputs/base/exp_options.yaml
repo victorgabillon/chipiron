@@ -1,5 +1,5 @@
 seed: 11
-gui: False
+gui: True
 file_name_player_ones: 'Sequool.yaml'
 file_name_player_two: 'RecurZipfBase3.yaml'
 file_name_player_one:  'RecurZipfBase3.yaml'

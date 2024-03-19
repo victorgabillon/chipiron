@@ -1,5 +1,5 @@
-import chipiron.players.move_selector.treevalue.nodes as nodes
 from chipiron.players.move_selector.treevalue.indices.node_indices.index_data import MaxDepthDescendants
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from .index_block import IndexUpdateInstructionsBlock
 from .updates_file import UpdateInstructions
 
@@ -11,7 +11,7 @@ class IndexUpdater:
 
     def create_update_instructions_after_node_birth(
             self,
-            new_node: nodes.AlgorithmNode
+            new_node: AlgorithmNode
     ) -> IndexUpdateInstructionsBlock:
         base_update_instructions_block: IndexUpdateInstructionsBlock = IndexUpdateInstructionsBlock(
             children_with_updated_index={new_node}
@@ -20,7 +20,7 @@ class IndexUpdater:
 
     def perform_updates(
             self,
-            node_to_update: nodes.AlgorithmNode,
+            node_to_update: AlgorithmNode,
             updates_instructions: UpdateInstructions
     ) -> IndexUpdateInstructionsBlock:
         # get the base block

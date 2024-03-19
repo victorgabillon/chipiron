@@ -18,8 +18,8 @@ from matplotlib.figure import Figure
 from chipiron.environments.chess.board import BoardChi
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.games.match.match_results import MatchResults
-from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMessage, EvaluationMessage, \
-    MatchResultsMessage
+from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMessage, EvaluationMessage
+from chipiron.utils.communication.gui_messages.gui_messages import MatchResultsMessage
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage
 from chipiron.utils.communication.player_game_messages import BoardMessage, MoveMessage
 

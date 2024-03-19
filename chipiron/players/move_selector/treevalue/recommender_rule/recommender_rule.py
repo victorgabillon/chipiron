@@ -8,7 +8,7 @@ import chess
 import chipiron.players.move_selector.treevalue.trees as trees
 from chipiron.players.boardevaluators.basic_evaluation import value_base
 from chipiron.players.boardevaluators.over_event import HowOver
-from chipiron.players.move_selector.treevalue.nodes import AlgorithmNode
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from chipiron.players.move_selector.treevalue.nodes.utils import is_winning
 from chipiron.utils.small_tools import softmax
 

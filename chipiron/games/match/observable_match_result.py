@@ -2,8 +2,9 @@ import copy
 import queue
 from dataclasses import dataclass, field
 
-from chipiron.utils.communication.gui_messages import MatchResultsMessage
 from .match_results import MatchResults
+
+from chipiron.utils.communication.gui_messages.gui_messages import MatchResultsMessage
 
 
 @dataclass
@@ -12,11 +13,11 @@ class ObservableMatchResults:
     # as i do the same for board and game info
 
     match_results: MatchResults
-    mailboxes: list[queue.Queue[MatchResultsMessage]] = field(default_factory=list)
+    mailboxes: 'list[queue.Queue[MatchResultsMessage]]' = field(default_factory=list)
 
     def subscribe(
             self,
-            mailbox: queue.Queue[MatchResultsMessage]
+            mailbox: 'queue.Queue[MatchResultsMessage]'
     ) -> None:
         self.mailboxes.append(mailbox)
 
@@ -40,7 +41,7 @@ class ObservableMatchResults:
     ) -> None:
         for mailbox in self.mailboxes:
             match_result_copy: MatchResults = self.copy_match_result()
-            message: MatchResultsMessage = MatchResultsMessage(
+            message: 'MatchResultsMessage' = MatchResultsMessage(
                 match_results=match_result_copy
             )
             mailbox.put(item=message)

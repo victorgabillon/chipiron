@@ -1,12 +1,15 @@
+import typing
 from dataclasses import dataclass
 
-import chipiron.players.move_selector.treevalue.nodes as nodes
-import chipiron.players.move_selector.treevalue.tree_manager as tree_man
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from .index_block import IndexUpdateInstructionsBlock
 from .index_updater import IndexUpdater
 from .minmax_evaluation_updater import MinMaxEvaluationUpdater
 from .updates_file import UpdateInstructions, UpdateInstructionsBatch
 from .value_block import ValueUpdateInstructionsBlock
+
+if typing.TYPE_CHECKING:
+    import chipiron.players.move_selector.treevalue.tree_manager as tree_man
 
 
 @dataclass
@@ -16,7 +19,7 @@ class AlgorithmNodeUpdater:
 
     def create_update_instructions_after_node_birth(
             self,
-            new_node: nodes.AlgorithmNode
+            new_node: AlgorithmNode
     ) -> UpdateInstructions:
         value_update_instructions_block = self.minmax_evaluation_updater.create_update_instructions_after_node_birth(
             new_node=new_node
@@ -37,15 +40,15 @@ class AlgorithmNodeUpdater:
 
     def generate_update_instructions(
             self,
-            tree_expansions: tree_man.TreeExpansions
+            tree_expansions: 'tree_man.TreeExpansions'
     ) -> UpdateInstructionsBatch:
         # TODO is the way of merging now overkill?
 
         update_instructions_batch: UpdateInstructionsBatch = UpdateInstructionsBatch()
 
-        tree_expansion: tree_man.TreeExpansion
+        tree_expansion: 'tree_man.TreeExpansion'
         for tree_expansion in tree_expansions:
-            assert isinstance(tree_expansion.child_node, nodes.AlgorithmNode)
+            assert isinstance(tree_expansion.child_node, AlgorithmNode)
             update_instructions = self.create_update_instructions_after_node_birth(
                 new_node=tree_expansion.child_node)
             # update_instructions_batch is key sorted dict, sorted by depth to ensure proper backprop from the back
@@ -62,7 +65,7 @@ class AlgorithmNodeUpdater:
 
     def perform_updates(
             self,
-            node_to_update: nodes.AlgorithmNode,
+            node_to_update: AlgorithmNode,
             update_instructions: UpdateInstructions
     ) -> UpdateInstructions:
 

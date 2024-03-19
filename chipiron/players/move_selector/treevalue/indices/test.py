@@ -9,8 +9,8 @@ from chipiron.players.move_selector.treevalue.node_indices.node_exploration_mana
     NodeExplorationIndexManager
 
 import chipiron.environments.chess.board as boards
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 import chipiron.players.move_selector.treevalue.node_factory as node_factory
-import chipiron.players.move_selector.treevalue.nodes as nodes
 import chipiron.players.move_selector.treevalue.search_factory as search_factories
 import chipiron.players.move_selector.treevalue.tree_manager as tree_manager
 import chipiron.players.move_selector.treevalue.trees as trees
@@ -74,7 +74,7 @@ def make_tree_from_file(
             board = chess.Board.from_chess960_pos(yaml_node['id'])
             board.turn = chess.WHITE
             board_chi = BoardChi(board=board)
-            root_node: nodes.AlgorithmNode = algorithm_node_factory.create(
+            root_node: AlgorithmNode = algorithm_node_factory.create(
                 board=board_chi,
                 half_move=0,
                 count=yaml_node['id'],
@@ -126,7 +126,7 @@ def make_tree_from_file(
                     creation_child_node=tree_expansion.creation_child_node
                 )
             )
-            assert isinstance(tree_expansion.child_node, nodes.AlgorithmNode)
+            assert isinstance(tree_expansion.child_node, AlgorithmNode)
             tree_expansion.child_node.tree_node.all_legal_moves_generated = True
             id_nodes[yaml_node['id']] = tree_expansion.child_node
             tree_expansion.child_node.minmax_evaluation.value_white_minmax = yaml_node['value']
@@ -150,7 +150,7 @@ def check_from_file(file, tree):
     for half_move in tree_nodes:
         # todo how are we sure that the hm comes in order?
         # print('hmv', half_move)
-        parent_node: nodes.AlgorithmNode
+        parent_node: AlgorithmNode
         for parent_node in tree_nodes[half_move].values():
             yaml_index = eval(str(yaml_nodes[parent_node.id]['index']))
             assert parent_node.exploration_index_data is not None

@@ -229,8 +229,11 @@ class GameManager:
 
         res: FinalGameResult | None = None
         if board.board.result() == '*':
-            if self.syzygy is None or not self.syzygy.fast_in_table(board):  # TODO when is this case useful?
-                raise ValueError(f'Problem with figuring our game results in {__name__}')
+            if self.syzygy is None or not self.syzygy.fast_in_table(board):
+                # useful when a game is stopped
+                # before the end, for instance for debugging and profiling
+                res = FinalGameResult.DRAW  # arbitrary meaningless choice
+                # raise ValueError(f'Problem with figuring our game results in {__name__}')
             else:
                 val = self.syzygy.value_white(board, chess.WHITE)
                 if val == 0:

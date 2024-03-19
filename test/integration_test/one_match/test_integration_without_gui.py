@@ -1,15 +1,16 @@
+import time
+
 import scripts
-import os
 
+start_time = time.time()
 configs = [
-
-
 
     # random Player first to have a fast game
     {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
      'file_name_player_two': 'Random.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
 
+    # stockfish
     {'seed': 11, 'gui': False, 'file_name_player_one': 'Stockfish.yaml',
      'file_name_player_two': 'Random.yaml',
      'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
@@ -45,7 +46,7 @@ configs = [
      'file_name_player_two': 'Random.yaml',
      'file_name_match_setting': 'setting_tron.yaml', 'profiling': False},
 
-
+    # todo add basic eval (no neural nets)
 ]
 
 for config in configs:
@@ -91,4 +92,7 @@ for ind in range(number_test):
     assert (match_report.match_move_history == match_report_base.match_move_history)
 
 print(match_report)
+
+end_time = time.time()
+print(f'time: {end_time - start_time}')
 print('ALL OK for ONE MATCH')

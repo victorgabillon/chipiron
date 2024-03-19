@@ -1,8 +1,8 @@
 import chess.syzygy
 
 import chipiron.environments.chess.board as boards
-import chipiron.players.move_selector.treevalue.nodes as nodes
 from chipiron.players.boardevaluators.over_event import Winner, HowOver, OverTags
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from chipiron.utils import path
 
 
@@ -33,7 +33,7 @@ class SyzygyTable:
 
     def set_over_event(
             self,
-            node: nodes.AlgorithmNode
+            node: AlgorithmNode
     ) -> None:
         val: int = self.val(node.board)
 
