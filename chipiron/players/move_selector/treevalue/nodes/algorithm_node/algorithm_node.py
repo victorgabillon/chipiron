@@ -1,11 +1,11 @@
 import chess
 from bidict import bidict
 
-import chipiron.players.move_selector.treevalue.indices.node_indices as node_indices
 from chipiron.environments.chess.board.board import BoardChi
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import BoardRepresentation
+from chipiron.players.move_selector.treevalue.indices.node_indices import NodeExplorationData
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.node_minmax_evaluation import NodeMinmaxEvaluation
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
-from chipiron.players.move_selector.treevalue.nodes.node_minmax_evaluation import NodeMinmaxEvaluation
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 
 
@@ -22,7 +22,7 @@ class AlgorithmNode:
     minmax_evaluation: NodeMinmaxEvaluation
 
     # the object storing the information to help the algorithm decide the next nodes to explore
-    exploration_index_data: node_indices.NodeExplorationData | None
+    exploration_index_data: NodeExplorationData | None
 
     # the board representation
     board_representation: BoardRepresentation | None
@@ -31,7 +31,7 @@ class AlgorithmNode:
             self,
             tree_node: TreeNode,
             minmax_evaluation: NodeMinmaxEvaluation,
-            exploration_index_data: node_indices.NodeExplorationData | None,
+            exploration_index_data: NodeExplorationData | None,
             board_representation: BoardRepresentation | None
     ) -> None:
         self.tree_node = tree_node

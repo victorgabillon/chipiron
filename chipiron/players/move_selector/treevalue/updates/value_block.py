@@ -1,13 +1,13 @@
 from dataclasses import dataclass, field
 
-import chipiron.players.move_selector.treevalue.nodes as nodes
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 
 
 @dataclass(slots=True)
 class ValueUpdateInstructionsBlock:
-    children_with_updated_over: set[nodes.AlgorithmNode] = field(default_factory=set)
-    children_with_updated_value: set[nodes.AlgorithmNode] = field(default_factory=set)
-    children_with_updated_best_move: set[nodes.AlgorithmNode] = field(default_factory=set)
+    children_with_updated_over: set[AlgorithmNode] = field(default_factory=set)
+    children_with_updated_value: set[AlgorithmNode] = field(default_factory=set)
+    children_with_updated_best_move: set[AlgorithmNode] = field(default_factory=set)
 
     def merge(
             self,

@@ -1,10 +1,10 @@
 import torch
 
 import chipiron.players.boardevaluators.neural_networks as board_nn
-import chipiron.players.move_selector.treevalue.nodes as nodes
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import BoardEvaluation
 from chipiron.players.boardevaluators.table_base import SyzygyTable
-from chipiron.players.move_selector.treevalue.node_evaluator import NodeEvaluator
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
+from ..node_evaluator import NodeEvaluator
 
 
 class NNNodeEvaluator(NodeEvaluator):
@@ -24,11 +24,11 @@ class NNNodeEvaluator(NodeEvaluator):
 
     def evaluate_all_not_over(
             self,
-            not_over_nodes: list[nodes.AlgorithmNode]
+            not_over_nodes: list[AlgorithmNode]
     ):
         list_of_tensors: list[torch.Tensor] = [torch.tensor([])] * len(not_over_nodes)
         index: int
-        node_not_over: nodes.AlgorithmNode
+        node_not_over: AlgorithmNode
         for index, node_not_over in enumerate(not_over_nodes):
             assert node_not_over.board_representation is not None
             list_of_tensors[index] = node_not_over.board_representation.get_evaluator_input(

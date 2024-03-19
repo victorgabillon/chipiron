@@ -1,16 +1,18 @@
+import typing
+
 import chess
 
 import chipiron.environments.chess.board as board_mod
-import chipiron.players.move_selector.treevalue.node_selector as node_sel
 import chipiron.players.move_selector.treevalue.nodes as node
 import chipiron.players.move_selector.treevalue.trees as trees
 from chipiron.players.move_selector.treevalue.tree_manager.tree_expander import TreeExpansion, TreeExpansions
-
 
 # todo should we use a discount? and discounted per round reward?
 # todo maybe convenient to seperate this object into openner updater and dsiplayer
 # todo have the reward with a discount
 # DISCOUNT = 1/.99999
+if typing.TYPE_CHECKING:
+    import chipiron.players.move_selector.treevalue.node_selector as node_sel
 
 
 class TreeManager:
@@ -82,8 +84,9 @@ class TreeManager:
         fast_rep: str = board.fast_representation()
 
         child_node: node.ITreeNode
-        need_creation_child_node: bool = tree.root_node is None or tree.descendants.is_new_generation(
-            half_move) or fast_rep not in tree.descendants.descendants_at_half_move[half_move]
+        need_creation_child_node: bool = (tree.root_node is None
+                                          or tree.descendants.is_new_generation(half_move)
+                                          or fast_rep not in tree.descendants.descendants_at_half_move[half_move])
         if need_creation_child_node:
             child_node = self.node_factory.create(
                 board=board,
@@ -115,7 +118,7 @@ class TreeManager:
     def open_instructions(
             self,
             tree: trees.MoveAndValueTree,
-            opening_instructions: node_sel.OpeningInstructions
+            opening_instructions: 'node_sel.OpeningInstructions'
     ) -> TreeExpansions:
         """
 

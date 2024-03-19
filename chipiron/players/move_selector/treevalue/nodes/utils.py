@@ -1,7 +1,7 @@
 import chess
 
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.node_minmax_evaluation import NodeMinmaxEvaluation
 from .itree_node import ITreeNode
-from .node_minmax_evaluation import NodeMinmaxEvaluation
 from .tree_node import TreeNode
 
 

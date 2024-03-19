@@ -9,6 +9,7 @@ from chipiron.games.game.game_manager import GameManager
 from chipiron.games.game.game_manager_factory import GameManagerFactory
 from chipiron.games.match.match_results import MatchResults, MatchReport, IMatchResults
 from chipiron.games.match.match_results_factory import MatchResultsFactory
+from chipiron.games.match.observable_match_result import ObservableMatchResults
 from chipiron.players import Player
 from chipiron.utils import path
 from chipiron.utils import seed
@@ -86,6 +87,10 @@ class MatchManager:
         # when a gui is present it might action it to close itself)
         match_results.finish()
 
+        # print('u',match_results,type(match_results))
+        if not isinstance(match_results, MatchResults):
+            assert isinstance(match_results, ObservableMatchResults)
+            match_results = match_results.match_results
         assert isinstance(match_results, MatchResults)
         match_report: MatchReport = MatchReport(
             match_move_history=match_move_history,

@@ -347,8 +347,8 @@ class SortedDescendants(Descendants):
 
     def contains_node(self, node):
         reply_base = super().contains_node(node)
-        if node.half_move in self.descendants_at_half_move and node in self.sorted_descendants_at_half_move[
-              node.half_move]:
+        if (node.half_move in self.descendants_at_half_move
+                and node in self.sorted_descendants_at_half_move[node.half_move]):
             rep = True
         else:
             rep = False

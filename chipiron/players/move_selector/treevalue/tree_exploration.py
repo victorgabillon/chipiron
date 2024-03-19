@@ -115,6 +115,7 @@ class TreeExploration:
         move_recommendation: MoveRecommendation = MoveRecommendation(
             move=best_move,
             evaluation=self.tree.root_node.minmax_evaluation.get_value_white())
+
         return move_recommendation
 
 

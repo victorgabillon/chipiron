@@ -1,17 +1,17 @@
 from dataclasses import make_dataclass
 from typing import Callable, Type, Any
 
-import chipiron.players.move_selector.treevalue.nodes as nodes
 from chipiron.players.move_selector.treevalue.indices.node_indices.index_data import NodeExplorationData, \
     RecurZipfQuoolExplorationData, MinMaxPathValue, IntervalExplo, \
     MaxDepthDescendants
 from chipiron.players.move_selector.treevalue.indices.node_indices.index_types import IndexComputationType
+from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 
-ExplorationIndexDataFactory = Callable[[nodes.TreeNode], NodeExplorationData | None]
+ExplorationIndexDataFactory = Callable[[TreeNode], NodeExplorationData | None]
 
 
 def create_exploration_index_data(
-        tree_node: nodes.TreeNode,
+        tree_node: TreeNode,
         index_computation: IndexComputationType | None = None,
         depth_index: bool = False
 ) -> NodeExplorationData | None:

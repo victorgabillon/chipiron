@@ -7,13 +7,13 @@ from typing import Protocol, Any
 import chess
 
 from chipiron.players.boardevaluators.over_event import OverEvent
+from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
+from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 from chipiron.utils.my_value_sorted_dict import sort_dic
 from chipiron.utils.small_tools import nth_key
-from .itree_node import ITreeNode
-from .tree_node import TreeNode
 
 if typing.TYPE_CHECKING:
-    from .algorithm_node import AlgorithmNode
+    from chipiron.players.move_selector.treevalue.nodes.algorithm_node import AlgorithmNode
 
 
 # todo maybe further split values from over?
@@ -133,7 +133,10 @@ class NodeMinmaxEvaluation:
     def is_draw(self):
         return self.over_event.is_draw()
 
-    def is_winner(self, player):
+    def is_winner(
+            self,
+            player: chess.Color
+    ) -> bool:
         return self.over_event.is_winner(player)
 
     def print_children_sorted_by_value(self):
@@ -221,6 +224,7 @@ class NodeMinmaxEvaluation:
             if child in self.children_not_over:
                 self.children_not_over.remove(child)
             # atm, it happens that child is already  not in children_not_over so we check,
+            print('ppl', child.minmax_evaluation.is_winner(self.tree_node.player_to_move))
             if not self.is_over() and child.minmax_evaluation.is_winner(self.tree_node.player_to_move):
                 self.becoming_over_from_children()
                 is_newly_over = True

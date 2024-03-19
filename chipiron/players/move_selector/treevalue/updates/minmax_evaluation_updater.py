@@ -1,4 +1,4 @@
-import chipiron.players.move_selector.treevalue.nodes as nodes
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from .updates_file import UpdateInstructions
 from .value_block import ValueUpdateInstructionsBlock, create_value_update_instructions_block
 
@@ -10,7 +10,7 @@ class MinMaxEvaluationUpdater:
 
     def create_update_instructions_after_node_birth(
             self,
-            new_node: nodes.AlgorithmNode
+            new_node: AlgorithmNode
     ) -> ValueUpdateInstructionsBlock:
 
         base_update_instructions_block: ValueUpdateInstructionsBlock
@@ -24,7 +24,7 @@ class MinMaxEvaluationUpdater:
 
     def perform_updates(
             self,
-            node_to_update: nodes.AlgorithmNode,
+            node_to_update: AlgorithmNode,
             updates_instructions: UpdateInstructions
     ) -> ValueUpdateInstructionsBlock:
         # get the base block
@@ -47,6 +47,7 @@ class MinMaxEvaluationUpdater:
         # UPDATE OVER
         is_newly_over = node_to_update.minmax_evaluation.update_over(
             updates_instructions_block.children_with_updated_over)
+
         assert (is_newly_over is not None)
 
         # create the new instructions for the parents

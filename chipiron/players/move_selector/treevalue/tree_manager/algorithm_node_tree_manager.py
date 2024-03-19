@@ -2,25 +2,27 @@
 Defining the AlgorithmNodeTreeManager class
 """
 
+import typing
 from dataclasses import dataclass
 
 import chess
 
-import chipiron.players.move_selector.treevalue.node_selector as node_sel
-import chipiron.players.move_selector.treevalue.nodes as node
 import chipiron.players.move_selector.treevalue.trees as trees
 import chipiron.players.move_selector.treevalue.updates as upda
 from chipiron.players.move_selector.treevalue.indices.index_manager import NodeExplorationIndexManager
 from chipiron.players.move_selector.treevalue.indices.index_manager.node_exploration_manager import update_all_indices
 from chipiron.players.move_selector.treevalue.node_evaluator import NodeEvaluator, EvaluationQueries
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from .tree_expander import TreeExpansion, TreeExpansions
 from .tree_manager import TreeManager
-
 
 # todo should we use a discount? and discounted per round reward?
 # todo maybe convenient to seperate this object into openner updater and dsiplayer
 # todo have the reward with a discount
 # DISCOUNT = 1/.99999
+if typing.TYPE_CHECKING:
+    import chipiron.players.move_selector.treevalue.node_selector as node_sel
+
 
 @dataclass
 class AlgorithmNodeTreeManager:
@@ -39,7 +41,7 @@ class AlgorithmNodeTreeManager:
     def open_node_move(
             self,
             tree: trees.MoveAndValueTree,
-            parent_node: node.AlgorithmNode,
+            parent_node: AlgorithmNode,
             move: chess.Move
     ) -> TreeExpansion:
         """
@@ -66,7 +68,7 @@ class AlgorithmNodeTreeManager:
     def open_instructions(
             self,
             tree: trees.MoveAndValueTree,
-            opening_instructions: node_sel.OpeningInstructions
+            opening_instructions: 'node_sel.OpeningInstructions'
     ) -> TreeExpansions:
         """
 
@@ -85,7 +87,7 @@ class AlgorithmNodeTreeManager:
         tree_expansion: TreeExpansion
         for opening_instruction in opening_instructions.values():
             # open
-            assert isinstance(opening_instruction.node_to_open, node.AlgorithmNode)
+            assert isinstance(opening_instruction.node_to_open, AlgorithmNode)
             tree_expansion = self.open_node_move(
                 tree=tree,
                 parent_node=opening_instruction.node_to_open,

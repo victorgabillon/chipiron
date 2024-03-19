@@ -1,12 +1,15 @@
+import typing
 from dataclasses import dataclass, field
 
-from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 from chipiron.utils.small_tools import Interval
+
+if typing.TYPE_CHECKING:
+    from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 
 
 @dataclass
 class NodeExplorationData:
-    tree_node: TreeNode
+    tree_node: 'TreeNode'
     index: float | None = None
 
     def dot_description(self):

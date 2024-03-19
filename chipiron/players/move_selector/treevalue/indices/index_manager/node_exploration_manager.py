@@ -3,10 +3,10 @@ from typing import Protocol
 
 import chess
 
-import chipiron.players.move_selector.treevalue.nodes as nodes
 import chipiron.players.move_selector.treevalue.trees as trees
 from chipiron.players.move_selector.treevalue.indices.node_indices.index_data import MinMaxPathValue, \
     RecurZipfQuoolExplorationData, IntervalExplo
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from chipiron.utils.small_tools import Interval, intersect_intervals, distance_number_to_interval
 
 
@@ -14,14 +14,14 @@ class NodeExplorationIndexManager(Protocol):
 
     def update_root_node_index(
             self,
-            root_node: nodes.AlgorithmNode,
+            root_node: AlgorithmNode,
     ) -> None:
         ...
 
     def update_node_indices(
             self,
-            child_node: nodes.AlgorithmNode,
-            parent_node: nodes.AlgorithmNode,
+            child_node: AlgorithmNode,
+            parent_node: AlgorithmNode,
             tree: trees.MoveAndValueTree,
             child_rank: int,
     ) -> None:
@@ -32,14 +32,14 @@ class NullNodeExplorationIndexManager(NodeExplorationIndexManager):
 
     def update_root_node_index(
             self,
-            root_node: nodes.AlgorithmNode,
+            root_node: AlgorithmNode,
     ) -> None:
         ...
 
     def update_node_indices(
             self,
-            child_node: nodes.AlgorithmNode,
-            parent_node: nodes.AlgorithmNode,
+            child_node: AlgorithmNode,
+            parent_node: AlgorithmNode,
             tree: trees.MoveAndValueTree,
             child_rank: int,
     ) -> None:
@@ -50,7 +50,7 @@ class UpdateIndexGlobalMinChange:
 
     def update_root_node_index(
             self,
-            root_node: nodes.AlgorithmNode,
+            root_node: AlgorithmNode,
     ) -> None:
 
         assert isinstance(root_node.exploration_index_data, MinMaxPathValue)
@@ -62,8 +62,8 @@ class UpdateIndexGlobalMinChange:
 
     def update_node_indices(
             self,
-            child_node: nodes.AlgorithmNode,
-            parent_node: nodes.AlgorithmNode,
+            child_node: AlgorithmNode,
+            parent_node: AlgorithmNode,
             tree: trees.MoveAndValueTree,
             child_rank: int,
     ) -> None:
@@ -115,7 +115,7 @@ class UpdateIndexZipfFactoredProba:
 
     def update_root_node_index(
             self,
-            root_node: nodes.AlgorithmNode,
+            root_node: AlgorithmNode,
     ) -> None:
 
         assert isinstance(root_node.exploration_index_data, RecurZipfQuoolExplorationData)
@@ -125,8 +125,8 @@ class UpdateIndexZipfFactoredProba:
 
     def update_node_indices(
             self,
-            child_node: nodes.AlgorithmNode,
-            parent_node: nodes.AlgorithmNode,
+            child_node: AlgorithmNode,
+            parent_node: AlgorithmNode,
             tree: trees.MoveAndValueTree,
             child_rank: int,
     ) -> None:
@@ -161,7 +161,7 @@ class UpdateIndexLocalMinChange:
 
     def update_root_node_index(
             self,
-            root_node: nodes.AlgorithmNode,
+            root_node: AlgorithmNode,
     ) -> None:
 
         assert isinstance(root_node.exploration_index_data, IntervalExplo)
@@ -174,8 +174,8 @@ class UpdateIndexLocalMinChange:
 
     def update_node_indices(
             self,
-            child_node: nodes.AlgorithmNode,
-            parent_node: nodes.AlgorithmNode,
+            child_node: AlgorithmNode,
+            parent_node: AlgorithmNode,
             tree: trees.MoveAndValueTree,
             child_rank: int,
     ) -> None:
@@ -287,9 +287,9 @@ def update_all_indices(
     for half_move in tree_nodes:
         # todo how are we sure that the hm comes in order?
         # print('hmv', half_move)
-        parent_node: nodes.AlgorithmNode
+        parent_node: AlgorithmNode
         for parent_node in tree_nodes[half_move].values():
-            child_node: nodes.AlgorithmNode
+            child_node: AlgorithmNode
             # for child_node in parent_node.moves_children.values():
             child_rank: int
             for child_rank, child_node in enumerate(parent_node.minmax_evaluation.children_sorted_by_value_):
@@ -314,7 +314,7 @@ def print_all_indices(
     for half_move in tree_nodes:
         # todo how are we sure that the hm comes in order?
         # print('hmv', half_move)
-        parent_node: nodes.AlgorithmNode
+        parent_node: AlgorithmNode
         for parent_node in tree_nodes[half_move].values():
             if parent_node.exploration_index_data is not None:
                 print('parent_node', parent_node.tree_node.id, parent_node.exploration_index_data.index)

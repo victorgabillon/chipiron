@@ -3,9 +3,9 @@ from enum import Enum
 import chess
 
 import chipiron.players.boardevaluators as board_evals
-import chipiron.players.move_selector.treevalue.nodes as nodes
 from chipiron.players.boardevaluators.over_event import HowOver, Winner
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 
 DISCOUNT = .999999999999  # todo play with this
 
@@ -75,7 +75,7 @@ class NodeEvaluator:
 
     def check_obvious_over_events(
             self,
-            node: nodes.AlgorithmNode):
+            node: AlgorithmNode):
         """ updates the node.over object
          if the game is obviously over"""
         game_over: bool = node.tree_node.board.is_game_over()
@@ -130,9 +130,11 @@ class NodeEvaluator:
             self.evaluate_all_not_over(evaluation_queries.not_over_nodes)
         evaluation_queries.clear_queries()
 
-    def add_evaluation_query(self,
-                             node,
-                             evaluation_queries: EvaluationQueries):
+    def add_evaluation_query(
+            self,
+            node,
+            evaluation_queries: EvaluationQueries
+    ) -> None:
         assert (node.minmax_evaluation.value_white_evaluator is None)
         self.check_obvious_over_events(node)
         if node.is_over():

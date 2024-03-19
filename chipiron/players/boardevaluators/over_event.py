@@ -88,11 +88,18 @@ class OverEvent:
     def is_draw(self):
         return self.how_over == HowOver.DRAW
 
-    def is_winner(self, player):
+    def is_winner(
+            self,
+            player: chess.Color
+    ) -> bool:
         assert (player == chess.WHITE or player == chess.BLACK)
 
         if self.how_over == HowOver.WIN:
-            return self.who_is_winner == player
+            if (self.who_is_winner == Winner.WHITE and player == chess.WHITE
+                    or self.who_is_winner == Winner.BLACK and player == chess.BLACK):
+                return True
+            else:
+                return False
         else:
             return False
 
