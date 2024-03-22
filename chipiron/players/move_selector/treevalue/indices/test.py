@@ -9,12 +9,12 @@ from chipiron.players.move_selector.treevalue.node_indices.node_exploration_mana
     NodeExplorationIndexManager
 
 import chipiron.environments.chess.board as boards
-from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 import chipiron.players.move_selector.treevalue.node_factory as node_factory
 import chipiron.players.move_selector.treevalue.search_factory as search_factories
 import chipiron.players.move_selector.treevalue.tree_manager as tree_manager
 import chipiron.players.move_selector.treevalue.trees as trees
 from chipiron.environments.chess.board.board import BoardChi
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from chipiron.players.move_selector.treevalue.tree_manager.tree_expander import TreeExpansions, TreeExpansion
 from chipiron.players.move_selector.treevalue.trees.descendants import RangedDescendants
 from chipiron.players.move_selector.treevalue.trees.move_and_value_tree import MoveAndValueTree

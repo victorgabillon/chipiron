@@ -10,7 +10,7 @@ from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 from .board_representation import Representation364
 
 if typing.TYPE_CHECKING:
-    from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
+    from chipiron.players.move_selector.treevalue.nodes.algorithm_node import AlgorithmNode
 
 
 def node_to_tensors_pieces_square_from_parent(node, board_modifications, parent_node):
