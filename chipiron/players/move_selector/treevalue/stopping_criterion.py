@@ -58,7 +58,10 @@ class StoppingCriterion:
         """
         return opening_instructions
 
-    def get_string_of_progress(self, tree: MoveAndValueTree) -> str:
+    def get_string_of_progress(
+            self,
+            tree: MoveAndValueTree
+    ) -> str:
         return ''
 
 
@@ -73,7 +76,10 @@ class TreeMoveLimit(StoppingCriterion):
     """
     tree_move_limit: int
 
-    def __init__(self, tree_move_limit: int):
+    def __init__(
+            self,
+            tree_move_limit: int
+    ) -> None:
         self.tree_move_limit = tree_move_limit
 
     def should_we_continue(

@@ -224,7 +224,6 @@ class NodeMinmaxEvaluation:
             if child in self.children_not_over:
                 self.children_not_over.remove(child)
             # atm, it happens that child is already  not in children_not_over so we check,
-            print('ppl', child.minmax_evaluation.is_winner(self.tree_node.player_to_move))
             if not self.is_over() and child.minmax_evaluation.is_winner(self.tree_node.player_to_move):
                 self.becoming_over_from_children()
                 is_newly_over = True

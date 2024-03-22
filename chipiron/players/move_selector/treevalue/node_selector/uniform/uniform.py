@@ -17,6 +17,11 @@ class Uniform:
         self.opening_instructor = opening_instructor
         self.current_depth_to_expand = 0
 
+    def get_current_depth_to_expand(
+            self
+    ) -> int:
+        return self.current_depth_to_expand
+
     def choose_node_and_move_to_open(
             self,
             tree: trees.MoveAndValueTree,
