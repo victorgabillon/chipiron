@@ -5,9 +5,9 @@ MoveAndValueTreeFactory
 import chipiron.environments.chess.board as boards
 import chipiron.players.move_selector.treevalue.node_factory as nod_fac
 from chipiron.players.move_selector.treevalue.node_evaluator import NodeEvaluator, EvaluationQueries
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from .descendants import RangedDescendants
 from .move_and_value_tree import MoveAndValueTree
-from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 
 
 class MoveAndValueTreeFactory:

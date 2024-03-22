@@ -10,18 +10,17 @@ from typing import Callable
 
 import chipiron.players.boardevaluators.table_base as table_base
 from chipiron.environments.chess.board import BoardChi
+from chipiron.players.boardevaluators.table_base import create_syzygy, SyzygyTable
+from chipiron.players.player_args import PlayerArgs
 from chipiron.players.utils import fetch_player_args_convert_and_save
+from chipiron.utils import path
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.communication.player_game_messages import MoveMessage
 from . import move_selector
 from .game_player import GamePlayer, game_player_computes_move_on_board_and_send_move_in_queue
 from .player import Player
-from .player_args import PlayerArgs
 from .player_thread import PlayerProcess
-from chipiron.utils import path
-from chipiron.players.player_args import PlayerArgs
-from chipiron.players.boardevaluators.table_base import create_syzygy, SyzygyTable
 
 
 def create_chipiron_player(
@@ -60,7 +59,6 @@ def create_player_from_file(
         player_args_file: path,
         random_generator: random.Random
 ) -> Player:
-
     args: PlayerArgs = fetch_player_args_convert_and_save(
         file_name_player=player_args_file
     )

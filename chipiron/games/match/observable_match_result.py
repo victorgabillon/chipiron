@@ -2,9 +2,8 @@ import copy
 import queue
 from dataclasses import dataclass, field
 
-from .match_results import MatchResults
-
 from chipiron.utils.communication.gui_messages.gui_messages import MatchResultsMessage
+from .match_results import MatchResults
 
 
 @dataclass
