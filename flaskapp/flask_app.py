@@ -6,7 +6,7 @@ from chipiron.players.move_selector.move_selector import MoveRecommendation
 from flask_bootstrap import Bootstrap4
 
 import json
-
+from chipiron.environments.chess.board import create_board
 # Uncomment and populate this variable in your code:
 PROJECT = 'chipironchess'
 
@@ -43,7 +43,6 @@ bootstrap = Bootstrap4(app)
 
 @app.route('/')
 def index():
-    print('tt')
     return render_template("index.html")
 
 
@@ -52,13 +51,12 @@ def index():
 def get_move(depth,fen):
     print('depth', depth, type(depth))
     print("CalculatingR...")
-    board: BoardChi = BoardChi()
+    board: BoardChi = create_board(fen=fen)
     print('fen', fen, type(fen))
-    board.set_starting_position(fen=fen)
     player = create_chipiron_player(depth)
     move_reco: MoveRecommendation = player.select_move(
         board=board,
-        seed=0
+        seed_=0
     )
     print("Move found!", move_reco.move)
     print()

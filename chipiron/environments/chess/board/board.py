@@ -19,7 +19,10 @@ class BoardChi:
     """
     board: chess.Board
 
-    def __init__(self, board: chess.Board) -> None:
+    def __init__(
+            self,
+            board: chess.Board
+    ) -> None:
         self.board = board
 
     def set_starting_position(

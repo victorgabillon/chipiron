@@ -19,6 +19,9 @@ from .game_player import GamePlayer, game_player_computes_move_on_board_and_send
 from .player import Player
 from .player_args import PlayerArgs
 from .player_thread import PlayerProcess
+from chipiron.utils import path
+from chipiron.players.player_args import PlayerArgs
+from chipiron.players.boardevaluators.table_base import create_syzygy, SyzygyTable
 
 
 def create_chipiron_player(
@@ -48,6 +51,30 @@ def create_chipiron_player(
 
     return Player(
         name='chipiron',
+        syzygy=syzygy_table,
+        main_move_selector=main_move_selector
+    )
+
+
+def create_player_from_file(
+        player_args_file: path,
+        random_generator: random.Random
+) -> Player:
+
+    args: PlayerArgs = fetch_player_args_convert_and_save(
+        file_name_player=player_args_file
+    )
+
+    syzygy_table: SyzygyTable | None = create_syzygy()
+
+    print('create player from file')
+    main_move_selector: move_selector.MoveSelector = move_selector.create_main_move_selector(
+        move_selector_instance_or_args=args.main_move_selector,
+        syzygy=syzygy_table,
+        random_generator=random_generator
+    )
+    return Player(
+        name=args.name,
         syzygy=syzygy_table,
         main_move_selector=main_move_selector
     )
