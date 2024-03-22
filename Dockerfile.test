@@ -42,7 +42,7 @@ RUN python3 -m pip install opencv-python-headless
 ADD . .
 
 RUN chmod -R 777 scripts
-RUN chmod -R 777 test
+RUN chmod -R 777 tests
 RUN chmod -R 777 chipiron
 
 RUN addgroup --system test
