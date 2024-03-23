@@ -1,6 +1,6 @@
 import copy
 import queue
-from typing import Callable
+from typing import Protocol
 
 import chess
 
@@ -72,7 +72,10 @@ class Game:
 
 # function that will be called by the observable game when the board is updated, which should query at least one player
 # to compute a move
-MoveFunction = Callable[[BoardChi, seed], None]
+# MoveFunction = Callable[[BoardChi, seed], None]
+
+class MoveFunction(Protocol):
+    def __call__(self, board: BoardChi, seed_: seed) -> None: ...
 
 
 class ObservableGame:
@@ -156,7 +159,7 @@ class ObservableGame:
                 board_copy: BoardChi = copy.deepcopy(self.game.board)
                 merged_seed: int | None = unique_int_from_list([self.game._seed, board_copy.ply()])
                 if merged_seed is not None:
-                    move_function(board=board_copy, seed=merged_seed)
+                    move_function(board=board_copy, seed_=merged_seed)
 
     def notify_status(self):
         print('notify game', self.game.playing_status.status)
