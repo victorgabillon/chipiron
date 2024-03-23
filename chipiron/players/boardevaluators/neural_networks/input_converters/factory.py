@@ -64,7 +64,6 @@ def node_to_tensors_pieces_square_from_parent(node, board_modifications, parent_
     return representation
 
 
-# todo remove the quotes around  'AlgorithmNode' in the type hont below and the related circular import
 class Representation364Factory:
     def create_from_transition(
             self,

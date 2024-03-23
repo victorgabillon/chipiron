@@ -1,0 +1,21 @@
+name: Uniform
+main_move_selector:
+  type: TreeAndValue
+  node_selector:
+    type: Uniform
+    
+  opening_type: all_children
+  recommender_rule:
+    type: almost_equal_logistic
+    temperature: 2
+  stopping_criterion:
+      type: depth_limit
+      depth_limit: 3
+  board_evaluator:
+    type: neural_network
+    neural_network:
+        nn_type: pp2d2_2_prelu
+        nn_param_folder_name: 'param_prelu'
+    representation: '364'
+    syzygy_evaluation: True
+syzygy_play: True
