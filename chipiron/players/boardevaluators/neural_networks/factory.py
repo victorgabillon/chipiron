@@ -1,10 +1,11 @@
 import os.path
 import sys
-from dataclasses import dataclass
 
-from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_input import Representation364BTI, \
-    BoardToInput
+from chipiron.players.boardevaluators.neural_networks import NeuralNetBoardEvalArgs
+from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_input import BoardToInput
 from chipiron.players.boardevaluators.neural_networks.input_converters.factory import Representation364Factory
+from chipiron.players.boardevaluators.neural_networks.input_converters.representation_364_bti import \
+    Representation364BTI
 from chipiron.players.boardevaluators.neural_networks.models.nn_pp1 import NetPP1
 from chipiron.players.boardevaluators.neural_networks.models.nn_pp2 import NetPP2
 from chipiron.players.boardevaluators.neural_networks.models.nn_pp2d2 import NetPP2D2
@@ -17,12 +18,6 @@ from chipiron.players.boardevaluators.neural_networks.output_converters.output_v
     OutputValueConverter, OneDToValueWhite
 from chipiron.utils.chi_nn import ChiNN
 from chipiron.utils.small_tools import mkdir
-
-
-@dataclass
-class NeuralNetBoardEvalArgs:
-    nn_type: str
-    nn_param_folder_name: str
 
 
 def get_folder_path_from(nn_type: str,

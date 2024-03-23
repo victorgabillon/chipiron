@@ -1,4 +1,3 @@
-import typing
 from typing import Optional
 
 import chess
@@ -6,11 +5,9 @@ import torch
 
 import chipiron.environments.chess.board as board_mod
 from chipiron.environments.chess.board.board import BoardChi
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node import AlgorithmNode
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 from .board_representation import Representation364
-
-if typing.TYPE_CHECKING:
-    pass
 
 
 def node_to_tensors_pieces_square_from_parent(node, board_modifications, parent_node):
@@ -72,7 +69,7 @@ class Representation364Factory:
     def create_from_transition(
             self,
             tree_node: TreeNode,
-            parent_node: 'AlgorithmNode | None',
+            parent_node: AlgorithmNode | None,
             modifications: board_mod.BoardModification | None
     ) -> Representation364:
 
