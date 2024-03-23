@@ -87,7 +87,9 @@ class OneMatchScript:
 
         self.gui = args.gui
 
-    def run(self) -> None:
+    def run(
+            self
+    ) -> None:
         """
         Runs the match either with a GUI or not
         Returns:
@@ -111,7 +113,9 @@ class OneMatchScript:
 
         # TODO check the good closing of processes
 
-    def terminate(self) -> None:
+    def terminate(
+            self
+    ) -> None:
         print('terminating script')
         self.base_script.terminate()
         if self.gui:
