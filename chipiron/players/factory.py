@@ -6,7 +6,7 @@ import multiprocessing
 import queue
 import random
 from functools import partial
-from typing import Callable
+from typing import Protocol
 
 import chipiron.players.boardevaluators.table_base as table_base
 from chipiron.environments.chess.board import BoardChi
@@ -126,7 +126,9 @@ def send_board_to_player_process_mailbox(
     player_process_mailbox.put(item=message)
 
 
-MoveFunction = Callable[[BoardChi, seed], None]
+# FIXME double definition of Move functions!!
+class MoveFunction(Protocol):
+    def __call__(self, board: BoardChi, seed_: seed) -> None: ...
 
 
 def create_player_observer(

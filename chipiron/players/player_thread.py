@@ -2,6 +2,7 @@ import multiprocessing
 import queue
 
 from chipiron.environments.chess.board import BoardChi
+from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.communication.player_game_messages import MoveMessage
 from chipiron.utils.is_dataclass import DataClass
@@ -14,11 +15,12 @@ class PlayerProcess(multiprocessing.Process):
     queue_board: queue.Queue[DataClass]
     queue_move: queue.Queue[MoveMessage]
 
-    def __init__(self,
-                 game_player: GamePlayer,
-                 queue_board: queue.Queue[DataClass],
-                 queue_move: queue.Queue[MoveMessage],
-                 ):
+    def __init__(
+            self,
+            game_player: GamePlayer,
+            queue_board: queue.Queue[DataClass],
+            queue_move: queue.Queue[MoveMessage],
+    ):
         # Call the Thread class's init function
         multiprocessing.Process.__init__(self, daemon=False)
         self._stop_event = multiprocessing.Event()
@@ -41,16 +43,16 @@ class PlayerProcess(multiprocessing.Process):
                 if isinstance(message, BoardMessage):
                     board_message: BoardMessage = message
                     board: BoardChi = board_message.board
-                    seed: int | None = board_message.seed
+                    seed_: seed | None = board_message.seed
                     print('player thread got ', board)
-                    assert seed is not None
+                    assert seed_ is not None
 
                     # the game_player computes the move for the board and sends the move in the move queue
                     game_player_computes_move_on_board_and_send_move_in_queue(
                         board=board,
                         game_player=self.game_player,
                         queue_move=self.queue_move,
-                        seed=seed
+                        seed_=seed_
                     )
 
                 else:

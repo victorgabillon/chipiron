@@ -5,6 +5,7 @@ import chess
 
 from chipiron.environments.chess.board import BoardChi
 from chipiron.players.move_selector.move_selector import MoveRecommendation
+from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import MoveMessage
 from .player import Player
 
@@ -33,15 +34,15 @@ class GamePlayer:
     def select_move(
             self,
             board: BoardChi,
-            seed: int | None = None
+            seed_: seed | None = None
     ) -> MoveRecommendation:
         all_legal_moves = list(board.legal_moves)
         if not all_legal_moves:
             raise Exception('No legal moves in this position')
-        assert seed is not None
+        assert seed_ is not None
         best_move: MoveRecommendation = self._player.select_move(
             board=board,
-            seed_=seed
+            seed_=seed_
         )
         return best_move
 
@@ -50,12 +51,12 @@ def game_player_computes_move_on_board_and_send_move_in_queue(
         board: BoardChi,
         game_player: GamePlayer,
         queue_move: queue.Queue[MoveMessage],
-        seed: int
+        seed_: seed
 ) -> None:
     if board.turn == game_player.color and not board.board.is_game_over():
         move_recommendation: MoveRecommendation = game_player.select_move(
             board=board,
-            seed=seed
+            seed_=seed_
         )
         message = MoveMessage(
             move=move_recommendation.move,
