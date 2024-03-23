@@ -9,7 +9,7 @@ from chipiron.players.boardevaluators.neural_networks import NeuralNetBoardEvalA
 from dataclasses import dataclass, field
 import dacite
 import os
-from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_input import Representation364BTI
+from chipiron.players.boardevaluators.neural_networks.input_converters.representation_364_bti import Representation364BTI
 from chipiron.players.boardevaluators.neural_networks.input_converters.factory import Representation364Factory
 
 
