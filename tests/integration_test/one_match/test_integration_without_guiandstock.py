@@ -1,6 +1,7 @@
 import time
 
 import scripts
+# we need to not use multiprocessing to be able to use pytest therefore use setting_pain (bread) and not setting_jime
 
 start_time = time.time()
 configs = [
@@ -10,7 +11,7 @@ configs = [
         'seed': 11, 'gui': False,
         'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
         'file_name_player_two': 'Random.yaml',
-        'file_name_match_setting': 'setting_jime.yaml',
+        'file_name_match_setting': 'setting_pain.yaml',
         'profiling': False,
         'match':{}
 
@@ -19,29 +20,29 @@ configs = [
 
     {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
      'file_name_player_two': 'players_for_test_purposes/RecurZipfSequool.yaml',
-     'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
+     'file_name_match_setting': 'setting_pain.yaml', 'profiling': False},
     {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
      'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml',
-     'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
+     'file_name_match_setting': 'setting_pain.yaml', 'profiling': False},
     {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/RecurZipfBase4.yaml',
      'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml',
-     'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
+     'file_name_match_setting': 'setting_pain.yaml', 'profiling': False},
     {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Uniform.yaml',
      'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml',
-     'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
+     'file_name_match_setting': 'setting_pain.yaml', 'profiling': False},
     {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/RecurZipfBase3.yaml',
      'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml',
-     'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
+     'file_name_match_setting': 'setting_pain.yaml', 'profiling': False},
 
     # checking profiling
     {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
      'file_name_player_two': 'Random.yaml',
-     'file_name_match_setting': 'setting_jime.yaml', 'profiling': True},
+     'file_name_match_setting': 'setting_pain.yaml', 'profiling': True},
 
     # checking another seed haha
     {'seed': 12, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
      'file_name_player_two': 'Random.yaml',
-     'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
+     'file_name_match_setting': 'setting_pain.yaml', 'profiling': False},
 
     # need a check with two games
     {'seed': 11, 'gui': False, 'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
