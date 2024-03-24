@@ -25,8 +25,7 @@ def create_match_manager(
         args_game: game.GameArgs,
         seed: int | None = None,
         output_folder_path: path | None = None,
-        gui: bool = False,
-        print_svg_board_to_file: bool = False
+        gui: bool = False
 ) -> MatchManager:
     main_thread_mailbox: queue.Queue[MoveMessage] = multiprocessing.Manager().Queue()
 
@@ -44,7 +43,6 @@ def create_match_manager(
         game_manager_board_evaluator=game_board_evaluator,
         output_folder_path=output_folder_path,
         main_thread_mailbox=main_thread_mailbox,
-        print_svg_board_to_file=print_svg_board_to_file
     )
 
     match_results_factory: MatchResultsFactory = MatchResultsFactory(
@@ -74,6 +72,7 @@ def create_match_manager(
 def create_match_manager_from_args(
         args: MatchArgs,
         profiling: bool = False,
+        testing: bool = False,
         gui: bool = False
 ) -> MatchManager:
     player_one_args: players.PlayerArgs
@@ -85,6 +84,7 @@ def create_match_manager_from_args(
         modification_player_two=args.player_two,
         experiment_output_folder=args.experiment_output_folder
     )
+    print('fssffff', profiling, testing)
 
     # Recovering args from yaml file for match and game and merging with extra args and converting
     # to standardized dataclass
@@ -92,6 +92,7 @@ def create_match_manager_from_args(
     game_args: game.GameArgs
     match_args, game_args = fetch_match_games_args_convert_and_save(
         profiling=profiling,
+        testing=testing,
         file_name_match_setting=args.file_name_match_setting,
         modification=args.match,
         experiment_output_folder=args.experiment_output_folder
@@ -108,8 +109,7 @@ def create_match_manager_from_args(
         output_folder_path=args.experiment_output_folder,
         seed=args.seed,
         args_game=game_args,
-        gui=gui,
-        print_svg_board_to_file=args.print_svg_board_to_file
+        gui=gui
     )
 
     return match_manager

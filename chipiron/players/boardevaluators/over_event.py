@@ -57,6 +57,7 @@ class OverEvent:
             how_over: HowOver,
             who_is_winner: Winner = Winner.NO_KNOWN_WINNER
     ) -> None:
+        # FIXME its it just replacing an over event by another over event?? should we simplify in some way?
         self.how_over = how_over
         self.who_is_winner = who_is_winner
 

@@ -94,6 +94,7 @@ class TreeExploration:
                 tree=self.tree,
                 opening_instructions=opening_instructions_subset
             )
+
             # self.node_selector.communicate_expansions()
             self.tree_manager.update_backward(tree_expansions=tree_expansions)
             self.tree_manager.update_indices(tree=self.tree)

@@ -2,7 +2,6 @@ import chess.syzygy
 
 import chipiron.environments.chess.board as boards
 from chipiron.players.boardevaluators.over_event import Winner, HowOver, OverTags
-from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from chipiron.utils import path
 
 
@@ -31,26 +30,24 @@ class SyzygyTable:
             return False
         return True
 
-    def set_over_event(
+    def get_over_event(
             self,
-            node: AlgorithmNode
-    ) -> None:
-        val: int = self.val(node.board)
+            board: boards.BoardChi
+    ) -> tuple[Winner, HowOver]:
+        val: int = self.val(board)
 
-        who_is_winner_ = Winner.NO_KNOWN_WINNER
+        who_is_winner_: Winner = Winner.NO_KNOWN_WINNER
+        how_over_: HowOver
         if val != 0:
             how_over_ = HowOver.WIN
             if val > 0:
-                who_is_winner_ = node.player_to_move
+                who_is_winner_ = board.turn
             if val < 0:
-                who_is_winner_ = Winner.WHITE if node.player_to_move == chess.BLACK else Winner.BLACK
+                who_is_winner_ = Winner.WHITE if board.turn == chess.BLACK else Winner.BLACK
         else:
             how_over_ = HowOver.DRAW
 
-        node.minmax_evaluation.over_event.becomes_over(
-            how_over=how_over_,
-            who_is_winner=who_is_winner_
-        )
+        return who_is_winner_, how_over_
 
     def val(
             self,

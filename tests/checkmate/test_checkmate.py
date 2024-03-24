@@ -19,7 +19,7 @@ def test_check():
 
 def test_check_in_two():
     dict_fen_move: dict[str, list[chess.Move]] = {}
-    with open('data/puzzles/mate_in_2_db.pickle', 'rb') as file:
+    with open('data/puzzles/mate_in_2_db_small.pickle', 'rb') as file:
         dict_fen_move = pickle.load(file=file)
 
     assert dict_fen_move

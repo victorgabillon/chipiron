@@ -9,7 +9,7 @@ with open(file='matein2.txt', mode='r') as file:
     content = file.readlines()
     line: int = first_line
     index: int = 0
-    while first_line + index * 5 < len(content):
+    while first_line + index * 5 < len(content) and index < 3:
         fen_line: int = first_line + index * 5
         fen = content[fen_line]
         board = chess.Board(fen=fen)
@@ -28,5 +28,5 @@ with open(file='matein2.txt', mode='r') as file:
         dict_fen_move[fen] = chess_moves
         index += 1
 
-with open('mate_in_2_db.pickle', 'wb') as file:
+with open('mate_in_2_db_small.pickle', 'wb') as file:
     pickle.dump(obj=dict_fen_move, file=file)

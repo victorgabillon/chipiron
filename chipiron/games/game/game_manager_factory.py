@@ -6,9 +6,9 @@ import chipiron as ch
 import chipiron.environments.chess.board as boards
 import chipiron.players as players_m
 from chipiron.games.game.game_args import GameArgs
-from chipiron.players import Player
+from chipiron.players import PlayerFactoryArgs
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
-from chipiron.players.factory import create_player_observer
+from chipiron.players.factory_higher_level import create_player_observer
 from chipiron.utils import path
 from chipiron.utils import seed
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage, extract_message_from_players
@@ -33,19 +33,17 @@ class GameManagerFactory:
             game_manager_board_evaluator,
             output_folder_path: path | None,
             main_thread_mailbox: queue.Queue[MoveMessage],
-            print_svg_board_to_file: bool = False
     ) -> None:
         self.syzygy_table = syzygy_table
         self.output_folder_path = output_folder_path
         self.game_manager_board_evaluator = game_manager_board_evaluator
         self.main_thread_mailbox = main_thread_mailbox
         self.subscribers = []
-        self.print_svg_board_to_file = print_svg_board_to_file
 
     def create(
             self,
             args_game_manager: GameArgs,
-            player_color_to_player: dict[chess.Color, Player],
+            player_color_to_factory_args: dict[chess.Color, PlayerFactoryArgs],
             game_seed: seed
     ) -> GameManager:
         # maybe this factory is overkill at the moment but might be
@@ -55,7 +53,7 @@ class GameManagerFactory:
         if self.subscribers:
             for subscriber in self.subscribers:
                 player_id_message: PlayersColorToPlayerMessage = extract_message_from_players(
-                    player_color_to_player=player_color_to_player
+                    player_color_to_factory_args=player_color_to_factory_args
                 )
                 subscriber.put(player_id_message)
 
@@ -79,13 +77,13 @@ class GameManagerFactory:
         players: list[players_m.GamePlayer | players_m.PlayerProcess] = []
         # Creating and launching the player threads
         for player_color in chess.COLORS:
-            player: players_m.Player = player_color_to_player[player_color]
-            game_player: players_m.GamePlayer = players_m.GamePlayer(player, player_color)
-            if player.id != 'Human':  # TODO COULD WE DO BETTER ? maybe with the null object
+            player_factory_args: players_m.PlayerFactoryArgs = player_color_to_factory_args[player_color]
+            if player_factory_args.player_args.name != 'Human':  # TODO COULD WE DO BETTER ? maybe with the null object
                 generic_player: players_m.GamePlayer | players_m.PlayerProcess
                 move_function: MoveFunction
                 generic_player, move_function = create_player_observer(
-                    game_player=game_player,
+                    player_color=player_color,
+                    player_factory_args=player_factory_args,
                     distributed_players=args_game_manager.each_player_has_its_own_thread,
                     main_thread_mailbox=self.main_thread_mailbox
                 )
@@ -94,8 +92,10 @@ class GameManagerFactory:
                 # registering to the observable board to get notification when it changes
                 observable_game.register_player(move_function=move_function)
 
-        player_color_to_id: dict[chess.Color, str] = {color: player.id for color, player in
-                                                      player_color_to_player.items()}
+        player_color_to_id: dict[chess.Color, str] = {
+            color: player_factory_args.player_args.name for color, player_factory_args in
+            player_color_to_factory_args.items()
+        }
 
         game_manager: GameManager
         game_manager = GameManager(
@@ -107,7 +107,6 @@ class GameManagerFactory:
             player_color_to_id=player_color_to_id,
             main_thread_mailbox=self.main_thread_mailbox,
             players=players,
-            print_svg_board_to_file=self.print_svg_board_to_file
         )
 
         return game_manager

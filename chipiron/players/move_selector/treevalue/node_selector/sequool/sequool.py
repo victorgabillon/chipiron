@@ -215,13 +215,11 @@ class Sequool:
             from_node=from_node,
             random_generator=self.random_generator
         )
-        print('half_move_selected', half_move_selected)
 
         nodes_to_consider: list[AlgorithmNode] = self.consider_nodes_from_half_moves(
             half_move_selected,
             from_node
         )
-        # print('nodes_to_consider', nodes_to_consider)
 
         best_node: AlgorithmNode = get_best_node_from_candidates(nodes_to_consider=nodes_to_consider)
 
@@ -237,4 +235,5 @@ class Sequool:
             opening_instructions: OpeningInstructions = create_instructions_to_open_all_moves(
                 moves_to_play=all_moves_to_open,
                 node_to_open=best_node)
+
             return opening_instructions

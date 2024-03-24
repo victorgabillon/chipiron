@@ -1,12 +1,16 @@
 import multiprocessing
 import queue
 
+import chess
+
 from chipiron.environments.chess.board import BoardChi
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.communication.player_game_messages import MoveMessage
 from chipiron.utils.is_dataclass import DataClass
+from .factory import create_game_player
 from .game_player import GamePlayer, game_player_computes_move_on_board_and_send_move_in_queue
+from .player_args import PlayerFactoryArgs
 
 
 # A class that extends the Thread class
@@ -14,19 +18,26 @@ class PlayerProcess(multiprocessing.Process):
     game_player: GamePlayer
     queue_board: queue.Queue[DataClass]
     queue_move: queue.Queue[MoveMessage]
+    player_color: chess.Color
 
     def __init__(
             self,
-            game_player: GamePlayer,
+            player_factory_args: PlayerFactoryArgs,
             queue_board: queue.Queue[DataClass],
             queue_move: queue.Queue[MoveMessage],
+            player_color: chess.Color
     ):
         # Call the Thread class's init function
         multiprocessing.Process.__init__(self, daemon=False)
         self._stop_event = multiprocessing.Event()
-        self.game_player = game_player
         self.queue_move = queue_move
         self.queue_board = queue_board
+        self.player_color = player_color
+
+        self.game_player = create_game_player(
+            player_factory_args=player_factory_args,
+            player_color=player_color
+        )
 
     # Override the run() function of Thread class
     def run(self):

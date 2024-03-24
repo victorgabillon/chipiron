@@ -16,6 +16,7 @@ class MatchArgs:
 
     # path to files with yaml config the players and the match setting.
     config_file_name: path = 'scripts/one_match/inputs/base/exp_options.yaml'
+    # FIXME does the lines below always overwrites the configfile name above ? is the aconfig file name ever used atm?
     file_name_player_one: path = 'RecurZipfBase3.yaml'
     file_name_player_two: path = 'Sequool.yaml'
     file_name_match_setting: path = 'setting_duda.yaml'
@@ -24,5 +25,3 @@ class MatchArgs:
     player_one: dict[Any, Any] = field(default_factory=dict)
     player_two: dict[Any, Any] = field(default_factory=dict)
     match: dict[Any, Any] = field(default_factory=dict)
-
-    print_svg_board_to_file: bool = False  # hardcode atm for webserver

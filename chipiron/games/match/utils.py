@@ -12,6 +12,7 @@ from .match_settings_args import MatchSettingsArgs
 def fetch_match_games_args_convert_and_save(
         file_name_match_setting: path,
         profiling: bool = False,
+        testing: bool = False,
         experiment_output_folder: path | None = None,
         modification: dict[Any, Any] | None = None,
 ) -> tuple[MatchSettingsArgs, game.GameArgs]:
@@ -19,6 +20,8 @@ def fetch_match_games_args_convert_and_save(
 
     if profiling:
         file_name_match_setting_ = 'setting_jime.yaml'
+        if testing:
+            file_name_match_setting_ = 'setting_cubo.yaml'
     else:
         file_name_match_setting_ = file_name_match_setting
 
