@@ -10,7 +10,7 @@ from chipiron.games.game.game_manager_factory import GameManagerFactory
 from chipiron.games.match.match_results import MatchResults, MatchReport, IMatchResults
 from chipiron.games.match.match_results_factory import MatchResultsFactory
 from chipiron.games.match.observable_match_result import ObservableMatchResults
-from chipiron.players import Player
+from chipiron.players import PlayerFactoryArgs
 from chipiron.utils import path
 from chipiron.utils import seed
 
@@ -20,13 +20,15 @@ class MatchManager:
     Objet in charge of playing one match
     """
 
-    def __init__(self,
-                 player_one_id: str,
-                 player_two_id: str,
-                 game_manager_factory: GameManagerFactory,
-                 game_args_factory,
-                 match_results_factory: MatchResultsFactory,
-                 output_folder_path=None):
+    def __init__(
+            self,
+            player_one_id: str,
+            player_two_id: str,
+            game_manager_factory: GameManagerFactory,
+            game_args_factory,
+            match_results_factory: MatchResultsFactory,
+            output_folder_path=None
+    ) -> None:
         self.player_one_id = player_one_id
         self.player_two_id = player_two_id
         self.game_manager_factory = game_manager_factory
@@ -53,13 +55,13 @@ class MatchManager:
         game_number: int = 0
         while not self.game_args_factory.is_match_finished():
             args_game: GameArgs
-            player_color_to_player: dict[chess.Color, Player]
+            player_color_to_factory_args: dict[chess.Color, PlayerFactoryArgs]
             game_seed: seed
-            player_color_to_player, args_game, game_seed = self.game_args_factory.generate_game_args(game_number)
+            player_color_to_factory_args, args_game, game_seed = self.game_args_factory.generate_game_args(game_number)
 
             # Play one game
             game_report: GameReport = self.play_one_game(
-                player_color_to_player=player_color_to_player,
+                player_color_to_factory_args=player_color_to_factory_args,
                 args_game=args_game,
                 game_number=game_number,
                 game_seed=game_seed
@@ -67,14 +69,15 @@ class MatchManager:
 
             # Update the reporting of the ongoing match with the report of the finished game
             match_results.add_result_one_game(
-                white_player_name_id=player_color_to_player[chess.WHITE].id,
+                white_player_name_id=player_color_to_factory_args[chess.WHITE].player_args.name,
                 game_result=game_report.final_game_result
             )
             match_move_history[game_number] = game_report.move_history
 
             # ad hoc waiting time in case we play against a human and the game is finished
             # (so that the human as the time to view the final position before the automatic start of a new game)
-            if player_color_to_player[chess.WHITE].id == 'Human' or player_color_to_player[chess.BLACK].id == 'Human':
+            if (player_color_to_factory_args[chess.WHITE].player_args.name == 'Human'
+                    or player_color_to_factory_args[chess.BLACK].player_args.name == 'Human'):
                 import time
                 time.sleep(30)
 
@@ -103,14 +106,14 @@ class MatchManager:
 
     def play_one_game(
             self,
-            player_color_to_player: dict[chess.Color, Player],
+            player_color_to_factory_args: dict[chess.Color, PlayerFactoryArgs],
             args_game: GameArgs,
             game_number: int,
             game_seed: seed
     ) -> GameReport:
         game_manager: GameManager = self.game_manager_factory.create(
             args_game_manager=args_game,
-            player_color_to_player=player_color_to_player,
+            player_color_to_factory_args=player_color_to_factory_args,
             game_seed=game_seed
         )
         game_report: GameReport = game_manager.play_one_game()

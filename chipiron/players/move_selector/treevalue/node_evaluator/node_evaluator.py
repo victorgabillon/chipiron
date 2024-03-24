@@ -101,7 +101,11 @@ class NodeEvaluator:
             )
 
         elif self.syzygy_evaluator and self.syzygy_evaluator.fast_in_table(node.tree_node.board):
-            self.syzygy_evaluator.set_over_event(node)
+            who_is_winner_, how_over_ = self.syzygy_evaluator.get_over_event(board=node.board)
+            node.minmax_evaluation.over_event.becomes_over(
+                how_over=how_over_,
+                who_is_winner=who_is_winner_
+            )
 
     def value_white_from_over_event(self, over_event):
         """ returns the value white given an over event"""
@@ -124,10 +128,13 @@ class NodeEvaluator:
             self,
             evaluation_queries: EvaluationQueries
     ) -> None:
+
         for node_over in evaluation_queries.over_nodes:
             self.evaluate_over(node_over)
+
         if evaluation_queries.not_over_nodes:
             self.evaluate_all_not_over(evaluation_queries.not_over_nodes)
+
         evaluation_queries.clear_queries()
 
     def add_evaluation_query(

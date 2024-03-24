@@ -9,3 +9,9 @@ class PlayerArgs:
     main_move_selector: move_selector.AllMoveSelectorArgs
     # whether to play with syzygy when possible
     syzygy_play: bool
+
+
+@dataclass
+class PlayerFactoryArgs:
+    player_args: PlayerArgs
+    seed: int

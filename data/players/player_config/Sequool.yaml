@@ -13,7 +13,7 @@ main_move_selector:
     temperature: 2
   stopping_criterion:
       type: tree_move_limit
-      tree_move_limit: 10000
+      tree_move_limit: 1000
   board_evaluator:
     type: neural_network
     neural_network:

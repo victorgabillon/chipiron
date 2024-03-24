@@ -1,4 +1,3 @@
-import random
 import typing
 from dataclasses import dataclass
 from enum import Enum
@@ -6,8 +5,6 @@ from enum import Enum
 import chess
 
 import chipiron.players as players
-from chipiron.players.boardevaluators.table_base import create_syzygy, SyzygyTable
-from chipiron.players.factory import create_player
 from chipiron.utils import seed
 from chipiron.utils.small_tools import unique_int_from_list
 from .game_args import GameArgs
@@ -70,34 +67,34 @@ class GameArgsFactory:
     def generate_game_args(
             self,
             game_number: int
-    ) -> tuple[dict[chess.Color, players.Player], GameArgs, seed | None]:
-
-        # Creating the players
-        syzygy_table: SyzygyTable | None = create_syzygy()
+    ) -> tuple[dict[chess.Color, players.PlayerFactoryArgs], GameArgs, seed | None]:
 
         merged_seed: seed | None = unique_int_from_list([self.seed_, game_number])
+        assert merged_seed is not None
 
-        # if seed is None random uses the current system time as seed
-        random_generator: random.Random = random.Random(merged_seed)
-        player_one: players.Player = create_player(
-            args=self.args_player_one,
-            syzygy=syzygy_table,
-            random_generator=random_generator
+        player_one_factory_args: players.PlayerFactoryArgs = players.PlayerFactoryArgs(
+            player_args=self.args_player_one,
+            seed=merged_seed
         )
-        player_two: players.Player = create_player(
-            args=self.args_player_two,
-            syzygy=syzygy_table,
-            random_generator=random_generator
+        player_two_factory_args: players.PlayerFactoryArgs = players.PlayerFactoryArgs(
+            player_args=self.args_player_two,
+            seed=merged_seed
         )
 
-        player_color_to_player: dict[chess.Color, players.Player]
+        player_color_to_factory_args: dict[chess.Color, players.PlayerFactoryArgs]
         if game_number < self.args_match.number_of_games_player_one_white:
-            player_color_to_player = {chess.WHITE: player_one, chess.BLACK: player_two}
+            player_color_to_factory_args = {
+                chess.WHITE: player_one_factory_args,
+                chess.BLACK: player_two_factory_args
+            }
         else:
-            player_color_to_player = {chess.WHITE: player_two, chess.BLACK: player_one}
+            player_color_to_factory_args = {
+                chess.WHITE: player_two_factory_args,
+                chess.BLACK: player_one_factory_args
+            }
         self.game_number += 1
 
-        return player_color_to_player, self.args_game, merged_seed
+        return player_color_to_factory_args, self.args_game, merged_seed
 
     def is_match_finished(self):
         return (self.game_number >= self.args_match.number_of_games_player_one_white

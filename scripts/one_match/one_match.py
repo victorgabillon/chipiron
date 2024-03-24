@@ -57,11 +57,14 @@ class OneMatchScript:
             data=args_dict
         )
 
+
+
         # creating the match manager
         self.match_manager: ch.game.MatchManager = create_match_manager_from_args(
             args=args,
             profiling=args.profiling,
-            gui=args.gui
+            gui=args.gui,
+            testing=args.testing
         )
 
         # saving the arguments of the script

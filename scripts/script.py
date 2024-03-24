@@ -16,8 +16,11 @@ import dacite
 
 @dataclass
 class ScriptArgs:
-    profiling: bool = False
+    # whether the script is profiling computation usage
+    profiling: bool = True
 
+    # whether the script is tesing the code (using pytest for instance)
+    testing: bool = False
 
 class Script:
     """

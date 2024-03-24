@@ -104,6 +104,7 @@ class AlgorithmNodeTreeManager:
                 node=tree_expansion.child_node,
                 evaluation_queries=self.evaluation_queries
             )
+
         self.node_evaluator.evaluate_all_queried_nodes(evaluation_queries=self.evaluation_queries)
 
         return tree_expansions

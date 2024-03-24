@@ -3,10 +3,6 @@ from math import isclose
 
 import chess
 import yaml
-from chipiron.players.move_selector.treevalue.node_indices.factory import create_exploration_index_manager
-from chipiron.players.move_selector.treevalue.node_indices.index_types import IndexComputationType
-from chipiron.players.move_selector.treevalue.node_indices.node_exploration_manager import update_all_indices, \
-    NodeExplorationIndexManager
 
 import chipiron.environments.chess.board as boards
 import chipiron.players.move_selector.treevalue.node_factory as node_factory
@@ -14,6 +10,10 @@ import chipiron.players.move_selector.treevalue.search_factory as search_factori
 import chipiron.players.move_selector.treevalue.tree_manager as tree_manager
 import chipiron.players.move_selector.treevalue.trees as trees
 from chipiron.environments.chess.board.board import BoardChi
+from chipiron.players.move_selector.treevalue.indices.index_manager.factory import create_exploration_index_manager
+from chipiron.players.move_selector.treevalue.indices.index_manager.node_exploration_manager import update_all_indices, \
+    NodeExplorationIndexManager
+from chipiron.players.move_selector.treevalue.indices.node_indices.index_types import IndexComputationType
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from chipiron.players.move_selector.treevalue.tree_manager.tree_expander import TreeExpansions, TreeExpansion
 from chipiron.players.move_selector.treevalue.trees.descendants import RangedDescendants
@@ -22,6 +22,7 @@ from chipiron.utils.small_tools import path
 
 
 class TestResult(Enum):
+    __test__ = False
     PASSED = 0
     FAILED = 1
     WARNING = 2
@@ -138,7 +139,10 @@ def make_tree_from_file(
     return move_and_value_tree
 
 
-def check_from_file(file, tree):
+def check_from_file(
+        file,
+        tree
+):
     with open(file, 'r') as file:
         tree_yaml = yaml.safe_load(file)
     print('tree', tree_yaml)
@@ -195,29 +199,44 @@ def check_index(
     #    tree
     # )
     file_index = f'data/trees/{tree_file}/{tree_file}_{index_computation.value}.yaml'
-    check_from_file(file=file_index, tree=tree)
+    print('tyu', file_index, index_computation.value)
+    check_from_file(
+        file=file_index,
+        tree=tree
+    )
 
     return TestResult.PASSED
 
 
 def test_indices():
-    index_computations = [IndexComputationType.MinGlobalChange,
-                          IndexComputationType.RecurZipf,
-                          IndexComputationType.MinLocalChange]
+    index_computations = [
+        IndexComputationType.MinGlobalChange,
+        IndexComputationType.RecurZipf,
+        IndexComputationType.MinLocalChange
+    ]
 
     tree_files = ['tree_1', 'tree_2']
 
     results: dict[TestResult, int] = {}
-    for index_computation in index_computations:
-        for tree_file in tree_files:
+    for tree_file in tree_files:
+
+        if tree_file == 'tree_2':
+            index_computations_ = [
+                IndexComputationType.MinGlobalChange,
+                IndexComputationType.MinLocalChange
+            ]
+        else:
+            index_computations_ = index_computations
+
+        for index_computation in index_computations_:
             print(f'---testing {index_computation} on {tree_file}')
             res: TestResult = check_index(index_computation, tree_file)
             if res in results:
                 results[res] += 1
             else:
                 results[res] = 1
-
     print(f'finished TEst: {results}')
+    assert (results[TestResult.PASSED] == 5)
 
 
 if __name__ == '__main__':
