@@ -3,24 +3,28 @@ The base script
 """
 
 import cProfile
+import io
 import os.path
 import pstats
-import io
-from pstats import SortKey
 import time
+from dataclasses import dataclass
+from pstats import SortKey
+from typing import Any
+
+import dacite
+
 from chipiron.utils.small_tools import mkdir
 from scripts.parsers.parser import MyParser
-from dataclasses import dataclass
-import dacite
 
 
 @dataclass
 class ScriptArgs:
     # whether the script is profiling computation usage
-    profiling: bool = True
+    profiling: bool = False
 
     # whether the script is tesing the code (using pytest for instance)
     testing: bool = False
+
 
 class Script:
     """
@@ -30,13 +34,14 @@ class Script:
 
     start_time: float
     parser: MyParser
-    gui_args: dict | None
+    gui_args: dict[str, Any] | None
+    profile: cProfile.Profile | None
     base_experiment_output_folder: str = 'scripts'
 
     def __init__(
             self,
             parser: MyParser,
-            extra_args: dict | None = None
+            extra_args: dict[str, Any] | None = None
     ) -> None:
         """
         Building the Script object, starts the clock,
@@ -52,13 +57,13 @@ class Script:
     def initiate(
             self,
             base_experiment_output_folder=None
-    ) -> dict:
+    ) -> dict[str, Any]:
 
         if base_experiment_output_folder is None:
             base_experiment_output_folder = self.base_experiment_output_folder
 
         # parse the arguments
-        args_dict: dict = self.parser.parse_arguments(
+        args_dict: dict[str, Any] = self.parser.parse_arguments(
             base_experiment_output_folder=base_experiment_output_folder,
             extra_args=self.extra_args
         )

@@ -1,18 +1,12 @@
-import random
-from chipiron.players.factory import create_player
-from scripts.script import Script
-from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
-import yaml
-from chipiron.environments.chess.board import create_board
 import cProfile
-import time
-import io
-from pstats import SortKey
-import pstats
-import os
-from chipiron.utils import path
-from chipiron.players.factory import PlayerArgs
+import random
+
+from chipiron.environments.chess.board import create_board
+from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
+from chipiron.players.factory import create_player
+from chipiron.players.player_args import PlayerArgs
 from chipiron.players.utils import fetch_player_args_convert_and_save
+from scripts.script import Script
 
 
 class BaseTreeExplorationScript:
@@ -36,12 +30,15 @@ class BaseTreeExplorationScript:
             file_name_player=file_name_player
         )
 
-        player_one_args.main_move_selector.stopping_criterion.tree_move_limit = 1000000
+        # player_one_args.main_move_selector.stopping_criterion.tree_move_limit = 1000000
         random_generator = random.Random()
         player = create_player(args=player_one_args, syzygy=syzygy, random_generator=random_generator)
 
         board = create_board()
-        player.select_move(board=board)
+        player.select_move(
+            board=board,
+            seed_=0
+        )
 
     def terminate(self) -> None:
         self.base_script.terminate()

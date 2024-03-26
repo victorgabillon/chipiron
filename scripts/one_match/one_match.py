@@ -1,19 +1,23 @@
 """
 the one match script
 """
-import sys
-import queue
-import os
 import multiprocessing
-from PySide6.QtWidgets import QApplication
-from scripts.script import Script
-import chipiron as ch
+import os
+import queue
+import sys
 from dataclasses import asdict
-import dacite
-from chipiron.games.match.match_args import MatchArgs
-import yaml
-from chipiron.games.match.match_factories import create_match_manager_from_args
 from dataclasses import dataclass
+from typing import Any
+
+import dacite
+import yaml
+from PySide6.QtWidgets import QApplication
+
+import chipiron as ch
+from chipiron.games.match.match_args import MatchArgs
+from chipiron.games.match.match_factories import create_match_manager_from_args
+from chipiron.utils.is_dataclass import IsDataclass
+from scripts.script import Script
 from scripts.script import ScriptArgs
 
 
@@ -47,7 +51,7 @@ class OneMatchScript:
         self.base_script = base_script
 
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into self.args
-        args_dict: dict = self.base_script.initiate(
+        args_dict: dict[str, Any] = self.base_script.initiate(
             base_experiment_output_folder=self.base_experiment_output_folder
         )
 
@@ -56,8 +60,6 @@ class OneMatchScript:
             data_class=MatchScriptArgs,
             data=args_dict
         )
-
-
 
         # creating the match manager
         self.match_manager: ch.game.MatchManager = create_match_manager_from_args(
@@ -68,7 +70,7 @@ class OneMatchScript:
         )
 
         # saving the arguments of the script
-        with open(os.path.join(args.experiment_output_folder, 'inputs_and_parsing/one_match_script_merge.yaml'),
+        with open(os.path.join(str(args.experiment_output_folder), 'inputs_and_parsing/one_match_script_merge.yaml'),
                   'w') as one_match_script:
             yaml.dump(asdict(args), one_match_script, default_flow_style=False)
 
@@ -80,7 +82,7 @@ class OneMatchScript:
         if args.gui:
             # if we use a graphic user interface (GUI) we create it its own thread and
             # create its mailbox to communicate with other threads
-            gui_thread_mailbox: queue.Queue = multiprocessing.Manager().Queue()
+            gui_thread_mailbox: queue.Queue[IsDataclass] = multiprocessing.Manager().Queue()
             self.chess_gui: QApplication = QApplication(sys.argv)
             self.window: ch.disp.MainWindow = ch.disp.MainWindow(
                 gui_mailbox=gui_thread_mailbox,
@@ -99,7 +101,7 @@ class OneMatchScript:
 
         """
 
-        print(' Script One MAtch go')
+        print(' Script One Match go')
         # Qt Application needs to be in the main Thread, so we need to distinguish between GUI and no GUI
         if self.gui:  # case with GUI
             # Launching the Match Manager in a Thread
