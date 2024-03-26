@@ -1,17 +1,22 @@
-from chipiron.players.move_selector.treevalue.trees.move_and_value_tree import MoveAndValueTree
+import os
 import pickle
-from scripts.script import Script
 import sys
-from chipiron.players.move_selector.treevalue.trees.tree_visualization import display_special
+import typing
 
 from PySide6 import QtCore, QtGui, QtWidgets
-import os
+
+from chipiron.players.move_selector.treevalue.trees.move_and_value_tree import MoveAndValueTree
+from chipiron.players.move_selector.treevalue.trees.tree_visualization import display_special
+from scripts.script import Script
 
 
+@typing.no_type_check
 class PhotoViewer(QtWidgets.QGraphicsView):
     photoClicked = QtCore.Signal(QtCore.QPoint)
 
+    @typing.no_type_check
     def __init__(self, parent):
+        # FIXME hinting problem with pyside, do we have visualisation  problems related to this?
         super(PhotoViewer, self).__init__(parent)
         self._zoom = 0
         self._empty = True
@@ -26,9 +31,11 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         self.setBackgroundBrush(QtGui.QBrush(QtGui.QColor(30, 30, 30)))
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
 
+    @typing.no_type_check
     def hasPhoto(self):
         return not self._empty
 
+    @typing.no_type_check
     def fitInView(self, scale=True):
         pass
         # rect = QtCore.QRectF(self._photo.pixmap().rect())
@@ -44,6 +51,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         #         self.scale(factor, factor)
         #     self._zoom = 0
 
+    @typing.no_type_check
     def set_photo(self, pixmap=None):
         self._zoom = 0
         if pixmap and not pixmap.isNull():
@@ -56,6 +64,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             self._photo.setPixmap(QtGui.QPixmap())
         self.fitInView()
 
+    @typing.no_type_check
     def wheelEvent(self, event):
         if self.hasPhoto():
             if event.angleDelta().y() > 0:
@@ -71,17 +80,20 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             else:
                 self._zoom = 0
 
+    @typing.no_type_check
     def toggleDragMode(self):
         if self.dragMode() == QtWidgets.QGraphicsView.ScrollHandDrag:
             self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
         elif not self._photo.pixmap().isNull():
             self.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag)
 
+    @typing.no_type_check
     def mousePressEvent(self, event):
         if self._photo.isUnderMouse():
             self.photoClicked.emit(self.mapToScene(event.pos()).toPoint())
         super(PhotoViewer, self).mousePressEvent(event)
 
+    @typing.no_type_check
     def zoomin(self):
         factor = 1.25
         self._zoom += 1
@@ -92,6 +104,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         else:
             self._zoom = 0
 
+    @typing.no_type_check
     def zoomout(self):
         factor = 1 / 1.25
         self._zoom -= 1
@@ -103,7 +116,10 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             self._zoom = 0
 
 
+@typing.no_type_check
 class Window(QtWidgets.QWidget):
+    # FIXME hinting problem with pyside, do we have visualisation  problems related to this?
+    @typing.no_type_check
     def __init__(self):
         super(Window, self).__init__()
         self.viewer = PhotoViewer(self)
@@ -138,27 +154,33 @@ class Window(QtWidgets.QWidget):
         self.display_subtree()
         self.load_image()
 
+    @typing.no_type_check
     def build_subtree(self):
         self.index = {}
         for ind, move in enumerate(self.current_node.moves_children):
             self.index[move] = chr(33 + ind)
 
+    @typing.no_type_check
     def display_subtree(self):
         dot = display_special(node=self.current_node,
                               format='jpg',
                               index=self.index)
         dot.render('chipiron/runs/treedisplays/TreeVisualtemp')
 
+    @typing.no_type_check
     def load_image(self):
         self.viewer.set_photo(QtGui.QPixmap('chipiron/runs/treedisplays/TreeVisualtemp.jpg'))
 
+    @typing.no_type_check
     def pixInfo(self):
         self.viewer.toggleDragMode()
 
+    @typing.no_type_check
     def photoClicked(self, pos):
         if self.viewer.dragMode() == QtWidgets.QGraphicsView.NoDrag:
             self.editPixInfo.setText('%d, %d' % (pos.x(), pos.y()))
 
+    @typing.no_type_check
     def keyPressEvent(self, event):
         print(event.text())
         key = event.text()
@@ -173,6 +195,7 @@ class Window(QtWidgets.QWidget):
 
             # todo there is collision as these numbers are used for children too now...
 
+    @typing.no_type_check
     def father(self):
         qq = list(self.current_node.parent_nodes)
         father_node = qq[0]  # by default!
@@ -182,6 +205,7 @@ class Window(QtWidgets.QWidget):
             self.display_subtree()
             self.load_image()
 
+    @typing.no_type_check
     def move_to_son(self, key):
         for move, ind in self.index.items():
             if key == ind:
@@ -198,12 +222,13 @@ class VisualizeTreeScript:
     base_experiment_output_folder = os.path.join(Script.base_experiment_output_folder, 'tree_visualization/outputs/')
     base_script: Script
 
-    def __init__(self,
-                 base_script: Script,
-                 ):
+    def __init__(
+            self,
+            base_script: Script,
+    ):
         self.base_script = base_script
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into self.args
-        args_dict: dict = self.base_script.initiate(self.base_experiment_output_folder)
+        self.args_dict: dict[str, typing.Any] = self.base_script.initiate(self.base_experiment_output_folder)
 
     def run(self):
         app = QtWidgets.QApplication(sys.argv)
@@ -211,3 +236,9 @@ class VisualizeTreeScript:
         window.setGeometry(0, 0, 1800, 1600)
         window.show()
         sys.exit(app.exec_())
+
+    def terminate(self) -> None:
+        """
+        Finishing the script. Profiling or timing.
+        """
+        pass

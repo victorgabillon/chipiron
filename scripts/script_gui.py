@@ -1,15 +1,22 @@
 import tkinter as tk
+from typing import Any
+
 import scripts
+
+
+def destroy(root):
+    root.destroy()
+    return None
 
 
 # TODO switch to pygame
 
 def script_gui(
-) -> tuple[scripts.ScriptType, dict]:
+) -> tuple[scripts.ScriptType, dict[str, Any]]:
     root = tk.Tk()
-    root.output = None
     # place a label on the root window
     root.title('chipiron')
+    output: dict[str, Any] = {}
 
     window_width: int = 800
     window_height: int = 300
@@ -77,7 +84,7 @@ def script_gui(
     message.grid(column=4, row=2)
 
     # Create the list of options
-    options_list = ["1", "2", "3", "4","5"]
+    options_list = ["1", "2", "3", "4", "5"]
 
     # Variable to keep track of the option
     # selected in OptionMenu
@@ -101,7 +108,7 @@ def script_gui(
                 strength=strength_value,
                 color=color_choice_human,
                 chipi_algo=chipi_algo_choice),
-            root.destroy()
+            destroy(root)
         ]
     )
 
@@ -109,14 +116,14 @@ def script_gui(
     watch_a_game_button: tk.Button = tk.Button(
         root,
         text='Watch a game',
-        command=lambda: [watch_a_game(root), root.destroy()]
+        command=lambda: [watch_a_game(output), destroy(root)]
     )
 
     # visualize button
     visualize_a_tree_button: tk.Button = tk.Button(
         root,
         text='Visualize a tree',
-        command=lambda: [visualize_a_tree(root), root.destroy()]
+        command=lambda: [visualize_a_tree(output), destroy(root)]
     )
 
     play_against_chipiron_button.grid(row=2, column=6)
@@ -125,24 +132,27 @@ def script_gui(
     exit_button.grid(row=8, column=0)
 
     root.mainloop()
-    gui_args: dict
+    gui_args: dict[str, Any]
     script_type: scripts.ScriptType
-    match root.output['type']:
+    match output['type']:
         case 'play_against_chipiron':
-            tree_move_limit = 4 * 10 ** root.output['strength']
-            gui_args = {'config_file_name': 'scripts/one_match/exp_options.yaml',
-                        'seed': 0,
-                        'gui': True,
-                        'file_name_match_setting': 'setting_duda.yaml',
-                        }
-            if root.output['color_human'] == 'White':
+            tree_move_limit = 4 * 10 ** output['strength']
+            gui_args = {
+                'config_file_name': 'scripts/one_match/exp_options.yaml',
+                'seed': 0,
+                'gui': True,
+                'file_name_match_setting': 'setting_duda.yaml',
+            }
+            if output['color_human'] == 'White':
                 gui_args['file_name_player_one'] = 'Human.yaml'
-                gui_args['file_name_player_two'] = f'{root.output["chipi_algo"]}.yaml'
-                gui_args['player_two'] = {'main_move_selector': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}
+                gui_args['file_name_player_two'] = f'{output["chipi_algo"]}.yaml'
+                gui_args['player_two'] = {
+                    'main_move_selector': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}
             else:
                 gui_args['file_name_player_two'] = 'Human.yaml'
-                gui_args['file_name_player_one'] = f'{root.output["chipi_algo"]}.yaml'
-                gui_args['player_one'] = {'main_move_selector': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}
+                gui_args['file_name_player_one'] = f'{output["chipi_algo"]}.yaml'
+                gui_args['player_one'] = {
+                    'main_move_selector': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}
             script_type = scripts.ScriptType.OneMatch
         case 'watch_a_game':
             gui_args = {'config_file_name': 'scripts/one_match/exp_options.yaml',
@@ -155,25 +165,24 @@ def script_gui(
         case 'tree_visualization':
             gui_args = {'config_file_name': 'scripts/tree_visualization/exp_options.yaml',
                         }
-            script_type = 'tree_visualization'
+            script_type = scripts.ScriptType.TreeVisualization
         case other:
-            raise f'Not a good name: {other}'
+            raise Exception(f'Not a good name: {other}')
 
     print(f'Gui choices: the script name is {script_type} and the args are {gui_args}')
     return script_type, gui_args
 
 
-def play_against_chipiron(root, strength, color, chipi_algo):
-    root.output = {'type': 'play_against_chipiron',
-                   'strength': int(strength.get()),
-                   'color_human': str(color.get()),
-                   'chipi_algo': str(chipi_algo.get()),
-                   }
+def play_against_chipiron(output, strength, color, chipi_algo):
+    output['type'] = 'play_against_chipiron'
+    output['strength'] = int(strength.get())
+    output['color_human'] = str(color.get())
+    output['chipi_algo'] = str(chipi_algo.get())
 
 
-def watch_a_game(root):
-    root.output = {'type': 'watch_a_game'}
+def watch_a_game(output):
+    output['type'] = 'watch_a_game'
 
 
-def visualize_a_tree(root):
-    root.output = {'type': 'tree_visualization'}
+def visualize_a_tree(output):
+    output['type'] = 'tree_visualization'

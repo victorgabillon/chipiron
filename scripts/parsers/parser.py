@@ -1,12 +1,17 @@
 import argparse
-import yaml
-from chipiron.utils.small_tools import dict_alphabetic_str
-from datetime import datetime
 import os
+from datetime import datetime
+from typing import Any
+
 import yaml
+
+from chipiron.utils import path
 
 
 class MyParser:
+    args_command_line: dict[str, Any] | None
+    args_config_file: dict[str, Any] | None
+    merged_args: dict[str, Any] | None
 
     def __init__(self, parser):
         self.parser = parser  # TODO not clear what it is, it always argparse?
@@ -37,15 +42,18 @@ class MyParser:
             raise Exception("Could not read file:", config_file_path)
         self.args_config_file = args_config_file
 
-    def parse_arguments(self,
-                        base_experiment_output_folder,
-                        extra_args=None,
-                        ):
+    def parse_arguments(
+            self,
+            base_experiment_output_folder: path,
+            extra_args: dict[str, Any] | None = None,
+    ):
 
         if extra_args is None:
             extra_args = {}
+        assert extra_args is not None
 
         self.parse_command_line_arguments()
+        assert self.args_command_line is not None
 
         config_file_path = None
         if 'config_file_name' in self.args_command_line:
@@ -55,6 +63,8 @@ class MyParser:
             self.args_config_file = {}
         else:
             self.parse_config_file_arguments(config_file_path)
+
+        assert self.args_config_file is not None
 
         #  the gui input  overwrite  the command line arguments
         #  that overwrite the config file arguments that overwrite the default arguments

@@ -1,34 +1,40 @@
-from chipiron.players.boardevaluators.neural_networks.factory import create_nn
-from chipiron.learningprocesses.nn_trainer.factory import create_nn_trainer, safe_nn_param_save, safe_nn_trainer_save
-import time
-from scripts.script import Script, ScriptArgs
-from chipiron.players.boardevaluators.datasets.datasets import FenAndValueDataSet
-from torch.utils.data import DataLoader
 import copy
-from chipiron.players.boardevaluators.neural_networks import NeuralNetBoardEvalArgs
-from dataclasses import dataclass, field
-import dacite
 import os
-from chipiron.players.boardevaluators.neural_networks.input_converters.representation_364_bti import Representation364BTI
+import time
+from dataclasses import dataclass, field
+from typing import Any
+
+import dacite
+from torch.utils.data import DataLoader
+
+from chipiron.learningprocesses.nn_trainer.factory import create_nn_trainer, safe_nn_param_save, safe_nn_trainer_save
+from chipiron.players.boardevaluators.datasets.datasets import FenAndValueDataSet
+from chipiron.players.boardevaluators.neural_networks import NeuralNetBoardEvalArgs
+from chipiron.players.boardevaluators.neural_networks.factory import create_nn
 from chipiron.players.boardevaluators.neural_networks.input_converters.factory import Representation364Factory
+from chipiron.players.boardevaluators.neural_networks.input_converters.representation_364_bti import \
+    Representation364BTI
+from scripts.script import Script, ScriptArgs
 
 
 @dataclass
 class LearnNNScriptArgs(ScriptArgs):
-    neural_network: NeuralNetBoardEvalArgs = field(default_factory=
-                                                   lambda: NeuralNetBoardEvalArgs(nn_type='pp2d2_2_leaky',
-                                                                                  nn_param_folder_name='foo')
-                                                   )
+    neural_network: NeuralNetBoardEvalArgs = field(
+        default_factory=lambda: NeuralNetBoardEvalArgs(
+            nn_type='pp2d2_2_leaky',
+            nn_param_folder_name='foo'
+        )
+    )
     create_nn_file: bool = True
-    config_file_name: str = 'scripts/learn_nn_supervised/exp_options.yaml',
+    config_file_name: str = 'scripts/learn_nn_supervised/exp_options.yaml'
     #  'stockfish_boards_train_file_name': '/home/victor/goodgames_plusvariation_stockfish_eval_train_10000000',
     stockfish_boards_train_file_name: str = 'data/datasets/goodgames_plusvariation_stockfish_eval_train_t.1_merge'
     stockfish_boards_test_file_name: str = 'data/datasets/goodgames_plusvariation_stockfish_eval_test'
     preprocessing_data_set: bool = False
     batch_size_train: int = 32
-    batch_size_test: int = 10,
-    saving_interval: int = 1000,
-    saving_intermediate_copy: bool = True,
+    batch_size_test: int = 10
+    saving_interval: int = 1000
+    saving_intermediate_copy: bool = True
     saving_intermediate_copy_interval: int = 10000
     min_interval_lr_change: int = 1000000
     starting_lr: float = .1
@@ -59,11 +65,11 @@ class LearnNNScript:
         self.base_script = base_script
 
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into self.args
-        args_dict: dict = self.base_script.initiate(self.base_experiment_output_folder)
+        args_dict: dict[str, Any] = self.base_script.initiate(self.base_experiment_output_folder)
 
         # Converting the args in the standardized dataclass
         self.args: LearnNNScriptArgs = dacite.from_dict(data_class=LearnNNScriptArgs,
-                                                   data=args_dict)
+                                                        data=args_dict)
 
         self.nn = create_nn(args=self.args.neural_network,
                             create_file=self.args.create_nn_file)
@@ -73,7 +79,6 @@ class LearnNNScript:
 
         board_representation_factory = Representation364Factory()
         board_to_input = Representation364BTI(representation_factory=board_representation_factory)
-
 
         self.stockfish_boards_train = FenAndValueDataSet(
             file_name=self.args.stockfish_boards_train_file_name,
@@ -104,10 +109,10 @@ class LearnNNScript:
         """ Running the learning of the NN"""
         print('Starting to learn the NN')
         count_train_step = 0
-        sum_loss_train = 0
-        sum_loss_train_print = 0
-        previous_dict = None
-        previous_train_loss = None
+        sum_loss_train: float = 0.
+        sum_loss_train_print: float = 0.
+        previous_dict: Any | None = None
+        previous_train_loss: float | None = None
         for i in range(100):
             for i_batch, sample_batched in enumerate(self.data_loader_stockfish_boards_train):
 
@@ -139,7 +144,7 @@ class LearnNNScript:
                     previous_dict = copy.deepcopy(self.nn.state_dict())
 
                     previous_train_loss = sum_loss_train
-                    sum_loss_train = 0
+                    sum_loss_train = 0.
 
                 # MAIN: the training bit
                 count_train_step += 1
@@ -167,3 +172,9 @@ class LearnNNScript:
         if self.args.saving_intermediate_copy \
                 and count_train_step % self.args.saving_intermediate_copy_interval == 0:
             safe_nn_param_save(self.nn, self.args.neural_network, training_copy=True)
+
+    def terminate(self) -> None:
+        """
+        Finishing the script. Profiling or timing.
+        """
+        pass

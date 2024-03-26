@@ -1,6 +1,6 @@
 neural_network:
-    nn_type: pp2d2_2
-    nn_param_folder_name: 'base'
+  nn_type: pp2d2_2
+  nn_param_folder_name: 'base'
 create_nn_file: True
 config_file_name: 'scripts/learn_nn_supervised/exp_options.yaml'
 stockfish_boards_train_file_name: 'data/datasets/goodgames_plusvariation_stockfish_eval_train_t.1_merge.pi'
