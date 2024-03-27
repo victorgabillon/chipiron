@@ -11,7 +11,7 @@ testpaths = [
 
 [tool.mypy]
 mypy_path = "."
-check_untyped_defs = true
+check_untyped_defs = tr ue
 disallow_any_generics = true
 ignore_missing_imports = true
 no_implicit_optional = true
