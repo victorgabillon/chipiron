@@ -4,8 +4,8 @@ factory for scripts module
 from enum import Enum
 from typing import Any
 
-from scripts.league.runtheleague import RunTheLeagueScript
-from scripts.parsers.parser import create_parser, MyParser
+from chipiron.scripts.league.runtheleague import RunTheLeagueScript
+from chipiron.scripts.parsers.parser import create_parser, MyParser
 from .base_tree_exploration.base_tree_exploration import BaseTreeExplorationScript
 from .iscript import IScript
 from .learn_nn_supervised.learn_nn_from_supervised_datasets import LearnNNScript

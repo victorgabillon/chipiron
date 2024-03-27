@@ -14,7 +14,7 @@ from chipiron.players.boardevaluators.neural_networks.factory import create_nn
 from chipiron.players.boardevaluators.neural_networks.input_converters.factory import Representation364Factory
 from chipiron.players.boardevaluators.neural_networks.input_converters.representation_364_bti import \
     Representation364BTI
-from scripts.script import Script, ScriptArgs
+from chipiron.scripts.script import Script, ScriptArgs
 
 
 @dataclass

@@ -1,20 +1,22 @@
+import tkinter as tk
 from typing import Any
 
-import customtkinter as ctk
+from chipiron import scripts
 
-import scripts
+
+def destroy(root):
+    root.destroy()
+    return None
 
 
 # TODO switch to pygame
 
 def script_gui(
 ) -> tuple[scripts.ScriptType, dict[str, Any]]:
-    root = ctk.CTk()
-    output: dict[str, Any] = {}
+    root = tk.Tk()
     # place a label on the root window
     root.title('chipiron')
-
-    # frm = ctk.CTkFrame(root, padding=10)
+    output: dict[str, Any] = {}
 
     window_width: int = 800
     window_height: int = 300
@@ -31,17 +33,17 @@ def script_gui(
     root.geometry(f'{window_width}x{window_height}+{center_x}+{center_y}')
     # root.iconbitmap('download.jpeg')
 
-    message = ctk.CTkLabel(root, text="What to do?")
+    message = tk.Label(root, text="What to do?")
     message.grid(column=0, row=0)
 
     # exit button
-    exit_button = ctk.CTkButton(
+    exit_button = tk.Button(
         root,
         text='Exit',
         command=lambda: root.quit()
     )
 
-    message = ctk.CTkLabel(root, text="Play ")
+    message = tk.Label(root, text="Play ")
     message.grid(column=0, row=2)
 
     # Create the list of options
@@ -49,22 +51,17 @@ def script_gui(
 
     # Variable to keep track of the option
     # selected in OptionMenu
-    # color_choice_human = ctk.StringVar(root)
-    color_choice_human = ctk.StringVar(value="White")  # set initial value
+    color_choice_human = tk.StringVar(root)
 
     # Set the default value of the variable
-    # color_choice_human.set("White")
+    color_choice_human.set("White")
 
     # Create the option menu widget and passing
     # the options_list and value_inside to it.
-    strength_menu = ctk.CTkOptionMenu(
-        master=root,
-        values=color_options_list,
-        variable=color_choice_human
-    )
+    strength_menu = tk.OptionMenu(root, color_choice_human, *color_options_list)
     strength_menu.grid(column=1, row=2)
 
-    message = ctk.CTkLabel(root, text=" against ")
+    message = tk.Label(root, text=" against ")
     message.grid(column=2, row=2)
 
     # Create the list of options
@@ -72,75 +69,67 @@ def script_gui(
 
     # Variable to keep track of the option
     # selected in OptionMenu
-    chipi_algo_choice = ctk.StringVar(value="RecurZipfBase3")  # set initial value
-
-    # chipi_algo_choice = tk.StringVar(root)
+    chipi_algo_choice = tk.StringVar(root)
 
     # Set the default value of the variable
-    # chipi_algo_choice.set("RecurZipfBase3")
+    chipi_algo_choice.set("RecurZipfBase3")
 
     # Create the option menu widget and passing
     # the options_list and value_inside to it.
-    strength_menu = ctk.CTkOptionMenu(master=root,
-                                      values=chipi_algo_options_list,
-                                      variable=chipi_algo_choice)
-    strength_menu.grid(column=3, row=2)
+    strength_menu = tk.OptionMenu(root, chipi_algo_choice, *chipi_algo_options_list)
+    strength_menu.grid(column=1, row=2)
 
-    message = ctk.CTkLabel(root, text="  strength: ")
+    message = tk.Label(root, text="  strength: ")
 
-    message.grid(column=5, row=2, padx=10, pady=10)
+    message.grid(column=4, row=2)
 
     # Create the list of options
     options_list = ["1", "2", "3", "4", "5"]
 
     # Variable to keep track of the option
     # selected in OptionMenu
-    strength_value = ctk.StringVar(value="1")  # set initial value
-
-    # strength_value = tk.StringVar(root)
+    strength_value = tk.StringVar(root)
 
     # Set the default value of the variable
-    # strength_value.set("1")
+    strength_value.set("1")
 
     # Create the option menu widget and passing
     # the options_list and value_inside to it.
-    strength_menu = ctk.CTkOptionMenu(master=root,
-                                      variable=strength_value,
-                                      values=options_list)
-    strength_menu.grid(column=5, row=2, padx=10, pady=10)
+    strength_menu = tk.OptionMenu(root, strength_value, *options_list)
+    strength_menu.grid(column=5, row=2)
 
     # play button
-    play_against_chipiron_button: ctk.CTkButton = ctk.CTkButton(
+    play_against_chipiron_button: tk.Button = tk.Button(
         root,
         text='!Play!',
         command=lambda: [
             play_against_chipiron(
-                output,
+                root,
                 strength=strength_value,
                 color=color_choice_human,
                 chipi_algo=chipi_algo_choice),
-            root.destroy()
+            destroy(root)
         ]
     )
 
     # watch button
-    watch_a_game_button: ctk.CTkButton = ctk.CTkButton(
+    watch_a_game_button: tk.Button = tk.Button(
         root,
         text='Watch a game',
-        command=lambda: [watch_a_game(output), root.destroy()]
+        command=lambda: [watch_a_game(output), destroy(root)]
     )
 
     # visualize button
-    visualize_a_tree_button: ctk.CTkButton = ctk.CTkButton(
+    visualize_a_tree_button: tk.Button = tk.Button(
         root,
         text='Visualize a tree',
-        command=lambda: [visualize_a_tree(output), root.destroy()]
+        command=lambda: [visualize_a_tree(output), destroy(root)]
     )
 
-    play_against_chipiron_button.grid(row=2, column=6, padx=10, pady=10)
-    watch_a_game_button.grid(row=4, column=0, padx=10, pady=10)
-    visualize_a_tree_button.grid(row=6, column=0, padx=10, pady=10)
-    exit_button.grid(row=8, column=0, padx=10, pady=10)
+    play_against_chipiron_button.grid(row=2, column=6)
+    watch_a_game_button.grid(row=4, column=0)
+    visualize_a_tree_button.grid(row=6, column=0)
+    exit_button.grid(row=8, column=0)
 
     root.mainloop()
     gui_args: dict[str, Any]
@@ -166,14 +155,12 @@ def script_gui(
                     'main_move_selector': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}
             script_type = scripts.ScriptType.OneMatch
         case 'watch_a_game':
-            gui_args = {
-                'config_file_name': 'scripts/one_match/exp_options.yaml',
-                'seed': 0,
-                'gui': True,
-                'file_name_player_one': 'RecurZipfBase3.yaml',
-                'file_name_player_two': 'RecurZipfBase4.yaml',
-                'file_name_match_setting': 'setting_duda.yaml'
-            }
+            gui_args = {'config_file_name': 'scripts/one_match/exp_options.yaml',
+                        'seed': 0,
+                        'gui': True,
+                        'file_name_player_one': 'RecurZipfBase3.yaml',
+                        'file_name_player_two': 'RecurZipfBase4.yaml',
+                        'file_name_match_setting': 'setting_duda.yaml'}
             script_type = scripts.ScriptType.OneMatch
         case 'tree_visualization':
             gui_args = {'config_file_name': 'scripts/tree_visualization/exp_options.yaml',
