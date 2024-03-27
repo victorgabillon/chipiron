@@ -7,7 +7,8 @@ import random
 import chess
 
 import chipiron.players.boardevaluators.table_base as table_base
-from chipiron.players.boardevaluators.table_base import create_syzygy, SyzygyTable
+from chipiron.players.boardevaluators.table_base import create_syzygy
+from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 from chipiron.players.player_args import PlayerArgs
 from chipiron.players.utils import fetch_player_args_convert_and_save
 from chipiron.utils import path
@@ -36,11 +37,13 @@ def create_chipiron_player(
         file_name_player='data/players/player_config/chipiron/chipiron.yaml',
         from_data_folder=False)
 
-    main_move_selector: move_selector.MoveSelector = move_selector.create_main_move_selector(
+    main_move_selector: move_selector.MoveSelector | None = move_selector.create_main_move_selector(
         move_selector_instance_or_args=args_player.main_move_selector,
         syzygy=syzygy_table,
         random_generator=random_generator
     )
+
+    assert main_move_selector is not None
 
     return Player(
         name='chipiron',
@@ -60,11 +63,14 @@ def create_player_from_file(
     syzygy_table: SyzygyTable | None = create_syzygy()
 
     print('create player from file')
-    main_move_selector: move_selector.MoveSelector = move_selector.create_main_move_selector(
+    main_move_selector: move_selector.MoveSelector | None = move_selector.create_main_move_selector(
         move_selector_instance_or_args=args.main_move_selector,
         syzygy=syzygy_table,
         random_generator=random_generator
     )
+
+    assert main_move_selector is not None
+
     return Player(
         name=args.name,
         syzygy=syzygy_table,
@@ -74,9 +80,9 @@ def create_player_from_file(
 
 def create_player(
         args: PlayerArgs,
-        syzygy,
+        syzygy: SyzygyTable,
         random_generator: random.Random
-) -> Player:
+) -> Player | None:
     """
     Creates a player
 
@@ -89,16 +95,19 @@ def create_player(
 
     """
     print('create player')
-    main_move_selector: move_selector.MoveSelector = move_selector.create_main_move_selector(
+    main_move_selector: move_selector.MoveSelector | None = move_selector.create_main_move_selector(
         move_selector_instance_or_args=args.main_move_selector,
         syzygy=syzygy,
         random_generator=random_generator
     )
-    return Player(
+
+    player: Player = Player(
         name=args.name,
         syzygy=syzygy,
         main_move_selector=main_move_selector
     )
+
+    return
 
 
 def create_game_player(

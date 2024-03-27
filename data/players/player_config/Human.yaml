@@ -1,4 +1,0 @@
-name: Human
-main_move_selector:
-  type: Human
-syzygy_play: False

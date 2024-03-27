@@ -75,10 +75,13 @@ class GameManagerFactory:
                 observable_game.register_display(subscriber)
 
         players: list[players_m.GamePlayer | players_m.PlayerProcess] = []
-        # Creating and launching the player threads
+        # Creating the players
         for player_color in chess.COLORS:
             player_factory_args: players_m.PlayerFactoryArgs = player_color_to_factory_args[player_color]
-            if player_factory_args.player_args.name != 'Human':  # TODO COULD WE DO BETTER ? maybe with the null object
+
+            # Human playing with gui does not need a player, as the playing moves will be generated directly
+            # by the GUI and sent directly to the game_manager
+            if player_factory_args.player_args.name != 'GUI_Human':
                 generic_player: players_m.GamePlayer | players_m.PlayerProcess
                 move_function: MoveFunction
                 generic_player, move_function = create_player_observer(

@@ -37,7 +37,11 @@ class MainWindow(QWidget):
     Create a surface for the chessboard.
     """
 
-    def __init__(self, gui_mailbox, main_thread_mailbox):
+    def __init__(
+            self,
+            gui_mailbox,
+            main_thread_mailbox
+    ) -> None:
         """
         Initialize the chessboard.
         """
@@ -203,11 +207,12 @@ class MainWindow(QWidget):
                     self.pieceToMove = [piece, self.coordinates]
 
     def send_move_to_main_thread(self, move):
-        print('move', type(move), move)
-        message: MoveMessage = MoveMessage(move=move,
-                                           corresponding_board=self.board.fen(),
-                                           player_name='Human',
-                                           color_to_play=self.board.turn)
+        message: MoveMessage = MoveMessage(
+            move=move,
+            corresponding_board=self.board.fen(),
+            player_name='Human',
+            color_to_play=self.board.turn
+        )
         self.main_thread_mailbox.put(item=message)
 
     @typing.no_type_check
@@ -330,7 +335,10 @@ class MainWindow(QWidget):
         self.fen_button.setText('fen: ' + str(self.board.fen()))  # text
         return self.drawBoardSvg
 
-    def update_players_color_to_id(self, players_color_to_player: dict[chess.Color, str]):
+    def update_players_color_to_id(
+            self,
+            players_color_to_player: dict[chess.Color, str]
+    ):
         self.player_white_button.setText(' White: ' + players_color_to_player[chess.WHITE])  # text
         self.player_black_button.setText(' Black: ' + players_color_to_player[chess.BLACK])  # text
 
@@ -363,7 +371,10 @@ class MainWindow(QWidget):
                 self.pause_button.setToolTip("pause the game")  # Tool tip
                 self.pause_button.move(850, 100)
 
-    def update_match_stats(self, match_result: MatchResults):
+    def update_match_stats(
+            self,
+            match_result: MatchResults
+    ):
         player_one_wins, player_two_wins, draws = match_result.get_simple_result()
         self.score_button.setText(
             'Score: ' + str(player_one_wins) + '-'

@@ -5,5 +5,5 @@ from .move_selector_types import MoveSelectorTypes
 
 
 @dataclass
-class HumanPlayerArgs:
-    type: Literal[MoveSelectorTypes.Human]  # for serialization
+class CommandLineHumanPlayerArgs:
+    type: Literal[MoveSelectorTypes.CommandLineHuman]  # for serialization
