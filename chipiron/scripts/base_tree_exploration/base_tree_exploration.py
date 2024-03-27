@@ -6,7 +6,7 @@ from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 from chipiron.players.factory import create_player
 from chipiron.players.player_args import PlayerArgs
 from chipiron.players.utils import fetch_player_args_convert_and_save
-from scripts.script import Script
+from chipiron.scripts.script import Script
 
 
 class BaseTreeExplorationScript:

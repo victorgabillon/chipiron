@@ -5,7 +5,7 @@ import argparse
 import sys
 from typing import Any
 
-import scripts
+from chipiron import scripts
 from chipiron.utils.small_tools import yaml_fetch_args_in_file
 
 

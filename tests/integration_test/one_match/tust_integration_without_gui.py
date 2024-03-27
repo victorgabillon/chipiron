@@ -1,6 +1,6 @@
 import time
 
-import scripts
+from chipiron import scripts
 
 start_time = time.time()
 configs = [

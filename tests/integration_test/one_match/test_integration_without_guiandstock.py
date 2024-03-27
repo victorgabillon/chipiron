@@ -1,6 +1,6 @@
 import time
 
-import scripts
+from chipiron import scripts
 
 # we need to not use multiprocessing to be able to use pytest therefore use setting_cubo  and not setting_jime
 

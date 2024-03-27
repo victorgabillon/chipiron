@@ -7,7 +7,7 @@ import random
 from typing import Any
 
 from chipiron.league.league import League
-from scripts.script import Script
+from chipiron.scripts.script import Script
 
 
 class RunTheLeagueScript:

@@ -1,4 +1,4 @@
-import scripts
+from chipiron import scripts
 import os
 
 os.chdir('../../')

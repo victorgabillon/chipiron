@@ -4,7 +4,7 @@ import sys
 from PySide6.QtWidgets import QApplication
 
 from chipiron.displays.gui_replay_games import MainWindow
-from scripts.script import Script
+from chipiron.scripts.script import Script
 
 
 class ReplayGameScript(Script):
