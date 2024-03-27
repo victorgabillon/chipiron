@@ -36,6 +36,7 @@ def create_script(
         extra_args:
 
     Returns:
+        object:
 
     """
 

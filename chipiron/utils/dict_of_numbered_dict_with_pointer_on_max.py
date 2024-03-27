@@ -1,10 +1,19 @@
+from typing import Any
+
+from chipiron.players.move_selector.treevalue.nodes import ITreeNode
+
+
 class DictOfNumberedDictWithPointerOnMax:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.half_moves = {}
         self.max_half_move = None
 
-    def __setitem__(self, node, value):
+    def __setitem__(
+            self,
+            node: ITreeNode,
+            value: Any
+    ) -> None:
         half_move = node.half_move
         if self.max_half_move is None:
             self.max_half_move = half_move

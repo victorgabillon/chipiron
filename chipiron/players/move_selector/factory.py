@@ -1,25 +1,28 @@
 import random
 from typing import TypeAlias
 
-from chipiron.utils.null_object import NullObject
+from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 from . import human
 from . import move_selector
 from . import stockfish
 from . import treevalue
 from .random import Random, create_random
 
-AllMoveSelectorArgs: TypeAlias = (treevalue.TreeAndValuePlayerArgs
-                                  | human.HumanPlayerArgs | Random |
-                                  stockfish.StockfishPlayer)
+AllMoveSelectorArgs: TypeAlias = (
+        treevalue.TreeAndValuePlayerArgs |
+        human.CommandLineHumanPlayerArgs |
+        Random |
+        stockfish.StockfishPlayer
+)
 
 
 def create_main_move_selector(
         move_selector_instance_or_args: AllMoveSelectorArgs,
-        syzygy,
+        syzygy: SyzygyTable,
         random_generator: random.Random
-) -> move_selector.MoveSelector:
+) -> move_selector.MoveSelector | None:
     main_move_selector: move_selector.MoveSelector
-    print('create main move')
+    print('create main move selector')
 
     match move_selector_instance_or_args:
         case Random():
@@ -35,8 +38,8 @@ def create_main_move_selector(
             )
         case stockfish.StockfishPlayer():
             main_move_selector = move_selector_instance_or_args
-        case human.HumanPlayerArgs():
-            main_move_selector = NullObject()  # TODO is it necessary?
+        case human.CommandLineHumanPlayerArgs():
+            main_move_selector = CommandLineHumanmoveslector()
         case other:
             raise ValueError(f'player creator: can not find {other} of type {type(other)}')
     return main_move_selector
