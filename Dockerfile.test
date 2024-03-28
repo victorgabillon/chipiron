@@ -43,7 +43,6 @@ ADD . .
 
 RUN chmod -R 777 scripts
 RUN chmod -R 777 tests
-RUN chmod -R 777 chipiron
 
 RUN addgroup --system test
 RUN adduser --system testuser --ingroup test

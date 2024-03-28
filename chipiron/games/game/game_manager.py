@@ -155,7 +155,7 @@ class GameManager:
 
                 else:
                     print(f'the move is rejected because one of the following is false \n'
-                          f' move_message.corresponding_board == board.fen(){move_message.corresponding_board == board.fen()} \n' 
+                          f' move_message.corresponding_board == board.fen(){move_message.corresponding_board == board.fen()} \n'
                           f'self.game.playing_status.is_play() {self.game.playing_status.is_play()}\n'
                           f'message.player_name == self.player_color_to_id[board.turn] {message.player_name == self.player_color_to_id[board.turn]}'
                           )

@@ -31,7 +31,7 @@ class TreeAndValuePlayerArgs:
 
 def create_tree_and_value_builders(
         args: TreeAndValuePlayerArgs,
-        syzygy: SyzygyTable,
+        syzygy: SyzygyTable | None,
         random_generator: random.Random
 ) -> TreeAndValueMoveSelector:
     node_evaluator: node_eval.NodeEvaluator = node_eval.create_node_evaluator(

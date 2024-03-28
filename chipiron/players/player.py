@@ -3,6 +3,7 @@ player
 """
 
 from chipiron.environments.chess.board.board import BoardChi
+from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 from chipiron.utils import seed
 from .move_selector.move_selector import MoveSelector, MoveRecommendation
 
@@ -20,7 +21,7 @@ class Player:
     def __init__(
             self,
             name: str,
-            syzygy,
+            syzygy: SyzygyTable | None,
             main_move_selector: MoveSelector):
         self.id = name
         self.main_move_selector: MoveSelector = main_move_selector

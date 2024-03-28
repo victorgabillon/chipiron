@@ -13,8 +13,8 @@ from typing import Any
 
 import dacite
 
-from chipiron.utils.small_tools import mkdir
 from chipiron.scripts.parsers.parser import MyParser
+from chipiron.utils.small_tools import mkdir
 
 
 @dataclass
