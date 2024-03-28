@@ -154,7 +154,12 @@ class GameManager:
                     board.print_chess_board()
 
                 else:
-                    pass
+                    print(f'the move is rejected because one of the following is false \n'
+                          f' move_message.corresponding_board == board.fen(){move_message.corresponding_board == board.fen()} \n' 
+                          f'self.game.playing_status.is_play() {self.game.playing_status.is_play()}\n'
+                          f'message.player_name == self.player_color_to_id[board.turn] {message.player_name == self.player_color_to_id[board.turn]}'
+                          )
+                    print(f'{message.player_name},{self.player_color_to_id[board.turn]}')
                     # put back in the queue
                     # self.main_thread_mailbox.put(message)
                 if message.evaluation is not None:

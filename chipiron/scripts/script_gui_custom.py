@@ -155,12 +155,12 @@ def script_gui(
                 'file_name_match_setting': 'setting_duda.yaml',
             }
             if output['color_human'] == 'White':
-                gui_args['file_name_player_one'] = 'Human.yaml'
+                gui_args['file_name_player_one'] = 'Gui_Human.yaml'
                 gui_args['file_name_player_two'] = f'{output["chipi_algo"]}.yaml'
                 gui_args['player_two'] = {
                     'main_move_selector': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}
             else:
-                gui_args['file_name_player_two'] = 'Human.yaml'
+                gui_args['file_name_player_two'] = 'Gui_Human.yaml'
                 gui_args['file_name_player_one'] = f'{output["chipi_algo"]}.yaml'
                 gui_args['player_one'] = {
                     'main_move_selector': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}
@@ -176,8 +176,9 @@ def script_gui(
             }
             script_type = scripts.ScriptType.OneMatch
         case 'tree_visualization':
-            gui_args = {'config_file_name': 'scripts/tree_visualization/exp_options.yaml',
-                        }
+            gui_args = {
+                'config_file_name': 'scripts/tree_visualization/exp_options.yaml',
+            }
             script_type = scripts.ScriptType.TreeVisualization
         case other:
             raise Exception(f'Not a good name: {other}')

@@ -6,3 +6,4 @@ class MoveSelectorTypes(str, Enum):
     TreeAndValue: str = 'TreeAndValue'
     Stockfish: str = 'Stockfish'
     CommandLineHuman: str = 'CommandLineHuman'
+    GuiHuman: str = 'GuiHuman'

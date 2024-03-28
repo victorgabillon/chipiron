@@ -84,7 +84,6 @@ def create_match_manager_from_args(
         modification_player_two=args.player_two,
         experiment_output_folder=args.experiment_output_folder
     )
-    print('fssffff', profiling, testing)
 
     # Recovering args from yaml file for match and game and merging with extra args and converting
     # to standardized dataclass
@@ -97,6 +96,9 @@ def create_match_manager_from_args(
         modification=args.match,
         experiment_output_folder=args.experiment_output_folder
     )
+
+    assert not player_one_args.name != 'Command_Line_Human.yaml' or not game_args.each_player_has_its_own_thread
+    assert not player_two_args.name != 'Command_Line_Human.yaml' or not game_args.each_player_has_its_own_thread
 
     # taking care of random
     ch.set_seeds(seed=args.seed)

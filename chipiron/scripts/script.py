@@ -36,7 +36,7 @@ class Script:
     parser: MyParser
     gui_args: dict[str, Any] | None
     profile: cProfile.Profile | None
-    base_experiment_output_folder: str = 'scripts'
+    base_experiment_output_folder: str = 'chipiron/scripts'
 
     def __init__(
             self,
