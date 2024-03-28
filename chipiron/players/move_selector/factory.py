@@ -11,6 +11,7 @@ from .random import Random, create_random
 AllMoveSelectorArgs: TypeAlias = (
         treevalue.TreeAndValuePlayerArgs |
         human.CommandLineHumanPlayerArgs |
+        human.GuiHumanPlayerArgs |
         Random |
         stockfish.StockfishPlayer
 )
@@ -20,7 +21,7 @@ def create_main_move_selector(
         move_selector_instance_or_args: AllMoveSelectorArgs,
         syzygy: SyzygyTable,
         random_generator: random.Random
-) -> move_selector.MoveSelector | None:
+) -> move_selector.MoveSelector:
     main_move_selector: move_selector.MoveSelector
     print('create main move selector')
 
@@ -39,7 +40,7 @@ def create_main_move_selector(
         case stockfish.StockfishPlayer():
             main_move_selector = move_selector_instance_or_args
         case human.CommandLineHumanPlayerArgs():
-            main_move_selector = CommandLineHumanmoveslector()
+            main_move_selector = human.CommandLineHumanMoveSelector()
         case other:
             raise ValueError(f'player creator: can not find {other} of type {type(other)}')
     return main_move_selector

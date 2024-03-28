@@ -206,11 +206,14 @@ class MainWindow(QWidget):
                         piece = None
                     self.pieceToMove = [piece, self.coordinates]
 
-    def send_move_to_main_thread(self, move):
+    def send_move_to_main_thread(
+            self,
+            move: chess.Move
+    ):
         message: MoveMessage = MoveMessage(
             move=move,
             corresponding_board=self.board.fen(),
-            player_name='Human',
+            player_name='Gui_Human',
             color_to_play=self.board.turn
         )
         self.main_thread_mailbox.put(item=message)
