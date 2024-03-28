@@ -52,7 +52,6 @@ class UpdateInstructions:
         return self.value_block.empty() and (self.index_block is None or self.index_block.empty())
 
 
-
 class UpdateInstructionsBatch:
     # todo probably what we need to do is is that we should split the dic between half mmoves instaead of sorting it
 
@@ -110,4 +109,3 @@ class UpdateInstructionsBatch:
                         self.batch[node] = new_update_information
                     else:
                         self.batch[node] = update_instructions_batch[node]
-

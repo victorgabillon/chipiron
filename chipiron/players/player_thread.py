@@ -38,7 +38,7 @@ class PlayerProcess(multiprocessing.Process):
             player_factory_args=player_factory_args,
             player_color=player_color
         )
-        print('rrt',player_factory_args)
+        print('rrt', player_factory_args)
         assert self.game_player.player is not None
 
     # Override the run() function of Thread class

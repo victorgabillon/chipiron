@@ -6,8 +6,8 @@ from chipiron.players.move_selector.treevalue.nodes import ITreeNode
 class DictOfNumberedDictWithPointerOnMax:
 
     def __init__(self) -> None:
-        self.half_moves = {}
-        self.max_half_move = None
+        self.half_moves: dict[int, dict[ITreeNode, Any]] = {}
+        self.max_half_move: int | None = None
 
     def __setitem__(
             self,
@@ -48,6 +48,7 @@ class DictOfNumberedDictWithPointerOnMax:
             return node in self.half_moves[node.half_move]
 
     def popitem(self):
+        assert self.max_half_move is not None
         popped = self.half_moves[self.max_half_move].popitem()
         if not self.half_moves[self.max_half_move]:
             del self.half_moves[self.max_half_move]

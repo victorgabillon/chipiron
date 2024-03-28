@@ -16,7 +16,7 @@ AllNodeEvaluatorArgs: TypeAlias = neural_networks.NeuralNetNodeEvalArgs | NodeEv
 
 def create_node_evaluator(
         arg_board_evaluator: AllNodeEvaluatorArgs,
-        syzygy: SyzygyTable
+        syzygy: SyzygyTable | None
 ) -> NodeEvaluator:
     if arg_board_evaluator.syzygy_evaluation:
         syzygy_ = syzygy

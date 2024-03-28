@@ -78,7 +78,7 @@ def create_player_from_file(
 
 def create_player(
         args: PlayerArgs,
-        syzygy: SyzygyTable,
+        syzygy: SyzygyTable | None,
         random_generator: random.Random
 ) -> Player:
     """

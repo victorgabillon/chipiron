@@ -19,7 +19,7 @@ AllMoveSelectorArgs: TypeAlias = (
 
 def create_main_move_selector(
         move_selector_instance_or_args: AllMoveSelectorArgs,
-        syzygy: SyzygyTable,
+        syzygy: SyzygyTable | None,
         random_generator: random.Random
 ) -> move_selector.MoveSelector:
     main_move_selector: move_selector.MoveSelector
