@@ -97,8 +97,8 @@ def create_match_manager_from_args(
         experiment_output_folder=args.experiment_output_folder
     )
 
-    assert not player_one_args.name != 'Command_Line_Human.yaml' or not game_args.each_player_has_its_own_thread
-    assert not player_two_args.name != 'Command_Line_Human.yaml' or not game_args.each_player_has_its_own_thread
+    assert player_one_args.name != 'Command_Line_Human.yaml' or not game_args.each_player_has_its_own_thread
+    assert player_two_args.name != 'Command_Line_Human.yaml' or not game_args.each_player_has_its_own_thread
 
     # taking care of random
     ch.set_seeds(seed=args.seed)
