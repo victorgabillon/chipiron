@@ -1,11 +1,12 @@
+import sys
 import time
 
-from chipiron import scripts
+import chipiron.scripts as scripts
 
 # we need to not use multiprocessing to be able to use pytest therefore use setting_cubo  and not setting_jime
 
 start_time = time.time()
-configs = [
+configs_base = [
 
     # random Player first to have a fast game
     {
@@ -103,11 +104,29 @@ configs = [
     # todo add basic eval (no neural nets)
 ]
 
+configs_with_stock = [
+                         # stockfish
+                         {'seed': 11, 'gui': False, 'file_name_player_one': 'Stockfish.yaml',
+                          'file_name_player_two': 'Random.yaml',
+                          'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
+                     ] + configs_base
 
-def test_one_matches():
+configs_with_stock_and_gui = [
+                                 # checking gui
+                                 {'seed': 11, 'gui': True,
+                                  'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
+                                  'file_name_player_two': 'Random.yaml',
+                                  'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
+
+                             ] + configs_with_stock
+
+
+def test_one_matches(
+        configs=configs_base
+):
     for config in configs:
         print(f'Running the SCRIPT with config {config}')
-        script_object: scripts.Script = scripts.create_script(
+        script_object: scripts.IScript = scripts.create_script(
             script_type=scripts.ScriptType.OneMatch,
             extra_args=config
         )
@@ -156,6 +175,19 @@ def test_randomness():
 
 
 if __name__ == "__main__":
-    test_one_matches()
+
+    try:
+        which_test = sys.argv[1]
+        if which_test == 'gui_stock':
+            print('gui_stock')
+            test_configs = configs_with_stock_and_gui
+        elif which_test == 'stock':
+            print('stock')
+            test_configs = configs_with_stock
+    except Exception:
+        test_configs = configs_base
+
+    test_one_matches(configs=test_configs)
+
     test_randomness()
     print('ALL OK for ONE MATCH')
