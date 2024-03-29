@@ -18,7 +18,10 @@ class MainWindow(QWidget):
     Create a surface for the chessboard.
     """
 
-    def __init__(self, chess_board):
+    def __init__(
+            self,
+            chess_board
+    ):
         """
         Initialize the chessboard.
         """
