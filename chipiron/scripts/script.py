@@ -22,7 +22,7 @@ class ScriptArgs:
     # whether the script is profiling computation usage
     profiling: bool = False
 
-    # whether the script is tesing the code (using pytest for instance)
+    # whether the script is testing the code (using pytest for instance)
     testing: bool = False
 
 
