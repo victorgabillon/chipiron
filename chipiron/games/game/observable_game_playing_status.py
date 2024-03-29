@@ -24,7 +24,7 @@ class ObservableGamePlayingStatus:
         self._mailboxes += mailboxes
 
     @property
-    def status(self):
+    def status(self) -> PlayingStatus:
         return self.game_playing_status.status
 
     @status.setter
@@ -35,21 +35,21 @@ class ObservableGamePlayingStatus:
         self.game_playing_status.status = new_status
         self.notify()
 
-    def play(self):
+    def play(self) -> None:
         self.game_playing_status.play()
         self.notify()
 
-    def pause(self):
+    def pause(self) -> None:
         self.game_playing_status.pause()
         self.notify()
 
-    def is_paused(self):
+    def is_paused(self) -> bool:
         return self.game_playing_status.is_paused()
 
-    def is_play(self):
+    def is_play(self) -> bool:
         return self.game_playing_status.is_play()
 
-    def notify(self):
+    def notify(self) -> None:
         print('notify observable game playing')
         message: GameStatusMessage = GameStatusMessage(status=self.game_playing_status.status)
         for mailbox in self._mailboxes:
