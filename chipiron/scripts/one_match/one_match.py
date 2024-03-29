@@ -55,7 +55,6 @@ class OneMatchScript:
             base_experiment_output_folder=self.base_experiment_output_folder
         )
 
-
         # Converting the args in the standardized dataclass
         args: MatchScriptArgs = dacite.from_dict(
             data_class=MatchScriptArgs,
@@ -92,7 +91,6 @@ class OneMatchScript:
             self.match_manager.subscribe(gui_thread_mailbox)
 
         self.gui = args.gui
-
 
     def run(
             self
