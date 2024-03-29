@@ -43,7 +43,7 @@ class OverEvent:
     how_over: HowOver = HowOver.DO_NOT_KNOW_OVER
     who_is_winner: Winner = Winner.NO_KNOWN_WINNER
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         assert self.how_over in HowOver
         assert self.who_is_winner in Winner
 
@@ -61,7 +61,7 @@ class OverEvent:
         self.how_over = how_over
         self.who_is_winner = who_is_winner
 
-    def get_over_tag(self):
+    def get_over_tag(self) -> OverTags:
         """ returns a simple string that is used a tag in the databases"""
         if self.how_over == HowOver.WIN:
             if self.who_is_winner.is_white():
@@ -77,16 +77,16 @@ class OverEvent:
         else:
             raise Exception('error: over is not properly defined.')
 
-    def __bool__(self):
+    def __bool__(self) -> None:
         raise Exception('Nooooooooooo  in over ebvent.py')
 
     def is_over(self) -> bool:
         return self.how_over == HowOver.WIN or self.how_over == HowOver.DRAW
 
-    def is_win(self):
+    def is_win(self) -> bool:
         return self.how_over == HowOver.WIN
 
-    def is_draw(self):
+    def is_draw(self) -> bool:
         return self.how_over == HowOver.DRAW
 
     def is_winner(
@@ -104,10 +104,10 @@ class OverEvent:
         else:
             return False
 
-    def print_info(self):
+    def print_info(self) -> None:
         print('over_event:', 'how_over:', self.how_over, 'who_is_winner:', self.who_is_winner)
 
-    def test(self):
+    def test(self) -> None:
         if self.how_over == HowOver.WIN:
             assert (self.who_is_winner is not None)
             assert (self.who_is_winner.is_white() or self.who_is_winner.is_black())
