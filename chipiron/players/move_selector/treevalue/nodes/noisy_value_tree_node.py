@@ -1,4 +1,4 @@
-from players.move_selector.treevalue.nodes.tree_node import TreeNode
+from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 
 
 class NoisyValueTreeNode(TreeNode):
@@ -8,9 +8,9 @@ class NoisyValueTreeNode(TreeNode):
         self.number_of_samples = 0
         self.variance = 0
 
-    def test(self):
+    def test(self) -> None:
         super().test()
 
-    def dot_description(self):
-        super_description = super().dot_description()
+    def dot_description(self) -> str:
+        super_description: str = super().dot_description()
         return super_description + '\n num_sampl: ' + str(self.number_of_samples) + '\n variance: ' + str(self.variance)

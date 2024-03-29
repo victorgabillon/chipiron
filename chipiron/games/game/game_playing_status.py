@@ -16,7 +16,7 @@ class GamePlayingStatus:
     _status: PlayingStatus = PlayingStatus.PLAY
 
     @property
-    def status(self):
+    def status(self) -> PlayingStatus:
         return self._status
 
     @status.setter
@@ -24,17 +24,17 @@ class GamePlayingStatus:
     def status(
             self,
             new_status: PlayingStatus
-    ):
+    ) -> None:
         self._status = new_status
 
-    def play(self):
+    def play(self) -> None:
         self.status = PlayingStatus.PLAY
 
-    def pause(self):
+    def pause(self) -> None:
         self.status = PlayingStatus.PAUSE
 
-    def is_paused(self):
+    def is_paused(self) -> bool:
         return self.status == PlayingStatus.PAUSE
 
-    def is_play(self):
+    def is_play(self) -> bool:
         return self.status == PlayingStatus.PLAY

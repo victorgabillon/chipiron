@@ -17,9 +17,9 @@ def node_to_tensors_pieces_square_from_parent(node, board_modifications, parent_
         parent_node.board_representation.tensor_black)
 
     for removal in board_modifications.removals:
-        piece_type = removal[1]
-        piece_color = removal[2]
-        square = removal[0]
+        piece_type = removal.piece
+        piece_color = removal.color
+        square = removal.square
         piece_code = piece_type - 1
         if piece_color == chess.BLACK:
             square_index = chess.square_mirror(square)
@@ -32,9 +32,9 @@ def node_to_tensors_pieces_square_from_parent(node, board_modifications, parent_
 
     for appearance in board_modifications.appearances:
         # print('app',appearance)
-        piece_type = appearance[1]
-        piece_color = appearance[2]
-        square = appearance[0]
+        piece_type = appearance.piece
+        piece_color = appearance.color
+        square = appearance.square
         piece_code = piece_type - 1
         if piece_color == chess.BLACK:
             square_index = chess.square_mirror(square)

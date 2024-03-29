@@ -3,7 +3,7 @@ import typing
 import chess
 import chess.polyglot
 
-from chipiron.environments.chess.board.board_modification import BoardModification
+from chipiron.environments.chess.board.board_modification import BoardModification, PieceInSquare
 from chipiron.environments.chess.board.board_tools import convert_to_fen
 from .starting_position import AllStartingPositionArgs, FenStartingPositionArgs, \
     FileStartingPositionArgs
@@ -36,7 +36,7 @@ class BoardChi:
             match starting_position_arg:
                 case FileStartingPositionArgs():
                     starting_position_arg_file: FileStartingPositionArgs = starting_position_arg
-                    file_name = starting_position_arg_file.file_name
+                    file_name: str = starting_position_arg_file.file_name
                     fen = self.load_from_file(file_name)
                     self.board.set_fen(fen)
                 case FenStartingPositionArgs():
@@ -113,13 +113,23 @@ class BoardChi:
         to_bb = chess.BB_SQUARES[move.to_square]
         promoted = bool(self.board.promoted & from_bb)
         piece_type = self.board._remove_piece_at(move.from_square)
-        board_modifications.add_removal((move.from_square, piece_type, self.board.turn))
+        piece_in_square: PieceInSquare = PieceInSquare(
+            square=move.from_square,
+            piece=piece_type,
+            color=self.board.turn
+        )
+        board_modifications.add_removal(removal=piece_in_square)
         # print('^&',(move.from_square, piece_type, self.turn),move)
         assert piece_type is not None, f"push() expects move to be pseudo-legal, but got {move} in {self.board.board_fen()}"
         capture_square = move.to_square
         captured_piece_type = self.board.piece_type_at(capture_square)
         if captured_piece_type is not None:
-            board_modifications.add_removal((capture_square, captured_piece_type, not self.board.turn))
+            captured_piece_in_square: PieceInSquare = PieceInSquare(
+                square=capture_square,
+                piece=captured_piece_type,
+                color=not self.board.turn
+            )
+            board_modifications.add_removal(removal=captured_piece_in_square)
 
         # Update castling rights.
         self.board.castling_rights &= ~to_bb & ~from_bb
@@ -148,7 +158,12 @@ class BoardChi:
                 capture_square = ep_square + down
                 captured_color = self.board.color_at(capture_square)
                 captured_piece_type = self.board._remove_piece_at(capture_square)
-                board_modifications.add_removal((capture_square, captured_piece_type, not self.board.turn))
+                pawn_captured_piece_in_square: PieceInSquare = PieceInSquare(
+                    square=capture_square,
+                    piece=captured_piece_type,
+                    color=not self.board.turn
+                )
+                board_modifications.add_removal(removal=pawn_captured_piece_in_square)
                 assert (not self.board.turn == captured_color)
 
         # Promotion.
@@ -163,8 +178,18 @@ class BoardChi:
 
             self.board._remove_piece_at(move.from_square)
             self.board._remove_piece_at(move.to_square)
-            board_modifications.add_removal((move.from_square, chess.KING, self.board.turn))
-            board_modifications.add_removal((move.to_square, chess.ROOK, self.board.turn))
+            remove_king_in_square: PieceInSquare = PieceInSquare(
+                square=move.from_square,
+                piece=chess.KING,
+                color=self.board.turn
+            )
+            board_modifications.add_removal(removal=remove_king_in_square)
+            remove_rook_in_square: PieceInSquare = PieceInSquare(
+                square=move.to_square,
+                piece=chess.ROOK,
+                color=self.board.turn
+            )
+            board_modifications.add_removal(removal=remove_rook_in_square)
 
             if a_side:
                 king_square = chess.C1 if self.board.turn == chess.WHITE else chess.C8
@@ -176,14 +201,29 @@ class BoardChi:
                 rook_square = chess.F1 if self.board.turn == WHITE else chess.F8
                 self.board._set_piece_at(king_square, chess.KING, self.board.turn)
                 self.board._set_piece_at(rook_square, chess.ROOK, self.board.turn)
-            board_modifications.add_appearance((king_square, chess.KING, self.board.turn))
-            board_modifications.add_appearance((rook_square, chess.ROOK, self.board.turn))
+            king_in_square: PieceInSquare = PieceInSquare(
+                square=king_square,
+                piece=chess.KING,
+                color=self.board.turn
+            )
+            board_modifications.add_appearance(appearance=king_in_square)
+            rook_in_square: PieceInSquare = PieceInSquare(
+                square=rook_square,
+                piece=chess.ROOK,
+                color=self.board.turn
+            )
+            board_modifications.add_appearance(appearance=rook_in_square)
 
         # Put the piece on the target square.
         if not castling:
             was_promoted = bool(self.board.promoted & to_bb)
             self.board._set_piece_at(move.to_square, piece_type, self.board.turn, promoted)
-            board_modifications.add_appearance((move.to_square, piece_type, self.board.turn))
+            promote_piece_in_square: PieceInSquare = PieceInSquare(
+                square=move.to_square,
+                piece=piece_type,
+                color=self.board.turn
+            )
+            board_modifications.add_appearance(appearance=promote_piece_in_square)
 
             if captured_piece_type:
                 self.board._push_capture(move, capture_square, captured_piece_type, was_promoted)
@@ -193,10 +233,13 @@ class BoardChi:
 
         return board_modifications
 
-    def load_from_file(self, file_name):
+    def load_from_file(
+            self,
+            file_name: str
+    ) -> str:
         with open('data/starting_boards/' + file_name, "r") as f:
-            asciiBoard = f.read()
-            fen = convert_to_fen(asciiBoard)
+            ascii_board: str = str(f.read())
+            fen: str = convert_to_fen(ascii_board)
         return fen
 
     def compute_key(self) -> str:
