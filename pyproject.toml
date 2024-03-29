@@ -22,3 +22,21 @@ warn_return_any = true
 warn_unreachable = true
 warn_unused_configs = true
 no_implicit_reexport = true
+
+
+[[tool.mypy.overrides]]
+module = [
+    "PySide6",
+]
+ignore_missing_imports = true
+follow_imports = 'skip'
+
+
+[[tool.mypy.overrides]]
+module = 'PySide6.*'
+follow_imports = 'skip'
+ignore_missing_imports = true
+
+
+[tool.mypy-PySide6]
+ignore_missing_imports = true

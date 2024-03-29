@@ -6,6 +6,7 @@ import sys
 from typing import Any
 
 from chipiron import scripts
+from chipiron.scripts.script_gui import script_gui
 from chipiron.utils.small_tools import yaml_fetch_args_in_file
 
 
@@ -27,7 +28,7 @@ def get_script_and_args(
     if len(raw_command_line_arguments) == 1:  # No args provided
         # use a gui to get user input
         gui_extra_args: dict[str, Any] | None
-        script_type, gui_extra_args = scripts.script_gui()
+        script_type, gui_extra_args = script_gui()
         extra_args = gui_extra_args
     else:
         # Capture  the script argument in the command line arguments

@@ -18,7 +18,7 @@ class MatchArgs:
     config_file_name: path = 'chipiron/scripts/one_match/inputs/base/exp_options.yaml'
     # FIXME does the lines below always overwrites the configfile name above ? is the aconfig file name ever used atm?
     file_name_player_one: path = 'RecurZipfBase3.yaml'
-    file_name_player_two: path = 'Command_Line_Human.yaml'
+    file_name_player_two: path = 'Gui_Human.yaml'
     file_name_match_setting: path = 'setting_cubo.yaml'
 
     # For players and match modification of the yaml file specified in a respective dict

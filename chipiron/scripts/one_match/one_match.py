@@ -28,7 +28,7 @@ class MatchScriptArgs(ScriptArgs, MatchArgs):
     """
 
     # whether to display the match in a GUI
-    gui: bool = False
+    gui: bool = True
 
 
 class OneMatchScript:
