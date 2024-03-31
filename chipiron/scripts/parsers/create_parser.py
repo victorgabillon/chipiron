@@ -25,7 +25,6 @@ def create_parser(
     # that will overwrite the ones in the yaml file
     field: Field[Any]
     for field in fields(args_class_name):
-        print('field.name', str('--' + field.name))
         parser.add_argument(
             str('--' + field.name),
             type=str,

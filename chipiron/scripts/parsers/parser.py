@@ -1,4 +1,5 @@
 import os
+import sys
 from datetime import datetime
 from typing import Any
 
@@ -27,12 +28,18 @@ class MyParser:
         self.args_config_file = None
         self.merged_args = None
 
-    def parse_command_line_arguments(self):
+    def parse_command_line_arguments(
+            self
+    ) -> dict[str, Any]:
 
         args_obj, unknown = self.parser.parse_known_args()
         args_command_line = vars(args_obj)  # converting into dictionary format
-        self.args_command_line = {key: value for key, value in args_command_line.items() if value is not None}
-        print('Here are the command line arguments of the script', self.args_command_line)
+        args_command_line_without_none: dict[str, Any] = {
+            key: value for key, value in args_command_line.items() if value is not None
+        }
+        print('Here are the command line arguments of the script', args_command_line_without_none, sys.argv)
+
+        return args_command_line_without_none
 
     def parse_config_file_arguments(self, config_file_path: str) -> None:
 
@@ -60,8 +67,9 @@ class MyParser:
         assert extra_args is not None
 
         if self.should_parse_command_line_arguments:
-            self.parse_command_line_arguments()
-        assert self.args_command_line is not None
+            self.args_command_line = self.parse_command_line_arguments()
+        else:
+            self.args_command_line = {}
 
         #  the gui/external input  overwrite  the command line arguments
         #  that will overwrite the config file arguments that will overwrite the default arguments
