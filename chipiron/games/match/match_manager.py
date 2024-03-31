@@ -90,7 +90,6 @@ class MatchManager:
         # when a gui is present it might action it to close itself)
         match_results.finish()
 
-        # print('u',match_results,type(match_results))
         if not isinstance(match_results, MatchResults):
             assert isinstance(match_results, ObservableMatchResults)
             match_results = match_results.match_results

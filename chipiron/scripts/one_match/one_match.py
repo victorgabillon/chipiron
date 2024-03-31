@@ -7,9 +7,7 @@ import queue
 import sys
 from dataclasses import asdict
 from dataclasses import dataclass
-from typing import Any
 
-import dacite
 import yaml
 from PySide6.QtWidgets import QApplication
 
@@ -36,6 +34,7 @@ class OneMatchScript:
     Script that plays a match between two players
 
     """
+    args_dataclass_name: type[MatchScriptArgs] = MatchScriptArgs
 
     base_experiment_output_folder = os.path.join(Script.base_experiment_output_folder, 'one_match/outputs/')
     base_script: Script
@@ -50,15 +49,10 @@ class OneMatchScript:
 
         self.base_script = base_script
 
-        # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into self.args
-        args_dict: dict[str, Any] = self.base_script.initiate(
-            base_experiment_output_folder=self.base_experiment_output_folder
-        )
-
-        # Converting the args in the standardized dataclass
-        args: MatchScriptArgs = dacite.from_dict(
-            data_class=MatchScriptArgs,
-            data=args_dict
+        # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into args
+        args: MatchScriptArgs = self.base_script.initiate(
+            base_experiment_output_folder=self.base_experiment_output_folder,
+            args_dataclass_name=MatchScriptArgs
         )
 
         # creating the match manager

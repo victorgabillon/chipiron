@@ -226,9 +226,7 @@ class VisualizeTreeScript:
             self,
             base_script: Script,
     ):
-        self.base_script = base_script
-        # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into self.args
-        self.args_dict: dict[str, typing.Any] = self.base_script.initiate(self.base_experiment_output_folder)
+        ...
 
     def run(self):
         app = QtWidgets.QApplication(sys.argv)

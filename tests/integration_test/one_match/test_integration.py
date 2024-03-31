@@ -128,7 +128,8 @@ def test_one_matches(
         print(f'Running the SCRIPT with config {config}')
         script_object: scripts.IScript = scripts.create_script(
             script_type=scripts.ScriptType.OneMatch,
-            extra_args=config
+            extra_args=config,
+            should_parse_command_line_arguments=False
         )
 
         # run the script

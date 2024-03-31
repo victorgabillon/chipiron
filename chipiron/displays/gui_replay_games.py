@@ -4,13 +4,15 @@
 This module is the execution point of the chess GUI application.
 """
 
-import sys
+from typing import Any
 
 import chess
 from PySide6.QtCore import Slot
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QKeyEvent
 from PySide6.QtSvgWidgets import QSvgWidget
-from PySide6.QtWidgets import QWidget, QPushButton, QApplication
+from PySide6.QtWidgets import QWidget, QPushButton
+
+from chipiron.environments.chess.board.board import BoardChi
 
 
 class MainWindow(QWidget):
@@ -20,8 +22,8 @@ class MainWindow(QWidget):
 
     def __init__(
             self,
-            chess_board
-    ):
+            chess_board: BoardChi
+    ) -> None:
         """
         Initialize the chessboard.
         """
@@ -66,12 +68,15 @@ class MainWindow(QWidget):
         self.squareSize = (self.boardSize - 2 * self.margin) / 8.0
 
         self.count = 0
-        self.next_move = self.chess_board_recorded.move_stack[self.count]
+        self.next_move = self.chess_board_recorded.board.move_stack[self.count]
 
         self.drawBoard()
 
     @Slot(QWidget)
-    def keyPressEvent(self, event):
+    def keyPressEvent(
+            self,
+            event: QKeyEvent
+    ) -> None:
         print(event.text())
         key = event.text()
         if key == '1':
@@ -80,19 +85,19 @@ class MainWindow(QWidget):
                 print(self.chess_board)
                 print(self.chess_board.fen())
                 self.count -= 1
-                self.next_move = self.chess_board_recorded.move_stack[self.count]
+                self.next_move = self.chess_board_recorded.board.move_stack[self.count]
                 self.drawBoard()
         if key == '2':
-            if self.count < len(self.chess_board_recorded.move_stack):
+            if self.count < len(self.chess_board_recorded.board.move_stack):
                 self.chess_board.push(self.next_move)
                 print(self.chess_board)
                 print(self.chess_board.fen())
                 self.count += 1
-                if self.count < len(self.chess_board_recorded.move_stack):
-                    self.next_move = self.chess_board_recorded.move_stack[self.count]
+                if self.count < len(self.chess_board_recorded.board.move_stack):
+                    self.next_move = self.chess_board_recorded.board.move_stack[self.count]
                 self.drawBoard()
 
-    def drawBoard(self):
+    def drawBoard(self) -> Any:
         """
         Draw a chessboard with the starting position and then redraw
         it for every new move.
@@ -102,10 +107,3 @@ class MainWindow(QWidget):
         self.drawBoardSvg = self.widgetSvg.load(self.boardSvg)
 
         return self.drawBoardSvg
-
-
-if __name__ == "__main__":
-    chessGui = QApplication(sys.argv)
-    window = MainWindow(None)
-    window.show()
-    sys.exit(chessGui.exec_())
