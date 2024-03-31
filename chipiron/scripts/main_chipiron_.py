@@ -8,8 +8,8 @@ from typing import Any, TypeVar
 from chipiron.scripts.factory import create_script
 from chipiron.scripts.iscript import IScript
 from chipiron.scripts.script_gui_custom import script_gui
+from chipiron.scripts.script_type import ScriptType
 from chipiron.utils.small_tools import yaml_fetch_args_in_file
-from .script_type import ScriptType
 
 T_IScript = TypeVar("T_IScript", covariant=True, bound=IScript)
 

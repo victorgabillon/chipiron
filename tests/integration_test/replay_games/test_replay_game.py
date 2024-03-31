@@ -7,7 +7,8 @@ import chipiron.scripts as scripts
 start_time = time.time()
 configs_base = [
     {
-        'file_path_game_pickle': 'tests/integration_test/replay_games/games_0_W:RecurZipfBase3-vs-B:RecurZipfBase3.obj'
+        'file_path_game_pickle': 'tests/integration_test/replay_games/games_0_W:RecurZipfBase3-vs-B:RecurZipfBase3.obj',
+        'gui': False
     }
 ]
 
