@@ -5,9 +5,9 @@ from chipiron.players.boardevaluators.over_event import OverEvent, Winner
 
 class TestOverEvent(unittest.TestCase):
 
-    def test_construct_over_events(self):
+    def test_construct_over_events(self) -> None:
 
-        def test_construct_over_event(test_over_event: OverEvent):
+        def test_construct_over_event(test_over_event: OverEvent) -> None:
             if test_over_event.is_over():
                 self.assertTrue(test_over_event.is_win() or test_over_event.is_draw())
             if test_over_event.is_win():

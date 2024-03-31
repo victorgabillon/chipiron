@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from enum import Enum
 from itertools import islice
 from typing import Any
-from typing import Type
 from typing import TypeVar
 
 import dacite
@@ -103,7 +102,7 @@ _T_co = TypeVar("_T_co", covariant=True, bound=IsDataclass)
 @typing.dataclass_transform()
 def fetch_args_modify_and_convert(
         path_to_file: path,  # path to a yaml file
-        dataclass_name: Type[_T_co],  # the dataclass into which the dictionary will be converted
+        dataclass_name: type[_T_co],  # the dataclass into which the dictionary will be converted
         modification: dict[Any, Any] | None = None,  # modification to the dict extracted from the yaml file
 ) -> _T_co:
     if modification is None:

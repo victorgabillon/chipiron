@@ -10,10 +10,12 @@ import time
 from dataclasses import dataclass
 from pstats import SortKey
 from typing import Any
+from typing import TypeVar
 
 import dacite
 
 from chipiron.scripts.parsers.parser import MyParser
+from chipiron.utils.is_dataclass import IsDataclass
 from chipiron.utils.small_tools import mkdir
 
 
@@ -24,6 +26,9 @@ class ScriptArgs:
 
     # whether the script is testing the code (using pytest for instance)
     testing: bool = False
+
+
+_T_co = TypeVar("_T_co", covariant=True, bound=IsDataclass)
 
 
 class Script:
@@ -56,8 +61,10 @@ class Script:
 
     def initiate(
             self,
+            args_dataclass_name: type[_T_co],
             base_experiment_output_folder=None
-    ) -> dict[str, Any]:
+
+    ) -> _T_co:
 
         if base_experiment_output_folder is None:
             base_experiment_output_folder = self.base_experiment_output_folder
@@ -84,7 +91,12 @@ class Script:
             self.profile = cProfile.Profile()
             self.profile.enable()
 
-        return args_dict
+        # Converting the args in the standardized dataclass
+        final_args: _T_co = dacite.from_dict(
+            data_class=args_dataclass_name,
+            data=args_dict
+        )
+        return final_args
 
     def terminate(self) -> None:
         """

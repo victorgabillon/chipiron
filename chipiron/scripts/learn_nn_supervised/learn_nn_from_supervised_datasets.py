@@ -4,7 +4,6 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
-import dacite
 from torch.utils.data import DataLoader
 
 from chipiron.learningprocesses.nn_trainer.factory import create_nn_trainer, safe_nn_param_save, safe_nn_trainer_save
@@ -65,17 +64,20 @@ class LearnNNScript:
         self.base_script = base_script
 
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into self.args
-        args_dict: dict[str, Any] = self.base_script.initiate(self.base_experiment_output_folder)
+        self.args: LearnNNScriptArgs = self.base_script.initiate(
+            args_dataclass_name=LearnNNScriptArgs,
+            base_experiment_output_folder=self.base_experiment_output_folder
+        )
 
-        # Converting the args in the standardized dataclass
-        self.args: LearnNNScriptArgs = dacite.from_dict(data_class=LearnNNScriptArgs,
-                                                        data=args_dict)
-
-        self.nn = create_nn(args=self.args.neural_network,
-                            create_file=self.args.create_nn_file)
+        self.nn = create_nn(
+            args=self.args.neural_network,
+            create_file=self.args.create_nn_file
+        )
         self.nn.print_param()
-        self.nn_trainer = create_nn_trainer(args=self.args,
-                                            nn=self.nn)
+        self.nn_trainer = create_nn_trainer(
+            args=self.args,
+            nn=self.nn
+        )
 
         board_representation_factory = Representation364Factory()
         board_to_input = Representation364BTI(representation_factory=board_representation_factory)
