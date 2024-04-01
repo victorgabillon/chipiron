@@ -41,7 +41,7 @@ class SyzygyTable:
         if val != 0:
             how_over_ = HowOver.WIN
             if val > 0:
-                who_is_winner_ = board.turn
+                who_is_winner_ = Winner.WHITE if board.turn == chess.WHITE else Winner.BLACK
             if val < 0:
                 who_is_winner_ = Winner.WHITE if board.turn == chess.BLACK else Winner.BLACK
         else:

@@ -21,7 +21,7 @@ class BoardEvaluator(Protocol):
     def value_white(
             self,
             board: BoardChi
-    ):
+    ) -> float:
         """Evaluates a board"""
         ...
 
@@ -45,7 +45,7 @@ class GameBoardEvaluator:
     def evaluate(
             self,
             board: BoardChi
-    ):
+    ) -> tuple[float, float]:
         evaluation_chi = self.board_evaluator_chi.value_white(board=board)
         evaluation_stock = self.board_evaluator_stock.value_white(board=board)
         return evaluation_stock, evaluation_chi
@@ -54,7 +54,7 @@ class GameBoardEvaluator:
             self,
             player_color: chess.Color,
             evaluation: float
-    ):
+    ) -> None:
         # clean at some point!
         ...
 
@@ -82,11 +82,17 @@ class ObservableBoardEvaluator:
         self.evaluation_player_black: Any = None
         self.evaluation_player_white: Any = None
 
-    def subscribe(self, mailbox):
+    def subscribe(
+            self,
+            mailbox: queue.Queue[EvaluationMessage]
+    ) -> None:
         self.mailboxes.append(mailbox)
 
     # wrapped function
-    def evaluate(self, board):
+    def evaluate(
+            self,
+            board: BoardChi
+    ):
         self.evaluation_stock, self.evaluation_chi = self.game_board_evaluator.evaluate(board=board)
 
         self.notify_new_results()
@@ -105,10 +111,12 @@ class ObservableBoardEvaluator:
 
     def notify_new_results(self):
         for mailbox in self.mailboxes:
-            message: EvaluationMessage = EvaluationMessage(evaluation_stock=self.evaluation_stock,
-                                                           evaluation_chipiron=self.evaluation_chi,
-                                                           evaluation_player_white=self.evaluation_player_white,
-                                                           evaluation_player_black=self.evaluation_player_black)
+            message: EvaluationMessage = EvaluationMessage(
+                evaluation_stock=self.evaluation_stock,
+                evaluation_chipiron=self.evaluation_chi,
+                evaluation_player_white=self.evaluation_player_white,
+                evaluation_player_black=self.evaluation_player_black
+            )
             mailbox.put(item=message)
 
     # forwarding

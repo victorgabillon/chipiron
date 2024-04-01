@@ -18,6 +18,7 @@ from matplotlib.figure import Figure
 from chipiron.environments.chess.board import BoardChi
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.games.match.match_results import MatchResults
+from chipiron.games.match.match_results import SimpleResults
 from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMessage, EvaluationMessage
 from chipiron.utils.communication.gui_messages.gui_messages import MatchResultsMessage
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage
@@ -378,11 +379,11 @@ class MainWindow(QWidget):
             self,
             match_result: MatchResults
     ):
-        player_one_wins, player_two_wins, draws = match_result.get_simple_result()
+        simple_results: SimpleResults = match_result.get_simple_result()
         self.score_button.setText(
-            'Score: ' + str(player_one_wins) + '-'
-            + str(player_two_wins) + '-'
-            + str(draws))  # text
+            'Score: ' + str(simple_results.player_one_wins) + '-'
+            + str(simple_results.player_two_wins) + '-'
+            + str(simple_results.draws))  # text
 
         print('update', match_result.match_finished)
         # if the match is over we kill th gui
