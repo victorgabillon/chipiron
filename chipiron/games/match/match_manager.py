@@ -1,5 +1,6 @@
 import os
 import pickle
+import queue
 
 import chess
 
@@ -13,6 +14,7 @@ from chipiron.games.match.observable_match_result import ObservableMatchResults
 from chipiron.players import PlayerFactoryArgs
 from chipiron.utils import path
 from chipiron.utils import seed
+from chipiron.utils.is_dataclass import IsDataclass
 
 
 class MatchManager:
@@ -140,7 +142,7 @@ class MatchManager:
 
     def subscribe(
             self,
-            subscriber
+            subscriber: queue.Queue[IsDataclass]
     ) -> None:
         self.game_manager_factory.subscribe(subscriber)
         self.match_results_factory.subscribe(subscriber)

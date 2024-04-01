@@ -16,12 +16,15 @@ from chipiron.players.boardevaluators.neural_networks.models.nn_pp2d2_2rrelu imp
 from chipiron.players.boardevaluators.neural_networks.nn_board_evaluator import NNBoardEvaluator
 from chipiron.players.boardevaluators.neural_networks.output_converters.output_value_converter import \
     OutputValueConverter, OneDToValueWhite
+from chipiron.utils import path
 from chipiron.utils.chi_nn import ChiNN
 from chipiron.utils.small_tools import mkdir
 
 
-def get_folder_path_from(nn_type: str,
-                         nn_param_folder_name):
+def get_folder_path_from(
+        nn_type: str,
+        nn_param_folder_name: str
+) -> path:
     print('nn_type', nn_type)
     folder_path = os.path.join('data/players/board_evaluators/nn_pytorch/nn_' + nn_type, nn_param_folder_name)
     return folder_path
@@ -59,6 +62,7 @@ def create_nn(
             sys.exit(f'Create NN: can not find {other} in file {__name__}')
 
     nn_param_file_path = get_nn_param_file_path_from(folder_path)
+    print('nn_param_file_path', nn_param_file_path, create_file)
     net.load_from_file_or_init_weights(nn_param_file_path, create_file)
 
     net.eval()

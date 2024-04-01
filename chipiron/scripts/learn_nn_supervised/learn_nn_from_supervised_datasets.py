@@ -6,26 +6,21 @@ from typing import Any
 
 from torch.utils.data import DataLoader
 
+from chipiron.learningprocesses.nn_trainer.factory import NNTrainerArgs
 from chipiron.learningprocesses.nn_trainer.factory import create_nn_trainer, safe_nn_param_save, safe_nn_trainer_save
 from chipiron.players.boardevaluators.datasets.datasets import FenAndValueDataSet
-from chipiron.players.boardevaluators.neural_networks import NeuralNetBoardEvalArgs
 from chipiron.players.boardevaluators.neural_networks.factory import create_nn
 from chipiron.players.boardevaluators.neural_networks.input_converters.factory import Representation364Factory
 from chipiron.players.boardevaluators.neural_networks.input_converters.representation_364_bti import \
     Representation364BTI
 from chipiron.scripts.script import Script, ScriptArgs
+from chipiron.utils.chi_nn import ChiNN
 
 
 @dataclass
 class LearnNNScriptArgs(ScriptArgs):
-    neural_network: NeuralNetBoardEvalArgs = field(
-        default_factory=lambda: NeuralNetBoardEvalArgs(
-            nn_type='pp2d2_2_leaky',
-            nn_param_folder_name='foo'
-        )
-    )
+    nn_trainer_args: NNTrainerArgs = field(default_factory=NNTrainerArgs)
     create_nn_file: bool = True
-    config_file_name: str = 'scripts/learn_nn_supervised/exp_options.yaml'
     #  'stockfish_boards_train_file_name': '/home/victor/goodgames_plusvariation_stockfish_eval_train_10000000',
     stockfish_boards_train_file_name: str = 'data/datasets/goodgames_plusvariation_stockfish_eval_train_t.1_merge'
     stockfish_boards_test_file_name: str = 'data/datasets/goodgames_plusvariation_stockfish_eval_test'
@@ -33,15 +28,9 @@ class LearnNNScriptArgs(ScriptArgs):
     batch_size_train: int = 32
     batch_size_test: int = 10
     saving_interval: int = 1000
-    saving_intermediate_copy: bool = True
     saving_intermediate_copy_interval: int = 10000
     min_interval_lr_change: int = 1000000
-    starting_lr: float = .1
     min_lr: float = .001
-    momentum_op: float = .9
-    scheduler_step_size: float = 1
-    scheduler_gamma: float = .5
-    reuse_existing_trainer: bool = False
 
 
 class LearnNNScript:
@@ -49,11 +38,14 @@ class LearnNNScript:
     Script that learns a NN from a supervised dataset pairs of board and evaluation
 
     """
+    args_dataclass_name: type[LearnNNScriptArgs] = LearnNNScriptArgs
 
     base_experiment_output_folder = os.path.join(Script.base_experiment_output_folder,
                                                  'learn_nn_supervised/learn_nn_supervised_outputs')
 
     base_script: Script
+    nn: ChiNN
+    args: LearnNNScriptArgs
 
     def __init__(
             self,
@@ -70,12 +62,12 @@ class LearnNNScript:
         )
 
         self.nn = create_nn(
-            args=self.args.neural_network,
+            args=self.args.nn_trainer_args.neural_network,
             create_file=self.args.create_nn_file
         )
         self.nn.print_param()
         self.nn_trainer = create_nn_trainer(
-            args=self.args,
+            args=self.args.nn_trainer_args,
             nn=self.nn
         )
 
@@ -86,26 +78,33 @@ class LearnNNScript:
             file_name=self.args.stockfish_boards_train_file_name,
             preprocessing=self.args.preprocessing_data_set,
             transform_board_function=board_to_input.convert,
-            transform_value_function='stockfish')
+            transform_value_function='stockfish'
+        )
 
         self.stockfish_boards_test = FenAndValueDataSet(
             file_name=self.args.stockfish_boards_test_file_name,
             preprocessing=self.args.preprocessing_data_set,
             transform_board_function=board_to_input.convert,
-            transform_value_function='stockfish')
+            transform_value_function='stockfish'
+        )
 
         start_time = time.time()
         self.stockfish_boards_train.load()
         print("--- LOADdd %s seconds ---" % (time.time() - start_time))
         self.stockfish_boards_test.load()
 
-        self.data_loader_stockfish_boards_train = DataLoader(self.stockfish_boards_train,
-                                                             batch_size=self.args.batch_size_train,
-                                                             shuffle=True, num_workers=1)
+        self.data_loader_stockfish_boards_train = DataLoader(
+            self.stockfish_boards_train,
+            batch_size=self.args.batch_size_train,
+            shuffle=True,
+            num_workers=1
+        )
 
-        self.data_loader_stockfish_boards_test = DataLoader(self.stockfish_boards_test,
-                                                            batch_size=self.args.batch_size_test,
-                                                            shuffle=True, num_workers=1)
+        self.data_loader_stockfish_boards_test = DataLoader(
+            self.stockfish_boards_test,
+            batch_size=self.args.batch_size_test,
+            shuffle=True, num_workers=1
+        )
 
     def run(self):
         """ Running the learning of the NN"""
@@ -169,11 +168,11 @@ class LearnNNScript:
 
     def saving_things_to_file(self, count_train_step):
         if count_train_step % self.args.saving_interval == 0:
-            safe_nn_param_save(self.nn, self.args.neural_network)
-            safe_nn_trainer_save(self.nn_trainer, self.args.neural_network)
-        if self.args.saving_intermediate_copy \
+            safe_nn_param_save(self.nn, self.args.nn_trainer_args.neural_network)
+            safe_nn_trainer_save(self.nn_trainer, self.args.nn_trainer_args.neural_network)
+        if self.args.nn_trainer_args.saving_intermediate_copy \
                 and count_train_step % self.args.saving_intermediate_copy_interval == 0:
-            safe_nn_param_save(self.nn, self.args.neural_network, training_copy=True)
+            safe_nn_param_save(self.nn, self.args.nn_trainer_args.neural_network, training_copy=True)
 
     def terminate(self) -> None:
         """

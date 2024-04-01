@@ -10,7 +10,11 @@ from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 from .board_representation import Representation364
 
 
-def node_to_tensors_pieces_square_from_parent(node, board_modifications, parent_node):
+def node_to_tensors_pieces_square_from_parent(
+        node,
+        board_modifications,
+        parent_node
+):
     tensor_white = torch.empty_like(parent_node.board_representation.tensor_white).copy_(
         parent_node.board_representation.tensor_white)
     tensor_black = torch.empty_like(parent_node.board_representation.tensor_black).copy_(

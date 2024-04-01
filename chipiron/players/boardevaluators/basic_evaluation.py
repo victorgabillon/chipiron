@@ -18,7 +18,9 @@ def value_base(
     return value_white_
 
 
-def add_pawns_value_white(board):
+def add_pawns_value_white(
+        board: BoardChi
+) -> float:
     # code to push the pawns to advance by giving more value to the  pawns that are advanced
     add_value: float = 0
     for pawn in list(board.board.pieces(chess.PAWN, chess.WHITE)):
@@ -26,7 +28,9 @@ def add_pawns_value_white(board):
     return add_value
 
 
-def add_pawns_value_black(board):
+def add_pawns_value_black(
+        board: BoardChi
+) -> float:
     # code to push the pawns to advance by giving more value to the  pawns that are advanced
 
     add_value: float = 0
@@ -35,7 +39,7 @@ def add_pawns_value_black(board):
     return add_value
 
 
-def value_white(board):
+def value_white(board: BoardChi) -> float:
     value_white_pieces = value_base(board, chess.WHITE)
     value_black_pieces = value_base(board, chess.BLACK)
     # value_white_pieces += add_pawns_value_white(board)
@@ -43,16 +47,16 @@ def value_white(board):
     return value_white_pieces - value_black_pieces
 
 
-def sigmoid(x):
+def sigmoid(x: float) -> float:
     return 1 / (1 + math.exp(-x))
 
 
-def value_player_to_move(board):
+def value_player_to_move(board: BoardChi) -> float:
     value_white_pieces = value_base(board, chess.WHITE)
     value_black_pieces = value_base(board, chess.BLACK)
     # value_white_pieces += add_pawns_value_white(board)
     # value_black_pieces += add_pawns_value_black(board)
-    if board.chess_board.turn == chess.WHITE:
+    if board.board.turn == chess.WHITE:
         return sigmoid((value_white_pieces - value_black_pieces) * .2)
     else:
         return sigmoid((value_black_pieces - value_white_pieces) * .2)
@@ -60,12 +64,12 @@ def value_player_to_move(board):
 
 class BasicEvaluation(BoardEvaluator):
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    def value_white(self, board):
-        value_white_pieces = value_base(board, chess.WHITE)
-        value_black_pieces = value_base(board, chess.BLACK)
+    def value_white(self, board: BoardChi) -> float:
+        value_white_pieces: float = float(value_base(board, chess.WHITE))
+        value_black_pieces: float = float(value_base(board, chess.BLACK))
         value_white_pieces += add_pawns_value_white(board)
         value_black_pieces += add_pawns_value_black(board)
 

@@ -92,7 +92,7 @@ class ObservableBoardEvaluator:
     def evaluate(
             self,
             board: BoardChi
-    ):
+    ) -> tuple[float, float]:
         self.evaluation_stock, self.evaluation_chi = self.game_board_evaluator.evaluate(board=board)
 
         self.notify_new_results()
@@ -109,7 +109,7 @@ class ObservableBoardEvaluator:
             self.evaluation_player_white = evaluation
         self.notify_new_results()
 
-    def notify_new_results(self):
+    def notify_new_results(self) -> None:
         for mailbox in self.mailboxes:
             message: EvaluationMessage = EvaluationMessage(
                 evaluation_stock=self.evaluation_stock,

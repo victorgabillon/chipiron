@@ -1,12 +1,31 @@
 import pickle
+from dataclasses import dataclass, field
 from datetime import datetime
 
 import torch
 import torch.optim as optim
 
 from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
+from chipiron.players.boardevaluators.neural_networks import NeuralNetBoardEvalArgs
 from chipiron.players.boardevaluators.neural_networks.factory import get_folder_path_from, get_nn_param_file_path_from
+from chipiron.utils.chi_nn import ChiNN
 from chipiron.utils.small_tools import mkdir
+
+
+@dataclass
+class NNTrainerArgs:
+    neural_network: NeuralNetBoardEvalArgs = field(
+        default_factory=lambda: NeuralNetBoardEvalArgs(
+            nn_type='pp2d2_2_leaky',
+            nn_param_folder_name='foo'
+        )
+    )
+    reuse_existing_trainer: bool = False
+    starting_lr: float = .1
+    momentum_op: float = .9
+    scheduler_step_size: int = 1
+    scheduler_gamma: float = .5
+    saving_intermediate_copy: bool = True
 
 
 def get_optimizer_file_path_from(folder_path):
@@ -23,10 +42,19 @@ def get_folder_training_copies_path_from(folder_path):
     return folder_path + '/training_copies'
 
 
-def create_nn_trainer(args, nn):
-    args_nn = args.neural_network
-    nn_folder_path = get_folder_path_from(nn_type=args_nn.nn_type, nn_param_folder_name=args_nn.nn_param_folder_name)
+def create_nn_trainer(
+        args: NNTrainerArgs,
+        nn: ChiNN
 
+):
+    args_nn = args.neural_network
+    nn_folder_path = get_folder_path_from(
+        nn_type=args_nn.nn_type,
+        nn_param_folder_name=args_nn.nn_param_folder_name
+    )
+
+    optimizer: torch.optim.Optimizer
+    scheduler: torch.optim.lr_scheduler.LRScheduler
     if args.reuse_existing_trainer:
         file_optimizer_path = get_optimizer_file_path_from(nn_folder_path)
         with open(file_optimizer_path, 'rb') as file_optimizer:
@@ -37,17 +65,26 @@ def create_nn_trainer(args, nn):
             scheduler = pickle.load(file_scheduler)
 
     else:
-        optimizer = optim.SGD(nn.parameters(), lr=args.starting_lr, momentum=args.momentum_op, weight_decay=.000)
-        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=args.scheduler_step_size,
-                                              gamma=args.scheduler_gamma)
+        optimizer = optim.SGD(
+            nn.parameters(),
+            lr=args.starting_lr,
+            momentum=args.momentum_op,
+            weight_decay=.000)
+        scheduler = optim.lr_scheduler.StepLR(
+            optimizer,
+            step_size=args.scheduler_step_size,
+            gamma=args.scheduler_gamma
+        )
 
     if args.saving_intermediate_copy:
         folder_path_training_copies = get_folder_training_copies_path_from(nn_folder_path)
         mkdir(folder_path_training_copies)
 
-    return NNPytorchTrainer(net=nn,
-                            optimizer=optimizer,
-                            scheduler=scheduler)
+    return NNPytorchTrainer(
+        net=nn,
+        optimizer=optimizer,
+        scheduler=scheduler
+    )
 
 
 def safe_nn_param_save(nn, args, training_copy=False):

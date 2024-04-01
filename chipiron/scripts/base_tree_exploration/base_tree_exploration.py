@@ -17,7 +17,7 @@ class BaseTreeExplorationScript:
     ) -> None:
         self.base_script = base_script
 
-    def run(self):
+    def run(self) -> None:
         syzygy = SyzygyTable('')
 
         profile = cProfile.Profile()
