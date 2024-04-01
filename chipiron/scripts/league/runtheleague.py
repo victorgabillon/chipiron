@@ -15,8 +15,9 @@ class RunTheLeagueScript:
     Running a league playing games between
     ers in the league and computing ELOs
     """
-    default_param_dict: dict[str, Any] = {'config_file_name': None,
-                                          }
+    default_param_dict: dict[str, Any] = {
+        'config_file_name': None,
+    }
     base_experiment_output_folder: str = os.path.join(Script.base_experiment_output_folder, 'league/outputs/')
 
     folder_league: str = os.path.join(Script.base_experiment_output_folder, 'league/league_data/league_10_001')
