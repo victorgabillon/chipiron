@@ -104,9 +104,11 @@ def script_gui(
 
     # Create the option menu widget and passing
     # the options_list and value_inside to it.
-    strength_menu = ctk.CTkOptionMenu(master=root,
-                                      variable=strength_value,
-                                      values=options_list)
+    strength_menu = ctk.CTkOptionMenu(
+        master=root,
+        variable=strength_value,
+        values=options_list
+    )
     strength_menu.grid(column=5, row=2, padx=10, pady=10)
 
     # play button
@@ -118,7 +120,8 @@ def script_gui(
                 output,
                 strength=strength_value,
                 color=color_choice_human,
-                chipi_algo=chipi_algo_choice),
+                chipi_algo=chipi_algo_choice
+            ),
             root.destroy()
         ]
     )
@@ -187,16 +190,24 @@ def script_gui(
     return script_type, gui_args
 
 
-def play_against_chipiron(output, strength, color, chipi_algo):
+def play_against_chipiron(
+        output: dict[str, Any],
+        strength: ctk.StringVar,
+        color: ctk.StringVar,
+        chipi_algo: ctk.StringVar
+) -> bool:
     output['type'] = 'play_against_chipiron'
     output['strength'] = int(strength.get())
     output['color_human'] = str(color.get())
     output['chipi_algo'] = str(chipi_algo.get())
+    return True
 
 
-def watch_a_game(output):
+def watch_a_game(output: dict[str, Any]) -> bool:
     output['type'] = 'watch_a_game'
+    return True
 
 
-def visualize_a_tree(output):
+def visualize_a_tree(output: dict[str, Any]) -> bool:
     output['type'] = 'tree_visualization'
+    return True

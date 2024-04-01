@@ -25,7 +25,7 @@ class ChiNN(nn.Module):
         print(f'load_or_init_weights from {path_to_param_file}')
         try:  # load
             with open(path_to_param_file, 'rb') as fileNNR:
-                print('loading the existing param file')
+                print('loading the existing param file', path_to_param_file)
                 self.load_state_dict(torch.load(fileNNR))
 
         except EnvironmentError:  # init

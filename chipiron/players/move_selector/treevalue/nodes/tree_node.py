@@ -35,7 +35,7 @@ class TreeNode:
     # the color of the player that has to move in the board
     player_to_move_: chess.Color = field(default_factory=chess.Color)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.board_:
             self.fast_rep = self.board_.fast_representation()
             self.player_to_move_: chess.Color = self.board_.turn
@@ -45,7 +45,7 @@ class TreeNode:
         return self.id_
 
     @property
-    def player_to_move(self):
+    def player_to_move(self) -> chess.Color:
         return self.player_to_move_
 
     @property
@@ -78,7 +78,7 @@ class TreeNode:
         assert (new_parent_node not in self.parent_nodes)  # there cannot be two ways to link the same child-parent
         self.parent_nodes.add(new_parent_node)
 
-    def print_moves_children(self):
+    def print_moves_children(self) -> None:
         print('here are the ', len(self.moves_children_), ' moves-children link of node', self.id, ': ', end=' ')
         for move, child in self.moves_children_.items():
             if child is None:
@@ -87,14 +87,14 @@ class TreeNode:
                 print(move, child.id, end=' ')
         print(' ')
 
-    def test(self):
+    def test(self) -> None:
         # print('testing node', selbestf.id)
         self.test_all_legal_moves_generated()
 
     def dot_description(self) -> str:
         return 'id:' + str(self.id) + ' dep: ' + str(self.half_move) + '\nfen:' + str(self.board)
 
-    def test_all_legal_moves_generated(self):
+    def test_all_legal_moves_generated(self) -> None:
         # print('test_all_legal_moves_generated')
         if self.all_legal_moves_generated:
             for move in self.board.legal_moves:
@@ -111,7 +111,7 @@ class TreeNode:
                 # print(self.board)
             assert (move_not_in != [] or legal_moves == [])
 
-    def get_descendants(self):
+    def get_descendants(self) -> dict[ITreeNode | None, None]:
 
         des: dict[ITreeNode | None, None] = {self: None}  # include itself
         generation = set(self.moves_children_.values())
