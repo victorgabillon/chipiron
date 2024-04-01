@@ -3,19 +3,25 @@ import sys
 import torch
 import torch.nn as nn
 
+from chipiron.utils import path
+
 
 class ChiNN(nn.Module):
     """
     The Generic Neural network class of chipiron
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super(ChiNN, self).__init__()
 
-    def __getstate__(self):
+    def __getstate__(self) -> None:
         return None
 
-    def load_from_file_or_init_weights(self, path_to_param_file, authorisation_to_create_file):
+    def load_from_file_or_init_weights(
+            self,
+            path_to_param_file: path,
+            authorisation_to_create_file: bool
+    ) -> None:
         print(f'load_or_init_weights from {path_to_param_file}')
         try:  # load
             with open(path_to_param_file, 'rb') as fileNNR:

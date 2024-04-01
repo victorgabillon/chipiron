@@ -28,7 +28,7 @@ class BoardChi:
     def set_starting_position(
             self,
             starting_position_arg: AllStartingPositionArgs | None = None,
-            fen=None
+            fen: str | None = None
     ) -> None:
 
         self.board.reset()
@@ -52,11 +52,11 @@ class BoardChi:
             move: chess.Move
     ) -> BoardModification:
         assert (move in self.legal_moves)
-        board_modif: BoardModification | None = self.push_and_return_modification(move)
-        if board_modif is None:
+        board_modification: BoardModification | None = self.push_and_return_modification(move)  # type: ignore
+        if board_modification is None:
             raise Exception('None Modif looks not good in board.py')
         else:
-            return board_modif
+            return board_modification
 
     def rewind_one_move(self) -> None:
         if self.ply() > 0:
@@ -256,14 +256,17 @@ class BoardChi:
     def fast_representation(self) -> str:
         return self.compute_key()
 
-    def print_chess_board(self):
+    def print_chess_board(self) -> None:
         print(self)
         print(self.board.fen())
 
     def number_of_pieces_on_the_board(self) -> int:
         return bin(self.board.occupied).count('1')
 
-    def is_attacked(self, a_color):
+    def is_attacked(
+            self,
+            a_color: chess.Color
+    ) -> bool:
         """ check if any piece of the color a_color is attacked"""
         all_squares_of_color = chess.SquareSet()
         for piece_type in [1, 2, 3, 4, 5, 6]:
@@ -278,37 +281,49 @@ class BoardChi:
     def is_game_over(self) -> bool:
         return self.board.is_game_over()
 
-    def ply(self):
+    def ply(self) -> int:
         return self.board.ply()
 
     @property
-    def turn(self):
+    def turn(self) -> chess.Color:
         return self.board.turn
 
-    def fen(self):
+    def fen(self) -> str:
         return self.board.fen()
 
     @property
-    def legal_moves(self):
+    def legal_moves(self) -> chess.LegalMoveGenerator:
         return self.board.legal_moves
 
-    def piece_at(self, square):
+    def piece_at(
+            self,
+            square: chess.Square
+    ) -> chess.Piece | None:
         return self.board.piece_at(square)
 
-    def has_castling_rights(self, color: chess.Color):
+    def has_castling_rights(
+            self,
+            color: chess.Color
+    ) -> bool:
         return self.board.has_castling_rights(color)
 
-    def has_queenside_castling_rights(self, color: chess.Color):
+    def has_queenside_castling_rights(
+            self,
+            color: chess.Color
+    ) -> bool:
         return self.board.has_queenside_castling_rights(color)
 
-    def has_kingside_castling_rights(self, color: chess.Color):
+    def has_kingside_castling_rights(
+            self,
+            color: chess.Color
+    ) -> bool:
         return self.board.has_kingside_castling_rights(color)
 
     def copy(
             self,
             stack: bool
-    ):
-        board = self.board.copy(stack=stack)
+    ) -> 'BoardChi':
+        board: chess.Board = self.board.copy(stack=stack)
         return BoardChi(board=board)
 
     def __str__(self) -> str:

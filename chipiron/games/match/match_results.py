@@ -6,20 +6,27 @@ import chess
 from chipiron.games.game.final_game_result import FinalGameResult
 
 
+@dataclass
+class SimpleResults:
+    player_one_wins: int
+    player_two_wins: int
+    draws: int
+
+
 class IMatchResults(Protocol):
 
     # wrapped function
     def add_result_one_game(
             self,
-            white_player_name_id,
-            game_result
+            white_player_name_id: str,
+            game_result: FinalGameResult
     ) -> None:
         ...
 
     # forwarding
     def get_simple_result(
             self
-    ):
+    ) -> SimpleResults:
         ...
 
     def __str__(
@@ -46,19 +53,28 @@ class MatchResults:
     player_two_is_white_draws: int = 0
     match_finished: bool = False
 
-    def get_player_one_wins(self):
+    def get_player_one_wins(self) -> int:
         return self.player_one_is_white_white_wins + self.player_two_is_white_black_wins
 
-    def get_player_two_wins(self):
+    def get_player_two_wins(self) -> int:
         return self.player_one_is_white_black_wins + self.player_two_is_white_white_wins
 
-    def get_draws(self):
+    def get_draws(self) -> int:
         return self.player_one_is_white_draws + self.player_two_is_white_draws
 
-    def get_simple_result(self):
-        return self.get_player_one_wins(), self.get_player_two_wins(), self.get_draws()
+    def get_simple_result(self) -> SimpleResults:
+        simple_result: SimpleResults = SimpleResults(
+            player_one_wins=self.get_player_one_wins(),
+            player_two_wins=self.get_player_two_wins(),
+            draws=self.get_draws()
+        )
+        return simple_result
 
-    def add_result_one_game(self, white_player_name_id, game_result):
+    def add_result_one_game(
+            self,
+            white_player_name_id: str,
+            game_result: FinalGameResult
+    ) -> None:
         self.number_of_games += 1
         if white_player_name_id == self.player_one_name_id:
             if game_result == FinalGameResult.WIN_FOR_WHITE:
@@ -85,7 +101,7 @@ class MatchResults:
     def finish(self) -> None:
         self.match_finished = True
 
-    def __str__(self):
+    def __str__(self) -> str:
         str_ = 'Main result: ' + self.player_one_name_id + ' wins ' + str(self.get_player_one_wins()) + ' '
         str_ += self.player_two_name_id + ' wins ' + str(self.get_player_two_wins())
         str_ += ' draws ' + str(self.get_draws()) + '\n'
