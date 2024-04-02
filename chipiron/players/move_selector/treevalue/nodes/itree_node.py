@@ -16,6 +16,8 @@ class ITreeNode(Protocol):
     ) -> int:
         ...
 
+    # actually giving access to the boars gives access to a lot of sub fucntion so might
+    # be no need to ask for them in the interfacec expicitly
     @property
     def board(
             self
@@ -49,4 +51,19 @@ class ITreeNode(Protocol):
 
     @property
     def all_legal_moves_generated(self) -> bool:  # todo looks not clean, more like a hack no?
+        ...
+
+    @all_legal_moves_generated.setter
+    def all_legal_moves_generated(self) -> None:  # todo looks not clean, more like a hack no?
+        ...
+
+    @property
+    def legal_moves(self) -> chess.LegalMoveGenerator:
+        ...
+
+    @property
+    def fast_rep(self) -> str:
+        ...
+
+    def is_over(self) -> bool:
         ...

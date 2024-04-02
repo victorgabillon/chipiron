@@ -1,3 +1,4 @@
+import random
 from dataclasses import dataclass
 from enum import Enum
 
@@ -104,18 +105,18 @@ class OpeningInstructor:
     def __init__(
             self,
             opening_type: OpeningType,
-            random_generator
+            random_generator: random.Random
     ) -> None:
         self.opening_type = opening_type
         self.random_generator = random_generator
 
     def all_moves_to_open(
             self,
-            node_to_open
+            node_to_open: nodes.ITreeNode
     ) -> list[chess.Move]:
         if self.opening_type == OpeningType.AllChildren:
             node_to_open.all_legal_moves_generated = True
-            moves_to_play = list(node_to_open.board.legal_moves)
+            moves_to_play = list(node_to_open.legal_moves)
 
             # this shuffling add randomness to the playing style
             self.random_generator.shuffle(moves_to_play)

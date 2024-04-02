@@ -67,9 +67,9 @@ class TreeNode:
     def is_root_node(self) -> bool:
         return not self.parent_nodes
 
-    # @property
-    # def all_legal_moves_generated(self) -> bool:
-    #    return self.all_legal_moves_generated
+    @property
+    def legal_moves(self) -> chess.LegalMoveGenerator:
+        return self.board_.legal_moves
 
     def add_parent(
             self,
@@ -77,6 +77,12 @@ class TreeNode:
     ) -> None:
         assert (new_parent_node not in self.parent_nodes)  # there cannot be two ways to link the same child-parent
         self.parent_nodes.add(new_parent_node)
+
+    def is_over(self) -> bool:
+        if self.board.is_game_over() is None:
+            return False
+        else:
+            return True
 
     def print_moves_children(self) -> None:
         print('here are the ', len(self.moves_children_), ' moves-children link of node', self.id, ': ', end=' ')

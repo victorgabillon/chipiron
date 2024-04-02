@@ -1,3 +1,5 @@
+import typing
+
 from sortedcollections import ValueSortedDict
 
 from chipiron.environments import HalfMove
@@ -11,29 +13,39 @@ class Descendants:
     min_half_move: int | None
     max_half_move: int | None
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.descendants_at_half_move = {}
         self.number_of_descendants = 0
         self.number_of_descendants_at_half_move = {}
         self.min_half_move = None
         self.max_half_move = None
 
-    def keys(self):
+    def keys(self) -> typing.MappingView:
         return self.descendants_at_half_move.keys()
 
-    def __setitem__(self, half_move, value):
+    def __setitem__(
+            self,
+            half_move: HalfMove,
+            value: dict[str, ITreeNode]
+    ) -> None:
         self.descendants_at_half_move[half_move] = value
 
-    def __getitem__(self, half_move):
+    def __getitem__(
+            self,
+            half_move: HalfMove
+    ) -> dict[str, ITreeNode]:
         return self.descendants_at_half_move[half_move]
 
-    def __iter__(self):
+    def __iter__(self) -> typing.Iterator[HalfMove]:
         return iter(self.descendants_at_half_move)
 
-    def get_count(self):
+    def get_count(self) -> int:
         return self.number_of_descendants
 
-    def contains_node(self, node):
+    def contains_node(
+            self,
+            node: ITreeNode
+    ) -> bool:
         if node.half_move in self.descendants_at_half_move and node.fast_rep in self[node.half_move]:
             return True
         else:

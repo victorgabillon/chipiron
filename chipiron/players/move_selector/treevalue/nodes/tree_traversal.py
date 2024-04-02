@@ -45,16 +45,16 @@ def get_descendants_candidate_to_open(
 
 
 def get_descendants_candidate_not_over(
-        from_tree_node: AlgorithmNode,
+        from_tree_node: ITreeNode,
         max_depth: int | None = None
-) -> list[AlgorithmNode]:
+) -> list[ITreeNode]:
     """ returns descendants that are not over
     returns himself if not opened"""
     assert (not from_tree_node.is_over())
     if not from_tree_node.moves_children:
         return [from_tree_node]
-    des: dict[AlgorithmNode, None] = {}
-    generation = set(from_tree_node.tree_node.moves_children_.values())
+    des: dict[ITreeNode, None] = {}
+    generation = set(from_tree_node.moves_children.values())
 
     depth: int = 1
     assert max_depth is not None
