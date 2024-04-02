@@ -15,6 +15,7 @@ from chipiron.utils.small_tools import softmax
 
 class RecommenderRuleTypes(str, Enum):
     AlmostEqualLogistic: str = 'almost_equal_logistic'
+    Softmax: str = 'softmax'
 
 
 # theses are functions but i still use dataclasses instead
@@ -23,12 +24,12 @@ class RecommenderRuleTypes(str, Enum):
 @dataclass
 class AlmostEqualLogistic:
     type: Literal[RecommenderRuleTypes.AlmostEqualLogistic]
-    temperature: int
+    temperature: float
 
     def __call__(
             self,
             tree: trees.MoveAndValueTree,
-            random_generator
+            random_generator: random.Random
     ) -> chess.Move:
         # TODO this should be given at construction but postponed for now because of dataclasses
         # find the best first move allowing for random choice for almost equally valued moves.
@@ -45,7 +46,32 @@ class AlmostEqualLogistic:
         return best_move
 
 
-AllRecommendFunctionsArgs = AlmostEqualLogistic
+@dataclass
+class SoftmaxRule:
+    type: Literal[RecommenderRuleTypes.Softmax]
+    temperature: float
+
+    def __call__(
+            self,
+            tree: trees.MoveAndValueTree,
+            random_generator: random.Random
+    ) -> chess.Move:
+        values = [tree.root_node.minmax_evaluation.subjective_value_of(node) for node in
+                  tree.root_node.moves_children.values()]
+
+        softmax_ = list(softmax(values, self.temperature))
+        print(values)
+        print('SOFTMAX', self.temperature, [i / sum(softmax_) for i in softmax_],
+              sum([i / sum(softmax_) for i in softmax_]))
+
+        move_as_list = random_generator.choices(
+            list(tree.root_node.moves_children.keys()),
+            weights=softmax_, k=1)
+        best_move: chess.Move = move_as_list[0]
+        return best_move
+
+
+AllRecommendFunctionsArgs = AlmostEqualLogistic | SoftmaxRule
 
 
 @dataclass

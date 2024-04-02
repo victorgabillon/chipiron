@@ -4,6 +4,7 @@ from sortedcollections import ValueSortedDict
 
 from chipiron.environments import HalfMove
 from chipiron.players.move_selector.treevalue.nodes import ITreeNode
+from chipiron.players.move_selector.treevalue.nodes.tree_traversal import get_descendants
 
 
 class Descendants:
@@ -51,7 +52,10 @@ class Descendants:
         else:
             return False
 
-    def remove_descendant(self, node):
+    def remove_descendant(
+            self,
+            node: ITreeNode
+    ) -> None:
         half_move = node.half_move
         fen = node.fast_rep
 
@@ -62,10 +66,13 @@ class Descendants:
             self.number_of_descendants_at_half_move.pop(half_move)
             self.descendants_at_half_move.pop(half_move)
 
-    def empty(self):
+    def empty(self) -> bool:
         return self.number_of_descendants == 0
 
-    def add_descendant(self, node):
+    def add_descendant(
+            self,
+            node: ITreeNode
+    ) -> None:
         half_move: HalfMove = node.half_move
         fen: str = node.fast_rep
 
@@ -78,10 +85,10 @@ class Descendants:
             self.number_of_descendants_at_half_move[half_move] = 1
         self.number_of_descendants += 1
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.descendants_at_half_move)
 
-    def print_info(self):
+    def print_info(self) -> None:
         print('---here are the ', self.get_count(), ' descendants.')
         for half_move in self:
             print('half_move: ', half_move, '| (', self.number_of_descendants_at_half_move[half_move],
@@ -90,12 +97,12 @@ class Descendants:
                 print(descendant.id, descendant.fast_rep, end=' ')
             print('')
 
-    def print_stats(self):
+    def print_stats(self) -> None:
         print('---here are the ', self.get_count(), ' descendants')
         for half_move in self:
             print('half_move: ', half_move, '| (', self.number_of_descendants_at_half_move[half_move], 'descendants)')
 
-    def test(self):
+    def test(self) -> None:
         assert (set(self.descendants_at_half_move.keys()) == set(self.number_of_descendants_at_half_move))
         sum_ = 0
         for half_move in self:
@@ -105,9 +112,12 @@ class Descendants:
         for half_move in self:
             assert (self.number_of_descendants_at_half_move[half_move] == len(self[half_move]))
 
-    def test_2(self, root_node):
+    def test_2(
+            self,
+            root_node: ITreeNode
+    ) -> None:
 
-        all_descendants = root_node.get_descendants()
+        all_descendants = get_descendants(root_node)
 
         # self.print_info()
         for d in all_descendants:
@@ -118,24 +128,6 @@ class Descendants:
 
         for half_move in self.descendants_at_half_move:
             for d in self[half_move].values():
-                # print('P',d)
-                assert (d in all_descendants)
-
-    def test_2_nod(self, root_node):
-
-        all_descendants = root_node.get_not_opened_descendants()
-        # print(':sssssssss')
-        # for i in all_descendants:
-        #    print(':',i.id,i)
-        # self.print_info()
-        for d in all_descendants:
-            if d.half_move not in self.descendants_at_half_move:
-                print('{{', d.id, root_node.id)
-                assert (d.fast_rep in self.descendants_at_half_move[d.half_move])
-
-        for half_move in self.descendants_at_half_move:
-            for d in self[half_move].values():
-                # print('P',d)
                 assert (d in all_descendants)
 
 
@@ -150,7 +142,7 @@ class RangedDescendants(Descendants):
         self.min_half_move = None
         self.max_half_move = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         string: str = ''
         for half_move in self:
             string += f'half_move: {half_move} | ({self.number_of_descendants_at_half_move[half_move]} descendants)\n'
@@ -210,7 +202,8 @@ class RangedDescendants(Descendants):
 
     def remove_descendant(
             self,
-            node):
+            node: ITreeNode
+    ) -> None:
         half_move: int = node.half_move
         fen = node.fast_rep
 
@@ -236,7 +229,10 @@ class RangedDescendants(Descendants):
         assert self.min_half_move is not None
         return range(self.min_half_move, self.max_half_move + 1)
 
-    def update(self, new_descendants):
+    def update(
+            self,
+            new_descendants
+    ):
         really_new_descendants = RangedDescendants()
 
         for half_move in new_descendants.range():
@@ -253,7 +249,11 @@ class RangedDescendants(Descendants):
 
         return really_new_descendants
 
-    def merge(self, descendant_1, descendant_2):
+    def merge(
+            self,
+            descendant_1,
+            descendant_2
+    ) -> None:
 
         half_moves_range = set(descendant_1.keys()) | set(descendant_2.keys())
         assert (len(half_moves_range) > 0)
