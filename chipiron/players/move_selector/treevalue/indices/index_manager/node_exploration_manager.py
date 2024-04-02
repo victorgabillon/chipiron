@@ -7,6 +7,7 @@ import chipiron.players.move_selector.treevalue.trees as trees
 from chipiron.players.move_selector.treevalue.indices.node_indices.index_data import MinMaxPathValue, \
     RecurZipfQuoolExplorationData, IntervalExplo
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
+from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.utils.small_tools import Interval, intersect_intervals, distance_number_to_interval
 
 
@@ -287,13 +288,13 @@ def update_all_indices(
     for half_move in tree_nodes:
         # todo how are we sure that the hm comes in order?
         # print('hmv', half_move)
-        parent_node: AlgorithmNode
+        parent_node: ITreeNode
         for parent_node in tree_nodes[half_move].values():
+            assert isinstance(parent_node, AlgorithmNode)
             child_node: AlgorithmNode
             # for child_node in parent_node.moves_children.values():
             child_rank: int
             for child_rank, child_node in enumerate(parent_node.minmax_evaluation.children_sorted_by_value_):
-                #   assert (1 == 2)
                 index_manager.update_node_indices(
                     child_node=child_node,
                     tree=tree,
@@ -314,7 +315,8 @@ def print_all_indices(
     for half_move in tree_nodes:
         # todo how are we sure that the hm comes in order?
         # print('hmv', half_move)
-        parent_node: AlgorithmNode
+        parent_node: ITreeNode
         for parent_node in tree_nodes[half_move].values():
+            assert isinstance(parent_node, AlgorithmNode)
             if parent_node.exploration_index_data is not None:
                 print('parent_node', parent_node.tree_node.id, parent_node.exploration_index_data.index)

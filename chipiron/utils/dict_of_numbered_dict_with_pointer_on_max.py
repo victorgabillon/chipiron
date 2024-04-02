@@ -26,10 +26,10 @@ class DictOfNumberedDictWithPointerOnMax:
 
         assert (self.max_half_move == max(self.half_moves))
 
-    def __getitem__(self, node):
+    def __getitem__(self, node: ITreeNode) -> Any:
         return self.half_moves[node.half_move][node]
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self.half_moves)
 
     # def items(self):
@@ -41,15 +41,15 @@ class DictOfNumberedDictWithPointerOnMax:
     # def __iter__(self):
     #    return iter(self.dic)
 
-    def __contains__(self, node):
+    def __contains__(self, node: ITreeNode) -> bool:
         if node.half_move not in self.half_moves:
             return False
         else:
             return node in self.half_moves[node.half_move]
 
-    def popitem(self):
+    def popitem(self) -> tuple[ITreeNode, Any]:
         assert self.max_half_move is not None
-        popped = self.half_moves[self.max_half_move].popitem()
+        popped: tuple[ITreeNode, Any] = self.half_moves[self.max_half_move].popitem()
         if not self.half_moves[self.max_half_move]:
             del self.half_moves[self.max_half_move]
             if self.half_moves:

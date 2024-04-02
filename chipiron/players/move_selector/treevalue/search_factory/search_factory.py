@@ -68,8 +68,10 @@ class SearchFactory:
             self
     ) -> NodeSelectorFactory:
         # creates the opening instructor
+        assert (self.random_generator is not None)
         opening_instructor: OpeningInstructor | None = OpeningInstructor(
-            self.opening_type, self.random_generator
+            opening_type=self.opening_type,
+            random_generator=self.random_generator
         ) if self.opening_type is not None else None
 
         node_selector_create: NodeSelectorFactory = partial(

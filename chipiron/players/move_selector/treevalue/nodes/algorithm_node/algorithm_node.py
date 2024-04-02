@@ -54,7 +54,7 @@ class AlgorithmNode:
         return self.tree_node.half_move
 
     @property
-    def fast_rep(self):
+    def fast_rep(self) -> str:
         return self.tree_node.fast_rep
 
     @property
@@ -85,8 +85,16 @@ class AlgorithmNode:
         self.tree_node.add_parent(new_parent_node=new_parent_node)
 
     @property
+    def legal_moves(self) -> chess.LegalMoveGenerator:
+        return self.tree_node.board_.legal_moves
+
+    @property
     def all_legal_moves_generated(self) -> bool:
         return self.tree_node.all_legal_moves_generated
+
+    @all_legal_moves_generated.setter
+    def all_legal_moves_generated(self, value: bool) -> None:  # todo looks not clean, more like a hack no?
+        self.tree_node.all_legal_moves_generated = value
 
     @property
     def non_opened_legal_moves(self):

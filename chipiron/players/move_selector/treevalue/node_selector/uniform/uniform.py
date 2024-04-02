@@ -40,12 +40,14 @@ class Uniform:
         nodes_to_consider = [node for node in nodes_to_consider if not node.is_over()]
 
         # sort them by order of importance for the player
-        nodes_to_consider_sorted_by_value = sorted(nodes_to_consider,
-                                                   key=lambda x: tree.root_node.minmax_evaluation.subjective_value_of(
-                                                       x))  # best last
+        nodes_to_consider_sorted_by_value = sorted(
+            nodes_to_consider,
+            key=lambda x: tree.root_node.minmax_evaluation.subjective_value_of(
+                x)
+        )  # best last
 
         for node in nodes_to_consider_sorted_by_value:
-            all_moves_to_open = self.opening_instructor.all_moves_to_open(node_to_open=node.tree_node)
+            all_moves_to_open = self.opening_instructor.all_moves_to_open(node_to_open=node)
             opening_instructions: OpeningInstructions = create_instructions_to_open_all_moves(
                 moves_to_play=all_moves_to_open,
                 node_to_open=node)

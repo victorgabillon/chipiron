@@ -15,6 +15,7 @@ from chipiron.players.move_selector.treevalue.node_selector.opening_instructions
     OpeningInstructor, \
     create_instructions_to_open_all_moves
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
+from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.tree_traversal import get_descendants_candidate_not_over
 from chipiron.players.move_selector.treevalue.trees.descendants import Descendants
 
@@ -87,18 +88,18 @@ class StaticNotOpenedSelector:
         return half_move_picked
 
 
-ConsiderNodesFromHalfMoves = Callable[[HalfMove, AlgorithmNode], list[AlgorithmNode]]
+ConsiderNodesFromHalfMoves = Callable[[HalfMove, AlgorithmNode], list[ITreeNode]]
 
 
 def consider_nodes_from_all_lesser_half_moves_in_descendants(
         half_move_picked: HalfMove,
         from_node: AlgorithmNode,
         descendants: Descendants
-) -> list[AlgorithmNode]:
+) -> list[ITreeNode]:
     """ consider all the nodes that are in smaller half moves than the picked half-move
     Done with the descendants objet"""
 
-    nodes_to_consider: list[AlgorithmNode] = []
+    nodes_to_consider: list[ITreeNode] = []
     half_move: int
     # considering all half-move smaller than the half move picked
     for half_move in filter(lambda hm: hm < half_move_picked + 1, descendants):
@@ -110,11 +111,11 @@ def consider_nodes_from_all_lesser_half_moves_in_descendants(
 def consider_nodes_from_all_lesser_half_moves_in_sub_stree(
         half_move_picked: HalfMove,
         from_node: AlgorithmNode,
-) -> list[AlgorithmNode]:
+) -> list[ITreeNode]:
     """ consider all the nodes that are in smaller half moves than the picked half-move
     Done with tree traversal from the node"""
 
-    nodes_to_consider: list[AlgorithmNode] = get_descendants_candidate_not_over(
+    nodes_to_consider: list[ITreeNode] = get_descendants_candidate_not_over(
         from_tree_node=from_node,
         max_depth=half_move_picked - from_node.half_move
     )
@@ -125,7 +126,7 @@ def consider_nodes_only_from_half_moves_in_descendants(
         half_move_picked: HalfMove,
         from_node: AlgorithmNode,
         descendants: Descendants,
-) -> list[AlgorithmNode]:
+) -> list[ITreeNode]:
     """ consider only the nodes at the picked depth"""
     return list(descendants[half_move_picked].values())
 
@@ -160,14 +161,16 @@ class RandomAllSelector:
 
 
 def get_best_node_from_candidates(
-        nodes_to_consider: list[AlgorithmNode]
+        nodes_to_consider: list[ITreeNode]
 ) -> AlgorithmNode:
-    best_node: AlgorithmNode = nodes_to_consider[0]
+    best_node: ITreeNode = nodes_to_consider[0]
+    assert isinstance(best_node, AlgorithmNode)
     assert best_node.exploration_index_data is not None
     best_value = (best_node.exploration_index_data.index, best_node.half_move)
 
-    node: AlgorithmNode
+    node: ITreeNode
     for node in nodes_to_consider:
+        assert isinstance(node, AlgorithmNode)
         assert node.exploration_index_data is not None
         if node.exploration_index_data.index is not None:
             if best_node.exploration_index_data.index is None \
@@ -216,7 +219,7 @@ class Sequool:
             random_generator=self.random_generator
         )
 
-        nodes_to_consider: list[AlgorithmNode] = self.consider_nodes_from_half_moves(
+        nodes_to_consider: list[ITreeNode] = self.consider_nodes_from_half_moves(
             half_move_selected,
             from_node
         )

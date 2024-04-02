@@ -15,6 +15,7 @@ from chipiron.players.move_selector.treevalue.indices.index_manager.node_explora
     NodeExplorationIndexManager
 from chipiron.players.move_selector.treevalue.indices.node_indices.index_types import IndexComputationType
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
+from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.tree_manager.tree_expander import TreeExpansions, TreeExpansion
 from chipiron.players.move_selector.treevalue.trees.descendants import RangedDescendants
 from chipiron.players.move_selector.treevalue.trees.move_and_value_tree import MoveAndValueTree
@@ -154,8 +155,9 @@ def check_from_file(
     for half_move in tree_nodes:
         # todo how are we sure that the hm comes in order?
         # print('hmv', half_move)
-        parent_node: AlgorithmNode
+        parent_node: ITreeNode
         for parent_node in tree_nodes[half_move].values():
+            assert isinstance(parent_node, AlgorithmNode)
             yaml_index = eval(str(yaml_nodes[parent_node.id]['index']))
             assert parent_node.exploration_index_data is not None
             print(
