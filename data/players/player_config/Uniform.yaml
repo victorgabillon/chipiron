@@ -6,7 +6,7 @@ main_move_selector:
     
   opening_type: all_children
   recommender_rule:
-    type: almost_equal_logistic
+    type: softmax
     temperature: 2
   stopping_criterion:
       type: tree_move_limit

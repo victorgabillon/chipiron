@@ -1,3 +1,4 @@
+import typing
 from dataclasses import dataclass, field
 from typing import List
 
@@ -14,7 +15,7 @@ class TreeExpansion:
     board_modifications: board_mod.BoardModification | None
     creation_child_node: bool
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (f'child_node{self.child_node.id} | '
                 f'parent_node{self.parent_node.id if self.parent_node is not None else None} | '
                 f'creation_child_node{self.creation_child_node}')
@@ -27,7 +28,7 @@ class TreeExpansions:
     expansions_with_node_creation: List[TreeExpansion] = field(default_factory=list)
     expansions_without_node_creation: List[TreeExpansion] = field(default_factory=list)
 
-    def __iter__(self):
+    def __iter__(self) -> typing.Iterator[TreeExpansion]:
         return iter(self.expansions_with_node_creation + self.expansions_without_node_creation)
 
     def add(
@@ -51,7 +52,7 @@ class TreeExpansions:
     ) -> None:
         self.expansions_without_node_creation.append(tree_expansion)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (f'expansions_with_node_creation {self.expansions_with_node_creation} \n'
                 f'expansions_without_node_creation{self.expansions_without_node_creation}')
 

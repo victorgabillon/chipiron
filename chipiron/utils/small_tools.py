@@ -10,6 +10,7 @@ from typing import TypeVar
 
 import dacite
 import numpy as np
+import numpy.typing as nptyping
 import yaml
 
 import chipiron
@@ -40,8 +41,10 @@ def yaml_fetch_args_in_file(path_file: path) -> dict[Any, Any]:
     return args
 
 
-def dict_alphabetic_str(dic):
-    string = ''
+def dict_alphabetic_str(
+        dic: dict[Any, Any]
+) -> str:
+    string: str = ''
     for key, value in sorted(dic.items()):
         string += ' {:>30} : {}\n'.format(key, value)
     return string
@@ -58,7 +61,10 @@ def unique_int_from_list(a_list: list[int | None]) -> int | None:
         return int(.5 * (x + y) * (x + y + 1) + y)  # Cantor pairing function
 
 
-def rec_merge_dic(a, b):
+def rec_merge_dic(
+        a: dict[Any, Any],
+        b: dict[Any, Any]
+) -> dict[Any, Any]:
     """recursively merges two dictionaries"""
     merged = copy.deepcopy(b)
     for key in a:
@@ -87,10 +93,14 @@ def nth_key(
     return next(it)
 
 
-def softmax(x, temperature):
+def softmax(
+        x: list[float],
+        temperature: float
+) -> nptyping.NDArray[np.float64]:
     """Compute softmax values for each sets of scores in x."""
-    e_x = np.exp((x - np.max(x)) * temperature)
-    return e_x / e_x.sum(axis=0)  # only difference
+    e_x: nptyping.NDArray[np.float64] = np.exp((x - np.max(x)) * temperature)
+    res: nptyping.NDArray[np.float64] = e_x / e_x.sum(axis=0)  # only difference
+    return res
 
 
 # before 3.12
