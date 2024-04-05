@@ -18,8 +18,8 @@ class StockfishPlayer:
     def select_move(
             self,
             board: boards.BoardChi,
-            move_seed
-    ):
+            move_seed: int
+    ) -> MoveRecommendation:
         if self.engine is None:
             # if this object is created in the init then seending the object
             # self.engine = chess.engine.SimpleEngine.popen_uci(
@@ -34,5 +34,5 @@ class StockfishPlayer:
         self.engine = None
         return MoveRecommendation(move=result.move)
 
-    def print_info(self):
+    def print_info(self) -> None:
         print(self.type)

@@ -113,8 +113,11 @@ class TreeMoveLimit(StoppingCriterion):
 
 
         """
-        opening_instructions_subset: node_sel.OpeningInstructions = opening_instructions.pop_items(
-            self.tree_move_limit - tree.move_count)
+        opening_instructions_subset: node_sel.OpeningInstructions = node_sel.OpeningInstructions()
+        opening_instructions.pop_items(
+            popped=opening_instructions_subset,
+            how_many=self.tree_move_limit - tree.move_count
+        )
         return opening_instructions_subset
 
 
