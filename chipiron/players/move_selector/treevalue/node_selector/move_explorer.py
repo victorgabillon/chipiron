@@ -45,5 +45,5 @@ class ZipfMoveExplorer(MoveExplorer):
             ordered_list_elements=sorted_not_over_children,
             random_generator=self.random_generator
         )
-        assert isinstance(child,AlgorithmNode)
+        assert isinstance(child, AlgorithmNode)
         return child
