@@ -166,12 +166,6 @@ class AlgorithmNodeTreeManager:
             sum_ += len(tree.descendants[half_move])
             print('half_move', half_move, len(tree.descendants[half_move]), sum_)
 
-    def print_parents(self, node):
-        node_to_print = node
-        while node_to_print:
-            parents = list(node_to_print.parent_nodes.keys())
-            node_to_print = parents[0]
-
     def test_the_tree(self,
                       tree):
         self.test_count(tree=tree)

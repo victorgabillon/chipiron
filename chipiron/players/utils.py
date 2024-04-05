@@ -47,11 +47,11 @@ def fetch_player_args_convert_and_save(
 
 
 def fetch_two_players_args_convert_and_save(
-        file_name_player_one,
-        file_name_player_two,
-        modification_player_one,
-        modification_player_two,
-        experiment_output_folder
+        file_name_player_one: path,
+        file_name_player_two: path,
+        modification_player_one: dict[Any, Any],
+        modification_player_two: dict[Any, Any],
+        experiment_output_folder: path | None
 ) -> tuple[PlayerArgs, PlayerArgs]:
     """
     From the names of the config file for players and match setting, open the config files, loads the arguments

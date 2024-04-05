@@ -167,25 +167,25 @@ class RangedDescendants(Descendants):
         else:
             return False
 
-    def is_in_the_acceptable_range(self, half_move):
-        # print('?',half_move)
+    def is_in_the_acceptable_range(
+            self,
+            half_move: int
+    ) -> bool:
         if self.min_half_move is not None and self.max_half_move is not None:
-            # print('?w', half_move,self.max_half_move , self.min_half_move)
             return self.max_half_move + 1 >= half_move >= self.min_half_move
         else:
-            #   print('s?', half_move)
-
             return True
 
-    def add_descendant(self, node):
-        half_move = node.half_move
-        fen = node.fast_rep
+    def add_descendant(
+            self,
+            node: ITreeNode
+    ) -> None:
+        half_move: int = node.half_move
+        fen: str = node.fast_rep
 
         assert (self.is_in_the_acceptable_range(half_move))
         if self.is_in_the_current_range(half_move):
-            # print('half move',half_move, self.max_half_move, self.min_half_move,
-            #      [(len(self.descendants_at_half_move[half_move]),half_move) for half_move in self.descendants_at_half_move])
-            if half_move in self.descendants_at_half_move[half_move]:
+            if half_move in self.descendants_at_half_move:
                 assert (fen not in self.descendants_at_half_move[half_move])
             self.descendants_at_half_move[half_move][fen] = node
             self.number_of_descendants_at_half_move[half_move] += 1

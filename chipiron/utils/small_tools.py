@@ -77,7 +77,7 @@ def rec_merge_dic(
     return merged
 
 
-_T = TypeVar("_T", covariant=True, bound=IsDataclass)
+_T = TypeVar("_T")
 
 
 def nth_key(

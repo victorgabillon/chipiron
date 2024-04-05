@@ -5,20 +5,21 @@ import torch
 
 import chipiron.environments.chess.board as board_mod
 from chipiron.environments.chess.board.board import BoardChi
-from chipiron.players.move_selector.treevalue.nodes.algorithm_node import AlgorithmNode
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
+from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 from .board_representation import Representation364
 
 
 def node_to_tensors_pieces_square_from_parent(
-        node,
-        board_modifications,
-        parent_node
-):
-    tensor_white = torch.empty_like(parent_node.board_representation.tensor_white).copy_(
-        parent_node.board_representation.tensor_white)
-    tensor_black = torch.empty_like(parent_node.board_representation.tensor_black).copy_(
-        parent_node.board_representation.tensor_black)
+        node: ITreeNode,
+        board_modifications: board_mod.BoardModification,
+        parent_node: AlgorithmNode
+) -> Representation364:
+    board_representation = parent_node.board_representation
+    assert isinstance(board_representation, Representation364)
+    tensor_white = torch.empty_like(board_representation.tensor_white).copy_(board_representation.tensor_white)
+    tensor_black = torch.empty_like(board_representation.tensor_black).copy_(board_representation.tensor_black)
 
     for removal in board_modifications.removals:
         piece_type = removal.piece
@@ -81,6 +82,7 @@ class Representation364Factory:
         if parent_node is None:  # this is the root_node
             representation = self.create_from_board(board=tree_node.board)
         else:
+            assert modifications is not None
             representation = node_to_tensors_pieces_square_from_parent(
                 node=tree_node,
                 board_modifications=modifications,

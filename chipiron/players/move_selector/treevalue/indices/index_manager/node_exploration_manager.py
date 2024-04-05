@@ -202,9 +202,11 @@ class UpdateIndexLocalMinChange:
                     child_white_value = child_node.minmax_evaluation.get_value_white()
                     local_interval = Interval()
                     if child_node == best_child:
+                        assert isinstance(second_best_child, AlgorithmNode)
                         local_interval.max_value = math.inf
                         local_interval.min_value = second_best_child.minmax_evaluation.get_value_white()
                     else:
+                        assert isinstance(best_child, AlgorithmNode)
                         local_interval.max_value = math.inf
                         local_interval.min_value = best_child.minmax_evaluation.get_value_white()
                     # print('intersectWHITE', parent_node.id, parent_node.tree_node.board.turn, local_interval,
@@ -227,9 +229,11 @@ class UpdateIndexLocalMinChange:
                     child_white_value = child_node.minmax_evaluation.get_value_white()
                     local_interval = Interval()
                     if child_node == best_child:
+                        assert isinstance(second_best_child, AlgorithmNode)
                         local_interval.max_value = second_best_child.minmax_evaluation.get_value_white()
                         local_interval.min_value = -math.inf
                     else:
+                        assert isinstance(best_child, AlgorithmNode)
                         local_interval.max_value = best_child.minmax_evaluation.get_value_white()
                         local_interval.min_value = -math.inf
                     #  print('intersect', local_interval, parent_node.exploration_index_data.interval)
@@ -291,10 +295,11 @@ def update_all_indices(
         parent_node: ITreeNode
         for parent_node in tree_nodes[half_move].values():
             assert isinstance(parent_node, AlgorithmNode)
-            child_node: AlgorithmNode
+            child_node: ITreeNode
             # for child_node in parent_node.moves_children.values():
             child_rank: int
             for child_rank, child_node in enumerate(parent_node.minmax_evaluation.children_sorted_by_value_):
+                assert isinstance(child_node, AlgorithmNode)
                 index_manager.update_node_indices(
                     child_node=child_node,
                     tree=tree,

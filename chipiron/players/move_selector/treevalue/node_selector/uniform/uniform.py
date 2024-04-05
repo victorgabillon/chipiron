@@ -3,6 +3,7 @@ from chipiron.players.move_selector.treevalue import trees
 from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructions, \
     OpeningInstructor, \
     create_instructions_to_open_all_moves
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node import AlgorithmNode
 
 
 class Uniform:
@@ -36,14 +37,15 @@ class Uniform:
         # self.tree.descendants.print_info()
         nodes_to_consider = list(tree.descendants[current_half_move_to_expand].values())
 
-        # filter the game-over ones
-        nodes_to_consider = [node for node in nodes_to_consider if not node.is_over()]
+        # filter the game-over ones and the ones with values
+        nodes_to_consider_not_over: list[AlgorithmNode] = [node for node in nodes_to_consider if
+                                                           not node.is_over() and isinstance(node, AlgorithmNode)]
 
         # sort them by order of importance for the player
         nodes_to_consider_sorted_by_value = sorted(
-            nodes_to_consider,
+            nodes_to_consider_not_over,
             key=lambda x: tree.root_node.minmax_evaluation.subjective_value_of(
-                x)
+                x.minmax_evaluation)
         )  # best last
 
         for node in nodes_to_consider_sorted_by_value:

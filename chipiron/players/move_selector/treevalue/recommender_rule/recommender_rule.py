@@ -56,7 +56,7 @@ class SoftmaxRule:
             tree: trees.MoveAndValueTree,
             random_generator: random.Random
     ) -> chess.Move:
-        values = [tree.root_node.minmax_evaluation.subjective_value_of(node) for node in
+        values = [tree.root_node.minmax_evaluation.subjective_value_of(node.minmax_evaluation) for node in
                   tree.root_node.moves_children.values()]
 
         softmax_ = list(softmax(values, self.temperature))

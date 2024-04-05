@@ -9,6 +9,6 @@ from ..node_evaluator_args import NodeEvaluatorArgs
 class NeuralNetNodeEvalArgs(NodeEvaluatorArgs):
     neural_network: board_nn.NeuralNetBoardEvalArgs
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.type != NodeEvaluatorTypes.NeuralNetwork:
             raise ValueError('Expecting neural_network as name')

@@ -41,8 +41,9 @@ class ZipfMoveExplorer(MoveExplorer):
     ) -> AlgorithmNode:
         sorted_not_over_children = tree_node_to_sample_from.minmax_evaluation.sort_children_not_over()
 
-        child: AlgorithmNode = zipf_picks_random(
+        child = zipf_picks_random(
             ordered_list_elements=sorted_not_over_children,
             random_generator=self.random_generator
         )
+        assert isinstance(child,AlgorithmNode)
         return child
