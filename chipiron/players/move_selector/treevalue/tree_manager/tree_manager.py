@@ -5,8 +5,9 @@ import chess
 import chipiron.environments.chess.board as board_mod
 import chipiron.players.move_selector.treevalue.nodes as node
 import chipiron.players.move_selector.treevalue.trees as trees
+from chipiron.players.move_selector.treevalue.node_factory.node_factory import TreeNodeFactory
 from chipiron.players.move_selector.treevalue.tree_manager.tree_expander import TreeExpansion, TreeExpansions
-
+from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructions
 # todo should we use a discount? and discounted per round reward?
 # todo maybe convenient to seperate this object into openner updater and dsiplayer
 # todo have the reward with a discount
@@ -21,7 +22,10 @@ class TreeManager:
     This class that and manages a tree by opening new nodes and updating the values and indexes on the nodes
     """
 
-    def __init__(self, node_factory):
+    def __init__(
+            self,
+            node_factory: TreeNodeFactory
+    ) -> None:
         self.node_factory = node_factory
 
     def open_node_move(
@@ -118,7 +122,7 @@ class TreeManager:
     def open_instructions(
             self,
             tree: trees.MoveAndValueTree,
-            opening_instructions: 'node_sel.OpeningInstructions'
+            opening_instructions: OpeningInstructions
     ) -> TreeExpansions:
         """
 
@@ -147,8 +151,10 @@ class TreeManager:
 
         return tree_expansions
 
-    def print_some_stats(self,
-                         tree):
+    def print_some_stats(
+            self,
+            tree: trees.MoveAndValueTree,
+    ) -> None:
         print('Tree stats: move_count', tree.move_count, ' node_count',
               tree.root_node.descendants.get_count())
         sum_ = 0
@@ -157,26 +163,14 @@ class TreeManager:
             sum_ += len(tree.root_node.descendants[half_move])
             print('half_move', half_move, len(tree.root_node.descendants[half_move]), sum_)
 
-    def print_parents(self, node):
-        node_to_print = node
-        while node_to_print:
-            parents = list(node_to_print.parent_nodes.keys())
-            node_to_print = parents[0]
-
-    def test_the_tree(self,
-                      tree):
-        self.test_count(tree)
-        for half_move in tree.descendants:
-            for fen in tree.descendants[half_move]:
-                node = tree.descendants[half_move][fen]
-                node.test()
-
-                # todo add a test for testing if the over match what the board evaluator says!
-
-    def test_count(self,
-                   tree):
+    def test_count(
+            self,
+            tree: trees.MoveAndValueTree,
+    ) -> None:
         assert (tree.root_node.descendants.get_count() == tree.nodes_count)
 
-    def print_best_line(self,
-                        tree):
+    def print_best_line(
+            self,
+            tree: trees.MoveAndValueTree,
+    ) -> None:
         tree.root_node.print_best_line()
