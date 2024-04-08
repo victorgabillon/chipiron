@@ -41,7 +41,10 @@ class MyParser:
 
         return args_command_line_without_none
 
-    def parse_config_file_arguments(self, config_file_path: str) -> None:
+    def parse_config_file_arguments(
+            self,
+            config_file_path: str
+    ) -> None:
 
         try:
 

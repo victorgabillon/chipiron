@@ -16,7 +16,6 @@ from chipiron.players.boardevaluators.neural_networks.models.nn_pp2d2_2rrelu imp
 from chipiron.players.boardevaluators.neural_networks.nn_board_evaluator import NNBoardEvaluator
 from chipiron.players.boardevaluators.neural_networks.output_converters.output_value_converter import \
     OutputValueConverter, OneDToValueWhite
-from chipiron.utils import path
 from chipiron.utils.chi_nn import ChiNN
 from chipiron.utils.small_tools import mkdir
 
@@ -24,22 +23,27 @@ from chipiron.utils.small_tools import mkdir
 def get_folder_path_from(
         nn_type: str,
         nn_param_folder_name: str
-) -> path:
+) -> str:
     print('nn_type', nn_type)
     folder_path = os.path.join('data/players/board_evaluators/nn_pytorch/nn_' + nn_type, nn_param_folder_name)
     return folder_path
 
 
-def get_nn_param_file_path_from(folder_path):
-    nn_param_file_path = os.path.join(folder_path, 'param.pt')
+def get_nn_param_file_path_from(
+        folder_path: str
+) -> str:
+    nn_param_file_path: str = os.path.join(folder_path, 'param.pt')
     return nn_param_file_path
 
 
 def create_nn(
         args: NeuralNetBoardEvalArgs,
-        create_file=False
+        create_file: bool = False
 ) -> ChiNN:
-    folder_path = get_folder_path_from(nn_type=args.nn_type, nn_param_folder_name=args.nn_param_folder_name)
+    folder_path = get_folder_path_from(
+        nn_type=args.nn_type,
+        nn_param_folder_name=args.nn_param_folder_name
+    )
     mkdir(folder_path)
 
     net: ChiNN
@@ -71,7 +75,7 @@ def create_nn(
 
 def create_nn_board_eval(
         arg: NeuralNetBoardEvalArgs,
-        create_file=False
+        create_file: bool = False
 ) -> NNBoardEvaluator:
     net = create_nn(arg, create_file=create_file)
     output_and_value_converter: OutputValueConverter = OneDToValueWhite(point_of_view=net.evaluation_point_of_view)

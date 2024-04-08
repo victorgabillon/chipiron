@@ -3,9 +3,11 @@ from enum import Enum
 import chess
 
 import chipiron.players.boardevaluators as board_evals
-from chipiron.players.boardevaluators.over_event import HowOver, Winner
+from chipiron.environments.chess.board.board import BoardChi
+from chipiron.players.boardevaluators.over_event import HowOver, Winner, OverEvent
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
+from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 
 DISCOUNT = .999999999999  # todo play with this
 
@@ -15,29 +17,16 @@ class NodeEvaluatorTypes(str, Enum):
 
 
 class EvaluationQueries:
-    def __init__(self):
+    over_nodes: list[AlgorithmNode]
+    not_over_nodes: list[AlgorithmNode]
+
+    def __init__(self) -> None:
         self.over_nodes = []
         self.not_over_nodes = []
 
-    def clear_queries(self):
+    def clear_queries(self) -> None:
         self.over_nodes = []
         self.not_over_nodes = []
-
-
-class BoardEvaluatorsProxy:
-    """
-    This is the aggregation of several board evaluator.
-    Atm, the moment it is a simple aggregation of a main_board evaluator and syzygy evaluator
-    and game-over automatic checks
-    """
-
-    def __init__(self, board_evaluator, syzygy):
-        self.board_evaluator = board_evaluator
-        self.syzygy_evaluator = syzygy
-
-    def evaluate(self, board_as_input_features):
-        evaluation = '?'
-        return evaluation
 
 
 class NodeEvaluator:
@@ -60,22 +49,34 @@ class NodeEvaluator:
         self.board_evaluator = board_evaluator
         self.syzygy_evaluator = syzygy
 
-    def value_white(self, node):
-        value_white = self.syzygy_value_white(node.board)
+    def value_white(
+            self,
+            node: ITreeNode
+    ) -> float:
+        value_white: float | None = self.syzygy_value_white(node.board)
+        value_white_float: float
         if value_white is None:
-            value_white = self.board_evaluator.value_white(node.board)
-        return value_white
+            value_white_float = self.board_evaluator.value_white(node.board)
+        else:
+            value_white_float = value_white
+        return value_white_float
 
-    def syzygy_value_white(self, board):
+    def syzygy_value_white(
+            self,
+            board: BoardChi
+    ) -> float | None:
+        # Todo probalby should use the function below value form over evnt
         if self.syzygy_evaluator is None or not self.syzygy_evaluator.fast_in_table(board):
             return None
         else:
-            raise Exception('looks like the commented funvtion below does not exists. Is this called ever?')
-            # return self.syzygy_evaluator.value_white(board)
+            val: int = self.syzygy_evaluator.val(board)
+
+            return val
 
     def check_obvious_over_events(
             self,
-            node: AlgorithmNode):
+            node: AlgorithmNode
+    ) -> None:
         """ updates the node.over object
          if the game is obviously over"""
         game_over: bool = node.tree_node.board.is_game_over()
@@ -107,20 +108,26 @@ class NodeEvaluator:
                 who_is_winner=who_is_winner_
             )
 
-    def value_white_from_over_event(self, over_event):
+    def value_white_from_over_event(
+            self,
+            over_event: OverEvent
+    ) -> board_evals.ValueWhiteWhenOver:
         """ returns the value white given an over event"""
         assert over_event.is_over()
         if over_event.is_win():
             assert (not over_event.is_draw())
             if over_event.is_winner(chess.WHITE):
-                return board_evals.VALUE_WHITE_WHEN_OVER_WHITE_WINS
+                return board_evals.ValueWhiteWhenOver.VALUE_WHITE_WHEN_OVER_WHITE_WINS
             else:
-                return board_evals.VALUE_WHITE_WHEN_OVER_BLACK_WINS
+                return board_evals.ValueWhiteWhenOver.VALUE_WHITE_WHEN_OVER_BLACK_WINS
         else:  # draw
             assert (over_event.is_draw())
-            return board_evals.VALUE_WHITE_WHEN_OVER_DRAW
+            return board_evals.ValueWhiteWhenOver.VALUE_WHITE_WHEN_OVER_DRAW
 
-    def evaluate_over(self, node):
+    def evaluate_over(
+            self,
+            node: AlgorithmNode
+    ) -> None:
         evaluation = DISCOUNT ** node.half_move * self.value_white_from_over_event(node.minmax_evaluation.over_event)
         node.minmax_evaluation.set_evaluation(evaluation)
 
@@ -129,7 +136,9 @@ class NodeEvaluator:
             evaluation_queries: EvaluationQueries
     ) -> None:
 
+        node_over: AlgorithmNode
         for node_over in evaluation_queries.over_nodes:
+            # assert isinstance(node_over, AlgorithmNode)
             self.evaluate_over(node_over)
 
         if evaluation_queries.not_over_nodes:
@@ -139,7 +148,7 @@ class NodeEvaluator:
 
     def add_evaluation_query(
             self,
-            node,
+            node: AlgorithmNode,
             evaluation_queries: EvaluationQueries
     ) -> None:
         assert (node.minmax_evaluation.value_white_evaluator is None)
@@ -149,12 +158,24 @@ class NodeEvaluator:
         else:
             evaluation_queries.not_over_nodes.append(node)
 
-    def evaluate_all_not_over(self, not_over_nodes):
+    def evaluate_all_not_over(
+            self,
+            not_over_nodes: list[AlgorithmNode]
+    ) -> None:
+        node_not_over: AlgorithmNode
         for node_not_over in not_over_nodes:
             evaluation = self.value_white(node_not_over)
-            processed_evaluation = self.process_evalution_not_over(evaluation, node_not_over)
+            processed_evaluation = self.process_evalution_not_over(
+                evaluation=evaluation,
+                node=node_not_over
+            )
+            # assert isinstance(node_not_over, AlgorithmNode)
             node_not_over.minmax_evaluation.set_evaluation(processed_evaluation)
 
-    def process_evalution_not_over(self, evaluation, node):
+    def process_evalution_not_over(
+            self,
+            evaluation: float,
+            node: AlgorithmNode
+    ) -> float:
         processed_evaluation = (1 / DISCOUNT) ** node.half_move * evaluation
         return processed_evaluation

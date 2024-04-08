@@ -9,6 +9,7 @@ import chess
 
 import chipiron.environments.chess.board as boards
 from chipiron.players.move_selector.move_selector import MoveRecommendation
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from chipiron.players.move_selector.treevalue.recommender_rule.recommender_rule import \
     recommend_move_after_exploration_generic
 from chipiron.players.move_selector.treevalue.search_factory import NodeSelectorFactory
@@ -36,11 +37,12 @@ class TreeExploration:
 
     def print_info_during_move_computation(
             self,
-            random_generator
+            random_generator: random.Random
     ):
         if self.tree.root_node.minmax_evaluation.best_node_sequence:
             current_best_child = self.tree.root_node.minmax_evaluation.best_node_sequence[0]
-            current_best_move = self.tree.root_node.moves_children.inverse[current_best_child]
+            current_best_move = str(self.tree.root_node.moves_children.inverse[current_best_child])
+            assert isinstance(current_best_child, AlgorithmNode)
             assert (
                     self.tree.root_node.minmax_evaluation.get_value_white() == current_best_child.minmax_evaluation.get_value_white())
 

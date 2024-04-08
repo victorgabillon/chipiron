@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Self
 
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 
@@ -11,8 +12,8 @@ class ValueUpdateInstructionsBlock:
 
     def merge(
             self,
-            an_update_instruction,
-            another_update_instruction
+            an_update_instruction: Self,
+            another_update_instruction: Self
     ) -> None:
 
         self.children_with_updated_value = (an_update_instruction.children_with_updated_value
@@ -22,7 +23,7 @@ class ValueUpdateInstructionsBlock:
         self.children_with_updated_over = (an_update_instruction.children_with_updated_over
                                            | another_update_instruction.children_with_updated_over)
 
-    def print_info(self):
+    def print_info(self) -> None:
         print('upInstructions printing')
         print(len(self.children_with_updated_value), 'children_with_updated_value', end=' ')
         for child in self.children_with_updated_value:
@@ -35,7 +36,7 @@ class ValueUpdateInstructionsBlock:
             print(child.id, end=' ')
         print()
 
-    def empty(self):
+    def empty(self) -> bool:
         """ returns if all the components are simultaneously empty"""
         empty_bool = not bool(self.children_with_updated_value) and not bool(
             self.children_with_updated_best_move) and not bool(self.children_with_updated_over)
@@ -43,10 +44,10 @@ class ValueUpdateInstructionsBlock:
 
 
 def create_value_update_instructions_block(
-        node_sending_update=None,  # node(or None)
-        is_node_newly_over=None,  # boolean
-        new_value_for_node=None,  # boolean
-        new_best_move_for_node=None  # boolean
+        node_sending_update: AlgorithmNode,  # node(or None)
+        is_node_newly_over: bool,  # boolean
+        new_value_for_node: bool,  # boolean
+        new_best_move_for_node: bool  # boolean
 ) -> ValueUpdateInstructionsBlock:
     value_update_instructions_block = ValueUpdateInstructionsBlock(
         children_with_updated_over={node_sending_update} if is_node_newly_over else set(),

@@ -6,8 +6,9 @@ import chipiron.environments.chess.board as board_mod
 import chipiron.players.move_selector.treevalue.nodes as node
 import chipiron.players.move_selector.treevalue.trees as trees
 from chipiron.players.move_selector.treevalue.node_factory.node_factory import TreeNodeFactory
-from chipiron.players.move_selector.treevalue.tree_manager.tree_expander import TreeExpansion, TreeExpansions
 from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructions
+from chipiron.players.move_selector.treevalue.tree_manager.tree_expander import TreeExpansion, TreeExpansions
+
 # todo should we use a discount? and discounted per round reward?
 # todo maybe convenient to seperate this object into openner updater and dsiplayer
 # todo have the reward with a discount
@@ -156,21 +157,21 @@ class TreeManager:
             tree: trees.MoveAndValueTree,
     ) -> None:
         print('Tree stats: move_count', tree.move_count, ' node_count',
-              tree.root_node.descendants.get_count())
+              tree.descendants.get_count())
         sum_ = 0
-        tree.root_node.descendants.print_stats()
-        for half_move in tree.root_node.descendants:
-            sum_ += len(tree.root_node.descendants[half_move])
-            print('half_move', half_move, len(tree.root_node.descendants[half_move]), sum_)
+        tree.descendants.print_stats()
+        for half_move in tree.descendants:
+            sum_ += len(tree.descendants[half_move])
+            print('half_move', half_move, len(tree.descendants[half_move]), sum_)
 
     def test_count(
             self,
             tree: trees.MoveAndValueTree,
     ) -> None:
-        assert (tree.root_node.descendants.get_count() == tree.nodes_count)
+        assert (tree.descendants.get_count() == tree.nodes_count)
 
     def print_best_line(
             self,
             tree: trees.MoveAndValueTree,
     ) -> None:
-        tree.root_node.print_best_line()
+        raise Exception('should not be called no? Think about modifying...')

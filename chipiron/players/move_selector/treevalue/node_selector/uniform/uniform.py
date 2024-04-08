@@ -58,5 +58,5 @@ class Uniform:
         self.current_depth_to_expand += 1
         return opening_instructions_batch
 
-    def print_info(self):
+    def print_info(self) -> None:
         print('Uniform')

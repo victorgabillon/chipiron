@@ -36,7 +36,7 @@ class HalfMoveSelector(Protocol):
     def select_half_move(
             self,
             from_node: AlgorithmNode,
-            random_generator
+            random_generator: random.Random
     ) -> HalfMove:
         ...
 
@@ -69,7 +69,7 @@ class StaticNotOpenedSelector:
     def select_half_move(
             self,
             from_node: AlgorithmNode,
-            random_generator
+            random_generator: random.Random
     ) -> HalfMove:
 
         filtered_count_visits: dict[int, int | float] = {hm: value for hm, value in self.count_visits.items() if
@@ -143,7 +143,7 @@ class RandomAllSelector:
     def select_half_move(
             self,
             from_node: AlgorithmNode,
-            random_generator
+            random_generator: random.Random
     ) -> HalfMove:
         half_move_picked: int
         # choose a half move based on zipf

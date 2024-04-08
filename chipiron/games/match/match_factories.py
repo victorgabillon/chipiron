@@ -9,6 +9,7 @@ from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_manager import MatchManager
 from chipiron.games.match.match_results_factory import MatchResultsFactory
 from chipiron.games.match.utils import fetch_match_games_args_convert_and_save
+from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator
 from chipiron.players.boardevaluators.factory import create_game_board_evaluator
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
@@ -36,7 +37,7 @@ def create_match_manager(
     player_one_name: str = args_player_one.name
     player_two_name: str = args_player_two.name
 
-    game_board_evaluator = create_game_board_evaluator(gui=gui)
+    game_board_evaluator: IGameBoardEvaluator = create_game_board_evaluator(gui=gui)
 
     game_manager_factory: GameManagerFactory = GameManagerFactory(
         syzygy_table=syzygy_mailbox,

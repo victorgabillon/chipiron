@@ -1,4 +1,5 @@
 import queue
+from enum import Enum
 from typing import Any
 from typing import Protocol
 
@@ -6,11 +7,16 @@ import chess
 
 from chipiron.environments.chess.board.board import BoardChi
 from chipiron.utils.communication.gui_messages import EvaluationMessage
+from chipiron.utils.is_dataclass import IsDataclass
+
 
 # VALUE_WHITE_WHEN_OVER is the value_white default value when the node is over
 # set atm to be symmetric and high to be preferred
-VALUE_WHITE_WHEN_OVER = [VALUE_WHITE_WHEN_OVER_WHITE_WINS, VALUE_WHITE_WHEN_OVER_DRAW,
-                         VALUE_WHITE_WHEN_OVER_BLACK_WINS, ] = [1000, 0, -1000]
+
+class ValueWhiteWhenOver(float, Enum):
+    VALUE_WHITE_WHEN_OVER_WHITE_WINS = 1000.
+    VALUE_WHITE_WHEN_OVER_DRAW = 0.
+    VALUE_WHITE_WHEN_OVER_BLACK_WINS = -1000.
 
 
 class BoardEvaluator(Protocol):
@@ -23,6 +29,26 @@ class BoardEvaluator(Protocol):
             board: BoardChi
     ) -> float:
         """Evaluates a board"""
+        ...
+
+
+class IGameBoardEvaluator(Protocol):
+    """
+
+    """
+
+    def evaluate(
+            self,
+            board: BoardChi
+    ) -> tuple[float, float]:
+        ...
+
+    def add_evaluation(
+            self,
+            player_color: chess.Color,
+            evaluation: float
+    ) -> None:
+        # clean at some point!
         ...
 
 
@@ -65,7 +91,7 @@ class ObservableBoardEvaluator:
     # todo its becoming hacky...
 
     game_board_evaluator: GameBoardEvaluator
-    mailboxes: list[queue.Queue[EvaluationMessage]]
+    mailboxes: list[queue.Queue[IsDataclass]]
     evaluation_stock: Any
     evaluation_chi: Any
     evaluation_player_black: Any
@@ -77,14 +103,14 @@ class ObservableBoardEvaluator:
     ):
         self.game_board_evaluator = game_board_evaluator
         self.mailboxes = []
-        self.evaluation_stock: Any = None
-        self.evaluation_chi: Any = None
-        self.evaluation_player_black: Any = None
-        self.evaluation_player_white: Any = None
+        self.evaluation_stock = None
+        self.evaluation_chi = None
+        self.evaluation_player_black = None
+        self.evaluation_player_white = None
 
     def subscribe(
             self,
-            mailbox: queue.Queue[EvaluationMessage]
+            mailbox: queue.Queue[IsDataclass]
     ) -> None:
         self.mailboxes.append(mailbox)
 

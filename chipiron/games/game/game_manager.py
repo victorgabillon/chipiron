@@ -1,17 +1,21 @@
 import logging
 import os
 import pickle
+import queue
 
 import chess
 
 import chipiron.players as players_m
 from chipiron.environments import HalfMove
 from chipiron.environments.chess.board import BoardChi
+from chipiron.environments.chess.board.starting_position import AllStartingPositionArgs
 from chipiron.games.game.game_playing_status import PlayingStatus
+from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator
+from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 from chipiron.utils import path
 from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMessage
 from chipiron.utils.communication.player_game_messages import MoveMessage
-from chipiron.utils.is_dataclass import DataClass
+from chipiron.utils.is_dataclass import IsDataclass
 from .final_game_result import GameReport, FinalGameResult
 from .game import ObservableGame
 from .game_args import GameArgs
@@ -37,18 +41,25 @@ class GameManager:
     """
 
     game: ObservableGame
+    syzygy: SyzygyTable | None
+    display_board_evaluator: IGameBoardEvaluator
+    output_folder_path: path | None
+    args: GameArgs
+    player_color_to_id: dict[chess.Color, str]
+    main_thread_mailbox: queue.Queue[MoveMessage]
+    players: list[players_m.PlayerProcess | players_m.GamePlayer]
 
     def __init__(
             self,
             game: ObservableGame,
-            syzygy,
-            display_board_evaluator,
+            syzygy: SyzygyTable | None,
+            display_board_evaluator: IGameBoardEvaluator,
             output_folder_path: path | None,
             args: GameArgs,
-            player_color_to_id,
-            main_thread_mailbox,
+            player_color_to_id: dict[chess.Color, str],
+            main_thread_mailbox: queue.Queue[MoveMessage],
             players: list[players_m.PlayerProcess | players_m.GamePlayer],
-    ):
+    ) -> None:
         """
         Constructor for the GameManager Class. If the args, and players are not given a value it is set to None,
          waiting for the set methods to be called. This is done like this so that the players can be changed
@@ -73,7 +84,7 @@ class GameManager:
         self.main_thread_mailbox = main_thread_mailbox
         self.players = players
 
-    def external_eval(self):
+    def external_eval(self) -> tuple[float, float]:
         return self.display_board_evaluator.evaluate(self.game.board)  # TODO DON'T LIKE THIS writing
 
     def play_one_move(
@@ -85,14 +96,17 @@ class GameManager:
             print('Theoretically finished with value for white: ',
                   self.syzygy.string_result(self.game.board))
 
-    def rewind_one_move(self):
+    def rewind_one_move(self) -> None:
         self.game.rewind_one_move()
-        if self.syzygy.fast_in_table(self.game.board):
+        if self.syzygy is not None and self.syzygy.fast_in_table(self.game.board):
             print('Theoretically finished with value for white: ',
                   self.syzygy.string_result(self.game.board))
 
-    def set_new_game(self, starting_position_arg):
-        self.game.set_starting_position(starting_position_arg)
+    def set_new_game(
+            self,
+            starting_position_arg: AllStartingPositionArgs
+    ) -> None:
+        self.game.set_starting_position(starting_position_arg=starting_position_arg)
 
     def play_one_game(
             self
@@ -130,7 +144,7 @@ class GameManager:
 
     def processing_mail(
             self,
-            message: DataClass
+            message: IsDataclass
     ) -> None:
         board: BoardChi = self.game.board
 
@@ -207,7 +221,7 @@ class GameManager:
             with open(path_file_obj, "wb") as f:
                 pickle.dump(self.game.board, f)
 
-    def tell_results(self):
+    def tell_results(self) -> None:
         board = self.game.board
         if self.syzygy is not None and self.syzygy.fast_in_table(board):
             print('Syzygy: Theoretical value for white', self.syzygy.string_result(board))
@@ -234,13 +248,7 @@ class GameManager:
                 res = FinalGameResult.DRAW  # arbitrary meaningless choice
                 # raise ValueError(f'Problem with figuring our game results in {__name__}')
             else:
-                val = self.syzygy.value_white(board, chess.WHITE)
-                if val == 0:
-                    res = FinalGameResult.DRAW
-                if val == -1000:
-                    res = FinalGameResult.WIN_FOR_BLACK
-                if val == 1000:
-                    res = FinalGameResult.WIN_FOR_WHITE
+                raise ValueError('this case is not coded atm think of what is the write thing to do here!')
         else:
             result = board.board.result()
             if result == '1/2-1/2':
@@ -252,7 +260,7 @@ class GameManager:
         assert isinstance(res, FinalGameResult)
         return res
 
-    def terminate_processes(self):
+    def terminate_processes(self) -> None:
         player: players_m.PlayerProcess | players_m.GamePlayer
         for player in self.players:
             if isinstance(player, players_m.PlayerProcess):

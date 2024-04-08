@@ -152,7 +152,7 @@ def script_gui(
         case 'play_against_chipiron':
             tree_move_limit = 4 * 10 ** output['strength']
             gui_args = {
-                'config_file_name': 'scripts/one_match/exp_options.yaml',
+                'config_file_name': 'chipiron/scripts/one_match/inputs/base/exp_options.yaml',
                 'seed': 0,
                 'gui': True,
                 'file_name_match_setting': 'setting_duda.yaml',
@@ -170,7 +170,7 @@ def script_gui(
             script_type = scripts.ScriptType.OneMatch
         case 'watch_a_game':
             gui_args = {
-                'config_file_name': 'scripts/one_match/exp_options.yaml',
+                'config_file_name': 'chipiron/scripts/one_match/inputs/base/exp_options.yaml',
                 'seed': 0,
                 'gui': True,
                 'file_name_player_one': 'RecurZipfBase3.yaml',
@@ -180,7 +180,7 @@ def script_gui(
             script_type = scripts.ScriptType.OneMatch
         case 'tree_visualization':
             gui_args = {
-                'config_file_name': 'scripts/tree_visualization/exp_options.yaml',
+                'config_file_name': 'scripts/tree_visualization/inputs/base/exp_options.yaml',
             }
             script_type = scripts.ScriptType.TreeVisualization
         case other:
