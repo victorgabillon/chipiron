@@ -1,3 +1,6 @@
+from typing import Any
+
+import torch
 import torch.nn as nn
 
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import PointOfView
@@ -5,7 +8,7 @@ from chipiron.utils.chi_nn import ChiNN
 
 
 class NetPP2D2_2(ChiNN):
-    def __init__(self):
+    def __init__(self) -> None:
         super(NetPP2D2_2, self).__init__()
         self.evaluation_point_of_view = PointOfView.PLAYER_TO_MOVE
 
@@ -15,7 +18,7 @@ class NetPP2D2_2(ChiNN):
         self.tanh = nn.Tanh()
         # self.dropout = nn.Dropout(.5)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.fc1(x)
         # x = self.dropout(self.relu_1(x))
         x = self.relu_1(x)
@@ -25,10 +28,10 @@ class NetPP2D2_2(ChiNN):
         x = self.tanh(x)
         return x
 
-    def init_weights(self, file):
+    def init_weights(self, file: str) -> None:
         pass
 
-    def print_param(self):
+    def print_param(self) -> None:
         for layer, param in enumerate(self.parameters()):
             if layer == 0:
                 print('pawns', sum(param.data[0, 64 * 0 + 8: 64 * 0 + 64 - 8]) / (64. - 16.))
@@ -60,7 +63,7 @@ class NetPP2D2_2(ChiNN):
             else:
                 print('other layer', layer, param.data)
 
-    def print_input(self, input):
+    def print_input(self, input: torch.Tensor) -> None:
 
         print('pawns', sum(input[0, 64 * 0 + 8: 64 * 0 + 64 - 8]) / (64. - 16.))
         print_piece_param(0, input)
@@ -87,13 +90,13 @@ class NetPP2D2_2(ChiNN):
         print('king-opposite', sum(input[0, 64 * 11: 64 * 11 + 64]) / 64.)
         print_piece_param(11, input)
 
-    def get_nn_input(self, node):
+    def get_nn_input(self, node: Any) -> None:
         raise Exception(f'to be recoded in {__name__}')
 
     # return get_tensor_from_tensors_two_sides(node.tensor_white, node.tensor_black, node.tensor_castling_white,
     #                                          node.tensor_castling_black, node.player_to_move)
 
 
-def print_piece_param(i, vec):
+def print_piece_param(i: int, vec: torch.Tensor) -> None:
     for r in range(8):
         print(vec[0, 64 * i + 8 * r: 64 * i + 8 * (r + 1)])

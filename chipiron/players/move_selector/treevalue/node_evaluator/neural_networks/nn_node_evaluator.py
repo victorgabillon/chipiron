@@ -25,7 +25,7 @@ class NNNodeEvaluator(NodeEvaluator):
     def evaluate_all_not_over(
             self,
             not_over_nodes: list[AlgorithmNode]
-    ):
+    ) -> None:
         list_of_tensors: list[torch.Tensor] = [torch.tensor([])] * len(not_over_nodes)
         index: int
         node_not_over: AlgorithmNode

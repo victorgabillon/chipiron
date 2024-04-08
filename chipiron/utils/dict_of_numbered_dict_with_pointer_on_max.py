@@ -1,18 +1,21 @@
-from typing import Any
+from typing import TypeVar, Generic
 
-from chipiron.players.move_selector.treevalue.nodes import ITreeNode
+from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
+
+T_Key = TypeVar('T_Key', bound=ITreeNode)
+T_Value = TypeVar('T_Value')
 
 
-class DictOfNumberedDictWithPointerOnMax:
+class DictOfNumberedDictWithPointerOnMax(Generic[T_Key, T_Value]):
 
     def __init__(self) -> None:
-        self.half_moves: dict[int, dict[ITreeNode, Any]] = {}
+        self.half_moves: dict[int, dict[T_Key, T_Value]] = {}
         self.max_half_move: int | None = None
 
     def __setitem__(
             self,
-            node: ITreeNode,
-            value: Any
+            node: T_Key,
+            value: T_Value
     ) -> None:
         half_move = node.half_move
         if self.max_half_move is None:
@@ -26,30 +29,21 @@ class DictOfNumberedDictWithPointerOnMax:
 
         assert (self.max_half_move == max(self.half_moves))
 
-    def __getitem__(self, node: ITreeNode) -> Any:
+    def __getitem__(self, node: T_Key) -> T_Value:
         return self.half_moves[node.half_move][node]
 
     def __bool__(self) -> bool:
         return bool(self.half_moves)
 
-    # def items(self):
-    #    return self.dic.items()
-
-    # def __len__(self):
-    #    return len(self.dic)
-
-    # def __iter__(self):
-    #    return iter(self.dic)
-
-    def __contains__(self, node: ITreeNode) -> bool:
+    def __contains__(self, node: T_Key) -> bool:
         if node.half_move not in self.half_moves:
             return False
         else:
             return node in self.half_moves[node.half_move]
 
-    def popitem(self) -> tuple[ITreeNode, Any]:
+    def popitem(self) -> tuple[T_Key, T_Value]:
         assert self.max_half_move is not None
-        popped: tuple[ITreeNode, Any] = self.half_moves[self.max_half_move].popitem()
+        popped: tuple[T_Key, T_Value] = self.half_moves[self.max_half_move].popitem()
         if not self.half_moves[self.max_half_move]:
             del self.half_moves[self.max_half_move]
             if self.half_moves:

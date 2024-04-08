@@ -1,6 +1,7 @@
 """
 RecurZipfBase
 """
+import random
 import typing
 from dataclasses import dataclass
 
@@ -11,6 +12,7 @@ from chipiron.players.move_selector.treevalue.node_selector.move_explorer import
 from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructions, \
     OpeningInstructor, \
     create_instructions_to_open_all_moves
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from ..move_explorer import SamplingPriorities
 from ..node_selector_args import NodeSelectorArgs
 
@@ -30,7 +32,7 @@ class RecurZipfBase:
     def __init__(
             self,
             args: RecurZipfBaseArgs,
-            random_generator,
+            random_generator: random.Random,
             opening_instructor: OpeningInstructor
     ) -> None:
         self.opening_instructor = opening_instructor
@@ -48,6 +50,7 @@ class RecurZipfBase:
         opening_instructions: OpeningInstructions
         if tree.root_node.minmax_evaluation.best_node_sequence:
             last_node_in_best_line = tree.root_node.minmax_evaluation.best_node_sequence[-1]
+            assert isinstance(last_node_in_best_line, AlgorithmNode)
             if last_node_in_best_line.board.is_attacked(
                     not last_node_in_best_line.tree_node.player_to_move) and not last_node_in_best_line.minmax_evaluation.is_over():
                 # print('best line is underattacked')
@@ -73,5 +76,5 @@ class RecurZipfBase:
 
         return opening_instructions
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'RecurZipfBase'

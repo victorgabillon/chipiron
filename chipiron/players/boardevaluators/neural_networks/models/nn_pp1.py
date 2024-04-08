@@ -1,24 +1,23 @@
 import torch
 import torch.nn as nn
 
-from chipiron.players.boardevaluators.neural_networks.board_to_tensor import get_tensor_from_tensors
 from chipiron.utils.chi_nn import ChiNN
 
 
 class NetPP1(ChiNN):
-    def __init__(self):
+    def __init__(self) -> None:
         super(NetPP1, self).__init__()
 
         self.transform_board_function = None
         self.fc1 = nn.Linear(384 + 2, 1)
         self.tanh = nn.Tanh()
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.fc1(x)
         x = self.tanh(x)
         return x
 
-    def init_weights(self, file):
+    def init_weights(self, file: str) -> None:
         ran = torch.rand(384 + 2) * 0.001 + 0.03
         ran = ran.unsqueeze(0)
         self.fc1.weight = torch.nn.Parameter(ran)
@@ -27,7 +26,7 @@ class NetPP1(ChiNN):
         for param in self.parameters():
             print(param.data)
 
-    def print_param(self):
+    def print_param(self) -> None:
         for layer, param in enumerate(self.parameters()):
             if layer == 0:
                 print('pawns', sum(param.data[0, 64 * 0 + 8: 64 * 0 + 64 - 8]) / (64. - 16.))
@@ -47,12 +46,8 @@ class NetPP1(ChiNN):
             else:
                 print(param.data)
 
-    def get_nn_input(self, node):
-        return get_tensor_from_tensors(node.tensor_white, node.tensor_black, node.tensor_castling_white,
-                                       node.tensor_castling_black, node.player_to_move)
 
-
-def print_input(input):
+def print_input(input: torch.Tensor) -> None:
     print('pawns', sum(input[64 * 0 + 8: 64 * 0 + 64 - 8]) / (64. - 16.))
     print_input_param(0, input)
     print('knights', sum(input[64 * 1: 64 * 1 + 64]) / 64.)
@@ -67,11 +62,11 @@ def print_input(input):
     print_input_param(5, input)
 
 
-def print_piece_param(i, vec):
+def print_piece_param(i: int, vec: torch.Tensor) -> None:
     for r in range(8):
         print(vec[0, 64 * i + 8 * r: 64 * i + 8 * (r + 1)])
 
 
-def print_input_param(i, vec):
+def print_input_param(i: int, vec: torch.Tensor) -> None:
     for r in range(8):
         print(vec[64 * i + 8 * r: 64 * i + 8 * (r + 1)])

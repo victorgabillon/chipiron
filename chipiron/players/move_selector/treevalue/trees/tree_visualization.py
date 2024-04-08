@@ -54,7 +54,7 @@ def save_pdf_to_file(
         tree: MoveAndValueTree
 ) -> None:
     dot = display(tree=tree, format_='pdf')
-    round_ = len(tree.root_node.board.move_stack) + 2
+    round_ = len(tree.root_node.board.board.move_stack) + 2
     color = 'white' if tree.root_node.player_to_move else 'black'
     dot.render('chipiron/runs/treedisplays/TreeVisual_' + str(int(round_ / 2)) + color + '.pdf')
 

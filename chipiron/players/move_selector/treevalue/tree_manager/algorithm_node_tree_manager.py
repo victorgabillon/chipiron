@@ -100,6 +100,7 @@ class AlgorithmNodeTreeManager:
         assert self.node_evaluator is not None
         for tree_expansion in tree_expansions.expansions_with_node_creation:
             # TODO give the tree expansion to the function directly
+            assert isinstance(tree_expansion.child_node, AlgorithmNode)
             self.node_evaluator.add_evaluation_query(
                 node=tree_expansion.child_node,
                 evaluation_queries=self.evaluation_queries

@@ -40,7 +40,7 @@ class AlgorithmNode:
         self.board_representation = board_representation
 
     @property
-    def player_to_move(self):
+    def player_to_move(self) -> chess.Color:
         return self.tree_node.player_to_move
 
     @property
@@ -97,7 +97,7 @@ class AlgorithmNode:
         self.tree_node.all_legal_moves_generated = value
 
     @property
-    def non_opened_legal_moves(self):
+    def non_opened_legal_moves(self) -> set[chess.Move]:
         return self.tree_node.non_opened_legal_moves
 
     def dot_description(self) -> str:

@@ -6,7 +6,7 @@ from .updates_file import UpdateInstructions
 
 class IndexUpdater:
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     def create_update_instructions_after_node_birth(

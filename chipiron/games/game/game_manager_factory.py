@@ -7,6 +7,7 @@ import chipiron.environments.chess.board as boards
 import chipiron.players as players_m
 from chipiron.games.game.game_args import GameArgs
 from chipiron.players import PlayerFactoryArgs
+from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator, ObservableBoardEvaluator
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 from chipiron.players.factory_higher_level import create_player_observer
 from chipiron.utils import path
@@ -30,7 +31,7 @@ class GameManagerFactory:
     def __init__(
             self,
             syzygy_table: SyzygyTable | None,
-            game_manager_board_evaluator,
+            game_manager_board_evaluator: IGameBoardEvaluator,
             output_folder_path: path | None,
             main_thread_mailbox: queue.Queue[MoveMessage],
     ) -> None:
@@ -119,4 +120,5 @@ class GameManagerFactory:
             subscriber: queue.Queue[IsDataclass]
     ) -> None:
         self.subscribers.append(subscriber)
+        assert isinstance(self.game_manager_board_evaluator, ObservableBoardEvaluator)
         self.game_manager_board_evaluator.subscribe(subscriber)

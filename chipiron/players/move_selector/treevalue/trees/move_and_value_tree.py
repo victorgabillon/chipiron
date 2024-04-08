@@ -52,10 +52,13 @@ class MoveAndValueTree:
         self.descendants = descendants
 
     @property
-    def root_node(self):
+    def root_node(self) -> AlgorithmNode:
         return self._root_node
 
-    def node_depth(self, node: nodes.ITreeNode) -> int:
+    def node_depth(
+            self,
+            node: nodes.ITreeNode
+    ) -> int:
         return node.half_move - self.tree_root_half_move
 
     def is_over(self) -> bool:

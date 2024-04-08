@@ -26,7 +26,7 @@ class PlayerProcess(multiprocessing.Process):
             queue_board: queue.Queue[DataClass],
             queue_move: queue.Queue[MoveMessage],
             player_color: chess.Color
-    ):
+    ) -> None:
         # Call the Thread class's init function
         multiprocessing.Process.__init__(self, daemon=False)
         self._stop_event = multiprocessing.Event()
@@ -42,7 +42,7 @@ class PlayerProcess(multiprocessing.Process):
         assert self.game_player.player is not None
 
     # Override the run() function of Thread class
-    def run(self):
+    def run(self) -> None:
         print('Started player thread : ', self.game_player)
 
         while True:

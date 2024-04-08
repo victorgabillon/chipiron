@@ -57,6 +57,17 @@ class SyzygyTable:
         val: int = self.table_base.probe_wdl(board.board)
         return val
 
+    def value_white(
+            self,
+            board: boards.BoardChi
+    ) -> int:
+        # tablebase.probe_wdl Returns 2 if the side to move is winning, 0 if the position is a draw and -2 if the side to move is losing.
+        val: int = self.table_base.probe_wdl(board.board)
+        if board.turn == chess.WHITE:
+            return val * 100000
+        else:
+            return val * -10000
+
     def get_over_tag(
             self,
             board: boards.BoardChi
@@ -121,7 +132,6 @@ class SyzygyTable:
                 new_value = - board.board.is_zeroing(move) * 100 + dtz_player_node
             elif val_player_node < 0:
                 new_value = - board.board.is_zeroing(move) * 100 + dtz_player_node - 1000
-            # print('edeswswswaqq',str(move),val_player_node,new_value ,node.board.is_zeroing(move) ,self.dtz(next_board))
 
             if new_value > best_value:
                 best_value = new_value

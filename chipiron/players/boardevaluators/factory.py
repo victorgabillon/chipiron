@@ -9,7 +9,7 @@ from chipiron.players.boardevaluators.basic_evaluation import BasicEvaluation
 from chipiron.players.boardevaluators.neural_networks.factory import create_nn_board_eval
 from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import NeuralNetBoardEvalArgs
 from chipiron.players.boardevaluators.stockfish_board_evaluator import StockfishBoardEvaluator, StockfishBoardEvalArgs
-from .board_evaluator import BoardEvaluator, ObservableBoardEvaluator, GameBoardEvaluator
+from .board_evaluator import BoardEvaluator, ObservableBoardEvaluator, GameBoardEvaluator, IGameBoardEvaluator
 
 
 class TableBaseArgs:
@@ -76,12 +76,14 @@ def create_game_board_evaluator_not_observable(
 
 def create_game_board_evaluator(
         gui: bool
-) -> ObservableBoardEvaluator | GameBoardEvaluator:
-    game_board_evaluator: ObservableBoardEvaluator | GameBoardEvaluator
-    game_board_evaluator = create_game_board_evaluator_not_observable()
+) -> IGameBoardEvaluator:
+    game_board_evaluator_res: IGameBoardEvaluator
+    game_board_evaluator: GameBoardEvaluator = create_game_board_evaluator_not_observable()
     if gui:
-        game_board_evaluator = ObservableBoardEvaluator(
+        game_board_evaluator_res = ObservableBoardEvaluator(
             game_board_evaluator=game_board_evaluator
         )
+    else:
+        game_board_evaluator_res = game_board_evaluator
 
-    return game_board_evaluator
+    return game_board_evaluator_res

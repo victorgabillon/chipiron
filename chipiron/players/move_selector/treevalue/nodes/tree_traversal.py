@@ -4,8 +4,8 @@ from .itree_node import ITreeNode
 
 def get_descendants(
         from_tree_node: ITreeNode
-):
-    des = {from_tree_node: None}  # include itself
+) -> dict[ITreeNode, None]:
+    des: dict[ITreeNode, None] = {from_tree_node: None}  # include itself
     generation = set(from_tree_node.moves_children.values())
     while generation:
         next_depth_generation = set()
