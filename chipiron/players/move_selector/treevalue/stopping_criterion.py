@@ -85,7 +85,7 @@ class TreeMoveLimit(StoppingCriterion):
     def should_we_continue(
             self,
             tree: MoveAndValueTree
-    ):
+    ) -> bool:
         continue_base = super().should_we_continue(tree=tree)
         if not continue_base:
             return continue_base
@@ -138,11 +138,14 @@ class DepthLimit(StoppingCriterion):
             self,
             depth_limit: int,
             node_selector: DepthToExpendP
-    ):
+    ) -> None:
         self.depth_limit = depth_limit
         self.node_selector = node_selector
 
-    def should_we_continue(self, tree: MoveAndValueTree):
+    def should_we_continue(
+            self,
+            tree: MoveAndValueTree
+    ) -> bool:
         continue_base = super().should_we_continue(tree=tree)
         if not continue_base:
             return continue_base

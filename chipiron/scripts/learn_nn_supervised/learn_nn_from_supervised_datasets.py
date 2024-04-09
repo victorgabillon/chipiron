@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader
 
 from chipiron.learningprocesses.nn_trainer.factory import NNTrainerArgs
 from chipiron.learningprocesses.nn_trainer.factory import create_nn_trainer, safe_nn_param_save, safe_nn_trainer_save
+from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
 from chipiron.players.boardevaluators.datasets.datasets import FenAndValueDataSet
 from chipiron.players.boardevaluators.neural_networks.factory import create_nn
 from chipiron.players.boardevaluators.neural_networks.input_converters.factory import Representation364Factory
@@ -66,7 +67,7 @@ class LearnNNScript:
             create_file=self.args.create_nn_file
         )
         self.nn.print_param()
-        self.nn_trainer = create_nn_trainer(
+        self.nn_trainer: NNPytorchTrainer = create_nn_trainer(
             args=self.args.nn_trainer_args,
             nn=self.nn
         )
@@ -106,7 +107,7 @@ class LearnNNScript:
             shuffle=True, num_workers=1
         )
 
-    def run(self):
+    def run(self) -> None:
         """ Running the learning of the NN"""
         print('Starting to learn the NN')
         count_train_step = 0
@@ -129,7 +130,7 @@ class LearnNNScript:
 
                     # condition to decrease the learning rate
                     if previous_train_loss is not None and sum_loss_train > previous_train_loss \
-                            and self.nn_trainer.scheduler.get_last_lr() > self.args.min_lr:
+                            and self.nn_trainer.scheduler.get_last_lr()[-1] > self.args.min_lr:
                         self.nn_trainer.scheduler.step()
                         print('decaying the learning rate to', self.nn_trainer.scheduler.get_last_lr())
 
@@ -156,17 +157,20 @@ class LearnNNScript:
                 # saving the learning process
                 self.saving_things_to_file(count_train_step)
 
-    def compute_test_error(self):
-        sum_loss_test = 0
+    def compute_test_error(self) -> None:
+        sum_loss_test = 0.
         count_test = 0
         for i in range(100):
             sample_batched_test = next(iter(self.data_loader_stockfish_boards_test))
             loss_test = self.nn_trainer.test(sample_batched_test[0], sample_batched_test[1])
-            sum_loss_test += loss_test
+            sum_loss_test += float(loss_test)
             count_test += 1
         print('test error', float(sum_loss_test / float(count_test)))
 
-    def saving_things_to_file(self, count_train_step):
+    def saving_things_to_file(
+            self,
+            count_train_step: int
+    ) -> None:
         if count_train_step % self.args.saving_interval == 0:
             safe_nn_param_save(self.nn, self.args.nn_trainer_args.neural_network)
             safe_nn_trainer_save(self.nn_trainer, self.args.nn_trainer_args.neural_network)

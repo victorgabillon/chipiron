@@ -46,7 +46,7 @@ class GameManager:
     output_folder_path: path | None
     args: GameArgs
     player_color_to_id: dict[chess.Color, str]
-    main_thread_mailbox: queue.Queue[MoveMessage]
+    main_thread_mailbox: queue.Queue[IsDataclass]
     players: list[players_m.PlayerProcess | players_m.GamePlayer]
 
     def __init__(
@@ -57,7 +57,7 @@ class GameManager:
             output_folder_path: path | None,
             args: GameArgs,
             player_color_to_id: dict[chess.Color, str],
-            main_thread_mailbox: queue.Queue[MoveMessage],
+            main_thread_mailbox: queue.Queue[IsDataclass],
             players: list[players_m.PlayerProcess | players_m.GamePlayer],
     ) -> None:
         """

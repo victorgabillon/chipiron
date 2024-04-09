@@ -38,7 +38,7 @@ class TreeExploration:
     def print_info_during_move_computation(
             self,
             random_generator: random.Random
-    ):
+    ) -> None:
         if self.tree.root_node.minmax_evaluation.best_node_sequence:
             current_best_child = self.tree.root_node.minmax_evaluation.best_node_sequence[0]
             current_best_move = str(self.tree.root_node.moves_children.inverse[current_best_child])

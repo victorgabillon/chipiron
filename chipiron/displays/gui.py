@@ -4,6 +4,7 @@
 This module is the execution point of the chess GUI application.
 """
 
+import queue
 import typing
 
 import chess
@@ -12,8 +13,6 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import QPushButton, QTableWidget, QWidget, QDialog, QTableWidgetItem
-from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
-from matplotlib.figure import Figure
 
 from chipiron.environments.chess.board import BoardChi
 from chipiron.games.game.game_playing_status import PlayingStatus
@@ -23,14 +22,7 @@ from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMes
 from chipiron.utils.communication.gui_messages.gui_messages import MatchResultsMessage
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage
 from chipiron.utils.communication.player_game_messages import BoardMessage, MoveMessage
-
-
-class MplCanvas(FigureCanvasQTAgg):
-
-    def __init__(self, parent=None, width=5, height=4, dpi=100):
-        fig = Figure(figsize=(width, height), dpi=dpi)
-        self.axes = fig.add_subplot(111)
-        super(MplCanvas, self).__init__(fig)
+from chipiron.utils.is_dataclass import IsDataclass
 
 
 class MainWindow(QWidget):
@@ -40,8 +32,8 @@ class MainWindow(QWidget):
 
     def __init__(
             self,
-            gui_mailbox,
-            main_thread_mailbox
+            gui_mailbox: queue.Queue[IsDataclass],
+            main_thread_mailbox: queue.Queue[IsDataclass]
     ) -> None:
         """
         Initialize the chessboard.
@@ -210,7 +202,7 @@ class MainWindow(QWidget):
     def send_move_to_main_thread(
             self,
             move: chess.Move
-    ):
+    ) -> None:
         message: MoveMessage = MoveMessage(
             move=move,
             corresponding_board=self.board.fen(),
@@ -272,7 +264,9 @@ class MainWindow(QWidget):
         self.move_promote_asked = chess.Move.from_uci("{}{}n".format(self.pieceToMove[1], self.coordinates))
         self.d.close()
 
-    def process_message(self):
+    def process_message(self
+                        ) -> None:
+
         """
         Draw a chessboard with the starting position and then redraw
         it for every new move.
@@ -314,7 +308,9 @@ class MainWindow(QWidget):
                 case other:
                     raise ValueError(f'unknown type of message received by gui {other} in {__name__}')
 
-    def display_move_history(self):
+    def display_move_history(self
+                             ) -> None:
+
         import math
         num_half_move: int = len(self.board.board.move_stack)
         num_rounds: int = int(math.ceil(num_half_move / 2))
@@ -327,7 +323,9 @@ class MainWindow(QWidget):
                     item = QTableWidgetItem(str(self.board.board.move_stack[half_move]))
                     self.tablewidget.setItem(round_, player, item)
 
-    def draw_board(self):
+    def draw_board(self
+                   ) -> None:
+
         """
         Draw a chessboard with the starting position and then redraw
         it for every new move.
@@ -342,12 +340,19 @@ class MainWindow(QWidget):
     def update_players_color_to_id(
             self,
             players_color_to_player: dict[chess.Color, str]
-    ):
+    ) -> None:
+
         self.player_white_button.setText(' White: ' + players_color_to_player[chess.WHITE])  # text
         self.player_black_button.setText(' Black: ' + players_color_to_player[chess.BLACK])  # text
 
-    def update_evaluation(self, evaluation_stock, evaluation_chipiron, evaluation_white,
-                          evaluation_black):
+    def update_evaluation(
+            self,
+            evaluation_stock: float,
+            evaluation_chipiron: float,
+            evaluation_white: float,
+            evaluation_black: float
+    ) -> None:
+
         self.eval_button.setText('eval: ' + str(evaluation_stock))  # text
         self.eval_button_chi.setText('eval: ' + str(evaluation_chipiron))  # text
         self.eval_button_black.setText('eval White: ' + str(evaluation_white))  # text
@@ -378,7 +383,7 @@ class MainWindow(QWidget):
     def update_match_stats(
             self,
             match_result: MatchResults
-    ):
+    ) -> None:
         simple_results: SimpleResults = match_result.get_simple_result()
         self.score_button.setText(
             'Score: ' + str(simple_results.player_one_wins) + '-'

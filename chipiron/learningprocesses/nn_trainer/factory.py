@@ -28,17 +28,17 @@ class NNTrainerArgs:
     saving_intermediate_copy: bool = True
 
 
-def get_optimizer_file_path_from(folder_path):
+def get_optimizer_file_path_from(folder_path: str) -> str:
     file_path = folder_path + '/optimizer.pi'
     return file_path
 
 
-def get_scheduler_file_path_from(folder_path):
+def get_scheduler_file_path_from(folder_path: str) -> str:
     file_path = folder_path + '/scheduler.pi'
     return file_path
 
 
-def get_folder_training_copies_path_from(folder_path):
+def get_folder_training_copies_path_from(folder_path: str) -> str:
     return folder_path + '/training_copies'
 
 
@@ -46,7 +46,7 @@ def create_nn_trainer(
         args: NNTrainerArgs,
         nn: ChiNN
 
-):
+) -> NNPytorchTrainer:
     args_nn = args.neural_network
     nn_folder_path = get_folder_path_from(
         nn_type=args_nn.nn_type,
@@ -87,7 +87,11 @@ def create_nn_trainer(
     )
 
 
-def safe_nn_param_save(nn, args, training_copy=False):
+def safe_nn_param_save(
+        nn: ChiNN,
+        args: NeuralNetBoardEvalArgs,
+        training_copy: bool = False
+) -> None:
     folder_path = get_folder_path_from(args.nn_type, args.nn_param_folder_name)
     folder_path_training_copies = get_folder_training_copies_path_from(folder_path)
     nn_file_path = get_nn_param_file_path_from(folder_path)
@@ -107,7 +111,10 @@ def safe_nn_param_save(nn, args, training_copy=False):
         exit(-1)
 
 
-def safe_nn_trainer_save(nn_trainer, args):
+def safe_nn_trainer_save(
+        nn_trainer: NNPytorchTrainer,
+        args: NeuralNetBoardEvalArgs
+) -> None:
     nn_folder_path = get_folder_path_from(args.nn_type, args.nn_param_folder_name)
     file_optimizer_path = get_optimizer_file_path_from(nn_folder_path)
     file_scheduler_path = get_scheduler_file_path_from(nn_folder_path)

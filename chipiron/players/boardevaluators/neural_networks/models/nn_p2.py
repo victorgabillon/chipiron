@@ -6,19 +6,21 @@ from chipiron.utils.chi_nn import ChiNN
 
 
 class NetP2(ChiNN):
-    def __init__(self, path_to_main_folder, relative_path_file):
+    def __init__(
+            self
+    ) -> None:
         super(NetP2, self).__init__()
 
         self.transform_board_function = transform_board_pieces_two_sides
         self.fc1 = nn.Linear(10, 1)
         self.tanh = nn.Tanh()
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.fc1(x)
         x = self.tanh(x)
         return x
 
-    def init_weights(self, file):
+    def init_weights(self, file: str) -> None:
         ran = torch.rand(10) * 0.001 + 0.03
         ran = ran.unsqueeze(0)
         self.fc1.weight = torch.nn.Parameter(ran)
@@ -27,7 +29,7 @@ class NetP2(ChiNN):
         for param in self.parameters():
             print(param.data)
 
-    def print_param(self):
+    def print_param(self) -> None:
         for layer, param in enumerate(self.parameters()):
             if layer == 0:
                 print('pawns', param.data[0, 0])
@@ -44,16 +46,15 @@ class NetP2(ChiNN):
             else:
                 print(param.data)
 
-
-def print_input(self, input):
-    print('pawns', input[0])
-    print('knights', input[1])
-    print('bishops', input[2])
-    print('rook', input[3])
-    print('queen', input[4])
-    #  print('king', input[5])
-    print('pawns-opp', input[5])
-    print('knights-opp', input[6])
-    print('bishops-opp', input[7])
-    print('rook-opp', input[8])
-    print('queen-opp', input[9])
+    def print_input(self, input: torch.Tensor) -> None:
+        print('pawns', input[0])
+        print('knights', input[1])
+        print('bishops', input[2])
+        print('rook', input[3])
+        print('queen', input[4])
+        #  print('king', input[5])
+        print('pawns-opp', input[5])
+        print('knights-opp', input[6])
+        print('bishops-opp', input[7])
+        print('rook-opp', input[8])
+        print('queen-opp', input[9])

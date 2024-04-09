@@ -1,3 +1,5 @@
+import typing
+
 import torch
 
 from chipiron.utils.chi_nn import ChiNN
@@ -16,6 +18,7 @@ class NNPytorchTrainer:
         self.optimizer = optimizer
         self.scheduler = scheduler
 
+    @typing.no_type_check
     def train(
             self,
             input_layer: torch.Tensor,

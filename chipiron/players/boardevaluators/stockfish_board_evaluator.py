@@ -21,14 +21,16 @@ class StockfishBoardEvaluator:
     """
     engine: chess.engine.SimpleEngine | None
 
-    def __init__(self,
-                 args: StockfishBoardEvalArgs):
+    def __init__(
+            self,
+            args: StockfishBoardEvalArgs
+    ) -> None:
         self.engine = None
 
     def value_white(
             self,
             board: boards.BoardChi
-    ):
+    ) -> float:
         print('infos')
         # todo make a large reformat so that the players are created after the launch of process
         """ computes the value white of the board"""
