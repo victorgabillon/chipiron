@@ -13,6 +13,9 @@ from chipiron.players.move_selector.treevalue.indices.index_manager import NodeE
 from chipiron.players.move_selector.treevalue.indices.index_manager.node_exploration_manager import update_all_indices
 from chipiron.players.move_selector.treevalue.node_evaluator import NodeEvaluator, EvaluationQueries
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
+from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
+from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
+from chipiron.players.move_selector.treevalue.updates.updates_file import UpdateInstructions
 from .tree_expander import TreeExpansion, TreeExpansions
 from .tree_manager import TreeManager
 
@@ -123,15 +126,18 @@ class AlgorithmNodeTreeManager:
     def update_backward(
             self,
             tree_expansions: TreeExpansions
-    ):
+    ) -> None:
 
         update_instructions_batch: upda.UpdateInstructionsBatch
         update_instructions_batch = self.algorithm_node_updater.generate_update_instructions(
             tree_expansions=tree_expansions)
 
         while update_instructions_batch:
+            node_to_update: ITreeNode
+            update_instructions: UpdateInstructions
             node_to_update, update_instructions = update_instructions_batch.popitem()
             extra_update_instructions_batch: upda.UpdateInstructionsBatch
+            assert isinstance(node_to_update, AlgorithmNode)
             extra_update_instructions_batch = self.update_node(
                 node_to_update=node_to_update,
                 update_instructions=update_instructions
@@ -140,8 +146,8 @@ class AlgorithmNodeTreeManager:
 
     def update_node(
             self,
-            node_to_update,
-            update_instructions
+            node_to_update: AlgorithmNode,
+            update_instructions: UpdateInstructions
     ) -> upda.UpdateInstructionsBatch:
 
         # UPDATES
@@ -157,8 +163,10 @@ class AlgorithmNodeTreeManager:
 
         return update_instructions_batch
 
-    def print_some_stats(self,
-                         tree):
+    def print_some_stats(
+            self,
+            tree: trees.MoveAndValueTree
+    ) -> None:
         print('Tree stats: move_count', tree.move_count, ' node_count',
               tree.descendants.get_count())
         sum_ = 0
@@ -167,20 +175,27 @@ class AlgorithmNodeTreeManager:
             sum_ += len(tree.descendants[half_move])
             print('half_move', half_move, len(tree.descendants[half_move]), sum_)
 
-    def test_the_tree(self,
-                      tree):
+    def test_the_tree(
+            self,
+            tree: trees.MoveAndValueTree
+    ) -> None:
         self.test_count(tree=tree)
         for half_move in tree.descendants:
             for fen in tree.descendants[half_move]:
                 node = tree.descendants[half_move][fen]
+                assert isinstance(node, TreeNode)
                 node.test()
 
                 # todo add a test for testing if the over match what the board evaluator says!
 
-    def test_count(self,
-                   tree):
-        assert (tree.root_node.descendants.get_count() == tree.nodes_count)
+    def test_count(
+            self,
+            tree: trees.MoveAndValueTree
+    ) -> None:
+        assert (tree.descendants.get_count() == tree.nodes_count)
 
-    def print_best_line(self,
-                        tree):
+    def print_best_line(
+            self,
+            tree: trees.MoveAndValueTree
+    ) -> None:
         tree.root_node.minmax_evaluation.print_best_line()

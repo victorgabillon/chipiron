@@ -162,9 +162,11 @@ class Window(QtWidgets.QWidget):
 
     @typing.no_type_check
     def display_subtree(self):
-        dot = display_special(node=self.current_node,
-                              format='jpg',
-                              index=self.index)
+        dot = display_special(
+            node=self.current_node,
+            format='jpg',
+            index=self.index
+        )
         dot.render('chipiron/runs/treedisplays/TreeVisualtemp')
 
     @typing.no_type_check
@@ -228,7 +230,7 @@ class VisualizeTreeScript:
     ):
         ...
 
-    def run(self):
+    def run(self) -> None:
         app = QtWidgets.QApplication(sys.argv)
         window = Window()
         window.setGeometry(0, 0, 1800, 1600)

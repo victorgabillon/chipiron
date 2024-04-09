@@ -1,8 +1,10 @@
 import pickle
 
+import chess
 from graphviz import Digraph
 
 from chipiron.players.move_selector.treevalue.nodes import ITreeNode
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from .move_and_value_tree import MoveAndValueTree
 
 
@@ -21,7 +23,11 @@ def add_dot(
                 add_dot(dot, child)
 
 
-def display_special(node, format, index):
+def display_special(
+        node: ITreeNode,
+        format: str,
+        index: dict[chess.Move, str]
+) -> Digraph:
     dot = Digraph(format=format)
     print(';;;', type(node))
     nd = node.dot_description()
@@ -30,9 +36,11 @@ def display_special(node, format, index):
     sorted_moves.sort()
     for move_key in sorted_moves:
         move = move_key[1]
-        child = node.moves_children[move]
         if node.moves_children[move] is not None:
             child = node.moves_children[move]
+            assert child is not None
+            assert isinstance(node, AlgorithmNode)
+
             cdd = str(child.id)
             edge_description = index[move] + '|' + str(
                 move.uci()) + '|' + node.minmax_evaluation.description_tree_visualizer_move(
@@ -44,7 +52,10 @@ def display_special(node, format, index):
     return dot
 
 
-def display(tree: MoveAndValueTree, format_):
+def display(
+        tree: MoveAndValueTree,
+        format_: str
+) -> Digraph:
     dot = Digraph(format=format_)
     add_dot(dot, tree.root_node)
     return dot
@@ -61,7 +72,8 @@ def save_pdf_to_file(
 
 def save_raw_data_to_file(
         tree: MoveAndValueTree,
-        count='#'):
+        count: str = '#'
+) -> None:
     round_ = len(tree.root_node.board.board.move_stack) + 2
     color = 'white' if tree.root_node.player_to_move else 'black'
     filename = 'chipiron/debugTreeData_' + str(int(round_ / 2)) + color + '-' + str(count) + '.td'

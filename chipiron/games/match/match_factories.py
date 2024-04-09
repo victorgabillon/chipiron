@@ -15,7 +15,7 @@ from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 from chipiron.players.utils import fetch_two_players_args_convert_and_save
 from chipiron.utils import path
-from chipiron.utils.communication.player_game_messages import MoveMessage
+from chipiron.utils.is_dataclass import IsDataclass
 from .match_settings_args import MatchSettingsArgs
 
 
@@ -28,7 +28,7 @@ def create_match_manager(
         output_folder_path: path | None = None,
         gui: bool = False
 ) -> MatchManager:
-    main_thread_mailbox: queue.Queue[MoveMessage] = multiprocessing.Manager().Queue()
+    main_thread_mailbox: queue.Queue[IsDataclass] = multiprocessing.Manager().Queue()
 
     # Creation of the Syzygy table for perfect play in low pieces cases, needed by the GameManager
     # and can also be used by the players

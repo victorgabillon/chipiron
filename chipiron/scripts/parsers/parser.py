@@ -63,7 +63,7 @@ class MyParser:
             self,
             base_experiment_output_folder: path,
             extra_args: dict[str, Any] | None = None,
-    ):
+    ) -> dict[str, Any]:
 
         if extra_args is None:
             extra_args = {}
@@ -109,7 +109,7 @@ class MyParser:
     def log_parser_info(
             self,
             output_folder: str
-    ):
+    ) -> None:
 
         with open(os.path.join(output_folder, 'inputs_and_parsing/base_script_merge.yaml'), 'w') as base_merge:
             yaml.dump(self.merged_args, base_merge, default_flow_style=False)

@@ -62,8 +62,7 @@ class Script:
     def initiate(
             self,
             args_dataclass_name: type[_T_co],
-            base_experiment_output_folder=None
-
+            base_experiment_output_folder: str | None = None
     ) -> _T_co:
 
         if base_experiment_output_folder is None:

@@ -31,7 +31,7 @@ class SearchFactoryP(Protocol):
     ) -> NodeSelectorFactory:
         ...
 
-    def create_node_index_updater(self):
+    def create_node_index_updater(self) -> IndexUpdater | None:
         ...
 
     def node_index_create(
@@ -57,7 +57,7 @@ class SearchFactory:
     index_computation: node_indices.IndexComputationType | None
     depth_index: bool = False
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if isinstance(self.node_selector_args, SequoolArgs):
             a: SequoolArgs = self.node_selector_args
             self.depth_index: bool = a.recursive_selection_on_all_nodes
@@ -82,7 +82,7 @@ class SearchFactory:
         )
         return node_selector_create
 
-    def create_node_index_updater(self):
+    def create_node_index_updater(self) -> IndexUpdater | None:
 
         index_updater: IndexUpdater | None
         if self.depth_index:

@@ -7,6 +7,7 @@ from chipiron.environments.chess.board import BoardChi
 from chipiron.players.move_selector.move_selector import MoveRecommendation
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import MoveMessage
+from chipiron.utils.is_dataclass import IsDataclass
 from .player import Player
 
 
@@ -50,7 +51,7 @@ class GamePlayer:
 def game_player_computes_move_on_board_and_send_move_in_queue(
         board: BoardChi,
         game_player: GamePlayer,
-        queue_move: queue.Queue[MoveMessage],
+        queue_move: queue.Queue[IsDataclass],
         seed_: seed
 ) -> None:
     if board.turn == game_player.color and not board.board.is_game_over():

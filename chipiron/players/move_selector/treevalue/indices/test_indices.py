@@ -31,7 +31,7 @@ class TestResult(Enum):
 
 def make_tree_from_file(
         file_path: path,
-        index_computation
+        index_computation: IndexComputationType
 ) -> MoveAndValueTree:
     # atm it is very ad hoc to test index so takes a lots of shortcut, will be made more general when needed
     with open(file_path, 'r') as file:
@@ -75,7 +75,9 @@ def make_tree_from_file(
 
             board = chess.Board.from_chess960_pos(yaml_node['id'])
             board.turn = chess.WHITE
-            board_chi = BoardChi(board=board)
+            board_chi = BoardChi(
+                board=board
+            )
             root_node: AlgorithmNode = algorithm_node_factory.create(
                 board=board_chi,
                 half_move=0,
@@ -141,10 +143,10 @@ def make_tree_from_file(
 
 
 def check_from_file(
-        file,
-        tree
-):
-    with open(file, 'r') as file:
+        file_path: path,
+        tree: MoveAndValueTree
+) -> None:
+    with open(file_path, 'r') as file:
         tree_yaml = yaml.safe_load(file)
     print('tree', tree_yaml)
     yaml_nodes = tree_yaml['nodes']
@@ -175,8 +177,8 @@ def check_from_file(
 
 
 def check_index(
-        index_computation,
-        tree_file
+        index_computation: IndexComputationType,
+        tree_file: path
 ) -> TestResult:
     try:
         tree_path = f'data/trees/{tree_file}/{tree_file}_{index_computation.value}.yaml'
@@ -185,7 +187,7 @@ def check_index(
         return TestResult.WARNING
 
     tree_path = f'data/trees/{tree_file}/{tree_file}.yaml'
-    tree = make_tree_from_file(
+    tree: MoveAndValueTree = make_tree_from_file(
         index_computation=index_computation,
         file_path=tree_path
     )
@@ -201,17 +203,16 @@ def check_index(
     #    tree
     # )
     file_index = f'data/trees/{tree_file}/{tree_file}_{index_computation.value}.yaml'
-    print('tyu', file_index, index_computation.value)
     check_from_file(
-        file=file_index,
+        file_path=file_index,
         tree=tree
     )
 
     return TestResult.PASSED
 
 
-def test_indices():
-    index_computations = [
+def test_indices() -> None:
+    index_computations: list[IndexComputationType] = [
         IndexComputationType.MinGlobalChange,
         IndexComputationType.RecurZipf,
         IndexComputationType.MinLocalChange
@@ -232,7 +233,10 @@ def test_indices():
 
         for index_computation in index_computations_:
             print(f'---testing {index_computation} on {tree_file}')
-            res: TestResult = check_index(index_computation, tree_file)
+            res: TestResult = check_index(
+                index_computation=index_computation,
+                tree_file=tree_file
+            )
             if res in results:
                 results[res] += 1
             else:

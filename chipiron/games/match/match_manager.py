@@ -6,6 +6,7 @@ import chess
 
 from chipiron.games.game.final_game_result import GameReport
 from chipiron.games.game.game_args import GameArgs
+from chipiron.games.game.game_args_factory import GameArgsFactory
 from chipiron.games.game.game_manager import GameManager
 from chipiron.games.game.game_manager_factory import GameManagerFactory
 from chipiron.games.match.match_results import MatchResults, MatchReport, IMatchResults
@@ -27,9 +28,9 @@ class MatchManager:
             player_one_id: str,
             player_two_id: str,
             game_manager_factory: GameManagerFactory,
-            game_args_factory,
+            game_args_factory: GameArgsFactory,
             match_results_factory: MatchResultsFactory,
-            output_folder_path=None
+            output_folder_path: path | None = None
     ) -> None:
         self.player_one_id = player_one_id
         self.player_two_id = player_two_id
@@ -39,7 +40,7 @@ class MatchManager:
         self.game_args_factory = game_args_factory
         self.print_info()
 
-    def print_info(self):
+    def print_info(self) -> None:
         print('player one is ', self.player_one_id)
         print('player two is ', self.player_two_id)
 
@@ -58,9 +59,10 @@ class MatchManager:
         while not self.game_args_factory.is_match_finished():
             args_game: GameArgs
             player_color_to_factory_args: dict[chess.Color, PlayerFactoryArgs]
-            game_seed: seed
+            game_seed: seed | None
             player_color_to_factory_args, args_game, game_seed = self.game_args_factory.generate_game_args(game_number)
 
+            assert game_seed is not None
             # Play one game
             game_report: GameReport = self.play_one_game(
                 player_color_to_factory_args=player_color_to_factory_args,

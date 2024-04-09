@@ -96,6 +96,6 @@ class GameArgsFactory:
 
         return player_color_to_factory_args, self.args_game, merged_seed
 
-    def is_match_finished(self):
+    def is_match_finished(self) -> bool:
         return (self.game_number >= self.args_match.number_of_games_player_one_white
                 + self.args_match.number_of_games_player_one_black)

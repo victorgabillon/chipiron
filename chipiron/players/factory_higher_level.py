@@ -8,7 +8,7 @@ import chess
 from chipiron.environments.chess.board import BoardChi
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import BoardMessage
-from chipiron.utils.communication.player_game_messages import MoveMessage
+from chipiron.utils.is_dataclass import IsDataclass
 from .factory import create_game_player
 from .game_player import GamePlayer, game_player_computes_move_on_board_and_send_move_in_queue
 from .player_args import PlayerFactoryArgs
@@ -17,7 +17,11 @@ from .player_thread import PlayerProcess
 
 # FIXME double definition of Move functions!!
 class MoveFunction(Protocol):
-    def __call__(self, board: BoardChi, seed_: seed) -> None: ...
+    def __call__(
+            self,
+            board: BoardChi,
+            seed_: seed
+    ) -> None: ...
 
 
 def send_board_to_player_process_mailbox(
@@ -43,7 +47,7 @@ def create_player_observer(
         player_factory_args: PlayerFactoryArgs,
         player_color: chess.Color,
         distributed_players: bool,
-        main_thread_mailbox: queue.Queue[MoveMessage]
+        main_thread_mailbox: queue.Queue[IsDataclass]
 ) -> tuple[GamePlayer | PlayerProcess, MoveFunction]:
     """
 

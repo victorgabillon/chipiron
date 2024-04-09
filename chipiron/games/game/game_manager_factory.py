@@ -13,7 +13,6 @@ from chipiron.players.factory_higher_level import create_player_observer
 from chipiron.utils import path
 from chipiron.utils import seed
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage, extract_message_from_players
-from chipiron.utils.communication.player_game_messages import MoveMessage
 from chipiron.utils.is_dataclass import IsDataclass
 from .game import Game, ObservableGame, MoveFunction
 from .game_manager import GameManager
@@ -33,7 +32,7 @@ class GameManagerFactory:
             syzygy_table: SyzygyTable | None,
             game_manager_board_evaluator: IGameBoardEvaluator,
             output_folder_path: path | None,
-            main_thread_mailbox: queue.Queue[MoveMessage],
+            main_thread_mailbox: queue.Queue[IsDataclass],
     ) -> None:
         self.syzygy_table = syzygy_table
         self.output_folder_path = output_folder_path

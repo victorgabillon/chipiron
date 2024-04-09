@@ -4,9 +4,9 @@ from typing import Any
 from chipiron import scripts
 
 
-def destroy(root):
+def destroy(root: tk.Tk) -> bool:
     root.destroy()
-    return None
+    return True
 
 
 # TODO switch to pygame
@@ -173,16 +173,24 @@ def script_gui(
     return script_type, gui_args
 
 
-def play_against_chipiron(output, strength, color, chipi_algo):
+def play_against_chipiron(
+        output: tk.Tk,
+        strength: tk.StringVar,
+        color: tk.StringVar,
+        chipi_algo: tk.StringVar
+) -> bool:
     output['type'] = 'play_against_chipiron'
     output['strength'] = int(strength.get())
     output['color_human'] = str(color.get())
     output['chipi_algo'] = str(chipi_algo.get())
+    return True
 
 
-def watch_a_game(output):
+def watch_a_game(output: dict[str, Any]) -> bool:
     output['type'] = 'watch_a_game'
+    return True
 
 
-def visualize_a_tree(output):
+def visualize_a_tree(output: dict[str, Any]) -> bool:
     output['type'] = 'tree_visualization'
+    return True

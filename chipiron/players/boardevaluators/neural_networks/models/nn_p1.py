@@ -6,14 +6,17 @@ from chipiron.utils.chi_nn import ChiNN
 
 
 class NetP1(ChiNN):
-    def __init__(self, path_to_main_folder, relative_path_file):
+    def __init__(self) -> None:
         super(NetP1, self).__init__()
 
         self.transform_board_function = transform_board_pieces_one_side
         self.fc1 = nn.Linear(5, 1)
         self.tanh = nn.Tanh()
 
-    def forward(self, x):
+    def forward(
+            self,
+            x: torch.Tensor
+    ) -> torch.Tensor:
         # print('weewwwww',x)
 
         x = self.fc1(x)
@@ -21,7 +24,7 @@ class NetP1(ChiNN):
         #   print('weew',x)
         return x
 
-    def init_weights(self, file):
+    def init_weights(self, file: str) -> None:
         ran = torch.rand(5) * 0.001 + 0.03
         ran = ran.unsqueeze(0)
         self.fc1.weight = torch.nn.Parameter(ran)
@@ -30,7 +33,7 @@ class NetP1(ChiNN):
         for param in self.parameters():
             print(param.data)
 
-    def print_param(self):
+    def print_param(self) -> None:
         for layer, param in enumerate(self.parameters()):
             if layer == 0:
                 print('pawns', param.data[0, 0])
@@ -42,7 +45,7 @@ class NetP1(ChiNN):
             else:
                 print(param.data)
 
-    def print_input(self, input):
+    def print_input(self, input: torch.Tensor) -> None:
 
         print('pawns', input[0])
         print('knights', input[1])

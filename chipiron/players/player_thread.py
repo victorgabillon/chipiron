@@ -6,8 +6,7 @@ import chess
 from chipiron.environments.chess.board import BoardChi
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import BoardMessage
-from chipiron.utils.communication.player_game_messages import MoveMessage
-from chipiron.utils.is_dataclass import DataClass
+from chipiron.utils.is_dataclass import DataClass, IsDataclass
 from .factory import create_game_player
 from .game_player import GamePlayer, game_player_computes_move_on_board_and_send_move_in_queue
 from .player_args import PlayerFactoryArgs
@@ -17,14 +16,14 @@ from .player_args import PlayerFactoryArgs
 class PlayerProcess(multiprocessing.Process):
     game_player: GamePlayer
     queue_board: queue.Queue[DataClass]
-    queue_move: queue.Queue[MoveMessage]
+    queue_move: queue.Queue[IsDataclass]
     player_color: chess.Color
 
     def __init__(
             self,
             player_factory_args: PlayerFactoryArgs,
             queue_board: queue.Queue[DataClass],
-            queue_move: queue.Queue[MoveMessage],
+            queue_move: queue.Queue[IsDataclass],
             player_color: chess.Color
     ) -> None:
         # Call the Thread class's init function

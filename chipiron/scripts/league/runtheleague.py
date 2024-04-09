@@ -46,7 +46,7 @@ class RunTheLeagueScript:
 
         self.league.print_info()
 
-    def run(self):
+    def run(self) -> None:
         print('run the league')
         while True:
             self.league.run()

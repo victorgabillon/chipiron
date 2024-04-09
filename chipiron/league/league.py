@@ -1,4 +1,3 @@
-import datetime
 import os
 import random
 import shutil
@@ -6,7 +5,6 @@ from collections import deque
 from dataclasses import dataclass, field
 
 import matplotlib.pyplot as plt
-import yaml
 from sortedcollections import ValueSortedDict
 
 import chipiron as ch
@@ -15,16 +13,10 @@ import chipiron.games.match as match
 import chipiron.players as players
 from chipiron.games.match.match_factories import create_match_manager
 from chipiron.games.match.match_results import MatchReport
+from chipiron.games.match.match_results import MatchResults
 from chipiron.games.match.utils import fetch_match_games_args_convert_and_save
 from chipiron.players.utils import fetch_player_args_convert_and_save
 from chipiron.utils.small_tools import mkdir, path
-
-
-def new_player_joins(player):
-    league_folder = 'chipiron/runs/league/league_10000/new_players/'
-    player_filename = league_folder + '/player' + str(datetime.datetime.now()) + '.yaml'
-    with open(player_filename, 'w') as out_file:
-        out_file.write(yaml.dump(player.arg))
 
 
 @dataclass(slots=True)
@@ -39,7 +31,7 @@ class League:
     ELO_HISTORY_LENGTH: int = 500
     games_already_played: int = 0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         print(f'init league from folder: {self.folder_league}')
         self.check_for_players()
         path_logs_folder: path = os.path.join(self.folder_league, 'logs')
@@ -47,7 +39,7 @@ class League:
         path_logs_games_folder: path = os.path.join(path_logs_folder, 'games')
         mkdir(path_logs_games_folder)
 
-    def check_for_players(self):
+    def check_for_players(self) -> None:
         path: str = os.path.join(self.folder_league, 'new_players/')
         if os.path.exists(path):
             files = os.listdir(path)
@@ -134,7 +126,11 @@ class League:
 
         self.games_already_played += 1
 
-    def update_elo(self, match_results, path_logs_file):
+    def update_elo(
+            self,
+            match_results: MatchResults,
+            path_logs_file: path
+    ) -> None:
         # coded for one single game!!
         player_one_name_id = match_results.player_one_name_id
         elo_player_one = self.players_elo[player_one_name_id][0]
@@ -170,7 +166,7 @@ class League:
 
         self.update_elo_graph()
 
-    def update_elo_graph(self):
+    def update_elo_graph(self) -> None:
         fig = plt.figure(num=1, clear=True)
         ax = fig.add_subplot()
         for player_name, elo in self.players_elo.items():
@@ -181,7 +177,7 @@ class League:
         plt.legend()
         plt.savefig(self.folder_league + '/elo.plot.svg', format='svg')
 
-    def select_two_players(self):
+    def select_two_players(self) -> tuple[players.PlayerArgs, players.PlayerArgs]:
         if len(self.players_args) < 2:
             raise ValueError(
                 'Not enough players in the league. To add players put the yaml files in the folder "new players"')
@@ -189,12 +185,9 @@ class League:
         print('picked', picked)
         return picked[0], picked[1]
 
-    def save(self):
+    def save(self) -> None:
         pass
 
-    def check_to_discard_bad_player(self, player):
-        pass
-
-    def print_info(self):
+    def print_info(self) -> None:
         print('print info league')
         print('players', self.players_elo)
