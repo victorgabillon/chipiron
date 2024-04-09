@@ -1,5 +1,5 @@
 """
-factory_higher_level.py
+Module for creating player observers.
 """
 import multiprocessing
 import queue

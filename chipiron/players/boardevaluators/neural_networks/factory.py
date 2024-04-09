@@ -1,3 +1,7 @@
+"""
+Module for creating neural networks and neural network board evaluators.
+"""
+
 import os.path
 import sys
 
@@ -24,6 +28,16 @@ def get_folder_path_from(
         nn_type: str,
         nn_param_folder_name: str
 ) -> str:
+    """
+    Get the folder path for the neural network parameters.
+
+    Args:
+        nn_type (str): The type of neural network.
+        nn_param_folder_name (str): The folder name for the neural network parameters.
+
+    Returns:
+        str: The folder path for the neural network parameters.
+    """
     print('nn_type', nn_type)
     folder_path = os.path.join('data/players/board_evaluators/nn_pytorch/nn_' + nn_type, nn_param_folder_name)
     return folder_path
@@ -32,6 +46,15 @@ def get_folder_path_from(
 def get_nn_param_file_path_from(
         folder_path: str
 ) -> str:
+    """
+    Get the file path for the neural network parameters.
+
+    Args:
+        folder_path (str): The folder path for the neural network parameters.
+
+    Returns:
+        str: The file path for the neural network parameters.
+    """
     nn_param_file_path: str = os.path.join(folder_path, 'param.pt')
     return nn_param_file_path
 
@@ -40,6 +63,16 @@ def create_nn(
         args: NeuralNetBoardEvalArgs,
         create_file: bool = False
 ) -> ChiNN:
+    """
+    Create a neural network.
+
+    Args:
+        args (NeuralNetBoardEvalArgs): The arguments for creating the neural network.
+        create_file (bool, optional): Whether to create the parameter file if it doesn't exist. Defaults to False.
+
+    Returns:
+        ChiNN: The created neural network.
+    """
     folder_path = get_folder_path_from(
         nn_type=args.nn_type,
         nn_param_folder_name=args.nn_param_folder_name
@@ -77,6 +110,16 @@ def create_nn_board_eval(
         arg: NeuralNetBoardEvalArgs,
         create_file: bool = False
 ) -> NNBoardEvaluator:
+    """
+    Create a neural network board evaluator.
+
+    Args:
+        arg (NeuralNetBoardEvalArgs): The arguments for creating the neural network board evaluator.
+        create_file (bool, optional): Whether to create the parameter file if it doesn't exist. Defaults to False.
+
+    Returns:
+        NNBoardEvaluator: The created neural network board evaluator.
+    """
     net = create_nn(arg, create_file=create_file)
     output_and_value_converter: OutputValueConverter = OneDToValueWhite(point_of_view=net.evaluation_point_of_view)
     representation_factory: Representation364Factory = Representation364Factory()

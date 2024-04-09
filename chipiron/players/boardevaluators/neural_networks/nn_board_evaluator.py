@@ -1,3 +1,6 @@
+"""
+Module for the Neural Network Board Evaluator
+"""
 import chess
 import torch
 
@@ -10,7 +13,14 @@ from chipiron.utils.chi_nn import ChiNN
 
 
 class NNBoardEvaluator:
-    """ The Generic Neural network class for board evaluation"""
+    """
+    The Generic Neural network class for board evaluation
+
+    Attributes:
+        net (ChiNN): The neural network model
+        output_and_value_converter (OutputValueConverter): The converter for output values
+        board_to_input_converter (BoardToInput): The converter for board to input tensor
+    """
 
     net: ChiNN
     output_and_value_converter: OutputValueConverter
@@ -22,6 +32,14 @@ class NNBoardEvaluator:
             output_and_value_converter: OutputValueConverter,
             board_to_input_converter: BoardToInput
     ) -> None:
+        """
+        Initialize the NNBoardEvaluator
+
+        Args:
+            net (ChiNN): The neural network model
+            output_and_value_converter (OutputValueConverter): The converter for output values
+            board_to_input_converter (BoardToInput): The converter for board to input tensor
+        """
         self.net = net
         self.my_scripted_model = torch.jit.script(net)
         self.output_and_value_converter = output_and_value_converter
@@ -31,6 +49,15 @@ class NNBoardEvaluator:
             self,
             board: boards.BoardChi
     ) -> float:
+        """
+        Evaluate the value for the white player
+
+        Args:
+            board (BoardChi): The chess board
+
+        Returns:
+            float: The value for the white player
+        """
         self.my_scripted_model.eval()
         input_layer: torch.Tensor = self.board_to_input_converter.convert(board=board)
         torch.no_grad()
@@ -47,6 +74,16 @@ class NNBoardEvaluator:
             input_layer: torch.Tensor,
             color_to_play: chess.Color
     ) -> BoardEvaluation:
+        """
+        Evaluate the board position
+
+        Args:
+            input_layer (torch.Tensor): The input tensor representing the board position
+            color_to_play (chess.Color): The color to play
+
+        Returns:
+            BoardEvaluation: The evaluation of the board position
+        """
         self.my_scripted_model.eval()
         torch.no_grad()
 
