@@ -1,16 +1,23 @@
+"""
+Module to transform the board into a tensor representation.
+"""
 import chess
 import torch
 
 from chipiron.environments.chess.board.board import BoardChi
 
 
-# This code is supposed to slowly be turned into the cmasses fro board and node represenatition
-def transform_board_pieces_one_side(
-        board: BoardChi,
-        requires_grad_: bool
-) -> torch.Tensor:
-    # normalisation of the board so that it is white turn (possible color inversion if it was black's turn)
+def transform_board_pieces_one_side(board: BoardChi, requires_grad_: bool) -> torch.Tensor:
+    """
+    Transform the board pieces for one side into a tensor representation.
 
+    Args:
+        board (BoardChi): The chess board.
+        requires_grad_ (bool): Whether the tensor requires gradient.
+
+    Returns:
+        torch.Tensor: The transformed board pieces tensor.
+    """
     if board.turn == chess.BLACK:
         color_turn = board.turn
         color_not_turn = chess.WHITE
@@ -20,7 +27,6 @@ def transform_board_pieces_one_side(
 
     transform = torch.zeros(5)
 
-    # print('ol', board.chessBoard)
     transform[0] = bin(board.board.pawns & board.board.occupied_co[color_turn]).count('1') - bin(
         board.board.pawns & board.board.occupied_co[color_not_turn]).count('1')
     transform[1] = bin(board.board.knights & board.board.occupied_co[color_turn]).count('1') - bin(
@@ -38,12 +44,17 @@ def transform_board_pieces_one_side(
     return transform
 
 
-def transform_board_pieces_two_sides(
-        board: BoardChi,
-        requires_grad_: bool
-) -> torch.Tensor:
-    # normalisation of the board so that it is white turn (possible color inversion if it was black's turn)
+def transform_board_pieces_two_sides(board: BoardChi, requires_grad_: bool) -> torch.Tensor:
+    """
+    Transform the board pieces for both sides into a tensor representation.
 
+    Args:
+        board (BoardChi): The chess board.
+        requires_grad_ (bool): Whether the tensor requires gradient.
+
+    Returns:
+        torch.Tensor: The transformed board pieces tensor.
+    """
     if board.turn == chess.BLACK:
         color_turn = board.turn
         color_not_turn = chess.WHITE
@@ -53,7 +64,6 @@ def transform_board_pieces_two_sides(
 
     transform = torch.zeros(10, requires_grad=requires_grad_)
 
-    # print('ol', board.chessBoard)
     transform[0] = bin(board.board.pawns & board.board.occupied_co[color_turn]).count('1')
     transform[1] = bin(board.board.knights & board.board.occupied_co[color_turn]).count('1')
     transform[2] = bin(board.board.bishops & board.board.occupied_co[color_turn]).count('1')
@@ -74,6 +84,19 @@ def get_tensor_from_tensors(
         tensor_castling_black: torch.Tensor,
         color_to_play: chess.Color
 ) -> torch.Tensor:
+    """
+    Get the final tensor representation from individual tensors.
+
+    Args:
+        tensor_white (torch.Tensor): The tensor representation for white pieces.
+        tensor_black (torch.Tensor): The tensor representation for black pieces.
+        tensor_castling_white (torch.Tensor): The tensor representation for white castling.
+        tensor_castling_black (torch.Tensor): The tensor representation for black castling.
+        color_to_play (chess.Color): The color to play.
+
+    Returns:
+        torch.Tensor: The final tensor representation.
+    """
     if color_to_play == chess.WHITE:
         tensor = tensor_white - tensor_black
     else:
@@ -86,60 +109,3 @@ def get_tensor_from_tensors(
 
     tensor_2 = torch.cat((tensor, tensor_castling), 0)
     return tensor_2
-
-#
-# def transform_board_pieces_square_old(
-#         node,
-#         requires_grad_: bool
-# ) -> torch.Tensor:
-#     board = node.board
-#     # normalisation of the board so that it is white turn (possible color inversion if it was black's turn)
-#     inversion = 1
-#     if board.turn == chess.BLACK:
-#         inversion = -1
-#
-#     transform = torch.zeros(384, requires_grad=requires_grad_)
-#
-#     for square in range(64):
-#         piece_type = board.piece_type_at(square)
-#         piece_color = board.color_at(square)
-#         if piece_type is not None:
-#             # print('p', square, piece.color, type(piece.piece_type))
-#             piece_code = (piece_type - 1)
-#             # print('dp', 64 * piece_code + square, 2 * piece.color - 1)
-#             if piece_color == chess.BLACK:
-#                 square_index = chess.square_mirror(square)
-#             else:
-#                 square_index = square
-#             index = 64 * piece_code + square_index
-#             transform[index] += (2 * piece_color - 1) * inversion
-#
-#         # transform[64 * piece_code + square] = 2 * piece.color - 1
-#     return transform
-#
-#
-# def transform_board_pieces_square_old2(node, requires_grad_):
-#     # print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
-#     board = node.board
-#     # normalisation of the board so that it is white turn (possible color inversion if it was black's turn)
-#     inversion = 1
-#     if board.turn == chess.BLACK:
-#         inversion = -1
-#
-#     transform = torch.zeros(384, requires_grad=requires_grad_)
-#
-#     for square in range(64):
-#         piece = board.piece_at(square)
-#         if piece:
-#             # print('p', square, piece.color, type(piece.piece_type))
-#             piece_code = (piece.piece_type - 1)
-#             # print('dp', 64 * piece_code + square, 2 * piece.color - 1)
-#             if piece.color == chess.BLACK:
-#                 square_index = chess.square_mirror(square)
-#             else:
-#                 square_index = square
-#             index = 64 * piece_code + square_index
-#             transform[index] += (2 * piece.color - 1) * inversion
-#
-#         # transform[64 * piece_code + square] = 2 * piece.color - 1
-#     return transform

@@ -1,3 +1,6 @@
+"""
+Module for the GameManagerFactory class.
+"""
 import queue
 
 import chess

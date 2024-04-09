@@ -1,3 +1,7 @@
+"""
+Module that contains the classes for the exploration data of a tree node.
+"""
+
 import typing
 from dataclasses import dataclass, field
 
@@ -9,6 +13,16 @@ if typing.TYPE_CHECKING:
 
 @dataclass
 class NodeExplorationData:
+    """
+    Represents the exploration data for a tree node.
+
+    Attributes:
+        tree_node (TreeNode): The tree node associated with the exploration data.
+        index (float | None): The index value associated with the node. Defaults to None.
+
+    Methods:
+        dot_description(): Returns a string representation of the exploration data for dot visualization.
+    """
     tree_node: 'TreeNode'
     index: float | None = None
 
@@ -18,7 +32,16 @@ class NodeExplorationData:
 
 @dataclass
 class RecurZipfQuoolExplorationData(NodeExplorationData):
-    # the 'proba' associated by recursively multiplying 1/rank of the node with the max zipf_factor of the parents
+    """
+    Represents the exploration data for a tree node with recursive zipf-quool factor.
+
+    Attributes:
+        zipf_factored_proba (float | None): The probability associated with the node, factored by zipf-quool factor.
+            Defaults to None.
+
+    Methods:
+        dot_description(): Returns a string representation of the exploration data for dot visualization.
+    """
     zipf_factored_proba: float | None = None
 
     def dot_description(self) -> str:
@@ -27,6 +50,16 @@ class RecurZipfQuoolExplorationData(NodeExplorationData):
 
 @dataclass
 class MinMaxPathValue(NodeExplorationData):
+    """
+    Represents the exploration data for a tree node with minimum and maximum path values.
+
+    Attributes:
+        min_path_value (float | None): The minimum path value associated with the node. Defaults to None.
+        max_path_value (float | None): The maximum path value associated with the node. Defaults to None.
+
+    Methods:
+        dot_description(): Returns a string representation of the exploration data for dot visualization.
+    """
     min_path_value: float | None = None
     max_path_value: float | None = None
 
@@ -36,6 +69,15 @@ class MinMaxPathValue(NodeExplorationData):
 
 @dataclass
 class IntervalExplo(NodeExplorationData):
+    """
+    Represents the exploration data for a tree node with an interval.
+
+    Attributes:
+        interval (Interval | None): The interval associated with the node. Defaults to None.
+
+    Methods:
+        dot_description(): Returns a string representation of the exploration data for dot visualization.
+    """
     interval: Interval | None = field(default_factory=Interval)
 
     def dot_description(self) -> str:
@@ -47,6 +89,18 @@ class IntervalExplo(NodeExplorationData):
 
 @dataclass
 class MaxDepthDescendants(NodeExplorationData):
+    """
+    Represents the exploration data for a tree node with maximum depth of descendants.
+
+    Attributes:
+        max_depth_descendants (int): The maximum depth of descendants associated with the node. Defaults to 0.
+
+    Methods:
+        update_from_child(child_max_depth_descendants: int) -> bool:
+            Updates the maximum depth of descendants based on the maximum depth of descendants of a child node.
+            Returns True if the maximum depth of descendants has changed, False otherwise.
+        dot_description(): Returns a string representation of the exploration data for dot visualization.
+    """
     max_depth_descendants: int = 0
 
     def update_from_child(

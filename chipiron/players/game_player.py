@@ -1,5 +1,5 @@
 """
-game_player.py
+Module for the GamePlayer class.
 """
 import copy
 import queue
@@ -31,36 +31,41 @@ class GamePlayer:
 
     @property
     def player(
-            self
-    ) -> Player:
-        return self._player
-
-    def select_move(
-                self,
-                board: BoardChi,
-                seed_: seed | None = None
-        ) -> MoveRecommendation:
-            """Selects the best move to play based on the current board position.
-
-            Args:
-                board (BoardChi): The current board position.
-                seed_ (seed | None, optional): The seed value for randomization. Defaults to None.
-
-            Raises:
-                Exception: If there are no legal moves in the current position.
+                self
+        ) -> Player:
+            """Return the player object.
 
             Returns:
-                MoveRecommendation: The recommended move to play.
+                Player: The player object.
             """
-            all_legal_moves = list(board.legal_moves)
-            if not all_legal_moves:
-                raise Exception('No legal moves in this position')
-            assert seed_ is not None
-            best_move: MoveRecommendation = self._player.select_move(
-                board=board,
-                seed_=seed_
-            )
-            return best_move
+            return self._player
+
+    def select_move(
+            self,
+            board: BoardChi,
+            seed_: seed | None = None
+    ) -> MoveRecommendation:
+        """Selects the best move to play based on the current board position.
+
+        Args:
+            board (BoardChi): The current board position.
+            seed_ (seed | None, optional): The seed value for randomization. Defaults to None.
+
+        Raises:
+            Exception: If there are no legal moves in the current position.
+
+        Returns:
+            MoveRecommendation: The recommended move to play.
+        """
+        all_legal_moves = list(board.legal_moves)
+        if not all_legal_moves:
+            raise Exception('No legal moves in this position')
+        assert seed_ is not None
+        best_move: MoveRecommendation = self._player.select_move(
+            board=board,
+            seed_=seed_
+        )
+        return best_move
 
 
 def game_player_computes_move_on_board_and_send_move_in_queue(

@@ -1,3 +1,7 @@
+"""
+This module contains functions for creating match managers in the Chipiron game framework.
+"""
+
 import multiprocessing
 import queue
 
@@ -28,6 +32,21 @@ def create_match_manager(
         output_folder_path: path | None = None,
         gui: bool = False
 ) -> MatchManager:
+    """
+    Create a match manager for running matches between two players.
+
+    Args:
+        args_match (MatchSettingsArgs): The match settings arguments.
+        args_player_one (players.PlayerArgs): The arguments for player one.
+        args_player_two (players.PlayerArgs): The arguments for player two.
+        args_game (game.GameArgs): The game arguments.
+        seed (int | None, optional): The seed for random number generation. Defaults to None.
+        output_folder_path (path | None, optional): The output folder path. Defaults to None.
+        gui (bool, optional): Flag indicating whether to enable GUI. Defaults to False.
+
+    Returns:
+        MatchManager: The created match manager.
+    """
     main_thread_mailbox: queue.Queue[IsDataclass] = multiprocessing.Manager().Queue()
 
     # Creation of the Syzygy table for perfect play in low pieces cases, needed by the GameManager
@@ -76,6 +95,18 @@ def create_match_manager_from_args(
         testing: bool = False,
         gui: bool = False
 ) -> MatchManager:
+    """
+    Create a match manager from the given arguments.
+
+    Args:
+        args (MatchArgs): The match arguments.
+        profiling (bool, optional): Flag indicating whether to enable profiling. Defaults to False.
+        testing (bool, optional): Flag indicating whether to enable testing. Defaults to False.
+        gui (bool, optional): Flag indicating whether to enable GUI. Defaults to False.
+
+    Returns:
+        MatchManager: The created match manager.
+    """
     player_one_args: players.PlayerArgs
     player_two_args: players.PlayerArgs
     player_one_args, player_two_args = fetch_two_players_args_convert_and_save(

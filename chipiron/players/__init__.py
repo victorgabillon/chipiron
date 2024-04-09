@@ -1,3 +1,6 @@
+"""
+Module for players in the game.
+"""
 from .game_player import GamePlayer
 from .move_selector.stockfish import StockfishPlayer
 from .player import Player

@@ -1,5 +1,5 @@
 """
-player factory
+Module for creating players.
 """
 
 import random

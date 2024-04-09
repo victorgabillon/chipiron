@@ -1,3 +1,7 @@
+"""
+Module in charge of managing the game. It is the main class that will be used to play a game.
+"""
+
 import logging
 import os
 import pickle
@@ -23,21 +27,14 @@ from .game_args import GameArgs
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s:%(name)s:%(message)s')
-# file_handler = logging.FileHandler('sample.log')
-# file_handler.setLevel(logging.DEBUG)
-# file_handler.setFormatter(formatter)
 stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(formatter)
-# logger.addHandler(file_handler)
 logger.addHandler(stream_handler)
-
-
-# todo a wrapper for chess.white chess.black
 
 
 class GameManager:
     """
-    Objet in charge of playing one game
+    Object in charge of playing one game
     """
 
     game: ObservableGame
@@ -94,7 +91,7 @@ class GameManager:
             Returns:
                 tuple[float, float]: A tuple containing the evaluation scores.
             """
-            return self.display_board_evaluator.evaluate(self.game.board)  # TODO DON'T LIKE THIS writing
+            return self.display_board_evaluator.evaluate(self.game.board)
 
     def play_one_move(
                 self,
@@ -125,6 +122,12 @@ class GameManager:
     def play_one_game(
             self
     ) -> GameReport:
+        """
+        Play one game.
+
+        Returns:
+            GameReport: The report of the game.
+        """
         board = self.game.board
         self.set_new_game(self.args.starting_position)
 
@@ -171,7 +174,6 @@ class GameManager:
                 if move_message.corresponding_board == board.fen() and \
                         self.game.playing_status.is_play() and \
                         message.player_name == self.player_color_to_id[board.turn]:
-                    # TODO THINK! HOW TO DEAL with premoves if we dont know the board in advance?
                     print(f'play a move {move} at {board} {self.game.board.board.fen()}')
                     self.play_one_move(move)
                     print(f'now board is  {self.game.board}')
@@ -188,16 +190,8 @@ class GameManager:
                           f'message.player_name == self.player_color_to_id[board.turn] {message.player_name == self.player_color_to_id[board.turn]}'
                           )
                     print(f'{message.player_name},{self.player_color_to_id[board.turn]}')
-                    # put back in the queue
-                    # self.main_thread_mailbox.put(message)
-                if message.evaluation is not None:
-                    self.display_board_evaluator.add_evaluation(
-                        player_color=message.color_to_play,
-                        evaluation=message.evaluation)
-                logger.debug(f'len main tread mailbox {self.main_thread_mailbox.qsize()}')
             case GameStatusMessage():
                 game_status_message: GameStatusMessage = message
-                # update game status
                 if game_status_message.status == PlayingStatus.PLAY:
                     self.game.play()
                 if game_status_message.status == PlayingStatus.PAUSE:

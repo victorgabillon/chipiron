@@ -11,6 +11,12 @@ import chipiron.environments.chess.board as boards
 # TODO are we calling this?
 @dataclass
 class StockfishBoardEvalArgs:
+    """Represents the arguments for the Stockfish board evaluator.
+
+    Attributes:
+        depth (int): The depth of the search algorithm.
+        time_limit (float): The time limit for the search algorithm.
+    """
     depth: int = 20
     time_limit: float = 0.1
 

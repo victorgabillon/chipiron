@@ -1,3 +1,6 @@
+"""
+Module that contains the logic to compute the exploration index of a node in a tree.
+"""
 import math
 from typing import Protocol
 
@@ -12,11 +15,25 @@ from chipiron.utils.small_tools import Interval, intersect_intervals, distance_n
 
 
 class NodeExplorationIndexManager(Protocol):
+    """
+    A protocol for managing the exploration indices of nodes in a tree.
+
+    This protocol defines methods for updating the exploration indices of nodes in a tree.
+
+    Args:
+        Protocol (type): The base protocol type.
+    """
 
     def update_root_node_index(
             self,
             root_node: AlgorithmNode,
     ) -> None:
+        """
+        Updates the exploration index of the root node in the tree.
+
+        Args:
+            root_node (AlgorithmNode): The root node of the tree.
+        """
         ...
 
     def update_node_indices(
@@ -26,6 +43,15 @@ class NodeExplorationIndexManager(Protocol):
             tree: trees.MoveAndValueTree,
             child_rank: int,
     ) -> None:
+        """
+        Updates the exploration index of a child node in the tree.
+
+        Args:
+            child_node (AlgorithmNode): The child node to update.
+            parent_node (AlgorithmNode): The parent node of the child node.
+            tree (trees.MoveAndValueTree): The tree containing the nodes.
+            child_rank (int): The rank of the child node among its siblings.
+        """
         ...
 
 
@@ -35,6 +61,12 @@ class NullNodeExplorationIndexManager(NodeExplorationIndexManager):
             self,
             root_node: AlgorithmNode,
     ) -> None:
+        """
+        Updates the exploration index of the root node in the tree.
+
+        Args:
+            root_node (AlgorithmNode): The root node of the tree.
+        """
         ...
 
     def update_node_indices(
@@ -44,6 +76,15 @@ class NullNodeExplorationIndexManager(NodeExplorationIndexManager):
             tree: trees.MoveAndValueTree,
             child_rank: int,
     ) -> None:
+        """
+        Updates the exploration index of a child node in the tree.
+
+        Args:
+            child_node (AlgorithmNode): The child node to update.
+            parent_node (AlgorithmNode): The parent node of the child node.
+            tree (trees.MoveAndValueTree): The tree containing the nodes.
+            child_rank (int): The rank of the child node among its siblings.
+        """
         raise Exception('should not be raised')
 
 
@@ -53,7 +94,12 @@ class UpdateIndexGlobalMinChange:
             self,
             root_node: AlgorithmNode,
     ) -> None:
+        """
+        Updates the exploration index of the root node in the tree using the global minimum change strategy.
 
+        Args:
+            root_node (AlgorithmNode): The root node of the tree.
+        """
         assert isinstance(root_node.exploration_index_data, MinMaxPathValue)
         root_value: float = root_node.minmax_evaluation.get_value_white()
 
@@ -68,6 +114,15 @@ class UpdateIndexGlobalMinChange:
             tree: trees.MoveAndValueTree,
             child_rank: int,
     ) -> None:
+        """
+        Updates the exploration index of a child node in the tree using the global minimum change strategy.
+
+        Args:
+            child_node (AlgorithmNode): The child node to update.
+            parent_node (AlgorithmNode): The parent node of the child node.
+            tree (trees.MoveAndValueTree): The tree containing the nodes.
+            child_rank (int): The rank of the child node among its siblings.
+        """
         assert isinstance(parent_node.exploration_index_data, MinMaxPathValue)
         assert isinstance(child_node.exploration_index_data, MinMaxPathValue)
 
@@ -118,7 +173,12 @@ class UpdateIndexZipfFactoredProba:
             self,
             root_node: AlgorithmNode,
     ) -> None:
+        """
+        Updates the exploration index of the root node in the tree using the Zipf factored probability strategy.
 
+        Args:
+            root_node (AlgorithmNode): The root node of the tree.
+        """
         assert isinstance(root_node.exploration_index_data, RecurZipfQuoolExplorationData)
 
         root_node.exploration_index_data.zipf_factored_proba = 1
@@ -131,6 +191,15 @@ class UpdateIndexZipfFactoredProba:
             tree: trees.MoveAndValueTree,
             child_rank: int,
     ) -> None:
+        """
+        Updates the exploration index of a child node in the tree using the Zipf factored probability strategy.
+
+        Args:
+            child_node (AlgorithmNode): The child node to update.
+            parent_node (AlgorithmNode): The parent node of the child node.
+            tree (trees.MoveAndValueTree): The tree containing the nodes.
+            child_rank (int): The rank of the child node among its siblings.
+        """
         assert isinstance(parent_node.exploration_index_data, RecurZipfQuoolExplorationData)
 
         parent_zipf_factored_proba: float | None = parent_node.exploration_index_data.zipf_factored_proba
@@ -164,7 +233,12 @@ class UpdateIndexLocalMinChange:
             self,
             root_node: AlgorithmNode,
     ) -> None:
+        """
+        Updates the exploration index of the root node in the tree using the local minimum change strategy.
 
+        Args:
+            root_node (AlgorithmNode): The root node of the tree.
+        """
         assert isinstance(root_node.exploration_index_data, IntervalExplo)
 
         root_node.exploration_index_data.index = 0
@@ -180,7 +254,15 @@ class UpdateIndexLocalMinChange:
             tree: trees.MoveAndValueTree,
             child_rank: int,
     ) -> None:
+        """
+        Updates the exploration index of a child node in the tree using the local minimum change strategy.
 
+        Args:
+            child_node (AlgorithmNode): The child node to update.
+            parent_node (AlgorithmNode): The parent node of the child node.
+            tree (trees.MoveAndValueTree): The tree containing the nodes.
+            child_rank (int): The rank of the child node among its siblings.
+        """
         assert isinstance(parent_node.exploration_index_data, IntervalExplo)
 
         assert parent_node.exploration_index_data is not None
@@ -220,6 +302,7 @@ class UpdateIndexLocalMinChange:
                         local_index = distance_number_to_interval(value=child_white_value,
                                                                   interval=inter_level_interval)
                     else:
+                        ...
                         local_index = None
                 if parent_node.tree_node.board.turn == chess.BLACK:
                     best_child = parent_node.minmax_evaluation.best_child()

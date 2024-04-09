@@ -1,3 +1,6 @@
+"""
+Module for creating board evaluators.
+"""
 import sys
 from dataclasses import dataclass
 from typing import Any
@@ -13,10 +16,32 @@ from .board_evaluator import BoardEvaluator, ObservableBoardEvaluator, GameBoard
 
 
 class TableBaseArgs:
+    """A class representing the arguments for the TableBase class.
+
+    This class provides a template for the arguments that can be passed to the TableBase class.
+    It serves as a base class for defining specific argument classes for different implementations of the TableBase class.
+
+    Attributes:
+        None
+
+    Methods:
+        None
+    """
     ...
 
 
+
 class BasicEvaluationArgs:
+    """A class representing the arguments for basic evaluation.
+
+    This class provides a way to store and access the arguments needed for basic evaluation.
+
+    Attributes:
+        None
+
+    Methods:
+        None
+    """
     ...
 
 
@@ -25,12 +50,31 @@ BoardEvalArgs = NeuralNetBoardEvalArgs | StockfishBoardEvalArgs | TableBaseArgs 
 
 @dataclass
 class BoardEvalArgsWrapper:
+    """A wrapper class for the BoardEvalArgs object.
+
+    This class provides a convenient way to access the board_evaluator attribute of the BoardEvalArgs object.
+
+    Attributes:
+        board_evaluator (BoardEvalArgs): The BoardEvalArgs object to be wrapped.
+    """
     board_evaluator: BoardEvalArgs
 
 
 def create_board_evaluator(
         args_board_evaluator: BoardEvalArgs,
 ) -> BoardEvaluator:
+    """Create a board evaluator based on the given arguments.
+
+    Args:
+        args_board_evaluator (BoardEvalArgs): The arguments for the board evaluator.
+
+    Returns:
+        BoardEvaluator: The created board evaluator.
+
+    Raises:
+        SystemExit: If the given arguments do not match any supported board evaluator.
+
+    """
     board_evaluator: BoardEvaluator
     match args_board_evaluator:
         case StockfishBoardEvalArgs():
@@ -47,8 +91,17 @@ def create_board_evaluator(
     return board_evaluator
 
 
-def create_game_board_evaluator_not_observable(
-) -> GameBoardEvaluator:
+def create_game_board_evaluator_not_observable() -> GameBoardEvaluator:
+    """Create a game board evaluator that is not observable.
+
+    This function creates a game board evaluator that consists of two board evaluators:
+    - board_evaluator_stock: A board evaluator created using the StockfishBoardEvalArgs.
+    - board_evaluator_chi: A board evaluator created using the board evaluator configuration
+      specified in the 'base_chipiron_board_eval.yaml' file.
+
+    Returns:
+        GameBoardEvaluator: The created game board evaluator.
+    """
     board_evaluator_stock: BoardEvaluator = create_board_evaluator(
         args_board_evaluator=StockfishBoardEvalArgs()
     )
@@ -63,10 +116,6 @@ def create_game_board_evaluator_not_observable(
             args_board_evaluator=chi_board_eval_args.board_evaluator
         )
 
-    # board_evaluator_table: BoardEvaluator = create_board_evaluator(
-    #    args_board_evaluator=TableBaseArgs()
-    # )
-
     game_board_evaluator: GameBoardEvaluator = GameBoardEvaluator(
         board_evaluator_stock=board_evaluator_stock,
         board_evaluator_chi=board_evaluator_chi
@@ -77,6 +126,15 @@ def create_game_board_evaluator_not_observable(
 def create_game_board_evaluator(
         gui: bool
 ) -> IGameBoardEvaluator:
+    """Create a game board evaluator based on the given GUI flag.
+
+    Args:
+        gui (bool): A flag indicating whether the GUI is enabled or not.
+
+    Returns:
+        IGameBoardEvaluator: An instance of the game board evaluator.
+
+    """
     game_board_evaluator_res: IGameBoardEvaluator
     game_board_evaluator: GameBoardEvaluator = create_game_board_evaluator_not_observable()
     if gui:

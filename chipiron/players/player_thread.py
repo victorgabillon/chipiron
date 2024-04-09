@@ -1,3 +1,6 @@
+"""
+player_thread.py
+"""
 import multiprocessing
 import queue
 
@@ -14,10 +17,22 @@ from .player_args import PlayerFactoryArgs
 
 # A class that extends the Thread class
 class PlayerProcess(multiprocessing.Process):
-    game_player: GamePlayer
-    queue_board: queue.Queue[DataClass]
-    queue_move: queue.Queue[IsDataclass]
-    player_color: chess.Color
+    """A class representing a player process.
+
+    This class extends the `multiprocessing.Process` class and is responsible for running a player in a separate process.
+
+    Attributes:
+        game_player (GamePlayer): The game player object.
+        queue_board (queue.Queue[DataClass]): The queue for receiving board messages.
+        queue_move (queue.Queue[IsDataclass]): The queue for sending move messages.
+        player_color (chess.Color): The color of the player.
+
+    Args:
+        player_factory_args (PlayerFactoryArgs): The arguments for creating the game player.
+        queue_board (queue.Queue[DataClass]): The queue for receiving board messages.
+        queue_move (queue.Queue[IsDataclass]): The queue for sending move messages.
+        player_color (chess.Color): The color of the player.
+    """
 
     def __init__(
             self,
@@ -26,6 +41,15 @@ class PlayerProcess(multiprocessing.Process):
             queue_move: queue.Queue[IsDataclass],
             player_color: chess.Color
     ) -> None:
+        """Initialize the PlayerThread object.
+
+        Args:
+            player_factory_args (PlayerFactoryArgs): The arguments required to create the player.
+            queue_board (queue.Queue[DataClass]): The queue for receiving board data.
+            queue_move (queue.Queue[IsDataclass]): The queue for sending move data.
+            player_color (chess.Color): The color of the player.
+
+        """
         # Call the Thread class's init function
         multiprocessing.Process.__init__(self, daemon=False)
         self._stop_event = multiprocessing.Event()
@@ -42,10 +66,22 @@ class PlayerProcess(multiprocessing.Process):
 
     # Override the run() function of Thread class
     def run(self) -> None:
-        print('Started player thread : ', self.game_player)
+        """
+        Executes the player thread.
+
+        This method is called when the player thread is started. It continuously checks for messages in the message queue
+        and handles them accordingly. If a message is a `BoardMessage`, it retrieves the board and seed from the message,
+        computes the move for the board using the `game_player`, and sends the move to the move queue. If the message is
+        not a `BoardMessage`, it simply prints the message.
+
+        Note: This method runs indefinitely until the thread is stopped externally.
+
+        Returns:
+            None
+        """
+        print('Started player thread:', self.game_player)
 
         while True:
-
             try:
                 message = self.queue_board.get(False)
             except queue.Empty:
@@ -56,7 +92,7 @@ class PlayerProcess(multiprocessing.Process):
                     board_message: BoardMessage = message
                     board: BoardChi = board_message.board
                     seed_: seed | None = board_message.seed
-                    print('player thread got ', board)
+                    print('player thread got', board)
                     assert seed_ is not None
 
                     # the game_player computes the move for the board and sends the move in the move queue
@@ -66,7 +102,6 @@ class PlayerProcess(multiprocessing.Process):
                         queue_move=self.queue_move,
                         seed_=seed_
                     )
-
                 else:
                     print(f'opopopopopopopopopdddddddddddddddddsssssssssss, {message}')
 
