@@ -56,6 +56,15 @@ def create_player_from_file(
         player_args_file: path,
         random_generator: random.Random
 ) -> Player:
+    """Create a player object from a file.
+
+    Args:
+        player_args_file (path): The path to the player arguments file.
+        random_generator (random.Random): The random number generator.
+
+    Returns:
+        Player: The created player object.
+    """
     args: PlayerArgs = fetch_player_args_convert_and_save(
         file_name_player=player_args_file
     )
@@ -81,16 +90,17 @@ def create_player(
         syzygy: SyzygyTable | None,
         random_generator: random.Random
 ) -> Player:
-    """
-    Creates a player
+    """Create a player object.
+
+    This function creates a player object based on the provided arguments.
 
     Args:
-        args:  players args
-        syzygy:
-        random_generator: the random generator
+        args (PlayerArgs): The arguments for creating the player.
+        syzygy (SyzygyTable | None): The Syzygy table to be used by the player, or None if not available.
+        random_generator (random.Random): The random number generator to be used by the player.
 
-    Returns: the player
-
+    Returns:
+        Player: The created player object.
     """
     print('create player')
     main_move_selector: move_selector.MoveSelector = move_selector.create_main_move_selector(
@@ -112,6 +122,17 @@ def create_game_player(
         player_factory_args: PlayerFactoryArgs,
         player_color: chess.Color
 ) -> GamePlayer:
+    """Create a game player.
+
+    This function creates a game player using the provided player factory arguments and player color.
+
+    Args:
+        player_factory_args (PlayerFactoryArgs): The arguments for creating the player.
+        player_color (chess.Color): The color of the player.
+
+    Returns:
+        GamePlayer: The created game player.
+    """
     syzygy_table: table_base.SyzygyTable | None = table_base.create_syzygy()
     random_generator = random.Random(player_factory_args.seed)
     player: Player = create_player(

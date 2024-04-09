@@ -28,12 +28,21 @@ class GameManagerFactory:
     subscribers: list[queue.Queue[IsDataclass]]
 
     def __init__(
-            self,
-            syzygy_table: SyzygyTable | None,
-            game_manager_board_evaluator: IGameBoardEvaluator,
-            output_folder_path: path | None,
-            main_thread_mailbox: queue.Queue[IsDataclass],
+        self,
+        syzygy_table: SyzygyTable | None,
+        game_manager_board_evaluator: IGameBoardEvaluator,
+        output_folder_path: path | None,
+        main_thread_mailbox: queue.Queue[IsDataclass],
     ) -> None:
+        """
+        Constructor for the GameManagerFactory class.
+
+        Args:
+            syzygy_table (SyzygyTable | None): The syzygy table used for endgame tablebase lookups.
+            game_manager_board_evaluator (IGameBoardEvaluator): The game board evaluator used for evaluating game positions.
+            output_folder_path (path | None): The path to the output folder where game data will be saved.
+            main_thread_mailbox (queue.Queue[IsDataclass]): The mailbox used for communication between processes.
+        """
         self.syzygy_table = syzygy_table
         self.output_folder_path = output_folder_path
         self.game_manager_board_evaluator = game_manager_board_evaluator
@@ -41,11 +50,21 @@ class GameManagerFactory:
         self.subscribers = []
 
     def create(
-            self,
-            args_game_manager: GameArgs,
-            player_color_to_factory_args: dict[chess.Color, PlayerFactoryArgs],
-            game_seed: seed
+        self,
+        args_game_manager: GameArgs,
+        player_color_to_factory_args: dict[chess.Color, PlayerFactoryArgs],
+        game_seed: seed
     ) -> GameManager:
+        """ 
+        Create a GameManager with the given arguments
+        Args:
+            args_game_manager (GameArgs): the arguments of the game manager
+            player_color_to_factory_args (dict[chess.Color, PlayerFactoryArgs]): the arguments of the players
+            game_seed (int): the seed of the game
+
+        Returns:    
+            the created GameManager
+        """
         # maybe this factory is overkill at the moment but might be
         # useful if the logic of game generation gets more complex
 
@@ -118,6 +137,12 @@ class GameManagerFactory:
             self,
             subscriber: queue.Queue[IsDataclass]
     ) -> None:
+        """
+        Subscribe to the GameManagerFactory to get the PlayersColorToPlayerMessage
+        As well as subscribing to the game_manager_board_evaluator to get the EvaluationMessage
+        Args:
+            subscriber: the subscriber queue
+        """
         self.subscribers.append(subscriber)
         assert isinstance(self.game_manager_board_evaluator, ObservableBoardEvaluator)
         self.game_manager_board_evaluator.subscribe(subscriber)

@@ -1,3 +1,6 @@
+"""
+factory_higher_level.py
+"""
 import multiprocessing
 import queue
 from functools import partial
@@ -17,6 +20,17 @@ from .player_thread import PlayerProcess
 
 # FIXME double definition of Move functions!!
 class MoveFunction(Protocol):
+    """Represents a callable object that defines a move function.
+
+    This protocol is used to define the signature of a move function that can be used by the game engine.
+
+    Args:
+        board (BoardChi): The game board on which the move function will be applied.
+        seed_ (seed): The seed value for the move function.
+
+    Returns:
+        None: This function does not return any value.
+    """
     def __call__(
             self,
             board: BoardChi,
@@ -29,12 +43,15 @@ def send_board_to_player_process_mailbox(
         seed_: int,
         player_process_mailbox: queue.Queue[BoardMessage]
 ) -> None:
-    """
+    """Sends the board and seed to the player process mailbox.
+
+    This function creates a BoardMessage object with the given board and seed,
+    and puts it into the player_process_mailbox.
 
     Args:
-        board:
-        seed_:
-        player_process_mailbox:
+        board (BoardChi): The board to send.
+        seed_ (int): The seed to send.
+        player_process_mailbox (queue.Queue[BoardMessage]): The mailbox to put the message into.
     """
     message: BoardMessage = BoardMessage(
         board=board,
@@ -49,17 +66,20 @@ def create_player_observer(
         distributed_players: bool,
         main_thread_mailbox: queue.Queue[IsDataclass]
 ) -> tuple[GamePlayer | PlayerProcess, MoveFunction]:
-    """
+    """Create a player observer.
+
+    This function creates a player observer based on the given parameters. The player observer can be either a `GamePlayer` or a `PlayerProcess`, depending on the value of `distributed_players`.
 
     Args:
-        game_player:
-        distributed_players:
-        main_thread_mailbox:
+        player_factory_args (PlayerFactoryArgs): The arguments for creating the player.
+        player_color (chess.Color): The color of the player.
+        distributed_players (bool): A flag indicating whether the players are distributed across multiple processes.
+        main_thread_mailbox (queue.Queue[IsDataclass]): The mailbox for communication between the main thread and the player.
 
     Returns:
+        tuple[GamePlayer | PlayerProcess, MoveFunction]: A tuple containing the player observer and the move function.
 
     """
-
     generic_player: GamePlayer | PlayerProcess
     move_function: MoveFunction
 

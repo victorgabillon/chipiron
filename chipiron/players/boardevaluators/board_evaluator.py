@@ -112,6 +112,10 @@ class ObservableBoardEvaluator:
             self,
             mailbox: queue.Queue[IsDataclass]
     ) -> None:
+        """
+        Subscribe to the ObservableBoardEvaluator to get the EvaluationMessage
+        Args:
+            mailbox: the mailbox queue"""
         self.mailboxes.append(mailbox)
 
     # wrapped function
