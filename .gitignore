@@ -1,4 +1,8 @@
 .idea
+.vscode
+.tox
+.mypy_cache
+
 chipiron/.idea
 chipiron/.ipynb_checkpoints
 __pycache__
@@ -7,12 +11,18 @@ build/*
 
 data/syzygy-tables/
 data/gui/*
+data/datasets/*
+data/players/board_evaluators/nn*
+docs/_build/
+
+stockfish/*
+.coverage
 
 
 chipiron/scripts/league/league_data/*
 chipiron/scripts/*/outputs/*
-chipiron.egg-info/*
-chipiron/chipiron.egg-info/*
+chipiron/runs/*
+*.egg-info/
 chipiron/scripts/one_match/outputs/*
 chipiron/scripts/learn_nn_supervised/learn_nn_supervised_outputs/*
 ## Core latex/pdflatex auxiliary files:

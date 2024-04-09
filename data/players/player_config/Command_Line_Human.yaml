@@ -1,0 +1,4 @@
+name: Command_Line_Human
+main_move_selector:
+  type: CommandLineHuman
+syzygy_play: False
