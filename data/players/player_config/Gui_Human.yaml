@@ -1,0 +1,4 @@
+name: Gui_Human
+main_move_selector:
+  type: GuiHuman
+syzygy_play: False

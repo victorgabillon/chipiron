@@ -1,0 +1,25 @@
+name: SequoolOnlyPromisingRecur
+main_move_selector:
+  type: TreeAndValue
+  node_selector:
+    type: Sequool
+    recursive_selection_on_all_nodes: True
+    random_depth_pick: True
+  index_computation : min_local_change
+  opening_type: all_children
+  recommender_rule:
+    type: almost_equal_logistic
+    temperature: 2
+  stopping_criterion:
+      type: tree_move_limit
+      tree_move_limit: 10000
+  board_evaluator:
+    type: neural_network
+    neural_network:
+      nn_type: pp2d2_2_prelu
+      nn_param_folder_name: 'param_prelu'
+    representation: '364'
+    syzygy_evaluation: True
+syzygy_play: True
+
+
