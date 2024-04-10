@@ -3,8 +3,11 @@ This module contains the definition of the NNPytorchTrainer class, which is resp
 """
 
 import typing
+
 import torch
+
 from chipiron.utils.chi_nn import ChiNN
+
 
 class NNPytorchTrainer:
     """
@@ -26,6 +29,7 @@ class NNPytorchTrainer:
         test(input_layer, target_value): Tests the neural network model using the provided input and target values.
         train_next_boards(input_layer, next_input_layer): Trains the neural network model using the provided input and next input layers.
     """
+
     def __init__(
             self,
             net: ChiNN,
