@@ -34,8 +34,8 @@ class GamePlayingStatus:
 
     @status.setter
     def status(
-        self,
-        new_status: PlayingStatus
+            self,
+            new_status: PlayingStatus
     ) -> None:
         """
         Set the playing status of the game.

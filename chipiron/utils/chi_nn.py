@@ -21,13 +21,13 @@ class ChiNN(nn.Module):
         super(ChiNN, self).__init__()
 
     def __getstate__(self) -> None:
-            """
-            Get the state of the object for pickling.
+        """
+        Get the state of the object for pickling.
 
-            Returns:
-                None
-            """
-            return None
+        Returns:
+            None
+        """
+        return None
 
     def load_from_file_or_init_weights(
             self,

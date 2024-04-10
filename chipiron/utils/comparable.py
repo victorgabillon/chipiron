@@ -15,11 +15,9 @@ Example usage:
 """
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, TypeVar
-
-
-from abc import ABCMeta, abstractmethod
 from typing import Any
+from typing import TypeVar
+
 
 class Comparable(metaclass=ABCMeta):
     """
@@ -33,7 +31,7 @@ class Comparable(metaclass=ABCMeta):
     Methods:
         __lt__(self, other: Any) -> bool: Abstract method that compares the object with another object and returns True if the object is less than the other object, False otherwise.
     """
-    
+
     @abstractmethod
     def __lt__(self, other: Any) -> bool: ...
 

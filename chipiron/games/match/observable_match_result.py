@@ -11,6 +11,7 @@ from chipiron.utils.communication.gui_messages.gui_messages import MatchResultsM
 from chipiron.utils.is_dataclass import IsDataclass
 from .match_results import MatchResults, SimpleResults
 
+
 @dataclass
 class ObservableMatchResults:
     """ 

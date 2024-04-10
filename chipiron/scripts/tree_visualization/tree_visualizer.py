@@ -27,7 +27,6 @@ from chipiron.players.move_selector.treevalue.trees.tree_visualization import di
 from chipiron.scripts.script import Script
 
 
-
 @typing.no_type_check
 class PhotoViewer(QtWidgets.QGraphicsView):
     photoClicked = QtCore.Signal(QtCore.QPoint)

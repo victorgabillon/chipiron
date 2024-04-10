@@ -8,18 +8,18 @@ from .comparable import CT
 
 # todo 3.12 vartype
 def sort_dic(
-                dic: dict[Any, CT]
+        dic: dict[Any, CT]
 ) -> dict[Any, CT]:
-        """
-        Sorts a dictionary by ascending order of values.
+    """
+    Sorts a dictionary by ascending order of values.
 
-        Args:
-                dic (dict[Any, CT]): The dictionary to be sorted.
+    Args:
+            dic (dict[Any, CT]): The dictionary to be sorted.
 
-        Returns:
-                dict[Any, CT]: The sorted dictionary.
-        """
-        z = dic.items()
-        a = sorted(z, key=lambda item: item[1])
-        sorted_dic = dict(a)
-        return sorted_dic
+    Returns:
+            dict[Any, CT]: The sorted dictionary.
+    """
+    z = dic.items()
+    a = sorted(z, key=lambda item: item[1])
+    sorted_dic = dict(a)
+    return sorted_dic
