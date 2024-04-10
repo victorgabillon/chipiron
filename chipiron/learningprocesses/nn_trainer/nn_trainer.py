@@ -3,13 +3,29 @@ This module contains the definition of the NNPytorchTrainer class, which is resp
 """
 
 import typing
-
 import torch
-
 from chipiron.utils.chi_nn import ChiNN
 
-
 class NNPytorchTrainer:
+    """
+    A class that trains a neural network model using PyTorch.
+
+    Args:
+        net (ChiNN): The neural network model to be trained.
+        optimizer (torch.optim.Optimizer): The optimizer used for updating the model's parameters.
+        scheduler (torch.optim.lr_scheduler.LRScheduler): The learning rate scheduler.
+
+    Attributes:
+        net (ChiNN): The neural network model to be trained.
+        criterion (torch.nn.L1Loss): The loss function used for training.
+        optimizer (torch.optim.Optimizer): The optimizer used for updating the model's parameters.
+        scheduler (torch.optim.lr_scheduler.LRScheduler): The learning rate scheduler.
+
+    Methods:
+        train(input_layer, target_value): Trains the neural network model using the provided input and target values.
+        test(input_layer, target_value): Tests the neural network model using the provided input and target values.
+        train_next_boards(input_layer, next_input_layer): Trains the neural network model using the provided input and next input layers.
+    """
     def __init__(
             self,
             net: ChiNN,
