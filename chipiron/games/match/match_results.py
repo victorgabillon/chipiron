@@ -1,3 +1,4 @@
+""" This module contains the classes for match results. """
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -8,40 +9,65 @@ from chipiron.games.game.final_game_result import FinalGameResult
 
 @dataclass
 class SimpleResults:
+    """
+    Represents the simple results of a match.
+    """
     player_one_wins: int
     player_two_wins: int
     draws: int
 
 
 class IMatchResults(Protocol):
+    """
+    Interface for match results.
+    """
 
-    # wrapped function
     def add_result_one_game(
             self,
             white_player_name_id: str,
             game_result: FinalGameResult
     ) -> None:
-        ...
+        """
+        Adds the result of one game to the match results.
 
-    # forwarding
+        Args:
+            white_player_name_id (str): The ID of the white player.
+            game_result (FinalGameResult): The result of the game.
+        """
+
     def get_simple_result(
             self
     ) -> SimpleResults:
-        ...
+        """
+        Returns the simple results of the match.
+
+        Returns:
+            SimpleResults: The simple results of the match.
+        """
 
     def __str__(
             self
     ) -> str:
-        ...
+        """
+        Returns a string representation of the match results.
+
+        Returns:
+            str: A string representation of the match results.
+        """
 
     def finish(
             self
     ) -> None:
-        ...
+        """
+        Finishes the match and marks it as finished.
+        """
 
 
 @dataclass
 class MatchResults:
+    """
+    Represents the results of a match between two players.
+    """
     player_one_name_id: str
     player_two_name_id: str
     number_of_games: int = 0
@@ -54,15 +80,39 @@ class MatchResults:
     match_finished: bool = False
 
     def get_player_one_wins(self) -> int:
+        """
+        Returns the number of wins for player one.
+
+        Returns:
+            int: The number of wins for player one.
+        """
         return self.player_one_is_white_white_wins + self.player_two_is_white_black_wins
 
     def get_player_two_wins(self) -> int:
+        """
+        Returns the number of wins for player two.
+
+        Returns:
+            int: The number of wins for player two.
+        """
         return self.player_one_is_white_black_wins + self.player_two_is_white_white_wins
 
     def get_draws(self) -> int:
+        """
+        Returns the number of draws.
+
+        Returns:
+            int: The number of draws.
+        """
         return self.player_one_is_white_draws + self.player_two_is_white_draws
 
     def get_simple_result(self) -> SimpleResults:
+        """
+        Returns the simple results of the match.
+
+        Returns:
+            SimpleResults: The simple results of the match.
+        """
         simple_result: SimpleResults = SimpleResults(
             player_one_wins=self.get_player_one_wins(),
             player_two_wins=self.get_player_two_wins(),
@@ -75,6 +125,13 @@ class MatchResults:
             white_player_name_id: str,
             game_result: FinalGameResult
     ) -> None:
+        """
+        Adds the result of one game to the match results.
+
+        Args:
+            white_player_name_id (str): The ID of the white player.
+            game_result (FinalGameResult): The result of the game.
+        """
         self.number_of_games += 1
         if white_player_name_id == self.player_one_name_id:
             if game_result == FinalGameResult.WIN_FOR_WHITE:
@@ -99,9 +156,18 @@ class MatchResults:
             raise Exception('?')
 
     def finish(self) -> None:
+        """
+        Finishes the match and marks it as finished.
+        """
         self.match_finished = True
 
     def __str__(self) -> str:
+        """
+        Returns a string representation of the match results.
+
+        Returns:
+            str: A string representation of the match results.
+        """
         str_ = 'Main result: ' + self.player_one_name_id + ' wins ' + str(self.get_player_one_wins()) + ' '
         str_ += self.player_two_name_id + ' wins ' + str(self.get_player_two_wins())
         str_ += ' draws ' + str(self.get_draws()) + '\n'
@@ -128,5 +194,8 @@ class MatchResults:
 
 @dataclass
 class MatchReport:
+    """
+    Represents a match report containing the match results and move history.
+    """
     match_results: MatchResults
     match_move_history: dict[int, list[chess.Move]]

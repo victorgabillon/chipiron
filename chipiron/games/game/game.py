@@ -1,3 +1,6 @@
+"""
+Module for the Game class.
+"""
 import copy
 import queue
 from typing import Protocol
@@ -14,8 +17,8 @@ from .game_playing_status import GamePlayingStatus
 
 
 class Game:
-    """
-    Objet
+    """ 
+    Class representing a game of chess.
     """
     _playing_status: GamePlayingStatus
     _board: BoardChi
@@ -27,6 +30,14 @@ class Game:
             playing_status: GamePlayingStatus,
             seed_: seed
     ):
+        """
+        Initializes the Game object.
+
+        Args:
+            board (BoardChi): The chess board.
+            playing_status (GamePlayingStatus): The playing status of the game.
+            seed_ (seed): The seed for random number generation.
+        """
         self._board = board
         self._playing_status = playing_status
         self._seed = seed_
@@ -35,6 +46,15 @@ class Game:
             self,
             move: chess.Move
     ) -> None:
+        """
+        Plays a move on the chess board.
+
+        Args:
+            move (chess.Move): The move to be played.
+
+        Raises:
+            AssertionError: If the move is not valid or the game status is not play.
+        """
         assert (self._board.board.is_valid())
         if self._playing_status.is_play():
             assert (move in self._board.legal_moves)
@@ -44,6 +64,12 @@ class Game:
         assert (self._board.board.is_valid())
 
     def rewind_one_move(self) -> None:
+        """
+        Rewinds the last move on the chess board.
+
+        Raises:
+            AssertionError: If the game status is not paused.
+        """
         if self._playing_status.is_paused():
             self._board.rewind_one_move()
         else:
@@ -51,6 +77,12 @@ class Game:
 
     @property
     def playing_status(self) -> GamePlayingStatus:
+        """
+        Gets or sets the playing status of the game.
+
+        Returns:
+            GamePlayingStatus: The playing status of the game.
+        """
         return self._playing_status
 
     @playing_status.setter
@@ -58,28 +90,54 @@ class Game:
             self,
             value: GamePlayingStatus
     ) -> None:
+        """
+        Sets the playing status of the game.
+
+        Args:
+            value (GamePlayingStatus): The new playing status of the game.
+        """
         self._playing_status = value
 
     def play(self) -> None:
+        """
+        Starts playing the game.
+        """
         self._playing_status.play()
 
     def pause(self) -> None:
+        """
+        Pauses the game.
+        """
         self._playing_status.pause()
 
     def is_paused(self) -> bool:
+        """
+        Checks if the game is paused.
+
+        Returns:
+            bool: True if the game is paused, False otherwise.
+        """
         return self._playing_status.is_paused()
 
     def is_play(self) -> bool:
+        """
+        Checks if the game is being played.
+
+        Returns:
+            bool: True if the game is being played, False otherwise.
+        """
         return self._playing_status.is_play()
 
     @property
     def board(self) -> BoardChi:
+        """
+        Gets the chess board.
+
+        Returns:
+            BoardChi: The chess board.
+        """
         return self._board
 
-
-# function that will be called by the observable game when the board is updated, which should query at least one player
-# to compute a move
-# MoveFunction = Callable[[BoardChi, seed], None]
 
 class MoveFunction(Protocol):
     def __call__(
@@ -91,36 +149,49 @@ class MoveFunction(Protocol):
 
 class ObservableGame:
     """
-    observable version of Game
+    Represents an observable version of the Game object.
     """
 
     game: Game
     mailboxes_display: list[queue.Queue[IsDataclass]]
-
-    # function that will be called by the observable game when the board is updated, which should query
-    # at least one player to compute a move
     move_functions: list[MoveFunction]
 
     def __init__(
             self,
             game: Game
     ) -> None:
+        """
+        Initializes the ObservableGame object.
+
+        Args:
+            game (Game): The underlying Game object.
+        """
         self.game = game
         self.mailboxes_display = []  # mailboxes for board to be displayed
         self.move_functions = []  # mailboxes for board to be played
-        # the difference between the two is that board can be modified without asking the player to play
-        # (for instance when using the button back)
 
     def register_display(
             self,
             mailbox: queue.Queue[IsDataclass]
     ) -> None:
+        """
+        Registers a mailbox for displaying the board.
+
+        Args:
+            mailbox (queue.Queue[IsDataclass]): The mailbox for board to be displayed.
+        """
         self.mailboxes_display.append(mailbox)
 
     def register_player(
             self,
             move_function: MoveFunction
     ) -> None:
+        """
+        Registers a player to compute a move.
+
+        Args:
+            move_function (MoveFunction): The function to be called to compute a move.
+        """
         self.move_functions.append(move_function)
 
     def set_starting_position(
@@ -128,6 +199,13 @@ class ObservableGame:
             starting_position_arg: AllStartingPositionArgs | None = None,
             fen: str | None = None
     ) -> None:
+        """
+        Sets the starting position of the chess board.
+
+        Args:
+            starting_position_arg (AllStartingPositionArgs | None): The starting position arguments.
+            fen (str | None): The FEN string representing the starting position.
+        """
         self.board.set_starting_position(starting_position_arg, fen)
         self.notify_display()
         self.notify_players()
@@ -136,16 +214,31 @@ class ObservableGame:
             self,
             move: chess.Move
     ) -> None:
+        """
+        Plays a move on the chess board.
+
+        Args:
+            move (chess.Move): The move to be played.
+        """
         self.game.play_move(move)
         self.notify_display()
         self.notify_players()
 
     def rewind_one_move(self) -> None:
+        """
+        Rewinds the last move on the chess board.
+        """
         self.game.rewind_one_move()
         self.notify_display()
 
     @property
     def playing_status(self) -> GamePlayingStatus:
+        """
+        Gets the playing status of the game.
+
+        Returns:
+            GamePlayingStatus: The playing status of the game.
+        """
         return self.game.playing_status
 
     @playing_status.setter
@@ -153,33 +246,62 @@ class ObservableGame:
             self,
             new_status: GamePlayingStatus
     ) -> None:
+        """
+        Sets the playing status of the game.
+
+        Args:
+            new_status (GamePlayingStatus): The new playing status of the game.
+        """
         self.game.playing_status = new_status
         raise Exception('problem no notificaiton implemented. Maybe this function is deadcode?')
 
     def play(self) -> None:
+        """
+        Starts playing the game.
+        """
         self.game.play()
         self.notify_players()
         self.notify_display()
         self.notify_status()
 
     def pause(self) -> None:
+        """
+        Pauses the game.
+        """
         self.game.pause()
         self.notify_status()
 
     def is_paused(self) -> bool:
+        """
+        Checks if the game is paused.
+
+        Returns:
+            bool: True if the game is paused, False otherwise.
+        """
         return self.game.is_paused()
 
     def is_play(self) -> bool:
+        """
+        Checks if the game is being played.
+
+        Returns:
+            bool: True if the game is being played, False otherwise.
+        """
         return self.game.is_play()
 
     def notify_display(self) -> None:
+        """
+        Notifies the display mailboxes with the updated board.
+        """
         for mailbox in self.mailboxes_display:
             board_copy = copy.deepcopy(self.game.board)
             message: BoardMessage = BoardMessage(board=board_copy)
             mailbox.put(item=message)
 
     def notify_players(self) -> None:
-        """ Notify the players to ask for a move"""
+        """
+        Notifies the players to ask for a move.
+        """
         if not self.game.board.is_game_over():
             move_function: MoveFunction
             for move_function in self.move_functions:
@@ -189,6 +311,9 @@ class ObservableGame:
                     move_function(board=board_copy, seed_=merged_seed)
 
     def notify_status(self) -> None:
+        """
+        Notifies the status mailboxes with the updated game status.
+        """
         print('notify game', self.game.playing_status.status)
 
         observable_copy = copy.copy(self.game.playing_status.status)
@@ -198,4 +323,10 @@ class ObservableGame:
 
     @property
     def board(self) -> BoardChi:
+        """
+        Gets the chess board.
+
+        Returns:
+            BoardChi: The chess board.
+        """
         return self.game.board

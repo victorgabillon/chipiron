@@ -19,7 +19,8 @@ class TableBaseArgs:
     """A class representing the arguments for the TableBase class.
 
     This class provides a template for the arguments that can be passed to the TableBase class.
-    It serves as a base class for defining specific argument classes for different implementations of the TableBase class.
+    It serves as a base class for defining specific argument classes for different implementations
+    of the TableBase class.
 
     Attributes:
         None
@@ -28,7 +29,6 @@ class TableBaseArgs:
         None
     """
     ...
-
 
 
 class BasicEvaluationArgs:

@@ -47,65 +47,65 @@ class GameManager:
     players: list[players_m.PlayerProcess | players_m.GamePlayer]
 
     def __init__(
-                self,
-                game: ObservableGame,
-                syzygy: SyzygyTable | None,
-                display_board_evaluator: IGameBoardEvaluator,
-                output_folder_path: path | None,
-                args: GameArgs,
-                player_color_to_id: dict[chess.Color, str],
-                main_thread_mailbox: queue.Queue[IsDataclass],
-                players: list[players_m.PlayerProcess | players_m.GamePlayer],
-        ) -> None:
-            """
-            Constructor for the GameManager Class. If the args, and players are not given a value it is set to None,
-            waiting for the set methods to be called. This is done like this so that the players can be changed
-            (often swapped) easily.
+            self,
+            game: ObservableGame,
+            syzygy: SyzygyTable | None,
+            display_board_evaluator: IGameBoardEvaluator,
+            output_folder_path: path | None,
+            args: GameArgs,
+            player_color_to_id: dict[chess.Color, str],
+            main_thread_mailbox: queue.Queue[IsDataclass],
+            players: list[players_m.PlayerProcess | players_m.GamePlayer],
+    ) -> None:
+        """
+        Constructor for the GameManager Class. If the args, and players are not given a value it is set to None,
+        waiting for the set methods to be called. This is done like this so that the players can be changed
+        (often swapped) easily.
 
-            Args:
-                game (ObservableGame): The observable game object.
-                syzygy (SyzygyTable | None): The syzygy table object or None.
-                display_board_evaluator (IGameBoardEvaluator): The board evaluator to display an independent evaluation.
-                output_folder_path (path | None): The output folder path or None.
-                args (GameArgs): The game arguments.
-                player_color_to_id (dict[chess.Color, str]): The dictionary mapping player color to player ID.
-                main_thread_mailbox (queue.Queue[IsDataclass]): The main thread mailbox.
-                players (list[players_m.PlayerProcess | players_m.GamePlayer]): The list of players.
+        Args:
+            game (ObservableGame): The observable game object.
+            syzygy (SyzygyTable | None): The syzygy table object or None.
+            display_board_evaluator (IGameBoardEvaluator): The board evaluator to display an independent evaluation.
+            output_folder_path (path | None): The output folder path or None.
+            args (GameArgs): The game arguments.
+            player_color_to_id (dict[chess.Color, str]): The dictionary mapping player color to player ID.
+            main_thread_mailbox (queue.Queue[IsDataclass]): The main thread mailbox.
+            players (list[players_m.PlayerProcess | players_m.GamePlayer]): The list of players.
 
-            Returns:
-                None
-            """
-            self.game = game
-            self.syzygy = syzygy
-            self.path_to_store_result = os.path.join(output_folder_path,
-                                                     'games') if output_folder_path is not None else None
-            self.display_board_evaluator = display_board_evaluator
-            self.args = args
-            self.player_color_to_id = player_color_to_id
-            self.main_thread_mailbox = main_thread_mailbox
-            self.players = players
+        Returns:
+            None
+        """
+        self.game = game
+        self.syzygy = syzygy
+        self.path_to_store_result = os.path.join(output_folder_path,
+                                                 'games') if output_folder_path is not None else None
+        self.display_board_evaluator = display_board_evaluator
+        self.args = args
+        self.player_color_to_id = player_color_to_id
+        self.main_thread_mailbox = main_thread_mailbox
+        self.players = players
 
     def external_eval(self) -> tuple[float, float]:
-            """Evaluates the game board using the display board evaluator.
+        """Evaluates the game board using the display board evaluator.
 
-            Returns:
-                tuple[float, float]: A tuple containing the evaluation scores.
-            """
-            return self.display_board_evaluator.evaluate(self.game.board)
+        Returns:
+            tuple[float, float]: A tuple containing the evaluation scores.
+        """
+        return self.display_board_evaluator.evaluate(self.game.board)
 
     def play_one_move(
-                self,
-                move: chess.Move
-        ) -> None:
-            """Play one move in the game.
+            self,
+            move: chess.Move
+    ) -> None:
+        """Play one move in the game.
 
-            Args:
-                move (chess.Move): The move to be played.
-            """
-            self.game.play_move(move)
-            if self.syzygy is not None and self.syzygy.fast_in_table(self.game.board):
-                print('Theoretically finished with value for white: ',
-                      self.syzygy.string_result(self.game.board))
+        Args:
+            move (chess.Move): The move to be played.
+        """
+        self.game.play_move(move)
+        if self.syzygy is not None and self.syzygy.fast_in_table(self.game.board):
+            print('Theoretically finished with value for white: ',
+                  self.syzygy.string_result(self.game.board))
 
     def rewind_one_move(self) -> None:
         self.game.rewind_one_move()

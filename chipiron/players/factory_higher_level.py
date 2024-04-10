@@ -31,6 +31,7 @@ class MoveFunction(Protocol):
     Returns:
         None: This function does not return any value.
     """
+
     def __call__(
             self,
             board: BoardChi,
@@ -68,13 +69,16 @@ def create_player_observer(
 ) -> tuple[GamePlayer | PlayerProcess, MoveFunction]:
     """Create a player observer.
 
-    This function creates a player observer based on the given parameters. The player observer can be either a `GamePlayer` or a `PlayerProcess`, depending on the value of `distributed_players`.
+    This function creates a player observer based on the given parameters.
+     The player observer can be either a `GamePlayer` or a `PlayerProcess`,
+      depending on the value of `distributed_players`.
 
     Args:
         player_factory_args (PlayerFactoryArgs): The arguments for creating the player.
         player_color (chess.Color): The color of the player.
         distributed_players (bool): A flag indicating whether the players are distributed across multiple processes.
-        main_thread_mailbox (queue.Queue[IsDataclass]): The mailbox for communication between the main thread and the player.
+        main_thread_mailbox (queue.Queue[IsDataclass]): The mailbox for communication between the main thread
+         and the player.
 
     Returns:
         tuple[GamePlayer | PlayerProcess, MoveFunction]: A tuple containing the player observer and the move function.

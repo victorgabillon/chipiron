@@ -26,7 +26,6 @@ class PointOfView(Enum):
     NOT_PLAYER_TO_MOVE = 3
 
 
-
 class BoardEvaluation:
     """
     The class to defines what is an evaluation of a board.

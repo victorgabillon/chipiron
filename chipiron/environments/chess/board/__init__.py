@@ -1,3 +1,6 @@
+"""
+init file for board module
+"""
 import typing
 
 from .board import BoardChi

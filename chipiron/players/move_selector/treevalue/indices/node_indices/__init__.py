@@ -20,5 +20,3 @@ __all__ = [
     "IndexComputationType",
     "create_exploration_index_data"
 ]
-
-

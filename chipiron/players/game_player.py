@@ -31,14 +31,14 @@ class GamePlayer:
 
     @property
     def player(
-                self
-        ) -> Player:
-            """Return the player object.
+            self
+    ) -> Player:
+        """Return the player object.
 
-            Returns:
-                Player: The player object.
-            """
-            return self._player
+        Returns:
+            Player: The player object.
+        """
+        return self._player
 
     def select_move(
             self,

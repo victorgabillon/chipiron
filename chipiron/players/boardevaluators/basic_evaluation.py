@@ -1,7 +1,6 @@
 """
 Module for the basic evaluation of a chess board.
 """
-import math
 
 import chess
 
@@ -86,6 +85,7 @@ def value_white(board: BoardChi) -> float:
 
 
 import math
+
 
 def sigmoid(x: float) -> float:
     """
