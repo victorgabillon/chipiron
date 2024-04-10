@@ -6,7 +6,7 @@ import os
 import random
 import shutil
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import matplotlib.pyplot as plt
 from sortedcollections import ValueSortedDict
@@ -39,6 +39,15 @@ class League:
         ELO_HISTORY_LENGTH (int): The length of Elo rating history to keep for each player.
         games_already_played (int): The number of games already played in the league.
     """
+    folder_league: str
+    seed: int
+    players_elo: ValueSortedDict = field(default_factory=ValueSortedDict)
+    players_args: dict[str, players.PlayerArgs] = field(default_factory=dict)
+    players_number_of_games_played: dict[str, int] = field(default_factory=dict)
+    id_for_next_player: int = 0
+    K: int = 10
+    ELO_HISTORY_LENGTH: int = 500
+    games_already_played: int = 0
 
     def __post_init__(self) -> None:
         """
