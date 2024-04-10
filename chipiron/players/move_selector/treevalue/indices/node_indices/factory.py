@@ -26,9 +26,9 @@ ExplorationIndexDataFactory = Callable[[TreeNode], NodeExplorationData | None]
 
 
 def create_exploration_index_data(
-    tree_node: TreeNode,
-    index_computation: IndexComputationType | None = None,
-    depth_index: bool = False
+        tree_node: TreeNode,
+        index_computation: IndexComputationType | None = None,
+        depth_index: bool = False
 ) -> NodeExplorationData | None:
     """
         Creates exploration index data for a given tree node.

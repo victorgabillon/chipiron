@@ -1,5 +1,8 @@
 [FORMAT]
 max-line-length=120
 
+[MAIN]
+max-line-length=100
+
 extension-pkg-whitelist=PyQt5
 extension-pkg-whitelist=PySide6

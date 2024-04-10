@@ -7,7 +7,6 @@ from enum import Enum
 import chess
 
 
-
 class HowOver(Enum):
     """Represents the possible outcomes of a game.
 
@@ -19,7 +18,6 @@ class HowOver(Enum):
     WIN = 1
     DRAW = 2
     DO_NOT_KNOW_OVER = 3
-
 
 
 class Winner(Enum):
@@ -52,15 +50,15 @@ class Winner(Enum):
         return self is None
 
     def is_white(self) -> bool:
-            """Check if the winner is white.
+        """Check if the winner is white.
 
-            Returns:
-                bool: True if the winner is white, False otherwise.
-            """
-            if not self.is_none():
-                return bool(self) is chess.WHITE
-            else:
-                return False
+        Returns:
+            bool: True if the winner is white, False otherwise.
+        """
+        if not self.is_none():
+            return bool(self) is chess.WHITE
+        else:
+            return False
 
     def is_black(self) -> bool:
         """Check if the winner is black.
@@ -72,7 +70,6 @@ class Winner(Enum):
             return bool(self) is chess.BLACK
         else:
             return False
-
 
 
 class OverTags(str, Enum):
@@ -126,7 +123,7 @@ class OverEvent:
         if self.how_over == HowOver.WIN:
             assert (self.who_is_winner is Winner.WHITE or self.who_is_winner is Winner.BLACK)
         elif self.how_over == HowOver.DRAW:
-            assert (self.who_is_winner is Winner.NO_KNOWN_WINNER)
+            assert self.who_is_winner is Winner.NO_KNOWN_WINNER
 
     def becomes_over(
             self,
@@ -230,7 +227,7 @@ class OverEvent:
     def test(self) -> None:
         """Performs tests on the `OverEvent` object."""
         if self.how_over == HowOver.WIN:
-            assert (self.who_is_winner is not None)
+            assert self.who_is_winner is not None
             assert (self.who_is_winner.is_white() or self.who_is_winner.is_black())
         if self.how_over == HowOver.DRAW:
             assert (self.who_is_winner is None)

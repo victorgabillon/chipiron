@@ -1,3 +1,6 @@
+"""
+Module that contains the BoardChi class that wraps the chess.Board class from the chess package
+"""
 import typing
 
 import chess
@@ -17,12 +20,17 @@ class BoardChi:
     object that describes the current board. it wraps the chess Board from the chess package so it can have more in it
     but im not sure its really necessary.i keep it for potential usefulness
     """
-    board: chess.Board
 
     def __init__(
             self,
             board: chess.Board
     ) -> None:
+        """
+        Initializes a new instance of the BoardChi class.
+
+        Args:
+            board: The chess.Board object to wrap.
+        """
         self.board = board
 
     def set_starting_position(
@@ -30,7 +38,13 @@ class BoardChi:
             starting_position_arg: AllStartingPositionArgs | None = None,
             fen: str | None = None
     ) -> None:
+        """
+        Sets the starting position of the board.
 
+        Args:
+            starting_position_arg: The starting position argument.
+            fen: The FEN string representing the starting position.
+        """
         self.board.reset()
         if starting_position_arg is not None:
             match starting_position_arg:
@@ -51,6 +65,15 @@ class BoardChi:
             self,
             move: chess.Move
     ) -> BoardModification:
+        """
+        Plays a move on the board and returns the board modification.
+
+        Args:
+            move: The move to play.
+
+        Returns:
+            The board modification resulting from the move.
+        """
         assert (move in self.legal_moves)
         board_modification: BoardModification | None = self.push_and_return_modification(move)  # type: ignore
         if board_modification is None:
@@ -59,6 +82,9 @@ class BoardChi:
             return board_modification
 
     def rewind_one_move(self) -> None:
+        """
+        Rewinds the board state to the previous move.
+        """
         if self.ply() > 0:
             self.board.pop()
         else:
@@ -72,6 +98,12 @@ class BoardChi:
         """
         Mostly reuse the push function of the chess library but records the modifications to the bitboard so that
         we can do the same with other parallel representations such as tensor in pytorch
+
+        Args:
+            move: The move to push.
+
+        Returns:
+            The board modification resulting from the move, or None if the move is a null move.
         """
         board_modifications = BoardModification()
 
@@ -234,15 +266,33 @@ class BoardChi:
         return board_modifications
 
     def load_from_file(
-            self,
-            file_name: str
-    ) -> str:
-        with open('data/starting_boards/' + file_name, "r") as f:
-            ascii_board: str = str(f.read())
-            fen: str = convert_to_fen(ascii_board)
-        return fen
+                self,
+                file_name: str
+        ) -> str:
+            """Load a chess board from a file.
+
+            Args:
+                file_name (str): The name of the file to load the chess board from.
+
+            Returns:
+                str: The FEN representation of the loaded chess board.
+            """
+            with open('data/starting_boards/' + file_name, "r") as f:
+                ascii_board: str = str(f.read())
+                fen: str = convert_to_fen(ascii_board)
+            return fen
 
     def compute_key(self) -> str:
+        """
+        Computes and returns a unique key representing the current state of the chess board.
+
+        The key is computed by concatenating various attributes of the board, including the positions of pawns, knights,
+        bishops, rooks, queens, and kings, as well as the current turn, castling rights, en passant square, halfmove clock,
+        occupied squares for each color, promoted pieces, and the fullmove number.
+
+        Returns:
+            str: A unique key representing the current state of the chess board.
+        """
         string = str(self.board.pawns) + str(self.board.knights) \
                  + str(self.board.bishops) + str(self.board.rooks) \
                  + str(self.board.queens) + str(self.board.kings) \
@@ -254,77 +304,189 @@ class BoardChi:
         return string
 
     def fast_representation(self) -> str:
+        """
+        Returns a fast representation of the board.
+
+        This method computes and returns a string representation of the board
+        that can be quickly generated and used for various purposes.
+
+        :return: A string representation of the board.
+        :rtype: str
+        """
         return self.compute_key()
 
     def print_chess_board(self) -> None:
-        print(self)
-        print(self.board.fen())
+            """
+            Prints the current state of the chess board.
+
+            This method prints the current state of the chess board, including the position of all the pieces.
+            It also prints the FEN (Forsyth–Edwards Notation) representation of the board.
+
+            Returns:
+                None
+            """
+            print(self)
+            print(self.board.fen())
 
     def number_of_pieces_on_the_board(self) -> int:
-        return bin(self.board.occupied).count('1')
+            """
+            Returns the number of pieces currently on the board.
+
+            Returns:
+                int: The number of pieces on the board.
+            """
+            return bin(self.board.occupied).count('1')
 
     def is_attacked(
-            self,
-            a_color: chess.Color
-    ) -> bool:
-        """ check if any piece of the color a_color is attacked"""
-        all_squares_of_color = chess.SquareSet()
-        for piece_type in [1, 2, 3, 4, 5, 6]:
-            new_squares = self.board.pieces(piece_type=piece_type, color=a_color)
-            all_squares_of_color = all_squares_of_color.union(new_squares)
-        all_attackers = chess.SquareSet()
-        for square in all_squares_of_color:
-            new_attackers = self.board.attackers(not a_color, square)
-            all_attackers = all_attackers.union(new_attackers)
-        return bool(all_attackers)
+                self,
+                a_color: chess.Color
+        ) -> bool:
+            """Check if any piece of the color `a_color` is attacked.
+
+            Args:
+                a_color (chess.Color): The color of the pieces to check.
+
+            Returns:
+                bool: True if any piece of the specified color is attacked, False otherwise.
+            """
+            all_squares_of_color = chess.SquareSet()
+            for piece_type in [1, 2, 3, 4, 5, 6]:
+                new_squares = self.board.pieces(piece_type=piece_type, color=a_color)
+                all_squares_of_color = all_squares_of_color.union(new_squares)
+            all_attackers = chess.SquareSet()
+            for square in all_squares_of_color:
+                new_attackers = self.board.attackers(not a_color, square)
+                all_attackers = all_attackers.union(new_attackers)
+            return bool(all_attackers)
 
     def is_game_over(self) -> bool:
-        return self.board.is_game_over()
+            """
+            Check if the game is over.
+
+            Returns:
+                bool: True if the game is over, False otherwise.
+            """
+            return self.board.is_game_over()
 
     def ply(self) -> int:
+        """
+        Returns the number of half-moves (plies) that have been played on the board.
+
+        :return: The number of half-moves played on the board.
+        :rtype: int
+        """
         return self.board.ply()
 
     @property
     def turn(self) -> chess.Color:
-        return self.board.turn
+            """
+            Get the current turn color.
+
+            Returns:
+                chess.Color: The color of the current turn.
+            """
+            return self.board.turn
 
     def fen(self) -> str:
+        """
+        Returns the Forsyth-Edwards Notation (FEN) representation of the chess board.
+
+        :return: The FEN string representing the current state of the board.
+        """
         return self.board.fen()
 
     @property
     def legal_moves(self) -> chess.LegalMoveGenerator:
-        return self.board.legal_moves
+            """
+            Returns a generator that yields all the legal moves for the current board state.
+
+            Returns:
+                chess.LegalMoveGenerator: A generator that yields legal moves.
+            """
+            return self.board.legal_moves
 
     def piece_at(
-            self,
-            square: chess.Square
-    ) -> chess.Piece | None:
-        return self.board.piece_at(square)
+                self,
+                square: chess.Square
+        ) -> chess.Piece | None:
+            """
+            Returns the piece at the specified square on the chess board.
+
+            Args:
+                square (chess.Square): The square on the chess board.
+
+            Returns:
+                chess.Piece | None: The piece at the specified square, or None if there is no piece.
+
+            """
+            return self.board.piece_at(square)
 
     def has_castling_rights(
-            self,
-            color: chess.Color
-    ) -> bool:
-        return self.board.has_castling_rights(color)
+                self,
+                color: chess.Color
+        ) -> bool:
+            """
+            Check if the specified color has castling rights.
+
+            Args:
+                color (chess.Color): The color to check for castling rights.
+
+            Returns:
+                bool: True if the color has castling rights, False otherwise.
+            """
+            return self.board.has_castling_rights(color)
 
     def has_queenside_castling_rights(
-            self,
-            color: chess.Color
-    ) -> bool:
-        return self.board.has_queenside_castling_rights(color)
+                self,
+                color: chess.Color
+        ) -> bool:
+            """
+            Check if the specified color has queenside castling rights.
+
+            Args:
+                color (chess.Color): The color to check for queenside castling rights.
+
+            Returns:
+                bool: True if the specified color has queenside castling rights, False otherwise.
+            """
+            return self.board.has_queenside_castling_rights(color)
 
     def has_kingside_castling_rights(
-            self,
-            color: chess.Color
-    ) -> bool:
-        return self.board.has_kingside_castling_rights(color)
+                self,
+                color: chess.Color
+        ) -> bool:
+            """
+            Check if the specified color has kingside castling rights.
+
+            Args:
+                color (chess.Color): The color to check for kingside castling rights.
+
+            Returns:
+                bool: True if the specified color has kingside castling rights, False otherwise.
+            """
+            return self.board.has_kingside_castling_rights(color)
 
     def copy(
-            self,
-            stack: bool
-    ) -> 'BoardChi':
-        board: chess.Board = self.board.copy(stack=stack)
-        return BoardChi(board=board)
+                self,
+                stack: bool
+        ) -> 'BoardChi':
+            """
+            Create a copy of the current board.
+
+            Args:
+                stack (bool): Whether to copy the move stack as well.
+
+            Returns:
+                BoardChi: A new instance of the BoardChi class with the copied board.
+            """
+            board: chess.Board = self.board.copy(stack=stack)
+            return BoardChi(board=board)
 
     def __str__(self) -> str:
-        return self.board.__str__()
+            """
+            Returns a string representation of the board.
+
+            Returns:
+                str: A string representation of the board.
+            """
+            return self.board.__str__()

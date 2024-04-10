@@ -31,11 +31,11 @@ class GameManagerFactory:
     subscribers: list[queue.Queue[IsDataclass]]
 
     def __init__(
-        self,
-        syzygy_table: SyzygyTable | None,
-        game_manager_board_evaluator: IGameBoardEvaluator,
-        output_folder_path: path | None,
-        main_thread_mailbox: queue.Queue[IsDataclass],
+            self,
+            syzygy_table: SyzygyTable | None,
+            game_manager_board_evaluator: IGameBoardEvaluator,
+            output_folder_path: path | None,
+            main_thread_mailbox: queue.Queue[IsDataclass],
     ) -> None:
         """
         Constructor for the GameManagerFactory class.
@@ -53,10 +53,10 @@ class GameManagerFactory:
         self.subscribers = []
 
     def create(
-        self,
-        args_game_manager: GameArgs,
-        player_color_to_factory_args: dict[chess.Color, PlayerFactoryArgs],
-        game_seed: seed
+            self,
+            args_game_manager: GameArgs,
+            player_color_to_factory_args: dict[chess.Color, PlayerFactoryArgs],
+            game_seed: seed
     ) -> GameManager:
         """ 
         Create a GameManager with the given arguments

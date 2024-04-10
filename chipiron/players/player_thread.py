@@ -19,7 +19,8 @@ from .player_args import PlayerFactoryArgs
 class PlayerProcess(multiprocessing.Process):
     """A class representing a player process.
 
-    This class extends the `multiprocessing.Process` class and is responsible for running a player in a separate process.
+    This class extends the `multiprocessing.Process` class and is responsible for running a player
+     in a separate process.
 
     Attributes:
         game_player (GamePlayer): The game player object.

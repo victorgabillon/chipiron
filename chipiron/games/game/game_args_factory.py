@@ -1,3 +1,9 @@
+""" 
+Module for the GameArgsFactory class
+
+This module defines the GameArgsFactory class, which is responsible for creating game arguments and managing game settings.
+"""
+
 import typing
 from dataclasses import dataclass
 from enum import Enum
@@ -34,12 +40,10 @@ class FileStaringPositionArgs(StaringPositionArgs):
 
 
 class GameArgsFactory:
-    # TODO MAYBE CHANGE THE NAME, ALSO MIGHT BE SPLIT IN TWO (players and rules)?
     """
     The GameArgsFactory creates the players and decides the rules.
     So far quite simple
-    This class is supposed to be dependent of Match-related classes (contrarily to the GameArgsFactory)
-
+    This class is supposed to be dependent on Match-related classes (contrarily to the GameArgsFactory)
     """
 
     args_match: 'match.MatchSettingsArgs'
@@ -68,7 +72,17 @@ class GameArgsFactory:
             self,
             game_number: int
     ) -> tuple[dict[chess.Color, players.PlayerFactoryArgs], GameArgs, seed | None]:
+        """
+        Generate game arguments for a specific game number.
 
+        Args:
+            game_number (int): The number of the game.
+
+        Returns:
+            tuple[dict[chess.Color, players.PlayerFactoryArgs], GameArgs, seed | None]: A tuple containing the player
+            color to factory arguments mapping, game arguments, and the merged seed.
+
+        """
         merged_seed: seed | None = unique_int_from_list([self.seed_, game_number])
         assert merged_seed is not None
 
@@ -97,5 +111,12 @@ class GameArgsFactory:
         return player_color_to_factory_args, self.args_game, merged_seed
 
     def is_match_finished(self) -> bool:
+        """
+        Check if the match is finished.
+
+        Returns:
+            bool: True if the match is finished, False otherwise.
+
+        """
         return (self.game_number >= self.args_match.number_of_games_player_one_white
                 + self.args_match.number_of_games_player_one_black)
