@@ -11,7 +11,7 @@ def set_seeds(seed: int = 0) -> None:
     """
     Set all the base seeds.
     Args:
-        seed: the seed
+        seed(int): the seed
     """
 
     random.seed(seed)

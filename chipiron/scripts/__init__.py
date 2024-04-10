@@ -1,3 +1,6 @@
+"""
+Init file for scripts module
+"""
 from .factory import create_script
 from .iscript import IScript
 from .script import Script

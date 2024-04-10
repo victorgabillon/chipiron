@@ -1,5 +1,6 @@
 """
-The base script
+This module contains the Script class which is responsible for launching scripts.
+It handles computing execution time, profiling, and parsing arguments.
 """
 
 import cProfile
@@ -21,10 +22,11 @@ from chipiron.utils.small_tools import mkdir
 
 @dataclass
 class ScriptArgs:
-    # whether the script is profiling computation usage
-    profiling: bool = False
+    """
+    Dataclass representing the arguments for the Script class.
+    """
 
-    # whether the script is testing the code (using pytest for instance)
+    profiling: bool = False
     testing: bool = False
 
 
@@ -34,7 +36,7 @@ _T_co = TypeVar("_T_co", covariant=True, bound=IsDataclass)
 class Script:
     """
     The core Script class to launch scripts.
-    Takes care of computing execution time, profiling, ang parsing arguments
+    Takes care of computing execution time, profiling, and parsing arguments.
     """
 
     start_time: float
@@ -49,10 +51,13 @@ class Script:
             extra_args: dict[str, Any] | None = None
     ) -> None:
         """
-        Building the Script object, starts the clock,
-        the profiling and parse arguments and deals with global variables
+        Initializes the Script object.
+        Starts the clock, the profiling, and parses arguments.
+        
+        Args:
+            parser: An instance of MyParser used for parsing arguments.
+            extra_args: Additional arguments to be passed to the parser.
         """
-        # start the clock
         self.start_time = time.time()
         self.parser = parser
         self.experiment_output_folder = None
@@ -64,17 +69,24 @@ class Script:
             args_dataclass_name: type[_T_co],
             base_experiment_output_folder: str | None = None
     ) -> _T_co:
-
+        """
+        Initiates the script by parsing arguments and converting them into a standardized dataclass.
+        
+        Args:
+            args_dataclass_name: The type of the dataclass to convert the arguments into.
+            base_experiment_output_folder: The base folder for experiment output. If None, uses the default value.
+        
+        Returns:
+            The converted arguments as a dataclass.
+        """
         if base_experiment_output_folder is None:
             base_experiment_output_folder = self.base_experiment_output_folder
 
-        # parse the arguments
         args_dict: dict[str, Any] = self.parser.parse_arguments(
             base_experiment_output_folder=base_experiment_output_folder,
             extra_args=self.extra_args
         )
 
-        # Converting the args in the standardized dataclass
         args: ScriptArgs = dacite.from_dict(
             data_class=ScriptArgs,
             data=args_dict
@@ -85,12 +97,10 @@ class Script:
 
         self.parser.log_parser_info(args_dict['experiment_output_folder'])
 
-        # activate profiling is if needed
         if args.profiling:
             self.profile = cProfile.Profile()
             self.profile.enable()
 
-        # Converting the args in the standardized dataclass
         final_args: _T_co = dacite.from_dict(
             data_class=args_dataclass_name,
             data=args_dict
@@ -99,7 +109,7 @@ class Script:
 
     def terminate(self) -> None:
         """
-        Finishing the script. Profiling or timing.
+        Finishes the script by printing execution time and profiling information (if enabled).
         """
         print('terminate')
         if self.profile is not None:
@@ -115,4 +125,6 @@ class Script:
         print('execution time', end_time - self.start_time)
 
     def run(self) -> None:
-        """ Running the script"""
+        """ 
+        Runs the script.
+        """

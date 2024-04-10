@@ -1,3 +1,7 @@
+"""
+This module contains a GUI script for the chipiron application.
+"""
+
 import tkinter as tk
 from typing import Any
 
@@ -5,14 +9,28 @@ from chipiron import scripts
 
 
 def destroy(root: tk.Tk) -> bool:
+    """
+    Destroy the root window.
+
+    Args:
+        root: The root window to be destroyed.
+
+    Returns:
+        bool: True if the root window is destroyed successfully.
+    """
     root.destroy()
     return True
 
 
 # TODO switch to pygame
 
-def script_gui(
-) -> tuple[scripts.ScriptType, dict[str, Any]]:
+def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
+    """
+    Run the chipiron GUI script.
+
+    Returns:
+        tuple[scripts.ScriptType, dict[str, Any]]: A tuple containing the script type and the GUI arguments.
+    """
     root = tk.Tk()
     # place a label on the root window
     root.title('chipiron')
@@ -179,6 +197,18 @@ def play_against_chipiron(
         color: tk.StringVar,
         chipi_algo: tk.StringVar
 ) -> bool:
+    """
+    Set the output dictionary to indicate playing against chipiron.
+
+    Args:
+        output: The output dictionary to be modified.
+        strength: The strength of the player.
+        color: The color of the human player.
+        chipi_algo: The algorithm choice for chipiron.
+
+    Returns:
+        bool: True if the output dictionary is modified successfully.
+    """
     output['type'] = 'play_against_chipiron'
     output['strength'] = int(strength.get())
     output['color_human'] = str(color.get())
@@ -187,10 +217,28 @@ def play_against_chipiron(
 
 
 def watch_a_game(output: dict[str, Any]) -> bool:
+    """
+    Set the output dictionary to indicate watching a game.
+
+    Args:
+        output: The output dictionary to be modified.
+
+    Returns:
+        bool: True if the output dictionary is modified successfully.
+    """
     output['type'] = 'watch_a_game'
     return True
 
 
 def visualize_a_tree(output: dict[str, Any]) -> bool:
+    """
+    Set the output dictionary to indicate visualizing a tree.
+
+    Args:
+        output: The output dictionary to be modified.
+
+    Returns:
+        bool: True if the output dictionary is modified successfully.
+    """
     output['type'] = 'tree_visualization'
     return True

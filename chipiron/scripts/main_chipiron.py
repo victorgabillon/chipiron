@@ -1,3 +1,15 @@
+"""
+This script is the entry point for running the chipiron application.
+
+Chipiron is a Python application that requires a version of Python higher than 3.10 to run.
+If the Python version is not compatible, an assertion error will be raised.
+
+The script launches the main_chipiron_.py script using the subprocess module, allowing it to bypass
+the automatic full interpreter check of Python that would raise a syntax error before the assertion check.
+
+Usage: python3 main_chipiron.py [arguments]
+"""
+
 import subprocess
 import sys
 

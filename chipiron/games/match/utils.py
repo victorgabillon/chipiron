@@ -1,3 +1,7 @@
+"""
+Module to fetch, modify and convert the match settings and game settings.
+"""
+
 import os
 from shutil import copyfile
 from typing import Any
@@ -16,6 +20,19 @@ def fetch_match_games_args_convert_and_save(
         experiment_output_folder: path | None = None,
         modification: dict[Any, Any] | None = None,
 ) -> tuple[MatchSettingsArgs, game.GameArgs]:
+    """
+    Fetches, modifies, and converts the match settings and game settings.
+
+    Args:
+        file_name_match_setting (path): The path to the match settings file.
+        profiling (bool, optional): Flag indicating whether profiling is enabled. Defaults to False.
+        testing (bool, optional): Flag indicating whether testing is enabled. Defaults to False.
+        experiment_output_folder (path | None, optional): The path to the experiment output folder. Defaults to None.
+        modification (dict[Any, Any] | None, optional): Dictionary of modifications to apply. Defaults to None.
+
+    Returns:
+        tuple[MatchSettingsArgs, game.GameArgs]: A tuple containing the match settings and game settings.
+    """
     file_name_match_setting_: path
 
     if profiling:
@@ -29,8 +46,7 @@ def fetch_match_games_args_convert_and_save(
     match_args: MatchSettingsArgs = fetch_args_modify_and_convert(
         path_to_file=path_match_setting,
         modification=modification,
-        dataclass_name=MatchSettingsArgs  # pycharm raises a warning here(hoping its beacause p
-        # ycharm does not understand well annoation in 3.12 yet)
+        dataclass_name=MatchSettingsArgs
     )
 
     file_game: path = match_args.game_setting_file

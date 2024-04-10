@@ -77,6 +77,11 @@ class MainWindow(QWidget):
             self,
             event: QKeyEvent
     ) -> None:
+        """Handle key press events.
+
+        Args:
+            event (QKeyEvent): The key event object.
+        """
         print(event.text())
         key = event.text()
         if key == '1':

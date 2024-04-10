@@ -1,3 +1,20 @@
+"""
+This module contains classes for visualizing a tree structure and interacting with it.
+
+Classes:
+- PhotoViewer: A QGraphicsView widget for displaying and interacting with an image.
+- Window: A QWidget that contains a PhotoViewer and provides additional functionality for tree visualization.
+- VisualizeTreeScript: A script for running the tree visualization application.
+
+Usage:
+1. Create an instance of VisualizeTreeScript.
+2. Call the run() method to start the visualization application.
+3. Interact with the displayed tree using mouse clicks and keyboard shortcuts.
+4. Call the terminate() method to finish the script.
+
+Note: This code requires the PySide6 library and the chipiron package to be installed.
+"""
+
 import os
 import pickle
 import sys
@@ -8,6 +25,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from chipiron.players.move_selector.treevalue.trees.move_and_value_tree import MoveAndValueTree
 from chipiron.players.move_selector.treevalue.trees.tree_visualization import display_special
 from chipiron.scripts.script import Script
+
 
 
 @typing.no_type_check
