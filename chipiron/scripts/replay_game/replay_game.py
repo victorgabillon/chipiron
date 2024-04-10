@@ -1,3 +1,7 @@
+"""
+This module contains the `ReplayGameScript` class, which is responsible for replaying a chess game.
+"""
+
 import os
 import pickle
 import sys
@@ -13,7 +17,7 @@ from chipiron.scripts.script import Script
 @dataclass
 class ReplayScriptArgs:
     """
-    The input arguments needed by the one match script to run
+    The input arguments needed by the replay game script to run.
     """
 
     # path to the pickle file with the BoardChi stored
@@ -24,6 +28,10 @@ class ReplayScriptArgs:
 
 
 class ReplayGameScript:
+    """
+    The `ReplayGameScript` class is responsible for replaying a chess game.
+    """
+
     args_dataclass_name: type[ReplayScriptArgs] = ReplayScriptArgs
 
     base_script: Script
@@ -36,9 +44,12 @@ class ReplayGameScript:
             base_script: Script,
     ) -> None:
         """
-        Builds the OneMatchScript object
-        """
+        Initializes the `ReplayGameScript` object.
 
+        Args:
+            base_script (Script): The base script object.
+
+        """
         self.base_script = base_script
 
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into self.args
@@ -52,6 +63,12 @@ class ReplayGameScript:
             self.chess_board: BoardChi = pickle.load(fileGame)
 
     def run(self) -> None:
+        """
+        Runs the replay game script.
+
+        If `gui` is set to True, it displays the match in a GUI. Otherwise, it runs a console version (TODO).
+
+        """
         if self.args.gui:
             chess_gui = QApplication(sys.argv)
             window = MainWindow(self.chess_board)
@@ -63,6 +80,9 @@ class ReplayGameScript:
 
     def terminate(self) -> None:
         """
-        Finishing the script. Profiling or timing.
+        Finishes the script.
+
+        Performs any necessary cleanup or finalization steps.
+
         """
         ...

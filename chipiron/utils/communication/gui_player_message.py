@@ -12,6 +12,12 @@ from chipiron.players.move_selector.treevalue.stopping_criterion import TreeMove
 
 @dataclass
 class PlayersColorToPlayerMessage:
+    """
+    Represents a mapping of player colors to GUI information.
+
+    Attributes:
+        player_color_to_gui_info (dict[chess.Color, str]): A dictionary mapping player colors to GUI information.
+    """
     player_color_to_gui_info: dict[chess.Color, str]
 
 

@@ -115,6 +115,9 @@ class OneMatchScript:
     def terminate(
             self
     ) -> None:
+        """
+        Terminates the script and cleans up any resources.
+        """
         print('terminating script')
         self.base_script.terminate()
         if self.gui:
