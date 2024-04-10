@@ -1,5 +1,5 @@
 """
-The interface script
+This module defines the IScript interface, which serves as the interface for scripts in the application.
 """
 
 from typing import Protocol, Any
@@ -8,21 +8,38 @@ from .script import Script
 
 
 class IScript(Protocol):
-    """ the interface for scripts"""
+    """
+    The interface for scripts in the application.
+    """
+
     args_dataclass_name: Any
 
     def __init__(
             self,
             base_script: Script
     ) -> None:
-        ...
+        """
+        Initializes the IScript object.
+
+        Args:
+            base_script (Script): The base script object.
+
+        Returns:
+            None
+        """
 
     def run(self) -> None:
-        """ Running the script"""
-        ...
+        """
+        Runs the script.
+
+        Returns:
+            None
+        """
 
     def terminate(self) -> None:
         """
-        Finishing the script. Profiling or timing.
+        Finishes the script. Performs profiling or timing.
+
+        Returns:
+            None
         """
-        ...

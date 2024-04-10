@@ -1,3 +1,6 @@
+""" 
+Module to create and save neural network trainers and their parameters
+"""
 import pickle
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -12,8 +15,23 @@ from chipiron.utils.chi_nn import ChiNN
 from chipiron.utils.small_tools import mkdir
 
 
+from dataclasses import dataclass, field
+
 @dataclass
 class NNTrainerArgs:
+    """
+    Arguments for the NNTrainer class.
+
+    Attributes:
+        neural_network (NeuralNetBoardEvalArgs): The arguments for the neural network.
+        reuse_existing_trainer (bool): Whether to reuse an existing trainer.
+        starting_lr (float): The starting learning rate.
+        momentum_op (float): The momentum value.
+        scheduler_step_size (int): The step size for the scheduler.
+        scheduler_gamma (float): The gamma value for the scheduler.
+        saving_intermediate_copy (bool): Whether to save intermediate copies.
+    """
+    
     neural_network: NeuralNetBoardEvalArgs = field(
         default_factory=lambda: NeuralNetBoardEvalArgs(
             nn_type='pp2d2_2_leaky',
@@ -29,24 +47,61 @@ class NNTrainerArgs:
 
 
 def get_optimizer_file_path_from(folder_path: str) -> str:
+    """
+    Returns the file path for the optimizer file in the given folder path.
+
+    Args:
+        folder_path (str): The path to the folder containing the optimizer file.
+
+    Returns:
+        str: The file path for the optimizer file.
+
+    """
     file_path = folder_path + '/optimizer.pi'
     return file_path
 
 
 def get_scheduler_file_path_from(folder_path: str) -> str:
+    """Get the file path for the scheduler file in the given folder path.
+
+    Args:
+        folder_path (str): The path of the folder containing the scheduler file.
+
+    Returns:
+        str: The file path of the scheduler file.
+    """
     file_path = folder_path + '/scheduler.pi'
     return file_path
 
 
 def get_folder_training_copies_path_from(folder_path: str) -> str:
+    """
+    Returns the path to the 'training_copies' folder within the given folder path.
+    
+    Parameters:
+        folder_path (str): The path to the folder.
+        
+    Returns:
+        str: The path to the 'training_copies' folder.
+    """
     return folder_path + '/training_copies'
 
 
 def create_nn_trainer(
         args: NNTrainerArgs,
         nn: ChiNN
-
 ) -> NNPytorchTrainer:
+    """
+    Creates an instance of NNPytorchTrainer based on the provided arguments and neural network.
+
+    Args:
+        args (NNTrainerArgs): The arguments for the NNTrainer.
+        nn (ChiNN): The neural network to be trained.
+
+    Returns:
+        NNPytorchTrainer: An instance of NNPytorchTrainer.
+
+    """
     args_nn = args.neural_network
     nn_folder_path = get_folder_path_from(
         nn_type=args_nn.nn_type,
@@ -92,6 +147,14 @@ def safe_nn_param_save(
         args: NeuralNetBoardEvalArgs,
         training_copy: bool = False
 ) -> None:
+    """
+    Save the parameters of a neural network to a file.
+
+    Args:
+        nn (ChiNN): The neural network to save.
+        args (NeuralNetBoardEvalArgs): The arguments containing information about the neural network.
+        training_copy (bool, optional): Whether to save a training copy of the parameters. Defaults to False.
+    """
     folder_path = get_folder_path_from(args.nn_type, args.nn_param_folder_name)
     folder_path_training_copies = get_folder_training_copies_path_from(folder_path)
     nn_file_path = get_nn_param_file_path_from(folder_path)
@@ -115,6 +178,16 @@ def safe_nn_trainer_save(
         nn_trainer: NNPytorchTrainer,
         args: NeuralNetBoardEvalArgs
 ) -> None:
+    """
+    Safely saves the optimizer and scheduler of the given NNPytorchTrainer object to files.
+
+    Args:
+        nn_trainer (NNPytorchTrainer): The NNPytorchTrainer object containing the optimizer and scheduler to be saved.
+        args (NeuralNetBoardEvalArgs): The arguments specifying the folder paths and other parameters.
+
+    Returns:
+        None
+    """
     nn_folder_path = get_folder_path_from(args.nn_type, args.nn_param_folder_name)
     file_optimizer_path = get_optimizer_file_path_from(nn_folder_path)
     file_scheduler_path = get_scheduler_file_path_from(nn_folder_path)

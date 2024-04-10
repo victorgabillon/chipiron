@@ -1,8 +1,24 @@
+"""
+Module that contains the NullObject class.
+
+
+"""
+
 from typing import Self, Any
 
-
 class NullObject:
-    """ Null objects always and reliably "do nothing." """
+    """ 
+    The NullObject class is a null object implementation in Python. Null objects are objects that always and reliably "do nothing." They are often used as placeholders or default values when an actual object is not available or needed.
+
+    The NullObject class provides the following methods:
+    - __init__: Initializes the NullObject instance.
+    - __call__: Allows the NullObject instance to be called as a function.
+    - __repr__: Returns a string representation of the NullObject instance.
+    - __nonzero__: Returns 0 to indicate that the NullObject instance is considered False.
+    - __getattr__: Handles attribute access on the NullObject instance.
+    - __setattr__: Handles attribute assignment on the NullObject instance.
+    - __delattr__: Handles attribute deletion on the NullObject instance.
+    """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None: pass
 

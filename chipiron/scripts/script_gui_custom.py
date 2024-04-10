@@ -1,14 +1,26 @@
+"""
+This script defines a graphical user interface (GUI) for interacting with the chipiron program.
+The GUI allows the user to select various options and perform different actions such as playing against the chipiron AI, watching a game, or visualizing a tree.
+
+The script_gui function creates the GUI window and handles the user interactions.
+The play_against_chipiron, watch_a_game, and visualize_a_tree functions are called when the corresponding buttons are clicked.
+
+Note: This script requires the customtkinter and chipiron modules to be installed.
+"""
+
 from typing import Any
-
 import customtkinter as ctk
-
 from chipiron import scripts
-
 
 # TODO switch to pygame
 
-def script_gui(
-) -> tuple[scripts.ScriptType, dict[str, Any]]:
+def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
+    """
+    Creates a graphical user interface (GUI) for interacting with the chipiron program.
+
+    Returns:
+        A tuple containing the script type and the arguments for the selected action.
+    """
     root = ctk.CTk()
     output: dict[str, Any] = {}
     # place a label on the root window
@@ -190,12 +202,26 @@ def script_gui(
     return script_type, gui_args
 
 
+
 def play_against_chipiron(
         output: dict[str, Any],
         strength: ctk.StringVar,
         color: ctk.StringVar,
         chipi_algo: ctk.StringVar
 ) -> bool:
+    """
+    Callback function for the "Play" button.
+    Sets the output dictionary with the selected options for playing against the chipiron AI.
+
+    Args:
+        output: The output dictionary to store the selected options.
+        strength: The selected strength level.
+        color: The selected color.
+        chipi_algo: The selected chipiron algorithm.
+
+    Returns:
+        True.
+    """
     output['type'] = 'play_against_chipiron'
     output['strength'] = int(strength.get())
     output['color_human'] = str(color.get())
@@ -204,10 +230,32 @@ def play_against_chipiron(
 
 
 def watch_a_game(output: dict[str, Any]) -> bool:
+    """
+    Callback function for the "Watch a game" button.
+    Sets the output dictionary with the selected options for watching a game.
+
+    Args:
+        output: The output dictionary to store the selected options.
+
+    Returns:
+        True.
+    """
     output['type'] = 'watch_a_game'
     return True
 
 
 def visualize_a_tree(output: dict[str, Any]) -> bool:
+    """
+    Callback function for the "Visualize a tree" button.
+    Sets the output dictionary with the selected options for tree visualization.
+
+    Args:
+        output: The output dictionary to store the selected options.
+
+    Returns:
+        True.
+    """
     output['type'] = 'tree_visualization'
     return True
+
+

@@ -1,3 +1,7 @@
+"""
+This module defines the ScriptType enum and provides a mapping between script types and their corresponding script classes.
+"""
+
 from enum import Enum
 from typing import Any
 
@@ -11,6 +15,9 @@ from .tree_visualization.tree_visualizer import VisualizeTreeScript
 
 
 class ScriptType(str, Enum):
+    """
+    Enum class representing different types of scripts.
+    """
     OneMatch = 'one_match'
     League = 'league'
     LearnNN = 'learn_nn'
@@ -19,7 +26,7 @@ class ScriptType(str, Enum):
     ReplayMatch = 'replay_match'
 
 
-#  script_type_to_script_class_name maps Script Type to the class name of the script to instantiate
+# script_type_to_script_class_name maps Script Type to the class name of the script to instantiate
 script_type_to_script_class_name: dict[ScriptType, Any] = {
     ScriptType.OneMatch: OneMatchScript,
     ScriptType.TreeVisualization: VisualizeTreeScript,
@@ -33,6 +40,18 @@ script_type_to_script_class_name: dict[ScriptType, Any] = {
 def get_script_type_from_script_class_name(
         script_type: ScriptType
 ) -> Any:
+    """
+    Retrieves the script class name based on the given script type.
+
+    Args:
+        script_type (ScriptType): The script type.
+
+    Returns:
+        Any: The script class name.
+
+    Raises:
+        Exception: If the script type is not found.
+    """
     if script_type in script_type_to_script_class_name:
         script_class_name: type[IScript] = script_type_to_script_class_name[script_type]
         return script_class_name

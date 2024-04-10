@@ -2,6 +2,8 @@
 
 """
 This module is the execution point of the chess GUI application.
+
+It provides the `MainWindow` class, which creates a surface for the chessboard and handles user interactions.
 """
 
 import queue
@@ -27,7 +29,15 @@ from chipiron.utils.is_dataclass import IsDataclass
 
 class MainWindow(QWidget):
     """
-    Create a surface for the chessboard.
+    Create a surface for the chessboard and handle user interactions.
+
+    This class provides the main window for the chess GUI application. It handles user interactions such as
+    clicking on chess pieces, making moves, and controlling the game status.
+
+    Attributes:
+        playing_status (PlayingStatus): The current playing status of the game.
+        gui_mailbox (queue.Queue[IsDataclass]): The mailbox for receiving messages from the GUI thread.
+        main_thread_mailbox (queue.Queue[IsDataclass]): The mailbox for sending messages to the main thread.
     """
 
     def __init__(
@@ -36,7 +46,11 @@ class MainWindow(QWidget):
             main_thread_mailbox: queue.Queue[IsDataclass]
     ) -> None:
         """
-        Initialize the chessboard.
+        Initialize the chessboard and the main window.
+
+        Args:
+            gui_mailbox (queue.Queue[IsDataclass]): The mailbox for receiving messages from the GUI thread.
+            main_thread_mailbox (queue.Queue[IsDataclass]): The mailbox for sending messages to the main thread.
         """
         super().__init__()
 
@@ -143,15 +157,34 @@ class MainWindow(QWidget):
         self.checkThreadTimer.start()
 
     def stopppy(self) -> None:
+        """
+        Stops the execution of the GUI.
+
+        This method closes the GUI window and sends a kill message to the main thread.
+
+        Returns:
+            None
+        """
         # should we send a kill message to the main thread?
         self.close()
 
     def play_button_clicked(self) -> None:
+        """
+        Handle the event when the play button is clicked.
+        
+        This method prints a message indicating that the play button has been clicked,
+        and sends a GameStatusMessage with the status set to PlayingStatus.PLAY to the main thread mailbox.
+        """
         print('play_button_clicked')
         message: GameStatusMessage = GameStatusMessage(status=PlayingStatus.PLAY)
         self.main_thread_mailbox.put(message)
 
     def back_button_clicked(self) -> None:
+        """
+        Handle the event when the back button is clicked.
+
+        This method prints a message and puts a `BackMessage` object into the main thread mailbox.
+        """
         print('back_button_clicked')
         message: BackMessage = BackMessage()
         self.main_thread_mailbox.put(message)
@@ -159,6 +192,12 @@ class MainWindow(QWidget):
     def pause_button_clicked(
             self
     ) -> None:
+        """
+        Handles the click event of the pause button.
+
+        Prints 'pause_button_clicked' and sends a GameStatusMessage with the status set to PlayingStatus.PAUSE
+        to the main thread mailbox.
+        """
         print('pause_button_clicked')
         message: GameStatusMessage = GameStatusMessage(status=PlayingStatus.PAUSE)
         self.main_thread_mailbox.put(message)
@@ -203,6 +242,15 @@ class MainWindow(QWidget):
             self,
             move: chess.Move
     ) -> None:
+        """
+        Sends a move to the main thread for processing.
+
+        Args:
+            move (chess.Move): The move to be sent.
+
+        Returns:
+            None
+        """
         message: MoveMessage = MoveMessage(
             move=move,
             corresponding_board=self.board.fen(),
@@ -213,6 +261,16 @@ class MainWindow(QWidget):
 
     @typing.no_type_check
     def choice_promote(self):
+        """
+        Displays a dialog box with buttons for promoting a chess piece.
+
+        The dialog box allows the user to choose between promoting the pawn to a queen, rook, bishop, or knight.
+        Each button is connected to a corresponding method for handling the promotion.
+
+        Returns:
+            None
+        """
+
         self.d = QDialog()
         d = self.d
         d.setWindowTitle("Promote to ?")
@@ -246,32 +304,83 @@ class MainWindow(QWidget):
 
     @typing.no_type_check
     def promote_queen(self):
+        """
+        Promotes the selected piece to a queen.
+
+        This method creates a move object to promote the selected piece to a queen by appending 'q' to the UCI notation
+        of the piece's destination square. It then closes the dialog window.
+
+        Returns:
+            None
+        """
         self.move_promote_asked = chess.Move.from_uci("{}{}q".format(self.pieceToMove[1], self.coordinates))
         self.d.close()
 
     @typing.no_type_check
     def promote_rook(self):
+        """
+        Promotes a pawn to a rook.
+
+        This method is called when a pawn reaches the opposite end of the board and needs to be promoted to a rook.
+        It creates a move object representing the promotion and closes the dialog window.
+
+        Returns:
+            None
+        """
         self.move_promote_asked = chess.Move.from_uci("{}{}r".format(self.pieceToMove[1], self.coordinates))
         self.d.close()
 
     @typing.no_type_check
     def promote_bishop(self):
+        """
+        Promotes the current piece to a bishop.
+
+        This method creates a move object to promote the current piece to a bishop and closes the dialog window.
+
+        Returns:
+            None
+        """
         self.move_promote_asked = chess.Move.from_uci("{}{}b".format(self.pieceToMove[1], self.coordinates))
         self.d.close()
 
     @typing.no_type_check
     def promote_knight(self):
+        """
+        Promotes a pawn to a knight.
+
+        This method is called when a pawn is promoted to a knight in the GUI.
+        It creates a move object representing the promotion and closes the GUI.
+
+        Returns:
+        None
+        """
         self.move_promote_asked = chess.Move.from_uci("{}{}n".format(self.pieceToMove[1], self.coordinates))
         self.d.close()
 
-    def process_message(self
-                        ) -> None:
+    def process_message(
+            self
+    ) -> None:
 
         """
+        Process a message received by the GUI.
+
         Draw a chessboard with the starting position and then redraw
         it for every new move.
-        """
 
+        This method is responsible for handling different types of messages
+        received by the GUI and taking appropriate actions based on the message type.
+
+        Supported message types:
+        - BoardMessage: Updates the board and redraws it.
+        - EvaluationMessage: Updates the evaluation values.
+        - PlayersColorToPlayerMessage: Updates the mapping of player colors to player information.
+        - MatchResultsMessage: Updates the match results.
+        - GameStatusMessage: Updates the game play status.
+        - Other: Raises a ValueError indicating an unknown message type.
+
+        Returns:
+        None
+        """
         if not self.gui_mailbox.empty():
             message = self.gui_mailbox.get()
             match message:
@@ -308,9 +417,18 @@ class MainWindow(QWidget):
                 case other:
                     raise ValueError(f'unknown type of message received by gui {other} in {__name__}')
 
-    def display_move_history(self
-                             ) -> None:
+    def display_move_history(self) -> None:
+        """
+        Display the move history in a table widget.
 
+        This method calculates the number of rounds based on the number of half moves in the move stack.
+        It then sets the number of rows in the table widget to the number of rounds.
+        The table widget's horizontal header labels are set to 'White' and 'Black'.
+        The move history is then iterated over and each move is added to the table widget.
+
+        Returns:
+            None
+        """
         import math
         num_half_move: int = len(self.board.board.move_stack)
         num_rounds: int = int(math.ceil(num_half_move / 2))
@@ -323,12 +441,13 @@ class MainWindow(QWidget):
                     item = QTableWidgetItem(str(self.board.board.move_stack[half_move]))
                     self.tablewidget.setItem(round_, player, item)
 
-    def draw_board(self
-                   ) -> None:
-
+    def draw_board(self) -> None:
         """
         Draw a chessboard with the starting position and then redraw
         it for every new move.
+
+        Returns:
+            None
         """
 
         self.boardSvg = self.board.board._repr_svg_().encode("UTF-8")
@@ -341,7 +460,15 @@ class MainWindow(QWidget):
             self,
             players_color_to_player: dict[chess.Color, str]
     ) -> None:
+        """
+        Update the player buttons with the corresponding player names.
 
+        Args:
+            players_color_to_player (dict[chess.Color, str]): A dictionary mapping chess.Color to player names.
+
+        Returns:
+            None
+        """
         self.player_white_button.setText(' White: ' + players_color_to_player[chess.WHITE])  # text
         self.player_black_button.setText(' Black: ' + players_color_to_player[chess.BLACK])  # text
 
@@ -352,7 +479,18 @@ class MainWindow(QWidget):
             evaluation_white: float,
             evaluation_black: float
     ) -> None:
+        """
+        Update the evaluation values displayed on the GUI.
 
+        Args:
+            evaluation_stock (float): The evaluation value for the stock.
+            evaluation_chipiron (float): The evaluation value for the chipiron.
+            evaluation_white (float): The evaluation value for the white.
+            evaluation_black (float): The evaluation value for the black.
+
+        Returns:
+            None
+        """
         self.eval_button.setText('eval: ' + str(evaluation_stock))  # text
         self.eval_button_chi.setText('eval: ' + str(evaluation_chipiron))  # text
         self.eval_button_black.setText('eval White: ' + str(evaluation_white))  # text
@@ -362,6 +500,11 @@ class MainWindow(QWidget):
             self,
             play_status: PlayingStatus
     ) -> None:
+        """Update the game play status.
+
+        Args:
+            play_status (PlayingStatus): The new playing status.
+        """
         print('update_game_play_status', play_status)
 
         if self.playing_status != play_status:
@@ -384,6 +527,15 @@ class MainWindow(QWidget):
             self,
             match_result: MatchResults
     ) -> None:
+        """
+        Update the match statistics and display them on the GUI.
+
+        Args:
+            match_result (MatchResults): The result of the match.
+
+        Returns:
+            None
+        """
         simple_results: SimpleResults = match_result.get_simple_result()
         self.score_button.setText(
             'Score: ' + str(simple_results.player_one_wins) + '-'
@@ -391,7 +543,7 @@ class MainWindow(QWidget):
             + str(simple_results.draws))  # text
 
         print('update', match_result.match_finished)
-        # if the match is over we kill th gui
+        # if the match is over we kill the GUI
         if match_result.match_finished:
             print('finishing the widget')
             self.close()
