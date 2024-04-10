@@ -1,7 +1,7 @@
-
 """ Module to convert an ascii board to a FEN string. """
 
 from typing import AnyStr
+
 
 def convert_line(
         line: AnyStr,

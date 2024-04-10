@@ -79,8 +79,8 @@ class MatchResultsFactory:
             return match_result
 
     def subscribe(
-        self,
-        subscriber: queue.Queue[IsDataclass]
+            self,
+            subscriber: queue.Queue[IsDataclass]
     ) -> None:
         """Subscribe a subscriber to receive match results.
 

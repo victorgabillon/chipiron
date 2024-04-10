@@ -9,8 +9,11 @@ Note: This script requires the customtkinter and chipiron modules to be installe
 """
 
 from typing import Any
+
 import customtkinter as ctk
+
 from chipiron import scripts
+
 
 # TODO switch to pygame
 
@@ -202,7 +205,6 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
     return script_type, gui_args
 
 
-
 def play_against_chipiron(
         output: dict[str, Any],
         strength: ctk.StringVar,
@@ -257,5 +259,3 @@ def visualize_a_tree(output: dict[str, Any]) -> bool:
     """
     output['type'] = 'tree_visualization'
     return True
-
-

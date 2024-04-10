@@ -15,8 +15,6 @@ from chipiron.utils.chi_nn import ChiNN
 from chipiron.utils.small_tools import mkdir
 
 
-from dataclasses import dataclass, field
-
 @dataclass
 class NNTrainerArgs:
     """
@@ -31,7 +29,7 @@ class NNTrainerArgs:
         scheduler_gamma (float): The gamma value for the scheduler.
         saving_intermediate_copy (bool): Whether to save intermediate copies.
     """
-    
+
     neural_network: NeuralNetBoardEvalArgs = field(
         default_factory=lambda: NeuralNetBoardEvalArgs(
             nn_type='pp2d2_2_leaky',
