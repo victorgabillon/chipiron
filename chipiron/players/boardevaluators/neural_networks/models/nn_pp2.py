@@ -12,6 +12,7 @@ from chipiron.utils.chi_nn import ChiNN
 
 class NetPP2(ChiNN):
     """The NetPP2 class. Inherits from the ChiNN base class."""
+
     def __init__(self) -> None:
         """Constructor for the NetPP2 class."""
         super(NetPP2, self).__init__()

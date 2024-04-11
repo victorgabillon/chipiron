@@ -1,5 +1,6 @@
 """
-This module contains the implementation of the CommandLineHumanMoveSelector class, which allows a human player to select moves through the command line interface.
+This module contains the implementation of the CommandLineHumanMoveSelector class, which allows a human player
+ to select moves through the command line interface.
 """
 
 from dataclasses import dataclass

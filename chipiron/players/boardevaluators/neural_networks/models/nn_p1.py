@@ -10,7 +10,9 @@ from chipiron.utils.chi_nn import ChiNN
 
 
 class NetP1(ChiNN):
-    """The NetP1 class is a subclass of ChiNN and implements the forward pass of the neural network. It consists of a single fully connected layer with a tanh activation function."""
+    """The NetP1 class is a subclass of ChiNN and implements the forward pass of the neural network. It consists of
+     a single fully connected layer with a tanh activation function."""
+
     def __init__(self) -> None:
         """Constructor for the NetP1 class. Initializes the neural network layers."""
         super(NetP1, self).__init__()
