@@ -1,6 +1,22 @@
 """
 Sequool
+
+This module contains the implementation of the Sequool node selector. The Sequool node selector is responsible for
+choosing the best node to open in a move tree based on various selection strategies.
+
+Classes:
+- HalfMoveSelector: Protocol defining the interface for a half-move selector.
+- StaticNotOpenedSelector: A node selector that considers the number of visits and selects half-moves based on zipf distribution.
+- RandomAllSelector: A node selector that selects half-moves randomly.
+- Sequool: The main class implementing the Sequool node selector.
+
+Functions:
+- consider_nodes_from_all_lesser_half_moves_in_descendants: Consider all nodes in smaller half-moves than the picked half-move using the descendants object.
+- consider_nodes_from_all_lesser_half_moves_in_sub_stree: Consider all nodes in smaller half-moves than the picked half-move using tree traversal.
+- consider_nodes_only_from_half_moves_in_descendants: Consider only the nodes at the picked depth.
+- get_best_node_from_candidates: Get the best node from a list of candidate nodes based on their exploration index data.
 """
+
 import random
 import typing
 from dataclasses import dataclass, field
@@ -23,26 +39,48 @@ if typing.TYPE_CHECKING:
     import chipiron.players.move_selector.treevalue.tree_manager as tree_man
 
 
-# NodeCandidatesSelector = Callable[[random.Random], list[AlgorithmNode]]
-
-
 class HalfMoveSelector(Protocol):
+    """
+    Protocol defining the interface for a half-move selector.
+    """
+
     def update_from_expansions(
             self,
             latest_tree_expansions: 'tree_man.TreeExpansions'
     ) -> None:
-        ...
+        """
+        Update the half-move selector with the latest tree expansions.
+
+        Args:
+            latest_tree_expansions: The latest tree expansions.
+
+        Returns:
+            None
+        """
 
     def select_half_move(
             self,
             from_node: AlgorithmNode,
             random_generator: random.Random
     ) -> HalfMove:
-        ...
+        """
+        Select the next half-move to consider based on the given node and random generator.
+
+        Args:
+            from_node: The current node.
+            random_generator: The random generator.
+
+        Returns:
+            The selected half-move.
+        """
 
 
 @dataclass
 class StaticNotOpenedSelector:
+    """
+    A node selector that considers the number of visits and selects half-moves based on zipf distribution.
+    """
+
     all_nodes_not_opened: Descendants
 
     # counting the visits for each half_move
@@ -52,8 +90,16 @@ class StaticNotOpenedSelector:
             self,
             latest_tree_expansions: 'tree_man.TreeExpansions'
     ) -> None:
+        """
+        Update the node selector with the latest tree expansions.
 
-        # print('updating the all_nodes_not_opened')
+        Args:
+            latest_tree_expansions: The latest tree expansions.
+
+        Returns:
+            None
+        """
+
         # Update internal info with the latest tree expansions
         expansion: tree_man.TreeExpansion
         for expansion in latest_tree_expansions:
@@ -71,6 +117,16 @@ class StaticNotOpenedSelector:
             from_node: AlgorithmNode,
             random_generator: random.Random
     ) -> HalfMove:
+        """
+        Select the next half-move to consider based on the given node and random generator.
+
+        Args:
+            from_node: The current node.
+            random_generator: The random generator.
+
+        Returns:
+            The selected half-move.
+        """
 
         filtered_count_visits: dict[int, int | float] = {hm: value for hm, value in self.count_visits.items() if
                                                          hm in self.all_nodes_not_opened}
@@ -96,8 +152,17 @@ def consider_nodes_from_all_lesser_half_moves_in_descendants(
         from_node: AlgorithmNode,
         descendants: Descendants
 ) -> list[ITreeNode]:
-    """ consider all the nodes that are in smaller half moves than the picked half-move
-    Done with the descendants objet"""
+    """
+    Consider all the nodes that are in smaller half-moves than the picked half-move using the descendants object.
+
+    Args:
+        half_move_picked: The picked half-move.
+        from_node: The current node.
+        descendants: The descendants object.
+
+    Returns:
+        A list of nodes to consider.
+    """
 
     nodes_to_consider: list[ITreeNode] = []
     half_move: int
@@ -112,8 +177,16 @@ def consider_nodes_from_all_lesser_half_moves_in_sub_stree(
         half_move_picked: HalfMove,
         from_node: AlgorithmNode,
 ) -> list[ITreeNode]:
-    """ consider all the nodes that are in smaller half moves than the picked half-move
-    Done with tree traversal from the node"""
+    """
+    Consider all the nodes that are in smaller half-moves than the picked half-move using tree traversal.
+
+    Args:
+        half_move_picked: The picked half-move.
+        from_node: The current node.
+
+    Returns:
+        A list of nodes to consider.
+    """
 
     nodes_to_consider: list[ITreeNode] = get_descendants_candidate_not_over(
         from_tree_node=from_node,
@@ -127,24 +200,57 @@ def consider_nodes_only_from_half_moves_in_descendants(
         from_node: AlgorithmNode,
         descendants: Descendants,
 ) -> list[ITreeNode]:
-    """ consider only the nodes at the picked depth"""
+    """
+    Consider only the nodes at the picked depth.
+
+    Args:
+        half_move_picked: The picked half-move.
+        from_node: The current node.
+        descendants: The descendants object.
+
+    Returns:
+        A list of nodes to consider.
+    """
+
     return list(descendants[half_move_picked].values())
 
 
 @dataclass
 class RandomAllSelector:
+    """
+    A node selector that selects half-moves randomly.
+    """
 
     def update_from_expansions(
             self,
             latest_tree_expansions: 'tree_man.TreeExpansions'
     ) -> None:
-        ...
+        """
+        Update the node selector with the latest tree expansions.
+
+        Args:
+            latest_tree_expansions: The latest tree expansions.
+
+        Returns:
+            None
+        """
 
     def select_half_move(
             self,
             from_node: AlgorithmNode,
             random_generator: random.Random
     ) -> HalfMove:
+        """
+        Select the next half-move to consider based on the given node and random generator.
+
+        Args:
+            from_node: The current node.
+            random_generator: The random generator.
+
+        Returns:
+            The selected half-move.
+        """
+
         half_move_picked: int
         # choose a half move based on zipf
         assert isinstance(from_node.exploration_index_data, MaxDepthDescendants)
@@ -183,8 +289,9 @@ def get_best_node_from_candidates(
 @dataclass
 class Sequool:
     """
-    Sequool Node selector
+    The main class implementing the Sequool node selector.
     """
+
     opening_instructor: OpeningInstructor
     all_nodes_not_opened: Descendants
     recursif: bool
@@ -198,6 +305,16 @@ class Sequool:
             tree: trees.MoveAndValueTree,
             latest_tree_expansions: 'tree_man.TreeExpansions'
     ) -> OpeningInstructions:
+        """
+        Choose the best node to open in the move tree and return the opening instructions.
+
+        Args:
+            tree: The move tree.
+            latest_tree_expansions: The latest tree expansions.
+
+        Returns:
+            The opening instructions.
+        """
 
         self.half_move_selector.update_from_expansions(
             latest_tree_expansions=latest_tree_expansions
@@ -206,13 +323,22 @@ class Sequool:
         opening_instructions: OpeningInstructions = self.choose_node_and_move_to_open_recur(
             from_node=tree.root_node
         )
-        # print('opening_instruction', opening_instructions)
+
         return opening_instructions
 
     def choose_node_and_move_to_open_recur(
             self,
             from_node: AlgorithmNode
     ) -> OpeningInstructions:
+        """
+        Recursively choose the best node to open in the move tree and return the opening instructions.
+
+        Args:
+            from_node: The current node.
+
+        Returns:
+            The opening instructions.
+        """
 
         half_move_selected: HalfMove = self.half_move_selector.select_half_move(
             from_node=from_node,
@@ -229,14 +355,13 @@ class Sequool:
         if not self.recursif:
             self.all_nodes_not_opened.remove_descendant(best_node)
 
-        # print('grn', best_node.tree_node.all_legal_moves_generated, best_node.tree_node.moves_children)
         if self.recursif and best_node.tree_node.all_legal_moves_generated:
-            print('RECUUUUR', best_node.half_move)
             return self.choose_node_and_move_to_open_recur(from_node=best_node)
         else:
             all_moves_to_open = self.opening_instructor.all_moves_to_open(node_to_open=best_node.tree_node)
             opening_instructions: OpeningInstructions = create_instructions_to_open_all_moves(
                 moves_to_play=all_moves_to_open,
-                node_to_open=best_node)
+                node_to_open=best_node
+            )
 
             return opening_instructions

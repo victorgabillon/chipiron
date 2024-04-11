@@ -1,6 +1,13 @@
 """
-RecurZipfBase
+This module contains the implementation of the RecurZipfBase class, which is a node selector for a move selector tree.
+
+The RecurZipfBase class is responsible for selecting the next node to explore in a move selector tree based on the RecurZipf algorithm.
+
+Classes:
+- RecurZipfBase: The RecurZipfBase Node selector.
+
 """
+
 import random
 import typing
 from dataclasses import dataclass
@@ -22,11 +29,19 @@ if typing.TYPE_CHECKING:
 
 @dataclass
 class RecurZipfBaseArgs(NodeSelectorArgs):
+    """
+    Arguments for the RecurZipfBase node selector.
+
+    Attributes:
+        move_explorer_priority (SamplingPriorities): The priority for move exploration.
+    """
+
     move_explorer_priority: SamplingPriorities
 
 
 class RecurZipfBase:
     """ The RecurZipfBase Node selector """
+
     opening_instructor: OpeningInstructor
 
     def __init__(
@@ -35,6 +50,15 @@ class RecurZipfBase:
             random_generator: random.Random,
             opening_instructor: OpeningInstructor
     ) -> None:
+        """
+        Initializes a new instance of the RecurZipfBase class.
+
+        Args:
+        - args (RecurZipfBaseArgs): The arguments for the RecurZipfBase node selector.
+        - random_generator (random.Random): The random number generator.
+        - opening_instructor (OpeningInstructor): The opening instructor.
+
+        """
         self.opening_instructor = opening_instructor
         self.move_explorer = ZipfMoveExplorer(args.move_explorer_priority, random_generator)
         self.random_generator = random_generator
@@ -45,6 +69,17 @@ class RecurZipfBase:
             latest_tree_expansions: 'tree_man.TreeExpansions'
 
     ) -> OpeningInstructions:
+        """
+        Chooses the next node to explore and the move to open.
+
+        Args:
+        - tree (trees.MoveAndValueTree): The move selector tree.
+        - latest_tree_expansions (tree_man.TreeExpansions): The latest tree expansions.
+
+        Returns:
+        - OpeningInstructions: The instructions for opening the selected move.
+
+        """
         # todo maybe proportions and proportions can be valuesorted dict with smart updates
 
         opening_instructions: OpeningInstructions
@@ -77,4 +112,11 @@ class RecurZipfBase:
         return opening_instructions
 
     def __str__(self) -> str:
+        """
+        Returns a string representation of the RecurZipfBase node selector.
+
+        Returns:
+        - str: The string representation of the RecurZipfBase node selector.
+
+        """
         return 'RecurZipfBase'

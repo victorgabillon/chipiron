@@ -31,6 +31,20 @@ class AlgorithmNodeFactory:
             parent_node: ITreeNode | None,
             modifications: board_mod.BoardModification | None
     ) -> AlgorithmNode:
+        """
+        Creates an AlgorithmNode object.
+
+        Args:
+            board: The board object.
+            half_move: The half move count.
+            count: The count.
+            parent_node: The parent node object.
+            modifications: The board modifications object.
+
+        Returns:
+            An AlgorithmNode object.
+
+        """
         tree_node: node.TreeNode = self.tree_node_factory.create(
             board=board,
             half_move=half_move,

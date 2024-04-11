@@ -1,5 +1,18 @@
 """
-Tree Exploration
+This module contains the implementation of the TreeExploration class, which is responsible for managing a search
+ for the best move in a given chess position using a tree-based approach.
+
+The TreeExploration class is used to create and manage a tree structure that represents the possible moves and
+ their evaluations in a chess position. It provides methods for exploring the tree, selecting the best move,
+  and printing information during the move computation.
+
+The module also includes helper functions for creating a TreeExploration object and its dependencies.
+
+Classes:
+- TreeExploration: Manages the search for the best move using a tree-based approach.
+
+Functions:
+- create_tree_exploration: Creates a TreeExploration object with the specified dependencies.
 """
 
 import random
@@ -24,7 +37,18 @@ from .trees.factory import MoveAndValueTreeFactory
 @dataclass
 class TreeExploration:
     """
-    Tree Exploration is an object to manage one best move search
+    Tree Exploration is an object to manage one best move search.
+
+    Attributes:
+    - tree: The tree structure representing the possible moves and their evaluations.
+    - tree_manager: The manager for the tree structure.
+    - node_selector: The selector for choosing nodes and moves to open in the tree.
+    - recommend_move_after_exploration: The recommender rule for selecting the best move after the tree exploration.
+    - stopping_criterion: The stopping criterion for determining when to stop the tree exploration.
+
+    Methods:
+    - print_info_during_move_computation: Prints information during the move computation.
+    - explore: Explores the tree to find the best move.
     """
     # TODO Not sure why this class is not simply the TreeAndValuePlayer Class
     #  but might be useful when dealing with multi round and time , no?
@@ -35,10 +59,16 @@ class TreeExploration:
     recommend_move_after_exploration: recommender_rule.AllRecommendFunctionsArgs
     stopping_criterion: StoppingCriterion
 
-    def print_info_during_move_computation(
-            self,
-            random_generator: random.Random
-    ) -> None:
+    def print_info_during_move_computation(self, random_generator: random.Random) -> None:
+        """
+        Prints information during the move computation.
+
+        Args:
+        - random_generator: The random number generator.
+
+        Returns:
+        - None
+        """
         if self.tree.root_node.minmax_evaluation.best_node_sequence:
             current_best_child = self.tree.root_node.minmax_evaluation.best_node_sequence[0]
             current_best_move = str(self.tree.root_node.moves_children.inverse[current_best_child])
@@ -60,6 +90,15 @@ class TreeExploration:
             self,
             random_generator: random.Random
     ) -> MoveRecommendation:
+        """
+        Explores the tree to find the best move.
+
+        Args:
+        - random_generator: The random number generator.
+
+        Returns:
+        - MoveRecommendation: The recommended move and its evaluation.
+        """
 
         # by default the first tree expansion is the creation of the tree node
         tree_expansions: tree_man.TreeExpansions = tree_man.TreeExpansions()
@@ -131,18 +170,18 @@ def create_tree_exploration(
         recommend_move_after_exploration: recommender_rule.AllRecommendFunctionsArgs
 ) -> TreeExploration:
     """
-    Creation of the tree exploration to init all object necessary
-     for a tree search to find one move in a given stating board
+    Creates a TreeExploration object with the specified dependencies.
+
     Args:
-        node_selector_create:
-        stopping_criterion_args:
-        recommend_move_after_exploration:
-        starting_board:
-        tree_manager:
-        tree_factory:
+    - node_selector_create: The factory function for creating the node selector.
+    - starting_board: The starting chess board position.
+    - tree_manager: The manager for the tree structure.
+    - tree_factory: The factory for creating the tree structure.
+    - stopping_criterion_args: The arguments for creating the stopping criterion.
+    - recommend_move_after_exploration: The recommender rule for selecting the best move after the tree exploration.
 
     Returns:
-
+    - TreeExploration: The created TreeExploration object.
     """
 
     # creates the tree

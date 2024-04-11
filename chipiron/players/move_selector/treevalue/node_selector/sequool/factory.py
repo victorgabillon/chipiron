@@ -15,6 +15,14 @@ from ..node_selector_args import NodeSelectorArgs
 
 @dataclass
 class SequoolArgs(NodeSelectorArgs):
+    """
+    Arguments for the Sequool node selector.
+
+    Attributes:
+        recursive_selection_on_all_nodes (bool): Flag indicating whether to perform recursive selection on all nodes.
+        random_depth_pick (bool): Flag indicating whether to randomly pick a depth for selection.
+        consider_all_lesser_half_move (bool): Flag indicating whether to consider all lesser half moves.
+    """
     recursive_selection_on_all_nodes: bool
     random_depth_pick: bool
     consider_all_lesser_half_move: bool
@@ -26,13 +34,15 @@ def create_sequool(
         random_generator: random.Random
 ) -> Sequool:
     """
+    Create a sequool node selector object.
 
     Args:
-        random_generator:
-        opening_instructor: an opening instructor object
-        args: dictionary of arguments
+        opening_instructor: An opening instructor object.
+        args: Dictionary of arguments.
+        random_generator: Random generator object.
 
-    Returns: a sequool node selector object
+    Returns:
+        A sequool node selector object.
 
     """
     all_nodes_not_opened = trees.Descendants()

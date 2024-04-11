@@ -1,3 +1,7 @@
+"""
+This module contains the implementation of the `NNNodeEvaluator` class, which is a generic neural network class for board evaluation.
+"""
+
 import torch
 
 import chipiron.players.boardevaluators.neural_networks as board_nn
@@ -15,6 +19,13 @@ class NNNodeEvaluator(NodeEvaluator):
             nn_board_evaluator: board_nn.NNBoardEvaluator,
             syzygy: SyzygyTable | None
     ) -> None:
+        """
+        Initializes an instance of the NNNodeEvaluator class.
+
+        Args:
+            nn_board_evaluator (board_nn.NNBoardEvaluator): The neural network board evaluator.
+            syzygy (SyzygyTable | None): The Syzygy table or None if not available.
+        """
         super().__init__(
             board_evaluator=nn_board_evaluator,
             syzygy=syzygy)
@@ -26,6 +37,15 @@ class NNNodeEvaluator(NodeEvaluator):
             self,
             not_over_nodes: list[AlgorithmNode]
     ) -> None:
+        """
+        Evaluates a list of `AlgorithmNode` objects that are not yet over.
+
+        Args:
+            not_over_nodes (list[AlgorithmNode]): The list of `AlgorithmNode` objects to evaluate.
+
+        Returns:
+            None
+        """
         list_of_tensors: list[torch.Tensor] = [torch.tensor([])] * len(not_over_nodes)
         index: int
         node_not_over: AlgorithmNode

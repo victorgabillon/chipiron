@@ -177,6 +177,9 @@ class UpdateIndexGlobalMinChange:
 
 
 class UpdateIndexZipfFactoredProba:
+    """
+    A class that updates the exploration index of nodes in a tree using the Zipf factored probability strategy.
+    """
 
     def update_root_node_index(
             self,
@@ -237,6 +240,9 @@ class UpdateIndexZipfFactoredProba:
 
 
 class UpdateIndexLocalMinChange:
+    """
+    A class that updates the exploration index of nodes in a tree using the local minimum change strategy.
+    """
 
     def update_root_node_index(
             self,
@@ -300,8 +306,6 @@ class UpdateIndexLocalMinChange:
                         assert isinstance(best_child, AlgorithmNode)
                         local_interval.max_value = math.inf
                         local_interval.min_value = best_child.minmax_evaluation.get_value_white()
-                    # print('intersectWHITE', parent_node.id, parent_node.tree_node.board.turn, local_interval,
-                    #      parent_node.exploration_index_data.interval)
 
                     inter_level_interval = intersect_intervals(
                         local_interval,
@@ -315,8 +319,6 @@ class UpdateIndexLocalMinChange:
                         local_index = None
                 if parent_node.tree_node.board.turn == chess.BLACK:
                     best_child = parent_node.minmax_evaluation.best_child()
-                    # print('parent_nodess', parent_node.id, child_node.id)
-
                     second_best_child = parent_node.minmax_evaluation.second_best_child()
                     child_white_value = child_node.minmax_evaluation.get_value_white()
                     local_interval = Interval()
@@ -328,7 +330,6 @@ class UpdateIndexLocalMinChange:
                         assert isinstance(best_child, AlgorithmNode)
                         local_interval.max_value = best_child.minmax_evaluation.get_value_white()
                         local_interval.min_value = -math.inf
-                    #  print('intersect', local_interval, parent_node.exploration_index_data.interval)
 
                     inter_level_interval = intersect_intervals(local_interval,
                                                                parent_node.exploration_index_data.interval)
@@ -339,7 +340,7 @@ class UpdateIndexLocalMinChange:
                         )
                     else:
                         local_index = None
-            # print('t', child_node.id, local_index, inter_level_interval)
+
             assert isinstance(child_node.exploration_index_data, IntervalExplo)
 
             if child_node.exploration_index_data.index is None:

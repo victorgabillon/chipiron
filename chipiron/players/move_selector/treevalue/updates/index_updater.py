@@ -1,3 +1,7 @@
+"""
+This module contains the IndexUpdater class, which is responsible for updating the indices of AlgorithmNode objects in a tree structure.
+"""
+
 from chipiron.players.move_selector.treevalue.indices.node_indices.index_data import MaxDepthDescendants
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from .index_block import IndexUpdateInstructionsBlock
@@ -5,6 +9,9 @@ from .updates_file import UpdateInstructions
 
 
 class IndexUpdater:
+    """
+    The IndexUpdater class is responsible for updating the indices of AlgorithmNode objects in a tree structure.
+    """
 
     def __init__(self) -> None:
         pass
@@ -13,6 +20,15 @@ class IndexUpdater:
             self,
             new_node: AlgorithmNode
     ) -> IndexUpdateInstructionsBlock:
+        """
+        Creates the update instructions block after a new node is added to the tree.
+
+        Args:
+            new_node (AlgorithmNode): The newly added node.
+
+        Returns:
+            IndexUpdateInstructionsBlock: The update instructions block.
+        """
         base_update_instructions_block: IndexUpdateInstructionsBlock = IndexUpdateInstructionsBlock(
             children_with_updated_index={new_node}
         )
@@ -23,6 +39,16 @@ class IndexUpdater:
             node_to_update: AlgorithmNode,
             updates_instructions: UpdateInstructions
     ) -> IndexUpdateInstructionsBlock:
+        """
+        Performs the index updates based on the given update instructions.
+
+        Args:
+            node_to_update (AlgorithmNode): The node to update.
+            updates_instructions (UpdateInstructions): The update instructions.
+
+        Returns:
+            IndexUpdateInstructionsBlock: The update instructions block.
+        """
         # get the base block
         updates_instructions_block: IndexUpdateInstructionsBlock | None = updates_instructions.index_block
         assert updates_instructions_block is not None

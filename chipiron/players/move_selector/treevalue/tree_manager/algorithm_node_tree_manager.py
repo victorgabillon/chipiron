@@ -117,7 +117,15 @@ class AlgorithmNodeTreeManager:
             self,
             tree: trees.MoveAndValueTree
     ) -> None:
+        """
+        Updates the indices of the nodes in the given tree.
 
+        Args:
+            tree (trees.MoveAndValueTree): The tree whose indices need to be updated.
+
+        Returns:
+            None
+        """
         update_all_indices(
             index_manager=self.index_manager,
             tree=tree
@@ -127,7 +135,15 @@ class AlgorithmNodeTreeManager:
             self,
             tree_expansions: TreeExpansions
     ) -> None:
+        """
+        Updates the algorithm node tree in a backward manner based on the given tree expansions.
 
+        Args:
+            tree_expansions (TreeExpansions): The tree expansions used to update the algorithm node tree.
+
+        Returns:
+            None
+        """
         update_instructions_batch: upda.UpdateInstructionsBatch
         update_instructions_batch = self.algorithm_node_updater.generate_update_instructions(
             tree_expansions=tree_expansions)
@@ -149,7 +165,16 @@ class AlgorithmNodeTreeManager:
             node_to_update: AlgorithmNode,
             update_instructions: UpdateInstructions
     ) -> upda.UpdateInstructionsBatch:
+        """
+        Updates the given node with the provided update instructions.
 
+        Args:
+            node_to_update (AlgorithmNode): The node to be updated.
+            update_instructions (UpdateInstructions): The instructions for updating the node.
+
+        Returns:
+            UpdateInstructionsBatch: A batch of update instructions for the parent nodes of the updated node.
+        """
         # UPDATES
         new_update_instructions: upda.UpdateInstructions = self.algorithm_node_updater.perform_updates(
             node_to_update=node_to_update,
@@ -167,6 +192,15 @@ class AlgorithmNodeTreeManager:
             self,
             tree: trees.MoveAndValueTree
     ) -> None:
+        """
+        Prints statistics about the given tree.
+
+        Args:
+            tree (trees.MoveAndValueTree): The tree to print statistics for.
+
+        Returns:
+            None
+        """
         print('Tree stats: move_count', tree.move_count, ' node_count',
               tree.descendants.get_count())
         sum_ = 0
@@ -179,6 +213,15 @@ class AlgorithmNodeTreeManager:
             self,
             tree: trees.MoveAndValueTree
     ) -> None:
+        """
+        Test the given tree by performing various tests on its nodes.
+
+        Args:
+            tree (trees.MoveAndValueTree): The tree to be tested.
+
+        Returns:
+            None
+        """
         self.test_count(tree=tree)
         for half_move in tree.descendants:
             for fen in tree.descendants[half_move]:
@@ -192,10 +235,25 @@ class AlgorithmNodeTreeManager:
             self,
             tree: trees.MoveAndValueTree
     ) -> None:
+        """
+        Test the count of nodes in the tree.
+
+        Args:
+            tree (trees.MoveAndValueTree): The tree to be tested.
+
+        Returns:
+            None
+        """
         assert (tree.descendants.get_count() == tree.nodes_count)
 
     def print_best_line(
             self,
             tree: trees.MoveAndValueTree
     ) -> None:
+        """
+        Prints the best line of moves based on the minmax evaluation of the tree.
+
+        Args:
+            tree (trees.MoveAndValueTree): The tree containing the moves and their minmax evaluations.
+        """
         tree.root_node.minmax_evaluation.print_best_line()

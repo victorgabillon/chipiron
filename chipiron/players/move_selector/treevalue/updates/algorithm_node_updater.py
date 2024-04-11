@@ -1,3 +1,12 @@
+"""
+This module contains the AlgorithmNodeUpdater class, which is responsible for updating AlgorithmNode objects in a
+ tree structure.
+
+The AlgorithmNodeUpdater class provides methods for creating update instructions after a node is added to the
+ tree, generating update instructions for a batch of tree expansions, and performing updates on a specific node
+  based on the given update instructions.
+"""
+
 import typing
 from dataclasses import dataclass
 
@@ -14,6 +23,14 @@ if typing.TYPE_CHECKING:
 
 @dataclass
 class AlgorithmNodeUpdater:
+    """
+    The AlgorithmNodeUpdater class is responsible for updating AlgorithmNode objects in a tree.
+
+    Attributes:
+        minmax_evaluation_updater (MinMaxEvaluationUpdater): The updater for min-max evaluation values.
+        index_updater (IndexUpdater | None): The updater for node indices, if available.
+    """
+
     minmax_evaluation_updater: MinMaxEvaluationUpdater
     index_updater: IndexUpdater | None = None
 
@@ -21,6 +38,15 @@ class AlgorithmNodeUpdater:
             self,
             new_node: AlgorithmNode
     ) -> UpdateInstructions:
+        """
+        Creates update instructions after a new node is added to the tree.
+
+        Args:
+            new_node (AlgorithmNode): The newly added AlgorithmNode.
+
+        Returns:
+            UpdateInstructions: The update instructions for the new node.
+        """
         value_update_instructions_block = self.minmax_evaluation_updater.create_update_instructions_after_node_birth(
             new_node=new_node
         )
@@ -42,6 +68,15 @@ class AlgorithmNodeUpdater:
             self,
             tree_expansions: 'tree_man.TreeExpansions'
     ) -> UpdateInstructionsBatch:
+        """
+        Generates update instructions for a batch of tree expansions.
+
+        Args:
+            tree_expansions (tree_man.TreeExpansions): The batch of tree expansions.
+
+        Returns:
+            UpdateInstructionsBatch: The update instructions for the batch of tree expansions.
+        """
         # TODO is the way of merging now overkill?
 
         update_instructions_batch: UpdateInstructionsBatch = UpdateInstructionsBatch()
@@ -68,7 +103,16 @@ class AlgorithmNodeUpdater:
             node_to_update: AlgorithmNode,
             update_instructions: UpdateInstructions
     ) -> UpdateInstructions:
+        """
+        Performs updates on a specific node based on the given update instructions.
 
+        Args:
+            node_to_update (AlgorithmNode): The node to update.
+            update_instructions (UpdateInstructions): The update instructions for the node.
+
+        Returns:
+            UpdateInstructions: The new update instructions after performing the updates.
+        """
         value_update_instructions_block: ValueUpdateInstructionsBlock = self.minmax_evaluation_updater.perform_updates(
             node_to_update,
             updates_instructions=update_instructions

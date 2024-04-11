@@ -1,3 +1,14 @@
+"""
+This module contains the implementation of the Uniform Node selector.
+
+The Uniform Node selector is responsible for selecting nodes to expand in a tree-based move selector algorithm.
+It uses an opening instructor to determine the moves to open for each node and generates opening instructions accordingly.
+
+Classes:
+- Uniform: The Uniform Node selector class.
+
+"""
+
 from chipiron.players.move_selector.treevalue import tree_manager as tree_man
 from chipiron.players.move_selector.treevalue import trees
 from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructions, \
@@ -15,12 +26,26 @@ class Uniform:
             self,
             opening_instructor: OpeningInstructor
     ) -> None:
+        """
+        Initializes a new instance of the Uniform class.
+
+        Args:
+        - opening_instructor (OpeningInstructor): The opening instructor to be used for determining moves to open.
+
+        """
         self.opening_instructor = opening_instructor
         self.current_depth_to_expand = 0
 
     def get_current_depth_to_expand(
             self
     ) -> int:
+        """
+        Gets the current depth to expand.
+
+        Returns:
+        - int: The current depth to expand.
+
+        """
         return self.current_depth_to_expand
 
     def choose_node_and_move_to_open(
@@ -29,6 +54,17 @@ class Uniform:
             latest_tree_expansions: tree_man.TreeExpansions
 
     ) -> OpeningInstructions:
+        """
+        Chooses a node to expand and determines the moves to open for that node.
+
+        Args:
+        - tree (trees.MoveAndValueTree): The move and value tree.
+        - latest_tree_expansions (tree_man.TreeExpansions): The latest tree expansions.
+
+        Returns:
+        - OpeningInstructions: The opening instructions for the chosen node.
+
+        """
         opening_instructions_batch: OpeningInstructions = OpeningInstructions()
 
         # generate the nodes to expand
@@ -59,4 +95,8 @@ class Uniform:
         return opening_instructions_batch
 
     def print_info(self) -> None:
+        """
+        Prints information about the Uniform Node selector.
+
+        """
         print('Uniform')
