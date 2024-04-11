@@ -13,6 +13,7 @@ Attributes:
 """
 from enum import Enum
 
+
 class MoveSelectorTypes(str, Enum):
     """
     Enumeration class representing different types of move selectors.
