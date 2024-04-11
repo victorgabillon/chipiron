@@ -6,7 +6,7 @@ import torch
 
 from chipiron.environments.chess.board.board import BoardChi
 
-
+# This code is supposed to slowly be turned into the cmasses fro board and node represenatition
 def transform_board_pieces_one_side(board: BoardChi, requires_grad_: bool) -> torch.Tensor:
     """
     Transform the board pieces for one side into a tensor representation.
@@ -18,6 +18,8 @@ def transform_board_pieces_one_side(board: BoardChi, requires_grad_: bool) -> to
     Returns:
         torch.Tensor: The transformed board pieces tensor.
     """
+    # normalisation of the board so that it is white turn (possible color inversion if it was black's turn)
+
     if board.turn == chess.BLACK:
         color_turn = board.turn
         color_not_turn = chess.WHITE
@@ -55,6 +57,8 @@ def transform_board_pieces_two_sides(board: BoardChi, requires_grad_: bool) -> t
     Returns:
         torch.Tensor: The transformed board pieces tensor.
     """
+    # normalisation of the board so that it is white turn (possible color inversion if it was black's turn)
+
     if board.turn == chess.BLACK:
         color_turn = board.turn
         color_not_turn = chess.WHITE

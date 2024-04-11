@@ -139,6 +139,9 @@ class Game:
         return self._board
 
 
+# function that will be called by the observable game when the board is updated, which should query at least one player
+# to compute a move
+# MoveFunction = Callable[[BoardChi, seed], None]
 class MoveFunction(Protocol):
     """
     Represents a move function that can be called on a game board.
@@ -165,6 +168,9 @@ class ObservableGame:
 
     game: Game
     mailboxes_display: list[queue.Queue[IsDataclass]]
+
+    # function that will be called by the observable game when the board is updated, which should query
+    # at least one player to compute a move
     move_functions: list[MoveFunction]
 
     def __init__(
@@ -180,6 +186,8 @@ class ObservableGame:
         self.game = game
         self.mailboxes_display = []  # mailboxes for board to be displayed
         self.move_functions = []  # mailboxes for board to be played
+        # the difference between the two is that board can be modified without asking the player to play
+        # (for instance when using the button back)
 
     def register_display(
             self,

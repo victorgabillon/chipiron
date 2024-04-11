@@ -61,6 +61,7 @@ def create_exploration_index_data(
     index_dataclass_name: Any
     if depth_index:
         assert base_index_dataclass_name is not None
+        # adding a field to the dataclass for keeping track of the depth
         index_dataclass_name = make_dataclass(
             'DepthExtendedDataclass',
             fields=[],

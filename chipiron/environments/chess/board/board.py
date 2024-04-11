@@ -21,6 +21,8 @@ class BoardChi:
     but im not sure its really necessary.i keep it for potential usefulness
     """
 
+    board: chess.Board
+
     def __init__(
             self,
             board: chess.Board

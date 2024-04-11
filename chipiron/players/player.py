@@ -12,7 +12,8 @@ class Player:
     """
     Player selects moves on a given board
     """
-
+    #  difference between player and treebuilder includes the fact
+    #  that now a player can be a mixture of multiple decision rules
     name: str
     main_move_selector: MoveSelector
 
