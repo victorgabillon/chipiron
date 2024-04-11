@@ -61,7 +61,7 @@ class Script:
             parser: An instance of MyParser used for parsing arguments.
             extra_args: Additional arguments to be passed to the parser.
         """
-        self.start_time = time.time()         # start the clock
+        self.start_time = time.time()  # start the clock
         self.parser = parser
         self.experiment_output_folder = None
         self.extra_args = extra_args
