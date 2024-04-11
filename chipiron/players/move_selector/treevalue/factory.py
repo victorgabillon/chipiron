@@ -1,3 +1,16 @@
+"""
+This module provides functions for creating a TreeAndValueMoveSelector object.
+
+The TreeAndValueMoveSelector is a player that uses a tree-based approach to select moves in a game. It evaluates the
+game tree using a node evaluator and selects moves based on a set of criteria defined by the node selector. The player
+uses a stopping criterion to determine when to stop the search and a recommender rule to recommend a move after
+exploration.
+
+This module also provides functions for creating the necessary components of the TreeAndValueMoveSelector, such as the
+node evaluator, node selector, tree factory, and tree manager.
+
+"""
+
 import random
 from dataclasses import dataclass
 from typing import Literal
@@ -34,6 +47,18 @@ def create_tree_and_value_builders(
         syzygy: SyzygyTable | None,
         random_generator: random.Random
 ) -> TreeAndValueMoveSelector:
+    """
+    Create a TreeAndValueMoveSelector object with the given arguments.
+
+    Args:
+        args (TreeAndValuePlayerArgs): The arguments for creating the TreeAndValueMoveSelector.
+        syzygy (SyzygyTable | None): The SyzygyTable object for tablebase endgame evaluation.
+        random_generator (random.Random): The random number generator.
+
+    Returns:
+        TreeAndValueMoveSelector: The created TreeAndValueMoveSelector object.
+
+    """
     node_evaluator: node_eval.NodeEvaluator = node_eval.create_node_evaluator(
         arg_board_evaluator=args.board_evaluator,
         syzygy=syzygy

@@ -1,3 +1,9 @@
+"""
+This module provides functions for traversing a tree of nodes.
+
+The functions in this module allow you to retrieve descendants of a given node in a tree structure.
+"""
+
 from .algorithm_node import AlgorithmNode
 from .itree_node import ITreeNode
 
@@ -5,6 +11,15 @@ from .itree_node import ITreeNode
 def get_descendants(
         from_tree_node: ITreeNode
 ) -> dict[ITreeNode, None]:
+    """
+    Get all descendants of a given tree node.
+
+    Args:
+        from_tree_node (ITreeNode): The starting tree node.
+
+    Returns:
+        dict[ITreeNode, None]: A dictionary containing all descendants of the starting tree node.
+    """
     des: dict[ITreeNode, None] = {from_tree_node: None}  # include itself
     generation = set(from_tree_node.moves_children.values())
     while generation:
@@ -22,7 +37,16 @@ def get_descendants_candidate_to_open(
         from_tree_node: AlgorithmNode,
         max_depth: int | None = None
 ) -> list[AlgorithmNode]:
-    """ returns descendants that are not over"""
+    """
+    Get descendants of a given tree node that are not over.
+
+    Args:
+        from_tree_node (AlgorithmNode): The starting tree node.
+        max_depth (int | None, optional): The maximum depth to traverse. Defaults to None.
+
+    Returns:
+        list[AlgorithmNode]: A list of descendants that are not over.
+    """
     if not from_tree_node.all_legal_moves_generated and not from_tree_node.is_over():
         # should use are_all_moves_and_children_opened() but its messy!
         # also using is_over is  messy as over_events are defined in a child class!!!
@@ -48,8 +72,16 @@ def get_descendants_candidate_not_over(
         from_tree_node: ITreeNode,
         max_depth: int | None = None
 ) -> list[ITreeNode]:
-    """ returns descendants that are not over
-    returns himself if not opened"""
+    """
+    Get descendants of a given tree node that are not over.
+
+    Args:
+        from_tree_node (ITreeNode): The starting tree node.
+        max_depth (int | None, optional): The maximum depth to traverse. Defaults to None.
+
+    Returns:
+        list[ITreeNode]: A list of descendants that are not over.
+    """
     assert (not from_tree_node.is_over())
     if not from_tree_node.moves_children:
         return [from_tree_node]

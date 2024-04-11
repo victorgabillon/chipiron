@@ -1,3 +1,18 @@
+"""
+This module defines recommender rules for selecting moves in a tree-based move selector.
+
+The recommender rules are implemented as data classes that define a `__call__` method. The `__call__` method takes a
+`MoveAndValueTree` object and a random generator, and returns a recommended chess move.
+
+The available recommender rule types are defined in the `RecommenderRuleTypes` enum.
+
+The module also defines a `RecommenderRule` protocol that all recommender rule classes must implement.
+
+Example usage:
+    rule = AlmostEqualLogistic(type=RecommenderRuleTypes.AlmostEqualLogistic, temperature=0.5)
+    move = rule(tree, random_generator)
+"""
+
 import random
 from dataclasses import dataclass
 from enum import Enum
@@ -14,6 +29,9 @@ from chipiron.utils.small_tools import softmax
 
 
 class RecommenderRuleTypes(str, Enum):
+    """
+    Enum class that defines the available recommender rule types.
+    """
     AlmostEqualLogistic: str = 'almost_equal_logistic'
     Softmax: str = 'softmax'
 
@@ -23,6 +41,9 @@ class RecommenderRuleTypes(str, Enum):
 
 @dataclass
 class AlmostEqualLogistic:
+    """
+    Recommender rule that selects the best move allowing for random choice for almost equally valued moves.
+    """
     type: Literal[RecommenderRuleTypes.AlmostEqualLogistic]
     temperature: float
 
@@ -31,6 +52,16 @@ class AlmostEqualLogistic:
             tree: trees.MoveAndValueTree,
             random_generator: random.Random
     ) -> chess.Move:
+        """
+        Selects the best move from the tree, allowing for random choice for almost equally valued moves.
+
+        Args:
+            tree (trees.MoveAndValueTree): The move and value tree.
+            random_generator (random.Random): The random generator.
+
+        Returns:
+            chess.Move: The recommended chess move.
+        """
         # TODO this should be given at construction but postponed for now because of dataclasses
         # find the best first move allowing for random choice for almost equally valued moves.
         best_root_children = tree.root_node.minmax_evaluation.get_all_of_the_best_moves(
@@ -46,6 +77,9 @@ class AlmostEqualLogistic:
 
 @dataclass
 class SoftmaxRule:
+    """
+    Recommender rule that selects the best move using the softmax function.
+    """
     type: Literal[RecommenderRuleTypes.Softmax]
     temperature: float
 
@@ -54,6 +88,16 @@ class SoftmaxRule:
             tree: trees.MoveAndValueTree,
             random_generator: random.Random
     ) -> chess.Move:
+        """
+        Selects the best move from the tree using the softmax function.
+
+        Args:
+            tree (trees.MoveAndValueTree): The move and value tree.
+            random_generator (random.Random): The random generator.
+
+        Returns:
+            chess.Move: The recommended chess move.
+        """
         # todo maybe there is a way to code this withtout the assert using the childrensorted value? or smth else
         values = []
         for node in tree.root_node.moves_children.values():
@@ -77,6 +121,9 @@ AllRecommendFunctionsArgs = AlmostEqualLogistic | SoftmaxRule
 
 @dataclass
 class RecommenderRule(Protocol):
+    """
+    Protocol that all recommender rule classes must implement.
+    """
     type: RecommenderRuleTypes
 
     def __call__(
@@ -84,52 +131,17 @@ class RecommenderRule(Protocol):
             tree: trees.MoveAndValueTree,
             random_generator: random.Random
     ) -> chess.Move:
+        """
+        Selects the best move from the tree.
+
+        Args:
+            tree (trees.MoveAndValueTree): The move and value tree.
+            random_generator (random.Random): The random generator.
+
+        Returns:
+            chess.Move: The recommended chess move.
+        """
         ...
-
-
-# below is the old code to be reformated in the bew WAY
-
-# def recommend_move_after_exploration(
-#         tree: trees.MoveAndValueTree
-# ):
-#     # todo the preference for action that have been explored more is not super clear,
-#     #  is it weel implemented, ven for debug?
-#
-#     # for debug we fix the choice in the next lines
-#     # if global_variables.deterministic_behavior:
-#     #     print(' FIXED CHOICE FOR DEBUG')
-#     #     best_child = self.tree.root_node.get_all_of_the_best_moves(how_equal='considered_equal')[-1]
-#     #     print('We have as best: ', self.tree.root_node.moves_children.inverse[best_child])
-#     #     best_move = self.tree.root_node.moves_children.inverse[best_child]
-#
-#     selection_rule = self.move_selection_rule.type
-#     if selection_rule == 'softmax':
-#         temperature = self.move_selection_rule.temperature
-#         values = [tree.root_node.subjective_value_of(node) for node in
-#                   tree.root_node.moves_children.values()]
-#
-#         softmax_ = softmax(values, temperature)
-#         print(values)
-#         print('SOFTMAX', temperature, [i / sum(softmax_) for i in softmax_],
-#               sum([i / sum(softmax_) for i in softmax_]))
-#
-#         move_as_list = self.random_generator.choices(
-#             list(tree.root_node.moves_children.keys()),
-#             weights=softmax_, k=1)
-#         best_move = move_as_list[0]
-#     elif selection_rule == 'almost_equal' or selection_rule == 'almost_equal_logistic':
-#         # find the best first move allowing for random choice for almost equally valued moves.
-#         best_root_children = tree.root_node.minmax_evaluation.get_all_of_the_best_moves(
-#             how_equal=selection_rule)
-#         print('We have as bests: ',
-#               [tree.root_node.moves_children.inverse[best] for best in best_root_children])
-#         best_child = self.random_generator.choice(best_root_children)
-#         if tree.root_node.minmax_evaluation.over_event.how_over == HowOver.WIN:
-#             assert (best_child.minmax_evaluation.over_event.how_over == HowOver.WIN)
-#         best_move = tree.root_node.moves_children.inverse[best_child]
-#     else:
-#         raise (ValueError('move_selection_rule is not valid it seems'))
-#     return best_move
 
 
 def recommend_move_after_exploration_generic(

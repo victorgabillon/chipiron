@@ -1,5 +1,15 @@
 """
-stopping criterion
+This module defines stopping criteria for a move selector in a game tree.
+
+The stopping criteria determine when the move selector should stop exploring the game tree and make a decision.
+
+The module includes the following classes:
+
+- StoppingCriterion: The general stopping criterion class.
+- TreeMoveLimit: A stopping criterion based on a tree move limit.
+- DepthLimit: A stopping criterion based on a depth limit.
+
+It also includes helper classes and functions for creating and managing stopping criteria.
 """
 
 from dataclasses import dataclass
@@ -12,18 +22,59 @@ from .trees import MoveAndValueTree
 
 @runtime_checkable
 class DepthToExpendP(Protocol):
+    """
+    Protocol for objects that provide the current depth to expand.
+
+    This protocol defines a single method `get_current_depth_to_expand` that should be implemented by classes
+    that want to provide the current depth to expand.
+
+    Attributes:
+        None
+
+    Methods:
+        get_current_depth_to_expand: Returns the current depth to expand as an integer.
+
+    Examples:
+        >>> class MyDepthToExpend(DepthToExpendP):
+        ...     def get_current_depth_to_expand(self) -> int:
+        ...         return 5
+        ...
+        >>> obj = MyDepthToExpend()
+        >>> obj.get_current_depth_to_expand()
+        5
+    """
 
     def get_current_depth_to_expand(self) -> int:
+        """
+        Returns the current depth to expand as an integer.
+
+        Returns:
+            The current depth to expand.
+
+        Raises:
+            None
+        """
         ...
 
 
 class StoppingCriterionTypes(str, Enum):
+    """
+    Enum class representing different types of stopping criteria for tree value calculation.
+    """
+
     DepthLimit: str = 'depth_limit'
     TreeMoveLimit: str = 'tree_move_limit'
 
 
 @dataclass
 class StoppingCriterionArgs:
+    """
+    Represents the arguments for a stopping criterion.
+
+    Attributes:
+        type (StoppingCriterionTypes): The type of stopping criterion.
+    """
+
     type: StoppingCriterionTypes
 
 
@@ -62,6 +113,15 @@ class StoppingCriterion:
             self,
             tree: MoveAndValueTree
     ) -> str:
+        """
+        Returns a string representation of the progress made by the stopping criterion.
+
+        Args:
+            tree (MoveAndValueTree): The move and value tree.
+
+        Returns:
+            str: A string representation of the progress.
+        """
         return ''
 
 
@@ -123,6 +183,12 @@ class TreeMoveLimit(StoppingCriterion):
 
 @dataclass
 class DepthLimitArgs(StoppingCriterionArgs):
+    """
+    Arguments for the depth limit stopping criterion.
+
+    Attributes:
+        depth_limit (int): The maximum depth allowed for the search.
+    """
     depth_limit: int
 
 
@@ -139,6 +205,16 @@ class DepthLimit(StoppingCriterion):
             depth_limit: int,
             node_selector: DepthToExpendP
     ) -> None:
+        """
+        Initializes a StoppingCriterion object.
+
+        Args:
+            depth_limit (int): The maximum depth to search in the tree.
+            node_selector (DepthToExpendP): The node selector used to determine which nodes to expand.
+
+        Returns:
+            None
+        """
         self.depth_limit = depth_limit
         self.node_selector = node_selector
 
@@ -146,6 +222,15 @@ class DepthLimit(StoppingCriterion):
             self,
             tree: MoveAndValueTree
     ) -> bool:
+        """
+        Determines whether the search should continue expanding nodes in the tree.
+
+        Args:
+            tree (MoveAndValueTree): The tree containing the moves and their corresponding values.
+
+        Returns:
+            bool: True if the search should continue, False otherwise.
+        """
         continue_base = super().should_we_continue(tree=tree)
         if not continue_base:
             return continue_base

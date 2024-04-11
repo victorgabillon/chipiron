@@ -1,3 +1,7 @@
+"""
+This module provides a factory function for creating node evaluators based on different types of board evaluators.
+"""
+
 import sys
 from typing import TypeAlias
 
@@ -18,6 +22,20 @@ def create_node_evaluator(
         arg_board_evaluator: AllNodeEvaluatorArgs,
         syzygy: SyzygyTable | None
 ) -> NodeEvaluator:
+    """
+    Create a node evaluator based on the given board evaluator argument and syzygy table.
+
+    Args:
+        arg_board_evaluator (AllNodeEvaluatorArgs): The argument for the board evaluator.
+        syzygy (SyzygyTable | None): The syzygy table to be used for evaluation.
+
+    Returns:
+        NodeEvaluator: The created node evaluator.
+
+    Raises:
+        SystemExit: If the given board evaluator type is not found.
+
+    """
     if arg_board_evaluator.syzygy_evaluation:
         syzygy_ = syzygy
     else:

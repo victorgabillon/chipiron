@@ -1,3 +1,24 @@
+"""
+This module contains the implementation of the NodeEvaluator class, which is responsible for evaluating the value of
+ nodes in a tree-based move selector.
+
+The NodeEvaluator class wraps a board evaluator and a syzygy table to provide more complex evaluations of chess
+ positions. It handles queries for evaluating nodes and manages obvious over events.
+
+Classes:
+- NodeEvaluator: Wrapping node evaluator with syzygy and obvious over event.
+
+Enums:
+- NodeEvaluatorTypes: Types of node evaluators.
+
+Constants:
+- DISCOUNT: Discount factor used in the evaluation.
+
+Functions:
+- None
+
+"""
+
 from enum import Enum
 
 import chess
@@ -13,30 +34,45 @@ DISCOUNT = .999999999999  # todo play with this
 
 
 class NodeEvaluatorTypes(str, Enum):
+    """
+    Enum class representing different types of node evaluators.
+    """
+
     NeuralNetwork: str = 'neural_network'
 
 
 class EvaluationQueries:
+    """
+    A class that represents evaluation queries for algorithm nodes.
+
+    Attributes:
+        over_nodes (list[AlgorithmNode]): A list of algorithm nodes that are considered "over".
+        not_over_nodes (list[AlgorithmNode]): A list of algorithm nodes that are not considered "over".
+    """
+
     over_nodes: list[AlgorithmNode]
     not_over_nodes: list[AlgorithmNode]
 
     def __init__(self) -> None:
+        """
+        Initializes a new instance of the NodeEvaluator class.
+        """
         self.over_nodes = []
         self.not_over_nodes = []
 
     def clear_queries(self) -> None:
+        """
+        Clears the evaluation queries by resetting the over_nodes and not_over_nodes lists.
+        """
         self.over_nodes = []
         self.not_over_nodes = []
 
 
 class NodeEvaluator:
-    # VALUE_WHITE_WHEN_OVER is the value_white default value when the node is over
-    # set atm to be symmetric and high to be preferred
-
-    """ Wrapping node evaluator with syzygy and obvious over event. I think the idea is this class builds
-     on top of BoardEvaluator which is th elementary class to build something more complex
-      (similar to the relation between player and move selector)
-       it also manages the evaluation querrys it seems"""
+    """
+    The NodeEvaluator class is responsible for evaluating the value of nodes in a tree structure.
+    It uses a board evaluator and a syzygy evaluator to calculate the value of the nodes.
+    """
 
     board_evaluator: board_evals.BoardEvaluator
     syzygy_evaluator: SyzygyTable | None
@@ -46,6 +82,13 @@ class NodeEvaluator:
             board_evaluator: board_evals.BoardEvaluator,
             syzygy: SyzygyTable | None
     ) -> None:
+        """
+        Initializes a NodeEvaluator object.
+
+        Args:
+            board_evaluator (board_evals.BoardEvaluator): The board evaluator used to evaluate the chess board.
+            syzygy (SyzygyTable | None): The Syzygy table used for endgame tablebase evaluations, or None if not available.
+        """
         self.board_evaluator = board_evaluator
         self.syzygy_evaluator = syzygy
 
@@ -53,6 +96,11 @@ class NodeEvaluator:
             self,
             node: ITreeNode
     ) -> float:
+        """
+        Calculates the value for the white player of a given node.
+        If the value can be obtained from the syzygy evaluator, it is used.
+        Otherwise, the board evaluator is used.
+        """
         value_white: float | None = self.syzygy_value_white(node.board)
         value_white_float: float
         if value_white is None:
@@ -65,20 +113,23 @@ class NodeEvaluator:
             self,
             board: BoardChi
     ) -> float | None:
-        # Todo probalby should use the function below value form over evnt
+        """
+        Calculates the value for the white player of a given board using the syzygy evaluator.
+        If the syzygy evaluator is not available or the board is not in the syzygy table, None is returned.
+        """
         if self.syzygy_evaluator is None or not self.syzygy_evaluator.fast_in_table(board):
             return None
         else:
             val: int = self.syzygy_evaluator.val(board)
-
             return val
 
     def check_obvious_over_events(
             self,
             node: AlgorithmNode
     ) -> None:
-        """ updates the node.over object
-         if the game is obviously over"""
+        """
+        Updates the node.over object if the game is obviously over.
+        """
         game_over: bool = node.tree_node.board.is_game_over()
         if game_over:
             value_as_string: str = node.board.board.result()
@@ -112,7 +163,9 @@ class NodeEvaluator:
             self,
             over_event: OverEvent
     ) -> board_evals.ValueWhiteWhenOver:
-        """ returns the value white given an over event"""
+        """
+        Returns the value white given an over event.
+        """
         assert over_event.is_over()
         if over_event.is_win():
             assert (not over_event.is_draw())
@@ -128,6 +181,9 @@ class NodeEvaluator:
             self,
             node: AlgorithmNode
     ) -> None:
+        """
+        Evaluates the node when the game is over.
+        """
         evaluation = DISCOUNT ** node.half_move * self.value_white_from_over_event(node.minmax_evaluation.over_event)
         node.minmax_evaluation.set_evaluation(evaluation)
 
@@ -135,7 +191,9 @@ class NodeEvaluator:
             self,
             evaluation_queries: EvaluationQueries
     ) -> None:
-
+        """
+        Evaluates all the queried nodes.
+        """
         node_over: AlgorithmNode
         for node_over in evaluation_queries.over_nodes:
             # assert isinstance(node_over, AlgorithmNode)
@@ -151,6 +209,9 @@ class NodeEvaluator:
             node: AlgorithmNode,
             evaluation_queries: EvaluationQueries
     ) -> None:
+        """
+        Adds an evaluation query for a node.
+        """
         assert (node.minmax_evaluation.value_white_evaluator is None)
         self.check_obvious_over_events(node)
         if node.is_over():
@@ -162,6 +223,9 @@ class NodeEvaluator:
             self,
             not_over_nodes: list[AlgorithmNode]
     ) -> None:
+        """
+        Evaluates all the nodes that are not over.
+        """
         node_not_over: AlgorithmNode
         for node_not_over in not_over_nodes:
             evaluation = self.value_white(node_not_over)
@@ -177,5 +241,8 @@ class NodeEvaluator:
             evaluation: float,
             node: AlgorithmNode
     ) -> float:
+        """
+        Processes the evaluation for a node that is not over.
+        """
         processed_evaluation = (1 / DISCOUNT) ** node.half_move * evaluation
         return processed_evaluation

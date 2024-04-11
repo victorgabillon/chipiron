@@ -1,3 +1,7 @@
+"""
+This module contains classes related to tree expansion in a chess game.
+"""
+
 import typing
 from dataclasses import dataclass, field
 from typing import List
@@ -8,7 +12,15 @@ import chipiron.players.move_selector.treevalue.nodes as node
 
 @dataclass(slots=True)
 class TreeExpansion:
-    """ the class describing TreeExpansion"""
+    """
+    Represents an expansion of a tree in a chess game.
+
+    Attributes:
+        child_node (node.ITreeNode): The child node created during the expansion.
+        parent_node (node.ITreeNode | None): The parent node of the child node. None if it's the root node.
+        board_modifications (board_mod.BoardModification | None): The modifications made to the chess board during the expansion.
+        creation_child_node (bool): Indicates whether the child node was created during the expansion.
+    """
 
     child_node: node.ITreeNode
     parent_node: node.ITreeNode | None
@@ -23,7 +35,13 @@ class TreeExpansion:
 
 @dataclass(slots=True)
 class TreeExpansions:
-    """ the class logging some expansions of a tree"""
+    """
+    Represents a collection of tree expansions in a chess game.
+
+    Attributes:
+        expansions_with_node_creation (List[TreeExpansion]): List of expansions where child nodes were created.
+        expansions_without_node_creation (List[TreeExpansion]): List of expansions where child nodes were not created.
+    """
 
     expansions_with_node_creation: List[TreeExpansion] = field(default_factory=list)
     expansions_without_node_creation: List[TreeExpansion] = field(default_factory=list)
@@ -35,6 +53,12 @@ class TreeExpansions:
             self,
             tree_expansion: TreeExpansion
     ) -> None:
+        """
+        Adds a tree expansion to the collection.
+
+        Args:
+            tree_expansion (TreeExpansion): The tree expansion to add.
+        """
         if tree_expansion.creation_child_node:
             self.add_creation(tree_expansion=tree_expansion)
         else:
@@ -44,12 +68,24 @@ class TreeExpansions:
             self,
             tree_expansion: TreeExpansion
     ) -> None:
+        """
+        Adds a tree expansion with a created child node to the collection.
+
+        Args:
+            tree_expansion (TreeExpansion): The tree expansion to add.
+        """
         self.expansions_with_node_creation.append(tree_expansion)
 
     def add_connection(
             self,
             tree_expansion: TreeExpansion
     ) -> None:
+        """
+        Adds a tree expansion without a created child node to the collection.
+
+        Args:
+            tree_expansion (TreeExpansion): The tree expansion to add.
+        """
         self.expansions_without_node_creation.append(tree_expansion)
 
     def __str__(self) -> str:
@@ -58,7 +94,13 @@ class TreeExpansions:
 
 
 class TreeExpansionHistory:
-    """ the class logging all the expansions of a tree"""
+    """
+    Represents the history of all the expansions in a tree.
+
+    Attributes:
+        history (List[TreeExpansion]): List of all the expansions in the tree.
+    """
+
     history: List[TreeExpansion]
 
     def __init__(self, root_node: node.TreeNode):
