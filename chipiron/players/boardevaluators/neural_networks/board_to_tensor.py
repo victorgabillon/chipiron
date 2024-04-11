@@ -6,6 +6,7 @@ import torch
 
 from chipiron.environments.chess.board.board import BoardChi
 
+
 # This code is supposed to slowly be turned into the cmasses fro board and node represenatition
 def transform_board_pieces_one_side(board: BoardChi, requires_grad_: bool) -> torch.Tensor:
     """
