@@ -35,6 +35,11 @@ class PlayerProcess(multiprocessing.Process):
         player_color (chess.Color): The color of the player.
     """
 
+    game_player: GamePlayer
+    queue_board: queue.Queue[DataClass]
+    queue_move: queue.Queue[IsDataclass]
+    player_color: chess.Color
+
     def __init__(
             self,
             player_factory_args: PlayerFactoryArgs,

@@ -48,6 +48,7 @@ class RecurZipfQuoolExplorationData(NodeExplorationData):
     Methods:
         dot_description(): Returns a string representation of the exploration data for dot visualization.
     """
+    # the 'proba' associated by recursively multiplying 1/rank of the node with the max zipf_factor of the parents
     zipf_factored_proba: float | None = None
 
     def dot_description(self) -> str:

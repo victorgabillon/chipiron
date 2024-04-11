@@ -26,7 +26,10 @@ class ScriptArgs:
     Dataclass representing the arguments for the Script class.
     """
 
+    # whether the script is profiling computation usage
     profiling: bool = False
+
+    # whether the script is testing the code (using pytest for instance)
     testing: bool = False
 
 
@@ -58,7 +61,7 @@ class Script:
             parser: An instance of MyParser used for parsing arguments.
             extra_args: Additional arguments to be passed to the parser.
         """
-        self.start_time = time.time()
+        self.start_time = time.time()         # start the clock
         self.parser = parser
         self.experiment_output_folder = None
         self.extra_args = extra_args
@@ -82,11 +85,13 @@ class Script:
         if base_experiment_output_folder is None:
             base_experiment_output_folder = self.base_experiment_output_folder
 
+        # parse the arguments
         args_dict: dict[str, Any] = self.parser.parse_arguments(
             base_experiment_output_folder=base_experiment_output_folder,
             extra_args=self.extra_args
         )
 
+        # Converting the args in the standardized dataclass
         args: ScriptArgs = dacite.from_dict(
             data_class=ScriptArgs,
             data=args_dict
@@ -97,10 +102,12 @@ class Script:
 
         self.parser.log_parser_info(args_dict['experiment_output_folder'])
 
+        # activate profiling is if needed
         if args.profiling:
             self.profile = cProfile.Profile()
             self.profile.enable()
 
+        # Converting the args in the standardized dataclass
         final_args: _T_co = dacite.from_dict(
             data_class=args_dataclass_name,
             data=args_dict
