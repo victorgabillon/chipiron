@@ -33,6 +33,9 @@ from .trees.factory import MoveAndValueTreeFactory
 
 @dataclass
 class TreeAndValuePlayerArgs:
+    """
+    Data class for the arguments of a TreeAndValueMoveSelector.
+    """
     type: Literal[MoveSelectorTypes.TreeAndValue]  # for serialization
     node_selector: node_selector_m.AllNodeSelectorArgs
     opening_type: node_selector_m.OpeningType

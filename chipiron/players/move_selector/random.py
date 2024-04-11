@@ -1,3 +1,15 @@
+"""
+This module provides a random move selector for a chess game.
+
+The Random class in this module implements a move selector that randomly selects a legal move from the given chess board.
+It uses a random number generator to make the selection.
+
+Example usage:
+    random_selector = create_random(random_generator)
+    move = random_selector.select_move(board, move_seed)
+
+"""
+
 import random
 from dataclasses import dataclass, field
 from typing import Literal
@@ -12,6 +24,17 @@ from .move_selector_types import MoveSelectorTypes
 
 @dataclass
 class Random:
+    """
+    Random move selector class.
+
+    This class implements a move selector that randomly selects a legal move from the given chess board.
+
+    Attributes:
+        type (Literal[MoveSelectorTypes.Random]): The type of move selector (for serialization).
+        random_generator (random.Random): The random number generator used for making the selection.
+
+    """
+
     type: Literal[MoveSelectorTypes.Random]  # for serialization
     random_generator: random.Random = field(default_factory=random.Random)
 
@@ -20,6 +43,17 @@ class Random:
             board: boards.BoardChi,
             move_seed: seed
     ) -> MoveRecommendation:
+        """
+        Selects a random move from the given chess board.
+
+        Args:
+            board (boards.BoardChi): The chess board.
+            move_seed (seed): The seed for the random number generator.
+
+        Returns:
+            MoveRecommendation: The selected move recommendation.
+
+        """
         self.random_generator.seed(move_seed)
         random_move: chess.Move = self.random_generator.choice(list(board.legal_moves))
         return MoveRecommendation(move=random_move)
@@ -28,6 +62,16 @@ class Random:
 def create_random(
         random_generator: random.Random
 ) -> Random:
+    """
+    Creates a random move selector.
+
+    Args:
+        random_generator (random.Random): The random number generator to use.
+
+    Returns:
+        Random: The created random move selector.
+
+    """
     return Random(
         type=MoveSelectorTypes.Random,
         random_generator=random_generator

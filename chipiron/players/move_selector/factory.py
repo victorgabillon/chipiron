@@ -1,3 +1,7 @@
+"""
+This module provides a factory function for creating the main move selector based on the given arguments.
+"""
+
 import random
 from typing import TypeAlias
 
@@ -22,6 +26,21 @@ def create_main_move_selector(
         syzygy: SyzygyTable | None,
         random_generator: random.Random
 ) -> move_selector.MoveSelector:
+    """
+    Create the main move selector based on the given arguments.
+
+    Args:
+        move_selector_instance_or_args (AllMoveSelectorArgs): The arguments or instance of the move selector.
+        syzygy (SyzygyTable | None): The syzygy table.
+        random_generator (random.Random): The random number generator.
+
+    Returns:
+        move_selector.MoveSelector: The main move selector.
+
+    Raises:
+        ValueError: If the given move selector instance or arguments are invalid.
+
+    """
     main_move_selector: move_selector.MoveSelector
     print('create main move selector')
 

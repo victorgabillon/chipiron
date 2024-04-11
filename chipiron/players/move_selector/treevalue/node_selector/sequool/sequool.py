@@ -269,6 +269,15 @@ class RandomAllSelector:
 def get_best_node_from_candidates(
         nodes_to_consider: list[ITreeNode]
 ) -> AlgorithmNode:
+    """
+    Returns the best node from a list of candidate nodes based on their exploration index and half move.
+
+    Args:
+        nodes_to_consider (list[ITreeNode]): A list of candidate nodes to consider.
+
+    Returns:
+        AlgorithmNode: The best node from the list of candidates.
+    """
     best_node: ITreeNode = nodes_to_consider[0]
     assert isinstance(best_node, AlgorithmNode)
     assert best_node.exploration_index_data is not None
