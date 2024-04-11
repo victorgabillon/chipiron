@@ -149,6 +149,19 @@ def recommend_move_after_exploration_generic(
         tree: trees.MoveAndValueTree,
         random_generator: random.Random
 ) -> chess.Move:
+    """
+    Recommends a move after exploration based on a generic rule.
+
+    Args:
+        recommend_move_after_exploration (AllRecommendFunctionsArgs): The recommend_move_after_exploration function.
+        tree (trees.MoveAndValueTree): The move and value tree.
+        random_generator (random.Random): The random number generator.
+
+    Returns:
+        chess.Move: The recommended move.
+
+    """
+
     # if the situation is winning, we ask to play the move that is the most likely
     # to end the game fast by capturing pieces if possible
     is_winning_situation: bool = is_winning(

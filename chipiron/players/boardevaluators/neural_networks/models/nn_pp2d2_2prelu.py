@@ -39,6 +39,7 @@ class NetPP2D2_2_PRELU(ChiNN):
     """
 
     def __init__(self) -> None:
+        """Constructor for the NetPP2D2_2_PRELU class. Initializes the neural network layers."""
         super(NetPP2D2_2_PRELU, self).__init__()
         self.evaluation_point_of_view = PointOfView.PLAYER_TO_MOVE
 
@@ -48,6 +49,7 @@ class NetPP2D2_2_PRELU(ChiNN):
         self.tanh = nn.Tanh()
 
     def __getstate__(self) -> None:
+        """Get the state of the neural network."""
         return None
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -67,6 +69,7 @@ class NetPP2D2_2_PRELU(ChiNN):
         return x
 
     def init_weights(self, file: str) -> None:
+        """Initialize the weights of the neural network."""
         pass
 
     def print_param(self) -> None:

@@ -18,7 +18,9 @@ from chipiron.utils.chi_nn import ChiNN
 
 
 class NetPP1(ChiNN):
+    """The NetPP1 class. Inherits from the ChiNN base class."""
     def __init__(self) -> None:
+        """Constructor for the NetPP1 class."""
         super(NetPP1, self).__init__()
 
         self.transform_board_function = None

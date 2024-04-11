@@ -127,6 +127,7 @@ class StoppingCriterion:
 
 @dataclass
 class TreeMoveLimitArgs(StoppingCriterionArgs):
+    """ Arguments for the tree move limit stopping criterion."""
     tree_move_limit: int
 
 

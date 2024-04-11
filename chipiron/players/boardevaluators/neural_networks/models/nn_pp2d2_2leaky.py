@@ -20,7 +20,14 @@ from chipiron.utils.chi_nn import ChiNN
 
 
 class NetPP2D2_2_LEAKY(ChiNN):
+    """
+    Neural network model for the NetPP2D2_2_LEAKY architecture.
+
+    Inherits from the ChiNN base class.
+    """
+
     def __init__(self) -> None:
+        """The constructor for the NetPP2D2_2_LEAKY class."""
         super(NetPP2D2_2_LEAKY, self).__init__()
 
         self.fc1 = nn.Linear(772, 20)

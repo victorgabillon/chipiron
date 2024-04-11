@@ -24,9 +24,11 @@ from chipiron.utils.chi_nn import ChiNN
 
 
 class NetP2(ChiNN):
+    """The NetP2 class. Inherits from the ChiNN base class."""
     def __init__(
             self
     ) -> None:
+        """Constructor for the NetP2 class. Initializes the neural network layers."""
         super(NetP2, self).__init__()
 
         self.transform_board_function = transform_board_pieces_two_sides
