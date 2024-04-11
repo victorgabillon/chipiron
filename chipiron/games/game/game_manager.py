@@ -108,6 +108,16 @@ class GameManager:
                   self.syzygy.string_result(self.game.board))
 
     def rewind_one_move(self) -> None:
+        """
+        Rewinds the game by one move.
+
+        This method rewinds the game by one move, undoing the last move made.
+        If the game has a Syzygy tablebase loaded and the current board position is in the tablebase,
+        it prints the theoretically finished value for white.
+
+        Returns:
+            None
+        """
         self.game.rewind_one_move()
         if self.syzygy is not None and self.syzygy.fast_in_table(self.game.board):
             print('Theoretically finished with value for white: ',
@@ -117,6 +127,15 @@ class GameManager:
             self,
             starting_position_arg: AllStartingPositionArgs
     ) -> None:
+        """
+        Sets a new game with the specified starting position.
+
+        Args:
+            starting_position_arg (AllStartingPositionArgs): The starting position for the new game.
+
+        Returns:
+            None
+        """
         self.game.set_starting_position(starting_position_arg=starting_position_arg)
 
     def play_one_game(
@@ -163,6 +182,16 @@ class GameManager:
             self,
             message: IsDataclass
     ) -> None:
+        """
+        Process the incoming mail message.
+
+        Args:
+            message (IsDataclass): The incoming mail message.
+
+        Returns:
+            None
+        """
+
         board: BoardChi = self.game.board
 
         match message:
@@ -205,6 +234,12 @@ class GameManager:
     def game_continue_conditions(
             self
     ) -> bool:
+        """
+        Checks the conditions for continuing the game.
+
+        Returns:
+            bool: True if the game should continue, False otherwise.
+        """
         half_move: HalfMove = self.game.board.ply()
         continue_bool: bool = True
         if self.args.max_half_moves is not None and half_move >= self.args.max_half_moves:
@@ -215,6 +250,15 @@ class GameManager:
             self,
             idx: int = 0
     ) -> None:
+        """
+        Print the moves of the game to a text file and pickle the game board object.
+
+        Args:
+            idx (int): The index to include in the file name (default is 0).
+
+        Returns:
+            None
+        """
         if self.path_to_store_result is not None:
             path_file: path = (f'{self.path_to_store_result}_{idx}_W:{self.player_color_to_id[chess.WHITE]}'
                                f'-vs-B:{self.player_color_to_id[chess.BLACK]}')
@@ -230,6 +274,16 @@ class GameManager:
                 pickle.dump(self.game.board, f)
 
     def tell_results(self) -> None:
+        """
+        Prints the results of the game based on the current state of the board.
+
+        The method checks various conditions on the board and prints the corresponding result.
+        It also checks for specific conditions like syzygy, fivefold repetition, seventy-five moves,
+        insufficient material, stalemate, and checkmate.
+
+        Returns:
+            None
+        """
         board = self.game.board
         if self.syzygy is not None and self.syzygy.fast_in_table(board):
             print('Syzygy: Theoretical value for white', self.syzygy.string_result(board))
@@ -246,6 +300,12 @@ class GameManager:
         print(board.board.result())
 
     def simple_results(self) -> FinalGameResult:
+        """
+        Determines the final result of the game based on the current state of the board.
+
+        Returns:
+            FinalGameResult: The final result of the game.
+        """
         board = self.game.board
 
         res: FinalGameResult | None = None
@@ -269,6 +329,18 @@ class GameManager:
         return res
 
     def terminate_processes(self) -> None:
+        """
+        Terminates all player processes and stops the associated threads.
+
+        This method iterates over the list of players and terminates any player processes found.
+        If a player process is found, it is terminated and the associated thread is stopped.
+
+        Note:
+        - This method assumes that the `players` attribute is a list of `PlayerProcess` or `GamePlayer` objects.
+
+        Returns:
+        None
+        """
         player: players_m.PlayerProcess | players_m.GamePlayer
         for player in self.players:
             if isinstance(player, players_m.PlayerProcess):

@@ -17,7 +17,7 @@ from .game_playing_status import GamePlayingStatus
 
 
 class Game:
-    """ 
+    """
     Class representing a game of chess.
     """
     _playing_status: GamePlayingStatus
@@ -140,6 +140,17 @@ class Game:
 
 
 class MoveFunction(Protocol):
+    """
+    Represents a move function that can be called on a game board.
+
+    Args:
+        board (BoardChi): The game board on which the move function is applied.
+        seed_ (seed): The seed used for the move function.
+
+    Returns:
+        None: This function does not return any value.
+    """
+
     def __call__(
             self,
             board: BoardChi,

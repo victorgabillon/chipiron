@@ -1,4 +1,4 @@
-""" 
+"""
 Module for the FinalGameResult enum and the GameReport dataclass.
 """
 

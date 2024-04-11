@@ -2,6 +2,8 @@
 Module for the basic evaluation of a chess board.
 """
 
+import math
+
 import chess
 
 from chipiron.environments.chess.board.board import BoardChi
@@ -21,11 +23,11 @@ def value_base(
     Returns:
         int: The base value of the board for the specified color.
     """
-    value_white_: int = bin(board.board.pawns & board.board.occupied_co[color]).count('1') \
-                        + bin(board.board.knights & board.board.occupied_co[color]).count('1') * 3 \
-                        + bin(board.board.bishops & board.board.occupied_co[color]).count('1') * 3 \
-                        + bin(board.board.rooks & board.board.occupied_co[color]).count('1') * 5 \
-                        + bin(board.board.queens & board.board.occupied_co[color]).count('1') * 9
+    value_white_: int = bin(board.board.pawns & board.board.occupied_co[color]).count('1') + bin(
+        board.board.knights & board.board.occupied_co[color]).count('1') * 3 + bin(
+        board.board.bishops & board.board.occupied_co[color]).count('1') * 3 + bin(
+        board.board.rooks & board.board.occupied_co[color]).count('1') * 5 + bin(
+        board.board.queens & board.board.occupied_co[color]).count('1') * 9
     return value_white_
 
 
@@ -82,9 +84,6 @@ def value_white(board: BoardChi) -> float:
     # value_white_pieces += add_pawns_value_white(board)
     # value_black_pieces += add_pawns_value_black(board)
     return value_white_pieces - value_black_pieces
-
-
-import math
 
 
 def sigmoid(x: float) -> float:

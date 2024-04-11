@@ -293,14 +293,11 @@ class BoardChi:
         Returns:
             str: A unique key representing the current state of the chess board.
         """
-        string = str(self.board.pawns) + str(self.board.knights) \
-                 + str(self.board.bishops) + str(self.board.rooks) \
-                 + str(self.board.queens) + str(self.board.kings) \
-                 + str(self.board.turn) + str(self.board.castling_rights) \
-                 + str(self.board.ep_square) + str(self.board.halfmove_clock) \
-                 + str(self.board.occupied_co[WHITE]) + str(self.board.occupied_co[BLACK]) \
-                 + str(self.board.promoted) \
-                 + str(self.board.fullmove_number)
+        string = str(self.board.pawns) + str(self.board.knights) + str(self.board.bishops) + str(
+            self.board.rooks) + str(self.board.queens) + str(self.board.kings) + str(self.board.turn) + str(
+            self.board.castling_rights) + str(self.board.ep_square) + str(self.board.halfmove_clock) + str(
+            self.board.occupied_co[WHITE]) + str(self.board.occupied_co[BLACK]) + str(self.board.promoted) + str(
+            self.board.fullmove_number)
         return string
 
     def fast_representation(self) -> str:

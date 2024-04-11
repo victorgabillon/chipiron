@@ -1,3 +1,16 @@
+"""
+This module defines the neural network model NetPP2D2_2_LEAKY, which is a subclass of ChiNN.
+
+ChiNN is a custom base class that provides common functionality for neural network models used in the chipiron project.
+
+The NetPP2D2_2_LEAKY model consists of two fully connected layers with leaky ReLU activation and a final linear layer with a tanh activation function.
+
+The model also includes methods for initializing weights, printing model parameters, printing input data, and getting the neural network input.
+
+Additionally, there is a helper function print_piece_param for printing specific piece parameters.
+
+"""
+
 from typing import Any
 
 import torch
@@ -17,6 +30,15 @@ class NetPP2D2_2_LEAKY(ChiNN):
         # self.dropout = nn.Dropout(.5)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass of the neural network model.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+
+        Returns:
+            torch.Tensor: Output tensor.
+        """
         x = self.fc1(x)
         # x = self.dropout(self.relu_1(x))
         x = self.relu_1(x)
@@ -25,9 +47,18 @@ class NetPP2D2_2_LEAKY(ChiNN):
         return x
 
     def init_weights(self, file: str) -> None:
+        """
+        Initialize weights of the neural network model.
+
+        Args:
+            file (str): File path to load the weights from.
+        """
         pass
 
     def print_param(self) -> None:
+        """
+        Print the parameters of the neural network model.
+        """
         for layer, param in enumerate(self.parameters()):
             if layer == 0:
                 print('pawns', sum(param.data[0, 64 * 0 + 8: 64 * 0 + 64 - 8]) / (64. - 16.))
@@ -60,7 +91,12 @@ class NetPP2D2_2_LEAKY(ChiNN):
                 print('other layer', layer, param.data)
 
     def print_input(self, input: torch.Tensor) -> None:
+        """
+        Print the input data.
 
+        Args:
+            input (torch.Tensor): Input tensor.
+        """
         print('pawns', sum(input[0, 64 * 0 + 8: 64 * 0 + 64 - 8]) / (64. - 16.))
         print_piece_param(0, input)
         print('knights', sum(input[0, 64 * 1: 64 * 1 + 64]) / 64.)
@@ -87,12 +123,25 @@ class NetPP2D2_2_LEAKY(ChiNN):
         print_piece_param(11, input)
 
     def get_nn_input(self, node: Any) -> None:
-        raise Exception(f'to be recoded in {__name__}')
+        """
+        Get the neural network input.
 
-        # return get_tensor_from_tensors_two_sides(node.tensor_white, node.tensor_black, node.tensor_castling_white,
-        #                                         node.tensor_castling_black, node.player_to_move)
+        Args:
+            node (Any): Node object.
+
+        Raises:
+            Exception: To be recoded in the current module.
+        """
+        raise Exception(f'to be recoded in {__name__}')
 
 
 def print_piece_param(i: int, vec: torch.Tensor) -> None:
+    """
+    Helper function to print specific piece parameters.
+
+    Args:
+        i (int): Index of the piece.
+        vec (torch.Tensor): Tensor containing the piece parameters.
+    """
     for r in range(8):
         print(vec[0, 64 * i + 8 * r: 64 * i + 8 * (r + 1)])

@@ -16,8 +16,8 @@ def create_exploration_index_manager(
     Creates a node exploration index manager based on the given index computation type.
 
     Args:
-        index_computation (IndexComputationType | None): The type of index computation to be used. 
-            Defaults to None.
+        index_computation (IndexComputationType | None): The type of index computation to be used.
+        Defaults to None.
 
     Returns:
         NodeExplorationIndexManager: The created node exploration index manager.

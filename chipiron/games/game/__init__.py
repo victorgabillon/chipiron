@@ -1,4 +1,4 @@
-""" 
+"""
 This module contains the game logic and the game arguments.
 
 The `game` module provides the following classes:

@@ -1,3 +1,16 @@
+"""
+This module defines the neural network model NetPP1, which is a subclass of ChiNN.
+NetPP1 is used for board evaluation in the game of chess.
+
+Classes:
+- NetPP1: Neural network model for board evaluation.
+
+Functions:
+- print_input: Prints the input parameters of the neural network.
+- print_piece_param: Prints the parameters of each piece in the neural network.
+- print_input_param: Prints the input parameters of each piece in the neural network.
+"""
+
 import torch
 import torch.nn as nn
 
@@ -13,11 +26,26 @@ class NetPP1(ChiNN):
         self.tanh = nn.Tanh()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass of the neural network.
+
+        Args:
+        - x: Input tensor.
+
+        Returns:
+        - Output tensor.
+        """
         x = self.fc1(x)
         x = self.tanh(x)
         return x
 
     def init_weights(self, file: str) -> None:
+        """
+        Initializes the weights of the neural network.
+
+        Args:
+        - file: File path to save the initialized weights.
+        """
         ran = torch.rand(384 + 2) * 0.001 + 0.03
         ran = ran.unsqueeze(0)
         self.fc1.weight = torch.nn.Parameter(ran)
@@ -27,6 +55,9 @@ class NetPP1(ChiNN):
             print(param.data)
 
     def print_param(self) -> None:
+        """
+        Prints the parameters of the neural network.
+        """
         for layer, param in enumerate(self.parameters()):
             if layer == 0:
                 print('pawns', sum(param.data[0, 64 * 0 + 8: 64 * 0 + 64 - 8]) / (64. - 16.))
@@ -48,6 +79,12 @@ class NetPP1(ChiNN):
 
 
 def print_input(input: torch.Tensor) -> None:
+    """
+    Prints the input parameters of the neural network.
+
+    Args:
+    - input: Input tensor.
+    """
     print('pawns', sum(input[64 * 0 + 8: 64 * 0 + 64 - 8]) / (64. - 16.))
     print_input_param(0, input)
     print('knights', sum(input[64 * 1: 64 * 1 + 64]) / 64.)
@@ -63,10 +100,24 @@ def print_input(input: torch.Tensor) -> None:
 
 
 def print_piece_param(i: int, vec: torch.Tensor) -> None:
+    """
+    Prints the parameters of each piece in the neural network.
+
+    Args:
+    - i: Index of the piece.
+    - vec: Tensor containing the parameters.
+    """
     for r in range(8):
         print(vec[0, 64 * i + 8 * r: 64 * i + 8 * (r + 1)])
 
 
 def print_input_param(i: int, vec: torch.Tensor) -> None:
+    """
+    Prints the input parameters of each piece in the neural network.
+
+    Args:
+    - i: Index of the piece.
+    - vec: Tensor containing the parameters.
+    """
     for r in range(8):
         print(vec[64 * i + 8 * r: 64 * i + 8 * (r + 1)])

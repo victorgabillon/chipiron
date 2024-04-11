@@ -144,7 +144,7 @@ class OverEvent:
 
         Returns:
             OverTags: The tag string representing the game outcome.
-        
+
         Raises:
             Exception: If the winner is not properly defined.
         """

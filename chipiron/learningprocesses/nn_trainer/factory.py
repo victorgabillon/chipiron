@@ -1,4 +1,4 @@
-""" 
+"""
 Module to create and save neural network trainers and their parameters
 """
 import pickle
@@ -75,10 +75,10 @@ def get_scheduler_file_path_from(folder_path: str) -> str:
 def get_folder_training_copies_path_from(folder_path: str) -> str:
     """
     Returns the path to the 'training_copies' folder within the given folder path.
-    
+
     Parameters:
         folder_path (str): The path to the folder.
-        
+
     Returns:
         str: The path to the 'training_copies' folder.
     """

@@ -31,15 +31,32 @@ class StockfishBoardEvaluator:
             self,
             args: StockfishBoardEvalArgs
     ) -> None:
+        """
+        Initializes a StockfishBoardEvaluator object.
+
+        Args:
+            args (StockfishBoardEvalArgs): The arguments for the StockfishBoardEvaluator.
+
+        Returns:
+            None
+        """
         self.engine = None
 
     def value_white(
             self,
             board: boards.BoardChi
     ) -> float:
+        """
+        Computes the value of the board for the white player.
+
+        Args:
+            board (boards.BoardChi): The board object representing the current state of the game.
+
+        Returns:
+            float: The value of the board for the white player.
+        """
         print('infos')
         # todo make a large reformat so that the players are created after the launch of process
-        """ computes the value white of the board"""
         return 0.  # to win time atm, please make it work fast when in testing mode and 0.1s in normal mode
 
         # if self.engine is None:

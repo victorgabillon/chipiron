@@ -53,13 +53,34 @@ class MoveAndValueTree:
 
     @property
     def root_node(self) -> AlgorithmNode:
+        """
+        Returns the root node of the move and value tree.
+
+        Returns:
+            AlgorithmNode: The root node of the move and value tree.
+        """
         return self._root_node
 
     def node_depth(
             self,
             node: nodes.ITreeNode
     ) -> int:
+        """
+        Calculates the depth of a given node in the tree.
+
+        Args:
+            node (nodes.ITreeNode): The node for which to calculate the depth.
+
+        Returns:
+            int: The depth of the node.
+        """
         return node.half_move - self.tree_root_half_move
 
     def is_over(self) -> bool:
+        """
+        Check if the game is over.
+
+        Returns:
+            bool: True if the game is over, False otherwise.
+        """
         return self._root_node.is_over()

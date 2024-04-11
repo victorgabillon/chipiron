@@ -1,3 +1,20 @@
+"""
+This module defines the Descendants and RangedDescendants classes.
+
+Descendants:
+- Represents a collection of descendants of a tree node at different half moves.
+- Provides methods to add, remove, and access descendants.
+- Keeps track of the number of descendants and the number of descendants at each half move.
+
+RangedDescendants:
+- Inherits from Descendants and adds the ability to track a range of half moves.
+- Provides methods to check if a half move is within the current range or acceptable range.
+- Allows adding and removing descendants within the range.
+- Provides a method to get the range of half moves.
+
+Note: The Descendants and RangedDescendants classes are used in the chipiron project for move selection in a game.
+"""
+
 import typing
 
 from sortedcollections import ValueSortedDict

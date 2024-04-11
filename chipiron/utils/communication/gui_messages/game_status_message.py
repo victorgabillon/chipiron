@@ -17,7 +17,7 @@ class BackMessage:
 class GameStatusMessage:
     """
     Represents a message containing the current game status.
-    
+
     Attributes:
         status (PlayingStatus): The playing status of the game.
     """

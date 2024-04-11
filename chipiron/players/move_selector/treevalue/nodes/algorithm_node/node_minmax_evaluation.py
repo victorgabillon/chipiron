@@ -1,9 +1,14 @@
 """
-This module contains the implementation of the NodeMinmaxEvaluation class, which represents a node in a tree structure used for the Minimax algorithm evaluation.
+This module contains the implementation of the NodeMinmaxEvaluation class, which represents a node in a tree structure
+ used for the Minimax algorithm evaluation.
 
-The NodeMinmaxEvaluation class stores information about the evaluation of a tree node, including the estimated value for the white player, the computed value using the Minimax procedure, the best node sequence, and the children of the tree node sorted by their evaluations.
+The NodeMinmaxEvaluation class stores information about the evaluation of a tree node, including the estimated value
+ for the white player, the computed value using the Minimax procedure, the best node sequence, and the children of
+  the tree node sorted by their evaluations.
 
-It also provides methods for accessing and manipulating the evaluation values, determining the subjective value from the point of view of the player to move, finding the best child node, checking if the node is over, and printing information about the node.
+It also provides methods for accessing and manipulating the evaluation values, determining the subjective value from
+ the point of view of the player to move, finding the best child node, checking if the node is over, and printing
+ information about the node.
 
 Note: This code snippet is a partial implementation and may require additional code to work properly.
 """
@@ -34,7 +39,7 @@ T = TypeVar('T')
 class NodeWithValue(ITreeNode, Protocol):
     """
     Represents a node with a value in a tree structure.
-    
+
     Attributes:
         minmax_evaluation (NodeMinmaxEvaluation): The minmax evaluation associated with the node.
         tree_node (TreeNode): The tree node associated with the node.
@@ -51,10 +56,13 @@ class NodeMinmaxEvaluation:
 
     Attributes:
         tree_node (TreeNode): A reference to the original tree node that is evaluated.
-        value_white_evaluator (float | None): The absolute value with respect to the white player as estimated by an evaluator.
-        value_white_minmax (float | None): The absolute value with respect to the white player as computed from the value_white_* of the descendants of this node (self) by a Minimax procedure.
+        value_white_evaluator (float | None): The absolute value with respect to the white player as estimated
+         by an evaluator.
+        value_white_minmax (float | None): The absolute value with respect to the white player as computed from
+         the value_white_* of the descendants of this node (self) by a Minimax procedure.
         best_node_sequence (list[ITreeNode]): The sequence of best nodes found during the Minimax evaluation.
-        children_sorted_by_value_ (dict[ITreeNode, Any]): The children of the tree node kept in a dictionary that can be sorted by their evaluations.
+        children_sorted_by_value_ (dict[ITreeNode, Any]): The children of the tree node kept in a dictionary
+         that can be sorted by their evaluations.
         best_index_for_value (int): The index of the best value in the children_sorted_by_value dictionary.
         children_not_over (list[ITreeNode]): The list of children that have not yet been found to be over.
         over_event (OverEvent): The event that determines if the node is over.
@@ -334,7 +342,7 @@ class NodeMinmaxEvaluation:
     def print_info(self) -> None:
         """
         Prints information about the node.
-        
+
         This method prints the ID of the node, the moves of its children, the children sorted by value,
         and the children that are not over.
         """
@@ -604,14 +612,17 @@ class NodeMinmaxEvaluation:
             children_with_updated_value: 'set[AlgorithmNode]'
     ) -> tuple[bool, bool]:
         """Updates the values of children in self.sortedchildren.
-        
-        This method updates the values of children in self.sortedchildren, updates the value minmax, and updates the best move.
-        
+
+        This method updates the values of children in self.sortedchildren, updates the value minmax, and updates
+         the best move.
+
         Args:
-            children_with_updated_value (set[AlgorithmNode]): A set of AlgorithmNode objects representing the children nodes with updated values.
-        
+            children_with_updated_value (set[AlgorithmNode]): A set of AlgorithmNode objects representing the
+             children nodes with updated values.
+
         Returns:
-            tuple[bool, bool]: A tuple containing two boolean values. The first value indicates whether the value has changed after the update, and the second value indicates whether the best node sequence has changed after the update.
+            tuple[bool, bool]: A tuple containing two boolean values. The first value indicates whether the value
+             has changed after the update, and the second value indicates whether the best node sequence has changed after the update.
         """
 
         # todo to be tested!!
@@ -658,10 +669,10 @@ class NodeMinmaxEvaluation:
     def dot_description(self) -> str:
         """
         Returns a string representation of the node's description in DOT format.
-        
+
         The description includes the values of `value_white_minmax` and `value_white_evaluator`,
         as well as the best move sequence and the over event tag.
-        
+
         Returns:
             A string representation of the node's description in DOT format.
         """
@@ -846,7 +857,7 @@ class NodeMinmaxEvaluation:
         Returns a list of all the best moves based on the specified equality criteria.
 
         Args:
-            how_equal (str | None): The equality criteria to determine the best moves. 
+            how_equal (str | None): The equality criteria to determine the best moves.
                 Possible values are 'equal', 'considered_equal', 'almost_equal', 'almost_equal_logistic'.
                 Defaults to None.
 

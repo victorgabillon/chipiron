@@ -53,7 +53,7 @@ class Script:
         """
         Initializes the Script object.
         Starts the clock, the profiling, and parses arguments.
-        
+
         Args:
             parser: An instance of MyParser used for parsing arguments.
             extra_args: Additional arguments to be passed to the parser.
@@ -71,11 +71,11 @@ class Script:
     ) -> _T_co:
         """
         Initiates the script by parsing arguments and converting them into a standardized dataclass.
-        
+
         Args:
             args_dataclass_name: The type of the dataclass to convert the arguments into.
             base_experiment_output_folder: The base folder for experiment output. If None, uses the default value.
-        
+
         Returns:
             The converted arguments as a dataclass.
         """
@@ -125,6 +125,6 @@ class Script:
         print('execution time', end_time - self.start_time)
 
     def run(self) -> None:
-        """ 
+        """
         Runs the script.
         """

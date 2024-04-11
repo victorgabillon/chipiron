@@ -29,7 +29,8 @@ class Comparable(metaclass=ABCMeta):
         None
 
     Methods:
-        __lt__(self, other: Any) -> bool: Abstract method that compares the object with another object and returns True if the object is less than the other object, False otherwise.
+        __lt__(self, other: Any) -> bool: Abstract method that compares the object with another object and
+         returns True if the object is less than the other object, False otherwise.
     """
 
     @abstractmethod

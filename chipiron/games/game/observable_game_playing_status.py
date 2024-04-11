@@ -1,4 +1,4 @@
-""" 
+"""
 Module that defines an observable version of GamePlayingStatus
 """
 import queue

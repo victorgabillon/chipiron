@@ -39,7 +39,7 @@ from chipiron.utils.chi_nn import ChiNN
 class LearnNNScriptArgs(ScriptArgs):
     """
     Represents the arguments for the LearnNNScript.
-    
+
     Attributes:
         nn_trainer_args (NNTrainerArgs): The arguments for the NNTrainer.
         create_nn_file (bool): Whether to create an NN file.

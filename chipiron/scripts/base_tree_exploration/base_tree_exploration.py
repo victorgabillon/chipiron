@@ -1,3 +1,9 @@
+"""
+This module contains the implementation of the BaseTreeExplorationScript class.
+
+The BaseTreeExplorationScript class is responsible for running a script that performs base tree exploration in a chess game.
+"""
+
 import cProfile
 import random
 
@@ -10,14 +16,32 @@ from chipiron.scripts.script import Script
 
 
 class BaseTreeExplorationScript:
+    """
+    The BaseTreeExplorationScript
+    """
+
+
+class BaseTreeExploration:
+    """
+    Represents a base tree exploration class.
+    """
 
     def __init__(
             self,
             base_script: Script
     ) -> None:
+        """
+        Initializes a new instance of the BaseTreeExploration class.
+
+        Args:
+            base_script (Script): The base script to be used for tree exploration.
+        """
         self.base_script = base_script
 
     def run(self) -> None:
+        """
+        Runs the base tree exploration script.
+        """
         syzygy = SyzygyTable('')
 
         profile = cProfile.Profile()
@@ -41,4 +65,7 @@ class BaseTreeExplorationScript:
         )
 
     def terminate(self) -> None:
+        """
+        Terminates the base tree exploration script.
+        """
         self.base_script.terminate()

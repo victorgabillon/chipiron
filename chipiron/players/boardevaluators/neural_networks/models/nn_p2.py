@@ -1,3 +1,21 @@
+"""
+This module defines the neural network model NetP2 for board evaluation in a game.
+
+The NetP2 class inherits from the ChiNN class and implements the forward pass and weight initialization methods.
+
+Attributes:
+    transform_board_function (function): A function to transform the board pieces into a tensor representation.
+    fc1 (torch.nn.Linear): The fully connected layer of the neural network.
+    tanh (torch.nn.Tanh): The activation function.
+
+Methods:
+    forward(x: torch.Tensor) -> torch.Tensor: Performs the forward pass of the neural network.
+    init_weights(file: str) -> None: Initializes the weights of the neural network and saves the state dictionary to a file.
+    print_param() -> None: Prints the parameters of the neural network.
+    print_input(input: torch.Tensor) -> None: Prints the input tensor.
+
+"""
+
 import torch
 import torch.nn as nn
 
@@ -16,11 +34,26 @@ class NetP2(ChiNN):
         self.tanh = nn.Tanh()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Performs the forward pass of the neural network.
+
+        Args:
+            x (torch.Tensor): The input tensor.
+
+        Returns:
+            torch.Tensor: The output tensor.
+        """
         x = self.fc1(x)
         x = self.tanh(x)
         return x
 
     def init_weights(self, file: str) -> None:
+        """
+        Initializes the weights of the neural network and saves the state dictionary to a file.
+
+        Args:
+            file (str): The file path to save the state dictionary.
+        """
         ran = torch.rand(10) * 0.001 + 0.03
         ran = ran.unsqueeze(0)
         self.fc1.weight = torch.nn.Parameter(ran)
@@ -30,6 +63,9 @@ class NetP2(ChiNN):
             print(param.data)
 
     def print_param(self) -> None:
+        """
+        Prints the parameters of the neural network.
+        """
         for layer, param in enumerate(self.parameters()):
             if layer == 0:
                 print('pawns', param.data[0, 0])
@@ -47,6 +83,12 @@ class NetP2(ChiNN):
                 print(param.data)
 
     def print_input(self, input: torch.Tensor) -> None:
+        """
+        Prints the input tensor.
+
+        Args:
+            input (torch.Tensor): The input tensor.
+        """
         print('pawns', input[0])
         print('knights', input[1])
         print('bishops', input[2])
