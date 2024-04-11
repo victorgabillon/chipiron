@@ -1,3 +1,15 @@
+"""
+This module provides functions and classes for creating board representations used in neural networks.
+
+The main classes in this module are:
+- `Representation364`: Represents the board state using a tensor of size 364.
+- `Representation364Factory`: Factory class for creating `Representation364` objects.
+
+The module also includes helper functions for converting board states to tensors and vice versa.
+
+Note: This module is part of the `chipiron` package.
+"""
+
 from typing import Optional
 
 import chess
@@ -16,6 +28,18 @@ def node_to_tensors_pieces_square_from_parent(
         board_modifications: board_mod.BoardModification,
         parent_node: AlgorithmNode
 ) -> Representation364:
+    """
+    Converts the node, board modifications, and parent node into a tensor representation.
+
+    Args:
+        node (ITreeNode): The current node in the tree.
+        board_modifications (board_mod.BoardModification): The modifications made to the board.
+        parent_node (AlgorithmNode): The parent node of the current node.
+
+    Returns:
+        Representation364: The tensor representation of the node, board modifications, and parent node.
+    """
+
     board_representation = parent_node.board_representation
     assert isinstance(board_representation, Representation364)
     tensor_white = torch.empty_like(board_representation.tensor_white).copy_(board_representation.tensor_white)
@@ -70,13 +94,29 @@ def node_to_tensors_pieces_square_from_parent(
 
 
 class Representation364Factory:
+    """
+    Factory class for creating instances of Representation364.
+
+    This factory provides methods to create a Representation364 object either from a transition or from a board.
+    """
+
     def create_from_transition(
             self,
             tree_node: TreeNode,
             parent_node: AlgorithmNode | None,
             modifications: board_mod.BoardModification | None
     ) -> Representation364:
+        """
+        Create a Representation364 object from a transition.
 
+        Args:
+            tree_node (TreeNode): The current tree node.
+            parent_node (AlgorithmNode | None): The parent node of the current tree node.
+            modifications (board_mod.BoardModification | None): The board modifications.
+
+        Returns:
+            Representation364: The created Representation364 object.
+        """
         """  this version is supposed to be faster as it only modifies the parent
         representation with the last move and does not scan fully the new board"""
         if parent_node is None:  # this is the root_node
@@ -95,6 +135,15 @@ class Representation364Factory:
             self,
             board: BoardChi
     ) -> Representation364:
+        """
+        Create a Representation364 object from a board.
+
+        Args:
+            board (BoardChi): The chess board.
+
+        Returns:
+            Representation364: The created Representation364 object.
+        """
         white: torch.Tensor = torch.zeros(384, dtype=torch.float)
         black: torch.Tensor = torch.zeros(384, dtype=torch.float)
         castling_white: torch.Tensor = torch.zeros(2, dtype=torch.float)
@@ -134,6 +183,19 @@ class Representation364Factory:
 def create_board_representation(
         board_representation_str: str
 ) -> Representation364Factory | None:
+    """
+    Create a board representation based on the given string.
+
+    Args:
+        board_representation_str (str): The string representing the board representation.
+
+    Returns:
+        Representation364Factory | None: The created board representation object, or None if the string is 'no'.
+
+    Raises:
+        Exception: If the string is not '364'.
+
+    """
     board_representation: Representation364Factory | None
     match board_representation_str:
         case '364':

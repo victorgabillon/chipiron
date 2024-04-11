@@ -1,4 +1,4 @@
-""" 
+"""
 This module contains the ObservableMatchResults class, which is a wrapper around the MatchResults class.
 """
 
@@ -14,8 +14,9 @@ from .match_results import MatchResults, SimpleResults
 
 @dataclass
 class ObservableMatchResults:
-    """ 
-    The ObservableMatchResults class provides a way to observe and subscribe to changes in the match results. It maintains a list of mailboxes (queue.Queue) to which it sends notifications whenever there are new match results.
+    """
+    The ObservableMatchResults class provides a way to observe and subscribe to changes in the match results.
+    It maintains a list of mailboxes (queue.Queue) to which it sends notifications whenever there are new match results.
 
     Attributes:
         match_results (MatchResults): The underlying MatchResults object that stores the match results.

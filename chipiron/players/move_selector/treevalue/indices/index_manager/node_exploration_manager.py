@@ -56,6 +56,12 @@ class NodeExplorationIndexManager(Protocol):
 
 
 class NullNodeExplorationIndexManager(NodeExplorationIndexManager):
+    """
+    A class representing a null node exploration index manager.
+
+    This class is used when there is no need to update the exploration index of nodes in a tree.
+    It inherits from the NodeExplorationIndexManager class.
+    """
 
     def update_root_node_index(
             self,
@@ -89,6 +95,9 @@ class NullNodeExplorationIndexManager(NodeExplorationIndexManager):
 
 
 class UpdateIndexGlobalMinChange:
+    """
+    A class that updates the exploration index of nodes in a tree using the global minimum change strategy.
+    """
 
     def update_root_node_index(
             self,
@@ -397,6 +406,15 @@ def update_all_indices(
 def print_all_indices(
         tree: trees.MoveAndValueTree,
 ) -> None:
+    """
+    Prints the exploration indices of all nodes in the given tree.
+
+    Args:
+        tree (trees.MoveAndValueTree): The tree containing the nodes.
+
+    Returns:
+        None
+    """
     tree_nodes: trees.RangedDescendants = tree.descendants
 
     half_move: int

@@ -1,4 +1,4 @@
-""" 
+"""
 Module containing the class GamePlaying
 """
 from dataclasses import dataclass
@@ -6,7 +6,7 @@ from enum import Enum
 
 
 class PlayingStatus(Enum):
-    """ 
+    """
     Class containing the possible playing status of a game.
     """
     PLAY: int = 1

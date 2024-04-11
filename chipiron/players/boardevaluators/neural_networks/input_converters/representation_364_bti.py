@@ -1,3 +1,11 @@
+"""
+This module provides a class for converting a chess board into a tensor representation using a 364-dimensional input.
+
+Classes:
+- Representation364BTI: Converts a chess board into a tensor representation.
+
+"""
+
 import torch
 
 from chipiron.environments.chess.board import BoardChi
@@ -6,17 +14,42 @@ from .factory import Representation364Factory
 
 
 class Representation364BTI:
+    """
+    Converts a chess board into a tensor representation using a 364-dimensional input.
+
+    Methods:
+    - __init__: Initializes the Representation364BTI object.
+    - convert: Converts the chess board into a tensor representation.
+
+    """
 
     def __init__(
             self,
             representation_factory: Representation364Factory
     ):
+        """
+        Initializes the Representation364BTI object.
+
+        Parameters:
+        - representation_factory (Representation364Factory): The factory object for creating the board representation.
+
+        """
         self.representation_factory = representation_factory
 
     def convert(
             self,
             board: BoardChi
     ) -> torch.Tensor:
+        """
+        Converts the chess board into a tensor representation.
+
+        Parameters:
+        - board (BoardChi): The chess board to convert.
+
+        Returns:
+        - tensor (torch.Tensor): The tensor representation of the chess board.
+
+        """
         representation: Representation364 = self.representation_factory.create_from_board(board=board)
         tensor: torch.Tensor = representation.get_evaluator_input(color_to_play=board.turn)
         return tensor

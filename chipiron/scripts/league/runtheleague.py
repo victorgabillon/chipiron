@@ -27,7 +27,15 @@ class RunTheLeagueScript:
             self,
             base_script: Script
     ) -> None:
+        """
+        Initialize the RunTheLeague class.
 
+        Args:
+            base_script (Script): The base script object.
+
+        Returns:
+            None
+        """
         self.base_script = base_script
 
         try:
@@ -47,6 +55,15 @@ class RunTheLeagueScript:
         self.league.print_info()
 
     def run(self) -> None:
+        """
+        Runs the league.
+
+        This method continuously runs the league until interrupted. It calls the `run` method of the `league` object and
+        saves the league data to a pickle file.
+
+        Returns:
+            None
+        """
         print('run the league')
         while True:
             self.league.run()
@@ -54,4 +71,7 @@ class RunTheLeagueScript:
             pickle.dump(self.league, open(self.folder_league + '/players.pickle', "wb"))
 
     def terminate(self) -> None:
+        """
+        Terminates the league execution.
+        """
         self.base_script.terminate()

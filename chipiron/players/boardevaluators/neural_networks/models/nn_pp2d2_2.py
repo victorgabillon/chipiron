@@ -1,3 +1,7 @@
+"""
+This module defines the neural network model NetPP2D2_2, which is a subclass of ChiNN.
+"""
+
 from typing import Any
 
 import torch
@@ -16,22 +20,36 @@ class NetPP2D2_2(ChiNN):
         self.relu_1 = nn.ReLU()
         self.fc2 = nn.Linear(20, 1)
         self.tanh = nn.Tanh()
-        # self.dropout = nn.Dropout(.5)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.fc1(x)
-        # x = self.dropout(self.relu_1(x))
-        x = self.relu_1(x)
-        #  print('tghy',x)
+        """
+        Forward pass of the neural network model.
 
+        Args:
+            x (torch.Tensor): Input tensor.
+
+        Returns:
+            torch.Tensor: Output tensor.
+        """
+        x = self.fc1(x)
+        x = self.relu_1(x)
         x = self.fc2(x)
         x = self.tanh(x)
         return x
 
     def init_weights(self, file: str) -> None:
+        """
+        Initialize the weights of the neural network.
+
+        Args:
+            file (str): File path to load the weights from.
+        """
         pass
 
     def print_param(self) -> None:
+        """
+        Print the parameters of the neural network.
+        """
         for layer, param in enumerate(self.parameters()):
             if layer == 0:
                 print('pawns', sum(param.data[0, 64 * 0 + 8: 64 * 0 + 64 - 8]) / (64. - 16.))
@@ -64,7 +82,12 @@ class NetPP2D2_2(ChiNN):
                 print('other layer', layer, param.data)
 
     def print_input(self, input: torch.Tensor) -> None:
+        """
+        Print the input tensor.
 
+        Args:
+            input (torch.Tensor): Input tensor.
+        """
         print('pawns', sum(input[0, 64 * 0 + 8: 64 * 0 + 64 - 8]) / (64. - 16.))
         print_piece_param(0, input)
         print('knights', sum(input[0, 64 * 1: 64 * 1 + 64]) / 64.)
@@ -91,12 +114,25 @@ class NetPP2D2_2(ChiNN):
         print_piece_param(11, input)
 
     def get_nn_input(self, node: Any) -> None:
-        raise Exception(f'to be recoded in {__name__}')
+        """
+        Get the input tensor for the neural network.
 
-    # return get_tensor_from_tensors_two_sides(node.tensor_white, node.tensor_black, node.tensor_castling_white,
-    #                                          node.tensor_castling_black, node.player_to_move)
+        Args:
+            node (Any): Node object.
+
+        Raises:
+            Exception: To be recoded in the current module.
+        """
+        raise Exception(f'to be recoded in {__name__}')
 
 
 def print_piece_param(i: int, vec: torch.Tensor) -> None:
+    """
+    Print the parameters of a specific piece.
+
+    Args:
+        i (int): Index of the piece.
+        vec (torch.Tensor): Tensor containing the parameters.
+    """
     for r in range(8):
         print(vec[0, 64 * i + 8 * r: 64 * i + 8 * (r + 1)])

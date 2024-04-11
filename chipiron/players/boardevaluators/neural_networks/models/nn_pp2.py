@@ -1,3 +1,7 @@
+"""
+This module defines the NetPP2 class, which is a neural network model for board evaluation in a chess game.
+"""
+
 from typing import Any
 
 import torch
@@ -14,11 +18,26 @@ class NetPP2(ChiNN):
         self.tanh = nn.Tanh()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass of the neural network model.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+
+        Returns:
+            torch.Tensor: Output tensor.
+        """
         x = self.fc1(x)
         x = self.tanh(x)
         return x
 
     def init_weights(self, file: str) -> None:
+        """
+        Initialize the weights of the neural network model.
+
+        Args:
+            file (str): File path to save the initialized weights.
+        """
         ran = torch.rand(772) * 0.001 + 0.03
         ran = ran.unsqueeze(0)
         self.fc1.weight = torch.nn.Parameter(ran)
@@ -28,6 +47,9 @@ class NetPP2(ChiNN):
             print(param.data)
 
     def print_param(self) -> None:
+        """
+        Print the parameters of the neural network model.
+        """
         for layer, param in enumerate(self.parameters()):
             if layer == 0:
                 print('pawns', sum(param.data[0, 64 * 0 + 8: 64 * 0 + 64 - 8]) / (64. - 16.))
@@ -60,7 +82,12 @@ class NetPP2(ChiNN):
                 print(param.data)
 
     def print_input(self, input: torch.Tensor) -> None:
+        """
+        Print the input tensor.
 
+        Args:
+            input (torch.Tensor): Input tensor.
+        """
         print('pawns', sum(input[0, 64 * 0 + 8: 64 * 0 + 64 - 8]) / (64. - 16.))
         print_piece_param(0, input)
         print('knights', sum(input[0, 64 * 1: 64 * 1 + 64]) / 64.)
@@ -87,19 +114,37 @@ class NetPP2(ChiNN):
         print_piece_param(11, input)
 
     def get_nn_input(self, node: Any) -> None:
+        """
+        Get the input for the neural network model.
+
+        Args:
+            node (Any): Node object.
+
+        Raises:
+            Exception: To be recoded in the current module.
+        """
         raise Exception(f'to be recoded in {__name__}')
 
 
-#        return get_tensor_from_tensors_two_sides(node.tensor_white, node.tensor_black, node.tensor_castling_white,
-#                                        node.tensor_castling_black, node.player_to_move)
-
-
 def print_piece_param(i: int, vec: torch.Tensor) -> None:
+    """
+    Print the piece parameters.
+
+    Args:
+        i (int): Index of the piece.
+        vec (torch.Tensor): Tensor containing the parameters.
+    """
     for r in range(8):
         print(vec[64 * i + 8 * r: 64 * i + 8 * (r + 1)])
 
 
 def print_input(input: torch.Tensor) -> None:
+    """
+    Print the input tensor.
+
+    Args:
+        input (torch.Tensor): Input tensor.
+    """
     print('pawns', sum(input[64 * 0 + 8: 64 * 0 + 64 - 8]) / (64. - 16.))
     print_piece_param(0, input)
     print('knights', sum(input[64 * 1: 64 * 1 + 64]) / 64.)

@@ -1,4 +1,4 @@
-""" 
+"""
 Module for the GameArgsFactory class
 
 This module defines the GameArgsFactory class, which is responsible for creating game arguments and managing game settings.
@@ -20,22 +20,42 @@ if typing.TYPE_CHECKING:
 
 
 class StaringPositionArgsType(str, Enum):
+    """
+    Enum class representing the types of starting position arguments.
+    """
+
     fromFile = 'from_file'
     fen = 'fen'
 
 
 @dataclass
 class StaringPositionArgs:
+    """
+    Represents the arguments for a starting position.
+    """
     type: StaringPositionArgsType
 
 
 @dataclass
 class FenStaringPositionArgs(StaringPositionArgs):
+    """
+    Represents the arguments for a starting position defined by a FEN string.
+
+    Attributes:
+        fen (str): The FEN string representing the starting position.
+    """
     fen: str
 
 
 @dataclass
 class FileStaringPositionArgs(StaringPositionArgs):
+    """
+    Represents the arguments for a starting position defined in a file.
+
+    Attributes:
+        file_name (str): The name of the file containing the starting position.
+    """
+
     file_name: str
 
 

@@ -58,14 +58,14 @@ class GameManagerFactory:
             player_color_to_factory_args: dict[chess.Color, PlayerFactoryArgs],
             game_seed: seed
     ) -> GameManager:
-        """ 
+        """
         Create a GameManager with the given arguments
         Args:
             args_game_manager (GameArgs): the arguments of the game manager
             player_color_to_factory_args (dict[chess.Color, PlayerFactoryArgs]): the arguments of the players
             game_seed (int): the seed of the game
 
-        Returns:    
+        Returns:
             the created GameManager
         """
         # maybe this factory is overkill at the moment but might be

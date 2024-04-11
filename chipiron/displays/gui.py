@@ -171,7 +171,7 @@ class MainWindow(QWidget):
     def play_button_clicked(self) -> None:
         """
         Handle the event when the play button is clicked.
-        
+
         This method prints a message indicating that the play button has been clicked,
         and sends a GameStatusMessage with the status set to PlayingStatus.PLAY to the main thread mailbox.
         """

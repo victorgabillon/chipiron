@@ -1,3 +1,13 @@
+"""
+This module contains functions for testing the indices used in the move selector tree.
+
+The main functions in this module are:
+- `make_tree_from_file`: Creates a move and value tree from a YAML file.
+- `check_from_file`: Compares the indices computed from the tree with the expected indices from a YAML file.
+- `check_index`: Tests the indices for a specific index computation type and tree file.
+- `test_indices`: Runs the index tests for multiple index computation types and tree files.
+"""
+
 from enum import Enum
 from math import isclose
 
@@ -23,6 +33,9 @@ from chipiron.utils.small_tools import path
 
 
 class TestResult(Enum):
+    """
+    Enumeration for the test results.
+    """
     __test__ = False
     PASSED = 0
     FAILED = 1
@@ -33,6 +46,17 @@ def make_tree_from_file(
         file_path: path,
         index_computation: IndexComputationType
 ) -> MoveAndValueTree:
+    """
+    Creates a move and value tree from a file.
+
+    Args:
+        file_path (path): The path to the file containing the tree data.
+        index_computation (IndexComputationType): The type of index computation to use.
+
+    Returns:
+        MoveAndValueTree: The created move and value tree.
+    """
+
     # atm it is very ad hoc to test index so takes a lots of shortcut, will be made more general when needed
     with open(file_path, 'r') as file:
         tree_yaml = yaml.safe_load(file)
@@ -146,6 +170,16 @@ def check_from_file(
         file_path: path,
         tree: MoveAndValueTree
 ) -> None:
+    """
+    Check the values in the given file against the values in the tree.
+
+    Args:
+        file_path (str): The path to the file containing the values to check.
+        tree (MoveAndValueTree): The tree containing the values to compare against.
+
+    Returns:
+        None
+    """
     with open(file_path, 'r') as file:
         tree_yaml = yaml.safe_load(file)
     print('tree', tree_yaml)
@@ -180,6 +214,20 @@ def check_index(
         index_computation: IndexComputationType,
         tree_file: path
 ) -> TestResult:
+    """
+    Checks the index for a given tree file and index computation type.
+
+    Args:
+        index_computation (IndexComputationType): The type of index computation.
+        tree_file (path): The path to the tree file.
+
+    Returns:
+        TestResult: The result of the index check.
+
+    Raises:
+        None
+
+    """
     try:
         tree_path = f'data/trees/{tree_file}/{tree_file}_{index_computation.value}.yaml'
     except Exception:
@@ -212,6 +260,16 @@ def check_index(
 
 
 def test_indices() -> None:
+    """
+    Test the index computations on multiple tree files.
+
+    This function iterates over a list of index computations and tree files,
+    and performs a test for each combination. The results of the tests are
+    stored in a dictionary.
+
+    Returns:
+        None
+    """
     index_computations: list[IndexComputationType] = [
         IndexComputationType.MinGlobalChange,
         IndexComputationType.RecurZipf,

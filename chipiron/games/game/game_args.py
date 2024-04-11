@@ -1,4 +1,4 @@
-""" 
+"""
 Module that contains the GameArgs class.
 """
 from dataclasses import dataclass

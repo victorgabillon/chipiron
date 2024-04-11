@@ -1,3 +1,7 @@
+"""
+This module defines the NetP1 class, which is a neural network model for board evaluation in a game.
+"""
+
 import torch
 import torch.nn as nn
 
@@ -17,14 +21,26 @@ class NetP1(ChiNN):
             self,
             x: torch.Tensor
     ) -> torch.Tensor:
-        # print('weewwwww',x)
+        """
+        Forward pass of the neural network model.
 
+        Args:
+            x (torch.Tensor): Input tensor.
+
+        Returns:
+            torch.Tensor: Output tensor.
+        """
         x = self.fc1(x)
         x = self.tanh(x)
-        #   print('weew',x)
         return x
 
     def init_weights(self, file: str) -> None:
+        """
+        Initialize the weights of the neural network model.
+
+        Args:
+            file (str): File path to save the initialized weights.
+        """
         ran = torch.rand(5) * 0.001 + 0.03
         ran = ran.unsqueeze(0)
         self.fc1.weight = torch.nn.Parameter(ran)
@@ -34,6 +50,9 @@ class NetP1(ChiNN):
             print(param.data)
 
     def print_param(self) -> None:
+        """
+        Print the parameters of the neural network model.
+        """
         for layer, param in enumerate(self.parameters()):
             if layer == 0:
                 print('pawns', param.data[0, 0])
@@ -41,15 +60,18 @@ class NetP1(ChiNN):
                 print('bishops', param.data[0, 2])
                 print('rook', param.data[0, 3])
                 print('queen', param.data[0, 4])
-            # print('king', param.data[0, 5])
             else:
                 print(param.data)
 
     def print_input(self, input: torch.Tensor) -> None:
+        """
+        Print the input tensor.
 
+        Args:
+            input (torch.Tensor): Input tensor.
+        """
         print('pawns', input[0])
         print('knights', input[1])
         print('bishops', input[2])
         print('rook', input[3])
         print('queen', input[4])
-    #  print('king', input[5])
