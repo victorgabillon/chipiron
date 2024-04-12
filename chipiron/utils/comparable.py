@@ -3,15 +3,6 @@ This module defines the Comparable class, which is an abstract base class for ob
 
 Classes that inherit from Comparable must implement the __lt__ method, which defines the less-than comparison operation.
 
-Example usage:
-    class MyObject(Comparable):
-        def __lt__(self, other):
-            # implementation of less-than comparison
-
-    my_object = MyObject()
-    other_object = MyObject()
-    if my_object < other_object:
-        # do something
 """
 
 from abc import ABCMeta, abstractmethod

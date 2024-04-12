@@ -279,7 +279,7 @@ class Window(QtWidgets.QWidget):
         """
         dot = display_special(
             node=self.current_node,
-            format='jpg',
+            format_str='jpg',
             index=self.index
         )
         dot.render('chipiron/runs/treedisplays/TreeVisualtemp')

@@ -97,7 +97,7 @@ def create_game_board_evaluator_not_observable() -> GameBoardEvaluator:
     This function creates a game board evaluator that consists of two board evaluators:
     - board_evaluator_stock: A board evaluator created using the StockfishBoardEvalArgs.
     - board_evaluator_chi: A board evaluator created using the board evaluator configuration
-      specified in the 'base_chipiron_board_eval.yaml' file.
+    specified in the 'base_chipiron_board_eval.yaml' file.
 
     Returns:
         GameBoardEvaluator: The created game board evaluator.

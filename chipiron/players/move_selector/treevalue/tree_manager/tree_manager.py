@@ -40,6 +40,7 @@ class TreeManager:
     ) -> TreeExpansion:
         """
         Opening a Node that contains a board following a move.
+
         Args:
             tree: The tree object.
             parent_node: The parent node that we want to expand.
@@ -76,6 +77,7 @@ class TreeManager:
     ) -> TreeExpansion:
         """
         Opening a Node that contains a board given the modifications.
+
         Args:
             tree: The tree object.
             parent_node: The parent node that we want to expand.
@@ -130,6 +132,7 @@ class TreeManager:
     ) -> TreeExpansions:
         """
         Opening multiple nodes based on the opening instructions.
+
         Args:
             tree: The tree object.
             opening_instructions: The opening instructions.
@@ -161,6 +164,7 @@ class TreeManager:
     ) -> None:
         """
         Print some statistics about the tree.
+
         Args:
             tree: The tree object.
         """
@@ -178,6 +182,7 @@ class TreeManager:
     ) -> None:
         """
         Test the count of nodes in the tree.
+
         Args:
             tree: The tree object.
         """
@@ -189,6 +194,7 @@ class TreeManager:
     ) -> None:
         """
         Print the best line in the tree.
+
         Args:
             tree: The tree object.
         """

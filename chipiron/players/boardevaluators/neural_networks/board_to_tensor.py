@@ -8,13 +8,16 @@ from chipiron.environments.chess.board.board import BoardChi
 
 
 # This code is supposed to slowly be turned into the cmasses fro board and node represenatition
-def transform_board_pieces_one_side(board: BoardChi, requires_grad_: bool) -> torch.Tensor:
+def transform_board_pieces_one_side(
+        board: BoardChi,
+        requires_grad_bool: bool
+) -> torch.Tensor:
     """
     Transform the board pieces for one side into a tensor representation.
 
     Args:
         board (BoardChi): The chess board.
-        requires_grad_ (bool): Whether the tensor requires gradient.
+        requires_grad_bool (bool): Whether the tensor requires gradient.
 
     Returns:
         torch.Tensor: The transformed board pieces tensor.
@@ -41,19 +44,19 @@ def transform_board_pieces_one_side(board: BoardChi, requires_grad_: bool) -> to
     transform[4] = bin(board.board.queens & board.board.occupied_co[color_turn]).count('1') - bin(
         board.board.queens & board.board.occupied_co[color_not_turn]).count('1')
 
-    if requires_grad_:
+    if requires_grad_bool:
         transform.requires_grad_(True)
 
     return transform
 
 
-def transform_board_pieces_two_sides(board: BoardChi, requires_grad_: bool) -> torch.Tensor:
+def transform_board_pieces_two_sides(board: BoardChi, requires_grad_bool: bool) -> torch.Tensor:
     """
     Transform the board pieces for both sides into a tensor representation.
 
     Args:
         board (BoardChi): The chess board.
-        requires_grad_ (bool): Whether the tensor requires gradient.
+        requires_grad_bool (bool): Whether the tensor requires gradient.
 
     Returns:
         torch.Tensor: The transformed board pieces tensor.
@@ -67,7 +70,7 @@ def transform_board_pieces_two_sides(board: BoardChi, requires_grad_: bool) -> t
         color_turn = chess.WHITE
         color_not_turn = chess.BLACK
 
-    transform = torch.zeros(10, requires_grad=requires_grad_)
+    transform = torch.zeros(10, requires_grad=requires_grad_bool)
 
     transform[0] = bin(board.board.pawns & board.board.occupied_co[color_turn]).count('1')
     transform[1] = bin(board.board.knights & board.board.occupied_co[color_turn]).count('1')

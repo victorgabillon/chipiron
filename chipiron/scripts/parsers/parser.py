@@ -119,7 +119,7 @@ class MyParser:
         Args:
             base_experiment_output_folder (path): The base output folder for the experiment.
             extra_args (dict[str, Any], optional): Extra arguments to be merged with the parsed arguments.
-                Defaults to None.
+            Defaults to None.
 
         Returns:
             dict[str, Any]: A dictionary containing the merged arguments.

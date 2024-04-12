@@ -43,13 +43,13 @@ class GamePlayer:
     def select_move(
             self,
             board: BoardChi,
-            seed_: seed | None = None
+            seed_int: seed | None = None
     ) -> MoveRecommendation:
         """Selects the best move to play based on the current board position.
 
         Args:
             board (BoardChi): The current board position.
-            seed_ (seed | None, optional): The seed value for randomization. Defaults to None.
+            seed_int (seed | None, optional): The seed value for randomization. Defaults to None.
 
         Raises:
             Exception: If there are no legal moves in the current position.
@@ -60,10 +60,10 @@ class GamePlayer:
         all_legal_moves = list(board.legal_moves)
         if not all_legal_moves:
             raise Exception('No legal moves in this position')
-        assert seed_ is not None
+        assert seed_int is not None
         best_move: MoveRecommendation = self._player.select_move(
             board=board,
-            seed_=seed_
+            seed_=seed_int
         )
         return best_move
 
@@ -72,7 +72,7 @@ def game_player_computes_move_on_board_and_send_move_in_queue(
         board: BoardChi,
         game_player: GamePlayer,
         queue_move: queue.Queue[IsDataclass],
-        seed_: seed
+        seed_int: seed
 ) -> None:
     """Computes the move for the game player on the given board and sends the move in the queue.
 
@@ -80,7 +80,7 @@ def game_player_computes_move_on_board_and_send_move_in_queue(
         board (BoardChi): The game board.
         game_player (GamePlayer): The game player.
         queue_move (queue.Queue[IsDataclass]): The queue to send the move.
-        seed_ (seed): The seed for move selection.
+        seed_int (seed): The seed for move selection.
 
     Returns:
         None
@@ -88,7 +88,7 @@ def game_player_computes_move_on_board_and_send_move_in_queue(
     if board.turn == game_player.color and not board.board.is_game_over():
         move_recommendation: MoveRecommendation = game_player.select_move(
             board=board,
-            seed_=seed_
+            seed_int=seed_int
         )
         message = MoveMessage(
             move=move_recommendation.move,

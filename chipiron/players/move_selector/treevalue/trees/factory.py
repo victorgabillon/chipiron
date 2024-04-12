@@ -37,6 +37,7 @@ class MoveAndValueTreeFactory:
     ) -> MoveAndValueTree:
         """
         creates the tree
+
         Args:
             starting_board: the starting position
 

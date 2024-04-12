@@ -8,7 +8,7 @@ node indices for a given tree node.
 
 Classes:
 - SearchFactory: An abstract factory for creating dependent factories for selecting nodes to open, creating indices,
-  and updating indices.
+and updating indices.
 
 Protocols:
 - SearchFactoryP: A protocol that defines the abstract methods for the SearchFactory class.

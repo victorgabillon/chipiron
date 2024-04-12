@@ -125,6 +125,7 @@ class ObservableBoardEvaluator:
     ) -> None:
         """
         Subscribe to the ObservableBoardEvaluator to get the EvaluationMessage.
+
         Args:
             mailbox: The mailbox queue.
         """

@@ -516,11 +516,11 @@ class RangedDescendants(Descendants):
 
         This method checks the validity of the descendants object by asserting various conditions.
         If the `min_half_move` attribute is None, it asserts that `max_half_move` is also None and
-         `number_of_descendants` is 0.
+        `number_of_descendants` is 0.
         Otherwise, it asserts that `max_half_move` and `min_half_move` are not None, and checks if all half moves
-         between `min_half_move` and `max_half_move` are present in `descendants_at_half_move` dictionary.
+        between `min_half_move` and `max_half_move` are present in `descendants_at_half_move` dictionary.
         Finally, it iterates over all half moves in the descendants object and asserts that each half move
-         is within the current range.
+        is within the current range.
 
         Returns:
             None

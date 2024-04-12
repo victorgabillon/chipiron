@@ -148,7 +148,7 @@ class MoveFunction(Protocol):
 
     Args:
         board (BoardChi): The game board on which the move function is applied.
-        seed_ (seed): The seed used for the move function.
+        seed_int (seed): The seed used for the move function.
 
     Returns:
         None: This function does not return any value.
@@ -157,7 +157,7 @@ class MoveFunction(Protocol):
     def __call__(
             self,
             board: BoardChi,
-            seed_: seed
+            seed_int: seed
     ) -> None: ...
 
 

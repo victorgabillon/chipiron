@@ -29,7 +29,7 @@ class Player:
     def select_move(
             self,
             board: BoardChi,
-            seed_: seed
+            seed_int: seed
     ) -> MoveRecommendation:
         """
         Returns the best move computed by the player.
@@ -37,7 +37,7 @@ class Player:
 
         Args:
             board (BoardChi): The current board state.
-            seed_ (seed): The seed for move selection.
+            seed_int (seed): The seed for move selection.
 
         Returns:
             MoveRecommendation: The recommended move.
@@ -59,7 +59,7 @@ class Player:
                 print('Playing with player (not Syzygy)')
                 move_recommendation = self.main_move_selector.select_move(
                     board=board,
-                    move_seed=seed_
+                    move_seed=seed_int
                 )
 
         return move_recommendation

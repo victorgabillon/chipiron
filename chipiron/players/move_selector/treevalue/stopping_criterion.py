@@ -158,6 +158,7 @@ class TreeMoveLimit(StoppingCriterion):
     ) -> str:
         """
         compute the string that display the progress in the terminal
+
         Returns:
             a string that display the progress in the terminal
         """
@@ -240,6 +241,7 @@ class DepthLimit(StoppingCriterion):
     def get_string_of_progress(self, tree: MoveAndValueTree) -> str:
         """
         compute the string that display the progress in the terminal
+
         Returns:
             a string that display the progress in the terminal
         """
@@ -256,6 +258,7 @@ def create_stopping_criterion(
 ) -> StoppingCriterion:
     """
     creating the stopping criterion
+
     Args:
         args:
         node_selector:
