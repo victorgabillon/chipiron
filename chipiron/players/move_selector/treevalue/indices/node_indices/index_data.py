@@ -113,15 +113,6 @@ class IntervalExplo(NodeExplorationData):
 class MaxDepthDescendants(NodeExplorationData):
     """
     Represents the exploration data for a tree node with maximum depth of descendants.
-
-    Attributes:
-        max_depth_descendants (int): The maximum depth of descendants associated with the node. Defaults to 0.
-
-    Methods:
-        update_from_child(child_max_depth_descendants: int) -> bool:
-            Updates the maximum depth of descendants based on the maximum depth of descendants of a child node.
-            Returns True if the maximum depth of descendants has changed, False otherwise.
-        dot_description(): Returns a string representation of the exploration data for dot visualization.
     """
     max_depth_descendants: int = 0
 

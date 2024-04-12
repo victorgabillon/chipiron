@@ -1,17 +1,10 @@
 """
 This module defines the IndexUpdateInstructionsBlock class, which represents a block of update instructions for
- index values in a tree structure.
+index values in a tree structure.
 
 The IndexUpdateInstructionsBlock class is a dataclass that contains a set of AlgorithmNode objects representing
- children with updated index values. It provides methods for merging update instructions and printing information
-  about the block.
-
-Example usage:
-    block = IndexUpdateInstructionsBlock()
-    block.merge(update_instruction1, update_instruction2)
-    block.print_info()
-    if block.empty():
-        print("Block is empty")
+children with updated index values. It provides methods for merging update instructions and printing information
+about the block.
 """
 
 from dataclasses import dataclass, field

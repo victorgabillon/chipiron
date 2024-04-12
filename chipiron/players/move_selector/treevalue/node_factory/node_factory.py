@@ -23,6 +23,7 @@ class TreeNodeFactory(Protocol):
     ) -> node.ITreeNode:
         """
         The main method to create a Tree Node
+
         Args:
             modifications:
             board: a board

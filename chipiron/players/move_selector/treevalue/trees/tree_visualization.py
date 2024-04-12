@@ -9,10 +9,10 @@ Functions:
 - add_dot(dot: Digraph, treenode: ITreeNode) -> None: Adds nodes and edges to the graph representation of the tree.
 - display_special(node: ITreeNode, format: str, index: dict[chess.Move, str]) -> Digraph: Displays a special
 representation of the tree with additional information.
-- display(tree: MoveAndValueTree, format_: str) -> Digraph: Displays the tree structure as a graph.
+- display(tree: MoveAndValueTree, format_str: str) -> Digraph: Displays the tree structure as a graph.
 - save_pdf_to_file(tree: MoveAndValueTree) -> None: Saves the tree structure as a PDF file.
-- save_raw_data_to_file(tree: MoveAndValueTree, count: str = '#') -> None: Saves the raw data of the tree structure to a file.
-
+- save_raw_data_to_file(tree: MoveAndValueTree, count: str = '#') -> None: Saves the raw data of the tree
+structure to a file.
 """
 
 import pickle
@@ -52,7 +52,7 @@ def add_dot(
 
 def display_special(
         node: ITreeNode,
-        format: str,
+        format_str: str,
         index: dict[chess.Move, str]
 ) -> Digraph:
     """
@@ -60,7 +60,7 @@ def display_special(
 
     Args:
         node (ITreeNode): The tree node to display.
-        format (str): The format of the output graph (e.g., 'png', 'pdf', 'svg').
+        format_str (str): The format of the output graph (e.g., 'png', 'pdf', 'svg').
         index (Dict[chess.Move, str]): A dictionary mapping chess moves to their descriptions.
 
     Returns:
@@ -69,7 +69,7 @@ def display_special(
     Raises:
         AssertionError: If the child node is None or if the parent node is not an AlgorithmNode.
     """
-    dot = Digraph(format=format)
+    dot = Digraph(format=format_str)
     print(';;;', type(node))
     nd = node.dot_description()
     dot.node(str(node.id), nd)
@@ -95,19 +95,19 @@ def display_special(
 
 def display(
         tree: MoveAndValueTree,
-        format_: str
+        format_str: str
 ) -> Digraph:
     """
     Display the move and value tree using graph visualization.
 
     Args:
         tree (MoveAndValueTree): The move and value tree to be displayed.
-        format_ (str): The format of the output graph (e.g., 'png', 'pdf', 'svg').
+        format_str (str): The format of the output graph (e.g., 'png', 'pdf', 'svg').
 
     Returns:
         Digraph: The graph representation of the move and value tree.
     """
-    dot = Digraph(format=format_)
+    dot = Digraph(format=format_str)
     add_dot(dot, tree.root_node)
     return dot
 
@@ -124,7 +124,10 @@ def save_pdf_to_file(
     Returns:
         None
     """
-    dot = display(tree=tree, format_='pdf')
+    dot = display(
+        tree=tree,
+        format_str='pdf'
+    )
     round_ = len(tree.root_node.board.board.move_stack) + 2
     color = 'white' if tree.root_node.player_to_move else 'black'
     dot.render('chipiron/runs/treedisplays/TreeVisual_' + str(int(round_ / 2)) + color + '.pdf')

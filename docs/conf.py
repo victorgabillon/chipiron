@@ -9,7 +9,7 @@ import sys
 import os
 
 # Import the chess module.
-sys.path.insert(0, os.path.abspath(".."))
+sys.path.insert(0, os.path.abspath("../chipiron/"))
 
 project = 'chipiron'
 copyright = '2024, Victor Gabillon'
@@ -21,7 +21,7 @@ author = 'Victor Gabillon'
 extensions = ["sphinx.ext.todo","sphinx.ext.autodoc","sphinx.ext.viewcode"]
 
 templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'app.py', 'setup.py','flaskapp.py']
 
 
 
@@ -30,3 +30,5 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
+
+strip_signature_backslash = True

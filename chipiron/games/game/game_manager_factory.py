@@ -60,6 +60,7 @@ class GameManagerFactory:
     ) -> GameManager:
         """
         Create a GameManager with the given arguments
+
         Args:
             args_game_manager (GameArgs): the arguments of the game manager
             player_color_to_factory_args (dict[chess.Color, PlayerFactoryArgs]): the arguments of the players
@@ -143,6 +144,7 @@ class GameManagerFactory:
         """
         Subscribe to the GameManagerFactory to get the PlayersColorToPlayerMessage
         As well as subscribing to the game_manager_board_evaluator to get the EvaluationMessage
+
         Args:
             subscriber: the subscriber queue
         """

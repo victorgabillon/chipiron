@@ -57,12 +57,12 @@ class NodeMinmaxEvaluation:
     Attributes:
         tree_node (TreeNode): A reference to the original tree node that is evaluated.
         value_white_evaluator (float | None): The absolute value with respect to the white player as estimated
-         by an evaluator.
+        by an evaluator.
         value_white_minmax (float | None): The absolute value with respect to the white player as computed from
-         the value_white_* of the descendants of this node (self) by a Minimax procedure.
+        the value_white_* of the descendants of this node (self) by a Minimax procedure.
         best_node_sequence (list[ITreeNode]): The sequence of best nodes found during the Minimax evaluation.
-        children_sorted_by_value_ (dict[ITreeNode, Any]): The children of the tree node kept in a dictionary
-         that can be sorted by their evaluations.
+        children_sorted_by_value\_ (dict[ITreeNode, Any]): The children of the tree node kept in a dictionary
+        that can be sorted by their evaluations.
         best_index_for_value (int): The index of the best value in the children_sorted_by_value dictionary.
         children_not_over (list[ITreeNode]): The list of children that have not yet been found to be over.
         over_event (OverEvent): The event that determines if the node is over.

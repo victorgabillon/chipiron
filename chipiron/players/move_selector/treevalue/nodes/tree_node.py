@@ -15,36 +15,36 @@ from .itree_node import ITreeNode
 class TreeNode:
     """
     The TreeNode class stores information about a specific board position, including the board representation,
-the player to move, the half-move count, and the parent-child relationships with other nodes.
+    the player to move, the half-move count, and the parent-child relationships with other nodes.
 
-Attributes:
-    id_ (int): The number to identify this node for easier debugging.
-    half_move_ (int): The number of half-moves since the start of the game to reach the board position.
-    board_ (boards.BoardChi): The board representation of the node.
-    parent_nodes_ (set[ITreeNode]): The set of parent nodes to this node.
-    all_legal_moves_generated (bool): A boolean indicating whether all moves have been generated.
-    non_opened_legal_moves (set[chess.Move]): The set of non-opened legal moves.
-    moves_children_ (bidict[chess.Move, ITreeNode | None]): The dictionary mapping moves to child nodes.
-    fast_rep (str): The fast representation of the board.
-    player_to_move_ (chess.Color): The color of the player that has to move in the board.
+    Attributes:
+        id\_ (int): The number to identify this node for easier debugging.
+        half_move\_ (int): The number of half-moves since the start of the game to reach the board position.
+        board\_ (boards.BoardChi): The board representation of the node.
+        parent_nodes\_ (set[ITreeNode]): The set of parent nodes to this node.
+        all_legal_moves_generated (bool): A boolean indicating whether all moves have been generated.
+        non_opened_legal_moves (set[chess.Move]): The set of non-opened legal moves.
+        moves_children\_ (bidict[chess.Move, ITreeNode | None]): The dictionary mapping moves to child nodes.
+        fast_rep (str): The fast representation of the board.
+        player_to_move\_ (chess.Color): The color of the player that has to move in the board.
 
-Methods:
-    __post_init__(): Initializes the TreeNode object after it has been created.
-    id(): Returns the id of the node.
-    player_to_move(): Returns the color of the player to move.
-    board(): Returns the board representation.
-    half_move(): Returns the number of half-moves.
-    moves_children(): Returns the dictionary mapping moves to child nodes.
-    parent_nodes(): Returns the set of parent nodes.
-    is_root_node(): Checks if the node is a root node.
-    legal_moves(): Returns the legal moves of the board.
-    add_parent(new_parent_node: ITreeNode): Adds a parent node to the current node.
-    is_over(): Checks if the game is over.
-    print_moves_children(): Prints the moves-children links of the node.
-    test(): Performs a test on the node.
-    dot_description(): Returns the dot description of the node.
-    test_all_legal_moves_generated(): Tests if all legal moves have been generated.
-    get_descendants(): Returns a dictionary of descendants of the node.
+    Methods:
+        __post_init__(): Initializes the TreeNode object after it has been created.
+        id(): Returns the id of the node.
+        player_to_move(): Returns the color of the player to move.
+        board(): Returns the board representation.
+        half_move(): Returns the number of half-moves.
+        moves_children(): Returns the dictionary mapping moves to child nodes.
+        parent_nodes(): Returns the set of parent nodes.
+        is_root_node(): Checks if the node is a root node.
+        legal_moves(): Returns the legal moves of the board.
+        add_parent(new_parent_node: ITreeNode): Adds a parent node to the current node.
+        is_over(): Checks if the game is over.
+        print_moves_children(): Prints the moves-children links of the node.
+        test(): Performs a test on the node.
+        dot_description(): Returns the dot description of the node.
+        test_all_legal_moves_generated(): Tests if all legal moves have been generated.
+        get_descendants(): Returns a dictionary of descendants of the node.
     """
     # id is a number to identify this node for easier debug
     id_: int

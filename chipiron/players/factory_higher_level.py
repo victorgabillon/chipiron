@@ -26,7 +26,7 @@ class MoveFunction(Protocol):
 
     Args:
         board (BoardChi): The game board on which the move function will be applied.
-        seed_ (seed): The seed value for the move function.
+        seed_int (seed): The seed value for the move function.
 
     Returns:
         None: This function does not return any value.
@@ -41,7 +41,7 @@ class MoveFunction(Protocol):
 
 def send_board_to_player_process_mailbox(
         board: BoardChi,
-        seed_: int,
+        seed_int: int,
         player_process_mailbox: queue.Queue[BoardMessage]
 ) -> None:
     """Sends the board and seed to the player process mailbox.
@@ -51,12 +51,12 @@ def send_board_to_player_process_mailbox(
 
     Args:
         board (BoardChi): The board to send.
-        seed_ (int): The seed to send.
+        seed_int (int): The seed to send.
         player_process_mailbox (queue.Queue[BoardMessage]): The mailbox to put the message into.
     """
     message: BoardMessage = BoardMessage(
         board=board,
-        seed=seed_
+        seed=seed_int
     )
     player_process_mailbox.put(item=message)
 
@@ -78,7 +78,7 @@ def create_player_observer(
         player_color (chess.Color): The color of the player.
         distributed_players (bool): A flag indicating whether the players are distributed across multiple processes.
         main_thread_mailbox (queue.Queue[IsDataclass]): The mailbox for communication between the main thread
-         and the player.
+        and the player.
 
     Returns:
         tuple[GamePlayer | PlayerProcess, MoveFunction]: A tuple containing the player observer and the move function.
