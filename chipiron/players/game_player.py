@@ -63,7 +63,7 @@ class GamePlayer:
         assert seed_int is not None
         best_move: MoveRecommendation = self._player.select_move(
             board=board,
-            seed_=seed_int
+            seed_int=seed_int
         )
         return best_move
 
