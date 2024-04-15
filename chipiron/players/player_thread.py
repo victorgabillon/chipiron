@@ -105,7 +105,7 @@ class PlayerProcess(multiprocessing.Process):
                         board=board,
                         game_player=self.game_player,
                         queue_move=self.queue_move,
-                        seed_=seed_
+                        seed_int=seed_
                     )
                 else:
                     print(f'opopopopopopopopopdddddddddddddddddsssssssssss, {message}')
