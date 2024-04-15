@@ -11,7 +11,7 @@ def test_check():
 
     player = create_chipiron_player(depth=1)
 
-    move_reco = player.select_move(board=board, seed_=0)
+    move_reco = player.select_move(board=board, seed_int=0)
 
     print('move', move_reco.move)
     assert (move_reco.move == chess.Move.from_uci('g6h7'))
@@ -37,7 +37,7 @@ def test_check_in_two():
             player_args_file='UniformDepth.yaml',
             random_generator=random_generator
         )
-        move_reco = player.select_move(board=board, seed_=0)
+        move_reco = player.select_move(board=board, seed_int=0)
 
         print('MMMMMMMMM move', move_reco.move, moves[0], move_reco.evaluation)
         assert (move_reco.move == moves[0])
