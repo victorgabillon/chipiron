@@ -23,12 +23,13 @@ def get_descendants(
     des: dict[ITreeNode, None] = {from_tree_node: None}  # include itself
     generation = set(from_tree_node.moves_children.values())
     while generation:
-        next_depth_generation = set()
+        next_depth_generation: set[ITreeNode] = set()
         for node in generation:
             assert node is not None
             des[node] = None
-            for move, next_generation_child in node.moves_children.items():
-                next_depth_generation.add(next_generation_child)
+            for _, next_generation_child in node.moves_children.items():
+                if next_generation_child is not None:
+                    next_depth_generation.add(next_generation_child)
         generation = next_depth_generation
     return des
 
@@ -57,13 +58,14 @@ def get_descendants_candidate_to_open(
     depth: int = 1
     assert max_depth is not None
     while generation and depth <= max_depth:
-        next_depth_generation = set()
+        next_depth_generation: set[ITreeNode] = set()
         for node in generation:
             assert isinstance(node, AlgorithmNode)
             if not node.all_legal_moves_generated and not node.is_over():
                 des[node] = None
-            for move, next_generation_child in node.moves_children.items():
-                next_depth_generation.add(next_generation_child)
+            for _, next_generation_child in node.moves_children.items():
+                if next_generation_child is not None:
+                    next_depth_generation.add(next_generation_child)
         generation = next_depth_generation
     return list(des.keys())
 
@@ -92,12 +94,13 @@ def get_descendants_candidate_not_over(
     assert max_depth is not None
     while generation and depth <= max_depth:
 
-        next_depth_generation = set()
+        next_depth_generation: set[ITreeNode] = set()
         for node in generation:
             assert isinstance(node, AlgorithmNode)
             if not node.is_over():
                 des[node] = None
-            for move, next_generation_child in node.moves_children.items():
-                next_depth_generation.add(next_generation_child)
+            for _, next_generation_child in node.moves_children.items():
+                if next_generation_child is not None:
+                    next_depth_generation.add(next_generation_child)
         generation = next_depth_generation
     return list(des.keys())

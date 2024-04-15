@@ -25,7 +25,6 @@ from chipiron.utils.chi_nn import ChiNN
 
 class NetP2(ChiNN):
     """The NetP2 class. Inherits from the ChiNN base class."""
-
     def __init__(
             self
     ) -> None:

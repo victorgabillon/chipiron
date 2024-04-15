@@ -10,7 +10,11 @@ Welcome to chipiron's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   modules
+   chipiron.displays
+   environments
+   games
+   league
+   learningprocess
 
 Indices and tables
 ==================
