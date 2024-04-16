@@ -61,7 +61,7 @@ class BaseTreeExploration:
         board = create_board()
         player.select_move(
             board=board,
-            seed_=0
+            seed_int=0
         )
 
     def terminate(self) -> None:

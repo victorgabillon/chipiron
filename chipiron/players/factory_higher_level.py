@@ -18,15 +18,16 @@ from .player_args import PlayerFactoryArgs
 from .player_thread import PlayerProcess
 
 
-# FIXME double definition of Move functions!!
+# function that will be called by the observable game when the board is updated, which should query at least one player
+# to compute a move
+# MoveFunction = Callable[[BoardChi, seed], None]
 class MoveFunction(Protocol):
-    """Represents a callable object that defines a move function.
-
-    This protocol is used to define the signature of a move function that can be used by the game engine.
+    """
+    Represents a move function that can be called on a game board.
 
     Args:
-        board (BoardChi): The game board on which the move function will be applied.
-        seed_int (seed): The seed value for the move function.
+        board (BoardChi): The game board on which the move function is applied.
+        seed_int (seed): The seed used for the move function.
 
     Returns:
         None: This function does not return any value.
@@ -35,7 +36,7 @@ class MoveFunction(Protocol):
     def __call__(
             self,
             board: BoardChi,
-            seed_: seed
+            seed_int: seed
     ) -> None: ...
 
 

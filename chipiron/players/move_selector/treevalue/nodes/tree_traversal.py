@@ -21,7 +21,7 @@ def get_descendants(
         dict[ITreeNode, None]: A dictionary containing all descendants of the starting tree node.
     """
     des: dict[ITreeNode, None] = {from_tree_node: None}  # include itself
-    generation = set(from_tree_node.moves_children.values())
+    generation: set[ITreeNode] = set([node for node in from_tree_node.moves_children.values() if node is not None])
     while generation:
         next_depth_generation: set[ITreeNode] = set()
         for node in generation:
@@ -54,7 +54,7 @@ def get_descendants_candidate_to_open(
         des = {from_tree_node: None}  # include itself maybe
     else:
         des = {}
-    generation = set(from_tree_node.tree_node.moves_children_.values())
+    generation: set[ITreeNode] = set([node for node in from_tree_node.moves_children.values() if node is not None])
     depth: int = 1
     assert max_depth is not None
     while generation and depth <= max_depth:
@@ -88,7 +88,7 @@ def get_descendants_candidate_not_over(
     if not from_tree_node.moves_children:
         return [from_tree_node]
     des: dict[ITreeNode, None] = {}
-    generation = set(from_tree_node.moves_children.values())
+    generation: set[ITreeNode] = set([node for node in from_tree_node.moves_children.values() if node is not None])
 
     depth: int = 1
     assert max_depth is not None

@@ -12,12 +12,13 @@ from chipiron.games.game.game_args import GameArgs
 from chipiron.players import PlayerFactoryArgs
 from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator, ObservableBoardEvaluator
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
+from chipiron.players.factory_higher_level import MoveFunction
 from chipiron.players.factory_higher_level import create_player_observer
 from chipiron.utils import path
 from chipiron.utils import seed
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage, extract_message_from_players
 from chipiron.utils.is_dataclass import IsDataclass
-from .game import Game, ObservableGame, MoveFunction
+from .game import Game, ObservableGame
 from .game_manager import GameManager
 
 
