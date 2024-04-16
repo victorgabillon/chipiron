@@ -51,7 +51,7 @@ class NodeWithValue(ITreeNode, Protocol):
 
 @dataclass(slots=True)
 class NodeMinmaxEvaluation:
-    """
+    r"""
     Represents a node in a tree structure used for the Minimax algorithm evaluation.
 
     Attributes:

@@ -21,7 +21,7 @@ def create_script(
 ) -> IScript:
     """
     Creates the corresponding script
-    
+
     Args:
         should_parse_command_line_arguments: whether the script should parse the command line. Default is True.
         But might be set to False if called from a higher level script that wants the current script to stick to some

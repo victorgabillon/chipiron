@@ -13,7 +13,7 @@ from .itree_node import ITreeNode
 
 @dataclass(slots=True)
 class TreeNode:
-    """
+    r"""
     The TreeNode class stores information about a specific board position, including the board representation,
     the player to move, the half-move count, and the parent-child relationships with other nodes.
 

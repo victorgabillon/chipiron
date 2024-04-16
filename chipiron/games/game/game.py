@@ -3,12 +3,12 @@ Module for the Game class.
 """
 import copy
 import queue
-from typing import Protocol
 
 import chess
 
 from chipiron.environments.chess.board import BoardChi
 from chipiron.environments.chess.board.starting_position import AllStartingPositionArgs
+from chipiron.players.factory_higher_level import MoveFunction
 from chipiron.utils import seed, unique_int_from_list
 from chipiron.utils.communication.gui_messages import GameStatusMessage
 from chipiron.utils.communication.player_game_messages import BoardMessage
@@ -137,28 +137,6 @@ class Game:
             BoardChi: The chess board.
         """
         return self._board
-
-
-# function that will be called by the observable game when the board is updated, which should query at least one player
-# to compute a move
-# MoveFunction = Callable[[BoardChi, seed], None]
-class MoveFunction(Protocol):
-    """
-    Represents a move function that can be called on a game board.
-
-    Args:
-        board (BoardChi): The game board on which the move function is applied.
-        seed_int (seed): The seed used for the move function.
-
-    Returns:
-        None: This function does not return any value.
-    """
-
-    def __call__(
-            self,
-            board: BoardChi,
-            seed_int: seed
-    ) -> None: ...
 
 
 class ObservableGame:

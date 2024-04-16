@@ -4,6 +4,7 @@ Module to define the transition between two boards
 from dataclasses import dataclass
 
 import chess
+
 from chipiron.environments.chess.board.board import BoardChi
 from chipiron.environments.chess.board.board_modification import BoardModification
 
