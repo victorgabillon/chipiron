@@ -36,7 +36,7 @@ def fetch_match_games_args_convert_and_save(
     file_name_match_setting_: path
 
     if profiling:
-        file_name_match_setting_ = 'setting_jime.yaml'
+        file_name_match_setting_ = 'setting_cubo.yaml'
         if testing:
             file_name_match_setting_ = 'setting_cubo.yaml'
     else:

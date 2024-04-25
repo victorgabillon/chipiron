@@ -20,6 +20,7 @@ from chipiron.players.move_selector.treevalue.node_selector.opening_instructions
     OpeningInstructor, \
     create_instructions_to_open_all_moves
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
+from chipiron.players.move_selector.treevalue.nodes.utils import best_node_sequence_from_node
 from ..move_explorer import SamplingPriorities
 from ..node_selector_args import NodeSelectorArgs
 
@@ -83,8 +84,9 @@ class RecurZipfBase:
         # todo maybe proportions and proportions can be valuesorted dict with smart updates
 
         opening_instructions: OpeningInstructions
-        if tree.root_node.minmax_evaluation.best_node_sequence:
-            last_node_in_best_line = tree.root_node.minmax_evaluation.best_node_sequence[-1]
+        best_node_sequence = best_node_sequence_from_node(tree.root_node)
+        if best_node_sequence:
+            last_node_in_best_line = best_node_sequence[-1]
             assert isinstance(last_node_in_best_line, AlgorithmNode)
             if last_node_in_best_line.board.is_attacked(
                     not last_node_in_best_line.tree_node.player_to_move) and not last_node_in_best_line.minmax_evaluation.is_over():
@@ -100,14 +102,18 @@ class RecurZipfBase:
 
         wandering_node = tree.root_node
 
-        while wandering_node.minmax_evaluation.children_not_over:
+        while wandering_node.minmax_evaluation.moves_not_over:
             assert (not wandering_node.is_over())
-            wandering_node = self.move_explorer.sample_child_to_explore(tree_node_to_sample_from=wandering_node)
+            move = self.move_explorer.sample_move_to_explore(tree_node_to_sample_from=wandering_node)
+            next_node = wandering_node.moves_children[move]
+            assert isinstance(next_node, AlgorithmNode)
+            wandering_node = next_node
 
         all_moves_to_open = self.opening_instructor.all_moves_to_open(node_to_open=wandering_node.tree_node)
         opening_instructions = create_instructions_to_open_all_moves(
             moves_to_play=all_moves_to_open,
-            node_to_open=wandering_node)
+            node_to_open=wandering_node
+        )
 
         return opening_instructions
 

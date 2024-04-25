@@ -8,55 +8,52 @@ about the block.
 """
 
 from dataclasses import dataclass, field
-from typing import Set
+from typing import Self
+
+import chess
 
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 
 
 @dataclass(slots=True)
-class IndexUpdateInstructionsBlock:
+class IndexUpdateInstructionsFromOneNode:
     """
-    Represents a block of index update instructions.
+    Represents a block of instructions for updating an index.
+
+    Attributes:
+        node_sending_update (AlgorithmNode): The node sending the update.
+        updated_index (bool): Indicates whether the index has been updated.
+    """
+    node_sending_update: AlgorithmNode
+    updated_index: bool
+
+
+@dataclass(slots=True)
+class IndexUpdateInstructionsTowardsOneParentNode:
+    """
+    Represents a block of index update instructions intended to a specific node in the algorithm tree.
 
     This class is used to store and manipulate sets of children with updated index values.
 
     Attributes:
-        children_with_updated_index (Set[AlgorithmNode]): A set of children with updated index values.
+        moves_with_updated_index (Set[chess.Move]): A set of children with updated index values.
     """
 
-    children_with_updated_index: Set[AlgorithmNode] = field(default_factory=set)
+    moves_with_updated_index: set[chess.Move] = field(default_factory=set)
 
-    def merge(
+    def add_update_from_one_child_node(
             self,
-            an_update_instruction: 'IndexUpdateInstructionsBlock',
-            another_update_instruction: 'IndexUpdateInstructionsBlock'
+            update_from_one_child_node: IndexUpdateInstructionsFromOneNode,
+            move_from_parent_to_child: chess.Move
     ) -> None:
-        """
-        Merge two update instructions blocks by combining their sets of children with updated index values.
+        if update_from_one_child_node.updated_index:
+            self.moves_with_updated_index.add(move_from_parent_to_child)
 
-        Args:
-            an_update_instruction (IndexUpdateInstructionsBlock): The first update instruction block to merge.
-            another_update_instruction (IndexUpdateInstructionsBlock): The second update instruction block to merge.
-
-        Returns:
-            None
-        """
-        self.children_with_updated_index = an_update_instruction.children_with_updated_index | another_update_instruction.children_with_updated_index
-
-    def print_info(self) -> None:
-        """
-        Print information about the IndexUpdateInstructionsBlock.
-
-        This method prints the number of children with updated index values and their IDs.
-
-        Returns:
-            None
-        """
-        print('upInstructions printing')
-        print(len(self.children_with_updated_index), 'children_with_updated_index', end=' ')
-        for child in self.children_with_updated_index:
-            print(child.id, end=' ')
-        print()
+    def add_update_toward_one_parent_node(
+            self,
+            another_update: Self
+    ) -> None:
+        self.moves_with_updated_index = self.moves_with_updated_index | another_update.moves_with_updated_index
 
     def empty(self) -> bool:
         """
@@ -65,5 +62,8 @@ class IndexUpdateInstructionsBlock:
         Returns:
             bool: True if the block is empty, False otherwise.
         """
-        empty_bool = not bool(self.children_with_updated_index)
+        empty_bool = not bool(self.moves_with_updated_index)
         return empty_bool
+
+    def print_info(self) -> None:
+        print(self.moves_with_updated_index)

@@ -17,7 +17,6 @@ from __future__ import annotations  # (helping with recursive type annotation)
 from typing import Protocol
 
 import chess
-from bidict import bidict
 
 from chipiron.environments.chess.board.board import BoardChi
 
@@ -63,7 +62,7 @@ class ITreeNode(Protocol):
     @property
     def moves_children(
             self
-    ) -> bidict[chess.Move, ITreeNode | None]:
+    ) -> dict[chess.Move, ITreeNode | None]:
         """
         Get the child nodes of the node.
 
@@ -74,16 +73,16 @@ class ITreeNode(Protocol):
     @property
     def parent_nodes(
             self
-    ) -> set[ITreeNode]:
+    ) -> dict[ITreeNode, chess.Move]:
         """
-        Get the parent nodes of the node.
+        Returns the dictionary of parent nodes of the current tree node with associated move.
 
-        Returns:
-            A set of parent nodes.
+        :return: A dictionary of parent nodes of the current tree node with associated move.
         """
 
     def add_parent(
             self,
+            move: chess.Move,
             new_parent_node: ITreeNode
     ) -> None:
         """
@@ -91,6 +90,8 @@ class ITreeNode(Protocol):
 
         Args:
             new_parent_node: The parent node to add.
+            move (chess.Move): the move that led to the node from the new_parent_node
+
         """
 
     def dot_description(self) -> str:

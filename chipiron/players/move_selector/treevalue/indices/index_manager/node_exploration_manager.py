@@ -294,8 +294,13 @@ class UpdateIndexLocalMinChange:
                 inter_level_interval = parent_node.exploration_index_data.interval
             else:
                 if parent_node.tree_node.board.turn == chess.WHITE:
-                    best_child = parent_node.minmax_evaluation.best_child()
-                    second_best_child = parent_node.minmax_evaluation.second_best_child()
+                    best_move: chess.Move | None = parent_node.minmax_evaluation.best_move()
+                    assert best_move is not None
+                    best_child = parent_node.moves_children[best_move]
+                    assert isinstance(best_child, AlgorithmNode)
+                    second_best_move: chess.Move | None = parent_node.minmax_evaluation.second_best_move()
+                    assert second_best_move is not None
+                    second_best_child = parent_node.moves_children[second_best_move]
                     child_white_value = child_node.minmax_evaluation.get_value_white()
                     local_interval = Interval()
                     if child_node == best_child:
@@ -303,7 +308,6 @@ class UpdateIndexLocalMinChange:
                         local_interval.max_value = math.inf
                         local_interval.min_value = second_best_child.minmax_evaluation.get_value_white()
                     else:
-                        assert isinstance(best_child, AlgorithmNode)
                         local_interval.max_value = math.inf
                         local_interval.min_value = best_child.minmax_evaluation.get_value_white()
 
@@ -318,16 +322,20 @@ class UpdateIndexLocalMinChange:
                         ...
                         local_index = None
                 if parent_node.tree_node.board.turn == chess.BLACK:
-                    best_child = parent_node.minmax_evaluation.best_child()
-                    second_best_child = parent_node.minmax_evaluation.second_best_child()
+                    best_move_black: chess.Move | None = parent_node.minmax_evaluation.best_move()
+                    assert best_move_black is not None
+                    best_child = parent_node.moves_children[best_move_black]
+                    second_best_move_black: chess.Move | None = parent_node.minmax_evaluation.second_best_move()
+                    assert second_best_move_black is not None
+                    second_best_child = parent_node.moves_children[second_best_move_black]
                     child_white_value = child_node.minmax_evaluation.get_value_white()
                     local_interval = Interval()
+                    assert isinstance(best_child, AlgorithmNode)
                     if child_node == best_child:
                         assert isinstance(second_best_child, AlgorithmNode)
                         local_interval.max_value = second_best_child.minmax_evaluation.get_value_white()
                         local_interval.min_value = -math.inf
                     else:
-                        assert isinstance(best_child, AlgorithmNode)
                         local_interval.max_value = best_child.minmax_evaluation.get_value_white()
                         local_interval.min_value = -math.inf
 
@@ -388,15 +396,17 @@ def update_all_indices(
         parent_node: ITreeNode
         for parent_node in tree_nodes[half_move].values():
             assert isinstance(parent_node, AlgorithmNode)
-            child_node: ITreeNode
+            child_node: ITreeNode | None
             # for child_node in parent_node.moves_children.values():
-            child_rank: int
-            for child_rank, child_node in enumerate(parent_node.minmax_evaluation.children_sorted_by_value_):
+            move_rank: int
+            move: chess.Move
+            for move_rank, move in enumerate(parent_node.minmax_evaluation.moves_sorted_by_value_):
+                child_node = parent_node.moves_children[move]
                 assert isinstance(child_node, AlgorithmNode)
                 index_manager.update_node_indices(
                     child_node=child_node,
                     tree=tree,
-                    child_rank=child_rank,
+                    child_rank=move_rank,
                     parent_node=parent_node
                 )
 

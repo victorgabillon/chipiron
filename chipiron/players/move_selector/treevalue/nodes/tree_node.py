@@ -5,7 +5,6 @@ This module defines the TreeNode class, which represents a node in a tree struct
 from dataclasses import dataclass, field
 
 import chess
-from bidict import bidict
 
 import chipiron.environments.chess.board as boards
 from .itree_node import ITreeNode
@@ -24,7 +23,7 @@ class TreeNode:
         parent_nodes\_ (set[ITreeNode]): The set of parent nodes to this node.
         all_legal_moves_generated (bool): A boolean indicating whether all moves have been generated.
         non_opened_legal_moves (set[chess.Move]): The set of non-opened legal moves.
-        moves_children\_ (bidict[chess.Move, ITreeNode | None]): The dictionary mapping moves to child nodes.
+        moves_children\_ (dict[chess.Move, ITreeNode | None]): The dictionary mapping moves to child nodes.
         fast_rep (str): The fast representation of the board.
         player_to_move\_ (chess.Color): The color of the player that has to move in the board.
 
@@ -56,7 +55,7 @@ class TreeNode:
     board_: boards.BoardChi
 
     # the set of parent nodes to this node. Note that a node can have multiple parents!
-    parent_nodes_: set[ITreeNode]
+    parent_nodes_: dict[ITreeNode, chess.Move]
 
     # all_legal_moves_generated  is a boolean saying whether all moves have been generated.
     # If true the moves are either opened in which case the corresponding opened node is stored in
@@ -64,8 +63,8 @@ class TreeNode:
     all_legal_moves_generated: bool = False
     non_opened_legal_moves: set[chess.Move] = field(default_factory=set)
 
-    # bijection dictionary between moves and children nodes. node is set to None is not created
-    moves_children_: bidict[chess.Move, ITreeNode | None] = field(default_factory=bidict)
+    # dictionary mapping moves to children nodes. Node is set to None if not created
+    moves_children_: dict[chess.Move, ITreeNode | None] = field(default_factory=dict)
 
     fast_rep: str = field(default_factory=str)
 
@@ -131,24 +130,24 @@ class TreeNode:
         return self.half_move_
 
     @property
-    def moves_children(self) -> bidict[chess.Move, ITreeNode | None]:
+    def moves_children(self) -> dict[chess.Move, ITreeNode | None]:
         """
         Returns a bidirectional dictionary containing the children nodes of the current tree node,
         along with the corresponding chess moves that lead to each child node.
 
         Returns:
-            bidict[chess.Move, ITreeNode | None]: A bidirectional dictionary mapping chess moves to
+            dict[chess.Move, ITreeNode | None]: A bidirectional dictionary mapping chess moves to
             the corresponding child nodes. If a move does not have a corresponding child node, it is
             mapped to None.
         """
         return self.moves_children_
 
     @property
-    def parent_nodes(self) -> set[ITreeNode]:
+    def parent_nodes(self) -> dict[ITreeNode, chess.Move]:
         """
-        Returns the set of parent nodes of the current tree node.
+        Returns the dictionary of parent nodes of the current tree node with associated move.
 
-        :return: A set of parent nodes.
+        :return: A dictionary of parent nodes of the current tree node with associated move.
         """
         return self.parent_nodes_
 
@@ -173,12 +172,14 @@ class TreeNode:
 
     def add_parent(
             self,
+            move: chess.Move,
             new_parent_node: ITreeNode
     ) -> None:
         """
         Adds a new parent node to the current node.
 
         Args:
+            move (chess.Move): the move that led to the node from the new_parent_node
             new_parent_node (ITreeNode): The new parent node to be added.
 
         Raises:
@@ -187,8 +188,9 @@ class TreeNode:
         Returns:
             None
         """
+        # debug
         assert (new_parent_node not in self.parent_nodes)  # there cannot be two ways to link the same child-parent
-        self.parent_nodes.add(new_parent_node)
+        self.parent_nodes[new_parent_node] = move
 
     def is_over(self) -> bool:
         """
@@ -197,10 +199,7 @@ class TreeNode:
         Returns:
             bool: True if the game is over, False otherwise.
         """
-        if self.board.is_game_over() is None:
-            return False
-        else:
-            return True
+        return self.board.is_game_over()
 
     def print_moves_children(self) -> None:
         """
@@ -256,7 +255,7 @@ class TreeNode:
             for move in self.board.legal_moves:
                 assert (bool(move in self.moves_children_) != bool(move in self.non_opened_legal_moves))
         else:
-            move_not_in = []
+            move_not_in: list[chess.Move] = []
             legal_moves = list(self.board.legal_moves)
             for move in legal_moves:
                 if move not in self.moves_children_:
@@ -280,11 +279,11 @@ class TreeNode:
         des: dict[ITreeNode | None, None] = {self: None}  # include itself
         generation = set(self.moves_children_.values())
         while generation:
-            next_depth_generation = set()
+            next_depth_generation: set[ITreeNode | None] = set()
             for node in generation:
                 if node is not None:
                     des[node] = None
-                    for move, next_generation_child in node.moves_children.items():
+                    for _, next_generation_child in node.moves_children.items():
                         next_depth_generation.add(next_generation_child)
             generation = next_depth_generation
         return des
