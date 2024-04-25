@@ -3,6 +3,8 @@ AlgorithmNodeFactory
 """
 from dataclasses import dataclass
 
+import chess
+
 import chipiron.environments.chess.board as board_mod
 import chipiron.players.move_selector.treevalue.indices.node_indices as node_indices
 import chipiron.players.move_selector.treevalue.nodes as node
@@ -29,12 +31,14 @@ class AlgorithmNodeFactory:
             half_move: int,
             count: int,
             parent_node: ITreeNode | None,
+            move_from_parent: chess.Move | None,
             modifications: board_mod.BoardModification | None
     ) -> AlgorithmNode:
         """
         Creates an AlgorithmNode object.
 
         Args:
+            move_from_parent (chess.Move | None): the move that led to the node from the parent node
             board: The board object.
             half_move: The half move count.
             count: The count.
@@ -49,6 +53,7 @@ class AlgorithmNodeFactory:
             board=board,
             half_move=half_move,
             count=count,
+            move_from_parent=move_from_parent,
             parent_node=parent_node,
             modifications=modifications
         )

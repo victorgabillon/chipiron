@@ -10,6 +10,7 @@ Functions:
 
 import chess
 
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.node_minmax_evaluation import NodeMinmaxEvaluation
 from .itree_node import ITreeNode
 from .tree_node import TreeNode
@@ -42,10 +43,32 @@ def a_move_sequence_from_root(tree_node: ITreeNode) -> list[str]:
     child: ITreeNode = tree_node
     while child.parent_nodes:
         parent: ITreeNode = next(iter(child.parent_nodes))
-        move_sequence_from_root.append(parent.moves_children.inverse[child])
+        move: chess.Move = child.parent_nodes[parent]
+        move_sequence_from_root.append(move)
         child = parent
     move_sequence_from_root.reverse()
     return [str(i) for i in move_sequence_from_root]
+
+
+def best_node_sequence_from_node(
+        tree_node: AlgorithmNode,
+) -> list[ITreeNode]:
+    """
+
+    """
+
+    best_move_seq: list[chess.Move] = tree_node.minmax_evaluation.best_move_sequence
+    index = 0
+    move_sequence: list[ITreeNode] = [tree_node]
+    child: ITreeNode = tree_node
+    while child.moves_children:
+        move: chess.Move = best_move_seq[index]
+        child_ = child.moves_children[move]
+        assert child_ is not None
+        child = child_
+        move_sequence.append(child)
+        index = index + 1
+    return move_sequence
 
 
 def print_a_move_sequence_from_root(tree_node: TreeNode) -> None:

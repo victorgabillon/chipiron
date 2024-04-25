@@ -64,12 +64,10 @@ class AlmostEqualLogistic:
         """
         # TODO this should be given at construction but postponed for now because of dataclasses
         # find the best first move allowing for random choice for almost equally valued moves.
-        best_root_children = tree.root_node.minmax_evaluation.get_all_of_the_best_moves(
+        best_root_moves: list[chess.Move] = tree.root_node.minmax_evaluation.get_all_of_the_best_moves(
             how_equal='almost_equal_logistic')
-        print('We have as bests: ',
-              [tree.root_node.moves_children.inverse[best] for best in best_root_children])
-        best_child = random_generator.choice(best_root_children)
-        best_move = tree.root_node.moves_children.inverse[best_child]
+        print('We have as bests: ', [best for best in best_root_moves])
+        best_move = random_generator.choice(best_root_moves)
 
         assert isinstance(best_move, chess.Move)
         return best_move

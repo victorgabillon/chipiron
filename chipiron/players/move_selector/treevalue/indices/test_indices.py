@@ -102,13 +102,15 @@ def make_tree_from_file(
             board_chi = BoardChi(
                 board=board
             )
-            root_node: AlgorithmNode = algorithm_node_factory.create(
+            root_node: ITreeNode = algorithm_node_factory.create(
                 board=board_chi,
                 half_move=0,
                 count=yaml_node['id'],
                 parent_node=None,
+                move_from_parent=None,
                 modifications=None
             )
+            assert isinstance(root_node, AlgorithmNode)
             root_node.minmax_evaluation.value_white_minmax = yaml_node['value']
             half_moves[yaml_node['id']] = 0
             id_nodes[yaml_node['id']] = root_node
@@ -123,7 +125,8 @@ def make_tree_from_file(
                     child_node=root_node,
                     parent_node=None,
                     board_modifications=None,
-                    creation_child_node=True
+                    creation_child_node=True,
+                    move=None
                 )
             )
             root_node.tree_node.all_legal_moves_generated = True
@@ -151,7 +154,8 @@ def make_tree_from_file(
                     child_node=tree_expansion.child_node,
                     parent_node=tree_expansion.parent_node,
                     board_modifications=tree_expansion.board_modifications,
-                    creation_child_node=tree_expansion.creation_child_node
+                    creation_child_node=tree_expansion.creation_child_node,
+                    move=yaml_node['id']
                 )
             )
             assert isinstance(tree_expansion.child_node, AlgorithmNode)
@@ -159,7 +163,8 @@ def make_tree_from_file(
             id_nodes[yaml_node['id']] = tree_expansion.child_node
             tree_expansion.child_node.minmax_evaluation.value_white_minmax = yaml_node['value']
             tree_expansion.child_node.minmax_evaluation.value_white_evaluator = yaml_node['value']
-            parent_node.minmax_evaluation.children_not_over.append(tree_expansion.child_node)
+            assert tree_expansion.move is not None
+            parent_node.minmax_evaluation.moves_not_over.append(tree_expansion.move)
             algo_tree_manager.update_backward(tree_expansions=tree_expansions)
 
     # print('move_and_value_tree', move_and_value_tree.descendants)
