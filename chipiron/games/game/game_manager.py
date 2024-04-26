@@ -153,11 +153,15 @@ class GameManager:
         color_names = ['Black', 'White']
 
         while True:
+
             half_move: HalfMove = board.ply()
             print(f'Half Move: {half_move} playing status {self.game.playing_status.status} ')
             color_to_move: chess.Color = board.turn
             color_of_player_to_move_str = color_names[color_to_move]
             print(f'{color_of_player_to_move_str} ({self.player_color_to_id[color_to_move]}) to play now...')
+
+            # sending the current board to the player and asking for a move
+            self.game.notify_players()
 
             # waiting for a message
             mail = self.main_thread_mailbox.get()
@@ -166,7 +170,7 @@ class GameManager:
             if board.is_game_over() or not self.game_continue_conditions():
                 break
             else:
-                print(f'not game over at {board}')
+                print(f'Not game over at {board}')
 
         self.tell_results()
         self.terminate_processes()
