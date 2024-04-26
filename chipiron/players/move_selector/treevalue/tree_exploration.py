@@ -73,7 +73,7 @@ class TreeExploration:
             current_best_move = str(self.tree.root_node.minmax_evaluation.best_move_sequence[0])
         else:
             current_best_move = '?'
-        if random_generator.random() < 5:
+        if random_generator.random() <1:
             str_progress = self.stopping_criterion.get_string_of_progress(self.tree)
             print(
                 f'{str_progress} | current best move:  {current_best_move} | current white value: {self.tree.root_node.minmax_evaluation.value_white_minmax})')
@@ -110,7 +110,7 @@ class TreeExploration:
         while self.stopping_criterion.should_we_continue(tree=self.tree):
             assert (not self.tree.root_node.is_over())
             # print info
-            # self.print_info_during_move_computation(random_generator=random_generator)
+            self.print_info_during_move_computation(random_generator=random_generator)
 
             # choose the moves and nodes to open
             opening_instructions: node_sel.OpeningInstructions
@@ -118,19 +118,23 @@ class TreeExploration:
                 tree=self.tree,
                 latest_tree_expansions=tree_expansions
             )
+          #  print('debug_opeing')
+           # opening_instructions.print_info()
 
             # make sure we do not break the stopping criterion
             opening_instructions_subset: node_sel.OpeningInstructions
             opening_instructions_subset = self.stopping_criterion.respectful_opening_instructions(
                 opening_instructions=opening_instructions,
                 tree=self.tree)
-
+           # print('debug_opeing')
+           # opening_instructions_subset.print_info()
             #  opening_instructions_subset.print_info()
             # open the nodes
             tree_expansions = self.tree_manager.open_instructions(
                 tree=self.tree,
                 opening_instructions=opening_instructions_subset
             )
+           # print('debug_opeing',tree_expansions)
 
             # self.node_selector.communicate_expansions()
             self.tree_manager.update_backward(tree_expansions=tree_expansions)

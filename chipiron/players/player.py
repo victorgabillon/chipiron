@@ -14,7 +14,7 @@ class Player:
     """
     #  difference between player and treebuilder includes the fact
     #  that now a player can be a mixture of multiple decision rules
-    name: str
+    id: str
     main_move_selector: MoveSelector
 
     def __init__(
@@ -56,7 +56,7 @@ class Player:
                 move_recommendation = MoveRecommendation(move=best_move)
 
             else:
-                print('Playing with player (not Syzygy)')
+                print(f'Playing with player (not Syzygy) {self.id} {board}')
                 move_recommendation = self.main_move_selector.select_move(
                     board=board,
                     move_seed=seed_int
