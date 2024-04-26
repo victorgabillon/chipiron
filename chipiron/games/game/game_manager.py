@@ -159,6 +159,9 @@ class GameManager:
             color_of_player_to_move_str = color_names[color_to_move]
             print(f'{color_of_player_to_move_str} ({self.player_color_to_id[color_to_move]}) to play now...')
 
+            # sending the current board to the player and asking for a move
+            self.game.notify_players()
+
             # waiting for a message
             mail = self.main_thread_mailbox.get()
             self.processing_mail(mail)
@@ -251,10 +254,8 @@ class GameManager:
         """
         half_move: HalfMove = self.game.board.ply()
         continue_bool: bool = True
-        print('debug_max',self.args.max_half_moves)
         if self.args.max_half_moves is not None and half_move >= self.args.max_half_moves:
             continue_bool = False
-        print('debug_max', continue_bool)
 
         return continue_bool
 

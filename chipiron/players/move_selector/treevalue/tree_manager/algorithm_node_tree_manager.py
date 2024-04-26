@@ -25,7 +25,6 @@ from .tree_manager import TreeManager
 if typing.TYPE_CHECKING:
     import chipiron.players.move_selector.treevalue.node_selector as node_sel
 
-index_debug = 0
 @dataclass
 class AlgorithmNodeTreeManager:
     """
@@ -56,9 +55,7 @@ class AlgorithmNodeTreeManager:
         Returns: the tree expansions
 
         """
-        global index_debug
-        index_debug +=1
-        print('debug_open',index_debug)
+
         tree_expansion: TreeExpansion = self.tree_manager.open_node_move(
             tree=tree,
             parent_node=parent_node,

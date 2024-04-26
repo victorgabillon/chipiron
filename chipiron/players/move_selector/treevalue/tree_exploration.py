@@ -118,23 +118,18 @@ class TreeExploration:
                 tree=self.tree,
                 latest_tree_expansions=tree_expansions
             )
-          #  print('debug_opeing')
-           # opening_instructions.print_info()
 
             # make sure we do not break the stopping criterion
             opening_instructions_subset: node_sel.OpeningInstructions
             opening_instructions_subset = self.stopping_criterion.respectful_opening_instructions(
                 opening_instructions=opening_instructions,
                 tree=self.tree)
-           # print('debug_opeing')
-           # opening_instructions_subset.print_info()
-            #  opening_instructions_subset.print_info()
+
             # open the nodes
             tree_expansions = self.tree_manager.open_instructions(
                 tree=self.tree,
                 opening_instructions=opening_instructions_subset
             )
-           # print('debug_opeing',tree_expansions)
 
             # self.node_selector.communicate_expansions()
             self.tree_manager.update_backward(tree_expansions=tree_expansions)

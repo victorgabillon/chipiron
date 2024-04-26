@@ -85,7 +85,6 @@ def game_player_computes_move_on_board_and_send_move_in_queue(
     Returns:
         None
     """
-    print('debug_play',game_player.player.id,board.turn == game_player.color,board.turn)
     if board.turn == game_player.color and not board.board.is_game_over():
         move_recommendation: MoveRecommendation = game_player.select_move(
             board=board,
