@@ -251,8 +251,11 @@ class GameManager:
         """
         half_move: HalfMove = self.game.board.ply()
         continue_bool: bool = True
+        print('debug_max',self.args.max_half_moves)
         if self.args.max_half_moves is not None and half_move >= self.args.max_half_moves:
             continue_bool = False
+        print('debug_max', continue_bool)
+
         return continue_bool
 
     def print_to_file(
