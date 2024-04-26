@@ -205,7 +205,7 @@ class ObservableGame:
         """
         self.board.set_starting_position(starting_position_arg, fen)
         self.notify_display()
-        self.notify_players()
+
 
     def play_move(
             self,
@@ -219,7 +219,6 @@ class ObservableGame:
         """
         self.game.play_move(move)
         self.notify_display()
-        self.notify_players()
 
     def rewind_one_move(self) -> None:
         """
