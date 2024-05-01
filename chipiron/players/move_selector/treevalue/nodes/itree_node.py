@@ -15,13 +15,17 @@ Note: This is an interface and should not be instantiated directly.
 from __future__ import annotations  # (helping with recursive type annotation)
 
 from typing import Protocol
-from typing import TypeVar
+from typing import TypeVar, Any
 
 import chess
 
 from chipiron.environments.chess.board.board import BoardChi
 
 T = TypeVar('T', bound='ITreeNode[Any]')
+
+# to force Any to stay becaus of weird interaction between flake8 and pycharm
+
+a: Any = 0
 
 
 class ITreeNode(Protocol[T]):

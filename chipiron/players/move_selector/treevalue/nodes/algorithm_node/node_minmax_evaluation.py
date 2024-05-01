@@ -567,7 +567,7 @@ class NodeMinmaxEvaluation:
         """
         has_best_move_seq_changed: bool = False
         best_move: chess.Move = self.best_move_sequence[0]
-        best_node: AlgorithmNode | None = self.tree_node.moves_children[best_move]
+        best_node: NodeWithValue | None = self.tree_node.moves_children[best_move]
 
         if best_move in moves_with_updated_best_move_seq and best_node is not None:
             self.best_move_sequence = [best_move] + best_node.minmax_evaluation.best_move_sequence
@@ -738,7 +738,7 @@ class NodeMinmaxEvaluation:
         classified as over or not over. It asserts that if a child is over, it should not be present in the
         children_not_over set, and if a child is not over, it should be present in the children_not_over set.
         """
-        child: AlgorithmNode | None
+        child: NodeWithValue | None
         for move, child in self.tree_node.moves_children.items():
             assert child is not None
             if child.is_over():
