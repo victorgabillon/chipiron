@@ -19,7 +19,7 @@ class OpeningInstruction:
     Represents an opening instruction for a specific node in the game tree.
     """
 
-    node_to_open: nodes.ITreeNode
+    node_to_open: nodes.ITreeNode[Any]
     move_to_play: chess.Move
 
     def print_info(self) -> None:
@@ -72,8 +72,6 @@ class OpeningInstructions:
         """
         # key is supposed to be a tuple with (node_to_open,  move_to_play)
         assert (len(key) == 2)
-        assert (isinstance(key, tuple))
-        assert (isinstance(key[1], chess.Move))
         self.batch[key] = value
 
     def __getitem__(
@@ -179,7 +177,7 @@ class OpeningInstructions:
 
 def create_instructions_to_open_all_moves(
         moves_to_play: list[chess.Move],
-        node_to_open: nodes.ITreeNode
+        node_to_open: nodes.ITreeNode[Any]
 ) -> OpeningInstructions:
     """
     Creates opening instructions for all possible moves to play from a given node.
@@ -233,7 +231,7 @@ class OpeningInstructor:
 
     def all_moves_to_open(
             self,
-            node_to_open: nodes.ITreeNode
+            node_to_open: nodes.ITreeNode[Any]
     ) -> list[chess.Move]:
         """
         Returns a list of all possible moves to open from a given node.

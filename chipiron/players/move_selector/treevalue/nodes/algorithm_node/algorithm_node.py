@@ -3,8 +3,9 @@ This module defines the AlgorithmNode class, which is a generic node used by the
 It wraps tree nodes with values, minimax computation, and exploration tools.
 """
 
+from typing import Any
+
 import chess
-from bidict import bidict
 
 from chipiron.environments.chess.board.board import BoardChi
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import BoardRepresentation
@@ -20,14 +21,14 @@ class AlgorithmNode:
     It wraps tree nodes with values, minimax computation and exploration tools
     """
 
-    tree_node: TreeNode  # the reference to the tree node that is wrapped
+    tree_node: TreeNode[Any]  # the reference to the tree node that is wrapped
     minmax_evaluation: NodeMinmaxEvaluation  # the object computing the value
     exploration_index_data: NodeExplorationData | None  # the object storing the information to help the algorithm decide the next nodes to explore
     board_representation: BoardRepresentation | None  # the board representation
 
     def __init__(
             self,
-            tree_node: TreeNode,
+            tree_node: TreeNode[Any],
             minmax_evaluation: NodeMinmaxEvaluation,
             exploration_index_data: NodeExplorationData | None,
             board_representation: BoardRepresentation | None
@@ -87,22 +88,21 @@ class AlgorithmNode:
         return self.tree_node.fast_rep
 
     @property
-    def moves_children(self) -> bidict[chess.Move, ITreeNode | None]:
+    def moves_children(self) -> dict[chess.Move, ITreeNode[Any] | None]:
         """
         Returns the bidirectional dictionary of moves and their corresponding child nodes.
 
         Returns:
-            bidict[chess.Move, ITreeNode | None]: The bidirectional dictionary of moves and their corresponding child nodes.
+            dict[chess.Move, ITreeNode[Any] | None]: The bidirectional dictionary of moves and their corresponding child nodes.
         """
         return self.tree_node.moves_children
 
     @property
-    def parent_nodes(self) -> set[ITreeNode]:
+    def parent_nodes(self) -> dict[ITreeNode[Any], chess.Move]:
         """
-        Returns the set of parent nodes.
+        Returns the dictionary of parent nodes of the current tree node with associated move.
 
-        Returns:
-            set[ITreeNode]: The set of parent nodes.
+        :return: A dictionary of parent nodes of the current tree node with associated move.
         """
         return self.tree_node.parent_nodes
 
@@ -125,14 +125,22 @@ class AlgorithmNode:
         """
         return self.minmax_evaluation.is_over()
 
-    def add_parent(self, new_parent_node: ITreeNode) -> None:
+    def add_parent(
+            self,
+            move: chess.Move,
+            new_parent_node: ITreeNode[Any]
+    ) -> None:
         """
         Adds a parent node.
 
         Args:
+            move (chess.Move): the move that led to the node from the new_parent_node
             new_parent_node (ITreeNode): The new parent node to add.
         """
-        self.tree_node.add_parent(new_parent_node=new_parent_node)
+        self.tree_node.add_parent(
+            move=move,
+            new_parent_node=new_parent_node
+        )
 
     @property
     def legal_moves(self) -> chess.LegalMoveGenerator:

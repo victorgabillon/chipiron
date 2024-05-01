@@ -4,6 +4,7 @@ Defining the AlgorithmNodeTreeManager class
 
 import typing
 from dataclasses import dataclass
+from typing import Any
 
 import chess
 
@@ -15,7 +16,6 @@ from chipiron.players.move_selector.treevalue.node_evaluator import NodeEvaluato
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
-from chipiron.players.move_selector.treevalue.updates.updates_file import UpdateInstructions
 from .tree_expander import TreeExpansion, TreeExpansions
 from .tree_manager import TreeManager
 
@@ -63,8 +63,8 @@ class AlgorithmNodeTreeManager:
             parent_node=parent_node,
             move=move
         )
-        parent_node.minmax_evaluation.children_not_over.append(
-            tree_expansion.child_node
+        parent_node.minmax_evaluation.moves_not_over.append(
+            move
         )  # default action checks for over event are performed later
 
         return tree_expansion
@@ -145,27 +145,35 @@ class AlgorithmNodeTreeManager:
         Returns:
             None
         """
-        update_instructions_batch: upda.UpdateInstructionsBatch
+        update_instructions_batch: upda.UpdateInstructionsTowardsMultipleNodes
         update_instructions_batch = self.algorithm_node_updater.generate_update_instructions(
             tree_expansions=tree_expansions)
 
         while update_instructions_batch:
-            node_to_update: ITreeNode
-            update_instructions: UpdateInstructions
-            node_to_update, update_instructions = update_instructions_batch.popitem()
-            extra_update_instructions_batch: upda.UpdateInstructionsBatch
+            node_to_update: ITreeNode[Any]
+            update_instructions: upda.UpdateInstructionsTowardsOneParentNode
+            node_to_update, update_instructions = update_instructions_batch.pop_item()
+            extra_update_instructions_batch: upda.UpdateInstructionsTowardsMultipleNodes
             assert isinstance(node_to_update, AlgorithmNode)
             extra_update_instructions_batch = self.update_node(
                 node_to_update=node_to_update,
                 update_instructions=update_instructions
             )
-            update_instructions_batch.merge(extra_update_instructions_batch)
+            # merge
+            while extra_update_instructions_batch.one_node_instructions:
+                parent_node_to_update: ITreeNode[Any]
+                update: upda.UpdateInstructionsTowardsOneParentNode
+                parent_node_to_update, update = extra_update_instructions_batch.pop_item()
+                update_instructions_batch.add_updates_towards_one_parent_node(
+                    parent_node=parent_node_to_update,
+                    update_from_child_node=update
+                )
 
     def update_node(
             self,
             node_to_update: AlgorithmNode,
-            update_instructions: UpdateInstructions
-    ) -> upda.UpdateInstructionsBatch:
+            update_instructions: upda.UpdateInstructionsTowardsOneParentNode
+    ) -> upda.UpdateInstructionsTowardsMultipleNodes:
         """
         Updates the given node with the provided update instructions.
 
@@ -176,16 +184,26 @@ class AlgorithmNodeTreeManager:
         Returns:
             UpdateInstructionsBatch: A batch of update instructions for the parent nodes of the updated node.
         """
-        # UPDATES
-        new_update_instructions: upda.UpdateInstructions = self.algorithm_node_updater.perform_updates(
-            node_to_update=node_to_update,
-            update_instructions=update_instructions)
 
-        update_instructions_batch: upda.UpdateInstructionsBatch = upda.UpdateInstructionsBatch()
-        for parent_node in node_to_update.parent_nodes:
-            if parent_node is not None and not new_update_instructions.empty():  # todo is it ever empty?
-                assert (parent_node not in update_instructions_batch)
-                update_instructions_batch[parent_node] = new_update_instructions
+        # UPDATES
+        new_update_instructions: upda.UpdateInstructionsFromOneNode = self.algorithm_node_updater.perform_updates(
+            node_to_update=node_to_update,
+            update_instructions=update_instructions
+        )
+
+        update_instructions_batch: upda.UpdateInstructionsTowardsMultipleNodes
+        update_instructions_batch = upda.UpdateInstructionsTowardsMultipleNodes()
+        parent_node: ITreeNode[Any] | None
+        move_from_parent: chess.Move
+        for parent_node, move_from_parent in node_to_update.parent_nodes.items():
+            if parent_node is not None:
+                # there was a test for emptyness here of new updates instructions remove this comment if no bug appear
+                assert parent_node not in update_instructions_batch.one_node_instructions
+                update_instructions_batch.add_update_from_one_child_node(
+                    update_from_child_node=new_update_instructions,
+                    parent_node=parent_node,
+                    move_from_parent=move_from_parent
+                )
 
         return update_instructions_batch
 

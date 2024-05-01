@@ -20,6 +20,7 @@ Functions:
 """
 
 from enum import Enum
+from typing import Any
 
 import chess
 
@@ -94,7 +95,7 @@ class NodeEvaluator:
 
     def value_white(
             self,
-            node: ITreeNode
+            node: ITreeNode[Any]
     ) -> float:
         """
         Calculates the value for the white player of a given node.

@@ -6,17 +6,34 @@ Classes:
 - UpdateInstructionsBatch: Represents a batch of update instructions for multiple nodes.
 """
 
-from dataclasses import dataclass
-from typing import Self, Iterator
+from dataclasses import dataclass, field
+from typing import Any
+from typing import Self
+
+import chess
 
 from chipiron.players.move_selector.treevalue.nodes import ITreeNode
 from chipiron.utils.dict_of_numbered_dict_with_pointer_on_max import DictOfNumberedDictWithPointerOnMax
-from .index_block import IndexUpdateInstructionsBlock
-from .value_block import ValueUpdateInstructionsBlock
+from .index_block import IndexUpdateInstructionsFromOneNode, IndexUpdateInstructionsTowardsOneParentNode
+from .value_block import ValueUpdateInstructionsFromOneNode, ValueUpdateInstructionsTowardsOneParentNode
 
 
 @dataclass(slots=True)
-class UpdateInstructions:
+class UpdateInstructionsFromOneNode:
+    """
+    Represents update instructions generated from a single node.
+
+    Attributes:
+    - value_block: The value update instructions generated from a single node.
+    - index_block: The index update instructions generated from a single node.
+    """
+
+    value_block: ValueUpdateInstructionsFromOneNode | None = None
+    index_block: IndexUpdateInstructionsFromOneNode | None = None
+
+
+@dataclass(slots=True)
+class UpdateInstructionsTowardsOneParentNode:
     """
     Represents update instructions for a single node.
 
@@ -25,55 +42,57 @@ class UpdateInstructions:
     - index_block: The index update instructions block.
     """
 
-    value_block: ValueUpdateInstructionsBlock | None = None
-    index_block: IndexUpdateInstructionsBlock | None = None
+    value_updates_toward_one_parent_node: ValueUpdateInstructionsTowardsOneParentNode | None = None
+    index_updates_toward_one_parent_node: IndexUpdateInstructionsTowardsOneParentNode | None = None
 
-    def merge(
+    def add_update_from_a_child_node(
             self,
-            an_update_instruction: Self,
-            another_update_instruction: Self
+            update_from_a_child_node: UpdateInstructionsFromOneNode,
+            move_from_parent_to_child: chess.Move
     ) -> None:
-        """
-        Merges two update instructions into one.
+        assert self.value_updates_toward_one_parent_node is not None
+        assert update_from_a_child_node.value_block is not None
+        self.value_updates_toward_one_parent_node.add_update_from_one_child_node(
+            move_from_parent_to_child=move_from_parent_to_child,
+            update_from_one_child_node=update_from_a_child_node.value_block
+        )
 
-        Args:
-        - an_update_instruction: The first update instruction to merge.
-        - another_update_instruction: The second update instruction to merge.
-        """
-        # Merge value blocks
-        if an_update_instruction.value_block:
-            if another_update_instruction.value_block:
-                self.value_block = ValueUpdateInstructionsBlock()
-                self.value_block.merge(
-                    an_update_instruction.value_block,
-                    another_update_instruction.value_block
-                )
-            else:
-                self.value_block = an_update_instruction.value_block
+        if self.index_updates_toward_one_parent_node is None:
+            assert update_from_a_child_node.index_block is None
         else:
-            self.value_block = another_update_instruction.value_block
+            if update_from_a_child_node.index_block is not None:
+                self.index_updates_toward_one_parent_node.add_update_from_one_child_node(
+                    move_from_parent_to_child=move_from_parent_to_child,
+                    update_from_one_child_node=update_from_a_child_node.index_block
+                )
 
-        # Merge index blocks
-        if an_update_instruction.index_block:
-            if another_update_instruction.index_block:
-                self.index_block = IndexUpdateInstructionsBlock()
-                self.index_block.merge(
-                    an_update_instruction.index_block,
-                    another_update_instruction.index_block
-                )
-            else:
-                self.index_block = an_update_instruction.index_block
+    def add_updates_towards_one_parent_node(
+            self,
+            another_update: Self
+    ) -> None:
+        assert self.value_updates_toward_one_parent_node is not None
+        assert another_update.value_updates_toward_one_parent_node is not None
+        self.value_updates_toward_one_parent_node.add_update_toward_one_parent_node(
+            another_update.value_updates_toward_one_parent_node
+        )
+
+        if self.index_updates_toward_one_parent_node is None:
+            assert another_update.index_updates_toward_one_parent_node is None
         else:
-            self.index_block = another_update_instruction.index_block
+            if another_update.index_updates_toward_one_parent_node is not None:
+                self.index_updates_toward_one_parent_node.add_update_toward_one_parent_node(
+                    another_update.index_updates_toward_one_parent_node
+                )
 
     def print_info(self) -> None:
         """
         Prints information about the update instructions.
         """
         print('printing info of update instructions')
-        assert (self.index_block is not None and self.value_block is not None)
-        self.value_block.print_info()
-        self.index_block.print_info()
+        assert (
+                self.index_updates_toward_one_parent_node is not None and self.value_updates_toward_one_parent_node is not None)
+        self.value_updates_toward_one_parent_node.print_info()
+        self.index_updates_toward_one_parent_node.print_info()
 
     def empty(self) -> bool:
         """
@@ -82,139 +101,77 @@ class UpdateInstructions:
         Returns:
         - True if the update instructions are empty, False otherwise.
         """
-        assert (self.value_block is not None)
-        return self.value_block.empty() and (self.index_block is None or self.index_block.empty())
+        assert (self.value_updates_toward_one_parent_node is not None)
+        return self.value_updates_toward_one_parent_node.empty() and (
+                self.index_updates_toward_one_parent_node is None or self.index_updates_toward_one_parent_node.empty())
 
 
-class UpdateInstructionsBatch:
-    """
-    Represents a batch of update instructions for multiple nodes.
+@dataclass
+class UpdateInstructionsTowardsMultipleNodes:
+    # mapping from nodes to the update instructions that are intended to them for consideration (performing the updates)
+    one_node_instructions: DictOfNumberedDictWithPointerOnMax[
+        ITreeNode[Any], UpdateInstructionsTowardsOneParentNode] = field(
+        default_factory=DictOfNumberedDictWithPointerOnMax)
 
-    Attributes:
-    - batch: The dictionary of update instructions for each node.
-    """
-
-    batch: DictOfNumberedDictWithPointerOnMax[ITreeNode, UpdateInstructions]
-
-    def __init__(
+    def add_update_from_one_child_node(
             self,
-            dictionary: dict[ITreeNode, UpdateInstructions] | None = None
+            update_from_child_node: UpdateInstructionsFromOneNode,
+            parent_node: ITreeNode[Any],
+            move_from_parent: chess.Move
     ) -> None:
-        """
-        Initializes the UpdateInstructionsBatch.
+        if parent_node not in self.one_node_instructions:
+            # build the UpdateInstructionsTowardsOneParentNode
+            assert update_from_child_node.value_block is not None
+            value_updates_toward_one_parent_node: ValueUpdateInstructionsTowardsOneParentNode
+            value_updates_toward_one_parent_node = ValueUpdateInstructionsTowardsOneParentNode(
+                moves_with_updated_value={
+                    move_from_parent} if update_from_child_node.value_block.new_value_for_node else set(),
+                moves_with_updated_over={
+                    move_from_parent} if update_from_child_node.value_block.is_node_newly_over else set(),
+                moves_with_updated_best_move={
+                    move_from_parent} if update_from_child_node.value_block.new_best_move_for_node else set(),
+            )
+            index_updates_toward_one_parent_node: IndexUpdateInstructionsTowardsOneParentNode | None
+            if update_from_child_node.index_block is not None:
+                index_updates_toward_one_parent_node = IndexUpdateInstructionsTowardsOneParentNode(
+                    moves_with_updated_index={
+                        move_from_parent} if update_from_child_node.index_block.updated_index else set(),
+                )
+            else:
+                index_updates_toward_one_parent_node = None
+            update_instructions_towards_parent: UpdateInstructionsTowardsOneParentNode
+            update_instructions_towards_parent = UpdateInstructionsTowardsOneParentNode(
+                value_updates_toward_one_parent_node=value_updates_toward_one_parent_node,
+                index_updates_toward_one_parent_node=index_updates_toward_one_parent_node
+            )
+            self.one_node_instructions[parent_node] = update_instructions_towards_parent
+        else:
+            # update the UpdateInstructionsTowardsOneParentNode
+            self.one_node_instructions[parent_node].add_update_from_a_child_node(
+                update_from_a_child_node=update_from_child_node,
+                move_from_parent_to_child=move_from_parent
+            )
 
-        Args:
-        - dictionary: The initial dictionary of update instructions.
-        """
-        # batch is a dictionary of all the node from which a backward update should be started
-        # it is a SortedDict where the keys involve the depth as the main sorting argument
-        # this permits to easily give priority of update to the nodes with higher depth.
-        # it should be less time-consuming because and less a redundant update depth per depth from the back
-        # self.batch = MySortedDict()
-        if dictionary is None:
-            dictionary = {}
-        self.batch = DictOfNumberedDictWithPointerOnMax()
-        for node in dictionary:
-            self.batch[node] = dictionary[node]
-
-    def __setitem__(
+    def add_updates_towards_one_parent_node(
             self,
-            node: ITreeNode,
-            value: UpdateInstructions
+            update_from_child_node: UpdateInstructionsTowardsOneParentNode,
+            parent_node: ITreeNode[Any],
     ) -> None:
-        """
-        Sets the update instructions for a node.
+        if parent_node in self.one_node_instructions:
+            self.one_node_instructions[parent_node].add_updates_towards_one_parent_node(
+                another_update=update_from_child_node
+            )
+        else:
+            self.one_node_instructions[parent_node] = update_from_child_node
 
-        Args:
-        - node: The node to set the update instructions for.
-        - value: The update instructions for the node.
-        """
-        self.batch[node] = value
-
-    def __getitem__(
-            self,
-            key: ITreeNode
-    ) -> UpdateInstructions:
-        """
-        Gets the update instructions for a node.
-
-        Args:
-        - key: The node to get the update instructions for.
-
-        Returns:
-        - The update instructions for the node.
-        """
-        return self.batch[key]
-
-    def __contains__(
-            self,
-            node: ITreeNode
-    ) -> bool:
-        """
-        Checks if the batch contains update instructions for a node.
-
-        Args:
-        - node: The node to check.
-
-        Returns:
-        - True if the batch contains update instructions for the node, False otherwise.
-        """
-        return node in self.batch
-
-    def __iter__(self) -> Iterator[ITreeNode]:
-        """
-        Returns an iterator over the nodes in the batch.
-
-        Returns:
-        - An iterator over the nodes in the batch.
-        """
-        raise Exception(f'fail in {__name__}')
-
-    def popitem(self) -> tuple[ITreeNode, UpdateInstructions]:
-        """
-        Removes and returns the last node and its update instructions from the batch.
-
-        Returns:
-        - A tuple containing the node and its update instructions.
-        """
-        node, value = self.batch.popitem()
-        return node, value
+    def pop_item(self) -> tuple[ITreeNode[Any], UpdateInstructionsTowardsOneParentNode]:
+        return self.one_node_instructions.popitem()
 
     def __bool__(self) -> bool:
         """
-        Checks if the batch is empty.
+        Checks if the data structure is non-empty.
 
         Returns:
-        - True if the batch is not empty, False otherwise.
+            bool: True if the data structure is non-empty, False otherwise.
         """
-        return bool(self.batch)
-
-    def print_info(self) -> None:
-        """
-        Prints information about the update instructions batch.
-        """
-        print('UpdateInstructionsBatch: batch contains')
-        raise Exception(f'not implemented in {__name__}')
-
-    def merge(
-            self,
-            update_instructions_batch: Self
-    ) -> None:
-        """
-        Merges another update instructions batch into this batch.
-
-        Args:
-        - update_instructions_batch: The update instructions batch to merge.
-        """
-        if update_instructions_batch is not None:
-            for half_move in update_instructions_batch.batch.half_moves:
-                for node in update_instructions_batch.batch.half_moves[half_move]:
-                    if half_move in self.batch.half_moves and node in self.batch.half_moves[half_move]:
-                        new_update_information = UpdateInstructions()
-                        new_update_information.merge(
-                            self.batch.half_moves[half_move][node],
-                            update_instructions_batch.batch.half_moves[half_move][node]
-                        )
-                        self.batch[node] = new_update_information
-                    else:
-                        self.batch[node] = update_instructions_batch[node]
+        return bool(self.one_node_instructions)

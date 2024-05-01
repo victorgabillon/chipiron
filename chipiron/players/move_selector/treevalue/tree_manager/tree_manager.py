@@ -3,6 +3,7 @@ This module contains the TreeManager class, which is responsible for managing a 
 """
 
 import typing
+from typing import Any
 
 import chess
 
@@ -28,14 +29,14 @@ class TreeManager:
 
     def __init__(
             self,
-            node_factory: TreeNodeFactory
+            node_factory: TreeNodeFactory[node.ITreeNode[Any]]
     ) -> None:
         self.node_factory = node_factory
 
     def open_node_move(
             self,
             tree: trees.MoveAndValueTree,
-            parent_node: node.ITreeNode,
+            parent_node: node.ITreeNode[Any],
             move: chess.Move
     ) -> TreeExpansion:
         """
@@ -70,7 +71,7 @@ class TreeManager:
     def open_node(
             self,
             tree: trees.MoveAndValueTree,
-            parent_node: node.ITreeNode,
+            parent_node: node.ITreeNode[Any],
             board: board_mod.BoardChi,
             modifications: board_mod.BoardModification | None,
             move: chess.Move
@@ -93,29 +94,34 @@ class TreeManager:
         half_move: int = parent_node.half_move + 1
         fast_rep: str = board.fast_representation()
 
-        child_node: node.ITreeNode
-        need_creation_child_node: bool = (tree.root_node is None
-                                          or tree.descendants.is_new_generation(half_move)
+        child_node: node.ITreeNode[Any]
+        need_creation_child_node: bool = (tree.descendants.is_new_generation(half_move)
                                           or fast_rep not in tree.descendants.descendants_at_half_move[half_move])
         if need_creation_child_node:
             child_node = self.node_factory.create(
                 board=board,
                 half_move=half_move,
                 count=tree.nodes_count,
+                move_from_parent=move,
                 parent_node=parent_node,
                 modifications=modifications
             )
             tree.nodes_count += 1
             tree.descendants.add_descendant(child_node)  # add it to the list of descendants
+
         else:  # the node already exists
             child_node = tree.descendants[half_move][fast_rep]
-            child_node.add_parent(parent_node)
+            child_node.add_parent(
+                move=move,
+                new_parent_node=parent_node
+            )
 
         tree_expansion: TreeExpansion = TreeExpansion(
             child_node=child_node,
             parent_node=parent_node,
             board_modifications=modifications,
-            creation_child_node=need_creation_child_node
+            creation_child_node=need_creation_child_node,
+            move=move
         )
 
         # add it to the list of opened move and out of the non-opened moves

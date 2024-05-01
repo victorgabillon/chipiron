@@ -358,7 +358,7 @@ class Window(QtWidgets.QWidget):
         """
         Move to the parent node of the current node and perform necessary operations.
         """
-        qq = list(self.current_node.parent_nodes)
+        qq = list(self.current_node.parent_nodes.keys())
         father_node = qq[0]  # by default!
         if father_node is not None:
             self.current_node = father_node

@@ -4,7 +4,9 @@ This module contains classes related to tree expansion in a chess game.
 
 import typing
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Any
+
+import chess
 
 import chipiron.environments.chess.board as board_mod
 import chipiron.players.move_selector.treevalue.nodes as node
@@ -20,12 +22,14 @@ class TreeExpansion:
         parent_node (node.ITreeNode | None): The parent node of the child node. None if it's the root node.
         board_modifications (board_mod.BoardModification | None): The modifications made to the chess board during the expansion.
         creation_child_node (bool): Indicates whether the child node was created during the expansion.
+        move (chess.Move): the move from parent to child node.
     """
 
-    child_node: node.ITreeNode
-    parent_node: node.ITreeNode | None
+    child_node: node.ITreeNode[Any]
+    parent_node: node.ITreeNode[Any] | None
     board_modifications: board_mod.BoardModification | None
     creation_child_node: bool
+    move: chess.Move | None
 
     def __repr__(self) -> str:
         return (f'child_node{self.child_node.id} | '
@@ -91,22 +95,3 @@ class TreeExpansions:
     def __str__(self) -> str:
         return (f'expansions_with_node_creation {self.expansions_with_node_creation} \n'
                 f'expansions_without_node_creation{self.expansions_without_node_creation}')
-
-
-class TreeExpansionHistory:
-    """
-    Represents the history of all the expansions in a tree.
-
-    Attributes:
-        history (List[TreeExpansion]): List of all the expansions in the tree.
-    """
-
-    history: List[TreeExpansion]
-
-    def __init__(self, root_node: node.TreeNode):
-        self.history = [TreeExpansion(
-            child_node=root_node,
-            parent_node=None,
-            creation_child_node=True,
-            board_modifications=None
-        )]
