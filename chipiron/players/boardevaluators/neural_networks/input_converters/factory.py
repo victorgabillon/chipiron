@@ -10,6 +10,7 @@ The module also includes helper functions for converting board states to tensors
 Note: This module is part of the `chipiron` package.
 """
 
+from typing import Any
 from typing import Optional
 
 import chess
@@ -24,7 +25,7 @@ from .board_representation import Representation364
 
 
 def node_to_tensors_pieces_square_from_parent(
-        node: ITreeNode,
+        node: ITreeNode[Any],
         board_modifications: board_mod.BoardModification,
         parent_node: AlgorithmNode
 ) -> Representation364:
@@ -102,7 +103,7 @@ class Representation364Factory:
 
     def create_from_transition(
             self,
-            tree_node: TreeNode,
+            tree_node: TreeNode[Any],
             parent_node: AlgorithmNode | None,
             modifications: board_mod.BoardModification | None
     ) -> Representation364:

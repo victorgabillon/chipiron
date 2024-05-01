@@ -73,7 +73,7 @@ class TreeExploration:
             current_best_move = str(self.tree.root_node.minmax_evaluation.best_move_sequence[0])
         else:
             current_best_move = '?'
-        if random_generator.random() <1:
+        if random_generator.random() < 1:
             str_progress = self.stopping_criterion.get_string_of_progress(self.tree)
             print(
                 f'{str_progress} | current best move:  {current_best_move} | current white value: {self.tree.root_node.minmax_evaluation.value_white_minmax})')

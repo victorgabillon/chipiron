@@ -3,6 +3,7 @@ This module contains the TreeManager class, which is responsible for managing a 
 """
 
 import typing
+from typing import Any
 
 import chess
 
@@ -28,14 +29,14 @@ class TreeManager:
 
     def __init__(
             self,
-            node_factory: TreeNodeFactory
+            node_factory: TreeNodeFactory[node.ITreeNode[Any]]
     ) -> None:
         self.node_factory = node_factory
 
     def open_node_move(
             self,
             tree: trees.MoveAndValueTree,
-            parent_node: node.ITreeNode,
+            parent_node: node.ITreeNode[Any],
             move: chess.Move
     ) -> TreeExpansion:
         """
@@ -70,7 +71,7 @@ class TreeManager:
     def open_node(
             self,
             tree: trees.MoveAndValueTree,
-            parent_node: node.ITreeNode,
+            parent_node: node.ITreeNode[Any],
             board: board_mod.BoardChi,
             modifications: board_mod.BoardModification | None,
             move: chess.Move
@@ -93,7 +94,7 @@ class TreeManager:
         half_move: int = parent_node.half_move + 1
         fast_rep: str = board.fast_representation()
 
-        child_node: node.ITreeNode
+        child_node: node.ITreeNode[Any]
         need_creation_child_node: bool = (tree.descendants.is_new_generation(half_move)
                                           or fast_rep not in tree.descendants.descendants_at_half_move[half_move])
         if need_creation_child_node:

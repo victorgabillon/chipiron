@@ -4,6 +4,7 @@ Defining the AlgorithmNodeTreeManager class
 
 import typing
 from dataclasses import dataclass
+from typing import Any
 
 import chess
 
@@ -24,6 +25,7 @@ from .tree_manager import TreeManager
 # DISCOUNT = 1/.99999
 if typing.TYPE_CHECKING:
     import chipiron.players.move_selector.treevalue.node_selector as node_sel
+
 
 @dataclass
 class AlgorithmNodeTreeManager:
@@ -148,7 +150,7 @@ class AlgorithmNodeTreeManager:
             tree_expansions=tree_expansions)
 
         while update_instructions_batch:
-            node_to_update: ITreeNode
+            node_to_update: ITreeNode[Any]
             update_instructions: upda.UpdateInstructionsTowardsOneParentNode
             node_to_update, update_instructions = update_instructions_batch.pop_item()
             extra_update_instructions_batch: upda.UpdateInstructionsTowardsMultipleNodes
@@ -159,7 +161,7 @@ class AlgorithmNodeTreeManager:
             )
             # merge
             while extra_update_instructions_batch.one_node_instructions:
-                parent_node_to_update: ITreeNode
+                parent_node_to_update: ITreeNode[Any]
                 update: upda.UpdateInstructionsTowardsOneParentNode
                 parent_node_to_update, update = extra_update_instructions_batch.pop_item()
                 update_instructions_batch.add_updates_towards_one_parent_node(
@@ -191,7 +193,7 @@ class AlgorithmNodeTreeManager:
 
         update_instructions_batch: upda.UpdateInstructionsTowardsMultipleNodes
         update_instructions_batch = upda.UpdateInstructionsTowardsMultipleNodes()
-        parent_node: ITreeNode | None
+        parent_node: ITreeNode[Any] | None
         move_from_parent: chess.Move
         for parent_node, move_from_parent in node_to_update.parent_nodes.items():
             if parent_node is not None:

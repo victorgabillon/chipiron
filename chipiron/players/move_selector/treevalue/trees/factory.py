@@ -2,6 +2,8 @@
 MoveAndValueTreeFactory
 """
 
+from typing import Any
+
 import chipiron.environments.chess.board as boards
 import chipiron.players.move_selector.treevalue.node_factory as nod_fac
 from chipiron.players.move_selector.treevalue.node_evaluator import NodeEvaluator, EvaluationQueries
@@ -46,7 +48,7 @@ class MoveAndValueTreeFactory:
 
         """
         print()
-        root_node: ITreeNode = self.node_factory.create(
+        root_node: ITreeNode[Any] = self.node_factory.create(
             board=starting_board,
             half_move=starting_board.ply(),
             count=0,

@@ -8,6 +8,8 @@ Functions:
 - is_winning(node_minmax_evaluation: NodeMinmaxEvaluation, color: chess.Color) -> bool: Checks if the color to play in the node is winning.
 """
 
+from typing import Any
+
 import chess
 
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
@@ -16,7 +18,7 @@ from .itree_node import ITreeNode
 from .tree_node import TreeNode
 
 
-def are_all_moves_and_children_opened(tree_node: TreeNode) -> bool:
+def are_all_moves_and_children_opened(tree_node: TreeNode[Any]) -> bool:
     """
     Checks if all moves and children of a tree node are opened.
 
@@ -29,7 +31,7 @@ def are_all_moves_and_children_opened(tree_node: TreeNode) -> bool:
     return tree_node.all_legal_moves_generated and tree_node.non_opened_legal_moves == set()
 
 
-def a_move_sequence_from_root(tree_node: ITreeNode) -> list[str]:
+def a_move_sequence_from_root(tree_node: ITreeNode[Any]) -> list[str]:
     """
     Returns a list of move sequences from the root node to a given tree node.
 
@@ -40,9 +42,9 @@ def a_move_sequence_from_root(tree_node: ITreeNode) -> list[str]:
         list[str]: A list of move sequences from the root node to the given tree node.
     """
     move_sequence_from_root: list[chess.Move] = []
-    child: ITreeNode = tree_node
+    child: ITreeNode[Any] = tree_node
     while child.parent_nodes:
-        parent: ITreeNode = next(iter(child.parent_nodes))
+        parent: ITreeNode[Any] = next(iter(child.parent_nodes))
         move: chess.Move = child.parent_nodes[parent]
         move_sequence_from_root.append(move)
         child = parent
@@ -52,15 +54,15 @@ def a_move_sequence_from_root(tree_node: ITreeNode) -> list[str]:
 
 def best_node_sequence_from_node(
         tree_node: AlgorithmNode,
-) -> list[ITreeNode]:
+) -> list[ITreeNode[Any]]:
     """
 
     """
 
     best_move_seq: list[chess.Move] = tree_node.minmax_evaluation.best_move_sequence
     index = 0
-    move_sequence: list[ITreeNode] = [tree_node]
-    child: ITreeNode = tree_node
+    move_sequence: list[ITreeNode[Any]] = [tree_node]
+    child: ITreeNode[Any] = tree_node
     while child.moves_children:
         move: chess.Move = best_move_seq[index]
         child_ = child.moves_children[move]
@@ -71,7 +73,7 @@ def best_node_sequence_from_node(
     return move_sequence
 
 
-def print_a_move_sequence_from_root(tree_node: TreeNode) -> None:
+def print_a_move_sequence_from_root(tree_node: TreeNode[Any]) -> None:
     """
     Prints the move sequence from the root node to a given tree node.
 
@@ -85,7 +87,10 @@ def print_a_move_sequence_from_root(tree_node: TreeNode) -> None:
     print(f'a_move_sequence_from_root{move_sequence_from_root}')
 
 
-def is_winning(node_minmax_evaluation: NodeMinmaxEvaluation, color: chess.Color) -> bool:
+def is_winning(
+        node_minmax_evaluation: NodeMinmaxEvaluation,
+        color: chess.Color
+) -> bool:
     """
     Checks if the color to play in the node is winning.
 

@@ -15,13 +15,16 @@ Note: This is an interface and should not be instantiated directly.
 from __future__ import annotations  # (helping with recursive type annotation)
 
 from typing import Protocol
+from typing import TypeVar
 
 import chess
 
 from chipiron.environments.chess.board.board import BoardChi
 
+T = TypeVar('T', bound='ITreeNode[Any]')
 
-class ITreeNode(Protocol):
+
+class ITreeNode(Protocol[T]):
     """
     The `ITreeNode` protocol represents a node in a tree structure used for selecting chess moves.
     """
@@ -62,7 +65,7 @@ class ITreeNode(Protocol):
     @property
     def moves_children(
             self
-    ) -> dict[chess.Move, ITreeNode | None]:
+    ) -> dict[chess.Move, T | None]:
         """
         Get the child nodes of the node.
 
@@ -73,7 +76,7 @@ class ITreeNode(Protocol):
     @property
     def parent_nodes(
             self
-    ) -> dict[ITreeNode, chess.Move]:
+    ) -> dict[ITreeNode[T], chess.Move]:
         """
         Returns the dictionary of parent nodes of the current tree node with associated move.
 
@@ -83,7 +86,7 @@ class ITreeNode(Protocol):
     def add_parent(
             self,
             move: chess.Move,
-            new_parent_node: ITreeNode
+            new_parent_node: ITreeNode[T]
     ) -> None:
         """
         Add a parent node to the node.

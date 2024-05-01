@@ -13,6 +13,7 @@ node evaluator, node selector, tree factory, and tree manager.
 
 import random
 from dataclasses import dataclass
+from typing import Any
 from typing import Literal
 
 import chipiron.players.move_selector.treevalue.search_factory as search_factories
@@ -68,9 +69,9 @@ def create_tree_and_value_builders(
     )
 
     # node_factory_name: str = args['node_factory_name'] if 'node_factory_name' in args else 'Base'
-    node_factory_name: str = 'Base'
+    node_factory_name: str = 'Base_with_algorithm_tree_node'
 
-    tree_node_factory: node_factory.Base = node_factory.create_node_factory(
+    tree_node_factory: node_factory.Base[Any] = node_factory.create_node_factory(
         node_factory_name=node_factory_name
     )
 

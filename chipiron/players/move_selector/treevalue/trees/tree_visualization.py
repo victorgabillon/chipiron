@@ -16,6 +16,7 @@ structure to a file.
 """
 
 import pickle
+from typing import Any
 
 import chess
 from graphviz import Digraph
@@ -27,7 +28,7 @@ from .move_and_value_tree import MoveAndValueTree
 
 def add_dot(
         dot: Digraph,
-        treenode: ITreeNode
+        treenode: ITreeNode[Any]
 ) -> None:
     """
     Adds a node and edges to the given Dot graph based on the provided tree node.
@@ -51,7 +52,7 @@ def add_dot(
 
 
 def display_special(
-        node: ITreeNode,
+        node: ITreeNode[Any],
         format_str: str,
         index: dict[chess.Move, str]
 ) -> Digraph:

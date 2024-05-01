@@ -4,7 +4,7 @@ This module contains classes related to tree expansion in a chess game.
 
 import typing
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Any
 
 import chess
 
@@ -25,8 +25,8 @@ class TreeExpansion:
         move (chess.Move): the move from parent to child node.
     """
 
-    child_node: node.ITreeNode
-    parent_node: node.ITreeNode | None
+    child_node: node.ITreeNode[Any]
+    parent_node: node.ITreeNode[Any] | None
     board_modifications: board_mod.BoardModification | None
     creation_child_node: bool
     move: chess.Move | None
