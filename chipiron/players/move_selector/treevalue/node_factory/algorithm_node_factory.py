@@ -2,6 +2,7 @@
 AlgorithmNodeFactory
 """
 from dataclasses import dataclass
+from typing import Any
 
 import chess
 
@@ -21,7 +22,7 @@ class AlgorithmNodeFactory:
     """
     The classe creating Algorithm Nodes
     """
-    tree_node_factory: Base
+    tree_node_factory: Base[Any]
     board_representation_factory: Representation364Factory | None
     exploration_index_data_create: node_indices.ExplorationIndexDataFactory
 
@@ -30,7 +31,7 @@ class AlgorithmNodeFactory:
             board: board_mod.BoardChi,
             half_move: int,
             count: int,
-            parent_node: ITreeNode | None,
+            parent_node: ITreeNode[Any] | None,
             move_from_parent: chess.Move | None,
             modifications: board_mod.BoardModification | None
     ) -> AlgorithmNode:
@@ -49,7 +50,7 @@ class AlgorithmNodeFactory:
             An AlgorithmNode object.
 
         """
-        tree_node: node.TreeNode = self.tree_node_factory.create(
+        tree_node: node.TreeNode[Any] = self.tree_node_factory.create(
             board=board,
             half_move=half_move,
             count=count,

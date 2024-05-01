@@ -7,6 +7,7 @@ Classes:
 """
 
 from dataclasses import dataclass, field
+from typing import Any
 from typing import Self
 
 import chess
@@ -109,12 +110,13 @@ class UpdateInstructionsTowardsOneParentNode:
 class UpdateInstructionsTowardsMultipleNodes:
     # mapping from nodes to the update instructions that are intended to them for consideration (performing the updates)
     one_node_instructions: DictOfNumberedDictWithPointerOnMax[
-        ITreeNode, UpdateInstructionsTowardsOneParentNode] = field(default_factory=DictOfNumberedDictWithPointerOnMax)
+        ITreeNode[Any], UpdateInstructionsTowardsOneParentNode] = field(
+        default_factory=DictOfNumberedDictWithPointerOnMax)
 
     def add_update_from_one_child_node(
             self,
             update_from_child_node: UpdateInstructionsFromOneNode,
-            parent_node: ITreeNode,
+            parent_node: ITreeNode[Any],
             move_from_parent: chess.Move
     ) -> None:
         if parent_node not in self.one_node_instructions:
@@ -153,7 +155,7 @@ class UpdateInstructionsTowardsMultipleNodes:
     def add_updates_towards_one_parent_node(
             self,
             update_from_child_node: UpdateInstructionsTowardsOneParentNode,
-            parent_node: ITreeNode,
+            parent_node: ITreeNode[Any],
     ) -> None:
         if parent_node in self.one_node_instructions:
             self.one_node_instructions[parent_node].add_updates_towards_one_parent_node(
@@ -162,7 +164,7 @@ class UpdateInstructionsTowardsMultipleNodes:
         else:
             self.one_node_instructions[parent_node] = update_from_child_node
 
-    def pop_item(self) -> tuple[ITreeNode, UpdateInstructionsTowardsOneParentNode]:
+    def pop_item(self) -> tuple[ITreeNode[Any], UpdateInstructionsTowardsOneParentNode]:
         return self.one_node_instructions.popitem()
 
     def __bool__(self) -> bool:

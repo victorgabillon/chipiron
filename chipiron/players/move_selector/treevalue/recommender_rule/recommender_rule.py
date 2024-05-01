@@ -16,6 +16,7 @@ Example usage:
 import random
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 from typing import Protocol, Literal
 
 import chess
@@ -174,7 +175,7 @@ def recommend_move_after_exploration_generic(
             color=not tree.root_node.board.turn
         )
 
-        child: ITreeNode | None
+        child: ITreeNode[Any] | None
         best_value: int | None = None
         best_move: chess.Move | None = None
         for move, child in tree.root_node.moves_children.items():

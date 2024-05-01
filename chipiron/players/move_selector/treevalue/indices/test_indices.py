@@ -10,6 +10,7 @@ The main functions in this module are:
 
 from enum import Enum
 from math import isclose
+from typing import Any
 
 import chess
 import yaml
@@ -63,8 +64,8 @@ def make_tree_from_file(
     print('tree', tree_yaml)
     yaml_nodes = tree_yaml['nodes']
 
-    node_factory_name: str = 'Base'
-    tree_node_factory: node_factory.Base = node_factory.create_node_factory(
+    node_factory_name: str = 'Base_with_algorithm_tree_node'
+    tree_node_factory: node_factory.Base[Any] = node_factory.create_node_factory(
         node_factory_name=node_factory_name
     )
 
@@ -102,7 +103,7 @@ def make_tree_from_file(
             board_chi = BoardChi(
                 board=board
             )
-            root_node: ITreeNode = algorithm_node_factory.create(
+            root_node: ITreeNode[Any] = algorithm_node_factory.create(
                 board=board_chi,
                 half_move=0,
                 count=yaml_node['id'],
@@ -196,7 +197,7 @@ def check_from_file(
     for half_move in tree_nodes:
         # todo how are we sure that the hm comes in order?
         # print('hmv', half_move)
-        parent_node: ITreeNode
+        parent_node: ITreeNode[Any]
         for parent_node in tree_nodes[half_move].values():
             assert isinstance(parent_node, AlgorithmNode)
             yaml_index = eval(str(yaml_nodes[parent_node.id]['index']))

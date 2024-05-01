@@ -1,16 +1,20 @@
 """
 TreeNodeFactory Protocol
 """
-from typing import Protocol
+from typing import Protocol, Any
+from typing import TypeVar
 
 import chess
 
 import chipiron.environments.chess.board as board_mod
 import chipiron.environments.chess.board as boards
 import chipiron.players.move_selector.treevalue.nodes as node
+from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
+
+T = TypeVar('T', bound=ITreeNode[Any])
 
 
-class TreeNodeFactory(Protocol):
+class TreeNodeFactory(Protocol[T]):
     """
     Interface for Tree Node Factories
     """
@@ -20,10 +24,10 @@ class TreeNodeFactory(Protocol):
             board: boards.BoardChi,
             half_move: int,
             count: int,
-            parent_node: node.ITreeNode | None,
+            parent_node: node.ITreeNode[Any] | None,
             move_from_parent: chess.Move | None,
             modifications: board_mod.BoardModification | None
-    ) -> node.ITreeNode:
+    ) -> node.ITreeNode[T]:
         """
         Creates a new TreeNode object.
 

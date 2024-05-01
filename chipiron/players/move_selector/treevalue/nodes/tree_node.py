@@ -3,15 +3,19 @@ This module defines the TreeNode class, which represents a node in a tree struct
 """
 
 from dataclasses import dataclass, field
+from typing import TypeVar, Generic, Any
 
 import chess
 
 import chipiron.environments.chess.board as boards
 from .itree_node import ITreeNode
 
+# replace the any with a defaut value in ITReenode when availble in python; 3.13?
+ChildrenType = TypeVar('ChildrenType', bound=ITreeNode[Any])
+
 
 @dataclass(slots=True)
-class TreeNode:
+class TreeNode(Generic[ChildrenType]):
     r"""
     The TreeNode class stores information about a specific board position, including the board representation,
     the player to move, the half-move count, and the parent-child relationships with other nodes.
@@ -55,7 +59,7 @@ class TreeNode:
     board_: boards.BoardChi
 
     # the set of parent nodes to this node. Note that a node can have multiple parents!
-    parent_nodes_: dict[ITreeNode, chess.Move]
+    parent_nodes_: dict[ITreeNode[ChildrenType], chess.Move]
 
     # all_legal_moves_generated  is a boolean saying whether all moves have been generated.
     # If true the moves are either opened in which case the corresponding opened node is stored in
@@ -64,7 +68,7 @@ class TreeNode:
     non_opened_legal_moves: set[chess.Move] = field(default_factory=set)
 
     # dictionary mapping moves to children nodes. Node is set to None if not created
-    moves_children_: dict[chess.Move, ITreeNode | None] = field(default_factory=dict)
+    moves_children_: dict[chess.Move, ChildrenType | None] = field(default_factory=dict)
 
     fast_rep: str = field(default_factory=str)
 
@@ -130,7 +134,7 @@ class TreeNode:
         return self.half_move_
 
     @property
-    def moves_children(self) -> dict[chess.Move, ITreeNode | None]:
+    def moves_children(self) -> dict[chess.Move, ChildrenType | None]:
         """
         Returns a bidirectional dictionary containing the children nodes of the current tree node,
         along with the corresponding chess moves that lead to each child node.
@@ -143,7 +147,7 @@ class TreeNode:
         return self.moves_children_
 
     @property
-    def parent_nodes(self) -> dict[ITreeNode, chess.Move]:
+    def parent_nodes(self) -> dict[ITreeNode[ChildrenType], chess.Move]:
         """
         Returns the dictionary of parent nodes of the current tree node with associated move.
 
@@ -173,7 +177,7 @@ class TreeNode:
     def add_parent(
             self,
             move: chess.Move,
-            new_parent_node: ITreeNode
+            new_parent_node: ITreeNode[ChildrenType]
     ) -> None:
         """
         Adds a new parent node to the current node.
@@ -265,25 +269,3 @@ class TreeNode:
                 # print('test', move_not_in, list(self.board.get_legal_moves()), self.moves_children)
                 # print(self.board)
             assert (move_not_in != [] or legal_moves == [])
-
-    def get_descendants(self) -> dict[ITreeNode | None, None]:
-        """
-        Returns a dictionary of descendants of the current tree node.
-
-        The descendants include the current node itself and all its child nodes at all levels.
-
-        Returns:
-            dict[ITreeNode | None, None]: A dictionary containing the descendants of the current node.
-        """
-
-        des: dict[ITreeNode | None, None] = {self: None}  # include itself
-        generation = set(self.moves_children_.values())
-        while generation:
-            next_depth_generation: set[ITreeNode | None] = set()
-            for node in generation:
-                if node is not None:
-                    des[node] = None
-                    for _, next_generation_child in node.moves_children.items():
-                        next_depth_generation.add(next_generation_child)
-            generation = next_depth_generation
-        return des
