@@ -206,7 +206,6 @@ class ObservableGame:
         self.board.set_starting_position(starting_position_arg, fen)
         self.notify_display()
 
-
     def play_move(
             self,
             move: chess.Move
