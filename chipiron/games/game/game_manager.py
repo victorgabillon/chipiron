@@ -257,6 +257,7 @@ class GameManager:
         continue_bool: bool = True
         if self.args.max_half_moves is not None and half_move >= self.args.max_half_moves:
             continue_bool = False
+
         return continue_bool
 
     def print_to_file(

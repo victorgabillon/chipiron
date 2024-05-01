@@ -1,11 +1,22 @@
 """
 Module for DictOfNumberedDictWithPointerOnMax class.
 """
+from typing import Protocol
 from typing import TypeVar, Generic
 
-from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 
-T_Key = TypeVar('T_Key', bound=ITreeNode)
+class HasHalfMove(Protocol):
+    @property
+    def half_move(self) -> int:
+        """
+        Get the half move count of the node.
+
+        Returns:
+            The half move count of the node.
+        """
+
+
+T_Key = TypeVar('T_Key', bound=HasHalfMove)
 T_Value = TypeVar('T_Value')
 
 

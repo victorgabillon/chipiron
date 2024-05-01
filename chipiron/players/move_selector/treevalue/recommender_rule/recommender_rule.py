@@ -16,6 +16,7 @@ Example usage:
 import random
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 from typing import Protocol, Literal
 
 import chess
@@ -64,12 +65,10 @@ class AlmostEqualLogistic:
         """
         # TODO this should be given at construction but postponed for now because of dataclasses
         # find the best first move allowing for random choice for almost equally valued moves.
-        best_root_children = tree.root_node.minmax_evaluation.get_all_of_the_best_moves(
+        best_root_moves: list[chess.Move] = tree.root_node.minmax_evaluation.get_all_of_the_best_moves(
             how_equal='almost_equal_logistic')
-        print('We have as bests: ',
-              [tree.root_node.moves_children.inverse[best] for best in best_root_children])
-        best_child = random_generator.choice(best_root_children)
-        best_move = tree.root_node.moves_children.inverse[best_child]
+        print('We have as bests: ', [best for best in best_root_moves])
+        best_move = random_generator.choice(best_root_moves)
 
         assert isinstance(best_move, chess.Move)
         return best_move
@@ -176,7 +175,7 @@ def recommend_move_after_exploration_generic(
             color=not tree.root_node.board.turn
         )
 
-        child: ITreeNode | None
+        child: ITreeNode[Any] | None
         best_value: int | None = None
         best_move: chess.Move | None = None
         for move, child in tree.root_node.moves_children.items():

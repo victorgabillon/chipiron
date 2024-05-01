@@ -4,11 +4,13 @@ Module that contains the classes for the exploration data of a tree node.
 
 import typing
 from dataclasses import dataclass, field
+from typing import Any
 
 from chipiron.utils.small_tools import Interval
 
 if typing.TYPE_CHECKING:
     from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
+    from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 
 
 @dataclass
@@ -23,7 +25,7 @@ class NodeExplorationData:
     Methods:
         dot_description(): Returns a string representation of the exploration data for dot visualization.
     """
-    tree_node: 'TreeNode'
+    tree_node: 'TreeNode[ITreeNode[Any]]'
     index: float | None = None
 
     def dot_description(self) -> str:

@@ -16,6 +16,7 @@ Note: The Descendants and RangedDescendants classes are used in the chipiron pro
 """
 
 import typing
+from typing import Any
 
 from sortedcollections import ValueSortedDict
 
@@ -35,7 +36,7 @@ class Descendants:
         min_half_move (int | None): The minimum half move in the collection, or None if the collection is empty.
         max_half_move (int | None): The maximum half move in the collection, or None if the collection is empty.
     """
-    descendants_at_half_move: dict[HalfMove, dict[str, ITreeNode]]
+    descendants_at_half_move: dict[HalfMove, dict[str, ITreeNode[Any]]]
     number_of_descendants: int
     number_of_descendants_at_half_move: dict[HalfMove, int]
     min_half_move: int | None
@@ -73,7 +74,7 @@ class Descendants:
     def __setitem__(
             self,
             half_move: HalfMove,
-            value: dict[str, ITreeNode]
+            value: dict[str, ITreeNode[Any]]
     ) -> None:
         """
         Sets the descendants at a specific half move.
@@ -90,7 +91,7 @@ class Descendants:
     def __getitem__(
             self,
             half_move: HalfMove
-    ) -> dict[str, ITreeNode]:
+    ) -> dict[str, ITreeNode[Any]]:
         """
         Retrieve the descendants at a specific half move.
 
@@ -122,7 +123,7 @@ class Descendants:
 
     def contains_node(
             self,
-            node: ITreeNode
+            node: ITreeNode[Any]
     ) -> bool:
         """
         Checks if the descendants contain a specific node.
@@ -140,7 +141,7 @@ class Descendants:
 
     def remove_descendant(
             self,
-            node: ITreeNode
+            node: ITreeNode[Any]
     ) -> None:
         """
         Removes a descendant node from the tree.
@@ -172,7 +173,7 @@ class Descendants:
 
     def add_descendant(
             self,
-            node: ITreeNode
+            node: ITreeNode[Any]
     ) -> None:
         """
         Adds a descendant node to the tree.
@@ -252,7 +253,7 @@ class Descendants:
 
     def test_2(
             self,
-            root_node: ITreeNode
+            root_node: ITreeNode[Any]
     ) -> None:
         """
         Test the descendants of a given root node.
@@ -374,7 +375,7 @@ class RangedDescendants(Descendants):
 
     def add_descendant(
             self,
-            node: ITreeNode
+            node: ITreeNode[Any]
     ) -> None:
         """
         Adds a descendant node to the tree.
@@ -407,7 +408,7 @@ class RangedDescendants(Descendants):
 
     def remove_descendant(
             self,
-            node: ITreeNode
+            node: ITreeNode[Any]
     ) -> None:
         """
         Removes a descendant node from the tree.
@@ -560,7 +561,7 @@ class SortedDescendants(Descendants):
     Inherits from the Descendants class.
     """
 
-    sorted_descendants_at_half_move: dict[int, dict[ITreeNode, float]]
+    sorted_descendants_at_half_move: dict[int, dict[ITreeNode[Any], float]]
 
     def __init__(self) -> None:
         super().__init__()
@@ -568,7 +569,7 @@ class SortedDescendants(Descendants):
 
     def update_value(
             self,
-            node: ITreeNode,
+            node: ITreeNode[Any],
             value: float
     ) -> None:
         """
@@ -582,7 +583,7 @@ class SortedDescendants(Descendants):
 
     def add_descendant_with_val(
             self,
-            node: ITreeNode,
+            node: ITreeNode[Any],
             value: float
     ) -> None:
         """
@@ -627,7 +628,7 @@ class SortedDescendants(Descendants):
                 print(descendant.id, descendant.fast_rep, '(' + str(value) + ')', end=' ')
             print('')
 
-    def remove_descendant(self, node: ITreeNode) -> None:
+    def remove_descendant(self, node: ITreeNode[Any]) -> None:
         """
         Removes a descendant node from the data structure.
 
@@ -641,7 +642,7 @@ class SortedDescendants(Descendants):
             self.sorted_descendants_at_half_move.pop(half_move)
         assert (not self.contains_node(node))
 
-    def contains_node(self, node: ITreeNode) -> bool:
+    def contains_node(self, node: ITreeNode[Any]) -> bool:
         """
         Checks if a descendant node is present in the data structure.
 
@@ -676,7 +677,7 @@ class SortedValueDescendants(Descendants):
         super().__init__()
         self.sorted_descendants_at_half_move = {}
 
-    def update_value(self, node: ITreeNode, value: float) -> None:
+    def update_value(self, node: ITreeNode[Any], value: float) -> None:
         """
         Updates the value associated with a given node.
 
@@ -690,7 +691,7 @@ class SortedValueDescendants(Descendants):
         self.sorted_descendants_at_half_move[node.half_move][node] = value
 
     def add_descendant_val(self,
-                           node: ITreeNode,
+                           node: ITreeNode[Any],
                            value: float
                            ) -> None:
         """
@@ -742,7 +743,7 @@ class SortedValueDescendants(Descendants):
                 print(str(descendant.id) + '(' + str(value) + ')', end=' ')
             print('')
 
-    def remove_descendant(self, node: ITreeNode) -> None:
+    def remove_descendant(self, node: ITreeNode[Any]) -> None:
         """
         Removes a descendant node.
 

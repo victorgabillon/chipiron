@@ -22,7 +22,6 @@ import chess
 
 import chipiron.environments.chess.board as boards
 from chipiron.players.move_selector.move_selector import MoveRecommendation
-from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from chipiron.players.move_selector.treevalue.recommender_rule.recommender_rule import \
     recommend_move_after_exploration_generic
 from chipiron.players.move_selector.treevalue.search_factory import NodeSelectorFactory
@@ -69,21 +68,17 @@ class TreeExploration:
         Returns:
         - None
         """
-        if self.tree.root_node.minmax_evaluation.best_node_sequence:
-            current_best_child = self.tree.root_node.minmax_evaluation.best_node_sequence[0]
-            current_best_move = str(self.tree.root_node.moves_children.inverse[current_best_child])
-            assert isinstance(current_best_child, AlgorithmNode)
-            assert (
-                    self.tree.root_node.minmax_evaluation.get_value_white() == current_best_child.minmax_evaluation.get_value_white())
-
+        current_best_move: str
+        if self.tree.root_node.minmax_evaluation.best_move_sequence:
+            current_best_move = str(self.tree.root_node.minmax_evaluation.best_move_sequence[0])
         else:
             current_best_move = '?'
-        if random_generator.random() < 5:
+        if random_generator.random() < 1:
             str_progress = self.stopping_criterion.get_string_of_progress(self.tree)
             print(
                 f'{str_progress} | current best move:  {current_best_move} | current white value: {self.tree.root_node.minmax_evaluation.value_white_minmax})')
             # ,end='\r')
-            self.tree.root_node.minmax_evaluation.print_children_sorted_by_value_and_exploration()
+            self.tree.root_node.minmax_evaluation.print_moves_sorted_by_value_and_exploration()
             self.tree_manager.print_best_line(tree=self.tree)
 
     def explore(
@@ -107,14 +102,15 @@ class TreeExploration:
             child_node=self.tree.root_node,
             parent_node=None,
             board_modifications=None,
-            creation_child_node=True
+            creation_child_node=True,
+            move=None
         )
         tree_expansions.add_creation(tree_expansion=tree_expansion)
 
         while self.stopping_criterion.should_we_continue(tree=self.tree):
             assert (not self.tree.root_node.is_over())
             # print info
-            # self.print_info_during_move_computation(random_generator=random_generator)
+            self.print_info_during_move_computation(random_generator=random_generator)
 
             # choose the moves and nodes to open
             opening_instructions: node_sel.OpeningInstructions
@@ -129,7 +125,6 @@ class TreeExploration:
                 opening_instructions=opening_instructions,
                 tree=self.tree)
 
-            #  opening_instructions_subset.print_info()
             # open the nodes
             tree_expansions = self.tree_manager.open_instructions(
                 tree=self.tree,

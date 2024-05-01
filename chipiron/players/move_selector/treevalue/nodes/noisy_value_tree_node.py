@@ -2,6 +2,8 @@
 This module contains the NoisyValueTreeNode class, which is a subclass of TreeNode.
 """
 
+from typing import Any
+
 import chess
 
 from chipiron.environments.chess.board.board import BoardChi
@@ -9,7 +11,7 @@ from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 
 
-class NoisyValueTreeNode(TreeNode):
+class NoisyValueTreeNode(TreeNode[Any]):
     """
     A class representing a node in a noisy value tree.
     Inherits from TreeNode.
@@ -20,7 +22,7 @@ class NoisyValueTreeNode(TreeNode):
             board: BoardChi,
             half_move: int,
             id_number: int,
-            parent_node: ITreeNode,
+            parent_node: ITreeNode[Any],
             last_move: chess.Move
     ) -> None:
         """
