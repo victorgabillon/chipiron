@@ -123,12 +123,14 @@ class Representation364Factory:
         if parent_node is None:  # this is the root_node
             representation = self.create_from_board(board=tree_node.board)
         else:
-            assert modifications is not None
-            representation = node_to_tensors_pieces_square_from_parent(
-                node=tree_node,
-                board_modifications=modifications,
-                parent_node=parent_node
-            )
+            if modifications is None:
+                representation = self.create_from_board(board=tree_node.board)
+            else:
+                representation = node_to_tensors_pieces_square_from_parent(
+                    node=tree_node,
+                    board_modifications=modifications,
+                    parent_node=parent_node
+                )
 
         return representation
 

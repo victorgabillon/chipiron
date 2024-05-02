@@ -58,7 +58,7 @@ class TreeManager:
         board: board_mod.BoardChi = parent_node.board.copy(stack=copy_stack)
 
         # The move is played. The board is now a new board
-        modifications: board_mod.BoardModification = board.play_move(move=move)
+        modifications: board_mod.BoardModification | None = board.play_move(move=move)
 
         return self.open_node(
             tree=tree,
