@@ -13,12 +13,15 @@ env:
 jobs:
 
 
-  free-disk-space:
-    runs-on: ubuntu-latest
-    steps:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest]
+        python-version: [ '3.11' ,'3.12' ]
 
-      - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
+    steps:
+      - uses: jlumbroso/free-disk-space@main
         with:
           # this might remove tools that are actually needed,
           # if set to "true" but frees about 6 GB
@@ -33,14 +36,6 @@ jobs:
           docker-images: true
           swap-storage: true
 
-  test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ ubuntu-latest]
-        python-version: [ '3.11' ,'3.12' ]
-
-    steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
