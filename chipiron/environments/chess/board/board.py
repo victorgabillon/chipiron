@@ -66,7 +66,7 @@ class BoardChi:
     def play_move(
             self,
             move: chess.Move
-    ) -> BoardModification |None:
+    ) -> BoardModification | None:
         """
         Plays a move on the board and returns the board modification.
 
@@ -78,10 +78,10 @@ class BoardChi:
         """
         assert (move in self.legal_moves)
         board_modification: BoardModification | None = self.push_and_return_modification(move)  # type: ignore
-        #board_modification: BoardModification | None = self.board.push(move)
+        # board_modification: BoardModification | None = self.board.push(move)
 
         if board_modification is None:
-            #raise Exception('None Modif looks not good in board.py')
+            # raise Exception('None Modif looks not good in board.py')
             return None
         else:
             return board_modification
