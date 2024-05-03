@@ -5,6 +5,8 @@ import chess
 
 from chipiron.environments.chess.board.board import BoardChi
 
+def create_board_factory():
+   ...
 
 def create_board(
         fen: str | None = None
