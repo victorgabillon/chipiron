@@ -6,3 +6,5 @@ file_name_player_one: 'Uniform.yaml'
 file_name_player_twos: 'RecurZipfBase3.yaml'
 file_name_match_setting: 'setting_jime.yaml'
 profiling: True
+use_board_modification:  False
+use_rust_boards: False

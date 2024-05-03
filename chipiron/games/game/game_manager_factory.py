@@ -28,8 +28,12 @@ class GameManagerFactory:
     Calling create ask for the creation of a GameManager depending on args and players.
     This class is supposed to be independent of Match-related classes (contrarily to the GameArgsFactory)
     """
+
     syzygy_table: SyzygyTable | None
     subscribers: list[queue.Queue[IsDataclass]]
+    output_folder_path: path | None
+    main_thread_mailbox: queue.Queue[IsDataclass]
+    game_manager_board_evaluator: IGameBoardEvaluator
 
     def __init__(
             self,
@@ -72,7 +76,6 @@ class GameManagerFactory:
         """
         # maybe this factory is overkill at the moment but might be
         # useful if the logic of game generation gets more complex
-
         board: boards.BoardChi = boards.create_board()
         if self.subscribers:
             for subscriber in self.subscribers:

@@ -58,6 +58,8 @@ def create_match_manager(
 
     game_board_evaluator: IGameBoardEvaluator = create_game_board_evaluator(gui=gui)
 
+    #board_factory: BoardFactory = create_board_factory()
+
     game_manager_factory: GameManagerFactory = GameManagerFactory(
         syzygy_table=syzygy_mailbox,
         game_manager_board_evaluator=game_board_evaluator,
@@ -109,7 +111,6 @@ def create_match_manager_from_args(
     """
     player_one_args: players.PlayerArgs
     player_two_args: players.PlayerArgs
-    print('fff', args, type(args))
     player_one_args, player_two_args = fetch_two_players_args_convert_and_save(
         file_name_player_one=args.file_name_player_one,
         file_name_player_two=args.file_name_player_two,

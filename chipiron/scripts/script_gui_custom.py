@@ -171,6 +171,7 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
                 'seed': 0,
                 'gui': True,
                 'file_name_match_setting': 'setting_duda.yaml',
+                'profiling':False
             }
             if output['color_human'] == 'White':
                 gui_args['file_name_player_one'] = 'Gui_Human.yaml'
