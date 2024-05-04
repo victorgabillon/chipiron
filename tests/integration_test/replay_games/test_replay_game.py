@@ -1,7 +1,7 @@
 import time
 
 import chipiron.scripts as scripts
-
+from chipiron.scripts.factory import create_script
 # we need to not use multiprocessing to be able to use pytest therefore use setting_cubo  and not setting_jime
 
 start_time = time.time()
@@ -18,7 +18,7 @@ def test_replay_match(
 ):
     for config in configs:
         print(f'Running the SCRIPT with config {config}')
-        script_object: scripts.IScript = scripts.create_script(
+        script_object: scripts.IScript = create_script(
             script_type=scripts.ScriptType.ReplayMatch,
             extra_args=config,
             should_parse_command_line_arguments=False
