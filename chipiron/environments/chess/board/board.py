@@ -22,10 +22,12 @@ class BoardChi:
     """
 
     board: chess.Board
+    compute_board_modification: bool
 
     def __init__(
             self,
-            board: chess.Board
+            board: chess.Board,
+            compute_board_modification: bool
     ) -> None:
         """
         Initializes a new instance of the BoardChi class.
@@ -34,6 +36,7 @@ class BoardChi:
             board: The chess.Board object to wrap.
         """
         self.board = board
+        self.compute_board_modification = compute_board_modification
 
     def set_starting_position(
             self,
@@ -482,7 +485,10 @@ class BoardChi:
             BoardChi: A new instance of the BoardChi class with the copied board.
         """
         board: chess.Board = self.board.copy(stack=stack)
-        return BoardChi(board=board)
+        return BoardChi(
+            board=board,
+            compute_board_modification=self.compute_board_modification
+        )
 
     def __str__(self) -> str:
         """

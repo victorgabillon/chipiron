@@ -27,7 +27,7 @@ class MatchScriptArgs:
     """
     base_script_args: BaseScriptArgs
     match_args: MatchArgs
-    implementation_args: ImplementationArgs= field(default_factory=ImplementationArgs)
+    implementation_args: ImplementationArgs = field(default_factory=ImplementationArgs)
     # whether to display the match in a GUI
     gui: bool = True
 
@@ -57,16 +57,14 @@ class OneMatchScript:
             base_experiment_output_folder=self.base_experiment_output_folder,
             args_dataclass_name=MatchScriptArgs
         )
-        print(args)
 
         # creating the match manager
         self.match_manager: ch.game.MatchManager = create_match_manager_from_args(
             match_args=args.match_args,
-            script_args=args.base_script_args,
+            base_script_args=args.base_script_args,
+            implementation_args=args.implementation_args,
             gui=args.gui,
         )
-
-        print(args)
 
         # saving the arguments of the script
         with open(os.path.join(str(args.base_script_args.experiment_output_folder),

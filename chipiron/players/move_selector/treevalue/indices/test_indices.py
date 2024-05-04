@@ -101,7 +101,8 @@ def make_tree_from_file(
             board = chess.Board.from_chess960_pos(yaml_node['id'])
             board.turn = chess.WHITE
             board_chi = BoardChi(
-                board=board
+                board=board,
+                compute_board_modification=True
             )
             root_node: ITreeNode[Any] = algorithm_node_factory.create(
                 board=board_chi,
@@ -141,7 +142,10 @@ def make_tree_from_file(
             parent_node = id_nodes[first_parent]
             board = chess.Board.from_chess960_pos(yaml_node['id'])
             board.turn = not parent_node.tree_node.board_.turn
-            board_chi = boards.BoardChi(board=board)
+            board_chi = boards.BoardChi(
+                board=board,
+                compute_board_modification=True
+            )
 
             tree_expansion: TreeExpansion = algo_tree_manager.tree_manager.open_node(
                 tree=move_and_value_tree,

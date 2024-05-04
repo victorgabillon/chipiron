@@ -8,8 +8,8 @@ match_args:
   file_name_player_twos: 'RecurZipfBase3.yaml'
   file_name_match_setting: 'setting_jime.yaml'
 base_script_args :
-  profiling: False
+  profiling: True
   testing: False
 implementation_args :
-  use_board_modification:  False
+  use_board_modification:  True
   use_rust_boards: False

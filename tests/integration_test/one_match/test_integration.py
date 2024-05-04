@@ -2,7 +2,9 @@ import sys
 import time
 
 import chipiron.scripts as scripts
+from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.factory import create_script
+from chipiron.scripts.script_args import BaseScriptArgs
 
 # we need to not use multiprocessing to be able to use pytest therefore use setting_cubo  and not setting_jime
 
@@ -200,27 +202,42 @@ def test_one_matches(
 
 def test_randomness():
     print('test randomness')
-    # test randomness
+
+    # test randomness: just two time the same script anf nothing should change!! the seed is fixed to the same on both
+    # cases
+
     import chipiron as ch
     from chipiron.games.match.match_factories import create_match_manager_from_args
     from chipiron.games.match.match_results import MatchReport
     from chipiron.games.match.match_args import MatchArgs
 
-    args: MatchArgs = MatchArgs()
-    args.seed = 0
-    args.file_name_player_one = 'players_for_test_purposes/Uniform.yaml'
-    args.file_name_player_two = 'players_for_test_purposes/Sequool.yaml'
-    args.file_name_player_two = 'Random.yaml'
-    args.file_name_match_setting = 'setting_tron.yaml'
+    match_args: MatchArgs = MatchArgs()
+    match_args.seed = 0
+    match_args.file_name_player_one = 'players_for_test_purposes/Uniform.yaml'
+    match_args.file_name_player_two = 'players_for_test_purposes/Sequool.yaml'
+    match_args.file_name_player_two = 'Random.yaml'
+    match_args.file_name_match_setting = 'setting_tron.yaml'
 
-    match_manager: ch.game.MatchManager = create_match_manager_from_args(args=args)
+    implementation_args: ImplementationArgs = ImplementationArgs()
+    base_script_args: BaseScriptArgs = BaseScriptArgs()
+    base_script_args.experiment_output_folder = None
+
+    match_manager: ch.game.MatchManager = create_match_manager_from_args(
+        match_args=match_args,
+        implementation_args=implementation_args,
+        base_script_args=base_script_args
+    )
     match_report_base: MatchReport = match_manager.play_one_match()
 
     test_passed: bool = True
     number_test: int = 1
 
     for ind in range(number_test):
-        match_manager: ch.game.MatchManager = create_match_manager_from_args(args=args)
+        match_manager: ch.game.MatchManager = create_match_manager_from_args(
+            match_args=match_args,
+            implementation_args=implementation_args,
+            base_script_args=base_script_args
+        )
         match_report: MatchReport = match_manager.play_one_match()
 
         # checking if two matches launched with the same fixed seed returns the same game moves.

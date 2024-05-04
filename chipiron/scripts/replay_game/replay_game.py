@@ -5,13 +5,14 @@ This module contains the `ReplayGameScript` class, which is responsible for repl
 import os
 import pickle
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass,field
 
 from PySide6.QtWidgets import QApplication
 
 from chipiron.displays.gui_replay_games import MainWindow
 from chipiron.environments.chess.board.board import BoardChi
 from chipiron.scripts.script import Script
+from chipiron.scripts.script_args import BaseScriptArgs
 
 
 @dataclass
@@ -22,6 +23,9 @@ class ReplayScriptArgs:
 
     # path to the pickle file with the BoardChi stored
     file_path_game_pickle: str
+
+    base_script_args: BaseScriptArgs = field(default_factory=BaseScriptArgs)
+
 
     # whether to display the match in a GUI
     gui: bool = False
