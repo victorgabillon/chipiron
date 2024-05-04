@@ -1,7 +1,6 @@
 """
 Init file for scripts module
 """
-from .factory import create_script
 from .iscript import IScript
 from .script import Script
 from .script_type import ScriptType
@@ -13,5 +12,4 @@ __all__ = [
     "IScript",
     "ScriptType",
     "Script",
-    "create_script"
 ]

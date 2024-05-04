@@ -18,6 +18,7 @@ from chipiron.players.boardevaluators.factory import create_game_board_evaluator
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 from chipiron.players.utils import fetch_two_players_args_convert_and_save
+from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
 from chipiron.utils.is_dataclass import IsDataclass
 from .match_settings_args import MatchSettingsArgs
@@ -58,7 +59,7 @@ def create_match_manager(
 
     game_board_evaluator: IGameBoardEvaluator = create_game_board_evaluator(gui=gui)
 
-    #board_factory: BoardFactory = create_board_factory()
+    # board_factory: BoardFactory = create_board_factory()
 
     game_manager_factory: GameManagerFactory = GameManagerFactory(
         syzygy_table=syzygy_mailbox,
@@ -92,18 +93,16 @@ def create_match_manager(
 
 
 def create_match_manager_from_args(
-        args: MatchArgs,
-        profiling: bool = False,
-        testing: bool = False,
+        match_args: MatchArgs,
+        script_args: BaseScriptArgs,
         gui: bool = False
 ) -> MatchManager:
     """
     Create a match manager from the given arguments.
 
     Args:
-        args (MatchArgs): The match arguments.
-        profiling (bool, optional): Flag indicating whether to enable profiling. Defaults to False.
-        testing (bool, optional): Flag indicating whether to enable testing. Defaults to False.
+        match_args (MatchArgs): The match arguments.
+        script_args (ScriptArgs) The script arguments.
         gui (bool, optional): Flag indicating whether to enable GUI. Defaults to False.
 
     Returns:
@@ -112,38 +111,38 @@ def create_match_manager_from_args(
     player_one_args: players.PlayerArgs
     player_two_args: players.PlayerArgs
     player_one_args, player_two_args = fetch_two_players_args_convert_and_save(
-        file_name_player_one=args.file_name_player_one,
-        file_name_player_two=args.file_name_player_two,
-        modification_player_one=args.player_one,
-        modification_player_two=args.player_two,
-        experiment_output_folder=args.experiment_output_folder
+        file_name_player_one=match_args.file_name_player_one,
+        file_name_player_two=match_args.file_name_player_two,
+        modification_player_one=match_args.player_one,
+        modification_player_two=match_args.player_two,
+        experiment_output_folder=script_args.experiment_output_folder
     )
 
     # Recovering args from yaml file for match and game and merging with extra args and converting
     # to standardized dataclass
-    match_args: MatchSettingsArgs
+    match_setting_args: MatchSettingsArgs
     game_args: game.GameArgs
-    match_args, game_args = fetch_match_games_args_convert_and_save(
-        profiling=profiling,
-        testing=testing,
-        file_name_match_setting=args.file_name_match_setting,
-        modification=args.match,
-        experiment_output_folder=args.experiment_output_folder
+    match_setting_args, game_args = fetch_match_games_args_convert_and_save(
+        profiling=script_args.profiling,
+        testing=script_args.testing,
+        file_name_match_setting=match_args.file_name_match_setting,
+        modification=match_args.match,
+        experiment_output_folder=script_args.experiment_output_folder
     )
 
     assert player_one_args.name != 'Command_Line_Human.yaml' or not game_args.each_player_has_its_own_thread
     assert player_two_args.name != 'Command_Line_Human.yaml' or not game_args.each_player_has_its_own_thread
 
     # taking care of random
-    ch.set_seeds(seed=args.seed)
+    ch.set_seeds(seed=match_args.seed)
 
-    print('self.args.experiment_output_folder', args.experiment_output_folder)
+    print('self.args.experiment_output_folder', script_args.experiment_output_folder)
     match_manager: MatchManager = create_match_manager(
-        args_match=match_args,
+        args_match=match_setting_args,
         args_player_one=player_one_args,
         args_player_two=player_two_args,
-        output_folder_path=args.experiment_output_folder,
-        seed=args.seed,
+        output_folder_path=script_args.experiment_output_folder,
+        seed=match_args.seed,
         args_game=game_args,
         gui=gui
     )

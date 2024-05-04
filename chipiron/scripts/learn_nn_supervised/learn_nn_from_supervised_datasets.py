@@ -31,12 +31,13 @@ from chipiron.players.boardevaluators.neural_networks.factory import create_nn
 from chipiron.players.boardevaluators.neural_networks.input_converters.factory import Representation364Factory
 from chipiron.players.boardevaluators.neural_networks.input_converters.representation_364_bti import \
     Representation364BTI
-from chipiron.scripts.script import Script, ScriptArgs
+from chipiron.scripts.script import Script
+from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.chi_nn import ChiNN
 
 
 @dataclass
-class LearnNNScriptArgs(ScriptArgs):
+class LearnNNScriptArgs(BaseScriptArgs):
     """
     Represents the arguments for the LearnNNScript.
 

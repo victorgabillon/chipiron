@@ -163,35 +163,42 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
     root.mainloop()
     gui_args: dict[str, Any]
     script_type: scripts.ScriptType
+    # TODO should this be dict or args or diretly the right dataclass bu then we might need to change abit the parser init logic
     match output['type']:
         case 'play_against_chipiron':
             tree_move_limit = 4 * 10 ** output['strength']
             gui_args = {
                 'config_file_name': 'chipiron/scripts/one_match/inputs/base/exp_options.yaml',
-                'seed': 0,
+                'base_script_args': {
+                    'profiling': False
+                },
+                'match_args': {
+                    'file_name_match_setting': 'setting_duda.yaml',
+                    'seed': 0
+                },
                 'gui': True,
-                'file_name_match_setting': 'setting_duda.yaml',
-                'profiling':False
             }
             if output['color_human'] == 'White':
-                gui_args['file_name_player_one'] = 'Gui_Human.yaml'
-                gui_args['file_name_player_two'] = f'{output["chipi_algo"]}.yaml'
-                gui_args['player_two'] = {
+                gui_args['match_args']['file_name_player_one'] = 'Gui_Human.yaml'
+                gui_args['match_args']['file_name_player_two'] = f'{output["chipi_algo"]}.yaml'
+                gui_args['match_args']['player_two'] = {
                     'main_move_selector': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}
             else:
-                gui_args['file_name_player_two'] = 'Gui_Human.yaml'
-                gui_args['file_name_player_one'] = f'{output["chipi_algo"]}.yaml'
-                gui_args['player_one'] = {
+                gui_args['match_args']['file_name_player_two'] = 'Gui_Human.yaml'
+                gui_args['match_args']['file_name_player_one'] = f'{output["chipi_algo"]}.yaml'
+                gui_args['match_args']['player_one'] = {
                     'main_move_selector': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}
             script_type = scripts.ScriptType.OneMatch
         case 'watch_a_game':
             gui_args = {
                 'config_file_name': 'chipiron/scripts/one_match/inputs/base/exp_options.yaml',
-                'seed': 0,
-                'gui': True,
-                'file_name_player_one': 'RecurZipfBase3.yaml',
-                'file_name_player_two': 'RecurZipfBase4.yaml',
-                'file_name_match_setting': 'setting_duda.yaml'
+                'match_args': {
+                    'seed': 0,
+                    'gui': True,
+                    'file_name_player_one': 'RecurZipfBase3.yaml',
+                    'file_name_player_two': 'RecurZipfBase4.yaml',
+                    'file_name_match_setting': 'setting_duda.yaml'
+                }
             }
             script_type = scripts.ScriptType.OneMatch
         case 'tree_visualization':

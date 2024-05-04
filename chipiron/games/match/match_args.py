@@ -14,7 +14,6 @@ class MatchArgs:
     The input arguments needed by the one match script to run
 
             seed (int): The seed for the match.
-            experiment_output_folder (path | None): The output folder for the experiment. Defaults to None.
             file_name_player_one (path): The file name for player one. Defaults to 'RecurZipfBase3.yaml'.
             file_name_player_two (path): The file name for player two. Defaults to 'RecurZipfBase3.yaml'.
             file_name_match_setting (path): The file name for the match setting. Defaults to 'setting_cubo.yaml'.
@@ -25,8 +24,6 @@ class MatchArgs:
     """
     # the seed
     seed: int = 0
-
-    experiment_output_folder: path | None = None
 
     file_name_player_one: path = 'RecurZipfBase3.yaml'
     file_name_player_two: path = 'RecurZipfBase3.yaml'

@@ -2,6 +2,7 @@ import sys
 import time
 
 import chipiron.scripts as scripts
+from chipiron.scripts.factory import create_script
 
 # we need to not use multiprocessing to be able to use pytest therefore use setting_cubo  and not setting_jime
 
@@ -10,95 +11,140 @@ configs_base = [
 
     # random Player first to have a fast game
     {
-        'seed': 11, 'gui': False,
-        'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
-        'file_name_player_two': 'Random.yaml',
-        'file_name_match_setting': 'setting_cubo.yaml',
-        'profiling': False,
-        'testing': True
-    },
 
-    {
-        'seed': 11,
         'gui': False,
-        'file_name_player_one':
-            'players_for_test_purposes/Sequool.yaml',
-        'file_name_player_two': 'players_for_test_purposes/RecurZipfSequool.yaml',
-        'file_name_match_setting': 'setting_cubo.yaml',
-        'profiling': False,
-        'testing': True
+        'match_args': {
+            'seed': 11,
+            'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
+            'file_name_player_two': 'Random.yaml',
+            'file_name_match_setting': 'setting_cubo.yaml'
+        },
+        'base_script_args': {
+            'profiling': False,
+            'testing': True
+        }
     },
 
     {
-        'seed': 11, 'gui': False,
-        'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
-        'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml',
-        'file_name_match_setting': 'setting_cubo.yaml',
-        'profiling': False,
-        'testing': True
-    },
-
-    {
-        'seed': 11,
         'gui': False,
-        'file_name_player_one': 'players_for_test_purposes/RecurZipfBase4.yaml',
-        'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml',
-        'file_name_match_setting': 'setting_cubo.yaml',
-        'profiling': False,
-        'testing': True
+        'match_args': {
+            'seed': 11,
+            'file_name_player_one':
+                'players_for_test_purposes/Sequool.yaml',
+            'file_name_player_two': 'players_for_test_purposes/RecurZipfSequool.yaml',
+            'file_name_match_setting': 'setting_cubo.yaml'
+        },
+        'base_script_args': {
+            'profiling': False,
+            'testing': True
+        }
     },
 
     {
-        'seed': 11,
         'gui': False,
-        'file_name_player_one': 'players_for_test_purposes/Uniform.yaml',
-        'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml',
-        'file_name_match_setting': 'setting_cubo.yaml',
-        'profiling': False,
-        'testing': True
+        'match_args': {
+            'seed': 11,
+            'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
+            'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml',
+            'file_name_match_setting': 'setting_cubo.yaml'
+        },
+        'base_script_args': {
+            'profiling': False,
+            'testing': True
+        }
     },
 
     {
-        'seed': 11,
         'gui': False,
-        'file_name_player_one': 'players_for_test_purposes/RecurZipfBase3.yaml',
-        'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml',
-        'file_name_match_setting': 'setting_cubo.yaml',
-        'profiling': False,
-        'testing': True
+
+        'match_args': {
+            'seed': 11,
+            'file_name_player_one': 'players_for_test_purposes/RecurZipfBase4.yaml',
+            'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml',
+            'file_name_match_setting': 'setting_cubo.yaml'
+        },
+        'base_script_args': {
+            'profiling': False,
+            'testing': True
+        }
+    },
+
+    {
+        'gui': False,
+
+        'match_args': {
+            'seed': 11,
+            'file_name_player_one': 'players_for_test_purposes/Uniform.yaml',
+            'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml',
+            'file_name_match_setting': 'setting_cubo.yaml'
+        },
+        'base_script_args': {
+            'profiling': False,
+            'testing': True
+        }
+    },
+
+    {
+        'gui': False,
+        'match_args': {
+            'seed': 11,
+
+            'file_name_player_one': 'players_for_test_purposes/RecurZipfBase3.yaml',
+            'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml',
+            'file_name_match_setting': 'setting_cubo.yaml'
+        },
+        'base_script_args': {
+            'profiling': False,
+            'testing': True
+        }
     },
 
     # checking profiling
     {
-        'seed': 11,
         'gui': False,
-        'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
-        'file_name_player_two': 'Random.yaml',
-        'file_name_match_setting': 'setting_cubo.yaml',
-        'profiling': True,
-        'testing': True
+        'match_args': {
+            'seed': 11,
+
+            'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
+            'file_name_player_two': 'Random.yaml',
+            'file_name_match_setting': 'setting_cubo.yaml'
+        },
+        'base_script_args': {
+            'profiling': True,
+            'testing': True
+        }
     },
 
     # checking another seed haha
     {
-        'seed': 12,
         'gui': False,
-        'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
-        'file_name_player_two': 'Random.yaml',
-        'file_name_match_setting': 'setting_cubo.yaml',
-        'profiling': False,
-        'testing': True
+        'match_args': {
+            'seed': 12,
+
+            'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
+            'file_name_player_two': 'Random.yaml',
+            'file_name_match_setting': 'setting_cubo.yaml'
+        },
+        'base_script_args': {
+            'profiling': False,
+            'testing': True
+        }
     },
 
     # need a check with two games
     {
-        'seed': 11,
         'gui': False,
-        'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
-        'file_name_player_two': 'Random.yaml',
-        'file_name_match_setting': 'setting_tron.yaml',
-        'profiling': False,
-        'testing': True
+
+        'match_args': {
+            'seed': 11,
+            'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
+            'file_name_player_two': 'Random.yaml',
+            'file_name_match_setting': 'setting_tron.yaml'
+        },
+        'base_script_args': {
+            'profiling': False,
+            'testing': True
+        }
     },
 
     # todo add basic eval (no neural nets)
@@ -106,17 +152,30 @@ configs_base = [
 
 configs_with_stock = [
                          # stockfish
-                         {'seed': 11, 'gui': False, 'file_name_player_one': 'Stockfish.yaml',
-                          'file_name_player_two': 'Random.yaml',
-                          'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
+                         {
+                             'gui': False,
+                             'match_args': {
+                                 'seed': 11, 'file_name_player_one': 'Stockfish.yaml',
+                                 'file_name_player_two': 'Random.yaml',
+                                 'file_name_match_setting': 'setting_jime.yaml'
+                             },
+                             'base_script_args': {
+                                 'profiling': False}
+                         }
                      ] + configs_base
 
 configs_with_stock_and_gui = [
                                  # checking gui
-                                 {'seed': 11, 'gui': True,
-                                  'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
-                                  'file_name_player_two': 'Random.yaml',
-                                  'file_name_match_setting': 'setting_jime.yaml', 'profiling': False},
+                                 {
+                                     'gui': True,
+                                     'match_args': {
+                                         'seed': 11,
+                                         'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
+                                         'file_name_player_two': 'Random.yaml',
+                                         'file_name_match_setting': 'setting_jime.yaml'
+                                     },
+                                     'base_script_args': {'profiling': False}
+                                 }
 
                              ] + configs_with_stock
 
@@ -126,7 +185,7 @@ def test_one_matches(
 ):
     for config in configs:
         print(f'Running the SCRIPT with config {config}')
-        script_object: scripts.IScript = scripts.create_script(
+        script_object: scripts.IScript = create_script(
             script_type=scripts.ScriptType.OneMatch,
             extra_args=config,
             should_parse_command_line_arguments=False
