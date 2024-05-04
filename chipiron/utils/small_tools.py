@@ -303,3 +303,16 @@ def distance_number_to_interval(
         return value - interval.max_value
     else:
         return 0
+
+
+def unflatten(dictionary):
+    resultDict = dict()
+    for key, value in dictionary.items():
+        parts = key.split(".")
+        d = resultDict
+        for part in parts[:-1]:
+            if part not in d:
+                d[part] = dict()
+            d = d[part]
+        d[parts[-1]] = value
+    return resultDict

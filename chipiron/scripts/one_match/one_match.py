@@ -6,7 +6,7 @@ import os
 import queue
 import sys
 from dataclasses import asdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import yaml
 from PySide6.QtWidgets import QApplication
@@ -16,20 +16,18 @@ from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_factories import create_match_manager_from_args
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script import Script
-from chipiron.scripts.script import ScriptArgs
+from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.is_dataclass import IsDataclass
 
 
 @dataclass
-class MatchScriptArgs(
-    ScriptArgs,
-    ImplementationArgs,
-    MatchArgs
-):
+class MatchScriptArgs:
     """
     The input arguments needed by the one match script to run
     """
-
+    base_script_args: BaseScriptArgs
+    match_args: MatchArgs
+    implementation_args: ImplementationArgs= field(default_factory=ImplementationArgs)
     # whether to display the match in a GUI
     gui: bool = True
 
@@ -59,22 +57,25 @@ class OneMatchScript:
             base_experiment_output_folder=self.base_experiment_output_folder,
             args_dataclass_name=MatchScriptArgs
         )
+        print(args)
 
         # creating the match manager
         self.match_manager: ch.game.MatchManager = create_match_manager_from_args(
-            args=args,
-            profiling=args.profiling,
+            match_args=args.match_args,
+            script_args=args.base_script_args,
             gui=args.gui,
-            testing=args.testing
         )
 
+        print(args)
+
         # saving the arguments of the script
-        with open(os.path.join(str(args.experiment_output_folder), 'inputs_and_parsing/one_match_script_merge.yaml'),
+        with open(os.path.join(str(args.base_script_args.experiment_output_folder),
+                               'inputs_and_parsing/one_match_script_merge.yaml'),
                   'w') as one_match_script:
             yaml.dump(asdict(args), one_match_script, default_flow_style=False)
 
         # checking for some incompatibility
-        if args.gui and args.profiling:
+        if args.gui and args.base_script_args.profiling:
             raise ValueError('Profiling does not work well atm with gui on')
 
         # If we need a GUI

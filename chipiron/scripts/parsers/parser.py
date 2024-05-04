@@ -9,12 +9,11 @@ Classes:
 
 import os
 import sys
-from datetime import datetime
 from typing import Any
 
 import yaml
 
-from chipiron.utils import path
+from chipiron.utils.small_tools import unflatten
 
 
 class MyParser:
@@ -84,7 +83,9 @@ class MyParser:
         }
         print('Here are the command line arguments of the script', args_command_line_without_none, sys.argv)
 
-        return args_command_line_without_none
+        args_command_line_without_none_unflatten = unflatten(args_command_line_without_none)
+
+        return args_command_line_without_none_unflatten
 
     def parse_config_file_arguments(
             self,
@@ -110,14 +111,12 @@ class MyParser:
 
     def parse_arguments(
             self,
-            base_experiment_output_folder: path,
             extra_args: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """
         Parse the command line arguments, config file arguments, and extra arguments.
 
         Args:
-            base_experiment_output_folder (path): The base output folder for the experiment.
             extra_args (dict[str, Any], optional): Extra arguments to be merged with the parsed arguments.
             Defaults to None.
 
@@ -137,31 +136,24 @@ class MyParser:
         #  that will overwrite the config file arguments that will overwrite the default arguments
         first_merged_args = self.args_command_line | extra_args
 
-        print('rr', self.args_command_line)
+        # 'config_file_name' is a specific input that can be specified either in extra_args or in the command line
+        # and that gives the path to a yaml file containing more args
         config_file_path = None
         if 'config_file_name' in first_merged_args:
             config_file_path = first_merged_args['config_file_name']
-
         if config_file_path is None:
             self.args_config_file = {}
         else:
             self.parse_config_file_arguments(config_file_path)
-
         assert self.args_config_file is not None
 
         #  the gui input  overwrite  the command line arguments
         #  that overwrite the config file arguments that overwrite the default arguments
         self.merged_args = self.args_config_file | first_merged_args
         print(
-            f'Here are the merged arguments of the script {self.merged_args}\n{self.args_config_file}\n{self.args_command_line}\n{extra_args}')
-
-        if 'output_folder' not in self.merged_args:
-            now = datetime.now()  # current date and time
-            self.merged_args['experiment_output_folder'] = os.path.join(base_experiment_output_folder, now.strftime(
-                "%A-%m-%d-%Y--%H:%M:%S:%f"))
-        else:
-            self.merged_args['experiment_output_folder'] = os.path.join(base_experiment_output_folder, self.merged_args[
-                'output_folder'])
+            f'Here are the merged arguments of the script {self.merged_args}\n{self.args_config_file}'
+            f'\n{self.args_command_line}\n{extra_args}'
+        )
 
         return self.merged_args
 

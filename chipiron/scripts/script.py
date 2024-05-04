@@ -8,32 +8,28 @@ import io
 import os.path
 import pstats
 import time
-from dataclasses import dataclass
 from pstats import SortKey
 from typing import Any
+from typing import Protocol, runtime_checkable
 from typing import TypeVar
 
 import dacite
 
 from chipiron.scripts.parsers.parser import MyParser
+from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.is_dataclass import IsDataclass
 from chipiron.utils.small_tools import mkdir
 
-
-@dataclass
-class ScriptArgs:
-    """
-    Dataclass representing the arguments for the Script class.
-    """
-
-    # whether the script is profiling computation usage
-    profiling: bool = False
-
-    # whether the script is testing the code (using pytest for instance)
-    testing: bool = False
-
-
 _T_co = TypeVar("_T_co", covariant=True, bound=IsDataclass)
+
+
+@runtime_checkable
+class HasBaseScriptArgs(Protocol):
+    """
+    Protocol of generic ScriptArgs that contains the BaseScriptArgs
+    """
+    base_script_args: BaseScriptArgs
+
 
 
 class Script:
@@ -82,36 +78,38 @@ class Script:
         Returns:
             The converted arguments as a dataclass.
         """
+
+        # checking that the dataclass that will contain the script args contains BaseScriptArgs
+        #assert issubclass(args_dataclass_name, HasBaseScriptArgs)
+
         if base_experiment_output_folder is None:
             base_experiment_output_folder = self.base_experiment_output_folder
 
         # parse the arguments
         args_dict: dict[str, Any] = self.parser.parse_arguments(
-            base_experiment_output_folder=base_experiment_output_folder,
             extra_args=self.extra_args
         )
-
-        # Converting the args in the standardized dataclass
-        args: ScriptArgs = dacite.from_dict(
-            data_class=ScriptArgs,
-            data=args_dict
-        )
-
-        mkdir(args_dict['experiment_output_folder'])
-        mkdir(os.path.join(args_dict['experiment_output_folder'], 'inputs_and_parsing'))
-
-        self.parser.log_parser_info(args_dict['experiment_output_folder'])
-
-        # activate profiling is if needed
-        if args.profiling:
-            self.profile = cProfile.Profile()
-            self.profile.enable()
 
         # Converting the args in the standardized dataclass
         final_args: _T_co = dacite.from_dict(
             data_class=args_dataclass_name,
             data=args_dict
         )
+
+        final_args.base_script_args.experiment_output_folder = os.path.join(
+            base_experiment_output_folder,
+            final_args.base_script_args.experiment_output_folder
+        )
+        mkdir(final_args.base_script_args.experiment_output_folder)
+        mkdir(os.path.join(final_args.base_script_args.experiment_output_folder, 'inputs_and_parsing'))
+
+        self.parser.log_parser_info(final_args.base_script_args.experiment_output_folder)
+
+        # activate profiling is if needed
+        if final_args.base_script_args.profiling:
+            self.profile = cProfile.Profile()
+            self.profile.enable()
+
         return final_args
 
     def terminate(self) -> None:
