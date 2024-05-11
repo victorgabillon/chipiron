@@ -8,7 +8,7 @@ import queue
 import chipiron as ch
 import chipiron.games.game as game
 import chipiron.players as players
-from chipiron.environments.chess.board.factory import create_board_factory
+from chipiron.environments.chess.board.factory import create_board_factory, BoardFactory
 from chipiron.games.game.game_manager_factory import GameManagerFactory
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_manager import MatchManager
@@ -73,6 +73,7 @@ def create_match_manager(
         game_manager_board_evaluator=game_board_evaluator,
         output_folder_path=output_folder_path,
         main_thread_mailbox=main_thread_mailbox,
+        board_factory = board_factory
     )
 
     match_results_factory: MatchResultsFactory = MatchResultsFactory(

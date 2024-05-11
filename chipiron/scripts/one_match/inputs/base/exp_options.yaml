@@ -11,5 +11,5 @@ base_script_args :
   profiling: True
   testing: False
 implementation_args :
-  use_board_modification:  True
-  use_rust_boards: False
+  use_board_modification:  False
+  use_rust_boards: True
