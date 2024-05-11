@@ -8,6 +8,12 @@
 
 Chipiron is a Python library that plays chess
 
+## Acknowledgments
+This code is build on top of the chess library https://github.com/niklasf/python-chess
+and its rust version :https://github.com/niklasf/shakmaty
+
+It also integrates code from : https://github.com/oakmac/chessboardjs/
+
 
 ## Requirements
 

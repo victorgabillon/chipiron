@@ -6,7 +6,7 @@ import queue
 
 import chess
 
-from chipiron.environments.chess.board import BoardChi
+from chipiron.environments.chess.board import IBoard
 from chipiron.players.move_selector.move_selector import MoveRecommendation
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import MoveMessage
@@ -42,13 +42,13 @@ class GamePlayer:
 
     def select_move(
             self,
-            board: BoardChi,
+            board: IBoard,
             seed_int: seed | None = None
     ) -> MoveRecommendation:
         """Selects the best move to play based on the current board position.
 
         Args:
-            board (BoardChi): The current board position.
+            board (IBoard): The current board position.
             seed_int (seed | None, optional): The seed value for randomization. Defaults to None.
 
         Raises:
@@ -69,7 +69,7 @@ class GamePlayer:
 
 
 def game_player_computes_move_on_board_and_send_move_in_queue(
-        board: BoardChi,
+        board: IBoard,
         game_player: GamePlayer,
         queue_move: queue.Queue[IsDataclass],
         seed_int: seed
@@ -77,7 +77,7 @@ def game_player_computes_move_on_board_and_send_move_in_queue(
     """Computes the move for the game player on the given board and sends the move in the queue.
 
     Args:
-        board (BoardChi): The game board.
+        board (IBoard): The game board.
         game_player (GamePlayer): The game player.
         queue_move (queue.Queue[IsDataclass]): The queue to send the move.
         seed_int (seed): The seed for move selection.
@@ -85,7 +85,7 @@ def game_player_computes_move_on_board_and_send_move_in_queue(
     Returns:
         None
     """
-    if board.turn == game_player.color and not board.board.is_game_over():
+    if board.turn == game_player.color and not board.is_game_over():
         move_recommendation: MoveRecommendation = game_player.select_move(
             board=board,
             seed_int=seed_int

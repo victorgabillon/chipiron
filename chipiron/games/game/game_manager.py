@@ -12,7 +12,6 @@ import chess
 import chipiron.players as players_m
 from chipiron.environments import HalfMove
 from chipiron.environments.chess.board import BoardChi
-from chipiron.environments.chess.board.starting_position import AllStartingPositionArgs
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
@@ -123,21 +122,6 @@ class GameManager:
             print('Theoretically finished with value for white: ',
                   self.syzygy.string_result(self.game.board))
 
-    def set_new_game(
-            self,
-            starting_position_arg: AllStartingPositionArgs
-    ) -> None:
-        """
-        Sets a new game with the specified starting position.
-
-        Args:
-            starting_position_arg (AllStartingPositionArgs): The starting position for the new game.
-
-        Returns:
-            None
-        """
-        self.game.set_starting_position(starting_position_arg=starting_position_arg)
-
     def play_one_game(
             self
     ) -> GameReport:
@@ -148,7 +132,6 @@ class GameManager:
             GameReport: The report of the game.
         """
         board = self.game.board
-        self.set_new_game(self.args.starting_position)
 
         color_names = ['Black', 'White']
 

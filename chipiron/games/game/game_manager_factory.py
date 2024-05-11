@@ -2,6 +2,7 @@
 Module for the GameManagerFactory class.
 """
 import queue
+from dataclasses import dataclass, field
 
 import chess
 
@@ -22,40 +23,27 @@ from .game import Game, ObservableGame
 from .game_manager import GameManager
 
 
+@dataclass
 class GameManagerFactory:
     """
     The GameManagerFactory creates GameManager once the players and rules have been decided.
     Calling create ask for the creation of a GameManager depending on args and players.
     This class is supposed to be independent of Match-related classes (contrarily to the GameArgsFactory)
+
+    Args:
+    syzygy_table (SyzygyTable | None): The syzygy table used for endgame tablebase lookups.
+    game_manager_board_evaluator (IGameBoardEvaluator): The game board evaluator used for evaluating game positions.
+    output_folder_path (path | None): The path to the output folder where game data will be saved.
+    main_thread_mailbox (queue.Queue[IsDataclass]): The mailbox used for communication between processes.
+
     """
 
     syzygy_table: SyzygyTable | None
-    subscribers: list[queue.Queue[IsDataclass]]
     output_folder_path: path | None
     main_thread_mailbox: queue.Queue[IsDataclass]
     game_manager_board_evaluator: IGameBoardEvaluator
-
-    def __init__(
-            self,
-            syzygy_table: SyzygyTable | None,
-            game_manager_board_evaluator: IGameBoardEvaluator,
-            output_folder_path: path | None,
-            main_thread_mailbox: queue.Queue[IsDataclass],
-    ) -> None:
-        """
-        Constructor for the GameManagerFactory class.
-
-        Args:
-            syzygy_table (SyzygyTable | None): The syzygy table used for endgame tablebase lookups.
-            game_manager_board_evaluator (IGameBoardEvaluator): The game board evaluator used for evaluating game positions.
-            output_folder_path (path | None): The path to the output folder where game data will be saved.
-            main_thread_mailbox (queue.Queue[IsDataclass]): The mailbox used for communication between processes.
-        """
-        self.syzygy_table = syzygy_table
-        self.output_folder_path = output_folder_path
-        self.game_manager_board_evaluator = game_manager_board_evaluator
-        self.main_thread_mailbox = main_thread_mailbox
-        self.subscribers = []
+    board_factory: boards.BoardFactory
+    subscribers: list[queue.Queue[IsDataclass]] = field(default_factory=list)
 
     def create(
             self,
@@ -76,7 +64,8 @@ class GameManagerFactory:
         """
         # maybe this factory is overkill at the moment but might be
         # useful if the logic of game generation gets more complex
-        board: boards.BoardChi = boards.create_board()
+        starting_fen: str = args_game_manager.starting_position.get_fen()
+        board: boards.IBoard = self.board_factory(fen=starting_fen)
         if self.subscribers:
             for subscriber in self.subscribers:
                 player_id_message: PlayersColorToPlayerMessage = extract_message_from_players(

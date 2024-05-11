@@ -7,9 +7,6 @@ import chess
 import chess.polyglot
 
 from chipiron.environments.chess.board.board_modification import BoardModification, PieceInSquare
-from chipiron.environments.chess.board.board_tools import convert_to_fen
-from .starting_position import AllStartingPositionArgs, FenStartingPositionArgs, \
-    FileStartingPositionArgs
 
 COLORS = [WHITE, BLACK] = [True, False]
 
@@ -37,34 +34,6 @@ class BoardChi:
         """
         self.board = board
         self.compute_board_modification = compute_board_modification
-
-    def set_starting_position(
-            self,
-            starting_position_arg: AllStartingPositionArgs | None = None,
-            fen: str | None = None
-    ) -> None:
-        """
-        Sets the starting position of the board.
-
-        Args:
-            starting_position_arg: The starting position argument.
-            fen: The FEN string representing the starting position.
-        """
-        self.board.reset()
-        if starting_position_arg is not None:
-            match starting_position_arg:
-                case FileStartingPositionArgs():
-                    starting_position_arg_file: FileStartingPositionArgs = starting_position_arg
-                    file_name: str = starting_position_arg_file.file_name
-                    fen = self.load_from_file(file_name)
-                    self.board.set_fen(fen)
-                case FenStartingPositionArgs():
-                    starting_position_arg_fen: FenStartingPositionArgs = starting_position_arg
-                    fen = starting_position_arg_fen.fen
-                    self.board.set_fen(fen)
-
-        elif fen is not None:
-            self.board.set_fen(fen)
 
     def play_move(
             self,
@@ -272,23 +241,6 @@ class BoardChi:
         self.board.turn = not self.board.turn
 
         return board_modifications
-
-    def load_from_file(
-            self,
-            file_name: str
-    ) -> str:
-        """Load a chess board from a file.
-
-        Args:
-            file_name (str): The name of the file to load the chess board from.
-
-        Returns:
-            str: The FEN representation of the loaded chess board.
-        """
-        with open('data/starting_boards/' + file_name, "r") as f:
-            ascii_board: str = str(f.read())
-            fen: str = convert_to_fen(ascii_board)
-        return fen
 
     def compute_key(self) -> str:
         """

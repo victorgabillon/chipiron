@@ -6,8 +6,7 @@ import queue
 
 import chess
 
-from chipiron.environments.chess.board import BoardChi
-from chipiron.environments.chess.board.starting_position import AllStartingPositionArgs
+from chipiron.environments.chess.board import IBoard
 from chipiron.players.factory_higher_level import MoveFunction
 from chipiron.utils import seed, unique_int_from_list
 from chipiron.utils.communication.gui_messages import GameStatusMessage
@@ -21,12 +20,12 @@ class Game:
     Class representing a game of chess.
     """
     _playing_status: GamePlayingStatus
-    _board: BoardChi
+    _board: IBoard
     _seed: seed | None
 
     def __init__(
             self,
-            board: BoardChi,
+            board: IBoard,
             playing_status: GamePlayingStatus,
             seed_: seed
     ):
@@ -129,7 +128,7 @@ class Game:
         return self._playing_status.is_play()
 
     @property
-    def board(self) -> BoardChi:
+    def board(self) -> IBoard:
         """
         Gets the chess board.
 
@@ -190,21 +189,6 @@ class ObservableGame:
             move_function (MoveFunction): The function to be called to compute a move.
         """
         self.move_functions.append(move_function)
-
-    def set_starting_position(
-            self,
-            starting_position_arg: AllStartingPositionArgs | None = None,
-            fen: str | None = None
-    ) -> None:
-        """
-        Sets the starting position of the chess board.
-
-        Args:
-            starting_position_arg (AllStartingPositionArgs | None): The starting position arguments.
-            fen (str | None): The FEN string representing the starting position.
-        """
-        self.board.set_starting_position(starting_position_arg, fen)
-        self.notify_display()
 
     def play_move(
             self,
@@ -300,7 +284,7 @@ class ObservableGame:
         if not self.game.board.is_game_over():
             move_function: MoveFunction
             for move_function in self.move_functions:
-                board_copy: BoardChi = copy.deepcopy(self.game.board)
+                board_copy: IBoard = self.game.board.copy(stack=True)
                 merged_seed: int | None = unique_int_from_list([self.game._seed, board_copy.ply()])
                 if merged_seed is not None:
                     move_function(board=board_copy, seed_int=merged_seed)
@@ -317,7 +301,7 @@ class ObservableGame:
             mailbox.put(message)
 
     @property
-    def board(self) -> BoardChi:
+    def board(self) -> IBoard:
         """
         Gets the chess board.
 

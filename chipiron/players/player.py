@@ -2,7 +2,7 @@
 Module for the Player class.
 """
 
-from chipiron.environments.chess.board.board import BoardChi
+from chipiron.environments.chess.board import BoardChi ,IBoard
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 from chipiron.utils import seed
 from .move_selector.move_selector import MoveSelector, MoveRecommendation
@@ -28,7 +28,7 @@ class Player:
 
     def select_move(
             self,
-            board: BoardChi,
+            board: IBoard,
             seed_int: seed
     ) -> MoveRecommendation:
         """
