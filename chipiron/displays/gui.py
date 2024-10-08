@@ -25,7 +25,7 @@ from chipiron.utils.communication.gui_messages.gui_messages import MatchResultsM
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage
 from chipiron.utils.communication.player_game_messages import BoardMessage, MoveMessage
 from chipiron.utils.is_dataclass import IsDataclass
-
+from chipiron.environments.chess.board.factory import create_board
 
 class MainWindow(QWidget):
     """
@@ -253,7 +253,7 @@ class MainWindow(QWidget):
         """
         message: MoveMessage = MoveMessage(
             move=move,
-            corresponding_board=self.board.fen(),
+            corresponding_board=self.board.fen,
             player_name='Gui_Human',
             color_to_play=self.board.turn
         )
@@ -385,8 +385,9 @@ class MainWindow(QWidget):
             message = self.gui_mailbox.get()
             match message:
                 case BoardMessage():
+                    print('receiving board')
                     board_message: BoardMessage = message
-                    self.board: BoardChi = board_message.board
+                    self.board: BoardChi = create_board(fen_with_history=board_message.fen_plus_moves)
                     self.draw_board()
                     self.display_move_history()
                 case EvaluationMessage():
@@ -449,11 +450,11 @@ class MainWindow(QWidget):
         Returns:
             None
         """
-
+        print('tupe', type(self.board),type(self.board.board.move_stack),self.board.board.move_stack)
         self.boardSvg = self.board.board._repr_svg_().encode("UTF-8")
         self.drawBoardSvg = self.widgetSvg.load(self.boardSvg)
         self.round_button.setText('Round: ' + str(self.board.board.fullmove_number))  # text
-        self.fen_button.setText('fen: ' + str(self.board.fen()))  # text
+        self.fen_button.setText('fen: ' + str(self.board.fen))  # text
         return self.drawBoardSvg
 
     def update_players_color_to_id(

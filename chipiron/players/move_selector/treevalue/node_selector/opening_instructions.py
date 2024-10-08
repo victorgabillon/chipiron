@@ -195,8 +195,10 @@ def create_instructions_to_open_all_moves(
         # at the moment it looks redundant keys are almost the same as values but its clean
         # the keys are here for fast and redundant proof insertion
         # and the values are here for clean data processing
-        opening_instructions_batch[(node_to_open.id, move_to_play)] = OpeningInstruction(node_to_open,
-                                                                                         move_to_play)
+        opening_instructions_batch[(node_to_open.id, move_to_play)] = OpeningInstruction(
+            node_to_open=node_to_open,
+            move_to_play=move_to_play
+        )
     #  node_to_open.non_opened_legal_moves.add(move_to_play)
     return opening_instructions_batch
 

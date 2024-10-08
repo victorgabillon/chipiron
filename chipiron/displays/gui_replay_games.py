@@ -12,7 +12,7 @@ from PySide6.QtGui import QIcon, QKeyEvent
 from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import QWidget, QPushButton
 
-from chipiron.environments.chess.board.board import BoardChi
+from chipiron.environments.chess.board.board_chi import BoardChi
 
 
 class MainWindow(QWidget):
@@ -88,7 +88,7 @@ class MainWindow(QWidget):
             if self.count > 0:
                 self.chess_board.pop()
                 print(self.chess_board)
-                print(self.chess_board.fen())
+                print(self.chess_board.fen)
                 self.count -= 1
                 self.next_move = self.chess_board_recorded.board.move_stack[self.count]
                 self.drawBoard()
@@ -96,7 +96,7 @@ class MainWindow(QWidget):
             if self.count < len(self.chess_board_recorded.board.move_stack):
                 self.chess_board.push(self.next_move)
                 print(self.chess_board)
-                print(self.chess_board.fen())
+                print(self.chess_board.fen)
                 self.count += 1
                 if self.count < len(self.chess_board_recorded.board.move_stack):
                     self.next_move = self.chess_board_recorded.board.move_stack[self.count]

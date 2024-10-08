@@ -4,7 +4,7 @@ Module to transform the board into a tensor representation.
 import chess
 import torch
 
-from chipiron.environments.chess.board.board import BoardChi
+from chipiron.environments.chess.board.board_chi import BoardChi
 
 
 # This code is supposed to slowly be turned into the cmasses fro board and node represenatition

@@ -13,6 +13,7 @@ from chipiron.utils.communication.gui_messages import GameStatusMessage
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.is_dataclass import IsDataclass
 from .game_playing_status import GamePlayingStatus
+from ...environments.chess.board.utils import FenPlusMoveHistory
 
 
 class Game:
@@ -54,13 +55,11 @@ class Game:
         Raises:
             AssertionError: If the move is not valid or the game status is not play.
         """
-        assert (self._board.board.is_valid())
         if self._playing_status.is_play():
             assert (move in self._board.legal_moves)
             self._board.play_move(move)
         else:
             print(f'Cannot play move if the game status is PAUSE {self._playing_status.status}')
-        assert (self._board.board.is_valid())
 
     def rewind_one_move(self) -> None:
         """
@@ -238,6 +237,7 @@ class ObservableGame:
         """
         Starts playing the game.
         """
+        print('start playing')
         self.game.play()
         self.notify_players()
         self.notify_display()
@@ -273,8 +273,13 @@ class ObservableGame:
         Notifies the display mailboxes with the updated board.
         """
         for mailbox in self.mailboxes_display:
-            board_copy = copy.deepcopy(self.game.board)
-            message: BoardMessage = BoardMessage(board=board_copy)
+            board_copy : IBoard = copy.deepcopy(self.game.board)
+            print('sending board')
+            print('dfdfd',type(board_copy.fen), board_copy.fen)
+            message: BoardMessage = BoardMessage(
+                fen_plus_moves=FenPlusMoveHistory(current_fen=board_copy.fen,
+                                                  historical_moves=board_copy.move_history_stack)
+            )
             mailbox.put(item=message)
 
     def notify_players(self) -> None:

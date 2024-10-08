@@ -1,12 +1,14 @@
 """
 Module that contains the BoardChi class that wraps the chess.Board class from the chess package
 """
+import pickle
 import typing
 
 import chess
 import chess.polyglot
 
 from chipiron.environments.chess.board.board_modification import BoardModification, PieceInSquare
+from .utils import fen
 
 COLORS = [WHITE, BLACK] = [True, False]
 
@@ -15,16 +17,17 @@ class BoardChi:
     """
     Board Chipiron
     object that describes the current board. it wraps the chess Board from the chess package so it can have more in it
-    but im not sure its really necessary.i keep it for potential usefulness
     """
 
     board: chess.Board
     compute_board_modification: bool
+    legal_moves_: list[chess.Move] | None = None
+    fast_representation_: str | None = None
 
     def __init__(
             self,
             board: chess.Board,
-            compute_board_modification: bool
+            compute_board_modification: bool,
     ) -> None:
         """
         Initializes a new instance of the BoardChi class.
@@ -48,15 +51,18 @@ class BoardChi:
         Returns:
             The board modification resulting from the move or None.
         """
-        assert (move in self.legal_moves)
-        board_modification: BoardModification | None = self.push_and_return_modification(move)  # type: ignore
-        # board_modification: BoardModification | None = self.board.push(move)
+        # assert self.board.is_legal(move)
+        #
+        board_modifications: BoardModification | None
 
-        if board_modification is None:
+        if self.compute_board_modification:
+            board_modifications = self.push_and_return_modification(move)  # type: ignore
             # raise Exception('None Modif looks not good in board.py')
-            return None
         else:
-            return board_modification
+            board_modifications = self.board.push(move)
+
+        self.legal_moves_ = None  # the legals moves needs to be recomputed as the board has changed
+        return board_modifications
 
     def rewind_one_move(self) -> None:
         """
@@ -270,7 +276,10 @@ class BoardChi:
         :return: A string representation of the board.
         :rtype: str
         """
-        return self.compute_key()
+
+        if self.fast_representation_ is None:
+            self.fast_representation_ = self.compute_key()
+        return self.fast_representation_
 
     def print_chess_board(self) -> None:
         """
@@ -283,7 +292,7 @@ class BoardChi:
             None
         """
         print(self)
-        print(self.board.fen())
+        print(self.board.fen)
 
     def number_of_pieces_on_the_board(self) -> int:
         """
@@ -292,7 +301,7 @@ class BoardChi:
         Returns:
             int: The number of pieces on the board.
         """
-        return bin(self.board.occupied).count('1')
+        return self.board.occupied.bit_count()
 
     def is_attacked(
             self,
@@ -344,6 +353,8 @@ class BoardChi:
         """
         return self.board.turn
 
+
+    @property
     def fen(self) -> str:
         """
         Returns the Forsyth-Edwards Notation (FEN) representation of the chess board.
@@ -353,14 +364,20 @@ class BoardChi:
         return self.board.fen()
 
     @property
-    def legal_moves(self) -> chess.LegalMoveGenerator:
+    def legal_moves(self) -> set[chess.Move]:
         """
         Returns a generator that yields all the legal moves for the current board state.
 
         Returns:
             chess.LegalMoveGenerator: A generator that yields legal moves.
         """
-        return self.board.legal_moves
+        # return self.board.legal_moves
+        if self.legal_moves_ is not None:
+            print('rrrooooo')
+            return self.legal_moves_
+        else:
+            self.legal_moves_ = set(self.board.legal_moves)
+            return self.legal_moves_
 
     def piece_at(
             self,
@@ -377,6 +394,18 @@ class BoardChi:
 
         """
         return self.board.piece_at(square)
+
+    def piece_map(
+            self,
+            mask: chess.Bitboard = chess.BB_ALL
+    ) -> dict[chess.Square, (int, bool)]:
+        result = {}
+        for square in chess.scan_reversed(self.board.occupied & mask):
+            piece_type: int = self.board.piece_type_at(square)
+            mask = chess.BB_SQUARES[square]
+            color = bool(self.board.occupied_co[WHITE] & mask)
+            result[square] = (piece_type, color)
+        return result
 
     def has_castling_rights(
             self,
@@ -450,3 +479,26 @@ class BoardChi:
             str: A string representation of the board.
         """
         return self.board.__str__()
+
+    def tell_result(self) -> None:
+        if self.board.is_fivefold_repetition():
+            print('is_fivefold_repetition')
+        if self.board.is_seventyfive_moves():
+            print('is seventy five  moves')
+        if self.board.is_insufficient_material():
+            print('is_insufficient_material')
+        if self.board.is_stalemate():
+            print('is_stalemate')
+        if self.board.is_checkmate():
+            print('is_checkmate')
+        print(self.board.result())
+
+    def result(self) -> str:
+        return self.board.result()
+
+    @property
+    def move_history_stack(self) -> list[chess.Move]:
+        return self.board.move_stack
+
+    def dump(self, f) -> None:
+        pickle.dump(self, f)

@@ -66,9 +66,12 @@ def fetch_match_games_args_convert_and_save(
         dataclass_name=game.GameArgs
     )
 
+    print('AAA',profiling)
+
     if profiling:
         args_game.max_half_moves = 1
     else:
         args_game.max_half_moves = None
+    print('AAAc',args_game.max_half_moves)
 
     return match_args, args_game

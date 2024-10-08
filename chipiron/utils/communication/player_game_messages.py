@@ -5,8 +5,8 @@ from dataclasses import dataclass
 
 import chess
 
-from chipiron.environments.chess.board import fen
-from chipiron.environments.chess.board.board import BoardChi
+from chipiron.environments.chess.board.utils import FenPlusMoveHistory
+from chipiron.environments.chess.board.utils import fen
 
 
 @dataclass
@@ -34,8 +34,8 @@ class BoardMessage:
     Represents a message containing the current state of the chess board.
 
     Attributes:
-        board (BoardChi): The current state of the chess board.
+        fen_plus_moves (FenPlusMoves): The original fen and the subsequent moves to be applied.
         seed (int | None, optional): The seed used for random number generation. Defaults to None.
     """
-    board: BoardChi
+    fen_plus_moves: FenPlusMoveHistory
     seed: int | None = None

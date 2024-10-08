@@ -3,7 +3,7 @@ gui: False
 match_args:
   seed: 11
   file_name_player_ones: 'Sequool.yaml'
-  file_name_player_two: 'RecurZipfBase3.yaml'
+  file_name_player_two: 'Uniform.yaml'
   file_name_player_one: 'Uniform.yaml'
   file_name_player_twos: 'RecurZipfBase3.yaml'
   file_name_match_setting: 'setting_jime.yaml'
@@ -11,5 +11,5 @@ base_script_args :
   profiling: True
   testing: False
 implementation_args :
-  use_board_modification:  False
-  use_rust_boards: True
+  use_board_modification: False
+  use_rust_boards: False

@@ -3,6 +3,7 @@ from typing import Protocol, Self
 import chess
 
 from chipiron.environments.chess.board.board_modification import BoardModification
+from .utils import fen
 
 
 class IBoard(Protocol):
@@ -11,6 +12,16 @@ class IBoard(Protocol):
             self,
             move: chess.Move
     ) -> BoardModification | None:
+        ...
+
+    @property
+    def fen(self) -> str:
+        ...
+
+    @property
+    def move_history_stack(
+            self,
+    ) -> list[chess.Move]:
         ...
 
     def ply(self) -> int:

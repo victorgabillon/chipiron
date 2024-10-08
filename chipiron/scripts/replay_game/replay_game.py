@@ -10,7 +10,7 @@ from dataclasses import dataclass,field
 from PySide6.QtWidgets import QApplication
 
 from chipiron.displays.gui_replay_games import MainWindow
-from chipiron.environments.chess.board.board import BoardChi
+from chipiron.environments.chess.board.board_chi import BoardChi
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
 
