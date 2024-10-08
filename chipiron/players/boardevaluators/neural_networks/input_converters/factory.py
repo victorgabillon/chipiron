@@ -11,13 +11,12 @@ Note: This module is part of the `chipiron` package.
 """
 
 from typing import Any
-from typing import Optional
 
 import chess
 import torch
 
 import chipiron.environments.chess.board as board_mod
-from chipiron.environments.chess.board.board import BoardChi
+from chipiron.environments.chess.board.board_chi import BoardChi
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
@@ -147,40 +146,62 @@ class Representation364Factory:
         Returns:
             Representation364: The created Representation364 object.
         """
-        white: torch.Tensor = torch.zeros(384, dtype=torch.float)
-        black: torch.Tensor = torch.zeros(384, dtype=torch.float)
-        castling_white: torch.Tensor = torch.zeros(2, dtype=torch.float)
-        castling_black: torch.Tensor = torch.zeros(2, dtype=torch.float)
 
-        square: int
-        for square in range(64):
-            piece: Optional[chess.Piece] = board.piece_at(square)
-            if piece:
-                piece_code: int = piece.piece_type - 1
-                square_index: chess.Square
-                index: int
-                if piece.color == chess.BLACK:
-                    square_index = chess.square_mirror(square)
-                    index = 64 * piece_code + square_index
-                    black[index] = 1.0
-                else:
-                    square_index = square
-                    index = 64 * piece_code + square_index
-                    white[index] = 1.0
+        white , black,castling_black,castling_white = d()
+        # square: int
+        # for square in range(64):
 
-        castling_white[0] = board.has_queenside_castling_rights(chess.WHITE)
-        castling_white[1] = board.has_kingside_castling_rights(chess.WHITE)
-        castling_black[0] = board.has_queenside_castling_rights(chess.BLACK)
-        castling_black[1] = board.has_kingside_castling_rights(chess.BLACK)
+        p=e(board)
+        a(board, black,white,p)
+        b(board,castling_black,castling_white)
+        representation =c(castling_black,castling_white,black,white)
 
-        representation: Representation364 = Representation364(
+
+
+        return representation
+def e(board):
+    piece_map: dict[chess.Square, (int, bool)] = board.piece_map()
+    return piece_map
+def d():
+    white: torch.Tensor = torch.zeros(384, dtype=torch.float)
+    black: torch.Tensor = torch.zeros(384, dtype=torch.float)
+    castling_white: torch.Tensor = torch.zeros(2, dtype=torch.float)
+    castling_black: torch.Tensor = torch.zeros(2, dtype=torch.float)
+    return white , black,castling_black,castling_white
+
+
+def c(castling_black,castling_white,black,white):
+    representation: Representation364 = Representation364(
             tensor_white=white,
             tensor_black=black,
             tensor_castling_black=castling_black,
             tensor_castling_white=castling_white
         )
+    return representation
+def b(board,castling_black,castling_white):
+    castling_white[0] = board.has_queenside_castling_rights(chess.WHITE)
+    castling_white[1] = board.has_kingside_castling_rights(chess.WHITE)
+    castling_black[0] = board.has_queenside_castling_rights(chess.BLACK)
+    castling_black[1] = board.has_kingside_castling_rights(chess.BLACK)
 
-        return representation
+
+def a(board,black,white,piece_map):
+    square: chess.Square
+    piece: (int, bool)
+    for square, piece in piece_map.items():
+        #   print('rr',square, piece)
+        piece_code: int = piece[0] - 1
+        piece_color: bool = piece[1]
+        square_index: chess.Square
+        index: int
+        if piece_color == chess.BLACK:
+            square_index = chess.square_mirror(square)
+            index = 64 * piece_code + square_index
+            black[index] = 1.0
+        else:
+            square_index = square
+            index = 64 * piece_code + square_index
+            white[index] = 1.0
 
 
 def create_board_representation(

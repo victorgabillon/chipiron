@@ -8,7 +8,7 @@ from typing import Literal
 
 import chess
 
-from chipiron.environments.chess.board import board as boards
+from chipiron.environments.chess.board import board_chi as boards
 from chipiron.utils import seed
 from .move_selector import MoveRecommendation
 from .move_selector_types import MoveSelectorTypes

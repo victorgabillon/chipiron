@@ -13,14 +13,15 @@ from chipiron.games.game.game_args import GameArgs
 from chipiron.players import PlayerFactoryArgs
 from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator, ObservableBoardEvaluator
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
-from chipiron.players.factory_higher_level import MoveFunction
-from chipiron.players.factory_higher_level import create_player_observer
+from chipiron.players.factory_higher_level import MoveFunction, create_player_observer_distributed_players, \
+    create_player_observer_mono_process
 from chipiron.utils import path
 from chipiron.utils import seed
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage, extract_message_from_players
 from chipiron.utils.is_dataclass import IsDataclass
 from .game import Game, ObservableGame
 from .game_manager import GameManager
+from ...environments.chess.board.utils import FenPlusMoveHistory
 
 
 @dataclass
@@ -65,7 +66,7 @@ class GameManagerFactory:
         # maybe this factory is overkill at the moment but might be
         # useful if the logic of game generation gets more complex
         starting_fen: str = args_game_manager.starting_position.get_fen()
-        board: boards.IBoard = self.board_factory(fen=starting_fen)
+        board: boards.IBoard = self.board_factory(fen_with_history=FenPlusMoveHistory(current_fen=starting_fen))
         if self.subscribers:
             for subscriber in self.subscribers:
                 player_id_message: PlayersColorToPlayerMessage = extract_message_from_players(
@@ -100,12 +101,19 @@ class GameManagerFactory:
             if player_factory_args.player_args.name != 'Gui_Human':
                 generic_player: players_m.GamePlayer | players_m.PlayerProcess
                 move_function: MoveFunction
-                generic_player, move_function = create_player_observer(
-                    player_color=player_color,
-                    player_factory_args=player_factory_args,
-                    distributed_players=args_game_manager.each_player_has_its_own_thread,
-                    main_thread_mailbox=self.main_thread_mailbox
-                )
+                if args_game_manager.each_player_has_its_own_thread:
+                    generic_player, move_function = create_player_observer_distributed_players(
+                        player_color=player_color,
+                        player_factory_args=player_factory_args,
+                        main_thread_mailbox=self.main_thread_mailbox,
+                        board_factory=self.board_factory
+                    )
+                else:
+                    generic_player, move_function = create_player_observer_mono_process(
+                        player_color=player_color,
+                        player_factory_args=player_factory_args,
+                        main_thread_mailbox=self.main_thread_mailbox
+                    )
                 players.append(generic_player)
 
                 # registering to the observable board to get notification when it changes

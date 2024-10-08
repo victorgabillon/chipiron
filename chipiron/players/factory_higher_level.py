@@ -9,6 +9,7 @@ from typing import Protocol
 import chess
 
 from chipiron.environments.chess.board import BoardChi
+from chipiron.environments.chess.board.factory import BoardFactory
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.is_dataclass import IsDataclass
@@ -16,6 +17,7 @@ from .factory import create_game_player
 from .game_player import GamePlayer, game_player_computes_move_on_board_and_send_move_in_queue
 from .player_args import PlayerFactoryArgs
 from .player_thread import PlayerProcess
+from ..environments.chess.board.utils import FenPlusMoveHistory
 
 
 # function that will be called by the observable game when the board is updated, which should query at least one player
@@ -56,28 +58,72 @@ def send_board_to_player_process_mailbox(
         player_process_mailbox (queue.Queue[BoardMessage]): The mailbox to put the message into.
     """
     message: BoardMessage = BoardMessage(
-        board=board,
+        fen_plus_moves=FenPlusMoveHistory(current_fen=board.fen, historical_moves=board.board.move_stack),
         seed=seed_int
     )
     player_process_mailbox.put(item=message)
 
 
-def create_player_observer(
+def create_player_observer_distributed_players(
         player_factory_args: PlayerFactoryArgs,
         player_color: chess.Color,
-        distributed_players: bool,
-        main_thread_mailbox: queue.Queue[IsDataclass]
+        main_thread_mailbox: queue.Queue[IsDataclass],
+        board_factory: BoardFactory
 ) -> tuple[GamePlayer | PlayerProcess, MoveFunction]:
     """Create a player observer.
 
     This function creates a player observer based on the given parameters.
-     The player observer can be either a `GamePlayer` or a `PlayerProcess`,
-      depending on the value of `distributed_players`.
+
+    Args:
+        board_factory: the board factory to create a board
+        player_factory_args (PlayerFactoryArgs): The arguments for creating the player.
+        player_color (chess.Color): The color of the player.
+        main_thread_mailbox (queue.Queue[IsDataclass]): The mailbox for communication between the main thread
+        and the player.
+
+    Returns:
+        tuple[ PlayerProcess, MoveFunction]: A tuple containing the player observer and the move function.
+
+    """
+    generic_player: PlayerProcess
+    move_function: MoveFunction
+
+    # case with multiprocessing when each player is a separate process
+    # creating objects Queue that is the mailbox for the player thread
+    player_process_mailbox = multiprocessing.Manager().Queue()
+
+    # creating and starting the thread for the player
+    player_process: PlayerProcess = PlayerProcess(
+        player_factory_args=player_factory_args,
+        player_color=player_color,
+        queue_board=player_process_mailbox,
+        queue_move=main_thread_mailbox,
+        board_factory=board_factory
+    )
+    player_process.start()
+    generic_player = player_process
+
+    move_function = partial(
+        send_board_to_player_process_mailbox,
+        player_process_mailbox=player_process_mailbox
+
+    )
+
+    return generic_player, move_function
+
+
+def create_player_observer_mono_process(
+        player_factory_args: PlayerFactoryArgs,
+        player_color: chess.Color,
+        main_thread_mailbox: queue.Queue[IsDataclass]
+) -> tuple[GamePlayer, MoveFunction]:
+    """Create a player observer.
+
+    This function creates a player observer based on the given parameters.
 
     Args:
         player_factory_args (PlayerFactoryArgs): The arguments for creating the player.
         player_color (chess.Color): The color of the player.
-        distributed_players (bool): A flag indicating whether the players are distributed across multiple processes.
         main_thread_mailbox (queue.Queue[IsDataclass]): The mailbox for communication between the main thread
         and the player.
 
@@ -85,40 +131,19 @@ def create_player_observer(
         tuple[GamePlayer | PlayerProcess, MoveFunction]: A tuple containing the player observer and the move function.
 
     """
-    generic_player: GamePlayer | PlayerProcess
+    generic_player: GamePlayer
     move_function: MoveFunction
 
-    # case with multiprocessing when each player is a separate process
-    if distributed_players:
-        # creating objects Queue that is the mailbox for the player thread
-        player_process_mailbox = multiprocessing.Manager().Queue()
-
-        # creating and starting the thread for the player
-        player_process: PlayerProcess = PlayerProcess(
-            player_factory_args=player_factory_args,
-            player_color=player_color,
-            queue_board=player_process_mailbox,
-            queue_move=main_thread_mailbox
-        )
-        player_process.start()
-        generic_player = player_process
-
-        move_function = partial(
-            send_board_to_player_process_mailbox,
-            player_process_mailbox=player_process_mailbox
-
-        )
-
     # case without multiprocessing all players and match manager in the same process
-    else:
-        generic_player = create_game_player(
-            player_factory_args=player_factory_args,
-            player_color=player_color
-        )
-        move_function = partial(
-            game_player_computes_move_on_board_and_send_move_in_queue,
-            game_player=generic_player,
-            queue_move=main_thread_mailbox
-        )
+
+    generic_player = create_game_player(
+        player_factory_args=player_factory_args,
+        player_color=player_color
+    )
+    move_function = partial(
+        game_player_computes_move_on_board_and_send_move_in_queue,
+        game_player=generic_player,
+        queue_move=main_thread_mailbox
+    )
 
     return generic_player, move_function

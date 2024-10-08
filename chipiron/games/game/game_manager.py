@@ -143,8 +143,8 @@ class GameManager:
             color_of_player_to_move_str = color_names[color_to_move]
             print(f'{color_of_player_to_move_str} ({self.player_color_to_id[color_to_move]}) to play now...')
 
-            # sending the current board to the player and asking for a move
-            self.game.notify_players()
+            # sending the current board to the player (and possibly gui) and asking for a move
+            self.game.play()
 
             # waiting for a message
             mail = self.main_thread_mailbox.get()
@@ -162,7 +162,7 @@ class GameManager:
         game_results: FinalGameResult = self.simple_results()
         game_report: GameReport = GameReport(
             final_game_result=game_results,
-            move_history=board.board.move_stack)
+            move_history=board.move_stack)
         return game_report
 
     def processing_mail(
@@ -187,10 +187,10 @@ class GameManager:
                 # play the move
                 move: chess.Move = move_message.move
                 print('receiving the move', move, type(self), self.game.playing_status, type(self.game.playing_status))
-                if move_message.corresponding_board == board.fen() and \
+                if move_message.corresponding_board == board.fen and \
                         self.game.playing_status.is_play() and \
                         message.player_name == self.player_color_to_id[board.turn]:
-                    print(f'play a move {move} at {board} {self.game.board.board.fen()}')
+                    print(f'play a move {move} at {board} {self.game.board.fen}')
                     self.play_one_move(move)
                     print(f'now board is  {self.game.board}')
 
@@ -201,7 +201,7 @@ class GameManager:
 
                 else:
                     print(f'the move is rejected because one of the following is false \n'
-                          f' move_message.corresponding_board == board.fen(){move_message.corresponding_board == board.fen()} \n'
+                          f' move_message.corresponding_board == board.fen{move_message.corresponding_board == board.fen} \n'
                           f'self.game.playing_status.is_play() {self.game.playing_status.is_play()}\n'
                           f'message.player_name == self.player_color_to_id[board.turn] {message.player_name == self.player_color_to_id[board.turn]}'
                           )
@@ -238,6 +238,7 @@ class GameManager:
         """
         half_move: HalfMove = self.game.board.ply()
         continue_bool: bool = True
+        print('rrt',half_move,self.args.max_half_moves)
         if self.args.max_half_moves is not None and half_move >= self.args.max_half_moves:
             continue_bool = False
 
@@ -262,13 +263,13 @@ class GameManager:
             path_file_txt = f'{path_file}.txt'
             path_file_obj = f'{path_file}.obj'
             with open(path_file_txt, 'a') as the_fileText:
-                for counter, move in enumerate(self.game.board.board.move_stack):
+                for counter, move in enumerate(self.game.board.move_stack()):
                     if counter % 2 == 0:
                         move_1 = move
                     else:
                         the_fileText.write(str(move_1) + ' ' + str(move) + '\n')
             with open(path_file_obj, "wb") as f:
-                pickle.dump(self.game.board, f)
+                self.game.board.dump(f)
 
     def tell_results(self) -> None:
         """
@@ -284,17 +285,7 @@ class GameManager:
         board = self.game.board
         if self.syzygy is not None and self.syzygy.fast_in_table(board):
             print('Syzygy: Theoretical value for white', self.syzygy.string_result(board))
-        if board.board.is_fivefold_repetition():
-            print('is_fivefold_repetition')
-        if board.board.is_seventyfive_moves():
-            print('is seventy five  moves')
-        if board.board.is_insufficient_material():
-            print('is_insufficient_material')
-        if board.board.is_stalemate():
-            print('is_stalemate')
-        if board.board.is_checkmate():
-            print('is_checkmate')
-        print(board.board.result())
+        board.tell_result()
 
     def simple_results(self) -> FinalGameResult:
         """
@@ -306,7 +297,7 @@ class GameManager:
         board = self.game.board
 
         res: FinalGameResult | None = None
-        if board.board.result() == '*':
+        if board.result() == '*':
             if self.syzygy is None or not self.syzygy.fast_in_table(board):
                 # useful when a game is stopped
                 # before the end, for instance for debugging and profiling
@@ -315,7 +306,7 @@ class GameManager:
             else:
                 raise ValueError('this case is not coded atm think of what is the write thing to do here!')
         else:
-            result = board.board.result()
+            result = board.result()
             if result == '1/2-1/2':
                 res = FinalGameResult.DRAW
             if result == '0-1':

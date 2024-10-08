@@ -57,9 +57,7 @@ class GamePlayer:
         Returns:
             MoveRecommendation: The recommended move to play.
         """
-        all_legal_moves = list(board.legal_moves)
-        if not all_legal_moves:
-            raise Exception('No legal moves in this position')
+
         assert seed_int is not None
         best_move: MoveRecommendation = self._player.select_move(
             board=board,
@@ -92,7 +90,7 @@ def game_player_computes_move_on_board_and_send_move_in_queue(
         )
         message = MoveMessage(
             move=move_recommendation.move,
-            corresponding_board=board.fen(),
+            corresponding_board=board.fen,
             player_name=game_player.player.id,
             evaluation=move_recommendation.evaluation,
             color_to_play=game_player.color

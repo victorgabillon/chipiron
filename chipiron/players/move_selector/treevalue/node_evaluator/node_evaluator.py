@@ -25,7 +25,7 @@ from typing import Any
 import chess
 
 import chipiron.players.boardevaluators as board_evals
-from chipiron.environments.chess.board.board import BoardChi
+from chipiron.environments.chess.board.board_chi import BoardChi
 from chipiron.players.boardevaluators.over_event import HowOver, Winner, OverEvent
 from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode

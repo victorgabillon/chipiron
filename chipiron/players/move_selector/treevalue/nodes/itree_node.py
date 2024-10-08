@@ -19,7 +19,7 @@ from typing import TypeVar, Any
 
 import chess
 
-from chipiron.environments.chess.board.board import BoardChi
+from chipiron.environments.chess.board.board_chi import BoardChi
 
 T = TypeVar('T', bound='ITreeNode[Any]')
 

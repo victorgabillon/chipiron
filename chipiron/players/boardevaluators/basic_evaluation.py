@@ -6,7 +6,7 @@ import math
 
 import chess
 
-from chipiron.environments.chess.board.board import BoardChi
+from chipiron.environments.chess.board.board_chi import BoardChi
 from chipiron.players.boardevaluators.board_evaluator import BoardEvaluator
 
 

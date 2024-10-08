@@ -260,7 +260,7 @@ class TreeNode(Generic[ChildrenType]):
                 assert (bool(move in self.moves_children_) != bool(move in self.non_opened_legal_moves))
         else:
             move_not_in: list[chess.Move] = []
-            legal_moves = list(self.board.legal_moves)
+            legal_moves = self.board.legal_moves
             for move in legal_moves:
                 if move not in self.moves_children_:
                     move_not_in.append(move)

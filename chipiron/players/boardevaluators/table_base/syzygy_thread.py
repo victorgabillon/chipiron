@@ -58,7 +58,7 @@ class SyzygyProcess(multiprocessing.Process):
                     queue_reply = message['queue_reply']
                     print('syzygy thread got ', board)
                     move = self.syzygy_table.best_move(board)
-                    message = {'type': 'move', 'move': move, 'corresponding_board': board.fen()}
+                    message = {'type': 'move', 'move': move, 'corresponding_board': board.fen}
                     deep_copy_message = copy.deepcopy(message)
                     print('sending ', message)
                     queue_reply.put(deep_copy_message)

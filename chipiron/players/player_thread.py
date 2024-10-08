@@ -6,6 +6,8 @@ import queue
 
 import chess
 
+from chipiron.environments.chess.board.iboard import IBoard
+
 from chipiron.environments.chess.board import BoardChi
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import BoardMessage
@@ -13,7 +15,8 @@ from chipiron.utils.is_dataclass import DataClass, IsDataclass
 from .factory import create_game_player
 from .game_player import GamePlayer, game_player_computes_move_on_board_and_send_move_in_queue
 from .player_args import PlayerFactoryArgs
-
+from ..environments.chess.board.utils import FenPlusMoves, FenPlusMoveHistory
+from chipiron.environments.chess.board.factory import BoardFactory
 
 # A class that extends the Thread class
 class PlayerProcess(multiprocessing.Process):
@@ -39,13 +42,15 @@ class PlayerProcess(multiprocessing.Process):
     queue_board: queue.Queue[DataClass]
     queue_move: queue.Queue[IsDataclass]
     player_color: chess.Color
+    board_factory: BoardFactory
 
     def __init__(
             self,
             player_factory_args: PlayerFactoryArgs,
             queue_board: queue.Queue[DataClass],
             queue_move: queue.Queue[IsDataclass],
-            player_color: chess.Color
+            player_color: chess.Color,
+            board_factory: BoardFactory
     ) -> None:
         """Initialize the PlayerThread object.
 
@@ -62,6 +67,7 @@ class PlayerProcess(multiprocessing.Process):
         self.queue_move = queue_move
         self.queue_board = queue_board
         self.player_color = player_color
+        self.board_factory = board_factory
 
         self.game_player: GamePlayer = create_game_player(
             player_factory_args=player_factory_args,
@@ -95,7 +101,8 @@ class PlayerProcess(multiprocessing.Process):
                 # Handle task here and call q.task_done()
                 if isinstance(message, BoardMessage):
                     board_message: BoardMessage = message
-                    board: BoardChi = board_message.board
+                    fen_plus_moves: FenPlusMoveHistory= board_message.fen_plus_moves
+                    board: IBoard  = self.board_factory(fen_with_history=fen_plus_moves)
                     seed_: seed | None = board_message.seed
                     print('player thread got', board)
                     assert seed_ is not None
