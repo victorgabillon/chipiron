@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Self
 
 import chess
@@ -20,6 +20,10 @@ class RustyBoardChi:
     """
 
     chess_: shakmaty_python_binding.MyChess
+
+    # the move history is kept here because shakmaty_python_binding.MyChess does not have a move stack at the moment
+    move_stack: list[chess.Move]  = field(default_factory=list)
+
     _original_fen: fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
     fast_representation_: str | None = None
 
@@ -63,7 +67,7 @@ class RustyBoardChi:
         Returns:
             bool: True if the game is over, False otherwise.
         """
-        # todo add move stack chek for repetition
+        # todo check the move stack : check for repetition as the rust version not do it
         return self.chess_.is_game_over()
 
     def copy(
