@@ -162,7 +162,7 @@ class GameManager:
         game_results: FinalGameResult = self.simple_results()
         game_report: GameReport = GameReport(
             final_game_result=game_results,
-            move_history=board.move_stack)
+            move_history=board.move_history_stack)
         return game_report
 
     def processing_mail(
