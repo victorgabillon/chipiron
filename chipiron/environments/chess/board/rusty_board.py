@@ -5,7 +5,6 @@ import chess
 import shakmaty_python_binding
 
 from chipiron.environments.chess.board.board_modification import BoardModification
-from .utils import fen
 
 
 @dataclass
@@ -22,22 +21,16 @@ class RustyBoardChi:
     chess_: shakmaty_python_binding.MyChess
 
     # the move history is kept here because shakmaty_python_binding.MyChess does not have a move stack at the moment
-    move_stack: list[chess.Move]  = field(default_factory=list)
+    move_stack: list[chess.Move] = field(default_factory=list)
 
-    _original_fen: fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
     fast_representation_: str | None = None
-
-    @property
-    def original_fen(
-            self,
-    ) -> fen:
-        return self._original_fen
 
     def play_move(
             self,
             move: chess.Move
     ) -> BoardModification | None:
         self.chess_.play(move.uci())
+        self.move_history_stack.append(move)
         return None
 
     def ply(self) -> int:
@@ -47,7 +40,6 @@ class RustyBoardChi:
         :return: The number of half-moves played on the board.
         :rtype: int
         """
-        print('r', self.chess_.ply())
         return self.chess_.ply()
 
     @property
@@ -107,6 +99,7 @@ class RustyBoardChi:
         """
         return self.chess_.number_of_pieces_on_the_board()
 
+    @property
     def fen(self) -> str:
         """
         Returns the Forsyth-Edwards Notation (FEN) representation of the chess board.
@@ -207,8 +200,24 @@ class RustyBoardChi:
     def result(self) -> str:
         return '*'
 
-    def move_stack(self) -> list:
-        return []
+    @property
+    def move_history_stack(self) -> list[chess.Move]:
+        return self.move_stack
 
     def dump(self, f) -> None:
         ...
+
+
+    def is_attacked(
+            self,
+            a_color: chess.Color
+    ) -> bool:
+        """Check if any piece of the color `a_color` is attacked.
+
+        Args:
+            a_color (chess.Color): The color of the pieces to check.
+
+        Returns:
+            bool: True if any piece of the specified color is attacked, False otherwise.
+        """
+        return self.chess_.is__attacked(a_color)

@@ -273,12 +273,11 @@ class ObservableGame:
         Notifies the display mailboxes with the updated board.
         """
         for mailbox in self.mailboxes_display:
-            board_copy : IBoard = copy.deepcopy(self.game.board)
-            print('sending board')
-            print('dfdfd',type(board_copy.fen), board_copy.fen)
+            print('sending board', self.game.board.fen, self.game.board.move_history_stack)
+
             message: BoardMessage = BoardMessage(
-                fen_plus_moves=FenPlusMoveHistory(current_fen=board_copy.fen,
-                                                  historical_moves=board_copy.move_history_stack)
+                fen_plus_moves=FenPlusMoveHistory(current_fen=self.game.board.fen,
+                                                  historical_moves=self.game.board.move_history_stack)
             )
             mailbox.put(item=message)
 

@@ -8,7 +8,7 @@ from typing import Protocol
 
 import chess
 
-from chipiron.environments.chess.board import BoardChi
+from chipiron.environments.chess.board import BoardChi, IBoard
 from chipiron.environments.chess.board.factory import BoardFactory
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import BoardMessage
@@ -37,13 +37,13 @@ class MoveFunction(Protocol):
 
     def __call__(
             self,
-            board: BoardChi,
+            board: IBoard,
             seed_int: seed
     ) -> None: ...
 
 
 def send_board_to_player_process_mailbox(
-        board: BoardChi,
+        board: IBoard,
         seed_int: int,
         player_process_mailbox: queue.Queue[BoardMessage]
 ) -> None:
@@ -53,12 +53,12 @@ def send_board_to_player_process_mailbox(
     and puts it into the player_process_mailbox.
 
     Args:
-        board (BoardChi): The board to send.
+        board (IBoard): The board to send.
         seed_int (int): The seed to send.
         player_process_mailbox (queue.Queue[BoardMessage]): The mailbox to put the message into.
     """
     message: BoardMessage = BoardMessage(
-        fen_plus_moves=FenPlusMoveHistory(current_fen=board.fen, historical_moves=board.board.move_stack),
+        fen_plus_moves=FenPlusMoveHistory(current_fen=board.fen, historical_moves=board.move_history_stack),
         seed=seed_int
     )
     player_process_mailbox.put(item=message)
