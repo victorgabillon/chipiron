@@ -5,6 +5,7 @@ on:
     branches:
       - 'main'
       - 'newtreealgos'
+      - 'rusty'
 
 env:
   TEST_TAG: victorgabillon/chipiron:test
