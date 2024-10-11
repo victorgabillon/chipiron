@@ -6,17 +6,16 @@ import queue
 
 import chess
 
+from chipiron.environments.chess.board.factory import BoardFactory
 from chipiron.environments.chess.board.iboard import IBoard
-
-from chipiron.environments.chess.board import BoardChi
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.is_dataclass import DataClass, IsDataclass
 from .factory import create_game_player
 from .game_player import GamePlayer, game_player_computes_move_on_board_and_send_move_in_queue
 from .player_args import PlayerFactoryArgs
-from ..environments.chess.board.utils import FenPlusMoves, FenPlusMoveHistory
-from chipiron.environments.chess.board.factory import BoardFactory
+from ..environments.chess.board.utils import FenPlusMoveHistory
+
 
 # A class that extends the Thread class
 class PlayerProcess(multiprocessing.Process):
@@ -101,10 +100,10 @@ class PlayerProcess(multiprocessing.Process):
                 # Handle task here and call q.task_done()
                 if isinstance(message, BoardMessage):
                     board_message: BoardMessage = message
-                    fen_plus_moves: FenPlusMoveHistory= board_message.fen_plus_moves
-                    board: IBoard  = self.board_factory(fen_with_history=fen_plus_moves)
+                    fen_plus_moves: FenPlusMoveHistory = board_message.fen_plus_moves
+                    board: IBoard = self.board_factory(fen_with_history=fen_plus_moves)
                     seed_: seed | None = board_message.seed
-                    print('player thread got', board)
+                    print(f'Player thread got the board {board}')
                     assert seed_ is not None
 
                     # the game_player computes the move for the board and sends the move in the move queue
@@ -115,12 +114,6 @@ class PlayerProcess(multiprocessing.Process):
                         seed_int=seed_
                     )
                 else:
-                    print(f'opopopopopopopopopdddddddddddddddddsssssssssss, {message}')
+                    print(f'NOT EXPECTING THIS MESSAGE !! :  {message}')
 
             # TODO here give option to continue working while the other is thinking
-
-# def stop(self): from the thread time
-#     self._stop_event.set()
-
-# def stopped(self):
-#     return self._stop_event.is_set()

@@ -220,4 +220,4 @@ class RustyBoardChi:
         Returns:
             bool: True if any piece of the specified color is attacked, False otherwise.
         """
-        return self.chess_.is__attacked(a_color)
+        return self.chess_.is_attacked(a_color)
