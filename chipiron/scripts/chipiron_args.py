@@ -4,7 +4,7 @@ from dataclasses import dataclass
 @dataclass
 class ImplementationArgs:
     # whether to use the speedup given by board_modification.
-    # If True the modifications are recorded when a move is played so as to update fast the tensor
+    # If True the modifications are recorded when a move is played to update fast the tensor
     # representation in pytorch
     use_board_modification: bool = False
 

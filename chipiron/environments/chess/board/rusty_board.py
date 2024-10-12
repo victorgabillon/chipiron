@@ -5,10 +5,11 @@ import chess
 import shakmaty_python_binding
 
 from chipiron.environments.chess.board.board_modification import BoardModification
+from .iboard import IBoard
 
 
 @dataclass
-class RustyBoardChi:
+class RustyBoardChi(IBoard):
     """
     Rusty Board Chipiron
     object that describes the current board. it wraps the chess Board from the chess package so it can have more in it
@@ -75,10 +76,11 @@ class RustyBoardChi:
         Returns:
             RustyBoardChi: A new instance of the BoardChi class with the copied board.
         """
-        # todo move stack !!
         chess_copy: shakmaty_python_binding.MyChess = self.chess_.copy()
+        move_stack_ = self.move_stack.copy() if stack else []
         return RustyBoardChi(
-            chess_=chess_copy
+            chess_=chess_copy,
+            move_stack=move_stack_
         )
 
     @property
@@ -206,7 +208,6 @@ class RustyBoardChi:
 
     def dump(self, f) -> None:
         ...
-
 
     def is_attacked(
             self,

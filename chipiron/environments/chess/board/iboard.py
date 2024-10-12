@@ -1,10 +1,12 @@
 from typing import Protocol, Self
 
 import chess
+import yaml
 
 from chipiron.environments.chess.board.board_modification import BoardModification
+from .utils import FenPlusMoveHistory
 from .utils import fen
-
+from dataclasses import asdict
 
 class IBoard(Protocol):
 
@@ -66,3 +68,16 @@ class IBoard(Protocol):
             bool: True if the game is over, False otherwise.
         """
         ...
+
+    def dump(self, file) -> None:
+        # create minimal info for reconstruction that is the class FenPlusMoveHistory
+
+        current_fen: fen = self.fen
+        fen_plus_moves: FenPlusMoveHistory = FenPlusMoveHistory(
+            current_fen=current_fen,
+            historical_moves=self.move_history_stack
+        )
+
+        yaml.dump(asdict(fen_plus_moves), file, default_flow_style=False)
+
+        file.write("durin's day\n")

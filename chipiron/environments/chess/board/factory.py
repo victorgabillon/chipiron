@@ -23,12 +23,9 @@ def create_board_factory(
         use_board_modification: bool
 ) -> BoardFactory:
     board_factory: BoardFactory
-    print('use_board_modification', use_board_modification)
     if use_rust_boards:
-        print('RUSToooooooooooooo', use_board_modification)
         board_factory = partial(create_rust_board, use_board_modification=use_board_modification)
     else:
-        print('oooooooooooooo', use_board_modification)
         board_factory = partial(create_board, use_board_modification=use_board_modification)
     return board_factory
 
@@ -42,7 +39,7 @@ def create_board(
 
     Args:
         use_board_modification (bool): whether to use the board modification
-        board_with_history (FenPlusMoves | None): The BoardWithHistory that contains a fen and the subsequent moves.
+        fen_with_history (FenPlusMoves | None): The BoardWithHistory that contains a fen and the subsequent moves.
             The FEN (Forsyth-Edwards Notation) string representing the board position. If None, the starting position
             is used.
 
@@ -55,7 +52,7 @@ def create_board(
 
     if fen_with_history is not None:
         current_fen: fen = fen_with_history.current_fen
-        print('fen_with_history.current_fen',fen_with_history.current_fen)
+        print('fen_with_history.current_fen', fen_with_history.current_fen)
         chess_board = chess.Board(fen=current_fen)
         chess_board.move_stack = fen_with_history.historical_moves
 
