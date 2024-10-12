@@ -7,22 +7,29 @@ import queue
 import chess
 
 from chipiron.environments.chess.board import IBoard
+from chipiron.environments.chess.board.utils import FenPlusMoveHistory
+from chipiron.environments.chess.board.utils import fen
 from chipiron.players.factory_higher_level import MoveFunction
 from chipiron.utils import seed, unique_int_from_list
 from chipiron.utils.communication.gui_messages import GameStatusMessage
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.is_dataclass import IsDataclass
 from .game_playing_status import GamePlayingStatus
-from ...environments.chess.board.utils import FenPlusMoveHistory
 
 
 class Game:
     """
     Class representing a game of chess.
+    Note that a Game and a Board can look similar classes as a Board can (but not necessarily) include a record
+    of previous moves. Board should be more lightweight that Board. Boards are more specific to a special position
+     (but can include history) while Game are more related to the entire Game and the process generating it.
+    Game needs the original fen, all the moves, the seed to generate and maybe more.
     """
-    _playing_status: GamePlayingStatus
-    _board: IBoard
+    _playing_status: GamePlayingStatus  # todo should this be here? looks related to gui
+    _current_board: IBoard
     _seed: seed | None
+    _fen_history: list[fen]
+    _move_history: list[chess.Move]
 
     def __init__(
             self,
@@ -38,7 +45,7 @@ class Game:
             playing_status (GamePlayingStatus): The playing status of the game.
             seed_ (seed): The seed for random number generation.
         """
-        self._board = board
+        self._current_board = board
         self._playing_status = playing_status
         self._seed = seed_
 
@@ -56,8 +63,8 @@ class Game:
             AssertionError: If the move is not valid or the game status is not play.
         """
         if self._playing_status.is_play():
-            assert (move in self._board.legal_moves)
-            self._board.play_move(move)
+            assert (move in self._current_board.legal_moves)
+            self._current_board.play_move(move)
         else:
             print(f'Cannot play move if the game status is PAUSE {self._playing_status.status}')
 
@@ -69,7 +76,7 @@ class Game:
             AssertionError: If the game status is not paused.
         """
         if self._playing_status.is_paused():
-            self._board.rewind_one_move()
+            self._current_board.rewind_one_move()
         else:
             print('Cannot rewind move if the game status is PLAY')
 
@@ -134,7 +141,7 @@ class Game:
         Returns:
             BoardChi: The chess board.
         """
-        return self._board
+        return self._current_board
 
 
 class ObservableGame:

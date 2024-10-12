@@ -1,19 +1,20 @@
 """
 Module that contains the BoardChi class that wraps the chess.Board class from the chess package
 """
-import pickle
 import typing
 
 import chess
 import chess.polyglot
 
 from chipiron.environments.chess.board.board_modification import BoardModification, PieceInSquare
-from .utils import fen
+from .iboard import IBoard
 
+
+#todo check if we need this here
 COLORS = [WHITE, BLACK] = [True, False]
 
 
-class BoardChi:
+class BoardChi(IBoard):
     """
     Board Chipiron
     object that describes the current board. it wraps the chess Board from the chess package so it can have more in it
@@ -353,7 +354,6 @@ class BoardChi:
         """
         return self.board.turn
 
-
     @property
     def fen(self) -> str:
         """
@@ -373,7 +373,6 @@ class BoardChi:
         """
         # return self.board.legal_moves
         if self.legal_moves_ is not None:
-            print('rrrooooo')
             return self.legal_moves_
         else:
             self.legal_moves_ = set(self.board.legal_moves)
@@ -500,5 +499,5 @@ class BoardChi:
     def move_history_stack(self) -> list[chess.Move]:
         return self.board.move_stack
 
-    def dump(self, f) -> None:
-        pickle.dump(self, f)
+
+

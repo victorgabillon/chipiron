@@ -238,7 +238,6 @@ class GameManager:
         """
         half_move: HalfMove = self.game.board.ply()
         continue_bool: bool = True
-        print('rrt',half_move,self.args.max_half_moves)
         if self.args.max_half_moves is not None and half_move >= self.args.max_half_moves:
             continue_bool = False
 
@@ -261,14 +260,14 @@ class GameManager:
             path_file: path = (f'{self.path_to_store_result}_{idx}_W:{self.player_color_to_id[chess.WHITE]}'
                                f'-vs-B:{self.player_color_to_id[chess.BLACK]}')
             path_file_txt = f'{path_file}.txt'
-            path_file_obj = f'{path_file}.obj'
+            path_file_obj = f'{path_file}.board'
             with open(path_file_txt, 'a') as the_fileText:
-                for counter, move in enumerate(self.game.board.move_stack()):
+                for counter, move in enumerate(self.game.board.move_history_stack):
                     if counter % 2 == 0:
                         move_1 = move
                     else:
                         the_fileText.write(str(move_1) + ' ' + str(move) + '\n')
-            with open(path_file_obj, "wb") as f:
+            with open(path_file_obj, "w") as f:
                 self.game.board.dump(f)
 
     def tell_results(self) -> None:
