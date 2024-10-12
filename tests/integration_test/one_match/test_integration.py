@@ -8,6 +8,10 @@ from chipiron.scripts.script_args import BaseScriptArgs
 
 # we need to not use multiprocessing to be able to use pytest therefore use setting_cubo  and not setting_jime
 
+#Todo add the check of rust with or without borad mofification
+# todo check that the game is the same with or without rust
+# todo check that the game is the same with or without board mofificaiton
+
 start_time = time.time()
 configs_base = [
 
