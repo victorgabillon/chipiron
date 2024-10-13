@@ -12,7 +12,7 @@ from chipiron.environments.chess.board import BoardChi, IBoard
 from chipiron.environments.chess.board.factory import BoardFactory
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import BoardMessage
-from chipiron.utils.is_dataclass import IsDataclass
+from chipiron.utils.dataclass import IsDataclass
 from .factory import create_game_player
 from .game_player import GamePlayer, game_player_computes_move_on_board_and_send_move_in_queue
 from .player_args import PlayerFactoryArgs

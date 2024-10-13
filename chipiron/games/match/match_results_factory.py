@@ -13,7 +13,7 @@ import queue
 
 from chipiron.games.match.match_results import MatchResults, IMatchResults
 from chipiron.games.match.observable_match_result import ObservableMatchResults
-from chipiron.utils.is_dataclass import IsDataclass
+from chipiron.utils.dataclass import IsDataclass
 
 
 class MatchResultsFactory:

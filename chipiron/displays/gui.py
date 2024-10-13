@@ -24,7 +24,7 @@ from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMes
 from chipiron.utils.communication.gui_messages.gui_messages import MatchResultsMessage
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage
 from chipiron.utils.communication.player_game_messages import BoardMessage, MoveMessage
-from chipiron.utils.is_dataclass import IsDataclass
+from chipiron.utils.dataclass import IsDataclass
 from chipiron.environments.chess.board.factory import create_board
 
 class MainWindow(QWidget):

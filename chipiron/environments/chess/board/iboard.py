@@ -79,5 +79,3 @@ class IBoard(Protocol):
         )
 
         yaml.dump(asdict(fen_plus_moves), file, default_flow_style=False)
-
-        file.write("durin's day\n")

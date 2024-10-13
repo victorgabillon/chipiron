@@ -13,7 +13,7 @@ from chipiron.players.factory_higher_level import MoveFunction
 from chipiron.utils import seed, unique_int_from_list
 from chipiron.utils.communication.gui_messages import GameStatusMessage
 from chipiron.utils.communication.player_game_messages import BoardMessage
-from chipiron.utils.is_dataclass import IsDataclass
+from chipiron.utils.dataclass import IsDataclass
 from .game_playing_status import GamePlayingStatus
 
 
@@ -48,6 +48,8 @@ class Game:
         self._current_board = board
         self._playing_status = playing_status
         self._seed = seed_
+        self._fen_history = [board.fen]
+        self._move_history = []
 
     def play_move(
             self,
@@ -65,6 +67,9 @@ class Game:
         if self._playing_status.is_play():
             assert (move in self._current_board.legal_moves)
             self._current_board.play_move(move)
+            self.move_history.append(move)
+            self.fen_history.append(self._current_board.fen)
+
         else:
             print(f'Cannot play move if the game status is PAUSE {self._playing_status.status}')
 
@@ -142,6 +147,26 @@ class Game:
             BoardChi: The chess board.
         """
         return self._current_board
+
+    @property
+    def move_history(self) -> list[chess.Move]:
+        """
+        Gets the history of move.
+
+        Returns:
+            list[chess.Move]: The history of move.
+        """
+        return self._move_history
+
+    @property
+    def fen_history(self) -> list[fen]:
+        """
+        Gets the history of fen.
+
+        Returns:
+            list[fen]: The history of fen.
+        """
+        return self._fen_history
 
 
 class ObservableGame:
@@ -320,3 +345,23 @@ class ObservableGame:
             BoardChi: The chess board.
         """
         return self.game.board
+
+    @property
+    def move_history(self) -> list[chess.Move]:
+        """
+        Gets the history of move.
+
+        Returns:
+            list[chess.Move]: The history of move.
+        """
+        return self.game.move_history
+
+    @property
+    def fen_history(self) -> list[fen]:
+        """
+        Gets the history of fen.
+
+        Returns:
+            list[fen]: The history of fen.
+        """
+        return self.game.fen_history
