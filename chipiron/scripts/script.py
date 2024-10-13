@@ -17,7 +17,7 @@ import dacite
 
 from chipiron.scripts.parsers.parser import MyParser
 from chipiron.scripts.script_args import BaseScriptArgs
-from chipiron.utils.is_dataclass import IsDataclass
+from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.small_tools import mkdir
 
 _T_co = TypeVar("_T_co", covariant=True, bound=IsDataclass)

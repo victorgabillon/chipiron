@@ -17,7 +17,7 @@ from chipiron.games.match.match_factories import create_match_manager_from_args
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
-from chipiron.utils.is_dataclass import IsDataclass
+from chipiron.utils.dataclass import IsDataclass
 
 
 @dataclass

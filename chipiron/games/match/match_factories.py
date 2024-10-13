@@ -22,7 +22,7 @@ from chipiron.players.utils import fetch_two_players_args_convert_and_save
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
-from chipiron.utils.is_dataclass import IsDataclass
+from chipiron.utils.dataclass import IsDataclass
 from .match_settings_args import MatchSettingsArgs
 
 

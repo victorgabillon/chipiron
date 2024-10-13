@@ -18,7 +18,7 @@ from chipiron.games.match.observable_match_result import ObservableMatchResults
 from chipiron.players import PlayerFactoryArgs
 from chipiron.utils import path
 from chipiron.utils import seed
-from chipiron.utils.is_dataclass import IsDataclass
+from chipiron.utils.dataclass import IsDataclass
 
 
 class MatchManager:
@@ -169,7 +169,7 @@ class MatchManager:
             game_seed=game_seed
         )
         game_report: GameReport = game_manager.play_one_game()
-        game_manager.print_to_file(idx=game_number)
+        game_manager.print_to_file(idx=game_number,game_report=game_report)
 
         return game_report
 

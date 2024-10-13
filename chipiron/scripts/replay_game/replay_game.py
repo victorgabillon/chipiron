@@ -3,14 +3,19 @@ This module contains the `ReplayGameScript` class, which is responsible for repl
 """
 
 import os
-import pickle
 import sys
-from dataclasses import dataclass,field
+from dataclasses import dataclass, field
+from enum import Enum
 
+import dacite
+import yaml
 from PySide6.QtWidgets import QApplication
 
 from chipiron.displays.gui_replay_games import MainWindow
 from chipiron.environments.chess.board.board_chi import BoardChi
+from chipiron.environments.chess.board.factory import create_board
+from chipiron.environments.chess.board.utils import FenPlusMoveHistory
+from chipiron.games.game.final_game_result import GameReport
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
 
@@ -21,11 +26,10 @@ class ReplayScriptArgs:
     The input arguments needed by the replay game script to run.
     """
 
-    # path to the pickle file with the BoardChi stored
-    file_path_game_pickle: str
+    # path to the yaml file with the Game Report stored
+    file_game_report: str
 
     base_script_args: BaseScriptArgs = field(default_factory=BaseScriptArgs)
-
 
     # whether to display the match in a GUI
     gui: bool = False
@@ -63,8 +67,19 @@ class ReplayGameScript:
 
         )
 
-        with open(self.args.file_path_game_pickle, 'rb') as fileGame:
-            self.chess_board: BoardChi = pickle.load(fileGame)
+        with open(self.args.file_game_report, 'r') as fileGame:
+            game_report_dict: dict = yaml.safe_load(fileGame)
+            game_report: GameReport = dacite.from_dict(
+                data_class=GameReport,
+                data=game_report_dict,
+                config=dacite.Config(cast=[Enum])
+            )
+            self.chess_board: BoardChi = create_board(
+                fen_with_history=FenPlusMoveHistory(
+                    current_fen=game_report.fen_history[0],
+                    historical_moves=game_report.move_history
+                )
+            )
 
     def run(self) -> None:
         """

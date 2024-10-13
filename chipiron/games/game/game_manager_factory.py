@@ -18,7 +18,7 @@ from chipiron.players.factory_higher_level import MoveFunction, create_player_ob
 from chipiron.utils import path
 from chipiron.utils import seed
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage, extract_message_from_players
-from chipiron.utils.is_dataclass import IsDataclass
+from chipiron.utils.dataclass import IsDataclass
 from .game import Game, ObservableGame
 from .game_manager import GameManager
 from ...environments.chess.board.utils import FenPlusMoveHistory

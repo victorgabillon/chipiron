@@ -10,7 +10,7 @@ import chess
 
 from chipiron.environments.chess.board.board_chi import BoardChi
 from chipiron.utils.communication.gui_messages import EvaluationMessage
-from chipiron.utils.is_dataclass import IsDataclass
+from chipiron.utils.dataclass import IsDataclass
 
 
 class ValueWhiteWhenOver(float, Enum):

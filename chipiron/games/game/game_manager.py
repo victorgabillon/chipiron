@@ -4,10 +4,11 @@ Module in charge of managing the game. It is the main class that will be used to
 
 import logging
 import os
-import pickle
 import queue
+from dataclasses import asdict
 
 import chess
+import yaml
 
 import chipiron.players as players_m
 from chipiron.environments import HalfMove
@@ -18,7 +19,8 @@ from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
 from chipiron.utils import path
 from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMessage
 from chipiron.utils.communication.player_game_messages import MoveMessage
-from chipiron.utils.is_dataclass import IsDataclass
+from chipiron.utils.dataclass import IsDataclass
+from chipiron.utils.dataclass import custom_asdict_factory
 from .final_game_result import GameReport, FinalGameResult
 from .game import ObservableGame
 from .game_args import GameArgs
@@ -162,7 +164,9 @@ class GameManager:
         game_results: FinalGameResult = self.simple_results()
         game_report: GameReport = GameReport(
             final_game_result=game_results,
-            move_history=board.move_history_stack)
+            move_history=self.game.move_history,
+            fen_history=self.game.fen_history
+        )
         return game_report
 
     def processing_mail(
@@ -245,30 +249,33 @@ class GameManager:
 
     def print_to_file(
             self,
+            game_report: GameReport,
             idx: int = 0
     ) -> None:
         """
-        Print the moves of the game to a text file and pickle the game board object.
+        Print the moves of the game to a yaml file and a more human-readable text file.
 
         Args:
+            game_report(GameReport): a game report to be printed
             idx (int): The index to include in the file name (default is 0).
 
         Returns:
             None
         """
+        # todo probably the txt file should be a valid PGN file : https://en.wikipedia.org/wiki/Portable_Game_Notation
         if self.path_to_store_result is not None:
             path_file: path = (f'{self.path_to_store_result}_{idx}_W:{self.player_color_to_id[chess.WHITE]}'
                                f'-vs-B:{self.player_color_to_id[chess.BLACK]}')
+            path_file_obj = f'{path_file}_game_report.yaml'
             path_file_txt = f'{path_file}.txt'
-            path_file_obj = f'{path_file}.board'
             with open(path_file_txt, 'a') as the_fileText:
-                for counter, move in enumerate(self.game.board.move_history_stack):
+                for counter, move in enumerate(self.game.move_history):
                     if counter % 2 == 0:
                         move_1 = move
                     else:
                         the_fileText.write(str(move_1) + ' ' + str(move) + '\n')
-            with open(path_file_obj, "w") as f:
-                self.game.board.dump(f)
+            with open(path_file_obj, "w") as file:
+                yaml.dump(asdict(game_report, dict_factory=custom_asdict_factory), file, default_flow_style=False)
 
     def tell_results(self) -> None:
         """
@@ -303,7 +310,7 @@ class GameManager:
                 res = FinalGameResult.DRAW  # arbitrary meaningless choice
                 # raise ValueError(f'Problem with figuring our game results in {__name__}')
             else:
-                raise ValueError('this case is not coded atm think of what is the write thing to do here!')
+                raise ValueError('this case is not coded atm think of what is the right thing to do here!')
         else:
             result = board.result()
             if result == '1/2-1/2':

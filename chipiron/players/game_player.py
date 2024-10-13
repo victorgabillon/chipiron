@@ -10,7 +10,7 @@ from chipiron.environments.chess.board import IBoard
 from chipiron.players.move_selector.move_selector import MoveRecommendation
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import MoveMessage
-from chipiron.utils.is_dataclass import IsDataclass
+from chipiron.utils.dataclass import IsDataclass
 from .player import Player
 
 

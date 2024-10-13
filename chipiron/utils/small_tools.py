@@ -19,7 +19,7 @@ import yaml
 
 import chipiron
 import chipiron as ch
-from chipiron.utils.is_dataclass import IsDataclass
+from chipiron.utils.dataclass import IsDataclass
 
 path = typing.Annotated[str | os.PathLike[str], 'path']
 seed = typing.Annotated[int, "seed"]
