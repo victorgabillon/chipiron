@@ -9,6 +9,7 @@ import chess
 
 import chipiron.environments.chess.board as boards
 from chipiron.utils import seed
+from chipiron.players.boardevaluators.board_evaluation.board_evaluation import BoardEvaluation
 
 
 @dataclass
@@ -17,7 +18,7 @@ class MoveRecommendation:
     Represents a recommended move to play along with an optional evaluation score.
     """
     move: chess.Move
-    evaluation: float | None = None
+    evaluation: BoardEvaluation | None = None
 
 
 class MoveSelector(Protocol):

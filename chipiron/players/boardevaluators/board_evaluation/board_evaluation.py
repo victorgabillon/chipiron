@@ -2,7 +2,12 @@
 Module for the BoardEvaluation class and the PointOfView enumeration.
 """
 
+from dataclasses import dataclass
 from enum import Enum
+
+import chess
+
+from chipiron.players.boardevaluators.over_event import OverEvent
 
 
 class PointOfView(Enum):
@@ -26,17 +31,27 @@ class PointOfView(Enum):
     NOT_PLAYER_TO_MOVE = 3
 
 
-class BoardEvaluation:
+@dataclass
+class ForcedOutcome:
+    """
+    The class
+    """
+
+    # The forced outcome with optimal play by both sides.
+    outcome: OverEvent
+
+    # the line
+    line: list[chess.Move]
+
+
+@dataclass
+class FloatyBoardEvaluation:
     """
     The class to defines what is an evaluation of a board.
     By convention is it always evaluated from the view point of the white side.
     """
+    # The evaluation value for the white side when the outcome is not certain. Typically, a float.
+    value_white: float | None
 
-    def __init__(self, value_white: float) -> None:
-        """
-        Initializes a BoardEvaluation object.
 
-        Args:
-            value_white (float): The evaluation value for the white side.
-        """
-        self.value_white = value_white
+BoardEvaluation = FloatyBoardEvaluation | ForcedOutcome

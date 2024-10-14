@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 import chess
 import torch
 
-from chipiron.players.boardevaluators.board_evaluation.board_evaluation import BoardEvaluation, PointOfView
+from chipiron.players.boardevaluators.board_evaluation.board_evaluation import FloatyBoardEvaluation, PointOfView
 
 
 class OutputValueConverter(ABC):
@@ -34,7 +34,7 @@ class OutputValueConverter(ABC):
             self,
             output_nn: torch.Tensor,
             color_to_play: chess.Color
-    ) -> BoardEvaluation:
+    ) -> FloatyBoardEvaluation:
         """
         Convert the output of the neural network to a board evaluation.
 
@@ -43,20 +43,20 @@ class OutputValueConverter(ABC):
             color_to_play (chess.Color): The color of the player to move.
 
         Returns:
-            BoardEvaluation: The converted board evaluation.
+            FloatyBoardEvaluation: The converted board evaluation.
         """
         ...
 
     @abstractmethod
     def to_nn_outputs(
             self,
-            board_evaluation: BoardEvaluation
+            board_evaluation: FloatyBoardEvaluation
     ) -> torch.Tensor:
         """
         Convert a board evaluation to the output of the neural network.
 
         Args:
-            board_evaluation (BoardEvaluation): The board evaluation to convert.
+            board_evaluation (FloatyBoardEvaluation): The board evaluation to convert.
 
         Returns:
             torch.Tensor: The converted output of the neural network.
@@ -94,7 +94,7 @@ class OneDToValueWhite(OutputValueConverter):
             self,
             output_nn: torch.Tensor,
             color_to_play: chess.Color
-    ) -> BoardEvaluation:
+    ) -> FloatyBoardEvaluation:
         """
         Convert the output of the neural network to a board evaluation.
 
@@ -103,24 +103,24 @@ class OneDToValueWhite(OutputValueConverter):
             color_to_play (chess.Color): The color of the player to move.
 
         Returns:
-            BoardEvaluation: The converted board evaluation.
+            FloatyBoardEvaluation: The converted board evaluation.
         """
         value: float = output_nn.item()
         value_white: float = self.convert_value_for_mover_viewpoint_to_value_white(
             turn=color_to_play,
             value_from_mover_view_point=value)
-        board_evaluation: BoardEvaluation = BoardEvaluation(value_white=value_white)
+        board_evaluation: FloatyBoardEvaluation = FloatyBoardEvaluation(value_white=value_white)
         return board_evaluation
 
     def to_nn_outputs(
             self,
-            board_evaluation: BoardEvaluation
+            board_evaluation: FloatyBoardEvaluation
     ) -> torch.Tensor:
         """
         Convert a board evaluation to the output of the neural network.
 
         Args:
-            board_evaluation (BoardEvaluation): The board evaluation to convert.
+            board_evaluation (FloatyBoardEvaluation): The board evaluation to convert.
 
         Returns:
             torch.Tensor: The converted output of the neural network.

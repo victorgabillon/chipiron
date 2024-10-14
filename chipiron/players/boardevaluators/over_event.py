@@ -115,6 +115,7 @@ class OverEvent:
 
     how_over: HowOver = HowOver.DO_NOT_KNOW_OVER
     who_is_winner: Winner = Winner.NO_KNOWN_WINNER
+    termination: chess.Termination | None = None
 
     def __post_init__(self) -> None:
         assert self.how_over in HowOver
@@ -128,6 +129,7 @@ class OverEvent:
     def becomes_over(
             self,
             how_over: HowOver,
+            termination: chess.Termination | None,
             who_is_winner: Winner = Winner.NO_KNOWN_WINNER
     ) -> None:
         """Sets the `how_over` and `who_is_winner` attributes.
@@ -138,6 +140,7 @@ class OverEvent:
         """
         self.how_over = how_over
         self.who_is_winner = who_is_winner
+        self.termination = termination
 
     def get_over_tag(self) -> OverTags:
         """Returns a tag string used in databases.

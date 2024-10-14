@@ -20,6 +20,8 @@ from typing import Protocol, Any, Self, TypeVar
 
 import chess
 
+from chipiron.players.boardevaluators.board_evaluation.board_evaluation import FloatyBoardEvaluation, ForcedOutcome, \
+    BoardEvaluation
 from chipiron.players.boardevaluators.over_event import OverEvent
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
@@ -453,7 +455,8 @@ class NodeMinmaxEvaluation:
         assert best_child is not None
         self.over_event.becomes_over(
             how_over=best_child.minmax_evaluation.over_event.how_over,
-            who_is_winner=best_child.minmax_evaluation.over_event.who_is_winner
+            who_is_winner=best_child.minmax_evaluation.over_event.who_is_winner,
+            termination=best_child.minmax_evaluation.over_event.termination
         )
 
     def update_over(
@@ -860,3 +863,12 @@ class NodeMinmaxEvaluation:
                 if self.are_almost_equal_values(child_value_logit, best_value_logit):
                     best_moves.append(move)
         return best_moves
+
+    def evaluate(self) -> BoardEvaluation:
+        if self.over_event.is_over():
+            return ForcedOutcome(
+                outcome=self.over_event,
+                line=self.best_move_sequence
+            )
+        else:
+            return FloatyBoardEvaluation(value_white=self.value_white_minmax)

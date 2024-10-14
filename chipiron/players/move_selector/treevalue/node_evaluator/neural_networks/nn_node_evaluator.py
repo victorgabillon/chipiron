@@ -5,7 +5,7 @@ This module contains the implementation of the `NNNodeEvaluator` class, which is
 import torch
 
 import chipiron.players.boardevaluators.neural_networks as board_nn
-from chipiron.players.boardevaluators.board_evaluation.board_evaluation import BoardEvaluation
+from chipiron.players.boardevaluators.board_evaluation.board_evaluation import FloatyBoardEvaluation
 from chipiron.players.boardevaluators.table_base import SyzygyTable
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from ..node_evaluator import NodeEvaluator
@@ -65,7 +65,7 @@ class NNNodeEvaluator(NodeEvaluator):
         output_layer = self.my_scripted_model(input_layers)
 
         for index, node_not_over in enumerate(not_over_nodes):
-            board_evaluation: BoardEvaluation = self.nn_board_evaluator.output_and_value_converter.to_board_evaluation(
+            board_evaluation: FloatyBoardEvaluation = self.nn_board_evaluator.output_and_value_converter.to_board_evaluation(
                 output_nn=output_layer[index],
                 color_to_play=node_not_over.tree_node.board.turn)
             value_white: float = board_evaluation.value_white
