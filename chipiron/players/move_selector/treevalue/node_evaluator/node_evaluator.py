@@ -150,14 +150,16 @@ class NodeEvaluator:
                     raise ValueError(f'value {other} not expected in {__name__}')
             node.minmax_evaluation.over_event.becomes_over(
                 how_over=how_over_,
-                who_is_winner=who_is_winner_
+                who_is_winner=who_is_winner_,
+                termination=node.board.board.outcome().termination
             )
 
         elif self.syzygy_evaluator and self.syzygy_evaluator.fast_in_table(node.tree_node.board):
             who_is_winner_, how_over_ = self.syzygy_evaluator.get_over_event(board=node.board)
             node.minmax_evaluation.over_event.becomes_over(
                 how_over=how_over_,
-                who_is_winner=who_is_winner_
+                who_is_winner=who_is_winner_,
+                termination= None # not sure how to retrieve this info more precisely atm
             )
 
     def value_white_from_over_event(

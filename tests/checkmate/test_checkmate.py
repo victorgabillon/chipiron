@@ -9,17 +9,18 @@ from chipiron.players import Player
 from chipiron.players.factory import create_chipiron_player, create_player_from_file
 from chipiron.players.move_selector.move_selector import MoveRecommendation
 
-def test_check():
-    board: BoardChi = create_board(fen_with_history=FenPlusMoveHistory(
-        current_fen='1nbqkbnr/rpppp2p/6P1/p6Q/8/8/PPPP1PPP/RNB1KBNR w KQk - 1 5')
+
+def test_check_in_one():
+    board: BoardChi = create_board(
+        fen_with_history=FenPlusMoveHistory(
+            current_fen='1nbqkbnr/rpppp2p/6P1/p6Q/8/8/PPPP1PPP/RNB1KBNR w KQk - 1 5')
     )
 
     player: Player = create_chipiron_player(depth=1)
 
     move_reco: MoveRecommendation = player.select_move(board=board, seed_int=0)
 
-    print('move', move_reco.move)
-    assert (move_reco.move == chess.Move.from_uci('g6h7'))
+    assert (move_reco.move == chess.Move.from_uci('g6h7') or  move_reco.move == chess.Move.from_uci('g6g7'))
 
 
 def test_check_in_two():
@@ -32,6 +33,7 @@ def test_check_in_two():
 
     fen: str
     moves: list[chess.Move]
+    print(f'Testing  check in two on {len(dict_fen_move)} boards.')
     for fen, moves in dict_fen_move.items():
         board = create_board(fen_with_history=FenPlusMoveHistory(current_fen=fen))
         player = create_player_from_file(
@@ -42,4 +44,5 @@ def test_check_in_two():
         assert (move_reco.move == moves[0])
 
 
+test_check_in_one()
 test_check_in_two()

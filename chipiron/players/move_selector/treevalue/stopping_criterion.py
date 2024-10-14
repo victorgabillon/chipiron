@@ -147,10 +147,14 @@ class TreeMoveLimit(StoppingCriterion):
             self,
             tree: MoveAndValueTree
     ) -> bool:
-        continue_base = super().should_we_continue(tree=tree)
+        continue_base: bool = super().should_we_continue(tree=tree)
+
+        should_we: bool
         if not continue_base:
-            return continue_base
-        return tree.move_count < self.tree_move_limit
+            should_we = continue_base
+        else:
+            should_we = tree.move_count < self.tree_move_limit
+        return should_we
 
     def get_string_of_progress(
             self,

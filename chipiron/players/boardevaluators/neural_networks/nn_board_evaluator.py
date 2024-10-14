@@ -5,7 +5,7 @@ import chess
 import torch
 
 import chipiron.environments.chess.board as boards
-from chipiron.players.boardevaluators.board_evaluation.board_evaluation import BoardEvaluation
+from chipiron.players.boardevaluators.board_evaluation.board_evaluation import FloatyBoardEvaluation
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_input import BoardToInput
 from chipiron.players.boardevaluators.neural_networks.output_converters.output_value_converter import \
     OutputValueConverter
@@ -63,7 +63,7 @@ class NNBoardEvaluator:
         torch.no_grad()
         output_layer: torch.Tensor = self.my_scripted_model(input_layer)
         torch.no_grad()
-        board_evaluation: BoardEvaluation = self.output_and_value_converter.to_board_evaluation(
+        board_evaluation: FloatyBoardEvaluation = self.output_and_value_converter.to_board_evaluation(
             output_nn=output_layer,
             color_to_play=board.turn)
         value_white: float = board_evaluation.value_white
@@ -73,7 +73,7 @@ class NNBoardEvaluator:
             self,
             input_layer: torch.Tensor,
             color_to_play: chess.Color
-    ) -> BoardEvaluation:
+    ) -> FloatyBoardEvaluation:
         """
         Evaluate the board position
 
@@ -82,7 +82,7 @@ class NNBoardEvaluator:
             color_to_play (chess.Color): The color to play
 
         Returns:
-            BoardEvaluation: The evaluation of the board position
+            FloatyBoardEvaluation: The evaluation of the board position
         """
         self.my_scripted_model.eval()
         torch.no_grad()

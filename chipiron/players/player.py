@@ -58,7 +58,7 @@ class Player:
                 move_recommendation = MoveRecommendation(move=best_move)
 
             else:
-                print(f'Playing with player (not Syzygy) {self.id} {board}')
+                print(f'Playing with player (not Syzygy) {self.id}\n{board}')
                 move_recommendation = self.main_move_selector.select_move(
                     board=board,
                     move_seed=seed_int

@@ -4,6 +4,7 @@ MoveAndValueTree
 from typing import Any
 
 import chipiron.players.move_selector.treevalue.nodes as nodes
+from chipiron.players.boardevaluators.board_evaluation.board_evaluation import BoardEvaluation
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node import AlgorithmNode
 from .descendants import RangedDescendants
 
@@ -86,3 +87,6 @@ class MoveAndValueTree:
             bool: True if the game is over, False otherwise.
         """
         return self._root_node.is_over()
+
+    def evaluate(self) -> BoardEvaluation:
+        return self._root_node.minmax_evaluation.evaluate()
