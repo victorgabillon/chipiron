@@ -56,7 +56,7 @@ class TreeNode(Generic[ChildrenType]):
     half_move_: int
 
     # the node represents a board position. we also store the fast representation of the board.
-    board_: boards.BoardChi
+    board_: boards.IBoard
 
     # the set of parent nodes to this node. Note that a node can have multiple parents!
     parent_nodes_: dict[ITreeNode[ChildrenType], chess.Move]

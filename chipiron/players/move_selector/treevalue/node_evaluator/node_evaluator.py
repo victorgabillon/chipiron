@@ -133,7 +133,7 @@ class NodeEvaluator:
         """
         game_over: bool = node.tree_node.board.is_game_over()
         if game_over:
-            value_as_string: str = node.board.board.result()
+            value_as_string: str = node.board.result()
             how_over_: HowOver
             who_is_winner_: Winner
             match value_as_string:
@@ -148,10 +148,11 @@ class NodeEvaluator:
                     who_is_winner_ = Winner.NO_KNOWN_WINNER
                 case other:
                     raise ValueError(f'value {other} not expected in {__name__}')
+
             node.minmax_evaluation.over_event.becomes_over(
                 how_over=how_over_,
                 who_is_winner=who_is_winner_,
-                termination=node.board.board.outcome().termination
+                termination=node.board.termination()
             )
 
         elif self.syzygy_evaluator and self.syzygy_evaluator.fast_in_table(node.tree_node.board):

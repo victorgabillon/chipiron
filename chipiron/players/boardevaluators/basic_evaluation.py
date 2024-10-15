@@ -6,12 +6,13 @@ import math
 
 import chess
 
+from chipiron.environments.chess.board import IBoard
 from chipiron.environments.chess.board.board_chi import BoardChi
 from chipiron.players.boardevaluators.board_evaluator import BoardEvaluator
 
 
 def value_base(
-        board: BoardChi,
+        board: IBoard,
         color: chess.Color
 ) -> int:
     """Calculate the base value of the given board for the specified color.
@@ -23,16 +24,16 @@ def value_base(
     Returns:
         int: The base value of the board for the specified color.
     """
-    value_white_: int = bin(board.board.pawns & board.board.occupied_co[color]).count('1') + bin(
-        board.board.knights & board.board.occupied_co[color]).count('1') * 3 + bin(
-        board.board.bishops & board.board.occupied_co[color]).count('1') * 3 + bin(
-        board.board.rooks & board.board.occupied_co[color]).count('1') * 5 + bin(
-        board.board.queens & board.board.occupied_co[color]).count('1') * 9
+    value_white_: int = bin(board.pawns & board.occupied_color(color)).count('1') + bin(
+        board.knights & board.occupied_color(color)).count('1') * 3 + bin(
+        board.bishops & board.occupied_color(color)).count('1') * 3 + bin(
+        board.rooks & board.occupied_color(color)).count('1') * 5 + bin(
+        board.queens & board.occupied_color(color)).count('1') * 9
     return value_white_
 
 
 def add_pawns_value_white(
-        board: BoardChi
+        board: IBoard
 ) -> float:
     """Calculate the additional value for white pawns based on their advancement.
 
@@ -49,7 +50,7 @@ def add_pawns_value_white(
 
 
 def add_pawns_value_black(
-        board: BoardChi
+        board: IBoard
 ) -> float:
     """Calculate the value to be added for black pawns based on their position.
 
@@ -68,7 +69,7 @@ def add_pawns_value_black(
     return add_value
 
 
-def value_white(board: BoardChi) -> float:
+def value_white(board: IBoard) -> float:
     """Calculate the value of the white pieces on the board.
 
     This function calculates the value of the white pieces on the board by subtracting the value of the black pieces from the value of the white pieces.
@@ -99,7 +100,7 @@ def sigmoid(x: float) -> float:
     return 1 / (1 + math.exp(-x))
 
 
-def value_player_to_move(board: BoardChi) -> float:
+def value_player_to_move(board: IBoard) -> float:
     """Calculate the value of the player to move.
 
     This function calculates the value of the player to move based on the difference in piece values
@@ -148,7 +149,7 @@ class BasicEvaluation(BoardEvaluator):
         """
         pass
 
-    def value_white(self, board: BoardChi) -> float:
+    def value_white(self, board: IBoard) -> float:
         """Calculates the value of the board for the white player.
 
         Args:
