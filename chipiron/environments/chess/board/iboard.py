@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from typing import Protocol, Self
 
 import chess
@@ -6,7 +7,7 @@ import yaml
 from chipiron.environments.chess.board.board_modification import BoardModification
 from .utils import FenPlusMoveHistory
 from .utils import fen
-from dataclasses import asdict
+
 
 class IBoard(Protocol):
 
@@ -67,6 +68,47 @@ class IBoard(Protocol):
         Returns:
             bool: True if the game is over, False otherwise.
         """
+        ...
+
+    @property
+    def pawns(self) -> chess.Bitboard:
+        ...
+
+    @property
+    def knights(self) -> chess.Bitboard:
+        ...
+
+    @property
+    def bishops(self) -> chess.Bitboard:
+        ...
+
+    @property
+    def rooks(self) -> chess.Bitboard:
+        ...
+
+    @property
+    def queens(self) -> chess.Bitboard:
+        ...
+
+    @property
+    def white(self) -> chess.Bitboard:
+        ...
+
+    @property
+    def black(self) -> chess.Bitboard:
+        ...
+
+    @property
+    def occupied(self) -> chess.Bitboard:
+        ...
+
+    def occupied_color(self, color: chess.COLORS)-> chess.Bitboard:
+        ...
+
+    def result(self) -> str:
+        ...
+
+    def termination(self) -> chess.Termination|None:
         ...
 
     def dump(self, file) -> None:

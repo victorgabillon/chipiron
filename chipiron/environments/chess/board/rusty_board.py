@@ -199,8 +199,6 @@ class RustyBoardChi(IBoard):
     def tell_result(self) -> None:
         ...
 
-    def result(self) -> str:
-        return '*'
 
     @property
     def move_history_stack(self) -> list[chess.Move]:
@@ -222,3 +220,47 @@ class RustyBoardChi(IBoard):
             bool: True if any piece of the specified color is attacked, False otherwise.
         """
         return self.chess_.is_attacked(a_color)
+
+    @property
+    def pawns(self) -> chess.Bitboard:
+        return self.chess_.pawns()
+
+    @property
+    def knights(self) -> chess.Bitboard:
+        return self.chess_.knights()
+
+    @property
+    def bishops(self) -> chess.Bitboard:
+        return self.chess_.bishops()
+
+    @property
+    def rooks(self) -> chess.Bitboard:
+        return self.chess_.rooks()
+
+    @property
+    def queens(self) -> chess.Bitboard:
+        return self.chess_.queens()
+
+    @property
+    def white(self) -> chess.Bitboard:
+        return self.chess_.white()
+
+    @property
+    def black(self) -> chess.Bitboard:
+        return self.chess_.black()
+
+    @property
+    def occupied(self) -> chess.Bitboard:
+        return self.chess_.occupied()
+
+    def result(self) -> str:
+        return self.chess_.result()
+
+    def termination(self) -> None:
+        return None
+
+    def occupied_color(self, color: chess.COLORS) -> chess.Bitboard:
+        if color == chess.WHITE:
+            return self.chess_.white()
+        else:
+            return self.chess_.black()
