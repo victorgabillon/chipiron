@@ -9,11 +9,11 @@
 Chipiron is a Python library that plays chess
 
 ## Acknowledgments
+
 This code is build on top of the chess library https://github.com/niklasf/python-chess
 and its rust version :https://github.com/niklasf/shakmaty
 
 It also integrates code from : https://github.com/oakmac/chessboardjs/
-
 
 ## Requirements
 
@@ -23,7 +23,9 @@ It also integrates code from : https://github.com/oakmac/chessboardjs/
 * tkinter
 
 ## Installation
-The following command will install the python packaged listed in requirements.txt, download syzygy tables, install stockfish, retrieve datasets and gui images...
+
+The following command will install the python packaged listed in requirements.txt, download syzygy tables, install
+stockfish, retrieve datasets and gui images...
 
 ```console
 make init
@@ -44,27 +46,31 @@ make init
 
 </details>
 
-
 ## Usage
 
-### Base case with a gui to play against chipiron or watch it play 
+### Base case with a gui to play against chipiron or watch it play
+
 Starts a gui to choose your options of play.
+
 ```console
 python3 main_chipiron.py 
 ```
 
 ### Script: one match
+
 This allows to play a match between two players.
+
 ```console
 python3 main_chipiron.py --script_name one_match --config_file_name scripts/one_match/inputs/base/exp_options.yaml
 ```
 
 ### Script: league
+
 This allows to run a league of selected players and compute their Elo ratings.
+
 ```console
 python3 main_chipiron.py --script_name league
 ```
-
 
 <!---### Script: learn nn from supervised datasets 
 This learns Neural Networks from a database of labelled boards.
@@ -75,6 +81,6 @@ python3 main_chipiron.py --script_name learn_nn --config_file_name scripts/learn
 
 ## Contributing
 
-
 ## License
+
 [GPL-3.0](https://choosealicense.com/licenses/gpl-3.0/)

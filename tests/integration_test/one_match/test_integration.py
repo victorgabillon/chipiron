@@ -73,6 +73,27 @@ configs_base = [
 
     },
 
+    # RUSTY BOARD 'use_board_modification': TRUE
+    {
+
+        'gui': False,
+        'match_args': {
+            'seed': 11,
+            'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
+            'file_name_player_two': 'Random.yaml',
+            'file_name_match_setting': 'setting_cubo.yaml'
+        },
+        'base_script_args': {
+            'profiling': False,
+            'testing': True
+        },
+        'implementation_args': {
+            'use_board_modification': True,
+            'use_rust_boards': True
+        }
+
+    },
+
     {
         'gui': False,
         'match_args': {
