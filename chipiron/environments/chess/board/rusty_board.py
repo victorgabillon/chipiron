@@ -21,6 +21,8 @@ class RustyBoardChi(IBoard):
 
     chess_: shakmaty_python_binding.MyChess
 
+    compute_board_modification: bool
+
     # the move history is kept here because shakmaty_python_binding.MyChess does not have a move stack at the moment
     move_stack: list[chess.Move] = field(default_factory=list)
 
@@ -30,9 +32,16 @@ class RustyBoardChi(IBoard):
             self,
             move: chess.Move
     ) -> BoardModification | None:
-        self.chess_.play(move.uci())
+        board_modifications: BoardModification | None
+
+        if self.compute_board_modification:
+            board_modifications = self.chess_.push_and_return_modification(move.uci())
+
+        else:
+            self.chess_.play(move.uci())
+            board_modifications = None
         self.move_history_stack.append(move)
-        return None
+        return board_modifications
 
     def ply(self) -> int:
         """
@@ -80,7 +89,8 @@ class RustyBoardChi(IBoard):
         move_stack_ = self.move_stack.copy() if stack else []
         return RustyBoardChi(
             chess_=chess_copy,
-            move_stack=move_stack_
+            move_stack=move_stack_,
+            compute_board_modification=self.compute_board_modification
         )
 
     @property
@@ -198,7 +208,6 @@ class RustyBoardChi(IBoard):
 
     def tell_result(self) -> None:
         ...
-
 
     @property
     def move_history_stack(self) -> list[chess.Move]:

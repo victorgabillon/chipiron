@@ -52,7 +52,6 @@ def create_board(
 
     if fen_with_history is not None:
         current_fen: fen = fen_with_history.current_fen
-        print('fen_with_history.current_fen', fen_with_history.current_fen)
         chess_board = chess.Board(fen=current_fen)
         chess_board.move_stack = fen_with_history.historical_moves
 
@@ -94,6 +93,7 @@ def create_rust_board(
 
     rusty_board_chi: RustyBoardChi = RustyBoardChi(
         chess_=chess_rust_binding,
+        compute_board_modification=use_board_modification
     )
     rusty_board_chi.move_stack = fen_with_history.historical_moves
 

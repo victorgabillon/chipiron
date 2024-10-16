@@ -5,12 +5,12 @@ import typing
 
 import chess
 import chess.polyglot
+from chess import _BoardState
 
 from chipiron.environments.chess.board.board_modification import BoardModification, PieceInSquare
 from .iboard import IBoard
-from chess import _BoardState
 
-#todo check if we need this here
+# todo check if we need this here
 COLORS = [WHITE, BLACK] = [True, False]
 
 
@@ -52,6 +52,7 @@ class BoardChi(IBoard):
         Returns:
             The board modification resulting from the move or None.
         """
+        # todo: illegal moves seem accepted, do we care? if we dont write it in the doc
         # assert self.board.is_legal(move)
         #
         board_modifications: BoardModification | None
@@ -249,11 +250,11 @@ class BoardChi(IBoard):
 
         return board_modifications
 
-#///////////////////////////////////
+    # ///////////////////////////////////
     @typing.no_type_check
     def push_and_return_modification(
-                self,
-                move: chess.Move
+            self,
+            move: chess.Move
     ) -> BoardModification | None:
         """
         Mostly reuse the push function of the chess library but records the modifications to the bitboard so that
@@ -515,7 +516,9 @@ class BoardChi(IBoard):
         Returns:
             bool: True if the game is over, False otherwise.
         """
-        return self.board.is_game_over()
+        # assume that player claim draw otherwise the opponent might be overoptimistic
+        # in winning position where draw by repetition occur
+        return self.board.is_game_over(claim_draw=True)
 
     def ply(self) -> int:
         """
@@ -680,7 +683,6 @@ class BoardChi(IBoard):
     @property
     def move_history_stack(self) -> list[chess.Move]:
         return self.board.move_stack
-
 
     @property
     def pawns(self) -> chess.Bitboard:
