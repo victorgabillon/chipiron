@@ -518,7 +518,8 @@ class BoardChi(IBoard):
         """
         # assume that player claim draw otherwise the opponent might be overoptimistic
         # in winning position where draw by repetition occur
-        return self.board.is_game_over(claim_draw=True)
+        claim_draw: bool = True if len(self.board.move_stack) >= 4 else False
+        return self.board.is_game_over(claim_draw=claim_draw)
 
     def ply(self) -> int:
         """
