@@ -14,7 +14,7 @@ from typing import Any
 import yaml
 
 from chipiron.utils.small_tools import unflatten
-
+from dataclasses import asdict
 
 class MyParser:
     """
@@ -45,11 +45,13 @@ class MyParser:
     args_config_file: dict[str, Any] | None
     merged_args: dict[str, Any] | None
     should_parse_command_line_arguments: bool = True
+    args_class_name: Any  # type[DataclassInstance]
 
     def __init__(
             self,
             parser: Any,
-            should_parse_command_line_arguments: bool = True
+            args_class_name: Any,  # type[DataclassInstance]
+        should_parse_command_line_arguments: bool = True
     ) -> None:
         """
         Initialize the MyParser object.
@@ -61,6 +63,7 @@ class MyParser:
         """
         self.parser = parser
         self.should_parse_command_line_arguments = should_parse_command_line_arguments
+        self.args_class_name = args_class_name
 
         # attributes to be set and saved at runtime
         self.args_command_line = None
@@ -142,7 +145,7 @@ class MyParser:
         if 'config_file_name' in first_merged_args:
             config_file_path = first_merged_args['config_file_name']
         if config_file_path is None:
-            self.args_config_file = {}
+            self.args_config_file = asdict(self.args_class_name())
         else:
             self.parse_config_file_arguments(config_file_path)
         assert self.args_config_file is not None

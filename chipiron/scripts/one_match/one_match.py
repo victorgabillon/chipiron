@@ -25,8 +25,8 @@ class MatchScriptArgs:
     """
     The input arguments needed by the one match script to run
     """
-    base_script_args: BaseScriptArgs
-    match_args: MatchArgs
+    base_script_args: BaseScriptArgs = field(default_factory=BaseScriptArgs)
+    match_args: MatchArgs = field(default_factory=MatchArgs)
     implementation_args: ImplementationArgs = field(default_factory=ImplementationArgs)
     # whether to display the match in a GUI
     gui: bool = True

@@ -48,7 +48,7 @@ def get_script_and_args(
         args_obj, _ = parser_default.parse_known_args()
         args_command_line: dict[Any, Any] = vars(args_obj)  # converting into dictionary format
 
-        print('okoks', args_command_line)
+        print('command line arguments:', args_command_line)
 
         # the script name must be specified otherwise fail
         if args_command_line['script_name'] is None:
@@ -56,7 +56,7 @@ def get_script_and_args(
                 'Expecting command line arguments of the shape python chipiron.py --script_name **name_of script**')
 
         script_type_str: str = args_command_line['script_name']
-        script_type = ScriptType(script_type_str)
+        script_type : ScriptType = ScriptType(script_type_str)
 
         extra_args = {}
 

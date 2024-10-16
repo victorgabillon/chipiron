@@ -71,6 +71,7 @@ def create_parser(
 
     my_parser: MyParser = MyParser(
         parser=parser,
+        args_class_name=args_class_name,
         should_parse_command_line_arguments=should_parse_command_line_arguments
     )
 
