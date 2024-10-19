@@ -12,7 +12,6 @@ board_key = tuple[int, int, int, int, int, int, bool, int, int | None, int, int,
 
 
 class IBoard(Protocol):
-
     fast_representation_: board_key | None = None
 
     def play_move(
@@ -162,10 +161,12 @@ class IBoard(Protocol):
             str: A unique key representing the current state of the chess board.
         """
         string = (self.pawns, self.knights, self.bishops, self.rooks, self.queens, self.kings,
-                  self.turn, self.castling_rights, self.ep_square, self.halfmove_clock,
-                  self.white, self.black, self.promoted, self.fullmove_number)
+                  self.turn, self.castling_rights, self.ep_square,
+                  self.white, self.black, self.promoted, self.fullmove_number, self.halfmove_clock)
         return string
 
+
+    @property
     def fast_representation(self) -> str:
         """
         Returns a fast representation of the board.
@@ -176,8 +177,18 @@ class IBoard(Protocol):
         :return: A string representation of the board.
         :rtype: str
         """
-        if self.fast_representation_ is None:
-            self.fast_representation_ = self.compute_key()
-        #print('fast rep ' , self.fast_representation_)
-
         return self.fast_representation_
+
+
+    @property
+    def fast_representation_without_counters(self) -> str:
+        """
+        Returns a fast representation of the board.
+
+        This method computes and returns a string representation of the board
+        that can be quickly generated and used for various purposes.
+
+        :return: A string representation of the board.
+        :rtype: str
+        """
+        return self.fast_representation_[:-2]

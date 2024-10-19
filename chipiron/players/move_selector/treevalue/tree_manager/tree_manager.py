@@ -92,7 +92,7 @@ class TreeManager:
 
         # Creation of the child node. If the board already exited in another node, that node is returned as child_node.
         half_move: int = parent_node.half_move + 1
-        fast_rep: str = board.fast_representation()
+        fast_rep: str = board.fast_representation
 
         child_node: node.ITreeNode[Any]
         need_creation_child_node: bool = (tree.descendants.is_new_generation(half_move)

@@ -133,7 +133,7 @@ class NodeEvaluator:
         """
         game_over: bool = node.tree_node.board.is_game_over()
         if game_over:
-            value_as_string: str = node.board.result()
+            value_as_string: str = node.board.result(claim_draw=True)
             how_over_: HowOver
             who_is_winner_: Winner
             match value_as_string:

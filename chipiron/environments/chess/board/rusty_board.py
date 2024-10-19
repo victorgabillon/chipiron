@@ -1,3 +1,4 @@
+from collections import Counter
 from dataclasses import dataclass, field
 from typing import Self
 
@@ -7,6 +8,8 @@ import shakmaty_python_binding
 from chipiron.environments.chess.board.board_modification import BoardModification, compute_modifications
 from .iboard import IBoard, board_key
 
+
+# todo implement rewind (and a test for it)
 
 @dataclass
 class RustyBoardChi(IBoard):
@@ -19,16 +22,26 @@ class RustyBoardChi(IBoard):
     It is based on the binding library shakmaty_python_binding to use the rust library shakmaty
     """
 
+    # the shakmaty implementation of the board that we wrap here
     chess_: shakmaty_python_binding.MyChess
 
     compute_board_modification: bool
+
+    # to count the number of occurrence of each board to be able to compute
+    # three-fold repetition as shakmaty does not do it atm
+    rep_to_count: Counter[board_key, int]
 
     # the move history is kept here because shakmaty_python_binding.MyChess does not have a move stack at the moment
     move_stack: list[chess.Move] = field(default_factory=list)
 
     fast_representation_: board_key | None = None
 
-    def play_move(
+    def __post_init__(self):
+        if self.fast_representation is None:
+            self.fast_representation_: board_key = self.compute_key()
+            self.rep_to_count[self.fast_representation_without_counters] = 1
+
+    def play_move_old(
             self,
             move: chess.Move
     ) -> BoardModification | None:
@@ -106,7 +119,12 @@ class RustyBoardChi(IBoard):
         else:
             self.play_min(move)
 
+        # update after move
         self.legal_moves_ = None  # the legals moves needs to be recomputed as the board has changed
+        fast_representation: board_key = self.compute_key()
+        self.fast_representation_ = fast_representation
+        self.rep_to_count.update([self.fast_representation_without_counters])
+        self.move_stack.append(move)
         return board_modifications
 
     def ply(self) -> int:
@@ -135,8 +153,11 @@ class RustyBoardChi(IBoard):
         Returns:
             bool: True if the game is over, False otherwise.
         """
+        claim_draw: bool = True if len(self.move_stack) >= 5 else False
+        three_fold_repetition: bool = max(self.rep_to_count.values()) > 2 if claim_draw else False
+        print('ttt', claim_draw, three_fold_repetition, self.move_stack)
         # todo check the move stack : check for repetition as the rust version not do it
-        return self.chess_.is_game_over()
+        return three_fold_repetition or self.chess_.is_game_over()
 
     def copy(
             self,
@@ -156,7 +177,8 @@ class RustyBoardChi(IBoard):
         return RustyBoardChi(
             chess_=chess_copy,
             move_stack=move_stack_,
-            compute_board_modification=self.compute_board_modification
+            compute_board_modification=self.compute_board_modification,
+            rep_to_count=self.rep_to_count.copy()
         )
 
     @property
@@ -185,8 +207,6 @@ class RustyBoardChi(IBoard):
         :return: The FEN string representing the current state of the board.
         """
         return self.chess_.fen()
-
-
 
     def piece_at(
             self,
@@ -316,7 +336,7 @@ class RustyBoardChi(IBoard):
     def occupied(self) -> chess.Bitboard:
         return self.chess_.occupied()
 
-    def result(self) -> str:
+    def result(self, claim_draw=False) -> str:
         return self.chess_.result()
 
     @property
@@ -351,7 +371,6 @@ class RustyBoardChi(IBoard):
     @property
     def ep_square(self) -> int | None:
         return self.chess_.ep_square()
-
 
     def fast_representation_old(self) -> str:
         """
