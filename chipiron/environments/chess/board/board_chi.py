@@ -38,6 +38,7 @@ class BoardChi(IBoard):
         """
         self.board = board
         self.compute_board_modification = compute_board_modification
+        self.fast_representation_ = self.compute_key()
 
     def play_moveà(
             self,
@@ -69,6 +70,7 @@ class BoardChi(IBoard):
     def play_mon(self, move):
         self.board.push(move)
 
+    # todo look like this function might move to ibord when the dust settle
     def play_move(
             self,
             move: chess.Move
@@ -129,7 +131,10 @@ class BoardChi(IBoard):
         else:
             self.board.push(move)
 
+        # update after move
         self.legal_moves_ = None  # the legals moves needs to be recomputed as the board has changed
+        fast_representation: board_key = self.compute_key()
+        self.fast_representation_ = fast_representation
         return board_modifications
 
     def rewind_one_move(self) -> None:
@@ -516,8 +521,6 @@ class BoardChi(IBoard):
             self.board.fullmove_number)
         return string
 
-
-
     def print_chess_board(self) -> None:
         """
         Prints the current state of the chess board.
@@ -572,7 +575,8 @@ class BoardChi(IBoard):
         # assume that player claim draw otherwise the opponent might be overoptimistic
         # in winning position where draw by repetition occur
         claim_draw: bool = True if len(self.board.move_stack) >= 4 else False
-        return self.board.is_game_over(claim_draw=claim_draw)
+        is_game_over: bool = self.board.is_game_over(claim_draw=claim_draw)
+        return is_game_over
 
     def ply(self) -> int:
         """
@@ -731,8 +735,11 @@ class BoardChi(IBoard):
             print('is_checkmate')
         print(self.board.result())
 
-    def result(self) -> str:
-        return self.board.result()
+    def result(
+            self,
+            claim_draw: bool = False
+    ) -> str:
+        return self.board.result(claim_draw=claim_draw)
 
     @property
     def move_history_stack(self) -> list[chess.Move]:
@@ -781,11 +788,8 @@ class BoardChi(IBoard):
     def occupied_color(self, color: chess.COLORS) -> chess.Bitboard:
         return self.board.occupied_co[color]
 
-    def result(self) -> str:
-        return self.board.result()
-
     def termination(self) -> chess.Termination:
-        return self.board.outcome().termination
+        return self.board.outcome(claim_draw=True).termination
 
     @property
     def promoted(self) -> chess.Bitboard:
@@ -802,4 +806,3 @@ class BoardChi(IBoard):
     @property
     def ep_square(self) -> int | None:
         return self.board.ep_square
-

@@ -1,8 +1,10 @@
 """
 Module to check if an object is a dataclass
 """
-from typing import ClassVar, Protocol, Any
+from collections.abc import Iterable
 from enum import Enum
+from typing import ClassVar, Protocol, Any
+
 
 class DataClass(Protocol):
     """
@@ -24,9 +26,8 @@ class IsDataclass(Protocol):
     __dataclass_fields__: ClassVar[dict[Any, Any]]
 
 
-def custom_asdict_factory(data):
-
-    def convert_value(obj):
+def custom_asdict_factory(data: Iterable) -> dict[Any, Any]:
+    def convert_value(obj: Any) -> Any:
         if isinstance(obj, Enum):
             return obj.value
         return obj

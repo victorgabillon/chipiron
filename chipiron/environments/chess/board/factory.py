@@ -1,6 +1,7 @@
 """
 Module to create a chess board.
 """
+from collections import Counter
 from functools import partial
 from typing import Protocol
 
@@ -93,7 +94,8 @@ def create_rust_board(
 
     rusty_board_chi: RustyBoardChi = RustyBoardChi(
         chess_=chess_rust_binding,
-        compute_board_modification=use_board_modification
+        compute_board_modification=use_board_modification,
+        rep_to_count=Counter()
     )
     rusty_board_chi.move_stack = fen_with_history.historical_moves
 

@@ -9,12 +9,13 @@ Classes:
 
 import os
 import sys
+from dataclasses import asdict
 from typing import Any
 
 import yaml
 
 from chipiron.utils.small_tools import unflatten
-from dataclasses import asdict
+
 
 class MyParser:
     """
@@ -51,7 +52,7 @@ class MyParser:
             self,
             parser: Any,
             args_class_name: Any,  # type[DataclassInstance]
-        should_parse_command_line_arguments: bool = True
+            should_parse_command_line_arguments: bool = True
     ) -> None:
         """
         Initialize the MyParser object.
@@ -145,7 +146,12 @@ class MyParser:
         if 'config_file_name' in first_merged_args:
             config_file_path = first_merged_args['config_file_name']
         if config_file_path is None:
-            self.args_config_file = asdict(self.args_class_name())
+            try:
+                self.args_config_file = asdict(self.args_class_name())
+            except:
+                raise Exception(
+                    'The Args dataclass should have all its attribute'
+                    ' have default value to have a default instantiation')
         else:
             self.parse_config_file_arguments(config_file_path)
         assert self.args_config_file is not None

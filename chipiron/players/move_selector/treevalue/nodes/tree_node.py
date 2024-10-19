@@ -90,7 +90,7 @@ class TreeNode(Generic[ChildrenType]):
             None
         """
         if self.board_:
-            self.fast_rep = self.board_.fast_representation()
+            self.fast_rep = self.board_.fast_representation
             self.player_to_move_: chess.Color = self.board_.turn
 
     @property
