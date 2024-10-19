@@ -7,8 +7,8 @@ import chess
 import chess.polyglot
 from chess import _BoardState
 
-from chipiron.environments.chess.board.board_modification import BoardModification, PieceInSquare
-from .iboard import IBoard
+from chipiron.environments.chess.board.board_modification import BoardModification, PieceInSquare, compute_modifications
+from .iboard import IBoard, board_key
 
 # todo check if we need this here
 COLORS = [WHITE, BLACK] = [True, False]
@@ -23,7 +23,7 @@ class BoardChi(IBoard):
     board: chess.Board
     compute_board_modification: bool
     legal_moves_: list[chess.Move] | None = None
-    fast_representation_: str | None = None
+    fast_representation_: board_key | None = None
 
     def __init__(
             self,
@@ -39,7 +39,7 @@ class BoardChi(IBoard):
         self.board = board
         self.compute_board_modification = compute_board_modification
 
-    def play_move(
+    def play_moveà(
             self,
             move: chess.Move
     ) -> BoardModification | None:
@@ -62,6 +62,72 @@ class BoardChi(IBoard):
             # raise Exception('None Modif looks not good in board.py')
         else:
             board_modifications = self.board.push(move)
+
+        self.legal_moves_ = None  # the legals moves needs to be recomputed as the board has changed
+        return board_modifications
+
+    def play_mon(self, move):
+        self.board.push(move)
+
+    def play_move(
+            self,
+            move: chess.Move
+    ) -> BoardModification | None:
+        """
+        Plays a move on the board and returns the board modification.
+
+        Args:
+            move: The move to play.
+
+        Returns:
+            The board modification resulting from the move or None.
+        """
+        # todo: illegal moves seem accepted, do we care? if we dont write it in the doc
+        # assert self.board.is_legal(move)
+        #
+        board_modifications: BoardModification | None = None
+
+        if self.compute_board_modification:
+            previous_pawns = self.board.pawns
+            previous_kings = self.board.kings
+            previous_queens = self.board.queens
+            previous_rooks = self.board.rooks
+            previous_bishops = self.board.bishops
+            previous_knights = self.board.knights
+            previous_occupied_white = self.board.occupied_co[chess.WHITE]
+            previous_occupied_black = self.board.occupied_co[chess.BLACK]
+
+            self.play_mon(move)
+
+            new_pawns = self.board.pawns
+            new_kings = self.board.kings
+            new_queens = self.board.queens
+            new_rooks = self.board.rooks
+            new_bishops = self.board.bishops
+            new_knights = self.board.knights
+            new_occupied_white = self.board.occupied_co[chess.WHITE]
+            new_occupied_black = self.board.occupied_co[chess.BLACK]
+
+            board_modifications = compute_modifications(
+                previous_bishops=previous_bishops,
+                previous_pawns=previous_pawns,
+                previous_kings=previous_kings,
+                previous_knights=previous_knights,
+                previous_queens=previous_queens,
+                previous_occupied_white=previous_occupied_white,
+                previous_rooks=previous_rooks,
+                previous_occupied_black=previous_occupied_black,
+                new_kings=new_kings,
+                new_bishops=new_bishops,
+                new_pawns=new_pawns,
+                new_queens=new_queens,
+                new_rooks=new_rooks,
+                new_knights=new_knights,
+                new_occupied_black=new_occupied_black,
+                new_occupied_white=new_occupied_white
+            )
+        else:
+            self.board.push(move)
 
         self.legal_moves_ = None  # the legals moves needs to be recomputed as the board has changed
         return board_modifications
@@ -277,7 +343,7 @@ class BoardChi(IBoard):
 
         # Reset en passant square.
         ep_square = self.board.ep_square
-        self.ep_square = None
+        self.board.ep_square = None
 
         # Increment move counters.
         self.board.halfmove_clock += 1
@@ -432,7 +498,7 @@ class BoardChi(IBoard):
         self.board.turn = not self.board.turn
         return board_modifications
 
-    def compute_key(self) -> str:
+    def compute_key_old(self) -> str:
         """
         Computes and returns a unique key representing the current state of the chess board.
 
@@ -450,20 +516,7 @@ class BoardChi(IBoard):
             self.board.fullmove_number)
         return string
 
-    def fast_representation(self) -> str:
-        """
-        Returns a fast representation of the board.
 
-        This method computes and returns a string representation of the board
-        that can be quickly generated and used for various purposes.
-
-        :return: A string representation of the board.
-        :rtype: str
-        """
-
-        if self.fast_representation_ is None:
-            self.fast_representation_ = self.compute_key()
-        return self.fast_representation_
 
     def print_chess_board(self) -> None:
         """
@@ -706,12 +759,20 @@ class BoardChi(IBoard):
         return self.board.queens
 
     @property
+    def kings(self) -> chess.Bitboard:
+        return self.board.kings
+
+    @property
     def white(self) -> chess.Bitboard:
         return self.board.occupied_co[chess.WHITE]
 
     @property
     def black(self) -> chess.Bitboard:
         return self.board.occupied_co[chess.BLACK]
+
+    @property
+    def castling_rights(self) -> chess.Bitboard:
+        return self.board.castling_rights
 
     @property
     def occupied(self) -> chess.Bitboard:
@@ -725,3 +786,20 @@ class BoardChi(IBoard):
 
     def termination(self) -> chess.Termination:
         return self.board.outcome().termination
+
+    @property
+    def promoted(self) -> chess.Bitboard:
+        return self.board.promoted
+
+    @property
+    def fullmove_number(self) -> int:
+        return self.board.fullmove_number
+
+    @property
+    def halfmove_clock(self) -> int:
+        return self.board.halfmove_clock
+
+    @property
+    def ep_square(self) -> int | None:
+        return self.board.ep_square
+
