@@ -104,7 +104,7 @@ class RustyBoardChi(IBoard):
                 new_occupied_white=new_occupied_white
             )
         else:
-            self.board.push(move)
+            self.play_min(move)
 
         self.legal_moves_ = None  # the legals moves needs to be recomputed as the board has changed
         return board_modifications
@@ -334,23 +334,23 @@ class RustyBoardChi(IBoard):
 
     @property
     def halfmove_clock(self) -> int:
-        return self.chess_.halfmove_clock
+        return self.chess_.halfmove_clock()
 
     @property
     def kings(self) -> chess.Bitboard:
-        return self.chess_.kings
+        return self.chess_.kings()
 
     @property
     def promoted(self) -> chess.Bitboard:
-        return self.chess_.promoted
+        return self.chess_.promoted()
 
     @property
     def fullmove_number(self) -> int:
-        return self.chess_.fullmove_clock
+        return self.chess_.fullmove_clock()
 
     @property
     def ep_square(self) -> int | None:
-        return self.chess_.ep_square
+        return self.chess_.ep_square()
 
 
     def fast_representation_old(self) -> str:

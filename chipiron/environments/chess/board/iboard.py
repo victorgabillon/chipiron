@@ -176,7 +176,8 @@ class IBoard(Protocol):
         :return: A string representation of the board.
         :rtype: str
         """
-
         if self.fast_representation_ is None:
             self.fast_representation_ = self.compute_key()
+        #print('fast rep ' , self.fast_representation_)
+
         return self.fast_representation_
