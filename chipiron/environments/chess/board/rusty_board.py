@@ -4,8 +4,8 @@ from typing import Self
 import chess
 import shakmaty_python_binding
 
-from chipiron.environments.chess.board.board_modification import BoardModification
-from .iboard import IBoard
+from chipiron.environments.chess.board.board_modification import BoardModification, compute_modifications
+from .iboard import IBoard, board_key
 
 
 @dataclass
@@ -26,7 +26,7 @@ class RustyBoardChi(IBoard):
     # the move history is kept here because shakmaty_python_binding.MyChess does not have a move stack at the moment
     move_stack: list[chess.Move] = field(default_factory=list)
 
-    fast_representation_: str | None = None
+    fast_representation_: board_key | None = None
 
     def play_move(
             self,
@@ -41,6 +41,72 @@ class RustyBoardChi(IBoard):
             self.chess_.play(move.uci())
             board_modifications = None
         self.move_history_stack.append(move)
+        return board_modifications
+
+    def play_min(self, move):
+        self.chess_.play(move.uci())
+
+    def play_move(
+            self,
+            move: chess.Move
+    ) -> BoardModification | None:
+        """
+        Plays a move on the board and returns the board modification.
+
+        Args:
+            move: The move to play.
+
+        Returns:
+            The board modification resulting from the move or None.
+        """
+        # todo: illegal moves seem accepted, do we care? if we dont write it in the doc
+        # assert self.board.is_legal(move)
+        #
+        board_modifications: BoardModification | None = None
+
+        if self.compute_board_modification:
+            previous_pawns = self.chess_.pawns()
+            previous_kings = self.chess_.kings()
+            previous_queens = self.chess_.queens()
+            previous_rooks = self.chess_.rooks()
+            previous_bishops = self.chess_.bishops()
+            previous_knights = self.chess_.knights()
+            previous_occupied_white = self.chess_.white()
+            previous_occupied_black = self.chess_.black()
+
+            self.play_min(move)
+
+            new_pawns = self.chess_.pawns()
+            new_kings = self.chess_.kings()
+            new_queens = self.chess_.queens()
+            new_rooks = self.chess_.rooks()
+            new_bishops = self.chess_.bishops()
+            new_knights = self.chess_.knights()
+            new_occupied_white = self.chess_.white()
+            new_occupied_black = self.chess_.black()
+
+            board_modifications = compute_modifications(
+                previous_bishops=previous_bishops,
+                previous_pawns=previous_pawns,
+                previous_kings=previous_kings,
+                previous_knights=previous_knights,
+                previous_queens=previous_queens,
+                previous_occupied_white=previous_occupied_white,
+                previous_rooks=previous_rooks,
+                previous_occupied_black=previous_occupied_black,
+                new_kings=new_kings,
+                new_bishops=new_bishops,
+                new_pawns=new_pawns,
+                new_queens=new_queens,
+                new_rooks=new_rooks,
+                new_knights=new_knights,
+                new_occupied_black=new_occupied_black,
+                new_occupied_white=new_occupied_white
+            )
+        else:
+            self.board.push(move)
+
+        self.legal_moves_ = None  # the legals moves needs to be recomputed as the board has changed
         return board_modifications
 
     def ply(self) -> int:
@@ -120,19 +186,7 @@ class RustyBoardChi(IBoard):
         """
         return self.chess_.fen()
 
-    def fast_representation(self) -> str:
-        """
-        Returns a fast representation of the board.
 
-        This method computes and returns a string representation of the board
-        that can be quickly generated and used for various purposes.
-
-        :return: A string representation of the board.
-        :rtype: str
-        """
-        if self.fast_representation_ is None:
-            self.fast_representation_ = self.chess_.fen()
-        return self.fast_representation_
 
     def piece_at(
             self,
@@ -265,6 +319,10 @@ class RustyBoardChi(IBoard):
     def result(self) -> str:
         return self.chess_.result()
 
+    @property
+    def castling_rights(self) -> chess.Bitboard:
+        return self.chess_.castling_rights()
+
     def termination(self) -> None:
         return None
 
@@ -273,3 +331,39 @@ class RustyBoardChi(IBoard):
             return self.chess_.white()
         else:
             return self.chess_.black()
+
+    @property
+    def halfmove_clock(self) -> int:
+        return self.chess_.halfmove_clock
+
+    @property
+    def kings(self) -> chess.Bitboard:
+        return self.chess_.kings
+
+    @property
+    def promoted(self) -> chess.Bitboard:
+        return self.chess_.promoted
+
+    @property
+    def fullmove_number(self) -> int:
+        return self.chess_.fullmove_clock
+
+    @property
+    def ep_square(self) -> int | None:
+        return self.chess_.ep_square
+
+
+    def fast_representation_old(self) -> str:
+        """
+        Returns a fast representation of the board.
+
+        This method computes and returns a string representation of the board
+        that can be quickly generated and used for various purposes.
+
+        :return: A string representation of the board.
+        :rtype: str
+        """
+
+        if self.fast_representation_ is None:
+            self.fast_representation_ = self.chess_.fen()
+        return self.fast_representation_

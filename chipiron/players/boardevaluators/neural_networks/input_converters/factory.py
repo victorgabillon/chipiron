@@ -21,7 +21,7 @@ from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_nod
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 from .board_representation import Representation364
-
+from chipiron.environments.chess.board.iboard import IBoard
 
 def node_to_tensors_pieces_square_from_parent(
         node: ITreeNode[Any],
@@ -77,11 +77,11 @@ def node_to_tensors_pieces_square_from_parent(
     tensor_castling_white = torch.zeros(2, requires_grad=False, dtype=torch.float)
     tensor_castling_black = torch.zeros(2, requires_grad=False, dtype=torch.float)
 
-    board = node.board
-    tensor_castling_white[0] = bool(board.board.castling_rights & chess.BB_A1)
-    tensor_castling_white[1] = bool(board.board.castling_rights & chess.BB_H1)
-    tensor_castling_black[0] = bool(board.board.castling_rights & chess.BB_A8)
-    tensor_castling_black[1] = bool(board.board.castling_rights & chess.BB_H8)
+    board : IBoard = node.board
+    tensor_castling_white[0] = bool(board.castling_rights & chess.BB_A1)
+    tensor_castling_white[1] = bool(board.castling_rights & chess.BB_H1)
+    tensor_castling_black[0] = bool(board.castling_rights & chess.BB_A8)
+    tensor_castling_black[1] = bool(board.castling_rights & chess.BB_H8)
 
     representation = Representation364(
         tensor_white=tensor_white,

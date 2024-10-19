@@ -8,8 +8,12 @@ from chipiron.environments.chess.board.board_modification import BoardModificati
 from .utils import FenPlusMoveHistory
 from .utils import fen
 
+board_key = tuple[int, int, int, int, int, int, bool, int, int | None, int, int, int, int, int]
+
 
 class IBoard(Protocol):
+
+    fast_representation_: board_key | None = None
 
     def play_move(
             self,
@@ -91,6 +95,10 @@ class IBoard(Protocol):
         ...
 
     @property
+    def kings(self) -> chess.Bitboard:
+        ...
+
+    @property
     def white(self) -> chess.Bitboard:
         ...
 
@@ -99,16 +107,32 @@ class IBoard(Protocol):
         ...
 
     @property
+    def halfmove_clock(self) -> int:
+        ...
+
+    @property
+    def promoted(self) -> chess.Bitboard:
+        ...
+
+    @property
+    def fullmove_number(self) -> int:
+        ...
+
+    @property
+    def castling_rights(self) -> chess.Bitboard:
+        ...
+
+    @property
     def occupied(self) -> chess.Bitboard:
         ...
 
-    def occupied_color(self, color: chess.COLORS)-> chess.Bitboard:
+    def occupied_color(self, color: chess.COLORS) -> chess.Bitboard:
         ...
 
     def result(self) -> str:
         ...
 
-    def termination(self) -> chess.Termination|None:
+    def termination(self) -> chess.Termination | None:
         ...
 
     def dump(self, file) -> None:
@@ -121,3 +145,38 @@ class IBoard(Protocol):
         )
 
         yaml.dump(asdict(fen_plus_moves), file, default_flow_style=False)
+
+    @property
+    def ep_square(self) -> int | None:
+        ...
+
+    def compute_key(self) -> board_key:
+        """
+        Computes and returns a unique key representing the current state of the chess board.
+
+        The key is computed by concatenating various attributes of the board, including the positions of pawns, knights,
+        bishops, rooks, queens, and kings, as well as the current turn, castling rights, en passant square, halfmove clock,
+        occupied squares for each color, promoted pieces, and the fullmove number.
+        It is faster than calling the fen.
+        Returns:
+            str: A unique key representing the current state of the chess board.
+        """
+        string = (self.pawns, self.knights, self.bishops, self.rooks, self.queens, self.kings,
+                  self.turn, self.castling_rights, self.ep_square, self.halfmove_clock,
+                  self.white, self.black, self.promoted, self.fullmove_number)
+        return string
+
+    def fast_representation(self) -> str:
+        """
+        Returns a fast representation of the board.
+
+        This method computes and returns a string representation of the board
+        that can be quickly generated and used for various purposes.
+
+        :return: A string representation of the board.
+        :rtype: str
+        """
+
+        if self.fast_representation_ is None:
+            self.fast_representation_ = self.compute_key()
+        return self.fast_representation_
