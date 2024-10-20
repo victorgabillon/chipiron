@@ -8,7 +8,7 @@ import cProfile
 import random
 
 from chipiron.environments.chess.board import create_board
-from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
+from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.players.factory import create_player
 from chipiron.players.player_args import PlayerArgs
 from chipiron.players.utils import fetch_player_args_convert_and_save

@@ -1,4 +1,5 @@
 from dataclasses import asdict
+from typing import Any
 from typing import Protocol, Self
 
 import chess
@@ -9,6 +10,7 @@ from .utils import FenPlusMoveHistory
 from .utils import fen
 
 board_key = tuple[int, int, int, int, int, int, bool, int, int | None, int, int, int, int, int]
+board_key_without_counters = tuple[int, int, int, int, int, int, bool, int, int | None, int, int, int]
 
 
 class IBoard(Protocol):
@@ -125,7 +127,7 @@ class IBoard(Protocol):
     def occupied(self) -> chess.Bitboard:
         ...
 
-    def occupied_color(self, color: chess.COLORS) -> chess.Bitboard:
+    def occupied_color(self, color: chess.Color) -> chess.Bitboard:
         ...
 
     def result(self) -> str:
@@ -134,7 +136,7 @@ class IBoard(Protocol):
     def termination(self) -> chess.Termination | None:
         ...
 
-    def dump(self, file) -> None:
+    def dump(self, file: Any) -> None:
         # create minimal info for reconstruction that is the class FenPlusMoveHistory
 
         current_fen: fen = self.fen
@@ -165,9 +167,8 @@ class IBoard(Protocol):
                   self.white, self.black, self.promoted, self.fullmove_number, self.halfmove_clock)
         return string
 
-
     @property
-    def fast_representation(self) -> str:
+    def fast_representation(self) -> board_key | None:
         """
         Returns a fast representation of the board.
 
@@ -179,9 +180,8 @@ class IBoard(Protocol):
         """
         return self.fast_representation_
 
-
     @property
-    def fast_representation_without_counters(self) -> str:
+    def fast_representation_without_counters(self) -> board_key_without_counters:
         """
         Returns a fast representation of the board.
 
@@ -191,4 +191,5 @@ class IBoard(Protocol):
         :return: A string representation of the board.
         :rtype: str
         """
+        assert self.fast_representation_ is not None
         return self.fast_representation_[:-2]

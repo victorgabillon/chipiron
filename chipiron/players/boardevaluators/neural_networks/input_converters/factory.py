@@ -160,7 +160,7 @@ class Representation364Factory:
 
         return representation
 def e(board):
-    piece_map: dict[chess.Square, (int, bool)] = board.piece_map()
+    piece_map: dict[chess.Square, tuple[int, bool]] = board.piece_map()
     return piece_map
 def d():
     white: torch.Tensor = torch.zeros(384, dtype=torch.float)

@@ -8,7 +8,7 @@ from chipiron.scripts.script_args import BaseScriptArgs
 
 # we need to not use multiprocessing to be able to use pytest therefore use setting_cubo  and not setting_jime
 
-#Todo add the check of rust with or without borad mofification
+# Todo add the check of rust with or without borad mofification
 # todo check that the game is the same with or without rust
 # todo check that the game is the same with or without board mofificaiton
 
@@ -29,69 +29,6 @@ configs_base = [
             'profiling': False,
             'testing': True
         }
-    },
-
-    # 'use_board_modification': True
-    {
-
-        'gui': False,
-        'match_args': {
-            'seed': 11,
-            'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
-            'file_name_player_two': 'Random.yaml',
-            'file_name_match_setting': 'setting_cubo.yaml'
-        },
-        'base_script_args': {
-            'profiling': False,
-            'testing': True
-        },
-        'implementation_args': {
-            'use_board_modification': True,
-            'use_rust_boards': False
-        }
-
-    },
-
-    # RUSTY BOARD 'use_board_modification': False
-    {
-
-        'gui': False,
-        'match_args': {
-            'seed': 11,
-            'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
-            'file_name_player_two': 'Random.yaml',
-            'file_name_match_setting': 'setting_cubo.yaml'
-        },
-        'base_script_args': {
-            'profiling': False,
-            'testing': True
-        },
-        'implementation_args': {
-            'use_board_modification': False,
-            'use_rust_boards': True
-        }
-
-    },
-
-    # RUSTY BOARD 'use_board_modification': TRUE
-    {
-
-        'gui': False,
-        'match_args': {
-            'seed': 11,
-            'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
-            'file_name_player_two': 'Random.yaml',
-            'file_name_match_setting': 'setting_cubo.yaml'
-        },
-        'base_script_args': {
-            'profiling': False,
-            'testing': True
-        },
-        'implementation_args': {
-            'use_board_modification': True,
-            'use_rust_boards': True
-        }
-
     },
 
     {
@@ -219,6 +156,33 @@ configs_base = [
     # todo add basic eval (no neural nets)
 ]
 
+configs_implementation = [
+    {
+        'implementation_args': {
+            'use_board_modification': False,
+            'use_rust_boards': False
+        }
+    },
+    {
+        'implementation_args': {
+            'use_board_modification': True,
+            'use_rust_boards': False
+        }
+    },
+    {
+        'implementation_args': {
+            'use_board_modification': False,
+            'use_rust_boards': True
+        }
+    },
+    {
+        'implementation_args': {
+            'use_board_modification': True,
+            'use_rust_boards': True
+        }
+    },
+]
+
 configs_with_stock = [
                          # stockfish
                          {
@@ -253,18 +217,20 @@ def test_one_matches(
         configs=configs_base
 ):
     for config in configs:
-        print(f'Running the SCRIPT with config {config}')
-        script_object: scripts.IScript = create_script(
-            script_type=scripts.ScriptType.OneMatch,
-            extra_args=config,
-            should_parse_command_line_arguments=False
-        )
+        for config_implementation in configs_implementation:
+            total_config = config | config_implementation
+            print(f'Running the SCRIPT with config {total_config}')
+            script_object: scripts.IScript = create_script(
+                script_type=scripts.ScriptType.OneMatch,
+                extra_args=total_config,
+                should_parse_command_line_arguments=False
+            )
 
-        # run the script
-        script_object.run()
+            # run the script
+            script_object.run()
 
-        # terminate the script
-        script_object.terminate()
+            # terminate the script
+            script_object.terminate()
 
 
 def test_randomness():

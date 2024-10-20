@@ -19,7 +19,7 @@ from typing import Literal
 import chipiron.players.move_selector.treevalue.search_factory as search_factories
 from chipiron.players.boardevaluators.neural_networks.input_converters.factory import create_board_representation, \
     Representation364Factory
-from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
+from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 from chipiron.players.move_selector.treevalue import node_factory
 from . import node_evaluator as node_eval

@@ -19,7 +19,7 @@ class BaseScriptArgs:
     # the folder where to output the results
     experiment_output_folder: path | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.experiment_output_folder is None:
             now = datetime.now()  # current date and time
 

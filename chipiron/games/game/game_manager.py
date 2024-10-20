@@ -15,7 +15,7 @@ from chipiron.environments import HalfMove
 from chipiron.environments.chess.board import BoardChi
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator
-from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
+from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.utils import path
 from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMessage
 from chipiron.utils.communication.player_game_messages import MoveMessage
