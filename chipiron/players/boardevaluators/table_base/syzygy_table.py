@@ -1,6 +1,8 @@
 """
 Module for the SyzygyTable class.
 """
+from typing import Protocol
+
 import chess.syzygy
 
 import chipiron.environments.chess.board as boards
@@ -8,7 +10,7 @@ from chipiron.players.boardevaluators.over_event import Winner, HowOver, OverTag
 from chipiron.utils import path
 
 
-class SyzygyTable:
+class SyzygyTable(Protocol):
     """
     A class representing a Syzygy tablebase for chess endgame analysis.
 

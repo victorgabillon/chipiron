@@ -5,7 +5,7 @@ This module provides a factory function for creating the main move selector base
 import random
 from typing import TypeAlias
 
-from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
+from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from . import human
 from . import move_selector
 from . import stockfish

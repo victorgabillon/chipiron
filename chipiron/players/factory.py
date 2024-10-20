@@ -8,7 +8,7 @@ import chess
 
 import chipiron.players.boardevaluators.table_base as table_base
 from chipiron.players.boardevaluators.table_base import create_syzygy
-from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
+from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.players.player_args import PlayerArgs
 from chipiron.players.utils import fetch_player_args_convert_and_save
 from chipiron.utils import path
@@ -19,7 +19,8 @@ from .player_args import PlayerFactoryArgs
 
 
 def create_chipiron_player(
-        depth: int
+        depth: int,
+        use_rusty_board: bool,
 ) -> Player:
     """
     Creates the chipiron champion/representative/standard/default player
@@ -30,8 +31,8 @@ def create_chipiron_player(
     Returns: the player
 
     """
-    syzygy_table: table_base.SyzygyTable | None = table_base.create_syzygy()
-    random_generator = random.Random()
+    syzygy_table: table_base.SyzygyTable | None = table_base.create_syzygy(use_rust=use_rusty_board)
+    random_generator: random.Random = random.Random()
 
     args_player: PlayerArgs = fetch_player_args_convert_and_save(
         file_name_player='data/players/player_config/chipiron/chipiron.yaml',
@@ -120,7 +121,8 @@ def create_player(
 
 def create_game_player(
         player_factory_args: PlayerFactoryArgs,
-        player_color: chess.Color
+        player_color: chess.Color,
+        use_rusty_board: bool
 ) -> GamePlayer:
     """Create a game player.
 
@@ -133,7 +135,7 @@ def create_game_player(
     Returns:
         GamePlayer: The created game player.
     """
-    syzygy_table: table_base.SyzygyTable | None = table_base.create_syzygy()
+    syzygy_table: table_base.SyzygyTable | None = table_base.create_syzygy(use_rust=use_rusty_board)
     random_generator = random.Random(player_factory_args.seed)
     player: Player = create_player(
         args=player_factory_args.player_args,

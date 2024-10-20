@@ -17,7 +17,7 @@ from chipiron.games.match.utils import fetch_match_games_args_convert_and_save
 from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator
 from chipiron.players.boardevaluators.factory import create_game_board_evaluator
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy
-from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
+from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.players.utils import fetch_two_players_args_convert_and_save
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script_args import BaseScriptArgs
@@ -34,7 +34,7 @@ def create_match_manager(
         implementation_args: ImplementationArgs,
         seed: int | None = None,
         output_folder_path: path | None = None,
-        gui: bool = False
+        gui: bool = False,
 ) -> MatchManager:
     """
     Create a match manager for running matches between two players.
@@ -56,7 +56,7 @@ def create_match_manager(
 
     # Creation of the Syzygy table for perfect play in low pieces cases, needed by the GameManager
     # and can also be used by the players
-    syzygy_mailbox: SyzygyTable | None = create_syzygy()
+    syzygy_mailbox: SyzygyTable | None = create_syzygy(use_rust=implementation_args.use_rust_boards)
 
     player_one_name: str = args_player_one.name
     player_two_name: str = args_player_two.name
@@ -73,7 +73,9 @@ def create_match_manager(
         game_manager_board_evaluator=game_board_evaluator,
         output_folder_path=output_folder_path,
         main_thread_mailbox=main_thread_mailbox,
-        board_factory = board_factory
+        board_factory = board_factory,
+        use_rusty_board=implementation_args.use_rust_boards
+
     )
 
     match_results_factory: MatchResultsFactory = MatchResultsFactory(

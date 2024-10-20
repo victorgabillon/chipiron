@@ -56,7 +56,7 @@ def get_script_and_args(
                 'Expecting command line arguments of the shape python chipiron.py --script_name **name_of script**')
 
         script_type_str: str = args_command_line['script_name']
-        script_type : ScriptType = ScriptType(script_type_str)
+        script_type = ScriptType(script_type_str)
 
         extra_args = {}
 

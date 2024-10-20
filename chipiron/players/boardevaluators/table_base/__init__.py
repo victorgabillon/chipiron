@@ -10,7 +10,7 @@ This module exports the following functions and classes:
 - SyzygyTable: A class representing a table base for endgame evaluation.
 """
 from .factory import create_syzygy
-from .syzygy import SyzygyTable
+from .syzygy_table import SyzygyTable
 
 __all__ = [
     "create_syzygy",

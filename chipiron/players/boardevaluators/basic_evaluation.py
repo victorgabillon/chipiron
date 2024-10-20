@@ -44,7 +44,7 @@ def add_pawns_value_white(
         float: The additional value for white pawns.
     """
     add_value: float = 0
-    for pawn in list(board.board.pieces(chess.PAWN, chess.WHITE)):
+    for pawn in list(board.pieces(chess.PAWN, chess.WHITE)):
         add_value += int((pawn - 8) / 8) / 50. * 1
     return add_value
 
@@ -149,7 +149,10 @@ class BasicEvaluation(BoardEvaluator):
         """
         pass
 
-    def value_white(self, board: IBoard) -> float:
+    def value_white(
+            self,
+            board: IBoard
+    ) -> float:
         """Calculates the value of the board for the white player.
 
         Args:

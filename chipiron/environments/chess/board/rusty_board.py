@@ -6,7 +6,7 @@ import chess
 import shakmaty_python_binding
 
 from chipiron.environments.chess.board.board_modification import BoardModification, compute_modifications
-from .iboard import IBoard, board_key
+from .iboard import IBoard, board_key,board_key_without_counters
 
 
 # todo implement rewind (and a test for it)
@@ -29,14 +29,14 @@ class RustyBoardChi(IBoard):
 
     # to count the number of occurrence of each board to be able to compute
     # three-fold repetition as shakmaty does not do it atm
-    rep_to_count: Counter[board_key, int]
+    rep_to_count: Counter[board_key_without_counters]
+
+    fast_representation_: board_key | None = None
 
     # the move history is kept here because shakmaty_python_binding.MyChess does not have a move stack at the moment
     move_stack: list[chess.Move] = field(default_factory=list)
 
-    fast_representation_: board_key | None = None
-
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.fast_representation is None:
             self.fast_representation_: board_key = self.compute_key()
             self.rep_to_count[self.fast_representation_without_counters] = 1
@@ -56,7 +56,7 @@ class RustyBoardChi(IBoard):
         self.move_history_stack.append(move)
         return board_modifications
 
-    def play_min(self, move):
+    def play_min(self, move: chess.Move) -> None:
         self.chess_.play(move.uci())
 
     def play_move(
@@ -134,7 +134,8 @@ class RustyBoardChi(IBoard):
         :return: The number of half-moves played on the board.
         :rtype: int
         """
-        return self.chess_.ply()
+        ply: int = self.chess_.ply()
+        return ply
 
     @property
     def turn(self) -> chess.Color:
@@ -155,7 +156,6 @@ class RustyBoardChi(IBoard):
         """
         claim_draw: bool = True if len(self.move_stack) >= 5 else False
         three_fold_repetition: bool = max(self.rep_to_count.values()) > 2 if claim_draw else False
-        print('ttt', claim_draw, three_fold_repetition, self.move_stack)
         # todo check the move stack : check for repetition as the rust version not do it
         return three_fold_repetition or self.chess_.is_game_over()
 
@@ -234,7 +234,7 @@ class RustyBoardChi(IBoard):
 
     def piece_map(
             self
-    ) -> dict[chess.Square, (int, bool)]:
+    ) -> dict[chess.Square, tuple[int, bool]]:
         dict_raw = self.chess_.piece_map()
         return dict_raw
 

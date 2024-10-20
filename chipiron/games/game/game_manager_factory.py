@@ -12,7 +12,7 @@ import chipiron.players as players_m
 from chipiron.games.game.game_args import GameArgs
 from chipiron.players import PlayerFactoryArgs
 from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator, ObservableBoardEvaluator
-from chipiron.players.boardevaluators.table_base.syzygy import SyzygyTable
+from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.players.factory_higher_level import MoveFunction, create_player_observer_distributed_players, \
     create_player_observer_mono_process
 from chipiron.utils import path
@@ -39,11 +39,14 @@ class GameManagerFactory:
 
     """
 
+    # todo we might want to plit this into various part, like maybe a player factory, not sure, think about it
+
     syzygy_table: SyzygyTable | None
     output_folder_path: path | None
     main_thread_mailbox: queue.Queue[IsDataclass]
     game_manager_board_evaluator: IGameBoardEvaluator
     board_factory: boards.BoardFactory
+    use_rusty_board: bool
     subscribers: list[queue.Queue[IsDataclass]] = field(default_factory=list)
 
     def create(
@@ -112,7 +115,8 @@ class GameManagerFactory:
                     generic_player, move_function = create_player_observer_mono_process(
                         player_color=player_color,
                         player_factory_args=player_factory_args,
-                        main_thread_mailbox=self.main_thread_mailbox
+                        main_thread_mailbox=self.main_thread_mailbox,
+                        use_rusty_board=self.use_rusty_board
                     )
                 players.append(generic_player)
 

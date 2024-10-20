@@ -115,7 +115,8 @@ def create_player_observer_distributed_players(
 def create_player_observer_mono_process(
         player_factory_args: PlayerFactoryArgs,
         player_color: chess.Color,
-        main_thread_mailbox: queue.Queue[IsDataclass]
+        main_thread_mailbox: queue.Queue[IsDataclass],
+use_rusty_board:bool
 ) -> tuple[GamePlayer, MoveFunction]:
     """Create a player observer.
 
@@ -138,7 +139,8 @@ def create_player_observer_mono_process(
 
     generic_player = create_game_player(
         player_factory_args=player_factory_args,
-        player_color=player_color
+        player_color=player_color,
+        use_rusty_board=use_rusty_board
     )
     move_function = partial(
         game_player_computes_move_on_board_and_send_move_in_queue,
