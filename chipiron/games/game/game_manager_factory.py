@@ -13,8 +13,7 @@ from chipiron.games.game.game_args import GameArgs
 from chipiron.players import PlayerFactoryArgs
 from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator, ObservableBoardEvaluator
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
-from chipiron.players.factory_higher_level import MoveFunction, create_player_observer_distributed_players, \
-    create_player_observer_mono_process
+from chipiron.players.factory_higher_level import MoveFunction, PlayerObserverFactory
 from chipiron.utils import path
 from chipiron.utils import seed
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage, extract_message_from_players
@@ -46,7 +45,7 @@ class GameManagerFactory:
     main_thread_mailbox: queue.Queue[IsDataclass]
     game_manager_board_evaluator: IGameBoardEvaluator
     board_factory: boards.BoardFactory
-    use_rusty_board: bool
+    player_observer_factory : PlayerObserverFactory
     subscribers: list[queue.Queue[IsDataclass]] = field(default_factory=list)
 
     def create(
@@ -104,20 +103,11 @@ class GameManagerFactory:
             if player_factory_args.player_args.name != 'Gui_Human':
                 generic_player: players_m.GamePlayer | players_m.PlayerProcess
                 move_function: MoveFunction
-                if args_game_manager.each_player_has_its_own_thread:
-                    generic_player, move_function = create_player_observer_distributed_players(
-                        player_color=player_color,
-                        player_factory_args=player_factory_args,
-                        main_thread_mailbox=self.main_thread_mailbox,
-                        board_factory=self.board_factory
-                    )
-                else:
-                    generic_player, move_function = create_player_observer_mono_process(
-                        player_color=player_color,
-                        player_factory_args=player_factory_args,
-                        main_thread_mailbox=self.main_thread_mailbox,
-                        use_rusty_board=self.use_rusty_board
-                    )
+                generic_player, move_function = self.player_observer_factory(
+                    player_color=player_color,
+                    player_factory_args=player_factory_args,
+                    main_thread_mailbox=self.main_thread_mailbox,
+                )
                 players.append(generic_player)
 
                 # registering to the observable board to get notification when it changes
@@ -138,6 +128,7 @@ class GameManagerFactory:
             player_color_to_id=player_color_to_id,
             main_thread_mailbox=self.main_thread_mailbox,
             players=players,
+            move_factory=self.move_factory
         )
 
         return game_manager

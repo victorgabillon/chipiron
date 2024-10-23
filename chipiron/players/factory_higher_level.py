@@ -64,6 +64,28 @@ def send_board_to_player_process_mailbox(
     player_process_mailbox.put(item=message)
 
 
+class PlayerObserverFactory(Protocol):
+    def __call__(
+            self,
+            player_factory_args: PlayerFactoryArgs,
+            player_color: chess.Color,
+            main_thread_mailbox: queue.Queue[IsDataclass],
+    ) -> tuple[GamePlayer | PlayerProcess, MoveFunction]:
+        ...
+
+
+def create_player_observer(
+        each_player_has_its_own_thread: bool,
+        board_factory:BoardFactory
+) -> PlayerObserverFactory:
+    player_observer_factory : PlayerObserverFactory
+    if each_player_has_its_own_thread:
+        player_observer_factory = partial(create_player_observer_distributed_players, board_factory=board_factory)
+    else:
+        player_observer_factory = create_player_observer_mono_process
+    return player_observer_factory
+
+
 def create_player_observer_distributed_players(
         player_factory_args: PlayerFactoryArgs,
         player_color: chess.Color,
@@ -116,7 +138,6 @@ def create_player_observer_mono_process(
         player_factory_args: PlayerFactoryArgs,
         player_color: chess.Color,
         main_thread_mailbox: queue.Queue[IsDataclass],
-use_rusty_board:bool
 ) -> tuple[GamePlayer, MoveFunction]:
     """Create a player observer.
 

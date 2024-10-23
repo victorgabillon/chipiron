@@ -68,13 +68,15 @@ def create_match_manager(
         use_board_modification=implementation_args.use_board_modification
     )
 
+    player_observer_factory =create_player_observer
+
     game_manager_factory: GameManagerFactory = GameManagerFactory(
         syzygy_table=syzygy_mailbox,
         game_manager_board_evaluator=game_board_evaluator,
         output_folder_path=output_folder_path,
         main_thread_mailbox=main_thread_mailbox,
-        board_factory = board_factory,
-        use_rusty_board=implementation_args.use_rust_boards
+        board_factory=board_factory,
+        player_observer_factory=player_observer_factory
 
     )
 

@@ -15,7 +15,10 @@ from .utils import fen, FenPlusMoveHistory
 
 
 class BoardFactory(Protocol):
-    def __call__(self, fen_with_history: FenPlusMoveHistory | None = None) -> IBoard:
+    def __call__(
+            self,
+            fen_with_history: FenPlusMoveHistory | None = None
+    ) -> IBoard:
         ...
 
 
@@ -84,6 +87,7 @@ def create_rust_board(
 
     """
     current_fen: fen
+    chess_rust_binding: shakmaty_python_binding.MyChess
 
     if fen_with_history is not None:
         current_fen: fen = fen_with_history.current_fen

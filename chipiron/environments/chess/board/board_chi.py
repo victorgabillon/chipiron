@@ -806,3 +806,9 @@ class BoardChi(IBoard):
     @property
     def ep_square(self) -> int | None:
         return self.board.ep_square
+
+    def is_zeroing(
+            self,
+            move: chess.Move
+    ) -> bool:
+        return self.board.is_zeroing(move)

@@ -2,13 +2,14 @@
 Module for the SyzygyTable class.
 """
 import chess.syzygy
+import shakmaty_python_binding
 
 import chipiron.environments.chess.board as boards
 from chipiron.players.boardevaluators.over_event import Winner, HowOver, OverTags
 from chipiron.utils import path
+from .syzygy_table import SyzygyTable
 
-
-class SyzygyChiTable:
+class SyzygyRustTable(SyzygyTable):
     """
     A class representing a Syzygy tablebase for chess endgame analysis.
 
@@ -44,6 +45,8 @@ class SyzygyChiTable:
             Get the best move according to the tablebase for the given board.
     """
 
+    table_base: shakmaty_python_binding.MyTableBase
+
     def __init__(
             self,
             path_to_table: path
@@ -55,11 +58,11 @@ class SyzygyChiTable:
             path_to_table (path): The path to the Syzygy tablebase.
         """
         path_to_table_str: str = str(path_to_table)
-        self.table_base = chess.syzygy.open_tablebase(path_to_table_str)
+        self.table_base = shakmaty_python_binding.MyTableBase(path_to_table_str)
 
     def fast_in_table(
             self,
-            board: boards.BoardChi
+            board: boards.RustyBoardChi
     ) -> bool:
         """
         Check if the given board is suitable for fast tablebase lookup.
@@ -74,7 +77,7 @@ class SyzygyChiTable:
 
     def in_table(
             self,
-            board: boards.BoardChi
+            board: boards.RustyBoardChi
     ) -> bool:
         """
         Check if the given board is in the tablebase.
@@ -86,14 +89,14 @@ class SyzygyChiTable:
             bool: True if the board is in the tablebase, False otherwise.
         """
         try:
-            self.table_base.probe_wdl(board.board)
+            self.table_base.probe_wdl(board.chess_)
         except KeyError:
             return False
         return True
 
     def get_over_event(
             self,
-            board: boards.BoardChi
+            board: boards.RustyBoardChi
     ) -> tuple[Winner, HowOver]:
         """
         Get the winner and how the game is over for the given board.
@@ -121,7 +124,7 @@ class SyzygyChiTable:
 
     def val(
             self,
-            board: boards.BoardChi
+            board: boards.RustyBoardChi
     ) -> int:
         """
         Get the value of the given board from the tablebase.
@@ -133,7 +136,7 @@ class SyzygyChiTable:
             int: The value of the board from the tablebase.
         """
         # tablebase.probe_wdl Returns 2 if the side to move is winning, 0 if the position is a draw and -2 if the side to move is losing.
-        val: int = self.table_base.probe_wdl(board.board)
+        val: int = self.table_base.probe_wdl(board.chess_)
         return val
 
     def value_white(
@@ -150,7 +153,7 @@ class SyzygyChiTable:
             int: The value of the board for the white player.
         """
         # tablebase.probe_wdl Returns 2 if the side to move is winning, 0 if the position is a draw and -2 if the side to move is losing.
-        val: int = self.table_base.probe_wdl(board.board)
+        val: int = self.table_base.probe_wdl(board.chess_)
         if board.turn == chess.WHITE:
             return val * 100000
         else:
@@ -169,7 +172,7 @@ class SyzygyChiTable:
         Returns:
             OverTags: The over tag for the board.
         """
-        val = self.table_base.probe_wdl(board.board)
+        val = self.table_base.probe_wdl(board.chess_)
         if val > 0:
             if board.turn == chess.WHITE:
                 return OverTags.TAG_WIN_WHITE
@@ -196,7 +199,7 @@ class SyzygyChiTable:
         Returns:
             str: The string representation of the result.
         """
-        val = self.table_base.probe_wdl(board.board)
+        val = self.table_base.probe_wdl(board.chess_)
         player_to_move = 'white' if board.turn == chess.WHITE else 'black'
         if val > 0:
             return 'WIN for player ' + player_to_move
@@ -218,5 +221,7 @@ class SyzygyChiTable:
         Returns:
             int: The DTZ value for the board.
         """
-        dtz: int = self.table_base.probe_dtz(board.board)
+        dtz: int = self.table_base.probe_dtz(board.chess_)
         return dtz
+
+

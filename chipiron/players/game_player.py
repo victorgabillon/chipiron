@@ -89,7 +89,7 @@ def game_player_computes_move_on_board_and_send_move_in_queue(
             seed_int=seed_int
         )
         message = MoveMessage(
-            move=move_recommendation.move,
+            move=move_recommendation.move.uci(),
             corresponding_board=board.fen,
             player_name=game_player.player.id,
             evaluation=move_recommendation.evaluation,

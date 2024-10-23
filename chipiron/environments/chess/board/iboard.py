@@ -6,6 +6,7 @@ import chess
 import yaml
 
 from chipiron.environments.chess.board.board_modification import BoardModification
+from chipiron.environments.chess.move.imove import IMove
 from .utils import FenPlusMoveHistory
 from .utils import fen
 
@@ -193,3 +194,9 @@ class IBoard(Protocol):
         """
         assert self.fast_representation_ is not None
         return self.fast_representation_[:-2]
+
+    def is_zeroing(
+            self,
+            move: IMove
+    ) -> bool:
+        ...

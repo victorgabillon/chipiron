@@ -6,7 +6,9 @@ import os
 
 from chipiron.players.boardevaluators.table_base.syzygy_python import SyzygyChiTable
 from chipiron.utils import path
+from .syzygy_rust import SyzygyRustTable
 from .syzygy_table import SyzygyTable
+
 
 def create_syzygy_python() -> SyzygyChiTable | None:
     """
@@ -49,6 +51,7 @@ def create_syzygy_rust() -> SyzygyChiTable | None:
 
     return syzygy_table
 
+
 def create_syzygy(use_rust: bool) -> SyzygyTable | None:
     """
     Create a SyzygyTable object
@@ -58,6 +61,5 @@ def create_syzygy(use_rust: bool) -> SyzygyTable | None:
         syzygy_table = create_syzygy_rust()
     else:
         syzygy_table = create_syzygy_python()
-
 
     return syzygy_table
