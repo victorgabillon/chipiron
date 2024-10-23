@@ -8,6 +8,7 @@ import chess.syzygy
 import chipiron.environments.chess.board as boards
 from chipiron.players.boardevaluators.over_event import Winner, HowOver, OverTags
 from chipiron.utils import path
+from chipiron.environments.chess.move import IMove
 
 
 class SyzygyTable(Protocol):
@@ -123,7 +124,7 @@ class SyzygyTable(Protocol):
 
     def val(
             self,
-            board: boards.BoardChi
+            board: boards.IBoard
     ) -> int:
         """
         Get the value of the given board from the tablebase.
@@ -134,9 +135,7 @@ class SyzygyTable(Protocol):
         Returns:
             int: The value of the board from the tablebase.
         """
-        # tablebase.probe_wdl Returns 2 if the side to move is winning, 0 if the position is a draw and -2 if the side to move is losing.
-        val: int = self.table_base.probe_wdl(board.board)
-        return val
+        ...
 
     def value_white(
             self,
@@ -209,7 +208,7 @@ class SyzygyTable(Protocol):
 
     def dtz(
             self,
-            board: boards.BoardChi
+            board: boards.IBoard
     ) -> int:
         """
         Get the distance-to-zero (DTZ) value for the given board.
@@ -220,12 +219,11 @@ class SyzygyTable(Protocol):
         Returns:
             int: The DTZ value for the board.
         """
-        dtz: int = self.table_base.probe_dtz(board.board)
-        return dtz
+        ...
 
     def best_move(
             self,
-            board: boards.BoardChi
+            board: boards.IBoard
     ) -> chess.Move:
         """
         Get the best move according to the tablebase for the given board.
@@ -236,28 +234,28 @@ class SyzygyTable(Protocol):
         Returns:
             chess.Move: The best move according to the tablebase.
         """
-        all_moves: list[chess.Move] = list(board.legal_moves)
-
+        all_moves: list[IMove] = list(board.legal_moves)
+        print('allmoves',all_moves, type(board))
         # avoid draws by 50 move rules in winning position, # otherwise look
         # for it to make it last and preserve pieces in case of mistake by opponent
 
         best_value = -1000000000000000000000
 
         assert all_moves
-        best_move: chess.Move = all_moves[0]
+        best_move: IMove = all_moves[0]
         for move in all_moves:
-            board_copy: boards.BoardChi = board.copy(stack=True)
-            board_copy.board.push(move)
+            board_copy: boards.IBoard = board.copy(stack=True)
+            board_copy.play_move(move=move)
             val_player_next_board = self.val(board_copy)
             val_player_node = -val_player_next_board
             dtz_player_next_board = self.dtz(board_copy)
             dtz_player_node = -dtz_player_next_board
             if val_player_node > 0:  # winning position
-                new_value = board.board.is_zeroing(move) * 100 - dtz_player_node + 1000
+                new_value = board.is_zeroing(move) * 100 - dtz_player_node + 1000
             elif val_player_node == 0:
-                new_value = - board.board.is_zeroing(move) * 100 + dtz_player_node
+                new_value = - board.is_zeroing(move) * 100 + dtz_player_node
             elif val_player_node < 0:
-                new_value = - board.board.is_zeroing(move) * 100 + dtz_player_node - 1000
+                new_value = - board.is_zeroing(move) * 100 + dtz_player_node - 1000
 
             if new_value > best_value:
                 best_value = new_value

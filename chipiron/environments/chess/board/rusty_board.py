@@ -7,7 +7,7 @@ import shakmaty_python_binding
 
 from chipiron.environments.chess.board.board_modification import BoardModification, compute_modifications
 from .iboard import IBoard, board_key,board_key_without_counters
-
+from chipiron.environments.chess.move import IMove
 
 # todo implement rewind (and a test for it)
 
@@ -41,6 +41,16 @@ class RustyBoardChi(IBoard):
             self.fast_representation_: board_key = self.compute_key()
             self.rep_to_count[self.fast_representation_without_counters] = 1
 
+
+    def __str__(self) -> str:
+        """
+        Returns a string representation of the board.
+
+        Returns:
+            str: A string representation of the board.
+        """
+        return ''
+
     def play_move_old(
             self,
             move: chess.Move
@@ -56,12 +66,12 @@ class RustyBoardChi(IBoard):
         self.move_history_stack.append(move)
         return board_modifications
 
-    def play_min(self, move: chess.Move) -> None:
-        self.chess_.play(move.uci())
+    def play_min(self, move: shakmaty_python_binding.MyMove) -> None:
+        self.chess_.play(move)
 
     def play_move(
             self,
-            move: chess.Move
+            move: shakmaty_python_binding.MyMove
     ) -> BoardModification | None:
         """
         Plays a move on the board and returns the board modification.
@@ -182,13 +192,9 @@ class RustyBoardChi(IBoard):
         )
 
     @property
-    def legal_moves(self) -> set[chess.Move]:
+    def legal_moves(self) -> set[IMove]:
         # todo minimize this call and understand when the role of the ariable all legal move generated
-        srt_legal_moves = self.chess_.legal_moves()
-        move_legal_moves = set()
-        for str_move in srt_legal_moves:
-            move_legal_moves.add(chess.Move.from_uci(str_move))
-        return move_legal_moves
+        return self.chess_.legal_moves()
 
     def number_of_pieces_on_the_board(self) -> int:
         """
@@ -337,7 +343,14 @@ class RustyBoardChi(IBoard):
         return self.chess_.occupied()
 
     def result(self, claim_draw=False) -> str:
-        return self.chess_.result()
+        print('ooooo,',claim_draw)
+        claim_draw_: bool = True if len(self.move_stack) >= 5 and claim_draw else False
+        three_fold_repetition: bool = max(self.rep_to_count.values()) > 2 if claim_draw_ else False
+
+        if three_fold_repetition:
+            return '1/2-1/2'
+        else:
+            return self.chess_.result()
 
     @property
     def castling_rights(self) -> chess.Bitboard:
@@ -386,3 +399,9 @@ class RustyBoardChi(IBoard):
         if self.fast_representation_ is None:
             self.fast_representation_ = self.chess_.fen()
         return self.fast_representation_
+
+    def is_zeroing(
+            self,
+            move: shakmaty_python_binding.MyMove
+    ) -> bool:
+        return move.is_zeroing()

@@ -12,7 +12,9 @@ import yaml
 
 import chipiron.players as players_m
 from chipiron.environments import HalfMove
-from chipiron.environments.chess.board import BoardChi
+from chipiron.environments.chess.board.iboard import IBoard
+from chipiron.environments.chess.move.imove import IMove
+from chipiron.environments.chess.move.factory import MoveFactory, moveUci
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
@@ -46,6 +48,7 @@ class GameManager:
     player_color_to_id: dict[chess.Color, str]
     main_thread_mailbox: queue.Queue[IsDataclass]
     players: list[players_m.PlayerProcess | players_m.GamePlayer]
+    move_factory: MoveFactory
 
     def __init__(
             self,
@@ -57,6 +60,7 @@ class GameManager:
             player_color_to_id: dict[chess.Color, str],
             main_thread_mailbox: queue.Queue[IsDataclass],
             players: list[players_m.PlayerProcess | players_m.GamePlayer],
+            move_factory: MoveFactory
     ) -> None:
         """
         Constructor for the GameManager Class. If the args, and players are not given a value it is set to None,
@@ -85,6 +89,7 @@ class GameManager:
         self.player_color_to_id = player_color_to_id
         self.main_thread_mailbox = main_thread_mailbox
         self.players = players
+        self.move_factory=move_factory
 
     def external_eval(self) -> tuple[float, float]:
         """Evaluates the game board using the display board evaluator.
@@ -183,18 +188,20 @@ class GameManager:
             None
         """
 
-        board: BoardChi = self.game.board
+        board: IBoard = self.game.board
 
         match message:
             case MoveMessage():
                 move_message: MoveMessage = message
                 # play the move
-                move: chess.Move = move_message.move
-                print('receiving the move', move, type(self), self.game.playing_status, type(self.game.playing_status))
+                move_uci: moveUci = move_message.move
+                print('receiving the move', move_uci, type(self), self.game.playing_status,
+                      type(self.game.playing_status))
                 if move_message.corresponding_board == board.fen and \
                         self.game.playing_status.is_play() and \
                         message.player_name == self.player_color_to_id[board.turn]:
-                    print(f'play a move {move} at {board} {self.game.board.fen}')
+                    print(f'play a move {move_uci} at {board} {self.game.board.fen}')
+                    move: IMove = self.move_factory(move_uci=move_uci, board=board)
                     self.play_one_move(move)
                     print(f'now board is  {self.game.board}')
 
