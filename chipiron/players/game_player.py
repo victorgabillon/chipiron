@@ -89,12 +89,13 @@ def game_player_computes_move_on_board_and_send_move_in_queue(
             seed_int=seed_int
         )
         message = MoveMessage(
-            move=move_recommendation.move.uci(),
+            move=move_recommendation.move,
             corresponding_board=board.fen,
             player_name=game_player.player.id,
             evaluation=move_recommendation.evaluation,
             color_to_play=game_player.color
         )
-        deep_copy_message = copy.deepcopy(message)
         print('sending ', message)
+
+        deep_copy_message = copy.deepcopy(message)
         queue_move.put(deep_copy_message)

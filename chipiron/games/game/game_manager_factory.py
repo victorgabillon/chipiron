@@ -12,8 +12,7 @@ import chipiron.players as players_m
 from chipiron.games.game.game_args import GameArgs
 from chipiron.players import PlayerFactoryArgs
 from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator, ObservableBoardEvaluator
-from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
-from chipiron.players.factory_higher_level import MoveFunction, PlayerObserverFactory
+from chipiron.players.factory_higher_level import MoveFunction, create_player_observer_factory
 from chipiron.utils import path
 from chipiron.utils import seed
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage, extract_message_from_players
@@ -21,6 +20,9 @@ from chipiron.utils.dataclass import IsDataclass
 from .game import Game, ObservableGame
 from .game_manager import GameManager
 from ...environments.chess.board.utils import FenPlusMoveHistory
+from ...environments.chess.move_factory import MoveFactory
+from ...players.boardevaluators.table_base import SyzygyTable
+from ...scripts.chipiron_args import ImplementationArgs
 
 
 @dataclass
@@ -45,7 +47,8 @@ class GameManagerFactory:
     main_thread_mailbox: queue.Queue[IsDataclass]
     game_manager_board_evaluator: IGameBoardEvaluator
     board_factory: boards.BoardFactory
-    player_observer_factory : PlayerObserverFactory
+    move_factory: MoveFactory
+    implementation_args: ImplementationArgs
     subscribers: list[queue.Queue[IsDataclass]] = field(default_factory=list)
 
     def create(
@@ -65,8 +68,11 @@ class GameManagerFactory:
         Returns:
             the created GameManager
         """
-        # maybe this factory is overkill at the moment but might be
-        # useful if the logic of game generation gets more complex
+        # useful if the logic of game generation gets complex
+        # in the future, we might want the implementation detail to actually be modified during the
+        # match in that case they would come arg_game_manager
+
+        ##### CREATING THE BOARD
         starting_fen: str = args_game_manager.starting_position.get_fen()
         board: boards.IBoard = self.board_factory(fen_with_history=FenPlusMoveHistory(current_fen=starting_fen))
         if self.subscribers:
@@ -93,6 +99,14 @@ class GameManagerFactory:
             for subscriber in self.subscribers:
                 observable_game.register_display(subscriber)
 
+
+        ##### CREATING THE PLAYERS
+        player_observer_factory = create_player_observer_factory(
+            each_player_has_its_own_thread=args_game_manager.each_player_has_its_own_thread,
+            implementation_args=self.implementation_args,
+            syzygy_table = self.syzygy_table
+        )
+
         players: list[players_m.GamePlayer | players_m.PlayerProcess] = []
         # Creating the players
         for player_color in chess.COLORS:
@@ -103,7 +117,7 @@ class GameManagerFactory:
             if player_factory_args.player_args.name != 'Gui_Human':
                 generic_player: players_m.GamePlayer | players_m.PlayerProcess
                 move_function: MoveFunction
-                generic_player, move_function = self.player_observer_factory(
+                generic_player, move_function = player_observer_factory(
                     player_color=player_color,
                     player_factory_args=player_factory_args,
                     main_thread_mailbox=self.main_thread_mailbox,

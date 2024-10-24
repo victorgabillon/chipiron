@@ -9,10 +9,8 @@ This module exports the following functions and classes:
 - create_syzygy: A function for creating a SyzygyTable object.
 - SyzygyTable: A class representing a table base for endgame evaluation.
 """
-from .factory import create_syzygy
 from .syzygy_table import SyzygyTable
 
 __all__ = [
-    "create_syzygy",
     "SyzygyTable"
 ]

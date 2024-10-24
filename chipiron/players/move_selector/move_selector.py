@@ -9,14 +9,14 @@ from typing import Protocol
 import chipiron.environments.chess.board as boards
 from chipiron.utils import seed
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import BoardEvaluation
-from chipiron.environments.chess.move.imove import IMove
+from chipiron.environments.chess.move import moveUci
 
 @dataclass
 class MoveRecommendation:
     """
     Represents a recommended move to play along with an optional evaluation score.
     """
-    move: IMove
+    move: moveUci
     evaluation: BoardEvaluation | None = None
 
 

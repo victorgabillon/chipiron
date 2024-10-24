@@ -11,6 +11,7 @@ from chipiron.scripts.script_args import BaseScriptArgs
 # Todo add the check of rust with or without borad mofification
 # todo check that the game is the same with or without rust
 # todo check that the game is the same with or without board mofificaiton
+# todo have a game that starts with an endgame to force to check the syzygy
 
 start_time = time.time()
 configs_base = [

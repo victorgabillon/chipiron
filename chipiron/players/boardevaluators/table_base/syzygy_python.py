@@ -5,10 +5,11 @@ import chess.syzygy
 
 import chipiron.environments.chess.board as boards
 from chipiron.players.boardevaluators.over_event import Winner, HowOver, OverTags
+from chipiron.players.boardevaluators.table_base import SyzygyTable
 from chipiron.utils import path
 
 
-class SyzygyChiTable:
+class SyzygyChiTable(SyzygyTable):
     """
     A class representing a Syzygy tablebase for chess endgame analysis.
 

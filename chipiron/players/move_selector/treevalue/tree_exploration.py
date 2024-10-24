@@ -150,7 +150,7 @@ class TreeExploration:
         self.tree_manager.print_best_line(tree=self.tree)  # todo maybe almost best chosen line no?
 
         move_recommendation: MoveRecommendation = MoveRecommendation(
-            move=best_move,
+            move=best_move.uci(),
             evaluation=self.tree.evaluate()
         )
 

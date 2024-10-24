@@ -64,7 +64,7 @@ class StockfishPlayer:
             MoveRecommendation: A MoveRecommendation object representing the selected move.
         """
         if self.engine is None:
-            # if this object is created in the init then seending the object
+            # if this object is created in the init then sending the object
             # self.engine = chess.engine.SimpleEngine.popen_uci(
             #    # TODO: should we remove the hardcoding
             #    r"stockfish/stockfish_14.1_linux_x64/stockfish_14.1_linux_x64")
@@ -75,7 +75,7 @@ class StockfishPlayer:
         result = self.engine.play(board.board, chess.engine.Limit(self.time_limit))
         self.engine.quit()
         self.engine = None
-        return MoveRecommendation(move=result.move)
+        return MoveRecommendation(move=result.move.uci())
 
     def print_info(self) -> None:
         """
