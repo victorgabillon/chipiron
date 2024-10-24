@@ -49,13 +49,13 @@ class Player:
         if not all_legal_moves:
             raise Exception('No legal moves in this position')
         if len(all_legal_moves) == 1 and self.id != 'Human':
-            move_recommendation = MoveRecommendation(move=all_legal_moves[0])
+            move_recommendation = MoveRecommendation(move=all_legal_moves[0].uci())
         else:
             # if the play with syzygy option is on test if the position is in the database to play syzygy
             if self.syzygy_player is not None and self.syzygy_player.fast_in_table(board):
                 print('Playing with Syzygy')
                 best_move = self.syzygy_player.best_move(board)
-                move_recommendation = MoveRecommendation(move=best_move)
+                move_recommendation = MoveRecommendation(move=best_move.uci())
 
             else:
                 print(f'Playing with player (not Syzygy) {self.id}\n{board}')

@@ -868,7 +868,7 @@ class NodeMinmaxEvaluation:
         if self.over_event.is_over():
             return ForcedOutcome(
                 outcome=self.over_event,
-                line=self.best_move_sequence
+                line=[move.uci() for move in self.best_move_sequence]
             )
         else:
             return FloatyBoardEvaluation(value_white=self.value_white_minmax)

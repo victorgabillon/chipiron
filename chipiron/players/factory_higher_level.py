@@ -9,15 +9,16 @@ from typing import Protocol
 import chess
 
 from chipiron.environments.chess.board import BoardChi, IBoard
-from chipiron.environments.chess.board.factory import BoardFactory
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.dataclass import IsDataclass
+from .boardevaluators.table_base import SyzygyTable
 from .factory import create_game_player
 from .game_player import GamePlayer, game_player_computes_move_on_board_and_send_move_in_queue
 from .player_args import PlayerFactoryArgs
 from .player_thread import PlayerProcess
 from ..environments.chess.board.utils import FenPlusMoveHistory
+from ..scripts.chipiron_args import ImplementationArgs
 
 
 # function that will be called by the observable game when the board is updated, which should query at least one player
@@ -74,15 +75,22 @@ class PlayerObserverFactory(Protocol):
         ...
 
 
-def create_player_observer(
+def create_player_observer_factory(
         each_player_has_its_own_thread: bool,
-        board_factory:BoardFactory
+        implementation_args: ImplementationArgs,
+        syzygy_table:SyzygyTable
 ) -> PlayerObserverFactory:
-    player_observer_factory : PlayerObserverFactory
+    player_observer_factory: PlayerObserverFactory
     if each_player_has_its_own_thread:
-        player_observer_factory = partial(create_player_observer_distributed_players, board_factory=board_factory)
+        player_observer_factory = partial(
+            create_player_observer_distributed_players,
+            implementation_args=implementation_args
+        )
     else:
-        player_observer_factory = create_player_observer_mono_process
+        player_observer_factory = partial(
+            create_player_observer_mono_process,
+            syzygy_table=syzygy_table
+        )
     return player_observer_factory
 
 
@@ -90,7 +98,7 @@ def create_player_observer_distributed_players(
         player_factory_args: PlayerFactoryArgs,
         player_color: chess.Color,
         main_thread_mailbox: queue.Queue[IsDataclass],
-        board_factory: BoardFactory
+        implementation_args: ImplementationArgs
 ) -> tuple[GamePlayer | PlayerProcess, MoveFunction]:
     """Create a player observer.
 
@@ -120,7 +128,7 @@ def create_player_observer_distributed_players(
         player_color=player_color,
         queue_board=player_process_mailbox,
         queue_move=main_thread_mailbox,
-        board_factory=board_factory
+        implementation_args=implementation_args
     )
     player_process.start()
     generic_player = player_process
@@ -138,6 +146,7 @@ def create_player_observer_mono_process(
         player_factory_args: PlayerFactoryArgs,
         player_color: chess.Color,
         main_thread_mailbox: queue.Queue[IsDataclass],
+        syzygy_table:SyzygyTable
 ) -> tuple[GamePlayer, MoveFunction]:
     """Create a player observer.
 
@@ -161,7 +170,7 @@ def create_player_observer_mono_process(
     generic_player = create_game_player(
         player_factory_args=player_factory_args,
         player_color=player_color,
-        use_rusty_board=use_rusty_board
+        syzygy_table=syzygy_table
     )
     move_function = partial(
         game_player_computes_move_on_board_and_send_move_in_queue,

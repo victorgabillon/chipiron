@@ -7,7 +7,6 @@ import random
 import chess
 
 import chipiron.players.boardevaluators.table_base as table_base
-from chipiron.players.boardevaluators.table_base import create_syzygy
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.players.player_args import PlayerArgs
 from chipiron.players.utils import fetch_player_args_convert_and_save
@@ -56,7 +55,7 @@ def create_chipiron_player(
 def create_player_from_file(
         player_args_file: path,
         random_generator: random.Random,
-        use_rusty_board: bool,
+        create_syzygy: table_base.SyzygyTable,
 ) -> Player:
     """Create a player object from a file.
 
@@ -71,7 +70,7 @@ def create_player_from_file(
         file_name_player=player_args_file
     )
 
-    syzygy_table: SyzygyTable | None = create_syzygy(use_rust=use_rusty_board)
+    syzygy_table: SyzygyTable | None = create_syzygy()
 
     print('create player from file')
     main_move_selector: move_selector.MoveSelector = move_selector.create_main_move_selector(
@@ -123,9 +122,9 @@ def create_player(
 def create_game_player(
         player_factory_args: PlayerFactoryArgs,
         player_color: chess.Color,
-        syzygy_create: SyzygyFactory
+        syzygy_table: table_base.SyzygyTable
 ) -> GamePlayer:
-    """Create a game player.
+    """Create a game player
 
     This function creates a game player using the provided player factory arguments and player color.
 
@@ -136,7 +135,6 @@ def create_game_player(
     Returns:
         GamePlayer: The created game player.
     """
-    syzygy_table: table_base.SyzygyTable | None = syzygy_create()
     random_generator = random.Random(player_factory_args.seed)
     player: Player = create_player(
         args=player_factory_args.player_args,

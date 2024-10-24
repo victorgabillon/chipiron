@@ -65,8 +65,7 @@ class Game:
             AssertionError: If the move is not valid or the game status is not play.
         """
         if self._playing_status.is_play():
-            print('momo', move)
-            assert (move in self._current_board.legal_moves)
+            assert (move.uci() in [i.uci() for i in self._current_board.legal_moves])
             self._current_board.play_move(move)
             self.move_history.append(move)
             self.fen_history.append(self._current_board.fen)

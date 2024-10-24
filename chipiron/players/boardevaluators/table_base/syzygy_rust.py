@@ -9,6 +9,7 @@ from chipiron.players.boardevaluators.over_event import Winner, HowOver, OverTag
 from chipiron.utils import path
 from .syzygy_table import SyzygyTable
 
+
 class SyzygyRustTable(SyzygyTable):
     """
     A class representing a Syzygy tablebase for chess endgame analysis.
@@ -223,5 +224,3 @@ class SyzygyRustTable(SyzygyTable):
         """
         dtz: int = self.table_base.probe_dtz(board.chess_)
         return dtz
-
-

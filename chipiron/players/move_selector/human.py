@@ -71,6 +71,6 @@ class CommandLineHumanMoveSelector:
         assert move_uci in legal_moves_uci
 
         return MoveRecommendation(
-            move=chess.Move.from_uci(move_uci),
+            move=move_uci,
             evaluation=None
         )

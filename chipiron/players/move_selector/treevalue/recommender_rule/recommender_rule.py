@@ -197,7 +197,7 @@ def recommend_move_after_exploration_generic(
                 best_move = move
         assert best_value is not None
         if best_value > 0:
-            assert isinstance(best_move, chess.Move)
+            #assert isinstance(best_move, chess.Move)
             return best_move
 
     # base case

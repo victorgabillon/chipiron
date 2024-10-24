@@ -1,15 +1,20 @@
-from chipiron.environments.chess.board.iboard import IBoard
-from .imove import IMove
-moveUci = str
-
 from typing import Protocol
 
 import chess
 import shakmaty_python_binding
 
+from chipiron.environments.chess.board.iboard import IBoard
+from chipiron.environments.chess.move.imove import IMove
+from .board import RustyBoardChi
+from .move import moveUci
+
 
 class MoveFactory(Protocol):
-    def __call__(self, move_uci: moveUci, board: IBoard | None = None) -> IMove:
+    def __call__(
+            self,
+            move_uci: moveUci,
+            board: IBoard | None = None
+    ) -> IMove:
         ...
 
 
@@ -26,13 +31,14 @@ def create_move_factory(
 
 def create_rust_move(
         move_uci: moveUci,
-        board: IBoard | None = None
+        board: RustyBoardChi | None = None
 ):
-    return shakmaty_python_binding.MyMove(move_uci, board)
+    return shakmaty_python_binding.MyMove(move_uci, board.chess_)
 
 
 def create_move(
         move_uci: moveUci,
         board: IBoard | None = None
 ):
+    print('pppp',move_uci,type(move_uci))
     return chess.Move.from_uci(move_uci)

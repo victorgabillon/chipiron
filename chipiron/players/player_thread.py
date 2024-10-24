@@ -11,10 +11,13 @@ from chipiron.environments.chess.board.iboard import IBoard
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.dataclass import DataClass, IsDataclass
+from .boardevaluators.table_base.factory import SyzygyFactory, create_syzygy_factory
 from .factory import create_game_player
 from .game_player import GamePlayer, game_player_computes_move_on_board_and_send_move_in_queue
 from .player_args import PlayerFactoryArgs
+from ..environments.chess.board import create_board_factory
 from ..environments.chess.board.utils import FenPlusMoveHistory
+from ..scripts.chipiron_args import ImplementationArgs
 
 
 # A class that extends the Thread class
@@ -49,7 +52,7 @@ class PlayerProcess(multiprocessing.Process):
             queue_board: queue.Queue[DataClass],
             queue_move: queue.Queue[IsDataclass],
             player_color: chess.Color,
-            board_factory: BoardFactory
+            implementation_args: ImplementationArgs
     ) -> None:
         """Initialize the PlayerThread object.
 
@@ -66,11 +69,20 @@ class PlayerProcess(multiprocessing.Process):
         self.queue_move = queue_move
         self.queue_board = queue_board
         self.player_color = player_color
-        self.board_factory = board_factory
+
+        self.board_factory: BoardFactory = create_board_factory(
+            use_rust_boards=implementation_args.use_rust_boards,
+            use_board_modification=implementation_args.use_board_modification
+        )
+
+        create_syzygy: SyzygyFactory = create_syzygy_factory(
+            use_rust=implementation_args.use_rust_boards
+        )
 
         self.game_player: GamePlayer = create_game_player(
             player_factory_args=player_factory_args,
-            player_color=player_color
+            player_color=player_color,
+            syzygy_table=create_syzygy()
         )
         assert self.game_player.player is not None
 

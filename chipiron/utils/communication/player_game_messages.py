@@ -7,7 +7,7 @@ import chess
 
 from chipiron.environments.chess.board.utils import FenPlusMoveHistory
 from chipiron.environments.chess.board.utils import fen
-from chipiron.environments.chess.move import move_uci
+from chipiron.environments.chess.move import moveUci
 
 
 @dataclass
@@ -22,7 +22,7 @@ class MoveMessage:
         color_to_play (chess.Color): The color of the player to play after the move.
         evaluation (float | None, optional): The evaluation score of the move. Defaults to None.
     """
-    move: move_uci
+    move: moveUci
     corresponding_board: fen
     player_name: str
     color_to_play: chess.Color
