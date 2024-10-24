@@ -28,7 +28,7 @@ def test_check_in_one(use_rusty_board: bool):
 
     move_reco: MoveRecommendation = player.select_move(board=board, seed_int=0)
 
-    assert (move_reco.move == chess.Move.from_uci('g6h7') or move_reco.move == chess.Move.from_uci('g6g7'))
+    assert (move_reco.move == 'g6h7' or move_reco.move == 'g6g7')
 
 
 @pytest.mark.parametrize(
@@ -54,7 +54,7 @@ def test_check_in_two(use_rusty_board: bool):
             use_rusty_board=use_rusty_board
         )
         move_reco = player.select_move(board=board, seed_int=0)
-        assert (move_reco.move == moves[0])
+        assert (move_reco.move == moves[0].uci())
 
 
 test_check_in_one(use_rusty_board=True)

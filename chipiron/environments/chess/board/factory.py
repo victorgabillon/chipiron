@@ -23,8 +23,8 @@ class BoardFactory(Protocol):
 
 
 def create_board_factory(
-        use_rust_boards: bool,
-        use_board_modification: bool
+        use_rust_boards: bool = False,
+        use_board_modification: bool = False
 ) -> BoardFactory:
     board_factory: BoardFactory
     if use_rust_boards:

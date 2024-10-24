@@ -8,6 +8,7 @@ import chess
 
 import chipiron.players.boardevaluators.table_base as table_base
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
+from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.players.player_args import PlayerArgs
 from chipiron.players.utils import fetch_player_args_convert_and_save
 from chipiron.utils import path
@@ -30,7 +31,7 @@ def create_chipiron_player(
     Returns: the player
 
     """
-    syzygy_table: table_base.SyzygyTable | None = table_base.create_syzygy(use_rust=use_rusty_board)
+    syzygy_table: table_base.SyzygyTable | None = create_syzygy(use_rust=use_rusty_board)
     random_generator: random.Random = random.Random()
 
     args_player: PlayerArgs = fetch_player_args_convert_and_save(
@@ -55,7 +56,7 @@ def create_chipiron_player(
 def create_player_from_file(
         player_args_file: path,
         random_generator: random.Random,
-        create_syzygy: table_base.SyzygyTable,
+        use_rusty_board: bool,
 ) -> Player:
     """Create a player object from a file.
 
@@ -70,7 +71,7 @@ def create_player_from_file(
         file_name_player=player_args_file
     )
 
-    syzygy_table: SyzygyTable | None = create_syzygy()
+    syzygy_table: table_base.SyzygyTable | None = create_syzygy(use_rust=use_rusty_board)
 
     print('create player from file')
     main_move_selector: move_selector.MoveSelector = move_selector.create_main_move_selector(

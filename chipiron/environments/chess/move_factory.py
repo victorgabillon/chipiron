@@ -40,5 +40,4 @@ def create_move(
         move_uci: moveUci,
         board: IBoard | None = None
 ):
-    print('pppp',move_uci,type(move_uci))
     return chess.Move.from_uci(move_uci)
