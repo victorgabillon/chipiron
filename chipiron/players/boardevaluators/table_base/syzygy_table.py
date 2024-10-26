@@ -62,7 +62,7 @@ class SyzygyTable(Protocol):
 
     def fast_in_table(
             self,
-            board: boards.BoardChi
+            board: boards.IBoard
     ) -> bool:
         """
         Check if the given board is suitable for fast tablebase lookup.
@@ -77,7 +77,7 @@ class SyzygyTable(Protocol):
 
     def in_table(
             self,
-            board: boards.BoardChi
+            board: boards.IBoard
     ) -> bool:
         """
         Check if the given board is in the tablebase.
@@ -96,7 +96,7 @@ class SyzygyTable(Protocol):
 
     def get_over_event(
             self,
-            board: boards.BoardChi
+            board: boards.IBoard
     ) -> tuple[Winner, HowOver]:
         """
         Get the winner and how the game is over for the given board.
@@ -139,7 +139,7 @@ class SyzygyTable(Protocol):
 
     def value_white(
             self,
-            board: boards.BoardChi
+            board: boards.IBoard
     ) -> int:
         """
         Get the value of the given board for the white player.
@@ -159,7 +159,7 @@ class SyzygyTable(Protocol):
 
     def get_over_tag(
             self,
-            board: boards.BoardChi
+            board: boards.IBoard
     ) -> OverTags:
         """
         Get the over tag for the given board.
@@ -186,7 +186,7 @@ class SyzygyTable(Protocol):
 
     def string_result(
             self,
-            board: boards.BoardChi
+            board: boards.IBoard
     ) -> str:
         """
         Get the string representation of the result for the given board.
@@ -224,7 +224,7 @@ class SyzygyTable(Protocol):
     def best_move(
             self,
             board: boards.IBoard
-    ) -> chess.Move:
+    ) -> IMove:
         """
         Get the best move according to the tablebase for the given board.
 

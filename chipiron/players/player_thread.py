@@ -15,7 +15,7 @@ from .boardevaluators.table_base.factory import SyzygyFactory, create_syzygy_fac
 from .factory import create_game_player
 from .game_player import GamePlayer, game_player_computes_move_on_board_and_send_move_in_queue
 from .player_args import PlayerFactoryArgs
-from ..environments.chess.board import create_board_factory
+from ..environments.chess.board.factory import create_board_factory
 from ..environments.chess.board.utils import FenPlusMoveHistory
 from ..scripts.chipiron_args import ImplementationArgs
 

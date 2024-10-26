@@ -6,7 +6,7 @@ import queue
 
 import chess
 
-from chipiron.environments.chess.board import IBoard
+from chipiron.environments.chess.board.iboard import IBoard
 from chipiron.players.move_selector.move_selector import MoveRecommendation
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import MoveMessage

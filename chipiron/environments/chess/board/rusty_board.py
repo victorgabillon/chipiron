@@ -7,12 +7,12 @@ import shakmaty_python_binding
 
 from chipiron.environments.chess.board.board_modification import BoardModification, compute_modifications
 from .iboard import IBoard, board_key,board_key_without_counters
-from chipiron.environments.chess.move import IMove
+from chipiron.environments.chess.move import IMove, moveUci
 
 # todo implement rewind (and a test for it)
 
 @dataclass
-class RustyBoardChi(IBoard):
+class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
     """
     Rusty Board Chipiron
     object that describes the current board. it wraps the chess Board from the chess package so it can have more in it
@@ -34,7 +34,7 @@ class RustyBoardChi(IBoard):
     fast_representation_: board_key | None = None
 
     # the move history is kept here because shakmaty_python_binding.MyChess does not have a move stack at the moment
-    move_stack: list[chess.Move] = field(default_factory=list)
+    move_stack: list[moveUci] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         if self.fast_representation is None:
@@ -53,17 +53,17 @@ class RustyBoardChi(IBoard):
 
     def play_move_old(
             self,
-            move: chess.Move
+            move: shakmaty_python_binding.MyMove
     ) -> BoardModification | None:
         board_modifications: BoardModification | None
 
         if self.compute_board_modification:
-            board_modifications = self.chess_.push_and_return_modification(move.uci())
-
+            #board_modifications = self.chess_.push_and_return_modification(move.uci())
+            ...
         else:
-            self.chess_.play(move.uci())
+            self.chess_.play(move)
             board_modifications = None
-        self.move_history_stack.append(move)
+        self.move_stack.append(move.uci())
         return board_modifications
 
     def play_min(self, move: shakmaty_python_binding.MyMove) -> None:
@@ -134,7 +134,7 @@ class RustyBoardChi(IBoard):
         fast_representation: board_key = self.compute_key()
         self.fast_representation_ = fast_representation
         self.rep_to_count.update([self.fast_representation_without_counters])
-        self.move_stack.append(move)
+        self.move_stack.append(move.uci())
         return board_modifications
 
     def ply(self) -> int:
@@ -184,7 +184,7 @@ class RustyBoardChi(IBoard):
         """
         chess_copy: shakmaty_python_binding.MyChess = self.chess_.copy()
         move_stack_ = self.move_stack.copy() if stack else []
-        return RustyBoardChi(
+        return type(self)(
             chess_=chess_copy,
             move_stack=move_stack_,
             compute_board_modification=self.compute_board_modification,
@@ -192,7 +192,7 @@ class RustyBoardChi(IBoard):
         )
 
     @property
-    def legal_moves(self) -> set[IMove]:
+    def legal_moves(self) -> set[shakmaty_python_binding.MyMove]:
         # todo minimize this call and understand when the role of the ariable all legal move generated
         return self.chess_.legal_moves()
 
@@ -290,7 +290,7 @@ class RustyBoardChi(IBoard):
         ...
 
     @property
-    def move_history_stack(self) -> list[chess.Move]:
+    def move_history_stack(self) -> list[moveUci]:
         return self.move_stack
 
     def dump(self, f) -> None:
@@ -359,7 +359,7 @@ class RustyBoardChi(IBoard):
     def termination(self) -> None:
         return None
 
-    def occupied_color(self, color: chess.COLORS) -> chess.Bitboard:
+    def occupied_color(self, color: chess.Color) -> chess.Bitboard:
         if color == chess.WHITE:
             return self.chess_.white()
         else:

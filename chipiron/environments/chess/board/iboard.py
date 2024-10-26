@@ -1,25 +1,29 @@
 from dataclasses import asdict
-from typing import Any
 from typing import Protocol, Self
+from typing import TypeVar, Any
 
 import chess
 import yaml
 
 from chipiron.environments.chess.board.board_modification import BoardModification
+from chipiron.environments.chess.move import moveUci
 from chipiron.environments.chess.move.imove import IMove
+
 from .utils import FenPlusMoveHistory
 from .utils import fen
 
 board_key = tuple[int, int, int, int, int, int, bool, int, int | None, int, int, int, int, int]
 board_key_without_counters = tuple[int, int, int, int, int, int, bool, int, int | None, int, int, int]
 
+T = TypeVar('T', bound=IMove)
 
-class IBoard(Protocol):
+
+class IBoard(Protocol[T]):
     fast_representation_: board_key | None = None
 
     def play_move(
             self,
-            move: chess.Move
+            move: T
     ) -> BoardModification | None:
         ...
 
@@ -30,7 +34,7 @@ class IBoard(Protocol):
     @property
     def move_history_stack(
             self,
-    ) -> list[chess.Move]:
+    ) -> list[T]:
         ...
 
     def ply(self) -> int:
@@ -143,7 +147,7 @@ class IBoard(Protocol):
         current_fen: fen = self.fen
         fen_plus_moves: FenPlusMoveHistory = FenPlusMoveHistory(
             current_fen=current_fen,
-            historical_moves=self.move_history_stack
+            historical_moves=[move.uci() for move in self.move_history_stack]
         )
 
         yaml.dump(asdict(fen_plus_moves), file, default_flow_style=False)
@@ -197,6 +201,6 @@ class IBoard(Protocol):
 
     def is_zeroing(
             self,
-            move: IMove
+            move: T
     ) -> bool:
         ...

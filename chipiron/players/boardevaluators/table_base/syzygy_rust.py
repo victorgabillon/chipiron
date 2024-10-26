@@ -142,7 +142,7 @@ class SyzygyRustTable(SyzygyTable):
 
     def value_white(
             self,
-            board: boards.BoardChi
+            board: boards.RustyBoardChi
     ) -> int:
         """
         Get the value of the given board for the white player.
@@ -162,7 +162,7 @@ class SyzygyRustTable(SyzygyTable):
 
     def get_over_tag(
             self,
-            board: boards.BoardChi
+            board: boards.RustyBoardChi
     ) -> OverTags:
         """
         Get the over tag for the given board.
@@ -189,7 +189,7 @@ class SyzygyRustTable(SyzygyTable):
 
     def string_result(
             self,
-            board: boards.BoardChi
+            board: boards.RustyBoardChi
     ) -> str:
         """
         Get the string representation of the result for the given board.
@@ -211,7 +211,7 @@ class SyzygyRustTable(SyzygyTable):
 
     def dtz(
             self,
-            board: boards.BoardChi
+            board: boards.RustyBoardChi
     ) -> int:
         """
         Get the distance-to-zero (DTZ) value for the given board.

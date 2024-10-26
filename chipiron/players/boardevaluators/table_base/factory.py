@@ -69,7 +69,7 @@ class SyzygyFactory(Protocol):
 
 def create_syzygy_factory(
         use_rust: bool
-) -> SyzygyFactory | None:
+) -> SyzygyFactory:
     """
     Create a SyzygyTable object
     """

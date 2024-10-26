@@ -14,5 +14,6 @@ __all__ = [
     "BoardChi",
     "create_board",
     "BoardFactory",
-    "RustyBoardChi"
+    "RustyBoardChi",
+    "IBoard"
 ]

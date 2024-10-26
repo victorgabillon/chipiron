@@ -10,7 +10,7 @@ import chess
 import chipiron.environments.chess.board as boards
 from .itree_node import ITreeNode
 
-# replace the any with a defaut value in ITReenode when availble in python; 3.13?
+# todo replace the any with a defaut value in ITReenode when availble in python; 3.13?
 ChildrenType = TypeVar('ChildrenType', bound=ITreeNode[Any])
 
 
