@@ -5,9 +5,10 @@ import typing
 
 import chess
 import chess.polyglot
-from chess import _BoardState
+from chess import _BoardState, Outcome
 
 from chipiron.environments.chess.board.board_modification import BoardModification, PieceInSquare, compute_modifications
+from chipiron.environments.chess.move import moveUci
 from .iboard import IBoard, board_key
 
 # todo check if we need this here
@@ -22,7 +23,7 @@ class BoardChi(IBoard):
 
     board: chess.Board
     compute_board_modification: bool
-    legal_moves_: list[chess.Move] | None = None
+    legal_moves_: set[chess.Move] | None = None
     fast_representation_: board_key | None = None
 
     def __init__(
@@ -640,10 +641,11 @@ class BoardChi(IBoard):
     def piece_map(
             self,
             mask: chess.Bitboard = chess.BB_ALL
-    ) -> dict[chess.Square, (int, bool)]:
+    ) -> dict[chess.Square, tuple[int, bool]]:
         result = {}
         for square in chess.scan_reversed(self.board.occupied & mask):
-            piece_type: int = self.board.piece_type_at(square)
+            piece_type: int | None = self.board.piece_type_at(square)
+            assert piece_type is not None
             mask = chess.BB_SQUARES[square]
             color = bool(self.board.occupied_co[WHITE] & mask)
             result[square] = (piece_type, color)
@@ -742,8 +744,8 @@ class BoardChi(IBoard):
         return self.board.result(claim_draw=claim_draw)
 
     @property
-    def move_history_stack(self) -> list[chess.Move]:
-        return self.board.move_stack
+    def move_history_stack(self) -> list[moveUci]:
+        return [move.uci() for move in self.board.move_stack]
 
     @property
     def pawns(self) -> chess.Bitboard:
@@ -789,7 +791,9 @@ class BoardChi(IBoard):
         return self.board.occupied_co[color]
 
     def termination(self) -> chess.Termination:
-        return self.board.outcome(claim_draw=True).termination
+        outcome: Outcome | None = self.board.outcome(claim_draw=True)
+        assert outcome is not None
+        return outcome.termination
 
     @property
     def promoted(self) -> chess.Bitboard:
