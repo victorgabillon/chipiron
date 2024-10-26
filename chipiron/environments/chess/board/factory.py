@@ -55,9 +55,9 @@ def create_board(
     current_fen: fen
 
     if fen_with_history is not None:
-        current_fen: fen = fen_with_history.current_fen
+        current_fen = fen_with_history.current_fen
         chess_board = chess.Board(fen=current_fen)
-        chess_board.move_stack = fen_with_history.historical_moves
+        chess_board.move_stack = [chess.Move.from_uci(move) for move in fen_with_history.historical_moves]
 
     else:
         chess_board = chess.Board()
@@ -90,7 +90,7 @@ def create_rust_board(
     chess_rust_binding: shakmaty_python_binding.MyChess
 
     if fen_with_history is not None:
-        current_fen: fen = fen_with_history.current_fen
+        current_fen = fen_with_history.current_fen
         chess_rust_binding = shakmaty_python_binding.MyChess(_fen_start=current_fen)
 
     else:

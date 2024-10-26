@@ -23,8 +23,7 @@ from chipiron.environments.chess.board.board_chi import BoardChi
 
 T = TypeVar('T', bound='ITreeNode[Any]')
 
-# to force Any to stay becaus of weird interaction between flake8 and pycharm
-
+# to force Any to stay because of weird interaction between flake8 and pycharm
 a: Any = 0
 
 

@@ -31,7 +31,6 @@ class HasBaseScriptArgs(Protocol):
     base_script_args: BaseScriptArgs
 
 
-
 class Script:
     """
     The core Script class to launch scripts.
@@ -80,7 +79,7 @@ class Script:
         """
 
         # checking that the dataclass that will contain the script args contains BaseScriptArgs
-        #assert issubclass(args_dataclass_name, HasBaseScriptArgs)
+        # assert issubclass(args_dataclass_name, HasBaseScriptArgs)
 
         if base_experiment_output_folder is None:
             base_experiment_output_folder = self.base_experiment_output_folder
@@ -95,6 +94,7 @@ class Script:
             data_class=args_dataclass_name,
             data=args_dict
         )
+        assert hasattr(final_args, 'base_script_args')
 
         final_args.base_script_args.experiment_output_folder = os.path.join(
             base_experiment_output_folder,

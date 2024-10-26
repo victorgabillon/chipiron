@@ -6,7 +6,7 @@ import queue
 
 import chess
 
-from chipiron.environments.chess.board import IBoard
+from chipiron.environments.chess.board.iboard import IBoard
 from chipiron.environments.chess.board.utils import FenPlusMoveHistory
 from chipiron.environments.chess.board.utils import fen
 from chipiron.players.factory_higher_level import MoveFunction

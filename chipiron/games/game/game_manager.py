@@ -14,7 +14,8 @@ import chipiron.players as players_m
 from chipiron.environments import HalfMove
 from chipiron.environments.chess.board.iboard import IBoard
 from chipiron.environments.chess.move.imove import IMove
-from chipiron.environments.chess.move_factory import MoveFactory, moveUci
+from chipiron.environments.chess.move_factory import MoveFactory
+from chipiron.environments.chess.move import moveUci
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable

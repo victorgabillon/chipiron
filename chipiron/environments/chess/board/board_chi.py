@@ -56,18 +56,18 @@ class BoardChi(IBoard):
         # todo: illegal moves seem accepted, do we care? if we dont write it in the doc
         # assert self.board.is_legal(move)
         #
-        board_modifications: BoardModification | None
+        board_modifications: BoardModification | None = None
 
         if self.compute_board_modification:
             board_modifications = self.push_and_return_modification(move)  # type: ignore
             # raise Exception('None Modif looks not good in board.py')
         else:
-            board_modifications = self.board.push(move)
+            self.board.push(move)
 
         self.legal_moves_ = None  # the legals moves needs to be recomputed as the board has changed
         return board_modifications
 
-    def play_mon(self, move):
+    def play_mon(self, move: chess.Move) -> None:
         self.board.push(move)
 
     # todo look like this function might move to ibord when the dust settle
@@ -785,7 +785,7 @@ class BoardChi(IBoard):
     def occupied(self) -> chess.Bitboard:
         return self.board.occupied
 
-    def occupied_color(self, color: chess.COLORS) -> chess.Bitboard:
+    def occupied_color(self, color: chess.Color) -> chess.Bitboard:
         return self.board.occupied_co[color]
 
     def termination(self) -> chess.Termination:
