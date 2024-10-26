@@ -9,13 +9,14 @@ import chess
 from chipiron.environments.chess.board.iboard import IBoard
 from chipiron.environments.chess.board.utils import FenPlusMoveHistory
 from chipiron.environments.chess.board.utils import fen
+from chipiron.environments.chess.move import IMove
 from chipiron.players.factory_higher_level import MoveFunction
 from chipiron.utils import seed, unique_int_from_list
 from chipiron.utils.communication.gui_messages import GameStatusMessage
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.dataclass import IsDataclass
 from .game_playing_status import GamePlayingStatus
-from chipiron.environments.chess.move import IMove
+
 
 class Game:
     """
@@ -308,8 +309,10 @@ class ObservableGame:
             print('sending board', self.game.board.fen, self.game.board.move_history_stack)
 
             message: BoardMessage = BoardMessage(
-                fen_plus_moves=FenPlusMoveHistory(current_fen=self.game.board.fen,
-                                                  historical_moves=self.game.board.move_history_stack)
+                fen_plus_moves=FenPlusMoveHistory(
+                    current_fen=self.game.board.fen,
+                    historical_moves=self.game.board.move_history_stack
+                )
             )
             mailbox.put(item=message)
 

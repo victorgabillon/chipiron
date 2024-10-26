@@ -15,7 +15,7 @@ from .utils import fen
 board_key = tuple[int, int, int, int, int, int, bool, int, int | None, int, int, int, int, int]
 board_key_without_counters = tuple[int, int, int, int, int, int, bool, int, int | None, int, int, int]
 
-T = TypeVar('T', bound=IMove)
+T = TypeVar('T', contravariant=True)
 
 
 class IBoard(Protocol[T]):
@@ -34,7 +34,7 @@ class IBoard(Protocol[T]):
     @property
     def move_history_stack(
             self,
-    ) -> list[T]:
+    ) -> list[moveUci       ]:
         ...
 
     def ply(self) -> int:
@@ -147,7 +147,7 @@ class IBoard(Protocol[T]):
         current_fen: fen = self.fen
         fen_plus_moves: FenPlusMoveHistory = FenPlusMoveHistory(
             current_fen=current_fen,
-            historical_moves=[move.uci() for move in self.move_history_stack]
+            historical_moves=   self.move_history_stack
         )
 
         yaml.dump(asdict(fen_plus_moves), file, default_flow_style=False)
@@ -202,5 +202,11 @@ class IBoard(Protocol[T]):
     def is_zeroing(
             self,
             move: T
+    ) -> bool:
+        ...
+
+    def is_attacked(
+            self,
+            a_color: chess.Color
     ) -> bool:
         ...

@@ -1,13 +1,14 @@
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import Self
+from typing import Self, Any
 
 import chess
 import shakmaty_python_binding
 
 from chipiron.environments.chess.board.board_modification import BoardModification, compute_modifications
-from .iboard import IBoard, board_key,board_key_without_counters
-from chipiron.environments.chess.move import IMove, moveUci
+from chipiron.environments.chess.move import moveUci
+from .iboard import IBoard, board_key, board_key_without_counters
+
 
 # todo implement rewind (and a test for it)
 
@@ -41,7 +42,6 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
             self.fast_representation_: board_key = self.compute_key()
             self.rep_to_count[self.fast_representation_without_counters] = 1
 
-
     def __str__(self) -> str:
         """
         Returns a string representation of the board.
@@ -58,7 +58,7 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
         board_modifications: BoardModification | None
 
         if self.compute_board_modification:
-            #board_modifications = self.chess_.push_and_return_modification(move.uci())
+            # board_modifications = self.chess_.push_and_return_modification(move.uci())
             ...
         else:
             self.chess_.play(move)
@@ -293,7 +293,7 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
     def move_history_stack(self) -> list[moveUci]:
         return self.move_stack
 
-    def dump(self, f) -> None:
+    def dump(self, f: Any) -> None:
         ...
 
     def is_attacked(
@@ -342,8 +342,10 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
     def occupied(self) -> chess.Bitboard:
         return self.chess_.occupied()
 
-    def result(self, claim_draw=False) -> str:
-        print('ooooo,',claim_draw)
+    def result(
+            self,
+            claim_draw: bool = False
+    ) -> str:
         claim_draw_: bool = True if len(self.move_stack) >= 5 and claim_draw else False
         three_fold_repetition: bool = max(self.rep_to_count.values()) > 2 if claim_draw_ else False
 
@@ -383,22 +385,11 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
 
     @property
     def ep_square(self) -> int | None:
-        return self.chess_.ep_square()
-
-    def fast_representation_old(self) -> str:
-        """
-        Returns a fast representation of the board.
-
-        This method computes and returns a string representation of the board
-        that can be quickly generated and used for various purposes.
-
-        :return: A string representation of the board.
-        :rtype: str
-        """
-
-        if self.fast_representation_ is None:
-            self.fast_representation_ = self.chess_.fen()
-        return self.fast_representation_
+        ep: int = self.chess_.ep_square()
+        if ep == -1:
+            return None
+        else:
+            return ep
 
     def is_zeroing(
             self,
