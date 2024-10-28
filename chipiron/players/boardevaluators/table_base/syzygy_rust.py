@@ -61,21 +61,6 @@ class SyzygyRustTable(SyzygyTable):
         path_to_table_str: str = str(path_to_table)
         self.table_base = shakmaty_python_binding.MyTableBase(path_to_table_str)
 
-    def fast_in_table(
-            self,
-            board: boards.RustyBoardChi
-    ) -> bool:
-        """
-        Check if the given board is suitable for fast tablebase lookup.
-
-        Args:
-            board (boards.BoardChi): The board to check.
-
-        Returns:
-            bool: True if the board is suitable for fast lookup, False otherwise.
-        """
-        return board.number_of_pieces_on_the_board() < 6
-
     def in_table(
             self,
             board: boards.RustyBoardChi

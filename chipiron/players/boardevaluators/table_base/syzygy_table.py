@@ -47,19 +47,6 @@ class SyzygyTable(Protocol):
             Get the best move according to the tablebase for the given board.
     """
 
-    def __init__(
-            self,
-            path_to_table: path
-    ):
-        """
-        Initialize the SyzygyTable object.
-
-        Args:
-            path_to_table (path): The path to the Syzygy tablebase.
-        """
-        path_to_table_str: str = str(path_to_table)
-        self.table_base = chess.syzygy.open_tablebase(path_to_table_str)
-
     def fast_in_table(
             self,
             board: boards.IBoard
@@ -235,7 +222,7 @@ class SyzygyTable(Protocol):
             chess.Move: The best move according to the tablebase.
         """
         all_moves: list[IMove] = list(board.legal_moves)
-        print('allmoves',all_moves, type(board))
+        print('allmoves', all_moves, type(board))
         # avoid draws by 50 move rules in winning position, # otherwise look
         # for it to make it last and preserve pieces in case of mistake by opponent
 

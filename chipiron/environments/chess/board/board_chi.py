@@ -15,7 +15,7 @@ from .iboard import IBoard, board_key
 COLORS = [WHITE, BLACK] = [True, False]
 
 
-class BoardChi(IBoard):
+class BoardChi(IBoard[chess.Move]):
     """
     Board Chipiron
     object that describes the current board. it wraps the chess Board from the chess package so it can have more in it
@@ -24,7 +24,7 @@ class BoardChi(IBoard):
     board: chess.Board
     compute_board_modification: bool
     legal_moves_: set[chess.Move] | None = None
-    fast_representation_: board_key | None = None
+    fast_representation_: board_key
 
     def __init__(
             self,

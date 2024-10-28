@@ -19,7 +19,8 @@ from typing import TypeVar, Any
 
 import chess
 
-from chipiron.environments.chess.board.board_chi import BoardChi
+import chipiron.environments.chess.board as boards
+from chipiron.environments.chess.move import IMove
 
 T = TypeVar('T', bound='ITreeNode[Any]')
 
@@ -48,7 +49,7 @@ class ITreeNode(Protocol[T]):
     @property
     def board(
             self
-    ) -> BoardChi:
+    ) -> boards.IBoard:
         """
         Get the chess board state of the node.
 
@@ -124,7 +125,7 @@ class ITreeNode(Protocol[T]):
         """
 
     @property
-    def legal_moves(self) -> chess.LegalMoveGenerator:
+    def legal_moves(self) -> set[IMove]:
         """
         Get the legal moves of the node.
 
@@ -133,7 +134,7 @@ class ITreeNode(Protocol[T]):
         """
 
     @property
-    def fast_rep(self) -> str:
+    def fast_rep(self) -> boards.board_key:
         """
         Get the fast representation of the node.
 

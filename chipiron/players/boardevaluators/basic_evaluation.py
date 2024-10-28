@@ -5,6 +5,7 @@ Module for the basic evaluation of a chess board.
 import math
 
 import chess
+from chess import Square
 
 from chipiron.environments.chess.board import IBoard
 from chipiron.environments.chess.board.board_chi import BoardChi
@@ -44,7 +45,8 @@ def add_pawns_value_white(
         float: The additional value for white pawns.
     """
     add_value: float = 0
-    for pawn in list(board.pieces(chess.PAWN, chess.WHITE)):
+    pawn: Square
+    for pawn in chess.scan_forward(board.pawns & board.white):
         add_value += int((pawn - 8) / 8) / 50. * 1
     return add_value
 
@@ -64,7 +66,8 @@ def add_pawns_value_black(
         float: The value to be added for black pawns.
     """
     add_value: float = 0
-    for pawn in list(board.board.pieces(chess.PAWN, chess.BLACK)):
+    pawn: Square
+    for pawn in chess.scan_forward(board.pawns & board.black):
         add_value += int((63 - pawn - 8) / 8) / 50. * 1
     return add_value
 
@@ -116,7 +119,7 @@ def value_player_to_move(board: IBoard) -> float:
     value_black_pieces = value_base(board, chess.BLACK)
     # value_white_pieces += add_pawns_value_white(board)
     # value_black_pieces += add_pawns_value_black(board)
-    if board.board.turn == chess.WHITE:
+    if board.turn == chess.WHITE:
         return sigmoid((value_white_pieces - value_black_pieces) * .2)
     else:
         return sigmoid((value_black_pieces - value_white_pieces) * .2)
