@@ -94,13 +94,15 @@ def create_rust_board(
         chess_rust_binding = shakmaty_python_binding.MyChess(_fen_start=current_fen)
 
     else:
-        chess_rust_binding = shakmaty_python_binding.MyChess()
+        chess_rust_binding = shakmaty_python_binding.MyChess(_fen_start=chess.STARTING_FEN  )
 
     rusty_board_chi: RustyBoardChi = RustyBoardChi(
         chess_=chess_rust_binding,
         compute_board_modification=use_board_modification,
         rep_to_count=Counter()
     )
-    rusty_board_chi.move_stack = fen_with_history.historical_moves
+
+    if fen_with_history is not None:
+        rusty_board_chi.move_stack = fen_with_history.historical_moves
 
     return rusty_board_chi

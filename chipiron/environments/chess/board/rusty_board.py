@@ -32,15 +32,14 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
     # three-fold repetition as shakmaty does not do it atm
     rep_to_count: Counter[board_key_without_counters]
 
-    fast_representation_: board_key | None = None
+    fast_representation_: board_key = field(init=False)
 
     # the move history is kept here because shakmaty_python_binding.MyChess does not have a move stack at the moment
     move_stack: list[moveUci] = field(default_factory=list)
 
     def __post_init__(self) -> None:
-        if self.fast_representation is None:
-            self.fast_representation_: board_key = self.compute_key()
-            self.rep_to_count[self.fast_representation_without_counters] = 1
+        self.fast_representation_ = self.compute_key()
+        self.rep_to_count[self.fast_representation_without_counters] = 1
 
     def __str__(self) -> str:
         """

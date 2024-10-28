@@ -305,14 +305,14 @@ def distance_number_to_interval(
         return 0
 
 
-def unflatten(dictionary: dict[Any]) -> dict[Any]:
-    resultDict = dict()
+def unflatten(dictionary: dict[Any, Any]) -> dict[Any, Any]:
+    result_dict: dict[Any, Any] = dict()
     for key, value in dictionary.items():
         parts = key.split(".")
-        d = resultDict
+        d = result_dict
         for part in parts[:-1]:
             if part not in d:
                 d[part] = dict()
             d = d[part]
         d[parts[-1]] = value
-    return resultDict
+    return result_dict

@@ -45,6 +45,8 @@ class SyzygyChiTable(SyzygyTable):
             Get the best move according to the tablebase for the given board.
     """
 
+    table_base: chess.syzygy.Tablebase
+
     def __init__(
             self,
             path_to_table: path
@@ -56,22 +58,9 @@ class SyzygyChiTable(SyzygyTable):
             path_to_table (path): The path to the Syzygy tablebase.
         """
         path_to_table_str: str = str(path_to_table)
-        self.table_base = chess.syzygy.open_tablebase(path_to_table_str)
+        self.table_base = chess.syzygy.open_tablebase(directory=path_to_table_str)
 
-    def fast_in_table(
-            self,
-            board: boards.BoardChi
-    ) -> bool:
-        """
-        Check if the given board is suitable for fast tablebase lookup.
 
-        Args:
-            board (boards.BoardChi): The board to check.
-
-        Returns:
-            bool: True if the board is suitable for fast lookup, False otherwise.
-        """
-        return board.number_of_pieces_on_the_board() < 6
 
     def in_table(
             self,

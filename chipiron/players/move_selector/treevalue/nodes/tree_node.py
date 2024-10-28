@@ -8,6 +8,7 @@ from typing import TypeVar, Generic, Any
 import chess
 
 import chipiron.environments.chess.board as boards
+from chipiron.environments.chess.move import IMove
 from .itree_node import ITreeNode
 
 # todo replace the any with a defaut value in ITReenode when availble in python; 3.13?
@@ -15,7 +16,10 @@ ChildrenType = TypeVar('ChildrenType', bound=ITreeNode[Any])
 
 
 @dataclass(slots=True)
-class TreeNode(Generic[ChildrenType]):
+class TreeNode(
+    Generic[ChildrenType],
+    ITreeNode  # Protocol
+):
     r"""
     The TreeNode class stores information about a specific board position, including the board representation,
     the player to move, the half-move count, and the parent-child relationships with other nodes.
@@ -70,8 +74,6 @@ class TreeNode(Generic[ChildrenType]):
     # dictionary mapping moves to children nodes. Node is set to None if not created
     moves_children_: dict[chess.Move, ChildrenType | None] = field(default_factory=dict)
 
-    fast_rep: str = field(default_factory=str)
-
     # the color of the player that has to move in the board
     player_to_move_: chess.Color = field(default_factory=chess.Color)
 
@@ -90,8 +92,11 @@ class TreeNode(Generic[ChildrenType]):
             None
         """
         if self.board_:
-            self.fast_rep = self.board_.fast_representation
             self.player_to_move_: chess.Color = self.board_.turn
+
+    @property
+    def fast_rep(self) -> boards.board_key:
+        return self.board_.fast_representation
 
     @property
     def id(self) -> int:
@@ -114,7 +119,7 @@ class TreeNode(Generic[ChildrenType]):
         return self.player_to_move_
 
     @property
-    def board(self) -> boards.BoardChi:
+    def board(self) -> boards.IBoard:
         """
         Returns the board associated with this tree node.
 
@@ -164,8 +169,11 @@ class TreeNode(Generic[ChildrenType]):
         """
         return not self.parent_nodes
 
+    # understand what is best :
+    # 1. this function returns a object of type chess.LegalMoveGenerator
+    # 2. of type set of moves
     @property
-    def legal_moves(self) -> chess.LegalMoveGenerator:
+    def legal_moves(self) -> set[IMove]:
         """
         Returns a generator that yields the legal moves for the current board state.
 
@@ -268,4 +276,4 @@ class TreeNode(Generic[ChildrenType]):
                 pass
                 # print('test', move_not_in, list(self.board.get_legal_moves()), self.moves_children)
                 # print(self.board)
-            assert (move_not_in != [] or legal_moves == [])
+            assert (move_not_in != [] or legal_moves == set())
