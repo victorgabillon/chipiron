@@ -12,6 +12,7 @@ from typing import Any
 
 import chess
 
+from chipiron.environments.chess.move import IMove
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.node_minmax_evaluation import NodeMinmaxEvaluation
 from .itree_node import ITreeNode
@@ -41,11 +42,11 @@ def a_move_sequence_from_root(tree_node: ITreeNode[Any]) -> list[str]:
     Returns:
         list[str]: A list of move sequences from the root node to the given tree node.
     """
-    move_sequence_from_root: list[chess.Move] = []
+    move_sequence_from_root: list[IMove] = []
     child: ITreeNode[Any] = tree_node
     while child.parent_nodes:
         parent: ITreeNode[Any] = next(iter(child.parent_nodes))
-        move: chess.Move = child.parent_nodes[parent]
+        move: IMove = child.parent_nodes[parent]
         move_sequence_from_root.append(move)
         child = parent
     move_sequence_from_root.reverse()

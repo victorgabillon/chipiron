@@ -21,6 +21,7 @@ from typing import Any
 import chess
 from graphviz import Digraph
 
+from chipiron.environments.chess.move import IMove
 from chipiron.players.move_selector.treevalue.nodes import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from .move_and_value_tree import MoveAndValueTree
@@ -54,7 +55,7 @@ def add_dot(
 def display_special(
         node: ITreeNode[Any],
         format_str: str,
-        index: dict[chess.Move, str]
+        index: dict[IMove, str]
 ) -> Digraph:
     """
     Display a special visualization of a tree node and its children.
@@ -129,7 +130,7 @@ def save_pdf_to_file(
         tree=tree,
         format_str='pdf'
     )
-    round_ = len(tree.root_node.board.board.move_stack) + 2
+    round_ = len(tree.root_node.board.move_history_stack) + 2
     color = 'white' if tree.root_node.player_to_move else 'black'
     dot.render('chipiron/runs/treedisplays/TreeVisual_' + str(int(round_ / 2)) + color + '.pdf')
 
@@ -148,7 +149,7 @@ def save_raw_data_to_file(
     Returns:
         None
     """
-    round_ = len(tree.root_node.board.board.move_stack) + 2
+    round_ = len(tree.root_node.board.move_history_stack) + 2
     color = 'white' if tree.root_node.player_to_move else 'black'
     filename = 'chipiron/debugTreeData_' + str(int(round_ / 2)) + color + '-' + str(count) + '.td'
 

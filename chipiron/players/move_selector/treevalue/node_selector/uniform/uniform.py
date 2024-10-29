@@ -8,7 +8,7 @@ Classes:
 - Uniform: The Uniform Node selector class.
 
 """
-
+from chipiron.environments.chess.move import IMove
 from chipiron.players.move_selector.treevalue import tree_manager as tree_man
 from chipiron.players.move_selector.treevalue import trees
 from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructions, \
@@ -85,7 +85,7 @@ class Uniform:
         )  # best last
 
         for node in nodes_to_consider_sorted_by_value:
-            all_moves_to_open = self.opening_instructor.all_moves_to_open(node_to_open=node)
+            all_moves_to_open: list[IMove] = self.opening_instructor.all_moves_to_open(node_to_open=node)
             opening_instructions: OpeningInstructions = create_instructions_to_open_all_moves(
                 moves_to_play=all_moves_to_open,
                 node_to_open=node)

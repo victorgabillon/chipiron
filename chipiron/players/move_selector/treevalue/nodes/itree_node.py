@@ -69,7 +69,7 @@ class ITreeNode(Protocol[T]):
     @property
     def moves_children(
             self
-    ) -> dict[chess.Move, T | None]:
+    ) -> dict[IMove, T | None]:
         """
         Get the child nodes of the node.
 
@@ -80,7 +80,7 @@ class ITreeNode(Protocol[T]):
     @property
     def parent_nodes(
             self
-    ) -> dict[ITreeNode[T], chess.Move]:
+    ) -> dict[ITreeNode[T], IMove]:
         """
         Returns the dictionary of parent nodes of the current tree node with associated move.
 
@@ -89,7 +89,7 @@ class ITreeNode(Protocol[T]):
 
     def add_parent(
             self,
-            move: chess.Move,
+            move: IMove,
             new_parent_node: ITreeNode[T]
     ) -> None:
         """

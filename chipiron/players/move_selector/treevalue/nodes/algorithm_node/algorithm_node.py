@@ -8,7 +8,7 @@ from typing import Any
 import chess
 
 import chipiron.environments.chess.board as boards
-from chipiron.environments.chess.move import IMove
+from chipiron.environments.IMove import IMove
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import BoardRepresentation
 from chipiron.players.move_selector.treevalue.indices.node_indices import NodeExplorationData
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.node_minmax_evaluation import NodeMinmaxEvaluation
@@ -89,17 +89,17 @@ class AlgorithmNode:
         return self.tree_node.fast_rep
 
     @property
-    def moves_children(self) -> dict[chess.Move, ITreeNode[Any] | None]:
+    def moves_children(self) -> dict[IMove, ITreeNode[Any] | None]:
         """
         Returns the bidirectional dictionary of moves and their corresponding child nodes.
 
         Returns:
-            dict[chess.Move, ITreeNode[Any] | None]: The bidirectional dictionary of moves and their corresponding child nodes.
+            dict[IMove, ITreeNode[Any] | None]: The bidirectional dictionary of moves and their corresponding child nodes.
         """
         return self.tree_node.moves_children
 
     @property
-    def parent_nodes(self) -> dict[ITreeNode[Any], chess.Move]:
+    def parent_nodes(self) -> dict[ITreeNode[Any], IMove]:
         """
         Returns the dictionary of parent nodes of the current tree node with associated move.
 
@@ -128,14 +128,14 @@ class AlgorithmNode:
 
     def add_parent(
             self,
-            move: chess.Move,
+            move: IMove,
             new_parent_node: ITreeNode[Any]
     ) -> None:
         """
         Adds a parent node.
 
         Args:
-            move (chess.Move): the move that led to the node from the new_parent_node
+            move (IMove): the move that led to the node from the new_parent_node
             new_parent_node (ITreeNode): The new parent node to add.
         """
         self.tree_node.add_parent(
@@ -174,12 +174,12 @@ class AlgorithmNode:
         self.tree_node.all_legal_moves_generated = value
 
     @property
-    def non_opened_legal_moves(self) -> set[chess.Move]:
+    def non_opened_legal_moves(self) -> set[IMove]:
         """
         Returns the set of non-opened legal moves.
 
         Returns:
-            set[chess.Move]: The set of non-opened legal moves.
+            set[IMove]: The set of non-opened legal moves.
         """
         return self.tree_node.non_opened_legal_moves
 

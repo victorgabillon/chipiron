@@ -8,7 +8,7 @@ Classes:
 
 import torch
 
-from chipiron.environments.chess.board import BoardChi
+import chipiron.environments.chess.board as boards
 from .board_representation import Representation364
 from .factory import Representation364Factory
 
@@ -38,7 +38,7 @@ class Representation364BTI:
 
     def convert(
             self,
-            board: BoardChi
+            board: boards.IBoard
     ) -> torch.Tensor:
         """
         Converts the chess board into a tensor representation.

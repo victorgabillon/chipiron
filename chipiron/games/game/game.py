@@ -150,7 +150,7 @@ class Game:
         return self._current_board
 
     @property
-    def move_history(self) -> list[chess.Move]:
+    def move_history(self) -> list[IMove]:
         """
         Gets the history of move.
 

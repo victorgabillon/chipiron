@@ -4,6 +4,7 @@ This module contains the IndexUpdater class, which is responsible for updating t
 
 import chess
 
+from chipiron.environments.chess.move import IMove
 from chipiron.players.move_selector.treevalue.indices.node_indices.index_data import MaxDepthDescendants
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from .index_block import IndexUpdateInstructionsFromOneNode, IndexUpdateInstructionsTowardsOneParentNode
@@ -59,7 +60,7 @@ class IndexUpdater:
 
         # UPDATE index
         has_index_changed: bool = False
-        move: chess.Move
+        move: IMove
         for move in updates_instructions_index.moves_with_updated_index:
             # hardcoded at some point it should be linked to updater coming from search factory i believe
             assert isinstance(node_to_update.exploration_index_data, MaxDepthDescendants)
