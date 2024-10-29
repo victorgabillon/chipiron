@@ -32,7 +32,7 @@ def create_syzygy_python() -> SyzygyChiTable | None:
     return syzygy_table
 
 
-def create_syzygy_rust() -> SyzygyChiTable | None:
+def create_syzygy_rust() -> SyzygyRustTable | None:
     """
     Create a SyzygyTable object if the path to the syzygy tables exists,
     otherwise return None.
@@ -40,7 +40,7 @@ def create_syzygy_rust() -> SyzygyChiTable | None:
     Returns:
         SyzygyTable | None: The created SyzygyTable object or None if the path does not exist.
     """
-    syzygy_table: SyzygyChiTable | None
+    syzygy_table: SyzygyRustTable | None
     path_to_table: path = "data/syzygy-tables/"
     is_exist: bool = os.path.exists(path_to_table)
 

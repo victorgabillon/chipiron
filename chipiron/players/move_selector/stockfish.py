@@ -22,6 +22,9 @@ import chess.engine
 import chipiron.environments.chess.board as boards
 from .move_selector import MoveRecommendation
 from .move_selector_types import MoveSelectorTypes
+from ...environments.chess import BoardChi
+from ...environments.chess.board import create_board
+from ...environments.chess.board.utils import FenPlusMoveHistory
 
 
 @dataclass
@@ -50,7 +53,7 @@ class StockfishPlayer:
 
     def select_move(
             self,
-            board: boards.BoardChi,
+            board: boards.IBoard,
             move_seed: int
     ) -> MoveRecommendation:
         """
@@ -72,7 +75,14 @@ class StockfishPlayer:
                 # TODO: should we remove the hardcoding
                 r"stockfish/stockfish/stockfish-ubuntu-x86-64-avx2")
 
-        result = self.engine.play(board.board, chess.engine.Limit(self.time_limit))
+        # transform the board
+        board_chi: BoardChi = create_board(
+            fen_with_history=FenPlusMoveHistory(
+                current_fen=board.fen,
+                historical_moves=board.move_history_stack
+            )
+        )
+        result = self.engine.play(board_chi.board, chess.engine.Limit(self.time_limit))
         self.engine.quit()
         self.engine = None
         return MoveRecommendation(move=result.move.uci())

@@ -40,7 +40,7 @@ class Random:
 
     def select_move(
             self,
-            board: boards.BoardChi,
+            board: boards.IBoard,
             move_seed: seed
     ) -> MoveRecommendation:
         """

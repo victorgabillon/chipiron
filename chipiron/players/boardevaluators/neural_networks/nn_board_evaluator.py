@@ -65,8 +65,10 @@ class NNBoardEvaluator:
         torch.no_grad()
         board_evaluation: FloatyBoardEvaluation = self.output_and_value_converter.to_board_evaluation(
             output_nn=output_layer,
-            color_to_play=board.turn)
-        value_white: float = board_evaluation.value_white
+            color_to_play=board.turn
+        )
+        value_white: float | None = board_evaluation.value_white
+        assert value_white is not None
         return value_white
 
     def evaluate(

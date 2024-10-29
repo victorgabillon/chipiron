@@ -25,7 +25,7 @@ from typing import Any
 import chess
 
 import chipiron.players.boardevaluators as board_evals
-from chipiron.environments.chess.board.board_chi import BoardChi
+import chipiron.environments.chess.board as boards
 from chipiron.players.boardevaluators.over_event import HowOver, Winner, OverEvent
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
@@ -112,7 +112,7 @@ class NodeEvaluator:
 
     def syzygy_value_white(
             self,
-            board: BoardChi
+            board: boards.IBoard
     ) -> float | None:
         """
         Calculates the value for the white player of a given board using the syzygy evaluator.

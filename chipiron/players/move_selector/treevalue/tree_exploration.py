@@ -159,7 +159,7 @@ class TreeExploration:
 
 def create_tree_exploration(
         node_selector_create: NodeSelectorFactory,
-        starting_board: boards.BoardChi,
+        starting_board: boards.IBoard,
         tree_manager: tree_man.AlgorithmNodeTreeManager,
         tree_factory: MoveAndValueTreeFactory,
         stopping_criterion_args: AllStoppingCriterionArgs,
