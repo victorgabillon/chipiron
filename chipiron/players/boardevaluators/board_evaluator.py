@@ -8,7 +8,7 @@ from typing import Protocol
 
 import chess
 
-from chipiron.environments.chess.board.board_chi import BoardChi
+import chipiron.environments.chess.board as boards
 from chipiron.utils.communication.gui_messages import EvaluationMessage
 from chipiron.utils.dataclass import IsDataclass
 
@@ -29,7 +29,7 @@ class BoardEvaluator(Protocol):
 
     def value_white(
             self,
-            board: BoardChi
+            board: boards.IBoard
     ) -> float:
         """
         Evaluates a board and returns the value for white.
@@ -44,7 +44,7 @@ class IGameBoardEvaluator(Protocol):
 
     def evaluate(
             self,
-            board: BoardChi
+            board: boards.IBoard
     ) -> tuple[float, float]:
         """
         Evaluates a board and returns the evaluation values for stock and chi.
@@ -78,7 +78,7 @@ class GameBoardEvaluator:
 
     def evaluate(
             self,
-            board: BoardChi
+            board: boards.IBoard
     ) -> tuple[float, float]:
         """
         Evaluates a board and returns the evaluation values for stock and chi.
@@ -133,7 +133,7 @@ class ObservableBoardEvaluator:
 
     def evaluate(
             self,
-            board: BoardChi
+            board: boards.IBoard
     ) -> tuple[float, float]:
         """
         Evaluates a board and returns the evaluation values for stock and chi.

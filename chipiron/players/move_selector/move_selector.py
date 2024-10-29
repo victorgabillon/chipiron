@@ -7,6 +7,7 @@ from typing import Protocol
 
 
 import chipiron.environments.chess.board as boards
+from chipiron.environments.chess.board import IBoard
 from chipiron.utils import seed
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import BoardEvaluation
 from chipiron.environments.chess.move import moveUci
@@ -29,7 +30,7 @@ class MoveSelector(Protocol):
 
     def select_move(
             self,
-            board: boards.BoardChi,
+            board: IBoard,
             move_seed: seed
     ) -> MoveRecommendation:
         """

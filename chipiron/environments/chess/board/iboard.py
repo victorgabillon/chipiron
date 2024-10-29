@@ -7,23 +7,23 @@ import chess
 import yaml
 
 from chipiron.environments.chess.board.board_modification import BoardModification
-from chipiron.environments.chess.move import moveUci
+from chipiron.environments.chess.move import moveUci, IMove
 from .utils import FenPlusMoveHistory
 from .utils import fen
 
 board_key = tuple[int, int, int, int, int, int, bool, int, int | None, int, int, int, int, int]
 board_key_without_counters = tuple[int, int, int, int, int, int, bool, int, int | None, int, int, int]
 
-T = TypeVar('T')
+T_Move = TypeVar('T_Move', bound=IMove)
 
 
-class IBoard(Protocol[T]):
+class IBoard(Protocol[T_Move]):
     fast_representation_: board_key
 
     @abstractmethod
     def play_move(
             self,
-            move: T
+            move: T_Move
     ) -> BoardModification | None:
         ...
 
@@ -156,7 +156,10 @@ class IBoard(Protocol[T]):
         ...
 
     @abstractmethod
-    def result(self) -> str:
+    def result(
+            self,
+            claim_draw: bool = False
+    ) -> str:
         ...
 
     @abstractmethod
@@ -225,7 +228,7 @@ class IBoard(Protocol[T]):
     @abstractmethod
     def is_zeroing(
             self,
-            move: T
+            move: T_Move
     ) -> bool:
         ...
 
@@ -238,8 +241,9 @@ class IBoard(Protocol[T]):
 
     @property
     @abstractmethod
-    def legal_moves(self) -> set[T]:
+    def legal_moves(self) -> set[T_Move]:
         ...
 
     def number_of_pieces_on_the_board(self) -> int:
         ...
+

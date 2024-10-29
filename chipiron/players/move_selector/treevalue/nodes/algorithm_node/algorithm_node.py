@@ -7,7 +7,8 @@ from typing import Any
 
 import chess
 
-from chipiron.environments.chess.board.board_chi import BoardChi
+import chipiron.environments.chess.board as boards
+from chipiron.environments.chess.move import IMove
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import BoardRepresentation
 from chipiron.players.move_selector.treevalue.indices.node_indices import NodeExplorationData
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.node_minmax_evaluation import NodeMinmaxEvaluation
@@ -78,7 +79,7 @@ class AlgorithmNode:
         return self.tree_node.half_move
 
     @property
-    def fast_rep(self) -> str:
+    def fast_rep(self) -> boards.board_key:
         """
         Returns the fast representation of the node.
 
@@ -107,7 +108,7 @@ class AlgorithmNode:
         return self.tree_node.parent_nodes
 
     @property
-    def board(self) -> BoardChi:
+    def board(self) -> boards.IBoard:
         """
         Returns the board.
 
@@ -143,7 +144,7 @@ class AlgorithmNode:
         )
 
     @property
-    def legal_moves(self) -> chess.LegalMoveGenerator:
+    def legal_moves(self) -> set[IMove]:
         """
         Returns the legal move generator.
 
