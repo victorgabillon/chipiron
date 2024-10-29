@@ -23,7 +23,7 @@ from sortedcollections import ValueSortedDict
 from chipiron.environments import HalfMove
 from chipiron.players.move_selector.treevalue.nodes import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.tree_traversal import get_descendants
-
+import chipiron.environments.chess.board as boards
 
 class Descendants:
     """
@@ -36,7 +36,7 @@ class Descendants:
         min_half_move (int | None): The minimum half move in the collection, or None if the collection is empty.
         max_half_move (int | None): The maximum half move in the collection, or None if the collection is empty.
     """
-    descendants_at_half_move: dict[HalfMove, dict[str, ITreeNode[Any]]]
+    descendants_at_half_move: dict[HalfMove, dict[boards.board_key, ITreeNode[Any]]]
     number_of_descendants: int
     number_of_descendants_at_half_move: dict[HalfMove, int]
     min_half_move: int | None
@@ -74,7 +74,7 @@ class Descendants:
     def __setitem__(
             self,
             half_move: HalfMove,
-            value: dict[str, ITreeNode[Any]]
+            value: dict[boards.board_key, ITreeNode[Any]]
     ) -> None:
         """
         Sets the descendants at a specific half move.
@@ -91,7 +91,7 @@ class Descendants:
     def __getitem__(
             self,
             half_move: HalfMove
-    ) -> dict[str, ITreeNode[Any]]:
+    ) -> dict[boards.board_key, ITreeNode[Any]]:
         """
         Retrieve the descendants at a specific half move.
 
@@ -185,14 +185,14 @@ class Descendants:
             None
         """
         half_move: HalfMove = node.half_move
-        fen: str = node.fast_rep
+        board_key: boards.board_key  = node.fast_rep
 
         if half_move in self.descendants_at_half_move:
-            assert (fen not in self.descendants_at_half_move[half_move])
-            self.descendants_at_half_move[half_move][fen] = node
+            assert (board_key not in self.descendants_at_half_move[half_move])
+            self.descendants_at_half_move[half_move][board_key] = node
             self.number_of_descendants_at_half_move[half_move] += 1
         else:
-            self.descendants_at_half_move[half_move] = {fen: node}
+            self.descendants_at_half_move[half_move] = {board_key: node}
             self.number_of_descendants_at_half_move[half_move] = 1
         self.number_of_descendants += 1
 
@@ -387,17 +387,17 @@ class RangedDescendants(Descendants):
             None
         """
         half_move: int = node.half_move
-        fen: str = node.fast_rep
+        board_key: boards.board_key = node.fast_rep
 
         assert (self.is_in_the_acceptable_range(half_move))
         if self.is_in_the_current_range(half_move):
             if half_move in self.descendants_at_half_move:
-                assert (fen not in self.descendants_at_half_move[half_move])
-            self.descendants_at_half_move[half_move][fen] = node
+                assert (board_key not in self.descendants_at_half_move[half_move])
+            self.descendants_at_half_move[half_move][board_key] = node
             self.number_of_descendants_at_half_move[half_move] += 1
         else:  # half_move == len(self.descendants_at_half_move)
             assert (self.is_new_generation(half_move))
-            self.descendants_at_half_move[half_move] = {fen: node}
+            self.descendants_at_half_move[half_move] = {board_key: node}
             self.number_of_descendants_at_half_move[half_move] = 1
             if self.max_half_move is not None:
                 self.max_half_move += 1

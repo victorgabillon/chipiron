@@ -10,6 +10,7 @@ import chess
 import chipiron.environments.chess.board as board_mod
 import chipiron.players.move_selector.treevalue.nodes as node
 import chipiron.players.move_selector.treevalue.trees as trees
+from chipiron.environments.chess.move import IMove
 from chipiron.players.move_selector.treevalue.node_factory.node_factory import TreeNodeFactory
 from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructions
 from chipiron.players.move_selector.treevalue.tree_manager.tree_expander import TreeExpansion, TreeExpansions
@@ -27,6 +28,8 @@ class TreeManager:
     This class manages a tree by opening new nodes and updating the values and indexes on the nodes.
     """
 
+    node_factory: TreeNodeFactory[node.ITreeNode[Any]]
+
     def __init__(
             self,
             node_factory: TreeNodeFactory[node.ITreeNode[Any]]
@@ -37,7 +40,7 @@ class TreeManager:
             self,
             tree: trees.MoveAndValueTree,
             parent_node: node.ITreeNode[Any],
-            move: chess.Move
+            move: IMove
     ) -> TreeExpansion:
         """
         Opening a Node that contains a board following a move.
@@ -55,7 +58,7 @@ class TreeManager:
         # To limit computation we limit copying it all the time. The resulting policy will only be aware of immediate
         # risk of draw by repetition
         copy_stack: bool = (tree.node_depth(parent_node) < 2)
-        board: board_mod.BoardChi = parent_node.board.copy(stack=copy_stack)
+        board: board_mod.IBoard = parent_node.board.copy(stack=copy_stack)
 
         # The move is played. The board is now a new board
         modifications: board_mod.BoardModification | None = board.play_move(move=move)
@@ -72,9 +75,9 @@ class TreeManager:
             self,
             tree: trees.MoveAndValueTree,
             parent_node: node.ITreeNode[Any],
-            board: board_mod.BoardChi,
+            board: board_mod.IBoard,
             modifications: board_mod.BoardModification | None,
-            move: chess.Move
+            move: IMove
     ) -> TreeExpansion:
         """
         Opening a Node that contains a board given the modifications.
@@ -92,7 +95,7 @@ class TreeManager:
 
         # Creation of the child node. If the board already exited in another node, that node is returned as child_node.
         half_move: int = parent_node.half_move + 1
-        fast_rep: str = board.fast_representation
+        fast_rep: board_mod.board_key = board.fast_representation
 
         child_node: node.ITreeNode[Any]
         need_creation_child_node: bool = (tree.descendants.is_new_generation(half_move)

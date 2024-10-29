@@ -9,6 +9,7 @@ import chess
 import chipiron.environments.chess.board as board_mod
 import chipiron.environments.chess.board as boards
 import chipiron.players.move_selector.treevalue.nodes as node
+from chipiron.environments.chess.move import IMove
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 
 T = TypeVar('T', bound=ITreeNode[Any])
@@ -21,11 +22,11 @@ class TreeNodeFactory(Protocol[T]):
 
     def create(
             self,
-            board: boards.BoardChi,
+            board: boards.IBoard,
             half_move: int,
             count: int,
             parent_node: node.ITreeNode[Any] | None,
-            move_from_parent: chess.Move | None,
+            move_from_parent: IMove | None,
             modifications: board_mod.BoardModification | None
     ) -> node.ITreeNode[T]:
         """

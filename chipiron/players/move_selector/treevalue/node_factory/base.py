@@ -7,6 +7,7 @@ import chess
 
 import chipiron.environments.chess.board as board_mod
 import chipiron.environments.chess.board as boards
+from chipiron.environments.chess.move import IMove
 from chipiron.players.move_selector.treevalue.node_factory.node_factory import TreeNodeFactory
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
@@ -21,11 +22,11 @@ class Base(Generic[T], TreeNodeFactory[T]):
 
     def create(
             self,
-            board: boards.BoardChi,
+            board: boards.IBoard,
             half_move: int,
             count: int,
             parent_node: ITreeNode[Any] | None,
-            move_from_parent: chess.Move | None,
+            move_from_parent: IMove | None,
             modifications: board_mod.BoardModification | None
     ) -> TreeNode[T]:
         """
@@ -43,7 +44,7 @@ class Base(Generic[T], TreeNodeFactory[T]):
             TreeNode: The newly created TreeNode object.
         """
 
-        parent_nodes: dict[ITreeNode[Any], chess.Move]
+        parent_nodes: dict[ITreeNode[Any], IMove]
         if parent_node is None:
             parent_nodes = {}
         else:

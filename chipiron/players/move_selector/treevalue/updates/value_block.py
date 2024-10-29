@@ -15,6 +15,7 @@ from typing import Self
 
 import chess
 
+from chipiron.environments.chess.move import IMove
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 
 
@@ -37,14 +38,14 @@ class ValueUpdateInstructionsTowardsOneParentNode:
         moves_with_updated_best_move (Set[AlgorithmNode]): Set of moves with updated 'best_move' value.
     """
 
-    moves_with_updated_over: set[chess.Move] = field(default_factory=set)
-    moves_with_updated_value: set[chess.Move] = field(default_factory=set)
-    moves_with_updated_best_move: set[chess.Move] = field(default_factory=set)
+    moves_with_updated_over: set[IMove] = field(default_factory=set)
+    moves_with_updated_value: set[IMove] = field(default_factory=set)
+    moves_with_updated_best_move: set[IMove] = field(default_factory=set)
 
     def add_update_from_one_child_node(
             self,
             update_from_one_child_node: ValueUpdateInstructionsFromOneNode,
-            move_from_parent_to_child: chess.Move
+            move_from_parent_to_child: IMove
     ) -> None:
         if update_from_one_child_node.is_node_newly_over:
             self.moves_with_updated_over.add(move_from_parent_to_child)

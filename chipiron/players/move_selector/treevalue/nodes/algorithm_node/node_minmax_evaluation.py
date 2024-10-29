@@ -20,6 +20,7 @@ from typing import Protocol, Any, Self, TypeVar
 
 import chess
 
+from chipiron.environments.IMove import IMove
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import FloatyBoardEvaluation, ForcedOutcome, \
     BoardEvaluation
 from chipiron.players.boardevaluators.over_event import OverEvent
@@ -78,7 +79,7 @@ class NodeMinmaxEvaluation:
     value_white_minmax: float | None = None
 
     # the sequence of best moves from this node
-    best_move_sequence: list[chess.Move] = field(default_factory=list)
+    best_move_sequence: list[IMove] = field(default_factory=list)
 
     # the children of the tree node are kept in a dictionary that can be sorted by their evaluations ()
 
@@ -87,7 +88,7 @@ class NodeMinmaxEvaluation:
     # careful, I have hard coded in the self.best_child() function the descending order for
     # fast access to the best element, so please do not change!
     # self.children_sorted_by_value_vsd = ValueSortedDict({})
-    moves_sorted_by_value_: dict[chess.Move, Any] = field(default_factory=dict)
+    moves_sorted_by_value_: dict[IMove, Any] = field(default_factory=dict)
 
     # self.children_sorted_by_value = {}
 
@@ -97,18 +98,18 @@ class NodeMinmaxEvaluation:
     # the list of moves that have not yet be found to be over
     # using atm a list instead of set as atm python set are not insertion ordered which adds randomness
     # and makes debug harder
-    moves_not_over: list[chess.Move] = field(default_factory=list)
+    moves_not_over: list[IMove] = field(default_factory=list)
 
     # creating a base Over event that is set to None
     over_event: OverEvent = field(default_factory=OverEvent)
 
     @property
-    def moves_sorted_by_value(self) -> dict[chess.Move, Any]:
+    def moves_sorted_by_value(self) -> dict[IMove, Any]:
         """
         Returns a dictionary containing the moves of the node sorted by their values.
 
         Returns:
-            dict[chess.Move, Any]: A dictionary where the keys are the moves in the node and the values
+            dict[IMove, Any]: A dictionary where the keys are the moves in the node and the values
             are their corresponding values.
         """
         return self.moves_sorted_by_value_
@@ -187,7 +188,7 @@ class NodeMinmaxEvaluation:
             subjective_value = -another_node_eval.get_value_white()
         return subjective_value
 
-    def best_move(self) -> chess.Move | None:
+    def best_move(self) -> IMove | None:
         """
         Returns the best move node based on the subjective value.
 
@@ -200,7 +201,7 @@ class NodeMinmaxEvaluation:
             best_move = None
         return best_move
 
-    def best_move_not_over(self) -> chess.Move:
+    def best_move_not_over(self) -> IMove:
         """
         Returns the best move that is not leading to a game-over.
 
@@ -237,7 +238,7 @@ class NodeMinmaxEvaluation:
 
     def second_best_move(
             self
-    ) -> chess.Move:
+    ) -> IMove:
         """
         Returns the second-best move based on the subjective value.
 
@@ -246,7 +247,7 @@ class NodeMinmaxEvaluation:
         """
         assert (len(self.moves_sorted_by_value) >= 2)
         # fast way to access second key with the highest subjective value
-        second_best_move: chess.Move = nth_key(self.moves_sorted_by_value, 1)
+        second_best_move: IMove = nth_key(self.moves_sorted_by_value, 1)
         return second_best_move
 
     def is_over(self) -> bool:
@@ -356,12 +357,12 @@ class NodeMinmaxEvaluation:
 
     def record_sort_value_of_child(
             self,
-            move: chess.Move
+            move: IMove
     ) -> None:
         """Stores the subjective value of the move in the self.moves_sorted_by_value (automatically sorted).
 
         Args:
-            move (chess.Move): The move whose value needs to be recorded.
+            move (IMove): The move whose value needs to be recorded.
 
         Returns:
             None
@@ -444,12 +445,12 @@ class NodeMinmaxEvaluation:
         # becoming over triggers a full update record_sort_value_of_child
         # where ties are now broken to reach over as fast as possible
         # todo we should reach it asap if we are winning and think about what to ddo in other scenarios....
-        move: chess.Move
+        move: IMove
         for move in self.tree_node.moves_children:
             self.record_sort_value_of_child(move=move)
 
         # fast way to access first key with the highest subjective value
-        best_move: chess.Move | None = self.best_move()
+        best_move: IMove | None = self.best_move()
         assert best_move is not None
         best_child = self.tree_node.moves_children[best_move]
         assert best_child is not None
@@ -461,13 +462,13 @@ class NodeMinmaxEvaluation:
 
     def update_over(
             self,
-            moves_with_updated_over: set[chess.Move]
+            moves_with_updated_over: set[IMove]
     ) -> bool:
         """
         Update the over_event of the node based on notification of change of over_event in children.
 
         Args:
-            moves_with_updated_over (set[chess.Move]): A set of chess moves linking to the children
+            moves_with_updated_over (set[IMove]): A set of chess moves linking to the children
                 nodes that have been updated with their over_event.
 
         Returns:
@@ -501,13 +502,13 @@ class NodeMinmaxEvaluation:
 
     def update_moves_values(
             self,
-            moves_to_consider: set[chess.Move]
+            moves_to_consider: set[IMove]
     ) -> None:
         """
         Updates the values of the moves based on the given set of moves to consider.
 
         Args:
-            moves_to_consider (set[chess.Move]): The set of moves to consider.
+            moves_to_consider (set[IMove]): The set of moves to consider.
 
         Returns:
             None
@@ -516,7 +517,7 @@ class NodeMinmaxEvaluation:
             self.record_sort_value_of_child(move=move)
         self.moves_sorted_by_value_ = sort_dic(self.moves_sorted_by_value_)
 
-    def sort_moves_not_over(self) -> list[chess.Move]:
+    def sort_moves_not_over(self) -> list[IMove]:
         """
         Sorts the moves that are not over based on their value.
 
@@ -541,7 +542,7 @@ class NodeMinmaxEvaluation:
         Returns:
             None
         """
-        best_move: chess.Move | None = self.best_move()
+        best_move: IMove | None = self.best_move()
         assert best_move is not None
         best_child = self.tree_node.moves_children[best_move]
         assert best_child is not None
@@ -556,20 +557,20 @@ class NodeMinmaxEvaluation:
 
     def update_best_move_sequence(
             self,
-            moves_with_updated_best_move_seq: set[chess.Move]
+            moves_with_updated_best_move_seq: set[IMove]
     ) -> bool:
         """Updates the best move sequence based on the notification from children nodes identified through their
         corresponding move.
 
         Args:
-            moves_with_updated_best_move_seq (set[chess.Move]): A set of move that have
+            moves_with_updated_best_move_seq (set[IMove]): A set of move that have
                 notified an updated best-move sequence.
 
         Returns:
             bool: True if self.best_move_sequence is modified, False otherwise.
         """
         has_best_move_seq_changed: bool = False
-        best_move: chess.Move = self.best_move_sequence[0]
+        best_move: IMove = self.best_move_sequence[0]
         best_node: NodeWithValue | None = self.tree_node.moves_children[best_move]
 
         if best_move in moves_with_updated_best_move_seq and best_node is not None:
@@ -591,7 +592,7 @@ class NodeMinmaxEvaluation:
 
         """
         how_equal_: str = 'equal'
-        best_moves: list[chess.Move] = self.get_all_of_the_best_moves(how_equal=how_equal_)
+        best_moves: list[IMove] = self.get_all_of_the_best_moves(how_equal=how_equal_)
         if how_equal_ == 'equal':
             assert (len(best_moves) == 1)
         best_move = choice(best_moves)
@@ -620,13 +621,13 @@ class NodeMinmaxEvaluation:
 
     def minmax_value_update_from_children(
             self,
-            moves_with_updated_value: set[chess.Move]
+            moves_with_updated_value: set[IMove]
     ) -> tuple[bool, bool]:
         """
         Updates the value and best move of the node based on the updated values of its children.
 
         Args:
-            moves_with_updated_value (set[chess.Move]): A set of moves with updated values.
+            moves_with_updated_value (set[IMove]): A set of moves with updated values.
 
         Returns:
             tuple[bool, bool]: A tuple containing two boolean values indicating whether the value and best move have
@@ -638,7 +639,7 @@ class NodeMinmaxEvaluation:
         # updates value
         value_white_before_update = self.get_value_white()
 
-        best_move_before_update: chess.Move | None = self.best_move()
+        best_move_before_update: IMove | None = self.best_move()
         self.update_moves_values(moves_to_consider=moves_with_updated_value)
         self.update_value_minmax()
 
@@ -658,7 +659,7 @@ class NodeMinmaxEvaluation:
                 best_value_children_after
             )
 
-        best_move_seq_before_update: list[chess.Move] = self.best_move_sequence.copy()
+        best_move_seq_before_update: list[IMove] = self.best_move_sequence.copy()
         if self.tree_node.all_legal_moves_generated:
             if best_child_before_update_not_the_best_anymore:
                 self.one_of_best_children_becomes_best_next_node()
@@ -705,7 +706,7 @@ class NodeMinmaxEvaluation:
             A string representation of the best move sequence.
         """
         res = ''
-        move: chess.Move
+        move: IMove
         for move in self.best_move_sequence:
             res += '_' + str(move)
         return res
@@ -828,7 +829,7 @@ class NodeMinmaxEvaluation:
     def get_all_of_the_best_moves(
             self,
             how_equal: str | None = None
-    ) -> list[chess.Move]:
+    ) -> list[IMove]:
         """
         Returns a list of all the best moves based on the specified equality criteria.
 
@@ -838,14 +839,14 @@ class NodeMinmaxEvaluation:
                 Defaults to None.
 
         Returns:
-            list[chess.Move]: A list of chess.Move representing the best moves.
+            list[IMove]: A list of IMove representing the best moves.
 
         """
-        best_moves: list[chess.Move] = []
-        best_move: chess.Move | None = self.best_move()
+        best_moves: list[IMove] = []
+        best_move: IMove | None = self.best_move()
         assert best_move is not None
         best_value = self.moves_sorted_by_value[best_move]
-        move: chess.Move
+        move: IMove
         for move in self.moves_sorted_by_value:
             if how_equal == 'equal':
                 if self.are_equal_values(self.moves_sorted_by_value[move], best_value):

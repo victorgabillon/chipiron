@@ -63,16 +63,16 @@ class TreeNode(
     board_: boards.IBoard
 
     # the set of parent nodes to this node. Note that a node can have multiple parents!
-    parent_nodes_: dict[ITreeNode[ChildrenType], chess.Move]
+    parent_nodes_: dict[ITreeNode[ChildrenType], IMove]
 
     # all_legal_moves_generated  is a boolean saying whether all moves have been generated.
     # If true the moves are either opened in which case the corresponding opened node is stored in
     # the dictionary self.moves_children, otherwise it is stored in self.non_opened_legal_moves
     all_legal_moves_generated: bool = False
-    non_opened_legal_moves: set[chess.Move] = field(default_factory=set)
+    non_opened_legal_moves: set[IMove] = field(default_factory=set)
 
     # dictionary mapping moves to children nodes. Node is set to None if not created
-    moves_children_: dict[chess.Move, ChildrenType | None] = field(default_factory=dict)
+    moves_children_: dict[IMove, ChildrenType | None] = field(default_factory=dict)
 
     # the color of the player that has to move in the board
     player_to_move_: chess.Color = field(default_factory=chess.Color)
@@ -139,7 +139,7 @@ class TreeNode(
         return self.half_move_
 
     @property
-    def moves_children(self) -> dict[chess.Move, ChildrenType | None]:
+    def moves_children(self) -> dict[IMove, ChildrenType | None]:
         """
         Returns a bidirectional dictionary containing the children nodes of the current tree node,
         along with the corresponding chess moves that lead to each child node.
@@ -152,7 +152,7 @@ class TreeNode(
         return self.moves_children_
 
     @property
-    def parent_nodes(self) -> dict[ITreeNode[ChildrenType], chess.Move]:
+    def parent_nodes(self) -> dict[ITreeNode[ChildrenType], IMove]:
         """
         Returns the dictionary of parent nodes of the current tree node with associated move.
 
@@ -184,7 +184,7 @@ class TreeNode(
 
     def add_parent(
             self,
-            move: chess.Move,
+            move: IMove,
             new_parent_node: ITreeNode[ChildrenType]
     ) -> None:
         """

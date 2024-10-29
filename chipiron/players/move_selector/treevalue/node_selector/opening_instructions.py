@@ -21,7 +21,7 @@ class OpeningInstruction:
     """
 
     node_to_open: nodes.ITreeNode[Any]
-    move_to_play: chess.Move
+    move_to_play: IMove
 
     def print_info(self) -> None:
         """
@@ -177,7 +177,7 @@ class OpeningInstructions:
 
 
 def create_instructions_to_open_all_moves(
-        moves_to_play: list[chess.Move],
+        moves_to_play: list[IMove],
         node_to_open: nodes.ITreeNode[Any]
 ) -> OpeningInstructions:
     """

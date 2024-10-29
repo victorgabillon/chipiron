@@ -12,6 +12,7 @@ from typing import Self
 
 import chess
 
+from chipiron.environments.chess.move import IMove
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 
 
@@ -36,15 +37,15 @@ class IndexUpdateInstructionsTowardsOneParentNode:
     This class is used to store and manipulate sets of children with updated index values.
 
     Attributes:
-        moves_with_updated_index (Set[chess.Move]): A set of children with updated index values.
+        moves_with_updated_index (Set[IMove]): A set of children with updated index values.
     """
 
-    moves_with_updated_index: set[chess.Move] = field(default_factory=set)
+    moves_with_updated_index: set[IMove] = field(default_factory=set)
 
     def add_update_from_one_child_node(
             self,
             update_from_one_child_node: IndexUpdateInstructionsFromOneNode,
-            move_from_parent_to_child: chess.Move
+            move_from_parent_to_child: IMove
     ) -> None:
         if update_from_one_child_node.updated_index:
             self.moves_with_updated_index.add(move_from_parent_to_child)

@@ -14,6 +14,7 @@ from dataclasses import dataclass
 
 import chess
 
+from chipiron.environments.chess.move import IMove
 from chipiron.players.move_selector.treevalue import trees
 from chipiron.players.move_selector.treevalue.node_selector.move_explorer import ZipfMoveExplorer
 from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructions, \
@@ -93,7 +94,7 @@ class RecurZipfBase:
                 # print('best line is underattacked')
                 if self.random_generator.random() > .5:
                     # print('best line is underattacked and i do')
-                    all_moves_to_open: list[chess.Move] = self.opening_instructor.all_moves_to_open(
+                    all_moves_to_open: list[IMove] = self.opening_instructor.all_moves_to_open(
                         node_to_open=last_node_in_best_line.tree_node)
                     opening_instructions = create_instructions_to_open_all_moves(
                         moves_to_play=all_moves_to_open,
