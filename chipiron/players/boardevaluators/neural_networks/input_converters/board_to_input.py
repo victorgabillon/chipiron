@@ -5,7 +5,7 @@ from typing import Protocol, runtime_checkable
 
 import torch
 
-from chipiron.environments.chess.board import BoardChi
+import chipiron.environments.chess.board as boards
 
 
 class BoardToInput(Protocol):
@@ -13,7 +13,7 @@ class BoardToInput(Protocol):
     Protocol for converting a chess board to a tensor input for a neural network.
     """
 
-    def convert(self, board: BoardChi) -> torch.Tensor:
+    def convert(self, board: boards.IBoard) -> torch.Tensor:
         """
         Converts the given chess board to a tensor input.
 
@@ -32,7 +32,7 @@ class BoardToInputFunction(Protocol):
     Protocol for a callable object that converts a chess board to a tensor input for a neural network.
     """
 
-    def __call__(self, board: BoardChi) -> torch.Tensor:
+    def __call__(self, board: boards.IBoard) -> torch.Tensor:
         """
         Converts the given chess board to a tensor input.
 

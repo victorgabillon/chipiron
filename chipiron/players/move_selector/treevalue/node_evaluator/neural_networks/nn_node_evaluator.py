@@ -68,6 +68,7 @@ class NNNodeEvaluator(NodeEvaluator):
             board_evaluation: FloatyBoardEvaluation = self.nn_board_evaluator.output_and_value_converter.to_board_evaluation(
                 output_nn=output_layer[index],
                 color_to_play=node_not_over.tree_node.board.turn)
-            value_white: float = board_evaluation.value_white
+            value_white: float |None = board_evaluation.value_white
+            assert value_white is not None
             processed_evaluation = self.process_evalution_not_over(value_white, node_not_over)
             node_not_over.minmax_evaluation.set_evaluation(processed_evaluation)

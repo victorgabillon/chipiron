@@ -123,7 +123,7 @@ def create_player(
 def create_game_player(
         player_factory_args: PlayerFactoryArgs,
         player_color: chess.Color,
-        syzygy_table: table_base.SyzygyTable
+        syzygy_table: table_base.SyzygyTable |None
 ) -> GamePlayer:
     """Create a game player
 
