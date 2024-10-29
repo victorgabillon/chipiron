@@ -47,7 +47,7 @@ class NNBoardEvaluator:
 
     def value_white(
             self,
-            board: boards.BoardChi
+            board: boards.IBoard
     ) -> float:
         """
         Evaluate the value for the white player

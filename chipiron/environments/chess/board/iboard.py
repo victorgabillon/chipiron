@@ -247,3 +247,19 @@ class IBoard(Protocol[T_Move]):
     def number_of_pieces_on_the_board(self) -> int:
         ...
 
+    def piece_map(
+            self
+    ) -> dict[chess.Square, tuple[int, bool]]:
+        ...
+
+    def has_kingside_castling_rights(
+            self,
+            color: chess.Color
+    ) -> bool:
+        ...
+
+    def has_queenside_castling_rights(
+            self,
+            color: chess.Color
+    ) -> bool:
+        ...
