@@ -263,3 +263,6 @@ class IBoard(Protocol[T_Move]):
             color: chess.Color
     ) -> bool:
         ...
+
+    def print_chess_board(self) -> None:
+        ...
