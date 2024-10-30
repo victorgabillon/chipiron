@@ -30,7 +30,11 @@ class Game:
     _current_board: IBoard
     _seed: seed | None
     _fen_history: list[fen]
-    _move_history: list[chess.Move]
+    _move_history: list[IMove]
+
+    # list of boards object to implement rewind function without having to necessarily code it in the Board object.
+    # this let the board object a bit more lightweight to speed up the Monte Carlo tree search
+    _board_history: list[IBoard]
 
     def __init__(
             self,
@@ -51,6 +55,7 @@ class Game:
         self._seed = seed_
         self._fen_history = [board.fen]
         self._move_history = []
+        self._board_history = [board.copy(stack=True)]
 
     def play_move(
             self,
@@ -70,6 +75,7 @@ class Game:
             self._current_board.play_move(move)
             self.move_history.append(move)
             self.fen_history.append(self._current_board.fen)
+            self._board_history.append(self._current_board.copy(stack=True))
 
         else:
             print(f'Cannot play move if the game status is PAUSE {self._playing_status.status}')
@@ -82,7 +88,9 @@ class Game:
             AssertionError: If the game status is not paused.
         """
         if self._playing_status.is_paused():
-            self._current_board.rewind_one_move()
+            if len(self._board_history) > 1:
+                del self._board_history[-1]
+                self._current_board = self._board_history[-1]
         else:
             print('Cannot rewind move if the game status is PLAY')
 
@@ -224,7 +232,7 @@ class ObservableGame:
 
     def play_move(
             self,
-            move: chess.Move
+            move: IMove
     ) -> None:
         """
         Plays a move on the chess board.
@@ -350,7 +358,7 @@ class ObservableGame:
         return self.game.board
 
     @property
-    def move_history(self) -> list[chess.Move]:
+    def move_history(self) -> list[IMove]:
         """
         Gets the history of move.
 

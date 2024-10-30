@@ -102,7 +102,7 @@ class GameManager:
 
     def play_one_move(
             self,
-            move: chess.Move
+            move: IMove
     ) -> None:
         """Play one move in the game.
 

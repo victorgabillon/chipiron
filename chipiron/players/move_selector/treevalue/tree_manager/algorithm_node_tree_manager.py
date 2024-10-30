@@ -10,6 +10,7 @@ import chess
 
 import chipiron.players.move_selector.treevalue.trees as trees
 import chipiron.players.move_selector.treevalue.updates as upda
+from chipiron.environments.chess.move import IMove
 from chipiron.players.move_selector.treevalue.indices.index_manager import NodeExplorationIndexManager
 from chipiron.players.move_selector.treevalue.indices.index_manager.node_exploration_manager import update_all_indices
 from chipiron.players.move_selector.treevalue.node_evaluator import NodeEvaluator, EvaluationQueries
@@ -45,7 +46,7 @@ class AlgorithmNodeTreeManager:
             self,
             tree: trees.MoveAndValueTree,
             parent_node: AlgorithmNode,
-            move: chess.Move
+            move: IMove
     ) -> TreeExpansion:
         """
 
