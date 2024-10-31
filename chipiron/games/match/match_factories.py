@@ -57,7 +57,7 @@ def create_match_manager(
 
     # Creation of the Syzygy table for perfect play in low pieces cases, needed by the GameManager
     # and can also be used by the players
-    syzygy_table: SyzygyTable = create_syzygy(
+    syzygy_table: SyzygyTable | None = create_syzygy(
         use_rust=implementation_args.use_rust_boards
     )
 

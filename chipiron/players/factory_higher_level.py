@@ -78,7 +78,7 @@ class PlayerObserverFactory(Protocol):
 def create_player_observer_factory(
         each_player_has_its_own_thread: bool,
         implementation_args: ImplementationArgs,
-        syzygy_table:SyzygyTable
+        syzygy_table: SyzygyTable | None
 ) -> PlayerObserverFactory:
     player_observer_factory: PlayerObserverFactory
     if each_player_has_its_own_thread:
@@ -146,7 +146,7 @@ def create_player_observer_mono_process(
         player_factory_args: PlayerFactoryArgs,
         player_color: chess.Color,
         main_thread_mailbox: queue.Queue[IsDataclass],
-        syzygy_table:SyzygyTable
+        syzygy_table: SyzygyTable | None
 ) -> tuple[GamePlayer, MoveFunction]:
     """Create a player observer.
 

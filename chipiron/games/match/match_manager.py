@@ -2,11 +2,11 @@
 Module in charge of playing one match
 """
 import os
-import pickle
 import queue
 
 import chess
 
+from chipiron.environments.chess.move import moveUci
 from chipiron.games.game.final_game_result import GameReport
 from chipiron.games.game.game_args import GameArgs
 from chipiron.games.game.game_args_factory import GameArgsFactory
@@ -90,7 +90,7 @@ class MatchManager:
 
         # creating object for reporting the result of the match and the move history
         match_results: IMatchResults = self.match_results_factory.create()
-        match_move_history: dict[int, list[chess.Move]] = {}
+        match_move_history: dict[int, list[moveUci]] = {}
 
         # Main loop of playing various games
         game_number: int = 0
@@ -169,7 +169,7 @@ class MatchManager:
             game_seed=game_seed
         )
         game_report: GameReport = game_manager.play_one_game()
-        game_manager.print_to_file(idx=game_number,game_report=game_report)
+        game_manager.print_to_file(idx=game_number, game_report=game_report)
 
         return game_report
 
@@ -199,8 +199,8 @@ class MatchManager:
         if self.output_folder_path is not None:
             path_file: path = os.path.join(self.output_folder_path, 'match_report.obj')
             with open(path_file, 'wb') as the_file:
-                print('tt',type(match_report))
-                #pickle.dump(match_report, the_file)
+                print('tt', type(match_report))
+                # pickle.dump(match_report, the_file)
 
     def subscribe(
             self,

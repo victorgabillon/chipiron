@@ -36,7 +36,7 @@ class MoveAndValueTreeFactory:
 
     def create(
             self,
-            starting_board: boards.BoardChi
+            starting_board: boards.IBoard
     ) -> MoveAndValueTree:
         """
         creates the tree

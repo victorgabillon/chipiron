@@ -266,3 +266,6 @@ class IBoard(Protocol[T_Move]):
 
     def print_chess_board(self) -> None:
         ...
+
+    def tell_result(self) -> None:
+        ...
