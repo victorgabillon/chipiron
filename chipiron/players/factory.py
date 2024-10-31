@@ -7,8 +7,8 @@ import random
 import chess
 
 import chipiron.players.boardevaluators.table_base as table_base
-from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy
+from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.players.player_args import PlayerArgs
 from chipiron.players.utils import fetch_player_args_convert_and_save
 from chipiron.utils import path
@@ -123,7 +123,7 @@ def create_player(
 def create_game_player(
         player_factory_args: PlayerFactoryArgs,
         player_color: chess.Color,
-        syzygy_table: table_base.SyzygyTable |None
+        syzygy_table: table_base.SyzygyTable | None
 ) -> GamePlayer:
     """Create a game player
 

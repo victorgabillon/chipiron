@@ -6,7 +6,7 @@ import multiprocessing
 import queue
 from typing import Any
 
-from chipiron.players.boardevaluators.table_base.syzygy_python import SyzygyTable
+from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 
 
 class SyzygyProcess(multiprocessing.Process):

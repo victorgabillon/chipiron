@@ -44,7 +44,7 @@ class StockfishBoardEvaluator:
 
     def value_white(
             self,
-            board: boards.BoardChi
+            board: boards.IBoard
     ) -> float:
         """
         Computes the value of the board for the white player.

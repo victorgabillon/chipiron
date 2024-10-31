@@ -17,6 +17,7 @@ from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import QPushButton, QTableWidget, QWidget, QDialog, QTableWidgetItem
 
 from chipiron.environments.chess.board import BoardChi
+from chipiron.environments.chess.move import IMove
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.games.match.match_results import MatchResults
 from chipiron.games.match.match_results import SimpleResults
@@ -252,7 +253,7 @@ class MainWindow(QWidget):
             None
         """
         message: MoveMessage = MoveMessage(
-            move=move,
+            move=move.uci(),
             corresponding_board=self.board.fen,
             player_name='Gui_Human',
             color_to_play=self.board.turn

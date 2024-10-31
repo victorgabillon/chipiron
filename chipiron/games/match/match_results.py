@@ -5,6 +5,7 @@ from typing import Protocol
 import chess
 
 from chipiron.games.game.final_game_result import FinalGameResult
+from chipiron.environments.chess.move import moveUci
 
 
 @dataclass
@@ -198,4 +199,4 @@ class MatchReport:
     Represents a match report containing the match results and move history.
     """
     match_results: MatchResults
-    match_move_history: dict[int, list[chess.Move]]
+    match_move_history: dict[int, list[moveUci]]

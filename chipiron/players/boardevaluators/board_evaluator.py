@@ -11,7 +11,7 @@ import chess
 import chipiron.environments.chess.board as boards
 from chipiron.utils.communication.gui_messages import EvaluationMessage
 from chipiron.utils.dataclass import IsDataclass
-
+from chipiron.players.boardevaluators.board_evaluation.board_evaluation import BoardEvaluation
 
 class ValueWhiteWhenOver(float, Enum):
     """
@@ -53,7 +53,7 @@ class IGameBoardEvaluator(Protocol):
     def add_evaluation(
             self,
             player_color: chess.Color,
-            evaluation: float
+            evaluation: BoardEvaluation
     ) -> None:
         """
         Adds an evaluation value for a player.
@@ -90,7 +90,7 @@ class GameBoardEvaluator:
     def add_evaluation(
             self,
             player_color: chess.Color,
-            evaluation: float
+            evaluation: BoardEvaluation
     ) -> None:
         """
         Adds an evaluation value for a player.
@@ -146,7 +146,7 @@ class ObservableBoardEvaluator:
     def add_evaluation(
             self,
             player_color: chess.Color,
-            evaluation: float
+            evaluation: BoardEvaluation
     ) -> None:
         """
         Adds an evaluation value for a player.
