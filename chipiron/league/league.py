@@ -146,7 +146,8 @@ class League:
             args_player_two=args_player_two,
             args_game=game_args,
             seed=match_seed,
-            output_folder_path=path_logs_game_folder
+            output_folder_path=path_logs_game_folder,
+            implementation_args=None
         )
 
         # Play the match

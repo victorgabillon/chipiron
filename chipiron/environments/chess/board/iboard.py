@@ -1,4 +1,3 @@
-from abc import abstractmethod
 from dataclasses import asdict
 from typing import Protocol, Self
 from typing import TypeVar, Any
@@ -20,7 +19,6 @@ T_Move = TypeVar('T_Move', bound=IMove)
 class IBoard(Protocol[T_Move]):
     fast_representation_: board_key
 
-    @abstractmethod
     def play_move(
             self,
             move: T_Move
@@ -28,18 +26,15 @@ class IBoard(Protocol[T_Move]):
         ...
 
     @property
-    @abstractmethod
     def fen(self) -> str:
         ...
 
     @property
-    @abstractmethod
     def move_history_stack(
             self,
     ) -> list[moveUci]:
         ...
 
-    @abstractmethod
     def ply(self) -> int:
         """
         Returns the number of half-moves (plies) that have been played on the board.
@@ -50,7 +45,6 @@ class IBoard(Protocol[T_Move]):
         ...
 
     @property
-    @abstractmethod
     def turn(self) -> chess.Color:
         """
         Get the current turn color.
@@ -60,7 +54,6 @@ class IBoard(Protocol[T_Move]):
         """
         ...
 
-    @abstractmethod
     def copy(
             self,
             stack: bool
@@ -76,7 +69,6 @@ class IBoard(Protocol[T_Move]):
         """
         ...
 
-    @abstractmethod
     def is_game_over(self) -> bool:
         """
         Check if the game is over.
@@ -87,82 +79,66 @@ class IBoard(Protocol[T_Move]):
         ...
 
     @property
-    @abstractmethod
     def pawns(self) -> chess.Bitboard:
         ...
 
     @property
-    @abstractmethod
     def knights(self) -> chess.Bitboard:
         ...
 
     @property
-    @abstractmethod
     def bishops(self) -> chess.Bitboard:
         ...
 
     @property
-    @abstractmethod
     def rooks(self) -> chess.Bitboard:
         ...
 
     @property
-    @abstractmethod
     def queens(self) -> chess.Bitboard:
         ...
 
     @property
-    @abstractmethod
     def kings(self) -> chess.Bitboard:
         ...
 
     @property
-    @abstractmethod
     def white(self) -> chess.Bitboard:
         ...
 
     @property
-    @abstractmethod
     def black(self) -> chess.Bitboard:
         ...
 
     @property
-    @abstractmethod
     def halfmove_clock(self) -> int:
         ...
 
     @property
-    @abstractmethod
     def promoted(self) -> chess.Bitboard:
         ...
 
     @property
-    @abstractmethod
     def fullmove_number(self) -> int:
         ...
 
     @property
-    @abstractmethod
     def castling_rights(self) -> chess.Bitboard:
         ...
 
     @property
-    @abstractmethod
     def occupied(self) -> chess.Bitboard:
         ...
 
-    @abstractmethod
     def occupied_color(self, color: chess.Color) -> chess.Bitboard:
         ...
 
-    @abstractmethod
     def result(
             self,
             claim_draw: bool = False
     ) -> str:
         ...
 
-    @abstractmethod
     def termination(self) -> chess.Termination | None:
         ...
 
@@ -178,7 +154,6 @@ class IBoard(Protocol[T_Move]):
         yaml.dump(asdict(fen_plus_moves), file, default_flow_style=False)
 
     @property
-    @abstractmethod
     def ep_square(self) -> int | None:
         ...
 
@@ -225,14 +200,12 @@ class IBoard(Protocol[T_Move]):
         assert self.fast_representation_ is not None
         return self.fast_representation_[:-2]
 
-    @abstractmethod
     def is_zeroing(
             self,
             move: T_Move
     ) -> bool:
         ...
 
-    @abstractmethod
     def is_attacked(
             self,
             a_color: chess.Color
@@ -240,7 +213,6 @@ class IBoard(Protocol[T_Move]):
         ...
 
     @property
-    @abstractmethod
     def legal_moves(self) -> set[T_Move]:
         ...
 

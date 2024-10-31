@@ -20,7 +20,7 @@ from typing import Protocol, Any, Self, TypeVar
 
 import chess
 
-from chipiron.environments.IMove import IMove
+from chipiron.environments.chess.move import IMove
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import FloatyBoardEvaluation, ForcedOutcome, \
     BoardEvaluation
 from chipiron.players.boardevaluators.over_event import OverEvent
