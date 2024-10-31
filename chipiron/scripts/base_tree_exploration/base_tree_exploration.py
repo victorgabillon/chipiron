@@ -8,6 +8,7 @@ import cProfile
 import random
 
 from chipiron.environments.chess.board import create_board
+from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.players.factory import create_player
 from chipiron.players.player_args import PlayerArgs
@@ -42,7 +43,7 @@ class BaseTreeExploration:
         """
         Runs the base tree exploration script.
         """
-        syzygy = SyzygyTable('')
+        syzygy = create_syzygy(use_rust=False)
 
         profile = cProfile.Profile()
         profile.enable()

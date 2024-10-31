@@ -17,8 +17,7 @@ ChildrenType = TypeVar('ChildrenType', bound=ITreeNode[Any])
 
 @dataclass(slots=True)
 class TreeNode(
-    Generic[ChildrenType],
-    ITreeNode  # Protocol
+    Generic[ChildrenType]
 ):
     r"""
     The TreeNode class stores information about a specific board position, including the board representation,

@@ -8,7 +8,7 @@ from typing import Any
 import chess
 
 import chipiron.environments.chess.board as boards
-from chipiron.environments.IMove import IMove
+from chipiron.environments.chess.move import IMove
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import BoardRepresentation
 from chipiron.players.move_selector.treevalue.indices.node_indices import NodeExplorationData
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.node_minmax_evaluation import NodeMinmaxEvaluation
