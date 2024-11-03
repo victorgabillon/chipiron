@@ -317,10 +317,7 @@ class ObservableGame:
             print('sending board', self.game.board.fen, self.game.board.move_history_stack)
 
             message: BoardMessage = BoardMessage(
-                fen_plus_moves=FenPlusMoveHistory(
-                    current_fen=self.game.board.fen,
-                    historical_moves=self.game.board.move_history_stack
-                )
+                fen_plus_moves=self.game.board.into_fen_plus_history()
             )
             mailbox.put(item=message)
 

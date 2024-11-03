@@ -195,10 +195,10 @@ class AlgorithmNodeTreeManager:
         update_instructions_batch: upda.UpdateInstructionsTowardsMultipleNodes
         update_instructions_batch = upda.UpdateInstructionsTowardsMultipleNodes()
         parent_node: ITreeNode[Any] | None
-        move_from_parent: chess.Move
+        move_from_parent: IMove
         for parent_node, move_from_parent in node_to_update.parent_nodes.items():
             if parent_node is not None:
-                # there was a test for emptyness here of new updates instructions remove this comment if no bug appear
+                # there was a test for emptiness here of new updates instructions remove this comment if no bug appear
                 assert parent_node not in update_instructions_batch.one_node_instructions
                 update_instructions_batch.add_update_from_one_child_node(
                     update_from_child_node=new_update_instructions,

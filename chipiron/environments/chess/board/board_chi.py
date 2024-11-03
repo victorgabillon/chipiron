@@ -10,6 +10,7 @@ from chess import _BoardState, Outcome
 from chipiron.environments.chess.board.board_modification import BoardModification, PieceInSquare, compute_modifications
 from chipiron.environments.chess.move import moveUci
 from .iboard import IBoard, board_key
+from .utils import FenPlusHistory
 
 # todo check if we need this here
 COLORS = [WHITE, BLACK] = [True, False]
@@ -576,6 +577,9 @@ class BoardChi(IBoard[chess.Move]):
         # assume that player claim draw otherwise the opponent might be overoptimistic
         # in winning position where draw by repetition occur
         claim_draw: bool = True if len(self.board.move_stack) >= 4 else False
+        print('rrt', self.board.move_stack)
+        print('rrtd', self.board._stack)
+
         is_game_over: bool = self.board.is_game_over(claim_draw=claim_draw)
         return is_game_over
 
@@ -816,3 +820,10 @@ class BoardChi(IBoard[chess.Move]):
             move: chess.Move
     ) -> bool:
         return self.board.is_zeroing(move)
+
+    def into_fen_plus_history(self) -> FenPlusHistory:
+        return FenPlusHistory(
+            current_fen=self.fen,
+            historical_moves=self.move_history_stack,
+            historical_boards=self.board._stack
+        )

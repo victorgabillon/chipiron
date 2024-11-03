@@ -18,3 +18,10 @@ class FenPlusMoves:
 class FenPlusMoveHistory:
     current_fen: fen
     historical_moves: list[moveUci] = field(default_factory=list)
+
+
+@dataclass
+class FenPlusHistory:
+    current_fen: fen
+    historical_moves: list[moveUci] = field(default_factory=list)
+    historical_boards: list[chess._BoardState] = field(default_factory=list)
