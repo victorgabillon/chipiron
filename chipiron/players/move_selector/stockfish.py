@@ -24,7 +24,7 @@ from .move_selector import MoveRecommendation
 from .move_selector_types import MoveSelectorTypes
 from ...environments.chess import BoardChi
 from ...environments.chess.board import create_board
-from ...environments.chess.board.utils import FenPlusMoveHistory
+from ...environments.chess.board.utils import FenPlusHistory
 
 
 @dataclass
@@ -77,9 +77,10 @@ class StockfishPlayer:
 
         # transform the board
         board_chi: BoardChi = create_board(
-            fen_with_history=FenPlusMoveHistory(
+            fen_with_history=FenPlusHistory(
                 current_fen=board.fen,
                 historical_moves=board.move_history_stack
+                # note that we dont give here historical_boards, hope this does not create but related to 3 fold repetition computation
             )
         )
         result = self.engine.play(board_chi.board, chess.engine.Limit(self.time_limit))

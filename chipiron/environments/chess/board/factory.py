@@ -11,13 +11,13 @@ import shakmaty_python_binding
 from .board_chi import BoardChi
 from .iboard import IBoard
 from .rusty_board import RustyBoardChi
-from .utils import fen, FenPlusMoveHistory
+from .utils import fen, FenPlusHistory
 
 
 class BoardFactory(Protocol):
     def __call__(
             self,
-            fen_with_history: FenPlusMoveHistory | None = None
+            fen_with_history: FenPlusHistory | None = None
     ) -> IBoard:
         ...
 
@@ -35,7 +35,7 @@ def create_board_factory(
 
 
 def create_board(
-        fen_with_history: FenPlusMoveHistory | None = None,
+        fen_with_history: FenPlusHistory | None = None,
         use_board_modification: bool = False
 ) -> BoardChi:
     """
@@ -58,6 +58,7 @@ def create_board(
         current_fen = fen_with_history.current_fen
         chess_board = chess.Board(fen=current_fen)
         chess_board.move_stack = [chess.Move.from_uci(move) for move in fen_with_history.historical_moves]
+        chess_board._stack = fen_with_history.historical_boards
 
     else:
         chess_board = chess.Board()
@@ -70,7 +71,7 @@ def create_board(
 
 
 def create_rust_board(
-        fen_with_history: FenPlusMoveHistory | None = None,
+        fen_with_history: FenPlusHistory | None = None,
         use_board_modification: bool = False
 ) -> RustyBoardChi:
     """

@@ -16,7 +16,7 @@ from .factory import create_game_player
 from .game_player import GamePlayer, game_player_computes_move_on_board_and_send_move_in_queue
 from .player_args import PlayerFactoryArgs
 from ..environments.chess.board.factory import create_board_factory
-from ..environments.chess.board.utils import FenPlusMoveHistory
+from ..environments.chess.board.utils import FenPlusHistory
 from ..scripts.chipiron_args import ImplementationArgs
 
 
@@ -112,7 +112,7 @@ class PlayerProcess(multiprocessing.Process):
                 # Handle task here and call q.task_done()
                 if isinstance(message, BoardMessage):
                     board_message: BoardMessage = message
-                    fen_plus_moves: FenPlusMoveHistory = board_message.fen_plus_moves
+                    fen_plus_moves: FenPlusHistory = board_message.fen_plus_moves
                     board: IBoard = self.board_factory(fen_with_history=fen_plus_moves)
                     seed_: seed | None = board_message.seed
                     print(f'Player thread got the board {board}')
