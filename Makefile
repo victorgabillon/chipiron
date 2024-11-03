@@ -15,6 +15,7 @@ init:  chipiron/stockfish chipiron/data chipiron/syzygy-tables chipiron/requirem
 
 chipiron/requirements:
 	python3 -m pip install --no-cache-dir -r  requirements.txt
+	pip install -e .
 
 chipiron/syzygy-tables:
 	echo "downloading SYZYGY"
