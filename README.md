@@ -33,14 +33,15 @@ make init
 
 so you might want to git clone and create a virtual environment as follows:
 <details>
-<summary> Click here to see more detailed instructions</summary>
+<summary> Click here to see more detailed instructions with conda</summary>
 <br>
 
 ```console
 git clone https://github.com/victorgabillon/chipiron.git
 cd chipiron
-virtualenv chipiron_env_test
-source chipiron_env_test/bin/activate
+conda create chipiron3.1 python==3.11
+conda activate chipiron3.11
+conda install -c conda-forge tk=*=xft_*
 make init
 ```
 
