@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 import chess
 
-from chipiron.environments.chess.board.utils import FenPlusMoveHistory
+from chipiron.environments.chess.board.utils import FenPlusHistory
 from chipiron.environments.chess.board.utils import fen
 from chipiron.environments.chess.move import moveUci
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import BoardEvaluation
@@ -39,5 +39,5 @@ class BoardMessage:
         fen_plus_moves (FenPlusMoves): The original fen and the subsequent moves to be applied.
         seed (int | None, optional): The seed used for random number generation. Defaults to None.
     """
-    fen_plus_moves: FenPlusMoveHistory
+    fen_plus_moves: FenPlusHistory
     seed: int | None = None

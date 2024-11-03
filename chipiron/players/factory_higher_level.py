@@ -59,7 +59,7 @@ def send_board_to_player_process_mailbox(
         player_process_mailbox (queue.Queue[BoardMessage]): The mailbox to put the message into.
     """
     message: BoardMessage = BoardMessage(
-        fen_plus_moves=FenPlusMoveHistory(current_fen=board.fen, historical_moves=board.move_history_stack),
+        fen_plus_moves=board.into_fen_plus_history(),
         seed=seed_int
     )
     player_process_mailbox.put(item=message)

@@ -52,7 +52,7 @@ class AlmostEqualLogistic:
             self,
             tree: trees.MoveAndValueTree,
             random_generator: random.Random
-    ) -> chess.Move:
+    ) -> IMove:
         """
         Selects the best move from the tree, allowing for random choice for almost equally valued moves.
 
@@ -65,7 +65,7 @@ class AlmostEqualLogistic:
         """
         # TODO this should be given at construction but postponed for now because of dataclasses
         # find the best first move allowing for random choice for almost equally valued moves.
-        best_root_moves: list[chess.Move] = tree.root_node.minmax_evaluation.get_all_of_the_best_moves(
+        best_root_moves: list[IMove] = tree.root_node.minmax_evaluation.get_all_of_the_best_moves(
             how_equal='almost_equal_logistic')
         print('We have as bests: ', [best for best in best_root_moves])
         best_move = random_generator.choice(best_root_moves)
@@ -86,7 +86,7 @@ class SoftmaxRule:
             self,
             tree: trees.MoveAndValueTree,
             random_generator: random.Random
-    ) -> chess.Move:
+    ) -> IMove:
         """
         Selects the best move from the tree using the softmax function.
 
@@ -111,7 +111,7 @@ class SoftmaxRule:
         move_as_list = random_generator.choices(
             list(tree.root_node.moves_children.keys()),
             weights=softmax_, k=1)
-        best_move: chess.Move = move_as_list[0]
+        best_move: IMove = move_as_list[0]
         return best_move
 
 
@@ -147,7 +147,7 @@ def recommend_move_after_exploration_generic(
         recommend_move_after_exploration: AllRecommendFunctionsArgs,
         tree: trees.MoveAndValueTree,
         random_generator: random.Random
-) -> chess.Move:
+) -> IMove:
     """
     Recommends a move after exploration based on a generic rule.
 
@@ -177,7 +177,7 @@ def recommend_move_after_exploration_generic(
 
         child: ITreeNode[Any] | None
         best_value: int | None = None
-        best_move: chess.Move | None = None
+        best_move: IMove | None = None
         for move, child in tree.root_node.moves_children.items():
             assert isinstance(child, AlgorithmNode)
 

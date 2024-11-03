@@ -8,6 +8,7 @@ import shakmaty_python_binding
 from chipiron.environments.chess.board.board_modification import BoardModification, compute_modifications
 from chipiron.environments.chess.move import moveUci
 from .iboard import IBoard, board_key, board_key_without_counters
+from .utils import FenPlusHistory
 
 
 # todo implement rewind (and a test for it)
@@ -395,3 +396,9 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
             move: shakmaty_python_binding.MyMove
     ) -> bool:
         return move.is_zeroing()
+
+    def into_fen_plus_history(self) -> FenPlusHistory:
+        return FenPlusHistory(
+            current_fen=self.fen,
+            historical_moves=self.move_history_stack
+        )
