@@ -12,6 +12,9 @@ from chipiron.scripts.script_type import ScriptType
 
 T_IScript = TypeVar("T_IScript", covariant=True, bound=IScript)
 
+import sys
+sys.path.append("../../")
+
 
 def get_script_and_args(
         raw_command_line_arguments: list[str]

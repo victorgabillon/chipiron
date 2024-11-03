@@ -21,7 +21,7 @@ from torch.utils.data import Dataset
 
 from chipiron.environments.chess.board import BoardChi
 from chipiron.environments.chess.board.factory import create_board
-from chipiron.environments.chess.board.utils import FenPlusMoveHistory
+from chipiron.environments.chess.board.utils import FenPlusMoveHistory, FenPlusHistory
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_input import BoardToInputFunction
 
 
@@ -223,7 +223,7 @@ class FenAndValueDataSet(MyDataSet):
         """
         fen = row['fen']
         board = create_board(
-            fen_with_history=FenPlusMoveHistory(current_fen=fen),
+            fen_with_history=FenPlusHistory(current_fen=fen),
             use_board_modification=True
         )
         input_layer = self.transform_board_function(board)

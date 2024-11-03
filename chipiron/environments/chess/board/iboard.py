@@ -7,7 +7,7 @@ import yaml
 
 from chipiron.environments.chess.board.board_modification import BoardModification
 from chipiron.environments.chess.move import moveUci, IMove
-from .utils import FenPlusMoveHistory
+from .utils import FenPlusMoveHistory, FenPlusHistory
 from .utils import fen
 
 board_key = tuple[int, int, int, int, int, int, bool, int, int | None, int, int, int, int, int]
@@ -240,4 +240,8 @@ class IBoard(Protocol[T_Move]):
         ...
 
     def tell_result(self) -> None:
+        ...
+
+
+    def into_fen_plus_history(self) ->FenPlusHistory:
         ...

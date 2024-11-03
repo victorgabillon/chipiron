@@ -60,12 +60,12 @@ def best_node_sequence_from_node(
 
     """
 
-    best_move_seq: list[chess.Move] = tree_node.minmax_evaluation.best_move_sequence
+    best_move_seq: list[IMove] = tree_node.minmax_evaluation.best_move_sequence
     index = 0
     move_sequence: list[ITreeNode[Any]] = [tree_node]
     child: ITreeNode[Any] = tree_node
     while child.moves_children:
-        move: chess.Move = best_move_seq[index]
+        move: IMove = best_move_seq[index]
         child_ = child.moves_children[move]
         assert child_ is not None
         child = child_

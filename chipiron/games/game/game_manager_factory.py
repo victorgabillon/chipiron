@@ -19,7 +19,7 @@ from chipiron.utils.communication.gui_player_message import PlayersColorToPlayer
 from chipiron.utils.dataclass import IsDataclass
 from .game import Game, ObservableGame
 from .game_manager import GameManager
-from ...environments.chess.board.utils import FenPlusMoveHistory
+from ...environments.chess.board.utils import FenPlusHistory
 from ...environments.chess.move_factory import MoveFactory
 from ...players.boardevaluators.table_base import SyzygyTable
 from ...scripts.chipiron_args import ImplementationArgs
@@ -74,7 +74,7 @@ class GameManagerFactory:
 
         ##### CREATING THE BOARD
         starting_fen: str = args_game_manager.starting_position.get_fen()
-        board: boards.IBoard = self.board_factory(fen_with_history=FenPlusMoveHistory(current_fen=starting_fen))
+        board: boards.IBoard = self.board_factory(fen_with_history=FenPlusHistory(current_fen=starting_fen))
         if self.subscribers:
             for subscriber in self.subscribers:
                 player_id_message: PlayersColorToPlayerMessage = extract_message_from_players(
