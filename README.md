@@ -21,6 +21,8 @@ It also integrates code from : https://github.com/oakmac/chessboardjs/
 * pip
 * curl
 * tkinter
+* make
+* gdown
 
 ## Installation
 
