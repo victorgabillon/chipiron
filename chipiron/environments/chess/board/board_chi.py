@@ -577,9 +577,6 @@ class BoardChi(IBoard[chess.Move]):
         # assume that player claim draw otherwise the opponent might be overoptimistic
         # in winning position where draw by repetition occur
         claim_draw: bool = True if len(self.board.move_stack) >= 4 else False
-        print('rrt', self.board.move_stack)
-        print('rrtd', self.board._stack)
-
         is_game_over: bool = self.board.is_game_over(claim_draw=claim_draw)
         return is_game_over
 
