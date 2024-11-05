@@ -24,7 +24,7 @@ class BoardChi(IBoard[chess.Move]):
 
     board: chess.Board
     compute_board_modification: bool
-    legal_moves_: set[chess.Move] | None = None
+    legal_moves_: list[chess.Move] | None = None
     fast_representation_: board_key
 
     def __init__(
@@ -577,6 +577,7 @@ class BoardChi(IBoard[chess.Move]):
         # assume that player claim draw otherwise the opponent might be overoptimistic
         # in winning position where draw by repetition occur
         claim_draw: bool = True if len(self.board.move_stack) >= 4 else False
+
         is_game_over: bool = self.board.is_game_over(claim_draw=claim_draw)
         return is_game_over
 
@@ -609,7 +610,7 @@ class BoardChi(IBoard[chess.Move]):
         return self.board.fen()
 
     @property
-    def legal_moves(self) -> set[chess.Move]:
+    def legal_moves(self) -> list[chess.Move]:
         """
         Returns a generator that yields all the legal moves for the current board state.
 
@@ -620,7 +621,9 @@ class BoardChi(IBoard[chess.Move]):
         if self.legal_moves_ is not None:
             return self.legal_moves_
         else:
-            self.legal_moves_ = set(self.board.legal_moves)
+            legal_moves_ = list(self.board.legal_moves)
+            legal_moves_ = sorted(legal_moves_, key=lambda x: x.uci())
+            self.legal_moves_ = legal_moves_
             return self.legal_moves_
 
     def piece_at(

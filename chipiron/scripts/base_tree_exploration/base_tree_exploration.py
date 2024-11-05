@@ -6,14 +6,20 @@ The BaseTreeExplorationScript class is responsible for running a script that per
 
 import cProfile
 import random
+from dataclasses import dataclass
 
 from chipiron.environments.chess.board import create_board
+from chipiron.environments.chess.board.factory import create_rust_board
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy
-from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.players.factory import create_player
 from chipiron.players.player_args import PlayerArgs
 from chipiron.players.utils import fetch_player_args_convert_and_save
 from chipiron.scripts.script import Script
+
+
+@dataclass
+class BaseTreeExplorationArgs:
+    ...
 
 
 class BaseTreeExplorationScript:
@@ -21,11 +27,7 @@ class BaseTreeExplorationScript:
     The BaseTreeExplorationScript
     """
 
-
-class BaseTreeExploration:
-    """
-    Represents a base tree exploration class.
-    """
+    args_dataclass_name: type[BaseTreeExplorationArgs] = BaseTreeExplorationArgs
 
     def __init__(
             self,
@@ -48,8 +50,8 @@ class BaseTreeExploration:
         profile = cProfile.Profile()
         profile.enable()
 
-        # file_name_player_one = 'RecurZipfBase3.yaml'
-        file_name_player: str = 'Uniform.yaml'
+        file_name_player = 'RecurZipfBase3.yaml'
+        #file_name_player: str = 'Uniform.yaml'
 
         player_one_args: PlayerArgs = fetch_player_args_convert_and_save(
             file_name_player=file_name_player
@@ -59,7 +61,7 @@ class BaseTreeExploration:
         random_generator = random.Random()
         player = create_player(args=player_one_args, syzygy=syzygy, random_generator=random_generator)
 
-        board = create_board()
+        board = create_rust_board()
         player.select_move(
             board=board,
             seed_int=0
