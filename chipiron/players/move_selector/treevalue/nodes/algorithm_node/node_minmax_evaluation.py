@@ -321,9 +321,10 @@ class NodeMinmaxEvaluation:
         Returns:
             None
         """
+        move:IMove
         print('here are the ', len(self.moves_sorted_by_value), ' moves sorted by value: ')
         for move, subjective_sort_value in self.moves_sorted_by_value.items():
-            print(move, subjective_sort_value[0], end=' $$ ')
+            print(move.uci(), subjective_sort_value[0], end=' $$ ')
             # print(move, subjective_sort_value[0],'('+str(child_node.descendants.number_of_descendants)+')', end=' $$ ')
         print('')
 

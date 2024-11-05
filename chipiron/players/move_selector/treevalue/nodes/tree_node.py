@@ -172,7 +172,7 @@ class TreeNode(
     # 1. this function returns a object of type chess.LegalMoveGenerator
     # 2. of type set of moves
     @property
-    def legal_moves(self) -> set[IMove]:
+    def legal_moves(self) -> list[IMove]:
         """
         Returns a generator that yields the legal moves for the current board state.
 

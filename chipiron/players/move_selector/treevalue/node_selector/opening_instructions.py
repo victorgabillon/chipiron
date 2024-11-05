@@ -29,7 +29,7 @@ class OpeningInstruction:
         """
         print(f'OpeningInstruction: node_to_open {self.node_to_open.id} at hm {self.node_to_open.half_move} | '
               f'a path from root to node_to_open is {a_move_sequence_from_root(self.node_to_open)} | '
-              f'self.move_to_play {self.move_to_play}')
+              f'self.move_to_play {self.move_to_play.uci()}')
 
 
 class OpeningInstructions:
@@ -251,6 +251,7 @@ class OpeningInstructor:
 
             # this shuffling add randomness to the playing style
             self.random_generator.shuffle(moves_to_play)
+
         else:
             raise Exception('Hello-la')
         return moves_to_play
