@@ -125,7 +125,7 @@ class ITreeNode(Protocol[T]):
         """
 
     @property
-    def legal_moves(self) -> set[IMove]:
+    def legal_moves(self) -> list[IMove]:
         """
         Get the legal moves of the node.
 

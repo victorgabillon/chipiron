@@ -144,7 +144,7 @@ class AlgorithmNode:
         )
 
     @property
-    def legal_moves(self) -> set[IMove]:
+    def legal_moves(self) -> list[IMove]:
         """
         Returns the legal move generator.
 

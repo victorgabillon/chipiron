@@ -213,7 +213,7 @@ class IBoard(Protocol[T_Move]):
         ...
 
     @property
-    def legal_moves(self) -> set[T_Move]:
+    def legal_moves(self) -> list[T_Move]:
         ...
 
     def number_of_pieces_on_the_board(self) -> int:

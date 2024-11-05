@@ -192,9 +192,11 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
         )
 
     @property
-    def legal_moves(self) -> set[shakmaty_python_binding.MyMove]:
+    def legal_moves(self) -> list[shakmaty_python_binding.MyMove]:
         # todo minimize this call and understand when the role of the ariable all legal move generated
-        return self.chess_.legal_moves()
+        legal_moves = self.chess_.legal_moves()
+        legal_moves = sorted(legal_moves, key=lambda x: x.uci())
+        return legal_moves
 
     def number_of_pieces_on_the_board(self) -> int:
         """
