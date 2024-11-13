@@ -348,7 +348,7 @@ if __name__ == "__main__":
     except Exception:
         test_configs = configs_base
 
-    #test_one_matches(configs=test_configs)
+    test_one_matches(configs=test_configs)
 
     # todo maybe merege the test that verifiy if two game are unchanged when variying some parameters like ranfom and rust atm
     test_same_game_with_or_without_rust()

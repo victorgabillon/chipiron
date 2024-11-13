@@ -304,7 +304,7 @@ class NodeMinmaxEvaluation:
             None
         """
         print('here are the ', len(self.moves_sorted_by_value), ' move sorted by value: ')
-        move:IMove
+        move: IMove
         for move, subjective_sort_value in self.moves_sorted_by_value.items():
             print(move.uci(), subjective_sort_value[0], end=' $$ ')
         print('')
@@ -322,7 +322,7 @@ class NodeMinmaxEvaluation:
         Returns:
             None
         """
-        move:IMove
+        move: IMove
         print('here are the ', len(self.moves_sorted_by_value), ' moves sorted by value: ')
         move: IMove
         for move, subjective_sort_value in self.moves_sorted_by_value.items():
