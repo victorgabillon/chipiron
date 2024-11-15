@@ -29,7 +29,7 @@ class AlgorithmNodeFactory:
 
     def create(
             self,
-            board: board_mod.IBoard,
+            board: board_mod.IBoard[Any],
             half_move: int,
             count: int,
             parent_node: ITreeNode[Any] | None,

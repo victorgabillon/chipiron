@@ -12,6 +12,7 @@ Example usage:
 
 import random
 from dataclasses import dataclass, field
+from typing import Any
 from typing import Literal
 
 import chess
@@ -40,7 +41,7 @@ class Random:
 
     def select_move(
             self,
-            board: boards.IBoard,
+            board: boards.IBoard[Any],
             move_seed: seed
     ) -> MoveRecommendation:
         """

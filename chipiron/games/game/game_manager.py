@@ -6,6 +6,7 @@ import logging
 import os
 import queue
 from dataclasses import asdict
+from typing import Any
 
 import chess
 import yaml
@@ -13,9 +14,9 @@ import yaml
 import chipiron.players as players_m
 from chipiron.environments import HalfMove
 from chipiron.environments.chess.board.iboard import IBoard
+from chipiron.environments.chess.move import moveUci
 from chipiron.environments.chess.move.imove import IMove
 from chipiron.environments.chess.move_factory import MoveFactory
-from chipiron.environments.chess.move import moveUci
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
@@ -42,7 +43,7 @@ class GameManager:
     """
 
     game: ObservableGame
-    syzygy: SyzygyTable | None
+    syzygy: SyzygyTable[Any] | None
     display_board_evaluator: IGameBoardEvaluator
     output_folder_path: path | None
     args: GameArgs
@@ -54,7 +55,7 @@ class GameManager:
     def __init__(
             self,
             game: ObservableGame,
-            syzygy: SyzygyTable | None,
+            syzygy: SyzygyTable[Any] | None,
             display_board_evaluator: IGameBoardEvaluator,
             output_folder_path: path | None,
             args: GameArgs,
@@ -90,7 +91,7 @@ class GameManager:
         self.player_color_to_id = player_color_to_id
         self.main_thread_mailbox = main_thread_mailbox
         self.players = players
-        self.move_factory=move_factory
+        self.move_factory = move_factory
 
     def external_eval(self) -> tuple[float, float]:
         """Evaluates the game board using the display board evaluator.
@@ -189,7 +190,7 @@ class GameManager:
             None
         """
 
-        board: IBoard = self.game.board
+        board: IBoard[Any] = self.game.board
 
         match message:
             case MoveMessage():

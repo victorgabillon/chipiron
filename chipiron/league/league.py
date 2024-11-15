@@ -20,6 +20,7 @@ from chipiron.games.match.match_results import MatchReport
 from chipiron.games.match.match_results import MatchResults
 from chipiron.games.match.utils import fetch_match_games_args_convert_and_save
 from chipiron.players.utils import fetch_player_args_convert_and_save
+from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.utils.small_tools import mkdir, path
 
 
@@ -147,7 +148,7 @@ class League:
             args_game=game_args,
             seed=match_seed,
             output_folder_path=path_logs_game_folder,
-            implementation_args=None
+            implementation_args=ImplementationArgs()
         )
 
         # Play the match

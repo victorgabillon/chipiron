@@ -3,6 +3,7 @@ This module provides a factory function for creating the main move selector base
 """
 
 import random
+from typing import Any
 from typing import TypeAlias
 
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
@@ -23,7 +24,7 @@ AllMoveSelectorArgs: TypeAlias = (
 
 def create_main_move_selector(
         move_selector_instance_or_args: AllMoveSelectorArgs,
-        syzygy: SyzygyTable | None,
+        syzygy: SyzygyTable[Any] | None,
         random_generator: random.Random
 ) -> move_selector.MoveSelector:
     """

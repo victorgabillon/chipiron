@@ -6,6 +6,7 @@ import os
 import sys
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any
 
 import dacite
 import yaml
@@ -14,7 +15,7 @@ from PySide6.QtWidgets import QApplication
 from chipiron.displays.gui_replay_games import MainWindow
 from chipiron.environments.chess.board.board_chi import BoardChi
 from chipiron.environments.chess.board.factory import create_board
-from chipiron.environments.chess.board.utils import FenPlusMoveHistory, FenPlusHistory
+from chipiron.environments.chess.board.utils import FenPlusHistory
 from chipiron.games.game.final_game_result import GameReport
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
@@ -68,7 +69,7 @@ class ReplayGameScript:
         )
 
         with open(self.args.file_game_report, 'r') as fileGame:
-            game_report_dict: dict = yaml.safe_load(fileGame)
+            game_report_dict: dict[Any, Any] = yaml.safe_load(fileGame)
             game_report: GameReport = dacite.from_dict(
                 data_class=GameReport,
                 data=game_report_dict,

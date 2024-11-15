@@ -58,7 +58,7 @@ class TreeManager:
         # To limit computation we limit copying it all the time. The resulting policy will only be aware of immediate
         # risk of draw by repetition
         copy_stack: bool = (tree.node_depth(parent_node) < 2)
-        board: board_mod.IBoard = parent_node.board.copy(stack=copy_stack)
+        board: board_mod.IBoard[Any] = parent_node.board.copy(stack=copy_stack)
 
         # The move is played. The board is now a new board
         modifications: board_mod.BoardModification | None = board.play_move(move=move)
@@ -75,7 +75,7 @@ class TreeManager:
             self,
             tree: trees.MoveAndValueTree,
             parent_node: node.ITreeNode[Any],
-            board: board_mod.IBoard,
+            board: board_mod.IBoard[Any],
             modifications: board_mod.BoardModification | None,
             move: IMove
     ) -> TreeExpansion:

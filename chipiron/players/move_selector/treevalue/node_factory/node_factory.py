@@ -22,7 +22,7 @@ class TreeNodeFactory(Protocol[T]):
 
     def create(
             self,
-            board: boards.IBoard,
+            board: boards.IBoard[Any],
             half_move: int,
             count: int,
             parent_node: node.ITreeNode[Any] | None,

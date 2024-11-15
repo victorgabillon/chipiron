@@ -48,7 +48,7 @@ class TreeAndValuePlayerArgs:
 
 def create_tree_and_value_builders(
         args: TreeAndValuePlayerArgs,
-        syzygy: SyzygyTable | None,
+        syzygy: SyzygyTable[Any] | None,
         random_generator: random.Random
 ) -> TreeAndValueMoveSelector:
     """

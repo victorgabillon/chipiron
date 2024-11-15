@@ -108,7 +108,7 @@ class AlgorithmNode:
         return self.tree_node.parent_nodes
 
     @property
-    def board(self) -> boards.IBoard:
+    def board(self) -> boards.IBoard[Any]:
         """
         Returns the board.
 

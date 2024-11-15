@@ -45,7 +45,7 @@ def create_rust_move(
 
 def create_rust_move_test_2(
         move_uci: moveUci,
-        board: IBoard | None = None
+        board: IBoard[Any] | None = None
 ) -> shakmaty_python_binding.MyMove:
     assert isinstance(board, RustyBoardChi)
     return shakmaty_python_binding.MyMove(
@@ -56,7 +56,7 @@ def create_rust_move_test_2(
 
 def create_rust_move_test(
         move_uci: moveUci,
-        board: IBoard | None = None
+        board: IBoard[Any] | None = None
 ) -> chess.Move:
     assert board is not None
     return chess.Move.from_uci(move_uci)
@@ -64,6 +64,6 @@ def create_rust_move_test(
 
 def create_move(
         move_uci: moveUci,
-        board: IBoard | None = None
+        board: IBoard[Any] | None = None
 ) -> chess.Move:
     return chess.Move.from_uci(move_uci)

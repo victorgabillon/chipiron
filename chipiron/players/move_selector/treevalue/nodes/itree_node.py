@@ -49,7 +49,7 @@ class ITreeNode(Protocol[T]):
     @property
     def board(
             self
-    ) -> boards.IBoard:
+    ) -> boards.IBoard[Any]:
         """
         Get the chess board state of the node.
 

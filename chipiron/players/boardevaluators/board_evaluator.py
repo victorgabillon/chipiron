@@ -29,7 +29,7 @@ class BoardEvaluator(Protocol):
 
     def value_white(
             self,
-            board: boards.IBoard
+            board: boards.IBoard[Any]
     ) -> float:
         """
         Evaluates a board and returns the value for white.
@@ -44,7 +44,7 @@ class IGameBoardEvaluator(Protocol):
 
     def evaluate(
             self,
-            board: boards.IBoard
+            board: boards.IBoard[Any]
     ) -> tuple[float, float]:
         """
         Evaluates a board and returns the evaluation values for stock and chi.
@@ -78,7 +78,7 @@ class GameBoardEvaluator:
 
     def evaluate(
             self,
-            board: boards.IBoard
+            board: boards.IBoard[Any]
     ) -> tuple[float, float]:
         """
         Evaluates a board and returns the evaluation values for stock and chi.
@@ -133,7 +133,7 @@ class ObservableBoardEvaluator:
 
     def evaluate(
             self,
-            board: boards.IBoard
+            board: boards.IBoard[Any]
     ) -> tuple[float, float]:
         """
         Evaluates a board and returns the evaluation values for stock and chi.

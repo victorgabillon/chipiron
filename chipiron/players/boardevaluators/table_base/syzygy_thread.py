@@ -21,7 +21,7 @@ class SyzygyProcess(multiprocessing.Process):
 
     def __init__(
             self,
-            syzygy_table: SyzygyTable,
+            syzygy_table: SyzygyTable[Any],
             queue_board: queue.Queue[Any]
     ) -> None:
         """

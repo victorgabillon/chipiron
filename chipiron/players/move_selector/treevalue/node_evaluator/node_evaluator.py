@@ -76,12 +76,12 @@ class NodeEvaluator:
     """
 
     board_evaluator: board_evals.BoardEvaluator
-    syzygy_evaluator: SyzygyTable | None
+    syzygy_evaluator: SyzygyTable[Any] | None
 
     def __init__(
             self,
             board_evaluator: board_evals.BoardEvaluator,
-            syzygy: SyzygyTable | None
+            syzygy: SyzygyTable[Any] | None
     ) -> None:
         """
         Initializes a NodeEvaluator object.
@@ -112,7 +112,7 @@ class NodeEvaluator:
 
     def syzygy_value_white(
             self,
-            board: boards.IBoard
+            board: boards.IBoard[Any]
     ) -> float | None:
         """
         Calculates the value for the white player of a given board using the syzygy evaluator.

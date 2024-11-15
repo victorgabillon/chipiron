@@ -1,18 +1,18 @@
 """
 Module for the SyzygyTable class.
 """
+from typing import Any
 from typing import Protocol, TypeVar
 
 import chess.syzygy
 
 import chipiron.environments.chess.board as boards
 from chipiron.environments.chess.board import IBoard
-from chipiron.players.boardevaluators.over_event import Winner, HowOver, OverTags
-from chipiron.utils import path
 from chipiron.environments.chess.move import IMove
+from chipiron.players.boardevaluators.over_event import Winner, HowOver, OverTags
 
+T_Board = TypeVar('T_Board', bound=IBoard[Any], contravariant=True)
 
-T_Board = TypeVar('T_Board', bound=IBoard, contravariant=True)
 
 class SyzygyTable(Protocol[T_Board]):
     """
@@ -83,7 +83,6 @@ class SyzygyTable(Protocol[T_Board]):
         except KeyError:
             return False
         return True
-
 
     def wdl(self, board: T_Board) -> int:
         ...

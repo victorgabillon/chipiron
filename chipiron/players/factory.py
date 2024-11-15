@@ -3,6 +3,7 @@ Module for creating players.
 """
 
 import random
+from typing import Any
 
 import chess
 
@@ -31,7 +32,7 @@ def create_chipiron_player(
     Returns: the player
 
     """
-    syzygy_table: table_base.SyzygyTable | None = create_syzygy(use_rust=use_rusty_board)
+    syzygy_table: table_base.SyzygyTable[Any] | None = create_syzygy(use_rust=use_rusty_board)
     random_generator: random.Random = random.Random()
 
     args_player: PlayerArgs = fetch_player_args_convert_and_save(
@@ -71,7 +72,7 @@ def create_player_from_file(
         file_name_player=player_args_file
     )
 
-    syzygy_table: table_base.SyzygyTable | None = create_syzygy(use_rust=use_rusty_board)
+    syzygy_table: table_base.SyzygyTable[Any] | None = create_syzygy(use_rust=use_rusty_board)
 
     print('create player from file')
     main_move_selector: move_selector.MoveSelector = move_selector.create_main_move_selector(
@@ -89,7 +90,7 @@ def create_player_from_file(
 
 def create_player(
         args: PlayerArgs,
-        syzygy: SyzygyTable | None,
+        syzygy: SyzygyTable[Any] | None,
         random_generator: random.Random
 ) -> Player:
     """Create a player object.
@@ -123,7 +124,7 @@ def create_player(
 def create_game_player(
         player_factory_args: PlayerFactoryArgs,
         player_color: chess.Color,
-        syzygy_table: table_base.SyzygyTable | None
+        syzygy_table: table_base.SyzygyTable[Any] | None
 ) -> GamePlayer:
     """Create a game player
 
