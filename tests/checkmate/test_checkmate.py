@@ -5,7 +5,7 @@ import chess
 import pytest
 
 from chipiron.environments.chess.board import create_board, BoardChi
-from chipiron.environments.chess.board.utils import FenPlusMoveHistory
+from chipiron.environments.chess.board.utils import FenPlusHistory
 from chipiron.players import Player
 from chipiron.players.factory import create_chipiron_player, create_player_from_file
 from chipiron.players.move_selector.move_selector import MoveRecommendation
@@ -17,7 +17,7 @@ from chipiron.players.move_selector.move_selector import MoveRecommendation
 )
 def test_check_in_one(use_rusty_board: bool):
     board: BoardChi = create_board(
-        fen_with_history=FenPlusMoveHistory(
+        fen_with_history=FenPlusHistory(
             current_fen='1nbqkbnr/rpppp2p/6P1/p6Q/8/8/PPPP1PPP/RNB1KBNR w KQk - 1 5')
     )
 
@@ -47,7 +47,7 @@ def test_check_in_two(use_rusty_board: bool):
     moves: list[chess.Move]
     print(f'Testing  check in two on {len(dict_fen_move)} boards.')
     for fen, moves in dict_fen_move.items():
-        board = create_board(fen_with_history=FenPlusMoveHistory(current_fen=fen))
+        board = create_board(fen_with_history=FenPlusHistory(current_fen=fen))
         player = create_player_from_file(
             player_args_file='UniformDepth.yaml',
             random_generator=random_generator,

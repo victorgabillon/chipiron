@@ -1,7 +1,9 @@
+from typing import Any
+
 import pytest
 
 from chipiron.environments.chess.board import create_board_factory, BoardFactory, IBoard
-from chipiron.environments.chess.board.utils import FenPlusMoveHistory
+from chipiron.environments.chess.board.utils import FenPlusHistory
 from chipiron.environments.chess.move import IMove
 from chipiron.environments.chess.move_factory import MoveFactory, create_move_factory
 
@@ -17,7 +19,7 @@ def test_three_fold_repetition(use_rusty_board: bool):
         use_rust_boards=use_rusty_board
     )
     board: IBoard[Any] = board_factory(
-        fen_with_history=FenPlusMoveHistory(
+        fen_with_history=FenPlusHistory(
             current_fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
     )
 
@@ -25,8 +27,7 @@ def test_three_fold_repetition(use_rusty_board: bool):
     moves_uci = ['b1c3', 'b8c6', 'c3b1', 'c6b8', 'b1c3', 'b8c6', 'c3b1', 'c6b8']
 
     for move_uci in moves_uci:
-
-        move: IMove = move_factory(move_uci=move_uci,board=board)
+        move: IMove = move_factory(move_uci=move_uci, board=board)
 
         board.play_move(move=move)
 
