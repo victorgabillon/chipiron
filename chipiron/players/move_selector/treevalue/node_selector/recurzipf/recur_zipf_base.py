@@ -12,8 +12,6 @@ import random
 import typing
 from dataclasses import dataclass
 
-import chess
-
 from chipiron.environments.chess.move import IMove
 from chipiron.players.move_selector.treevalue import trees
 from chipiron.players.move_selector.treevalue.node_selector.move_explorer import ZipfMoveExplorer

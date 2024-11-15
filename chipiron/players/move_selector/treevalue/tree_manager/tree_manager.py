@@ -5,8 +5,6 @@ This module contains the TreeManager class, which is responsible for managing a 
 import typing
 from typing import Any
 
-import chess
-
 import chipiron.environments.chess.board as board_mod
 import chipiron.players.move_selector.treevalue.nodes as node
 import chipiron.players.move_selector.treevalue.trees as trees

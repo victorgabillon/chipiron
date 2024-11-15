@@ -9,7 +9,7 @@ from typing import Protocol
 
 import chess
 
-from chipiron.environments.chess.board import BoardChi, IBoard
+from chipiron.environments.chess.board import IBoard
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.dataclass import IsDataclass

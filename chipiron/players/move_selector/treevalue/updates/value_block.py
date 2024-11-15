@@ -13,8 +13,6 @@ The create_value_update_instructions_block function is a helper function that cr
 from dataclasses import dataclass, field
 from typing import Self
 
-import chess
-
 from chipiron.environments.chess.move import IMove
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 

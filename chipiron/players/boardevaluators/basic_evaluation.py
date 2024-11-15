@@ -9,7 +9,6 @@ import chess
 from chess import Square
 
 from chipiron.environments.chess.board import IBoard
-from chipiron.environments.chess.board.board_chi import BoardChi
 from chipiron.players.boardevaluators.board_evaluator import BoardEvaluator
 
 

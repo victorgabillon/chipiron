@@ -17,7 +17,7 @@ from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import QPushButton, QTableWidget, QWidget, QDialog, QTableWidgetItem
 
 from chipiron.environments.chess.board import BoardChi
-from chipiron.environments.chess.move import IMove
+from chipiron.environments.chess.board.factory import create_board
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.games.match.match_results import MatchResults
 from chipiron.games.match.match_results import SimpleResults
@@ -26,7 +26,7 @@ from chipiron.utils.communication.gui_messages.gui_messages import MatchResultsM
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage
 from chipiron.utils.communication.player_game_messages import BoardMessage, MoveMessage
 from chipiron.utils.dataclass import IsDataclass
-from chipiron.environments.chess.board.factory import create_board
+
 
 class MainWindow(QWidget):
     """
@@ -451,7 +451,7 @@ class MainWindow(QWidget):
         Returns:
             None
         """
-        print('tupe', type(self.board),type(self.board.board.move_stack),self.board.board.move_stack)
+        print('tupe', type(self.board), type(self.board.board.move_stack), self.board.board.move_stack)
         self.boardSvg = self.board.board._repr_svg_().encode("UTF-8")
         self.drawBoardSvg = self.widgetSvg.load(self.boardSvg)
         self.round_button.setText('Round: ' + str(self.board.board.fullmove_number))  # text

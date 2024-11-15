@@ -4,7 +4,7 @@ Module for the Player class.
 
 from typing import Any
 
-from chipiron.environments.chess.board import BoardChi, IBoard
+from chipiron.environments.chess.board import IBoard
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.utils import seed
 from .move_selector.move_selector import MoveSelector, MoveRecommendation

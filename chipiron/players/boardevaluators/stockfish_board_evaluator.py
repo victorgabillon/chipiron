@@ -2,11 +2,12 @@
 Module where we define the Stockfish Board Evaluator
 """
 from dataclasses import dataclass
+from typing import Any
 
 import chess.engine
 
 import chipiron.environments.chess.board as boards
-from typing import Any
+
 
 # TODO are we calling this?
 @dataclass

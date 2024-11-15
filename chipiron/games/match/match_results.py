@@ -2,10 +2,8 @@
 from dataclasses import dataclass
 from typing import Protocol
 
-import chess
-
-from chipiron.games.game.final_game_result import FinalGameResult
 from chipiron.environments.chess.move import moveUci
+from chipiron.games.game.final_game_result import FinalGameResult
 
 
 @dataclass

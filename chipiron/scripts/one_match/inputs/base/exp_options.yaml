@@ -1,4 +1,3 @@
-
 gui: False
 match_args:
   seed: 11
@@ -7,9 +6,9 @@ match_args:
   file_name_player_one: 'Uniform.yaml'
   file_name_player_twos: 'RecurZipfBase3.yaml'
   file_name_match_setting: 'setting_jime.yaml'
-base_script_args :
+base_script_args:
   profiling: True
   testing: False
-implementation_args :
+implementation_args:
   use_board_modification: True
   use_rust_boards: True

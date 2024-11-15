@@ -21,7 +21,7 @@ from torch.utils.data import Dataset
 
 from chipiron.environments.chess.board import BoardChi
 from chipiron.environments.chess.board.factory import create_board
-from chipiron.environments.chess.board.utils import FenPlusMoveHistory, FenPlusHistory
+from chipiron.environments.chess.board.utils import FenPlusHistory
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_input import BoardToInputFunction
 
 

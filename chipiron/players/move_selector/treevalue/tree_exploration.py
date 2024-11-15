@@ -17,8 +17,7 @@ Functions:
 
 import random
 from dataclasses import dataclass
-
-import chess
+from typing import Any
 
 import chipiron.environments.chess.board as boards
 from chipiron.environments.chess.move import IMove
@@ -32,7 +31,7 @@ from . import tree_manager as tree_man
 from . import trees
 from .stopping_criterion import StoppingCriterion, create_stopping_criterion, AllStoppingCriterionArgs
 from .trees.factory import MoveAndValueTreeFactory
-from typing import Any
+
 
 @dataclass
 class TreeExploration:

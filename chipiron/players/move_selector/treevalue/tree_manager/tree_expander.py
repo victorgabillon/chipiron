@@ -6,8 +6,6 @@ import typing
 from dataclasses import dataclass, field
 from typing import List, Any
 
-import chess
-
 import chipiron.environments.chess.board as board_mod
 import chipiron.players.move_selector.treevalue.nodes as node
 from chipiron.environments.chess.move import IMove

@@ -10,8 +10,6 @@ from dataclasses import dataclass, field
 from typing import Any
 from typing import Self
 
-import chess
-
 from chipiron.environments.chess.move import IMove
 from chipiron.players.move_selector.treevalue.nodes import ITreeNode
 from chipiron.utils.dict_of_numbered_dict_with_pointer_on_max import DictOfNumberedDictWithPointerOnMax

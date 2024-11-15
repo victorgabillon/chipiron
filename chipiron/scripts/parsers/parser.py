@@ -148,7 +148,7 @@ class MyParser:
         if config_file_path is None:
             try:
                 self.args_config_file = asdict(self.args_class_name())
-            except:
+            except Exception:
                 raise Exception(
                     'The Args dataclass should have all its attribute'
                     ' have default value to have a default instantiation')
