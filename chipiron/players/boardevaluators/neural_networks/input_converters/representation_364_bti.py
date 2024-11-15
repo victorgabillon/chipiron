@@ -12,7 +12,7 @@ import chipiron.environments.chess.board as boards
 from .board_representation import Representation364
 from .factory import Representation364Factory
 
-
+from typing import Any
 class Representation364BTI:
     """
     Converts a chess board into a tensor representation using a 364-dimensional input.
@@ -38,7 +38,7 @@ class Representation364BTI:
 
     def convert(
             self,
-            board: boards.IBoard
+            board: boards.IBoard[Any]
     ) -> torch.Tensor:
         """
         Converts the chess board into a tensor representation.

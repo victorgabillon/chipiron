@@ -4,6 +4,7 @@ Module for creating player observers.
 import multiprocessing
 import queue
 from functools import partial
+from typing import Any
 from typing import Protocol
 
 import chess
@@ -17,7 +18,6 @@ from .factory import create_game_player
 from .game_player import GamePlayer, game_player_computes_move_on_board_and_send_move_in_queue
 from .player_args import PlayerFactoryArgs
 from .player_thread import PlayerProcess
-from ..environments.chess.board.utils import FenPlusMoveHistory
 from ..scripts.chipiron_args import ImplementationArgs
 
 
@@ -38,13 +38,13 @@ class MoveFunction(Protocol):
 
     def __call__(
             self,
-            board: IBoard,
+            board: IBoard[Any],
             seed_int: seed
     ) -> None: ...
 
 
 def send_board_to_player_process_mailbox(
-        board: IBoard,
+        board: IBoard[Any],
         seed_int: int,
         player_process_mailbox: queue.Queue[BoardMessage]
 ) -> None:
@@ -78,7 +78,7 @@ class PlayerObserverFactory(Protocol):
 def create_player_observer_factory(
         each_player_has_its_own_thread: bool,
         implementation_args: ImplementationArgs,
-        syzygy_table: SyzygyTable | None
+        syzygy_table: SyzygyTable[Any] | None
 ) -> PlayerObserverFactory:
     player_observer_factory: PlayerObserverFactory
     if each_player_has_its_own_thread:
@@ -146,7 +146,7 @@ def create_player_observer_mono_process(
         player_factory_args: PlayerFactoryArgs,
         player_color: chess.Color,
         main_thread_mailbox: queue.Queue[IsDataclass],
-        syzygy_table: SyzygyTable | None
+        syzygy_table: SyzygyTable[Any] | None
 ) -> tuple[GamePlayer, MoveFunction]:
     """Create a player observer.
 

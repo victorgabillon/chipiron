@@ -4,6 +4,7 @@ This module contains the implementation of the CommandLineHumanMoveSelector clas
 """
 
 from dataclasses import dataclass
+from typing import Any
 from typing import Literal
 
 import chipiron.environments.chess.board as boards
@@ -35,7 +36,7 @@ class CommandLineHumanMoveSelector:
 
     def select_move(
             self,
-            board: boards.IBoard,
+            board: boards.IBoard[Any],
             move_seed: seed
     ) -> MoveRecommendation:
         """

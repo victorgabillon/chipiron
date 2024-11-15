@@ -12,4 +12,4 @@ base_script_args :
   testing: False
 implementation_args :
   use_board_modification: True
-  use_rust_boards: False
+  use_rust_boards: True

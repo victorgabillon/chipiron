@@ -53,7 +53,7 @@ class StockfishPlayer:
 
     def select_move(
             self,
-            board: boards.IBoard,
+            board: boards.IBoard[Any],
             move_seed: int
     ) -> MoveRecommendation:
         """

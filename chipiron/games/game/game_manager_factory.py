@@ -3,7 +3,7 @@ Module for the GameManagerFactory class.
 """
 import queue
 from dataclasses import dataclass, field
-
+from typing import Any
 import chess
 
 import chipiron as ch
@@ -42,7 +42,7 @@ class GameManagerFactory:
 
     # todo we might want to plit this into various part, like maybe a player factory, not sure, think about it
 
-    syzygy_table: SyzygyTable | None
+    syzygy_table: SyzygyTable[Any] | None
     output_folder_path: path | None
     main_thread_mailbox: queue.Queue[IsDataclass]
     game_manager_board_evaluator: IGameBoardEvaluator
@@ -74,7 +74,7 @@ class GameManagerFactory:
 
         ##### CREATING THE BOARD
         starting_fen: str = args_game_manager.starting_position.get_fen()
-        board: boards.IBoard = self.board_factory(fen_with_history=FenPlusHistory(current_fen=starting_fen))
+        board: boards.IBoard[Any] = self.board_factory(fen_with_history=FenPlusHistory(current_fen=starting_fen))
         if self.subscribers:
             for subscriber in self.subscribers:
                 player_id_message: PlayersColorToPlayerMessage = extract_message_from_players(

@@ -59,7 +59,7 @@ class TreeNode(
     half_move_: int
 
     # the node represents a board position. we also store the fast representation of the board.
-    board_: boards.IBoard
+    board_: boards.IBoard[Any]
 
     # the set of parent nodes to this node. Note that a node can have multiple parents!
     parent_nodes_: dict[ITreeNode[ChildrenType], IMove]
@@ -118,7 +118,7 @@ class TreeNode(
         return self.player_to_move_
 
     @property
-    def board(self) -> boards.IBoard:
+    def board(self) -> boards.IBoard[Any]:
         """
         Returns the board associated with this tree node.
 
@@ -267,7 +267,7 @@ class TreeNode(
                 assert (bool(move in self.moves_children_) != bool(move in self.non_opened_legal_moves))
         else:
             move_not_in: list[chess.Move] = []
-            legal_moves = self.board.legal_moves
+            legal_moves: list[chess.Move] = self.board.legal_moves
             for move in legal_moves:
                 if move not in self.moves_children_:
                     move_not_in.append(move)
@@ -275,4 +275,4 @@ class TreeNode(
                 pass
                 # print('test', move_not_in, list(self.board.get_legal_moves()), self.moves_children)
                 # print(self.board)
-            assert (move_not_in != [] or legal_moves == set())
+            assert (move_not_in != [] or legal_moves == [])

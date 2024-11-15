@@ -3,7 +3,7 @@ This module defines the MoveSelector class and related data structures for selec
 """
 
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Protocol, Any
 
 
 import chipiron.environments.chess.board as boards
@@ -30,7 +30,7 @@ class MoveSelector(Protocol):
 
     def select_move(
             self,
-            board: IBoard,
+            board: IBoard[Any],
             move_seed: seed
     ) -> MoveRecommendation:
         """

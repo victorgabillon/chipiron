@@ -1,6 +1,8 @@
 """
 Module for the Neural Network Board Evaluator
 """
+from typing import Any
+
 import chess
 import torch
 
@@ -47,7 +49,7 @@ class NNBoardEvaluator:
 
     def value_white(
             self,
-            board: boards.IBoard
+            board: boards.IBoard[Any]
     ) -> float:
         """
         Evaluate the value for the white player

@@ -26,7 +26,7 @@ class IsDataclass(Protocol):
     __dataclass_fields__: ClassVar[dict[Any, Any]]
 
 
-def custom_asdict_factory(data: Iterable) -> dict[Any, Any]:
+def custom_asdict_factory(data: Iterable[Any]) -> dict[Any, Any]:
     def convert_value(obj: Any) -> Any:
         if isinstance(obj, Enum):
             return obj.value

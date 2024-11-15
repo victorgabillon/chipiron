@@ -3,7 +3,7 @@ This module contains the implementation of the `NNNodeEvaluator` class, which is
 """
 
 import torch
-
+from typing import Any
 import chipiron.players.boardevaluators.neural_networks as board_nn
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import FloatyBoardEvaluation
 from chipiron.players.boardevaluators.table_base import SyzygyTable
@@ -17,7 +17,7 @@ class NNNodeEvaluator(NodeEvaluator):
     def __init__(
             self,
             nn_board_evaluator: board_nn.NNBoardEvaluator,
-            syzygy: SyzygyTable | None
+            syzygy: SyzygyTable[Any] | None
     ) -> None:
         """
         Initializes an instance of the NNNodeEvaluator class.

@@ -3,7 +3,7 @@ Module to create a chess board.
 """
 from collections import Counter
 from functools import partial
-from typing import Protocol
+from typing import Protocol, Any
 
 import chess
 import shakmaty_python_binding
@@ -18,7 +18,7 @@ class BoardFactory(Protocol):
     def __call__(
             self,
             fen_with_history: FenPlusHistory | None = None
-    ) -> IBoard:
+    ) -> IBoard[Any]:
         ...
 
 

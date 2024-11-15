@@ -14,13 +14,13 @@ from .all_node_evaluators import NodeEvaluatorTypes
 from .neural_networks.nn_node_evaluator import NNNodeEvaluator
 from .node_evaluator import NodeEvaluator
 from .node_evaluator_args import NodeEvaluatorArgs
-
+from typing import Any
 AllNodeEvaluatorArgs: TypeAlias = neural_networks.NeuralNetNodeEvalArgs | NodeEvaluatorArgs
 
 
 def create_node_evaluator(
         arg_board_evaluator: AllNodeEvaluatorArgs,
-        syzygy: SyzygyTable | None
+        syzygy: SyzygyTable[Any] | None
 ) -> NodeEvaluator:
     """
     Create a node evaluator based on the given board evaluator argument and syzygy table.

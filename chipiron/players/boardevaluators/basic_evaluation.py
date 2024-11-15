@@ -3,6 +3,7 @@ Module for the basic evaluation of a chess board.
 """
 
 import math
+from typing import Any
 
 import chess
 from chess import Square
@@ -13,7 +14,7 @@ from chipiron.players.boardevaluators.board_evaluator import BoardEvaluator
 
 
 def value_base(
-        board: IBoard,
+        board: IBoard[Any],
         color: chess.Color
 ) -> int:
     """Calculate the base value of the given board for the specified color.
@@ -34,7 +35,7 @@ def value_base(
 
 
 def add_pawns_value_white(
-        board: IBoard
+        board: IBoard[Any]
 ) -> float:
     """Calculate the additional value for white pawns based on their advancement.
 
@@ -52,7 +53,7 @@ def add_pawns_value_white(
 
 
 def add_pawns_value_black(
-        board: IBoard
+        board: IBoard[Any]
 ) -> float:
     """Calculate the value to be added for black pawns based on their position.
 
@@ -72,7 +73,9 @@ def add_pawns_value_black(
     return add_value
 
 
-def value_white(board: IBoard) -> float:
+def value_white(
+        board: IBoard[Any]
+) -> float:
     """Calculate the value of the white pieces on the board.
 
     This function calculates the value of the white pieces on the board by subtracting the value of the black pieces from the value of the white pieces.
@@ -103,7 +106,7 @@ def sigmoid(x: float) -> float:
     return 1 / (1 + math.exp(-x))
 
 
-def value_player_to_move(board: IBoard) -> float:
+def value_player_to_move(board: IBoard[Any]) -> float:
     """Calculate the value of the player to move.
 
     This function calculates the value of the player to move based on the difference in piece values
@@ -154,7 +157,7 @@ class BasicEvaluation(BoardEvaluator):
 
     def value_white(
             self,
-            board: IBoard
+            board: IBoard[Any]
     ) -> float:
         """Calculates the value of the board for the white player.
 

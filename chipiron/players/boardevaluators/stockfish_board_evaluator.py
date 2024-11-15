@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import chess.engine
 
 import chipiron.environments.chess.board as boards
-
+from typing import Any
 
 # TODO are we calling this?
 @dataclass
@@ -44,7 +44,7 @@ class StockfishBoardEvaluator:
 
     def value_white(
             self,
-            board: boards.IBoard
+            board: boards.IBoard[Any]
     ) -> float:
         """
         Computes the value of the board for the white player.

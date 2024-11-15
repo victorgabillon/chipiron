@@ -13,6 +13,7 @@ The TreeAndValueMoveSelector class provides the following methods:
 
 import random
 from dataclasses import dataclass
+from typing import Any
 
 import chipiron.environments.chess.board as boards
 from chipiron.players.move_selector.move_selector import MoveRecommendation
@@ -49,7 +50,7 @@ class TreeAndValueMoveSelector:
 
     def select_move(
             self,
-            board: boards.IBoard,
+            board: boards.IBoard[Any],
             move_seed: seed
     ) -> MoveRecommendation:
         """

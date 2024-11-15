@@ -32,7 +32,7 @@ from . import tree_manager as tree_man
 from . import trees
 from .stopping_criterion import StoppingCriterion, create_stopping_criterion, AllStoppingCriterionArgs
 from .trees.factory import MoveAndValueTreeFactory
-
+from typing import Any
 
 @dataclass
 class TreeExploration:
@@ -160,7 +160,7 @@ class TreeExploration:
 
 def create_tree_exploration(
         node_selector_create: NodeSelectorFactory,
-        starting_board: boards.IBoard,
+        starting_board: boards.IBoard[Any],
         tree_manager: tree_man.AlgorithmNodeTreeManager,
         tree_factory: MoveAndValueTreeFactory,
         stopping_criterion_args: AllStoppingCriterionArgs,

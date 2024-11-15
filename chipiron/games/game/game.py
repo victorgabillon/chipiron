@@ -3,11 +3,11 @@ Module for the Game class.
 """
 import copy
 import queue
+from typing import Any
 
 import chess
 
 from chipiron.environments.chess.board.iboard import IBoard
-from chipiron.environments.chess.board.utils import FenPlusMoveHistory
 from chipiron.environments.chess.board.utils import fen
 from chipiron.environments.chess.move import IMove
 from chipiron.players.factory_higher_level import MoveFunction
@@ -27,18 +27,18 @@ class Game:
     Game needs the original fen, all the moves, the seed to generate and maybe more.
     """
     _playing_status: GamePlayingStatus  # todo should this be here? looks related to gui
-    _current_board: IBoard
+    _current_board: IBoard[Any]
     _seed: seed | None
     _fen_history: list[fen]
     _move_history: list[IMove]
 
     # list of boards object to implement rewind function without having to necessarily code it in the Board object.
     # this let the board object a bit more lightweight to speed up the Monte Carlo tree search
-    _board_history: list[IBoard]
+    _board_history: list[IBoard[Any]]
 
     def __init__(
             self,
-            board: IBoard,
+            board: IBoard[Any],
             playing_status: GamePlayingStatus,
             seed_: seed
     ):
@@ -148,7 +148,7 @@ class Game:
         return self._playing_status.is_play()
 
     @property
-    def board(self) -> IBoard:
+    def board(self) -> IBoard[Any]:
         """
         Gets the chess board.
 
@@ -328,7 +328,7 @@ class ObservableGame:
         if not self.game.board.is_game_over():
             move_function: MoveFunction
             for move_function in self.move_functions:
-                board_copy: IBoard = self.game.board.copy(stack=True)
+                board_copy: IBoard[Any] = self.game.board.copy(stack=True)
                 merged_seed: int | None = unique_int_from_list([self.game._seed, board_copy.ply()])
                 if merged_seed is not None:
                     move_function(board=board_copy, seed_int=merged_seed)
@@ -345,7 +345,7 @@ class ObservableGame:
             mailbox.put(message)
 
     @property
-    def board(self) -> IBoard:
+    def board(self) -> IBoard[Any]:
         """
         Gets the chess board.
 

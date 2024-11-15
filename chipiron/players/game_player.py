@@ -3,6 +3,7 @@ Module for the GamePlayer class.
 """
 import copy
 import queue
+from typing import Any
 
 import chess
 
@@ -42,7 +43,7 @@ class GamePlayer:
 
     def select_move(
             self,
-            board: IBoard,
+            board: IBoard[Any],
             seed_int: seed | None = None
     ) -> MoveRecommendation:
         """Selects the best move to play based on the current board position.
@@ -67,7 +68,7 @@ class GamePlayer:
 
 
 def game_player_computes_move_on_board_and_send_move_in_queue(
-        board: IBoard,
+        board: IBoard[Any],
         game_player: GamePlayer,
         queue_move: queue.Queue[IsDataclass],
         seed_int: seed

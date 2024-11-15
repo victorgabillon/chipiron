@@ -3,7 +3,7 @@ Module to create a SyzygyTable object if the path to the syzygy tables exists,
 otherwise return None.
 """
 import os
-from typing import Protocol
+from typing import Protocol, Any
 
 from chipiron.players.boardevaluators.table_base.syzygy_python import SyzygyChiTable
 from chipiron.utils import path
@@ -63,7 +63,7 @@ class SyzygyProvider(Protocol):
 class SyzygyFactory(Protocol):
     def __call__(
             self,
-    ) -> SyzygyTable | None:
+    ) -> SyzygyTable[Any] | None:
         ...
 
 
@@ -84,11 +84,11 @@ def create_syzygy_factory(
 
 def create_syzygy(
         use_rust: bool
-) -> SyzygyTable | None:
+) -> SyzygyTable[Any] | None:
     """
     Create a SyzygyTable object
     """
-    syzygy_table: SyzygyTable | None
+    syzygy_table: SyzygyTable[Any] | None
     if use_rust:
         syzygy_table = create_syzygy_rust()
     else:
