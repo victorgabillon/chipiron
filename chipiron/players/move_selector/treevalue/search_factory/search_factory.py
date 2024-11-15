@@ -134,6 +134,9 @@ class SearchFactory:
             random_generator=self.random_generator
         ) if self.opening_type is not None else None
 
+        assert(self.node_selector_args is not None)
+        assert(opening_instructor is not None)
+
         node_selector_create: NodeSelectorFactory = partial(
             node_selectors.create,
             args=self.node_selector_args,
