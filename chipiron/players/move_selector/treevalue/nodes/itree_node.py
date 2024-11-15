@@ -17,7 +17,6 @@ from __future__ import annotations  # (helping with recursive type annotation)
 from typing import Protocol
 from typing import TypeVar, Any
 
-
 import chipiron.environments.chess.board as boards
 from chipiron.environments.chess.move import IMove
 

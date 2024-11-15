@@ -3,7 +3,6 @@ Basic class for Creating Tree nodes
 """
 from typing import TypeVar, Generic, Any
 
-
 import chipiron.environments.chess.board as board_mod
 import chipiron.environments.chess.board as boards
 from chipiron.environments.chess.move import IMove

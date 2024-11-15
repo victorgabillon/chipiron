@@ -4,7 +4,6 @@ AlgorithmNodeFactory
 from dataclasses import dataclass
 from typing import Any
 
-
 import chipiron.environments.chess.board as board_mod
 import chipiron.players.move_selector.treevalue.indices.node_indices as node_indices
 import chipiron.players.move_selector.treevalue.nodes as node

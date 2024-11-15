@@ -4,7 +4,6 @@ TreeNodeFactory Protocol
 from typing import Protocol, Any
 from typing import TypeVar
 
-
 import chipiron.environments.chess.board as board_mod
 import chipiron.environments.chess.board as boards
 import chipiron.players.move_selector.treevalue.nodes as node
