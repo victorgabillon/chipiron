@@ -7,8 +7,6 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Iterator, Self, ItemsView, ValuesView
 
-import chess
-
 import chipiron.players.move_selector.treevalue.nodes as nodes
 from chipiron.environments.chess.move import IMove
 from chipiron.players.move_selector.treevalue.nodes.utils import a_move_sequence_from_root
@@ -247,7 +245,7 @@ class OpeningInstructor:
         """
         if self.opening_type == OpeningType.AllChildren:
             node_to_open.all_legal_moves_generated = True
-            moves_to_play : list[IMove] = list(node_to_open.legal_moves)
+            moves_to_play: list[IMove] = list(node_to_open.legal_moves)
 
             # this shuffling add randomness to the playing style
             self.random_generator.shuffle(moves_to_play)

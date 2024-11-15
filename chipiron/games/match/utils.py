@@ -66,7 +66,6 @@ def fetch_match_games_args_convert_and_save(
         dataclass_name=game.GameArgs
     )
 
-
     if profiling:
         args_game.max_half_moves = 1
     else:

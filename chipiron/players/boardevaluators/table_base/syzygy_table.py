@@ -6,7 +6,6 @@ from typing import Protocol, TypeVar
 
 import chess.syzygy
 
-import chipiron.environments.chess.board as boards
 from chipiron.environments.chess.board import IBoard
 from chipiron.environments.chess.move import IMove
 from chipiron.players.boardevaluators.over_event import Winner, HowOver, OverTags

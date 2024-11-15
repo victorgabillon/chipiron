@@ -6,8 +6,6 @@ import typing
 from dataclasses import dataclass
 from typing import Any
 
-import chess
-
 import chipiron.players.move_selector.treevalue.trees as trees
 import chipiron.players.move_selector.treevalue.updates as upda
 from chipiron.environments.chess.move import IMove

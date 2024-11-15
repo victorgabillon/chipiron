@@ -1,7 +1,6 @@
 """
 Module for the SyzygyTable class.
 """
-import chess.syzygy
 import shakmaty_python_binding
 
 import chipiron.environments.chess.board as boards

@@ -6,8 +6,6 @@ MoveExplorer is responsible for exploring moves in a game tree.
 import random
 from enum import Enum
 
-import chess
-
 from chipiron.environments.chess.move import IMove
 from chipiron.players.move_selector.treevalue.node_selector.notations_and_statics import zipf_picks_random
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node import AlgorithmNode

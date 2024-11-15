@@ -230,8 +230,6 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
             chess.Piece | None: The piece at the specified square, or None if there is no piece.
 
         """
-        color: bool
-        role: int
         piece_or_none = self.chess_.piece_at(square)
         piece: chess.Piece | None
         if piece_or_none is None:

@@ -6,8 +6,8 @@ from .board_chi import BoardChi
 from .board_modification import BoardModification
 from .factory import create_board, create_board_factory, BoardFactory
 from .iboard import IBoard, board_key
-from .utils import fen
 from .rusty_board import RustyBoardChi
+from .utils import fen
 
 __all__ = [
     "BoardModification",
@@ -16,5 +16,7 @@ __all__ = [
     "BoardFactory",
     "RustyBoardChi",
     "IBoard",
-    "board_key"
+    "board_key",
+    "fen",
+    "create_board_factory"
 ]

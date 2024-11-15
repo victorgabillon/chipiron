@@ -5,8 +5,6 @@ import copy
 import queue
 from typing import Any
 
-import chess
-
 from chipiron.environments.chess.board.iboard import IBoard
 from chipiron.environments.chess.board.utils import fen
 from chipiron.environments.chess.move import IMove

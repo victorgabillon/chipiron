@@ -16,7 +16,6 @@ import chess
 import torch
 
 import chipiron.environments.chess.board as boards
-from chipiron.environments.chess.board.board_chi import BoardChi
 from chipiron.environments.chess.board.iboard import IBoard
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode

@@ -24,8 +24,8 @@ from typing import Any
 
 import chess
 
-import chipiron.players.boardevaluators as board_evals
 import chipiron.environments.chess.board as boards
+import chipiron.players.boardevaluators as board_evals
 from chipiron.players.boardevaluators.over_event import HowOver, Winner, OverEvent
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
@@ -160,7 +160,7 @@ class NodeEvaluator:
             node.minmax_evaluation.over_event.becomes_over(
                 how_over=how_over_,
                 who_is_winner=who_is_winner_,
-                termination= None # not sure how to retrieve this info more precisely atm
+                termination=None  # not sure how to retrieve this info more precisely atm
             )
 
     def value_white_from_over_event(

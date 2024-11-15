@@ -22,12 +22,13 @@ from typing import Protocol, Literal
 import chess
 
 import chipiron.players.move_selector.treevalue.trees as trees
+from chipiron.environments.chess.move import IMove
 from chipiron.players.boardevaluators.basic_evaluation import value_base
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.utils import is_winning
 from chipiron.utils.small_tools import softmax
-from chipiron.environments.chess.move import IMove
+
 
 class RecommenderRuleTypes(str, Enum):
     """
@@ -70,7 +71,7 @@ class AlmostEqualLogistic:
         print('We have as bests: ', [best for best in best_root_moves])
         best_move = random_generator.choice(best_root_moves)
 
-        #assert isinstance(best_move, IMove)
+        # assert isinstance(best_move, IMove)
         return best_move
 
 

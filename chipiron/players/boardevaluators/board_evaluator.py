@@ -9,9 +9,10 @@ from typing import Protocol
 import chess
 
 import chipiron.environments.chess.board as boards
+from chipiron.players.boardevaluators.board_evaluation.board_evaluation import BoardEvaluation
 from chipiron.utils.communication.gui_messages import EvaluationMessage
 from chipiron.utils.dataclass import IsDataclass
-from chipiron.players.boardevaluators.board_evaluation.board_evaluation import BoardEvaluation
+
 
 class ValueWhiteWhenOver(float, Enum):
     """

@@ -3,6 +3,7 @@ This module provides a factory function for creating node evaluators based on di
 """
 
 import sys
+from typing import Any
 from typing import TypeAlias
 
 import chipiron.players.boardevaluators.basic_evaluation as basic_evaluation
@@ -14,7 +15,7 @@ from .all_node_evaluators import NodeEvaluatorTypes
 from .neural_networks.nn_node_evaluator import NNNodeEvaluator
 from .node_evaluator import NodeEvaluator
 from .node_evaluator_args import NodeEvaluatorArgs
-from typing import Any
+
 AllNodeEvaluatorArgs: TypeAlias = neural_networks.NeuralNetNodeEvalArgs | NodeEvaluatorArgs
 
 

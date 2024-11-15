@@ -7,5 +7,3 @@ class IMove(Protocol):
     @abstractmethod
     def uci(self) -> str:
         ...
-
-

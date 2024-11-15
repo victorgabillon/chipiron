@@ -20,10 +20,11 @@ from typing import Any
 
 from sortedcollections import ValueSortedDict
 
+import chipiron.environments.chess.board as boards
 from chipiron.environments import HalfMove
 from chipiron.players.move_selector.treevalue.nodes import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.tree_traversal import get_descendants
-import chipiron.environments.chess.board as boards
+
 
 class Descendants:
     """
@@ -185,7 +186,7 @@ class Descendants:
             None
         """
         half_move: HalfMove = node.half_move
-        board_key: boards.board_key  = node.fast_rep
+        board_key: boards.board_key = node.fast_rep
 
         if half_move in self.descendants_at_half_move:
             assert (board_key not in self.descendants_at_half_move[half_move])

@@ -18,7 +18,6 @@ structure to a file.
 import pickle
 from typing import Any
 
-import chess
 from graphviz import Digraph
 
 from chipiron.environments.chess.move import IMove

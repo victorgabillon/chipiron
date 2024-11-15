@@ -242,6 +242,5 @@ class IBoard(Protocol[T_Move]):
     def tell_result(self) -> None:
         ...
 
-
-    def into_fen_plus_history(self) ->FenPlusHistory:
+    def into_fen_plus_history(self) -> FenPlusHistory:
         ...

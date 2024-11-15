@@ -4,6 +4,7 @@ Module for the GameManagerFactory class.
 import queue
 from dataclasses import dataclass, field
 from typing import Any
+
 import chess
 
 import chipiron as ch
@@ -72,7 +73,7 @@ class GameManagerFactory:
         # in the future, we might want the implementation detail to actually be modified during the
         # match in that case they would come arg_game_manager
 
-        ##### CREATING THE BOARD
+        # CREATING THE BOARD
         starting_fen: str = args_game_manager.starting_position.get_fen()
         board: boards.IBoard[Any] = self.board_factory(fen_with_history=FenPlusHistory(current_fen=starting_fen))
         if self.subscribers:
@@ -99,12 +100,11 @@ class GameManagerFactory:
             for subscriber in self.subscribers:
                 observable_game.register_display(subscriber)
 
-
-        ##### CREATING THE PLAYERS
+        # CREATING THE PLAYERS
         player_observer_factory = create_player_observer_factory(
             each_player_has_its_own_thread=args_game_manager.each_player_has_its_own_thread,
             implementation_args=self.implementation_args,
-            syzygy_table = self.syzygy_table
+            syzygy_table=self.syzygy_table
         )
 
         players: list[players_m.GamePlayer | players_m.PlayerProcess] = []

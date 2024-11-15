@@ -95,7 +95,7 @@ def create_rust_board(
         chess_rust_binding = shakmaty_python_binding.MyChess(_fen_start=current_fen)
 
     else:
-        chess_rust_binding = shakmaty_python_binding.MyChess(_fen_start=chess.STARTING_FEN  )
+        chess_rust_binding = shakmaty_python_binding.MyChess(_fen_start=chess.STARTING_FEN)
 
     rusty_board_chi: RustyBoardChi = RustyBoardChi(
         chess_=chess_rust_binding,
