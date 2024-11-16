@@ -9,7 +9,7 @@ import chess
 import shakmaty_python_binding
 
 from .board_chi import BoardChi
-from .iboard import IBoard
+from .iboard import IBoard, compute_key, board_key
 from .rusty_board import RustyBoardChi
 from .utils import fen, FenPlusHistory
 
@@ -63,9 +63,14 @@ def create_board(
     else:
         chess_board = chess.Board()
 
+    board_key_representation: board_key = compute_key(
+        chess_keyable_object=chess_board
+    )
+
     board: BoardChi = BoardChi(
         board=chess_board,
-        compute_board_modification=use_board_modification
+        compute_board_modification=use_board_modification,
+        fast_representation_=board_key_representation
     )
     return board
 
@@ -97,10 +102,15 @@ def create_rust_board(
     else:
         chess_rust_binding = shakmaty_python_binding.MyChess(_fen_start=chess.STARTING_FEN)
 
+    board_key_representation: board_key = compute_key(
+        chess_keyable_object=chess_rust_binding
+    )
+
     rusty_board_chi: RustyBoardChi = RustyBoardChi(
         chess_=chess_rust_binding,
         compute_board_modification=use_board_modification,
-        rep_to_count=Counter()
+        rep_to_count=Counter(),
+        fast_representation_=board_key_representation
     )
 
     if fen_with_history is not None:

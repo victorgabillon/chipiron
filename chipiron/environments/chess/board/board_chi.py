@@ -31,6 +31,7 @@ class BoardChi(IBoard[chess.Move]):
             self,
             board: chess.Board,
             compute_board_modification: bool,
+            fast_representation_: board_key
     ) -> None:
         """
         Initializes a new instance of the BoardChi class.
@@ -40,7 +41,7 @@ class BoardChi(IBoard[chess.Move]):
         """
         self.board = board
         self.compute_board_modification = compute_board_modification
-        self.fast_representation_ = self.compute_key()
+        self.fast_representation_ = fast_representation_
 
     def play_moveà(
             self,

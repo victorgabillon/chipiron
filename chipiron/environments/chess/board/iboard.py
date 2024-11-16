@@ -16,6 +16,103 @@ board_key_without_counters = tuple[int, int, int, int, int, int, bool, int, int 
 T_Move = TypeVar('T_Move', bound=IMove)
 
 
+class ChessKeyable(Protocol):
+
+    def ply(self) -> int:
+        """
+        Returns the number of half-moves (plies) that have been played on the board.
+
+        :return: The number of half-moves played on the board.
+        :rtype: int
+        """
+        ...
+
+    @property
+    def turn(self) -> chess.Color:
+        """
+        Get the current turn color.
+
+        Returns:
+            chess.Color: The color of the current turn.
+        """
+        ...
+
+    @property
+    def pawns(self) -> chess.Bitboard:
+        ...
+
+    @property
+    def knights(self) -> chess.Bitboard:
+        ...
+
+    @property
+    def bishops(self) -> chess.Bitboard:
+        ...
+
+    @property
+    def rooks(self) -> chess.Bitboard:
+        ...
+
+    @property
+    def queens(self) -> chess.Bitboard:
+        ...
+
+    @property
+    def kings(self) -> chess.Bitboard:
+        ...
+
+    @property
+    def white(self) -> chess.Bitboard:
+        ...
+
+    @property
+    def black(self) -> chess.Bitboard:
+        ...
+
+    @property
+    def halfmove_clock(self) -> int:
+        ...
+
+    @property
+    def promoted(self) -> chess.Bitboard:
+        ...
+
+    @property
+    def fullmove_number(self) -> int:
+        ...
+
+    @property
+    def castling_rights(self) -> chess.Bitboard:
+        ...
+
+    @property
+    def ep_square(self) -> int | None:
+        ...
+
+
+def compute_key(
+        chess_keyable_object: ChessKeyable
+) -> board_key:
+    """
+    Computes and returns a unique key representing the current state of the chess board.
+
+    The key is computed by concatenating various attributes of the board, including the positions of pawns, knights,
+    bishops, rooks, queens, and kings, as well as the current turn, castling rights, en passant square, halfmove clock,
+    occupied squares for each color, promoted pieces, and the fullmove number.
+    It is faster than calling the fen.
+    Returns:
+        str: A unique key representing the current state of the chess board.
+    """
+    string = (
+        chess_keyable_object.pawns, chess_keyable_object.knights, chess_keyable_object.bishops,
+        chess_keyable_object.rooks, chess_keyable_object.queens, chess_keyable_object.kings,
+        chess_keyable_object.turn, chess_keyable_object.castling_rights,
+        chess_keyable_object.ep_square, chess_keyable_object.white, chess_keyable_object.black,
+        chess_keyable_object.promoted, chess_keyable_object.fullmove_number, chess_keyable_object.halfmove_clock
+    )
+    return string
+
+
 class IBoard(Protocol[T_Move]):
     fast_representation_: board_key
 
@@ -156,22 +253,6 @@ class IBoard(Protocol[T_Move]):
     @property
     def ep_square(self) -> int | None:
         ...
-
-    def compute_key(self) -> board_key:
-        """
-        Computes and returns a unique key representing the current state of the chess board.
-
-        The key is computed by concatenating various attributes of the board, including the positions of pawns, knights,
-        bishops, rooks, queens, and kings, as well as the current turn, castling rights, en passant square, halfmove clock,
-        occupied squares for each color, promoted pieces, and the fullmove number.
-        It is faster than calling the fen.
-        Returns:
-            str: A unique key representing the current state of the chess board.
-        """
-        string = (self.pawns, self.knights, self.bishops, self.rooks, self.queens, self.kings,
-                  self.turn, self.castling_rights, self.ep_square,
-                  self.white, self.black, self.promoted, self.fullmove_number, self.halfmove_clock)
-        return string
 
     @property
     def fast_representation(self) -> board_key:

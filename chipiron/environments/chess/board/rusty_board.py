@@ -7,7 +7,7 @@ import shakmaty_python_binding
 
 from chipiron.environments.chess.board.board_modification import BoardModification, compute_modifications
 from chipiron.environments.chess.move import moveUci
-from .iboard import IBoard, board_key, board_key_without_counters
+from .iboard import IBoard, board_key, board_key_without_counters, compute_key
 from .utils import FenPlusHistory
 
 
@@ -33,14 +33,17 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
     # three-fold repetition as shakmaty does not do it atm
     rep_to_count: Counter[board_key_without_counters]
 
-    fast_representation_: board_key = field(init=False)
+    fast_representation_: board_key
 
     # the move history is kept here because shakmaty_python_binding.MyChess does not have a move stack at the moment
     move_stack: list[moveUci] = field(default_factory=list)
 
+    # storing the info here for fast access as it seems calls to rust bingings can be costy
+    turn_ : chess.Color = chess.WHITE
+
     def __post_init__(self) -> None:
-        self.fast_representation_ = self.compute_key()
         self.rep_to_count[self.fast_representation_without_counters] = 1
+        self.turn_ = bool(self.chess_.turn())
 
     def __str__(self) -> str:
         """
@@ -131,10 +134,13 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
 
         # update after move
         self.legal_moves_ = None  # the legals moves needs to be recomputed as the board has changed
-        fast_representation: board_key = self.compute_key()
+        fast_representation: board_key = compute_key(chess_keyable_object=self.chess_)
         self.fast_representation_ = fast_representation
         self.rep_to_count.update([self.fast_representation_without_counters])
         self.move_stack.append(move.uci())
+
+        self.turn_ = not self.turn_
+
         return board_modifications
 
     def ply(self) -> int:
@@ -155,7 +161,8 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
         Returns:
             chess.Color: The color of the current turn.
         """
-        return bool(self.chess_.turn())
+        #return bool(self.chess_.turn())
+        return self.turn_
 
     def is_game_over(self) -> bool:
         """
@@ -188,7 +195,8 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
             chess_=chess_copy,
             move_stack=move_stack_,
             compute_board_modification=self.compute_board_modification,
-            rep_to_count=self.rep_to_count.copy()
+            rep_to_count=self.rep_to_count.copy(),
+            fast_representation_=self.fast_representation_
         )
 
     @property
@@ -381,7 +389,7 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
 
     @property
     def fullmove_number(self) -> int:
-        return self.chess_.fullmove_clock()
+        return self.chess_.fullmove_number()
 
     @property
     def ep_square(self) -> int | None:
