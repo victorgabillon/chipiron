@@ -16,6 +16,10 @@ class BaseScriptArgs:
     # whether the script is testing the code (using pytest for instance)
     testing: bool = False
 
+    # whether the script should force the behavior of the algorithm be only dependent on the seed and number
+    # and on no other parameter ( could happen that using some external functions/modules add some randomness)
+    universal_behavior: bool = False
+
     # the folder where to output the results
     experiment_output_folder: path | None = None
 

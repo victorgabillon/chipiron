@@ -94,7 +94,7 @@ class TreeNode(
             self.player_to_move_: chess.Color = self.board_.turn
 
     @property
-    def fast_rep(self) -> boards.board_key:
+    def fast_rep(self) -> boards.boardKey:
         return self.board_.fast_representation
 
     @property

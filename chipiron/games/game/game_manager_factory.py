@@ -50,6 +50,7 @@ class GameManagerFactory:
     board_factory: boards.BoardFactory
     move_factory: MoveFactory
     implementation_args: ImplementationArgs
+    universal_behavior:bool
     subscribers: list[queue.Queue[IsDataclass]] = field(default_factory=list)
 
     def create(
@@ -104,7 +105,8 @@ class GameManagerFactory:
         player_observer_factory = create_player_observer_factory(
             each_player_has_its_own_thread=args_game_manager.each_player_has_its_own_thread,
             implementation_args=self.implementation_args,
-            syzygy_table=self.syzygy_table
+            syzygy_table=self.syzygy_table,
+            universal_behavior=self.universal_behavior
         )
 
         players: list[players_m.GamePlayer | players_m.PlayerProcess] = []

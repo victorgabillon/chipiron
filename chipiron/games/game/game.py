@@ -8,6 +8,8 @@ from typing import Any
 from chipiron.environments.chess.board.iboard import IBoard
 from chipiron.environments.chess.board.utils import fen
 from chipiron.environments.chess.move import IMove
+from chipiron.environments.chess.move import moveUci
+from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.factory_higher_level import MoveFunction
 from chipiron.utils import seed, unique_int_from_list
 from chipiron.utils.communication.gui_messages import GameStatusMessage
@@ -28,7 +30,7 @@ class Game:
     _current_board: IBoard[Any]
     _seed: seed | None
     _fen_history: list[fen]
-    _move_history: list[IMove]
+    _move_history: list[moveUci]
 
     # list of boards object to implement rewind function without having to necessarily code it in the Board object.
     # this let the board object a bit more lightweight to speed up the Monte Carlo tree search
@@ -57,7 +59,7 @@ class Game:
 
     def play_move(
             self,
-            move: IMove
+            move: moveKey
     ) -> None:
         """
         Plays a move on the chess board.
@@ -69,9 +71,9 @@ class Game:
             AssertionError: If the move is not valid or the game status is not play.
         """
         if self._playing_status.is_play():
-            assert (move.uci() in [i.uci() for i in self._current_board.legal_moves])
-            self._current_board.play_move(move)
-            self.move_history.append(move)
+            assert (move in [i for i in self._current_board.legal_moves])
+            self.move_history.append(self._current_board.get_uci_from_move_key(move_key=move))
+            self._current_board.play_move_key(move)
             self.fen_history.append(self._current_board.fen)
             self._board_history.append(self._current_board.copy(stack=True))
 
@@ -156,7 +158,7 @@ class Game:
         return self._current_board
 
     @property
-    def move_history(self) -> list[IMove]:
+    def move_history(self) -> list[moveUci]:
         """
         Gets the history of move.
 

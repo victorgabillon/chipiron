@@ -56,8 +56,8 @@ class Random:
 
         """
         self.random_generator.seed(move_seed)
-        random_move: chess.Move = self.random_generator.choice(list(board.legal_moves))
-        return MoveRecommendation(move=random_move.uci())
+        random_move: chess.Move = self.random_generator.choice(board.legal_moves.get_all())
+        return MoveRecommendation(move=random_move)
 
 
 def create_random(

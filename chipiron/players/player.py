@@ -5,6 +5,7 @@ Module for the Player class.
 from typing import Any
 
 from chipiron.environments.chess.board import IBoard
+from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.utils import seed
 from .move_selector.move_selector import MoveSelector, MoveRecommendation
@@ -47,17 +48,16 @@ class Player:
 
         move_recommendation: MoveRecommendation
         # if there is only one possible legal move in the position, do not think, choose it.
-        all_legal_moves = list(board.legal_moves)
-        if not all_legal_moves:
+        if not board.legal_moves:
             raise Exception('No legal moves in this position')
-        if len(all_legal_moves) == 1 and self.id != 'Human':
-            move_recommendation = MoveRecommendation(move=all_legal_moves[0].uci())
-        else:
+        if board.legal_moves.more_than_one_move() or self.id != 'Human':
+            # if len(list(board.legal_moves))>1 or self.id != 'Human':
+
             # if the play with syzygy option is on test if the position is in the database to play syzygy
             if self.syzygy_player is not None and self.syzygy_player.fast_in_table(board):
                 print('Playing with Syzygy')
-                best_move = self.syzygy_player.best_move(board)
-                move_recommendation = MoveRecommendation(move=best_move.uci())
+                best_move: moveKey = self.syzygy_player.best_move(board)
+                move_recommendation = MoveRecommendation(move=best_move)
 
             else:
                 print(f'Playing with player (not Syzygy) {self.id}\n{board}')
@@ -65,5 +65,7 @@ class Player:
                     board=board,
                     move_seed=seed_int
                 )
+        else:
+            move_recommendation = MoveRecommendation(move=list(board.legal_moves)[0])
 
         return move_recommendation

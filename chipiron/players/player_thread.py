@@ -53,7 +53,8 @@ class PlayerProcess(multiprocessing.Process):
             queue_board: queue.Queue[DataClass],
             queue_move: queue.Queue[IsDataclass],
             player_color: chess.Color,
-            implementation_args: ImplementationArgs
+            implementation_args: ImplementationArgs,
+            universal_behavior: bool
     ) -> None:
         """Initialize the PlayerThread object.
 
@@ -73,7 +74,8 @@ class PlayerProcess(multiprocessing.Process):
 
         self.board_factory: BoardFactory = create_board_factory(
             use_rust_boards=implementation_args.use_rust_boards,
-            use_board_modification=implementation_args.use_board_modification
+            use_board_modification=implementation_args.use_board_modification,
+            sort_legal_moves=universal_behavior
         )
 
         create_syzygy: SyzygyFactory = create_syzygy_factory(

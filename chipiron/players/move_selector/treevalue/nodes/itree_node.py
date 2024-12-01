@@ -18,6 +18,7 @@ from typing import Protocol
 from typing import TypeVar, Any
 
 import chipiron.environments.chess.board as boards
+from chipiron.environments.chess.board.iboard import LegalMoveGeneratorUciP
 from chipiron.environments.chess.move import IMove
 
 T = TypeVar('T', bound='ITreeNode[Any]')
@@ -123,7 +124,7 @@ class ITreeNode(Protocol[T]):
         """
 
     @property
-    def legal_moves(self) -> list[IMove]:
+    def legal_moves(self) -> LegalMoveGeneratorUciP:
         """
         Get the legal moves of the node.
 

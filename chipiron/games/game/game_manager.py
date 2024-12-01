@@ -160,6 +160,10 @@ class GameManager:
             self.processing_mail(mail)
 
             if board.is_game_over() or not self.game_continue_conditions():
+                if board.is_game_over():
+                    print('the game is other')
+                if not self.game_continue_conditions():
+                    print('game continuation not met')
                 break
             else:
                 print(f'Not game over at {board}')
@@ -169,9 +173,11 @@ class GameManager:
         print('end play_one_game')
 
         game_results: FinalGameResult = self.simple_results()
+        print('lplpl', [move for move in self.game.move_history])
+
         game_report: GameReport = GameReport(
             final_game_result=game_results,
-            move_history=[move.uci() for move in self.game.move_history],
+            move_history=[move for move in self.game.move_history],
             fen_history=self.game.fen_history
         )
         return game_report
@@ -203,8 +209,8 @@ class GameManager:
                         self.game.playing_status.is_play() and \
                         message.player_name == self.player_color_to_id[board.turn]:
                     print(f'play a move {move_uci} at {board} {self.game.board.fen}')
-                    move: IMove = self.move_factory(move_uci=move_uci, board=board)
-                    self.play_one_move(move)
+                    # move: IMove = self.move_factory(move_uci=move_uci, board=board)
+                    self.play_one_move(move_uci)
                     print(f'now board is  {self.game.board}')
 
                     eval_sto, eval_chi = self.external_eval()
@@ -312,7 +318,8 @@ class GameManager:
         board = self.game.board
 
         res: FinalGameResult | None = None
-        if board.result() == '*':
+        result: str = board.result(claim_draw=True)
+        if result == '*':
             if self.syzygy is None or not self.syzygy.fast_in_table(board):
                 # useful when a game is stopped
                 # before the end, for instance for debugging and profiling
@@ -321,13 +328,16 @@ class GameManager:
             else:
                 raise ValueError('this case is not coded atm think of what is the right thing to do here!')
         else:
-            result = board.result()
-            if result == '1/2-1/2':
-                res = FinalGameResult.DRAW
-            if result == '0-1':
-                res = FinalGameResult.WIN_FOR_BLACK
-            if result == '1-0':
-                res = FinalGameResult.WIN_FOR_WHITE
+            match result:
+                case '1/2-1/2':
+                    res = FinalGameResult.DRAW
+                case '0-1':
+                    res = FinalGameResult.WIN_FOR_BLACK
+                case '1-0':
+                    res = FinalGameResult.WIN_FOR_WHITE
+                case other:
+                    raise Exception(f'unexpected result value {result} in game manager/simple_results')
+
         assert isinstance(res, FinalGameResult)
         return res
 
