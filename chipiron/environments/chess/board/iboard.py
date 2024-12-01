@@ -7,92 +7,50 @@ import yaml
 
 from chipiron.environments.chess.board.board_modification import BoardModification
 from chipiron.environments.chess.move import moveUci, IMove
+from chipiron.environments.chess.move.imove import moveKey
 from .utils import FenPlusMoveHistory, FenPlusHistory
 from .utils import fen
 
-board_key = tuple[int, int, int, int, int, int, bool, int, int | None, int, int, int, int, int]
-board_key_without_counters = tuple[int, int, int, int, int, int, bool, int, int | None, int, int, int]
+boardKey = tuple[int, int, int, int, int, int, bool, int, int | None, int, int, int, int, int]
+boardKeyWithoutCounters = tuple[int, int, int, int, int, int, bool, int, int | None, int, int, int]
 
 T_Move = TypeVar('T_Move', bound=IMove)
 
 
-class ChessKeyable(Protocol):
+class LegalMoveGeneratorUciP(Protocol):
+    generated_moves: list[IMove]
+    all_generated_keys: list[moveKey] | None
+    sort_legal_moves: bool
 
-    def ply(self) -> int:
-        """
-        Returns the number of half-moves (plies) that have been played on the board.
-
-        :return: The number of half-moves played on the board.
-        :rtype: int
-        """
+    def __iter__(self):
         ...
 
-    @property
-    def turn(self) -> chess.Color:
-        """
-        Get the current turn color.
-
-        Returns:
-            chess.Color: The color of the current turn.
-        """
+    def __next__(self) -> moveKey:
         ...
 
-    @property
-    def pawns(self) -> chess.Bitboard:
+    def more_than_one_move(self) -> bool:
         ...
 
-    @property
-    def knights(self) -> chess.Bitboard:
-        ...
-
-    @property
-    def bishops(self) -> chess.Bitboard:
-        ...
-
-    @property
-    def rooks(self) -> chess.Bitboard:
-        ...
-
-    @property
-    def queens(self) -> chess.Bitboard:
-        ...
-
-    @property
-    def kings(self) -> chess.Bitboard:
-        ...
-
-    @property
-    def white(self) -> chess.Bitboard:
-        ...
-
-    @property
-    def black(self) -> chess.Bitboard:
-        ...
-
-    @property
-    def halfmove_clock(self) -> int:
-        ...
-
-    @property
-    def promoted(self) -> chess.Bitboard:
-        ...
-
-    @property
-    def fullmove_number(self) -> int:
-        ...
-
-    @property
-    def castling_rights(self) -> chess.Bitboard:
-        ...
-
-    @property
-    def ep_square(self) -> int | None:
+    def get_all(self) -> list[moveKey]:
         ...
 
 
 def compute_key(
-        chess_keyable_object: ChessKeyable
-) -> board_key:
+        pawns: int,
+        knights: int,
+        bishops: int,
+        rooks: int,
+        queens: int,
+        kings: int,
+        turn: bool,
+        castling_rights: int,
+        ep_square: int | None,
+        white: int,
+        black: int,
+        promoted: int,
+        fullmove_number: int,
+        halfmove_clock: int
+) -> boardKey:
     """
     Computes and returns a unique key representing the current state of the chess board.
 
@@ -103,22 +61,35 @@ def compute_key(
     Returns:
         str: A unique key representing the current state of the chess board.
     """
-    string = (
-        chess_keyable_object.pawns, chess_keyable_object.knights, chess_keyable_object.bishops,
-        chess_keyable_object.rooks, chess_keyable_object.queens, chess_keyable_object.kings,
-        chess_keyable_object.turn, chess_keyable_object.castling_rights,
-        chess_keyable_object.ep_square, chess_keyable_object.white, chess_keyable_object.black,
-        chess_keyable_object.promoted, chess_keyable_object.fullmove_number, chess_keyable_object.halfmove_clock
+    string: boardKey = (
+        pawns, knights, bishops,
+        rooks, queens, kings,
+        turn, castling_rights, ep_square,
+        white, black, promoted,
+        fullmove_number, halfmove_clock
     )
     return string
 
 
 class IBoard(Protocol[T_Move]):
-    fast_representation_: board_key
+    fast_representation_: boardKey
+    legal_moves_: LegalMoveGeneratorUciP | None = None
 
-    def play_move(
+    def get_move_from_move_key(self, move_key: moveKey) -> IMove:
+        return self.legal_moves_.generated_moves[move_key]
+
+    def get_uci_from_move_key(self, move_key: moveKey) -> moveUci:
+        return self.legal_moves_.generated_moves[move_key].uci()
+
+    def play_move_key(
             self,
-            move: T_Move
+            move: moveKey
+    ) -> BoardModification | None:
+        ...
+
+    def play_move_uci(
+            self,
+            move_uci: moveUci
     ) -> BoardModification | None:
         ...
 
@@ -255,7 +226,7 @@ class IBoard(Protocol[T_Move]):
         ...
 
     @property
-    def fast_representation(self) -> board_key:
+    def fast_representation(self) -> boardKey:
         """
         Returns a fast representation of the board.
 
@@ -268,7 +239,7 @@ class IBoard(Protocol[T_Move]):
         return self.fast_representation_
 
     @property
-    def fast_representation_without_counters(self) -> board_key_without_counters:
+    def fast_representation_without_counters(self) -> boardKeyWithoutCounters:
         """
         Returns a fast representation of the board.
 
@@ -294,7 +265,7 @@ class IBoard(Protocol[T_Move]):
         ...
 
     @property
-    def legal_moves(self) -> list[T_Move]:
+    def legal_moves(self) -> LegalMoveGeneratorUciP:
         ...
 
     def number_of_pieces_on_the_board(self) -> int:

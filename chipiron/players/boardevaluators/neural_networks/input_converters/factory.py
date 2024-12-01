@@ -199,7 +199,6 @@ def a(black: torch.Tensor, white: torch.Tensor, piece_map: dict[chess.Square, tu
     square: chess.Square
     piece: tuple[int, bool]
     for square, piece in piece_map.items():
-        #   print('rr',square, piece)
         piece_code: int = piece[0] - 1
         piece_color: bool = piece[1]
         square_index: chess.Square

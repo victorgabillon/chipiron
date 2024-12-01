@@ -1,14 +1,56 @@
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import Self, Any
+from typing import Self, Any, Iterator
 
 import chess
 import shakmaty_python_binding
 
 from chipiron.environments.chess.board.board_modification import BoardModification, compute_modifications
 from chipiron.environments.chess.move import moveUci
-from .iboard import IBoard, board_key, board_key_without_counters, compute_key
+from chipiron.environments.chess.move.imove import moveKey
+from .iboard import IBoard, boardKey, boardKeyWithoutCounters, compute_key, LegalMoveGeneratorUciP
 from .utils import FenPlusHistory
+
+
+class LegalMoveGeneratorUciRust(LegalMoveGeneratorUciP):
+    sort_legal_moves: bool
+    generated_moves: list[shakmaty_python_binding.MyMove]
+    sort_legal_moves: bool
+    all_generated_keys: list[moveKey] | None
+
+    def __init__(
+            self,
+            generated_moves: list[shakmaty_python_binding.MyMove],
+            sort_legal_moves: bool
+    ):
+        self.generated_moves = generated_moves
+        self.number_moves = len(generated_moves)
+        self.sort_legal_moves = sort_legal_moves
+        self.it: Iterator[int] = iter(range(self.number_moves))
+        self.all_generated_keys = None
+
+    def __iter__(self):
+        self.it = iter(range(self.number_moves))
+        return self
+
+    def __next__(self) -> moveKey:
+        return self.it.__next__()
+
+    def get_all(self) -> list[moveKey]:
+        if self.all_generated_keys is None:
+
+            if self.sort_legal_moves:
+                return sorted(
+                    list(range(self.number_moves)),
+                    key=lambda i: self.generated_moves[i].uci()
+                )
+            else:
+                return list(range(self.number_moves))
+        else:
+            return self.all_generated_keys
+
+    def more_than_one_move(self) -> bool:
+        return len(self.generated_moves) > 0
 
 
 # todo implement rewind (and a test for it)
@@ -31,19 +73,34 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
 
     # to count the number of occurrence of each board to be able to compute
     # three-fold repetition as shakmaty does not do it atm
-    rep_to_count: Counter[board_key_without_counters]
+    rep_to_count: Counter[boardKeyWithoutCounters]
 
-    fast_representation_: board_key
+    fast_representation_: boardKey
+
+    # storing the info here for fast access as it seems calls to rust bingings can be costy
+    pawns_: int
+    kings_: int
+    queens_: int
+    rooks_: int
+    bishops_: int
+    knights_: int
+    white_: int
+    black_: int
+    turn_: bool
+    ep_square_: int
+    promoted_: int
+    castling_rights_: int
 
     # the move history is kept here because shakmaty_python_binding.MyChess does not have a move stack at the moment
     move_stack: list[moveUci] = field(default_factory=list)
 
-    # storing the info here for fast access as it seems calls to rust bingings can be costy
-    turn_ : chess.Color = chess.WHITE
+    # whether to sort the legal_moves by their respective uci for easy comparison of various implementations
+    sort_legal_moves: bool = False
+
+    legal_moves_: LegalMoveGeneratorUciRust | None = None
 
     def __post_init__(self) -> None:
         self.rep_to_count[self.fast_representation_without_counters] = 1
-        self.turn_ = bool(self.chess_.turn())
 
     def __str__(self) -> str:
         """
@@ -72,6 +129,18 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
     def play_min(self, move: shakmaty_python_binding.MyMove) -> None:
         self.chess_.play(move)
 
+    def play_min_2(self, move: shakmaty_python_binding.MyMove) -> None:
+        # _str, ply, turn, is_game_over = self.chess_.play_and_return(move)
+        (self.castling_rights_, self.pawns_, self.knights_, self.bishops_, self.rooks_, self.queens_, self.kings_,
+         self.white_, self.black_, turn_int, ep_square_int, self.promoted_) = self.chess_.play_and_return_o(
+            move)
+        self.turn_ = bool(turn_int)
+        if ep_square_int == -1:
+            self.ep_square_ = None
+        else:
+            self.ep_square_ = ep_square_int
+        # print('ar',a)
+
     def play_move(
             self,
             move: shakmaty_python_binding.MyMove
@@ -91,25 +160,43 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
         board_modifications: BoardModification | None = None
 
         if self.compute_board_modification:
-            previous_pawns = self.chess_.pawns()
-            previous_kings = self.chess_.kings()
-            previous_queens = self.chess_.queens()
-            previous_rooks = self.chess_.rooks()
-            previous_bishops = self.chess_.bishops()
-            previous_knights = self.chess_.knights()
-            previous_occupied_white = self.chess_.white()
-            previous_occupied_black = self.chess_.black()
+            previous_pawns = self.pawns_
+            previous_kings = self.kings_
+            previous_queens = self.queens_
+            previous_rooks = self.rooks_
+            previous_bishops = self.bishops_
+            previous_knights = self.knights_
+            previous_occupied_white = self.white_
+            previous_occupied_black = self.black_
 
-            self.play_min(move)
+            # previous_pawns = self.chess_.pawns()
+            # previous_kings = self.chess_.kings()
+            # previous_queens = self.chess_.queens()
+            # previous_rooks = self.chess_.rooks()
+            # previous_bishops = self.chess_.bishops()
+            # previous_knights = self.chess_.knights()
+            # previous_occupied_white = self.chess_.white()
+            # previous_occupied_black = self.chess_.black()
 
-            new_pawns = self.chess_.pawns()
-            new_kings = self.chess_.kings()
-            new_queens = self.chess_.queens()
-            new_rooks = self.chess_.rooks()
-            new_bishops = self.chess_.bishops()
-            new_knights = self.chess_.knights()
-            new_occupied_white = self.chess_.white()
-            new_occupied_black = self.chess_.black()
+            self.play_min_2(move)
+
+            # new_pawns = self.chess_.pawns()
+            # new_kings = self.chess_.kings()
+            # new_queens = self.chess_.queens()
+            # new_rooks = self.chess_.rooks()
+            # new_bishops = self.chess_.bishops()
+            # new_knights = self.chess_.knights()
+            # new_occupied_white = self.chess_.white()
+            # new_occupied_black = self.chess_.black()
+
+            new_pawns = self.pawns_
+            new_kings = self.kings_
+            new_queens = self.queens_
+            new_rooks = self.rooks_
+            new_bishops = self.bishops_
+            new_knights = self.knights_
+            new_occupied_white = self.white_
+            new_occupied_black = self.black_
 
             board_modifications = compute_modifications(
                 previous_bishops=previous_bishops,
@@ -130,18 +217,48 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
                 new_occupied_white=new_occupied_white
             )
         else:
-            self.play_min(move)
+            self.play_min_2(move)
 
         # update after move
         self.legal_moves_ = None  # the legals moves needs to be recomputed as the board has changed
-        fast_representation: board_key = compute_key(chess_keyable_object=self.chess_)
+        fast_representation: boardKey = compute_key(
+            pawns=self.pawns_,
+            knights=self.knights_,
+            bishops=self.bishops_,
+            rooks=self.rooks_,
+            queens=self.queens_,
+            kings=self.kings_,
+            turn=self.turn_,
+            castling_rights=self.castling_rights_,
+            ep_square=self.ep_square_,
+            white=self.white_,
+            black=self.black_,
+            promoted=self.promoted_,
+            fullmove_number=self.chess_.fullmove_number(),
+            halfmove_clock=self.chess_.halfmove_clock()
+        )
         self.fast_representation_ = fast_representation
         self.rep_to_count.update([self.fast_representation_without_counters])
         self.move_stack.append(move.uci())
 
-        self.turn_ = not self.turn_
+        #self.turn_ = not self.turn_
 
         return board_modifications
+
+    def play_move_uci(
+            self,
+            move_uci: moveUci
+    ) -> BoardModification | None:
+        chess_move: shakmaty_python_binding.MyMove = shakmaty_python_binding.MyMove(uci=move_uci, my_chess=self.chess_)
+        return self.play_move(move=chess_move)
+
+    # todo look like this function might move to iboard when the dust settle
+    def play_move_key(
+            self,
+            move: moveKey
+    ) -> BoardModification | None:
+        my_move: shakmaty_python_binding.MyMove = self.legal_moves_.generated_moves[move]
+        return self.play_move(move=my_move)
 
     def ply(self) -> int:
         """
@@ -161,7 +278,7 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
         Returns:
             chess.Color: The color of the current turn.
         """
-        #return bool(self.chess_.turn())
+        # return bool(self.chess_.turn())
         return self.turn_
 
     def is_game_over(self) -> bool:
@@ -174,7 +291,11 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
         claim_draw: bool = True if len(self.move_stack) >= 5 else False
         three_fold_repetition: bool = max(self.rep_to_count.values()) > 2 if claim_draw else False
         # todo check the move stack : check for repetition as the rust version not do it
-        return three_fold_repetition or self.chess_.is_game_over()
+        # todo remove this hasatrribute at some point
+        if hasattr(self, 'is_game_over_'):
+            return three_fold_repetition or self.is_game_over_
+        else:
+            return three_fold_repetition or self.chess_.is_game_over()
 
     def copy(
             self,
@@ -196,15 +317,41 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
             move_stack=move_stack_,
             compute_board_modification=self.compute_board_modification,
             rep_to_count=self.rep_to_count.copy(),
-            fast_representation_=self.fast_representation_
+            fast_representation_=self.fast_representation_,
+            sort_legal_moves=self.sort_legal_moves,
+            pawns_=self.pawns_,
+            knights_=self.knights_,
+            kings_=self.kings_,
+            rooks_=self.rooks_,
+            queens_=self.queens_,
+            bishops_=self.bishops_,
+            black_=self.black_,
+            white_=self.white_,
+            turn_=self.turn_,
+            ep_square_=self.ep_square_,
+            promoted_=self.promoted_,
+            castling_rights_=self.castling_rights_,
+            legal_moves_=self.legal_moves_
         )
 
     @property
-    def legal_moves(self) -> list[shakmaty_python_binding.MyMove]:
-        # todo minimize this call and understand when the role of the ariable all legal move generated
-        legal_moves = self.chess_.legal_moves()
-        legal_moves = sorted(legal_moves, key=lambda x: x.uci())
-        return legal_moves
+    def legal_moves(self) -> LegalMoveGeneratorUciRust:
+        # todo minimize this call and understand when the role of the variable all legal move generated
+        if self.legal_moves_ is None:
+            self.legal_moves_: LegalMoveGeneratorUciRust = LegalMoveGeneratorUciRust(
+                generated_moves=self.chess_.legal_moves(),
+                sort_legal_moves=self.sort_legal_moves
+            )
+
+        # legal_moves= []
+        # for move in legal_moves_first:
+        #    legal_moves.append(
+        #        RustMove(move=move[0],uci=move[1])
+        #    )
+
+        # if self.sort_legal_moves:
+        #    legal_moves = sorted(legal_moves, key=lambda x: x.uci())
+        return self.legal_moves_
 
     def number_of_pieces_on_the_board(self) -> int:
         """
@@ -324,27 +471,40 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
 
     @property
     def knights(self) -> chess.Bitboard:
-        return self.chess_.knights()
+        return self.knights_
+        # return self.chess_.knights()
 
     @property
     def bishops(self) -> chess.Bitboard:
-        return self.chess_.bishops()
+        return self.bishops_
+        #        return self.chess_.bishops()
 
     @property
     def rooks(self) -> chess.Bitboard:
-        return self.chess_.rooks()
+        return self.rooks_
+        # return self.chess_.rooks()
 
     @property
     def queens(self) -> chess.Bitboard:
-        return self.chess_.queens()
+        return self.queens_
+
+    #        return self.chess_.queens()
+
+    @property
+    def kings(self) -> chess.Bitboard:
+        return self.kings_
+
+    #        return self.chess_.kings()
 
     @property
     def white(self) -> chess.Bitboard:
-        return self.chess_.white()
+        return self.white_
+        # return self.chess_.white()
 
     @property
     def black(self) -> chess.Bitboard:
-        return self.chess_.black()
+        return self.black_
+        # return self.chess_.black()
 
     @property
     def occupied(self) -> chess.Bitboard:
@@ -354,6 +514,7 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
             self,
             claim_draw: bool = False
     ) -> str:
+
         claim_draw_: bool = True if len(self.move_stack) >= 5 and claim_draw else False
         three_fold_repetition: bool = max(self.rep_to_count.values()) > 2 if claim_draw_ else False
 
@@ -364,7 +525,8 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
 
     @property
     def castling_rights(self) -> chess.Bitboard:
-        return self.chess_.castling_rights()
+        # return self.chess_.castling_rights()
+        return self.castling_rights_
 
     def termination(self) -> None:
         return None
@@ -380,12 +542,8 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
         return self.chess_.halfmove_clock()
 
     @property
-    def kings(self) -> chess.Bitboard:
-        return self.chess_.kings()
-
-    @property
     def promoted(self) -> chess.Bitboard:
-        return self.chess_.promoted()
+        return self.promoted_
 
     @property
     def fullmove_number(self) -> int:
@@ -393,7 +551,7 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
 
     @property
     def ep_square(self) -> int | None:
-        ep: int = self.chess_.ep_square()
+        ep: int = self.ep_square_
         if ep == -1:
             return None
         else:
@@ -401,9 +559,10 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
 
     def is_zeroing(
             self,
-            move: shakmaty_python_binding.MyMove
+            move: moveKey
     ) -> bool:
-        return move.is_zeroing()
+        chess_move: shakmaty_python_binding.MyMove = self.get_move_from_move_key(move_key=move)
+        return chess_move.is_zeroing()
 
     def into_fen_plus_history(self) -> FenPlusHistory:
         return FenPlusHistory(

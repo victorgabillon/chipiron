@@ -21,6 +21,7 @@ import chipiron.players.move_selector.treevalue.search_factory as search_factori
 import chipiron.players.move_selector.treevalue.tree_manager as tree_manager
 import chipiron.players.move_selector.treevalue.trees as trees
 from chipiron.environments.chess.board.board_chi import BoardChi
+from chipiron.environments.chess.board.factory import create_board_chi_from_pychess_board
 from chipiron.players.move_selector.treevalue.indices.index_manager.factory import create_exploration_index_manager
 from chipiron.players.move_selector.treevalue.indices.index_manager.node_exploration_manager import update_all_indices, \
     NodeExplorationIndexManager
@@ -100,10 +101,10 @@ def make_tree_from_file(
 
             board = chess.Board.from_chess960_pos(yaml_node['id'])
             board.turn = chess.WHITE
-            board_chi = BoardChi(
-                board=board,
-                compute_board_modification=True
+            board_chi = create_board_chi_from_pychess_board(
+                chess_board=board
             )
+
             root_node: ITreeNode[Any] = algorithm_node_factory.create(
                 board=board_chi,
                 half_move=0,
@@ -142,9 +143,8 @@ def make_tree_from_file(
             parent_node = id_nodes[first_parent]
             board = chess.Board.from_chess960_pos(yaml_node['id'])
             board.turn = not parent_node.tree_node.board_.turn
-            board_chi = boards.BoardChi(
-                board=board,
-                compute_board_modification=True
+            board_chi = create_board_chi_from_pychess_board(
+                chess_board=board
             )
 
             tree_expansion: TreeExpansion = algo_tree_manager.tree_manager.open_node(
@@ -309,7 +309,7 @@ def test_indices() -> None:
                 results[res] += 1
             else:
                 results[res] = 1
-    print(f'finished TEst: {results}')
+    print(f'finished Test: {results}')
     assert (results[TestResult.PASSED] == 5)
 
 

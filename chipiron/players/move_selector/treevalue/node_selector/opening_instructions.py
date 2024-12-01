@@ -5,12 +5,12 @@ This module contains classes and functions related to opening instructions in a 
 import random
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Iterator, Self, ItemsView, ValuesView
+from typing import Any, Iterator, Self, ItemsView, ValuesView, Iterable
 
 import chipiron.players.move_selector.treevalue.nodes as nodes
 from chipiron.environments.chess.move import IMove
 from chipiron.players.move_selector.treevalue.nodes.utils import a_move_sequence_from_root
-
+from chipiron.environments.chess.move import moveUci
 
 @dataclass(slots=True)
 class OpeningInstruction:
@@ -25,9 +25,10 @@ class OpeningInstruction:
         """
         Prints information about the opening instruction.
         """
+        #print('ttt',self.node_to_open.board.chess_,self.node_to_open.board.legal_moves_)
         print(f'OpeningInstruction: node_to_open {self.node_to_open.id} at hm {self.node_to_open.half_move} | '
               f'a path from root to node_to_open is {a_move_sequence_from_root(self.node_to_open)} | '
-              f'self.move_to_play {self.move_to_play.uci()}')
+              f'self.move_to_play {self.move_to_play} {self.node_to_open.board.get_uci_from_move_key(self.move_to_play)}')
 
 
 class OpeningInstructions:
@@ -245,9 +246,10 @@ class OpeningInstructor:
         """
         if self.opening_type == OpeningType.AllChildren:
             node_to_open.all_legal_moves_generated = True
-            moves_to_play: list[IMove] = list(node_to_open.legal_moves)
+            moves_to_play: list[moveUci] = node_to_open.legal_moves.get_all()
 
             # this shuffling add randomness to the playing style
+            # (it stills depends on the random seed, but if random seed varies then the behavior will be more random)
             self.random_generator.shuffle(moves_to_play)
 
         else:

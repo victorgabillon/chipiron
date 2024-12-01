@@ -323,9 +323,9 @@ class NodeMinmaxEvaluation:
             None
         """
         move: IMove
-        print('here are the ', len(self.moves_sorted_by_value), ' moves sorted by value: ')
+        print(f'here are the {len(self.moves_sorted_by_value)} moves sorted by value: ')
         for move, subjective_sort_value in self.moves_sorted_by_value.items():
-            print(move.uci(), subjective_sort_value[0], end=' $$ ')
+            print(self.tree_node.board.get_uci_from_move_key(move), subjective_sort_value[0], end=' $$ ')
             # print(move, subjective_sort_value[0],'('+str(child_node.descendants.number_of_descendants)+')', end=' $$ ')
         print('')
 
@@ -871,7 +871,7 @@ class NodeMinmaxEvaluation:
         if self.over_event.is_over():
             return ForcedOutcome(
                 outcome=self.over_event,
-                line=[move.uci() for move in self.best_move_sequence]
+                line=[move for move in self.best_move_sequence]
             )
         else:
             return FloatyBoardEvaluation(value_white=self.value_white_minmax)

@@ -78,13 +78,15 @@ class PlayerObserverFactory(Protocol):
 def create_player_observer_factory(
         each_player_has_its_own_thread: bool,
         implementation_args: ImplementationArgs,
+        universal_behavior: bool,
         syzygy_table: SyzygyTable[Any] | None
 ) -> PlayerObserverFactory:
     player_observer_factory: PlayerObserverFactory
     if each_player_has_its_own_thread:
         player_observer_factory = partial(
             create_player_observer_distributed_players,
-            implementation_args=implementation_args
+            implementation_args=implementation_args,
+            universal_behavior=universal_behavior
         )
     else:
         player_observer_factory = partial(
@@ -98,7 +100,8 @@ def create_player_observer_distributed_players(
         player_factory_args: PlayerFactoryArgs,
         player_color: chess.Color,
         main_thread_mailbox: queue.Queue[IsDataclass],
-        implementation_args: ImplementationArgs
+        implementation_args: ImplementationArgs,
+        universal_behavior: bool
 ) -> tuple[GamePlayer | PlayerProcess, MoveFunction]:
     """Create a player observer.
 
@@ -128,7 +131,8 @@ def create_player_observer_distributed_players(
         player_color=player_color,
         queue_board=player_process_mailbox,
         queue_move=main_thread_mailbox,
-        implementation_args=implementation_args
+        implementation_args=implementation_args,
+        universal_behavior=universal_behavior
     )
     player_process.start()
     generic_player = player_process

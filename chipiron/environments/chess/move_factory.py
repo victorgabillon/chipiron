@@ -7,7 +7,7 @@ import shakmaty_python_binding
 from chipiron.environments.chess.board.iboard import IBoard
 from chipiron.environments.chess.move.imove import IMove
 from .board import RustyBoardChi
-from .move import moveUci
+from .move import moveUci, RustMove
 
 
 class MoveFactory(Protocol):
@@ -48,11 +48,13 @@ def create_rust_move_test_2(
         board: IBoard[Any] | None = None
 ) -> shakmaty_python_binding.MyMove:
     assert isinstance(board, RustyBoardChi)
-    return shakmaty_python_binding.MyMove(
+    binding_move =  shakmaty_python_binding.MyMove(
         move_uci,
         board.chess_
     )
-
+    rust_move= RustMove(move=binding_move,uci=move_uci)
+    #return rust_move
+    return binding_move
 
 def create_rust_move_test(
         move_uci: moveUci,

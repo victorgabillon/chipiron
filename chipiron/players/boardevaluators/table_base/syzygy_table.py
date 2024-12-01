@@ -9,6 +9,7 @@ import chess.syzygy
 from chipiron.environments.chess.board import IBoard
 from chipiron.environments.chess.move import IMove
 from chipiron.players.boardevaluators.over_event import Winner, HowOver, OverTags
+from chipiron.environments.chess.move.imove import moveKey
 
 T_Board = TypeVar('T_Board', bound=IBoard[Any], contravariant=True)
 
@@ -228,18 +229,17 @@ class SyzygyTable(Protocol[T_Board]):
         Returns:
             chess.Move: The best move according to the tablebase.
         """
-        all_moves: list[IMove] = list(board.legal_moves)
-        print('allmoves', all_moves, type(board))
+        all_moves: list[moveKey] = board.legal_moves_.get_all()
         # avoid draws by 50 move rules in winning position, # otherwise look
         # for it to make it last and preserve pieces in case of mistake by opponent
 
         best_value = -1000000000000000000000
 
         assert all_moves
-        best_move: IMove = all_moves[0]
+        best_move: moveKey = all_moves[0]
         for move in all_moves:
             board_copy: T_Board = board.copy(stack=True)
-            board_copy.play_move(move=move)
+            board_copy.play_move_key(move=move)
             val_player_next_board = self.val(board_copy)
             val_player_node = -val_player_next_board
             dtz_player_next_board = self.dtz(board_copy)

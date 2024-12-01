@@ -56,7 +56,6 @@ class StockfishBoardEvaluator:
         Returns:
             float: The value of the board for the white player.
         """
-        print('infos')
         # todo make a large reformat so that the players are created after the launch of process
         return 0.  # to win time atm, please make it work fast when in testing mode and 0.1s in normal mode
 

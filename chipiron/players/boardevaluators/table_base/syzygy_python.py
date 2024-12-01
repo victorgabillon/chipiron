@@ -62,7 +62,7 @@ class SyzygyChiTable(SyzygyTable[boards.BoardChi]):
     def wdl(self,
             board: boards.BoardChi
             ) -> int:
-        return self.table_base.probe_wdl(board=board.board)
+        return self.table_base.probe_wdl(board=board.chess_board)
 
     def dtz(
             self,
@@ -77,5 +77,5 @@ class SyzygyChiTable(SyzygyTable[boards.BoardChi]):
         Returns:
             int: The DTZ value for the board.
         """
-        dtz: int = self.table_base.probe_dtz(board.board)
+        dtz: int = self.table_base.probe_dtz(board.chess_board)
         return dtz

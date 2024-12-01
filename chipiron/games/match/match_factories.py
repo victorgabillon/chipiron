@@ -34,6 +34,7 @@ def create_match_manager(
         args_player_two: players.PlayerArgs,
         args_game: game.GameArgs,
         implementation_args: ImplementationArgs,
+        universal_behavior: bool,
         seed: int | None = None,
         output_folder_path: path | None = None,
         gui: bool = False,
@@ -59,7 +60,7 @@ def create_match_manager(
     # Creation of the Syzygy table for perfect play in low pieces cases, needed by the GameManager
     # and can also be used by the players
     syzygy_table: SyzygyTable[Any] | None = create_syzygy(
-        use_rust=implementation_args.use_rust_boards
+        use_rust=implementation_args.use_rust_boards,
     )
 
     player_one_name: str = args_player_one.name
@@ -69,7 +70,8 @@ def create_match_manager(
 
     board_factory: BoardFactory = create_board_factory(
         use_rust_boards=implementation_args.use_rust_boards,
-        use_board_modification=implementation_args.use_board_modification
+        use_board_modification=implementation_args.use_board_modification,
+        sort_legal_moves=universal_behavior
     )
 
     move_factory: MoveFactory = create_move_factory(use_rust_boards=implementation_args.use_rust_boards)
@@ -81,7 +83,8 @@ def create_match_manager(
         main_thread_mailbox=main_thread_mailbox,
         board_factory=board_factory,
         implementation_args=implementation_args,
-        move_factory=move_factory
+        move_factory=move_factory,
+        universal_behavior=universal_behavior
     )
 
     match_results_factory: MatchResultsFactory = MatchResultsFactory(
@@ -155,11 +158,13 @@ def create_match_manager_from_args(
     ch.set_seeds(seed=match_args.seed)
 
     print('self.args.experiment_output_folder', base_script_args.experiment_output_folder)
+
     match_manager: MatchManager = create_match_manager(
         args_match=match_setting_args,
         args_player_one=player_one_args,
         args_player_two=player_two_args,
         output_folder_path=base_script_args.experiment_output_folder,
+        universal_behavior=base_script_args.universal_behavior,
         seed=match_args.seed,
         args_game=game_args,
         gui=gui,

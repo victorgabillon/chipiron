@@ -37,7 +37,7 @@ class Descendants:
         min_half_move (int | None): The minimum half move in the collection, or None if the collection is empty.
         max_half_move (int | None): The maximum half move in the collection, or None if the collection is empty.
     """
-    descendants_at_half_move: dict[HalfMove, dict[boards.board_key, ITreeNode[Any]]]
+    descendants_at_half_move: dict[HalfMove, dict[boards.boardKey, ITreeNode[Any]]]
     number_of_descendants: int
     number_of_descendants_at_half_move: dict[HalfMove, int]
     min_half_move: int | None
@@ -75,7 +75,7 @@ class Descendants:
     def __setitem__(
             self,
             half_move: HalfMove,
-            value: dict[boards.board_key, ITreeNode[Any]]
+            value: dict[boards.boardKey, ITreeNode[Any]]
     ) -> None:
         """
         Sets the descendants at a specific half move.
@@ -92,7 +92,7 @@ class Descendants:
     def __getitem__(
             self,
             half_move: HalfMove
-    ) -> dict[boards.board_key, ITreeNode[Any]]:
+    ) -> dict[boards.boardKey, ITreeNode[Any]]:
         """
         Retrieve the descendants at a specific half move.
 
@@ -186,7 +186,7 @@ class Descendants:
             None
         """
         half_move: HalfMove = node.half_move
-        board_key: boards.board_key = node.fast_rep
+        board_key: boards.boardKey = node.fast_rep
 
         if half_move in self.descendants_at_half_move:
             assert (board_key not in self.descendants_at_half_move[half_move])
@@ -388,7 +388,7 @@ class RangedDescendants(Descendants):
             None
         """
         half_move: int = node.half_move
-        board_key: boards.board_key = node.fast_rep
+        board_key: boards.boardKey = node.fast_rep
 
         assert (self.is_in_the_acceptable_range(half_move))
         if self.is_in_the_current_range(half_move):
