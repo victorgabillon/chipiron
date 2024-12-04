@@ -14,7 +14,7 @@ from PySide6.QtWidgets import QApplication
 
 from chipiron.displays.gui_replay_games import MainWindow
 from chipiron.environments.chess.board.board_chi import BoardChi
-from chipiron.environments.chess.board.factory import create_board
+from chipiron.environments.chess.board.factory import create_board_chi
 from chipiron.environments.chess.board.utils import FenPlusHistory
 from chipiron.games.game.final_game_result import GameReport
 from chipiron.scripts.script import Script
@@ -75,7 +75,7 @@ class ReplayGameScript:
                 data=game_report_dict,
                 config=dacite.Config(cast=[Enum])
             )
-            self.chess_board: BoardChi = create_board(
+            self.chess_board: BoardChi = create_board_chi(
                 fen_with_history=FenPlusHistory(
                     current_fen=game_report.fen_history[0],
                     historical_moves=game_report.move_history

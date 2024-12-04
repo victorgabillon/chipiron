@@ -4,7 +4,7 @@ init file for board module
 
 from .board_chi import BoardChi
 from .board_modification import BoardModification
-from .factory import create_board, create_board_factory, BoardFactory
+from .factory import create_board_chi, create_board_factory, BoardFactory
 from .iboard import IBoard, boardKey
 from .rusty_board import RustyBoardChi
 from .utils import fen
@@ -12,7 +12,7 @@ from .utils import fen
 __all__ = [
     "BoardModification",
     "BoardChi",
-    "create_board",
+    "create_board_chi",
     "BoardFactory",
     "RustyBoardChi",
     "IBoard",

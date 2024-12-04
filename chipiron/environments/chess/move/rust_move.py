@@ -5,7 +5,11 @@ class RustMove:
     move: shakmaty_python_binding.MyMove
     uci_: str
 
-    def __init__(self, move, uci) -> None:
+    def __init__(
+            self,
+            move: shakmaty_python_binding.MyMove,
+            uci: str
+    ) -> None:
         self.move = move
         self.uci_ = uci
 

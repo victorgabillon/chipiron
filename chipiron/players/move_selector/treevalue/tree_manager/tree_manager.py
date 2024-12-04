@@ -12,6 +12,7 @@ from chipiron.environments.chess.move import IMove
 from chipiron.players.move_selector.treevalue.node_factory.node_factory import TreeNodeFactory
 from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructions
 from chipiron.players.move_selector.treevalue.tree_manager.tree_expander import TreeExpansion, TreeExpansions
+from chipiron.environments.chess.move.imove import moveKey
 
 # todo should we use a discount? and discounted per round reward?
 # todo maybe convenient to seperate this object into openner updater and dsiplayer
@@ -38,7 +39,7 @@ class TreeManager:
             self,
             tree: trees.MoveAndValueTree,
             parent_node: node.ITreeNode[Any],
-            move: IMove
+            move: moveKey
     ) -> TreeExpansion:
         """
         Opening a Node that contains a board following a move.
@@ -56,7 +57,11 @@ class TreeManager:
         # To limit computation we limit copying it all the time. The resulting policy will only be aware of immediate
         # risk of draw by repetition
         copy_stack: bool = (tree.node_depth(parent_node) < 2)
-        board: board_mod.IBoard[Any] = parent_node.board.copy(stack=copy_stack)
+        board: board_mod.IBoard[Any] = parent_node.board.copy(
+            stack=copy_stack,
+            deep_copy_legal_moves=False  # trick to win time (the original legal moves is assume to not be changed as
+            # moves are not supposed to be played anymore on that board and therefore this allows copy by reference
+        )
 
         # The move is played. The board is now a new board
         modifications: board_mod.BoardModification | None = board.play_move_key(move=move)
@@ -93,7 +98,7 @@ class TreeManager:
 
         # Creation of the child node. If the board already exited in another node, that node is returned as child_node.
         half_move: int = parent_node.half_move + 1
-        fast_rep: board_mod.board_key = board.fast_representation
+        fast_rep: board_mod.boardKey = board.fast_representation
 
         child_node: node.ITreeNode[Any]
         need_creation_child_node: bool = (tree.descendants.is_new_generation(half_move)

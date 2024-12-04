@@ -15,9 +15,8 @@ from dataclasses import dataclass, field
 from typing import Any
 from typing import Literal
 
-import chess
-
 import chipiron.environments.chess.board as boards
+from chipiron.environments.chess.move.imove import moveKey
 from chipiron.utils import seed
 from .move_selector import MoveRecommendation
 from .move_selector_types import MoveSelectorTypes
@@ -56,7 +55,7 @@ class Random:
 
         """
         self.random_generator.seed(move_seed)
-        random_move: chess.Move = self.random_generator.choice(board.legal_moves.get_all())
+        random_move: moveKey = self.random_generator.choice(board.legal_moves.get_all())
         return MoveRecommendation(move=random_move)
 
 

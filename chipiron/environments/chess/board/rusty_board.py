@@ -15,7 +15,10 @@ from .utils import FenPlusHistory
 class LegalMoveGeneratorUciRust(LegalMoveGeneratorUciP):
     sort_legal_moves: bool
     generated_moves: list[shakmaty_python_binding.MyMove]
-    sort_legal_moves: bool
+
+    # whether to sort the legal_moves by their respective uci for easy comparison of various implementations
+    sort_legal_moves: bool = False
+
     all_generated_keys: list[moveKey] | None
 
     def __init__(
@@ -29,12 +32,50 @@ class LegalMoveGeneratorUciRust(LegalMoveGeneratorUciP):
         self.it: Iterator[int] = iter(range(self.number_moves))
         self.all_generated_keys = None
 
+    def reset(
+            self,
+            generated_moves: list[shakmaty_python_binding.MyMove]
+    ):
+        self.generated_moves = generated_moves
+        self.number_moves = len(generated_moves)
+        self.it: Iterator[int] = iter(range(self.number_moves))
+        self.all_generated_keys = None
+
+    def copy_with_reset(
+            self,
+            generated_moves: list[shakmaty_python_binding.MyMove]
+    ):
+        print('debugggg')
+        legal_move_copy = LegalMoveGeneratorUciRust(
+            generated_moves=generated_moves,
+            sort_legal_moves=self.sort_legal_moves
+        )
+        return legal_move_copy
+
+    def set_legal_moves(
+            self,
+            generated_moves: list[shakmaty_python_binding.MyMove]
+    ) -> None:
+        self.generated_moves = generated_moves
+        self.number_moves = len(generated_moves)
+
     def __iter__(self):
         self.it = iter(range(self.number_moves))
         return self
 
     def __next__(self) -> moveKey:
         return self.it.__next__()
+
+    def copy(self) -> 'LegalMoveGeneratorUciRust':
+        legal_move_copy = LegalMoveGeneratorUciRust(
+            generated_moves=self.generated_moves.copy(),
+            sort_legal_moves=self.sort_legal_moves
+        )
+        if legal_move_copy.all_generated_keys is not None:
+            legal_move_copy.all_generated_keys = self.all_generated_keys.copy()
+        else:
+            legal_move_copy.all_generated_keys = legal_move_copy.all_generated_keys
+        return legal_move_copy
 
     def get_all(self) -> list[moveKey]:
         if self.all_generated_keys is None:
@@ -94,9 +135,6 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
     # the move history is kept here because shakmaty_python_binding.MyChess does not have a move stack at the moment
     move_stack: list[moveUci] = field(default_factory=list)
 
-    # whether to sort the legal_moves by their respective uci for easy comparison of various implementations
-    sort_legal_moves: bool = False
-
     legal_moves_: LegalMoveGeneratorUciRust | None = None
 
     def __post_init__(self) -> None:
@@ -109,7 +147,7 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
         Returns:
             str: A string representation of the board.
         """
-        return ''
+        return self.fen
 
     def play_move_old(
             self,
@@ -220,7 +258,8 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
             self.play_min_2(move)
 
         # update after move
-        self.legal_moves_ = None  # the legals moves needs to be recomputed as the board has changed
+        self.legal_moves_ = self.legal_moves_.copy_with_reset(generated_moves=self.chess_.legal_moves())  # the legals moves needs to be recomputed as the board has changed
+
         fast_representation: boardKey = compute_key(
             pawns=self.pawns_,
             knights=self.knights_,
@@ -241,7 +280,7 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
         self.rep_to_count.update([self.fast_representation_without_counters])
         self.move_stack.append(move.uci())
 
-        #self.turn_ = not self.turn_
+        # self.turn_ = not self.turn_
 
         return board_modifications
 
@@ -299,7 +338,8 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
 
     def copy(
             self,
-            stack: bool
+            stack: bool,
+            deep_copy_legal_moves: bool = True
     ) -> Self:
         """
         Create a copy of the current board.
@@ -312,13 +352,19 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
         """
         chess_copy: shakmaty_python_binding.MyChess = self.chess_.copy()
         move_stack_ = self.move_stack.copy() if stack else []
+
+        legal_moves_copy: LegalMoveGeneratorUciRust
+        if deep_copy_legal_moves:
+            legal_moves_copy = self.legal_moves_.copy()
+        else:
+            legal_moves_copy = self.legal_moves_
+
         return type(self)(
             chess_=chess_copy,
             move_stack=move_stack_,
             compute_board_modification=self.compute_board_modification,
             rep_to_count=self.rep_to_count.copy(),
             fast_representation_=self.fast_representation_,
-            sort_legal_moves=self.sort_legal_moves,
             pawns_=self.pawns_,
             knights_=self.knights_,
             kings_=self.kings_,
@@ -331,26 +377,14 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
             ep_square_=self.ep_square_,
             promoted_=self.promoted_,
             castling_rights_=self.castling_rights_,
-            legal_moves_=self.legal_moves_
+            legal_moves_=legal_moves_copy
         )
 
     @property
     def legal_moves(self) -> LegalMoveGeneratorUciRust:
         # todo minimize this call and understand when the role of the variable all legal move generated
-        if self.legal_moves_ is None:
-            self.legal_moves_: LegalMoveGeneratorUciRust = LegalMoveGeneratorUciRust(
-                generated_moves=self.chess_.legal_moves(),
-                sort_legal_moves=self.sort_legal_moves
-            )
-
-        # legal_moves= []
-        # for move in legal_moves_first:
-        #    legal_moves.append(
-        #        RustMove(move=move[0],uci=move[1])
-        #    )
-
-        # if self.sort_legal_moves:
-        #    legal_moves = sorted(legal_moves, key=lambda x: x.uci())
+        if self.legal_moves_.generated_moves is None:
+            self.legal_moves_.set_legal_moves(generated_moves=self.chess_.legal_moves())
         return self.legal_moves_
 
     def number_of_pieces_on_the_board(self) -> int:

@@ -232,7 +232,7 @@ class ObservableGame:
 
     def play_move(
             self,
-            move: IMove
+            move: moveKey
     ) -> None:
         """
         Plays a move on the chess board.

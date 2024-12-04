@@ -34,7 +34,7 @@ def create_match_manager(
         args_player_two: players.PlayerArgs,
         args_game: game.GameArgs,
         implementation_args: ImplementationArgs,
-        universal_behavior: bool,
+        universal_behavior: bool= False,
         seed: int | None = None,
         output_folder_path: path | None = None,
         gui: bool = False,

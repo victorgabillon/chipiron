@@ -230,8 +230,10 @@ class NodeEvaluator:
         """
         Evaluates all the nodes that are not over.
         """
+
         node_not_over: AlgorithmNode
         for node_not_over in not_over_nodes:
+
             evaluation = self.value_white(node_not_over)
             processed_evaluation = self.process_evalution_not_over(
                 evaluation=evaluation,

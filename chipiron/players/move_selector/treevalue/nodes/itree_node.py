@@ -133,7 +133,7 @@ class ITreeNode(Protocol[T]):
         """
 
     @property
-    def fast_rep(self) -> boards.board_key:
+    def fast_rep(self) -> board.boardKey:
         """
         Get the fast representation of the node.
 
