@@ -1,6 +1,6 @@
 from dataclasses import asdict
 from typing import Protocol, Self
-from typing import TypeVar, Any
+from typing import TypeVar, Any, Iterable
 
 import chess
 import yaml
@@ -18,11 +18,12 @@ T_Move = TypeVar('T_Move', bound=IMove)
 
 
 class LegalMoveGeneratorUciP(Protocol):
-    generated_moves: list[IMove]
+    generated_moves: dict[moveKey, chess.Move]
     all_generated_keys: list[moveKey] | None
-    sort_legal_moves: bool
+    # whether to sort the legal_moves by their respective uci for easy comparison of various implementations
+    sort_legal_moves: bool = False
 
-    def __iter__(self):
+    def __iter__(self): -> Iterable[moveKey]
         ...
 
     def __next__(self) -> moveKey:
@@ -124,7 +125,8 @@ class IBoard(Protocol[T_Move]):
 
     def copy(
             self,
-            stack: bool
+            stack: bool,
+            deep_copy_legal_moves: bool = True
     ) -> Self:
         """
         Create a copy of the current board.

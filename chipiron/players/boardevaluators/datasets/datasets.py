@@ -20,7 +20,7 @@ import torch
 from torch.utils.data import Dataset
 
 from chipiron.environments.chess.board import BoardChi
-from chipiron.environments.chess.board.factory import create_board
+from chipiron.environments.chess.board.factory import create_board_chi
 from chipiron.environments.chess.board.utils import FenPlusHistory
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_input import BoardToInputFunction
 
@@ -222,7 +222,7 @@ class FenAndValueDataSet(MyDataSet):
         - tuple[torch.Tensor, torch.Tensor]: The input and target tensors.
         """
         fen = row['fen']
-        board = create_board(
+        board = create_board_chi(
             fen_with_history=FenPlusHistory(current_fen=fen),
             use_board_modification=True
         )

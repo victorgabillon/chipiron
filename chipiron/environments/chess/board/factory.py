@@ -8,9 +8,9 @@ from typing import Protocol, Any
 import chess
 import shakmaty_python_binding
 
-from .board_chi import BoardChi
+from .board_chi import BoardChi, LegalMoveGeneratorUci
 from .iboard import IBoard, compute_key, boardKey
-from .rusty_board import RustyBoardChi
+from .rusty_board import RustyBoardChi, LegalMoveGeneratorUciRust
 from .utils import fen, FenPlusHistory
 
 
@@ -36,7 +36,7 @@ def create_board_factory(
         )
     else:
         board_factory = partial(
-            create_board,
+            create_board_chi,
             use_board_modification=use_board_modification,
             sort_legal_moves=sort_legal_moves
         )
@@ -65,22 +65,27 @@ def create_board_chi_from_pychess_board(
         halfmove_clock=chess_board.halfmove_clock
     )
 
+    legal_moves: LegalMoveGeneratorUci = LegalMoveGeneratorUci(
+        chess_board=chess_board,
+        sort_legal_moves=sort_legal_moves
+    )
+
     board: BoardChi = BoardChi(
         chess_board=chess_board,
         compute_board_modification=use_board_modification,
         fast_representation_=board_key_representation,
-        sort_legal_moves=sort_legal_moves
+        legal_moves_=legal_moves
     )
     return board
 
 
-def create_board(
+def create_board_chi(
         fen_with_history: FenPlusHistory | None = None,
         use_board_modification: bool = False,
         sort_legal_moves: bool = False
 ) -> BoardChi:
     """
-    Create a chess board.
+    Create a chipiron chess board.
 
     Args:
         use_board_modification (bool): whether to use the board modification
@@ -175,12 +180,16 @@ def create_rust_board(
         halfmove_clock=chess_rust_binding.halfmove_clock()
     )
 
+    legal_moves: LegalMoveGeneratorUciRust = LegalMoveGeneratorUciRust(
+        generated_moves=chess_rust_binding.legal_moves(),
+        sort_legal_moves=sort_legal_moves
+    )
+
     rusty_board_chi: RustyBoardChi = RustyBoardChi(
         chess_=chess_rust_binding,
         compute_board_modification=use_board_modification,
         rep_to_count=Counter(),
         fast_representation_=board_key_representation,
-        sort_legal_moves=sort_legal_moves,
         pawns_=pawns,
         knights_=knights,
         kings_=kings,
@@ -192,7 +201,8 @@ def create_rust_board(
         turn_=turn,
         ep_square_=ep_square,
         castling_rights_=castling_rights,
-        promoted_=promoted
+        promoted_=promoted,
+        legal_moves_=legal_moves
     )
 
     if fen_with_history is not None:

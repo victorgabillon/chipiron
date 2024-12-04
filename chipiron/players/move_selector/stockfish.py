@@ -23,7 +23,7 @@ import chipiron.environments.chess.board as boards
 from .move_selector import MoveRecommendation
 from .move_selector_types import MoveSelectorTypes
 from ...environments.chess import BoardChi
-from ...environments.chess.board import create_board
+from ...environments.chess.board import create_board_chi
 from ...environments.chess.board.utils import FenPlusHistory
 
 
@@ -76,7 +76,7 @@ class StockfishPlayer:
                 r"stockfish/stockfish/stockfish-ubuntu-x86-64-avx2")
 
         # transform the board
-        board_chi: BoardChi = create_board(
+        board_chi: BoardChi = create_board_chi(
             fen_with_history=FenPlusHistory(
                 current_fen=board.fen,
                 historical_moves=board.move_history_stack

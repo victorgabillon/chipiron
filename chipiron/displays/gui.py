@@ -17,7 +17,7 @@ from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import QPushButton, QTableWidget, QWidget, QDialog, QTableWidgetItem
 
 from chipiron.environments.chess.board import BoardChi
-from chipiron.environments.chess.board.factory import create_board
+from chipiron.environments.chess.board.factory import create_board_chi
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.games.match.match_results import MatchResults
 from chipiron.games.match.match_results import SimpleResults
@@ -388,7 +388,7 @@ class MainWindow(QWidget):
                 case BoardMessage():
                     print('receiving board')
                     board_message: BoardMessage = message
-                    self.board: BoardChi = create_board(fen_with_history=board_message.fen_plus_moves)
+                    self.board: BoardChi = create_board_chi(fen_with_history=board_message.fen_plus_moves)
                     self.draw_board()
                     self.display_move_history()
                 case EvaluationMessage():
@@ -432,7 +432,7 @@ class MainWindow(QWidget):
             None
         """
         import math
-        num_half_move: int = len(self.board.board.move_stack)
+        num_half_move: int = len(self.board.chess_board.move_stack)
         num_rounds: int = int(math.ceil(num_half_move / 2))
         self.tablewidget.setRowCount(num_rounds)
         self.tablewidget.setHorizontalHeaderLabels(['White', 'Black'])
@@ -440,7 +440,7 @@ class MainWindow(QWidget):
             for round_ in range(num_rounds):
                 half_move = round_ * 2 + player
                 if half_move < num_half_move:
-                    item = QTableWidgetItem(str(self.board.board.move_stack[half_move]))
+                    item = QTableWidgetItem(str(self.board.chess_board.move_stack[half_move]))
                     self.tablewidget.setItem(round_, player, item)
 
     def draw_board(self) -> None:
@@ -451,10 +451,10 @@ class MainWindow(QWidget):
         Returns:
             None
         """
-        print('tupe', type(self.board), type(self.board.board.move_stack), self.board.board.move_stack)
-        self.boardSvg = self.board.board._repr_svg_().encode("UTF-8")
+        print('tupe', type(self.board), type(self.board.chess_board.move_stack), self.board.chess_board.move_stack)
+        self.boardSvg = self.board.chess_board._repr_svg_().encode("UTF-8")
         self.drawBoardSvg = self.widgetSvg.load(self.boardSvg)
-        self.round_button.setText('Round: ' + str(self.board.board.fullmove_number))  # text
+        self.round_button.setText('Round: ' + str(self.board.chess_board.fullmove_number))  # text
         self.fen_button.setText('fen: ' + str(self.board.fen))  # text
         return self.drawBoardSvg
 

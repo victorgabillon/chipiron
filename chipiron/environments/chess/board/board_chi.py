@@ -19,9 +19,12 @@ COLORS = [WHITE, BLACK] = [True, False]
 
 
 class LegalMoveGeneratorUci(LegalMoveGeneratorUciP):
-    generated_moves: dict[moveKey: chess.Move]
+    generated_moves: dict[moveKey, chess.Move]
     all_generated_keys: list[moveKey] | None
-    sort_legal_moves: bool
+
+    # whether to sort the legal_moves by their respective uci for easy comparison of various implementations
+    sort_legal_moves: bool = False
+
     chess_board: chess.Board
 
     def __init__(
@@ -49,8 +52,28 @@ class LegalMoveGeneratorUci(LegalMoveGeneratorUciP):
         self.count += 1
         return move_key_
 
+    def copy(self) -> 'LegalMoveGeneratorUci':
+        legal_move_copy = LegalMoveGeneratorUci(chess_board=self.chess_board, sort_legal_moves=self.sort_legal_moves)
+        legal_move_copy.generated_moves = self.generated_moves.copy()
+        if self.all_generated_keys is not None:
+            legal_move_copy.all_generated_keys = self.all_generated_keys.copy()
+        else:
+            legal_move_copy.all_generated_keys = None
+        legal_move_copy.count = self.count
+        return legal_move_copy
+
+    def reset(self):
+        self.it: Iterator[chess.Move] = self.chess_board.generate_legal_moves()
+        self.generated_moves = {}
+        self.count = 0
+        self.all_generated_keys = None
+
+    def copy_with_reset(self):
+        legal_move_copy = LegalMoveGeneratorUci(chess_board=self.chess_board, sort_legal_moves=self.sort_legal_moves)
+        return legal_move_copy
+
     def get_all(self) -> list[moveKey]:
-        #print('tt',self.chess_board,list(self.chess_board.legal_moves))
+
         if self.all_generated_keys is None:
             list_keys: list[moveKey]
             if self.sort_legal_moves:
@@ -64,8 +87,6 @@ class LegalMoveGeneratorUci(LegalMoveGeneratorUciP):
             return list_keys
         else:
             return self.all_generated_keys
-
-
 
     def more_than_one_move(self) -> bool:
         # assume legal_moves not empty
@@ -103,7 +124,7 @@ class BoardChi(IBoard[chess.Move]):
 
     chess_board: chess.Board
     compute_board_modification: bool
-    legal_moves_: LegalMoveGeneratorUci | None = None
+    legal_moves_: LegalMoveGeneratorUci
     fast_representation_: boardKey
 
     # whether to sort the legal_moves by their respective uci for easy comparison of various implementations
@@ -114,8 +135,7 @@ class BoardChi(IBoard[chess.Move]):
             chess_board: chess.Board,
             compute_board_modification: bool,
             fast_representation_: boardKey,
-            sort_legal_moves: bool = False,
-            legal_moves_: LegalMoveGeneratorUci | None = None
+            legal_moves_: LegalMoveGeneratorUci,
     ) -> None:
         """
         Initializes a new instance of the BoardChi class.
@@ -126,8 +146,6 @@ class BoardChi(IBoard[chess.Move]):
         self.chess_board = chess_board
         self.compute_board_modification = compute_board_modification
         self.fast_representation_ = fast_representation_
-        self.legal_moves_ = None
-        self.sort_legal_moves = sort_legal_moves
         self.legal_moves_ = legal_moves_
 
     def play_moveà(
@@ -224,7 +242,8 @@ class BoardChi(IBoard[chess.Move]):
             self.chess_board.push(move)
 
         # update after move
-        self.legal_moves_ = None  # the legals moves needs to be recomputed as the board has changed
+        self.legal_moves_ = self.legal_moves_.copy_with_reset()  # the legals moves needs to be recomputed as the board has changed
+
         fast_representation: boardKey = compute_key(
             pawns=self.chess_board.pawns,
             knights=self.chess_board.knights,
@@ -256,7 +275,6 @@ class BoardChi(IBoard[chess.Move]):
             self,
             move: moveKey
     ) -> BoardModification | None:
-
         # chess_move: chess.Move = chess.Move.from_uci(uci=move)
         # if True:
         #    if self.legal_moves_ is not None and move in self.legal_moves_.generated_moves:
@@ -835,7 +853,8 @@ class BoardChi(IBoard[chess.Move]):
 
     def copy(
             self,
-            stack: bool
+            stack: bool,
+            deep_copy_legal_moves: bool = True
     ) -> 'BoardChi':
         """
         Create a copy of the current board.
@@ -846,13 +865,22 @@ class BoardChi(IBoard[chess.Move]):
         Returns:
             BoardChi: A new instance of the BoardChi class with the copied board.
         """
-        chess_board: chess.Board = self.chess_board.copy(stack=stack)
+        chess_board_copy: chess.Board = self.chess_board.copy(stack=stack)
+
+        legal_moves_copy: LegalMoveGeneratorUci
+        if deep_copy_legal_moves:
+            # deep_copy
+            legal_moves_copy = self.legal_moves_.copy()
+        else:
+            # faster as move generated are not deep copied but tricky (should not be modified later!)
+            legal_moves_copy = self.legal_moves_
+            self.legal_moves_.chess_board = chess_board_copy
+
         return BoardChi(
-            chess_board=chess_board,
+            chess_board=chess_board_copy,
             compute_board_modification=self.compute_board_modification,
             fast_representation_=self.fast_representation_,
-            sort_legal_moves=self.sort_legal_moves,
-            legal_moves_=self.legal_moves_
+            legal_moves_=legal_moves_copy
         )
 
     def __str__(self) -> str:

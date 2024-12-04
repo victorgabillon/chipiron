@@ -68,7 +68,7 @@ class MainWindow(QWidget):
         self.squareSize = (self.boardSize - 2 * self.margin) / 8.0
 
         self.count = 0
-        self.next_move = self.chess_board_recorded.board.move_stack[self.count]
+        self.next_move = self.chess_board_recorded.chess_board.move_stack[self.count]
 
         self.drawBoard()
 
@@ -90,16 +90,16 @@ class MainWindow(QWidget):
                 print(self.chess_board)
                 print(self.chess_board.fen)
                 self.count -= 1
-                self.next_move = self.chess_board_recorded.board.move_stack[self.count]
+                self.next_move = self.chess_board_recorded.chess_board.move_stack[self.count]
                 self.drawBoard()
         if key == '2':
-            if self.count < len(self.chess_board_recorded.board.move_stack):
+            if self.count < len(self.chess_board_recorded.chess_board.move_stack):
                 self.chess_board.push(self.next_move)
                 print(self.chess_board)
                 print(self.chess_board.fen)
                 self.count += 1
-                if self.count < len(self.chess_board_recorded.board.move_stack):
-                    self.next_move = self.chess_board_recorded.board.move_stack[self.count]
+                if self.count < len(self.chess_board_recorded.chess_board.move_stack):
+                    self.next_move = self.chess_board_recorded.chess_board.move_stack[self.count]
                 self.drawBoard()
 
     def drawBoard(self) -> Any:
