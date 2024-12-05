@@ -7,6 +7,7 @@ from enum import Enum
 
 from chipiron.environments.chess.move import moveUci
 from chipiron.players.boardevaluators.over_event import OverEvent
+from chipiron.environments.chess.move.imove import moveKey
 
 
 class PointOfView(Enum):
@@ -40,7 +41,7 @@ class ForcedOutcome:
     outcome: OverEvent
 
     # the line
-    line: list[moveUci]
+    line: list[moveKey]
 
 
 @dataclass

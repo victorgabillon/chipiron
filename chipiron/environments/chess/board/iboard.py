@@ -76,7 +76,6 @@ class IBoard(Protocol):
     legal_moves_: LegalMoveKeyGeneratorP
 
     def get_uci_from_move_key(self, move_key: moveKey) -> moveUci:
-        print('debug',self.legal_moves_.generated_moves)
         return self.legal_moves_.generated_moves[move_key].uci()
 
     def get_move_key_from_uci(self, move_uci: moveUci) -> moveKey:
