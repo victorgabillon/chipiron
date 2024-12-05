@@ -15,7 +15,7 @@ import chipiron.players as players_m
 from chipiron.environments import HalfMove
 from chipiron.environments.chess.board.iboard import IBoard
 from chipiron.environments.chess.move import moveUci
-from chipiron.environments.chess.move.imove import IMove
+from chipiron.environments.chess.move.imove import moveKey
 from chipiron.environments.chess.move_factory import MoveFactory
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator
@@ -103,7 +103,7 @@ class GameManager:
 
     def play_one_move(
             self,
-            move: IMove
+            move: moveKey
     ) -> None:
         """Play one move in the game.
 
@@ -196,21 +196,26 @@ class GameManager:
             None
         """
 
-        board: IBoard[Any] = self.game.board
+        board: IBoard = self.game.board
 
         match message:
             case MoveMessage():
                 move_message: MoveMessage = message
                 # play the move
-                move_uci: moveUci = move_message.move
-                print('receiving the move', move_uci, type(self), self.game.playing_status,
+                move_key: moveKey = move_message.move
+
+                print('receiving the move key', move_key, type(self), self.game.playing_status,
                       type(self.game.playing_status))
                 if move_message.corresponding_board == board.fen and \
                         self.game.playing_status.is_play() and \
                         message.player_name == self.player_color_to_id[board.turn]:
+
+                    board.legal_moves.get_all() #make sure the board has generated the legal moves
+                    move_uci: moveUci = board.get_uci_from_move_key(move_key)
+
                     print(f'play a move {move_uci} at {board} {self.game.board.fen}')
                     # move: IMove = self.move_factory(move_uci=move_uci, board=board)
-                    self.play_one_move(move_uci)
+                    self.play_one_move(move_key)
                     print(f'now board is  {self.game.board}')
 
                     eval_sto, eval_chi = self.external_eval()
@@ -336,7 +341,7 @@ class GameManager:
                 case '1-0':
                     res = FinalGameResult.WIN_FOR_WHITE
                 case other:
-                    raise Exception(f'unexpected result value {result} in game manager/simple_results')
+                    raise Exception(f'unexpected result value {other} in game manager/simple_results')
 
         assert isinstance(res, FinalGameResult)
         return res

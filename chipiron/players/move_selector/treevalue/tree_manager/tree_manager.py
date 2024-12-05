@@ -8,11 +8,10 @@ from typing import Any
 import chipiron.environments.chess.board as board_mod
 import chipiron.players.move_selector.treevalue.nodes as node
 import chipiron.players.move_selector.treevalue.trees as trees
-from chipiron.environments.chess.move import IMove
+from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.move_selector.treevalue.node_factory.node_factory import TreeNodeFactory
 from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructions
 from chipiron.players.move_selector.treevalue.tree_manager.tree_expander import TreeExpansion, TreeExpansions
-from chipiron.environments.chess.move.imove import moveKey
 
 # todo should we use a discount? and discounted per round reward?
 # todo maybe convenient to seperate this object into openner updater and dsiplayer
@@ -57,7 +56,7 @@ class TreeManager:
         # To limit computation we limit copying it all the time. The resulting policy will only be aware of immediate
         # risk of draw by repetition
         copy_stack: bool = (tree.node_depth(parent_node) < 2)
-        board: board_mod.IBoard[Any] = parent_node.board.copy(
+        board: board_mod.IBoard = parent_node.board.copy(
             stack=copy_stack,
             deep_copy_legal_moves=False  # trick to win time (the original legal moves is assume to not be changed as
             # moves are not supposed to be played anymore on that board and therefore this allows copy by reference
@@ -78,17 +77,19 @@ class TreeManager:
             self,
             tree: trees.MoveAndValueTree,
             parent_node: node.ITreeNode[Any],
-            board: board_mod.IBoard[Any],
+            board: board_mod.IBoard,
             modifications: board_mod.BoardModification | None,
-            move: IMove
+            move: moveKey
     ) -> TreeExpansion:
         """
         Opening a Node that contains a board given the modifications.
+        Checks if the new node needs to be created or if the new_board already existed in the tree
+         (was reached from a different serie of move)
 
         Args:
             tree: The tree object.
             parent_node: The parent node that we want to expand.
-            board: The board object.
+            board: The board object that is a move forward compared to the board in the parent node
             modifications: The board modifications.
             move: The move to play to expand the node.
 

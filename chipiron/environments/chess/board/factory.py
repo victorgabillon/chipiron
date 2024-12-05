@@ -3,14 +3,14 @@ Module to create a chess board.
 """
 from collections import Counter
 from functools import partial
-from typing import Protocol, Any
+from typing import Protocol
 
 import chess
 import shakmaty_python_binding
 
-from .board_chi import BoardChi, LegalMoveGeneratorUci
+from .board_chi import BoardChi, LegalMoveKeyGenerator
 from .iboard import IBoard, compute_key, boardKey
-from .rusty_board import RustyBoardChi, LegalMoveGeneratorUciRust
+from .rusty_board import RustyBoardChi, LegalMoveKeyGeneratorRust
 from .utils import fen, FenPlusHistory
 
 
@@ -18,7 +18,7 @@ class BoardFactory(Protocol):
     def __call__(
             self,
             fen_with_history: FenPlusHistory | None = None
-    ) -> IBoard[Any]:
+    ) -> IBoard:
         ...
 
 
@@ -65,7 +65,7 @@ def create_board_chi_from_pychess_board(
         halfmove_clock=chess_board.halfmove_clock
     )
 
-    legal_moves: LegalMoveGeneratorUci = LegalMoveGeneratorUci(
+    legal_moves: LegalMoveKeyGenerator = LegalMoveKeyGenerator(
         chess_board=chess_board,
         sort_legal_moves=sort_legal_moves
     )
@@ -180,7 +180,7 @@ def create_rust_board(
         halfmove_clock=chess_rust_binding.halfmove_clock()
     )
 
-    legal_moves: LegalMoveGeneratorUciRust = LegalMoveGeneratorUciRust(
+    legal_moves: LegalMoveKeyGeneratorRust = LegalMoveKeyGeneratorRust(
         generated_moves=chess_rust_binding.legal_moves(),
         sort_legal_moves=sort_legal_moves
     )

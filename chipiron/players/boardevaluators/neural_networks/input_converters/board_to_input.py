@@ -1,7 +1,6 @@
 """
 Module for the BoardToInput protocol and BoardToInputFunction protocol.
 """
-from typing import Any
 from typing import Protocol, runtime_checkable
 
 import torch
@@ -16,7 +15,7 @@ class BoardToInput(Protocol):
 
     def convert(
             self,
-            board: boards.IBoard[Any]
+            board: boards.IBoard
     ) -> torch.Tensor:
         """
         Converts the given chess board to a tensor input.
@@ -38,7 +37,7 @@ class BoardToInputFunction(Protocol):
 
     def __call__(
             self,
-            board: boards.IBoard[Any]
+            board: boards.IBoard
     ) -> torch.Tensor:
         """
         Converts the given chess board to a tensor input.

@@ -1,12 +1,13 @@
 from dataclasses import asdict
-from typing import Protocol, Self
-from typing import TypeVar, Any, Iterable
+from typing import Any
+from typing import Protocol, Self, Iterator
 
 import chess
+import shakmaty_python_binding
 import yaml
 
 from chipiron.environments.chess.board.board_modification import BoardModification
-from chipiron.environments.chess.move import moveUci, IMove
+from chipiron.environments.chess.move import moveUci
 from chipiron.environments.chess.move.imove import moveKey
 from .utils import FenPlusMoveHistory, FenPlusHistory
 from .utils import fen
@@ -14,16 +15,14 @@ from .utils import fen
 boardKey = tuple[int, int, int, int, int, int, bool, int, int | None, int, int, int, int, int]
 boardKeyWithoutCounters = tuple[int, int, int, int, int, int, bool, int, int | None, int, int, int]
 
-T_Move = TypeVar('T_Move', bound=IMove)
 
-
-class LegalMoveGeneratorUciP(Protocol):
-    generated_moves: dict[moveKey, chess.Move]
+class LegalMoveKeyGeneratorP(Protocol):
+    generated_moves: dict[moveKey, chess.Move] | list[shakmaty_python_binding.MyMove]
     all_generated_keys: list[moveKey] | None
     # whether to sort the legal_moves by their respective uci for easy comparison of various implementations
     sort_legal_moves: bool = False
 
-    def __iter__(self): -> Iterable[moveKey]
+    def __iter__(self) -> Iterator[moveKey]:
         ...
 
     def __next__(self) -> moveKey:
@@ -72,15 +71,23 @@ def compute_key(
     return string
 
 
-class IBoard(Protocol[T_Move]):
+class IBoard(Protocol):
     fast_representation_: boardKey
-    legal_moves_: LegalMoveGeneratorUciP | None = None
-
-    def get_move_from_move_key(self, move_key: moveKey) -> IMove:
-        return self.legal_moves_.generated_moves[move_key]
+    legal_moves_: LegalMoveKeyGeneratorP
 
     def get_uci_from_move_key(self, move_key: moveKey) -> moveUci:
+        print('debug',self.legal_moves_.generated_moves)
         return self.legal_moves_.generated_moves[move_key].uci()
+
+    def get_move_key_from_uci(self, move_uci: moveUci) -> moveKey:
+        number_moves: int = len(self.legal_moves_.get_all())
+        i: int
+        for i in range(number_moves):
+            if self.legal_moves_.generated_moves[i].uci() == move_uci:
+                return i
+
+        raise Exception('code should not have reached this point: problem with'
+                        ' legal moves / uci relation in boards object it seems')
 
     def play_move_key(
             self,
@@ -256,7 +263,7 @@ class IBoard(Protocol[T_Move]):
 
     def is_zeroing(
             self,
-            move: T_Move
+            move: moveKey
     ) -> bool:
         ...
 
@@ -267,7 +274,7 @@ class IBoard(Protocol[T_Move]):
         ...
 
     @property
-    def legal_moves(self) -> LegalMoveGeneratorUciP:
+    def legal_moves(self) -> LegalMoveKeyGeneratorP:
         ...
 
     def number_of_pieces_on_the_board(self) -> int:

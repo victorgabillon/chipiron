@@ -12,7 +12,7 @@ from typing import Any
 
 import chess
 
-from chipiron.environments.chess.move import IMove
+from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.node_minmax_evaluation import NodeMinmaxEvaluation
 from .itree_node import ITreeNode
@@ -42,11 +42,11 @@ def a_move_sequence_from_root(tree_node: ITreeNode[Any]) -> list[str]:
     Returns:
         list[str]: A list of move sequences from the root node to the given tree node.
     """
-    move_sequence_from_root: list[IMove] = []
+    move_sequence_from_root: list[moveKey] = []
     child: ITreeNode[Any] = tree_node
     while child.parent_nodes:
         parent: ITreeNode[Any] = next(iter(child.parent_nodes))
-        move: IMove = child.parent_nodes[parent]
+        move: moveKey = child.parent_nodes[parent]
         move_sequence_from_root.append(move)
         child = parent
     move_sequence_from_root.reverse()
@@ -60,12 +60,12 @@ def best_node_sequence_from_node(
 
     """
 
-    best_move_seq: list[IMove] = tree_node.minmax_evaluation.best_move_sequence
+    best_move_seq: list[moveKey] = tree_node.minmax_evaluation.best_move_sequence
     index = 0
     move_sequence: list[ITreeNode[Any]] = [tree_node]
     child: ITreeNode[Any] = tree_node
     while child.moves_children:
-        move: IMove = best_move_seq[index]
+        move: moveKey = best_move_seq[index]
         child_ = child.moves_children[move]
         assert child_ is not None
         child = child_

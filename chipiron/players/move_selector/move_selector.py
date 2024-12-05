@@ -3,12 +3,12 @@ This module defines the MoveSelector class and related data structures for selec
 """
 
 from dataclasses import dataclass
-from typing import Protocol, Any
+from typing import Protocol
 
 from chipiron.environments.chess.board import IBoard
+from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import BoardEvaluation
 from chipiron.utils import seed
-from chipiron.environments.chess.move.imove import moveKey
 
 
 @dataclass
@@ -16,7 +16,7 @@ class MoveRecommendation:
     """
     Represents a recommended move to play along with an optional evaluation score.
     """
-    #todo should it be a movekey or moveuci? both?
+    # todo should it be a movekey or moveuci? both?
     move: moveKey
     evaluation: BoardEvaluation | None = None
 
@@ -30,7 +30,7 @@ class MoveSelector(Protocol):
 
     def select_move(
             self,
-            board: IBoard[Any],
+            board: IBoard,
             move_seed: seed
     ) -> MoveRecommendation:
         """

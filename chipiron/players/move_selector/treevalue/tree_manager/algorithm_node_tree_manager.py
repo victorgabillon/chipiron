@@ -8,7 +8,7 @@ from typing import Any
 
 import chipiron.players.move_selector.treevalue.trees as trees
 import chipiron.players.move_selector.treevalue.updates as upda
-from chipiron.environments.chess.move import IMove
+from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.move_selector.treevalue.indices.index_manager import NodeExplorationIndexManager
 from chipiron.players.move_selector.treevalue.indices.index_manager.node_exploration_manager import update_all_indices
 from chipiron.players.move_selector.treevalue.node_evaluator import NodeEvaluator, EvaluationQueries
@@ -44,7 +44,7 @@ class AlgorithmNodeTreeManager:
             self,
             tree: trees.MoveAndValueTree,
             parent_node: AlgorithmNode,
-            move: IMove
+            move: moveKey
     ) -> TreeExpansion:
         """
 
@@ -193,7 +193,7 @@ class AlgorithmNodeTreeManager:
         update_instructions_batch: upda.UpdateInstructionsTowardsMultipleNodes
         update_instructions_batch = upda.UpdateInstructionsTowardsMultipleNodes()
         parent_node: ITreeNode[Any] | None
-        move_from_parent: IMove
+        move_from_parent: moveKey
         for parent_node, move_from_parent in node_to_update.parent_nodes.items():
             if parent_node is not None:
                 # there was a test for emptiness here of new updates instructions remove this comment if no bug appear

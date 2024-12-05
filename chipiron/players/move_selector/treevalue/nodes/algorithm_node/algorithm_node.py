@@ -8,8 +8,8 @@ from typing import Any
 import chess
 
 import chipiron.environments.chess.board as boards
-from chipiron.environments.chess.board.iboard import LegalMoveGeneratorUciP
-from chipiron.environments.chess.move import IMove
+from chipiron.environments.chess.board.iboard import LegalMoveKeyGeneratorP
+from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import BoardRepresentation
 from chipiron.players.move_selector.treevalue.indices.node_indices import NodeExplorationData
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.node_minmax_evaluation import NodeMinmaxEvaluation
@@ -90,7 +90,7 @@ class AlgorithmNode:
         return self.tree_node.fast_rep
 
     @property
-    def moves_children(self) -> dict[IMove, ITreeNode[Any] | None]:
+    def moves_children(self) -> dict[moveKey, ITreeNode[Any] | None]:
         """
         Returns the bidirectional dictionary of moves and their corresponding child nodes.
 
@@ -100,7 +100,7 @@ class AlgorithmNode:
         return self.tree_node.moves_children
 
     @property
-    def parent_nodes(self) -> dict[ITreeNode[Any], IMove]:
+    def parent_nodes(self) -> dict[ITreeNode[Any], moveKey]:
         """
         Returns the dictionary of parent nodes of the current tree node with associated move.
 
@@ -109,7 +109,7 @@ class AlgorithmNode:
         return self.tree_node.parent_nodes
 
     @property
-    def board(self) -> boards.IBoard[Any]:
+    def board(self) -> boards.IBoard:
         """
         Returns the board.
 
@@ -129,7 +129,7 @@ class AlgorithmNode:
 
     def add_parent(
             self,
-            move: IMove,
+            move: moveKey,
             new_parent_node: ITreeNode[Any]
     ) -> None:
         """
@@ -145,7 +145,7 @@ class AlgorithmNode:
         )
 
     @property
-    def legal_moves(self) -> LegalMoveGeneratorUciP:
+    def legal_moves(self) -> LegalMoveKeyGeneratorP:
         """
         Returns the legal move generator.
 
@@ -175,7 +175,7 @@ class AlgorithmNode:
         self.tree_node.all_legal_moves_generated = value
 
     @property
-    def non_opened_legal_moves(self) -> set[IMove]:
+    def non_opened_legal_moves(self) -> set[moveKey]:
         """
         Returns the set of non-opened legal moves.
 

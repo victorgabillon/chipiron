@@ -50,7 +50,7 @@ class GameManagerFactory:
     board_factory: boards.BoardFactory
     move_factory: MoveFactory
     implementation_args: ImplementationArgs
-    universal_behavior:bool
+    universal_behavior: bool
     subscribers: list[queue.Queue[IsDataclass]] = field(default_factory=list)
 
     def create(
@@ -76,7 +76,7 @@ class GameManagerFactory:
 
         # CREATING THE BOARD
         starting_fen: str = args_game_manager.starting_position.get_fen()
-        board: boards.IBoard[Any] = self.board_factory(fen_with_history=FenPlusHistory(current_fen=starting_fen))
+        board: boards.IBoard = self.board_factory(fen_with_history=FenPlusHistory(current_fen=starting_fen))
         if self.subscribers:
             for subscriber in self.subscribers:
                 player_id_message: PlayersColorToPlayerMessage = extract_message_from_players(

@@ -7,7 +7,7 @@ from typing import Any
 import chipiron.environments.chess.board as board_mod
 import chipiron.players.move_selector.treevalue.indices.node_indices as node_indices
 import chipiron.players.move_selector.treevalue.nodes as node
-from chipiron.environments.chess.move.imove import IMove
+from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import BoardRepresentation
 from chipiron.players.boardevaluators.neural_networks.input_converters.factory import Representation364Factory
 from chipiron.players.move_selector.treevalue.node_factory.base import Base
@@ -27,11 +27,11 @@ class AlgorithmNodeFactory:
 
     def create(
             self,
-            board: board_mod.IBoard[Any],
+            board: board_mod.IBoard,
             half_move: int,
             count: int,
             parent_node: ITreeNode[Any] | None,
-            move_from_parent: IMove | None,
+            move_from_parent: moveKey | None,
             modifications: board_mod.BoardModification | None
     ) -> AlgorithmNode:
         """

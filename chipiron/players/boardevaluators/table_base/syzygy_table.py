@@ -1,17 +1,15 @@
 """
 Module for the SyzygyTable class.
 """
-from typing import Any
 from typing import Protocol, TypeVar
 
 import chess.syzygy
 
 from chipiron.environments.chess.board import IBoard
-from chipiron.environments.chess.move import IMove
-from chipiron.players.boardevaluators.over_event import Winner, HowOver, OverTags
 from chipiron.environments.chess.move.imove import moveKey
+from chipiron.players.boardevaluators.over_event import Winner, HowOver, OverTags
 
-T_Board = TypeVar('T_Board', bound=IBoard[Any], contravariant=True)
+T_Board = TypeVar('T_Board', bound=IBoard, contravariant=True)
 
 
 class SyzygyTable(Protocol[T_Board]):
@@ -219,7 +217,7 @@ class SyzygyTable(Protocol[T_Board]):
     def best_move(
             self,
             board: T_Board
-    ) -> IMove:
+    ) -> moveKey:
         """
         Get the best move according to the tablebase for the given board.
 

@@ -2,7 +2,6 @@
 Module where we define the Stockfish Board Evaluator
 """
 from dataclasses import dataclass
-from typing import Any
 
 import chess.engine
 
@@ -45,7 +44,7 @@ class StockfishBoardEvaluator:
 
     def value_white(
             self,
-            board: boards.IBoard[Any]
+            board: boards.IBoard
     ) -> float:
         """
         Computes the value of the board for the white player.

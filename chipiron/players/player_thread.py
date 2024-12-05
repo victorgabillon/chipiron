@@ -3,7 +3,6 @@ player_thread.py
 """
 import multiprocessing
 import queue
-from typing import Any
 
 import chess
 
@@ -116,7 +115,7 @@ class PlayerProcess(multiprocessing.Process):
                 if isinstance(message, BoardMessage):
                     board_message: BoardMessage = message
                     fen_plus_moves: FenPlusHistory = board_message.fen_plus_moves
-                    board: IBoard[Any] = self.board_factory(fen_with_history=fen_plus_moves)
+                    board: IBoard = self.board_factory(fen_with_history=fen_plus_moves)
                     seed_: seed | None = board_message.seed
                     print(f'Player thread got the board {board}')
                     assert seed_ is not None

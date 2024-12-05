@@ -74,4 +74,3 @@ class NNNodeEvaluator(NodeEvaluator):
             assert value_white is not None
             processed_evaluation = self.process_evalution_not_over(value_white, node_not_over)
             node_not_over.minmax_evaluation.set_evaluation(processed_evaluation)
-

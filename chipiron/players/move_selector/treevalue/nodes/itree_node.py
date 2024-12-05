@@ -18,8 +18,8 @@ from typing import Protocol
 from typing import TypeVar, Any
 
 import chipiron.environments.chess.board as boards
-from chipiron.environments.chess.board.iboard import LegalMoveGeneratorUciP
-from chipiron.environments.chess.move import IMove
+from chipiron.environments.chess.board.iboard import LegalMoveKeyGeneratorP
+from chipiron.environments.chess.move.imove import moveKey
 
 T = TypeVar('T', bound='ITreeNode[Any]')
 
@@ -48,7 +48,7 @@ class ITreeNode(Protocol[T]):
     @property
     def board(
             self
-    ) -> boards.IBoard[Any]:
+    ) -> boards.IBoard:
         """
         Get the chess board state of the node.
 
@@ -68,7 +68,7 @@ class ITreeNode(Protocol[T]):
     @property
     def moves_children(
             self
-    ) -> dict[IMove, T | None]:
+    ) -> dict[moveKey, T | None]:
         """
         Get the child nodes of the node.
 
@@ -79,7 +79,7 @@ class ITreeNode(Protocol[T]):
     @property
     def parent_nodes(
             self
-    ) -> dict[ITreeNode[T], IMove]:
+    ) -> dict[ITreeNode[T], moveKey]:
         """
         Returns the dictionary of parent nodes of the current tree node with associated move.
 
@@ -88,7 +88,7 @@ class ITreeNode(Protocol[T]):
 
     def add_parent(
             self,
-            move: IMove,
+            move: moveKey,
             new_parent_node: ITreeNode[T]
     ) -> None:
         """
@@ -124,7 +124,7 @@ class ITreeNode(Protocol[T]):
         """
 
     @property
-    def legal_moves(self) -> LegalMoveGeneratorUciP:
+    def legal_moves(self) -> LegalMoveKeyGeneratorP:
         """
         Get the legal moves of the node.
 
@@ -133,7 +133,7 @@ class ITreeNode(Protocol[T]):
         """
 
     @property
-    def fast_rep(self) -> board.boardKey:
+    def fast_rep(self) -> boards.boardKey:
         """
         Get the fast representation of the node.
 

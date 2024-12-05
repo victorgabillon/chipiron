@@ -17,10 +17,9 @@ Functions:
 
 import random
 from dataclasses import dataclass
-from typing import Any
 
 import chipiron.environments.chess.board as boards
-from chipiron.environments.chess.move import IMove
+from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.move_selector.move_selector import MoveRecommendation
 from chipiron.players.move_selector.treevalue.recommender_rule.recommender_rule import \
     recommend_move_after_exploration_generic
@@ -142,7 +141,7 @@ class TreeExploration:
         #          f' {child.minmax_evaluation.over_event.get_over_tag()}')
         # print(f'evaluation for white: {self.tree.root_node.minmax_evaluation.get_value_white()}')
 
-        best_move: IMove = recommend_move_after_exploration_generic(
+        best_move: moveKey = recommend_move_after_exploration_generic(
             self.recommend_move_after_exploration,
             tree=self.tree,
             random_generator=random_generator)
@@ -159,7 +158,7 @@ class TreeExploration:
 
 def create_tree_exploration(
         node_selector_create: NodeSelectorFactory,
-        starting_board: boards.IBoard[Any],
+        starting_board: boards.IBoard,
         tree_manager: tree_man.AlgorithmNodeTreeManager,
         tree_factory: MoveAndValueTreeFactory,
         stopping_criterion_args: AllStoppingCriterionArgs,

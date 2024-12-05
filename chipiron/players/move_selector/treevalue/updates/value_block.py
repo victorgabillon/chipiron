@@ -13,7 +13,7 @@ The create_value_update_instructions_block function is a helper function that cr
 from dataclasses import dataclass, field
 from typing import Self
 
-from chipiron.environments.chess.move import IMove
+from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 
 
@@ -36,14 +36,14 @@ class ValueUpdateInstructionsTowardsOneParentNode:
         moves_with_updated_best_move (Set[AlgorithmNode]): Set of moves with updated 'best_move' value.
     """
 
-    moves_with_updated_over: set[IMove] = field(default_factory=set)
-    moves_with_updated_value: set[IMove] = field(default_factory=set)
-    moves_with_updated_best_move: set[IMove] = field(default_factory=set)
+    moves_with_updated_over: set[moveKey] = field(default_factory=set)
+    moves_with_updated_value: set[moveKey] = field(default_factory=set)
+    moves_with_updated_best_move: set[moveKey] = field(default_factory=set)
 
     def add_update_from_one_child_node(
             self,
             update_from_one_child_node: ValueUpdateInstructionsFromOneNode,
-            move_from_parent_to_child: IMove
+            move_from_parent_to_child: moveKey
     ) -> None:
         if update_from_one_child_node.is_node_newly_over:
             self.moves_with_updated_over.add(move_from_parent_to_child)

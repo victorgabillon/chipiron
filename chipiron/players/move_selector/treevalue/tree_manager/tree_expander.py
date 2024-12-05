@@ -8,7 +8,7 @@ from typing import List, Any
 
 import chipiron.environments.chess.board as board_mod
 import chipiron.players.move_selector.treevalue.nodes as node
-from chipiron.environments.chess.move import IMove
+from chipiron.environments.chess.move.imove import moveKey
 
 
 @dataclass(slots=True)
@@ -28,7 +28,7 @@ class TreeExpansion:
     parent_node: node.ITreeNode[Any] | None
     board_modifications: board_mod.BoardModification | None
     creation_child_node: bool
-    move: IMove | None
+    move: moveKey | None
 
     def __repr__(self) -> str:
         return (f'child_node{self.child_node.id} | '

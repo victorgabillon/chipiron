@@ -1,8 +1,8 @@
 from abc import abstractmethod
 from typing import Protocol
 
+moveKey = int
 
-moveKey = str| int
 
 class IMove(Protocol):
 
