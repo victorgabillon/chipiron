@@ -874,7 +874,7 @@ class NodeMinmaxEvaluation:
             board = self.tree_node.board
             return ForcedOutcome(
                 outcome=self.over_event,
-                line=[board.get_uci_from_move_key(move) for move in self.best_move_sequence]
+                line=[move for move in self.best_move_sequence]
             )
         else:
             return FloatyBoardEvaluation(value_white=self.value_white_minmax)
