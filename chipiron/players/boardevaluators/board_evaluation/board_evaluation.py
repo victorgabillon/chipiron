@@ -5,7 +5,6 @@ Module for the BoardEvaluation class and the PointOfView enumeration.
 from dataclasses import dataclass
 from enum import Enum
 
-from chipiron.environments.chess.move import moveUci
 from chipiron.players.boardevaluators.over_event import OverEvent
 from chipiron.environments.chess.move.imove import moveKey
 
