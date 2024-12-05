@@ -15,12 +15,10 @@ from typing import Any
 import chess
 import yaml
 
-import chipiron.environments.chess.board as boards
 import chipiron.players.move_selector.treevalue.node_factory as node_factory
 import chipiron.players.move_selector.treevalue.search_factory as search_factories
 import chipiron.players.move_selector.treevalue.tree_manager as tree_manager
 import chipiron.players.move_selector.treevalue.trees as trees
-from chipiron.environments.chess.board.board_chi import BoardChi
 from chipiron.environments.chess.board.factory import create_board_chi_from_pychess_board
 from chipiron.players.move_selector.treevalue.indices.index_manager.factory import create_exploration_index_manager
 from chipiron.players.move_selector.treevalue.indices.index_manager.node_exploration_manager import update_all_indices, \

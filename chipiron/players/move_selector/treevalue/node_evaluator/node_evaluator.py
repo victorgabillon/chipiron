@@ -112,7 +112,7 @@ class NodeEvaluator:
 
     def syzygy_value_white(
             self,
-            board: boards.IBoard[Any]
+            board: boards.IBoard
     ) -> float | None:
         """
         Calculates the value for the white player of a given board using the syzygy evaluator.
@@ -233,7 +233,6 @@ class NodeEvaluator:
 
         node_not_over: AlgorithmNode
         for node_not_over in not_over_nodes:
-
             evaluation = self.value_white(node_not_over)
             processed_evaluation = self.process_evalution_not_over(
                 evaluation=evaluation,

@@ -12,7 +12,6 @@ Example usage:
 
 import random
 from dataclasses import dataclass, field
-from typing import Any
 from typing import Literal
 
 import chipiron.environments.chess.board as boards
@@ -40,7 +39,7 @@ class Random:
 
     def select_move(
             self,
-            board: boards.IBoard[Any],
+            board: boards.IBoard,
             move_seed: seed
     ) -> MoveRecommendation:
         """

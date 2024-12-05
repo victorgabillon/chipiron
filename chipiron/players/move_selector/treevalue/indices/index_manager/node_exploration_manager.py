@@ -8,7 +8,7 @@ from typing import Protocol
 import chess
 
 import chipiron.players.move_selector.treevalue.trees as trees
-from chipiron.environments.chess.move import IMove
+from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.move_selector.treevalue.indices.node_indices.index_data import MinMaxPathValue, \
     RecurZipfQuoolExplorationData, IntervalExplo
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
@@ -296,11 +296,11 @@ class UpdateIndexLocalMinChange:
                 inter_level_interval = parent_node.exploration_index_data.interval
             else:
                 if parent_node.tree_node.board.turn == chess.WHITE:
-                    best_move: IMove | None = parent_node.minmax_evaluation.best_move()
+                    best_move: moveKey | None = parent_node.minmax_evaluation.best_move()
                     assert best_move is not None
                     best_child = parent_node.moves_children[best_move]
                     assert isinstance(best_child, AlgorithmNode)
-                    second_best_move: IMove | None = parent_node.minmax_evaluation.second_best_move()
+                    second_best_move: moveKey | None = parent_node.minmax_evaluation.second_best_move()
                     assert second_best_move is not None
                     second_best_child = parent_node.moves_children[second_best_move]
                     child_white_value = child_node.minmax_evaluation.get_value_white()
@@ -324,10 +324,10 @@ class UpdateIndexLocalMinChange:
                         ...
                         local_index = None
                 if parent_node.tree_node.board.turn == chess.BLACK:
-                    best_move_black: IMove | None = parent_node.minmax_evaluation.best_move()
+                    best_move_black: moveKey | None = parent_node.minmax_evaluation.best_move()
                     assert best_move_black is not None
                     best_child = parent_node.moves_children[best_move_black]
-                    second_best_move_black: IMove | None = parent_node.minmax_evaluation.second_best_move()
+                    second_best_move_black: moveKey | None = parent_node.minmax_evaluation.second_best_move()
                     assert second_best_move_black is not None
                     second_best_child = parent_node.moves_children[second_best_move_black]
                     child_white_value = child_node.minmax_evaluation.get_value_white()
@@ -401,7 +401,7 @@ def update_all_indices(
             child_node: ITreeNode[Any] | None
             # for child_node in parent_node.moves_children.values():
             move_rank: int
-            move: IMove
+            move: moveKey
             for move_rank, move in enumerate(parent_node.minmax_evaluation.moves_sorted_by_value_):
                 child_node = parent_node.moves_children[move]
                 assert isinstance(child_node, AlgorithmNode)

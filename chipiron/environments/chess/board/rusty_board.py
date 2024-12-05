@@ -8,16 +8,15 @@ import shakmaty_python_binding
 from chipiron.environments.chess.board.board_modification import BoardModification, compute_modifications
 from chipiron.environments.chess.move import moveUci
 from chipiron.environments.chess.move.imove import moveKey
-from .iboard import IBoard, boardKey, boardKeyWithoutCounters, compute_key, LegalMoveGeneratorUciP
+from .iboard import IBoard, boardKey, boardKeyWithoutCounters, compute_key, LegalMoveKeyGeneratorP
 from .utils import FenPlusHistory
 
 
-class LegalMoveGeneratorUciRust(LegalMoveGeneratorUciP):
-    sort_legal_moves: bool
-    generated_moves: list[shakmaty_python_binding.MyMove]
-
+class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
     # whether to sort the legal_moves by their respective uci for easy comparison of various implementations
-    sort_legal_moves: bool = False
+    sort_legal_moves: bool
+
+    generated_moves: list[shakmaty_python_binding.MyMove]
 
     all_generated_keys: list[moveKey] | None
 
@@ -35,18 +34,17 @@ class LegalMoveGeneratorUciRust(LegalMoveGeneratorUciP):
     def reset(
             self,
             generated_moves: list[shakmaty_python_binding.MyMove]
-    ):
+    ) -> None:
         self.generated_moves = generated_moves
         self.number_moves = len(generated_moves)
-        self.it: Iterator[int] = iter(range(self.number_moves))
+        self.it = iter(range(self.number_moves))
         self.all_generated_keys = None
 
     def copy_with_reset(
             self,
             generated_moves: list[shakmaty_python_binding.MyMove]
-    ):
-        print('debugggg')
-        legal_move_copy = LegalMoveGeneratorUciRust(
+    ) -> 'LegalMoveKeyGeneratorRust':
+        legal_move_copy = LegalMoveKeyGeneratorRust(
             generated_moves=generated_moves,
             sort_legal_moves=self.sort_legal_moves
         )
@@ -59,19 +57,19 @@ class LegalMoveGeneratorUciRust(LegalMoveGeneratorUciP):
         self.generated_moves = generated_moves
         self.number_moves = len(generated_moves)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[moveKey]:
         self.it = iter(range(self.number_moves))
         return self
 
     def __next__(self) -> moveKey:
         return self.it.__next__()
 
-    def copy(self) -> 'LegalMoveGeneratorUciRust':
-        legal_move_copy = LegalMoveGeneratorUciRust(
+    def copy(self) -> 'LegalMoveKeyGeneratorRust':
+        legal_move_copy = LegalMoveKeyGeneratorRust(
             generated_moves=self.generated_moves.copy(),
             sort_legal_moves=self.sort_legal_moves
         )
-        if legal_move_copy.all_generated_keys is not None:
+        if self.all_generated_keys is not None:
             legal_move_copy.all_generated_keys = self.all_generated_keys.copy()
         else:
             legal_move_copy.all_generated_keys = legal_move_copy.all_generated_keys
@@ -97,7 +95,7 @@ class LegalMoveGeneratorUciRust(LegalMoveGeneratorUciP):
 # todo implement rewind (and a test for it)
 
 @dataclass
-class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
+class RustyBoardChi(IBoard):
     """
     Rusty Board Chipiron
     object that describes the current board. it wraps the chess Board from the chess package so it can have more in it
@@ -128,14 +126,14 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
     white_: int
     black_: int
     turn_: bool
-    ep_square_: int
+    ep_square_: int | None
     promoted_: int
     castling_rights_: int
 
+    legal_moves_: LegalMoveKeyGeneratorRust
+
     # the move history is kept here because shakmaty_python_binding.MyChess does not have a move stack at the moment
     move_stack: list[moveUci] = field(default_factory=list)
-
-    legal_moves_: LegalMoveGeneratorUciRust | None = None
 
     def __post_init__(self) -> None:
         self.rep_to_count[self.fast_representation_without_counters] = 1
@@ -258,7 +256,8 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
             self.play_min_2(move)
 
         # update after move
-        self.legal_moves_ = self.legal_moves_.copy_with_reset(generated_moves=self.chess_.legal_moves())  # the legals moves needs to be recomputed as the board has changed
+        self.legal_moves_ = self.legal_moves_.copy_with_reset(
+            generated_moves=self.chess_.legal_moves())  # the legals moves needs to be recomputed as the board has changed
 
         fast_representation: boardKey = compute_key(
             pawns=self.pawns_,
@@ -353,7 +352,7 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
         chess_copy: shakmaty_python_binding.MyChess = self.chess_.copy()
         move_stack_ = self.move_stack.copy() if stack else []
 
-        legal_moves_copy: LegalMoveGeneratorUciRust
+        legal_moves_copy: LegalMoveKeyGeneratorRust
         if deep_copy_legal_moves:
             legal_moves_copy = self.legal_moves_.copy()
         else:
@@ -381,10 +380,8 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
         )
 
     @property
-    def legal_moves(self) -> LegalMoveGeneratorUciRust:
+    def legal_moves(self) -> LegalMoveKeyGeneratorRust:
         # todo minimize this call and understand when the role of the variable all legal move generated
-        if self.legal_moves_.generated_moves is None:
-            self.legal_moves_.set_legal_moves(generated_moves=self.chess_.legal_moves())
         return self.legal_moves_
 
     def number_of_pieces_on_the_board(self) -> int:
@@ -585,17 +582,13 @@ class RustyBoardChi(IBoard[shakmaty_python_binding.MyMove]):
 
     @property
     def ep_square(self) -> int | None:
-        ep: int = self.ep_square_
-        if ep == -1:
-            return None
-        else:
-            return ep
+        return self.ep_square_
 
     def is_zeroing(
             self,
             move: moveKey
     ) -> bool:
-        chess_move: shakmaty_python_binding.MyMove = self.get_move_from_move_key(move_key=move)
+        chess_move: shakmaty_python_binding.MyMove = self.legal_moves_.generated_moves[move]
         return chess_move.is_zeroing()
 
     def into_fen_plus_history(self) -> FenPlusHistory:

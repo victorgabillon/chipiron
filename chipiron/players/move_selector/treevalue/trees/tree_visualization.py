@@ -20,7 +20,7 @@ from typing import Any
 
 from graphviz import Digraph
 
-from chipiron.environments.chess.move import IMove
+from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.move_selector.treevalue.nodes import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from .move_and_value_tree import MoveAndValueTree
@@ -42,19 +42,20 @@ def add_dot(
     """
     nd = treenode.dot_description()
     dot.node(str(treenode.id), nd)
+    move: moveKey
     for _, move in enumerate(treenode.moves_children):
         if treenode.moves_children[move] is not None:
             child = treenode.moves_children[move]
             if child is not None:
                 cdd = str(child.id)
-                dot.edge(str(treenode.id), cdd, str(move.uci()))
+                dot.edge(str(treenode.id), cdd, str(treenode.board.get_uci_from_move_key(move_key=move)))
                 add_dot(dot, child)
 
 
 def display_special(
         node: ITreeNode[Any],
         format_str: str,
-        index: dict[IMove, str]
+        index: dict[moveKey, str]
 ) -> Digraph:
     """
     Display a special visualization of a tree node and its children.
@@ -85,7 +86,8 @@ def display_special(
 
             cdd = str(child.id)
             edge_description = index[move] + '|' + str(
-                move.uci()) + '|' + node.minmax_evaluation.description_tree_visualizer_move(
+                node.board.get_uci_from_move_key(
+                    move_key=move)) + '|' + node.minmax_evaluation.description_tree_visualizer_move(
                 child)
             dot.edge(str(node.id), cdd, edge_description)
             dot.node(str(child.id), child.dot_description())

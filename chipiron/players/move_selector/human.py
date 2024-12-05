@@ -4,10 +4,11 @@ This module contains the implementation of the CommandLineHumanMoveSelector clas
 """
 
 from dataclasses import dataclass
-from typing import Any
 from typing import Literal
 
 import chipiron.environments.chess.board as boards
+from chipiron.environments.chess.move import moveUci
+from chipiron.environments.chess.move.imove import moveKey
 from chipiron.utils import seed
 from .move_selector import MoveRecommendation
 from .move_selector_types import MoveSelectorTypes
@@ -36,7 +37,7 @@ class CommandLineHumanMoveSelector:
 
     def select_move(
             self,
-            board: boards.IBoard[Any],
+            board: boards.IBoard,
             move_seed: seed
     ) -> MoveRecommendation:
         """
@@ -53,9 +54,10 @@ class CommandLineHumanMoveSelector:
             AssertionError: If the selected move is not a legal move.
         """
         print(f'Legal Moves {board.legal_moves}')
-        legal_moves_uci: list[str] = []
+        legal_moves_uci: list[moveUci] = []
+        move: moveKey
         for move in board.legal_moves:
-            legal_moves_uci.append(move.uci())
+            legal_moves_uci.append(board.get_uci_from_move_key(move))
         print(f'Legal Moves {legal_moves_uci}')
 
         good_move: bool = False
@@ -70,6 +72,6 @@ class CommandLineHumanMoveSelector:
         assert move_uci in legal_moves_uci
 
         return MoveRecommendation(
-            move=move_uci,
+            move=board.get_move_key_from_uci(move_uci=move_uci),
             evaluation=None
         )

@@ -10,7 +10,7 @@ about the block.
 from dataclasses import dataclass, field
 from typing import Self
 
-from chipiron.environments.chess.move import IMove
+from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 
 
@@ -38,12 +38,12 @@ class IndexUpdateInstructionsTowardsOneParentNode:
         moves_with_updated_index (Set[IMove]): A set of children with updated index values.
     """
 
-    moves_with_updated_index: set[IMove] = field(default_factory=set)
+    moves_with_updated_index: set[moveKey] = field(default_factory=set)
 
     def add_update_from_one_child_node(
             self,
             update_from_one_child_node: IndexUpdateInstructionsFromOneNode,
-            move_from_parent_to_child: IMove
+            move_from_parent_to_child: moveKey
     ) -> None:
         if update_from_one_child_node.updated_index:
             self.moves_with_updated_index.add(move_from_parent_to_child)

@@ -19,10 +19,9 @@ from enum import Enum
 from typing import Any
 from typing import Protocol, Literal
 
-import chess
 
 import chipiron.players.move_selector.treevalue.trees as trees
-from chipiron.environments.chess.move import IMove
+from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.boardevaluators.basic_evaluation import value_base
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
@@ -53,7 +52,7 @@ class AlmostEqualLogistic:
             self,
             tree: trees.MoveAndValueTree,
             random_generator: random.Random
-    ) -> IMove:
+    ) -> moveKey:
         """
         Selects the best move from the tree, allowing for random choice for almost equally valued moves.
 
@@ -66,7 +65,7 @@ class AlmostEqualLogistic:
         """
         # TODO this should be given at construction but postponed for now because of dataclasses
         # find the best first move allowing for random choice for almost equally valued moves.
-        best_root_moves: list[IMove] = tree.root_node.minmax_evaluation.get_all_of_the_best_moves(
+        best_root_moves: list[moveKey] = tree.root_node.minmax_evaluation.get_all_of_the_best_moves(
             how_equal='almost_equal_logistic')
         print('We have as bests: ', [best for best in best_root_moves])
         best_move = random_generator.choice(best_root_moves)
@@ -87,7 +86,7 @@ class SoftmaxRule:
             self,
             tree: trees.MoveAndValueTree,
             random_generator: random.Random
-    ) -> IMove:
+    ) -> moveKey:
         """
         Selects the best move from the tree using the softmax function.
 
@@ -112,7 +111,7 @@ class SoftmaxRule:
         move_as_list = random_generator.choices(
             list(tree.root_node.moves_children.keys()),
             weights=softmax_, k=1)
-        best_move: IMove = move_as_list[0]
+        best_move: moveKey = move_as_list[0]
         return best_move
 
 
@@ -130,7 +129,7 @@ class RecommenderRule(Protocol):
             self,
             tree: trees.MoveAndValueTree,
             random_generator: random.Random
-    ) -> chess.Move:
+    ) -> moveKey:
         """
         Selects the best move from the tree.
 
@@ -148,7 +147,7 @@ def recommend_move_after_exploration_generic(
         recommend_move_after_exploration: AllRecommendFunctionsArgs,
         tree: trees.MoveAndValueTree,
         random_generator: random.Random
-) -> IMove:
+) -> moveKey:
     """
     Recommends a move after exploration based on a generic rule.
 
@@ -178,7 +177,7 @@ def recommend_move_after_exploration_generic(
 
         child: ITreeNode[Any] | None
         best_value: int | None = None
-        best_move: IMove | None = None
+        best_move: moveKey | None = None
         for move, child in tree.root_node.moves_children.items():
             assert isinstance(child, AlgorithmNode)
 

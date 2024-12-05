@@ -31,7 +31,7 @@ class Player:
 
     def select_move(
             self,
-            board: IBoard[Any],
+            board: IBoard,
             seed_int: seed
     ) -> MoveRecommendation:
         """

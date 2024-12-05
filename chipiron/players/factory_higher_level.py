@@ -38,13 +38,13 @@ class MoveFunction(Protocol):
 
     def __call__(
             self,
-            board: IBoard[Any],
+            board: IBoard,
             seed_int: seed
     ) -> None: ...
 
 
 def send_board_to_player_process_mailbox(
-        board: IBoard[Any],
+        board: IBoard,
         seed_int: int,
         player_process_mailbox: queue.Queue[BoardMessage]
 ) -> None:

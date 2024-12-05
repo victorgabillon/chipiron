@@ -77,7 +77,7 @@ def node_to_tensors_pieces_square_from_parent(
     tensor_castling_white = torch.zeros(2, requires_grad=False, dtype=torch.float)
     tensor_castling_black = torch.zeros(2, requires_grad=False, dtype=torch.float)
 
-    board: IBoard[Any] = node.board
+    board: IBoard = node.board
     tensor_castling_white[0] = bool(board.castling_rights & chess.BB_A1)
     tensor_castling_white[1] = bool(board.castling_rights & chess.BB_H1)
     tensor_castling_black[0] = bool(board.castling_rights & chess.BB_A8)
@@ -135,7 +135,7 @@ class Representation364Factory:
 
     def create_from_board(
             self,
-            board: boards.IBoard[Any]
+            board: boards.IBoard
     ) -> Representation364:
         """
         Create a Representation364 object from a board.
@@ -161,7 +161,7 @@ class Representation364Factory:
         return representation
 
 
-def e(board: boards.IBoard[Any]) -> dict[chess.Square, tuple[int, bool]]:
+def e(board: boards.IBoard) -> dict[chess.Square, tuple[int, bool]]:
     piece_map: dict[chess.Square, tuple[int, bool]] = board.piece_map()
     return piece_map
 
@@ -188,7 +188,7 @@ def c(
     return representation
 
 
-def b(board: boards.IBoard[Any], castling_black: torch.Tensor, castling_white: torch.Tensor) -> None:
+def b(board: boards.IBoard, castling_black: torch.Tensor, castling_white: torch.Tensor) -> None:
     castling_white[0] = board.has_queenside_castling_rights(chess.WHITE)
     castling_white[1] = board.has_kingside_castling_rights(chess.WHITE)
     castling_black[0] = board.has_queenside_castling_rights(chess.BLACK)

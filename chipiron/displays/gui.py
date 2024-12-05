@@ -18,6 +18,7 @@ from PySide6.QtWidgets import QPushButton, QTableWidget, QWidget, QDialog, QTabl
 
 from chipiron.environments.chess.board import BoardChi
 from chipiron.environments.chess.board.factory import create_board_chi
+from chipiron.environments.chess.move.imove import moveKey
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.games.match.match_results import MatchResults
 from chipiron.games.match.match_results import SimpleResults
@@ -241,7 +242,7 @@ class MainWindow(QWidget):
 
     def send_move_to_main_thread(
             self,
-            move: chess.Move
+            move_key: moveKey
     ) -> None:
         """
         Sends a move to the main thread for processing.
@@ -253,7 +254,7 @@ class MainWindow(QWidget):
             None
         """
         message: MoveMessage = MoveMessage(
-            move=move.uci(),
+            move=move_key,
             corresponding_board=self.board.fen,
             player_name='Gui_Human',
             color_to_play=self.board.turn

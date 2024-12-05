@@ -8,7 +8,8 @@ from typing import TypeVar, Generic, Any
 import chess
 
 import chipiron.environments.chess.board as boards
-from chipiron.environments.chess.move import IMove
+from chipiron.environments.chess.board.iboard import LegalMoveKeyGeneratorP
+from chipiron.environments.chess.move.imove import moveKey
 from .itree_node import ITreeNode
 
 # todo replace the any with a defaut value in ITReenode when availble in python; 3.13?
@@ -59,19 +60,19 @@ class TreeNode(
     half_move_: int
 
     # the node represents a board position. we also store the fast representation of the board.
-    board_: boards.IBoard[Any]
+    board_: boards.IBoard
 
     # the set of parent nodes to this node. Note that a node can have multiple parents!
-    parent_nodes_: dict[ITreeNode[ChildrenType], IMove]
+    parent_nodes_: dict[ITreeNode[ChildrenType], moveKey]
 
     # all_legal_moves_generated  is a boolean saying whether all moves have been generated.
     # If true the moves are either opened in which case the corresponding opened node is stored in
     # the dictionary self.moves_children, otherwise it is stored in self.non_opened_legal_moves
     all_legal_moves_generated: bool = False
-    non_opened_legal_moves: set[IMove] = field(default_factory=set)
+    non_opened_legal_moves: set[moveKey] = field(default_factory=set)
 
     # dictionary mapping moves to children nodes. Node is set to None if not created
-    moves_children_: dict[IMove, ChildrenType | None] = field(default_factory=dict)
+    moves_children_: dict[moveKey, ChildrenType | None] = field(default_factory=dict)
 
     # the color of the player that has to move in the board
     player_to_move_: chess.Color = field(default_factory=chess.Color)
@@ -118,7 +119,7 @@ class TreeNode(
         return self.player_to_move_
 
     @property
-    def board(self) -> boards.IBoard[Any]:
+    def board(self) -> boards.IBoard:
         """
         Returns the board associated with this tree node.
 
@@ -138,7 +139,7 @@ class TreeNode(
         return self.half_move_
 
     @property
-    def moves_children(self) -> dict[IMove, ChildrenType | None]:
+    def moves_children(self) -> dict[moveKey, ChildrenType | None]:
         """
         Returns a bidirectional dictionary containing the children nodes of the current tree node,
         along with the corresponding chess moves that lead to each child node.
@@ -151,7 +152,7 @@ class TreeNode(
         return self.moves_children_
 
     @property
-    def parent_nodes(self) -> dict[ITreeNode[ChildrenType], IMove]:
+    def parent_nodes(self) -> dict[ITreeNode[ChildrenType], moveKey]:
         """
         Returns the dictionary of parent nodes of the current tree node with associated move.
 
@@ -172,7 +173,7 @@ class TreeNode(
     # 1. this function returns a object of type chess.LegalMoveGenerator
     # 2. of type set of moves
     @property
-    def legal_moves(self) -> list[IMove]:
+    def legal_moves(self) -> LegalMoveKeyGeneratorP:
         """
         Returns a generator that yields the legal moves for the current board state.
 
@@ -183,7 +184,7 @@ class TreeNode(
 
     def add_parent(
             self,
-            move: IMove,
+            move: moveKey,
             new_parent_node: ITreeNode[ChildrenType]
     ) -> None:
         """
@@ -262,12 +263,13 @@ class TreeNode(
             AssertionError: If the generated moves do not match the expected moves.
         """
         # print('test_all_legal_moves_generated')
+        move: moveKey
         if self.all_legal_moves_generated:
             for move in self.board.legal_moves:
                 assert (bool(move in self.moves_children_) != bool(move in self.non_opened_legal_moves))
         else:
-            move_not_in: list[chess.Move] = []
-            legal_moves: list[chess.Move] = self.board.legal_moves
+            move_not_in: list[moveKey] = []
+            legal_moves: list[moveKey] = self.board.legal_moves.get_all()
             for move in legal_moves:
                 if move not in self.moves_children_:
                     move_not_in.append(move)

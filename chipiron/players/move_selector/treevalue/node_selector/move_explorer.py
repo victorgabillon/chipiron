@@ -6,7 +6,7 @@ MoveExplorer is responsible for exploring moves in a game tree.
 import random
 from enum import Enum
 
-from chipiron.environments.chess.move import IMove
+from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.move_selector.treevalue.node_selector.notations_and_statics import zipf_picks_random
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node import AlgorithmNode
 
@@ -69,7 +69,7 @@ class ZipfMoveExplorer(MoveExplorer):
     def sample_move_to_explore(
             self,
             tree_node_to_sample_from: AlgorithmNode
-    ) -> IMove:
+    ) -> moveKey:
         """
         Samples a child node to explore from the given tree node.
 
@@ -79,7 +79,7 @@ class ZipfMoveExplorer(MoveExplorer):
         Returns:
             AlgorithmNode: The sampled child node to explore.
         """
-        sorted_not_over_moves: list[IMove] = tree_node_to_sample_from.minmax_evaluation.sort_moves_not_over()
+        sorted_not_over_moves: list[moveKey] = tree_node_to_sample_from.minmax_evaluation.sort_moves_not_over()
 
         move = zipf_picks_random(
             ordered_list_elements=sorted_not_over_moves,

@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from typing import Any
 from typing import Self
 
-from chipiron.environments.chess.move import IMove
+from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.move_selector.treevalue.nodes import ITreeNode
 from chipiron.utils.dict_of_numbered_dict_with_pointer_on_max import DictOfNumberedDictWithPointerOnMax
 from .index_block import IndexUpdateInstructionsFromOneNode, IndexUpdateInstructionsTowardsOneParentNode
@@ -47,7 +47,7 @@ class UpdateInstructionsTowardsOneParentNode:
     def add_update_from_a_child_node(
             self,
             update_from_a_child_node: UpdateInstructionsFromOneNode,
-            move_from_parent_to_child: IMove
+            move_from_parent_to_child: moveKey
     ) -> None:
         assert self.value_updates_toward_one_parent_node is not None
         assert update_from_a_child_node.value_block is not None
@@ -116,7 +116,7 @@ class UpdateInstructionsTowardsMultipleNodes:
             self,
             update_from_child_node: UpdateInstructionsFromOneNode,
             parent_node: ITreeNode[Any],
-            move_from_parent: IMove
+            move_from_parent: moveKey
     ) -> None:
         if parent_node not in self.one_node_instructions:
             # build the UpdateInstructionsTowardsOneParentNode
