@@ -86,7 +86,7 @@ class IBoard(Protocol):
             if self.legal_moves_.generated_moves[i].uci() == move_uci:
                 return i
 
-        raise Exception('code should not have reached this point: problem with'
+        raise Exception('the code should not have reached this point: problem with'
                         ' legal moves / uci relation in boards object it seems')
 
     def play_move_key(
