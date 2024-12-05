@@ -72,7 +72,7 @@ def compute_key(
 
 
 class IBoard(Protocol):
-    
+
     fast_representation_: boardKey
     legal_moves_: LegalMoveKeyGeneratorP
 

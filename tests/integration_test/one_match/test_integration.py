@@ -300,7 +300,9 @@ def test_same_game_with_or_without_rust():
     match_args.file_name_match_setting = 'setting_tron.yaml'
 
     implementation_args: ImplementationArgs = ImplementationArgs(use_rust_boards=False)
-    base_script_args: BaseScriptArgs = BaseScriptArgs()
+
+    # important to set universal_behavior=True to obtain a standard behavior in test (based on sorting wrt uci)
+    base_script_args: BaseScriptArgs = BaseScriptArgs(universal_behavior=True)
     base_script_args.experiment_output_folder = None
 
     match_manager: ch.game.MatchManager = create_match_manager_from_args(
@@ -310,7 +312,6 @@ def test_same_game_with_or_without_rust():
     )
     match_report_base: MatchReport = match_manager.play_one_match()
 
-    test_passed: bool = True
     number_test: int = 1
 
     for ind in range(number_test):

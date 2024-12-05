@@ -18,7 +18,7 @@ def test_three_fold_repetition(use_rusty_board: bool):
     board_factory: BoardFactory = create_board_factory(
         use_rust_boards=use_rusty_board
     )
-    board: IBoard[Any] = board_factory(
+    board: IBoard = board_factory(
         fen_with_history=FenPlusHistory(
             current_fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
     )
