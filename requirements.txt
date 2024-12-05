@@ -14,7 +14,7 @@ graphviz>=0.20.1
 dacite >= 1.8.1
 customtkinter
 pyarrow
-shakmaty_python_binding >=1.0.4
+shakmaty_python_binding >=0.1.4
 
 # for the web app
 flask
