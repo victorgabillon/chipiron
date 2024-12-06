@@ -17,7 +17,7 @@ boardKeyWithoutCounters = tuple[int, int, int, int, int, int, bool, int, int | N
 
 
 class LegalMoveKeyGeneratorP(Protocol):
-    generated_moves: dict[moveKey, chess.Move] | list[shakmaty_python_binding.MyMove]
+    generated_moves: dict[moveKey, chess.Move] | list[shakmaty_python_binding.MyMove] | None
     all_generated_keys: list[moveKey] | None
     # whether to sort the legal_moves by their respective uci for easy comparison of various implementations
     sort_legal_moves: bool = False
@@ -72,16 +72,18 @@ def compute_key(
 
 
 class IBoard(Protocol):
-
     fast_representation_: boardKey
     legal_moves_: LegalMoveKeyGeneratorP
 
     def get_uci_from_move_key(self, move_key: moveKey) -> moveUci:
+        assert (self.legal_moves_.generated_moves is not None)
         return self.legal_moves_.generated_moves[move_key].uci()
 
     def get_move_key_from_uci(self, move_uci: moveUci) -> moveKey:
         number_moves: int = len(self.legal_moves_.get_all())
         i: int
+        assert (self.legal_moves_.generated_moves is not None)
+
         for i in range(number_moves):
             if self.legal_moves_.generated_moves[i].uci() == move_uci:
                 return i

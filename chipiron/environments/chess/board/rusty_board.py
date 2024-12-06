@@ -56,7 +56,7 @@ class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
 
     def set_legal_moves(
             self,
-            generated_moves: list[shakmaty_python_binding.MyMove] | None = None
+            generated_moves: list[shakmaty_python_binding.MyMove]
     ) -> None:
         self.generated_moves = generated_moves
         self.number_moves = len(generated_moves)
@@ -65,10 +65,17 @@ class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
         if self.generated_moves is None:
             self.generated_moves = self.chess_rust_binding.legal_moves()
         if self.sort_legal_moves:
-                self.it = iter(sorted(
-                    list(range(self.number_moves)),
-                    key=lambda i: self.generated_moves[i].uci()
-                ))
+            assert (self.generated_moves is not None)
+
+            def f(i: int) -> moveUci:
+                assert (self.generated_moves is not None)
+                return self.generated_moves[i].uci()
+
+            self.it = iter(sorted(
+                list(range(self.number_moves)),
+                # key=lambda i: self.generated_moves[i].uci()
+                key=f
+            ))
         else:
             self.it = iter(range(self.number_moves))
         return self
@@ -96,10 +103,16 @@ class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
 
         if self.all_generated_keys is None:
             if self.sort_legal_moves:
-                return sorted(
+                def f(i: int) -> moveUci:
+                    assert (self.generated_moves is not None)
+                    return self.generated_moves[i].uci()
+
+                s = sorted(
                     list(range(self.number_moves)),
-                    key=lambda i: self.generated_moves[i].uci()
+                    # key=lambda i: self.generated_moves[i].uci()
+                    key=f
                 )
+                return s
             else:
                 return list(range(self.number_moves))
         else:
@@ -315,6 +328,7 @@ class RustyBoardChi(IBoard):
             self,
             move: moveKey
     ) -> BoardModification | None:
+        assert (self.legal_moves_.generated_moves is not None)
         my_move: shakmaty_python_binding.MyMove = self.legal_moves_.generated_moves[move]
         return self.play_move(move=my_move)
 
@@ -609,6 +623,7 @@ class RustyBoardChi(IBoard):
             self,
             move: moveKey
     ) -> bool:
+        assert (self.legal_moves_.generated_moves is not None)
         chess_move: shakmaty_python_binding.MyMove = self.legal_moves_.generated_moves[move]
         return chess_move.is_zeroing()
 

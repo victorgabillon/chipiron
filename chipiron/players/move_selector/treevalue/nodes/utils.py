@@ -69,7 +69,7 @@ def a_move_uci_sequence_from_root(tree_node: ITreeNode[Any]) -> list[str]:
     while child.parent_nodes:
         parent: ITreeNode[Any] = next(iter(child.parent_nodes))
         move: moveKey = child.parent_nodes[parent]
-        move_uci: move_uci = parent.board.get_uci_from_move_key(move)
+        move_uci: moveUci = parent.board.get_uci_from_move_key(move)
         move_sequence_from_root.append(move_uci)
         child = parent
     move_sequence_from_root.reverse()
