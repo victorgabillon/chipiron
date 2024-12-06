@@ -30,9 +30,9 @@ class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
         self.generated_moves = generated_moves
         if generated_moves is not None:
             self.number_moves = len(generated_moves)
-            self.sort_legal_moves = sort_legal_moves
             self.it: Iterator[int] = iter(range(self.number_moves))
         self.all_generated_keys = None
+        self.sort_legal_moves = sort_legal_moves
 
     def reset(
             self,
@@ -64,7 +64,13 @@ class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
     def __iter__(self) -> Iterator[moveKey]:
         if self.generated_moves is None:
             self.generated_moves = self.chess_rust_binding.legal_moves()
-        self.it = iter(range(self.number_moves))
+        if self.sort_legal_moves:
+                self.it = iter(sorted(
+                    list(range(self.number_moves)),
+                    key=lambda i: self.generated_moves[i].uci()
+                ))
+        else:
+            self.it = iter(range(self.number_moves))
         return self
 
     def __next__(self) -> moveKey:
@@ -367,6 +373,7 @@ class RustyBoardChi(IBoard):
             legal_moves_copy = self.legal_moves_.copy()
         else:
             legal_moves_copy = self.legal_moves_
+            self.legal_moves_.chess_rust_binding = chess_copy
 
         return type(self)(
             chess_=chess_copy,

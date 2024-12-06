@@ -24,7 +24,6 @@ def test_universal_behavior() -> None:
             current_fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
         ),
         sort_legal_moves=True
-
     )
 
     all_moves_keys_rust = board_rust.legal_moves.get_all()
@@ -71,12 +70,6 @@ def test_universal_behavior() -> None:
 
     chi_move_uci = board_chi.get_uci_from_move_key(move_key=move_reco_chi.move)
     chi_move_rust = board_rust.get_uci_from_move_key(move_key=move_reco_rust.move)
-
-    print(move_reco_chi, move_reco_rust)
-    print(chi_move_uci, chi_move_rust)
-    print('aa', board_rust)
-    print('pp', board_chi.chess_board)
-    print('aa', board_rust)
 
     assert (chi_move_uci == chi_move_rust)
 
