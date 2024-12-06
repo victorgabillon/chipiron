@@ -12,6 +12,7 @@ from typing import Any
 
 import chess
 
+from chipiron.environments.chess.move import moveUci
 from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.node_minmax_evaluation import NodeMinmaxEvaluation
@@ -32,7 +33,7 @@ def are_all_moves_and_children_opened(tree_node: TreeNode[Any]) -> bool:
     return tree_node.all_legal_moves_generated and tree_node.non_opened_legal_moves == set()
 
 
-def a_move_sequence_from_root(tree_node: ITreeNode[Any]) -> list[str]:
+def a_move_key_sequence_from_root(tree_node: ITreeNode[Any]) -> list[str]:
     """
     Returns a list of move sequences from the root node to a given tree node.
 
@@ -48,6 +49,28 @@ def a_move_sequence_from_root(tree_node: ITreeNode[Any]) -> list[str]:
         parent: ITreeNode[Any] = next(iter(child.parent_nodes))
         move: moveKey = child.parent_nodes[parent]
         move_sequence_from_root.append(move)
+        child = parent
+    move_sequence_from_root.reverse()
+    return [str(i) for i in move_sequence_from_root]
+
+
+def a_move_uci_sequence_from_root(tree_node: ITreeNode[Any]) -> list[str]:
+    """
+    Returns a list of move sequences from the root node to a given tree node.
+
+    Args:
+        tree_node (ITreeNode): The tree node to get the move sequence for.
+
+    Returns:
+        list[str]: A list of move sequences from the root node to the given tree node.
+    """
+    move_sequence_from_root: list[moveUci] = []
+    child: ITreeNode[Any] = tree_node
+    while child.parent_nodes:
+        parent: ITreeNode[Any] = next(iter(child.parent_nodes))
+        move: moveKey = child.parent_nodes[parent]
+        move_uci: move_uci = parent.board.get_uci_from_move_key(move)
+        move_sequence_from_root.append(move_uci)
         child = parent
     move_sequence_from_root.reverse()
     return [str(i) for i in move_sequence_from_root]
@@ -84,7 +107,7 @@ def print_a_move_sequence_from_root(tree_node: TreeNode[Any]) -> None:
     Returns:
         None
     """
-    move_sequence_from_root: list[str] = a_move_sequence_from_root(tree_node=tree_node)
+    move_sequence_from_root: list[str] = a_move_key_sequence_from_root(tree_node=tree_node)
     print(f'a_move_sequence_from_root{move_sequence_from_root}')
 
 

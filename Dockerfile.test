@@ -23,11 +23,11 @@ RUN apt install libxcb-cursor0  libxcb-xinerama0  '^libxcb.*-dev' libx11-xcb-dev
 
 RUN python3 -m venv .venv
 RUN . .venv/bin/activate
-RUN apt install pipx -y
 RUN rm /usr/lib/python*/EXTERNALLY-MANAGED && \
     pip install gdown --break-system-packages\
     && pip install --upgrade gdown
 
+RUN pip install -U pip
 
 
 RUN python3 -m pip install torch==2.2.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
