@@ -16,19 +16,22 @@ class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
     # whether to sort the legal_moves by their respective uci for easy comparison of various implementations
     sort_legal_moves: bool
 
-    generated_moves: list[shakmaty_python_binding.MyMove]
+    generated_moves: list[shakmaty_python_binding.MyMove] | None
 
     all_generated_keys: list[moveKey] | None
 
     def __init__(
             self,
-            generated_moves: list[shakmaty_python_binding.MyMove],
-            sort_legal_moves: bool
+            sort_legal_moves: bool,
+            chess_rust_binding: shakmaty_python_binding.MyChess,
+            generated_moves: list[shakmaty_python_binding.MyMove] | None = None
     ):
+        self.chess_rust_binding = chess_rust_binding
         self.generated_moves = generated_moves
-        self.number_moves = len(generated_moves)
-        self.sort_legal_moves = sort_legal_moves
-        self.it: Iterator[int] = iter(range(self.number_moves))
+        if generated_moves is not None:
+            self.number_moves = len(generated_moves)
+            self.sort_legal_moves = sort_legal_moves
+            self.it: Iterator[int] = iter(range(self.number_moves))
         self.all_generated_keys = None
 
     def reset(
@@ -42,9 +45,10 @@ class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
 
     def copy_with_reset(
             self,
-            generated_moves: list[shakmaty_python_binding.MyMove]
+            generated_moves: list[shakmaty_python_binding.MyMove] | None = None
     ) -> 'LegalMoveKeyGeneratorRust':
         legal_move_copy = LegalMoveKeyGeneratorRust(
+            chess_rust_binding=self.chess_rust_binding,
             generated_moves=generated_moves,
             sort_legal_moves=self.sort_legal_moves
         )
@@ -52,12 +56,14 @@ class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
 
     def set_legal_moves(
             self,
-            generated_moves: list[shakmaty_python_binding.MyMove]
+            generated_moves: list[shakmaty_python_binding.MyMove] | None = None
     ) -> None:
         self.generated_moves = generated_moves
         self.number_moves = len(generated_moves)
 
     def __iter__(self) -> Iterator[moveKey]:
+        if self.generated_moves is None:
+            self.generated_moves = self.chess_rust_binding.legal_moves()
         self.it = iter(range(self.number_moves))
         return self
 
@@ -66,7 +72,8 @@ class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
 
     def copy(self) -> 'LegalMoveKeyGeneratorRust':
         legal_move_copy = LegalMoveKeyGeneratorRust(
-            generated_moves=self.generated_moves.copy(),
+            chess_rust_binding=self.chess_rust_binding,
+            generated_moves=self.generated_moves.copy() if self.generated_moves is not None else None,
             sort_legal_moves=self.sort_legal_moves
         )
         if self.all_generated_keys is not None:
@@ -76,8 +83,12 @@ class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
         return legal_move_copy
 
     def get_all(self) -> list[moveKey]:
-        if self.all_generated_keys is None:
+        if self.generated_moves is None:
+            self.generated_moves = self.chess_rust_binding.legal_moves()
+            self.number_moves = len(self.generated_moves)
+            self.all_generated_keys = None
 
+        if self.all_generated_keys is None:
             if self.sort_legal_moves:
                 return sorted(
                     list(range(self.number_moves)),
@@ -256,8 +267,7 @@ class RustyBoardChi(IBoard):
             self.play_min_2(move)
 
         # update after move
-        self.legal_moves_ = self.legal_moves_.copy_with_reset(
-            generated_moves=self.chess_.legal_moves())  # the legals moves needs to be recomputed as the board has changed
+        self.legal_moves_ = self.legal_moves_.copy_with_reset()  # the legals moves needs to be recomputed as the board has changed
 
         fast_representation: boardKey = compute_key(
             pawns=self.pawns_,

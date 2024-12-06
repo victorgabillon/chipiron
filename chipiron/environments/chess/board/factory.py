@@ -181,6 +181,7 @@ def create_rust_board(
     )
 
     legal_moves: LegalMoveKeyGeneratorRust = LegalMoveKeyGeneratorRust(
+        chess_rust_binding=chess_rust_binding,
         generated_moves=chess_rust_binding.legal_moves(),
         sort_legal_moves=sort_legal_moves
     )
