@@ -871,7 +871,6 @@ class NodeMinmaxEvaluation:
 
     def evaluate(self) -> BoardEvaluation:
         if self.over_event.is_over():
-            board = self.tree_node.board
             return ForcedOutcome(
                 outcome=self.over_event,
                 line=[move for move in self.best_move_sequence]

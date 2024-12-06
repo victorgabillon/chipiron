@@ -210,7 +210,7 @@ class GameManager:
                         self.game.playing_status.is_play() and \
                         message.player_name == self.player_color_to_id[board.turn]:
 
-                    board.legal_moves.get_all() #make sure the board has generated the legal moves
+                    board.legal_moves.get_all()  # make sure the board has generated the legal moves
                     move_uci: moveUci = board.get_uci_from_move_key(move_key)
 
                     print(f'play a move {move_uci} at {board} {self.game.board.fen}')
