@@ -23,7 +23,6 @@ RUN apt install libxcb-cursor0  libxcb-xinerama0  '^libxcb.*-dev' libx11-xcb-dev
 
 RUN python3 -m venv .venv
 RUN . .venv/bin/activate
-RUN rm /usr/lib/python3.11/EXTERNALLY-MANAGED
 RUN pip install gdown \
     && pip install --upgrade gdown
 
