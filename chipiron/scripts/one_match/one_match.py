@@ -12,6 +12,7 @@ import yaml
 from PySide6.QtWidgets import QApplication
 
 import chipiron as ch
+from chipiron.environments.chess.board import create_board_factory, BoardFactory
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_factories import create_match_manager_from_args
 from chipiron.scripts.chipiron_args import ImplementationArgs
@@ -82,9 +83,14 @@ class OneMatchScript:
             # create its mailbox to communicate with other threads
             gui_thread_mailbox: queue.Queue[IsDataclass] = multiprocessing.Manager().Queue()
             self.chess_gui: QApplication = QApplication(sys.argv)
+            board_factory: BoardFactory = create_board_factory(
+                use_rust_boards=args.implementation_args.use_rust_boards,
+                sort_legal_moves=args.base_script_args.universal_behavior
+            )
             self.window: ch.disp.MainWindow = ch.disp.MainWindow(
                 gui_mailbox=gui_thread_mailbox,
-                main_thread_mailbox=self.match_manager.game_manager_factory.main_thread_mailbox
+                main_thread_mailbox=self.match_manager.game_manager_factory.main_thread_mailbox,
+                board_factory=board_factory
             )
             self.match_manager.subscribe(gui_thread_mailbox)
 

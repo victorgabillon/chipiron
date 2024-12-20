@@ -43,6 +43,21 @@ def create_board_factory(
     return board_factory
 
 
+def create_board(
+        use_rust_boards: bool = False,
+        use_board_modification: bool = False,
+        sort_legal_moves: bool = False,
+        fen_with_history: FenPlusHistory | None = None
+) -> IBoard:
+    board_factory: BoardFactory = create_board_factory(
+        use_rust_boards=use_rust_boards,
+        use_board_modification=use_board_modification,
+        sort_legal_moves=sort_legal_moves
+    )
+    board: IBoard = board_factory(fen_with_history=fen_with_history)
+    return board
+
+
 def create_board_chi_from_pychess_board(
         chess_board: chess.Board,
         use_board_modification: bool = False,
