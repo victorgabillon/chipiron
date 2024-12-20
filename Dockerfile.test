@@ -34,6 +34,12 @@ RUN python3 -m pip install torch==2.2.0+cpu -f https://download.pytorch.org/whl/
 ADD ./requirements_light.txt requirements.txt
 ADD ./MakefileForTest.mk Makefile
 
+RUN .venv/bin/pip install --upgrade pip
+
+# Get Rust
+RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
+RUN echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
+
 RUN make init
 
 RUN python3 -m pip uninstall opencv-python

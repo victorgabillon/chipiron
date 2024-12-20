@@ -50,6 +50,36 @@ class BoardModification:
         """
         self.removals.add(removal)
 
+@dataclass
+class PieceRustIterator:
+
+    items_: set[int,int,int] = field(default_factory=set)
+
+    def __iter__(self):
+        self.it = iter(self.items_)
+        return self
+
+    def __next__(self):
+        next_ = self.it.__next__()
+        return PieceInSquare(square=next_[0],piece=next_[1],color=bool(next_[2]))
+
+
+@dataclass
+class BoardModificationRust:
+    """
+    Represents a modification to a chessboard resulting from a move.
+    """
+
+    removals_: set[int,int,int] = field(default_factory=set)
+    appearances_: set[int,int,int] = field(default_factory=set)
+
+    @property
+    def removals(self):
+        return PieceRustIterator(self.removals_)
+
+    @property
+    def appearances(self):
+        return PieceRustIterator(self.appearances_)
 
 def compute_modifications(
         previous_pawns: chess.Bitboard,

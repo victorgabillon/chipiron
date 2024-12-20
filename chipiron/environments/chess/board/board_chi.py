@@ -182,45 +182,49 @@ class BoardChi(IBoard):
         board_modifications: BoardModification | None = None
 
         if self.compute_board_modification:
-            previous_pawns = self.chess_board.pawns
-            previous_kings = self.chess_board.kings
-            previous_queens = self.chess_board.queens
-            previous_rooks = self.chess_board.rooks
-            previous_bishops = self.chess_board.bishops
-            previous_knights = self.chess_board.knights
-            previous_occupied_white = self.chess_board.occupied_co[chess.WHITE]
-            previous_occupied_black = self.chess_board.occupied_co[chess.BLACK]
+            if False:
+                board_modifications = self.push_and_return_modification(move)  # type: ignore
 
-            self.play_mon(move)
-            # self.play_mon(move)
+            else:
+                previous_pawns = self.chess_board.pawns
+                previous_kings = self.chess_board.kings
+                previous_queens = self.chess_board.queens
+                previous_rooks = self.chess_board.rooks
+                previous_bishops = self.chess_board.bishops
+                previous_knights = self.chess_board.knights
+                previous_occupied_white = self.chess_board.occupied_co[chess.WHITE]
+                previous_occupied_black = self.chess_board.occupied_co[chess.BLACK]
 
-            new_pawns = self.chess_board.pawns
-            new_kings = self.chess_board.kings
-            new_queens = self.chess_board.queens
-            new_rooks = self.chess_board.rooks
-            new_bishops = self.chess_board.bishops
-            new_knights = self.chess_board.knights
-            new_occupied_white = self.chess_board.occupied_co[chess.WHITE]
-            new_occupied_black = self.chess_board.occupied_co[chess.BLACK]
+                self.play_mon(move)
+                # self.play_mon(move)
 
-            board_modifications = compute_modifications(
-                previous_bishops=previous_bishops,
-                previous_pawns=previous_pawns,
-                previous_kings=previous_kings,
-                previous_knights=previous_knights,
-                previous_queens=previous_queens,
-                previous_occupied_white=previous_occupied_white,
-                previous_rooks=previous_rooks,
-                previous_occupied_black=previous_occupied_black,
-                new_kings=new_kings,
-                new_bishops=new_bishops,
-                new_pawns=new_pawns,
-                new_queens=new_queens,
-                new_rooks=new_rooks,
-                new_knights=new_knights,
-                new_occupied_black=new_occupied_black,
-                new_occupied_white=new_occupied_white
-            )
+                new_pawns = self.chess_board.pawns
+                new_kings = self.chess_board.kings
+                new_queens = self.chess_board.queens
+                new_rooks = self.chess_board.rooks
+                new_bishops = self.chess_board.bishops
+                new_knights = self.chess_board.knights
+                new_occupied_white = self.chess_board.occupied_co[chess.WHITE]
+                new_occupied_black = self.chess_board.occupied_co[chess.BLACK]
+
+                board_modifications = compute_modifications(
+                    previous_bishops=previous_bishops,
+                    previous_pawns=previous_pawns,
+                    previous_kings=previous_kings,
+                    previous_knights=previous_knights,
+                    previous_queens=previous_queens,
+                    previous_occupied_white=previous_occupied_white,
+                    previous_rooks=previous_rooks,
+                    previous_occupied_black=previous_occupied_black,
+                    new_kings=new_kings,
+                    new_bishops=new_bishops,
+                    new_pawns=new_pawns,
+                    new_queens=new_queens,
+                    new_rooks=new_rooks,
+                    new_knights=new_knights,
+                    new_occupied_black=new_occupied_black,
+                    new_occupied_white=new_occupied_white
+                )
         else:
             self.chess_board.push(move)
 

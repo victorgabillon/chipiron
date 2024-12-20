@@ -16,8 +16,9 @@ from PySide6.QtGui import QIcon
 from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import QPushButton, QTableWidget, QWidget, QDialog, QTableWidgetItem
 
-from chipiron.environments.chess.board import BoardChi
-from chipiron.environments.chess.board.factory import create_board_chi
+from chipiron.environments.chess.board import IBoard, BoardFactory, create_board_chi
+from chipiron.environments.chess.board.utils import FenPlusHistory
+from chipiron.environments.chess.move import moveUci
 from chipiron.environments.chess.move.imove import moveKey
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.games.match.match_results import MatchResults
@@ -45,7 +46,8 @@ class MainWindow(QWidget):
     def __init__(
             self,
             gui_mailbox: queue.Queue[IsDataclass],
-            main_thread_mailbox: queue.Queue[IsDataclass]
+            main_thread_mailbox: queue.Queue[IsDataclass],
+            board_factory: BoardFactory
     ) -> None:
         """
         Initialize the chessboard and the main window.
@@ -56,6 +58,7 @@ class MainWindow(QWidget):
         """
         super().__init__()
 
+        self.board_factory = board_factory
         self.playing_status = PlayingStatus.PLAY
 
         self.gui_mailbox = gui_mailbox
@@ -226,15 +229,29 @@ class MainWindow(QWidget):
                     self.coordinates = f'{chr(file + 97)}{rank + 1}'
                     if self.pieceToMove[0] is not None:
                         try:
-                            move = chess.Move.from_uci("{}{}".format(self.pieceToMove[1], self.coordinates))
-                            move_promote = chess.Move.from_uci("{}{}q".format(self.pieceToMove[1], self.coordinates))
-                            if move in self.board.legal_moves:
-                                self.send_move_to_main_thread(move)
-                            elif move_promote in self.board.legal_moves:
+                            all_moves_keys: list[moveKey] = self.board.legal_moves.get_all()
+                            all_legal_moves_uci: list[moveUci] = [self.board.legal_moves.generated_moves[move_key].uci()
+                                                                  for move_key in all_moves_keys]
+                            move: chess.Move = chess.Move.from_uci(
+                                "{}{}".format(self.pieceToMove[1], self.coordinates)
+                            )
+                            move_promote: chess.Move = chess.Move.from_uci(
+                                "{}{}q".format(self.pieceToMove[1], self.coordinates))
+
+                            if move.uci() in all_legal_moves_uci:
+                                move_key: moveKey = self.board.get_move_key_from_uci(move_uci=move.uci())
+                                self.send_move_to_main_thread(move_key)
+                            elif move_promote.uci() in all_legal_moves_uci:
                                 self.choice_promote()
-                                self.send_move_to_main_thread(self.move_promote_asked)
+                                move_key: moveKey = self.board.get_move_key_from_uci(
+                                    move_uci=self.move_promote_asked.uci())
+                                self.send_move_to_main_thread(move_key)
                             else:
-                                print(f'Looks like a wrong move. {move} {self.board.legal_moves}')
+                                legal_moves_uci: list[moveUci] = [self.board.get_uci_from_move_key(move_key) for
+                                                                  move_key in all_moves_keys]
+                                print(
+                                    f'Looks like the move {move} is a wrong move.. '
+                                    f'The legals moves are {legal_moves_uci} in {self.board}')
                         except ValueError:
                             print("Oops!  Doubleclicked?  Try again...")
                         piece = None
@@ -389,7 +406,7 @@ class MainWindow(QWidget):
                 case BoardMessage():
                     print('receiving board')
                     board_message: BoardMessage = message
-                    self.board: BoardChi = create_board_chi(fen_with_history=board_message.fen_plus_moves)
+                    self.board: IBoard = self.board_factory(fen_with_history=board_message.fen_plus_moves)
                     self.draw_board()
                     self.display_move_history()
                 case EvaluationMessage():
@@ -433,7 +450,7 @@ class MainWindow(QWidget):
             None
         """
         import math
-        num_half_move: int = len(self.board.chess_board.move_stack)
+        num_half_move: int = len(self.board.move_history_stack)
         num_rounds: int = int(math.ceil(num_half_move / 2))
         self.tablewidget.setRowCount(num_rounds)
         self.tablewidget.setHorizontalHeaderLabels(['White', 'Black'])
@@ -441,7 +458,7 @@ class MainWindow(QWidget):
             for round_ in range(num_rounds):
                 half_move = round_ * 2 + player
                 if half_move < num_half_move:
-                    item = QTableWidgetItem(str(self.board.chess_board.move_stack[half_move]))
+                    item = QTableWidgetItem(str(self.board.move_history_stack[half_move]))
                     self.tablewidget.setItem(round_, player, item)
 
     def draw_board(self) -> None:
@@ -452,10 +469,10 @@ class MainWindow(QWidget):
         Returns:
             None
         """
-        print('tupe', type(self.board), type(self.board.chess_board.move_stack), self.board.chess_board.move_stack)
-        self.boardSvg = self.board.chess_board._repr_svg_().encode("UTF-8")
+        board_chi = create_board_chi(fen_with_history=FenPlusHistory(current_fen=self.board.fen))
+        self.boardSvg = board_chi.chess_board._repr_svg_().encode("UTF-8")
         self.drawBoardSvg = self.widgetSvg.load(self.boardSvg)
-        self.round_button.setText('Round: ' + str(self.board.chess_board.fullmove_number))  # text
+        self.round_button.setText('Round: ' + str(self.board.fullmove_number))  # text
         self.fen_button.setText('fen: ' + str(self.board.fen))  # text
         return self.drawBoardSvg
 

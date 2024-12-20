@@ -5,7 +5,8 @@ from typing import Self, Any, Iterator
 import chess
 import shakmaty_python_binding
 
-from chipiron.environments.chess.board.board_modification import BoardModification, compute_modifications
+from chipiron.environments.chess.board.board_modification import BoardModification, compute_modifications, \
+    PieceInSquare, BoardModificationRust
 from chipiron.environments.chess.move import moveUci
 from chipiron.environments.chess.move.imove import moveKey
 from .iboard import IBoard, boardKey, boardKeyWithoutCounters, compute_key, LegalMoveKeyGeneratorP
@@ -211,6 +212,33 @@ class RustyBoardChi(IBoard):
             self.ep_square_ = ep_square_int
         # print('ar',a)
 
+    def play_min_3(self, move: shakmaty_python_binding.MyMove) -> BoardModification:
+        # _str, ply, turn, is_game_over = self.chess_.play_and_return(move)
+        (
+            (self.castling_rights_, self.pawns_, self.knights_, self.bishops_, self.rooks_, self.queens_, self.kings_,
+             self.white_, self.black_, turn_int, ep_square_int, self.promoted_),
+            appearances, removals
+        ) = self.chess_.play_and_return_modifications(
+            move)
+        self.turn_ = bool(turn_int)
+        if ep_square_int == -1:
+            self.ep_square_ = None
+        else:
+            self.ep_square_ = ep_square_int
+        # print('ar',a)
+
+        board_modifications: BoardModification = self.convert(appearances,removals)
+        #board_modifications: BoardModification = BoardModificationRust(appearances_=appearances,removals_=removals)
+        return board_modifications
+
+    def convert(self, appearances, removals):
+        board_modifications: BoardModification = BoardModificationRust(appearances_=appearances,removals_=removals)
+
+#        board_modifications: BoardModification = BoardModification(
+#            appearances={PieceInSquare(square=a[0],piece=a[1],color=bool(a[2])) for a in appearances},
+#            removals={PieceInSquare(square=r[0],piece=r[1],color=bool(r[2])) for r in removals}
+#        )
+        return  board_modifications
     def play_move(
             self,
             move: shakmaty_python_binding.MyMove
@@ -230,62 +258,50 @@ class RustyBoardChi(IBoard):
         board_modifications: BoardModification | None = None
 
         if self.compute_board_modification:
-            previous_pawns = self.pawns_
-            previous_kings = self.kings_
-            previous_queens = self.queens_
-            previous_rooks = self.rooks_
-            previous_bishops = self.bishops_
-            previous_knights = self.knights_
-            previous_occupied_white = self.white_
-            previous_occupied_black = self.black_
+            if True:
 
-            # previous_pawns = self.chess_.pawns()
-            # previous_kings = self.chess_.kings()
-            # previous_queens = self.chess_.queens()
-            # previous_rooks = self.chess_.rooks()
-            # previous_bishops = self.chess_.bishops()
-            # previous_knights = self.chess_.knights()
-            # previous_occupied_white = self.chess_.white()
-            # previous_occupied_black = self.chess_.black()
+                board_modifications = self.play_min_3(move)
 
-            self.play_min_2(move)
 
-            # new_pawns = self.chess_.pawns()
-            # new_kings = self.chess_.kings()
-            # new_queens = self.chess_.queens()
-            # new_rooks = self.chess_.rooks()
-            # new_bishops = self.chess_.bishops()
-            # new_knights = self.chess_.knights()
-            # new_occupied_white = self.chess_.white()
-            # new_occupied_black = self.chess_.black()
+            else:
+                previous_pawns = self.pawns_
+                previous_kings = self.kings_
+                previous_queens = self.queens_
+                previous_rooks = self.rooks_
+                previous_bishops = self.bishops_
+                previous_knights = self.knights_
+                previous_occupied_white = self.white_
+                previous_occupied_black = self.black_
 
-            new_pawns = self.pawns_
-            new_kings = self.kings_
-            new_queens = self.queens_
-            new_rooks = self.rooks_
-            new_bishops = self.bishops_
-            new_knights = self.knights_
-            new_occupied_white = self.white_
-            new_occupied_black = self.black_
+                self.play_min_2(move)
 
-            board_modifications = compute_modifications(
-                previous_bishops=previous_bishops,
-                previous_pawns=previous_pawns,
-                previous_kings=previous_kings,
-                previous_knights=previous_knights,
-                previous_queens=previous_queens,
-                previous_occupied_white=previous_occupied_white,
-                previous_rooks=previous_rooks,
-                previous_occupied_black=previous_occupied_black,
-                new_kings=new_kings,
-                new_bishops=new_bishops,
-                new_pawns=new_pawns,
-                new_queens=new_queens,
-                new_rooks=new_rooks,
-                new_knights=new_knights,
-                new_occupied_black=new_occupied_black,
-                new_occupied_white=new_occupied_white
-            )
+                new_pawns = self.pawns_
+                new_kings = self.kings_
+                new_queens = self.queens_
+                new_rooks = self.rooks_
+                new_bishops = self.bishops_
+                new_knights = self.knights_
+                new_occupied_white = self.white_
+                new_occupied_black = self.black_
+
+                board_modifications = compute_modifications(
+                    previous_bishops=previous_bishops,
+                    previous_pawns=previous_pawns,
+                    previous_kings=previous_kings,
+                    previous_knights=previous_knights,
+                    previous_queens=previous_queens,
+                    previous_occupied_white=previous_occupied_white,
+                    previous_rooks=previous_rooks,
+                    previous_occupied_black=previous_occupied_black,
+                    new_kings=new_kings,
+                    new_bishops=new_bishops,
+                    new_pawns=new_pawns,
+                    new_queens=new_queens,
+                    new_rooks=new_rooks,
+                    new_knights=new_knights,
+                    new_occupied_black=new_occupied_black,
+                    new_occupied_white=new_occupied_white
+                )
         else:
             self.play_min_2(move)
 
