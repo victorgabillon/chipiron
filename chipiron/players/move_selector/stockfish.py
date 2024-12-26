@@ -83,7 +83,7 @@ class StockfishPlayer:
                 # note that we dont give here historical_boards, hope this does not create but related to 3 fold repetition computation
             )
         )
-        result = self.engine.play(board_chi.chess_board, chess.engine.Limit(self.time_limit))
+        result = self.engine.set_play_status(board_chi.chess_board, chess.engine.Limit(self.time_limit))
         self.engine.quit()
         self.engine = None
         return MoveRecommendation(move=result.move.uci())

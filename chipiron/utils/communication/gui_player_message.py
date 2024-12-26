@@ -7,7 +7,7 @@ import chess
 
 from chipiron.players import PlayerFactoryArgs
 from chipiron.players.move_selector.treevalue import TreeAndValuePlayerArgs
-from chipiron.players.move_selector.treevalue.stopping_criterion import TreeMoveLimitArgs
+from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import TreeMoveLimitArgs
 
 
 @dataclass

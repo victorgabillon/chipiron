@@ -66,6 +66,9 @@ def send_board_to_player_process_mailbox(
 
 
 class PlayerObserverFactory(Protocol):
+    """
+    creates the player and the means to communicate with it
+    """
     def __call__(
             self,
             player_factory_args: PlayerFactoryArgs,
@@ -129,8 +132,8 @@ def create_player_observer_distributed_players(
     player_process: PlayerProcess = PlayerProcess(
         player_factory_args=player_factory_args,
         player_color=player_color,
-        queue_board=player_process_mailbox,
-        queue_move=main_thread_mailbox,
+        queue_receiving_board=player_process_mailbox,
+        queue_sending_move=main_thread_mailbox,
         implementation_args=implementation_args,
         universal_behavior=universal_behavior
     )
@@ -174,7 +177,8 @@ def create_player_observer_mono_process(
     generic_player = create_game_player(
         player_factory_args=player_factory_args,
         player_color=player_color,
-        syzygy_table=syzygy_table
+        syzygy_table=syzygy_table,
+        queue_progress_player=main_thread_mailbox
     )
     move_function = partial(
         game_player_computes_move_on_board_and_send_move_in_queue,

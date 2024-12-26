@@ -1,7 +1,7 @@
 """
 This module provides a factory function for creating the main move selector based on the given arguments.
 """
-
+import queue
 import random
 from typing import Any
 from typing import TypeAlias
@@ -12,6 +12,7 @@ from . import move_selector
 from . import stockfish
 from . import treevalue
 from .random import Random, create_random
+from ...utils.dataclass import IsDataclass
 
 AllMoveSelectorArgs: TypeAlias = (
         treevalue.TreeAndValuePlayerArgs |
@@ -25,7 +26,9 @@ AllMoveSelectorArgs: TypeAlias = (
 def create_main_move_selector(
         move_selector_instance_or_args: AllMoveSelectorArgs,
         syzygy: SyzygyTable[Any] | None,
-        random_generator: random.Random
+        random_generator: random.Random,
+        queue_progress_player: queue.Queue[IsDataclass]|None
+
 ) -> move_selector.MoveSelector:
     """
     Create the main move selector based on the given arguments.
@@ -55,7 +58,8 @@ def create_main_move_selector(
             main_move_selector = treevalue.create_tree_and_value_builders(
                 args=tree_args,
                 syzygy=syzygy,
-                random_generator=random_generator
+                random_generator=random_generator,
+                queue_progress_player=queue_progress_player
             )
         case stockfish.StockfishPlayer():
             main_move_selector = move_selector_instance_or_args

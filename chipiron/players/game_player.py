@@ -99,3 +99,5 @@ def game_player_computes_move_on_board_and_send_move_in_queue(
 
         deep_copy_message = copy.deepcopy(message)
         queue_move.put(deep_copy_message)
+    else:
+        print("Game player rejects move query", board.fen)

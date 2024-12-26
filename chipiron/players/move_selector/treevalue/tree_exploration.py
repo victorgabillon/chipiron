@@ -14,21 +14,25 @@ Classes:
 Functions:
 - create_tree_exploration: Creates a TreeExploration object with the specified dependencies.
 """
-
+import queue
 import random
 from dataclasses import dataclass
+from typing import Callable
 
 import chipiron.environments.chess.board as boards
 from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.move_selector.move_selector import MoveRecommendation
+from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import ProgressMonitor, \
+    create_stopping_criterion, AllStoppingCriterionArgs
 from chipiron.players.move_selector.treevalue.recommender_rule.recommender_rule import \
     recommend_move_after_exploration_generic
 from chipiron.players.move_selector.treevalue.search_factory import NodeSelectorFactory
+from chipiron.utils.communication.gui_messages import PlayerProgressMessage
+from chipiron.utils.dataclass import IsDataclass
 from . import node_selector as node_sel
 from . import recommender_rule
 from . import tree_manager as tree_man
 from . import trees
-from .stopping_criterion import StoppingCriterion, create_stopping_criterion, AllStoppingCriterionArgs
 from .trees.factory import MoveAndValueTreeFactory
 
 
@@ -55,7 +59,8 @@ class TreeExploration:
     tree_manager: tree_man.AlgorithmNodeTreeManager
     node_selector: node_sel.NodeSelector
     recommend_move_after_exploration: recommender_rule.AllRecommendFunctionsArgs
-    stopping_criterion: StoppingCriterion
+    stopping_criterion: ProgressMonitor
+    notify_percent_function: Callable[[int], None] | None
 
     def print_info_during_move_computation(self, random_generator: random.Random) -> None:
         """
@@ -72,7 +77,8 @@ class TreeExploration:
             current_best_move = str(self.tree.root_node.minmax_evaluation.best_move_sequence[0])
         else:
             current_best_move = '?'
-        if random_generator.random() < 1:
+        if random_generator.random() < .11:
+            print(f'fen: {self.tree.root_node.board.fen}')
             str_progress = self.stopping_criterion.get_string_of_progress(self.tree)
             print(
                 f'{str_progress} | current best move:  {current_best_move} | current white value: {self.tree.root_node.minmax_evaluation.value_white_minmax})')
@@ -134,6 +140,11 @@ class TreeExploration:
             self.tree_manager.update_backward(tree_expansions=tree_expansions)
             self.tree_manager.update_indices(tree=self.tree)
 
+            self.stopping_criterion.notify_percent_progress(
+                tree=self.tree,
+                notify_percent_function=self.notify_percent_function
+            )
+
         # trees.save_raw_data_to_file(tree=self.tree)
         # self.tree_manager.print_some_stats(tree=self.tree)
         # for move, child in self.tree.root_node.moves_children.items():
@@ -162,7 +173,8 @@ def create_tree_exploration(
         tree_manager: tree_man.AlgorithmNodeTreeManager,
         tree_factory: MoveAndValueTreeFactory,
         stopping_criterion_args: AllStoppingCriterionArgs,
-        recommend_move_after_exploration: recommender_rule.AllRecommendFunctionsArgs
+        recommend_move_after_exploration: recommender_rule.AllRecommendFunctionsArgs,
+        queue_progress_player: queue.Queue[IsDataclass]
 ) -> TreeExploration:
     """
     Creates a TreeExploration object with the specified dependencies.
@@ -185,16 +197,24 @@ def create_tree_exploration(
     # creates the node selector
     node_selector: node_sel.NodeSelector = node_selector_create()
 
-    stopping_criterion: StoppingCriterion = create_stopping_criterion(
+    stopping_criterion: ProgressMonitor = create_stopping_criterion(
         args=stopping_criterion_args,
         node_selector=node_selector
     )
+
+    def notify_percent_function(progress_percent: int):
+        queue_progress_player.put(PlayerProgressMessage(
+            progress_percent=progress_percent,
+            player_color=starting_board.turn
+        ))
 
     tree_exploration: TreeExploration = TreeExploration(
         tree=move_and_value_tree,
         tree_manager=tree_manager,
         stopping_criterion=stopping_criterion,
         node_selector=node_selector,
-        recommend_move_after_exploration=recommend_move_after_exploration
+        recommend_move_after_exploration=recommend_move_after_exploration,
+        notify_percent_function=notify_percent_function
     )
+
     return tree_exploration

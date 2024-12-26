@@ -2,6 +2,7 @@
 Module for creating players.
 """
 
+import queue
 import random
 from typing import Any
 
@@ -17,11 +18,13 @@ from . import move_selector
 from .game_player import GamePlayer
 from .player import Player
 from .player_args import PlayerFactoryArgs
+from ..utils.dataclass import IsDataclass
 
 
 def create_chipiron_player(
         depth: int,
         use_rusty_board: bool,
+        queue_progress_player: queue.Queue[IsDataclass] | None
 ) -> Player:
     """
     Creates the chipiron champion/representative/standard/default player
@@ -42,7 +45,8 @@ def create_chipiron_player(
     main_move_selector: move_selector.MoveSelector | None = move_selector.create_main_move_selector(
         move_selector_instance_or_args=args_player.main_move_selector,
         syzygy=syzygy_table,
-        random_generator=random_generator
+        random_generator=random_generator,
+        queue_progress_player=queue_progress_player
     )
 
     assert main_move_selector is not None
@@ -58,6 +62,8 @@ def create_player_from_file(
         player_args_file: path,
         random_generator: random.Random,
         use_rusty_board: bool,
+        queue_progress_player: queue.Queue[IsDataclass] | None
+
 ) -> Player:
     """Create a player object from a file.
 
@@ -78,7 +84,8 @@ def create_player_from_file(
     main_move_selector: move_selector.MoveSelector = move_selector.create_main_move_selector(
         move_selector_instance_or_args=args.main_move_selector,
         syzygy=syzygy_table,
-        random_generator=random_generator
+        random_generator=random_generator,
+        queue_progress_player=queue_progress_player
     )
 
     return Player(
@@ -91,7 +98,8 @@ def create_player_from_file(
 def create_player(
         args: PlayerArgs,
         syzygy: SyzygyTable[Any] | None,
-        random_generator: random.Random
+        random_generator: random.Random,
+        queue_progress_player: queue.Queue[IsDataclass] | None
 ) -> Player:
     """Create a player object.
 
@@ -109,7 +117,8 @@ def create_player(
     main_move_selector: move_selector.MoveSelector = move_selector.create_main_move_selector(
         move_selector_instance_or_args=args.main_move_selector,
         syzygy=syzygy,
-        random_generator=random_generator
+        random_generator=random_generator,
+        queue_progress_player=queue_progress_player
     )
 
     player: Player = Player(
@@ -124,7 +133,8 @@ def create_player(
 def create_game_player(
         player_factory_args: PlayerFactoryArgs,
         player_color: chess.Color,
-        syzygy_table: table_base.SyzygyTable[Any] | None
+        syzygy_table: table_base.SyzygyTable[Any] | None,
+        queue_progress_player: queue.Queue[IsDataclass] | None
 ) -> GamePlayer:
     """Create a game player
 
@@ -141,7 +151,8 @@ def create_game_player(
     player: Player = create_player(
         args=player_factory_args.player_args,
         syzygy=syzygy_table,
-        random_generator=random_generator
+        random_generator=random_generator,
+        queue_progress_player=queue_progress_player
     )
     game_player: GamePlayer = GamePlayer(player, player_color)
     return game_player

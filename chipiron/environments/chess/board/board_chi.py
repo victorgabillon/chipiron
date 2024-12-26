@@ -39,6 +39,17 @@ class LegalMoveKeyGenerator(LegalMoveKeyGeneratorP):
         self.count = 0
         self.all_generated_keys = None
 
+    def __str__(self) -> str:
+
+        the_string :str = 'Legals Moves: '
+        ucis: list[moveUci] = [chess_move.uci() for move_key, chess_move in self.generated_moves.items()]
+        keys: list[moveKey] = [move_key for move_key, chess_move in self.generated_moves.items()]
+
+        the_string = the_string + f'Generated ucis {ucis}'
+        the_string = the_string + f' and generated ucis {keys}'
+
+        return the_string
+
     def __iter__(self) -> Iterator[moveKey]:
         self.it = self.chess_board.generate_legal_moves()
         self.count = 0
@@ -52,8 +63,16 @@ class LegalMoveKeyGenerator(LegalMoveKeyGeneratorP):
         self.count += 1
         return move_key_
 
-    def copy(self) -> 'LegalMoveKeyGenerator':
-        legal_move_copy = LegalMoveKeyGenerator(chess_board=self.chess_board, sort_legal_moves=self.sort_legal_moves)
+    def copy(
+            self,
+            copied_chess_board: chess.Board | None = None
+    ) -> 'LegalMoveKeyGenerator':
+        if copied_chess_board is None:
+            copied_chess_board_ = self.chess_board
+        else:
+            copied_chess_board_ = copied_chess_board
+        legal_move_copy = LegalMoveKeyGenerator(chess_board=copied_chess_board_, sort_legal_moves=self.sort_legal_moves)
+
         legal_move_copy.generated_moves = self.generated_moves.copy()
         if self.all_generated_keys is not None:
             legal_move_copy.all_generated_keys = self.all_generated_keys.copy()
@@ -846,7 +865,7 @@ class BoardChi(IBoard):
         legal_moves_copy: LegalMoveKeyGenerator
         if deep_copy_legal_moves:
             # deep_copy
-            legal_moves_copy = self.legal_moves_.copy()
+            legal_moves_copy = self.legal_moves_.copy(copied_chess_board=chess_board_copy)
         else:
             # faster as move generated are not deep copied but tricky (should not be modified later!)
             legal_moves_copy = self.legal_moves_

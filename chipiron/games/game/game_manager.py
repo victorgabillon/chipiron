@@ -21,13 +21,14 @@ from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.utils import path
-from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMessage
+from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMessage, PlayerProgressMessage
 from chipiron.utils.communication.player_game_messages import MoveMessage
 from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.dataclass import custom_asdict_factory
 from .final_game_result import GameReport, FinalGameResult
 from .game import ObservableGame
 from .game_args import GameArgs
+from .progress_collector import PlayerProgressCollectorP
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -51,6 +52,7 @@ class GameManager:
     main_thread_mailbox: queue.Queue[IsDataclass]
     players: list[players_m.PlayerProcess | players_m.GamePlayer]
     move_factory: MoveFactory
+    progress_collector : PlayerProgressCollectorP
 
     def __init__(
             self,
@@ -62,7 +64,9 @@ class GameManager:
             player_color_to_id: dict[chess.Color, str],
             main_thread_mailbox: queue.Queue[IsDataclass],
             players: list[players_m.PlayerProcess | players_m.GamePlayer],
-            move_factory: MoveFactory
+            move_factory: MoveFactory,
+            progress_collector : PlayerProgressCollectorP
+
     ) -> None:
         """
         Constructor for the GameManager Class. If the args, and players are not given a value it is set to None,
@@ -92,6 +96,7 @@ class GameManager:
         self.main_thread_mailbox = main_thread_mailbox
         self.players = players
         self.move_factory = move_factory
+        self.progress_collector = progress_collector
 
     def external_eval(self) -> tuple[float, float]:
         """Evaluates the game board using the display board evaluator.
@@ -140,25 +145,32 @@ class GameManager:
         Returns:
             GameReport: The report of the game.
         """
-        board = self.game.board
 
         color_names = ['Black', 'White']
 
+        # sending the current board to the gui
+        self.game.notify_display()
+
+        # sending the current board to the player and asking for a move
+        if self.game.is_play():
+            self.game.query_move_from_players()
+
         while True:
 
+            board = self.game.board
             half_move: HalfMove = board.ply()
             print(f'Half Move: {half_move} playing status {self.game.playing_status.status} ')
             color_to_move: chess.Color = board.turn
             color_of_player_to_move_str = color_names[color_to_move]
             print(f'{color_of_player_to_move_str} ({self.player_color_to_id[color_to_move]}) to play now...')
 
-            # sending the current board to the player (and possibly gui) and asking for a move
-            self.game.play()
+
 
             # waiting for a message
             mail = self.main_thread_mailbox.get()
             self.processing_mail(mail)
 
+            board = self.game.board
             if board.is_game_over() or not self.game_continue_conditions():
                 if board.is_game_over():
                     print('the game is other')
@@ -173,7 +185,6 @@ class GameManager:
         print('end play_one_game')
 
         game_results: FinalGameResult = self.simple_results()
-        print('lplpl', [move for move in self.game.move_history])
 
         game_report: GameReport = GameReport(
             final_game_result=game_results,
@@ -200,17 +211,21 @@ class GameManager:
 
         match message:
             case MoveMessage():
+                print('=====================MOVE MESSAGE RECEIVED============')
                 move_message: MoveMessage = message
                 # play the move
                 move_key: moveKey = move_message.move
 
-                print('receiving the move key', move_key, type(self), self.game.playing_status,
-                      type(self.game.playing_status))
+                print('Receiving the move key', move_key, self.game.playing_status, board.fen )
                 if move_message.corresponding_board == board.fen and \
                         self.game.playing_status.is_play() and \
                         message.player_name == self.player_color_to_id[board.turn]:
 
-                    board.legal_moves.get_all()  # make sure the board has generated the legal moves
+                    board.legal_moves.get_all() # make sure the board has generated the legal moves
+
+                    print('rr',board.fen, board)
+                    print(board.legal_moves, board.legal_moves.chess_board)
+
                     move_uci: moveUci = board.get_uci_from_move_key(move_key)
 
                     print(f'play a move {move_uci} at {board} {self.game.board.fen}')
@@ -222,6 +237,10 @@ class GameManager:
                     print(f'Stockfish evaluation:{eval_sto} and chipiron eval{eval_chi}')
                     # Print the board
                     board.print_chess_board()
+
+                    # sending the current board to the player  and asking for a move
+                    if self.game.is_play():
+                        self.game.query_move_from_players()
 
                 else:
                     print(f'the move is rejected because one of the following is false \n'
@@ -237,17 +256,25 @@ class GameManager:
                         player_color=message.color_to_play,
                         evaluation=message.evaluation)
                 logger.debug(f'len main tread mailbox {self.main_thread_mailbox.qsize()}')
-
+            case PlayerProgressMessage():
+                player_progress_message: PlayerProgressMessage = message
+                if player_progress_message.player_color == chess.WHITE:
+                    self.progress_collector.progress_white(value=player_progress_message.progress_percent)
+                if player_progress_message.player_color == chess.BLACK:
+                    self.progress_collector.progress_black(value=player_progress_message.progress_percent)
             case GameStatusMessage():
                 game_status_message: GameStatusMessage = message
                 # update game status
                 if game_status_message.status == PlayingStatus.PLAY:
-                    self.game.play()
+                    self.game.set_play_status()
+                    self.game.query_move_from_players()
+
                 if game_status_message.status == PlayingStatus.PAUSE:
-                    self.game.pause()
+                    self.game.set_pause_status()
             case BackMessage():
+                self.game.set_pause_status()
                 self.rewind_one_move()
-                self.game.pause()
+
             case other:
                 raise ValueError(f'type of message received is not recognized {other} in file {__name__}')
 

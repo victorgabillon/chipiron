@@ -41,16 +41,16 @@ class PlayerProcess(multiprocessing.Process):
     """
 
     game_player: GamePlayer
-    queue_board: queue.Queue[DataClass]
-    queue_move: queue.Queue[IsDataclass]
+    queue_receiving_board: queue.Queue[DataClass]
+    queue_sending_move: queue.Queue[IsDataclass]
     player_color: chess.Color
     board_factory: BoardFactory
 
     def __init__(
             self,
             player_factory_args: PlayerFactoryArgs,
-            queue_board: queue.Queue[DataClass],
-            queue_move: queue.Queue[IsDataclass],
+            queue_receiving_board: queue.Queue[DataClass],
+            queue_sending_move: queue.Queue[IsDataclass],
             player_color: chess.Color,
             implementation_args: ImplementationArgs,
             universal_behavior: bool
@@ -59,7 +59,7 @@ class PlayerProcess(multiprocessing.Process):
 
         Args:
             player_factory_args (PlayerFactoryArgs): The arguments required to create the player.
-            queue_board (queue.Queue[DataClass]): The queue for receiving board data.
+            queue_receiving_board (queue.Queue[DataClass]): The queue for receiving board data.
             queue_move (queue.Queue[IsDataclass]): The queue for sending move data.
             player_color (chess.Color): The color of the player.
 
@@ -67,8 +67,8 @@ class PlayerProcess(multiprocessing.Process):
         # Call the Thread class's init function
         multiprocessing.Process.__init__(self, daemon=False)
         self._stop_event = multiprocessing.Event()
-        self.queue_move = queue_move
-        self.queue_board = queue_board
+        self.queue_sending_move = queue_sending_move
+        self.queue_receiving_board = queue_receiving_board
         self.player_color = player_color
 
         self.board_factory: BoardFactory = create_board_factory(
@@ -84,7 +84,8 @@ class PlayerProcess(multiprocessing.Process):
         self.game_player: GamePlayer = create_game_player(
             player_factory_args=player_factory_args,
             player_color=player_color,
-            syzygy_table=create_syzygy()
+            syzygy_table=create_syzygy(),
+            queue_progress_player=queue_sending_move
         )
         assert self.game_player.player is not None
 
@@ -107,7 +108,7 @@ class PlayerProcess(multiprocessing.Process):
 
         while True:
             try:
-                message = self.queue_board.get(False)
+                message = self.queue_receiving_board.get(False)
             except queue.Empty:
                 pass
             else:
@@ -124,7 +125,7 @@ class PlayerProcess(multiprocessing.Process):
                     game_player_computes_move_on_board_and_send_move_in_queue(
                         board=board,
                         game_player=self.game_player,
-                        queue_move=self.queue_move,
+                        queue_move=self.queue_sending_move,
                         seed_int=seed_
                     )
                 else:
