@@ -13,13 +13,14 @@ import chipiron.players as players_m
 from chipiron.games.game.game_args import GameArgs
 from chipiron.players import PlayerFactoryArgs
 from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator, ObservableBoardEvaluator
-from chipiron.players.factory_higher_level import MoveFunction, create_player_observer_factory
+from chipiron.players.factory_higher_level import MoveFunction, create_player_observer_factory, PlayerObserverFactory
 from chipiron.utils import path
 from chipiron.utils import seed
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage, extract_message_from_players
 from chipiron.utils.dataclass import IsDataclass
 from .game import Game, ObservableGame
 from .game_manager import GameManager
+from .progress_collector import PlayerProgressCollectorObservable
 from ...environments.chess.board.utils import FenPlusHistory
 from ...environments.chess.move_factory import MoveFactory
 from ...players.boardevaluators.table_base import SyzygyTable
@@ -102,11 +103,15 @@ class GameManagerFactory:
                 observable_game.register_display(subscriber)
 
         # CREATING THE PLAYERS
-        player_observer_factory = create_player_observer_factory(
+        player_observer_factory: PlayerObserverFactory = create_player_observer_factory(
             each_player_has_its_own_thread=args_game_manager.each_player_has_its_own_thread,
             implementation_args=self.implementation_args,
             syzygy_table=self.syzygy_table,
             universal_behavior=self.universal_behavior
+        )
+
+        player_progress_collector: PlayerProgressCollectorObservable = PlayerProgressCollectorObservable(
+            subscribers=self.subscribers
         )
 
         players: list[players_m.GamePlayer | players_m.PlayerProcess] = []
@@ -122,7 +127,8 @@ class GameManagerFactory:
                 generic_player, move_function = player_observer_factory(
                     player_color=player_color,
                     player_factory_args=player_factory_args,
-                    main_thread_mailbox=self.main_thread_mailbox,
+                    main_thread_mailbox=self.main_thread_mailbox
+                    # player_progress_collector=player_progress_collector
                 )
                 players.append(generic_player)
 
@@ -144,7 +150,8 @@ class GameManagerFactory:
             player_color_to_id=player_color_to_id,
             main_thread_mailbox=self.main_thread_mailbox,
             players=players,
-            move_factory=self.move_factory
+            move_factory=self.move_factory,
+            progress_collector=player_progress_collector
         )
 
         return game_manager

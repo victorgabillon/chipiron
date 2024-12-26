@@ -53,7 +53,10 @@ class Game:
         self._seed = seed_
         self._fen_history = [board.fen]
         self._move_history = []
-        self._board_history = [board.copy(stack=True)]
+        board_copy: IBoard = board.copy(stack=True)
+        assert (board_copy.fen == board_copy.legal_moves.chess_board.fen())
+        self._board_history = [board_copy]
+        assert (self._current_board.fen == self._current_board.legal_moves.chess_board.fen())
 
     def play_move(
             self,
@@ -70,10 +73,25 @@ class Game:
         """
         if self._playing_status.is_play():
             assert (move in [i for i in self._current_board.legal_moves])
+            assert (self._current_board.fen == self._current_board.legal_moves.chess_board.fen())
+
             self.move_history.append(self._current_board.get_uci_from_move_key(move_key=move))
+
+            assert (self._board_history[-1].fen == self._board_history[-1].legal_moves.chess_board.fen())
+
             self._current_board.play_move_key(move)
+
+            assert (self._board_history[-1].fen == self._board_history[-1].legal_moves.chess_board.fen())
+
             self.fen_history.append(self._current_board.fen)
-            self._board_history.append(self._current_board.copy(stack=True))
+            current_board_copy: IBoard = self._current_board.copy(stack=True)
+
+            assert (self._board_history[-1].fen == self._board_history[-1].legal_moves.chess_board.fen())
+            assert (current_board_copy.fen == current_board_copy.legal_moves.chess_board.fen())
+
+            self._board_history.append(current_board_copy)
+
+            assert (self._current_board.fen == self._current_board.legal_moves.chess_board.fen())
 
         else:
             print(f'Cannot play move if the game status is PAUSE {self._playing_status.status}')
@@ -85,12 +103,17 @@ class Game:
         Raises:
             AssertionError: If the game status is not paused.
         """
+        assert (self._board_history[-2].fen == self._board_history[-2].legal_moves.chess_board.fen())
+
         if self._playing_status.is_paused():
             if len(self._board_history) > 1:
                 del self._board_history[-1]
-                self._current_board = self._board_history[-1]
+                self._current_board = self._board_history[-1].copy(stack=True, deep_copy_legal_moves=True)
+                assert (self._current_board.fen == self._current_board.legal_moves.chess_board.fen())
+
         else:
             print('Cannot rewind move if the game status is PLAY')
+
 
     @property
     def playing_status(self) -> GamePlayingStatus:
@@ -115,13 +138,13 @@ class Game:
         """
         self._playing_status = value
 
-    def play(self) -> None:
+    def set_play_status(self) -> None:
         """
         Starts playing the game.
         """
         self._playing_status.play()
 
-    def pause(self) -> None:
+    def set_pause_status(self) -> None:
         """
         Pauses the game.
         """
@@ -272,21 +295,20 @@ class ObservableGame:
         self.game.playing_status = new_status
         raise Exception('problem no notificaiton implemented. Maybe this function is deadcode?')
 
-    def play(self) -> None:
+    def set_play_status(self) -> None:
         """
         Starts playing the game.
         """
         print('start playing')
-        self.game.play()
-        self.notify_players()
-        self.notify_display()
+        self.game.set_play_status()
         self.notify_status()
+        self.notify_display()
 
-    def pause(self) -> None:
+    def set_pause_status(self) -> None:
         """
         Pauses the game.
         """
-        self.game.pause()
+        self.game.set_pause_status()
         self.notify_status()
 
     def is_paused(self) -> bool:
@@ -312,14 +334,14 @@ class ObservableGame:
         Notifies the display mailboxes with the updated board.
         """
         for mailbox in self.mailboxes_display:
-            print('sending board', self.game.board.fen, self.game.board.move_history_stack)
+            print('sending board to display', self.game.board.fen, self.game.board.move_history_stack)
 
             message: BoardMessage = BoardMessage(
                 fen_plus_moves=self.game.board.into_fen_plus_history()
             )
             mailbox.put(item=message)
 
-    def notify_players(self) -> None:
+    def query_move_from_players(self) -> None:
         """
         Notifies the players to ask for a move.
         """

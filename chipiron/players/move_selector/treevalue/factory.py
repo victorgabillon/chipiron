@@ -11,6 +11,7 @@ node evaluator, node selector, tree factory, and tree manager.
 
 """
 
+import queue
 import random
 from dataclasses import dataclass
 from typing import Any
@@ -22,12 +23,13 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.factory i
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 from chipiron.players.move_selector.treevalue import node_factory
+from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import AllStoppingCriterionArgs
+from chipiron.utils.dataclass import IsDataclass
 from . import node_evaluator as node_eval
 from . import node_selector as node_selector_m
 from . import recommender_rule
 from . import tree_manager as tree_man
 from .indices.node_indices.index_types import IndexComputationType
-from .stopping_criterion import AllStoppingCriterionArgs
 from .tree_and_value_player import TreeAndValueMoveSelector
 from .trees.factory import MoveAndValueTreeFactory
 
@@ -49,7 +51,9 @@ class TreeAndValuePlayerArgs:
 def create_tree_and_value_builders(
         args: TreeAndValuePlayerArgs,
         syzygy: SyzygyTable[Any] | None,
-        random_generator: random.Random
+        random_generator: random.Random,
+        queue_progress_player: queue.Queue[IsDataclass]
+
 ) -> TreeAndValueMoveSelector:
     """
     Create a TreeAndValueMoveSelector object with the given arguments.
@@ -113,6 +117,8 @@ def create_tree_and_value_builders(
         tree_factory=tree_factory,
         node_selector_create=search_factory.create_node_selector_factory(),
         stopping_criterion_args=args.stopping_criterion,
-        recommend_move_after_exploration=args.recommender_rule
+        recommend_move_after_exploration=args.recommender_rule,
+        queue_progress_player=queue_progress_player
+
     )
     return tree_move_selector

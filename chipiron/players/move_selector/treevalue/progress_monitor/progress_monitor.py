@@ -14,10 +14,10 @@ It also includes helper classes and functions for creating and managing stopping
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable, Callable
 
-from . import node_selector as node_sel
-from .trees import MoveAndValueTree
+from chipiron.players.move_selector.treevalue import node_selector as node_sel
+from chipiron.players.move_selector.treevalue.trees import MoveAndValueTree
 
 
 @runtime_checkable
@@ -78,9 +78,61 @@ class StoppingCriterionArgs:
     type: StoppingCriterionTypes
 
 
-class StoppingCriterion:
+class ProgressMonitorP:
     """
-    The general stopping criterion
+    The general stopping criterion Protocol
+    """
+
+    def should_we_continue(
+            self,
+            tree: MoveAndValueTree
+    ) -> bool:
+        """
+        Asking should we continue
+
+        Returns:
+            boolean of should we continue
+        """
+        ...
+
+    def respectful_opening_instructions(
+            self,
+            opening_instructions: node_sel.OpeningInstructions,
+            tree: MoveAndValueTree
+    ) -> node_sel.OpeningInstructions:
+        """
+        Ensures the opening request do not exceed the stopping criterion
+
+
+        """
+        ...
+
+    def get_string_of_progress(
+            self,
+            tree: MoveAndValueTree
+    ) -> str:
+        """
+        Returns a string representation of the progress made by the stopping criterion.
+
+        Args:
+            tree (MoveAndValueTree): The move and value tree.
+
+        Returns:
+            str: A string representation of the progress.
+        """
+        ...
+
+    def get_percent_of_progress(
+            self,
+            tree: MoveAndValueTree,
+            notify_function: Callable[[int], None] | None
+    ) -> str:
+        ...
+
+
+class ProgressMonitor:
+    """
+    The general stopping criterion base class
     """
 
     def should_we_continue(
@@ -124,6 +176,22 @@ class StoppingCriterion:
         """
         return ''
 
+    def get_percent_of_progress(
+            self,
+            tree: MoveAndValueTree
+    ) -> int:
+        ...
+
+    def notify_percent_progress(
+            self,
+            tree: MoveAndValueTree,
+        notify_percent_function: Callable[[int], None] | None
+    ) -> None:
+        percent_progress: int = self.get_percent_of_progress(tree=tree)
+
+        if notify_percent_function is not None:
+            notify_percent_function(percent_progress)
+
 
 @dataclass
 class TreeMoveLimitArgs(StoppingCriterionArgs):
@@ -131,7 +199,7 @@ class TreeMoveLimitArgs(StoppingCriterionArgs):
     tree_move_limit: int
 
 
-class TreeMoveLimit(StoppingCriterion):
+class TreeMoveLimit(ProgressMonitor):
     """
     The stopping criterion based on a tree move limit
     """
@@ -156,19 +224,6 @@ class TreeMoveLimit(StoppingCriterion):
             should_we = tree.move_count < self.tree_move_limit
         return should_we
 
-    def get_string_of_progress(
-            self,
-            tree: MoveAndValueTree
-    ) -> str:
-        """
-        compute the string that display the progress in the terminal
-
-        Returns:
-            a string that display the progress in the terminal
-        """
-        return f'========= tree move counting: {tree.move_count} out of {self.tree_move_limit}' \
-               f' |  {tree.move_count / self.tree_move_limit:.0%}'
-
     def respectful_opening_instructions(
             self,
             opening_instructions: node_sel.OpeningInstructions,
@@ -186,6 +241,26 @@ class TreeMoveLimit(StoppingCriterion):
         )
         return opening_instructions_subset
 
+    def get_string_of_progress(
+            self,
+            tree: MoveAndValueTree
+    ) -> str:
+        """
+        compute the string that display the progress in the terminal
+
+        Returns:
+            a string that display the progress in the terminal
+        """
+        return f'========= tree move counting: {tree.move_count} out of {self.tree_move_limit}' \
+               f' |  {tree.move_count / self.tree_move_limit:.0%}'
+
+    def get_percent_of_progress(
+            self,
+            tree: MoveAndValueTree,
+    ) -> int:
+        percent: int = int(tree.move_count / self.tree_move_limit * 100)
+        return percent
+
 
 @dataclass
 class DepthLimitArgs(StoppingCriterionArgs):
@@ -198,7 +273,7 @@ class DepthLimitArgs(StoppingCriterionArgs):
     depth_limit: int
 
 
-class DepthLimit(StoppingCriterion):
+class DepthLimit(ProgressMonitor):
     """
     The stopping criterion based on a depth limit
     """
@@ -252,6 +327,14 @@ class DepthLimit(StoppingCriterion):
         return '========= tree move counting: ' + str(tree.move_count) + ' | Depth: ' + str(
             self.node_selector.get_current_depth_to_expand()) + ' out of ' + str(self.depth_limit)
 
+    def get_percent_of_progress(
+            self,
+            tree: MoveAndValueTree,
+    ) -> int:
+        # todo this percent is not precise
+        percent: int = int(self.node_selector.get_current_depth_to_expand() / self.depth_limit * 100)
+        return percent
+
 
 AllStoppingCriterionArgs = TreeMoveLimitArgs | DepthLimitArgs
 
@@ -259,7 +342,7 @@ AllStoppingCriterionArgs = TreeMoveLimitArgs | DepthLimitArgs
 def create_stopping_criterion(
         args: AllStoppingCriterionArgs,
         node_selector: node_sel.NodeSelector
-) -> StoppingCriterion:
+) -> ProgressMonitor:
     """
     creating the stopping criterion
 
@@ -271,7 +354,7 @@ def create_stopping_criterion(
         A stopping criterion
 
     """
-    stopping_criterion: StoppingCriterion
+    stopping_criterion: ProgressMonitor
 
     match args.type:
         case StoppingCriterionTypes.DepthLimit:
