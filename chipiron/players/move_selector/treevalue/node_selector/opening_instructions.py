@@ -9,7 +9,8 @@ from typing import Any, Iterator, Self, ItemsView, ValuesView
 
 import chipiron.players.move_selector.treevalue.nodes as nodes
 from chipiron.environments.chess.move.imove import moveKey
-from chipiron.players.move_selector.treevalue.nodes.utils import a_move_key_sequence_from_root, a_move_uci_sequence_from_root
+from chipiron.players.move_selector.treevalue.nodes.utils import a_move_key_sequence_from_root, \
+    a_move_uci_sequence_from_root
 
 
 @dataclass(slots=True)
@@ -26,9 +27,10 @@ class OpeningInstruction:
         Prints information about the opening instruction.
         """
         # print('ttt',self.node_to_open.board.chess_,self.node_to_open.board.legal_moves_)
-        print(f'OpeningInstruction: node_to_open {self.node_to_open.id} at hm {self.node_to_open.half_move} {self.node_to_open.board.fen}| '
-              f'a path from root to node_to_open is {a_move_key_sequence_from_root(self.node_to_open)} {a_move_uci_sequence_from_root(self.node_to_open)}| '
-              f'self.move_to_play {self.move_to_play} {self.node_to_open.board.get_uci_from_move_key(self.move_to_play)}')
+        print(
+            f'OpeningInstruction: node_to_open {self.node_to_open.id} at hm {self.node_to_open.half_move} {self.node_to_open.board.fen}| '
+            f'a path from root to node_to_open is {a_move_key_sequence_from_root(self.node_to_open)} {a_move_uci_sequence_from_root(self.node_to_open)}| '
+            f'self.move_to_play {self.move_to_play} {self.node_to_open.board.get_uci_from_move_key(self.move_to_play)}')
 
 
 class OpeningInstructions:
@@ -208,7 +210,7 @@ class OpeningType(Enum):
     Represents the type of opening to use.
     """
 
-    AllChildren: str = 'all_children'
+    AllChildren = 'all_children'
 
 
 class OpeningInstructor:

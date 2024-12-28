@@ -10,7 +10,7 @@ from chipiron.utils.small_tools import fetch_args_modify_and_convert, path
 
 
 def fetch_player_args_convert_and_save(
-        file_name_player: path,
+        file_name_player: str,
         modification_player: dict[Any, Any] | None = None,
         experiment_output_folder: path | None = None,
         from_data_folder: bool = True
@@ -25,7 +25,7 @@ def fetch_player_args_convert_and_save(
     """
     path_player: path
     if from_data_folder:
-        path_player = os.path.join('data/players/player_config', file_name_player)
+        path_player = os.path.join('data/players/player_config', file_name_player + '.yaml')
     else:
         path_player = file_name_player
 
@@ -47,8 +47,8 @@ def fetch_player_args_convert_and_save(
 
 
 def fetch_two_players_args_convert_and_save(
-        file_name_player_one: path,
-        file_name_player_two: path,
+        file_name_player_one: str,
+        file_name_player_two: str,
         modification_player_one: dict[Any, Any],
         modification_player_two: dict[Any, Any],
         experiment_output_folder: path | None

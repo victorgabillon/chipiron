@@ -8,6 +8,7 @@ import io
 import os.path
 import pstats
 import time
+from enum import Enum
 from pstats import SortKey
 from typing import Any
 from typing import Protocol, runtime_checkable
@@ -92,7 +93,8 @@ class Script:
         # Converting the args in the standardized dataclass
         final_args: _T_co = dacite.from_dict(
             data_class=args_dataclass_name,
-            data=args_dict
+            data=args_dict,
+            config=dacite.Config(cast=[Enum])
         )
         assert hasattr(final_args, 'base_script_args')
 

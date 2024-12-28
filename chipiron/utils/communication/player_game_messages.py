@@ -9,6 +9,7 @@ from chipiron.environments.chess.board.utils import FenPlusHistory
 from chipiron.environments.chess.board.utils import fen
 from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import BoardEvaluation
+from chipiron.players.player import playerId
 
 
 @dataclass
@@ -25,7 +26,7 @@ class MoveMessage:
     """
     move: moveKey
     corresponding_board: fen
-    player_name: str
+    player_name: playerId
     color_to_play: chess.Color
     evaluation: BoardEvaluation | None = None
 

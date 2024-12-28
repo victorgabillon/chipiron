@@ -1,13 +1,13 @@
-gui: False
+gui: True
 match_args:
   seed: 11
   file_name_player_ones: 'Sequool.yaml'
-  file_name_player_two: 'Uniform.yaml'
-  file_name_player_one: 'Uniform.yaml'
-  file_name_player_twos: 'RecurZipfBase3.yaml'
+  file_name_player_twos: 'Gui_Human.yaml'
+  file_name_player_one: 'RecurZipfBase3'
+  file_name_player_two: 'Gui_Human'
   file_name_match_setting: 'setting_jime.yaml'
 base_script_args:
-  profiling: True
+  profiling: False
   testing: False
   universal_behavior: False
 implementation_args:

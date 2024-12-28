@@ -23,7 +23,12 @@ from chipiron.environments.chess.move.imove import moveKey
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.games.match.match_results import MatchResults
 from chipiron.games.match.match_results import SimpleResults
-from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMessage, EvaluationMessage, PlayerProgressMessage
+from chipiron.players import PlayerFactoryArgs
+from chipiron.players.move_selector.treevalue import TreeAndValuePlayerArgs
+from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import TreeMoveLimitArgs
+from chipiron.players.player_ids import PlayerConfigFile
+from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMessage, EvaluationMessage, \
+    PlayerProgressMessage
 from chipiron.utils.communication.gui_messages.gui_messages import MatchResultsMessage
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage
 from chipiron.utils.communication.player_game_messages import BoardMessage, MoveMessage
@@ -58,8 +63,8 @@ class MainWindow(QWidget):
         """
         super().__init__()
 
-        self.play_button_clicked_last_time = None
-        self.pause_button_clicked_last_time = None
+        self.play_button_clicked_last_time: float | None = None
+        self.pause_button_clicked_last_time: float | None = None
 
         self.board_factory = board_factory
         self.playing_status = PlayingStatus.PLAY
@@ -67,7 +72,9 @@ class MainWindow(QWidget):
         self.gui_mailbox = gui_mailbox
         self.main_thread_mailbox = main_thread_mailbox
 
-        self.setWindowTitle("Chess GUI")
+        self.setWindowIcon(QIcon('data/gui/chipicon.png'))
+
+        self.setWindowTitle("Chipiron Chess GUI")
         self.setGeometry(300, 300, 1400, 800)
 
         self.widgetSvg = QSvgWidget(parent=self)
@@ -117,12 +124,8 @@ class MainWindow(QWidget):
         self.player_black_button.setStyleSheet('QPushButton {background-color: black; color: white;}')
         self.player_black_button.setGeometry(620, 300, 470, 30)
 
-
         self.progress_black = QProgressBar(self)
         self.progress_black.setGeometry(620, 330, 470, 30)
-
-
-
 
         self.tablewidget = QTableWidget(1, 2, self)
         self.tablewidget.setGeometry(1100, 200, 260, 330)
@@ -258,13 +261,13 @@ class MainWindow(QWidget):
                             )
                             move_promote: chess.Move = chess.Move.from_uci(
                                 "{}{}q".format(self.pieceToMove[1], self.coordinates))
-
+                            move_key: moveKey
                             if move.uci() in all_legal_moves_uci:
-                                move_key: moveKey = self.board.get_move_key_from_uci(move_uci=move.uci())
+                                move_key = self.board.get_move_key_from_uci(move_uci=move.uci())
                                 self.send_move_to_main_thread(move_key)
                             elif move_promote.uci() in all_legal_moves_uci:
                                 self.choice_promote()
-                                move_key: moveKey = self.board.get_move_key_from_uci(
+                                move_key = self.board.get_move_key_from_uci(
                                     move_uci=self.move_promote_asked.uci())
                                 self.send_move_to_main_thread(move_key)
                             else:
@@ -294,7 +297,7 @@ class MainWindow(QWidget):
         message: MoveMessage = MoveMessage(
             move=move_key,
             corresponding_board=self.board.fen,
-            player_name='Gui_Human',
+            player_name=PlayerConfigFile.GuiHuman,
             color_to_play=self.board.turn
         )
         self.main_thread_mailbox.put(item=message)
@@ -432,9 +435,9 @@ class MainWindow(QWidget):
                     self.display_move_history()
                 case PlayerProgressMessage():
                     progress_message: PlayerProgressMessage = message
-                    if progress_message.player_color == chess.WHITE:
+                    if progress_message.player_color == chess.WHITE and progress_message.progress_percent is not None:
                         self.progress_white.setValue(progress_message.progress_percent)
-                    if progress_message.player_color == chess.BLACK:
+                    if progress_message.player_color == chess.BLACK and progress_message.progress_percent is not None:
                         self.progress_black.setValue(progress_message.progress_percent)
                 case EvaluationMessage():
                     evaluation_message: EvaluationMessage = message
@@ -450,7 +453,7 @@ class MainWindow(QWidget):
                     )
                 case PlayersColorToPlayerMessage():
                     player_color_message: PlayersColorToPlayerMessage = message
-                    players_color_to_player: dict[chess.Color, str] = player_color_message.player_color_to_gui_info
+                    players_color_to_player: dict[chess.Color, PlayerFactoryArgs] = player_color_message.player_color_to_factory_args
                     self.update_players_color_to_id(players_color_to_player)
                 case MatchResultsMessage():
                     match_message: MatchResultsMessage = message
@@ -505,9 +508,30 @@ class MainWindow(QWidget):
         self.fen_button.setText('fen: ' + str(self.board.fen))  # text
         return self.drawBoardSvg
 
+    def extract_message_from_player(
+            self,
+            player: PlayerFactoryArgs
+    ) -> str:
+        """
+        Extracts a message from a player to be shown in the GUI.
+
+        Args:
+            player (PlayerFactoryArgs): The factory arguments for the player.
+
+        Returns:
+            str: The extracted message.
+        """
+        name: str = player.player_args.name
+        tree_move_limit: str | int = ''
+        if isinstance(player.player_args.main_move_selector, TreeAndValuePlayerArgs):
+            if isinstance(player.player_args.main_move_selector.stopping_criterion, TreeMoveLimitArgs):
+                tree_move_limit = player.player_args.main_move_selector.stopping_criterion.tree_move_limit
+
+        return f'{name} ({tree_move_limit})'
+
     def update_players_color_to_id(
             self,
-            players_color_to_player: dict[chess.Color, str]
+            players_color_to_player: dict[chess.Color, PlayerFactoryArgs]
     ) -> None:
         """
         Update the player buttons with the corresponding player names.
@@ -518,26 +542,25 @@ class MainWindow(QWidget):
         Returns:
             None
         """
-        self.player_white_button.setText(' White: ' + players_color_to_player[chess.WHITE])  # text
-        self.player_black_button.setText(' Black: ' + players_color_to_player[chess.BLACK])  # text
+        self.player_white_button.setText(
+            ' White: ' + self.extract_message_from_player(players_color_to_player[chess.WHITE])
+        )  # text
+        self.player_black_button.setText(
+            ' Black: ' + self.extract_message_from_player(players_color_to_player[chess.BLACK])
+        )  # text
 
-        if (players_color_to_player[chess.BLACK].split()[0] == 'Gui_Human'
-                or players_color_to_player[chess.BLACK].split()[0] == 'Command_Line_Human'):
+        if players_color_to_player[chess.BLACK].player_args.is_human():
             self.progress_black.setTextVisible(True)
             self.progress_black.setValue(100)
             self.progress_black.setFormat('Think Human!')
-            self.progress_black.setAlignment(Qt.AlignCenter)
-        else :
+        else:
             self.progress_black.setValue(0)
 
-
-        if (players_color_to_player[chess.WHITE].split()[0] == 'Gui_Human'
-                or players_color_to_player[chess.WHITE].split()[0] == 'Command_Line_Human'):
+        if players_color_to_player[chess.WHITE].player_args.is_human():
             self.progress_white.setTextVisible(True)
             self.progress_white.setValue(100)
             self.progress_white.setFormat('Think Human!')
-            self.progress_white.setAlignment(Qt.AlignCenter)
-        else :
+        else:
             self.progress_white.setValue(0)
 
     def update_evaluation(
@@ -583,13 +606,13 @@ class MainWindow(QWidget):
                 self.pause_button.setIcon(QIcon("data/gui/play.png"))  # icon
                 self.pause_button.clicked.connect(self.play_button_clicked)
                 self.pause_button.setToolTip("play the game")  # Tool tip
-                self.pause_button.move(850, 100)
+                self.pause_button.move(700, 100)
             elif play_status == PlayingStatus.PLAY:
                 self.pause_button.setText("Pause")  # text
                 self.pause_button.setIcon(QIcon("data/gui/pause.png"))  # icon
                 self.pause_button.clicked.connect(self.pause_button_clicked)
                 self.pause_button.setToolTip("pause the game")  # Tool tip
-                self.pause_button.move(850, 100)
+                self.pause_button.move(700, 100)
 
     def update_match_stats(
             self,

@@ -54,9 +54,7 @@ class Game:
         self._fen_history = [board.fen]
         self._move_history = []
         board_copy: IBoard = board.copy(stack=True)
-        assert (board_copy.fen == board_copy.legal_moves.chess_board.fen())
         self._board_history = [board_copy]
-        assert (self._current_board.fen == self._current_board.legal_moves.chess_board.fen())
 
     def play_move(
             self,
@@ -73,26 +71,15 @@ class Game:
         """
         if self._playing_status.is_play():
             assert (move in [i for i in self._current_board.legal_moves])
-            assert (self._current_board.fen == self._current_board.legal_moves.chess_board.fen())
 
             self.move_history.append(self._current_board.get_uci_from_move_key(move_key=move))
 
-            assert (self._board_history[-1].fen == self._board_history[-1].legal_moves.chess_board.fen())
-
             self._current_board.play_move_key(move)
-
-            assert (self._board_history[-1].fen == self._board_history[-1].legal_moves.chess_board.fen())
 
             self.fen_history.append(self._current_board.fen)
             current_board_copy: IBoard = self._current_board.copy(stack=True)
 
-            assert (self._board_history[-1].fen == self._board_history[-1].legal_moves.chess_board.fen())
-            assert (current_board_copy.fen == current_board_copy.legal_moves.chess_board.fen())
-
             self._board_history.append(current_board_copy)
-
-            assert (self._current_board.fen == self._current_board.legal_moves.chess_board.fen())
-
         else:
             print(f'Cannot play move if the game status is PAUSE {self._playing_status.status}')
 
@@ -103,17 +90,14 @@ class Game:
         Raises:
             AssertionError: If the game status is not paused.
         """
-        assert (self._board_history[-2].fen == self._board_history[-2].legal_moves.chess_board.fen())
 
         if self._playing_status.is_paused():
             if len(self._board_history) > 1:
                 del self._board_history[-1]
                 self._current_board = self._board_history[-1].copy(stack=True, deep_copy_legal_moves=True)
-                assert (self._current_board.fen == self._current_board.legal_moves.chess_board.fen())
 
         else:
             print('Cannot rewind move if the game status is PLAY')
-
 
     @property
     def playing_status(self) -> GamePlayingStatus:

@@ -10,6 +10,8 @@ from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.utils import seed
 from .move_selector.move_selector import MoveSelector, MoveRecommendation
 
+playerId = str
+
 
 class Player:
     """
@@ -17,7 +19,7 @@ class Player:
     """
     #  difference between player and treebuilder includes the fact
     #  that now a player can be a mixture of multiple decision rules
-    id: str
+    id: playerId
     main_move_selector: MoveSelector
 
     def __init__(

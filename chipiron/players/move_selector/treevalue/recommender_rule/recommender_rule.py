@@ -19,7 +19,6 @@ from enum import Enum
 from typing import Any
 from typing import Protocol, Literal
 
-
 import chipiron.players.move_selector.treevalue.trees as trees
 from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.boardevaluators.basic_evaluation import value_base
@@ -33,8 +32,8 @@ class RecommenderRuleTypes(str, Enum):
     """
     Enum class that defines the available recommender rule types.
     """
-    AlmostEqualLogistic: str = 'almost_equal_logistic'
-    Softmax: str = 'softmax'
+    AlmostEqualLogistic = 'almost_equal_logistic'
+    Softmax = 'softmax'
 
 
 # theses are functions but i still use dataclasses instead

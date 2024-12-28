@@ -16,12 +16,12 @@ from dataclasses import dataclass
 
 import chipiron.environments.chess.board as boards
 from chipiron.players.move_selector.move_selector import MoveRecommendation
+from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import AllStoppingCriterionArgs
 from chipiron.players.move_selector.treevalue.search_factory import NodeSelectorFactory
 from chipiron.utils import seed
 from chipiron.utils.dataclass import IsDataclass
 from . import recommender_rule
 from . import tree_manager as tree_man
-from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import AllStoppingCriterionArgs
 from .tree_exploration import create_tree_exploration, TreeExploration
 from .trees.factory import MoveAndValueTreeFactory
 
@@ -47,7 +47,7 @@ class TreeAndValueMoveSelector:
     node_selector_create: NodeSelectorFactory
     random_generator: random.Random
     recommend_move_after_exploration: recommender_rule.AllRecommendFunctionsArgs
-    queue_progress_player: queue.Queue[IsDataclass]
+    queue_progress_player: queue.Queue[IsDataclass] | None
 
     def select_move(
             self,

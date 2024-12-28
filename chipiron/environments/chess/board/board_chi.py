@@ -8,7 +8,8 @@ import chess
 import chess.polyglot
 from chess import _BoardState, Outcome
 
-from chipiron.environments.chess.board.board_modification import BoardModification, PieceInSquare, compute_modifications
+from chipiron.environments.chess.board.board_modification import BoardModification, PieceInSquare, \
+    compute_modifications, BoardModificationP
 from chipiron.environments.chess.move import moveUci
 from chipiron.environments.chess.move.imove import moveKey
 from .iboard import IBoard, boardKey, compute_key, LegalMoveKeyGeneratorP
@@ -41,7 +42,7 @@ class LegalMoveKeyGenerator(LegalMoveKeyGeneratorP):
 
     def __str__(self) -> str:
 
-        the_string :str = 'Legals Moves: '
+        the_string: str = 'Legals Moves: '
         ucis: list[moveUci] = [chess_move.uci() for move_key, chess_move in self.generated_moves.items()]
         keys: list[moveKey] = [move_key for move_key, chess_move in self.generated_moves.items()]
 
@@ -153,7 +154,7 @@ class BoardChi(IBoard):
     def play_moveà(
             self,
             move: chess.Move
-    ) -> BoardModification | None:
+    ) -> BoardModificationP | None:
         """
         Plays a move on the board and returns the board modification.
 
@@ -166,7 +167,7 @@ class BoardChi(IBoard):
         # todo: illegal moves seem accepted, do we care? if we dont write it in the doc
         # assert self.chess_board.is_legal(move)
         #
-        board_modifications: BoardModification | None = None
+        board_modifications: BoardModificationP | None = None
 
         if self.compute_board_modification:
             board_modifications = self.push_and_return_modification(move)  # type: ignore
@@ -183,7 +184,7 @@ class BoardChi(IBoard):
     def play_move(
             self,
             move: chess.Move
-    ) -> BoardModification | None:
+    ) -> BoardModificationP | None:
         """
         Plays a move on the board and returns the board modification.
 
@@ -198,7 +199,7 @@ class BoardChi(IBoard):
         # todo: illegal moves seem accepted, do we care? if we dont write it in the doc
         # assert self.chess_board.is_legal(move)
         #
-        board_modifications: BoardModification | None = None
+        board_modifications: BoardModificationP | None = None
 
         if self.compute_board_modification:
             if False:
@@ -272,7 +273,7 @@ class BoardChi(IBoard):
     def play_move_uci(
             self,
             move_uci: moveUci
-    ) -> BoardModification | None:
+    ) -> BoardModificationP | None:
         chess_move: chess.Move = chess.Move.from_uci(uci=move_uci)
         return self.play_move(move=chess_move)
 
@@ -280,7 +281,7 @@ class BoardChi(IBoard):
     def play_move_key(
             self,
             move: moveKey
-    ) -> BoardModification | None:
+    ) -> BoardModificationP | None:
         # chess_move: chess.Move = chess.Move.from_uci(uci=move)
         # if True:
         #    if self.legal_moves_ is not None and move in self.legal_moves_.generated_moves:

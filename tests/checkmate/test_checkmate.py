@@ -54,7 +54,7 @@ def test_check_in_two(use_rusty_board: bool):
     for fen, moves in dict_fen_move.items():
         board = create_board_chi(fen_with_history=FenPlusHistory(current_fen=fen))
         player = create_player_from_file(
-            player_args_file='UniformDepth.yaml',
+            player_args_file='UniformDepth',
             random_generator=random_generator,
             use_rusty_board=use_rusty_board
         )

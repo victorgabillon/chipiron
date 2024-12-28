@@ -80,7 +80,7 @@ class League:
 
     def new_player_joins(
             self,
-            file_player: str | os.PathLike[str]
+            file_player: str
     ) -> None:
         """
         Adds a new player to the league.

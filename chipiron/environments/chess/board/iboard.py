@@ -6,7 +6,7 @@ import chess
 import shakmaty_python_binding
 import yaml
 
-from chipiron.environments.chess.board.board_modification import BoardModification
+from chipiron.environments.chess.board.board_modification import BoardModificationP
 from chipiron.environments.chess.move import moveUci
 from chipiron.environments.chess.move.imove import moveKey
 from .utils import FenPlusMoveHistory, FenPlusHistory
@@ -94,13 +94,13 @@ class IBoard(Protocol):
     def play_move_key(
             self,
             move: moveKey
-    ) -> BoardModification | None:
+    ) -> BoardModificationP | None:
         ...
 
     def play_move_uci(
             self,
             move_uci: moveUci
-    ) -> BoardModification | None:
+    ) -> BoardModificationP | None:
         ...
 
     @property

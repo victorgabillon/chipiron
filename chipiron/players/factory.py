@@ -13,7 +13,6 @@ from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.players.player_args import PlayerArgs
 from chipiron.players.utils import fetch_player_args_convert_and_save
-from chipiron.utils import path
 from . import move_selector
 from .game_player import GamePlayer
 from .player import Player
@@ -24,7 +23,7 @@ from ..utils.dataclass import IsDataclass
 def create_chipiron_player(
         depth: int,
         use_rusty_board: bool,
-        queue_progress_player: queue.Queue[IsDataclass] | None
+        queue_progress_player: queue.Queue[IsDataclass] | None = None
 ) -> Player:
     """
     Creates the chipiron champion/representative/standard/default player
@@ -59,10 +58,10 @@ def create_chipiron_player(
 
 
 def create_player_from_file(
-        player_args_file: path,
+        player_args_file: str,
         random_generator: random.Random,
         use_rusty_board: bool,
-        queue_progress_player: queue.Queue[IsDataclass] | None
+        queue_progress_player: queue.Queue[IsDataclass] | None = None
 
 ) -> Player:
     """Create a player object from a file.
@@ -99,7 +98,7 @@ def create_player(
         args: PlayerArgs,
         syzygy: SyzygyTable[Any] | None,
         random_generator: random.Random,
-        queue_progress_player: queue.Queue[IsDataclass] | None
+        queue_progress_player: queue.Queue[IsDataclass] | None = None
 ) -> Player:
     """Create a player object.
 

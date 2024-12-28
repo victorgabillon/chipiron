@@ -19,8 +19,11 @@ class MoveSelectorTypes(str, Enum):
     Enumeration class representing different types of move selectors.
     """
 
-    Random: str = 'Random'
-    TreeAndValue: str = 'TreeAndValue'
-    Stockfish: str = 'Stockfish'
-    CommandLineHuman: str = 'CommandLineHuman'
-    GuiHuman: str = 'GuiHuman'
+    Random = 'Random'
+    TreeAndValue = 'TreeAndValue'
+    Stockfish = 'Stockfish'
+    CommandLineHuman = 'CommandLineHuman'
+    GuiHuman = 'GuiHuman'
+
+    def is_human(self) -> bool:
+        return self is MoveSelectorTypes.GuiHuman or self is MoveSelectorTypes.CommandLineHuman

@@ -10,6 +10,6 @@ class NodeSelectorType(str, Enum):
     Enumeration representing the types of node selectors.
     """
 
-    RecurZipfBase: str = 'RecurZipfBase'
-    Sequool: str = 'Sequool'
-    Uniform: str = 'Uniform'
+    RecurZipfBase = 'RecurZipfBase'
+    Sequool = 'Sequool'
+    Uniform = 'Uniform'

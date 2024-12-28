@@ -112,7 +112,9 @@ class TreeExploration:
         )
         tree_expansions.add_creation(tree_expansion=tree_expansion)
 
+        loop: int = 0
         while self.stopping_criterion.should_we_continue(tree=self.tree):
+            loop = loop + 1
             assert (not self.tree.root_node.is_over())
             # print info
             self.print_info_during_move_computation(random_generator=random_generator)
@@ -128,7 +130,8 @@ class TreeExploration:
             opening_instructions_subset: node_sel.OpeningInstructions
             opening_instructions_subset = self.stopping_criterion.respectful_opening_instructions(
                 opening_instructions=opening_instructions,
-                tree=self.tree)
+                tree=self.tree
+            )
 
             # open the nodes
             tree_expansions = self.tree_manager.open_instructions(
@@ -140,10 +143,11 @@ class TreeExploration:
             self.tree_manager.update_backward(tree_expansions=tree_expansions)
             self.tree_manager.update_indices(tree=self.tree)
 
-            self.stopping_criterion.notify_percent_progress(
-                tree=self.tree,
-                notify_percent_function=self.notify_percent_function
-            )
+            if loop % 10 == 0:
+                self.stopping_criterion.notify_percent_progress(
+                    tree=self.tree,
+                    notify_percent_function=self.notify_percent_function
+                )
 
         # trees.save_raw_data_to_file(tree=self.tree)
         # self.tree_manager.print_some_stats(tree=self.tree)
@@ -174,7 +178,7 @@ def create_tree_exploration(
         tree_factory: MoveAndValueTreeFactory,
         stopping_criterion_args: AllStoppingCriterionArgs,
         recommend_move_after_exploration: recommender_rule.AllRecommendFunctionsArgs,
-        queue_progress_player: queue.Queue[IsDataclass]
+        queue_progress_player: queue.Queue[IsDataclass] | None
 ) -> TreeExploration:
     """
     Creates a TreeExploration object with the specified dependencies.
@@ -202,11 +206,12 @@ def create_tree_exploration(
         node_selector=node_selector
     )
 
-    def notify_percent_function(progress_percent: int):
-        queue_progress_player.put(PlayerProgressMessage(
-            progress_percent=progress_percent,
-            player_color=starting_board.turn
-        ))
+    def notify_percent_function(progress_percent: int) -> None:
+        if queue_progress_player is not None:
+            queue_progress_player.put(PlayerProgressMessage(
+                progress_percent=progress_percent,
+                player_color=starting_board.turn
+            ))
 
     tree_exploration: TreeExploration = TreeExploration(
         tree=move_and_value_tree,

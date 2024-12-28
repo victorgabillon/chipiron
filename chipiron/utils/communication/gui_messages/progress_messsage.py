@@ -14,7 +14,5 @@ class PlayerProgressMessage:
     Attributes:
         evaluation_stock (Any): The evaluation for the stock.
     """
-    progress_percent: int
+    progress_percent: int | None
     player_color: chess.Color
-
-
