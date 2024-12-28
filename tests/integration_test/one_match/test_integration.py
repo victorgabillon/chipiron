@@ -188,8 +188,8 @@ configs_with_stock = [
                          {
                              'gui': False,
                              'match_args': {
-                                 'seed': 11, 'file_name_player_one': 'Stockfish.yaml',
-                                 'file_name_player_two': 'Random.yaml',
+                                 'seed': 11, 'file_name_player_one': PlayerConfigFile.Stockfish,
+                                 'file_name_player_two': PlayerConfigFile.Random,
                                  'file_name_match_setting': 'setting_jime.yaml'
                              },
                              'base_script_args': {
@@ -203,8 +203,8 @@ configs_with_stock_and_gui = [
                                      'gui': True,
                                      'match_args': {
                                          'seed': 11,
-                                         'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
-                                         'file_name_player_two': 'Random.yaml',
+                                         'file_name_player_one': PlayerConfigFile.Test_Sequool,
+                                         'file_name_player_two': PlayerConfigFile.Random,
                                          'file_name_match_setting': 'setting_jime.yaml'
                                      },
                                      'base_script_args': {'profiling': False}
