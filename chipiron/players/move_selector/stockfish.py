@@ -20,6 +20,7 @@ from typing import Literal, Any
 import chess.engine
 
 import chipiron.environments.chess.board as boards
+from chipiron.environments.chess.move.imove import moveKey
 from .move_selector import MoveRecommendation
 from .move_selector_types import MoveSelectorTypes
 from ...environments.chess import BoardChi
@@ -83,10 +84,11 @@ class StockfishPlayer:
                 # note that we dont give here historical_boards, hope this does not create but related to 3 fold repetition computation
             )
         )
-        result = self.engine.set_play_status(board_chi.chess_board, chess.engine.Limit(self.time_limit))
+        result = self.engine.play(board_chi.chess_board, chess.engine.Limit(self.time_limit))
         self.engine.quit()
         self.engine = None
-        return MoveRecommendation(move=result.move.uci())
+        move_key: moveKey = board.get_move_key_from_uci(move_uci=result.move.uci())
+        return MoveRecommendation(move=move_key)
 
     def print_info(self) -> None:
         """

@@ -12,7 +12,7 @@ class PlayerConfigFile(str, Enum):
     UniformDepth = 'UniformDepth'
     Uniform = 'Uniform'
     Random = 'Random'
-    Stockfish ='Stockfish'
+    Stockfish = 'Stockfish'
 
     Test_Sequool = 'players_for_test_purposes/Sequool'
     Test_RecurZipfSequool = 'players_for_test_purposes/RecurZipfSequool'
