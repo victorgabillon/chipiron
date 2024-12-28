@@ -12,6 +12,7 @@ The module includes the following classes:
 It also includes helper classes and functions for creating and managing stopping criteria.
 """
 
+import abc
 from dataclasses import dataclass
 from enum import Enum
 from typing import Protocol, runtime_checkable, Callable
@@ -62,8 +63,8 @@ class StoppingCriterionTypes(str, Enum):
     Enum class representing different types of stopping criteria for tree value calculation.
     """
 
-    DepthLimit: str = 'depth_limit'
-    TreeMoveLimit: str = 'tree_move_limit'
+    DepthLimit = 'depth_limit'
+    TreeMoveLimit = 'tree_move_limit'
 
 
 @dataclass
@@ -78,7 +79,7 @@ class StoppingCriterionArgs:
     type: StoppingCriterionTypes
 
 
-class ProgressMonitorP:
+class ProgressMonitorP(Protocol):
     """
     The general stopping criterion Protocol
     """
@@ -176,6 +177,7 @@ class ProgressMonitor:
         """
         return ''
 
+    @abc.abstractmethod
     def get_percent_of_progress(
             self,
             tree: MoveAndValueTree
@@ -185,7 +187,7 @@ class ProgressMonitor:
     def notify_percent_progress(
             self,
             tree: MoveAndValueTree,
-        notify_percent_function: Callable[[int], None] | None
+            notify_percent_function: Callable[[int], None] | None
     ) -> None:
         percent_progress: int = self.get_percent_of_progress(tree=tree)
 

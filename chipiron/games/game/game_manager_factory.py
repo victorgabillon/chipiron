@@ -16,7 +16,7 @@ from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator
 from chipiron.players.factory_higher_level import MoveFunction, create_player_observer_factory, PlayerObserverFactory
 from chipiron.utils import path
 from chipiron.utils import seed
-from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage, extract_message_from_players
+from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage
 from chipiron.utils.dataclass import IsDataclass
 from .game import Game, ObservableGame
 from .game_manager import GameManager
@@ -24,6 +24,7 @@ from .progress_collector import PlayerProgressCollectorObservable
 from ...environments.chess.board.utils import FenPlusHistory
 from ...environments.chess.move_factory import MoveFactory
 from ...players.boardevaluators.table_base import SyzygyTable
+from ...players.player_ids import PlayerConfigFile
 from ...scripts.chipiron_args import ImplementationArgs
 
 
@@ -80,9 +81,10 @@ class GameManagerFactory:
         board: boards.IBoard = self.board_factory(fen_with_history=FenPlusHistory(current_fen=starting_fen))
         if self.subscribers:
             for subscriber in self.subscribers:
-                player_id_message: PlayersColorToPlayerMessage = extract_message_from_players(
+                player_id_message: PlayersColorToPlayerMessage = PlayersColorToPlayerMessage(
                     player_color_to_factory_args=player_color_to_factory_args
                 )
+
                 subscriber.put(player_id_message)
 
         while not self.main_thread_mailbox.empty():
@@ -121,7 +123,7 @@ class GameManagerFactory:
 
             # Human playing with gui does not need a player, as the playing moves will be generated directly
             # by the GUI and sent directly to the game_manager
-            if player_factory_args.player_args.name != 'Gui_Human':
+            if player_factory_args.player_args.name != PlayerConfigFile.GuiHuman:
                 generic_player: players_m.GamePlayer | players_m.PlayerProcess
                 move_function: MoveFunction
                 generic_player, move_function = player_observer_factory(

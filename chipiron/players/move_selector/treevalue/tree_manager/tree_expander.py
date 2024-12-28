@@ -26,7 +26,7 @@ class TreeExpansion:
 
     child_node: node.ITreeNode[Any]
     parent_node: node.ITreeNode[Any] | None
-    board_modifications: board_mod.BoardModification | None
+    board_modifications: board_mod.BoardModificationP | None
     creation_child_node: bool
     move: moveKey | None
 

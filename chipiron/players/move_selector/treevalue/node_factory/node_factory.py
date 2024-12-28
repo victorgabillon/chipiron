@@ -25,7 +25,7 @@ class TreeNodeFactory(Protocol[T]):
             count: int,
             parent_node: node.ITreeNode[Any] | None,
             move_from_parent: moveKey | None,
-            modifications: board_mod.BoardModification | None
+            modifications: board_mod.BoardModificationP | None
     ) -> node.ITreeNode[T]:
         """
         Creates a new TreeNode object.

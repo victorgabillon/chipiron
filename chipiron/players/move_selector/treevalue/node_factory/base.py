@@ -25,7 +25,7 @@ class Base(Generic[T], TreeNodeFactory[T]):
             count: int,
             parent_node: ITreeNode[Any] | None,
             move_from_parent: moveKey | None,
-            modifications: board_mod.BoardModification | None
+            modifications: board_mod.BoardModificationP | None
     ) -> TreeNode[T]:
         """
         Creates a new TreeNode object.

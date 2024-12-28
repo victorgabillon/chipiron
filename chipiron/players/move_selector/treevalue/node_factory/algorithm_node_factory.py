@@ -32,7 +32,7 @@ class AlgorithmNodeFactory:
             count: int,
             parent_node: ITreeNode[Any] | None,
             move_from_parent: moveKey | None,
-            modifications: board_mod.BoardModification | None
+            modifications: board_mod.BoardModificationP | None
     ) -> AlgorithmNode:
         """
         Creates an AlgorithmNode object.

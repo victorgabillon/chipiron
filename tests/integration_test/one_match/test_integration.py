@@ -2,6 +2,7 @@ import sys
 import time
 
 import chipiron.scripts as scripts
+from chipiron.players.player_ids import PlayerConfigFile
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.factory import create_script
 from chipiron.scripts.script_args import BaseScriptArgs
@@ -21,8 +22,8 @@ configs_base = [
         'gui': False,
         'match_args': {
             'seed': 11,
-            'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
-            'file_name_player_two': 'Random.yaml',
+            'file_name_player_one': PlayerConfigFile.Test_Sequool,
+            'file_name_player_two': PlayerConfigFile.Random,
             'file_name_match_setting': 'setting_cubo.yaml'
         },
         'base_script_args': {
@@ -35,9 +36,8 @@ configs_base = [
         'gui': False,
         'match_args': {
             'seed': 11,
-            'file_name_player_one':
-                'players_for_test_purposes/Sequool.yaml',
-            'file_name_player_two': 'players_for_test_purposes/RecurZipfSequool.yaml',
+            'file_name_player_one': PlayerConfigFile.Test_Sequool,
+            'file_name_player_two': PlayerConfigFile.Test_RecurZipfSequool,
             'file_name_match_setting': 'setting_cubo.yaml'
         },
         'base_script_args': {
@@ -50,23 +50,8 @@ configs_base = [
         'gui': False,
         'match_args': {
             'seed': 11,
-            'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
-            'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml',
-            'file_name_match_setting': 'setting_cubo.yaml'
-        },
-        'base_script_args': {
-            'profiling': False,
-            'testing': True
-        }
-    },
-
-    {
-        'gui': False,
-
-        'match_args': {
-            'seed': 11,
-            'file_name_player_one': 'players_for_test_purposes/RecurZipfBase4.yaml',
-            'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml',
+            'file_name_player_one': PlayerConfigFile.Test_Sequool,
+            'file_name_player_two': PlayerConfigFile.Test_RecurZipfBase3,
             'file_name_match_setting': 'setting_cubo.yaml'
         },
         'base_script_args': {
@@ -80,8 +65,23 @@ configs_base = [
 
         'match_args': {
             'seed': 11,
-            'file_name_player_one': 'players_for_test_purposes/Uniform.yaml',
-            'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml',
+            'file_name_player_one': PlayerConfigFile.Test_RecurZipfBase4,
+            'file_name_player_two': PlayerConfigFile.Test_RecurZipfBase3,
+            'file_name_match_setting': 'setting_cubo.yaml'
+        },
+        'base_script_args': {
+            'profiling': False,
+            'testing': True
+        }
+    },
+
+    {
+        'gui': False,
+
+        'match_args': {
+            'seed': 11,
+            'file_name_player_one': PlayerConfigFile.Test_Uniform,
+            'file_name_player_two': PlayerConfigFile.Test_RecurZipfBase3,
             'file_name_match_setting': 'setting_cubo.yaml'
         },
         'base_script_args': {
@@ -95,8 +95,8 @@ configs_base = [
         'match_args': {
             'seed': 11,
 
-            'file_name_player_one': 'players_for_test_purposes/RecurZipfBase3.yaml',
-            'file_name_player_two': 'players_for_test_purposes/RecurZipfBase3.yaml',
+            'file_name_player_one': PlayerConfigFile.Test_RecurZipfBase3,
+            'file_name_player_two': PlayerConfigFile.Test_RecurZipfBase3,
             'file_name_match_setting': 'setting_cubo.yaml'
         },
         'base_script_args': {
@@ -111,8 +111,8 @@ configs_base = [
         'match_args': {
             'seed': 11,
 
-            'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
-            'file_name_player_two': 'Random.yaml',
+            'file_name_player_one': PlayerConfigFile.Test_Sequool,
+            'file_name_player_two': PlayerConfigFile.Random,
             'file_name_match_setting': 'setting_cubo.yaml'
         },
         'base_script_args': {
@@ -127,8 +127,8 @@ configs_base = [
         'match_args': {
             'seed': 12,
 
-            'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
-            'file_name_player_two': 'Random.yaml',
+            'file_name_player_one': PlayerConfigFile.Test_Sequool,
+            'file_name_player_two': PlayerConfigFile.Random,
             'file_name_match_setting': 'setting_cubo.yaml'
         },
         'base_script_args': {
@@ -143,8 +143,8 @@ configs_base = [
 
         'match_args': {
             'seed': 11,
-            'file_name_player_one': 'players_for_test_purposes/Sequool.yaml',
-            'file_name_player_two': 'Random.yaml',
+            'file_name_player_one': PlayerConfigFile.Test_Sequool,
+            'file_name_player_two': PlayerConfigFile.Random,
             'file_name_match_setting': 'setting_tron.yaml'
         },
         'base_script_args': {
@@ -246,9 +246,9 @@ def test_randomness():
 
     match_args: MatchArgs = MatchArgs()
     match_args.seed = 0
-    match_args.file_name_player_one = 'players_for_test_purposes/Uniform.yaml'
-    match_args.file_name_player_two = 'players_for_test_purposes/Sequool.yaml'
-    match_args.file_name_player_two = 'Random.yaml'
+    match_args.file_name_player_one = PlayerConfigFile.Test_Uniform
+    match_args.file_name_player_two = PlayerConfigFile.Test_Sequool
+    match_args.file_name_player_two = PlayerConfigFile.Random
     match_args.file_name_match_setting = 'setting_tron.yaml'
 
     implementation_args: ImplementationArgs = ImplementationArgs()
@@ -285,8 +285,6 @@ def test_randomness():
 
 
 def test_same_game_with_or_without_rust():
-
-
     import chipiron as ch
     from chipiron.games.match.match_factories import create_match_manager_from_args
     from chipiron.games.match.match_results import MatchReport
@@ -294,9 +292,9 @@ def test_same_game_with_or_without_rust():
 
     match_args: MatchArgs = MatchArgs()
     match_args.seed = 0
-    match_args.file_name_player_one = 'players_for_test_purposes/Uniform.yaml'
-    match_args.file_name_player_two = 'players_for_test_purposes/Sequool.yaml'
-    match_args.file_name_player_two = 'Random.yaml'
+    match_args.file_name_player_one = PlayerConfigFile.Test_Uniform
+    match_args.file_name_player_two = PlayerConfigFile.Test_Sequool
+    match_args.file_name_player_two = PlayerConfigFile.Random
     match_args.file_name_match_setting = 'setting_tron.yaml'
 
     implementation_args: ImplementationArgs = ImplementationArgs(use_rust_boards=False)
@@ -333,7 +331,6 @@ def test_same_game_with_or_without_rust():
 
     end_time = time.time()
     print(f'time: {end_time - start_time}')
-
 
 
 if __name__ == "__main__":

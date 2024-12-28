@@ -9,8 +9,8 @@ class PlayingStatus(Enum):
     """
     Class containing the possible playing status of a game.
     """
-    PLAY: int = 1
-    PAUSE: int = 0
+    PLAY = 1
+    PAUSE = 0
 
 
 @dataclass

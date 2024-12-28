@@ -52,7 +52,7 @@ class GameManager:
     main_thread_mailbox: queue.Queue[IsDataclass]
     players: list[players_m.PlayerProcess | players_m.GamePlayer]
     move_factory: MoveFactory
-    progress_collector : PlayerProgressCollectorP
+    progress_collector: PlayerProgressCollectorP
 
     def __init__(
             self,
@@ -65,7 +65,7 @@ class GameManager:
             main_thread_mailbox: queue.Queue[IsDataclass],
             players: list[players_m.PlayerProcess | players_m.GamePlayer],
             move_factory: MoveFactory,
-            progress_collector : PlayerProgressCollectorP
+            progress_collector: PlayerProgressCollectorP
 
     ) -> None:
         """
@@ -164,8 +164,6 @@ class GameManager:
             color_of_player_to_move_str = color_names[color_to_move]
             print(f'{color_of_player_to_move_str} ({self.player_color_to_id[color_to_move]}) to play now...')
 
-
-
             # waiting for a message
             mail = self.main_thread_mailbox.get()
             self.processing_mail(mail)
@@ -216,15 +214,12 @@ class GameManager:
                 # play the move
                 move_key: moveKey = move_message.move
 
-                print('Receiving the move key', move_key, self.game.playing_status, board.fen )
+                print('Receiving the move key', move_key, self.game.playing_status, board.fen)
                 if move_message.corresponding_board == board.fen and \
                         self.game.playing_status.is_play() and \
                         message.player_name == self.player_color_to_id[board.turn]:
 
-                    board.legal_moves.get_all() # make sure the board has generated the legal moves
-
-                    print('rr',board.fen, board)
-                    print(board.legal_moves, board.legal_moves.chess_board)
+                    board.legal_moves.get_all()  # make sure the board has generated the legal moves
 
                     move_uci: moveUci = board.get_uci_from_move_key(move_key)
 

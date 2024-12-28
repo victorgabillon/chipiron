@@ -13,6 +13,7 @@ from typing import Any
 import customtkinter as ctk
 
 from chipiron import scripts
+from chipiron.players.player_ids import PlayerConfigFile
 
 
 # TODO switch to pygame
@@ -83,11 +84,12 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
     message.grid(column=2, row=2)
 
     # Create the list of options
-    chipi_algo_options_list: list[str] = ["RecurZipfBase3", "Uniform", "Sequool"]
+    chipi_algo_options_list: list[PlayerConfigFile] = [PlayerConfigFile.RecurZipfBase3,
+                                                       PlayerConfigFile.Uniform, PlayerConfigFile.Sequool]
 
     # Variable to keep track of the option
     # selected in OptionMenu
-    chipi_algo_choice = ctk.StringVar(value="RecurZipfBase3")  # set initial value
+    chipi_algo_choice = ctk.StringVar(value=PlayerConfigFile.RecurZipfBase3)  # set initial value
 
     # chipi_algo_choice = tk.StringVar(root)
 
@@ -179,13 +181,13 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
                 'gui': True,
             }
             if output['color_human'] == 'White':
-                gui_args['match_args']['file_name_player_one'] = 'Gui_Human.yaml'
-                gui_args['match_args']['file_name_player_two'] = f'{output["chipi_algo"]}.yaml'
+                gui_args['match_args']['file_name_player_one'] = PlayerConfigFile.GuiHuman
+                gui_args['match_args']['file_name_player_two'] = f'{output["chipi_algo"]}'
                 gui_args['match_args']['player_two'] = {
                     'main_move_selector': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}
             else:
-                gui_args['match_args']['file_name_player_two'] = 'Gui_Human.yaml'
-                gui_args['match_args']['file_name_player_one'] = f'{output["chipi_algo"]}.yaml'
+                gui_args['match_args']['file_name_player_two'] = PlayerConfigFile.GuiHuman
+                gui_args['match_args']['file_name_player_one'] = f'{output["chipi_algo"]}'
                 gui_args['match_args']['player_one'] = {
                     'main_move_selector': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}
             script_type = scripts.ScriptType.OneMatch
@@ -195,8 +197,8 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
                 'match_args': {
                     'seed': 0,
                     'gui': True,
-                    'file_name_player_one': 'RecurZipfBase3.yaml',
-                    'file_name_player_two': 'RecurZipfBase4.yaml',
+                    'file_name_player_one': PlayerConfigFile.RecurZipfBase3,
+                    'file_name_player_two': PlayerConfigFile.RecurZipfBase3,
                     'file_name_match_setting': 'setting_duda.yaml'
                 }
             }

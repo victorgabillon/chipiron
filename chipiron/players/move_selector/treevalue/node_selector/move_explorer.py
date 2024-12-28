@@ -20,9 +20,9 @@ class SamplingPriorities(str, Enum):
         PRIORITY_BEST (str): Priority for the best move.
         PRIORITY_TWO_BEST (str): Priority for the two best moves.
     """
-    NO_PRIORITY: str = 'no_priority'
-    PRIORITY_BEST: str = 'priority_best'
-    PRIORITY_TWO_BEST: str = 'priority_two_best'
+    NO_PRIORITY = 'no_priority'
+    PRIORITY_BEST = 'priority_best'
+    PRIORITY_TWO_BEST = 'priority_two_best'
 
 
 class MoveExplorer:

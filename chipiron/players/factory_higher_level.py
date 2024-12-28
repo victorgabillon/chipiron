@@ -69,6 +69,7 @@ class PlayerObserverFactory(Protocol):
     """
     creates the player and the means to communicate with it
     """
+
     def __call__(
             self,
             player_factory_args: PlayerFactoryArgs,

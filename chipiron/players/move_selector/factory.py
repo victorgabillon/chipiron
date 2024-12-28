@@ -27,7 +27,7 @@ def create_main_move_selector(
         move_selector_instance_or_args: AllMoveSelectorArgs,
         syzygy: SyzygyTable[Any] | None,
         random_generator: random.Random,
-        queue_progress_player: queue.Queue[IsDataclass]|None
+        queue_progress_player: queue.Queue[IsDataclass] | None
 
 ) -> move_selector.MoveSelector:
     """

@@ -5,6 +5,7 @@ This module defines the `MatchArgs` class, which represents the input arguments 
 from dataclasses import dataclass, field
 from typing import Any
 
+from chipiron.players.player_ids import PlayerConfigFile
 from chipiron.utils import path
 
 
@@ -25,8 +26,8 @@ class MatchArgs:
     # the seed
     seed: int = 0
 
-    file_name_player_one: path = 'RecurZipfBase3.yaml'
-    file_name_player_two: path = 'RecurZipfBase3.yaml'
+    file_name_player_one: PlayerConfigFile = PlayerConfigFile.RecurZipfBase3
+    file_name_player_two: PlayerConfigFile = PlayerConfigFile.RecurZipfBase3
     file_name_match_setting: path = 'setting_cubo.yaml'
 
     # For players and match modification of the yaml file specified in a respective dict

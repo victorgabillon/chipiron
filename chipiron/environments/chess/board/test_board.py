@@ -18,7 +18,6 @@ def test_copy() -> None:
     )
 
     all_moves_keys_chi = board_chi.legal_moves.get_all()
-    all_moves_uci_chi = [board_chi.get_uci_from_move_key(move_key=move_key) for move_key in all_moves_keys_chi]
 
     board_chi.play_move_key(move=all_moves_keys_chi[0])
 

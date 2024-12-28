@@ -25,7 +25,7 @@ from .board_representation import Representation364
 
 def node_to_tensors_pieces_square_from_parent(
         node: ITreeNode[Any],
-        board_modifications: boards.BoardModification,
+        board_modifications: boards.BoardModificationP,
         parent_node: AlgorithmNode
 ) -> Representation364:
     """
@@ -104,7 +104,7 @@ class Representation364Factory:
             self,
             tree_node: TreeNode[Any],
             parent_node: AlgorithmNode | None,
-            modifications: boards.BoardModification | None
+            modifications: boards.BoardModificationP | None
     ) -> Representation364:
         """
         Create a Representation364 object from a transition.

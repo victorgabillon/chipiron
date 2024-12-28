@@ -52,7 +52,7 @@ def create_tree_and_value_builders(
         args: TreeAndValuePlayerArgs,
         syzygy: SyzygyTable[Any] | None,
         random_generator: random.Random,
-        queue_progress_player: queue.Queue[IsDataclass]
+        queue_progress_player: queue.Queue[IsDataclass] | None
 
 ) -> TreeAndValueMoveSelector:
     """

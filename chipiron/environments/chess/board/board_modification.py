@@ -2,6 +2,7 @@
 Module that contains the BoardModification class
 """
 from dataclasses import dataclass, field
+from typing import Iterator, Protocol
 
 import chess
 
@@ -17,14 +18,28 @@ class PieceInSquare:
     color: chess.Color
 
 
+class BoardModificationP(Protocol):
+    """
+    Represents a modification to a chessboard resulting from a move.
+    """
+
+    @property
+    def removals(self) -> Iterator[PieceInSquare]:
+        ...
+
+    @property
+    def appearances(self) -> Iterator[PieceInSquare]:
+        ...
+
+
 @dataclass
 class BoardModification:
     """
     Represents a modification to a chessboard resulting from a move.
     """
 
-    removals: set[PieceInSquare] = field(default_factory=set)
-    appearances: set[PieceInSquare] = field(default_factory=set)
+    removals_: set[PieceInSquare] = field(default_factory=set)
+    appearances_: set[PieceInSquare] = field(default_factory=set)
 
     def add_appearance(
             self,
@@ -36,7 +51,7 @@ class BoardModification:
         Args:
             appearance: The PieceInSquare object representing the appearance to add.
         """
-        self.appearances.add(appearance)
+        self.appearances_.add(appearance)
 
     def add_removal(
             self,
@@ -48,20 +63,28 @@ class BoardModification:
         Args:
             removal: The PieceInSquare object representing the removal to add.
         """
-        self.removals.add(removal)
+        self.removals_.add(removal)
+
+    @property
+    def removals(self) -> Iterator[PieceInSquare]:
+        return iter(self.removals_)
+
+    @property
+    def appearances(self) -> Iterator[PieceInSquare]:
+        return iter(self.appearances_)
+
 
 @dataclass
 class PieceRustIterator:
+    items_: set[tuple[int, int, int]] = field(default_factory=set)
 
-    items_: set[int,int,int] = field(default_factory=set)
-
-    def __iter__(self):
+    def __iter__(self) -> Iterator[PieceInSquare]:
         self.it = iter(self.items_)
         return self
 
-    def __next__(self):
+    def __next__(self) -> PieceInSquare:
         next_ = self.it.__next__()
-        return PieceInSquare(square=next_[0],piece=next_[1],color=bool(next_[2]))
+        return PieceInSquare(square=next_[0], piece=next_[1], color=bool(next_[2]))
 
 
 @dataclass
@@ -70,16 +93,17 @@ class BoardModificationRust:
     Represents a modification to a chessboard resulting from a move.
     """
 
-    removals_: set[int,int,int] = field(default_factory=set)
-    appearances_: set[int,int,int] = field(default_factory=set)
+    removals_: set[tuple[int, int, int]] = field(default_factory=set)
+    appearances_: set[tuple[int, int, int]] = field(default_factory=set)
 
     @property
-    def removals(self):
+    def removals(self) -> Iterator[PieceInSquare]:
         return PieceRustIterator(self.removals_)
 
     @property
-    def appearances(self):
+    def appearances(self) -> Iterator[PieceInSquare]:
         return PieceRustIterator(self.appearances_)
+
 
 def compute_modifications(
         previous_pawns: chess.Bitboard,

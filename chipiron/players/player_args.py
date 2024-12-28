@@ -4,6 +4,7 @@ Module for player arguments.
 from dataclasses import dataclass
 
 from . import move_selector
+from .move_selector.move_selector_types import MoveSelectorTypes
 
 
 @dataclass
@@ -18,6 +19,9 @@ class PlayerArgs:
     name: str
     main_move_selector: move_selector.AllMoveSelectorArgs
     syzygy_play: bool
+
+    def is_human(self) -> bool:
+        return MoveSelectorTypes(self.main_move_selector.type).is_human()
 
 
 @dataclass

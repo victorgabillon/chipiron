@@ -63,7 +63,7 @@ class TreeManager:
         )
 
         # The move is played. The board is now a new board
-        modifications: board_mod.BoardModification | None = board.play_move_key(move=move)
+        modifications: board_mod.BoardModificationP | None = board.play_move_key(move=move)
 
         return self.open_node(
             tree=tree,
@@ -78,7 +78,7 @@ class TreeManager:
             tree: trees.MoveAndValueTree,
             parent_node: node.ITreeNode[Any],
             board: board_mod.IBoard,
-            modifications: board_mod.BoardModification | None,
+            modifications: board_mod.BoardModificationP | None,
             move: moveKey
     ) -> TreeExpansion:
         """

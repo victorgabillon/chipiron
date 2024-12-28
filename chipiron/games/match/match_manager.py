@@ -118,12 +118,7 @@ class MatchManager:
 
             # ad hoc waiting time in case we play against a human and the game is finished
             # (so that the human as the time to view the final position before the automatic start of a new game)
-            if (player_color_to_factory_args[chess.WHITE].player_args.name == 'Gui_Human'
-                    or player_color_to_factory_args[chess.BLACK].player_args.name == 'Gui_Human'
-                    or player_color_to_factory_args[chess.WHITE].player_args.name == 'Command_Line_Human'
-                    or player_color_to_factory_args[chess.BLACK].player_args.name == 'Command_Line_Human'
-            ):
-                #todo create a enum with all the name of player accepted so that is its not hardcoded like 'Command_Line_Human' here
+            if player_color_to_factory_args[chess.WHITE].player_args.is_human():
                 import time
                 time.sleep(30)
 
