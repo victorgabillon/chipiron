@@ -1,7 +1,7 @@
 """
 Module for the SyzygyTable class.
 """
-from typing import Protocol, TypeVar
+from typing import Protocol
 
 import chess.syzygy
 
@@ -9,10 +9,8 @@ from chipiron.environments.chess.board import IBoard
 from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.boardevaluators.over_event import Winner, HowOver, OverTags
 
-T_Board = TypeVar('T_Board', bound=IBoard, contravariant=True)
 
-
-class SyzygyTable(Protocol[T_Board]):
+class SyzygyTable[T_Board:IBoard](Protocol):
     """
     A class representing a Syzygy tablebase for chess endgame analysis.
 

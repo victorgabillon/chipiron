@@ -17,7 +17,7 @@ It also integrates code from : https://github.com/oakmac/chessboardjs/
 
 ## Requirements
 
-* Python 3.11
+* Python 3.12
 * pip
 * curl
 * tkinter

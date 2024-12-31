@@ -2,7 +2,6 @@
 Module for DictOfNumberedDictWithPointerOnMax class.
 """
 from typing import Protocol
-from typing import TypeVar, Generic
 
 
 class HasHalfMove(Protocol):
@@ -16,11 +15,7 @@ class HasHalfMove(Protocol):
         """
 
 
-T_Key = TypeVar('T_Key', bound=HasHalfMove)
-T_Value = TypeVar('T_Value')
-
-
-class DictOfNumberedDictWithPointerOnMax(Generic[T_Key, T_Value]):
+class DictOfNumberedDictWithPointerOnMax[T_Key:HasHalfMove, T_Value]:
     """
     A dictionary-like data structure that stores numbered dictionaries and keeps track of the maximum half move.
 

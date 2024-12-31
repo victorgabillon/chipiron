@@ -3,7 +3,7 @@ This module defines the TreeNode class, which represents a node in a tree struct
 """
 
 from dataclasses import dataclass, field
-from typing import TypeVar, Generic, Any
+from typing import Any
 
 import chess
 
@@ -12,14 +12,12 @@ from chipiron.environments.chess.board.iboard import LegalMoveKeyGeneratorP
 from chipiron.environments.chess.move.imove import moveKey
 from .itree_node import ITreeNode
 
+
 # todo replace the any with a defaut value in ITReenode when availble in python; 3.13?
-ChildrenType = TypeVar('ChildrenType', bound=ITreeNode[Any])
 
 
 @dataclass(slots=True)
-class TreeNode(
-    Generic[ChildrenType]
-):
+class TreeNode[ChildrenType:ITreeNode[Any]]:
     r"""
     The TreeNode class stores information about a specific board position, including the board representation,
     the player to move, the half-move count, and the parent-child relationships with other nodes.
