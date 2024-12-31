@@ -12,8 +12,6 @@ and checking if the game is over.
 Note: This is an interface and should not be instantiated directly.
 """
 
-from __future__ import annotations  # (helping with recursive type annotation)
-
 from typing import Any
 from typing import Protocol
 
@@ -25,7 +23,7 @@ from chipiron.environments.chess.move.imove import moveKey
 a: Any = 0
 
 
-class ITreeNode[T:'ITreeNode[Any]'](Protocol):
+class ITreeNode[T:ITreeNode[Any]](Protocol):
     """
     The `ITreeNode` protocol represents a node in a tree structure used for selecting chess moves.
     """
