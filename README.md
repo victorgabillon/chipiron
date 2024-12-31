@@ -17,7 +17,7 @@ It also integrates code from : https://github.com/oakmac/chessboardjs/
 
 ## Requirements
 
-* Python 3.12
+* Python 3.13
 * pip
 * curl
 * tkinter
@@ -41,8 +41,8 @@ so you might want to git clone and create a virtual environment as follows:
 ```console
 git clone https://github.com/victorgabillon/chipiron.git
 cd chipiron
-conda create chipiron3.1 python==3.11
-conda activate chipiron3.11
+conda create chipiron3.1 python==3.13
+conda activate chipiron3.13
 conda install -c conda-forge tk=*=xft_*
 make init
 ```
@@ -60,6 +60,7 @@ python3 main_chipiron.py
 ```
 
 ### Script: one match
+
 
 This allows to play a match between two players.
 
