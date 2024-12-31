@@ -14,20 +14,18 @@ Note: This is an interface and should not be instantiated directly.
 
 from __future__ import annotations  # (helping with recursive type annotation)
 
+from typing import Any
 from typing import Protocol
-from typing import TypeVar, Any
 
 import chipiron.environments.chess.board as boards
 from chipiron.environments.chess.board.iboard import LegalMoveKeyGeneratorP
 from chipiron.environments.chess.move.imove import moveKey
 
-T = TypeVar('T', bound='ITreeNode[Any]')
-
 # to force Any to stay because of weird interaction between flake8 and pycharm
 a: Any = 0
 
 
-class ITreeNode(Protocol[T]):
+class ITreeNode[T:'ITreeNode[Any]'](Protocol):
     """
     The `ITreeNode` protocol represents a node in a tree structure used for selecting chess moves.
     """

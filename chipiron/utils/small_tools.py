@@ -10,7 +10,6 @@ from dataclasses import dataclass
 from enum import Enum
 from itertools import islice
 from typing import Any
-from typing import TypeVar
 
 import dacite
 import numpy as np
@@ -133,10 +132,7 @@ def rec_merge_dic(
     return merged
 
 
-_T = TypeVar("_T")
-
-
-def nth_key(
+def nth_key[_T](
         dct: dict[_T, Any],
         n: int
 ) -> _T:
@@ -180,14 +176,8 @@ def softmax(
     return res
 
 
-# before 3.12
-
-
-_T_co = TypeVar("_T_co", covariant=True, bound=IsDataclass)
-
-
 @typing.dataclass_transform()
-def fetch_args_modify_and_convert(
+def fetch_args_modify_and_convert[_T_co:IsDataclass](
         path_to_file: path,  # path to a yaml file
         dataclass_name: type[_T_co],  # the dataclass into which the dictionary will be converted
         modification: dict[Any, Any] | None = None,  # modification to the dict extracted from the yaml file
@@ -211,33 +201,13 @@ def fetch_args_modify_and_convert(
 
     print('merged_args_dict', merged_args_dict)
     # formatting the dictionary into the corresponding dataclass
-    dataclass_args: _T_co = dacite.from_dict(data_class=dataclass_name,
-                                             data=merged_args_dict,
-                                             config=dacite.Config(cast=[Enum]))
+    dataclass_args: _T_co = dacite.from_dict(
+        data_class=dataclass_name,
+        data=merged_args_dict,
+        config=dacite.Config(cast=[Enum])
+    )
 
     return dataclass_args
-
-
-# after 3.12
-
-
-# def fetch_args_modify_and_convert[ADataclass: IsDataclass](
-#         path_to_file: str | bytes | os.PathLike,  # path to a yaml file
-#         dataclass_name: Type[ADataclass],  # the dataclass into which the dictionary will be converted
-#         modification: dict | None = None,  # modification to the dict extracted from the yaml file
-# ) -> ADataclass:
-#     if modification is None:
-#         modification = {}
-#     file_args: dict = ch.tool.yaml_fetch_args_in_file(path_to_file)
-#     merged_args_dict: dict = ch.tool.rec_merge_dic(file_args, modification)
-#
-#     print('merged_args_dict', merged_args_dict)
-#     # formatting the dictionary into the corresponding dataclass
-#     dataclass_args: ADataclass = dacite.from_dict(data_class=dataclass_name,
-#                                                   data=merged_args_dict,
-#                                                   config=dacite.Config(cast=[Enum]))
-#
-#     return dataclass_args
 
 
 @dataclass

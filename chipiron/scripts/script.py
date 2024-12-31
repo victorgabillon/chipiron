@@ -12,7 +12,6 @@ from enum import Enum
 from pstats import SortKey
 from typing import Any
 from typing import Protocol, runtime_checkable
-from typing import TypeVar
 
 import dacite
 
@@ -20,8 +19,6 @@ from chipiron.scripts.parsers.parser import MyParser
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.small_tools import mkdir
-
-_T_co = TypeVar("_T_co", covariant=True, bound=IsDataclass)
 
 
 @runtime_checkable
@@ -63,7 +60,7 @@ class Script:
         self.extra_args = extra_args
         self.profile = None
 
-    def initiate(
+    def initiate[_T_co:IsDataclass](
             self,
             args_dataclass_name: type[_T_co],
             base_experiment_output_folder: str | None = None

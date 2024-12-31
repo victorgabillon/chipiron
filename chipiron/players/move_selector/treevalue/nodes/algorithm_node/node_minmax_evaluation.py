@@ -16,7 +16,7 @@ import math
 import typing
 from dataclasses import dataclass, field
 from random import choice
-from typing import Protocol, Any, Self, TypeVar
+from typing import Protocol, Any, Self
 
 import chess
 
@@ -28,8 +28,6 @@ from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 from chipiron.utils.my_value_sorted_dict import sort_dic
 from chipiron.utils.small_tools import nth_key
-
-T = TypeVar('T')
 
 
 # todo maybe further split values from over?
@@ -390,7 +388,7 @@ class NodeMinmaxEvaluation:
             self.moves_sorted_by_value_[move] = (
                 subjective_value_of_child, len(child.minmax_evaluation.best_move_sequence), child.tree_node.id)
 
-    def are_equal_values(
+    def are_equal_values[T](
             self,
             value_1: T,
             value_2: T
@@ -407,7 +405,7 @@ class NodeMinmaxEvaluation:
         """
         return value_1 == value_2
 
-    def are_considered_equal_values(self, value_1: tuple[T], value_2: tuple[T]) -> bool:
+    def are_considered_equal_values[T](self, value_1: tuple[T], value_2: tuple[T]) -> bool:
         """
         Check if two values are considered equal.
 

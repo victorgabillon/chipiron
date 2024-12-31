@@ -1,7 +1,7 @@
 """
 Basic class for Creating Tree nodes
 """
-from typing import TypeVar, Generic, Any
+from typing import Any
 
 import chipiron.environments.chess.board as board_mod
 import chipiron.environments.chess.board as boards
@@ -10,10 +10,8 @@ from chipiron.players.move_selector.treevalue.node_factory.node_factory import T
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 
-T = TypeVar('T', bound=ITreeNode[Any])
 
-
-class Base(Generic[T], TreeNodeFactory[T]):
+class Base[T:ITreeNode[Any]](TreeNodeFactory[T]):
     """
     Basic class for Creating Tree nodes
     """

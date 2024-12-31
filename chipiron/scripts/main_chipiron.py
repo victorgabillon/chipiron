@@ -3,14 +3,12 @@ Launching the main chipiron
 """
 import argparse
 import sys
-from typing import Any, TypeVar
+from typing import Any
 
 from chipiron.scripts.factory import create_script
 from chipiron.scripts.iscript import IScript
 from chipiron.scripts.script_gui_custom import script_gui
 from chipiron.scripts.script_type import ScriptType
-
-T_IScript = TypeVar("T_IScript", covariant=True, bound=IScript)
 
 sys.path.append("../../")
 

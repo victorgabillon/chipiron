@@ -9,10 +9,6 @@ The functions in this module provide methods for selecting elements based on the
 import math
 import random
 
-from typing import TypeVar
-
-T = TypeVar('T')
-
 
 def zipf_picks(
         ranks_values: dict[int, int | float],
@@ -66,7 +62,7 @@ def zipf_picks(
         return best_rank
 
 
-def zipf_picks_random(
+def zipf_picks_random[T](
         ordered_list_elements: list[T],
         random_generator: random.Random
 ) -> T:
