@@ -21,6 +21,8 @@ class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
 
     all_generated_keys: list[moveKey] | None
 
+    chess_rust_binding: shakmaty_python_binding.MyChess
+
     def __init__(
             self,
             sort_legal_moves: bool,
@@ -48,6 +50,10 @@ class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
         else:
             self.all_generated_keys = None
         self.sort_legal_moves = sort_legal_moves
+
+    @property
+    def fen(self) -> fen:
+        return self.chess_rust_binding.fen()
 
     def reset(
             self,

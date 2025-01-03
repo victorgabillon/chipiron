@@ -34,6 +34,10 @@ class LegalMoveKeyGeneratorP(Protocol):
     def get_all(self) -> list[moveKey]:
         ...
 
+    @property
+    def fen(self) -> fen:
+        ...
+
 
 def compute_key(
         pawns: int,

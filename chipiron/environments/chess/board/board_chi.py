@@ -40,6 +40,10 @@ class LegalMoveKeyGenerator(LegalMoveKeyGeneratorP):
         self.count = 0
         self.all_generated_keys = None
 
+    @property
+    def fen(self) -> fen:
+        return self.chess_board.fen()
+
     def __str__(self) -> str:
 
         the_string: str = 'Legals Moves: '
@@ -286,7 +290,8 @@ class BoardChi(IBoard):
         # if True:
         #    if self.legal_moves_ is not None and move in self.legal_moves_.generated_moves:
         chess_move: chess.Move = self.legal_moves_.generated_moves[move]
-        return self.play_move(move=chess_move)
+        board_modification = self.play_move(move=chess_move)
+        return board_modification
 
     def rewind_one_move(self) -> None:
         """
