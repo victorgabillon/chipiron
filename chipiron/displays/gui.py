@@ -149,7 +149,7 @@ class MainWindow(QWidget):
         self.legal_moves_button = QLabel(self)
         self.legal_moves_button.setText("legal moves")  # text
         self.legal_moves_button.setStyleSheet('QPushButton { background-color: white; color: black;}')
-        self.legal_moves_button.setGeometry(20, 650, 550, 60)
+        self.legal_moves_button.setGeometry(20, 650, 550, 80)
         self.legal_moves_button.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         self.eval_button = QPushButton(self)

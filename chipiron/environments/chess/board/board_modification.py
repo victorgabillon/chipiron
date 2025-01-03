@@ -136,17 +136,19 @@ def compute_modifications(
     ]
     hip = [(previous_occupied_white, new_occupied_white, chess.WHITE),
            (previous_occupied_black, new_occupied_black, chess.BLACK)]
+
     for previous_bitboard_piece, new_bitboard_piece, piece_type in hop:
         for previous_bitboard_color, new_bitboard_color, color in hip:
 
-            removals: chess.Bitboard = previous_bitboard_piece & ~new_bitboard_piece & previous_bitboard_color
+            removals: chess.Bitboard = (previous_bitboard_piece & previous_bitboard_color) & ~(new_bitboard_piece & new_bitboard_color)
             if removals:
                 for square in chess.scan_forward(removals):
                     board_modifications.add_removal(PieceInSquare(square=square,
                                                                   piece=piece_type,
                                                                   color=color))
 
-            appearance: chess.Bitboard = ~previous_bitboard_piece & new_bitboard_piece & new_bitboard_color
+            appearance: chess.Bitboard = ~(previous_bitboard_piece & previous_bitboard_color) & (new_bitboard_piece & new_bitboard_color)
+
             if appearance:
                 for square in chess.scan_forward(appearance):
                     board_modifications.add_appearance(PieceInSquare(square=square,
