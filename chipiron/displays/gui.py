@@ -12,6 +12,7 @@ import typing
 import chess
 from PySide6.QtCore import QTimer, Slot
 from PySide6.QtCore import Qt
+import PySide6.QtGui as QtGui
 from PySide6.QtGui import QIcon
 from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import QPushButton, QTableWidget, QWidget, QDialog, QTableWidgetItem, QProgressBar, QLabel
@@ -144,13 +145,13 @@ class MainWindow(QWidget):
         self.fen_button.setText("fen")  # text
         self.fen_button.setStyleSheet('QPushButton { background-color: white; color: black;}')
         self.fen_button.setGeometry(20, 620, 550, 30)
-        self.fen_button.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.fen_button.setTextInteractionFlags(QtGui.Qt.TextInteractionFlag.TextSelectableByMouse)
 
         self.legal_moves_button = QLabel(self)
         self.legal_moves_button.setText("legal moves")  # text
         self.legal_moves_button.setStyleSheet('QPushButton { background-color: white; color: black;}')
         self.legal_moves_button.setGeometry(20, 650, 550, 80)
-        self.legal_moves_button.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.legal_moves_button.setTextInteractionFlags(QtGui.Qt.TextInteractionFlag.TextSelectableByMouse)
 
         self.eval_button = QPushButton(self)
         self.eval_button.setText("Stock Eval")  # text

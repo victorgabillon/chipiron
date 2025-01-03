@@ -75,9 +75,10 @@ def test_modifications(use_rust_boards: bool) -> None:
             use_board_modification=True
         )
 
-        board_modification: BoardModificationP = board.play_move_key(
+        board_modification: BoardModificationP | None = board.play_move_key(
             move=board.get_move_key_from_uci(move_uci=move_uci)
         )
+        assert (board_modification is not None)
 
         assert (set(board_modification.removals) == set(removals))
         assert (set(board_modification.appearances) == set(appearances))

@@ -9,6 +9,7 @@ import chipiron.players.move_selector.treevalue.indices.node_indices as node_ind
 import chipiron.players.move_selector.treevalue.nodes as node
 from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import BoardRepresentation
+from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import Representation364
 from chipiron.players.boardevaluators.neural_networks.input_converters.factory import Representation364Factory
 from chipiron.players.move_selector.treevalue.node_factory.base import Base
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
@@ -64,9 +65,18 @@ class AlgorithmNodeFactory:
         board_representation: BoardRepresentation | None = None
         if self.board_representation_factory is not None:
             assert isinstance(parent_node, AlgorithmNode) or parent_node is None
+            parent_node_representation: Representation364 | None
+            if parent_node is not None:
+                assert isinstance(parent_node, AlgorithmNode)
+                assert isinstance(parent_node.board_representation, Representation364)
+                # todo remove all these ugly assert!!
+                parent_node_representation = parent_node.board_representation
+            else:
+                parent_node_representation = None
+
             board_representation = self.board_representation_factory.create_from_transition(
                 tree_node=tree_node,
-                parent_node=parent_node,
+                parent_node_representation=parent_node_representation,
                 modifications=modifications
             )
 

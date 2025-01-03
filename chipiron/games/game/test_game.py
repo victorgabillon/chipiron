@@ -11,7 +11,7 @@ from .game_playing_status import GamePlayingStatus
     ('use_rust_boards'),
     (True, False)
 )
-def test_game_rewind(use_rust_boards: bool):
+def test_game_rewind(use_rust_boards: bool) -> None:
     board: IBoard = create_board(
         use_rust_boards=use_rust_boards,
         fen_with_history=FenPlusHistory(
