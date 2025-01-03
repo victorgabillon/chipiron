@@ -12,6 +12,8 @@ and checking if the game is over.
 Note: This is an interface and should not be instantiated directly.
 """
 
+from __future__ import annotations
+
 from typing import Any
 from typing import Protocol
 
