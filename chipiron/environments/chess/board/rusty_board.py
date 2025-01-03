@@ -10,7 +10,7 @@ from chipiron.environments.chess.board.board_modification import BoardModificati
 from chipiron.environments.chess.move import moveUci
 from chipiron.environments.chess.move.imove import moveKey
 from .iboard import IBoard, boardKey, boardKeyWithoutCounters, compute_key, LegalMoveKeyGeneratorP
-from .utils import FenPlusHistory
+from .utils import FenPlusHistory, fen
 
 
 class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
@@ -32,7 +32,21 @@ class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
         if generated_moves is not None:
             self.number_moves = len(generated_moves)
             self.it: Iterator[int] = iter(range(self.number_moves))
-        self.all_generated_keys = None
+            self.all_generated_keys = list(range(self.number_moves))
+            if sort_legal_moves:
+                def f(i: int) -> moveUci:
+                    assert (self.generated_moves is not None)
+                    return self.generated_moves[i].uci()
+
+                self.all_generated_keys = sorted(
+                    list(range(self.number_moves)),
+                    # key=lambda i: self.generated_moves[i].uci()
+                    key=f
+                )
+            else:
+                self.all_generated_keys = list(range(self.number_moves))
+        else:
+            self.all_generated_keys = None
         self.sort_legal_moves = sort_legal_moves
 
     def reset(
@@ -42,7 +56,7 @@ class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
         self.generated_moves = generated_moves
         self.number_moves = len(generated_moves)
         self.it = iter(range(self.number_moves))
-        self.all_generated_keys = None
+        self.all_generated_keys = list(range(self.number_moves))
 
     def copy_with_reset(
             self,
@@ -84,9 +98,16 @@ class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
     def __next__(self) -> moveKey:
         return self.it.__next__()
 
-    def copy(self) -> 'LegalMoveKeyGeneratorRust':
+    def copy(
+            self,
+            copied_chess_rust_binding: shakmaty_python_binding.MyChess | None = None
+    ) -> 'LegalMoveKeyGeneratorRust':
+        if copied_chess_rust_binding is None:
+            copied_chess_rust_binding_ = self.chess_rust_binding
+        else:
+            copied_chess_rust_binding_ = copied_chess_rust_binding
         legal_move_copy = LegalMoveKeyGeneratorRust(
-            chess_rust_binding=self.chess_rust_binding,
+            chess_rust_binding=copied_chess_rust_binding_,
             generated_moves=self.generated_moves.copy() if self.generated_moves is not None else None,
             sort_legal_moves=self.sort_legal_moves
         )
@@ -407,10 +428,10 @@ class RustyBoardChi(IBoard):
 
         legal_moves_copy: LegalMoveKeyGeneratorRust
         if deep_copy_legal_moves:
-            legal_moves_copy = self.legal_moves_.copy()
+            legal_moves_copy = self.legal_moves_.copy(copied_chess_rust_binding=chess_copy)
         else:
             legal_moves_copy = self.legal_moves_
-            self.legal_moves_.chess_rust_binding = chess_copy
+            legal_moves_copy.chess_rust_binding = chess_copy
 
         return type(self)(
             chess_=chess_copy,
@@ -448,7 +469,7 @@ class RustyBoardChi(IBoard):
         return self.chess_.number_of_pieces_on_the_board()
 
     @property
-    def fen(self) -> str:
+    def fen(self) -> fen:
         """
         Returns the Forsyth-Edwards Notation (FEN) representation of the chess board.
 

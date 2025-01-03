@@ -104,7 +104,7 @@ class IBoard(Protocol):
         ...
 
     @property
-    def fen(self) -> str:
+    def fen(self) -> fen:
         ...
 
     @property

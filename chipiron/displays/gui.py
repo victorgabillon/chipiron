@@ -14,7 +14,7 @@ from PySide6.QtCore import QTimer, Slot
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtSvgWidgets import QSvgWidget
-from PySide6.QtWidgets import QPushButton, QTableWidget, QWidget, QDialog, QTableWidgetItem, QProgressBar
+from PySide6.QtWidgets import QPushButton, QTableWidget, QWidget, QDialog, QTableWidgetItem, QProgressBar, QLabel
 
 from chipiron.environments.chess.board import IBoard, BoardFactory, create_board_chi
 from chipiron.environments.chess.board.utils import FenPlusHistory
@@ -140,10 +140,17 @@ class MainWindow(QWidget):
         self.round_button.setStyleSheet('QPushButton {background-color: white; color: black;}')
         self.round_button.setGeometry(620, 500, 370, 30)
 
-        self.fen_button = QPushButton(self)
+        self.fen_button = QLabel(self)
         self.fen_button.setText("fen")  # text
         self.fen_button.setStyleSheet('QPushButton { background-color: white; color: black;}')
-        self.fen_button.setGeometry(50, 700, 1250, 30)
+        self.fen_button.setGeometry(20, 620, 550, 30)
+        self.fen_button.setTextInteractionFlags(Qt.TextSelectableByMouse)
+
+        self.legal_moves_button = QLabel(self)
+        self.legal_moves_button.setText("legal moves")  # text
+        self.legal_moves_button.setStyleSheet('QPushButton { background-color: white; color: black;}')
+        self.legal_moves_button.setGeometry(20, 650, 550, 60)
+        self.legal_moves_button.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         self.eval_button = QPushButton(self)
         self.eval_button.setText("Stock Eval")  # text
@@ -453,7 +460,8 @@ class MainWindow(QWidget):
                     )
                 case PlayersColorToPlayerMessage():
                     player_color_message: PlayersColorToPlayerMessage = message
-                    players_color_to_player: dict[chess.Color, PlayerFactoryArgs] = player_color_message.player_color_to_factory_args
+                    players_color_to_player: dict[
+                        chess.Color, PlayerFactoryArgs] = player_color_message.player_color_to_factory_args
                     self.update_players_color_to_id(players_color_to_player)
                 case MatchResultsMessage():
                     match_message: MatchResultsMessage = message
@@ -506,6 +514,17 @@ class MainWindow(QWidget):
         self.drawBoardSvg = self.widgetSvg.load(self.boardSvg)
         self.round_button.setText('Round: ' + str(self.board.fullmove_number))  # text
         self.fen_button.setText('fen: ' + str(self.board.fen))  # text
+
+        all_moves_keys_chi = self.board.legal_moves.get_all()
+        all_moves_uci_chi = [self.board.get_uci_from_move_key(move_key=move_key) for move_key in
+                             all_moves_keys_chi]
+        self.legal_moves_button.setText(
+            'legal moves: ' + str(all_moves_uci_chi[:8])
+            + '\n ' + str(all_moves_uci_chi[8:16])
+            + '\n ' + str(all_moves_uci_chi[16:24])
+            + '\n ' + str(all_moves_uci_chi[24:32])
+        )  # text
+
         return self.drawBoardSvg
 
     def extract_message_from_player(
@@ -600,7 +619,6 @@ class MainWindow(QWidget):
 
         if self.playing_status != play_status:
             self.playing_status = play_status
-            print('real update_game_play_status', play_status)
             if play_status == PlayingStatus.PAUSE:
                 self.pause_button.setText("Play")  # text
                 self.pause_button.setIcon(QIcon("data/gui/play.png"))  # icon

@@ -214,7 +214,7 @@ class GameManager:
                 # play the move
                 move_key: moveKey = move_message.move
 
-                print('Receiving the move key', move_key, self.game.playing_status, board.fen)
+                print('Game Manager: Receiving the move key', move_key, self.game.playing_status, board.fen)
                 if move_message.corresponding_board == board.fen and \
                         self.game.playing_status.is_play() and \
                         message.player_name == self.player_color_to_id[board.turn]:
@@ -223,10 +223,10 @@ class GameManager:
 
                     move_uci: moveUci = board.get_uci_from_move_key(move_key)
 
-                    print(f'play a move {move_uci} at {board} {self.game.board.fen}')
+                    print(f'Game Manager: Play a move {move_uci} at {board} {self.game.board.fen}')
                     # move: IMove = self.move_factory(move_uci=move_uci, board=board)
                     self.play_one_move(move_key)
-                    print(f'now board is  {self.game.board}')
+                    print(f'Game Manager: Now board is  {self.game.board}')
 
                     eval_sto, eval_chi = self.external_eval()
                     print(f'Stockfish evaluation:{eval_sto} and chipiron eval{eval_chi}')

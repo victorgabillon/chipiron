@@ -4,12 +4,13 @@ import random
 import chess
 import pytest
 
-from chipiron.environments.chess.board import create_board_chi, BoardChi
+from chipiron.environments.chess.board import create_board, IBoard
 from chipiron.environments.chess.board.utils import FenPlusHistory
 from chipiron.environments.chess.move import moveUci
 from chipiron.players import Player
 from chipiron.players.factory import create_chipiron_player, create_player_from_file
 from chipiron.players.move_selector.move_selector import MoveRecommendation
+from chipiron.players.player_ids import PlayerConfigFile
 
 
 @pytest.mark.parametrize(
@@ -17,7 +18,8 @@ from chipiron.players.move_selector.move_selector import MoveRecommendation
     (True, False)
 )
 def test_check_in_one(use_rusty_board: bool):
-    board: BoardChi = create_board_chi(
+    board: IBoard = create_board(
+        use_rust_boards=use_rusty_board,
         fen_with_history=FenPlusHistory(
             current_fen='1nbqkbnr/rpppp2p/6P1/p6Q/8/8/PPPP1PPP/RNB1KBNR w KQk - 1 5')
     )
@@ -52,9 +54,13 @@ def test_check_in_two(use_rusty_board: bool):
     moves: list[chess.Move]
     print(f'Testing  check in two on {len(dict_fen_move)} boards.')
     for fen, moves in dict_fen_move.items():
-        board = create_board_chi(fen_with_history=FenPlusHistory(current_fen=fen))
+        print('fen', fen)
+        board: IBoard = create_board(
+            use_rust_boards=use_rusty_board,
+            fen_with_history=FenPlusHistory(current_fen=fen)
+        )
         player = create_player_from_file(
-            player_args_file='UniformDepth',
+            player_args_file=PlayerConfigFile.UniformDepth3,
             random_generator=random_generator,
             use_rusty_board=use_rusty_board
         )
@@ -67,8 +73,9 @@ def test_check_in_two(use_rusty_board: bool):
         assert (move_reco_uci == moves[0].uci())
 
 
-test_check_in_one(use_rusty_board=True)
-test_check_in_one(use_rusty_board=False)
+if __name__ == '__main__':
+    test_check_in_one(use_rusty_board=True)
+    test_check_in_one(use_rusty_board=False)
 
-test_check_in_two(use_rusty_board=True)
-test_check_in_two(use_rusty_board=False)
+    test_check_in_two(use_rusty_board=True)
+    test_check_in_two(use_rusty_board=False)

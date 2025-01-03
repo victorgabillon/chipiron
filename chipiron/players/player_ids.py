@@ -10,6 +10,8 @@ class PlayerConfigFile(str, Enum):
     Sequool = 'Sequool'
     RecurZipfBase3 = 'RecurZipfBase3'
     UniformDepth = 'UniformDepth'
+    UniformDepth2 = 'UniformDepth2'
+    UniformDepth3 = 'UniformDepth3'
     Uniform = 'Uniform'
     Random = 'Random'
     Stockfish = 'Stockfish'

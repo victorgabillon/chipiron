@@ -143,6 +143,13 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
         ]
     )
 
+    # play_two_humans button
+    play_two_humans_button: ctk.CTkButton = ctk.CTkButton(
+        root,
+        text='Play between Two Humans',
+        command=lambda: [play_two_humans(output), root.destroy()]
+    )
+
     # watch button
     watch_a_game_button: ctk.CTkButton = ctk.CTkButton(
         root,
@@ -158,19 +165,20 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
     )
 
     play_against_chipiron_button.grid(row=2, column=6, padx=10, pady=10)
-    watch_a_game_button.grid(row=4, column=0, padx=10, pady=10)
-    visualize_a_tree_button.grid(row=6, column=0, padx=10, pady=10)
-    exit_button.grid(row=8, column=0, padx=10, pady=10)
+    play_two_humans_button.grid(row=4, column=0, padx=10, pady=10)
+    watch_a_game_button.grid(row=6, column=0, padx=10, pady=10)
+    visualize_a_tree_button.grid(row=8, column=0, padx=10, pady=10)
+    exit_button.grid(row=10, column=0, padx=10, pady=10)
 
     root.mainloop()
     gui_args: dict[str, Any]
     script_type: scripts.ScriptType
-    # TODO should this be dict or args or diretly the right dataclass bu then we might need to change abit the parser init logic
+    # TODO should this be dict or args or directly the right dataclass bu then we might need to change abit the parser init logic
     match output['type']:
         case 'play_against_chipiron':
             tree_move_limit = 4 * 10 ** output['strength']
             gui_args = {
-                'config_file_name': 'chipiron/scripts/one_match/inputs/base/exp_options.yaml',
+                'config_file_name': 'chipiron/scripts/one_match/inputs/human_play_against_computer/exp_options.yaml',
                 'base_script_args': {
                     'profiling': False
                 },
@@ -191,9 +199,24 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
                 gui_args['match_args']['player_one'] = {
                     'main_move_selector': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}
             script_type = scripts.ScriptType.OneMatch
+        case 'play_two_humans':
+            gui_args = {
+                'config_file_name': 'chipiron/scripts/one_match/inputs/human_play_against_human/exp_options.yaml',
+                'base_script_args': {
+                    'profiling': False
+                },
+                'match_args': {
+                    'file_name_match_setting': 'setting_duda.yaml',
+                    'seed': 0
+                },
+                'gui': True,
+            }
+            gui_args['match_args']['file_name_player_one'] = PlayerConfigFile.GuiHuman
+            gui_args['match_args']['file_name_player_two'] = PlayerConfigFile.GuiHuman
+            script_type = scripts.ScriptType.OneMatch
         case 'watch_a_game':
             gui_args = {
-                'config_file_name': 'chipiron/scripts/one_match/inputs/base/exp_options.yaml',
+                'config_file_name': 'chipiron/scripts/one_match/inputs/watch_a_game/exp_options.yaml',
                 'match_args': {
                     'seed': 0,
                     'gui': True,
@@ -253,6 +276,21 @@ def watch_a_game(output: dict[str, Any]) -> bool:
         True.
     """
     output['type'] = 'watch_a_game'
+    return True
+
+
+def play_two_humans(output: dict[str, Any]) -> bool:
+    """
+    Callback function for the "play_two_humans" button.
+    Sets the output dictionary with the selected options for play_two_humans.
+
+    Args:
+        output: The output dictionary to store the selected options.
+
+    Returns:
+        True.
+    """
+    output['type'] = 'play_two_humans'
     return True
 
 
