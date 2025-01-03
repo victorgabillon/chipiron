@@ -1,6 +1,7 @@
 """
 Module defining the board representation interface and the 364 features board representation.
 """
+from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Protocol
@@ -40,6 +41,17 @@ class Representation364(BoardRepresentation):
     tensor_black: torch.Tensor
     tensor_castling_white: torch.Tensor
     tensor_castling_black: torch.Tensor
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Representation364):
+            return False
+        else:
+            return (
+                    torch.equal(self.tensor_white, other.tensor_white)
+                    and torch.equal(self.tensor_black, other.tensor_black)
+                    and torch.equal(self.tensor_castling_black, other.tensor_castling_black)
+                    and torch.equal(self.tensor_castling_white, other.tensor_castling_white)
+            )
 
     def get_evaluator_input(
             self,

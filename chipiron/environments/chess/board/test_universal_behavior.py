@@ -70,6 +70,8 @@ def test_universal_behavior() -> None:
         seed_int=0
     )
 
+    assert (move_reco_chi.evaluation == move_reco_rust.evaluation)
+
     chi_move_uci = board_chi.get_uci_from_move_key(move_key=move_reco_chi.move)
     chi_move_rust = board_rust.get_uci_from_move_key(move_key=move_reco_rust.move)
 

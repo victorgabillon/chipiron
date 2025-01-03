@@ -17,22 +17,20 @@ import torch
 
 import chipiron.environments.chess.board as boards
 from chipiron.environments.chess.board.iboard import IBoard
-from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
-from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 from .board_representation import Representation364
 
 
 def node_to_tensors_pieces_square_from_parent(
-        node: ITreeNode[Any],
+        board: IBoard,
         board_modifications: boards.BoardModificationP,
-        parent_node: AlgorithmNode
+        parent_node_board_representation: Representation364
 ) -> Representation364:
     """
     Converts the node, board modifications, and parent node into a tensor representation.
 
     Args:
-        node (ITreeNode): The current node in the tree.
+        board (IBoard): The current board in the tree.
         board_modifications (board_mod.BoardModification): The modifications made to the board.
         parent_node (AlgorithmNode): The parent node of the current node.
 
@@ -40,10 +38,13 @@ def node_to_tensors_pieces_square_from_parent(
         Representation364: The tensor representation of the node, board modifications, and parent node.
     """
 
-    board_representation = parent_node.board_representation
-    assert isinstance(board_representation, Representation364)
-    tensor_white = torch.empty_like(board_representation.tensor_white).copy_(board_representation.tensor_white)
-    tensor_black = torch.empty_like(board_representation.tensor_black).copy_(board_representation.tensor_black)
+    assert isinstance(parent_node_board_representation, Representation364)
+    tensor_white = torch.empty_like(
+        parent_node_board_representation.tensor_white).copy_(parent_node_board_representation.tensor_white
+                                                             )
+    tensor_black = torch.empty_like(
+        parent_node_board_representation.tensor_black).copy_(parent_node_board_representation.tensor_black
+                                                             )
 
     for removal in board_modifications.removals:
         piece_type = removal.piece
@@ -77,7 +78,6 @@ def node_to_tensors_pieces_square_from_parent(
     tensor_castling_white = torch.zeros(2, requires_grad=False, dtype=torch.float)
     tensor_castling_black = torch.zeros(2, requires_grad=False, dtype=torch.float)
 
-    board: IBoard = node.board
     tensor_castling_white[0] = bool(board.castling_rights & chess.BB_A1)
     tensor_castling_white[1] = bool(board.castling_rights & chess.BB_H1)
     tensor_castling_black[0] = bool(board.castling_rights & chess.BB_A8)
@@ -103,7 +103,7 @@ class Representation364Factory:
     def create_from_transition(
             self,
             tree_node: TreeNode[Any],
-            parent_node: AlgorithmNode | None,
+            parent_node_representation: Representation364 | None,
             modifications: boards.BoardModificationP | None
     ) -> Representation364:
         """
@@ -119,16 +119,16 @@ class Representation364Factory:
         """
         """  this version is supposed to be faster as it only modifies the parent
         representation with the last move and does not scan fully the new board"""
-        if parent_node is None:  # this is the root_node
+        if parent_node_representation is None:  # this is the root_node
             representation = self.create_from_board(board=tree_node.board)
         else:
             if modifications is None:
                 representation = self.create_from_board(board=tree_node.board)
             else:
                 representation = node_to_tensors_pieces_square_from_parent(
-                    node=tree_node,
+                    board=tree_node.board,
                     board_modifications=modifications,
-                    parent_node=parent_node
+                    parent_node_board_representation=parent_node_representation
                 )
 
         return representation
