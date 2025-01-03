@@ -1,3 +1,5 @@
+import chess
+
 from chipiron.environments.chess.board import create_board_chi
 from chipiron.environments.chess.board.factory import create_rust_board
 from chipiron.environments.chess.board.utils import FenPlusHistory
@@ -9,7 +11,7 @@ from chipiron.players.move_selector.move_selector import MoveRecommendation
 def test_universal_behavior() -> None:
     board_chi = create_board_chi(
         fen_with_history=FenPlusHistory(
-            current_fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+            current_fen=chess.STARTING_FEN
         ),
         sort_legal_moves=True
 
@@ -21,7 +23,7 @@ def test_universal_behavior() -> None:
 
     board_rust = create_rust_board(
         fen_with_history=FenPlusHistory(
-            current_fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+            current_fen=chess.STARTING_FEN
         ),
         sort_legal_moves=True
     )

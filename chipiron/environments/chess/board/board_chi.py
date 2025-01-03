@@ -13,7 +13,7 @@ from chipiron.environments.chess.board.board_modification import BoardModificati
 from chipiron.environments.chess.move import moveUci
 from chipiron.environments.chess.move.imove import moveKey
 from .iboard import IBoard, boardKey, compute_key, LegalMoveKeyGeneratorP
-from .utils import FenPlusHistory
+from .utils import FenPlusHistory, fen
 
 # todo check if we need this here
 COLORS = [WHITE, BLACK] = [True, False]
@@ -754,7 +754,7 @@ class BoardChi(IBoard):
         return self.chess_board.turn
 
     @property
-    def fen(self) -> str:
+    def fen(self) -> fen:
         """
         Returns the Forsyth-Edwards Notation (FEN) representation of the chess board.
 
@@ -870,7 +870,7 @@ class BoardChi(IBoard):
         else:
             # faster as move generated are not deep copied but tricky (should not be modified later!)
             legal_moves_copy = self.legal_moves_
-            self.legal_moves_.chess_board = chess_board_copy
+            legal_moves_copy.chess_board = chess_board_copy
 
         return BoardChi(
             chess_board=chess_board_copy,

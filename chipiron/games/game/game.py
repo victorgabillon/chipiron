@@ -38,7 +38,7 @@ class Game:
             self,
             board: IBoard,
             playing_status: GamePlayingStatus,
-            seed_: seed
+            seed_: seed = 0
     ):
         """
         Initializes the Game object.
@@ -77,8 +77,10 @@ class Game:
             self._current_board.play_move_key(move)
 
             self.fen_history.append(self._current_board.fen)
-            current_board_copy: IBoard = self._current_board.copy(stack=True)
-
+            current_board_copy: IBoard = self._current_board.copy(
+                stack=True,
+                deep_copy_legal_moves=True
+            )
             self._board_history.append(current_board_copy)
         else:
             print(f'Cannot play move if the game status is PAUSE {self._playing_status.status}')
@@ -94,10 +96,12 @@ class Game:
         if self._playing_status.is_paused():
             if len(self._board_history) > 1:
                 del self._board_history[-1]
-                self._current_board = self._board_history[-1].copy(stack=True, deep_copy_legal_moves=True)
-
+                self._current_board = self._board_history[-1].copy(
+                    stack=True,
+                    deep_copy_legal_moves=True
+                )
         else:
-            print('Cannot rewind move if the game status is PLAY')
+            print(f'Cannot rewind move if the game status is {self._playing_status}')
 
     @property
     def playing_status(self) -> GamePlayingStatus:

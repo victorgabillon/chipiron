@@ -62,7 +62,9 @@ class TreeExploration:
     stopping_criterion: ProgressMonitor
     notify_percent_function: Callable[[int], None] | None
 
-    def print_info_during_move_computation(self, random_generator: random.Random) -> None:
+    def print_info_during_move_computation(
+            self, random_generator: random.Random
+    ) -> None:
         """
         Prints information during the move computation.
 
