@@ -1,15 +1,15 @@
 gui: False
 match_args:
-  seed: 11
   file_name_player_ones: 'Sequool.yaml'
   file_name_player_twos: 'Gui_Human.yaml'
   file_name_player_one: 'Uniform'
   file_name_player_two: 'Gui_Human'
   file_name_match_setting: 'setting_jime.yaml'
 base_script_args:
+  seed: 11
   profiling: True
   testing: False
   universal_behavior: True
 implementation_args:
   use_board_modification: True
-  use_rust_boards: True
+  use_rust_boards: False

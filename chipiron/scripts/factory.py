@@ -15,7 +15,7 @@ from .script_type import ScriptType
 # instantiate relevant script
 def create_script(
         script_type: ScriptType,
-        extra_args: dict[str, Any] | None,
+        extra_args: dict[str, Any] | None = None,
         should_parse_command_line_arguments: bool = True
 ) -> IScript:
     """

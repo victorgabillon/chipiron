@@ -155,7 +155,7 @@ def create_match_manager_from_args(
     assert player_two_args.name != 'Command_Line_Human.yaml' or not game_args.each_player_has_its_own_thread
 
     # taking care of random
-    ch.set_seeds(seed=match_args.seed)
+    ch.set_seeds(seed=base_script_args.seed)
 
     print('self.args.experiment_output_folder', base_script_args.experiment_output_folder)
 
@@ -165,7 +165,7 @@ def create_match_manager_from_args(
         args_player_two=player_two_args,
         output_folder_path=base_script_args.experiment_output_folder,
         universal_behavior=base_script_args.universal_behavior,
-        seed=match_args.seed,
+        seed=base_script_args.seed,
         args_game=game_args,
         gui=gui,
         implementation_args=implementation_args

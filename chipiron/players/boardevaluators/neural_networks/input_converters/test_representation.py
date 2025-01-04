@@ -35,7 +35,6 @@ def test_representation(use_rust_boards: bool) -> None:
         parent_node_board_representation=parent_node_board_representation
     )
 
-    print('debug', direct_rep, rep_from_parents)
     assert (direct_rep == rep_from_parents)
 
 
