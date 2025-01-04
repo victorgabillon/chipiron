@@ -1,3 +1,8 @@
-seed: 11
-gui: False
-profiling: True
+base_script_args:
+  profiling: True
+  testing: False
+  universal_behavior: True
+  seed: 11
+implementation_args:
+  use_board_modification: True
+  use_rust_boards: False

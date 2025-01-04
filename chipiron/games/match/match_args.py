@@ -14,7 +14,6 @@ class MatchArgs:
     """
     The input arguments needed by the one match script to run
 
-            seed (int): The seed for the match.
             file_name_player_one (path): The file name for player one. Defaults to 'RecurZipfBase3.yaml'.
             file_name_player_two (path): The file name for player two. Defaults to 'RecurZipfBase3.yaml'.
             file_name_match_setting (path): The file name for the match setting. Defaults to 'setting_cubo.yaml'.
@@ -23,8 +22,6 @@ class MatchArgs:
             match (dict[Any, Any]): The dictionary for the match. Defaults to an empty dictionary.
 
     """
-    # the seed
-    seed: int = 0
 
     file_name_player_one: PlayerConfigFile = PlayerConfigFile.RecurZipfBase3
     file_name_player_two: PlayerConfigFile = PlayerConfigFile.RecurZipfBase3

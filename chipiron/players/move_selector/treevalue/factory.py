@@ -30,7 +30,7 @@ from . import node_selector as node_selector_m
 from . import recommender_rule
 from . import tree_manager as tree_man
 from .indices.node_indices.index_types import IndexComputationType
-from .tree_and_value_player import TreeAndValueMoveSelector
+from .tree_and_value_move_selector import TreeAndValueMoveSelector
 from .trees.factory import MoveAndValueTreeFactory
 
 

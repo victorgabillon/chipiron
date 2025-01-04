@@ -28,4 +28,3 @@ class PlayerConfigFile(str, Enum):
 
 if __name__ == "__main__":
     a = PlayerConfigFile.CommandLineHuman
-    print('rrf', a, a.is_human())

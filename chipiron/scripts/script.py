@@ -6,6 +6,7 @@ It handles computing execution time, profiling, and parsing arguments.
 import cProfile
 import io
 import os.path
+import pprint
 import pstats
 import time
 from enum import Enum
@@ -59,6 +60,7 @@ class Script:
         self.experiment_output_folder = None
         self.extra_args = extra_args
         self.profile = None
+        self.args: IsDataclass | None = None
 
     def initiate[_T_co:IsDataclass](
             self,
@@ -109,6 +111,9 @@ class Script:
             self.profile = cProfile.Profile()
             self.profile.enable()
 
+        self.args = final_args
+        print('the args of the script are:\n')
+        pprint.pprint(self.args)
         return final_args
 
     def terminate(self) -> None:
@@ -126,6 +131,9 @@ class Script:
             print(string_io.getvalue())
 
         end_time = time.time()
+
+        print('the args of the script were:\n')
+        pprint.pprint(self.args)
         print('execution time', end_time - self.start_time)
 
     def run(self) -> None:

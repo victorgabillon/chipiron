@@ -339,7 +339,10 @@ class ObservableGame:
                 board_copy: IBoard = self.game.board.copy(stack=True)
                 merged_seed: int | None = unique_int_from_list([self.game._seed, board_copy.ply()])
                 if merged_seed is not None:
-                    move_function(board=board_copy, seed_int=merged_seed)
+                    move_function(
+                        board=board_copy,
+                        seed_int=merged_seed
+                    )
 
     def notify_status(self) -> None:
         """
