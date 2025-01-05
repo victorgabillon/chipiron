@@ -47,7 +47,7 @@ class Base[T:ITreeNode[Any]](TreeNodeFactory[T]):
             assert move_from_parent is not None
             parent_nodes = {parent_node: move_from_parent}
 
-        tree_node: TreeNode[T] = TreeNode[T](
+        tree_node: TreeNode[T] = TreeNode(
             board_=board,
             half_move_=half_move,
             id_=count,
