@@ -20,15 +20,22 @@ class BaseScriptArgs:
     # and on no other parameter ( could happen that using some external functions/modules add some randomness)
     universal_behavior: bool = False
 
+    # if experiment_output_folder is specified it is used as is. If not it is build from default path plus the
+    # relative_script_instance_experiment_output_folder
+
     # the folder where to output the results
     experiment_output_folder: path | None = None
+
+    # specific folder name  where to output the results (if none it is set to time and day in post init)
+    relative_script_instance_experiment_output_folder: path | None = None
 
     # the seed
     seed: int = 0
 
     def __post_init__(self) -> None:
-        if self.experiment_output_folder is None:
-            now = datetime.now()  # current date and time
 
-            self.experiment_output_folder = now.strftime(
+        # if relative_script_instance_experiment_output_folde is not set, it gets time and day
+        if self.relative_script_instance_experiment_output_folder is None:
+            now = datetime.now()  # current date and time
+            self.relative_script_instance_experiment_output_folder = now.strftime(
                 "%A-%m-%d-%Y--%H:%M:%S:%f")

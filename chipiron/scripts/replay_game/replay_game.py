@@ -64,7 +64,7 @@ class ReplayGameScript:
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into self.args
         self.args: ReplayScriptArgs = self.base_script.initiate(
             args_dataclass_name=ReplayScriptArgs,
-            base_experiment_output_folder=self.base_experiment_output_folder,
+            experiment_output_folder=self.base_experiment_output_folder,
 
         )
 

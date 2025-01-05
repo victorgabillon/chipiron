@@ -4,6 +4,7 @@ This module contains the implementation of the BaseTreeExplorationScript class.
 The BaseTreeExplorationScript class is responsible for running a script that performs base tree exploration in a chess game.
 """
 
+import os
 import random
 from dataclasses import dataclass, field
 
@@ -30,6 +31,8 @@ class BaseTreeExplorationScript:
     """
 
     args_dataclass_name: type[BaseTreeExplorationArgs] = BaseTreeExplorationArgs
+    base_experiment_output_folder = os.path.join(Script.base_experiment_output_folder, 'base_tree_exploration/outputs/')
+    base_script: Script
 
     def __init__(
             self,
@@ -45,6 +48,7 @@ class BaseTreeExplorationScript:
 
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into args
         self.args: BaseTreeExplorationArgs = self.base_script.initiate(
+            experiment_output_folder=self.base_experiment_output_folder,
             args_dataclass_name=BaseTreeExplorationArgs
         )
 
@@ -65,7 +69,10 @@ class BaseTreeExplorationScript:
         random_generator.seed(self.args.implementation_args.use_rust_boards)
         player = create_player(args=player_one_args, syzygy=syzygy, random_generator=random_generator)
 
-        board = create_board(use_rust_boards=self.args.implementation_args.use_rust_boards)
+        board = create_board(
+            use_rust_boards=self.args.implementation_args.use_rust_boards,
+            use_board_modification=self.args.implementation_args.use_board_modification
+        )
         player.select_move(
             board=board,
             seed_int=self.args.implementation_args.use_rust_boards
