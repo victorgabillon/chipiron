@@ -9,7 +9,7 @@ __pycache__
 data/syzygy-tables/
 chipiron/scripts/stockfish/
 
-**/*outputs*
+**/*outputs/*
 
 .idea
 .git
