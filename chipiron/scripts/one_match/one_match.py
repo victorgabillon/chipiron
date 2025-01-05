@@ -55,7 +55,7 @@ class OneMatchScript:
 
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into args
         args: MatchScriptArgs = self.base_script.initiate(
-            base_experiment_output_folder=self.base_experiment_output_folder,
+            experiment_output_folder=self.base_experiment_output_folder,
             args_dataclass_name=MatchScriptArgs
         )
 

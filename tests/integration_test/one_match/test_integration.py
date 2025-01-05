@@ -253,7 +253,7 @@ def test_randomness():
 
     implementation_args: ImplementationArgs = ImplementationArgs()
     base_script_args: BaseScriptArgs = BaseScriptArgs()
-    base_script_args.experiment_output_folder = None
+    base_script_args.relative_script_instance_experiment_output_folder = None
 
     match_manager: ch.game.MatchManager = create_match_manager_from_args(
         match_args=match_args,
@@ -301,7 +301,7 @@ def test_same_game_with_or_without_rust():
 
     # important to set universal_behavior=True to obtain a standard behavior in test (based on sorting wrt uci)
     base_script_args: BaseScriptArgs = BaseScriptArgs(universal_behavior=True)
-    base_script_args.experiment_output_folder = None
+    base_script_args.relative_script_instance_experiment_output_folder = None
 
     match_manager: ch.game.MatchManager = create_match_manager_from_args(
         match_args=match_args,

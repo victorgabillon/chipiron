@@ -157,8 +157,6 @@ def create_match_manager_from_args(
     # taking care of random
     ch.set_seeds(seed=base_script_args.seed)
 
-    print('self.args.experiment_output_folder', base_script_args.experiment_output_folder)
-
     match_manager: MatchManager = create_match_manager(
         args_match=match_setting_args,
         args_player_one=player_one_args,
