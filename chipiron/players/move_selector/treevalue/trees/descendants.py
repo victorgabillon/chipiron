@@ -14,9 +14,8 @@ RangedDescendants:
 
 Note: The Descendants and RangedDescendants classes are used in the chipiron project for move selection in a game.
 """
-
 import typing
-from typing import Any
+from typing import Any, Iterator
 
 from sortedcollections import ValueSortedDict
 
@@ -62,6 +61,11 @@ class Descendants:
         self.number_of_descendants_at_half_move = {}
         self.min_half_move = None
         self.max_half_move = None
+
+    def iter_on_all_nodes(self) -> Iterator[tuple[HalfMove, boards.boardKey, ITreeNode[Any]]]:
+        return ((hm, board_key, node) for hm, nodes_at_hm in self.descendants_at_half_move.items() for board_key, node
+                in
+                nodes_at_hm.items())
 
     def keys(self) -> typing.KeysView[HalfMove]:
         """

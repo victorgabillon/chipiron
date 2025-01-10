@@ -252,7 +252,8 @@ class OpeningInstructor:
 
             # this shuffling add randomness to the playing style
             # (it stills depends on the random seed, but if random seed varies then the behavior will be more random)
-            self.random_generator.shuffle(moves_to_play)
+            # DEACTIVATED ATM BECAUSE I DO NOT UNDERSTAND or FORGOT THE USE CASE: MAYBE DEAD SINCE SEED SYSTEM CHANGED
+            # self.random_generator.shuffle(moves_to_play)
 
         else:
             raise Exception('Hello-la')

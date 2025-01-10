@@ -64,6 +64,18 @@ class TreeAndValueMoveSelector:
         Returns:
         - The recommended move based on the tree and value strategy.
         """
+        tree_exploration: TreeExploration = self.create_tree_exploration(board=board)
+        self.random_generator.seed(move_seed)
+        move_recommendation: MoveRecommendation = tree_exploration.explore(
+            random_generator=self.random_generator
+        ).move_recommendation
+
+        return move_recommendation
+
+    def create_tree_exploration(
+            self,
+            board: boards.IBoard,
+    ) -> TreeExploration:
         tree_exploration: TreeExploration = create_tree_exploration(
             tree_manager=self.tree_manager,
             node_selector_create=self.node_selector_create,
@@ -72,14 +84,8 @@ class TreeAndValueMoveSelector:
             stopping_criterion_args=self.stopping_criterion_args,
             recommend_move_after_exploration=self.recommend_move_after_exploration,
             queue_progress_player=self.queue_progress_player
-
         )
-        self.random_generator.seed(move_seed)
-        move_recommendation: MoveRecommendation = tree_exploration.explore(
-            random_generator=self.random_generator
-        )
-
-        return move_recommendation
+        return tree_exploration
 
     def print_info(self) -> None:
         """

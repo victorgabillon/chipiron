@@ -24,9 +24,12 @@ def test_check_in_one(use_rusty_board: bool):
             current_fen='1nbqkbnr/rpppp2p/6P1/p6Q/8/8/PPPP1PPP/RNB1KBNR w KQk - 1 5')
     )
 
+    random_generator: random.Random = random.Random(0)
+
     player: Player = create_chipiron_player(
         depth=1,
-        use_rusty_board=use_rusty_board
+        use_rusty_board=use_rusty_board,
+        random_generator=random_generator
     )
 
     move_reco: MoveRecommendation = player.select_move(
