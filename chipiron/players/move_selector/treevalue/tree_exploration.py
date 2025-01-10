@@ -37,6 +37,12 @@ from .trees.factory import MoveAndValueTreeFactory
 
 
 @dataclass
+class TreeExplorationResult:
+    move_recommendation: MoveRecommendation
+    tree: trees.MoveAndValueTree
+
+
+@dataclass
 class TreeExploration:
     """
     Tree Exploration is an object to manage one best move search.
@@ -91,7 +97,7 @@ class TreeExploration:
     def explore(
             self,
             random_generator: random.Random
-    ) -> MoveRecommendation:
+    ) -> TreeExplorationResult:
         """
         Explores the tree to find the best move.
 
@@ -170,7 +176,12 @@ class TreeExploration:
             evaluation=self.tree.evaluate()
         )
 
-        return move_recommendation
+        tree_exploration_result: TreeExplorationResult = TreeExplorationResult(
+            move_recommendation=move_recommendation,
+            tree=self.tree
+        )
+
+        return tree_exploration_result
 
 
 def create_tree_exploration(

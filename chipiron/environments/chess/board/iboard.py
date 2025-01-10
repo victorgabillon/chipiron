@@ -12,7 +12,10 @@ from chipiron.environments.chess.move.imove import moveKey
 from .utils import FenPlusMoveHistory, FenPlusHistory
 from .utils import fen
 
+# identifier that should be unique to any position
 boardKey = tuple[int, int, int, int, int, int, bool, int, int | None, int, int, int, int, int]
+
+# identifier that removes the info (such as rounds) to count easily repeating position at difference round of the game
 boardKeyWithoutCounters = tuple[int, int, int, int, int, int, bool, int, int | None, int, int, int]
 
 

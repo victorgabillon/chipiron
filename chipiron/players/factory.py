@@ -23,7 +23,9 @@ from ..utils.dataclass import IsDataclass
 def create_chipiron_player(
         depth: int,
         use_rusty_board: bool,
-        queue_progress_player: queue.Queue[IsDataclass] | None = None
+        random_generator: random.Random,
+        queue_progress_player: queue.Queue[IsDataclass] | None = None,
+
 ) -> Player:
     """
     Creates the chipiron champion/representative/standard/default player
@@ -35,7 +37,6 @@ def create_chipiron_player(
 
     """
     syzygy_table: table_base.SyzygyTable[Any] | None = create_syzygy(use_rust=use_rusty_board)
-    random_generator: random.Random = random.Random()
 
     args_player: PlayerArgs = fetch_player_args_convert_and_save(
         file_name_player='data/players/player_config/chipiron/chipiron.yaml',

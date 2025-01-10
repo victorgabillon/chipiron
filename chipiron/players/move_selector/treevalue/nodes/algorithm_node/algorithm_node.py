@@ -195,3 +195,6 @@ class AlgorithmNode:
             if self.exploration_index_data is not None else ''
 
         return f'{self.tree_node.dot_description()}\n{self.minmax_evaluation.dot_description()}\n{exploration_description}'
+
+    def __str__(self) -> str:
+        return f'{self.__class__} id :{self.tree_node.id}'

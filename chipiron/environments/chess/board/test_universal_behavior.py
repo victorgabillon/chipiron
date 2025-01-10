@@ -1,5 +1,5 @@
 import chess
-
+import random
 from chipiron.environments.chess.board import create_board_chi
 from chipiron.environments.chess.board.factory import create_rust_board
 from chipiron.environments.chess.board.utils import FenPlusHistory
@@ -50,9 +50,11 @@ def test_universal_behavior() -> None:
 
     assert all_moves_uci_rust == all_moves_uci_chi
 
+    random_generator_rust: random.Random = random.Random(0)
     player_rust: Player = create_chipiron_player(
         depth=1,
-        use_rusty_board=True
+        use_rusty_board=True,
+        random_generator=random_generator_rust
     )
 
     move_reco_rust: MoveRecommendation = player_rust.select_move(
@@ -60,9 +62,12 @@ def test_universal_behavior() -> None:
         seed_int=0
     )
 
+    random_generator_chi: random.Random = random.Random(0)
     player_chi: Player = create_chipiron_player(
         depth=1,
-        use_rusty_board=False
+        use_rusty_board=False,
+        random_generator=random_generator_chi
+
     )
 
     move_reco_chi: MoveRecommendation = player_chi.select_move(
