@@ -4,12 +4,16 @@ Module for creating neural networks and neural network board evaluators.
 
 import os.path
 import sys
+from typing import Any
 
 from chipiron.players.boardevaluators.neural_networks import NeuralNetBoardEvalArgs
+from chipiron.players.boardevaluators.neural_networks.input_converters.RepresentationType import RepresentationType
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_input import BoardToInput
-from chipiron.players.boardevaluators.neural_networks.input_converters.factory import Representation364Factory
+from chipiron.players.boardevaluators.neural_networks.input_converters.factory import RepresentationFactory
 from chipiron.players.boardevaluators.neural_networks.input_converters.representation_364_bti import \
-    Representation364BTI
+    RepresentationBTI
+from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import \
+    create_board_representation_factory
 from chipiron.players.boardevaluators.neural_networks.models.nn_pp1 import NetPP1
 from chipiron.players.boardevaluators.neural_networks.models.nn_pp2 import NetPP2
 from chipiron.players.boardevaluators.neural_networks.models.nn_pp2d2 import NetPP2D2
@@ -108,7 +112,8 @@ def create_nn(
 
 def create_nn_board_eval(
         arg: NeuralNetBoardEvalArgs,
-        create_file: bool = False
+        representation_type: RepresentationType,
+        create_file: bool = False,
 ) -> NNBoardEvaluator:
     """
     Create a neural network board evaluator.
@@ -122,8 +127,11 @@ def create_nn_board_eval(
     """
     net = create_nn(arg, create_file=create_file)
     output_and_value_converter: OutputValueConverter = OneDToValueWhite(point_of_view=net.evaluation_point_of_view)
-    representation_factory: Representation364Factory = Representation364Factory()
-    board_to_input_converter: BoardToInput = Representation364BTI(
+    representation_factory: RepresentationFactory[Any] | None = create_board_representation_factory(
+        board_representation_factory_type=representation_type
+    )
+    assert (representation_factory is not None)
+    board_to_input_converter: BoardToInput = RepresentationBTI(
         representation_factory=representation_factory
     )
     return NNBoardEvaluator(

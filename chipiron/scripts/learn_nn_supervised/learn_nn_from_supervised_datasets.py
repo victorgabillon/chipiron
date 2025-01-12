@@ -28,9 +28,12 @@ from chipiron.learningprocesses.nn_trainer.factory import create_nn_trainer, saf
 from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
 from chipiron.players.boardevaluators.datasets.datasets import FenAndValueDataSet
 from chipiron.players.boardevaluators.neural_networks.factory import create_nn
-from chipiron.players.boardevaluators.neural_networks.input_converters.factory import Representation364Factory
+from chipiron.players.boardevaluators.neural_networks.input_converters.RepresentationType import RepresentationType
+from chipiron.players.boardevaluators.neural_networks.input_converters.factory import RepresentationFactory
 from chipiron.players.boardevaluators.neural_networks.input_converters.representation_364_bti import \
-    Representation364BTI
+    RepresentationBTI
+from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import \
+    create_board_representation_factory
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.chi_nn import ChiNN
@@ -123,8 +126,11 @@ class LearnNNScript:
             nn=self.nn
         )
 
-        board_representation_factory = Representation364Factory()
-        board_to_input = Representation364BTI(representation_factory=board_representation_factory)
+        board_representation_factory: RepresentationFactory[Any] | None = create_board_representation_factory(
+            board_representation_factory_type=RepresentationType.NOBUG364
+        )
+        assert board_representation_factory is not None
+        board_to_input = RepresentationBTI(representation_factory=board_representation_factory)
 
         self.stockfish_boards_train = FenAndValueDataSet(
             file_name=self.args.stockfish_boards_train_file_name,
