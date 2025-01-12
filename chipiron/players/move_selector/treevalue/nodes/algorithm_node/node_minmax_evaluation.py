@@ -12,6 +12,8 @@ It also provides methods for accessing and manipulating the evaluation values, d
 
 Note: This code snippet is a partial implementation and may require additional code to work properly.
 """
+# todo maybe further split values from over?
+
 import math
 import typing
 from dataclasses import dataclass, field
@@ -32,7 +34,6 @@ from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 from chipiron.utils.my_value_sorted_dict import sort_dic
 from chipiron.utils.small_tools import nth_key
 
-# todo maybe further split values from over?
 
 @typing.runtime_checkable
 # Class created to avoid circular import and defines what is seen and needed by the NodeMinmaxEvaluation class
