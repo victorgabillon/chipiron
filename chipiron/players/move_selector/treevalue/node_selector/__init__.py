@@ -28,5 +28,5 @@ __all__ = [
     "NodeSelector",
     "create",
     "NodeSelectorArgs",
-    "NodeSelectorType"
+    "NodeSelectorType",
 ]

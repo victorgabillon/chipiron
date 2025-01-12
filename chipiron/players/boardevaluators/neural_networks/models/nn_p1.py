@@ -13,7 +13,7 @@ from chipiron.utils.chi_nn import ChiNN
 
 class NetP1(ChiNN):
     """The NetP1 class is a subclass of ChiNN and implements the forward pass of the neural network. It consists of
-     a single fully connected layer with a tanh activation function."""
+    a single fully connected layer with a tanh activation function."""
 
     def __init__(self) -> None:
         """Constructor for the NetP1 class. Initializes the neural network layers."""
@@ -23,10 +23,7 @@ class NetP1(ChiNN):
         self.fc1 = nn.Linear(5, 1)
         self.tanh = nn.Tanh()
 
-    def forward(
-            self,
-            x: torch.Tensor
-    ) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Forward pass of the neural network model.
 
@@ -61,11 +58,11 @@ class NetP1(ChiNN):
         """
         for layer, param in enumerate(self.parameters()):
             if layer == 0:
-                print('pawns', param.data[0, 0])
-                print('knights', param.data[0, 1])
-                print('bishops', param.data[0, 2])
-                print('rook', param.data[0, 3])
-                print('queen', param.data[0, 4])
+                print("pawns", param.data[0, 0])
+                print("knights", param.data[0, 1])
+                print("bishops", param.data[0, 2])
+                print("rook", param.data[0, 3])
+                print("queen", param.data[0, 4])
             else:
                 print(param.data)
 
@@ -76,8 +73,8 @@ class NetP1(ChiNN):
         Args:
             input (torch.Tensor): Input tensor.
         """
-        print('pawns', input[0])
-        print('knights', input[1])
-        print('bishops', input[2])
-        print('rook', input[3])
-        print('queen', input[4])
+        print("pawns", input[0])
+        print("knights", input[1])
+        print("bishops", input[2])
+        print("rook", input[3])
+        print("queen", input[4])

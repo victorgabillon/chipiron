@@ -11,8 +11,4 @@ To use this module, import the desired factory class from this module and use it
 
 from .search_factory import NodeSelectorFactory, SearchFactory, SearchFactoryP
 
-__all__ = [
-    "SearchFactoryP",
-    "SearchFactory",
-    "NodeSelectorFactory"
-]
+__all__ = ["SearchFactoryP", "SearchFactory", "NodeSelectorFactory"]

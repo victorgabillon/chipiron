@@ -1,6 +1,7 @@
 """
 Basic class for Creating Tree nodes
 """
+
 from typing import Any
 
 import chipiron.environments.chess.board as board_mod
@@ -13,19 +14,19 @@ from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 
 
-class Base[T:ITreeNode[Any]](TreeNodeFactory[T]):
+class Base[T: ITreeNode[Any]](TreeNodeFactory[T]):
     """
     Basic class for Creating Tree nodes
     """
 
     def create(
-            self,
-            board: boards.IBoard,
-            half_move: int,
-            count: int,
-            parent_node: ITreeNode[Any] | None,
-            move_from_parent: moveKey | None,
-            modifications: board_mod.BoardModificationP | None
+        self,
+        board: boards.IBoard,
+        half_move: int,
+        count: int,
+        parent_node: ITreeNode[Any] | None,
+        move_from_parent: moveKey | None,
+        modifications: board_mod.BoardModificationP | None,
     ) -> TreeNode[T]:
         """
         Creates a new TreeNode object.

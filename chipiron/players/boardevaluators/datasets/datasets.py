@@ -45,11 +45,7 @@ class MyDataSet(Dataset[Any]):
     data: pandas.DataFrame | list[tuple[torch.Tensor, torch.Tensor]] | None
     len: int | None
 
-    def __init__(
-            self,
-            file_name: str,
-            preprocessing: bool
-    ) -> None:
+    def __init__(self, file_name: str, preprocessing: bool) -> None:
         """
         Initializes a new instance of the MyDataSet class.
 
@@ -66,38 +62,37 @@ class MyDataSet(Dataset[Any]):
         """
         Loads the dataset from the file.
         """
-        print('Loading the dataset...')
+        print("Loading the dataset...")
         start_time = time.time()
         raw_data: pandas.DataFrame = pd.read_pickle(self.file_name)
-        print('raw_data', type(raw_data))
-        raw_data = raw_data.copy()  # gets read of compatibility problem between various version of panda and pickle
+        print("raw_data", type(raw_data))
+        raw_data = (
+            raw_data.copy()
+        )  # gets read of compatibility problem between various version of panda and pickle
         print("--- LOAD READ PICKLE %s seconds ---" % (time.time() - start_time))
-        print('Dataset  loaded with {} items'.format(len(raw_data)))
+        print("Dataset  loaded with {} items".format(len(raw_data)))
 
         # preprocessing
         if self.preprocessing:
-            print('preprocessing dataset...')
+            print("preprocessing dataset...")
             processed_data: list[tuple[torch.Tensor, torch.Tensor]] = []
 
             for idx in range(len(raw_data)):
                 # print(idx, type(idx),idx % 10 == 0)
                 if idx % 10 == 0:
-                    print('\rloading the data', str(idx / len(raw_data) * 100) + '%')
+                    print("\rloading the data", str(idx / len(raw_data) * 100) + "%")
                 row: pandas.Series = raw_data.iloc[idx % len(raw_data)]
                 processed_data.append(self.process_raw_row(row))
             self.data = processed_data
 
-            print('preprocessing dataset done')
+            print("preprocessing dataset done")
         else:
-            print('no preprocessing the dataset')
+            print("no preprocessing the dataset")
             self.data = raw_data
 
         self.len = len(self.data)
 
-    def process_raw_row(
-            self,
-            row: pandas.Series
-    ) -> tuple[torch.Tensor, torch.Tensor]:
+    def process_raw_row(self, row: pandas.Series) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Processes a raw row into input and target tensors.
 
@@ -107,7 +102,7 @@ class MyDataSet(Dataset[Any]):
         Returns:
         - tuple[torch.Tensor, torch.Tensor]: The input and target tensors.
         """
-        raise Exception('should not be called')
+        raise Exception("should not be called")
 
     def __len__(self) -> int:
         """
@@ -116,12 +111,11 @@ class MyDataSet(Dataset[Any]):
         Returns:
         - int: The length of the dataset.
         """
-        assert (self.data is not None)
+        assert self.data is not None
         return len(self.data)
 
     def __getitem__(
-            self,
-            idx: int
+        self, idx: int
     ) -> tuple[torch.Tensor, torch.Tensor] | pandas.Series:
         """
         Returns the item at the given index.
@@ -132,7 +126,7 @@ class MyDataSet(Dataset[Any]):
         Returns:
         - tuple[torch.Tensor, torch.Tensor] | pandas.Series: The input and target tensors, or the raw row.
         """
-        assert (self.data is not None)
+        assert self.data is not None
 
         if self.preprocessing:
             assert self.len is not None
@@ -145,10 +139,7 @@ class MyDataSet(Dataset[Any]):
             return self.process_raw_row(raw_row)  # to be coded!
 
 
-def process_stockfish_value(
-        board: BoardChi,
-        row: pandas.Series
-) -> torch.Tensor:
+def process_stockfish_value(board: BoardChi, row: pandas.Series) -> torch.Tensor:
     """
     Processes the stockfish value for a given board and row.
 
@@ -160,9 +151,9 @@ def process_stockfish_value(
     - torch.Tensor: The processed target value tensor.
     """
     if board.turn == chess.BLACK:
-        target_value = -np.tanh(row['stockfish_value'] / 500.)
+        target_value = -np.tanh(row["stockfish_value"] / 500.0)
     else:
-        target_value = np.tanh(row['stockfish_value'] / 500.)
+        target_value = np.tanh(row["stockfish_value"] / 500.0)
     target_value_tensor: torch.Tensor = torch.tensor([target_value])
     return target_value_tensor
 
@@ -183,11 +174,11 @@ class FenAndValueDataSet(MyDataSet):
     transform_board_function: BoardToInputFunction
 
     def __init__(
-            self,
-            file_name: str,
-            preprocessing: bool = False,
-            transform_board_function: str | BoardToInputFunction = 'identity',
-            transform_value_function: str = ''
+        self,
+        file_name: str,
+        preprocessing: bool = False,
+        transform_board_function: str | BoardToInputFunction = "identity",
+        transform_value_function: str = "",
     ) -> None:
         """
         Initializes a new instance of the FenAndValueDataSet class.
@@ -200,20 +191,17 @@ class FenAndValueDataSet(MyDataSet):
         """
         super().__init__(file_name, preprocessing)
         # transform function
-        if transform_board_function == 'identity':
-            raise Exception(f'tobe coded in {__name__}')
+        if transform_board_function == "identity":
+            raise Exception(f"tobe coded in {__name__}")
         else:
             assert isinstance(transform_board_function, BoardToInputFunction)
             self.transform_board_function = transform_board_function
 
         # transform function
-        if transform_value_function == 'stockfish':
+        if transform_value_function == "stockfish":
             self.transform_value_function = process_stockfish_value
 
-    def process_raw_row(
-            self,
-            row: pandas.Series
-    ) -> tuple[torch.Tensor, torch.Tensor]:
+    def process_raw_row(self, row: pandas.Series) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Processes a raw row into input and target tensors.
 
@@ -223,18 +211,17 @@ class FenAndValueDataSet(MyDataSet):
         Returns:
         - tuple[torch.Tensor, torch.Tensor]: The input and target tensors.
         """
-        fen = row['fen']
+        fen = row["fen"]
         board = create_board_chi(
             fen_with_history=FenPlusHistory(current_fen=fen),
-            use_board_modification=True
+            use_board_modification=True,
         )
         input_layer = self.transform_board_function(board)
         target_value = self.transform_value_function(board, row)
         return input_layer.float(), target_value.float()
 
     def process_raw_rows(
-            self,
-            dataframe: pandas.DataFrame
+        self, dataframe: pandas.DataFrame
     ) -> list[tuple[torch.Tensor, torch.Tensor]]:
         """
         Processes raw rows into input and target tensors.

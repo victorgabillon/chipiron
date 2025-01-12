@@ -1,6 +1,7 @@
 """
 Module that contains the GameStatusMessage class.
 """
+
 from dataclasses import dataclass
 
 from chipiron.games.game.game_playing_status import PlayingStatus
@@ -21,4 +22,5 @@ class GameStatusMessage:
     Attributes:
         status (PlayingStatus): The playing status of the game.
     """
+
     status: PlayingStatus

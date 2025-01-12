@@ -29,5 +29,5 @@ __all__ = [
     "UpdateInstructionsFromOneNode",
     "UpdateInstructionsTowardsOneParentNode",
     "MinMaxEvaluationUpdater",
-    "UpdateInstructionsTowardsMultipleNodes"
+    "UpdateInstructionsTowardsMultipleNodes",
 ]

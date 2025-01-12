@@ -1,6 +1,7 @@
 """
 Module that contains the SyzygyProcess class.
 """
+
 import copy
 import multiprocessing
 import queue
@@ -20,9 +21,7 @@ class SyzygyProcess(multiprocessing.Process):
     """
 
     def __init__(
-            self,
-            syzygy_table: SyzygyTable[Any],
-            queue_board: queue.Queue[Any]
+        self, syzygy_table: SyzygyTable[Any], queue_board: queue.Queue[Any]
     ) -> None:
         """
         Initializes a new instance of the SyzygyProcess class.
@@ -45,7 +44,7 @@ class SyzygyProcess(multiprocessing.Process):
         performs tablebase lookups using the SyzygyTable object,
         and sends back the corresponding move messages.
         """
-        print('Started Syzygy thread : ', self.syzygy_table)
+        print("Started Syzygy thread : ", self.syzygy_table)
 
         while not self.stopped():
             try:
@@ -53,14 +52,18 @@ class SyzygyProcess(multiprocessing.Process):
             except queue.Empty:
                 pass
             else:
-                if message['type'] == 'board':
-                    board = message['board']
-                    queue_reply = message['queue_reply']
-                    print('syzygy thread got ', board)
+                if message["type"] == "board":
+                    board = message["board"]
+                    queue_reply = message["queue_reply"]
+                    print("syzygy thread got ", board)
                     move = self.syzygy_table.best_move(board)
-                    message = {'type': 'move', 'move': move, 'corresponding_board': board.fen}
+                    message = {
+                        "type": "move",
+                        "move": move,
+                        "corresponding_board": board.fen,
+                    }
                     deep_copy_message = copy.deepcopy(message)
-                    print('sending ', message)
+                    print("sending ", message)
                     queue_reply.put(deep_copy_message)
 
     def stop(self) -> None:

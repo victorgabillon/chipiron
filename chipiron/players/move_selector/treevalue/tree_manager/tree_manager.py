@@ -35,17 +35,14 @@ class TreeManager:
 
     node_factory: TreeNodeFactory[node.ITreeNode[Any]]
 
-    def __init__(
-            self,
-            node_factory: TreeNodeFactory[node.ITreeNode[Any]]
-    ) -> None:
+    def __init__(self, node_factory: TreeNodeFactory[node.ITreeNode[Any]]) -> None:
         self.node_factory = node_factory
 
     def open_node_move(
-            self,
-            tree: trees.MoveAndValueTree,
-            parent_node: node.ITreeNode[Any],
-            move: moveKey
+        self,
+        tree: trees.MoveAndValueTree,
+        parent_node: node.ITreeNode[Any],
+        move: moveKey,
     ) -> TreeExpansion:
         """
         Opening a Node that contains a board following a move.
@@ -62,31 +59,33 @@ class TreeManager:
         # Having the stack information allows checking for draw by repetition.
         # To limit computation we limit copying it all the time. The resulting policy will only be aware of immediate
         # risk of draw by repetition
-        copy_stack: bool = (tree.node_depth(parent_node) < 2)
+        copy_stack: bool = tree.node_depth(parent_node) < 2
         board: board_mod.IBoard = parent_node.board.copy(
             stack=copy_stack,
-            deep_copy_legal_moves=False  # trick to win time (the original legal moves is assume to not be changed as
+            deep_copy_legal_moves=False,  # trick to win time (the original legal moves is assume to not be changed as
             # moves are not supposed to be played anymore on that board and therefore this allows copy by reference
         )
 
         # The move is played. The board is now a new board
-        modifications: board_mod.BoardModificationP | None = board.play_move_key(move=move)
+        modifications: board_mod.BoardModificationP | None = board.play_move_key(
+            move=move
+        )
 
         return self.open_node(
             tree=tree,
             parent_node=parent_node,
             board=board,
             modifications=modifications,
-            move=move
+            move=move,
         )
 
     def open_node(
-            self,
-            tree: trees.MoveAndValueTree,
-            parent_node: node.ITreeNode[Any],
-            board: board_mod.IBoard,
-            modifications: board_mod.BoardModificationP | None,
-            move: moveKey
+        self,
+        tree: trees.MoveAndValueTree,
+        parent_node: node.ITreeNode[Any],
+        board: board_mod.IBoard,
+        modifications: board_mod.BoardModificationP | None,
+        move: moveKey,
     ) -> TreeExpansion:
         """
         Opening a Node that contains a board given the modifications.
@@ -109,8 +108,10 @@ class TreeManager:
         fast_rep: board_mod.boardKey = board.fast_representation
 
         child_node: node.ITreeNode[Any]
-        need_creation_child_node: bool = (tree.descendants.is_new_generation(half_move)
-                                          or fast_rep not in tree.descendants.descendants_at_half_move[half_move])
+        need_creation_child_node: bool = (
+            tree.descendants.is_new_generation(half_move)
+            or fast_rep not in tree.descendants.descendants_at_half_move[half_move]
+        )
         if need_creation_child_node:
             child_node = self.node_factory.create(
                 board=board,
@@ -118,24 +119,23 @@ class TreeManager:
                 count=tree.nodes_count,
                 move_from_parent=move,
                 parent_node=parent_node,
-                modifications=modifications
+                modifications=modifications,
             )
             tree.nodes_count += 1
-            tree.descendants.add_descendant(child_node)  # add it to the list of descendants
+            tree.descendants.add_descendant(
+                child_node
+            )  # add it to the list of descendants
 
         else:  # the node already exists
             child_node = tree.descendants[half_move][fast_rep]
-            child_node.add_parent(
-                move=move,
-                new_parent_node=parent_node
-            )
+            child_node.add_parent(move=move, new_parent_node=parent_node)
 
         tree_expansion: TreeExpansion = TreeExpansion(
             child_node=child_node,
             parent_node=parent_node,
             board_modifications=modifications,
             creation_child_node=need_creation_child_node,
-            move=move
+            move=move,
         )
 
         # add it to the list of opened move and out of the non-opened moves
@@ -146,9 +146,7 @@ class TreeManager:
         return tree_expansion
 
     def open_instructions(
-            self,
-            tree: trees.MoveAndValueTree,
-            opening_instructions: OpeningInstructions
+        self, tree: trees.MoveAndValueTree, opening_instructions: OpeningInstructions
     ) -> TreeExpansions:
         """
         Opening multiple nodes based on the opening instructions.
@@ -170,7 +168,7 @@ class TreeManager:
             tree_expansion: TreeExpansion = self.open_node_move(
                 tree=tree,
                 parent_node=opening_instruction.node_to_open,
-                move=opening_instruction.move_to_play
+                move=opening_instruction.move_to_play,
             )
 
             # concatenate the tree expansions
@@ -179,8 +177,8 @@ class TreeManager:
         return tree_expansions
 
     def print_some_stats(
-            self,
-            tree: trees.MoveAndValueTree,
+        self,
+        tree: trees.MoveAndValueTree,
     ) -> None:
         """
         Print some statistics about the tree.
@@ -188,17 +186,21 @@ class TreeManager:
         Args:
             tree: The tree object.
         """
-        print('Tree stats: move_count', tree.move_count, ' node_count',
-              tree.descendants.get_count())
+        print(
+            "Tree stats: move_count",
+            tree.move_count,
+            " node_count",
+            tree.descendants.get_count(),
+        )
         sum_ = 0
         tree.descendants.print_stats()
         for half_move in tree.descendants:
             sum_ += len(tree.descendants[half_move])
-            print('half_move', half_move, len(tree.descendants[half_move]), sum_)
+            print("half_move", half_move, len(tree.descendants[half_move]), sum_)
 
     def test_count(
-            self,
-            tree: trees.MoveAndValueTree,
+        self,
+        tree: trees.MoveAndValueTree,
     ) -> None:
         """
         Test the count of nodes in the tree.
@@ -206,11 +208,11 @@ class TreeManager:
         Args:
             tree: The tree object.
         """
-        assert (tree.descendants.get_count() == tree.nodes_count)
+        assert tree.descendants.get_count() == tree.nodes_count
 
     def print_best_line(
-            self,
-            tree: trees.MoveAndValueTree,
+        self,
+        tree: trees.MoveAndValueTree,
     ) -> None:
         """
         Print the best line in the tree.
@@ -218,4 +220,4 @@ class TreeManager:
         Args:
             tree: The tree object.
         """
-        raise Exception('should not be called no? Think about modifying...')
+        raise Exception("should not be called no? Think about modifying...")

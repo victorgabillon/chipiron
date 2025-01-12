@@ -1,6 +1,7 @@
 """
 Module for the ProgressMessage class.
 """
+
 from dataclasses import dataclass
 
 import chess
@@ -14,5 +15,6 @@ class PlayerProgressMessage:
     Attributes:
         evaluation_stock (Any): The evaluation for the stock.
     """
+
     progress_percent: int | None
     player_color: chess.Color

@@ -28,7 +28,9 @@ class ReplayScriptArgs:
     """
 
     # path to the yaml file with the Game Report stored
-    file_game_report: str = 'chipiron/scripts/one_match/outputs/Sunday-10-13-2024--22:40:58:049918/games_0_W:Sequool-vs-B:Random_game_report.yaml'
+    file_game_report: str = (
+        "chipiron/scripts/one_match/outputs/Sunday-10-13-2024--22:40:58:049918/games_0_W:Sequool-vs-B:Random_game_report.yaml"
+    )
 
     base_script_args: BaseScriptArgs = field(default_factory=BaseScriptArgs)
 
@@ -46,11 +48,13 @@ class ReplayGameScript:
     base_script: Script
     chess_board: BoardChi
 
-    base_experiment_output_folder = os.path.join(Script.base_experiment_output_folder, 'replay_game/outputs/')
+    base_experiment_output_folder = os.path.join(
+        Script.base_experiment_output_folder, "replay_game/outputs/"
+    )
 
     def __init__(
-            self,
-            base_script: Script,
+        self,
+        base_script: Script,
     ) -> None:
         """
         Initializes the `ReplayGameScript` object.
@@ -65,20 +69,19 @@ class ReplayGameScript:
         self.args: ReplayScriptArgs = self.base_script.initiate(
             args_dataclass_name=ReplayScriptArgs,
             experiment_output_folder=self.base_experiment_output_folder,
-
         )
 
-        with open(self.args.file_game_report, 'r') as fileGame:
+        with open(self.args.file_game_report, "r") as fileGame:
             game_report_dict: dict[Any, Any] = yaml.safe_load(fileGame)
             game_report: GameReport = dacite.from_dict(
                 data_class=GameReport,
                 data=game_report_dict,
-                config=dacite.Config(cast=[Enum])
+                config=dacite.Config(cast=[Enum]),
             )
             self.chess_board: BoardChi = create_board_chi(
                 fen_with_history=FenPlusHistory(
                     current_fen=game_report.fen_history[0],
-                    historical_moves=game_report.move_history
+                    historical_moves=game_report.move_history,
                 )
             )
 

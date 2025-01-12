@@ -33,10 +33,10 @@ class NNBoardEvaluator:
     board_to_input_converter: BoardToInput
 
     def __init__(
-            self,
-            net: ChiNN,
-            output_and_value_converter: OutputValueConverter,
-            board_to_input_converter: BoardToInput
+        self,
+        net: ChiNN,
+        output_and_value_converter: OutputValueConverter,
+        board_to_input_converter: BoardToInput,
     ) -> None:
         """
         Initialize the NNBoardEvaluator
@@ -51,10 +51,7 @@ class NNBoardEvaluator:
         self.output_and_value_converter = output_and_value_converter
         self.board_to_input_converter = board_to_input_converter
 
-    def value_white(
-            self,
-            board: boards.IBoard
-    ) -> float:
+    def value_white(self, board: boards.IBoard) -> float:
         """
         Evaluate the value for the white player
 
@@ -69,18 +66,17 @@ class NNBoardEvaluator:
         torch.no_grad()
         output_layer: torch.Tensor = self.my_scripted_model(input_layer)
         torch.no_grad()
-        board_evaluation: FloatyBoardEvaluation = self.output_and_value_converter.to_board_evaluation(
-            output_nn=output_layer,
-            color_to_play=board.turn
+        board_evaluation: FloatyBoardEvaluation = (
+            self.output_and_value_converter.to_board_evaluation(
+                output_nn=output_layer, color_to_play=board.turn
+            )
         )
         value_white: float | None = board_evaluation.value_white
         assert value_white is not None
         return value_white
 
     def evaluate(
-            self,
-            input_layer: torch.Tensor,
-            color_to_play: chess.Color
+        self, input_layer: torch.Tensor, color_to_play: chess.Color
     ) -> FloatyBoardEvaluation:
         """
         Evaluate the board position
@@ -100,8 +96,7 @@ class NNBoardEvaluator:
 
         # translate the NN output batch into a proper Board Evaluations classes in a list
         board_evaluations = self.output_and_value_converter.to_board_evaluation(
-            output_nn=output_layer,
-            color_to_play=color_to_play
+            output_nn=output_layer, color_to_play=color_to_play
         )
 
         return board_evaluations

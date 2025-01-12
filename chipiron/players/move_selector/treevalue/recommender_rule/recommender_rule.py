@@ -33,25 +33,26 @@ class RecommenderRuleTypes(str, Enum):
     """
     Enum class that defines the available recommender rule types.
     """
-    AlmostEqualLogistic = 'almost_equal_logistic'
-    Softmax = 'softmax'
+
+    AlmostEqualLogistic = "almost_equal_logistic"
+    Softmax = "softmax"
 
 
 # theses are functions but i still use dataclasses instead
 # of partial to be able to easily construct from yaml files using dacite
+
 
 @dataclass
 class AlmostEqualLogistic:
     """
     Recommender rule that selects the best move allowing for random choice for almost equally valued moves.
     """
+
     type: Literal[RecommenderRuleTypes.AlmostEqualLogistic]
     temperature: float
 
     def __call__(
-            self,
-            tree: trees.MoveAndValueTree,
-            random_generator: random.Random
+        self, tree: trees.MoveAndValueTree, random_generator: random.Random
     ) -> moveKey:
         """
         Selects the best move from the tree, allowing for random choice for almost equally valued moves.
@@ -65,9 +66,12 @@ class AlmostEqualLogistic:
         """
         # TODO this should be given at construction but postponed for now because of dataclasses
         # find the best first move allowing for random choice for almost equally valued moves.
-        best_root_moves: list[moveKey] = tree.root_node.minmax_evaluation.get_all_of_the_best_moves(
-            how_equal='almost_equal_logistic')
-        print('We have as bests: ', [best for best in best_root_moves])
+        best_root_moves: list[moveKey] = (
+            tree.root_node.minmax_evaluation.get_all_of_the_best_moves(
+                how_equal="almost_equal_logistic"
+            )
+        )
+        print("We have as bests: ", [best for best in best_root_moves])
         best_move = random_generator.choice(best_root_moves)
 
         # assert isinstance(best_move, IMove)
@@ -79,13 +83,12 @@ class SoftmaxRule:
     """
     Recommender rule that selects the best move using the softmax function.
     """
+
     type: Literal[RecommenderRuleTypes.Softmax]
     temperature: float
 
     def __call__(
-            self,
-            tree: trees.MoveAndValueTree,
-            random_generator: random.Random
+        self, tree: trees.MoveAndValueTree, random_generator: random.Random
     ) -> moveKey:
         """
         Selects the best move from the tree using the softmax function.
@@ -101,16 +104,22 @@ class SoftmaxRule:
         values = []
         for node in tree.root_node.moves_children.values():
             assert isinstance(node, AlgorithmNode)
-            value = tree.root_node.minmax_evaluation.subjective_value_of(node.minmax_evaluation)
+            value = tree.root_node.minmax_evaluation.subjective_value_of(
+                node.minmax_evaluation
+            )
             values.append(value)
 
         softmax_ = list(softmax(values, self.temperature))
-        print('SOFTMAX', self.temperature, [i / sum(softmax_) for i in softmax_],
-              sum([i / sum(softmax_) for i in softmax_]))
+        print(
+            "SOFTMAX",
+            self.temperature,
+            [i / sum(softmax_) for i in softmax_],
+            sum([i / sum(softmax_) for i in softmax_]),
+        )
 
         move_as_list = random_generator.choices(
-            list(tree.root_node.moves_children.keys()),
-            weights=softmax_, k=1)
+            list(tree.root_node.moves_children.keys()), weights=softmax_, k=1
+        )
         best_move: moveKey = move_as_list[0]
         return best_move
 
@@ -123,12 +132,11 @@ class RecommenderRule(Protocol):
     """
     Protocol that all recommender rule classes must implement.
     """
+
     type: RecommenderRuleTypes
 
     def __call__(
-            self,
-            tree: trees.MoveAndValueTree,
-            random_generator: random.Random
+        self, tree: trees.MoveAndValueTree, random_generator: random.Random
     ) -> moveKey:
         """
         Selects the best move from the tree.
@@ -144,9 +152,9 @@ class RecommenderRule(Protocol):
 
 
 def recommend_move_after_exploration_generic(
-        recommend_move_after_exploration: AllRecommendFunctionsArgs,
-        tree: trees.MoveAndValueTree,
-        random_generator: random.Random
+    recommend_move_after_exploration: AllRecommendFunctionsArgs,
+    tree: trees.MoveAndValueTree,
+    random_generator: random.Random,
 ) -> moveKey:
     """
     Recommends a move after exploration based on a generic rule.
@@ -165,14 +173,13 @@ def recommend_move_after_exploration_generic(
     # to end the game fast by capturing pieces if possible
     is_winning_situation: bool = is_winning(
         node_minmax_evaluation=tree.root_node.minmax_evaluation,
-        color=tree.root_node.board.turn
+        color=tree.root_node.board.turn,
     )
     over: bool = tree.root_node.is_over()
     if is_winning_situation and not over:
         # value of pieces of the opponent before the move
         value_father: int = value_base(
-            board=tree.root_node.board,
-            color=not tree.root_node.board.turn
+            board=tree.root_node.board, color=not tree.root_node.board.turn
         )
 
         child: ITreeNode[Any] | None
@@ -182,15 +189,12 @@ def recommend_move_after_exploration_generic(
             assert isinstance(child, AlgorithmNode)
 
             # value of pieces of the opponent after that move
-            value_child: int = value_base(
-                board=child.board,
-                color=child.board.turn
-            )
+            value_child: int = value_base(board=child.board, color=child.board.turn)
             value: int = value_father - value_child
 
             still_wining_after_move: bool = is_winning(
                 node_minmax_evaluation=child.minmax_evaluation,
-                color=tree.root_node.board.turn
+                color=tree.root_node.board.turn,
             )
             if still_wining_after_move and (best_value is None or best_value < value):
                 best_value = value
@@ -201,4 +205,6 @@ def recommend_move_after_exploration_generic(
             return best_move
 
     # base case
-    return recommend_move_after_exploration(tree=tree, random_generator=random_generator)
+    return recommend_move_after_exploration(
+        tree=tree, random_generator=random_generator
+    )

@@ -14,6 +14,7 @@ class IndexComputationType(str, Enum):
         MinLocalChange (str): Represents the minimum local change computation type.
         RecurZipf (str): Represents the recurzipf computation type.
     """
-    MinGlobalChange = 'min_global_change'
-    MinLocalChange = 'min_local_change'
-    RecurZipf = 'recurzipf'
+
+    MinGlobalChange = "min_global_change"
+    MinLocalChange = "min_local_change"
+    RecurZipf = "recurzipf"

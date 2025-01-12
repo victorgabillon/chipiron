@@ -1,6 +1,7 @@
 """
 Module for the GameManagerFactory class.
 """
+
 import queue
 from dataclasses import dataclass, field
 from typing import Any
@@ -63,10 +64,10 @@ class GameManagerFactory:
     subscribers: list[queue.Queue[IsDataclass]] = field(default_factory=list)
 
     def create(
-            self,
-            args_game_manager: GameArgs,
-            player_color_to_factory_args: dict[chess.Color, PlayerFactoryArgs],
-            game_seed: seed
+        self,
+        args_game_manager: GameArgs,
+        player_color_to_factory_args: dict[chess.Color, PlayerFactoryArgs],
+        game_seed: seed,
     ) -> GameManager:
         """
         Create a GameManager with the given arguments
@@ -85,11 +86,15 @@ class GameManagerFactory:
 
         # CREATING THE BOARD
         starting_fen: str = args_game_manager.starting_position.get_fen()
-        board: boards.IBoard = self.board_factory(fen_with_history=FenPlusHistory(current_fen=starting_fen))
+        board: boards.IBoard = self.board_factory(
+            fen_with_history=FenPlusHistory(current_fen=starting_fen)
+        )
         if self.subscribers:
             for subscriber in self.subscribers:
-                player_id_message: PlayersColorToPlayerMessage = PlayersColorToPlayerMessage(
-                    player_color_to_factory_args=player_color_to_factory_args
+                player_id_message: PlayersColorToPlayerMessage = (
+                    PlayersColorToPlayerMessage(
+                        player_color_to_factory_args=player_color_to_factory_args
+                    )
                 )
 
                 subscriber.put(player_id_message)
@@ -101,9 +106,7 @@ class GameManagerFactory:
         game_playing_status: ch.games.GamePlayingStatus = ch.games.GamePlayingStatus()
 
         game: Game = Game(
-            playing_status=game_playing_status,
-            board=board,
-            seed_=game_seed
+            playing_status=game_playing_status, board=board, seed_=game_seed
         )
         observable_game: ObservableGame = ObservableGame(game=game)
 
@@ -116,17 +119,19 @@ class GameManagerFactory:
             each_player_has_its_own_thread=args_game_manager.each_player_has_its_own_thread,
             implementation_args=self.implementation_args,
             syzygy_table=self.syzygy_table,
-            universal_behavior=self.universal_behavior
+            universal_behavior=self.universal_behavior,
         )
 
-        player_progress_collector: PlayerProgressCollectorObservable = PlayerProgressCollectorObservable(
-            subscribers=self.subscribers
+        player_progress_collector: PlayerProgressCollectorObservable = (
+            PlayerProgressCollectorObservable(subscribers=self.subscribers)
         )
 
         players: list[players_m.GamePlayer | players_m.PlayerProcess] = []
         # Creating the players
         for player_color in chess.COLORS:
-            player_factory_args: players_m.PlayerFactoryArgs = player_color_to_factory_args[player_color]
+            player_factory_args: players_m.PlayerFactoryArgs = (
+                player_color_to_factory_args[player_color]
+            )
 
             # Human playing with gui does not need a player, as the playing moves will be generated directly
             # by the GUI and sent directly to the game_manager
@@ -136,7 +141,7 @@ class GameManagerFactory:
                 generic_player, move_function = player_observer_factory(
                     player_color=player_color,
                     player_factory_args=player_factory_args,
-                    main_thread_mailbox=self.main_thread_mailbox
+                    main_thread_mailbox=self.main_thread_mailbox,
                     # player_progress_collector=player_progress_collector
                 )
                 players.append(generic_player)
@@ -145,8 +150,8 @@ class GameManagerFactory:
                 observable_game.register_player(move_function=move_function)
 
         player_color_to_id: dict[chess.Color, str] = {
-            color: player_factory_args.player_args.name for color, player_factory_args in
-            player_color_to_factory_args.items()
+            color: player_factory_args.player_args.name
+            for color, player_factory_args in player_color_to_factory_args.items()
         }
 
         game_manager: GameManager
@@ -160,15 +165,12 @@ class GameManagerFactory:
             main_thread_mailbox=self.main_thread_mailbox,
             players=players,
             move_factory=self.move_factory,
-            progress_collector=player_progress_collector
+            progress_collector=player_progress_collector,
         )
 
         return game_manager
 
-    def subscribe(
-            self,
-            subscriber: queue.Queue[IsDataclass]
-    ) -> None:
+    def subscribe(self, subscriber: queue.Queue[IsDataclass]) -> None:
         """
         Subscribe to the GameManagerFactory to get the PlayersColorToPlayerMessage
         As well as subscribing to the game_manager_board_evaluator to get the EvaluationMessage

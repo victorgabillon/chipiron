@@ -22,11 +22,10 @@ from .player_args import PlayerFactoryArgs
 
 
 def create_chipiron_player(
-        depth: int,
-        use_rusty_board: bool,
-        random_generator: random.Random,
-        queue_progress_player: queue.Queue[IsDataclass] | None = None,
-
+    depth: int,
+    use_rusty_board: bool,
+    random_generator: random.Random,
+    queue_progress_player: queue.Queue[IsDataclass] | None = None,
 ) -> Player:
     """
     Creates the chipiron champion/representative/standard/default player
@@ -37,34 +36,36 @@ def create_chipiron_player(
     Returns: the player
 
     """
-    syzygy_table: table_base.SyzygyTable[Any] | None = create_syzygy(use_rust=use_rusty_board)
+    syzygy_table: table_base.SyzygyTable[Any] | None = create_syzygy(
+        use_rust=use_rusty_board
+    )
 
     args_player: PlayerArgs = fetch_player_args_convert_and_save(
-        file_name_player='data/players/player_config/chipiron/chipiron.yaml',
-        from_data_folder=False)
+        file_name_player="data/players/player_config/chipiron/chipiron.yaml",
+        from_data_folder=False,
+    )
 
-    main_move_selector: move_selector.MoveSelector | None = move_selector.create_main_move_selector(
-        move_selector_instance_or_args=args_player.main_move_selector,
-        syzygy=syzygy_table,
-        random_generator=random_generator,
-        queue_progress_player=queue_progress_player
+    main_move_selector: move_selector.MoveSelector | None = (
+        move_selector.create_main_move_selector(
+            move_selector_instance_or_args=args_player.main_move_selector,
+            syzygy=syzygy_table,
+            random_generator=random_generator,
+            queue_progress_player=queue_progress_player,
+        )
     )
 
     assert main_move_selector is not None
 
     return Player(
-        name='chipiron',
-        syzygy=syzygy_table,
-        main_move_selector=main_move_selector
+        name="chipiron", syzygy=syzygy_table, main_move_selector=main_move_selector
     )
 
 
 def create_player_from_file(
-        player_args_file: str,
-        random_generator: random.Random,
-        use_rusty_board: bool,
-        queue_progress_player: queue.Queue[IsDataclass] | None = None
-
+    player_args_file: str,
+    random_generator: random.Random,
+    use_rusty_board: bool,
+    queue_progress_player: queue.Queue[IsDataclass] | None = None,
 ) -> Player:
     """Create a player object from a file.
 
@@ -79,28 +80,30 @@ def create_player_from_file(
         file_name_player=player_args_file
     )
 
-    syzygy_table: table_base.SyzygyTable[Any] | None = create_syzygy(use_rust=use_rusty_board)
+    syzygy_table: table_base.SyzygyTable[Any] | None = create_syzygy(
+        use_rust=use_rusty_board
+    )
 
-    print('create player from file')
-    main_move_selector: move_selector.MoveSelector = move_selector.create_main_move_selector(
-        move_selector_instance_or_args=args.main_move_selector,
-        syzygy=syzygy_table,
-        random_generator=random_generator,
-        queue_progress_player=queue_progress_player
+    print("create player from file")
+    main_move_selector: move_selector.MoveSelector = (
+        move_selector.create_main_move_selector(
+            move_selector_instance_or_args=args.main_move_selector,
+            syzygy=syzygy_table,
+            random_generator=random_generator,
+            queue_progress_player=queue_progress_player,
+        )
     )
 
     return Player(
-        name=args.name,
-        syzygy=syzygy_table,
-        main_move_selector=main_move_selector
+        name=args.name, syzygy=syzygy_table, main_move_selector=main_move_selector
     )
 
 
 def create_player(
-        args: PlayerArgs,
-        syzygy: SyzygyTable[Any] | None,
-        random_generator: random.Random,
-        queue_progress_player: queue.Queue[IsDataclass] | None = None
+    args: PlayerArgs,
+    syzygy: SyzygyTable[Any] | None,
+    random_generator: random.Random,
+    queue_progress_player: queue.Queue[IsDataclass] | None = None,
 ) -> Player:
     """Create a player object.
 
@@ -114,28 +117,28 @@ def create_player(
     Returns:
         Player: The created player object.
     """
-    print('create player')
-    main_move_selector: move_selector.MoveSelector = move_selector.create_main_move_selector(
-        move_selector_instance_or_args=args.main_move_selector,
-        syzygy=syzygy,
-        random_generator=random_generator,
-        queue_progress_player=queue_progress_player
+    print("create player")
+    main_move_selector: move_selector.MoveSelector = (
+        move_selector.create_main_move_selector(
+            move_selector_instance_or_args=args.main_move_selector,
+            syzygy=syzygy,
+            random_generator=random_generator,
+            queue_progress_player=queue_progress_player,
+        )
     )
 
     player: Player = Player(
-        name=args.name,
-        syzygy=syzygy,
-        main_move_selector=main_move_selector
+        name=args.name, syzygy=syzygy, main_move_selector=main_move_selector
     )
 
     return player
 
 
 def create_game_player(
-        player_factory_args: PlayerFactoryArgs,
-        player_color: chess.Color,
-        syzygy_table: table_base.SyzygyTable[Any] | None,
-        queue_progress_player: queue.Queue[IsDataclass] | None
+    player_factory_args: PlayerFactoryArgs,
+    player_color: chess.Color,
+    syzygy_table: table_base.SyzygyTable[Any] | None,
+    queue_progress_player: queue.Queue[IsDataclass] | None,
 ) -> GamePlayer:
     """Create a game player
 
@@ -153,7 +156,7 @@ def create_game_player(
         args=player_factory_args.player_args,
         syzygy=syzygy_table,
         random_generator=random_generator,
-        queue_progress_player=queue_progress_player
+        queue_progress_player=queue_progress_player,
     )
     game_player: GamePlayer = GamePlayer(player, player_color)
     return game_player

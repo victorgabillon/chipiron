@@ -17,13 +17,11 @@ script_type_to_script_class_name: dict[ScriptType, Any] = {
     ScriptType.LearnNN: LearnNNScript,
     ScriptType.ReplayMatch: ReplayGameScript,
     ScriptType.League: RunTheLeagueScript,
-    ScriptType.BaseTreeExploration: BaseTreeExplorationScript
+    ScriptType.BaseTreeExploration: BaseTreeExplorationScript,
 }
 
 
-def get_script_type_from_script_class_name(
-        script_type: ScriptType
-) -> Any:
+def get_script_type_from_script_class_name(script_type: ScriptType) -> Any:
     """
     Retrieves the script class name based on the given script type.
 
@@ -40,4 +38,4 @@ def get_script_type_from_script_class_name(
         script_class_name: type[IScript] = script_type_to_script_class_name[script_type]
         return script_class_name
     else:
-        raise Exception(f'Cannot find the script type {script_type} in file {__name__}')
+        raise Exception(f"Cannot find the script type {script_type} in file {__name__}")

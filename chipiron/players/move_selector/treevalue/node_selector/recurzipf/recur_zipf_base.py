@@ -49,15 +49,15 @@ class RecurZipfBaseArgs(NodeSelectorArgs):
 
 
 class RecurZipfBase:
-    """ The RecurZipfBase Node selector """
+    """The RecurZipfBase Node selector"""
 
     opening_instructor: OpeningInstructor
 
     def __init__(
-            self,
-            args: RecurZipfBaseArgs,
-            random_generator: random.Random,
-            opening_instructor: OpeningInstructor
+        self,
+        args: RecurZipfBaseArgs,
+        random_generator: random.Random,
+        opening_instructor: OpeningInstructor,
     ) -> None:
         """
         Initializes a new instance of the RecurZipfBase class.
@@ -69,14 +69,15 @@ class RecurZipfBase:
 
         """
         self.opening_instructor = opening_instructor
-        self.move_explorer = ZipfMoveExplorer(args.move_explorer_priority, random_generator)
+        self.move_explorer = ZipfMoveExplorer(
+            args.move_explorer_priority, random_generator
+        )
         self.random_generator = random_generator
 
     def choose_node_and_move_to_open(
-            self,
-            tree: trees.MoveAndValueTree,
-            latest_tree_expansions: 'tree_man.TreeExpansions'
-
+        self,
+        tree: trees.MoveAndValueTree,
+        latest_tree_expansions: "tree_man.TreeExpansions",
     ) -> OpeningInstructions:
         """
         Chooses the next node to explore and the move to open.
@@ -96,31 +97,42 @@ class RecurZipfBase:
         if best_node_sequence:
             last_node_in_best_line = best_node_sequence[-1]
             assert isinstance(last_node_in_best_line, AlgorithmNode)
-            if last_node_in_best_line.board.is_attacked(
-                    not last_node_in_best_line.tree_node.player_to_move) and not last_node_in_best_line.minmax_evaluation.is_over():
+            if (
+                last_node_in_best_line.board.is_attacked(
+                    not last_node_in_best_line.tree_node.player_to_move
+                )
+                and not last_node_in_best_line.minmax_evaluation.is_over()
+            ):
                 # print('best line is underattacked')
-                if self.random_generator.random() > .5:
+                if self.random_generator.random() > 0.5:
                     # print('best line is underattacked and i do')
-                    all_moves_to_open: list[moveKey] = self.opening_instructor.all_moves_to_open(
-                        node_to_open=last_node_in_best_line.tree_node)
+                    all_moves_to_open: list[moveKey] = (
+                        self.opening_instructor.all_moves_to_open(
+                            node_to_open=last_node_in_best_line.tree_node
+                        )
+                    )
                     opening_instructions = create_instructions_to_open_all_moves(
                         moves_to_play=all_moves_to_open,
-                        node_to_open=last_node_in_best_line)
+                        node_to_open=last_node_in_best_line,
+                    )
                     return opening_instructions
 
         wandering_node = tree.root_node
 
         while wandering_node.minmax_evaluation.moves_not_over:
-            assert (not wandering_node.is_over())
-            move = self.move_explorer.sample_move_to_explore(tree_node_to_sample_from=wandering_node)
+            assert not wandering_node.is_over()
+            move = self.move_explorer.sample_move_to_explore(
+                tree_node_to_sample_from=wandering_node
+            )
             next_node = wandering_node.moves_children[move]
             assert isinstance(next_node, AlgorithmNode)
             wandering_node = next_node
 
-        all_moves_to_open = self.opening_instructor.all_moves_to_open(node_to_open=wandering_node.tree_node)
+        all_moves_to_open = self.opening_instructor.all_moves_to_open(
+            node_to_open=wandering_node.tree_node
+        )
         opening_instructions = create_instructions_to_open_all_moves(
-            moves_to_play=all_moves_to_open,
-            node_to_open=wandering_node
+            moves_to_play=all_moves_to_open, node_to_open=wandering_node
         )
 
         return opening_instructions
@@ -133,4 +145,4 @@ class RecurZipfBase:
         - str: The string representation of the RecurZipfBase node selector.
 
         """
-        return 'RecurZipfBase'
+        return "RecurZipfBase"

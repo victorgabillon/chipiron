@@ -8,21 +8,19 @@ from chipiron.scripts.factory import create_script
 start_time = time.time()
 configs_base = [
     {
-        'file_game_report': 'tests/integration_test/replay_games/games_0_W:RecurZipfBase3-vs-B:RecurZipfBase3_game_report.yaml',
-        'gui': False
+        "file_game_report": "tests/integration_test/replay_games/games_0_W:RecurZipfBase3-vs-B:RecurZipfBase3_game_report.yaml",
+        "gui": False,
     }
 ]
 
 
-def test_replay_match(
-        configs=configs_base
-):
+def test_replay_match(configs=configs_base):
     for config in configs:
-        print(f'Running the SCRIPT with config {config}')
+        print(f"Running the SCRIPT with config {config}")
         script_object: scripts.IScript = create_script(
             script_type=scripts.ScriptType.ReplayMatch,
             extra_args=config,
-            should_parse_command_line_arguments=False
+            should_parse_command_line_arguments=False,
         )
 
         # run the script
@@ -34,4 +32,4 @@ def test_replay_match(
 
 if __name__ == "__main__":
     test_replay_match()
-    print('ALL OK for REPLAY')
+    print("ALL OK for REPLAY")

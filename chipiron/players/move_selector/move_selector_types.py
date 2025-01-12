@@ -11,6 +11,7 @@ Attributes:
     CommandLineHuman: Represents a move selector for a human player using the command line.
     GuiHuman: Represents a move selector for a human player using a graphical user interface.
 """
+
 from enum import Enum
 
 
@@ -19,11 +20,14 @@ class MoveSelectorTypes(str, Enum):
     Enumeration class representing different types of move selectors.
     """
 
-    Random = 'Random'
-    TreeAndValue = 'TreeAndValue'
-    Stockfish = 'Stockfish'
-    CommandLineHuman = 'CommandLineHuman'
-    GuiHuman = 'GuiHuman'
+    Random = "Random"
+    TreeAndValue = "TreeAndValue"
+    Stockfish = "Stockfish"
+    CommandLineHuman = "CommandLineHuman"
+    GuiHuman = "GuiHuman"
 
     def is_human(self) -> bool:
-        return self is MoveSelectorTypes.GuiHuman or self is MoveSelectorTypes.CommandLineHuman
+        return (
+            self is MoveSelectorTypes.GuiHuman
+            or self is MoveSelectorTypes.CommandLineHuman
+        )

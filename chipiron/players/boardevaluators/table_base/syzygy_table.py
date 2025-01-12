@@ -1,6 +1,7 @@
 """
 Module for the SyzygyTable class.
 """
+
 from typing import Protocol
 
 import chess.syzygy
@@ -10,7 +11,7 @@ from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.boardevaluators.over_event import HowOver, OverTags, Winner
 
 
-class SyzygyTable[T_Board:IBoard](Protocol):
+class SyzygyTable[T_Board: IBoard](Protocol):
     """
     A class representing a Syzygy tablebase for chess endgame analysis.
 
@@ -46,10 +47,7 @@ class SyzygyTable[T_Board:IBoard](Protocol):
             Get the best move according to the tablebase for the given board.
     """
 
-    def fast_in_table(
-            self,
-            board: T_Board
-    ) -> bool:
+    def fast_in_table(self, board: T_Board) -> bool:
         """
         Check if the given board is suitable for fast tablebase lookup.
 
@@ -61,10 +59,7 @@ class SyzygyTable[T_Board:IBoard](Protocol):
         """
         return board.number_of_pieces_on_the_board() < 6
 
-    def in_table(
-            self,
-            board: T_Board
-    ) -> bool:
+    def in_table(self, board: T_Board) -> bool:
         """
         Check if the given board is in the tablebase.
 
@@ -80,13 +75,9 @@ class SyzygyTable[T_Board:IBoard](Protocol):
             return False
         return True
 
-    def wdl(self, board: T_Board) -> int:
-        ...
+    def wdl(self, board: T_Board) -> int: ...
 
-    def get_over_event(
-            self,
-            board: T_Board
-    ) -> tuple[Winner, HowOver]:
+    def get_over_event(self, board: T_Board) -> tuple[Winner, HowOver]:
         """
         Get the winner and how the game is over for the given board.
 
@@ -103,18 +94,19 @@ class SyzygyTable[T_Board:IBoard](Protocol):
         if val != 0:
             how_over_ = HowOver.WIN
             if val > 0:
-                who_is_winner_ = Winner.WHITE if board.turn == chess.WHITE else Winner.BLACK
+                who_is_winner_ = (
+                    Winner.WHITE if board.turn == chess.WHITE else Winner.BLACK
+                )
             if val < 0:
-                who_is_winner_ = Winner.WHITE if board.turn == chess.BLACK else Winner.BLACK
+                who_is_winner_ = (
+                    Winner.WHITE if board.turn == chess.BLACK else Winner.BLACK
+                )
         else:
             how_over_ = HowOver.DRAW
 
         return who_is_winner_, how_over_
 
-    def val(
-            self,
-            board: T_Board
-    ) -> int:
+    def val(self, board: T_Board) -> int:
         """
         Get the value of the given board from the tablebase.
 
@@ -128,10 +120,7 @@ class SyzygyTable[T_Board:IBoard](Protocol):
         val: int = self.wdl(board)
         return val
 
-    def value_white(
-            self,
-            board: T_Board
-    ) -> int:
+    def value_white(self, board: T_Board) -> int:
         """
         Get the value of the given board for the white player.
 
@@ -148,10 +137,7 @@ class SyzygyTable[T_Board:IBoard](Protocol):
         else:
             return val * -10000
 
-    def get_over_tag(
-            self,
-            board: T_Board
-    ) -> OverTags:
+    def get_over_tag(self, board: T_Board) -> OverTags:
         """
         Get the over tag for the given board.
 
@@ -175,10 +161,7 @@ class SyzygyTable[T_Board:IBoard](Protocol):
             else:
                 return OverTags.TAG_WIN_WHITE
 
-    def string_result(
-            self,
-            board: T_Board
-    ) -> str:
+    def string_result(self, board: T_Board) -> str:
         """
         Get the string representation of the result for the given board.
 
@@ -189,18 +172,15 @@ class SyzygyTable[T_Board:IBoard](Protocol):
             str: The string representation of the result.
         """
         val = self.wdl(board)
-        player_to_move = 'white' if board.turn == chess.WHITE else 'black'
+        player_to_move = "white" if board.turn == chess.WHITE else "black"
         if val > 0:
-            return 'WIN for player ' + player_to_move
+            return "WIN for player " + player_to_move
         elif val == 0:
-            return 'DRAW'
+            return "DRAW"
         else:
-            return 'LOSS for player ' + player_to_move
+            return "LOSS for player " + player_to_move
 
-    def dtz(
-            self,
-            board: T_Board
-    ) -> int:
+    def dtz(self, board: T_Board) -> int:
         """
         Get the distance-to-zero (DTZ) value for the given board.
 
@@ -212,10 +192,7 @@ class SyzygyTable[T_Board:IBoard](Protocol):
         """
         ...
 
-    def best_move(
-            self,
-            board: T_Board
-    ) -> moveKey:
+    def best_move(self, board: T_Board) -> moveKey:
         """
         Get the best move according to the tablebase for the given board.
 
@@ -243,9 +220,9 @@ class SyzygyTable[T_Board:IBoard](Protocol):
             if val_player_node > 0:  # winning position
                 new_value = board.is_zeroing(move) * 100 - dtz_player_node + 1000
             elif val_player_node == 0:
-                new_value = - board.is_zeroing(move) * 100 + dtz_player_node
+                new_value = -board.is_zeroing(move) * 100 + dtz_player_node
             elif val_player_node < 0:
-                new_value = - board.is_zeroing(move) * 100 + dtz_player_node - 1000
+                new_value = -board.is_zeroing(move) * 100 + dtz_player_node - 1000
 
             if new_value > best_value:
                 best_value = new_value

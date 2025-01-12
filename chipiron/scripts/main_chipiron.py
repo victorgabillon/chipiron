@@ -1,6 +1,7 @@
 """
 Launching the main chipiron
 """
+
 import argparse
 import sys
 from typing import Any
@@ -14,7 +15,7 @@ sys.path.append("../../")
 
 
 def get_script_and_args(
-        raw_command_line_arguments: list[str]
+    raw_command_line_arguments: list[str],
 ) -> tuple[ScriptType, dict[str, Any] | None]:
     """
 
@@ -40,33 +41,33 @@ def get_script_and_args(
         # Capture  the script argument in the command line arguments
         parser_default: argparse.ArgumentParser = argparse.ArgumentParser()
         parser_default.add_argument(
-            '--script_name',
-            type=str,
-            default=None,
-            help='name of the script'
+            "--script_name", type=str, default=None, help="name of the script"
         )
         args_obj, _ = parser_default.parse_known_args()
-        args_command_line: dict[Any, Any] = vars(args_obj)  # converting into dictionary format
+        args_command_line: dict[Any, Any] = vars(
+            args_obj
+        )  # converting into dictionary format
 
-        print('command line arguments:', args_command_line)
+        print("command line arguments:", args_command_line)
 
         # the script name must be specified otherwise fail
-        if args_command_line['script_name'] is None:
+        if args_command_line["script_name"] is None:
             raise ValueError(
-                'Expecting command line arguments of the shape python chipiron.py --script_name **name_of script**')
+                "Expecting command line arguments of the shape python chipiron.py --script_name **name_of script**"
+            )
 
-        script_type_str: str = args_command_line['script_name']
+        script_type_str: str = args_command_line["script_name"]
         script_type = ScriptType(script_type_str)
 
         extra_args = {}
 
-    print('extra_args', extra_args)
+    print("extra_args", extra_args)
     return script_type, extra_args
 
 
 def main() -> None:
     """
-        The main function
+    The main function
     """
     # Getting the command line arguments from the system
     raw_command_line_arguments: list[str] = sys.argv
@@ -84,7 +85,7 @@ def main() -> None:
     script_object: IScript = create_script(
         script_type=script_type,
         extra_args=extra_args,
-        should_parse_command_line_arguments=True
+        should_parse_command_line_arguments=True,
     )
 
     # run the script
@@ -96,8 +97,10 @@ def main() -> None:
 
 if __name__ == "__main__":
     # checking if the version of python is high enough
-    message = 'A version of Python higher than 3.10 is required to run chipiron.\n' + \
-              ' Try using "python3 main_chipiron.py" instead'
+    message = (
+        "A version of Python higher than 3.10 is required to run chipiron.\n"
+        + ' Try using "python3 main_chipiron.py" instead'
+    )
 
     assert sys.version_info >= (3, 10), message
     # launching the real main python script.

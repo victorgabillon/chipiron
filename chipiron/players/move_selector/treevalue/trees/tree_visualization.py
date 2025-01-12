@@ -29,10 +29,7 @@ from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_nod
 from .move_and_value_tree import MoveAndValueTree
 
 
-def add_dot(
-        dot: Digraph,
-        treenode: ITreeNode[Any]
-) -> None:
+def add_dot(dot: Digraph, treenode: ITreeNode[Any]) -> None:
     """
     Adds a node and edges to the given Dot graph based on the provided tree node.
 
@@ -51,14 +48,16 @@ def add_dot(
             child = treenode.moves_children[move]
             if child is not None:
                 cdd = str(child.id)
-                dot.edge(str(treenode.id), cdd, str(treenode.board.get_uci_from_move_key(move_key=move)))
+                dot.edge(
+                    str(treenode.id),
+                    cdd,
+                    str(treenode.board.get_uci_from_move_key(move_key=move)),
+                )
                 add_dot(dot, child)
 
 
 def display_special(
-        node: ITreeNode[Any],
-        format_str: str,
-        index: dict[moveKey, str]
+    node: ITreeNode[Any], format_str: str, index: dict[moveKey, str]
 ) -> Digraph:
     """
     Display a special visualization of a tree node and its children.
@@ -75,7 +74,7 @@ def display_special(
         AssertionError: If the child node is None or if the parent node is not an AlgorithmNode.
     """
     dot = Digraph(format=format_str)
-    print(';;;', type(node))
+    print(";;;", type(node))
     nd = node.dot_description()
     dot.node(str(node.id), nd)
     sorted_moves = [(str(move), move) for move in node.moves_children.keys()]
@@ -88,21 +87,21 @@ def display_special(
             assert isinstance(node, AlgorithmNode)
 
             cdd = str(child.id)
-            edge_description = index[move] + '|' + str(
-                node.board.get_uci_from_move_key(
-                    move_key=move)) + '|' + node.minmax_evaluation.description_tree_visualizer_move(
-                child)
+            edge_description = (
+                index[move]
+                + "|"
+                + str(node.board.get_uci_from_move_key(move_key=move))
+                + "|"
+                + node.minmax_evaluation.description_tree_visualizer_move(child)
+            )
             dot.edge(str(node.id), cdd, edge_description)
             dot.node(str(child.id), child.dot_description())
-            print('--move:', edge_description)
-            print('--child:', child.dot_description())
+            print("--move:", edge_description)
+            print("--child:", child.dot_description())
     return dot
 
 
-def display(
-        tree: MoveAndValueTree,
-        format_str: str
-) -> Digraph:
+def display(tree: MoveAndValueTree, format_str: str) -> Digraph:
     """
     Display the move and value tree using graph visualization.
 
@@ -118,9 +117,7 @@ def display(
     return dot
 
 
-def save_pdf_to_file(
-        tree: MoveAndValueTree
-) -> None:
+def save_pdf_to_file(tree: MoveAndValueTree) -> None:
     """
     Saves the visualization of a tree as a PDF file.
 
@@ -130,19 +127,15 @@ def save_pdf_to_file(
     Returns:
         None
     """
-    dot = display(
-        tree=tree,
-        format_str='pdf'
-    )
+    dot = display(tree=tree, format_str="pdf")
     round_ = len(tree.root_node.board.move_history_stack) + 2
-    color = 'white' if tree.root_node.player_to_move else 'black'
-    dot.render('chipiron/runs/treedisplays/TreeVisual_' + str(int(round_ / 2)) + color + '.pdf')
+    color = "white" if tree.root_node.player_to_move else "black"
+    dot.render(
+        "chipiron/runs/treedisplays/TreeVisual_" + str(int(round_ / 2)) + color + ".pdf"
+    )
 
 
-def save_raw_data_to_file(
-        tree: MoveAndValueTree,
-        count: str = '#'
-) -> None:
+def save_raw_data_to_file(tree: MoveAndValueTree, count: str = "#") -> None:
     """
     Save raw data of a MoveAndValueTree to a file.
 
@@ -154,10 +147,18 @@ def save_raw_data_to_file(
         None
     """
     round_ = len(tree.root_node.board.move_history_stack) + 2
-    color = 'white' if tree.root_node.player_to_move else 'black'
-    filename = 'chipiron/debugTreeData_' + str(int(round_ / 2)) + color + '-' + str(count) + '.td'
+    color = "white" if tree.root_node.player_to_move else "black"
+    filename = (
+        "chipiron/debugTreeData_"
+        + str(int(round_ / 2))
+        + color
+        + "-"
+        + str(count)
+        + ".td"
+    )
 
     import sys
+
     sys.setrecursionlimit(100000)
     with open(filename, "wb") as f:
         pickle.dump([tree.descendants, tree.root_node], f)

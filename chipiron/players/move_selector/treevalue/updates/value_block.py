@@ -43,9 +43,9 @@ class ValueUpdateInstructionsTowardsOneParentNode:
     moves_with_updated_best_move: set[moveKey] = field(default_factory=set)
 
     def add_update_from_one_child_node(
-            self,
-            update_from_one_child_node: ValueUpdateInstructionsFromOneNode,
-            move_from_parent_to_child: moveKey
+        self,
+        update_from_one_child_node: ValueUpdateInstructionsFromOneNode,
+        move_from_parent_to_child: moveKey,
     ) -> None:
         if update_from_one_child_node.is_node_newly_over:
             self.moves_with_updated_over.add(move_from_parent_to_child)
@@ -54,13 +54,17 @@ class ValueUpdateInstructionsTowardsOneParentNode:
         if update_from_one_child_node.new_best_move_for_node:
             self.moves_with_updated_best_move.add(move_from_parent_to_child)
 
-    def add_update_toward_one_parent_node(
-            self,
-            another_update: Self
-    ) -> None:
-        self.moves_with_updated_value = self.moves_with_updated_value | another_update.moves_with_updated_over
-        self.moves_with_updated_over = self.moves_with_updated_over | another_update.moves_with_updated_over
-        self.moves_with_updated_best_move = self.moves_with_updated_best_move | another_update.moves_with_updated_best_move
+    def add_update_toward_one_parent_node(self, another_update: Self) -> None:
+        self.moves_with_updated_value = (
+            self.moves_with_updated_value | another_update.moves_with_updated_over
+        )
+        self.moves_with_updated_over = (
+            self.moves_with_updated_over | another_update.moves_with_updated_over
+        )
+        self.moves_with_updated_best_move = (
+            self.moves_with_updated_best_move
+            | another_update.moves_with_updated_best_move
+        )
 
     def print_info(self) -> None:
         """
@@ -69,16 +73,23 @@ class ValueUpdateInstructionsTowardsOneParentNode:
         Returns:
             None
         """
-        print('upInstructions printing')
-        print(len(self.moves_with_updated_value), 'moves_with_updated_value', end=' ')
+        print("upInstructions printing")
+        print(len(self.moves_with_updated_value), "moves_with_updated_value", end=" ")
         for move in self.moves_with_updated_value:
-            print(move, end=' ')
-        print('\n', len(self.moves_with_updated_best_move), 'moves_with_updated_best_move:', end=' ')
+            print(move, end=" ")
+        print(
+            "\n",
+            len(self.moves_with_updated_best_move),
+            "moves_with_updated_best_move:",
+            end=" ",
+        )
         for move in self.moves_with_updated_best_move:
-            print(move, end=' ')
-        print('\n', len(self.moves_with_updated_over), 'moves_with_updated_over', end=' ')
+            print(move, end=" ")
+        print(
+            "\n", len(self.moves_with_updated_over), "moves_with_updated_over", end=" "
+        )
         for move in self.moves_with_updated_over:
-            print(move, end=' ')
+            print(move, end=" ")
         print()
 
     def empty(self) -> bool:
@@ -88,6 +99,9 @@ class ValueUpdateInstructionsTowardsOneParentNode:
         Returns:
             bool: True if all components are empty, False otherwise.
         """
-        empty_bool = not bool(self.moves_with_updated_value) and not bool(
-            self.moves_with_updated_best_move) and not bool(self.moves_with_updated_over)
+        empty_bool = (
+            not bool(self.moves_with_updated_value)
+            and not bool(self.moves_with_updated_best_move)
+            and not bool(self.moves_with_updated_over)
+        )
         return empty_bool

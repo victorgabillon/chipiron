@@ -16,9 +16,9 @@ AllNodeSelectorArgs = RecurZipfBaseArgs | SequoolArgs | NodeSelectorArgs
 
 
 def create(
-        args: AllNodeSelectorArgs,
-        opening_instructor: OpeningInstructor,
-        random_generator: random.Random,
+    args: AllNodeSelectorArgs,
+    opening_instructor: OpeningInstructor,
+    random_generator: random.Random,
 ) -> NodeSelector:
     """
     Creation of a node selector
@@ -34,7 +34,7 @@ def create(
             node_move_opening_selector = RecurZipfBase(
                 args=args,
                 random_generator=random_generator,
-                opening_instructor=opening_instructor
+                opening_instructor=opening_instructor,
             )
 
         case NodeSelectorType.Sequool:
@@ -42,10 +42,12 @@ def create(
             node_move_opening_selector = create_sequool(
                 opening_instructor=opening_instructor,
                 random_generator=random_generator,
-                args=args
+                args=args,
             )
 
         case other:
-            raise ValueError(f'node selector construction: can not find {other}  {args} in file {__name__}')
+            raise ValueError(
+                f"node selector construction: can not find {other}  {args} in file {__name__}"
+            )
 
     return node_move_opening_selector

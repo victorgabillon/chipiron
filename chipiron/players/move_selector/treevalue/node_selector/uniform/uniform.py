@@ -8,6 +8,7 @@ Classes:
 - Uniform: The Uniform Node selector class.
 
 """
+
 from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.move_selector.treevalue import tree_manager as tree_man
 from chipiron.players.move_selector.treevalue import trees
@@ -20,14 +21,11 @@ from chipiron.players.move_selector.treevalue.nodes.algorithm_node import Algori
 
 
 class Uniform:
-    """ The Uniform Node selector """
+    """The Uniform Node selector"""
 
     opening_instructor: OpeningInstructor
 
-    def __init__(
-            self,
-            opening_instructor: OpeningInstructor
-    ) -> None:
+    def __init__(self, opening_instructor: OpeningInstructor) -> None:
         """
         Initializes a new instance of the Uniform class.
 
@@ -38,9 +36,7 @@ class Uniform:
         self.opening_instructor = opening_instructor
         self.current_depth_to_expand = 0
 
-    def get_current_depth_to_expand(
-            self
-    ) -> int:
+    def get_current_depth_to_expand(self) -> int:
         """
         Gets the current depth to expand.
 
@@ -51,10 +47,9 @@ class Uniform:
         return self.current_depth_to_expand
 
     def choose_node_and_move_to_open(
-            self,
-            tree: trees.MoveAndValueTree,
-            latest_tree_expansions: tree_man.TreeExpansions
-
+        self,
+        tree: trees.MoveAndValueTree,
+        latest_tree_expansions: tree_man.TreeExpansions,
     ) -> OpeningInstructions:
         """
         Chooses a node to expand and determines the moves to open for that node.
@@ -70,27 +65,37 @@ class Uniform:
         opening_instructions_batch: OpeningInstructions = OpeningInstructions()
 
         # generate the nodes to expand
-        current_half_move_to_expand = tree.tree_root_half_move + self.current_depth_to_expand
+        current_half_move_to_expand = (
+            tree.tree_root_half_move + self.current_depth_to_expand
+        )
 
         # self.tree.descendants.print_info()
         nodes_to_consider = list(tree.descendants[current_half_move_to_expand].values())
 
         # filter the game-over ones and the ones with values
-        nodes_to_consider_not_over: list[AlgorithmNode] = [node for node in nodes_to_consider if
-                                                           not node.is_over() and isinstance(node, AlgorithmNode)]
+        nodes_to_consider_not_over: list[AlgorithmNode] = [
+            node
+            for node in nodes_to_consider
+            if not node.is_over() and isinstance(node, AlgorithmNode)
+        ]
 
         # sort them by order of importance for the player
         nodes_to_consider_sorted_by_value = sorted(
             nodes_to_consider_not_over,
             key=lambda x: tree.root_node.minmax_evaluation.subjective_value_of(
-                x.minmax_evaluation)
+                x.minmax_evaluation
+            ),
         )  # best last
 
         for node in nodes_to_consider_sorted_by_value:
-            all_moves_to_open: list[moveKey] = self.opening_instructor.all_moves_to_open(node_to_open=node)
-            opening_instructions: OpeningInstructions = create_instructions_to_open_all_moves(
-                moves_to_play=all_moves_to_open,
-                node_to_open=node)
+            all_moves_to_open: list[moveKey] = (
+                self.opening_instructor.all_moves_to_open(node_to_open=node)
+            )
+            opening_instructions: OpeningInstructions = (
+                create_instructions_to_open_all_moves(
+                    moves_to_play=all_moves_to_open, node_to_open=node
+                )
+            )
             opening_instructions_batch.merge(opening_instructions)
 
         self.current_depth_to_expand += 1
@@ -101,4 +106,4 @@ class Uniform:
         Prints information about the Uniform Node selector.
 
         """
-        print('Uniform')
+        print("Uniform")

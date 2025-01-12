@@ -9,7 +9,4 @@ Classes:
 
 from .recommender_rule import AllRecommendFunctionsArgs, RecommenderRule
 
-__all__ = [
-    "AllRecommendFunctionsArgs",
-    "RecommenderRule"
-]
+__all__ = ["AllRecommendFunctionsArgs", "RecommenderRule"]

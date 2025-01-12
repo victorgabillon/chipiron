@@ -27,4 +27,4 @@ class Comparable(metaclass=ABCMeta):
     def __lt__(self, other: Any) -> bool: ...
 
 
-CT = TypeVar('CT', bound=Comparable)
+CT = TypeVar("CT", bound=Comparable)

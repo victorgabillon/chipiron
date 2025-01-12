@@ -5,7 +5,7 @@ import chess
 
 from chipiron.environments.chess.move import moveUci
 
-fen = typing.Annotated[str, 'a string representing a fen']
+fen = typing.Annotated[str, "a string representing a fen"]
 
 
 @dataclass

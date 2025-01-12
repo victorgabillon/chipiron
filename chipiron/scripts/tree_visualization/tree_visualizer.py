@@ -224,11 +224,11 @@ class Window(QtWidgets.QWidget):
         self.viewer = PhotoViewer(self)
         # 'Load image' button
         self.btnLoad = QtWidgets.QToolButton(self)
-        self.btnLoad.setText('Load image')
+        self.btnLoad.setText("Load image")
         self.btnLoad.clicked.connect(self.load_image)
         # Button to change from drag/pan to getting pixel info
         self.btnPixInfo = QtWidgets.QToolButton(self)
-        self.btnPixInfo.setText('Enter pixel info mode')
+        self.btnPixInfo.setText("Enter pixel info mode")
         self.btnPixInfo.clicked.connect(self.pixInfo)
         self.editPixInfo = QtWidgets.QLineEdit(self)
         self.editPixInfo.setReadOnly(True)
@@ -245,7 +245,9 @@ class Window(QtWidgets.QWidget):
 
         pic = pickle.load(open("chipiron/debugTreeData_1white-#.td", "rb"))
 
-        self.tree: MoveAndValueTree = MoveAndValueTree(root_node=pic[1], descendants=pic[0])
+        self.tree: MoveAndValueTree = MoveAndValueTree(
+            root_node=pic[1], descendants=pic[0]
+        )
         self.tree.descendants = pic[0]
 
         self.current_node = self.tree.root_node
@@ -282,11 +284,9 @@ class Window(QtWidgets.QWidget):
             None
         """
         dot = display_special(
-            node=self.current_node,
-            format_str='jpg',
-            index=self.index
+            node=self.current_node, format_str="jpg", index=self.index
         )
-        dot.render('chipiron/runs/treedisplays/TreeVisualtemp')
+        dot.render("chipiron/runs/treedisplays/TreeVisualtemp")
 
     @typing.no_type_check
     def load_image(self):
@@ -301,7 +301,9 @@ class Window(QtWidgets.QWidget):
         Returns:
             None
         """
-        self.viewer.set_photo(QtGui.QPixmap('chipiron/runs/treedisplays/TreeVisualtemp.jpg'))
+        self.viewer.set_photo(
+            QtGui.QPixmap("chipiron/runs/treedisplays/TreeVisualtemp.jpg")
+        )
 
     @typing.no_type_check
     def pixInfo(self):
@@ -331,7 +333,7 @@ class Window(QtWidgets.QWidget):
             None
         """
         if self.viewer.dragMode() == QtWidgets.QGraphicsView.NoDrag:
-            self.editPixInfo.setText('%d, %d' % (pos.x(), pos.y()))
+            self.editPixInfo.setText("%d, %d" % (pos.x(), pos.y()))
 
     @typing.no_type_check
     def keyPressEvent(self, event):
@@ -348,11 +350,11 @@ class Window(QtWidgets.QWidget):
         key = event.text()
         if key in self.index.values():
             self.move_to_son(key)
-        if key == '9':
+        if key == "9":
             self.viewer.zoomin()
-        if key == '0':
+        if key == "0":
             self.viewer.zoomout()
-        if key == 'z':
+        if key == "z":
             self.father()
 
         # todo there is collision as these numbers are used for children too now...
@@ -386,7 +388,7 @@ class Window(QtWidgets.QWidget):
         """
         for move, ind in self.index.items():
             if key == ind:
-                print('switching to move', move, ind, key)
+                print("switching to move", move, ind, key)
                 move_to_move = move
 
         self.current_node = self.current_node.moves_children[move_to_move]
@@ -400,12 +402,14 @@ class VisualizeTreeScript:
     This class represents a script for visualizing a tree.
     """
 
-    base_experiment_output_folder = os.path.join(Script.base_experiment_output_folder, 'tree_visualization/outputs/')
+    base_experiment_output_folder = os.path.join(
+        Script.base_experiment_output_folder, "tree_visualization/outputs/"
+    )
     base_script: Script
 
     def __init__(
-            self,
-            base_script: Script,
+        self,
+        base_script: Script,
     ):
         """
         Initializes a TreeVisualizer object.

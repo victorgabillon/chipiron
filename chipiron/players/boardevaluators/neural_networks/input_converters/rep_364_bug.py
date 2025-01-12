@@ -8,9 +8,9 @@ from .board_representation import Representation364
 
 
 def create_from_board_and_from_parent(
-        board: IBoard,
-        board_modifications: boards.BoardModificationP,
-        parent_node_board_representation: Representation364
+    board: IBoard,
+    board_modifications: boards.BoardModificationP,
+    parent_node_board_representation: Representation364,
 ) -> Representation364:
     """
     Converts the node, board modifications, and parent node into a tensor representation.
@@ -26,11 +26,11 @@ def create_from_board_and_from_parent(
 
     assert isinstance(parent_node_board_representation, Representation364)
     tensor_white = torch.empty_like(
-        parent_node_board_representation.tensor_white).copy_(parent_node_board_representation.tensor_white
-                                                             )
+        parent_node_board_representation.tensor_white
+    ).copy_(parent_node_board_representation.tensor_white)
     tensor_black = torch.empty_like(
-        parent_node_board_representation.tensor_black).copy_(parent_node_board_representation.tensor_black
-                                                             )
+        parent_node_board_representation.tensor_black
+    ).copy_(parent_node_board_representation.tensor_black)
 
     for removal in board_modifications.removals:
         piece_type = removal.piece
@@ -73,15 +73,13 @@ def create_from_board_and_from_parent(
         tensor_white=tensor_white,
         tensor_black=tensor_black,
         tensor_castling_black=tensor_castling_black,
-        tensor_castling_white=tensor_castling_white
+        tensor_castling_white=tensor_castling_white,
     )
 
     return representation
 
 
-def create_from_board(
-        board: boards.IBoard
-) -> Representation364:
+def create_from_board(board: boards.IBoard) -> Representation364:
     """
     Create a Representation364 object from a board.
 
@@ -120,27 +118,34 @@ def d() -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
 
 
 def c(
-        castling_black: torch.Tensor,
-        castling_white: torch.Tensor,
-        black: torch.Tensor,
-        white: torch.Tensor) -> Representation364:
+    castling_black: torch.Tensor,
+    castling_white: torch.Tensor,
+    black: torch.Tensor,
+    white: torch.Tensor,
+) -> Representation364:
     representation: Representation364 = Representation364(
         tensor_white=white,
         tensor_black=black,
         tensor_castling_black=castling_black,
-        tensor_castling_white=castling_white
+        tensor_castling_white=castling_white,
     )
     return representation
 
 
-def b(board: boards.IBoard, castling_black: torch.Tensor, castling_white: torch.Tensor) -> None:
+def b(
+    board: boards.IBoard, castling_black: torch.Tensor, castling_white: torch.Tensor
+) -> None:
     castling_white[0] = board.has_queenside_castling_rights(chess.WHITE)
     castling_white[1] = board.has_kingside_castling_rights(chess.WHITE)
     castling_black[0] = board.has_queenside_castling_rights(chess.BLACK)
     castling_black[1] = board.has_kingside_castling_rights(chess.BLACK)
 
 
-def a(black: torch.Tensor, white: torch.Tensor, piece_map: dict[chess.Square, tuple[int, bool]]) -> None:
+def a(
+    black: torch.Tensor,
+    white: torch.Tensor,
+    piece_map: dict[chess.Square, tuple[int, bool]],
+) -> None:
     square: chess.Square
     piece: tuple[int, bool]
     for square, piece in piece_map.items():

@@ -10,6 +10,7 @@ The TreeAndValueMoveSelector class provides the following methods:
 - select_move: Selects the best move based on the tree and value strategy.
 - print_info: Prints information about the move selector type.
 """
+
 import queue
 import random
 from dataclasses import dataclass
@@ -42,6 +43,7 @@ class TreeAndValueMoveSelector:
     - random_generator: The random generator used for randomization during tree exploration.
     - recommend_move_after_exploration: The recommendation functions used to recommend a move after tree exploration.
     """
+
     # pretty empty class but might be useful when dealing with multi round and time , no?
 
     tree_manager: tree_man.AlgorithmNodeTreeManager
@@ -52,11 +54,7 @@ class TreeAndValueMoveSelector:
     recommend_move_after_exploration: recommender_rule.AllRecommendFunctionsArgs
     queue_progress_player: queue.Queue[IsDataclass] | None
 
-    def select_move(
-            self,
-            board: boards.IBoard,
-            move_seed: seed
-    ) -> MoveRecommendation:
+    def select_move(self, board: boards.IBoard, move_seed: seed) -> MoveRecommendation:
         """
         Selects the best move based on the tree and value strategy.
 
@@ -76,8 +74,8 @@ class TreeAndValueMoveSelector:
         return move_recommendation
 
     def create_tree_exploration(
-            self,
-            board: boards.IBoard,
+        self,
+        board: boards.IBoard,
     ) -> TreeExploration:
         tree_exploration: TreeExploration = create_tree_exploration(
             tree_manager=self.tree_manager,
@@ -86,7 +84,7 @@ class TreeAndValueMoveSelector:
             tree_factory=self.tree_factory,
             stopping_criterion_args=self.stopping_criterion_args,
             recommend_move_after_exploration=self.recommend_move_after_exploration,
-            queue_progress_player=self.queue_progress_player
+            queue_progress_player=self.queue_progress_player,
         )
         return tree_exploration
 
@@ -94,4 +92,4 @@ class TreeAndValueMoveSelector:
         """
         Prints information about the move selector type.
         """
-        print('type: Tree and Value')
+        print("type: Tree and Value")

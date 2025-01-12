@@ -1,6 +1,7 @@
 """
 Module for creating player observers.
 """
+
 import multiprocessing
 import queue
 from functools import partial
@@ -39,17 +40,11 @@ class MoveFunction(Protocol):
         None: This function does not return any value.
     """
 
-    def __call__(
-            self,
-            board: IBoard,
-            seed_int: seed
-    ) -> None: ...
+    def __call__(self, board: IBoard, seed_int: seed) -> None: ...
 
 
 def send_board_to_player_process_mailbox(
-        board: IBoard,
-        seed_int: int,
-        player_process_mailbox: queue.Queue[BoardMessage]
+    board: IBoard, seed_int: int, player_process_mailbox: queue.Queue[BoardMessage]
 ) -> None:
     """Sends the board and seed to the player process mailbox.
 
@@ -62,8 +57,7 @@ def send_board_to_player_process_mailbox(
         player_process_mailbox (queue.Queue[BoardMessage]): The mailbox to put the message into.
     """
     message: BoardMessage = BoardMessage(
-        fen_plus_moves=board.into_fen_plus_history(),
-        seed=seed_int
+        fen_plus_moves=board.into_fen_plus_history(), seed=seed_int
     )
     player_process_mailbox.put(item=message)
 
@@ -74,41 +68,39 @@ class PlayerObserverFactory(Protocol):
     """
 
     def __call__(
-            self,
-            player_factory_args: PlayerFactoryArgs,
-            player_color: chess.Color,
-            main_thread_mailbox: queue.Queue[IsDataclass],
-    ) -> tuple[GamePlayer | PlayerProcess, MoveFunction]:
-        ...
+        self,
+        player_factory_args: PlayerFactoryArgs,
+        player_color: chess.Color,
+        main_thread_mailbox: queue.Queue[IsDataclass],
+    ) -> tuple[GamePlayer | PlayerProcess, MoveFunction]: ...
 
 
 def create_player_observer_factory(
-        each_player_has_its_own_thread: bool,
-        implementation_args: ImplementationArgs,
-        universal_behavior: bool,
-        syzygy_table: SyzygyTable[Any] | None
+    each_player_has_its_own_thread: bool,
+    implementation_args: ImplementationArgs,
+    universal_behavior: bool,
+    syzygy_table: SyzygyTable[Any] | None,
 ) -> PlayerObserverFactory:
     player_observer_factory: PlayerObserverFactory
     if each_player_has_its_own_thread:
         player_observer_factory = partial(
             create_player_observer_distributed_players,
             implementation_args=implementation_args,
-            universal_behavior=universal_behavior
+            universal_behavior=universal_behavior,
         )
     else:
         player_observer_factory = partial(
-            create_player_observer_mono_process,
-            syzygy_table=syzygy_table
+            create_player_observer_mono_process, syzygy_table=syzygy_table
         )
     return player_observer_factory
 
 
 def create_player_observer_distributed_players(
-        player_factory_args: PlayerFactoryArgs,
-        player_color: chess.Color,
-        main_thread_mailbox: queue.Queue[IsDataclass],
-        implementation_args: ImplementationArgs,
-        universal_behavior: bool
+    player_factory_args: PlayerFactoryArgs,
+    player_color: chess.Color,
+    main_thread_mailbox: queue.Queue[IsDataclass],
+    implementation_args: ImplementationArgs,
+    universal_behavior: bool,
 ) -> tuple[GamePlayer | PlayerProcess, MoveFunction]:
     """Create a player observer.
 
@@ -139,25 +131,24 @@ def create_player_observer_distributed_players(
         queue_receiving_board=player_process_mailbox,
         queue_sending_move=main_thread_mailbox,
         implementation_args=implementation_args,
-        universal_behavior=universal_behavior
+        universal_behavior=universal_behavior,
     )
     player_process.start()
     generic_player = player_process
 
     move_function = partial(
         send_board_to_player_process_mailbox,
-        player_process_mailbox=player_process_mailbox
-
+        player_process_mailbox=player_process_mailbox,
     )
 
     return generic_player, move_function
 
 
 def create_player_observer_mono_process(
-        player_factory_args: PlayerFactoryArgs,
-        player_color: chess.Color,
-        main_thread_mailbox: queue.Queue[IsDataclass],
-        syzygy_table: SyzygyTable[Any] | None
+    player_factory_args: PlayerFactoryArgs,
+    player_color: chess.Color,
+    main_thread_mailbox: queue.Queue[IsDataclass],
+    syzygy_table: SyzygyTable[Any] | None,
 ) -> tuple[GamePlayer, MoveFunction]:
     """Create a player observer.
 
@@ -182,12 +173,12 @@ def create_player_observer_mono_process(
         player_factory_args=player_factory_args,
         player_color=player_color,
         syzygy_table=syzygy_table,
-        queue_progress_player=main_thread_mailbox
+        queue_progress_player=main_thread_mailbox,
     )
     move_function = partial(
         game_player_computes_move_on_board_and_send_move_in_queue,
         game_player=generic_player,
-        queue_move=main_thread_mailbox
+        queue_move=main_thread_mailbox,
     )
 
     return generic_player, move_function

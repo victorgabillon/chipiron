@@ -1,15 +1,14 @@
 """
 Module for sorting a dictionary by ascending order
 """
+
 from typing import Any
 
 from .comparable import Comparable
 
 
 # todo 3.12 vartype
-def sort_dic[CT:Comparable](
-        dic: dict[Any, CT]
-) -> dict[Any, CT]:
+def sort_dic[CT: Comparable](dic: dict[Any, CT]) -> dict[Any, CT]:
     """
     Sorts a dictionary by ascending order of values.
 

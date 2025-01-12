@@ -25,7 +25,7 @@ class MatchArgs:
 
     file_name_player_one: PlayerConfigFile = PlayerConfigFile.RecurZipfBase3
     file_name_player_two: PlayerConfigFile = PlayerConfigFile.RecurZipfBase3
-    file_name_match_setting: path = 'setting_cubo.yaml'
+    file_name_match_setting: path = "setting_cubo.yaml"
 
     # For players and match modification of the yaml file specified in a respective dict
     player_one: dict[Any, Any] = field(default_factory=dict)

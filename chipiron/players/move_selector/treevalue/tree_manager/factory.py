@@ -26,10 +26,10 @@ from .tree_manager import TreeManager
 
 
 def create_algorithm_node_tree_manager(
-        node_evaluator: NodeEvaluator | None,
-        algorithm_node_factory: node_factory.AlgorithmNodeFactory,
-        index_computation: IndexComputationType | None,
-        index_updater: IndexUpdater | None
+    node_evaluator: NodeEvaluator | None,
+    algorithm_node_factory: node_factory.AlgorithmNodeFactory,
+    index_computation: IndexComputationType | None,
+    index_updater: IndexUpdater | None,
 ) -> AlgorithmNodeTreeManager:
     """
     Create an AlgorithmNodeTreeManager object.
@@ -44,18 +44,16 @@ def create_algorithm_node_tree_manager(
         An AlgorithmNodeTreeManager object.
 
     """
-    tree_manager: TreeManager = TreeManager(
-        node_factory=algorithm_node_factory
-    )
+    tree_manager: TreeManager = TreeManager(node_factory=algorithm_node_factory)
 
-    algorithm_node_updater: upda.AlgorithmNodeUpdater = upda.create_algorithm_node_updater(
-        index_updater=index_updater
+    algorithm_node_updater: upda.AlgorithmNodeUpdater = (
+        upda.create_algorithm_node_updater(index_updater=index_updater)
     )
 
     evaluation_queries: EvaluationQueries = EvaluationQueries()
 
-    exploration_index_manager: NodeExplorationIndexManager = create_exploration_index_manager(
-        index_computation=index_computation
+    exploration_index_manager: NodeExplorationIndexManager = (
+        create_exploration_index_manager(index_computation=index_computation)
     )
 
     algorithm_node_tree_manager: AlgorithmNodeTreeManager = AlgorithmNodeTreeManager(
@@ -63,7 +61,7 @@ def create_algorithm_node_tree_manager(
         tree_manager=tree_manager,
         algorithm_node_updater=algorithm_node_updater,
         evaluation_queries=evaluation_queries,
-        index_manager=exploration_index_manager
+        index_manager=exploration_index_manager,
     )
 
     return algorithm_node_tree_manager

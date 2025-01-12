@@ -13,7 +13,7 @@ from .RepresentationType import RepresentationType
 
 
 def create_board_representation_factory(
-        board_representation_factory_type: RepresentationType
+    board_representation_factory_type: RepresentationType,
 ) -> RepresentationFactory[Any] | None:
     """
     Create a board representation based on the given string.
@@ -33,16 +33,16 @@ def create_board_representation_factory(
         case RepresentationType.BUG364:
             board_representation_factory = RepresentationFactory(
                 create_from_board=create_from_board_364_bug,
-                create_from_board_and_from_parent=create_from_board_and_from_parent_364_bug
+                create_from_board_and_from_parent=create_from_board_and_from_parent_364_bug,
             )
         case RepresentationType.NOBUG364:
             board_representation_factory = RepresentationFactory(
                 create_from_board=create_from_board_364_no_bug,
-                create_from_board_and_from_parent=create_from_board_and_from_parent_364_no_bug
+                create_from_board_and_from_parent=create_from_board_and_from_parent_364_no_bug,
             )
         case RepresentationType.NO:
             board_representation_factory = None
         case other:
-            raise Exception(f'trying to create {other} in file {__name__}')
+            raise Exception(f"trying to create {other} in file {__name__}")
 
     return board_representation_factory

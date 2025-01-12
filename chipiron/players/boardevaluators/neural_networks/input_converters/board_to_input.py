@@ -1,6 +1,7 @@
 """
 Module for the BoardToInput protocol and BoardToInputFunction protocol.
 """
+
 from typing import Protocol, runtime_checkable
 
 import torch
@@ -13,10 +14,7 @@ class BoardToInput(Protocol):
     Protocol for converting a chess board to a tensor input for a neural network.
     """
 
-    def convert(
-            self,
-            board: boards.IBoard
-    ) -> torch.Tensor:
+    def convert(self, board: boards.IBoard) -> torch.Tensor:
         """
         Converts the given chess board to a tensor input.
 
@@ -35,10 +33,7 @@ class BoardToInputFunction(Protocol):
     Protocol for a callable object that converts a chess board to a tensor input for a neural network.
     """
 
-    def __call__(
-            self,
-            board: boards.IBoard
-    ) -> torch.Tensor:
+    def __call__(self, board: boards.IBoard) -> torch.Tensor:
         """
         Converts the given chess board to a tensor input.
 

@@ -1,6 +1,7 @@
 """
 Module for the Game class.
 """
+
 import copy
 import queue
 
@@ -25,6 +26,7 @@ class Game:
      (but can include history) while Game are more related to the entire Game and the process generating it.
     Game needs the original fen, all the moves, the seed to generate and maybe more.
     """
+
     _playing_status: GamePlayingStatus  # todo should this be here? looks related to gui
     _current_board: IBoard
     _seed: seed | None
@@ -36,10 +38,7 @@ class Game:
     _board_history: list[IBoard]
 
     def __init__(
-            self,
-            board: IBoard,
-            playing_status: GamePlayingStatus,
-            seed_: seed = 0
+        self, board: IBoard, playing_status: GamePlayingStatus, seed_: seed = 0
     ):
         """
         Initializes the Game object.
@@ -57,10 +56,7 @@ class Game:
         board_copy: IBoard = board.copy(stack=True)
         self._board_history = [board_copy]
 
-    def play_move(
-            self,
-            move: moveKey
-    ) -> None:
+    def play_move(self, move: moveKey) -> None:
         """
         Plays a move on the chess board.
 
@@ -71,20 +67,23 @@ class Game:
             AssertionError: If the move is not valid or the game status is not play.
         """
         if self._playing_status.is_play():
-            assert (move in [i for i in self._current_board.legal_moves])
+            assert move in [i for i in self._current_board.legal_moves]
 
-            self.move_history.append(self._current_board.get_uci_from_move_key(move_key=move))
+            self.move_history.append(
+                self._current_board.get_uci_from_move_key(move_key=move)
+            )
 
             self._current_board.play_move_key(move)
 
             self.fen_history.append(self._current_board.fen)
             current_board_copy: IBoard = self._current_board.copy(
-                stack=True,
-                deep_copy_legal_moves=True
+                stack=True, deep_copy_legal_moves=True
             )
             self._board_history.append(current_board_copy)
         else:
-            print(f'Cannot play move if the game status is PAUSE {self._playing_status.status}')
+            print(
+                f"Cannot play move if the game status is PAUSE {self._playing_status.status}"
+            )
 
     def rewind_one_move(self) -> None:
         """
@@ -98,11 +97,10 @@ class Game:
             if len(self._board_history) > 1:
                 del self._board_history[-1]
                 self._current_board = self._board_history[-1].copy(
-                    stack=True,
-                    deep_copy_legal_moves=True
+                    stack=True, deep_copy_legal_moves=True
                 )
         else:
-            print(f'Cannot rewind move if the game status is {self._playing_status}')
+            print(f"Cannot rewind move if the game status is {self._playing_status}")
 
     @property
     def playing_status(self) -> GamePlayingStatus:
@@ -115,10 +113,7 @@ class Game:
         return self._playing_status
 
     @playing_status.setter
-    def playing_status(
-            self,
-            value: GamePlayingStatus
-    ) -> None:
+    def playing_status(self, value: GamePlayingStatus) -> None:
         """
         Sets the playing status of the game.
 
@@ -200,10 +195,7 @@ class ObservableGame:
     # at least one player to compute a move
     move_functions: list[MoveFunction]
 
-    def __init__(
-            self,
-            game: Game
-    ) -> None:
+    def __init__(self, game: Game) -> None:
         """
         Initializes the ObservableGame object.
 
@@ -216,10 +208,7 @@ class ObservableGame:
         # the difference between the two is that board can be modified without asking the player to play
         # (for instance when using the button back)
 
-    def register_display(
-            self,
-            mailbox: queue.Queue[IsDataclass]
-    ) -> None:
+    def register_display(self, mailbox: queue.Queue[IsDataclass]) -> None:
         """
         Registers a mailbox for displaying the board.
 
@@ -228,10 +217,7 @@ class ObservableGame:
         """
         self.mailboxes_display.append(mailbox)
 
-    def register_player(
-            self,
-            move_function: MoveFunction
-    ) -> None:
+    def register_player(self, move_function: MoveFunction) -> None:
         """
         Registers a player to compute a move.
 
@@ -240,10 +226,7 @@ class ObservableGame:
         """
         self.move_functions.append(move_function)
 
-    def play_move(
-            self,
-            move: moveKey
-    ) -> None:
+    def play_move(self, move: moveKey) -> None:
         """
         Plays a move on the chess board.
 
@@ -271,10 +254,7 @@ class ObservableGame:
         return self.game.playing_status
 
     @playing_status.setter
-    def playing_status(
-            self,
-            new_status: GamePlayingStatus
-    ) -> None:
+    def playing_status(self, new_status: GamePlayingStatus) -> None:
         """
         Sets the playing status of the game.
 
@@ -282,13 +262,15 @@ class ObservableGame:
             new_status (GamePlayingStatus): The new playing status of the game.
         """
         self.game.playing_status = new_status
-        raise Exception('problem no notificaiton implemented. Maybe this function is deadcode?')
+        raise Exception(
+            "problem no notificaiton implemented. Maybe this function is deadcode?"
+        )
 
     def set_play_status(self) -> None:
         """
         Starts playing the game.
         """
-        print('start playing')
+        print("start playing")
         self.game.set_play_status()
         self.notify_status()
         self.notify_display()
@@ -323,7 +305,11 @@ class ObservableGame:
         Notifies the display mailboxes with the updated board.
         """
         for mailbox in self.mailboxes_display:
-            print('sending board to display', self.game.board.fen, self.game.board.move_history_stack)
+            print(
+                "sending board to display",
+                self.game.board.fen,
+                self.game.board.move_history_stack,
+            )
 
             message: BoardMessage = BoardMessage(
                 fen_plus_moves=self.game.board.into_fen_plus_history()
@@ -338,18 +324,17 @@ class ObservableGame:
             move_function: MoveFunction
             for move_function in self.move_functions:
                 board_copy: IBoard = self.game.board.copy(stack=True)
-                merged_seed: int | None = unique_int_from_list([self.game._seed, board_copy.ply()])
+                merged_seed: int | None = unique_int_from_list(
+                    [self.game._seed, board_copy.ply()]
+                )
                 if merged_seed is not None:
-                    move_function(
-                        board=board_copy,
-                        seed_int=merged_seed
-                    )
+                    move_function(board=board_copy, seed_int=merged_seed)
 
     def notify_status(self) -> None:
         """
         Notifies the status mailboxes with the updated game status.
         """
-        print('notify game', self.game.playing_status.status)
+        print("notify game", self.game.playing_status.status)
 
         observable_copy = copy.copy(self.game.playing_status.status)
         message: GameStatusMessage = GameStatusMessage(status=observable_copy)

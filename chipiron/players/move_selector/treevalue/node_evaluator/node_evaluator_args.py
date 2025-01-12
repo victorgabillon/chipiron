@@ -26,6 +26,7 @@ class NodeEvaluatorArgs:
     - representation: The representation of the node evaluator.
 
     """
+
     type: NodeEvaluatorTypes
     syzygy_evaluation: bool
     representation_type: RepresentationType  # this should maybe be optional and involves creates wrapper? but i am lazy at the moment

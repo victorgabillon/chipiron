@@ -14,6 +14,7 @@ RangedDescendants:
 
 Note: The Descendants and RangedDescendants classes are used in the chipiron project for move selection in a game.
 """
+
 import typing
 from typing import Any, Iterator
 
@@ -38,6 +39,7 @@ class Descendants:
         min_half_move (int | None): The minimum half move in the collection, or None if the collection is empty.
         max_half_move (int | None): The maximum half move in the collection, or None if the collection is empty.
     """
+
     descendants_at_half_move: dict[HalfMove, dict[boards.boardKey, ITreeNode[Any]]]
     number_of_descendants: int
     number_of_descendants_at_half_move: dict[HalfMove, int]
@@ -64,10 +66,14 @@ class Descendants:
         self.min_half_move = None
         self.max_half_move = None
 
-    def iter_on_all_nodes(self) -> Iterator[tuple[HalfMove, boards.boardKey, ITreeNode[Any]]]:
-        return ((hm, board_key, node) for hm, nodes_at_hm in self.descendants_at_half_move.items() for board_key, node
-                in
-                nodes_at_hm.items())
+    def iter_on_all_nodes(
+        self,
+    ) -> Iterator[tuple[HalfMove, boards.boardKey, ITreeNode[Any]]]:
+        return (
+            (hm, board_key, node)
+            for hm, nodes_at_hm in self.descendants_at_half_move.items()
+            for board_key, node in nodes_at_hm.items()
+        )
 
     def keys(self) -> typing.KeysView[HalfMove]:
         """
@@ -79,9 +85,7 @@ class Descendants:
         return self.descendants_at_half_move.keys()
 
     def __setitem__(
-            self,
-            half_move: HalfMove,
-            value: dict[boards.boardKey, ITreeNode[Any]]
+        self, half_move: HalfMove, value: dict[boards.boardKey, ITreeNode[Any]]
     ) -> None:
         """
         Sets the descendants at a specific half move.
@@ -95,10 +99,7 @@ class Descendants:
         """
         self.descendants_at_half_move[half_move] = value
 
-    def __getitem__(
-            self,
-            half_move: HalfMove
-    ) -> dict[boards.boardKey, ITreeNode[Any]]:
+    def __getitem__(self, half_move: HalfMove) -> dict[boards.boardKey, ITreeNode[Any]]:
         """
         Retrieve the descendants at a specific half move.
 
@@ -128,10 +129,7 @@ class Descendants:
         """
         return self.number_of_descendants
 
-    def contains_node(
-            self,
-            node: ITreeNode[Any]
-    ) -> bool:
+    def contains_node(self, node: ITreeNode[Any]) -> bool:
         """
         Checks if the descendants contain a specific node.
 
@@ -141,15 +139,15 @@ class Descendants:
         Returns:
             bool: True if the descendants contain the node, False otherwise.
         """
-        if node.half_move in self.descendants_at_half_move and node.fast_rep in self[node.half_move]:
+        if (
+            node.half_move in self.descendants_at_half_move
+            and node.fast_rep in self[node.half_move]
+        ):
             return True
         else:
             return False
 
-    def remove_descendant(
-            self,
-            node: ITreeNode[Any]
-    ) -> None:
+    def remove_descendant(self, node: ITreeNode[Any]) -> None:
         """
         Removes a descendant node from the tree.
 
@@ -178,10 +176,7 @@ class Descendants:
         """
         return self.number_of_descendants == 0
 
-    def add_descendant(
-            self,
-            node: ITreeNode[Any]
-    ) -> None:
+    def add_descendant(self, node: ITreeNode[Any]) -> None:
         """
         Adds a descendant node to the tree.
 
@@ -195,7 +190,7 @@ class Descendants:
         board_key: boards.boardKey = node.fast_rep
 
         if half_move in self.descendants_at_half_move:
-            assert (board_key not in self.descendants_at_half_move[half_move])
+            assert board_key not in self.descendants_at_half_move[half_move]
             self.descendants_at_half_move[half_move][board_key] = node
             self.number_of_descendants_at_half_move[half_move] += 1
         else:
@@ -222,13 +217,18 @@ class Descendants:
         Returns:
             None
         """
-        print('---here are the ', self.get_count(), ' descendants.')
+        print("---here are the ", self.get_count(), " descendants.")
         for half_move in self:
-            print('half_move: ', half_move, '| (', self.number_of_descendants_at_half_move[half_move],
-                  'descendants)')  # ,                  end='| ')
+            print(
+                "half_move: ",
+                half_move,
+                "| (",
+                self.number_of_descendants_at_half_move[half_move],
+                "descendants)",
+            )  # ,                  end='| ')
             for descendant in self[half_move].values():
-                print(descendant.id, descendant.fast_rep, end=' ')
-            print('')
+                print(descendant.id, descendant.fast_rep, end=" ")
+            print("")
 
     def print_stats(self) -> None:
         """
@@ -239,9 +239,15 @@ class Descendants:
         Returns:
             None
         """
-        print('---here are the ', self.get_count(), ' descendants')
+        print("---here are the ", self.get_count(), " descendants")
         for half_move in self:
-            print('half_move: ', half_move, '| (', self.number_of_descendants_at_half_move[half_move], 'descendants)')
+            print(
+                "half_move: ",
+                half_move,
+                "| (",
+                self.number_of_descendants_at_half_move[half_move],
+                "descendants)",
+            )
 
     def test(self) -> None:
         """
@@ -249,19 +255,20 @@ class Descendants:
         It checks if the number of descendants at each half move matches the number of descendants stored.
         It also checks if the sum of the lengths of all descendants at each half move matches the total number of descendants.
         """
-        assert (set(self.descendants_at_half_move.keys()) == set(self.number_of_descendants_at_half_move))
+        assert set(self.descendants_at_half_move.keys()) == set(
+            self.number_of_descendants_at_half_move
+        )
         sum_ = 0
         for half_move in self:
             sum_ += len(self[half_move])
-        assert (self.number_of_descendants == sum_)
+        assert self.number_of_descendants == sum_
 
         for half_move in self:
-            assert (self.number_of_descendants_at_half_move[half_move] == len(self[half_move]))
+            assert self.number_of_descendants_at_half_move[half_move] == len(
+                self[half_move]
+            )
 
-    def test_2(
-            self,
-            root_node: ITreeNode[Any]
-    ) -> None:
+    def test_2(self, root_node: ITreeNode[Any]) -> None:
         """
         Test the descendants of a given root node.
 
@@ -276,13 +283,13 @@ class Descendants:
         # self.print_info()
         for d in all_descendants:
             if d.half_move not in self.descendants_at_half_move:
-                assert (d.half_move in self.descendants_at_half_move)
+                assert d.half_move in self.descendants_at_half_move
             if d.fast_rep not in self.descendants_at_half_move[d.half_move]:
-                assert (d.fast_rep in self.descendants_at_half_move[d.half_move])
+                assert d.fast_rep in self.descendants_at_half_move[d.half_move]
 
         for half_move in self.descendants_at_half_move:
             for d in self[half_move].values():
-                assert (d in all_descendants)
+                assert d in all_descendants
 
 
 class RangedDescendants(Descendants):
@@ -297,9 +304,7 @@ class RangedDescendants(Descendants):
     min_half_move: int | None
     max_half_move: int | None
 
-    def __init__(
-            self
-    ) -> None:
+    def __init__(self) -> None:
         """
         Initializes a Descendants object.
         """
@@ -316,18 +321,15 @@ class RangedDescendants(Descendants):
         Returns:
             str: A string representation of the Descendants object.
         """
-        string: str = ''
+        string: str = ""
         for half_move in self:
-            string += f'half_move: {half_move} | ({self.number_of_descendants_at_half_move[half_move]} descendants)\n'
+            string += f"half_move: {half_move} | ({self.number_of_descendants_at_half_move[half_move]} descendants)\n"
             for descendant in self[half_move].values():
-                string += f'{descendant.id} '
-            string += '\n'
+                string += f"{descendant.id} "
+            string += "\n"
         return string
 
-    def is_new_generation(
-            self,
-            half_move: HalfMove
-    ) -> bool:
+    def is_new_generation(self, half_move: HalfMove) -> bool:
         """
         Checks if the given half move is a new generation.
 
@@ -343,10 +345,7 @@ class RangedDescendants(Descendants):
         else:
             return True
 
-    def is_in_the_current_range(
-            self,
-            half_move: int
-    ) -> bool:
+    def is_in_the_current_range(self, half_move: int) -> bool:
         """
         Checks if the given half_move is within the current range.
 
@@ -362,10 +361,7 @@ class RangedDescendants(Descendants):
         else:
             return False
 
-    def is_in_the_acceptable_range(
-            self,
-            half_move: int
-    ) -> bool:
+    def is_in_the_acceptable_range(self, half_move: int) -> bool:
         """
         Checks if the given half_move is within the acceptable range.
 
@@ -380,10 +376,7 @@ class RangedDescendants(Descendants):
         else:
             return True
 
-    def add_descendant(
-            self,
-            node: ITreeNode[Any]
-    ) -> None:
+    def add_descendant(self, node: ITreeNode[Any]) -> None:
         """
         Adds a descendant node to the tree.
 
@@ -396,14 +389,14 @@ class RangedDescendants(Descendants):
         half_move: int = node.half_move
         board_key: boards.boardKey = node.fast_rep
 
-        assert (self.is_in_the_acceptable_range(half_move))
+        assert self.is_in_the_acceptable_range(half_move)
         if self.is_in_the_current_range(half_move):
             if half_move in self.descendants_at_half_move:
-                assert (board_key not in self.descendants_at_half_move[half_move])
+                assert board_key not in self.descendants_at_half_move[half_move]
             self.descendants_at_half_move[half_move][board_key] = node
             self.number_of_descendants_at_half_move[half_move] += 1
         else:  # half_move == len(self.descendants_at_half_move)
-            assert (self.is_new_generation(half_move))
+            assert self.is_new_generation(half_move)
             self.descendants_at_half_move[half_move] = {board_key: node}
             self.number_of_descendants_at_half_move[half_move] = 1
             if self.max_half_move is not None:
@@ -413,10 +406,7 @@ class RangedDescendants(Descendants):
                 self.max_half_move = half_move
         self.number_of_descendants += 1
 
-    def remove_descendant(
-            self,
-            node: ITreeNode[Any]
-    ) -> None:
+    def remove_descendant(self, node: ITreeNode[Any]) -> None:
         """
         Removes a descendant node from the tree.
 
@@ -444,7 +434,7 @@ class RangedDescendants(Descendants):
             if self.max_half_move < self.min_half_move:
                 self.max_half_move = None
                 self.min_half_move = None
-                assert (self.number_of_descendants == 0)
+                assert self.number_of_descendants == 0
 
     def range(self) -> range:
         """
@@ -480,11 +470,7 @@ class RangedDescendants(Descendants):
 
     #    return really_new_descendants
 
-    def merge(
-            self,
-            descendant_1: typing.Self,
-            descendant_2: typing.Self
-    ) -> None:
+    def merge(self, descendant_1: typing.Self, descendant_2: typing.Self) -> None:
         """
         Merges the descendants of two nodes into the current node.
 
@@ -496,7 +482,7 @@ class RangedDescendants(Descendants):
             None
         """
         half_moves_range = set(descendant_1.keys()) | set(descendant_2.keys())
-        assert (len(half_moves_range) > 0)
+        assert len(half_moves_range) > 0
         self.min_half_move = min(half_moves_range)
         self.max_half_move = max(half_moves_range)
         for half_move in half_moves_range:
@@ -504,19 +490,29 @@ class RangedDescendants(Descendants):
                 if descendant_2.is_in_the_current_range(half_move):
                     #  print('dd',type(self.descendants_at_half_move),type())
                     # in python 3.9 we can use a |
-                    self.descendants_at_half_move[half_move] = {**descendant_1[half_move], **descendant_2[half_move]}
-                    self.number_of_descendants_at_half_move[half_move] = len(self[half_move])
-                    assert (self.number_of_descendants_at_half_move[half_move] == len(
-                        {**descendant_1[half_move], **descendant_2[half_move]}))
+                    self.descendants_at_half_move[half_move] = {
+                        **descendant_1[half_move],
+                        **descendant_2[half_move],
+                    }
+                    self.number_of_descendants_at_half_move[half_move] = len(
+                        self[half_move]
+                    )
+                    assert self.number_of_descendants_at_half_move[half_move] == len(
+                        {**descendant_1[half_move], **descendant_2[half_move]}
+                    )
                 else:
                     self.descendants_at_half_move[half_move] = descendant_1[half_move]
-                    self.number_of_descendants_at_half_move[half_move] = \
+                    self.number_of_descendants_at_half_move[half_move] = (
                         descendant_1.number_of_descendants_at_half_move[half_move]
+                    )
             else:
                 self.descendants_at_half_move[half_move] = descendant_2[half_move]
-                self.number_of_descendants_at_half_move[half_move] = descendant_2.number_of_descendants_at_half_move[
-                    half_move]
-            self.number_of_descendants += self.number_of_descendants_at_half_move[half_move]
+                self.number_of_descendants_at_half_move[half_move] = (
+                    descendant_2.number_of_descendants_at_half_move[half_move]
+                )
+            self.number_of_descendants += self.number_of_descendants_at_half_move[
+                half_move
+            ]
 
     def test(self) -> None:
         """
@@ -535,15 +531,15 @@ class RangedDescendants(Descendants):
         """
         super().test()
         if self.min_half_move is None:
-            assert (self.max_half_move is None)
-            assert (self.number_of_descendants == 0)
+            assert self.max_half_move is None
+            assert self.number_of_descendants == 0
         else:
             assert self.max_half_move is not None
             assert self.min_half_move is not None
             for i in range(self.min_half_move, self.max_half_move + 1):
-                assert (i in self.descendants_at_half_move.keys())
+                assert i in self.descendants_at_half_move.keys()
         for half_move in self:
-            assert (self.is_in_the_current_range(half_move))
+            assert self.is_in_the_current_range(half_move)
 
     def print_info(self) -> None:
         """
@@ -556,8 +552,14 @@ class RangedDescendants(Descendants):
             None
         """
         super().print_info()
-        print('---here are the ', self.get_count(), ' descendants. min:', self.min_half_move, '. max:',
-              self.max_half_move)
+        print(
+            "---here are the ",
+            self.get_count(),
+            " descendants. min:",
+            self.min_half_move,
+            ". max:",
+            self.max_half_move,
+        )
 
 
 class SortedDescendants(Descendants):
@@ -574,11 +576,7 @@ class SortedDescendants(Descendants):
         super().__init__()
         self.sorted_descendants_at_half_move = {}
 
-    def update_value(
-            self,
-            node: ITreeNode[Any],
-            value: float
-    ) -> None:
+    def update_value(self, node: ITreeNode[Any], value: float) -> None:
         """
         Updates the value of a descendant node.
 
@@ -588,11 +586,7 @@ class SortedDescendants(Descendants):
         """
         self.sorted_descendants_at_half_move[node.half_move][node] = value
 
-    def add_descendant_with_val(
-            self,
-            node: ITreeNode[Any],
-            value: float
-    ) -> None:
+    def add_descendant_with_val(self, node: ITreeNode[Any], value: float) -> None:
         """
         Adds a descendant node with its corresponding value.
 
@@ -604,36 +598,51 @@ class SortedDescendants(Descendants):
         half_move = node.half_move
 
         if half_move in self.sorted_descendants_at_half_move:
-            assert (node not in self.sorted_descendants_at_half_move[half_move])
+            assert node not in self.sorted_descendants_at_half_move[half_move]
             self.sorted_descendants_at_half_move[half_move][node] = value
         else:  # half_move == len(self.descendants_at_half_move)
             self.sorted_descendants_at_half_move[half_move] = {node: value}
 
-        assert (self.contains_node(node))
+        assert self.contains_node(node)
 
     def test(self) -> None:
         """
         Performs a test to ensure the integrity of the data structure.
         """
         super().test()
-        assert (len(self.sorted_descendants_at_half_move) == len(self.descendants_at_half_move))
-        assert (self.sorted_descendants_at_half_move.keys() == self.descendants_at_half_move.keys())
+        assert len(self.sorted_descendants_at_half_move) == len(
+            self.descendants_at_half_move
+        )
+        assert (
+            self.sorted_descendants_at_half_move.keys()
+            == self.descendants_at_half_move.keys()
+        )
         for half_move in self.sorted_descendants_at_half_move:
-            assert (len(self.sorted_descendants_at_half_move[half_move]) == len(
-                self.descendants_at_half_move[half_move]))
+            assert len(self.sorted_descendants_at_half_move[half_move]) == len(
+                self.descendants_at_half_move[half_move]
+            )
 
     def print_info(self) -> None:
         """
         Prints information about the sorted descendants.
         """
         super().print_info()
-        print('sorted')
+        print("sorted")
         for half_move in self:
-            print('half_move: ', half_move, '| (', self.number_of_descendants_at_half_move[half_move],
-                  'descendants)')  # ,                  end='| ')
-            for descendant, value in self.sorted_descendants_at_half_move[half_move].items():
-                print(descendant.id, descendant.fast_rep, '(' + str(value) + ')', end=' ')
-            print('')
+            print(
+                "half_move: ",
+                half_move,
+                "| (",
+                self.number_of_descendants_at_half_move[half_move],
+                "descendants)",
+            )  # ,                  end='| ')
+            for descendant, value in self.sorted_descendants_at_half_move[
+                half_move
+            ].items():
+                print(
+                    descendant.id, descendant.fast_rep, "(" + str(value) + ")", end=" "
+                )
+            print("")
 
     def remove_descendant(self, node: ITreeNode[Any]) -> None:
         """
@@ -647,7 +656,7 @@ class SortedDescendants(Descendants):
         self.sorted_descendants_at_half_move[half_move].pop(node)
         if half_move not in self.number_of_descendants_at_half_move:
             self.sorted_descendants_at_half_move.pop(half_move)
-        assert (not self.contains_node(node))
+        assert not self.contains_node(node)
 
     def contains_node(self, node: ITreeNode[Any]) -> bool:
         """
@@ -660,12 +669,14 @@ class SortedDescendants(Descendants):
             bool: True if the descendant node is present, False otherwise.
         """
         reply_base = super().contains_node(node)
-        if (node.half_move in self.descendants_at_half_move
-                and node in self.sorted_descendants_at_half_move[node.half_move]):
+        if (
+            node.half_move in self.descendants_at_half_move
+            and node in self.sorted_descendants_at_half_move[node.half_move]
+        ):
             rep = True
         else:
             rep = False
-        assert (reply_base == rep)
+        assert reply_base == rep
         return rep
 
 
@@ -697,10 +708,7 @@ class SortedValueDescendants(Descendants):
         """
         self.sorted_descendants_at_half_move[node.half_move][node] = value
 
-    def add_descendant_val(self,
-                           node: ITreeNode[Any],
-                           value: float
-                           ) -> None:
+    def add_descendant_val(self, node: ITreeNode[Any], value: float) -> None:
         """
         Adds a descendant node with an associated value.
 
@@ -715,10 +723,12 @@ class SortedValueDescendants(Descendants):
         half_move = node.half_move
 
         if half_move in self.sorted_descendants_at_half_move:
-            assert (node not in self.sorted_descendants_at_half_move[half_move])
+            assert node not in self.sorted_descendants_at_half_move[half_move]
             self.sorted_descendants_at_half_move[half_move][node] = value
         else:
-            self.sorted_descendants_at_half_move[half_move] = ValueSortedDict({node: value})
+            self.sorted_descendants_at_half_move[half_move] = ValueSortedDict(
+                {node: value}
+            )
 
     def test(self) -> None:
         """
@@ -728,11 +738,17 @@ class SortedValueDescendants(Descendants):
             None
         """
         super().test()
-        assert (len(self.sorted_descendants_at_half_move) == len(self.descendants_at_half_move))
-        assert (self.sorted_descendants_at_half_move.keys() == self.descendants_at_half_move.keys())
+        assert len(self.sorted_descendants_at_half_move) == len(
+            self.descendants_at_half_move
+        )
+        assert (
+            self.sorted_descendants_at_half_move.keys()
+            == self.descendants_at_half_move.keys()
+        )
         for half_move in self.sorted_descendants_at_half_move:
-            assert (len(self.sorted_descendants_at_half_move[half_move]) == len(
-                self.descendants_at_half_move[half_move]))
+            assert len(self.sorted_descendants_at_half_move[half_move]) == len(
+                self.descendants_at_half_move[half_move]
+            )
 
     def print_info(self) -> None:
         """
@@ -742,13 +758,20 @@ class SortedValueDescendants(Descendants):
             None
         """
         super().print_info()
-        print('sorted')
+        print("sorted")
         for half_move in self:
-            print('half_move: ', half_move, '| (', self.number_of_descendants_at_half_move[half_move],
-                  'descendants)')
-            for descendant, value in self.sorted_descendants_at_half_move[half_move].items():
-                print(str(descendant.id) + '(' + str(value) + ')', end=' ')
-            print('')
+            print(
+                "half_move: ",
+                half_move,
+                "| (",
+                self.number_of_descendants_at_half_move[half_move],
+                "descendants)",
+            )
+            for descendant, value in self.sorted_descendants_at_half_move[
+                half_move
+            ].items():
+                print(str(descendant.id) + "(" + str(value) + ")", end=" ")
+            print("")
 
     def remove_descendant(self, node: ITreeNode[Any]) -> None:
         """

@@ -1,6 +1,7 @@
 """
 Module for the SyzygyTable class.
 """
+
 import shakmaty_python_binding
 
 import chipiron.environments.chess.board as boards
@@ -48,10 +49,7 @@ class SyzygyRustTable(SyzygyTable[RustyBoardChi]):
 
     table_base: shakmaty_python_binding.MyTableBase
 
-    def __init__(
-            self,
-            path_to_table: path
-    ):
+    def __init__(self, path_to_table: path):
         """
         Initialize the SyzygyTable object.
 
@@ -61,17 +59,11 @@ class SyzygyRustTable(SyzygyTable[RustyBoardChi]):
         path_to_table_str: str = str(path_to_table)
         self.table_base = shakmaty_python_binding.MyTableBase(path_to_table_str)
 
-    def wdl(
-            self,
-            board: boards.RustyBoardChi
-    ) -> int:
+    def wdl(self, board: boards.RustyBoardChi) -> int:
         wdl: int = self.table_base.probe_wdl(board.chess_)
         return wdl
 
-    def dtz(
-            self,
-            board: boards.RustyBoardChi
-    ) -> int:
+    def dtz(self, board: boards.RustyBoardChi) -> int:
         """
         Get the distance-to-zero (DTZ) value for the given board.
 

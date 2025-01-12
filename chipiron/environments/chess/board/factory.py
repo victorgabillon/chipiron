@@ -1,6 +1,7 @@
 """
 Module to create a chess board.
 """
+
 from collections import Counter
 from functools import partial
 from typing import Protocol
@@ -15,53 +16,49 @@ from .utils import FenPlusHistory, fen
 
 
 class BoardFactory(Protocol):
-    def __call__(
-            self,
-            fen_with_history: FenPlusHistory | None = None
-    ) -> IBoard:
-        ...
+    def __call__(self, fen_with_history: FenPlusHistory | None = None) -> IBoard: ...
 
 
 def create_board_factory(
-        use_rust_boards: bool = False,
-        use_board_modification: bool = False,
-        sort_legal_moves: bool = False
+    use_rust_boards: bool = False,
+    use_board_modification: bool = False,
+    sort_legal_moves: bool = False,
 ) -> BoardFactory:
     board_factory: BoardFactory
     if use_rust_boards:
         board_factory = partial(
             create_rust_board,
             use_board_modification=use_board_modification,
-            sort_legal_moves=sort_legal_moves
+            sort_legal_moves=sort_legal_moves,
         )
     else:
         board_factory = partial(
             create_board_chi,
             use_board_modification=use_board_modification,
-            sort_legal_moves=sort_legal_moves
+            sort_legal_moves=sort_legal_moves,
         )
     return board_factory
 
 
 def create_board(
-        use_rust_boards: bool = False,
-        use_board_modification: bool = False,
-        sort_legal_moves: bool = False,
-        fen_with_history: FenPlusHistory | None = None
+    use_rust_boards: bool = False,
+    use_board_modification: bool = False,
+    sort_legal_moves: bool = False,
+    fen_with_history: FenPlusHistory | None = None,
 ) -> IBoard:
     board_factory: BoardFactory = create_board_factory(
         use_rust_boards=use_rust_boards,
         use_board_modification=use_board_modification,
-        sort_legal_moves=sort_legal_moves
+        sort_legal_moves=sort_legal_moves,
     )
     board: IBoard = board_factory(fen_with_history=fen_with_history)
     return board
 
 
 def create_board_chi_from_pychess_board(
-        chess_board: chess.Board,
-        use_board_modification: bool = False,
-        sort_legal_moves: bool = False
+    chess_board: chess.Board,
+    use_board_modification: bool = False,
+    sort_legal_moves: bool = False,
 ) -> BoardChi:
     board_key_representation: boardKey = compute_key(
         pawns=chess_board.pawns,
@@ -77,27 +74,26 @@ def create_board_chi_from_pychess_board(
         black=chess_board.occupied_co[chess.BLACK],
         promoted=chess_board.promoted,
         fullmove_number=chess_board.fullmove_number,
-        halfmove_clock=chess_board.halfmove_clock
+        halfmove_clock=chess_board.halfmove_clock,
     )
 
     legal_moves: LegalMoveKeyGenerator = LegalMoveKeyGenerator(
-        chess_board=chess_board,
-        sort_legal_moves=sort_legal_moves
+        chess_board=chess_board, sort_legal_moves=sort_legal_moves
     )
 
     board: BoardChi = BoardChi(
         chess_board=chess_board,
         compute_board_modification=use_board_modification,
         fast_representation_=board_key_representation,
-        legal_moves_=legal_moves
+        legal_moves_=legal_moves,
     )
     return board
 
 
 def create_board_chi(
-        fen_with_history: FenPlusHistory | None = None,
-        use_board_modification: bool = False,
-        sort_legal_moves: bool = False
+    fen_with_history: FenPlusHistory | None = None,
+    use_board_modification: bool = False,
+    sort_legal_moves: bool = False,
 ) -> BoardChi:
     """
     Create a chipiron chess board.
@@ -118,7 +114,9 @@ def create_board_chi(
     if fen_with_history is not None:
         current_fen = fen_with_history.current_fen
         chess_board = chess.Board(fen=current_fen)
-        chess_board.move_stack = [chess.Move.from_uci(move) for move in fen_with_history.historical_moves]
+        chess_board.move_stack = [
+            chess.Move.from_uci(move) for move in fen_with_history.historical_moves
+        ]
         chess_board._stack = fen_with_history.historical_boards
 
     else:
@@ -127,15 +125,15 @@ def create_board_chi(
     board: BoardChi = create_board_chi_from_pychess_board(
         chess_board=chess_board,
         use_board_modification=use_board_modification,
-        sort_legal_moves=sort_legal_moves
+        sort_legal_moves=sort_legal_moves,
     )
     return board
 
 
 def create_rust_board(
-        fen_with_history: FenPlusHistory | None = None,
-        use_board_modification: bool = False,
-        sort_legal_moves: bool = False
+    fen_with_history: FenPlusHistory | None = None,
+    use_board_modification: bool = False,
+    sort_legal_moves: bool = False,
 ) -> RustyBoardChi:
     """
     Create a rust chess board.
@@ -158,7 +156,9 @@ def create_rust_board(
         chess_rust_binding = shakmaty_python_binding.MyChess(_fen_start=current_fen)
 
     else:
-        chess_rust_binding = shakmaty_python_binding.MyChess(_fen_start=chess.STARTING_FEN)
+        chess_rust_binding = shakmaty_python_binding.MyChess(
+            _fen_start=chess.STARTING_FEN
+        )
 
     pawns: int = chess_rust_binding.pawns()
     knights: int = chess_rust_binding.knights()
@@ -192,13 +192,13 @@ def create_rust_board(
         black=black,
         promoted=promoted,
         fullmove_number=chess_rust_binding.fullmove_number(),
-        halfmove_clock=chess_rust_binding.halfmove_clock()
+        halfmove_clock=chess_rust_binding.halfmove_clock(),
     )
 
     legal_moves: LegalMoveKeyGeneratorRust = LegalMoveKeyGeneratorRust(
         chess_rust_binding=chess_rust_binding,
         generated_moves=chess_rust_binding.legal_moves(),
-        sort_legal_moves=sort_legal_moves
+        sort_legal_moves=sort_legal_moves,
     )
 
     rusty_board_chi: RustyBoardChi = RustyBoardChi(
@@ -218,7 +218,7 @@ def create_rust_board(
         ep_square_=ep_square,
         castling_rights_=castling_rights,
         promoted_=promoted,
-        legal_moves_=legal_moves
+        legal_moves_=legal_moves,
     )
 
     if fen_with_history is not None:

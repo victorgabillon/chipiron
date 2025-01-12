@@ -31,13 +31,12 @@ class BaseTreeExplorationScript:
     """
 
     args_dataclass_name: type[BaseTreeExplorationArgs] = BaseTreeExplorationArgs
-    base_experiment_output_folder = os.path.join(Script.base_experiment_output_folder, 'base_tree_exploration/outputs/')
+    base_experiment_output_folder = os.path.join(
+        Script.base_experiment_output_folder, "base_tree_exploration/outputs/"
+    )
     base_script: Script
 
-    def __init__(
-            self,
-            base_script: Script
-    ) -> None:
+    def __init__(self, base_script: Script) -> None:
         """
         Initializes a new instance of the BaseTreeExploration class.
 
@@ -49,7 +48,7 @@ class BaseTreeExplorationScript:
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into args
         self.args: BaseTreeExplorationArgs = self.base_script.initiate(
             experiment_output_folder=self.base_experiment_output_folder,
-            args_dataclass_name=BaseTreeExplorationArgs
+            args_dataclass_name=BaseTreeExplorationArgs,
         )
 
     def run(self) -> None:
@@ -67,15 +66,16 @@ class BaseTreeExplorationScript:
         # player_one_args.main_move_selector.stopping_criterion.tree_move_limit = 1000000
         random_generator = random.Random()
         random_generator.seed(self.args.implementation_args.use_rust_boards)
-        player = create_player(args=player_one_args, syzygy=syzygy, random_generator=random_generator)
+        player = create_player(
+            args=player_one_args, syzygy=syzygy, random_generator=random_generator
+        )
 
         board = create_board(
             use_rust_boards=self.args.implementation_args.use_rust_boards,
-            use_board_modification=self.args.implementation_args.use_board_modification
+            use_board_modification=self.args.implementation_args.use_board_modification,
         )
         player.select_move(
-            board=board,
-            seed_int=self.args.implementation_args.use_rust_boards
+            board=board, seed_int=self.args.implementation_args.use_rust_boards
         )
 
     def terminate(self) -> None:

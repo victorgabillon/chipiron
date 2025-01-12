@@ -14,10 +14,7 @@ class IScript(Protocol):
 
     args_dataclass_name: Any
 
-    def __init__(
-            self,
-            base_script: Script
-    ) -> None:
+    def __init__(self, base_script: Script) -> None:
         """
         Initializes the IScript object.
 

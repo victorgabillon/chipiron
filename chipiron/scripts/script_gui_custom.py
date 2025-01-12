@@ -7,6 +7,7 @@ The play_against_chipiron, watch_a_game, and visualize_a_tree functions are call
 
 Note: This script requires the customtkinter and chipiron modules to be installed.
 """
+
 # TODO switch to pygame
 from typing import Any
 
@@ -26,7 +27,7 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
     root = ctk.CTk()
     output: dict[str, Any] = {}
     # place a label on the root window
-    root.title('chipiron')
+    root.title("chipiron")
 
     # frm = ctk.CTkFrame(root, padding=10)
 
@@ -42,18 +43,14 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
     center_y: int = int(screen_height / 2 - window_height / 2)
 
     # set the position of the window to the center of the screen
-    root.geometry(f'{window_width}x{window_height}+{center_x}+{center_y}')
+    root.geometry(f"{window_width}x{window_height}+{center_x}+{center_y}")
     # root.iconbitmap('download.jpeg')
 
     message = ctk.CTkLabel(root, text="What to do?")
     message.grid(column=0, row=0)
 
     # exit button
-    exit_button = ctk.CTkButton(
-        root,
-        text='Exit',
-        command=lambda: root.quit()
-    )
+    exit_button = ctk.CTkButton(root, text="Exit", command=lambda: root.quit())
 
     message = ctk.CTkLabel(root, text="Play ")
     message.grid(column=0, row=2)
@@ -72,9 +69,7 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
     # Create the option menu widget and passing
     # the options_list and value_inside to it.
     strength_menu = ctk.CTkOptionMenu(
-        master=root,
-        values=color_options_list,
-        variable=color_choice_human
+        master=root, values=color_options_list, variable=color_choice_human
     )
     strength_menu.grid(column=1, row=2)
 
@@ -82,12 +77,17 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
     message.grid(column=2, row=2)
 
     # Create the list of options
-    chipi_algo_options_list: list[PlayerConfigFile] = [PlayerConfigFile.RecurZipfBase3,
-                                                       PlayerConfigFile.Uniform, PlayerConfigFile.Sequool]
+    chipi_algo_options_list: list[PlayerConfigFile] = [
+        PlayerConfigFile.RecurZipfBase3,
+        PlayerConfigFile.Uniform,
+        PlayerConfigFile.Sequool,
+    ]
 
     # Variable to keep track of the option
     # selected in OptionMenu
-    chipi_algo_choice = ctk.StringVar(value=PlayerConfigFile.RecurZipfBase3)  # set initial value
+    chipi_algo_choice = ctk.StringVar(
+        value=PlayerConfigFile.RecurZipfBase3
+    )  # set initial value
 
     # chipi_algo_choice = tk.StringVar(root)
 
@@ -96,9 +96,9 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
 
     # Create the option menu widget and passing
     # the options_list and value_inside to it.
-    strength_menu = ctk.CTkOptionMenu(master=root,
-                                      values=chipi_algo_options_list,
-                                      variable=chipi_algo_choice)
+    strength_menu = ctk.CTkOptionMenu(
+        master=root, values=chipi_algo_options_list, variable=chipi_algo_choice
+    )
     strength_menu.grid(column=3, row=2)
 
     message = ctk.CTkLabel(root, text="  strength: ")
@@ -120,46 +120,44 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
     # Create the option menu widget and passing
     # the options_list and value_inside to it.
     strength_menu = ctk.CTkOptionMenu(
-        master=root,
-        variable=strength_value,
-        values=options_list
+        master=root, variable=strength_value, values=options_list
     )
     strength_menu.grid(column=5, row=2, padx=10, pady=10)
 
     # play button
     play_against_chipiron_button: ctk.CTkButton = ctk.CTkButton(
         root,
-        text='!Play!',
+        text="!Play!",
         command=lambda: [
             play_against_chipiron(
                 output,
                 strength=strength_value,
                 color=color_choice_human,
-                chipi_algo=chipi_algo_choice
+                chipi_algo=chipi_algo_choice,
             ),
-            root.destroy()
-        ]
+            root.destroy(),
+        ],
     )
 
     # play_two_humans button
     play_two_humans_button: ctk.CTkButton = ctk.CTkButton(
         root,
-        text='Play between Two Humans',
-        command=lambda: [play_two_humans(output), root.destroy()]
+        text="Play between Two Humans",
+        command=lambda: [play_two_humans(output), root.destroy()],
     )
 
     # watch button
     watch_a_game_button: ctk.CTkButton = ctk.CTkButton(
         root,
-        text='Watch a game',
-        command=lambda: [watch_a_game(output), root.destroy()]
+        text="Watch a game",
+        command=lambda: [watch_a_game(output), root.destroy()],
     )
 
     # visualize button
     visualize_a_tree_button: ctk.CTkButton = ctk.CTkButton(
         root,
-        text='Visualize a tree',
-        command=lambda: [visualize_a_tree(output), root.destroy()]
+        text="Visualize a tree",
+        command=lambda: [visualize_a_tree(output), root.destroy()],
     )
 
     play_against_chipiron_button.grid(row=2, column=6, padx=10, pady=10)
@@ -172,75 +170,85 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
     gui_args: dict[str, Any]
     script_type: scripts.ScriptType
     # TODO should this be dict or args or directly the right dataclass bu then we might need to change abit the parser init logic
-    match output['type']:
-        case 'play_against_chipiron':
-            tree_move_limit = 4 * 10 ** output['strength']
+    match output["type"]:
+        case "play_against_chipiron":
+            tree_move_limit = 4 * 10 ** output["strength"]
             gui_args = {
-                'config_file_name': 'chipiron/scripts/one_match/inputs/human_play_against_computer/exp_options.yaml',
-                'base_script_args': {
-                    'profiling': False
+                "config_file_name": "chipiron/scripts/one_match/inputs/human_play_against_computer/exp_options.yaml",
+                "base_script_args": {"profiling": False},
+                "match_args": {
+                    "file_name_match_setting": "setting_duda.yaml",
+                    "seed": 0,
                 },
-                'match_args': {
-                    'file_name_match_setting': 'setting_duda.yaml',
-                    'seed': 0
-                },
-                'gui': True,
+                "gui": True,
             }
-            if output['color_human'] == 'White':
-                gui_args['match_args']['file_name_player_one'] = PlayerConfigFile.GuiHuman
-                gui_args['match_args']['file_name_player_two'] = f'{output["chipi_algo"]}'
-                gui_args['match_args']['player_two'] = {
-                    'main_move_selector': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}
-            else:
-                gui_args['match_args']['file_name_player_two'] = PlayerConfigFile.GuiHuman
-                gui_args['match_args']['file_name_player_one'] = f'{output["chipi_algo"]}'
-                gui_args['match_args']['player_one'] = {
-                    'main_move_selector': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}
-            script_type = scripts.ScriptType.OneMatch
-        case 'play_two_humans':
-            gui_args = {
-                'config_file_name': 'chipiron/scripts/one_match/inputs/human_play_against_human/exp_options.yaml',
-                'base_script_args': {
-                    'profiling': False
-                },
-                'match_args': {
-                    'file_name_match_setting': 'setting_duda.yaml',
-                    'seed': 0
-                },
-                'gui': True,
-            }
-            gui_args['match_args']['file_name_player_one'] = PlayerConfigFile.GuiHuman
-            gui_args['match_args']['file_name_player_two'] = PlayerConfigFile.GuiHuman
-            script_type = scripts.ScriptType.OneMatch
-        case 'watch_a_game':
-            gui_args = {
-                'config_file_name': 'chipiron/scripts/one_match/inputs/watch_a_game/exp_options.yaml',
-                'match_args': {
-                    'seed': 0,
-                    'gui': True,
-                    'file_name_player_one': PlayerConfigFile.RecurZipfBase3,
-                    'file_name_player_two': PlayerConfigFile.RecurZipfBase3,
-                    'file_name_match_setting': 'setting_duda.yaml'
+            if output["color_human"] == "White":
+                gui_args["match_args"][
+                    "file_name_player_one"
+                ] = PlayerConfigFile.GuiHuman
+                gui_args["match_args"][
+                    "file_name_player_two"
+                ] = f'{output["chipi_algo"]}'
+                gui_args["match_args"]["player_two"] = {
+                    "main_move_selector": {
+                        "stopping_criterion": {"tree_move_limit": tree_move_limit}
+                    }
                 }
+            else:
+                gui_args["match_args"][
+                    "file_name_player_two"
+                ] = PlayerConfigFile.GuiHuman
+                gui_args["match_args"][
+                    "file_name_player_one"
+                ] = f'{output["chipi_algo"]}'
+                gui_args["match_args"]["player_one"] = {
+                    "main_move_selector": {
+                        "stopping_criterion": {"tree_move_limit": tree_move_limit}
+                    }
+                }
+            script_type = scripts.ScriptType.OneMatch
+        case "play_two_humans":
+            gui_args = {
+                "config_file_name": "chipiron/scripts/one_match/inputs/human_play_against_human/exp_options.yaml",
+                "base_script_args": {"profiling": False},
+                "match_args": {
+                    "file_name_match_setting": "setting_duda.yaml",
+                    "seed": 0,
+                },
+                "gui": True,
+            }
+            gui_args["match_args"]["file_name_player_one"] = PlayerConfigFile.GuiHuman
+            gui_args["match_args"]["file_name_player_two"] = PlayerConfigFile.GuiHuman
+            script_type = scripts.ScriptType.OneMatch
+        case "watch_a_game":
+            gui_args = {
+                "config_file_name": "chipiron/scripts/one_match/inputs/watch_a_game/exp_options.yaml",
+                "match_args": {
+                    "seed": 0,
+                    "gui": True,
+                    "file_name_player_one": PlayerConfigFile.RecurZipfBase3,
+                    "file_name_player_two": PlayerConfigFile.RecurZipfBase3,
+                    "file_name_match_setting": "setting_duda.yaml",
+                },
             }
             script_type = scripts.ScriptType.OneMatch
-        case 'tree_visualization':
+        case "tree_visualization":
             gui_args = {
-                'config_file_name': 'scripts/tree_visualization/inputs/base/exp_options.yaml',
+                "config_file_name": "scripts/tree_visualization/inputs/base/exp_options.yaml",
             }
             script_type = scripts.ScriptType.TreeVisualization
         case other:
-            raise Exception(f'Not a good name: {other}')
+            raise Exception(f"Not a good name: {other}")
 
-    print(f'Gui choices: the script name is {script_type} and the args are {gui_args}')
+    print(f"Gui choices: the script name is {script_type} and the args are {gui_args}")
     return script_type, gui_args
 
 
 def play_against_chipiron(
-        output: dict[str, Any],
-        strength: ctk.StringVar,
-        color: ctk.StringVar,
-        chipi_algo: ctk.StringVar
+    output: dict[str, Any],
+    strength: ctk.StringVar,
+    color: ctk.StringVar,
+    chipi_algo: ctk.StringVar,
 ) -> bool:
     """
     Callback function for the "Play" button.
@@ -255,10 +263,10 @@ def play_against_chipiron(
     Returns:
         True.
     """
-    output['type'] = 'play_against_chipiron'
-    output['strength'] = int(strength.get())
-    output['color_human'] = str(color.get())
-    output['chipi_algo'] = str(chipi_algo.get())
+    output["type"] = "play_against_chipiron"
+    output["strength"] = int(strength.get())
+    output["color_human"] = str(color.get())
+    output["chipi_algo"] = str(chipi_algo.get())
     return True
 
 
@@ -273,7 +281,7 @@ def watch_a_game(output: dict[str, Any]) -> bool:
     Returns:
         True.
     """
-    output['type'] = 'watch_a_game'
+    output["type"] = "watch_a_game"
     return True
 
 
@@ -288,7 +296,7 @@ def play_two_humans(output: dict[str, Any]) -> bool:
     Returns:
         True.
     """
-    output['type'] = 'play_two_humans'
+    output["type"] = "play_two_humans"
     return True
 
 
@@ -303,5 +311,5 @@ def visualize_a_tree(output: dict[str, Any]) -> bool:
     Returns:
         True.
     """
-    output['type'] = 'tree_visualization'
+    output["type"] = "tree_visualization"
     return True

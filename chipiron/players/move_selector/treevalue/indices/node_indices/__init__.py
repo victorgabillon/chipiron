@@ -18,5 +18,5 @@ __all__ = [
     "NodeExplorationData",
     "ExplorationIndexDataFactory",
     "IndexComputationType",
-    "create_exploration_index_data"
+    "create_exploration_index_data",
 ]

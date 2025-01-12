@@ -1,6 +1,7 @@
 """
 This module provides a factory function for creating the main move selector based on the given arguments.
 """
+
 import queue
 import random
 from typing import Any, TypeAlias
@@ -12,20 +13,19 @@ from . import human, move_selector, stockfish, treevalue
 from .random import Random, create_random
 
 AllMoveSelectorArgs: TypeAlias = (
-        treevalue.TreeAndValuePlayerArgs |
-        human.CommandLineHumanPlayerArgs |
-        human.GuiHumanPlayerArgs |
-        Random |
-        stockfish.StockfishPlayer
+    treevalue.TreeAndValuePlayerArgs
+    | human.CommandLineHumanPlayerArgs
+    | human.GuiHumanPlayerArgs
+    | Random
+    | stockfish.StockfishPlayer
 )
 
 
 def create_main_move_selector(
-        move_selector_instance_or_args: AllMoveSelectorArgs,
-        syzygy: SyzygyTable[Any] | None,
-        random_generator: random.Random,
-        queue_progress_player: queue.Queue[IsDataclass] | None
-
+    move_selector_instance_or_args: AllMoveSelectorArgs,
+    syzygy: SyzygyTable[Any] | None,
+    random_generator: random.Random,
+    queue_progress_player: queue.Queue[IsDataclass] | None,
 ) -> move_selector.MoveSelector:
     """
     Create the main move selector based on the given arguments.
@@ -43,25 +43,25 @@ def create_main_move_selector(
 
     """
     main_move_selector: move_selector.MoveSelector
-    print('create main move selector')
+    print("create main move selector")
 
     match move_selector_instance_or_args:
         case Random():
-            main_move_selector = create_random(
-                random_generator=random_generator
-            )
+            main_move_selector = create_random(random_generator=random_generator)
         case treevalue.TreeAndValuePlayerArgs():
             tree_args: treevalue.TreeAndValuePlayerArgs = move_selector_instance_or_args
             main_move_selector = treevalue.create_tree_and_value_builders(
                 args=tree_args,
                 syzygy=syzygy,
                 random_generator=random_generator,
-                queue_progress_player=queue_progress_player
+                queue_progress_player=queue_progress_player,
             )
         case stockfish.StockfishPlayer():
             main_move_selector = move_selector_instance_or_args
         case human.CommandLineHumanPlayerArgs():
             main_move_selector = human.CommandLineHumanMoveSelector()
         case other:
-            raise ValueError(f'player creator: can not find {other} of type {type(other)}')
+            raise ValueError(
+                f"player creator: can not find {other} of type {type(other)}"
+            )
     return main_move_selector

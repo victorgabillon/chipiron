@@ -1,6 +1,7 @@
 """
 Module for creating board evaluators.
 """
+
 import sys
 from dataclasses import dataclass
 from typing import Any
@@ -42,6 +43,7 @@ class TableBaseArgs:
     Methods:
         None
     """
+
     ...
 
 
@@ -56,10 +58,16 @@ class BasicEvaluationArgs:
     Methods:
         None
     """
+
     ...
 
 
-BoardEvalArgs = NeuralNetBoardEvalArgs | StockfishBoardEvalArgs | TableBaseArgs | BasicEvaluationArgs
+BoardEvalArgs = (
+    NeuralNetBoardEvalArgs
+    | StockfishBoardEvalArgs
+    | TableBaseArgs
+    | BasicEvaluationArgs
+)
 
 
 @dataclass
@@ -71,11 +79,12 @@ class BoardEvalArgsWrapper:
     Attributes:
         board_evaluator (BoardEvalArgs): The BoardEvalArgs object to be wrapped.
     """
+
     board_evaluator: BoardEvalArgs
 
 
 def create_board_evaluator(
-        args_board_evaluator: BoardEvalArgs,
+    args_board_evaluator: BoardEvalArgs,
 ) -> BoardEvaluator:
     """Create a board evaluator based on the given arguments.
 
@@ -98,13 +107,13 @@ def create_board_evaluator(
         case NeuralNetBoardEvalArgs():
             board_evaluator = create_nn_board_eval(
                 arg=args_board_evaluator,
-                representation_type=RepresentationType.NOBUG364
+                representation_type=RepresentationType.NOBUG364,
             )
 
         #  case TableBaseArgs():
         #      board_evaluator = None
         case other:
-            sys.exit(f'Board Eval: cannot find {other} in file {__name__}')
+            sys.exit(f"Board Eval: cannot find {other} in file {__name__}")
 
     return board_evaluator
 
@@ -123,17 +132,17 @@ def create_game_board_evaluator_not_observable() -> GameBoardEvaluator:
     board_evaluator_stock: BoardEvaluator = create_board_evaluator(
         args_board_evaluator=StockfishBoardEvalArgs()
     )
-    chi_board_eval_yaml_path: str = 'data/players/board_evaluator_config/base_chipiron_board_eval.yaml'
-    with open(chi_board_eval_yaml_path, 'r') as chi_board_eval_yaml_file:
+    chi_board_eval_yaml_path: str = (
+        "data/players/board_evaluator_config/base_chipiron_board_eval.yaml"
+    )
+    with open(chi_board_eval_yaml_path, "r") as chi_board_eval_yaml_file:
         chi_board_eval_dict: dict[Any, Any] = yaml.load(
-            stream=chi_board_eval_yaml_file,
-            Loader=yaml.FullLoader
+            stream=chi_board_eval_yaml_file, Loader=yaml.FullLoader
         )
 
         # atm using a wrapper because dacite does not accept unions as data_class argument
         chi_board_eval_args: BoardEvalArgsWrapper = dacite.from_dict(
-            data_class=BoardEvalArgsWrapper,
-            data=chi_board_eval_dict
+            data_class=BoardEvalArgsWrapper, data=chi_board_eval_dict
         )
         board_evaluator_chi: BoardEvaluator = create_board_evaluator(
             args_board_evaluator=chi_board_eval_args.board_evaluator
@@ -141,14 +150,12 @@ def create_game_board_evaluator_not_observable() -> GameBoardEvaluator:
 
     game_board_evaluator: GameBoardEvaluator = GameBoardEvaluator(
         board_evaluator_stock=board_evaluator_stock,
-        board_evaluator_chi=board_evaluator_chi
+        board_evaluator_chi=board_evaluator_chi,
     )
     return game_board_evaluator
 
 
-def create_game_board_evaluator(
-        gui: bool
-) -> IGameBoardEvaluator:
+def create_game_board_evaluator(gui: bool) -> IGameBoardEvaluator:
     """Create a game board evaluator based on the given GUI flag.
 
     Args:
@@ -159,7 +166,9 @@ def create_game_board_evaluator(
 
     """
     game_board_evaluator_res: IGameBoardEvaluator
-    game_board_evaluator: GameBoardEvaluator = create_game_board_evaluator_not_observable()
+    game_board_evaluator: GameBoardEvaluator = (
+        create_game_board_evaluator_not_observable()
+    )
     if gui:
         game_board_evaluator_res = ObservableBoardEvaluator(
             game_board_evaluator=game_board_evaluator

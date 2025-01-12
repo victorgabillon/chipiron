@@ -53,11 +53,7 @@ class StockfishPlayer:
     time_limit: float = 0.1
     engine: Any = None
 
-    def select_move(
-            self,
-            board: boards.IBoard,
-            move_seed: int
-    ) -> MoveRecommendation:
+    def select_move(self, board: boards.IBoard, move_seed: int) -> MoveRecommendation:
         """
         Selects a move based on the given board state and move seed.
 
@@ -75,17 +71,20 @@ class StockfishPlayer:
             #    r"stockfish/stockfish_14.1_linux_x64/stockfish_14.1_linux_x64")
             self.engine = chess.engine.SimpleEngine.popen_uci(
                 # TODO: should we remove the hardcoding
-                r"stockfish/stockfish/stockfish-ubuntu-x86-64-avx2")
+                r"stockfish/stockfish/stockfish-ubuntu-x86-64-avx2"
+            )
 
         # transform the board
         board_chi: BoardChi = create_board_chi(
             fen_with_history=FenPlusHistory(
                 current_fen=board.fen,
-                historical_moves=board.move_history_stack
+                historical_moves=board.move_history_stack,
                 # note that we dont give here historical_boards, hope this does not create but related to 3 fold repetition computation
             )
         )
-        result = self.engine.play(board_chi.chess_board, chess.engine.Limit(self.time_limit))
+        result = self.engine.play(
+            board_chi.chess_board, chess.engine.Limit(self.time_limit)
+        )
         self.engine.quit()
         self.engine = None
         move_key: moveKey = board.get_move_key_from_uci(move_uci=result.move.uci())

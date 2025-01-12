@@ -51,9 +51,7 @@ class SearchFactoryP(Protocol):
     These three classes needs to operate on the same data, so they need to be created in a coherent way
     """
 
-    def create_node_selector_factory(
-            self
-    ) -> NodeSelectorFactory:
+    def create_node_selector_factory(self) -> NodeSelectorFactory:
         """
         Creates a NodeSelectorFactory object.
 
@@ -72,8 +70,7 @@ class SearchFactoryP(Protocol):
         ...
 
     def node_index_create(
-            self,
-            tree_node: nodes.TreeNode[Any]
+        self, tree_node: nodes.TreeNode[Any]
     ) -> node_indices.NodeExplorationData | None:
         """
         Creates a node index for the given tree node.
@@ -120,9 +117,7 @@ class SearchFactory:
         else:
             self.depth_index: bool = False
 
-    def create_node_selector_factory(
-            self
-    ) -> NodeSelectorFactory:
+    def create_node_selector_factory(self) -> NodeSelectorFactory:
         """
         Creates the node selector factory .
 
@@ -134,14 +129,17 @@ class SearchFactory:
         """
         # creates the opening instructor
 
-        assert (self.random_generator is not None)
-        opening_instructor: OpeningInstructor | None = OpeningInstructor(
-            opening_type=self.opening_type,
-            random_generator=self.random_generator
-        ) if self.opening_type is not None else None
+        assert self.random_generator is not None
+        opening_instructor: OpeningInstructor | None = (
+            OpeningInstructor(
+                opening_type=self.opening_type, random_generator=self.random_generator
+            )
+            if self.opening_type is not None
+            else None
+        )
 
-        assert (self.node_selector_args is not None)
-        assert (opening_instructor is not None)
+        assert self.node_selector_args is not None
+        assert opening_instructor is not None
 
         node_selector_create: NodeSelectorFactory = partial(
             node_selectors.create,
@@ -166,8 +164,7 @@ class SearchFactory:
         return index_updater
 
     def node_index_create(
-            self,
-            tree_node: nodes.TreeNode[Any]
+        self, tree_node: nodes.TreeNode[Any]
     ) -> node_indices.NodeExplorationData | None:
         """
         Creates node indices for a given tree node.
@@ -178,10 +175,12 @@ class SearchFactory:
         Returns:
             An instance of the NodeExplorationData class if depth indexing is enabled, otherwise None.
         """
-        exploration_index_data: node_indices.NodeExplorationData | None = create_exploration_index_data(
-            tree_node=tree_node,
-            index_computation=self.index_computation,
-            depth_index=self.depth_index
+        exploration_index_data: node_indices.NodeExplorationData | None = (
+            create_exploration_index_data(
+                tree_node=tree_node,
+                index_computation=self.index_computation,
+                depth_index=self.depth_index,
+            )
         )
 
         return exploration_index_data

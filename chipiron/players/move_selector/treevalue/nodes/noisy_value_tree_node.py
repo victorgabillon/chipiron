@@ -18,12 +18,12 @@ class NoisyValueTreeNode(TreeNode[Any]):
     """
 
     def __init__(
-            self,
-            board: BoardChi,
-            half_move: int,
-            id_number: int,
-            parent_node: ITreeNode[Any],
-            last_move: chess.Move
+        self,
+        board: BoardChi,
+        half_move: int,
+        id_number: int,
+        parent_node: ITreeNode[Any],
+        last_move: chess.Move,
     ) -> None:
         """
         Initializes a NoisyValueTreeNode object.
@@ -56,4 +56,10 @@ class NoisyValueTreeNode(TreeNode[Any]):
 
         """
         super_description: str = super().dot_description()
-        return super_description + '\n num_sampl: ' + str(self.number_of_samples) + '\n variance: ' + str(self.variance)
+        return (
+            super_description
+            + "\n num_sampl: "
+            + str(self.number_of_samples)
+            + "\n variance: "
+            + str(self.variance)
+        )

@@ -30,9 +30,10 @@ class OpeningInstruction:
         """
         # print('ttt',self.node_to_open.board.chess_,self.node_to_open.board.legal_moves_)
         print(
-            f'OpeningInstruction: node_to_open {self.node_to_open.id} at hm {self.node_to_open.half_move} {self.node_to_open.board.fen}| '
-            f'a path from root to node_to_open is {a_move_key_sequence_from_root(self.node_to_open)} {a_move_uci_sequence_from_root(self.node_to_open)}| '
-            f'self.move_to_play {self.move_to_play} {self.node_to_open.board.get_uci_from_move_key(self.move_to_play)}')
+            f"OpeningInstruction: node_to_open {self.node_to_open.id} at hm {self.node_to_open.half_move} {self.node_to_open.board.fen}| "
+            f"a path from root to node_to_open is {a_move_key_sequence_from_root(self.node_to_open)} {a_move_uci_sequence_from_root(self.node_to_open)}| "
+            f"self.move_to_play {self.move_to_play} {self.node_to_open.board.get_uci_from_move_key(self.move_to_play)}"
+        )
 
 
 class OpeningInstructions:
@@ -44,10 +45,7 @@ class OpeningInstructions:
 
     batch: dict[Any, OpeningInstruction]
 
-    def __init__(
-            self,
-            dictionary: dict[Any, OpeningInstruction] | None = None
-    ) -> None:
+    def __init__(self, dictionary: dict[Any, OpeningInstruction] | None = None) -> None:
         """
         Initializes the OpeningInstructions object.
 
@@ -62,11 +60,7 @@ class OpeningInstructions:
             for key in dictionary:
                 self[key] = dictionary[key]
 
-    def __setitem__(
-            self,
-            key: Any,
-            value: OpeningInstruction
-    ) -> None:
+    def __setitem__(self, key: Any, value: OpeningInstruction) -> None:
         """
         Sets an opening instruction in the collection.
 
@@ -75,13 +69,10 @@ class OpeningInstructions:
             value: The opening instruction.
         """
         # key is supposed to be a tuple with (node_to_open,  move_to_play)
-        assert (len(key) == 2)
+        assert len(key) == 2
         self.batch[key] = value
 
-    def __getitem__(
-            self,
-            key: Any
-    ) -> OpeningInstruction:
+    def __getitem__(self, key: Any) -> OpeningInstruction:
         """
         Retrieves an opening instruction from the collection.
 
@@ -112,25 +103,21 @@ class OpeningInstructions:
         """
         return bool(self.batch)
 
-    def merge(
-            self,
-            another_opening_instructions_batch: Self
-    ) -> None:
+    def merge(self, another_opening_instructions_batch: Self) -> None:
         """
         Merges another batch of opening instructions into the current collection.
 
         Args:
             another_opening_instructions_batch: Another OpeningInstructions object.
         """
-        for opening_instruction_key, opening_instruction in another_opening_instructions_batch.items():
+        for (
+            opening_instruction_key,
+            opening_instruction,
+        ) in another_opening_instructions_batch.items():
             if opening_instruction_key not in self.batch:
                 self.batch[opening_instruction_key] = opening_instruction
 
-    def pop_items(
-            self,
-            how_many: int,
-            popped: Self
-    ) -> None:
+    def pop_items(self, how_many: int, popped: Self) -> None:
         """
         Pops a specified number of opening instructions from the collection.
 
@@ -165,7 +152,7 @@ class OpeningInstructions:
         """
         Prints information about the opening instructions in the collection.
         """
-        print('OpeningInstructionsBatch: batch contains', len(self.batch), 'elements:')
+        print("OpeningInstructionsBatch: batch contains", len(self.batch), "elements:")
         for key, opening_instructions in self.batch.items():
             opening_instructions.print_info()
 
@@ -180,8 +167,7 @@ class OpeningInstructions:
 
 
 def create_instructions_to_open_all_moves(
-        moves_to_play: list[moveKey],
-        node_to_open: nodes.ITreeNode[Any]
+    moves_to_play: list[moveKey], node_to_open: nodes.ITreeNode[Any]
 ) -> OpeningInstructions:
     """
     Creates opening instructions for all possible moves to play from a given node.
@@ -199,9 +185,8 @@ def create_instructions_to_open_all_moves(
         # at the moment it looks redundant keys are almost the same as values but its clean
         # the keys are here for fast and redundant proof insertion
         # and the values are here for clean data processing
-        opening_instructions_batch[(node_to_open.id, move_to_play)] = OpeningInstruction(
-            node_to_open=node_to_open,
-            move_to_play=move_to_play
+        opening_instructions_batch[(node_to_open.id, move_to_play)] = (
+            OpeningInstruction(node_to_open=node_to_open, move_to_play=move_to_play)
         )
     #  node_to_open.non_opened_legal_moves.add(move_to_play)
     return opening_instructions_batch
@@ -212,7 +197,7 @@ class OpeningType(Enum):
     Represents the type of opening to use.
     """
 
-    AllChildren = 'all_children'
+    AllChildren = "all_children"
 
 
 class OpeningInstructor:
@@ -221,9 +206,7 @@ class OpeningInstructor:
     """
 
     def __init__(
-            self,
-            opening_type: OpeningType,
-            random_generator: random.Random
+        self, opening_type: OpeningType, random_generator: random.Random
     ) -> None:
         """
         Initializes the OpeningInstructor object.
@@ -235,10 +218,7 @@ class OpeningInstructor:
         self.opening_type = opening_type
         self.random_generator = random_generator
 
-    def all_moves_to_open(
-            self,
-            node_to_open: nodes.ITreeNode[Any]
-    ) -> list[moveKey]:
+    def all_moves_to_open(self, node_to_open: nodes.ITreeNode[Any]) -> list[moveKey]:
         """
         Returns a list of all possible moves to open from a given node.
 
@@ -258,5 +238,5 @@ class OpeningInstructor:
             # self.random_generator.shuffle(moves_to_play)
 
         else:
-            raise Exception('Hello-la')
+            raise Exception("Hello-la")
         return moves_to_play

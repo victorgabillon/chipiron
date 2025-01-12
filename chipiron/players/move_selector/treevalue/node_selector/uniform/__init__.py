@@ -13,6 +13,4 @@ Example usage:
 
 from .uniform import Uniform
 
-__all__ = [
-    "Uniform"
-]
+__all__ = ["Uniform"]

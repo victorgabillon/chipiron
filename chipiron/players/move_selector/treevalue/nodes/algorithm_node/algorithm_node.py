@@ -31,15 +31,17 @@ class AlgorithmNode:
 
     tree_node: TreeNode[Any]  # the reference to the tree node that is wrapped
     minmax_evaluation: NodeMinmaxEvaluation  # the object computing the value
-    exploration_index_data: NodeExplorationData | None  # the object storing the information to help the algorithm decide the next nodes to explore
+    exploration_index_data: (
+        NodeExplorationData | None
+    )  # the object storing the information to help the algorithm decide the next nodes to explore
     board_representation: BoardRepresentation | None  # the board representation
 
     def __init__(
-            self,
-            tree_node: TreeNode[Any],
-            minmax_evaluation: NodeMinmaxEvaluation,
-            exploration_index_data: NodeExplorationData | None,
-            board_representation: BoardRepresentation | None
+        self,
+        tree_node: TreeNode[Any],
+        minmax_evaluation: NodeMinmaxEvaluation,
+        exploration_index_data: NodeExplorationData | None,
+        board_representation: BoardRepresentation | None,
     ) -> None:
         """
         Initializes an AlgorithmNode object.
@@ -133,11 +135,7 @@ class AlgorithmNode:
         """
         return self.minmax_evaluation.is_over()
 
-    def add_parent(
-            self,
-            move: moveKey,
-            new_parent_node: ITreeNode[Any]
-    ) -> None:
+    def add_parent(self, move: moveKey, new_parent_node: ITreeNode[Any]) -> None:
         """
         Adds a parent node.
 
@@ -145,10 +143,7 @@ class AlgorithmNode:
             move (IMove): the move that led to the node from the new_parent_node
             new_parent_node (ITreeNode): The new parent node to add.
         """
-        self.tree_node.add_parent(
-            move=move,
-            new_parent_node=new_parent_node
-        )
+        self.tree_node.add_parent(move=move, new_parent_node=new_parent_node)
 
     @property
     def legal_moves(self) -> LegalMoveKeyGeneratorP:
@@ -197,10 +192,13 @@ class AlgorithmNode:
         Returns:
             str: The dot description of the node.
         """
-        exploration_description: str = self.exploration_index_data.dot_description() \
-            if self.exploration_index_data is not None else ''
+        exploration_description: str = (
+            self.exploration_index_data.dot_description()
+            if self.exploration_index_data is not None
+            else ""
+        )
 
-        return f'{self.tree_node.dot_description()}\n{self.minmax_evaluation.dot_description()}\n{exploration_description}'
+        return f"{self.tree_node.dot_description()}\n{self.minmax_evaluation.dot_description()}\n{exploration_description}"
 
     def __str__(self) -> str:
-        return f'{self.__class__} id :{self.tree_node.id}'
+        return f"{self.__class__} id :{self.tree_node.id}"
