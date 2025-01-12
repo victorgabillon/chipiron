@@ -1,6 +1,7 @@
 """
 Module containing the class GamePlaying
 """
+
 from dataclasses import dataclass
 from enum import Enum
 
@@ -9,6 +10,7 @@ class PlayingStatus(Enum):
     """
     Class containing the possible playing status of a game.
     """
+
     PLAY = 1
     PAUSE = 0
 
@@ -33,10 +35,7 @@ class GamePlayingStatus:
         return self._status
 
     @status.setter
-    def status(
-            self,
-            new_status: PlayingStatus
-    ) -> None:
+    def status(self, new_status: PlayingStatus) -> None:
         """
         Set the playing status of the game.
 

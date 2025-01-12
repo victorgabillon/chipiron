@@ -1,6 +1,7 @@
 """
 Module in charge of playing one match
 """
+
 import os
 import queue
 
@@ -34,13 +35,13 @@ class MatchManager:
     """
 
     def __init__(
-            self,
-            player_one_id: str,
-            player_two_id: str,
-            game_manager_factory: GameManagerFactory,
-            game_args_factory: GameArgsFactory,
-            match_results_factory: MatchResultsFactory,
-            output_folder_path: path | None = None
+        self,
+        player_one_id: str,
+        player_two_id: str,
+        game_manager_factory: GameManagerFactory,
+        game_args_factory: GameArgsFactory,
+        match_results_factory: MatchResultsFactory,
+        output_folder_path: path | None = None,
     ) -> None:
         """Initialize a MatchManager object.
 
@@ -71,12 +72,10 @@ class MatchManager:
         Returns:
             None
         """
-        print('player one is ', self.player_one_id)
-        print('player two is ', self.player_two_id)
+        print("player one is ", self.player_one_id)
+        print("player two is ", self.player_two_id)
 
-    def play_one_match(
-            self
-    ) -> MatchReport:
+    def play_one_match(self) -> MatchReport:
         """Plays one match and returns the match report.
 
         This method plays a single match, which consists of multiple games. It generates game arguments,
@@ -85,7 +84,7 @@ class MatchManager:
         Returns:
             MatchReport: The report of the match, including the move history and match results.
         """
-        print('Playing the match')
+        print("Playing the match")
 
         # creating object for reporting the result of the match and the move history
         match_results: IMatchResults = self.match_results_factory.create()
@@ -97,7 +96,9 @@ class MatchManager:
             args_game: GameArgs
             player_color_to_factory_args: dict[chess.Color, PlayerFactoryArgs]
             game_seed: seed | None
-            player_color_to_factory_args, args_game, game_seed = self.game_args_factory.generate_game_args(game_number)
+            player_color_to_factory_args, args_game, game_seed = (
+                self.game_args_factory.generate_game_args(game_number)
+            )
 
             assert game_seed is not None
             # Play one game
@@ -105,13 +106,15 @@ class MatchManager:
                 player_color_to_factory_args=player_color_to_factory_args,
                 args_game=args_game,
                 game_number=game_number,
-                game_seed=game_seed
+                game_seed=game_seed,
             )
 
             # Update the reporting of the ongoing match with the report of the finished game
             match_results.add_result_one_game(
-                white_player_name_id=player_color_to_factory_args[chess.WHITE].player_args.name,
-                game_result=game_report.final_game_result
+                white_player_name_id=player_color_to_factory_args[
+                    chess.WHITE
+                ].player_args.name,
+                game_result=game_report.final_game_result,
             )
             match_move_history[game_number] = game_report.move_history
 
@@ -119,6 +122,7 @@ class MatchManager:
             # (so that the human as the time to view the final position before the automatic start of a new game)
             if player_color_to_factory_args[chess.WHITE].player_args.is_human():
                 import time
+
                 time.sleep(30)
 
             game_number += 1
@@ -135,8 +139,7 @@ class MatchManager:
             match_results = match_results.match_results
         assert isinstance(match_results, MatchResults)
         match_report: MatchReport = MatchReport(
-            match_move_history=match_move_history,
-            match_results=match_results
+            match_move_history=match_move_history, match_results=match_results
         )
 
         self.save_match_report_to_file(match_report)
@@ -144,11 +147,11 @@ class MatchManager:
         return match_report
 
     def play_one_game(
-            self,
-            player_color_to_factory_args: dict[chess.Color, PlayerFactoryArgs],
-            args_game: GameArgs,
-            game_number: int,
-            game_seed: seed
+        self,
+        player_color_to_factory_args: dict[chess.Color, PlayerFactoryArgs],
+        args_game: GameArgs,
+        game_number: int,
+        game_seed: seed,
     ) -> GameReport:
         """Plays one game and returns the game report.
 
@@ -164,31 +167,25 @@ class MatchManager:
         game_manager: GameManager = self.game_manager_factory.create(
             args_game_manager=args_game,
             player_color_to_factory_args=player_color_to_factory_args,
-            game_seed=game_seed
+            game_seed=game_seed,
         )
         game_report: GameReport = game_manager.play_one_game()
         game_manager.print_to_file(idx=game_number, game_report=game_report)
 
         return game_report
 
-    def print_stats_to_file(
-            self,
-            match_results: IMatchResults
-    ) -> None:
+    def print_stats_to_file(self, match_results: IMatchResults) -> None:
         """Prints the match statistics to a file.
 
         Args:
             match_results (IMatchResults): The match results object containing the statistics.
         """
         if self.output_folder_path is not None:
-            path_file: path = os.path.join(self.output_folder_path, 'gameStats.txt')
-            with open(path_file, 'a') as the_file:
+            path_file: path = os.path.join(self.output_folder_path, "gameStats.txt")
+            with open(path_file, "a") as the_file:
                 the_file.write(str(match_results))
 
-    def save_match_report_to_file(
-            self,
-            match_report: MatchReport
-    ) -> None:
+    def save_match_report_to_file(self, match_report: MatchReport) -> None:
         """Save the match report to a file.
 
         Args:
@@ -201,10 +198,7 @@ class MatchManager:
             # print('tt', type(match_report))
             # pickle.dump(match_report, the_file)
 
-    def subscribe(
-            self,
-            subscriber: queue.Queue[IsDataclass]
-    ) -> None:
+    def subscribe(self, subscriber: queue.Queue[IsDataclass]) -> None:
         """Subscribe a subscriber to receive updates from the match manager.
 
         Args:

@@ -15,7 +15,7 @@ from chipiron.players.move_selector.treevalue.indices.node_indices.index_types i
 
 
 def create_exploration_index_manager(
-        index_computation: IndexComputationType | None = None
+    index_computation: IndexComputationType | None = None,
 ) -> NodeExplorationIndexManager:
     """
     Creates a node exploration index manager based on the given index computation type.
@@ -43,6 +43,6 @@ def create_exploration_index_manager(
             case IndexComputationType.MinLocalChange:
                 node_exploration_manager = UpdateIndexLocalMinChange()
             case other:
-                raise ValueError(f'player creator: can not find {other} in {__name__}')
+                raise ValueError(f"player creator: can not find {other} in {__name__}")
 
     return node_exploration_manager

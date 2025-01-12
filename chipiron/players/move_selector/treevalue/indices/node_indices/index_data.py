@@ -25,7 +25,8 @@ class NodeExplorationData:
     Methods:
         dot_description(): Returns a string representation of the exploration data for dot visualization.
     """
-    tree_node: 'TreeNode[ITreeNode[Any]]'
+
+    tree_node: "TreeNode[ITreeNode[Any]]"
     index: float | None = None
 
     def dot_description(self) -> str:
@@ -35,7 +36,7 @@ class NodeExplorationData:
         Returns:
             str: The dot description of the index.
         """
-        return f'index:{self.index}'
+        return f"index:{self.index}"
 
 
 @dataclass
@@ -50,6 +51,7 @@ class RecurZipfQuoolExplorationData(NodeExplorationData):
     Methods:
         dot_description(): Returns a string representation of the exploration data for dot visualization.
     """
+
     # the 'proba' associated by recursively multiplying 1/rank of the node with the max zipf_factor of the parents
     zipf_factored_proba: float | None = None
 
@@ -60,7 +62,7 @@ class RecurZipfQuoolExplorationData(NodeExplorationData):
         Returns:
             str: A string representation of the index and zipf_factored_proba values.
         """
-        return f'index:{self.index} zipf_factored_proba:{self.zipf_factored_proba}'
+        return f"index:{self.index} zipf_factored_proba:{self.zipf_factored_proba}"
 
 
 @dataclass
@@ -75,11 +77,12 @@ class MinMaxPathValue(NodeExplorationData):
     Methods:
         dot_description(): Returns a string representation of the exploration data for dot visualization.
     """
+
     min_path_value: float | None = None
     max_path_value: float | None = None
 
     def dot_description(self) -> str:
-        return f'min_path_value: {self.min_path_value}, max_path_value: {self.max_path_value}'
+        return f"min_path_value: {self.min_path_value}, max_path_value: {self.max_path_value}"
 
 
 @dataclass
@@ -93,6 +96,7 @@ class IntervalExplo(NodeExplorationData):
     Methods:
         dot_description(): Returns a string representation of the exploration data for dot visualization.
     """
+
     interval: Interval | None = field(default_factory=Interval)
 
     def dot_description(self) -> str:
@@ -106,9 +110,9 @@ class IntervalExplo(NodeExplorationData):
             str: A string representation of the interval values.
         """
         if self.interval is None:
-            return 'None'
+            return "None"
         else:
-            return f'min_interval_value: {self.interval.min_value}, max_interval_value: {self.interval.max_value}'
+            return f"min_interval_value: {self.interval.min_value}, max_interval_value: {self.interval.max_value}"
 
 
 @dataclass
@@ -116,12 +120,10 @@ class MaxDepthDescendants(NodeExplorationData):
     """
     Represents the exploration data for a tree node with maximum depth of descendants.
     """
+
     max_depth_descendants: int = 0
 
-    def update_from_child(
-            self,
-            child_max_depth_descendants: int
-    ) -> bool:
+    def update_from_child(self, child_max_depth_descendants: int) -> bool:
         """
         Updates the max_depth_descendants value based on the child's max_depth_descendants.
 
@@ -133,8 +135,7 @@ class MaxDepthDescendants(NodeExplorationData):
         """
         previous_index = self.max_depth_descendants
         new_index: int = max(
-            self.max_depth_descendants,
-            child_max_depth_descendants + 1
+            self.max_depth_descendants, child_max_depth_descendants + 1
         )
         self.max_depth_descendants = new_index
         has_index_changed: bool = new_index != previous_index
@@ -148,4 +149,4 @@ class MaxDepthDescendants(NodeExplorationData):
         Returns:
             str: The dot description for the node indices.
         """
-        return f'max_depth_descendants: {self.max_depth_descendants}'
+        return f"max_depth_descendants: {self.max_depth_descendants}"

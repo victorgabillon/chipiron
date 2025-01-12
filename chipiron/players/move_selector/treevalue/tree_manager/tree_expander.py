@@ -31,9 +31,11 @@ class TreeExpansion:
     move: moveKey | None
 
     def __repr__(self) -> str:
-        return (f'child_node{self.child_node.id} | '
-                f'parent_node{self.parent_node.id if self.parent_node is not None else None} | '
-                f'creation_child_node{self.creation_child_node}')
+        return (
+            f"child_node{self.child_node.id} | "
+            f"parent_node{self.parent_node.id if self.parent_node is not None else None} | "
+            f"creation_child_node{self.creation_child_node}"
+        )
 
 
 @dataclass(slots=True)
@@ -50,12 +52,11 @@ class TreeExpansions:
     expansions_without_node_creation: List[TreeExpansion] = field(default_factory=list)
 
     def __iter__(self) -> typing.Iterator[TreeExpansion]:
-        return iter(self.expansions_with_node_creation + self.expansions_without_node_creation)
+        return iter(
+            self.expansions_with_node_creation + self.expansions_without_node_creation
+        )
 
-    def add(
-            self,
-            tree_expansion: TreeExpansion
-    ) -> None:
+    def add(self, tree_expansion: TreeExpansion) -> None:
         """
         Adds a tree expansion to the collection.
 
@@ -67,10 +68,7 @@ class TreeExpansions:
         else:
             self.add_connection(tree_expansion=tree_expansion)
 
-    def add_creation(
-            self,
-            tree_expansion: TreeExpansion
-    ) -> None:
+    def add_creation(self, tree_expansion: TreeExpansion) -> None:
         """
         Adds a tree expansion with a created child node to the collection.
 
@@ -79,10 +77,7 @@ class TreeExpansions:
         """
         self.expansions_with_node_creation.append(tree_expansion)
 
-    def add_connection(
-            self,
-            tree_expansion: TreeExpansion
-    ) -> None:
+    def add_connection(self, tree_expansion: TreeExpansion) -> None:
         """
         Adds a tree expansion without a created child node to the collection.
 
@@ -92,5 +87,7 @@ class TreeExpansions:
         self.expansions_without_node_creation.append(tree_expansion)
 
     def __str__(self) -> str:
-        return (f'expansions_with_node_creation {self.expansions_with_node_creation} \n'
-                f'expansions_without_node_creation{self.expansions_without_node_creation}')
+        return (
+            f"expansions_with_node_creation {self.expansions_with_node_creation} \n"
+            f"expansions_without_node_creation{self.expansions_without_node_creation}"
+        )

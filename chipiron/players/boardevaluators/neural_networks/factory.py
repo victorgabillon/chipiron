@@ -48,10 +48,7 @@ from chipiron.utils.chi_nn import ChiNN
 from chipiron.utils.small_tools import mkdir
 
 
-def get_folder_path_from(
-        nn_type: str,
-        nn_param_folder_name: str
-) -> str:
+def get_folder_path_from(nn_type: str, nn_param_folder_name: str) -> str:
     """
     Get the folder path for the neural network parameters.
 
@@ -62,14 +59,14 @@ def get_folder_path_from(
     Returns:
         str: The folder path for the neural network parameters.
     """
-    print('nn_type', nn_type)
-    folder_path = os.path.join('data/players/board_evaluators/nn_pytorch/nn_' + nn_type, nn_param_folder_name)
+    print("nn_type", nn_type)
+    folder_path = os.path.join(
+        "data/players/board_evaluators/nn_pytorch/nn_" + nn_type, nn_param_folder_name
+    )
     return folder_path
 
 
-def get_nn_param_file_path_from(
-        folder_path: str
-) -> str:
+def get_nn_param_file_path_from(folder_path: str) -> str:
     """
     Get the file path for the neural network parameters.
 
@@ -79,14 +76,11 @@ def get_nn_param_file_path_from(
     Returns:
         str: The file path for the neural network parameters.
     """
-    nn_param_file_path: str = os.path.join(folder_path, 'param.pt')
+    nn_param_file_path: str = os.path.join(folder_path, "param.pt")
     return nn_param_file_path
 
 
-def create_nn(
-        args: NeuralNetBoardEvalArgs,
-        create_file: bool = False
-) -> ChiNN:
+def create_nn(args: NeuralNetBoardEvalArgs, create_file: bool = False) -> ChiNN:
     """
     Create a neural network.
 
@@ -98,32 +92,31 @@ def create_nn(
         ChiNN: The created neural network.
     """
     folder_path = get_folder_path_from(
-        nn_type=args.nn_type,
-        nn_param_folder_name=args.nn_param_folder_name
+        nn_type=args.nn_type, nn_param_folder_name=args.nn_param_folder_name
     )
     mkdir(folder_path)
 
     net: ChiNN
     match args.nn_type:
-        case 'pp1':
+        case "pp1":
             net = NetPP1()
-        case 'pp2':
+        case "pp2":
             net = NetPP2()
-        case 'pp2d2':
+        case "pp2d2":
             net = NetPP2D2()
-        case 'pp2d2_2':
+        case "pp2d2_2":
             net = NetPP2D2_2()
-        case 'pp2d2_2_leaky':
+        case "pp2d2_2_leaky":
             net = NetPP2D2_2_LEAKY()
-        case 'pp2d2_2_rrelu':
+        case "pp2d2_2_rrelu":
             net = NetPP2D2_2_RRELU()
-        case 'pp2d2_2_prelu':
+        case "pp2d2_2_prelu":
             net = NetPP2D2_2_PRELU()
         case other:
-            sys.exit(f'Create NN: can not find {other} in file {__name__}')
+            sys.exit(f"Create NN: can not find {other} in file {__name__}")
 
     nn_param_file_path = get_nn_param_file_path_from(folder_path)
-    print('nn_param_file_path', nn_param_file_path, create_file)
+    print("nn_param_file_path", nn_param_file_path, create_file)
     net.load_from_file_or_init_weights(nn_param_file_path, create_file)
 
     net.eval()
@@ -131,9 +124,9 @@ def create_nn(
 
 
 def create_nn_board_eval(
-        arg: NeuralNetBoardEvalArgs,
-        representation_type: RepresentationType,
-        create_file: bool = False,
+    arg: NeuralNetBoardEvalArgs,
+    representation_type: RepresentationType,
+    create_file: bool = False,
 ) -> NNBoardEvaluator:
     """
     Create a neural network board evaluator.
@@ -146,16 +139,20 @@ def create_nn_board_eval(
         NNBoardEvaluator: The created neural network board evaluator.
     """
     net = create_nn(arg, create_file=create_file)
-    output_and_value_converter: OutputValueConverter = OneDToValueWhite(point_of_view=net.evaluation_point_of_view)
-    representation_factory: RepresentationFactory[Any] | None = create_board_representation_factory(
-        board_representation_factory_type=representation_type
+    output_and_value_converter: OutputValueConverter = OneDToValueWhite(
+        point_of_view=net.evaluation_point_of_view
     )
-    assert (representation_factory is not None)
+    representation_factory: RepresentationFactory[Any] | None = (
+        create_board_representation_factory(
+            board_representation_factory_type=representation_type
+        )
+    )
+    assert representation_factory is not None
     board_to_input_converter: BoardToInput = RepresentationBTI(
         representation_factory=representation_factory
     )
     return NNBoardEvaluator(
         net=net,
         output_and_value_converter=output_and_value_converter,
-        board_to_input_converter=board_to_input_converter
+        board_to_input_converter=board_to_input_converter,
     )

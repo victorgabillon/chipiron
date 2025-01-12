@@ -25,5 +25,5 @@ __all__ = [
     "TreeManager",
     "AlgorithmNodeTreeManager",
     "TreeExpansion",
-    "TreeExpansions"
+    "TreeExpansions",
 ]

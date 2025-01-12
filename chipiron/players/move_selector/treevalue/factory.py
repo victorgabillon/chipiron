@@ -45,6 +45,7 @@ class TreeAndValuePlayerArgs:
     """
     Data class for the arguments of a TreeAndValueMoveSelector.
     """
+
     type: Literal[MoveSelectorTypes.TreeAndValue]  # for serialization
     node_selector: node_selector_m.AllNodeSelectorArgs
     opening_type: node_selector_m.OpeningType
@@ -55,11 +56,10 @@ class TreeAndValuePlayerArgs:
 
 
 def create_tree_and_value_builders(
-        args: TreeAndValuePlayerArgs,
-        syzygy: SyzygyTable[Any] | None,
-        random_generator: random.Random,
-        queue_progress_player: queue.Queue[IsDataclass] | None
-
+    args: TreeAndValuePlayerArgs,
+    syzygy: SyzygyTable[Any] | None,
+    random_generator: random.Random,
+    queue_progress_player: queue.Queue[IsDataclass] | None,
 ) -> TreeAndValueMoveSelector:
     """
     Create a TreeAndValueMoveSelector object with the given arguments.
@@ -74,12 +74,11 @@ def create_tree_and_value_builders(
 
     """
     node_evaluator: node_eval.NodeEvaluator = node_eval.create_node_evaluator(
-        arg_board_evaluator=args.board_evaluator,
-        syzygy=syzygy
+        arg_board_evaluator=args.board_evaluator, syzygy=syzygy
     )
 
     # node_factory_name: str = args['node_factory_name'] if 'node_factory_name' in args else 'Base'
-    node_factory_name: str = 'Base_with_algorithm_tree_node'
+    node_factory_name: str = "Base_with_algorithm_tree_node"
 
     tree_node_factory: node_factory.Base[Any] = node_factory.create_node_factory(
         node_factory_name=node_factory_name
@@ -94,19 +93,18 @@ def create_tree_and_value_builders(
         node_selector_args=args.node_selector,
         opening_type=args.opening_type,
         random_generator=random_generator,
-        index_computation=args.index_computation
+        index_computation=args.index_computation,
     )
 
     algorithm_node_factory: node_factory.AlgorithmNodeFactory
     algorithm_node_factory = node_factory.AlgorithmNodeFactory(
         tree_node_factory=tree_node_factory,
         board_representation_factory=board_representation_factory,
-        exploration_index_data_create=search_factory.node_index_create
+        exploration_index_data_create=search_factory.node_index_create,
     )
 
     tree_factory = MoveAndValueTreeFactory(
-        node_factory=algorithm_node_factory,
-        node_evaluator=node_evaluator
+        node_factory=algorithm_node_factory, node_evaluator=node_evaluator
     )
 
     tree_manager: tree_man.AlgorithmNodeTreeManager
@@ -114,7 +112,7 @@ def create_tree_and_value_builders(
         algorithm_node_factory=algorithm_node_factory,
         node_evaluator=node_evaluator,
         index_computation=args.index_computation,
-        index_updater=search_factory.create_node_index_updater()
+        index_updater=search_factory.create_node_index_updater(),
     )
 
     tree_move_selector: TreeAndValueMoveSelector = TreeAndValueMoveSelector(
@@ -124,7 +122,6 @@ def create_tree_and_value_builders(
         node_selector_create=search_factory.create_node_selector_factory(),
         stopping_criterion_args=args.stopping_criterion,
         recommend_move_after_exploration=args.recommender_rule,
-        queue_progress_player=queue_progress_player
-
+        queue_progress_player=queue_progress_player,
     )
     return tree_move_selector

@@ -38,11 +38,7 @@ class Random:
     type: Literal[MoveSelectorTypes.Random]  # for serialization
     random_generator: random.Random = field(default_factory=random.Random)
 
-    def select_move(
-            self,
-            board: boards.IBoard,
-            move_seed: seed
-    ) -> MoveRecommendation:
+    def select_move(self, board: boards.IBoard, move_seed: seed) -> MoveRecommendation:
         """
         Selects a random move from the given chess board.
 
@@ -59,9 +55,7 @@ class Random:
         return MoveRecommendation(move=random_move)
 
 
-def create_random(
-        random_generator: random.Random
-) -> Random:
+def create_random(random_generator: random.Random) -> Random:
     """
     Creates a random move selector.
 
@@ -72,7 +66,4 @@ def create_random(
         Random: The created random move selector.
 
     """
-    return Random(
-        type=MoveSelectorTypes.Random,
-        random_generator=random_generator
-    )
+    return Random(type=MoveSelectorTypes.Random, random_generator=random_generator)

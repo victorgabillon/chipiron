@@ -24,15 +24,13 @@ from chipiron.environments.chess.move.imove import moveKey
 a: Any = 0
 
 
-class ITreeNode[T:ITreeNode[Any]](Protocol):
+class ITreeNode[T: ITreeNode[Any]](Protocol):
     """
     The `ITreeNode` protocol represents a node in a tree structure used for selecting chess moves.
     """
 
     @property
-    def id(
-            self
-    ) -> int:
+    def id(self) -> int:
         """
         Get the ID of the node.
 
@@ -43,9 +41,7 @@ class ITreeNode[T:ITreeNode[Any]](Protocol):
     # actually giving access to the boars gives access to a lot of sub fucntion so might
     # be no need to ask for them in the interfacec expicitly
     @property
-    def board(
-            self
-    ) -> boards.IBoard:
+    def board(self) -> boards.IBoard:
         """
         Get the chess board state of the node.
 
@@ -63,9 +59,7 @@ class ITreeNode[T:ITreeNode[Any]](Protocol):
         """
 
     @property
-    def moves_children(
-            self
-    ) -> dict[moveKey, T | None]:
+    def moves_children(self) -> dict[moveKey, T | None]:
         """
         Get the child nodes of the node.
 
@@ -74,20 +68,14 @@ class ITreeNode[T:ITreeNode[Any]](Protocol):
         """
 
     @property
-    def parent_nodes(
-            self
-    ) -> dict[ITreeNode[T], moveKey]:
+    def parent_nodes(self) -> dict[ITreeNode[T], moveKey]:
         """
         Returns the dictionary of parent nodes of the current tree node with associated move.
 
         :return: A dictionary of parent nodes of the current tree node with associated move.
         """
 
-    def add_parent(
-            self,
-            move: moveKey,
-            new_parent_node: ITreeNode[T]
-    ) -> None:
+    def add_parent(self, move: moveKey, new_parent_node: ITreeNode[T]) -> None:
         """
         Add a parent node to the node.
 

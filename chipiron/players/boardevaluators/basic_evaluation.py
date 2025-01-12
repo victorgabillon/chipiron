@@ -11,10 +11,7 @@ from chipiron.environments.chess.board import IBoard
 from chipiron.players.boardevaluators.board_evaluator import BoardEvaluator
 
 
-def value_base(
-        board: IBoard,
-        color: chess.Color
-) -> int:
+def value_base(board: IBoard, color: chess.Color) -> int:
     """Calculate the base value of the given board for the specified color.
 
     Args:
@@ -24,17 +21,17 @@ def value_base(
     Returns:
         int: The base value of the board for the specified color.
     """
-    value_white_: int = bin(board.pawns & board.occupied_color(color)).count('1') + bin(
-        board.knights & board.occupied_color(color)).count('1') * 3 + bin(
-        board.bishops & board.occupied_color(color)).count('1') * 3 + bin(
-        board.rooks & board.occupied_color(color)).count('1') * 5 + bin(
-        board.queens & board.occupied_color(color)).count('1') * 9
+    value_white_: int = (
+        bin(board.pawns & board.occupied_color(color)).count("1")
+        + bin(board.knights & board.occupied_color(color)).count("1") * 3
+        + bin(board.bishops & board.occupied_color(color)).count("1") * 3
+        + bin(board.rooks & board.occupied_color(color)).count("1") * 5
+        + bin(board.queens & board.occupied_color(color)).count("1") * 9
+    )
     return value_white_
 
 
-def add_pawns_value_white(
-        board: IBoard
-) -> float:
+def add_pawns_value_white(board: IBoard) -> float:
     """Calculate the additional value for white pawns based on their advancement.
 
     Args:
@@ -46,13 +43,11 @@ def add_pawns_value_white(
     add_value: float = 0
     pawn: Square
     for pawn in chess.scan_forward(board.pawns & board.white):
-        add_value += int((pawn - 8) / 8) / 50. * 1
+        add_value += int((pawn - 8) / 8) / 50.0 * 1
     return add_value
 
 
-def add_pawns_value_black(
-        board: IBoard
-) -> float:
+def add_pawns_value_black(board: IBoard) -> float:
     """Calculate the value to be added for black pawns based on their position.
 
     This function calculates the value to be added for black pawns based on their position on the board.
@@ -67,13 +62,11 @@ def add_pawns_value_black(
     add_value: float = 0
     pawn: Square
     for pawn in chess.scan_forward(board.pawns & board.black):
-        add_value += int((63 - pawn - 8) / 8) / 50. * 1
+        add_value += int((63 - pawn - 8) / 8) / 50.0 * 1
     return add_value
 
 
-def value_white(
-        board: IBoard
-) -> float:
+def value_white(board: IBoard) -> float:
     """Calculate the value of the white pieces on the board.
 
     This function calculates the value of the white pieces on the board by subtracting the value of the black pieces from the value of the white pieces.
@@ -121,9 +114,9 @@ def value_player_to_move(board: IBoard) -> float:
     # value_white_pieces += add_pawns_value_white(board)
     # value_black_pieces += add_pawns_value_black(board)
     if board.turn == chess.WHITE:
-        return sigmoid((value_white_pieces - value_black_pieces) * .2)
+        return sigmoid((value_white_pieces - value_black_pieces) * 0.2)
     else:
-        return sigmoid((value_black_pieces - value_white_pieces) * .2)
+        return sigmoid((value_black_pieces - value_white_pieces) * 0.2)
 
 
 class BasicEvaluation(BoardEvaluator):
@@ -153,10 +146,7 @@ class BasicEvaluation(BoardEvaluator):
         """
         pass
 
-    def value_white(
-            self,
-            board: IBoard
-    ) -> float:
+    def value_white(self, board: IBoard) -> float:
         """Calculates the value of the board for the white player.
 
         Args:
@@ -171,4 +161,6 @@ class BasicEvaluation(BoardEvaluator):
         value_white_pieces += add_pawns_value_white(board)
         value_black_pieces += add_pawns_value_black(board)
 
-        return value_white_pieces - value_black_pieces  # + 100 * board.chess_board.is_check() - 200 * queen_atta
+        return (
+            value_white_pieces - value_black_pieces
+        )  # + 100 * board.chess_board.is_check() - 200 * queen_atta

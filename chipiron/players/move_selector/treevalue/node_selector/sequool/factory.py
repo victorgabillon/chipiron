@@ -1,6 +1,7 @@
 """
 factory for sequool node selector
 """
+
 import random
 from dataclasses import dataclass
 from functools import partial
@@ -33,15 +34,16 @@ class SequoolArgs(NodeSelectorArgs):
         random_depth_pick (bool): Flag indicating whether to randomly pick a depth for selection.
         consider_all_lesser_half_move (bool): Flag indicating whether to consider all lesser half moves.
     """
+
     recursive_selection_on_all_nodes: bool
     random_depth_pick: bool
     consider_all_lesser_half_move: bool
 
 
 def create_sequool(
-        opening_instructor: OpeningInstructor,
-        args: SequoolArgs,
-        random_generator: random.Random
+    opening_instructor: OpeningInstructor,
+    args: SequoolArgs,
+    random_generator: random.Random,
 ) -> Sequool:
     """
     Create a sequool node selector object.
@@ -66,17 +68,20 @@ def create_sequool(
 
     consider_nodes_from_half_moves: ConsiderNodesFromHalfMoves
     if args.recursive_selection_on_all_nodes:
-        consider_nodes_from_half_moves = consider_nodes_from_all_lesser_half_moves_in_sub_stree
+        consider_nodes_from_half_moves = (
+            consider_nodes_from_all_lesser_half_moves_in_sub_stree
+        )
     else:
         if args.consider_all_lesser_half_move:
             consider_nodes_from_all_lesser_half_moves = partial(
                 consider_nodes_from_all_lesser_half_moves_in_descendants,
-                descendants=all_nodes_not_opened)
+                descendants=all_nodes_not_opened,
+            )
             consider_nodes_from_half_moves = consider_nodes_from_all_lesser_half_moves
         else:
             consider_nodes_only_from_half_moves = partial(
                 consider_nodes_only_from_half_moves_in_descendants,
-                descendants=all_nodes_not_opened
+                descendants=all_nodes_not_opened,
             )
             consider_nodes_from_half_moves = consider_nodes_only_from_half_moves
 
@@ -87,7 +92,7 @@ def create_sequool(
         half_move_selector=half_move_selector,
         random_depth_pick=args.random_depth_pick,
         random_generator=random_generator,
-        consider_nodes_from_half_moves=consider_nodes_from_half_moves
+        consider_nodes_from_half_moves=consider_nodes_from_half_moves,
     )
 
     return sequool

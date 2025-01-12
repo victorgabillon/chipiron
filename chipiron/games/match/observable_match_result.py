@@ -32,10 +32,11 @@ class ObservableMatchResults:
         finish() -> None: Marks the match as finished and notifies all subscribed mailboxes.
         __str__() -> str: Returns a string representation of the match results.
     """
-    match_results: MatchResults
-    mailboxes: 'list[queue.Queue[IsDataclass]]' = field(default_factory=list)
 
-    def subscribe(self, mailbox: 'queue.Queue[IsDataclass]') -> None:
+    match_results: MatchResults
+    mailboxes: "list[queue.Queue[IsDataclass]]" = field(default_factory=list)
+
+    def subscribe(self, mailbox: "queue.Queue[IsDataclass]") -> None:
         """Subscribes a mailbox to receive notifications.
 
         Args:
@@ -55,7 +56,9 @@ class ObservableMatchResults:
         match_result_copy: MatchResults = copy.deepcopy(self.match_results)
         return match_result_copy
 
-    def add_result_one_game(self, white_player_name_id: str, game_result: FinalGameResult) -> None:
+    def add_result_one_game(
+        self, white_player_name_id: str, game_result: FinalGameResult
+    ) -> None:
         """Adds the result of a single game to the match results.
 
         Args:
@@ -76,7 +79,9 @@ class ObservableMatchResults:
         """
         for mailbox in self.mailboxes:
             match_result_copy: MatchResults = self.copy_match_result()
-            message: 'MatchResultsMessage' = MatchResultsMessage(match_results=match_result_copy)
+            message: "MatchResultsMessage" = MatchResultsMessage(
+                match_results=match_result_copy
+            )
             mailbox.put(item=message)
 
     def get_simple_result(self) -> SimpleResults:
@@ -88,7 +93,7 @@ class ObservableMatchResults:
         simple_results = SimpleResults(
             player_one_wins=self.match_results.get_player_one_wins(),
             player_two_wins=self.match_results.get_player_two_wins(),
-            draws=self.match_results.get_draws()
+            draws=self.match_results.get_draws(),
         )
         return simple_results
 

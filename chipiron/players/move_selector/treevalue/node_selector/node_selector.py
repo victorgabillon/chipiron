@@ -16,6 +16,7 @@ if typing.TYPE_CHECKING:
 @dataclass
 class NodeSelectorState:
     """Node Selector State"""
+
     ...
 
 
@@ -25,9 +26,7 @@ class NodeSelector(Protocol):
     """
 
     def choose_node_and_move_to_open(
-            self,
-            tree: MoveAndValueTree,
-            latest_tree_expansions: 'tree_man.TreeExpansions'
+        self, tree: MoveAndValueTree, latest_tree_expansions: "tree_man.TreeExpansions"
     ) -> OpeningInstructions:
         """
         Selects a node from the given tree and returns the instructions to move to an open position.

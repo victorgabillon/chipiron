@@ -20,5 +20,5 @@ __all__ = [
     "IBoard",
     "boardKey",
     "fen",
-    "create_board_factory"
+    "create_board_factory",
 ]

@@ -39,6 +39,7 @@ class League:
         ELO_HISTORY_LENGTH (int): The length of Elo rating history to keep for each player.
         games_already_played (int): The number of games already played in the league.
     """
+
     folder_league: str
     seed: int
     players_elo: ValueSortedDict = field(default_factory=ValueSortedDict)
@@ -56,11 +57,11 @@ class League:
         This method is called after the object is created and initializes the necessary attributes.
         It also creates the required folders for logging and storing game data.
         """
-        print(f'init league from folder: {self.folder_league}')
+        print(f"init league from folder: {self.folder_league}")
         self.check_for_players()
-        path_logs_folder: path = os.path.join(self.folder_league, 'logs')
+        path_logs_folder: path = os.path.join(self.folder_league, "logs")
         mkdir(path_logs_folder)
-        path_logs_games_folder: path = os.path.join(path_logs_folder, 'games')
+        path_logs_games_folder: path = os.path.join(path_logs_folder, "games")
         mkdir(path_logs_games_folder)
 
     def check_for_players(self) -> None:
@@ -69,18 +70,15 @@ class League:
 
         This method checks if there are any new player files in the 'new_players' folder and adds them to the league.
         """
-        path: str = os.path.join(self.folder_league, 'new_players/')
+        path: str = os.path.join(self.folder_league, "new_players/")
         if os.path.exists(path):
             files = os.listdir(path)
             if len(files) > 0:
                 for file in files:
-                    path_file = os.path.join(self.folder_league, 'new_players/', file)
+                    path_file = os.path.join(self.folder_league, "new_players/", file)
                     self.new_player_joins(path_file)
 
-    def new_player_joins(
-            self,
-            file_player: str
-    ) -> None:
+    def new_player_joins(self, file_player: str) -> None:
         """
         Adds a new player to the league.
 
@@ -90,25 +88,29 @@ class League:
         This method adds a new player to the league by reading the player file, assigning a unique ID to the player,
         and updating the necessary attributes.
         """
-        print('adding player:', file_player)
+        print("adding player:", file_player)
         args_player: players.PlayerArgs = fetch_player_args_convert_and_save(
-            file_name_player=file_player,
-            from_data_folder=False)
+            file_name_player=file_player, from_data_folder=False
+        )
         print(args_player)
 
-        args_player.name = f'{args_player.name}_{self.id_for_next_player}'
+        args_player.name = f"{args_player.name}_{self.id_for_next_player}"
         self.id_for_next_player += 1
 
-        self.players_elo[args_player.name] = deque([1200], maxlen=self.ELO_HISTORY_LENGTH)
+        self.players_elo[args_player.name] = deque(
+            [1200], maxlen=self.ELO_HISTORY_LENGTH
+        )
         self.players_args[args_player.name] = args_player
         self.players_number_of_games_played[args_player.name] = 0
 
-        current_player_folder: path = os.path.join(self.folder_league, 'current_players')
+        current_player_folder: path = os.path.join(
+            self.folder_league, "current_players"
+        )
         mkdir(current_player_folder)
         shutil.move(file_player, current_player_folder)
 
-        print('elo', self.players_elo)
-        print('args', self.players_args)
+        print("elo", self.players_elo)
+        print("args", self.players_args)
 
     def run(self) -> None:
         """
@@ -123,7 +125,7 @@ class League:
         args_player_one, args_player_two = self.select_two_players()
 
         #  play
-        file_match_setting: str = 'setting_jime.yaml'
+        file_match_setting: str = "setting_jime.yaml"
 
         # Recovering args from yaml file for match and game and merging with extra args and converting
         # to standardized dataclass
@@ -133,10 +135,13 @@ class League:
             file_name_match_setting=file_match_setting,
         )
 
-        path_logs_game_folder: path = os.path.join(self.folder_league, f'logs/games/game{self.games_already_played}')
+        path_logs_game_folder: path = os.path.join(
+            self.folder_league, f"logs/games/game{self.games_already_played}"
+        )
         mkdir(path_logs_game_folder)
-        path_logs_game_folder_temp: path = os.path.join(self.folder_league,
-                                                        f'logs/games/game{self.games_already_played}/games')
+        path_logs_game_folder_temp: path = os.path.join(
+            self.folder_league, f"logs/games/game{self.games_already_played}/games"
+        )
         mkdir(path_logs_game_folder_temp)
 
         match_seed = self.seed + self.games_already_played
@@ -147,20 +152,20 @@ class League:
             args_game=game_args,
             seed=match_seed,
             output_folder_path=path_logs_game_folder,
-            implementation_args=ImplementationArgs()
+            implementation_args=ImplementationArgs(),
         )
 
         # Play the match
         match_report: MatchReport = match_manager.play_one_match()
 
         # Logs the results
-        path_logs_file: path = os.path.join(self.folder_league, 'logs/log_results.txt')
-        with open(path_logs_file, 'a') as log_file:
+        path_logs_file: path = os.path.join(self.folder_league, "logs/log_results.txt")
+        with open(path_logs_file, "a") as log_file:
             log_file.write(
-                f'Game #{self.games_already_played} || '
-                f'{args_player_one.name} vs {args_player_two.name}: {match_report.match_results.get_player_one_wins()}-'
-                f'{match_report.match_results.get_player_two_wins()}-{match_report.match_results.get_draws()}'
-                f' with seed {match_seed}\n'
+                f"Game #{self.games_already_played} || "
+                f"{args_player_one.name} vs {args_player_two.name}: {match_report.match_results.get_player_one_wins()}-"
+                f"{match_report.match_results.get_player_two_wins()}-{match_report.match_results.get_draws()}"
+                f" with seed {match_seed}\n"
             )
         self.players_number_of_games_played[args_player_one.name] += 1
         self.players_number_of_games_played[args_player_two.name] += 1
@@ -170,11 +175,7 @@ class League:
 
         self.games_already_played += 1
 
-    def update_elo(
-            self,
-            match_results: MatchResults,
-            path_logs_file: path
-    ) -> None:
+    def update_elo(self, match_results: MatchResults, path_logs_file: path) -> None:
         """
         Updates the Elo ratings of the players based on the match results.
 
@@ -195,8 +196,8 @@ class League:
         Eone = power_player_one / (power_player_one + power_player_two)
         Etwo = power_player_two / (power_player_one + power_player_two)
 
-        Perf_one = match_results.get_player_one_wins() + match_results.get_draws() / 2.
-        Perf_two = match_results.get_player_two_wins() + match_results.get_draws() / 2.
+        Perf_one = match_results.get_player_one_wins() + match_results.get_draws() / 2.0
+        Perf_two = match_results.get_player_two_wins() + match_results.get_draws() / 2.0
 
         print(elo_player_one, self.players_elo[player_one_name_id])
         old_elo_player_one = elo_player_one
@@ -212,11 +213,13 @@ class League:
             if player != player_one_name_id and player != player_two_name_id:
                 self.players_elo[player].appendleft(self.players_elo[player][0])
 
-        with open(path_logs_file, 'a') as log_file:
+        with open(path_logs_file, "a") as log_file:
             log_file.write(
-                f'{player_one_name_id} increments its elo by {increment_one}: {old_elo_player_one} -> {new_elo_one}\n')
+                f"{player_one_name_id} increments its elo by {increment_one}: {old_elo_player_one} -> {new_elo_one}\n"
+            )
             log_file.write(
-                f'{player_two_name_id} increments its elo by {increment_two}: {old_elo_player_two} -> {new_elo_two}\n')
+                f"{player_two_name_id} increments its elo by {increment_two}: {old_elo_player_two} -> {new_elo_two}\n"
+            )
 
         self.update_elo_graph()
 
@@ -234,7 +237,7 @@ class League:
             elo.reverse()
         # plt.axis([0, 6, 0, 20])
         plt.legend()
-        plt.savefig(self.folder_league + '/elo.plot.svg', format='svg')
+        plt.savefig(self.folder_league + "/elo.plot.svg", format="svg")
 
     def select_two_players(self) -> tuple[players.PlayerArgs, players.PlayerArgs]:
         """
@@ -247,9 +250,10 @@ class League:
         """
         if len(self.players_args) < 2:
             raise ValueError(
-                'Not enough players in the league. To add players put the yaml files in the folder "new players"')
+                'Not enough players in the league. To add players put the yaml files in the folder "new players"'
+            )
         picked = random.sample(list(self.players_args.values()), k=2)
-        print('picked', picked)
+        print("picked", picked)
         return picked[0], picked[1]
 
     def save(self) -> None:
@@ -266,5 +270,5 @@ class League:
 
         This method prints information about the league, such as the players and their Elo ratings.
         """
-        print('print info league')
-        print('players', self.players_elo)
+        print("print info league")
+        print("players", self.players_elo)

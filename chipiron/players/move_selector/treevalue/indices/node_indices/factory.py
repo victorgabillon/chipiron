@@ -32,24 +32,24 @@ ExplorationIndexDataFactory = Callable[[TreeNode[Any]], NodeExplorationData | No
 
 
 def create_exploration_index_data(
-        tree_node: TreeNode[Any],
-        index_computation: IndexComputationType | None = None,
-        depth_index: bool = False
+    tree_node: TreeNode[Any],
+    index_computation: IndexComputationType | None = None,
+    depth_index: bool = False,
 ) -> NodeExplorationData | None:
     """
-        Creates exploration index data for a given tree node.
+    Creates exploration index data for a given tree node.
 
-        Args:
-            tree_node (TreeNode): The tree node for which to create the exploration index data.
-            index_computation (IndexComputationType | None, optional): The type of index computation to use. Defaults to None.
-            depth_index (bool, optional): Whether to include depth information in the index data. Defaults to False.
+    Args:
+        tree_node (TreeNode): The tree node for which to create the exploration index data.
+        index_computation (IndexComputationType | None, optional): The type of index computation to use. Defaults to None.
+        depth_index (bool, optional): Whether to include depth information in the index data. Defaults to False.
 
-        Returns:
-            NodeExplorationData | None: The created exploration index data.
+    Returns:
+        NodeExplorationData | None: The created exploration index data.
 
-        Raises:
-            ValueError: If the index_computation value is not recognized.
-        """
+    Raises:
+        ValueError: If the index_computation value is not recognized.
+    """
     exploration_index_data: NodeExplorationData | None
     base_index_dataclass_name: Type[NodeExplorationData] | None
     match index_computation:
@@ -62,16 +62,16 @@ def create_exploration_index_data(
         case IndexComputationType.RecurZipf:
             base_index_dataclass_name = RecurZipfQuoolExplorationData
         case other:
-            raise ValueError(f'not finding good case for {other} in file {__name__}')
+            raise ValueError(f"not finding good case for {other} in file {__name__}")
 
     index_dataclass_name: Any
     if depth_index:
         assert base_index_dataclass_name is not None
         # adding a field to the dataclass for keeping track of the depth
         index_dataclass_name = make_dataclass(
-            'DepthExtendedDataclass',
+            "DepthExtendedDataclass",
             fields=[],
-            bases=(base_index_dataclass_name, MaxDepthDescendants)
+            bases=(base_index_dataclass_name, MaxDepthDescendants),
         )
     else:
         index_dataclass_name = base_index_dataclass_name

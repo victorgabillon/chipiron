@@ -25,8 +25,8 @@ class StaringPositionArgsType(str, Enum):
     Enum class representing the types of starting position arguments.
     """
 
-    fromFile = 'from_file'
-    fen = 'fen'
+    fromFile = "from_file"
+    fen = "fen"
 
 
 @dataclass
@@ -34,6 +34,7 @@ class StaringPositionArgs:
     """
     Represents the arguments for a starting position.
     """
+
     type: StaringPositionArgsType
 
 
@@ -45,6 +46,7 @@ class FenStaringPositionArgs(StaringPositionArgs):
     Attributes:
         fen (str): The FEN string representing the starting position.
     """
+
     fen: str
 
 
@@ -67,7 +69,7 @@ class GameArgsFactory:
     This class is supposed to be dependent on Match-related classes (contrarily to the GameArgsFactory)
     """
 
-    args_match: 'match.MatchSettingsArgs'
+    args_match: "match.MatchSettingsArgs"
     seed_: int | None
     args_player_one: players.PlayerArgs
     args_player_two: players.PlayerArgs
@@ -75,12 +77,12 @@ class GameArgsFactory:
     game_number: int
 
     def __init__(
-            self,
-            args_match: 'match.MatchSettingsArgs',
-            args_player_one: players.PlayerArgs,
-            args_player_two: players.PlayerArgs,
-            seed_: int | None,
-            args_game: GameArgs
+        self,
+        args_match: "match.MatchSettingsArgs",
+        args_player_one: players.PlayerArgs,
+        args_player_two: players.PlayerArgs,
+        seed_: int | None,
+        args_game: GameArgs,
     ):
         self.args_match = args_match
         self.seed_ = seed_
@@ -90,8 +92,7 @@ class GameArgsFactory:
         self.game_number = 0
 
     def generate_game_args(
-            self,
-            game_number: int
+        self, game_number: int
     ) -> tuple[dict[chess.Color, players.PlayerFactoryArgs], GameArgs, seed | None]:
         """
         Generate game arguments for a specific game number.
@@ -108,24 +109,22 @@ class GameArgsFactory:
         assert merged_seed is not None
 
         player_one_factory_args: players.PlayerFactoryArgs = players.PlayerFactoryArgs(
-            player_args=self.args_player_one,
-            seed=merged_seed
+            player_args=self.args_player_one, seed=merged_seed
         )
         player_two_factory_args: players.PlayerFactoryArgs = players.PlayerFactoryArgs(
-            player_args=self.args_player_two,
-            seed=merged_seed
+            player_args=self.args_player_two, seed=merged_seed
         )
 
         player_color_to_factory_args: dict[chess.Color, players.PlayerFactoryArgs]
         if game_number < self.args_match.number_of_games_player_one_white:
             player_color_to_factory_args = {
                 chess.WHITE: player_one_factory_args,
-                chess.BLACK: player_two_factory_args
+                chess.BLACK: player_two_factory_args,
             }
         else:
             player_color_to_factory_args = {
                 chess.WHITE: player_two_factory_args,
-                chess.BLACK: player_one_factory_args
+                chess.BLACK: player_one_factory_args,
             }
         self.game_number += 1
 
@@ -139,5 +138,8 @@ class GameArgsFactory:
             bool: True if the match is finished, False otherwise.
 
         """
-        return (self.game_number >= self.args_match.number_of_games_player_one_white
-                + self.args_match.number_of_games_player_one_black)
+        return (
+            self.game_number
+            >= self.args_match.number_of_games_player_one_white
+            + self.args_match.number_of_games_player_one_black
+        )

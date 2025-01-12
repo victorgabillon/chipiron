@@ -8,7 +8,7 @@ from chipiron.players.factory import create_chipiron_player
 from chipiron.players.move_selector.move_selector import MoveRecommendation
 
 # Uncomment and populate this variable in your code:
-PROJECT = 'chipironchess'
+PROJECT = "chipironchess"
 
 # Build structured log messages as an object.
 global_log_fields = {}
@@ -22,9 +22,9 @@ if request_is_defined and request:
 
     if trace_header and PROJECT:
         trace = trace_header.split("/")
-        global_log_fields[
-            "logging.googleapis.com/trace"
-        ] = f"projects/{PROJECT}/traces/{trace[0]}"
+        global_log_fields["logging.googleapis.com/trace"] = (
+            f"projects/{PROJECT}/traces/{trace[0]}"
+        )
 
 # Complete a structured log entry.
 entry = dict(
@@ -41,33 +41,31 @@ print(json.dumps(entry))
 app = Flask(__name__)
 bootstrap = Bootstrap4(app)
 
-@app.route('/')
+
+@app.route("/")
 def index():
     return render_template("index.html")
 
 
-#@app.route('/move/<int:depth>/')
-@app.route('/move/<int:depth>--<path:fen>/', methods=['GET', 'POST'])
-def get_move(depth,fen):
-    print('depth', depth, type(depth))
+# @app.route('/move/<int:depth>/')
+@app.route("/move/<int:depth>--<path:fen>/", methods=["GET", "POST"])
+def get_move(depth, fen):
+    print("depth", depth, type(depth))
     print("CalculatingR...")
     board: BoardChi = create_board_chi(fen=fen)
-    print('fen', fen, type(fen))
+    print("fen", fen, type(fen))
     player = create_chipiron_player(depth)
-    move_reco: MoveRecommendation = player.select_move(
-        board=board,
-        seed_=0
-    )
+    move_reco: MoveRecommendation = player.select_move(board=board, seed_=0)
     print("Move found!", move_reco.move)
     print()
-    res =str(move_reco.move)
+    res = str(move_reco.move)
     del player
     del move_reco
     del board
     return res
 
 
-@app.route('/test/<string:tester>')
+@app.route("/test/<string:tester>")
 def test_get(tester):
     return tester
 
@@ -75,8 +73,8 @@ def test_get(tester):
 @app.route("/about")
 def about():
     """About route."""
-    return render_template('about.html')
+    return render_template("about.html")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)

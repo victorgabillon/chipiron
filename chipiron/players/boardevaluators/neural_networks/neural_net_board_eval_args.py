@@ -1,6 +1,7 @@
 """
 Module that contains the NeuralNetBoardEvalArgs class.
 """
+
 from dataclasses import dataclass
 
 
@@ -13,5 +14,6 @@ class NeuralNetBoardEvalArgs:
         nn_type (str): The type of the neural network.
         nn_param_folder_name (str): The name of the folder containing the neural network parameters.
     """
+
     nn_type: str
     nn_param_folder_name: str

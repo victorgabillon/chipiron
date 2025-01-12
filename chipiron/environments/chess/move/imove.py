@@ -9,5 +9,4 @@ moveKey = int
 class IMove(Protocol):
 
     @abstractmethod
-    def uci(self) -> moveUci:
-        ...
+    def uci(self) -> moveUci: ...

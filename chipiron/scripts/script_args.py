@@ -38,4 +38,5 @@ class BaseScriptArgs:
         if self.relative_script_instance_experiment_output_folder is None:
             now = datetime.now()  # current date and time
             self.relative_script_instance_experiment_output_folder = now.strftime(
-                "%A-%m-%d-%Y--%H:%M:%S:%f")
+                "%A-%m-%d-%Y--%H:%M:%S:%f"
+            )

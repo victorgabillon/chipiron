@@ -20,13 +20,11 @@ import chipiron
 import chipiron as ch
 from chipiron.utils.dataclass import IsDataclass
 
-path = typing.Annotated[str | os.PathLike[str], 'path']
+path = typing.Annotated[str | os.PathLike[str], "path"]
 seed = typing.Annotated[int, "seed"]
 
 
-def mkdir(
-        folder_path: path
-) -> None:
+def mkdir(folder_path: path) -> None:
     """
     Create a directory at the specified path.
 
@@ -41,9 +39,12 @@ def mkdir(
         os.mkdir(folder_path)
     except FileNotFoundError as error:
         sys.exit(
-            f"Creation of the directory {folder_path} failed with error {error} in file {__name__}\n with pwd {os.getcwd()}")
+            f"Creation of the directory {folder_path} failed with error {error} in file {__name__}\n with pwd {os.getcwd()}"
+        )
     except FileExistsError as error:
-        print(f'the file already exists so no creation needed for {folder_path}, with error {error}  ')
+        print(
+            f"the file already exists so no creation needed for {folder_path}, with error {error}  "
+        )
     else:
         print(f"Successfully created the directory {folder_path} ")
 
@@ -59,14 +60,12 @@ def yaml_fetch_args_in_file(path_file: path) -> dict[Any, Any]:
         A dictionary containing the arguments.
 
     """
-    with open(path_file, 'r', encoding="utf-8") as file:
+    with open(path_file, "r", encoding="utf-8") as file:
         args: dict[Any, Any] = yaml.load(file, Loader=yaml.FullLoader)
     return args
 
 
-def dict_alphabetic_str(
-        dic: dict[Any, Any]
-) -> str:
+def dict_alphabetic_str(dic: dict[Any, Any]) -> str:
     """
     Convert a dictionary to a string with keys sorted alphabetically.
 
@@ -77,9 +76,9 @@ def dict_alphabetic_str(
         A string representation of the dictionary with keys sorted alphabetically.
 
     """
-    string: str = ''
+    string: str = ""
     for key, value in sorted(dic.items()):
-        string += ' {:>30} : {}\n'.format(key, value)
+        string += " {:>30} : {}\n".format(key, value)
     return string
 
 
@@ -97,19 +96,16 @@ def unique_int_from_list(a_list: list[int | None]) -> int | None:
         AssertionError: If the list does not contain exactly two elements.
 
     """
-    assert (len(a_list) == 2)
+    assert len(a_list) == 2
     x = a_list[0]
     y = a_list[1]
     if x is None or y is None:
         return None
     else:
-        return int(.5 * (x + y) * (x + y + 1) + y)  # Cantor pairing function
+        return int(0.5 * (x + y) * (x + y + 1) + y)  # Cantor pairing function
 
 
-def rec_merge_dic(
-        a: dict[Any, Any],
-        b: dict[Any, Any]
-) -> dict[Any, Any]:
+def rec_merge_dic(a: dict[Any, Any], b: dict[Any, Any]) -> dict[Any, Any]:
     """
     Recursively merge two dictionaries.
 
@@ -132,10 +128,7 @@ def rec_merge_dic(
     return merged
 
 
-def nth_key[_T](
-        dct: dict[_T, Any],
-        n: int
-) -> _T:
+def nth_key[_T](dct: dict[_T, Any], n: int) -> _T:
     """
     Get the nth key from a dictionary.
 
@@ -156,10 +149,7 @@ def nth_key[_T](
     return next(it)
 
 
-def softmax(
-        x: list[float],
-        temperature: float
-) -> nptyping.NDArray[np.float64]:
+def softmax(x: list[float], temperature: float) -> nptyping.NDArray[np.float64]:
     """
     Compute softmax values for each set of scores in x.
 
@@ -177,10 +167,16 @@ def softmax(
 
 
 @typing.dataclass_transform()
-def fetch_args_modify_and_convert[_T_co:IsDataclass](
-        path_to_file: path,  # path to a yaml file
-        dataclass_name: type[_T_co],  # the dataclass into which the dictionary will be converted
-        modification: dict[Any, Any] | None = None,  # modification to the dict extracted from the yaml file
+def fetch_args_modify_and_convert[
+    _T_co: IsDataclass
+](
+    path_to_file: path,  # path to a yaml file
+    dataclass_name: type[
+        _T_co
+    ],  # the dataclass into which the dictionary will be converted
+    modification: (
+        dict[Any, Any] | None
+    ) = None,  # modification to the dict extracted from the yaml file
 ) -> _T_co:
     """
     Fetch, modify, and convert arguments from a YAML file to a dataclass.
@@ -199,12 +195,12 @@ def fetch_args_modify_and_convert[_T_co:IsDataclass](
     file_args: dict[Any, Any] = chipiron.utils.yaml_fetch_args_in_file(path_to_file)
     merged_args_dict: dict[Any, Any] = ch.tool.rec_merge_dic(file_args, modification)
 
-    print('merged_args_dict', merged_args_dict)
+    print("merged_args_dict", merged_args_dict)
     # formatting the dictionary into the corresponding dataclass
     dataclass_args: _T_co = dacite.from_dict(
         data_class=dataclass_name,
         data=merged_args_dict,
-        config=dacite.Config(cast=[Enum])
+        config=dacite.Config(cast=[Enum]),
     )
 
     return dataclass_args
@@ -215,14 +211,12 @@ class Interval:
     """
     Represents an interval with a minimum and maximum value.
     """
+
     min_value: float | None = None
     max_value: float | None = None
 
 
-def intersect_intervals(
-        interval_1: Interval,
-        interval_2: Interval
-) -> Interval | None:
+def intersect_intervals(interval_1: Interval, interval_2: Interval) -> Interval | None:
     """
     Find the intersection of two intervals.
 
@@ -237,8 +231,8 @@ def intersect_intervals(
         AssertionError: If any of the intervals have missing values.
 
     """
-    assert (interval_1.max_value is not None and interval_1.min_value is not None)
-    assert (interval_2.max_value is not None and interval_2.min_value is not None)
+    assert interval_1.max_value is not None and interval_1.min_value is not None
+    assert interval_2.max_value is not None and interval_2.min_value is not None
     min_value: float = max(interval_1.min_value, interval_2.min_value)
     max_value: float = min(interval_1.max_value, interval_2.max_value)
     if max_value < min_value:
@@ -248,10 +242,7 @@ def intersect_intervals(
         return interval_res
 
 
-def distance_number_to_interval(
-        value: float,
-        interval: Interval
-) -> float:
+def distance_number_to_interval(value: float, interval: Interval) -> float:
     """
     Calculate the distance between a number and an interval.
 
@@ -266,7 +257,7 @@ def distance_number_to_interval(
         AssertionError: If the interval has missing values.
 
     """
-    assert (interval.max_value is not None and interval.min_value is not None)
+    assert interval.max_value is not None and interval.min_value is not None
     if value < interval.min_value:
         return interval.min_value - value
     elif value > interval.max_value:

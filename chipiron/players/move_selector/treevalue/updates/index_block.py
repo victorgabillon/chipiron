@@ -25,6 +25,7 @@ class IndexUpdateInstructionsFromOneNode:
         node_sending_update (AlgorithmNode): The node sending the update.
         updated_index (bool): Indicates whether the index has been updated.
     """
+
     node_sending_update: AlgorithmNode
     updated_index: bool
 
@@ -43,18 +44,17 @@ class IndexUpdateInstructionsTowardsOneParentNode:
     moves_with_updated_index: set[moveKey] = field(default_factory=set)
 
     def add_update_from_one_child_node(
-            self,
-            update_from_one_child_node: IndexUpdateInstructionsFromOneNode,
-            move_from_parent_to_child: moveKey
+        self,
+        update_from_one_child_node: IndexUpdateInstructionsFromOneNode,
+        move_from_parent_to_child: moveKey,
     ) -> None:
         if update_from_one_child_node.updated_index:
             self.moves_with_updated_index.add(move_from_parent_to_child)
 
-    def add_update_toward_one_parent_node(
-            self,
-            another_update: Self
-    ) -> None:
-        self.moves_with_updated_index = self.moves_with_updated_index | another_update.moves_with_updated_index
+    def add_update_toward_one_parent_node(self, another_update: Self) -> None:
+        self.moves_with_updated_index = (
+            self.moves_with_updated_index | another_update.moves_with_updated_index
+        )
 
     def empty(self) -> bool:
         """

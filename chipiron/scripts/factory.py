@@ -1,6 +1,7 @@
 """
 factory for scripts module
 """
+
 from typing import Any
 
 from chipiron.scripts.parsers.create_parser import create_parser
@@ -15,9 +16,9 @@ from .script_type import ScriptType
 
 # instantiate relevant script
 def create_script(
-        script_type: ScriptType,
-        extra_args: dict[str, Any] | None = None,
-        should_parse_command_line_arguments: bool = True
+    script_type: ScriptType,
+    extra_args: dict[str, Any] | None = None,
+    should_parse_command_line_arguments: bool = True,
 ) -> IScript:
     """
     Creates the corresponding script
@@ -45,15 +46,14 @@ def create_script(
     # create the relevant script
     parser: MyParser = create_parser(
         args_class_name=args_class_name,
-        should_parse_command_line_arguments=should_parse_command_line_arguments
+        should_parse_command_line_arguments=should_parse_command_line_arguments,
     )
 
-    base_script: Script = Script(
-        parser=parser,
-        extra_args=extra_args
-    )
+    base_script: Script = Script(parser=parser, extra_args=extra_args)
 
-    script_class_name: type[IScript] = get_script_type_from_script_class_name(script_type=script_type)
+    script_class_name: type[IScript] = get_script_type_from_script_class_name(
+        script_type=script_type
+    )
     script_object: IScript = script_class_name(base_script=base_script)
 
     return script_object

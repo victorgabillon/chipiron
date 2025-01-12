@@ -12,6 +12,7 @@ It also provides methods for accessing and manipulating the evaluation values, d
 
 Note: This code snippet is a partial implementation and may require additional code to work properly.
 """
+
 # todo maybe further split values from over?
 
 import math
@@ -46,7 +47,7 @@ class NodeWithValue(ITreeNode[Any], Protocol):
         tree_node (TreeNode): The tree node associated with the node.
     """
 
-    minmax_evaluation: 'NodeMinmaxEvaluation'
+    minmax_evaluation: "NodeMinmaxEvaluation"
     tree_node: TreeNode[Any]
 
 
@@ -124,11 +125,8 @@ class NodeMinmaxEvaluation:
         assert self.value_white_minmax is not None
         return self.value_white_minmax
 
-    def set_evaluation(
-            self,
-            evaluation: float
-    ) -> None:
-        """ sets the evaluation from the board evaluator
+    def set_evaluation(self, evaluation: float) -> None:
+        """sets the evaluation from the board evaluator
 
         Args:
             evaluation (float): The evaluation value to be set.
@@ -137,12 +135,11 @@ class NodeMinmaxEvaluation:
             None
         """
         self.value_white_evaluator = evaluation
-        self.value_white_minmax = evaluation  # base value before knowing values of the children
+        self.value_white_minmax = (
+            evaluation  # base value before knowing values of the children
+        )
 
-    def subjective_value_(
-            self,
-            value_white: float
-    ) -> float:
+    def subjective_value_(self, value_white: float) -> float:
         """
         Return the subjective value of `value_white` from the point of view of the `self.tree_node.player_to_move`.
 
@@ -155,7 +152,11 @@ class NodeMinmaxEvaluation:
         Returns:
             float: The subjective value of `value_white` based on the player to move.
         """
-        subjective_value = value_white if self.tree_node.player_to_move == chess.WHITE else -value_white
+        subjective_value = (
+            value_white
+            if self.tree_node.player_to_move == chess.WHITE
+            else -value_white
+        )
         return subjective_value
 
     def subjective_value(self) -> float:
@@ -167,13 +168,14 @@ class NodeMinmaxEvaluation:
         Returns:
             float: The subjective value of self.value_white.
         """
-        subjective_value = self.get_value_white() if self.tree_node.player_to_move == chess.WHITE else -self.get_value_white()
+        subjective_value = (
+            self.get_value_white()
+            if self.tree_node.player_to_move == chess.WHITE
+            else -self.get_value_white()
+        )
         return subjective_value
 
-    def subjective_value_of(
-            self,
-            another_node_eval: Self
-    ) -> float:
+    def subjective_value_of(self, another_node_eval: Self) -> float:
         """
         Calculates the subjective value of the current node evaluation based on the player to move.
 
@@ -219,7 +221,7 @@ class NodeMinmaxEvaluation:
             assert child is not None
             if not child.is_over():
                 return move
-        raise Exception('Not ok')
+        raise Exception("Not ok")
 
     def best_move_value(self) -> float | None:
         """
@@ -239,16 +241,14 @@ class NodeMinmaxEvaluation:
             best_value = None
         return best_value
 
-    def second_best_move(
-            self
-    ) -> moveKey:
+    def second_best_move(self) -> moveKey:
         """
         Returns the second-best move based on the subjective value.
 
         Returns:
             The second-best move.
         """
-        assert (len(self.moves_sorted_by_value) >= 2)
+        assert len(self.moves_sorted_by_value) >= 2
         # fast way to access second key with the highest subjective value
         second_best_move: moveKey = nth_key(self.moves_sorted_by_value, 1)
         return second_best_move
@@ -280,10 +280,7 @@ class NodeMinmaxEvaluation:
         """
         return self.over_event.is_draw()
 
-    def is_winner(
-            self,
-            player: chess.Color
-    ) -> bool:
+    def is_winner(self, player: chess.Color) -> bool:
         """
         Determines if the specified player is the winner.
 
@@ -306,11 +303,17 @@ class NodeMinmaxEvaluation:
         Returns:
             None
         """
-        print('here are the ', len(self.moves_sorted_by_value), ' move sorted by value: ')
+        print(
+            "here are the ", len(self.moves_sorted_by_value), " move sorted by value: "
+        )
         move: moveKey
         for move, subjective_sort_value in self.moves_sorted_by_value.items():
-            print(self.tree_node.board.get_uci_from_move_key(move), subjective_sort_value[0], end=' $$ ')
-        print('')
+            print(
+                self.tree_node.board.get_uci_from_move_key(move),
+                subjective_sort_value[0],
+                end=" $$ ",
+            )
+        print("")
 
     def print_moves_sorted_by_value_and_exploration(self) -> None:
         """
@@ -326,11 +329,15 @@ class NodeMinmaxEvaluation:
             None
         """
         move: moveKey
-        print(f'here are the {len(self.moves_sorted_by_value)} moves sorted by value: ')
+        print(f"here are the {len(self.moves_sorted_by_value)} moves sorted by value: ")
         for move, subjective_sort_value in self.moves_sorted_by_value.items():
-            print(self.tree_node.board.get_uci_from_move_key(move), subjective_sort_value[0], end=' $$ ')
+            print(
+                self.tree_node.board.get_uci_from_move_key(move),
+                subjective_sort_value[0],
+                end=" $$ ",
+            )
             # print(move, subjective_sort_value[0],'('+str(child_node.descendants.number_of_descendants)+')', end=' $$ ')
-        print('')
+        print("")
 
     def print_moves_not_over(self) -> None:
         """
@@ -342,10 +349,10 @@ class NodeMinmaxEvaluation:
         Returns:
             None
         """
-        print('here are the ', len(self.moves_not_over), ' move not over: ', end=' ')
+        print("here are the ", len(self.moves_not_over), " move not over: ", end=" ")
         for move in self.moves_not_over:
-            print(move, end=' ')
-        print(' ')
+            print(move, end=" ")
+        print(" ")
 
     def print_info(self) -> None:
         """
@@ -354,16 +361,13 @@ class NodeMinmaxEvaluation:
         This method prints the ID of the node, the moves of its children, the children sorted by value,
         and the children that are not over.
         """
-        print('Soy el Node', self.tree_node.id)
+        print("Soy el Node", self.tree_node.id)
         self.tree_node.print_moves_children()
         self.print_moves_sorted_by_value()
         self.print_moves_not_over()
         # todo probably more to print...
 
-    def record_sort_value_of_child(
-            self,
-            move: moveKey
-    ) -> None:
+    def record_sort_value_of_child(self, move: moveKey) -> None:
         """Stores the subjective value of the move in the self.moves_sorted_by_value (automatically sorted).
 
         Args:
@@ -380,22 +384,28 @@ class NodeMinmaxEvaluation:
         child = self.tree_node.moves_children[move]
         assert child is not None
         child_value_white = child.minmax_evaluation.get_value_white()
-        subjective_value_of_child = -child_value_white if self.tree_node.player_to_move == chess.WHITE else child_value_white
+        subjective_value_of_child = (
+            -child_value_white
+            if self.tree_node.player_to_move == chess.WHITE
+            else child_value_white
+        )
         if self.is_over():
             # the shorter the check the better now
             self.moves_sorted_by_value_[move] = (
-                subjective_value_of_child, -len(child.minmax_evaluation.best_move_sequence), child.tree_node.id)
+                subjective_value_of_child,
+                -len(child.minmax_evaluation.best_move_sequence),
+                child.tree_node.id,
+            )
 
         else:
             # the longer the line the better now
             self.moves_sorted_by_value_[move] = (
-                subjective_value_of_child, len(child.minmax_evaluation.best_move_sequence), child.tree_node.id)
+                subjective_value_of_child,
+                len(child.minmax_evaluation.best_move_sequence),
+                child.tree_node.id,
+            )
 
-    def are_equal_values[T](
-            self,
-            value_1: T,
-            value_2: T
-    ) -> bool:
+    def are_equal_values[T](self, value_1: T, value_2: T) -> bool:
         """
         Check if two values are equal.
 
@@ -408,7 +418,9 @@ class NodeMinmaxEvaluation:
         """
         return value_1 == value_2
 
-    def are_considered_equal_values[T](self, value_1: tuple[T], value_2: tuple[T]) -> bool:
+    def are_considered_equal_values[
+        T
+    ](self, value_1: tuple[T], value_2: tuple[T]) -> bool:
         """
         Check if two values are considered equal.
 
@@ -445,7 +457,7 @@ class NodeMinmaxEvaluation:
             AssertionError: If the node is already in the "over" status.
 
         """
-        assert (not self.is_over())
+        assert not self.is_over()
 
         # becoming over triggers a full update record_sort_value_of_child
         # where ties are now broken to reach over as fast as possible
@@ -462,13 +474,10 @@ class NodeMinmaxEvaluation:
         self.over_event.becomes_over(
             how_over=best_child.minmax_evaluation.over_event.how_over,
             who_is_winner=best_child.minmax_evaluation.over_event.who_is_winner,
-            termination=best_child.minmax_evaluation.over_event.termination
+            termination=best_child.minmax_evaluation.over_event.termination,
         )
 
-    def update_over(
-            self,
-            moves_with_updated_over: set[moveKey]
-    ) -> bool:
+    def update_over(self, moves_with_updated_over: set[moveKey]) -> bool:
         """
         Update the over_event of the node based on notification of change of over_event in children.
 
@@ -494,7 +503,9 @@ class NodeMinmaxEvaluation:
                 self.moves_not_over.remove(move)
 
             # Check if child is already not in children_not_over.
-            if not self.is_over() and child.minmax_evaluation.is_winner(self.tree_node.player_to_move):
+            if not self.is_over() and child.minmax_evaluation.is_winner(
+                self.tree_node.player_to_move
+            ):
                 self.becoming_over_from_children()
                 is_newly_over = True
 
@@ -505,10 +516,7 @@ class NodeMinmaxEvaluation:
 
         return is_newly_over
 
-    def update_moves_values(
-            self,
-            moves_to_consider: set[moveKey]
-    ) -> None:
+    def update_moves_values(self, moves_to_consider: set[moveKey]) -> None:
         """
         Updates the values of the moves based on the given set of moves to consider.
 
@@ -531,8 +539,9 @@ class NodeMinmaxEvaluation:
         """
         # todo: looks like the determinism of the sort induces some determinisin the play like always
         #  playing the same actions when a lot of them have equal value: introduce some randomness?
-        return [move for move in self.moves_sorted_by_value if
-                move in self.moves_not_over]  # todo is this a fast way to do it?
+        return [
+            move for move in self.moves_sorted_by_value if move in self.moves_not_over
+        ]  # todo is this a fast way to do it?
 
     def update_value_minmax(self) -> None:
         """
@@ -555,14 +564,19 @@ class NodeMinmaxEvaluation:
             self.value_white_minmax = best_child.minmax_evaluation.get_value_white()
         elif self.tree_node.player_to_move == chess.WHITE:
             assert self.value_white_evaluator is not None
-            self.value_white_minmax = max(best_child.minmax_evaluation.get_value_white(), self.value_white_evaluator)
+            self.value_white_minmax = max(
+                best_child.minmax_evaluation.get_value_white(),
+                self.value_white_evaluator,
+            )
         else:
             assert self.value_white_evaluator is not None
-            self.value_white_minmax = min(best_child.minmax_evaluation.get_value_white(), self.value_white_evaluator)
+            self.value_white_minmax = min(
+                best_child.minmax_evaluation.get_value_white(),
+                self.value_white_evaluator,
+            )
 
     def update_best_move_sequence(
-            self,
-            moves_with_updated_best_move_seq: set[moveKey]
+        self, moves_with_updated_best_move_seq: set[moveKey]
     ) -> bool:
         """Updates the best move sequence based on the notification from children nodes identified through their
         corresponding move.
@@ -579,7 +593,9 @@ class NodeMinmaxEvaluation:
         best_node: NodeWithValue | None = self.tree_node.moves_children[best_move]
 
         if best_move in moves_with_updated_best_move_seq and best_node is not None:
-            self.best_move_sequence = [best_move] + best_node.minmax_evaluation.best_move_sequence
+            self.best_move_sequence = [
+                best_move
+            ] + best_node.minmax_evaluation.best_move_sequence
             has_best_move_seq_changed = True
 
         return has_best_move_seq_changed
@@ -596,21 +612,20 @@ class NodeMinmaxEvaluation:
             AssertionError: If the `best_node_sequence` attribute is empty after updating.
 
         """
-        how_equal_: str = 'equal'
+        how_equal_: str = "equal"
         best_moves: list[moveKey] = self.get_all_of_the_best_moves(how_equal=how_equal_)
-        if how_equal_ == 'equal':
-            assert (len(best_moves) == 1)
+        if how_equal_ == "equal":
+            assert len(best_moves) == 1
         best_move = choice(best_moves)
         best_child = self.tree_node.moves_children[best_move]
         # best_child = best_children[len(best_children) - 1]  # for debug!!
         assert best_child is not None
-        self.best_move_sequence = [best_move] + best_child.minmax_evaluation.best_move_sequence
+        self.best_move_sequence = [
+            best_move
+        ] + best_child.minmax_evaluation.best_move_sequence
         assert self.best_move_sequence
 
-    def is_value_subjectively_better_than_evaluation(
-            self,
-            value_white: float
-    ) -> bool:
+    def is_value_subjectively_better_than_evaluation(self, value_white: float) -> bool:
         """
         Checks if the given value_white is subjectively better than the value_white_evaluator.
 
@@ -625,8 +640,7 @@ class NodeMinmaxEvaluation:
         return subjective_value >= self.value_white_evaluator
 
     def minmax_value_update_from_children(
-            self,
-            moves_with_updated_value: set[moveKey]
+        self, moves_with_updated_value: set[moveKey]
     ) -> tuple[bool, bool]:
         """
         Updates the value and best move of the node based on the updated values of its children.
@@ -657,11 +671,12 @@ class NodeMinmaxEvaluation:
         else:
             # here we compare the values in the self.children_sorted_by_value which might include more
             # than just the basic values #todo make that more clear at some point maybe even creating a value object
-            updated_value_of_best_child_before_update = self.moves_sorted_by_value[best_move_before_update]
+            updated_value_of_best_child_before_update = self.moves_sorted_by_value[
+                best_move_before_update
+            ]
             best_value_children_after = self.best_move_value()
             best_child_before_update_not_the_best_anymore = not self.are_equal_values(
-                updated_value_of_best_child_before_update,
-                best_value_children_after
+                updated_value_of_best_child_before_update, best_value_children_after
             )
 
         best_move_seq_before_update: list[moveKey] = self.best_move_sequence.copy()
@@ -672,15 +687,20 @@ class NodeMinmaxEvaluation:
             # we only consider a child as best if it is more promising than the evaluation of self
             # in self.value_white_evaluator
             assert best_move_before_update is not None
-            best_child_before_update = self.tree_node.moves_children[best_move_before_update]
+            best_child_before_update = self.tree_node.moves_children[
+                best_move_before_update
+            ]
             assert best_child_before_update is not None
             if self.is_value_subjectively_better_than_evaluation(
-                    best_child_before_update.minmax_evaluation.get_value_white()):
+                best_child_before_update.minmax_evaluation.get_value_white()
+            ):
                 self.one_of_best_children_becomes_best_next_node()
             else:
                 self.best_move_sequence = []
         best_move_seq_after_update = self.best_move_sequence
-        has_best_node_seq_changed = best_move_seq_before_update != best_move_seq_after_update
+        has_best_node_seq_changed = (
+            best_move_seq_before_update != best_move_seq_after_update
+        )
 
         return has_value_changed, has_best_node_seq_changed
 
@@ -694,11 +714,26 @@ class NodeMinmaxEvaluation:
         Returns:
             A string representation of the node's description in DOT format.
         """
-        value_mm = "{:.3f}".format(self.value_white_minmax) if self.value_white_minmax is not None else 'None'
-        value_eval = "{:.3f}".format(self.value_white_evaluator) if self.value_white_evaluator is not None else 'None'
-        return '\n wh_val_mm: ' + value_mm + '\n wh_val_eval: ' \
-            + value_eval + '\n moves*' + \
-            self.description_best_move_sequence() + '\nover: ' + self.over_event.get_over_tag()
+        value_mm = (
+            "{:.3f}".format(self.value_white_minmax)
+            if self.value_white_minmax is not None
+            else "None"
+        )
+        value_eval = (
+            "{:.3f}".format(self.value_white_evaluator)
+            if self.value_white_evaluator is not None
+            else "None"
+        )
+        return (
+            "\n wh_val_mm: "
+            + value_mm
+            + "\n wh_val_eval: "
+            + value_eval
+            + "\n moves*"
+            + self.description_best_move_sequence()
+            + "\nover: "
+            + self.over_event.get_over_tag()
+        )
 
     def description_best_move_sequence(self) -> str:
         """
@@ -710,10 +745,10 @@ class NodeMinmaxEvaluation:
         Returns:
             A string representation of the best move sequence.
         """
-        res = ''
+        res = ""
         move: moveKey
         for move in self.best_move_sequence:
-            res += '_' + str(move)
+            res += "_" + str(move)
         return res
 
     def description_tree_visualizer_move(self, child: Any) -> str:
@@ -726,7 +761,7 @@ class NodeMinmaxEvaluation:
         Returns:
         - str: A string representation of the move for the tree visualizer.
         """
-        return ''
+        return ""
 
     def test(self) -> None:
         """
@@ -756,7 +791,7 @@ class NodeMinmaxEvaluation:
                 assert move in self.moves_not_over
 
     def test_over(self) -> None:
-        """ to be coded again"""
+        """to be coded again"""
 
         ...
 
@@ -772,26 +807,38 @@ class NodeMinmaxEvaluation:
         value_children: list[float] = []
         for move, child in self.tree_node.moves_children.items():
             assert child is not None
-            assert (self.moves_sorted_by_value[move][0] * (
-                    1 - 2 * self.tree_node.player_to_move) == child.minmax_evaluation.get_value_white())
+            assert (
+                self.moves_sorted_by_value[move][0]
+                * (1 - 2 * self.tree_node.player_to_move)
+                == child.minmax_evaluation.get_value_white()
+            )
             value_children.append(child.minmax_evaluation.get_value_white())
         if self.tree_node.moves_children:
             if self.tree_node.player_to_move == chess.WHITE:
-                assert (max(value_children) == self.get_value_white())
+                assert max(value_children) == self.get_value_white()
             if self.tree_node.player_to_move == chess.BLACK:
-                assert (min(value_children) == self.get_value_white())
+                assert min(value_children) == self.get_value_white()
             for ind, move in enumerate(self.moves_sorted_by_value):
                 child = self.tree_node.moves_children[move]
                 assert child is not None
                 if ind == 0:
-                    assert (child.minmax_evaluation.get_value_white() == self.get_value_white())
+                    assert (
+                        child.minmax_evaluation.get_value_white()
+                        == self.get_value_white()
+                    )
                     before = child
                 else:
                     before = child
                     if self.tree_node.player_to_move == chess.WHITE:
-                        assert (before.minmax_evaluation.get_value_white() >= child.minmax_evaluation.get_value_white())
+                        assert (
+                            before.minmax_evaluation.get_value_white()
+                            >= child.minmax_evaluation.get_value_white()
+                        )
                     if self.tree_node.player_to_move == chess.BLACK:
-                        assert (before.minmax_evaluation.get_value_white() <= child.minmax_evaluation.get_value_white())
+                        assert (
+                            before.minmax_evaluation.get_value_white()
+                            <= child.minmax_evaluation.get_value_white()
+                        )
         else:
             pass
             # todo test board value
@@ -806,19 +853,16 @@ class NodeMinmaxEvaluation:
         Returns:
             None
         """
-        print('Best line from node ' + str(self.tree_node.id) + ':', end=' ')
+        print("Best line from node " + str(self.tree_node.id) + ":", end=" ")
         minmax: NodeMinmaxEvaluation = self
         for move in self.best_move_sequence:
             child = minmax.tree_node.moves_children[move]
             assert child is not None
-            print(move, '(' + str(child.tree_node.id) + ')', end=' ')
+            print(move, "(" + str(child.tree_node.id) + ")", end=" ")
             minmax = child.minmax_evaluation
-        print(' ')
+        print(" ")
 
-    def my_logit(
-            self,
-            x: float
-    ) -> float:
+    def my_logit(self, x: float) -> float:
         """
         Applies the logit function to the input value.
 
@@ -828,13 +872,12 @@ class NodeMinmaxEvaluation:
         Returns:
             float: The result of applying the logit function to the input value.
         """
-        y = min(max(x, .000000000000000000000001), .9999999999999999)
-        return math.log(y / (1 - y)) * max(1, abs(x))  # the * min(1,x) is a hack to prioritize game over
+        y = min(max(x, 0.000000000000000000000001), 0.9999999999999999)
+        return math.log(y / (1 - y)) * max(
+            1, abs(x)
+        )  # the * min(1,x) is a hack to prioritize game over
 
-    def get_all_of_the_best_moves(
-            self,
-            how_equal: str | None = None
-    ) -> list[moveKey]:
+    def get_all_of_the_best_moves(self, how_equal: str | None = None) -> list[moveKey]:
         """
         Returns a list of all the best moves based on the specified equality criteria.
 
@@ -853,19 +896,25 @@ class NodeMinmaxEvaluation:
         best_value = self.moves_sorted_by_value[best_move]
         move: moveKey
         for move in self.moves_sorted_by_value:
-            if how_equal == 'equal':
+            if how_equal == "equal":
                 if self.are_equal_values(self.moves_sorted_by_value[move], best_value):
                     best_moves.append(move)
-                    assert (len(best_moves) == 1)
-            elif how_equal == 'considered_equal':
-                if self.are_considered_equal_values(self.moves_sorted_by_value[move], best_value):
+                    assert len(best_moves) == 1
+            elif how_equal == "considered_equal":
+                if self.are_considered_equal_values(
+                    self.moves_sorted_by_value[move], best_value
+                ):
                     best_moves.append(move)
-            elif how_equal == 'almost_equal':
-                if self.are_almost_equal_values(self.moves_sorted_by_value[move][0], best_value[0]):
+            elif how_equal == "almost_equal":
+                if self.are_almost_equal_values(
+                    self.moves_sorted_by_value[move][0], best_value[0]
+                ):
                     best_moves.append(move)
-            elif how_equal == 'almost_equal_logistic':
-                best_value_logit = self.my_logit(best_value[0] * .5 + .5)
-                child_value_logit = self.my_logit(self.moves_sorted_by_value[move][0] * .5 + .5)
+            elif how_equal == "almost_equal_logistic":
+                best_value_logit = self.my_logit(best_value[0] * 0.5 + 0.5)
+                child_value_logit = self.my_logit(
+                    self.moves_sorted_by_value[move][0] * 0.5 + 0.5
+                )
                 if self.are_almost_equal_values(child_value_logit, best_value_logit):
                     best_moves.append(move)
         return best_moves
@@ -873,8 +922,7 @@ class NodeMinmaxEvaluation:
     def evaluate(self) -> BoardEvaluation:
         if self.over_event.is_over():
             return ForcedOutcome(
-                outcome=self.over_event,
-                line=[move for move in self.best_move_sequence]
+                outcome=self.over_event, line=[move for move in self.best_move_sequence]
             )
         else:
             return FloatyBoardEvaluation(value_white=self.value_white_minmax)

@@ -1,6 +1,7 @@
 """
 Module for the SyzygyTable class.
 """
+
 import chess.syzygy
 
 import chipiron.environments.chess.board as boards
@@ -46,10 +47,7 @@ class SyzygyChiTable(SyzygyTable[boards.BoardChi]):
 
     table_base: chess.syzygy.Tablebase
 
-    def __init__(
-            self,
-            path_to_table: path
-    ):
+    def __init__(self, path_to_table: path):
         """
         Initialize the SyzygyTable object.
 
@@ -59,15 +57,10 @@ class SyzygyChiTable(SyzygyTable[boards.BoardChi]):
         path_to_table_str: str = str(path_to_table)
         self.table_base = chess.syzygy.open_tablebase(directory=path_to_table_str)
 
-    def wdl(self,
-            board: boards.BoardChi
-            ) -> int:
+    def wdl(self, board: boards.BoardChi) -> int:
         return self.table_base.probe_wdl(board=board.chess_board)
 
-    def dtz(
-            self,
-            board: boards.BoardChi
-    ) -> int:
+    def dtz(self, board: boards.BoardChi) -> int:
         """
         Get the distance-to-zero (DTZ) value for the given board.
 

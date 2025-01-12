@@ -22,9 +22,10 @@ class SamplingPriorities(str, Enum):
         PRIORITY_BEST (str): Priority for the best move.
         PRIORITY_TWO_BEST (str): Priority for the two best moves.
     """
-    NO_PRIORITY = 'no_priority'
-    PRIORITY_BEST = 'priority_best'
-    PRIORITY_TWO_BEST = 'priority_two_best'
+
+    NO_PRIORITY = "no_priority"
+    PRIORITY_BEST = "priority_best"
+    PRIORITY_TWO_BEST = "priority_two_best"
 
 
 class MoveExplorer:
@@ -35,10 +36,7 @@ class MoveExplorer:
 
     priority_sampling: SamplingPriorities
 
-    def __init__(
-            self,
-            priority_sampling: SamplingPriorities
-    ):
+    def __init__(self, priority_sampling: SamplingPriorities):
         """
         Initializes a MoveExplorer instance.
 
@@ -54,9 +52,7 @@ class ZipfMoveExplorer(MoveExplorer):
     """
 
     def __init__(
-            self,
-            priority_sampling: SamplingPriorities,
-            random_generator: random.Random
+        self, priority_sampling: SamplingPriorities, random_generator: random.Random
     ) -> None:
         """
         Initializes a ZipfMoveExplorer instance.
@@ -69,8 +65,7 @@ class ZipfMoveExplorer(MoveExplorer):
         self.random_generator = random_generator
 
     def sample_move_to_explore(
-            self,
-            tree_node_to_sample_from: AlgorithmNode
+        self, tree_node_to_sample_from: AlgorithmNode
     ) -> moveKey:
         """
         Samples a child node to explore from the given tree node.
@@ -81,10 +76,12 @@ class ZipfMoveExplorer(MoveExplorer):
         Returns:
             AlgorithmNode: The sampled child node to explore.
         """
-        sorted_not_over_moves: list[moveKey] = tree_node_to_sample_from.minmax_evaluation.sort_moves_not_over()
+        sorted_not_over_moves: list[moveKey] = (
+            tree_node_to_sample_from.minmax_evaluation.sort_moves_not_over()
+        )
 
         move = zipf_picks_random(
             ordered_list_elements=sorted_not_over_moves,
-            random_generator=self.random_generator
+            random_generator=self.random_generator,
         )
         return move

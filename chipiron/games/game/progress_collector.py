@@ -17,11 +17,9 @@ class PlayerProgressCollectorP(Protocol):
     Object defining the protocol for setting the progress values
     """
 
-    def progress_white(self, value: int | None) -> None:
-        ...
+    def progress_white(self, value: int | None) -> None: ...
 
-    def progress_black(self, value: int | None) -> None:
-        ...
+    def progress_black(self, value: int | None) -> None: ...
 
 
 @dataclass
@@ -56,7 +54,9 @@ class PlayerProgressCollectorObservable:
     Object in charge of collecting the progress of computing moves by each player
     """
 
-    progress_collector: PlayerProgressCollector = field(default_factory=PlayerProgressCollector)
+    progress_collector: PlayerProgressCollector = field(
+        default_factory=PlayerProgressCollector
+    )
     subscribers: list[queue.Queue[IsDataclass]] = field(default_factory=list)
 
     def progress_white(self, value: int | None) -> None:
@@ -70,8 +70,5 @@ class PlayerProgressCollectorObservable:
     def notify(self, color: chess.Color, value: int | None) -> None:
         for subscriber in self.subscribers:
             subscriber.put(
-                PlayerProgressMessage(
-                    player_color=color,
-                    progress_percent=value
-                )
+                PlayerProgressMessage(player_color=color, progress_percent=value)
             )

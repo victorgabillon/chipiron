@@ -10,5 +10,5 @@ class NodeEvaluatorTypes(str, Enum):
     Enum class representing different types of node evaluators.
     """
 
-    NeuralNetwork = 'neural_network'
-    BasicEvaluation = 'basic_evaluation'
+    NeuralNetwork = "neural_network"
+    BasicEvaluation = "basic_evaluation"

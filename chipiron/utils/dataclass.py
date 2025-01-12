@@ -1,6 +1,7 @@
 """
 Module to check if an object is a dataclass
 """
+
 from collections.abc import Iterable
 from enum import Enum
 from typing import Any, ClassVar, Protocol
@@ -13,6 +14,7 @@ class DataClass(Protocol):
     This protocol is used to check if an object is a dataclass by checking
     for the presence of the `__dataclass_fields__` attribute.
     """
+
     __dataclass_fields__: dict[str, Any]
 
 
@@ -23,6 +25,7 @@ class IsDataclass(Protocol):
     This protocol is used to check if an object is a dataclass by checking
     for the presence of the `__dataclass_fields__` attribute.
     """
+
     __dataclass_fields__: ClassVar[dict[Any, Any]]
 
 

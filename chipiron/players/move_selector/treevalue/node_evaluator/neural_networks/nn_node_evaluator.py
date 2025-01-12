@@ -19,12 +19,12 @@ from ..node_evaluator import NodeEvaluator
 
 
 class NNNodeEvaluator(NodeEvaluator):
-    """ The Generic Neural network class for board evaluation"""
+    """The Generic Neural network class for board evaluation"""
 
     def __init__(
-            self,
-            nn_board_evaluator: board_nn.NNBoardEvaluator,
-            syzygy: SyzygyTable[Any] | None
+        self,
+        nn_board_evaluator: board_nn.NNBoardEvaluator,
+        syzygy: SyzygyTable[Any] | None,
     ) -> None:
         """
         Initializes an instance of the NNNodeEvaluator class.
@@ -33,17 +33,12 @@ class NNNodeEvaluator(NodeEvaluator):
             nn_board_evaluator (board_nn.NNBoardEvaluator): The neural network board evaluator.
             syzygy (SyzygyTable | None): The Syzygy table or None if not available.
         """
-        super().__init__(
-            board_evaluator=nn_board_evaluator,
-            syzygy=syzygy)
+        super().__init__(board_evaluator=nn_board_evaluator, syzygy=syzygy)
         self.net = nn_board_evaluator.net
         self.my_scripted_model = torch.jit.script(self.net)
         self.nn_board_evaluator = nn_board_evaluator
 
-    def evaluate_all_not_over(
-            self,
-            not_over_nodes: list[AlgorithmNode]
-    ) -> None:
+    def evaluate_all_not_over(self, not_over_nodes: list[AlgorithmNode]) -> None:
         """
         Evaluates a list of `AlgorithmNode` objects that are not yet over.
 
@@ -59,8 +54,10 @@ class NNNodeEvaluator(NodeEvaluator):
 
         for index, node_not_over in enumerate(not_over_nodes):
             assert node_not_over.board_representation is not None
-            list_of_tensors[index] = node_not_over.board_representation.get_evaluator_input(
-                color_to_play=node_not_over.player_to_move
+            list_of_tensors[index] = (
+                node_not_over.board_representation.get_evaluator_input(
+                    color_to_play=node_not_over.player_to_move
+                )
             )
 
         input_layers = torch.stack(list_of_tensors, dim=0)
@@ -72,10 +69,15 @@ class NNNodeEvaluator(NodeEvaluator):
         output_layer = self.my_scripted_model(input_layers)
 
         for index, node_not_over in enumerate(not_over_nodes):
-            board_evaluation: FloatyBoardEvaluation = self.nn_board_evaluator.output_and_value_converter.to_board_evaluation(
-                output_nn=output_layer[index],
-                color_to_play=node_not_over.tree_node.board.turn)
+            board_evaluation: FloatyBoardEvaluation = (
+                self.nn_board_evaluator.output_and_value_converter.to_board_evaluation(
+                    output_nn=output_layer[index],
+                    color_to_play=node_not_over.tree_node.board.turn,
+                )
+            )
             value_white: float | None = board_evaluation.value_white
             assert value_white is not None
-            processed_evaluation = self.process_evalution_not_over(value_white, node_not_over)
+            processed_evaluation = self.process_evalution_not_over(
+                value_white, node_not_over
+            )
             node_not_over.minmax_evaluation.set_evaluation(processed_evaluation)

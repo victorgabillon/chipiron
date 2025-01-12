@@ -1,6 +1,7 @@
 """
 Module for DictOfNumberedDictWithPointerOnMax class.
 """
+
 from typing import Protocol
 
 
@@ -15,7 +16,7 @@ class HasHalfMove(Protocol):
         """
 
 
-class DictOfNumberedDictWithPointerOnMax[T_Key:HasHalfMove, T_Value]:
+class DictOfNumberedDictWithPointerOnMax[T_Key: HasHalfMove, T_Value]:
     """
     A dictionary-like data structure that stores numbered dictionaries and keeps track of the maximum half move.
 
@@ -35,11 +36,7 @@ class DictOfNumberedDictWithPointerOnMax[T_Key:HasHalfMove, T_Value]:
         self.half_moves: dict[int, dict[T_Key, T_Value]] = {}
         self.max_half_move: int | None = None
 
-    def __setitem__(
-            self,
-            node: T_Key,
-            value: T_Value
-    ) -> None:
+    def __setitem__(self, node: T_Key, value: T_Value) -> None:
         """
         Adds an item to the data structure.
 
@@ -60,7 +57,7 @@ class DictOfNumberedDictWithPointerOnMax[T_Key:HasHalfMove, T_Value]:
         else:
             self.half_moves[half_move] = {node: value}
 
-        assert (self.max_half_move == max(self.half_moves))
+        assert self.max_half_move == max(self.half_moves)
 
     def __getitem__(self, node: T_Key) -> T_Value:
         """

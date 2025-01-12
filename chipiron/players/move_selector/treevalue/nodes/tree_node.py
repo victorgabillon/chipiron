@@ -17,7 +17,7 @@ from .itree_node import ITreeNode
 
 
 @dataclass(slots=True)
-class TreeNode[ChildrenType:ITreeNode[Any]]:
+class TreeNode[ChildrenType: ITreeNode[Any]]:
     r"""
     The TreeNode class stores information about a specific board position, including the board representation,
     the player to move, the half-move count, and the parent-child relationships with other nodes.
@@ -51,6 +51,7 @@ class TreeNode[ChildrenType:ITreeNode[Any]]:
         test_all_legal_moves_generated(): Tests if all legal moves have been generated.
         get_descendants(): Returns a dictionary of descendants of the node.
     """
+
     # id is a number to identify this node for easier debug
     id_: int
 
@@ -181,9 +182,7 @@ class TreeNode[ChildrenType:ITreeNode[Any]]:
         return self.board_.legal_moves
 
     def add_parent(
-            self,
-            move: moveKey,
-            new_parent_node: ITreeNode[ChildrenType]
+        self, move: moveKey, new_parent_node: ITreeNode[ChildrenType]
     ) -> None:
         """
         Adds a new parent node to the current node.
@@ -199,7 +198,9 @@ class TreeNode[ChildrenType:ITreeNode[Any]]:
             None
         """
         # debug
-        assert (new_parent_node not in self.parent_nodes)  # there cannot be two ways to link the same child-parent
+        assert (
+            new_parent_node not in self.parent_nodes
+        )  # there cannot be two ways to link the same child-parent
         self.parent_nodes[new_parent_node] = move
 
     def is_over(self) -> bool:
@@ -221,13 +222,20 @@ class TreeNode[ChildrenType:ITreeNode[Any]]:
         Returns:
             None
         """
-        print('here are the ', len(self.moves_children_), ' moves-children link of node', self.id, ': ', end=' ')
+        print(
+            "here are the ",
+            len(self.moves_children_),
+            " moves-children link of node",
+            self.id,
+            ": ",
+            end=" ",
+        )
         for move, child in self.moves_children_.items():
             if child is None:
-                print(move, child, end=' ')
+                print(move, child, end=" ")
             else:
-                print(move, child.id, end=' ')
-        print(' ')
+                print(move, child.id, end=" ")
+        print(" ")
 
     def test(self) -> None:
         """
@@ -246,7 +254,14 @@ class TreeNode[ChildrenType:ITreeNode[Any]]:
         Returns:
             A string representation of the node in the DOT format.
         """
-        return 'id:' + str(self.id) + ' dep: ' + str(self.half_move) + '\nfen:' + str(self.board)
+        return (
+            "id:"
+            + str(self.id)
+            + " dep: "
+            + str(self.half_move)
+            + "\nfen:"
+            + str(self.board)
+        )
 
     def test_all_legal_moves_generated(self) -> None:
         """
@@ -264,7 +279,9 @@ class TreeNode[ChildrenType:ITreeNode[Any]]:
         move: moveKey
         if self.all_legal_moves_generated:
             for move in self.board.legal_moves:
-                assert (bool(move in self.moves_children_) != bool(move in self.non_opened_legal_moves))
+                assert bool(move in self.moves_children_) != bool(
+                    move in self.non_opened_legal_moves
+                )
         else:
             move_not_in: list[moveKey] = []
             legal_moves: list[moveKey] = self.board.legal_moves.get_all()
@@ -275,4 +292,4 @@ class TreeNode[ChildrenType:ITreeNode[Any]]:
                 pass
                 # print('test', move_not_in, list(self.board.get_legal_moves()), self.moves_children)
                 # print(self.board)
-            assert (move_not_in != [] or legal_moves == [])
+            assert move_not_in != [] or legal_moves == []

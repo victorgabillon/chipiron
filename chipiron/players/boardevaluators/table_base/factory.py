@@ -2,6 +2,7 @@
 Module to create a SyzygyTable object if the path to the syzygy tables exists,
 otherwise return None.
 """
+
 import os
 from typing import Any, Protocol
 
@@ -27,7 +28,7 @@ def create_syzygy_python() -> SyzygyChiTable | None:
     if is_exist:
         syzygy_table = SyzygyChiTable(path_to_table=path_to_table)
     else:
-        print('WARNING: no folder found for syzygy tables so NOT using it')
+        print("WARNING: no folder found for syzygy tables so NOT using it")
         syzygy_table = None
 
     return syzygy_table
@@ -48,7 +49,7 @@ def create_syzygy_rust() -> SyzygyRustTable | None:
     if is_exist:
         syzygy_table = SyzygyRustTable(path_to_table=path_to_table)
     else:
-        print('WARNING: no folder found for syzygy tables so NOT using it')
+        print("WARNING: no folder found for syzygy tables so NOT using it")
         syzygy_table = None
 
     return syzygy_table
@@ -56,21 +57,17 @@ def create_syzygy_rust() -> SyzygyRustTable | None:
 
 class SyzygyProvider(Protocol):
     def provide(
-            self,
-    ) -> SyzygyChiTable | None:
-        ...
+        self,
+    ) -> SyzygyChiTable | None: ...
 
 
 class SyzygyFactory(Protocol):
     def __call__(
-            self,
-    ) -> SyzygyTable[Any] | None:
-        ...
+        self,
+    ) -> SyzygyTable[Any] | None: ...
 
 
-def create_syzygy_factory(
-        use_rust: bool
-) -> SyzygyFactory:
+def create_syzygy_factory(use_rust: bool) -> SyzygyFactory:
     """
     Create a SyzygyTable object
     """
@@ -83,9 +80,7 @@ def create_syzygy_factory(
     return syzygy_factory
 
 
-def create_syzygy(
-        use_rust: bool
-) -> SyzygyTable[Any] | None:
+def create_syzygy(use_rust: bool) -> SyzygyTable[Any] | None:
     """
     Create a SyzygyTable object
     """

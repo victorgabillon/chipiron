@@ -8,7 +8,7 @@ first_line: int = 8
 
 dict_fen_move: dict[str, list[chess.Move]] = {}
 
-with open(file='data/puzzles/matein2.txt', mode='r') as file:
+with open(file="data/puzzles/matein2.txt", mode="r") as file:
     content = file.readlines()
     line: int = first_line
     index: int = 0
@@ -34,5 +34,5 @@ with open(file='data/puzzles/matein2.txt', mode='r') as file:
         dict_fen_move[clean_fen] = chess_moves
         index += 1
 
-with open('data/puzzles/mate_in_2_db_small.pickle', 'wb') as file:
+with open("data/puzzles/mate_in_2_db_small.pickle", "wb") as file:
     pickle.dump(obj=dict_fen_move, file=file)

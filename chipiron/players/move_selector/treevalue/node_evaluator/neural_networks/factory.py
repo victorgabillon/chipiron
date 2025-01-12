@@ -31,4 +31,4 @@ class NeuralNetNodeEvalArgs(NodeEvaluatorArgs):
             ValueError: If the type is not NodeEvaluatorTypes.NeuralNetwork.
         """
         if self.type != NodeEvaluatorTypes.NeuralNetwork:
-            raise ValueError('Expecting neural_network as name')
+            raise ValueError("Expecting neural_network as name")

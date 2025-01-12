@@ -28,9 +28,7 @@ from chipiron.utils.chi_nn import ChiNN
 class NetP2(ChiNN):
     """The NetP2 class. Inherits from the ChiNN base class."""
 
-    def __init__(
-            self
-    ) -> None:
+    def __init__(self) -> None:
         """Constructor for the NetP2 class. Initializes the neural network layers."""
         super(NetP2, self).__init__()
 
@@ -73,17 +71,17 @@ class NetP2(ChiNN):
         """
         for layer, param in enumerate(self.parameters()):
             if layer == 0:
-                print('pawns', param.data[0, 0])
-                print('knights', param.data[0, 1])
-                print('bishops', param.data[0, 2])
-                print('rook', param.data[0, 3])
-                print('queen', param.data[0, 4])
+                print("pawns", param.data[0, 0])
+                print("knights", param.data[0, 1])
+                print("bishops", param.data[0, 2])
+                print("rook", param.data[0, 3])
+                print("queen", param.data[0, 4])
                 # print('king', param.data[0, 5])
-                print('pawns-opp', param.data[0, 5])
-                print('knights-opp', param.data[0, 6])
-                print('bishops-opp', param.data[0, 7])
-                print('rook-opp', param.data[0, 8])
-                print('queen-opp', param.data[0, 9])
+                print("pawns-opp", param.data[0, 5])
+                print("knights-opp", param.data[0, 6])
+                print("bishops-opp", param.data[0, 7])
+                print("rook-opp", param.data[0, 8])
+                print("queen-opp", param.data[0, 9])
             else:
                 print(param.data)
 
@@ -94,14 +92,14 @@ class NetP2(ChiNN):
         Args:
             input (torch.Tensor): The input tensor.
         """
-        print('pawns', input[0])
-        print('knights', input[1])
-        print('bishops', input[2])
-        print('rook', input[3])
-        print('queen', input[4])
+        print("pawns", input[0])
+        print("knights", input[1])
+        print("bishops", input[2])
+        print("rook", input[3])
+        print("queen", input[4])
         #  print('king', input[5])
-        print('pawns-opp', input[5])
-        print('knights-opp', input[6])
-        print('bishops-opp', input[7])
-        print('rook-opp', input[8])
-        print('queen-opp', input[9])
+        print("pawns-opp", input[5])
+        print("knights-opp", input[6])
+        print("bishops-opp", input[7])
+        print("rook-opp", input[8])
+        print("queen-opp", input[9])

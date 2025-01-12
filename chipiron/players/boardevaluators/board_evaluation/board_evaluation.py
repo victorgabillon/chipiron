@@ -24,6 +24,7 @@ class PointOfView(Enum):
         PLAYER_TO_MOVE (PointOfView): The point of view of the player who is currently making a move.
         NOT_PLAYER_TO_MOVE (PointOfView): The point of view of the player who is not currently making a move.
     """
+
     WHITE = 0
     BLACK = 1
     PLAYER_TO_MOVE = 2
@@ -49,6 +50,7 @@ class FloatyBoardEvaluation:
     The class to defines what is an evaluation of a board.
     By convention is it always evaluated from the view point of the white side.
     """
+
     # The evaluation value for the white side when the outcome is not certain. Typically, a float.
     # todo can we remove the None option?
     value_white: float | None

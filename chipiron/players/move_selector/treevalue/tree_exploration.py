@@ -14,6 +14,7 @@ Classes:
 Functions:
 - create_tree_exploration: Creates a TreeExploration object with the specified dependencies.
 """
+
 import queue
 import random
 from dataclasses import dataclass
@@ -63,6 +64,7 @@ class TreeExploration:
     - print_info_during_move_computation: Prints information during the move computation.
     - explore: Explores the tree to find the best move.
     """
+
     # TODO Not sure why this class is not simply the TreeAndValuePlayer Class
     #  but might be useful when dealing with multi round and time , no?
 
@@ -74,7 +76,7 @@ class TreeExploration:
     notify_percent_function: Callable[[int], None] | None
 
     def print_info_during_move_computation(
-            self, random_generator: random.Random
+        self, random_generator: random.Random
     ) -> None:
         """
         Prints information during the move computation.
@@ -87,22 +89,22 @@ class TreeExploration:
         """
         current_best_move: str
         if self.tree.root_node.minmax_evaluation.best_move_sequence:
-            current_best_move = str(self.tree.root_node.minmax_evaluation.best_move_sequence[0])
+            current_best_move = str(
+                self.tree.root_node.minmax_evaluation.best_move_sequence[0]
+            )
         else:
-            current_best_move = '?'
-        if random_generator.random() < .11:
-            print(f'fen: {self.tree.root_node.board.fen}')
+            current_best_move = "?"
+        if random_generator.random() < 0.11:
+            print(f"fen: {self.tree.root_node.board.fen}")
             str_progress = self.stopping_criterion.get_string_of_progress(self.tree)
             print(
-                f'{str_progress} | current best move:  {current_best_move} | current white value: {self.tree.root_node.minmax_evaluation.value_white_minmax})')
+                f"{str_progress} | current best move:  {current_best_move} | current white value: {self.tree.root_node.minmax_evaluation.value_white_minmax})"
+            )
             # ,end='\r')
             self.tree.root_node.minmax_evaluation.print_moves_sorted_by_value_and_exploration()
             self.tree_manager.print_best_line(tree=self.tree)
 
-    def explore(
-            self,
-            random_generator: random.Random
-    ) -> TreeExplorationResult:
+    def explore(self, random_generator: random.Random) -> TreeExplorationResult:
         """
         Explores the tree to find the best move.
 
@@ -121,35 +123,34 @@ class TreeExploration:
             parent_node=None,
             board_modifications=None,
             creation_child_node=True,
-            move=None
+            move=None,
         )
         tree_expansions.add_creation(tree_expansion=tree_expansion)
 
         loop: int = 0
         while self.stopping_criterion.should_we_continue(tree=self.tree):
             loop = loop + 1
-            assert (not self.tree.root_node.is_over())
+            assert not self.tree.root_node.is_over()
             # print info
             self.print_info_during_move_computation(random_generator=random_generator)
 
             # choose the moves and nodes to open
             opening_instructions: node_sel.OpeningInstructions
             opening_instructions = self.node_selector.choose_node_and_move_to_open(
-                tree=self.tree,
-                latest_tree_expansions=tree_expansions
+                tree=self.tree, latest_tree_expansions=tree_expansions
             )
 
             # make sure we do not break the stopping criterion
             opening_instructions_subset: node_sel.OpeningInstructions
-            opening_instructions_subset = self.stopping_criterion.respectful_opening_instructions(
-                opening_instructions=opening_instructions,
-                tree=self.tree
+            opening_instructions_subset = (
+                self.stopping_criterion.respectful_opening_instructions(
+                    opening_instructions=opening_instructions, tree=self.tree
+                )
             )
 
             # open the nodes
             tree_expansions = self.tree_manager.open_instructions(
-                tree=self.tree,
-                opening_instructions=opening_instructions_subset
+                tree=self.tree, opening_instructions=opening_instructions_subset
             )
 
             # self.node_selector.communicate_expansions()
@@ -158,8 +159,7 @@ class TreeExploration:
 
             if loop % 10 == 0:
                 self.stopping_criterion.notify_percent_progress(
-                    tree=self.tree,
-                    notify_percent_function=self.notify_percent_function
+                    tree=self.tree, notify_percent_function=self.notify_percent_function
                 )
 
         # trees.save_raw_data_to_file(tree=self.tree)
@@ -172,31 +172,32 @@ class TreeExploration:
         best_move: moveKey = recommend_move_after_exploration_generic(
             self.recommend_move_after_exploration,
             tree=self.tree,
-            random_generator=random_generator)
+            random_generator=random_generator,
+        )
 
-        self.tree_manager.print_best_line(tree=self.tree)  # todo maybe almost best chosen line no?
+        self.tree_manager.print_best_line(
+            tree=self.tree
+        )  # todo maybe almost best chosen line no?
 
         move_recommendation: MoveRecommendation = MoveRecommendation(
-            move=best_move,
-            evaluation=self.tree.evaluate()
+            move=best_move, evaluation=self.tree.evaluate()
         )
 
         tree_exploration_result: TreeExplorationResult = TreeExplorationResult(
-            move_recommendation=move_recommendation,
-            tree=self.tree
+            move_recommendation=move_recommendation, tree=self.tree
         )
 
         return tree_exploration_result
 
 
 def create_tree_exploration(
-        node_selector_create: NodeSelectorFactory,
-        starting_board: boards.IBoard,
-        tree_manager: tree_man.AlgorithmNodeTreeManager,
-        tree_factory: MoveAndValueTreeFactory,
-        stopping_criterion_args: AllStoppingCriterionArgs,
-        recommend_move_after_exploration: recommender_rule.AllRecommendFunctionsArgs,
-        queue_progress_player: queue.Queue[IsDataclass] | None
+    node_selector_create: NodeSelectorFactory,
+    starting_board: boards.IBoard,
+    tree_manager: tree_man.AlgorithmNodeTreeManager,
+    tree_factory: MoveAndValueTreeFactory,
+    stopping_criterion_args: AllStoppingCriterionArgs,
+    recommend_move_after_exploration: recommender_rule.AllRecommendFunctionsArgs,
+    queue_progress_player: queue.Queue[IsDataclass] | None,
 ) -> TreeExploration:
     """
     Creates a TreeExploration object with the specified dependencies.
@@ -214,22 +215,24 @@ def create_tree_exploration(
     """
 
     # creates the tree
-    move_and_value_tree: trees.MoveAndValueTree = tree_factory.create(starting_board=starting_board)
+    move_and_value_tree: trees.MoveAndValueTree = tree_factory.create(
+        starting_board=starting_board
+    )
 
     # creates the node selector
     node_selector: node_sel.NodeSelector = node_selector_create()
 
     stopping_criterion: ProgressMonitor = create_stopping_criterion(
-        args=stopping_criterion_args,
-        node_selector=node_selector
+        args=stopping_criterion_args, node_selector=node_selector
     )
 
     def notify_percent_function(progress_percent: int) -> None:
         if queue_progress_player is not None:
-            queue_progress_player.put(PlayerProgressMessage(
-                progress_percent=progress_percent,
-                player_color=starting_board.turn
-            ))
+            queue_progress_player.put(
+                PlayerProgressMessage(
+                    progress_percent=progress_percent, player_color=starting_board.turn
+                )
+            )
 
     tree_exploration: TreeExploration = TreeExploration(
         tree=move_and_value_tree,
@@ -237,7 +240,7 @@ def create_tree_exploration(
         stopping_criterion=stopping_criterion,
         node_selector=node_selector,
         recommend_move_after_exploration=recommend_move_after_exploration,
-        notify_percent_function=notify_percent_function
+        notify_percent_function=notify_percent_function,
     )
 
     return tree_exploration

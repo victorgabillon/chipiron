@@ -34,10 +34,10 @@ class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
     chess_rust_binding: shakmaty_python_binding.MyChess
 
     def __init__(
-            self,
-            sort_legal_moves: bool,
-            chess_rust_binding: shakmaty_python_binding.MyChess,
-            generated_moves: list[shakmaty_python_binding.MyMove] | None = None
+        self,
+        sort_legal_moves: bool,
+        chess_rust_binding: shakmaty_python_binding.MyChess,
+        generated_moves: list[shakmaty_python_binding.MyMove] | None = None,
     ):
         self.chess_rust_binding = chess_rust_binding
         self.generated_moves = generated_moves
@@ -46,14 +46,15 @@ class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
             self.it: Iterator[int] = iter(range(self.number_moves))
             self.all_generated_keys = list(range(self.number_moves))
             if sort_legal_moves:
+
                 def f(i: int) -> moveUci:
-                    assert (self.generated_moves is not None)
+                    assert self.generated_moves is not None
                     return self.generated_moves[i].uci()
 
                 self.all_generated_keys = sorted(
                     list(range(self.number_moves)),
                     # key=lambda i: self.generated_moves[i].uci()
-                    key=f
+                    key=f,
                 )
             else:
                 self.all_generated_keys = list(range(self.number_moves))
@@ -65,29 +66,24 @@ class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
     def fen(self) -> fen:
         return self.chess_rust_binding.fen()
 
-    def reset(
-            self,
-            generated_moves: list[shakmaty_python_binding.MyMove]
-    ) -> None:
+    def reset(self, generated_moves: list[shakmaty_python_binding.MyMove]) -> None:
         self.generated_moves = generated_moves
         self.number_moves = len(generated_moves)
         self.it = iter(range(self.number_moves))
         self.all_generated_keys = list(range(self.number_moves))
 
     def copy_with_reset(
-            self,
-            generated_moves: list[shakmaty_python_binding.MyMove] | None = None
-    ) -> 'LegalMoveKeyGeneratorRust':
+        self, generated_moves: list[shakmaty_python_binding.MyMove] | None = None
+    ) -> "LegalMoveKeyGeneratorRust":
         legal_move_copy = LegalMoveKeyGeneratorRust(
             chess_rust_binding=self.chess_rust_binding,
             generated_moves=generated_moves,
-            sort_legal_moves=self.sort_legal_moves
+            sort_legal_moves=self.sort_legal_moves,
         )
         return legal_move_copy
 
     def set_legal_moves(
-            self,
-            generated_moves: list[shakmaty_python_binding.MyMove]
+        self, generated_moves: list[shakmaty_python_binding.MyMove]
     ) -> None:
         self.generated_moves = generated_moves
         self.number_moves = len(generated_moves)
@@ -96,17 +92,19 @@ class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
         if self.generated_moves is None:
             self.generated_moves = self.chess_rust_binding.legal_moves()
         if self.sort_legal_moves:
-            assert (self.generated_moves is not None)
+            assert self.generated_moves is not None
 
             def f(i: int) -> moveUci:
-                assert (self.generated_moves is not None)
+                assert self.generated_moves is not None
                 return self.generated_moves[i].uci()
 
-            self.it = iter(sorted(
-                list(range(self.number_moves)),
-                # key=lambda i: self.generated_moves[i].uci()
-                key=f
-            ))
+            self.it = iter(
+                sorted(
+                    list(range(self.number_moves)),
+                    # key=lambda i: self.generated_moves[i].uci()
+                    key=f,
+                )
+            )
         else:
             self.it = iter(range(self.number_moves))
         return self
@@ -115,17 +113,20 @@ class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
         return self.it.__next__()
 
     def copy(
-            self,
-            copied_chess_rust_binding: shakmaty_python_binding.MyChess | None = None
-    ) -> 'LegalMoveKeyGeneratorRust':
+        self, copied_chess_rust_binding: shakmaty_python_binding.MyChess | None = None
+    ) -> "LegalMoveKeyGeneratorRust":
         if copied_chess_rust_binding is None:
             copied_chess_rust_binding_ = self.chess_rust_binding
         else:
             copied_chess_rust_binding_ = copied_chess_rust_binding
         legal_move_copy = LegalMoveKeyGeneratorRust(
             chess_rust_binding=copied_chess_rust_binding_,
-            generated_moves=self.generated_moves.copy() if self.generated_moves is not None else None,
-            sort_legal_moves=self.sort_legal_moves
+            generated_moves=(
+                self.generated_moves.copy()
+                if self.generated_moves is not None
+                else None
+            ),
+            sort_legal_moves=self.sort_legal_moves,
         )
         if self.all_generated_keys is not None:
             legal_move_copy.all_generated_keys = self.all_generated_keys.copy()
@@ -141,14 +142,15 @@ class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
 
         if self.all_generated_keys is None:
             if self.sort_legal_moves:
+
                 def f(i: int) -> moveUci:
-                    assert (self.generated_moves is not None)
+                    assert self.generated_moves is not None
                     return self.generated_moves[i].uci()
 
                 s = sorted(
                     list(range(self.number_moves)),
                     # key=lambda i: self.generated_moves[i].uci()
-                    key=f
+                    key=f,
                 )
                 return s
             else:
@@ -165,6 +167,7 @@ class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
 
 
 # todo implement rewind (and a test for it)
+
 
 @dataclass
 class RustyBoardChi(IBoard):
@@ -220,8 +223,7 @@ class RustyBoardChi(IBoard):
         return self.fen
 
     def play_move_old(
-            self,
-            move: shakmaty_python_binding.MyMove
+        self, move: shakmaty_python_binding.MyMove
     ) -> BoardModification | None:
         board_modifications: BoardModification | None
 
@@ -239,9 +241,20 @@ class RustyBoardChi(IBoard):
 
     def play_min_2(self, move: shakmaty_python_binding.MyMove) -> None:
         # _str, ply, turn, is_game_over = self.chess_.play_and_return(move)
-        (self.castling_rights_, self.pawns_, self.knights_, self.bishops_, self.rooks_, self.queens_, self.kings_,
-         self.white_, self.black_, turn_int, ep_square_int, self.promoted_) = self.chess_.play_and_return_o(
-            move)
+        (
+            self.castling_rights_,
+            self.pawns_,
+            self.knights_,
+            self.bishops_,
+            self.rooks_,
+            self.queens_,
+            self.kings_,
+            self.white_,
+            self.black_,
+            turn_int,
+            ep_square_int,
+            self.promoted_,
+        ) = self.chess_.play_and_return_o(move)
         self.turn_ = bool(turn_int)
         if ep_square_int == -1:
             self.ep_square_ = None
@@ -252,11 +265,23 @@ class RustyBoardChi(IBoard):
     def play_min_3(self, move: shakmaty_python_binding.MyMove) -> BoardModificationRust:
         # _str, ply, turn, is_game_over = self.chess_.play_and_return(move)
         (
-            (self.castling_rights_, self.pawns_, self.knights_, self.bishops_, self.rooks_, self.queens_, self.kings_,
-             self.white_, self.black_, turn_int, ep_square_int, self.promoted_),
-            appearances, removals
-        ) = self.chess_.play_and_return_modifications(
-            move)
+            (
+                self.castling_rights_,
+                self.pawns_,
+                self.knights_,
+                self.bishops_,
+                self.rooks_,
+                self.queens_,
+                self.kings_,
+                self.white_,
+                self.black_,
+                turn_int,
+                ep_square_int,
+                self.promoted_,
+            ),
+            appearances,
+            removals,
+        ) = self.chess_.play_and_return_modifications(move)
         self.turn_ = bool(turn_int)
         if ep_square_int == -1:
             self.ep_square_ = None
@@ -269,11 +294,13 @@ class RustyBoardChi(IBoard):
         return board_modifications
 
     def convert(
-            self,
-            appearances: set[tuple[int, int, int]],
-            removals: set[tuple[int, int, int]]
+        self,
+        appearances: set[tuple[int, int, int]],
+        removals: set[tuple[int, int, int]],
     ) -> BoardModificationRust:
-        board_modifications: BoardModificationRust = BoardModificationRust(appearances_=appearances, removals_=removals)
+        board_modifications: BoardModificationRust = BoardModificationRust(
+            appearances_=appearances, removals_=removals
+        )
 
         #        board_modifications: BoardModification = BoardModification(
         #            appearances={PieceInSquare(square=a[0],piece=a[1],color=bool(a[2])) for a in appearances},
@@ -282,8 +309,7 @@ class RustyBoardChi(IBoard):
         return board_modifications
 
     def play_move(
-            self,
-            move: shakmaty_python_binding.MyMove
+        self, move: shakmaty_python_binding.MyMove
     ) -> BoardModificationP | None:
         """
         Plays a move on the board and returns the board modification.
@@ -346,7 +372,9 @@ class RustyBoardChi(IBoard):
             self.play_min_2(move)
 
         # update after move
-        self.legal_moves_ = self.legal_moves_.copy_with_reset()  # the legals moves needs to be recomputed as the board has changed
+        self.legal_moves_ = (
+            self.legal_moves_.copy_with_reset()
+        )  # the legals moves needs to be recomputed as the board has changed
 
         fast_representation: boardKey = compute_key(
             pawns=self.pawns_,
@@ -362,7 +390,7 @@ class RustyBoardChi(IBoard):
             black=self.black_,
             promoted=self.promoted_,
             fullmove_number=self.chess_.fullmove_number(),
-            halfmove_clock=self.chess_.halfmove_clock()
+            halfmove_clock=self.chess_.halfmove_clock(),
         )
         self.fast_representation_ = fast_representation
         self.rep_to_count.update([self.fast_representation_without_counters])
@@ -372,20 +400,18 @@ class RustyBoardChi(IBoard):
 
         return board_modifications
 
-    def play_move_uci(
-            self,
-            move_uci: moveUci
-    ) -> BoardModificationP | None:
-        chess_move: shakmaty_python_binding.MyMove = shakmaty_python_binding.MyMove(uci=move_uci, my_chess=self.chess_)
+    def play_move_uci(self, move_uci: moveUci) -> BoardModificationP | None:
+        chess_move: shakmaty_python_binding.MyMove = shakmaty_python_binding.MyMove(
+            uci=move_uci, my_chess=self.chess_
+        )
         return self.play_move(move=chess_move)
 
     # todo look like this function might move to iboard when the dust settle
-    def play_move_key(
-            self,
-            move: moveKey
-    ) -> BoardModificationP | None:
-        assert (self.legal_moves_.generated_moves is not None)
-        my_move: shakmaty_python_binding.MyMove = self.legal_moves_.generated_moves[move]
+    def play_move_key(self, move: moveKey) -> BoardModificationP | None:
+        assert self.legal_moves_.generated_moves is not None
+        my_move: shakmaty_python_binding.MyMove = self.legal_moves_.generated_moves[
+            move
+        ]
         return self.play_move(move=my_move)
 
     def ply(self) -> int:
@@ -417,19 +443,17 @@ class RustyBoardChi(IBoard):
             bool: True if the game is over, False otherwise.
         """
         claim_draw: bool = True if len(self.move_stack) >= 5 else False
-        three_fold_repetition: bool = max(self.rep_to_count.values()) > 2 if claim_draw else False
+        three_fold_repetition: bool = (
+            max(self.rep_to_count.values()) > 2 if claim_draw else False
+        )
         # todo check the move stack : check for repetition as the rust version not do it
         # todo remove this hasatrribute at some point
-        if hasattr(self, 'is_game_over_'):
+        if hasattr(self, "is_game_over_"):
             return three_fold_repetition or self.is_game_over_
         else:
             return three_fold_repetition or self.chess_.is_game_over()
 
-    def copy(
-            self,
-            stack: bool,
-            deep_copy_legal_moves: bool = True
-    ) -> Self:
+    def copy(self, stack: bool, deep_copy_legal_moves: bool = True) -> Self:
         """
         Create a copy of the current board.
 
@@ -444,7 +468,9 @@ class RustyBoardChi(IBoard):
 
         legal_moves_copy: LegalMoveKeyGeneratorRust
         if deep_copy_legal_moves:
-            legal_moves_copy = self.legal_moves_.copy(copied_chess_rust_binding=chess_copy)
+            legal_moves_copy = self.legal_moves_.copy(
+                copied_chess_rust_binding=chess_copy
+            )
         else:
             legal_moves_copy = self.legal_moves_
             legal_moves_copy.chess_rust_binding = chess_copy
@@ -467,7 +493,7 @@ class RustyBoardChi(IBoard):
             ep_square_=self.ep_square_,
             promoted_=self.promoted_,
             castling_rights_=self.castling_rights_,
-            legal_moves_=legal_moves_copy
+            legal_moves_=legal_moves_copy,
         )
 
     @property
@@ -493,10 +519,7 @@ class RustyBoardChi(IBoard):
         """
         return self.chess_.fen()
 
-    def piece_at(
-            self,
-            square: chess.Square
-    ) -> chess.Piece | None:
+    def piece_at(self, square: chess.Square) -> chess.Piece | None:
         """
         Returns the piece at the specified square on the chess board.
 
@@ -515,16 +538,11 @@ class RustyBoardChi(IBoard):
             piece = chess.Piece(piece_type=piece_or_none[1], color=piece_or_none[0])
         return piece
 
-    def piece_map(
-            self
-    ) -> dict[chess.Square, tuple[int, bool]]:
+    def piece_map(self) -> dict[chess.Square, tuple[int, bool]]:
         dict_raw = self.chess_.piece_map()
         return dict_raw
 
-    def has_kingside_castling_rights(
-            self,
-            color: chess.Color
-    ) -> bool:
+    def has_kingside_castling_rights(self, color: chess.Color) -> bool:
         """
         Check if the specified color has kingside castling rights.
 
@@ -536,10 +554,7 @@ class RustyBoardChi(IBoard):
         """
         return self.chess_.has_kingside_castling_rights(color)
 
-    def has_queenside_castling_rights(
-            self,
-            color: chess.Color
-    ) -> bool:
+    def has_queenside_castling_rights(self, color: chess.Color) -> bool:
         """
         Check if the specified color has queenside castling rights.
 
@@ -563,20 +578,15 @@ class RustyBoardChi(IBoard):
         """
         print(self.chess_.fen())
 
-    def tell_result(self) -> None:
-        ...
+    def tell_result(self) -> None: ...
 
     @property
     def move_history_stack(self) -> list[moveUci]:
         return self.move_stack
 
-    def dump(self, f: Any) -> None:
-        ...
+    def dump(self, f: Any) -> None: ...
 
-    def is_attacked(
-            self,
-            a_color: chess.Color
-    ) -> bool:
+    def is_attacked(self, a_color: chess.Color) -> bool:
         """Check if any piece of the color `a_color` is attacked.
 
         Args:
@@ -632,16 +642,15 @@ class RustyBoardChi(IBoard):
     def occupied(self) -> chess.Bitboard:
         return self.chess_.occupied()
 
-    def result(
-            self,
-            claim_draw: bool = False
-    ) -> str:
+    def result(self, claim_draw: bool = False) -> str:
 
         claim_draw_: bool = True if len(self.move_stack) >= 5 and claim_draw else False
-        three_fold_repetition: bool = max(self.rep_to_count.values()) > 2 if claim_draw_ else False
+        three_fold_repetition: bool = (
+            max(self.rep_to_count.values()) > 2 if claim_draw_ else False
+        )
 
         if three_fold_repetition:
-            return '1/2-1/2'
+            return "1/2-1/2"
         else:
             return self.chess_.result()
 
@@ -675,16 +684,14 @@ class RustyBoardChi(IBoard):
     def ep_square(self) -> int | None:
         return self.ep_square_
 
-    def is_zeroing(
-            self,
-            move: moveKey
-    ) -> bool:
-        assert (self.legal_moves_.generated_moves is not None)
-        chess_move: shakmaty_python_binding.MyMove = self.legal_moves_.generated_moves[move]
+    def is_zeroing(self, move: moveKey) -> bool:
+        assert self.legal_moves_.generated_moves is not None
+        chess_move: shakmaty_python_binding.MyMove = self.legal_moves_.generated_moves[
+            move
+        ]
         return chess_move.is_zeroing()
 
     def into_fen_plus_history(self) -> FenPlusHistory:
         return FenPlusHistory(
-            current_fen=self.fen,
-            historical_moves=self.move_history_stack
+            current_fen=self.fen, historical_moves=self.move_history_stack
         )

@@ -24,6 +24,7 @@ def destroy(root: tk.Tk) -> bool:
 
 # TODO switch to pygame
 
+
 def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
     """
     Run the chipiron GUI script.
@@ -33,7 +34,7 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
     """
     root = tk.Tk()
     # place a label on the root window
-    root.title('chipiron')
+    root.title("chipiron")
     output: dict[str, Any] = {}
 
     window_width: int = 800
@@ -48,18 +49,14 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
     center_y: int = int(screen_height / 2 - window_height / 2)
 
     # set the position of the window to the center of the screen
-    root.geometry(f'{window_width}x{window_height}+{center_x}+{center_y}')
+    root.geometry(f"{window_width}x{window_height}+{center_x}+{center_y}")
     # root.iconbitmap('download.jpeg')
 
     message = tk.Label(root, text="What to do?")
     message.grid(column=0, row=0)
 
     # exit button
-    exit_button = tk.Button(
-        root,
-        text='Exit',
-        command=lambda: root.quit()
-    )
+    exit_button = tk.Button(root, text="Exit", command=lambda: root.quit())
 
     message = tk.Label(root, text="Play ")
     message.grid(column=0, row=2)
@@ -119,29 +116,28 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
     # play button
     play_against_chipiron_button: tk.Button = tk.Button(
         root,
-        text='!Play!',
+        text="!Play!",
         command=lambda: [
             play_against_chipiron(
                 root,
                 strength=strength_value,
                 color=color_choice_human,
-                chipi_algo=chipi_algo_choice),
-            destroy(root)
-        ]
+                chipi_algo=chipi_algo_choice,
+            ),
+            destroy(root),
+        ],
     )
 
     # watch button
     watch_a_game_button: tk.Button = tk.Button(
-        root,
-        text='Watch a game',
-        command=lambda: [watch_a_game(output), destroy(root)]
+        root, text="Watch a game", command=lambda: [watch_a_game(output), destroy(root)]
     )
 
     # visualize button
     visualize_a_tree_button: tk.Button = tk.Button(
         root,
-        text='Visualize a tree',
-        command=lambda: [visualize_a_tree(output), destroy(root)]
+        text="Visualize a tree",
+        command=lambda: [visualize_a_tree(output), destroy(root)],
     )
 
     play_against_chipiron_button.grid(row=2, column=6)
@@ -152,50 +148,56 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
     root.mainloop()
     gui_args: dict[str, Any]
     script_type: scripts.ScriptType
-    match output['type']:
-        case 'play_against_chipiron':
-            tree_move_limit = 4 * 10 ** output['strength']
+    match output["type"]:
+        case "play_against_chipiron":
+            tree_move_limit = 4 * 10 ** output["strength"]
             gui_args = {
-                'config_file_name': 'chipiron/scripts/one_match/exp_options.yaml',
-                'seed': 0,
-                'gui': True,
-                'file_name_match_setting': 'setting_duda.yaml',
+                "config_file_name": "chipiron/scripts/one_match/exp_options.yaml",
+                "seed": 0,
+                "gui": True,
+                "file_name_match_setting": "setting_duda.yaml",
             }
-            if output['color_human'] == 'White':
-                gui_args['file_name_player_one'] = 'Human.yaml'
-                gui_args['file_name_player_two'] = f'{output["chipi_algo"]}.yaml'
-                gui_args['player_two'] = {
-                    'main_move_selector': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}
+            if output["color_human"] == "White":
+                gui_args["file_name_player_one"] = "Human.yaml"
+                gui_args["file_name_player_two"] = f'{output["chipi_algo"]}.yaml'
+                gui_args["player_two"] = {
+                    "main_move_selector": {
+                        "stopping_criterion": {"tree_move_limit": tree_move_limit}
+                    }
+                }
             else:
-                gui_args['file_name_player_two'] = 'Human.yaml'
-                gui_args['file_name_player_one'] = f'{output["chipi_algo"]}.yaml'
-                gui_args['player_one'] = {
-                    'main_move_selector': {'stopping_criterion': {'tree_move_limit': tree_move_limit}}}
+                gui_args["file_name_player_two"] = "Human.yaml"
+                gui_args["file_name_player_one"] = f'{output["chipi_algo"]}.yaml'
+                gui_args["player_one"] = {
+                    "main_move_selector": {
+                        "stopping_criterion": {"tree_move_limit": tree_move_limit}
+                    }
+                }
             script_type = scripts.ScriptType.OneMatch
-        case 'watch_a_game':
-            gui_args = {'config_file_name': 'chipiron/scripts/one_match/exp_options.yaml',
-                        'seed': 0,
-                        'gui': True,
-                        'file_name_player_one': 'RecurZipfBase3.yaml',
-                        'file_name_player_two': 'RecurZipfBase4.yaml',
-                        'file_name_match_setting': 'setting_duda.yaml'}
+        case "watch_a_game":
+            gui_args = {
+                "config_file_name": "chipiron/scripts/one_match/exp_options.yaml",
+                "seed": 0,
+                "gui": True,
+                "file_name_player_one": "RecurZipfBase3.yaml",
+                "file_name_player_two": "RecurZipfBase4.yaml",
+                "file_name_match_setting": "setting_duda.yaml",
+            }
             script_type = scripts.ScriptType.OneMatch
-        case 'tree_visualization':
-            gui_args = {'config_file_name': 'chipiron/scripts/tree_visualization/exp_options.yaml',
-                        }
+        case "tree_visualization":
+            gui_args = {
+                "config_file_name": "chipiron/scripts/tree_visualization/exp_options.yaml",
+            }
             script_type = scripts.ScriptType.TreeVisualization
         case other:
-            raise Exception(f'Not a good name: {other}')
+            raise Exception(f"Not a good name: {other}")
 
-    print(f'Gui choices: the script name is {script_type} and the args are {gui_args}')
+    print(f"Gui choices: the script name is {script_type} and the args are {gui_args}")
     return script_type, gui_args
 
 
 def play_against_chipiron(
-        output: tk.Tk,
-        strength: tk.StringVar,
-        color: tk.StringVar,
-        chipi_algo: tk.StringVar
+    output: tk.Tk, strength: tk.StringVar, color: tk.StringVar, chipi_algo: tk.StringVar
 ) -> bool:
     """
     Set the output dictionary to indicate playing against chipiron.
@@ -209,10 +211,10 @@ def play_against_chipiron(
     Returns:
         bool: True if the output dictionary is modified successfully.
     """
-    output['type'] = 'play_against_chipiron'
-    output['strength'] = int(strength.get())
-    output['color_human'] = str(color.get())
-    output['chipi_algo'] = str(chipi_algo.get())
+    output["type"] = "play_against_chipiron"
+    output["strength"] = int(strength.get())
+    output["color_human"] = str(color.get())
+    output["chipi_algo"] = str(chipi_algo.get())
     return True
 
 
@@ -226,7 +228,7 @@ def watch_a_game(output: dict[str, Any]) -> bool:
     Returns:
         bool: True if the output dictionary is modified successfully.
     """
-    output['type'] = 'watch_a_game'
+    output["type"] = "watch_a_game"
     return True
 
 
@@ -240,5 +242,5 @@ def visualize_a_tree(output: dict[str, Any]) -> bool:
     Returns:
         bool: True if the output dictionary is modified successfully.
     """
-    output['type'] = 'tree_visualization'
+    output["type"] = "tree_visualization"
     return True

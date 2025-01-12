@@ -20,6 +20,7 @@ class CommandLineHumanPlayerArgs:
     """
     Represents the arguments for a human player that selects moves through the command line interface.
     """
+
     type: Literal[MoveSelectorTypes.CommandLineHuman]  # for serialization
 
 
@@ -28,6 +29,7 @@ class GuiHumanPlayerArgs:
     """
     Represents the arguments for a human player that selects moves through the GUI.
     """
+
     type: Literal[MoveSelectorTypes.GuiHuman]  # for serialization
 
 
@@ -36,11 +38,7 @@ class CommandLineHumanMoveSelector:
     A move selector that allows a human player to select moves through the command line interface.
     """
 
-    def select_move(
-            self,
-            board: boards.IBoard,
-            move_seed: seed
-    ) -> MoveRecommendation:
+    def select_move(self, board: boards.IBoard, move_seed: seed) -> MoveRecommendation:
         """
         Selects a move based on user input through the command line interface.
 
@@ -54,25 +52,24 @@ class CommandLineHumanMoveSelector:
         Raises:
             AssertionError: If the selected move is not a legal move.
         """
-        print(f'Legal Moves {board.legal_moves}')
+        print(f"Legal Moves {board.legal_moves}")
         legal_moves_uci: list[moveUci] = []
         move: moveKey
         for move in board.legal_moves:
             legal_moves_uci.append(board.get_uci_from_move_key(move))
-        print(f'Legal Moves {legal_moves_uci}')
+        print(f"Legal Moves {legal_moves_uci}")
 
         good_move: bool = False
         while not good_move:
-            move_uci: str = input('Input your move')
-            print(f'choice of move {move_uci}')
+            move_uci: str = input("Input your move")
+            print(f"choice of move {move_uci}")
             if move_uci in legal_moves_uci:
                 good_move = True
             else:
-                print('Bad move, Not legal')
+                print("Bad move, Not legal")
 
         assert move_uci in legal_moves_uci
 
         return MoveRecommendation(
-            move=board.get_move_key_from_uci(move_uci=move_uci),
-            evaluation=None
+            move=board.get_move_key_from_uci(move_uci=move_uci), evaluation=None
         )

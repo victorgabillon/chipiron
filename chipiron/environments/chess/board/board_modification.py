@@ -1,6 +1,7 @@
 """
 Module that contains the BoardModification class
 """
+
 from dataclasses import dataclass, field
 from typing import Iterator, Protocol
 
@@ -24,12 +25,10 @@ class BoardModificationP(Protocol):
     """
 
     @property
-    def removals(self) -> Iterator[PieceInSquare]:
-        ...
+    def removals(self) -> Iterator[PieceInSquare]: ...
 
     @property
-    def appearances(self) -> Iterator[PieceInSquare]:
-        ...
+    def appearances(self) -> Iterator[PieceInSquare]: ...
 
 
 @dataclass
@@ -41,10 +40,7 @@ class BoardModification:
     removals_: set[PieceInSquare] = field(default_factory=set)
     appearances_: set[PieceInSquare] = field(default_factory=set)
 
-    def add_appearance(
-            self,
-            appearance: PieceInSquare
-    ) -> None:
+    def add_appearance(self, appearance: PieceInSquare) -> None:
         """
         Adds a piece appearance to the board modification.
 
@@ -53,10 +49,7 @@ class BoardModification:
         """
         self.appearances_.add(appearance)
 
-    def add_removal(
-            self,
-            removal: PieceInSquare
-    ) -> None:
+    def add_removal(self, removal: PieceInSquare) -> None:
         """
         Adds a piece removal to the board modification.
 
@@ -106,24 +99,22 @@ class BoardModificationRust:
 
 
 def compute_modifications(
-        previous_pawns: chess.Bitboard,
-        previous_kings: chess.Bitboard,
-        previous_queens: chess.Bitboard,
-        previous_rooks: chess.Bitboard,
-        previous_bishops: chess.Bitboard,
-        previous_knights: chess.Bitboard,
-        previous_occupied_white: chess.Bitboard,
-        previous_occupied_black: chess.Bitboard,
-
-        new_pawns: chess.Bitboard,
-        new_kings: chess.Bitboard,
-        new_queens: chess.Bitboard,
-        new_rooks: chess.Bitboard,
-        new_bishops: chess.Bitboard,
-        new_knights: chess.Bitboard,
-        new_occupied_white: chess.Bitboard,
-        new_occupied_black: chess.Bitboard,
-
+    previous_pawns: chess.Bitboard,
+    previous_kings: chess.Bitboard,
+    previous_queens: chess.Bitboard,
+    previous_rooks: chess.Bitboard,
+    previous_bishops: chess.Bitboard,
+    previous_knights: chess.Bitboard,
+    previous_occupied_white: chess.Bitboard,
+    previous_occupied_black: chess.Bitboard,
+    new_pawns: chess.Bitboard,
+    new_kings: chess.Bitboard,
+    new_queens: chess.Bitboard,
+    new_rooks: chess.Bitboard,
+    new_bishops: chess.Bitboard,
+    new_knights: chess.Bitboard,
+    new_occupied_white: chess.Bitboard,
+    new_occupied_black: chess.Bitboard,
 ) -> BoardModification:
     board_modifications: BoardModification = BoardModification()
     hop = [
@@ -132,27 +123,33 @@ def compute_modifications(
         (previous_rooks, new_rooks, chess.ROOK),
         (previous_knights, new_knights, chess.KNIGHT),
         (previous_queens, new_queens, chess.QUEEN),
-        (previous_kings, new_kings, chess.KING)
+        (previous_kings, new_kings, chess.KING),
     ]
-    hip = [(previous_occupied_white, new_occupied_white, chess.WHITE),
-           (previous_occupied_black, new_occupied_black, chess.BLACK)]
+    hip = [
+        (previous_occupied_white, new_occupied_white, chess.WHITE),
+        (previous_occupied_black, new_occupied_black, chess.BLACK),
+    ]
 
     for previous_bitboard_piece, new_bitboard_piece, piece_type in hop:
         for previous_bitboard_color, new_bitboard_color, color in hip:
 
-            removals: chess.Bitboard = (previous_bitboard_piece & previous_bitboard_color) & ~(new_bitboard_piece & new_bitboard_color)
+            removals: chess.Bitboard = (
+                previous_bitboard_piece & previous_bitboard_color
+            ) & ~(new_bitboard_piece & new_bitboard_color)
             if removals:
                 for square in chess.scan_forward(removals):
-                    board_modifications.add_removal(PieceInSquare(square=square,
-                                                                  piece=piece_type,
-                                                                  color=color))
+                    board_modifications.add_removal(
+                        PieceInSquare(square=square, piece=piece_type, color=color)
+                    )
 
-            appearance: chess.Bitboard = ~(previous_bitboard_piece & previous_bitboard_color) & (new_bitboard_piece & new_bitboard_color)
+            appearance: chess.Bitboard = ~(
+                previous_bitboard_piece & previous_bitboard_color
+            ) & (new_bitboard_piece & new_bitboard_color)
 
             if appearance:
                 for square in chess.scan_forward(appearance):
-                    board_modifications.add_appearance(PieceInSquare(square=square,
-                                                                     piece=piece_type,
-                                                                     color=color))
+                    board_modifications.add_appearance(
+                        PieceInSquare(square=square, piece=piece_type, color=color)
+                    )
 
     return board_modifications

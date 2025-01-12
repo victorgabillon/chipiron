@@ -1,6 +1,7 @@
 """
 player_thread.py
 """
+
 import multiprocessing
 import queue
 
@@ -51,13 +52,13 @@ class PlayerProcess(multiprocessing.Process):
     board_factory: BoardFactory
 
     def __init__(
-            self,
-            player_factory_args: PlayerFactoryArgs,
-            queue_receiving_board: queue.Queue[DataClass],
-            queue_sending_move: queue.Queue[IsDataclass],
-            player_color: chess.Color,
-            implementation_args: ImplementationArgs,
-            universal_behavior: bool
+        self,
+        player_factory_args: PlayerFactoryArgs,
+        queue_receiving_board: queue.Queue[DataClass],
+        queue_sending_move: queue.Queue[IsDataclass],
+        player_color: chess.Color,
+        implementation_args: ImplementationArgs,
+        universal_behavior: bool,
     ) -> None:
         """Initialize the PlayerThread object.
 
@@ -78,7 +79,7 @@ class PlayerProcess(multiprocessing.Process):
         self.board_factory: BoardFactory = create_board_factory(
             use_rust_boards=implementation_args.use_rust_boards,
             use_board_modification=implementation_args.use_board_modification,
-            sort_legal_moves=universal_behavior
+            sort_legal_moves=universal_behavior,
         )
 
         create_syzygy: SyzygyFactory = create_syzygy_factory(
@@ -89,7 +90,7 @@ class PlayerProcess(multiprocessing.Process):
             player_factory_args=player_factory_args,
             player_color=player_color,
             syzygy_table=create_syzygy(),
-            queue_progress_player=queue_sending_move
+            queue_progress_player=queue_sending_move,
         )
         assert self.game_player.player is not None
 
@@ -108,7 +109,7 @@ class PlayerProcess(multiprocessing.Process):
         Returns:
             None
         """
-        print('Started player thread:', self.game_player)
+        print("Started player thread:", self.game_player)
 
         while True:
             try:
@@ -122,7 +123,7 @@ class PlayerProcess(multiprocessing.Process):
                     fen_plus_moves: FenPlusHistory = board_message.fen_plus_moves
                     board: IBoard = self.board_factory(fen_with_history=fen_plus_moves)
                     seed_: seed | None = board_message.seed
-                    print(f'Player thread got the board {board}')
+                    print(f"Player thread got the board {board}")
                     assert seed_ is not None
 
                     # the game_player computes the move for the board and sends the move in the move queue
@@ -130,9 +131,9 @@ class PlayerProcess(multiprocessing.Process):
                         board=board,
                         game_player=self.game_player,
                         queue_move=self.queue_sending_move,
-                        seed_int=seed_
+                        seed_int=seed_,
                     )
                 else:
-                    print(f'NOT EXPECTING THIS MESSAGE !! :  {message}')
+                    print(f"NOT EXPECTING THIS MESSAGE !! :  {message}")
 
             # TODO here give option to continue working while the other is thinking

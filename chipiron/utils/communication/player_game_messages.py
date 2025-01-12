@@ -1,6 +1,7 @@
 """
 Module to define the messages that are sent between the players and the game.
 """
+
 from dataclasses import dataclass
 
 import chess
@@ -25,6 +26,7 @@ class MoveMessage:
         color_to_play (chess.Color): The color of the player to play after the move.
         evaluation (float | None, optional): The evaluation score of the move. Defaults to None.
     """
+
     move: moveKey
     corresponding_board: fen
     player_name: playerId
@@ -41,5 +43,6 @@ class BoardMessage:
         fen_plus_moves (FenPlusMoves): The original fen and the subsequent moves to be applied.
         seed (int | None, optional): The seed used for random number generation. Defaults to None.
     """
+
     fen_plus_moves: FenPlusHistory
     seed: int | None = None

@@ -9,9 +9,10 @@ class ScriptType(str, Enum):
     """
     Enum class representing different types of scripts.
     """
-    OneMatch = 'one_match'
-    League = 'league'
-    LearnNN = 'learn_nn'
-    BaseTreeExploration = 'base_tree_exploration'
-    TreeVisualization = 'tree_visualization'
-    ReplayMatch = 'replay_match'
+
+    OneMatch = "one_match"
+    League = "league"
+    LearnNN = "learn_nn"
+    BaseTreeExploration = "base_tree_exploration"
+    TreeVisualization = "tree_visualization"
+    ReplayMatch = "replay_match"

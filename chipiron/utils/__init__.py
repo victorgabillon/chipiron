@@ -2,6 +2,7 @@
 Module that contains small tools that are used in the project.
 
 """
+
 from .small_tools import (
     dict_alphabetic_str,
     mkdir,
@@ -19,5 +20,5 @@ __all__ = [
     "path",
     "mkdir",
     "unique_int_from_list",
-    "dict_alphabetic_str"
+    "dict_alphabetic_str",
 ]

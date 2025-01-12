@@ -1,6 +1,7 @@
 """
 Module for the EvaluationMessage class.
 """
+
 from dataclasses import dataclass
 from typing import Any
 
@@ -16,6 +17,7 @@ class EvaluationMessage:
         evaluation_player_black (Any, optional): The evaluation for the black player. Defaults to None.
         evaluation_player_white (Any, optional): The evaluation for the white player. Defaults to None.
     """
+
     evaluation_stock: Any
     evaluation_chipiron: Any
     evaluation_player_black: Any = None

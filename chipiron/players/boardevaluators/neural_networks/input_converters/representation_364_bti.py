@@ -26,10 +26,7 @@ class RepresentationBTI:
 
     """
 
-    def __init__(
-            self,
-            representation_factory: RepresentationFactory[Any]
-    ):
+    def __init__(self, representation_factory: RepresentationFactory[Any]):
         """
         Initializes the Representation364BTI object.
 
@@ -39,10 +36,7 @@ class RepresentationBTI:
         """
         self.representation_factory = representation_factory
 
-    def convert(
-            self,
-            board: boards.IBoard
-    ) -> torch.Tensor:
+    def convert(self, board: boards.IBoard) -> torch.Tensor:
         """
         Converts the chess board into a tensor representation.
 
@@ -53,6 +47,10 @@ class RepresentationBTI:
         - tensor (torch.Tensor): The tensor representation of the chess board.
 
         """
-        representation: BoardRepresentation = self.representation_factory.create_from_board(board=board)
-        tensor: torch.Tensor = representation.get_evaluator_input(color_to_play=board.turn)
+        representation: BoardRepresentation = (
+            self.representation_factory.create_from_board(board=board)
+        )
+        tensor: torch.Tensor = representation.get_evaluator_input(
+            color_to_play=board.turn
+        )
         return tensor

@@ -36,7 +36,7 @@ from .progress_collector import PlayerProgressCollectorP
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s:%(name)s:%(message)s')
+formatter = logging.Formatter("%(asctime)s:%(name)s:%(message)s")
 stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(formatter)
 logger.addHandler(stream_handler)
@@ -59,18 +59,17 @@ class GameManager:
     progress_collector: PlayerProgressCollectorP
 
     def __init__(
-            self,
-            game: ObservableGame,
-            syzygy: SyzygyTable[Any] | None,
-            display_board_evaluator: IGameBoardEvaluator,
-            output_folder_path: path | None,
-            args: GameArgs,
-            player_color_to_id: dict[chess.Color, str],
-            main_thread_mailbox: queue.Queue[IsDataclass],
-            players: list[players_m.PlayerProcess | players_m.GamePlayer],
-            move_factory: MoveFactory,
-            progress_collector: PlayerProgressCollectorP
-
+        self,
+        game: ObservableGame,
+        syzygy: SyzygyTable[Any] | None,
+        display_board_evaluator: IGameBoardEvaluator,
+        output_folder_path: path | None,
+        args: GameArgs,
+        player_color_to_id: dict[chess.Color, str],
+        main_thread_mailbox: queue.Queue[IsDataclass],
+        players: list[players_m.PlayerProcess | players_m.GamePlayer],
+        move_factory: MoveFactory,
+        progress_collector: PlayerProgressCollectorP,
     ) -> None:
         """
         Constructor for the GameManager Class. If the args, and players are not given a value it is set to None,
@@ -92,8 +91,11 @@ class GameManager:
         """
         self.game = game
         self.syzygy = syzygy
-        self.path_to_store_result = os.path.join(output_folder_path,
-                                                 'games') if output_folder_path is not None else None
+        self.path_to_store_result = (
+            os.path.join(output_folder_path, "games")
+            if output_folder_path is not None
+            else None
+        )
         self.display_board_evaluator = display_board_evaluator
         self.args = args
         self.player_color_to_id = player_color_to_id
@@ -110,10 +112,7 @@ class GameManager:
         """
         return self.display_board_evaluator.evaluate(self.game.board)
 
-    def play_one_move(
-            self,
-            move: moveKey
-    ) -> None:
+    def play_one_move(self, move: moveKey) -> None:
         """Play one move in the game.
 
         Args:
@@ -121,8 +120,10 @@ class GameManager:
         """
         self.game.play_move(move)
         if self.syzygy is not None and self.syzygy.fast_in_table(self.game.board):
-            print('Theoretically finished with value for white: ',
-                  self.syzygy.string_result(self.game.board))
+            print(
+                "Theoretically finished with value for white: ",
+                self.syzygy.string_result(self.game.board),
+            )
 
     def rewind_one_move(self) -> None:
         """
@@ -137,12 +138,12 @@ class GameManager:
         """
         self.game.rewind_one_move()
         if self.syzygy is not None and self.syzygy.fast_in_table(self.game.board):
-            print('Theoretically finished with value for white: ',
-                  self.syzygy.string_result(self.game.board))
+            print(
+                "Theoretically finished with value for white: ",
+                self.syzygy.string_result(self.game.board),
+            )
 
-    def play_one_game(
-            self
-    ) -> GameReport:
+    def play_one_game(self) -> GameReport:
         """
         Play one game.
 
@@ -150,7 +151,7 @@ class GameManager:
             GameReport: The report of the game.
         """
 
-        color_names = ['Black', 'White']
+        color_names = ["Black", "White"]
 
         # sending the current board to the gui
         self.game.notify_display()
@@ -163,10 +164,14 @@ class GameManager:
 
             board = self.game.board
             half_move: HalfMove = board.ply()
-            print(f'Half Move: {half_move} playing status {self.game.playing_status.status} ')
+            print(
+                f"Half Move: {half_move} playing status {self.game.playing_status.status} "
+            )
             color_to_move: chess.Color = board.turn
             color_of_player_to_move_str = color_names[color_to_move]
-            print(f'{color_of_player_to_move_str} ({self.player_color_to_id[color_to_move]}) to play now...')
+            print(
+                f"{color_of_player_to_move_str} ({self.player_color_to_id[color_to_move]}) to play now..."
+            )
 
             # waiting for a message
             mail = self.main_thread_mailbox.get()
@@ -175,30 +180,27 @@ class GameManager:
             board = self.game.board
             if board.is_game_over() or not self.game_continue_conditions():
                 if board.is_game_over():
-                    print('the game is other')
+                    print("the game is other")
                 if not self.game_continue_conditions():
-                    print('game continuation not met')
+                    print("game continuation not met")
                 break
             else:
-                print(f'Not game over at {board}')
+                print(f"Not game over at {board}")
 
         self.tell_results()
         self.terminate_processes()
-        print('end play_one_game')
+        print("end play_one_game")
 
         game_results: FinalGameResult = self.simple_results()
 
         game_report: GameReport = GameReport(
             final_game_result=game_results,
             move_history=[move for move in self.game.move_history],
-            fen_history=self.game.fen_history
+            fen_history=self.game.fen_history,
         )
         return game_report
 
-    def processing_mail(
-            self,
-            message: IsDataclass
-    ) -> None:
+    def processing_mail(self, message: IsDataclass) -> None:
         """
         Process the incoming mail message.
 
@@ -213,27 +215,38 @@ class GameManager:
 
         match message:
             case MoveMessage():
-                print('=====================MOVE MESSAGE RECEIVED============')
+                print("=====================MOVE MESSAGE RECEIVED============")
                 move_message: MoveMessage = message
                 # play the move
                 move_key: moveKey = move_message.move
 
-                print('Game Manager: Receiving the move key', move_key, self.game.playing_status, board.fen)
-                if move_message.corresponding_board == board.fen and \
-                        self.game.playing_status.is_play() and \
-                        message.player_name == self.player_color_to_id[board.turn]:
+                print(
+                    "Game Manager: Receiving the move key",
+                    move_key,
+                    self.game.playing_status,
+                    board.fen,
+                )
+                if (
+                    move_message.corresponding_board == board.fen
+                    and self.game.playing_status.is_play()
+                    and message.player_name == self.player_color_to_id[board.turn]
+                ):
 
                     board.legal_moves.get_all()  # make sure the board has generated the legal moves
 
                     move_uci: moveUci = board.get_uci_from_move_key(move_key)
 
-                    print(f'Game Manager: Play a move {move_uci} at {board} {self.game.board.fen}')
+                    print(
+                        f"Game Manager: Play a move {move_uci} at {board} {self.game.board.fen}"
+                    )
                     # move: IMove = self.move_factory(move_uci=move_uci, board=board)
                     self.play_one_move(move_key)
-                    print(f'Game Manager: Now board is  {self.game.board}')
+                    print(f"Game Manager: Now board is  {self.game.board}")
 
                     eval_sto, eval_chi = self.external_eval()
-                    print(f'Stockfish evaluation:{eval_sto} and chipiron eval{eval_chi}')
+                    print(
+                        f"Stockfish evaluation:{eval_sto} and chipiron eval{eval_chi}"
+                    )
                     # Print the board
                     board.print_chess_board()
 
@@ -242,25 +255,35 @@ class GameManager:
                         self.game.query_move_from_players()
 
                 else:
-                    print(f'the move is rejected because one of the following is false \n'
-                          f' move_message.corresponding_board == board.fen{move_message.corresponding_board == board.fen} \n'
-                          f'self.game.playing_status.is_play() {self.game.playing_status.is_play()}\n'
-                          f'message.player_name == self.player_color_to_id[board.turn] {message.player_name == self.player_color_to_id[board.turn]}'
-                          )
-                    print(f'{message.player_name},{self.player_color_to_id[board.turn]}')
+                    print(
+                        f"the move is rejected because one of the following is false \n"
+                        f" move_message.corresponding_board == board.fen{move_message.corresponding_board == board.fen} \n"
+                        f"self.game.playing_status.is_play() {self.game.playing_status.is_play()}\n"
+                        f"message.player_name == self.player_color_to_id[board.turn] {message.player_name == self.player_color_to_id[board.turn]}"
+                    )
+                    print(
+                        f"{message.player_name},{self.player_color_to_id[board.turn]}"
+                    )
                     # put back in the queue
                     # self.main_thread_mailbox.put(message)
                 if message.evaluation is not None:
                     self.display_board_evaluator.add_evaluation(
                         player_color=message.color_to_play,
-                        evaluation=message.evaluation)
-                logger.debug(f'len main tread mailbox {self.main_thread_mailbox.qsize()}')
+                        evaluation=message.evaluation,
+                    )
+                logger.debug(
+                    f"len main tread mailbox {self.main_thread_mailbox.qsize()}"
+                )
             case PlayerProgressMessage():
                 player_progress_message: PlayerProgressMessage = message
                 if player_progress_message.player_color == chess.WHITE:
-                    self.progress_collector.progress_white(value=player_progress_message.progress_percent)
+                    self.progress_collector.progress_white(
+                        value=player_progress_message.progress_percent
+                    )
                 if player_progress_message.player_color == chess.BLACK:
-                    self.progress_collector.progress_black(value=player_progress_message.progress_percent)
+                    self.progress_collector.progress_black(
+                        value=player_progress_message.progress_percent
+                    )
             case GameStatusMessage():
                 game_status_message: GameStatusMessage = message
                 # update game status
@@ -275,11 +298,11 @@ class GameManager:
                 self.rewind_one_move()
 
             case other:
-                raise ValueError(f'type of message received is not recognized {other} in file {__name__}')
+                raise ValueError(
+                    f"type of message received is not recognized {other} in file {__name__}"
+                )
 
-    def game_continue_conditions(
-            self
-    ) -> bool:
+    def game_continue_conditions(self) -> bool:
         """
         Checks the conditions for continuing the game.
 
@@ -288,16 +311,15 @@ class GameManager:
         """
         half_move: HalfMove = self.game.board.ply()
         continue_bool: bool = True
-        if self.args.max_half_moves is not None and half_move >= self.args.max_half_moves:
+        if (
+            self.args.max_half_moves is not None
+            and half_move >= self.args.max_half_moves
+        ):
             continue_bool = False
 
         return continue_bool
 
-    def print_to_file(
-            self,
-            game_report: GameReport,
-            idx: int = 0
-    ) -> None:
+    def print_to_file(self, game_report: GameReport, idx: int = 0) -> None:
         """
         Print the moves of the game to a yaml file and a more human-readable text file.
 
@@ -310,18 +332,24 @@ class GameManager:
         """
         # todo probably the txt file should be a valid PGN file : https://en.wikipedia.org/wiki/Portable_Game_Notation
         if self.path_to_store_result is not None:
-            path_file: path = (f'{self.path_to_store_result}_{idx}_W:{self.player_color_to_id[chess.WHITE]}'
-                               f'-vs-B:{self.player_color_to_id[chess.BLACK]}')
-            path_file_obj = f'{path_file}_game_report.yaml'
-            path_file_txt = f'{path_file}.txt'
-            with open(path_file_txt, 'a') as the_fileText:
+            path_file: path = (
+                f"{self.path_to_store_result}_{idx}_W:{self.player_color_to_id[chess.WHITE]}"
+                f"-vs-B:{self.player_color_to_id[chess.BLACK]}"
+            )
+            path_file_obj = f"{path_file}_game_report.yaml"
+            path_file_txt = f"{path_file}.txt"
+            with open(path_file_txt, "a") as the_fileText:
                 for counter, move in enumerate(self.game.move_history):
                     if counter % 2 == 0:
                         move_1 = move
                     else:
-                        the_fileText.write(str(move_1) + ' ' + str(move) + '\n')
+                        the_fileText.write(str(move_1) + " " + str(move) + "\n")
             with open(path_file_obj, "w") as file:
-                yaml.dump(asdict(game_report, dict_factory=custom_asdict_factory), file, default_flow_style=False)
+                yaml.dump(
+                    asdict(game_report, dict_factory=custom_asdict_factory),
+                    file,
+                    default_flow_style=False,
+                )
 
     def tell_results(self) -> None:
         """
@@ -336,7 +364,9 @@ class GameManager:
         """
         board = self.game.board
         if self.syzygy is not None and self.syzygy.fast_in_table(board):
-            print('Syzygy: Theoretical value for white', self.syzygy.string_result(board))
+            print(
+                "Syzygy: Theoretical value for white", self.syzygy.string_result(board)
+            )
         board.tell_result()
 
     def simple_results(self) -> FinalGameResult:
@@ -350,24 +380,28 @@ class GameManager:
 
         res: FinalGameResult | None = None
         result: str = board.result(claim_draw=True)
-        if result == '*':
+        if result == "*":
             if self.syzygy is None or not self.syzygy.fast_in_table(board):
                 # useful when a game is stopped
                 # before the end, for instance for debugging and profiling
                 res = FinalGameResult.DRAW  # arbitrary meaningless choice
                 # raise ValueError(f'Problem with figuring our game results in {__name__}')
             else:
-                raise ValueError('this case is not coded atm think of what is the right thing to do here!')
+                raise ValueError(
+                    "this case is not coded atm think of what is the right thing to do here!"
+                )
         else:
             match result:
-                case '1/2-1/2':
+                case "1/2-1/2":
                     res = FinalGameResult.DRAW
-                case '0-1':
+                case "0-1":
                     res = FinalGameResult.WIN_FOR_BLACK
-                case '1-0':
+                case "1-0":
                     res = FinalGameResult.WIN_FOR_WHITE
                 case other:
-                    raise Exception(f'unexpected result value {other} in game manager/simple_results')
+                    raise Exception(
+                        f"unexpected result value {other} in game manager/simple_results"
+                    )
 
         assert isinstance(res, FinalGameResult)
         return res
@@ -389,6 +423,6 @@ class GameManager:
         for player in self.players:
             if isinstance(player, players_m.PlayerProcess):
                 player.terminate()
-                print('stopping the thread')
+                print("stopping the thread")
                 # player_thread.join()
-                print('thread stopped')
+                print("thread stopped")

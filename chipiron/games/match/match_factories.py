@@ -30,15 +30,15 @@ from .match_settings_args import MatchSettingsArgs
 
 
 def create_match_manager(
-        args_match: MatchSettingsArgs,
-        args_player_one: players.PlayerArgs,
-        args_player_two: players.PlayerArgs,
-        args_game: game.GameArgs,
-        implementation_args: ImplementationArgs,
-        universal_behavior: bool = False,
-        seed: int | None = None,
-        output_folder_path: path | None = None,
-        gui: bool = False,
+    args_match: MatchSettingsArgs,
+    args_player_one: players.PlayerArgs,
+    args_player_two: players.PlayerArgs,
+    args_game: game.GameArgs,
+    implementation_args: ImplementationArgs,
+    universal_behavior: bool = False,
+    seed: int | None = None,
+    output_folder_path: path | None = None,
+    gui: bool = False,
 ) -> MatchManager:
     """
     Create a match manager for running matches between two players.
@@ -72,10 +72,12 @@ def create_match_manager(
     board_factory: BoardFactory = create_board_factory(
         use_rust_boards=implementation_args.use_rust_boards,
         use_board_modification=implementation_args.use_board_modification,
-        sort_legal_moves=universal_behavior
+        sort_legal_moves=universal_behavior,
     )
 
-    move_factory: MoveFactory = create_move_factory(use_rust_boards=implementation_args.use_rust_boards)
+    move_factory: MoveFactory = create_move_factory(
+        use_rust_boards=implementation_args.use_rust_boards
+    )
 
     game_manager_factory: GameManagerFactory = GameManagerFactory(
         syzygy_table=syzygy_table,
@@ -85,12 +87,11 @@ def create_match_manager(
         board_factory=board_factory,
         implementation_args=implementation_args,
         move_factory=move_factory,
-        universal_behavior=universal_behavior
+        universal_behavior=universal_behavior,
     )
 
     match_results_factory: MatchResultsFactory = MatchResultsFactory(
-        player_one_name=player_one_name,
-        player_two_name=player_two_name
+        player_one_name=player_one_name, player_two_name=player_two_name
     )
 
     game_args_factory: game.GameArgsFactory = game.GameArgsFactory(
@@ -98,7 +99,7 @@ def create_match_manager(
         args_player_one=args_player_one,
         args_player_two=args_player_two,
         seed_=seed,
-        args_game=args_game
+        args_game=args_game,
     )
 
     match_manager: MatchManager = MatchManager(
@@ -107,16 +108,16 @@ def create_match_manager(
         game_manager_factory=game_manager_factory,
         game_args_factory=game_args_factory,
         match_results_factory=match_results_factory,
-        output_folder_path=output_folder_path
+        output_folder_path=output_folder_path,
     )
     return match_manager
 
 
 def create_match_manager_from_args(
-        match_args: MatchArgs,
-        base_script_args: BaseScriptArgs,
-        implementation_args: ImplementationArgs,
-        gui: bool = False
+    match_args: MatchArgs,
+    base_script_args: BaseScriptArgs,
+    implementation_args: ImplementationArgs,
+    gui: bool = False,
 ) -> MatchManager:
     """
     Create a match manager from the given arguments.
@@ -137,7 +138,7 @@ def create_match_manager_from_args(
         file_name_player_two=match_args.file_name_player_two,
         modification_player_one=match_args.player_one,
         modification_player_two=match_args.player_two,
-        experiment_output_folder=base_script_args.experiment_output_folder
+        experiment_output_folder=base_script_args.experiment_output_folder,
     )
 
     # Recovering args from yaml file for match and game and merging with extra args and converting
@@ -149,11 +150,17 @@ def create_match_manager_from_args(
         testing=base_script_args.testing,
         file_name_match_setting=match_args.file_name_match_setting,
         modification=match_args.match,
-        experiment_output_folder=base_script_args.experiment_output_folder
+        experiment_output_folder=base_script_args.experiment_output_folder,
     )
 
-    assert player_one_args.name != 'Command_Line_Human.yaml' or not game_args.each_player_has_its_own_thread
-    assert player_two_args.name != 'Command_Line_Human.yaml' or not game_args.each_player_has_its_own_thread
+    assert (
+        player_one_args.name != "Command_Line_Human.yaml"
+        or not game_args.each_player_has_its_own_thread
+    )
+    assert (
+        player_two_args.name != "Command_Line_Human.yaml"
+        or not game_args.each_player_has_its_own_thread
+    )
 
     # taking care of random
     ch.set_seeds(seed=base_script_args.seed)
@@ -167,7 +174,7 @@ def create_match_manager_from_args(
         seed=base_script_args.seed,
         args_game=game_args,
         gui=gui,
-        implementation_args=implementation_args
+        implementation_args=implementation_args,
     )
 
     return match_manager

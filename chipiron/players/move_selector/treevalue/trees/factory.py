@@ -23,13 +23,12 @@ class MoveAndValueTreeFactory:
     """
     MoveAndValueTreeFactory
     """
+
     node_factory: nod_fac.AlgorithmNodeFactory
     node_evaluator: NodeEvaluator
 
     def __init__(
-            self,
-            node_factory: nod_fac.AlgorithmNodeFactory,
-            node_evaluator: NodeEvaluator
+        self, node_factory: nod_fac.AlgorithmNodeFactory, node_evaluator: NodeEvaluator
     ) -> None:
         """
         creates the tree factory
@@ -40,10 +39,7 @@ class MoveAndValueTreeFactory:
         self.node_factory = node_factory
         self.node_evaluator = node_evaluator
 
-    def create(
-            self,
-            starting_board: boards.IBoard
-    ) -> MoveAndValueTree:
+    def create(self, starting_board: boards.IBoard) -> MoveAndValueTree:
         """
         creates the tree
 
@@ -60,24 +56,26 @@ class MoveAndValueTreeFactory:
             count=0,
             parent_node=None,
             modifications=None,
-            move_from_parent=None
+            move_from_parent=None,
         )
 
         evaluation_queries: EvaluationQueries = EvaluationQueries()
 
         assert isinstance(root_node, AlgorithmNode)
         self.node_evaluator.add_evaluation_query(
-            node=root_node,
-            evaluation_queries=evaluation_queries
+            node=root_node, evaluation_queries=evaluation_queries
         )
 
-        self.node_evaluator.evaluate_all_queried_nodes(evaluation_queries=evaluation_queries)
+        self.node_evaluator.evaluate_all_queried_nodes(
+            evaluation_queries=evaluation_queries
+        )
         # is this needed? used outside?
 
         descendants: RangedDescendants = RangedDescendants()
         descendants.add_descendant(root_node)
 
-        move_and_value_tree: MoveAndValueTree = MoveAndValueTree(root_node=root_node,
-                                                                 descendants=descendants)
+        move_and_value_tree: MoveAndValueTree = MoveAndValueTree(
+            root_node=root_node, descendants=descendants
+        )
 
         return move_and_value_tree

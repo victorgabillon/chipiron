@@ -1,6 +1,7 @@
 """
 Module that contains the BoardChi class that wraps the chess.Board class from the chess package
 """
+
 import typing
 from typing import Iterator
 
@@ -33,11 +34,7 @@ class LegalMoveKeyGenerator(LegalMoveKeyGeneratorP):
 
     chess_board: chess.Board
 
-    def __init__(
-            self,
-            chess_board: chess.Board,
-            sort_legal_moves: bool
-    ) -> None:
+    def __init__(self, chess_board: chess.Board, sort_legal_moves: bool) -> None:
         self.chess_board = chess_board
         self.it: Iterator[chess.Move] = self.chess_board.generate_legal_moves()
         self.generated_moves = {}
@@ -51,12 +48,16 @@ class LegalMoveKeyGenerator(LegalMoveKeyGeneratorP):
 
     def __str__(self) -> str:
 
-        the_string: str = 'Legals Moves: '
-        ucis: list[moveUci] = [chess_move.uci() for move_key, chess_move in self.generated_moves.items()]
-        keys: list[moveKey] = [move_key for move_key, chess_move in self.generated_moves.items()]
+        the_string: str = "Legals Moves: "
+        ucis: list[moveUci] = [
+            chess_move.uci() for move_key, chess_move in self.generated_moves.items()
+        ]
+        keys: list[moveKey] = [
+            move_key for move_key, chess_move in self.generated_moves.items()
+        ]
 
-        the_string = the_string + f'Generated ucis {ucis}'
-        the_string = the_string + f' and generated ucis {keys}'
+        the_string = the_string + f"Generated ucis {ucis}"
+        the_string = the_string + f" and generated ucis {keys}"
 
         return the_string
 
@@ -74,14 +75,15 @@ class LegalMoveKeyGenerator(LegalMoveKeyGeneratorP):
         return move_key_
 
     def copy(
-            self,
-            copied_chess_board: chess.Board | None = None
-    ) -> 'LegalMoveKeyGenerator':
+        self, copied_chess_board: chess.Board | None = None
+    ) -> "LegalMoveKeyGenerator":
         if copied_chess_board is None:
             copied_chess_board_ = self.chess_board
         else:
             copied_chess_board_ = copied_chess_board
-        legal_move_copy = LegalMoveKeyGenerator(chess_board=copied_chess_board_, sort_legal_moves=self.sort_legal_moves)
+        legal_move_copy = LegalMoveKeyGenerator(
+            chess_board=copied_chess_board_, sort_legal_moves=self.sort_legal_moves
+        )
 
         legal_move_copy.generated_moves = self.generated_moves.copy()
         if self.all_generated_keys is not None:
@@ -97,8 +99,10 @@ class LegalMoveKeyGenerator(LegalMoveKeyGeneratorP):
         self.count = 0
         self.all_generated_keys = None
 
-    def copy_with_reset(self) -> 'LegalMoveKeyGenerator':
-        legal_move_copy = LegalMoveKeyGenerator(chess_board=self.chess_board, sort_legal_moves=self.sort_legal_moves)
+    def copy_with_reset(self) -> "LegalMoveKeyGenerator":
+        legal_move_copy = LegalMoveKeyGenerator(
+            chess_board=self.chess_board, sort_legal_moves=self.sort_legal_moves
+        )
         return legal_move_copy
 
     def get_all(self) -> list[moveKey]:
@@ -107,8 +111,7 @@ class LegalMoveKeyGenerator(LegalMoveKeyGeneratorP):
             list_keys: list[moveKey]
             if self.sort_legal_moves:
                 list_keys = sorted(
-                    list(self),
-                    key=lambda i: self.generated_moves[i].uci()
+                    list(self), key=lambda i: self.generated_moves[i].uci()
                 )
             else:
                 list_keys = list(self)
@@ -143,11 +146,11 @@ class BoardChi(IBoard):
     sort_legal_moves: bool
 
     def __init__(
-            self,
-            chess_board: chess.Board,
-            compute_board_modification: bool,
-            fast_representation_: boardKey,
-            legal_moves_: LegalMoveKeyGenerator,
+        self,
+        chess_board: chess.Board,
+        compute_board_modification: bool,
+        fast_representation_: boardKey,
+        legal_moves_: LegalMoveKeyGenerator,
     ) -> None:
         """
         Initializes a new instance of the BoardChi class.
@@ -164,9 +167,7 @@ class BoardChi(IBoard):
         self.chess_board.push(move)
 
     def play_move(
-            self,
-            move: chess.Move,
-            use_compute_modification_function: bool = False
+        self, move: chess.Move, use_compute_modification_function: bool = False
     ) -> BoardModificationP | None:
         """
         Plays a move on the board and returns the board modification.
@@ -225,13 +226,15 @@ class BoardChi(IBoard):
                     new_rooks=new_rooks,
                     new_knights=new_knights,
                     new_occupied_black=new_occupied_black,
-                    new_occupied_white=new_occupied_white
+                    new_occupied_white=new_occupied_white,
                 )
         else:
             self.chess_board.push(move)
 
         # update after move
-        self.legal_moves_ = self.legal_moves_.copy_with_reset()  # the legals moves needs to be recomputed as the board has changed
+        self.legal_moves_ = (
+            self.legal_moves_.copy_with_reset()
+        )  # the legals moves needs to be recomputed as the board has changed
 
         fast_representation: boardKey = compute_key(
             pawns=self.chess_board.pawns,
@@ -247,23 +250,17 @@ class BoardChi(IBoard):
             black=self.chess_board.occupied_co[chess.BLACK],
             promoted=self.chess_board.promoted,
             fullmove_number=self.chess_board.fullmove_number,
-            halfmove_clock=self.chess_board.halfmove_clock
+            halfmove_clock=self.chess_board.halfmove_clock,
         )
         self.fast_representation_ = fast_representation
         return board_modifications
 
-    def play_move_uci(
-            self,
-            move_uci: moveUci
-    ) -> BoardModificationP | None:
+    def play_move_uci(self, move_uci: moveUci) -> BoardModificationP | None:
         chess_move: chess.Move = chess.Move.from_uci(uci=move_uci)
         return self.play_move(move=chess_move)
 
     # todo look like this function might move to iboard when the dust settle
-    def play_move_key(
-            self,
-            move: moveKey
-    ) -> BoardModificationP | None:
+    def play_move_key(self, move: moveKey) -> BoardModificationP | None:
         # chess_move: chess.Move = chess.Move.from_uci(uci=move)
         # if True:
         #    if self.legal_moves_ is not None and move in self.legal_moves_.generated_moves:
@@ -278,12 +275,13 @@ class BoardChi(IBoard):
         if self.ply() > 0:
             self.chess_board.pop()
         else:
-            print('Cannot rewind more as self.halfmove_clock equals {}'.format(self.ply()))
+            print(
+                "Cannot rewind more as self.halfmove_clock equals {}".format(self.ply())
+            )
 
     @typing.no_type_check
     def push_and_return_modification(
-            self,
-            move: chess.Move
+        self, move: chess.Move
     ) -> BoardModification | None:
         """
         Mostly reuse the push function of the chess library but records the modifications to the bitboard so that
@@ -300,10 +298,18 @@ class BoardChi(IBoard):
         move = self.chess_board._to_chess960(move)
 
         board_state = _BoardState(self.chess_board)
-        self.chess_board.castling_rights = self.chess_board.clean_castling_rights()  # Before pushing stack
+        self.chess_board.castling_rights = (
+            self.chess_board.clean_castling_rights()
+        )  # Before pushing stack
         self.chess_board.move_stack.append(
-            self.chess_board._from_chess960(self.chess_board.chess960, move.from_square, move.to_square, move.promotion,
-                                            move.drop))
+            self.chess_board._from_chess960(
+                self.chess_board.chess960,
+                move.from_square,
+                move.to_square,
+                move.promotion,
+                move.drop,
+            )
+        )
         self.chess_board._stack.append(board_state)
 
         # Reset en passant square.
@@ -322,7 +328,9 @@ class BoardChi(IBoard):
 
         # Drops.
         if move.drop:
-            self.chess_board._set_piece_at(move.to_square, move.drop, self.chess_board.turn)
+            self.chess_board._set_piece_at(
+                move.to_square, move.drop, self.chess_board.turn
+            )
             self.chess_board.turn = not self.turn
             return
 
@@ -337,24 +345,26 @@ class BoardChi(IBoard):
         piece_type = self.chess_board._remove_piece_at(move.from_square)
         # start added
         piece_in_square: PieceInSquare = PieceInSquare(
-            square=move.from_square,
-            piece=piece_type,
-            color=self.chess_board.turn
+            square=move.from_square, piece=piece_type, color=self.chess_board.turn
         )
 
         board_modifications.add_removal(removal=piece_in_square)
         # end added
-        assert piece_type is not None, f"push() expects move to be pseudo-legal, but got {move} in {self.chess_board.board_fen()}"
+        assert (
+            piece_type is not None
+        ), f"push() expects move to be pseudo-legal, but got {move} in {self.chess_board.board_fen()}"
         capture_square = move.to_square
         captured_piece_type = self.chess_board.piece_type_at(capture_square)
         # start added
-        castling = piece_type == chess.KING and self.chess_board.occupied_co[self.turn] & to_bb
+        castling = (
+            piece_type == chess.KING and self.chess_board.occupied_co[self.turn] & to_bb
+        )
 
         if captured_piece_type is not None and not castling:
             captured_piece_in_square: PieceInSquare = PieceInSquare(
                 square=capture_square,
                 piece=captured_piece_type,
-                color=not self.chess_board.turn
+                color=not self.chess_board.turn,
             )
 
             board_modifications.add_removal(removal=captured_piece_in_square)
@@ -367,7 +377,9 @@ class BoardChi(IBoard):
                 self.chess_board.castling_rights &= ~chess.BB_RANK_1
             else:
                 self.chess_board.castling_rights &= ~chess.BB_RANK_8
-        elif captured_piece_type == chess.KING and not self.chess_board.promoted & to_bb:
+        elif (
+            captured_piece_type == chess.KING and not self.chess_board.promoted & to_bb
+        ):
             if self.turn == WHITE and chess.square_rank(move.to_square) == 7:
                 self.chess_board.castling_rights &= ~chess.BB_RANK_8
             elif self.turn == BLACK and chess.square_rank(move.to_square) == 0:
@@ -381,7 +393,11 @@ class BoardChi(IBoard):
                 self.chess_board.ep_square = move.from_square + 8
             elif diff == -16 and chess.square_rank(move.from_square) == 6:
                 self.chess_board.ep_square = move.from_square - 8
-            elif move.to_square == ep_square and abs(diff) in [7, 9] and not captured_piece_type:
+            elif (
+                move.to_square == ep_square
+                and abs(diff) in [7, 9]
+                and not captured_piece_type
+            ):
                 # Remove pawns captured en passant.
                 down = -8 if self.turn == WHITE else 8
                 capture_square = ep_square + down
@@ -390,7 +406,7 @@ class BoardChi(IBoard):
                 pawn_captured_piece_in_square: PieceInSquare = PieceInSquare(
                     square=capture_square,
                     piece=captured_piece_type,
-                    color=not self.chess_board.turn
+                    color=not self.chess_board.turn,
                 )
 
                 board_modifications.add_removal(removal=pawn_captured_piece_in_square)
@@ -402,9 +418,13 @@ class BoardChi(IBoard):
             piece_type = move.promotion
 
         # Castling.
-        castling = piece_type == chess.KING and self.chess_board.occupied_co[self.turn] & to_bb
+        castling = (
+            piece_type == chess.KING and self.chess_board.occupied_co[self.turn] & to_bb
+        )
         if castling:
-            a_side = chess.square_file(move.to_square) < chess.square_file(move.from_square)
+            a_side = chess.square_file(move.to_square) < chess.square_file(
+                move.from_square
+            )
 
             self.chess_board._remove_piece_at(move.from_square)
             self.chess_board._remove_piece_at(move.to_square)
@@ -417,35 +437,41 @@ class BoardChi(IBoard):
             # print('debug here123d',remove_king_in_square)
             # board_modifications.add_removal(removal=remove_king_in_square)
             remove_rook_in_square: PieceInSquare = PieceInSquare(
-                square=move.to_square,
-                piece=chess.ROOK,
-                color=self.chess_board.turn
+                square=move.to_square, piece=chess.ROOK, color=self.chess_board.turn
             )
             board_modifications.add_removal(removal=remove_rook_in_square)
             # start added
 
             if a_side:
-                king_square = chess.C1 if self.chess_board.turn == chess.WHITE else chess.C8
+                king_square = (
+                    chess.C1 if self.chess_board.turn == chess.WHITE else chess.C8
+                )
                 rook_square = chess.D1 if self.chess_board.turn == WHITE else chess.D8
-                self.chess_board._set_piece_at(chess.C1 if self.turn == WHITE else chess.C8, chess.KING, self.turn)
-                self.chess_board._set_piece_at(chess.D1 if self.turn == WHITE else chess.D8, chess.ROOK, self.turn)
+                self.chess_board._set_piece_at(
+                    chess.C1 if self.turn == WHITE else chess.C8, chess.KING, self.turn
+                )
+                self.chess_board._set_piece_at(
+                    chess.D1 if self.turn == WHITE else chess.D8, chess.ROOK, self.turn
+                )
             else:
-                king_square = chess.G1 if self.chess_board.turn == chess.WHITE else chess.G8
+                king_square = (
+                    chess.G1 if self.chess_board.turn == chess.WHITE else chess.G8
+                )
                 rook_square = chess.F1 if self.chess_board.turn == WHITE else chess.F8
-                self.chess_board._set_piece_at(chess.G1 if self.turn == WHITE else chess.G8, chess.KING, self.turn)
-                self.chess_board._set_piece_at(chess.F1 if self.turn == WHITE else chess.F8, chess.ROOK, self.turn)
+                self.chess_board._set_piece_at(
+                    chess.G1 if self.turn == WHITE else chess.G8, chess.KING, self.turn
+                )
+                self.chess_board._set_piece_at(
+                    chess.F1 if self.turn == WHITE else chess.F8, chess.ROOK, self.turn
+                )
 
             # start added
             king_in_square: PieceInSquare = PieceInSquare(
-                square=king_square,
-                piece=chess.KING,
-                color=self.chess_board.turn
+                square=king_square, piece=chess.KING, color=self.chess_board.turn
             )
             board_modifications.add_appearance(appearance=king_in_square)
             rook_in_square: PieceInSquare = PieceInSquare(
-                square=rook_square,
-                piece=chess.ROOK,
-                color=self.chess_board.turn
+                square=rook_square, piece=chess.ROOK, color=self.chess_board.turn
             )
             board_modifications.add_appearance(appearance=rook_in_square)
             # end added
@@ -453,15 +479,17 @@ class BoardChi(IBoard):
         # Put the piece on the target square.
         if not castling:
             was_promoted = bool(self.chess_board.promoted & to_bb)
-            self.chess_board._set_piece_at(move.to_square, piece_type, self.chess_board.turn, promoted)
+            self.chess_board._set_piece_at(
+                move.to_square, piece_type, self.chess_board.turn, promoted
+            )
 
             if captured_piece_type:
-                self.chess_board._push_capture(move, capture_square, captured_piece_type, was_promoted)
+                self.chess_board._push_capture(
+                    move, capture_square, captured_piece_type, was_promoted
+                )
 
             promote_piece_in_square: PieceInSquare = PieceInSquare(
-                square=move.to_square,
-                piece=piece_type,
-                color=self.chess_board.turn
+                square=move.to_square, piece=piece_type, color=self.chess_board.turn
             )
             board_modifications.add_appearance(appearance=promote_piece_in_square)
 
@@ -480,14 +508,22 @@ class BoardChi(IBoard):
         Returns:
             str: A unique key representing the current state of the chess board.
         """
-        string = str(self.chess_board.pawns) + str(self.chess_board.knights) + str(self.chess_board.bishops) + str(
-            self.chess_board.rooks) + str(self.chess_board.queens) + str(self.chess_board.kings) + str(
-            self.chess_board.turn) + str(
-            self.chess_board.castling_rights) + str(self.chess_board.ep_square) + str(
-            self.chess_board.halfmove_clock) + str(
-            self.chess_board.occupied_co[WHITE]) + str(self.chess_board.occupied_co[BLACK]) + str(
-            self.chess_board.promoted) + str(
-            self.chess_board.fullmove_number)
+        string = (
+            str(self.chess_board.pawns)
+            + str(self.chess_board.knights)
+            + str(self.chess_board.bishops)
+            + str(self.chess_board.rooks)
+            + str(self.chess_board.queens)
+            + str(self.chess_board.kings)
+            + str(self.chess_board.turn)
+            + str(self.chess_board.castling_rights)
+            + str(self.chess_board.ep_square)
+            + str(self.chess_board.halfmove_clock)
+            + str(self.chess_board.occupied_co[WHITE])
+            + str(self.chess_board.occupied_co[BLACK])
+            + str(self.chess_board.promoted)
+            + str(self.chess_board.fullmove_number)
+        )
         return string
 
     def print_chess_board(self) -> None:
@@ -512,10 +548,7 @@ class BoardChi(IBoard):
         """
         return self.chess_board.occupied.bit_count()
 
-    def is_attacked(
-            self,
-            a_color: chess.Color
-    ) -> bool:
+    def is_attacked(self, a_color: chess.Color) -> bool:
         """Check if any piece of the color `a_color` is attacked.
 
         Args:
@@ -587,10 +620,7 @@ class BoardChi(IBoard):
         # return self.chess_board.legal_moves
         return self.legal_moves_
 
-    def piece_at(
-            self,
-            square: chess.Square
-    ) -> chess.Piece | None:
+    def piece_at(self, square: chess.Square) -> chess.Piece | None:
         """
         Returns the piece at the specified square on the chess board.
 
@@ -604,8 +634,7 @@ class BoardChi(IBoard):
         return self.chess_board.piece_at(square)
 
     def piece_map(
-            self,
-            mask: chess.Bitboard = chess.BB_ALL
+        self, mask: chess.Bitboard = chess.BB_ALL
     ) -> dict[chess.Square, tuple[int, bool]]:
         result = {}
         for square in chess.scan_reversed(self.chess_board.occupied & mask):
@@ -616,10 +645,7 @@ class BoardChi(IBoard):
             result[square] = (piece_type, color)
         return result
 
-    def has_castling_rights(
-            self,
-            color: chess.Color
-    ) -> bool:
+    def has_castling_rights(self, color: chess.Color) -> bool:
         """
         Check if the specified color has castling rights.
 
@@ -631,10 +657,7 @@ class BoardChi(IBoard):
         """
         return self.chess_board.has_castling_rights(color)
 
-    def has_queenside_castling_rights(
-            self,
-            color: chess.Color
-    ) -> bool:
+    def has_queenside_castling_rights(self, color: chess.Color) -> bool:
         """
         Check if the specified color has queenside castling rights.
 
@@ -646,10 +669,7 @@ class BoardChi(IBoard):
         """
         return self.chess_board.has_queenside_castling_rights(color)
 
-    def has_kingside_castling_rights(
-            self,
-            color: chess.Color
-    ) -> bool:
+    def has_kingside_castling_rights(self, color: chess.Color) -> bool:
         """
         Check if the specified color has kingside castling rights.
 
@@ -661,11 +681,7 @@ class BoardChi(IBoard):
         """
         return self.chess_board.has_kingside_castling_rights(color)
 
-    def copy(
-            self,
-            stack: bool,
-            deep_copy_legal_moves: bool = True
-    ) -> 'BoardChi':
+    def copy(self, stack: bool, deep_copy_legal_moves: bool = True) -> "BoardChi":
         """
         Create a copy of the current board.
 
@@ -680,7 +696,9 @@ class BoardChi(IBoard):
         legal_moves_copy: LegalMoveKeyGenerator
         if deep_copy_legal_moves:
             # deep_copy
-            legal_moves_copy = self.legal_moves_.copy(copied_chess_board=chess_board_copy)
+            legal_moves_copy = self.legal_moves_.copy(
+                copied_chess_board=chess_board_copy
+            )
         else:
             # faster as move generated are not deep copied but tricky (should not be modified later!)
             legal_moves_copy = self.legal_moves_
@@ -690,7 +708,7 @@ class BoardChi(IBoard):
             chess_board=chess_board_copy,
             compute_board_modification=self.compute_board_modification,
             fast_representation_=self.fast_representation_,
-            legal_moves_=legal_moves_copy
+            legal_moves_=legal_moves_copy,
         )
 
     def __str__(self) -> str:
@@ -704,21 +722,18 @@ class BoardChi(IBoard):
 
     def tell_result(self) -> None:
         if self.chess_board.is_fivefold_repetition():
-            print('is_fivefold_repetition')
+            print("is_fivefold_repetition")
         if self.chess_board.is_seventyfive_moves():
-            print('is seventy five  moves')
+            print("is seventy five  moves")
         if self.chess_board.is_insufficient_material():
-            print('is_insufficient_material')
+            print("is_insufficient_material")
         if self.chess_board.is_stalemate():
-            print('is_stalemate')
+            print("is_stalemate")
         if self.chess_board.is_checkmate():
-            print('is_checkmate')
+            print("is_checkmate")
         print(self.chess_board.result())
 
-    def result(
-            self,
-            claim_draw: bool = False
-    ) -> str:
+    def result(self, claim_draw: bool = False) -> str:
         return self.chess_board.result(claim_draw=claim_draw)
 
     @property
@@ -789,10 +804,7 @@ class BoardChi(IBoard):
     def ep_square(self) -> int | None:
         return self.chess_board.ep_square
 
-    def is_zeroing(
-            self,
-            move: moveKey
-    ) -> bool:
+    def is_zeroing(self, move: moveKey) -> bool:
         chess_move: chess.Move = self.legal_moves_.generated_moves[move]
         return self.chess_board.is_zeroing(chess_move)
 
@@ -800,5 +812,5 @@ class BoardChi(IBoard):
         return FenPlusHistory(
             current_fen=self.fen,
             historical_moves=self.move_history_stack,
-            historical_boards=self.chess_board._stack
+            historical_boards=self.chess_board._stack,
         )

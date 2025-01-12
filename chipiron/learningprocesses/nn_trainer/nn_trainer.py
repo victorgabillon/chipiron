@@ -31,10 +31,10 @@ class NNPytorchTrainer:
     """
 
     def __init__(
-            self,
-            net: ChiNN,
-            optimizer: torch.optim.Optimizer,
-            scheduler: torch.optim.lr_scheduler.LRScheduler
+        self,
+        net: ChiNN,
+        optimizer: torch.optim.Optimizer,
+        scheduler: torch.optim.lr_scheduler.LRScheduler,
     ) -> None:
         """
         Initializes a new instance of the NNPytorchTrainer class.
@@ -54,9 +54,7 @@ class NNPytorchTrainer:
 
     @typing.no_type_check
     def train(
-            self,
-            input_layer: torch.Tensor,
-            target_value: torch.Tensor
+        self, input_layer: torch.Tensor, target_value: torch.Tensor
     ) -> torch.Tensor:
         """
         Trains the neural network model using the provided input and target values.
@@ -71,15 +69,15 @@ class NNPytorchTrainer:
         self.net.train()
         self.optimizer.zero_grad()
         prediction_with_player_to_move_as_white = self.net(input_layer)
-        loss: torch.Tensor = self.criterion(prediction_with_player_to_move_as_white, target_value)
+        loss: torch.Tensor = self.criterion(
+            prediction_with_player_to_move_as_white, target_value
+        )
         loss.backward()
         self.optimizer.step()
         return loss
 
     def test(
-            self,
-            input_layer: torch.Tensor,
-            target_value: torch.Tensor
+        self, input_layer: torch.Tensor, target_value: torch.Tensor
     ) -> torch.Tensor:
         """
         Tests the neural network model using the provided input and target values.
@@ -93,14 +91,14 @@ class NNPytorchTrainer:
         """
         self.net.eval()
         prediction_with_player_to_move_as_white = self.net(input_layer)
-        loss: torch.Tensor = self.criterion(prediction_with_player_to_move_as_white, target_value)
+        loss: torch.Tensor = self.criterion(
+            prediction_with_player_to_move_as_white, target_value
+        )
         self.net.train()
         return loss
 
     def train_next_boards(
-            self,
-            input_layer: torch.Tensor,
-            next_input_layer: torch.Tensor
+        self, input_layer: torch.Tensor, next_input_layer: torch.Tensor
     ) -> None:
         """
         Trains the neural network model using the provided input and next input layers.
@@ -113,7 +111,7 @@ class NNPytorchTrainer:
             None
         """
         self.net.eval()
-        target_value = - self.net(next_input_layer)
+        target_value = -self.net(next_input_layer)
 
         self.net.train()
         self.optimizer.zero_grad()

@@ -1,6 +1,7 @@
 """"
 AlgorithmNodeFactory
 """
+
 from dataclasses import dataclass
 from typing import Any
 
@@ -30,18 +31,19 @@ class AlgorithmNodeFactory:
     """
     The classe creating Algorithm Nodes
     """
+
     tree_node_factory: Base[Any]
     board_representation_factory: RepresentationFactory[Any] | None
     exploration_index_data_create: node_indices.ExplorationIndexDataFactory
 
     def create(
-            self,
-            board: board_mod.IBoard,
-            half_move: int,
-            count: int,
-            parent_node: ITreeNode[Any] | None,
-            move_from_parent: moveKey | None,
-            modifications: board_mod.BoardModificationP | None
+        self,
+        board: board_mod.IBoard,
+        half_move: int,
+        count: int,
+        parent_node: ITreeNode[Any] | None,
+        move_from_parent: moveKey | None,
+        modifications: board_mod.BoardModificationP | None,
     ) -> AlgorithmNode:
         """
         Creates an AlgorithmNode object.
@@ -64,11 +66,15 @@ class AlgorithmNodeFactory:
             count=count,
             move_from_parent=move_from_parent,
             parent_node=parent_node,
-            modifications=modifications
+            modifications=modifications,
         )
-        minmax_evaluation: NodeMinmaxEvaluation = NodeMinmaxEvaluation(tree_node=tree_node)
+        minmax_evaluation: NodeMinmaxEvaluation = NodeMinmaxEvaluation(
+            tree_node=tree_node
+        )
 
-        exploration_index_data: node_indices.NodeExplorationData | None = self.exploration_index_data_create(tree_node)
+        exploration_index_data: node_indices.NodeExplorationData | None = (
+            self.exploration_index_data_create(tree_node)
+        )
 
         board_representation: BoardRepresentation | None = None
         if self.board_representation_factory is not None:
@@ -82,15 +88,17 @@ class AlgorithmNodeFactory:
             else:
                 parent_node_representation = None
 
-            board_representation = self.board_representation_factory.create_from_transition(
-                tree_node=tree_node,
-                parent_node_representation=parent_node_representation,
-                modifications=modifications
+            board_representation = (
+                self.board_representation_factory.create_from_transition(
+                    tree_node=tree_node,
+                    parent_node_representation=parent_node_representation,
+                    modifications=modifications,
+                )
             )
 
         return AlgorithmNode(
             tree_node=tree_node,
             minmax_evaluation=minmax_evaluation,
             exploration_index_data=exploration_index_data,
-            board_representation=board_representation
+            board_representation=board_representation,
         )

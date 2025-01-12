@@ -10,5 +10,5 @@ __all__ = [
     "AllMoveSelectorArgs",
     "MoveSelector",
     "create_main_move_selector",
-    "StockfishPlayer"
+    "StockfishPlayer",
 ]

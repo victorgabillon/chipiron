@@ -3,10 +3,7 @@
 from typing import AnyStr
 
 
-def convert_line(
-        line: AnyStr,
-        index: int
-) -> str:
+def convert_line(line: AnyStr, index: int) -> str:
     """
     Convert a line of the ascii board to a FEN string.
 
@@ -18,10 +15,10 @@ def convert_line(
         str: The converted FEN string.
     """
     if len(line) == 0:
-        return ''
+        return ""
 
     count: int = 0
-    while index + count < 8 and line[count] == '1':
+    while index + count < 8 and line[count] == "1":
         count = count + 1
 
     if count == 0:
@@ -41,11 +38,11 @@ def convert_to_fen(ascii_board: AnyStr) -> str:
         str: The converted FEN string.
     """
     list_ascii_board: list[AnyStr] = ascii_board.splitlines()
-    fen: str = ''
+    fen: str = ""
     list_ascii_board2: list[AnyStr] = list_ascii_board[:-1]
     line: AnyStr
     for line in list_ascii_board2:
-        fen = fen + convert_line(line, 0) + '/'
+        fen = fen + convert_line(line, 0) + "/"
     fen = fen[:-1]
-    fen = fen + ' ' + str(list_ascii_board[-1])
+    fen = fen + " " + str(list_ascii_board[-1])
     return fen

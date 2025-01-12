@@ -18,6 +18,7 @@ class MoveRecommendation:
     """
     Represents a recommended move to play along with an optional evaluation score.
     """
+
     # todo should it be a movekey or moveuci? both?
     move: moveKey
     evaluation: BoardEvaluation | None = None
@@ -30,11 +31,7 @@ class MoveSelector(Protocol):
     Move selectors are responsible for selecting the best move to play given a chess board and a move seed.
     """
 
-    def select_move(
-            self,
-            board: IBoard,
-            move_seed: seed
-    ) -> MoveRecommendation:
+    def select_move(self, board: IBoard, move_seed: seed) -> MoveRecommendation:
         """
         Selects the best move to play given a chess board and a move seed.
 

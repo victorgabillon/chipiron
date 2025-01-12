@@ -1,6 +1,7 @@
 """
 Module for handling game over events.
 """
+
 from dataclasses import dataclass
 from enum import Enum
 
@@ -15,6 +16,7 @@ class HowOver(Enum):
         DRAW (int): Indicates a draw.
         DO_NOT_KNOW_OVER (int): Indicates that the outcome is unknown.
     """
+
     WIN = 1
     DRAW = 2
     DO_NOT_KNOW_OVER = 3
@@ -81,10 +83,11 @@ class OverTags(str, Enum):
         TAG_DRAW (str): Tag indicating a draw.
         TAG_DO_NOT_KNOW (str): Tag indicating an unknown outcome.
     """
-    TAG_WIN_WHITE = 'Win-Wh'
-    TAG_WIN_BLACK = 'Win-Bl'
-    TAG_DRAW = 'Draw'
-    TAG_DO_NOT_KNOW = '?'
+
+    TAG_WIN_WHITE = "Win-Wh"
+    TAG_WIN_BLACK = "Win-Bl"
+    TAG_DRAW = "Draw"
+    TAG_DO_NOT_KNOW = "?"
 
 
 @dataclass(slots=True)
@@ -122,15 +125,17 @@ class OverEvent:
         assert self.who_is_winner in Winner
 
         if self.how_over == HowOver.WIN:
-            assert (self.who_is_winner is Winner.WHITE or self.who_is_winner is Winner.BLACK)
+            assert (
+                self.who_is_winner is Winner.WHITE or self.who_is_winner is Winner.BLACK
+            )
         elif self.how_over == HowOver.DRAW:
             assert self.who_is_winner is Winner.NO_KNOWN_WINNER
 
     def becomes_over(
-            self,
-            how_over: HowOver,
-            termination: chess.Termination | None,
-            who_is_winner: Winner = Winner.NO_KNOWN_WINNER
+        self,
+        how_over: HowOver,
+        termination: chess.Termination | None,
+        who_is_winner: Winner = Winner.NO_KNOWN_WINNER,
     ) -> None:
         """Sets the `how_over` and `who_is_winner` attributes.
 
@@ -157,13 +162,13 @@ class OverEvent:
             elif self.who_is_winner.is_black():
                 return OverTags.TAG_WIN_BLACK
             else:
-                raise Exception('error: winner is not properly defined.')
+                raise Exception("error: winner is not properly defined.")
         elif self.how_over == HowOver.DRAW:
             return OverTags.TAG_DRAW
         elif self.how_over == HowOver.DO_NOT_KNOW_OVER:
             return OverTags.TAG_DO_NOT_KNOW
         else:
-            raise Exception('error: over is not properly defined.')
+            raise Exception("error: over is not properly defined.")
 
     def __bool__(self) -> None:
         """Raises an exception.
@@ -171,7 +176,7 @@ class OverEvent:
         Raises:
             Exception: Always raises an exception.
         """
-        raise Exception('Nooooooooooo  in over ebvent.py')
+        raise Exception("Nooooooooooo  in over ebvent.py")
 
     def is_over(self) -> bool:
         """Checks if the game is over.
@@ -197,10 +202,7 @@ class OverEvent:
         """
         return self.how_over == HowOver.DRAW
 
-    def is_winner(
-            self,
-            player: chess.Color
-    ) -> bool:
+    def is_winner(self, player: chess.Color) -> bool:
         """Checks if the specified player is the winner.
 
         Args:
@@ -212,11 +214,15 @@ class OverEvent:
         Raises:
             AssertionError: If the `player` argument is not a valid value from the `chess.Color` enum.
         """
-        assert (player == chess.WHITE or player == chess.BLACK)
+        assert player == chess.WHITE or player == chess.BLACK
 
         if self.how_over == HowOver.WIN:
-            if (self.who_is_winner == Winner.WHITE and player == chess.WHITE
-                    or self.who_is_winner == Winner.BLACK and player == chess.BLACK):
+            if (
+                self.who_is_winner == Winner.WHITE
+                and player == chess.WHITE
+                or self.who_is_winner == Winner.BLACK
+                and player == chess.BLACK
+            ):
                 return True
             else:
                 return False
@@ -225,12 +231,18 @@ class OverEvent:
 
     def print_info(self) -> None:
         """Prints information about the `OverEvent` object."""
-        print('over_event:', 'how_over:', self.how_over, 'who_is_winner:', self.who_is_winner)
+        print(
+            "over_event:",
+            "how_over:",
+            self.how_over,
+            "who_is_winner:",
+            self.who_is_winner,
+        )
 
     def test(self) -> None:
         """Performs tests on the `OverEvent` object."""
         if self.how_over == HowOver.WIN:
             assert self.who_is_winner is not None
-            assert (self.who_is_winner.is_white() or self.who_is_winner.is_black())
+            assert self.who_is_winner.is_white() or self.who_is_winner.is_black()
         if self.how_over == HowOver.DRAW:
-            assert (self.who_is_winner is None)
+            assert self.who_is_winner is None

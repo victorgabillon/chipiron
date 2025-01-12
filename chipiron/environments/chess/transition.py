@@ -1,6 +1,7 @@
 """
 Module to define the transition between two boards
 """
+
 from dataclasses import dataclass
 
 import chess
@@ -20,6 +21,7 @@ class BoardTransition:
         next_board (BoardChi): The resulting chess board state after the move.
         board_modifications (BoardModification): The modifications made to the board during the transition.
     """
+
     board: BoardChi
     move: chess.Move
     next_board: BoardChi
