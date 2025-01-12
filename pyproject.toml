@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=42"]
-build-backend= "setuptools.build_meta"
+build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
 addopts = "--cov=chipiron"
@@ -45,6 +45,11 @@ strict_equality = true
 
 # Config file
 warn_unused_configs = true
+
+
+[tool.isort]
+profile = "black"
+
 
 [[tool.mypy.overrides]]
 module = [

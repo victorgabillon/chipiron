@@ -7,7 +7,7 @@ Classes:
 
 """
 
-from .recommender_rule import RecommenderRule, AllRecommendFunctionsArgs
+from .recommender_rule import AllRecommendFunctionsArgs, RecommenderRule
 
 __all__ = [
     "AllRecommendFunctionsArgs",

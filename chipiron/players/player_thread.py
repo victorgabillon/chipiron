@@ -11,13 +11,17 @@ from chipiron.environments.chess.board.iboard import IBoard
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.dataclass import DataClass, IsDataclass
-from .boardevaluators.table_base.factory import SyzygyFactory, create_syzygy_factory
-from .factory import create_game_player
-from .game_player import GamePlayer, game_player_computes_move_on_board_and_send_move_in_queue
-from .player_args import PlayerFactoryArgs
+
 from ..environments.chess.board.factory import create_board_factory
 from ..environments.chess.board.utils import FenPlusHistory
 from ..scripts.chipiron_args import ImplementationArgs
+from .boardevaluators.table_base.factory import SyzygyFactory, create_syzygy_factory
+from .factory import create_game_player
+from .game_player import (
+    GamePlayer,
+    game_player_computes_move_on_board_and_send_move_in_queue,
+)
+from .player_args import PlayerFactoryArgs
 
 
 # A class that extends the Thread class

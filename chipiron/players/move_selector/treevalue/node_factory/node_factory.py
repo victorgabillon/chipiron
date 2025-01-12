@@ -1,7 +1,7 @@
 """
 TreeNodeFactory Protocol
 """
-from typing import Protocol, Any
+from typing import Any, Protocol
 
 import chipiron.environments.chess.board as board_mod
 import chipiron.environments.chess.board as boards

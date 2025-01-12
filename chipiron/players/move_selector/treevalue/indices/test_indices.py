@@ -19,16 +19,31 @@ import chipiron.players.move_selector.treevalue.node_factory as node_factory
 import chipiron.players.move_selector.treevalue.search_factory as search_factories
 import chipiron.players.move_selector.treevalue.tree_manager as tree_manager
 import chipiron.players.move_selector.treevalue.trees as trees
-from chipiron.environments.chess.board.factory import create_board_chi_from_pychess_board
-from chipiron.players.move_selector.treevalue.indices.index_manager.factory import create_exploration_index_manager
-from chipiron.players.move_selector.treevalue.indices.index_manager.node_exploration_manager import update_all_indices, \
-    NodeExplorationIndexManager
-from chipiron.players.move_selector.treevalue.indices.node_indices.index_types import IndexComputationType
-from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
+from chipiron.environments.chess.board.factory import (
+    create_board_chi_from_pychess_board,
+)
+from chipiron.players.move_selector.treevalue.indices.index_manager.factory import (
+    create_exploration_index_manager,
+)
+from chipiron.players.move_selector.treevalue.indices.index_manager.node_exploration_manager import (
+    NodeExplorationIndexManager,
+    update_all_indices,
+)
+from chipiron.players.move_selector.treevalue.indices.node_indices.index_types import (
+    IndexComputationType,
+)
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
+    AlgorithmNode,
+)
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
-from chipiron.players.move_selector.treevalue.tree_manager.tree_expander import TreeExpansions, TreeExpansion
+from chipiron.players.move_selector.treevalue.tree_manager.tree_expander import (
+    TreeExpansion,
+    TreeExpansions,
+)
 from chipiron.players.move_selector.treevalue.trees.descendants import RangedDescendants
-from chipiron.players.move_selector.treevalue.trees.move_and_value_tree import MoveAndValueTree
+from chipiron.players.move_selector.treevalue.trees.move_and_value_tree import (
+    MoveAndValueTree,
+)
 from chipiron.utils.small_tools import path
 
 

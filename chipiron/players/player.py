@@ -8,7 +8,8 @@ from chipiron.environments.chess.board import IBoard
 from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.utils import seed
-from .move_selector.move_selector import MoveSelector, MoveRecommendation
+
+from .move_selector.move_selector import MoveRecommendation, MoveSelector
 
 playerId = str
 

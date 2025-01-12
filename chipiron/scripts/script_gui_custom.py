@@ -15,7 +15,6 @@ import customtkinter as ctk
 from chipiron import scripts
 from chipiron.players.player_ids import PlayerConfigFile
 
-
 # TODO switch to pygame
 
 def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:

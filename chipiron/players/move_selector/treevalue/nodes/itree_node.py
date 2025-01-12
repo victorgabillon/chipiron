@@ -14,8 +14,7 @@ Note: This is an interface and should not be instantiated directly.
 
 from __future__ import annotations
 
-from typing import Any
-from typing import Protocol
+from typing import Any, Protocol
 
 import chipiron.environments.chess.board as boards
 from chipiron.environments.chess.board.iboard import LegalMoveKeyGeneratorP

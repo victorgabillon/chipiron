@@ -21,11 +21,15 @@ from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.utils import path
-from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMessage, PlayerProgressMessage
+from chipiron.utils.communication.gui_messages import (
+    BackMessage,
+    GameStatusMessage,
+    PlayerProgressMessage,
+)
 from chipiron.utils.communication.player_game_messages import MoveMessage
-from chipiron.utils.dataclass import IsDataclass
-from chipiron.utils.dataclass import custom_asdict_factory
-from .final_game_result import GameReport, FinalGameResult
+from chipiron.utils.dataclass import IsDataclass, custom_asdict_factory
+
+from .final_game_result import FinalGameResult, GameReport
 from .game import ObservableGame
 from .game_args import GameArgs
 from .progress_collector import PlayerProgressCollectorP

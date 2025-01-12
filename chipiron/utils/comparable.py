@@ -6,8 +6,7 @@ Classes that inherit from Comparable must implement the __lt__ method, which def
 """
 
 from abc import ABCMeta, abstractmethod
-from typing import Any
-from typing import TypeVar
+from typing import Any, TypeVar
 
 
 class Comparable(metaclass=ABCMeta):

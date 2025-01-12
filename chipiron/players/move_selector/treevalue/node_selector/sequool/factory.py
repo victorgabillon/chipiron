@@ -6,11 +6,21 @@ from dataclasses import dataclass
 from functools import partial
 
 import chipiron.players.move_selector.treevalue.trees as trees
-from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructor
-from .sequool import Sequool, StaticNotOpenedSelector, HalfMoveSelector, ConsiderNodesFromHalfMoves, \
-    consider_nodes_only_from_half_moves_in_descendants, consider_nodes_from_all_lesser_half_moves_in_descendants, \
-    RandomAllSelector, consider_nodes_from_all_lesser_half_moves_in_sub_stree
+from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import (
+    OpeningInstructor,
+)
+
 from ..node_selector_args import NodeSelectorArgs
+from .sequool import (
+    ConsiderNodesFromHalfMoves,
+    HalfMoveSelector,
+    RandomAllSelector,
+    Sequool,
+    StaticNotOpenedSelector,
+    consider_nodes_from_all_lesser_half_moves_in_descendants,
+    consider_nodes_from_all_lesser_half_moves_in_sub_stree,
+    consider_nodes_only_from_half_moves_in_descendants,
+)
 
 
 @dataclass

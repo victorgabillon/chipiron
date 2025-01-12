@@ -9,7 +9,7 @@ from typing import Any
 import chipiron as ch
 import chipiron.games.game as game
 import chipiron.players as players
-from chipiron.environments.chess.board.factory import create_board_factory, BoardFactory
+from chipiron.environments.chess.board.factory import BoardFactory, create_board_factory
 from chipiron.games.game.game_manager_factory import GameManagerFactory
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_manager import MatchManager
@@ -23,9 +23,10 @@ from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
 from chipiron.utils.dataclass import IsDataclass
-from .match_settings_args import MatchSettingsArgs
+
 from ...environments.chess.move_factory import MoveFactory, create_move_factory
 from ...players.boardevaluators.table_base import SyzygyTable
+from .match_settings_args import MatchSettingsArgs
 
 
 def create_match_manager(

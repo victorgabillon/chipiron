@@ -15,17 +15,18 @@ Note: The Stockfish engine is initialized lazily when the first move is selected
 """
 
 from dataclasses import dataclass
-from typing import Literal, Any
+from typing import Any, Literal
 
 import chess.engine
 
 import chipiron.environments.chess.board as boards
 from chipiron.environments.chess.move.imove import moveKey
-from .move_selector import MoveRecommendation
-from .move_selector_types import MoveSelectorTypes
+
 from ...environments.chess import BoardChi
 from ...environments.chess.board import create_board_chi
 from ...environments.chess.board.utils import FenPlusHistory
+from .move_selector import MoveRecommendation
+from .move_selector_types import MoveSelectorTypes
 
 
 @dataclass

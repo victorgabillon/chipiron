@@ -8,7 +8,10 @@ Classes:
 
 from dataclasses import dataclass
 
-from chipiron.players.boardevaluators.neural_networks.input_converters.RepresentationType import RepresentationType
+from chipiron.players.boardevaluators.neural_networks.input_converters.RepresentationType import (
+    RepresentationType,
+)
+
 from .all_node_evaluators import NodeEvaluatorTypes
 
 

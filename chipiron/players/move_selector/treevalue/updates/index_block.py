@@ -11,7 +11,9 @@ from dataclasses import dataclass, field
 from typing import Self
 
 from chipiron.environments.chess.move.imove import moveKey
-from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
+    AlgorithmNode,
+)
 
 
 @dataclass(slots=True)

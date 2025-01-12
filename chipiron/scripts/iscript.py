@@ -2,7 +2,7 @@
 This module defines the IScript interface, which serves as the interface for scripts in the application.
 """
 
-from typing import Protocol, Any
+from typing import Any, Protocol
 
 from .script import Script
 

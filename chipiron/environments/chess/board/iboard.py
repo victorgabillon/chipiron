@@ -1,6 +1,5 @@
 from dataclasses import asdict
-from typing import Any
-from typing import Protocol, Self, Iterator
+from typing import Any, Iterator, Protocol, Self
 
 import chess
 import shakmaty_python_binding
@@ -9,8 +8,8 @@ import yaml
 from chipiron.environments.chess.board.board_modification import BoardModificationP
 from chipiron.environments.chess.move import moveUci
 from chipiron.environments.chess.move.imove import moveKey
-from .utils import FenPlusMoveHistory, FenPlusHistory
-from .utils import fen
+
+from .utils import FenPlusHistory, FenPlusMoveHistory, fen
 
 # identifier that should be unique to any position
 boardKey = tuple[int, int, int, int, int, int, bool, int, int | None, int, int, int, int, int]

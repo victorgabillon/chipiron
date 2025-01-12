@@ -1,6 +1,7 @@
 from typing import Any
 
 from chipiron.scripts.league.runtheleague import RunTheLeagueScript
+
 from .base_tree_exploration.base_tree_exploration import BaseTreeExplorationScript
 from .iscript import IScript
 from .learn_nn_supervised.learn_nn_from_supervised_datasets import LearnNNScript

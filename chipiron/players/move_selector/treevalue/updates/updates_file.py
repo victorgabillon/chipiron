@@ -7,14 +7,22 @@ Classes:
 """
 
 from dataclasses import dataclass, field
-from typing import Any
-from typing import Self
+from typing import Any, Self
 
 from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.move_selector.treevalue.nodes import ITreeNode
-from chipiron.utils.dict_of_numbered_dict_with_pointer_on_max import DictOfNumberedDictWithPointerOnMax
-from .index_block import IndexUpdateInstructionsFromOneNode, IndexUpdateInstructionsTowardsOneParentNode
-from .value_block import ValueUpdateInstructionsFromOneNode, ValueUpdateInstructionsTowardsOneParentNode
+from chipiron.utils.dict_of_numbered_dict_with_pointer_on_max import (
+    DictOfNumberedDictWithPointerOnMax,
+)
+
+from .index_block import (
+    IndexUpdateInstructionsFromOneNode,
+    IndexUpdateInstructionsTowardsOneParentNode,
+)
+from .value_block import (
+    ValueUpdateInstructionsFromOneNode,
+    ValueUpdateInstructionsTowardsOneParentNode,
+)
 
 
 @dataclass(slots=True)

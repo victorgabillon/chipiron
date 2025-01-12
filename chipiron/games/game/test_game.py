@@ -1,8 +1,9 @@
 import chess
 import pytest
 
-from chipiron.environments.chess.board import create_board, IBoard
+from chipiron.environments.chess.board import IBoard, create_board
 from chipiron.environments.chess.board.utils import FenPlusHistory
+
 from .game import Game
 from .game_playing_status import GamePlayingStatus
 

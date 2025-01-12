@@ -9,9 +9,16 @@ import chipiron.environments.chess.board as board_mod
 import chipiron.players.move_selector.treevalue.nodes as node
 import chipiron.players.move_selector.treevalue.trees as trees
 from chipiron.environments.chess.move.imove import moveKey
-from chipiron.players.move_selector.treevalue.node_factory.node_factory import TreeNodeFactory
-from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructions
-from chipiron.players.move_selector.treevalue.tree_manager.tree_expander import TreeExpansion, TreeExpansions
+from chipiron.players.move_selector.treevalue.node_factory.node_factory import (
+    TreeNodeFactory,
+)
+from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import (
+    OpeningInstructions,
+)
+from chipiron.players.move_selector.treevalue.tree_manager.tree_expander import (
+    TreeExpansion,
+    TreeExpansions,
+)
 
 # todo should we use a discount? and discounted per round reward?
 # todo maybe convenient to seperate this object into openner updater and dsiplayer

@@ -1,5 +1,6 @@
-from chipiron import scripts
 import os
+
+from chipiron import scripts
 
 os.chdir('../../')
 print(os.getcwd())

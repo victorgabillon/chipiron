@@ -4,8 +4,7 @@ Module for creating player observers.
 import multiprocessing
 import queue
 from functools import partial
-from typing import Any
-from typing import Protocol
+from typing import Any, Protocol
 
 import chess
 
@@ -13,12 +12,16 @@ from chipiron.environments.chess.board import IBoard
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.dataclass import IsDataclass
+
+from ..scripts.chipiron_args import ImplementationArgs
 from .boardevaluators.table_base import SyzygyTable
 from .factory import create_game_player
-from .game_player import GamePlayer, game_player_computes_move_on_board_and_send_move_in_queue
+from .game_player import (
+    GamePlayer,
+    game_player_computes_move_on_board_and_send_move_in_queue,
+)
 from .player_args import PlayerFactoryArgs
 from .player_thread import PlayerProcess
-from ..scripts.chipiron_args import ImplementationArgs
 
 
 # function that will be called by the observable game when the board is updated, which should query at least one player

@@ -3,13 +3,14 @@ Module representing the board evaluators.
 """
 import queue
 from enum import Enum
-from typing import Any
-from typing import Protocol
+from typing import Any, Protocol
 
 import chess
 
 import chipiron.environments.chess.board as boards
-from chipiron.players.boardevaluators.board_evaluation.board_evaluation import BoardEvaluation
+from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
+    BoardEvaluation,
+)
 from chipiron.utils.communication.gui_messages import EvaluationMessage
 from chipiron.utils.dataclass import IsDataclass
 

@@ -1,7 +1,9 @@
 import pickle
 
 import chess
+
 from chipiron.environments.chess.board import fen
+
 first_line: int = 8
 
 dict_fen_move: dict[str, list[chess.Move]] = {}

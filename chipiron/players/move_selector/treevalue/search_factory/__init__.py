@@ -9,7 +9,7 @@ The factories included in this module are:
 To use this module, import the desired factory class from this module and use it to create the desired objects.
 """
 
-from .search_factory import SearchFactoryP, SearchFactory, NodeSelectorFactory
+from .search_factory import NodeSelectorFactory, SearchFactory, SearchFactoryP
 
 __all__ = [
     "SearchFactoryP",

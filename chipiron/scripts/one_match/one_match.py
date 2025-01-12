@@ -5,14 +5,13 @@ import multiprocessing
 import os
 import queue
 import sys
-from dataclasses import asdict
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 
 import yaml
 from PySide6.QtWidgets import QApplication
 
 import chipiron as ch
-from chipiron.environments.chess.board import create_board_factory, BoardFactory
+from chipiron.environments.chess.board import BoardFactory, create_board_factory
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_factories import create_match_manager_from_args
 from chipiron.scripts.chipiron_args import ImplementationArgs

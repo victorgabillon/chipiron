@@ -19,7 +19,9 @@ Methods:
 import torch
 import torch.nn as nn
 
-from chipiron.players.boardevaluators.neural_networks.board_to_tensor import transform_board_pieces_two_sides
+from chipiron.players.boardevaluators.neural_networks.board_to_tensor import (
+    transform_board_pieces_two_sides,
+)
 from chipiron.utils.chi_nn import ChiNN
 
 

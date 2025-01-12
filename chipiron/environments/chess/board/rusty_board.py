@@ -1,15 +1,25 @@
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import Self, Any, Iterator
+from typing import Any, Iterator, Self
 
 import chess
 import shakmaty_python_binding
 
-from chipiron.environments.chess.board.board_modification import BoardModification, BoardModificationRust, \
-    BoardModificationP
+from chipiron.environments.chess.board.board_modification import (
+    BoardModification,
+    BoardModificationP,
+    BoardModificationRust,
+)
 from chipiron.environments.chess.move import moveUci
 from chipiron.environments.chess.move.imove import moveKey
-from .iboard import IBoard, boardKey, boardKeyWithoutCounters, compute_key, LegalMoveKeyGeneratorP
+
+from .iboard import (
+    IBoard,
+    LegalMoveKeyGeneratorP,
+    boardKey,
+    boardKeyWithoutCounters,
+    compute_key,
+)
 from .utils import FenPlusHistory, fen
 
 

@@ -3,6 +3,7 @@ import torch
 
 import chipiron.environments.chess.board as boards
 from chipiron.environments.chess.board.iboard import IBoard
+
 from .board_representation import Representation364
 
 

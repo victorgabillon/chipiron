@@ -1,7 +1,7 @@
 """
 init file for trees module
 """
-from .descendants import RangedDescendants, Descendants
+from .descendants import Descendants, RangedDescendants
 from .move_and_value_tree import MoveAndValueTree
 from .tree_visualization import save_raw_data_to_file
 

@@ -10,7 +10,7 @@ The following classes and functions are available:
 
 """
 
-from .factory import create_exploration_index_data, ExplorationIndexDataFactory
+from .factory import ExplorationIndexDataFactory, create_exploration_index_data
 from .index_data import NodeExplorationData
 from .index_types import IndexComputationType
 

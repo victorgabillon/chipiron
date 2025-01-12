@@ -8,12 +8,20 @@ import chipiron.environments.chess.board as board_mod
 import chipiron.players.move_selector.treevalue.indices.node_indices as node_indices
 import chipiron.players.move_selector.treevalue.nodes as node
 from chipiron.environments.chess.move.imove import moveKey
-from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import BoardRepresentation
-from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import Representation364
-from chipiron.players.boardevaluators.neural_networks.input_converters.factory import RepresentationFactory
+from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import (
+    BoardRepresentation,
+    Representation364,
+)
+from chipiron.players.boardevaluators.neural_networks.input_converters.factory import (
+    RepresentationFactory,
+)
 from chipiron.players.move_selector.treevalue.node_factory.base import Base
-from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
-from chipiron.players.move_selector.treevalue.nodes.algorithm_node.node_minmax_evaluation import NodeMinmaxEvaluation
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
+    AlgorithmNode,
+)
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.node_minmax_evaluation import (
+    NodeMinmaxEvaluation,
+)
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 
 

@@ -14,12 +14,18 @@
 """
 
 from dataclasses import make_dataclass
-from typing import Callable, Type, Any
+from typing import Any, Callable, Type
 
-from chipiron.players.move_selector.treevalue.indices.node_indices.index_data import NodeExplorationData, \
-    RecurZipfQuoolExplorationData, MinMaxPathValue, IntervalExplo, \
-    MaxDepthDescendants
-from chipiron.players.move_selector.treevalue.indices.node_indices.index_types import IndexComputationType
+from chipiron.players.move_selector.treevalue.indices.node_indices.index_data import (
+    IntervalExplo,
+    MaxDepthDescendants,
+    MinMaxPathValue,
+    NodeExplorationData,
+    RecurZipfQuoolExplorationData,
+)
+from chipiron.players.move_selector.treevalue.indices.node_indices.index_types import (
+    IndexComputationType,
+)
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 
 ExplorationIndexDataFactory = Callable[[TreeNode[Any]], NodeExplorationData | None]

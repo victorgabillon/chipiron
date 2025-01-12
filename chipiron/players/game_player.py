@@ -11,6 +11,7 @@ from chipiron.players.move_selector.move_selector import MoveRecommendation
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import MoveMessage
 from chipiron.utils.dataclass import IsDataclass
+
 from .player import Player
 
 

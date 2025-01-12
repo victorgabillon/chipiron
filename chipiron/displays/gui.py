@@ -10,26 +10,38 @@ import time
 import typing
 
 import chess
-from PySide6.QtCore import QTimer, Slot
-from PySide6.QtCore import Qt
 import PySide6.QtGui as QtGui
+from PySide6.QtCore import Qt, QTimer, Slot
 from PySide6.QtGui import QIcon
 from PySide6.QtSvgWidgets import QSvgWidget
-from PySide6.QtWidgets import QPushButton, QTableWidget, QWidget, QDialog, QTableWidgetItem, QProgressBar, QLabel
+from PySide6.QtWidgets import (
+    QDialog,
+    QLabel,
+    QProgressBar,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QWidget,
+)
 
-from chipiron.environments.chess.board import IBoard, BoardFactory, create_board_chi
+from chipiron.environments.chess.board import BoardFactory, IBoard, create_board_chi
 from chipiron.environments.chess.board.utils import FenPlusHistory
 from chipiron.environments.chess.move import moveUci
 from chipiron.environments.chess.move.imove import moveKey
 from chipiron.games.game.game_playing_status import PlayingStatus
-from chipiron.games.match.match_results import MatchResults
-from chipiron.games.match.match_results import SimpleResults
+from chipiron.games.match.match_results import MatchResults, SimpleResults
 from chipiron.players import PlayerFactoryArgs
 from chipiron.players.move_selector.treevalue import TreeAndValuePlayerArgs
-from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import TreeMoveLimitArgs
+from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
+    TreeMoveLimitArgs,
+)
 from chipiron.players.player_ids import PlayerConfigFile
-from chipiron.utils.communication.gui_messages import GameStatusMessage, BackMessage, EvaluationMessage, \
-    PlayerProgressMessage
+from chipiron.utils.communication.gui_messages import (
+    BackMessage,
+    EvaluationMessage,
+    GameStatusMessage,
+    PlayerProgressMessage,
+)
 from chipiron.utils.communication.gui_messages.gui_messages import MatchResultsMessage
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage
 from chipiron.utils.communication.player_game_messages import BoardMessage, MoveMessage

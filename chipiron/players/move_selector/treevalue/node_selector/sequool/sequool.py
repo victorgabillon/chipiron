@@ -20,20 +20,29 @@ Functions:
 import random
 import typing
 from dataclasses import dataclass, field
-from typing import Any
-from typing import Callable
-from typing import Protocol
+from typing import Any, Callable, Protocol
 
 from chipiron.environments import HalfMove
 from chipiron.players.move_selector.treevalue import trees
-from chipiron.players.move_selector.treevalue.indices.node_indices.index_data import MaxDepthDescendants
-from chipiron.players.move_selector.treevalue.node_selector.notations_and_statics import zipf_picks, zipf_picks_random
-from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructions, \
-    OpeningInstructor, \
-    create_instructions_to_open_all_moves
-from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
+from chipiron.players.move_selector.treevalue.indices.node_indices.index_data import (
+    MaxDepthDescendants,
+)
+from chipiron.players.move_selector.treevalue.node_selector.notations_and_statics import (
+    zipf_picks,
+    zipf_picks_random,
+)
+from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import (
+    OpeningInstructions,
+    OpeningInstructor,
+    create_instructions_to_open_all_moves,
+)
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
+    AlgorithmNode,
+)
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
-from chipiron.players.move_selector.treevalue.nodes.tree_traversal import get_descendants_candidate_not_over
+from chipiron.players.move_selector.treevalue.nodes.tree_traversal import (
+    get_descendants_candidate_not_over,
+)
 from chipiron.players.move_selector.treevalue.trees.descendants import Descendants
 
 if typing.TYPE_CHECKING:

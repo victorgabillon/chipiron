@@ -1,5 +1,7 @@
-import chess
 import random
+
+import chess
+
 from chipiron.environments.chess.board import create_board_chi
 from chipiron.environments.chess.board.factory import create_rust_board
 from chipiron.environments.chess.board.utils import FenPlusHistory

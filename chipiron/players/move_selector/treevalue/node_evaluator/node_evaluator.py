@@ -26,9 +26,11 @@ import chess
 
 import chipiron.environments.chess.board as boards
 import chipiron.players.boardevaluators as board_evals
-from chipiron.players.boardevaluators.over_event import HowOver, Winner, OverEvent
+from chipiron.players.boardevaluators.over_event import HowOver, OverEvent, Winner
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
-from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
+    AlgorithmNode,
+)
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 
 DISCOUNT = .999999999999  # todo play with this

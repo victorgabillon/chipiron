@@ -3,10 +3,11 @@ Module to create a SyzygyTable object if the path to the syzygy tables exists,
 otherwise return None.
 """
 import os
-from typing import Protocol, Any
+from typing import Any, Protocol
 
 from chipiron.players.boardevaluators.table_base.syzygy_python import SyzygyChiTable
 from chipiron.utils import path
+
 from .syzygy_rust import SyzygyRustTable
 from .syzygy_table import SyzygyTable
 

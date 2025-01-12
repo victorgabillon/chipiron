@@ -2,18 +2,26 @@
 Module that contains the logic to compute the exploration index of a node in a tree.
 """
 import math
-from typing import Any
-from typing import Protocol
+from typing import Any, Protocol
 
 import chess
 
 import chipiron.players.move_selector.treevalue.trees as trees
 from chipiron.environments.chess.move.imove import moveKey
-from chipiron.players.move_selector.treevalue.indices.node_indices.index_data import MinMaxPathValue, \
-    RecurZipfQuoolExplorationData, IntervalExplo
-from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
+from chipiron.players.move_selector.treevalue.indices.node_indices.index_data import (
+    IntervalExplo,
+    MinMaxPathValue,
+    RecurZipfQuoolExplorationData,
+)
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
+    AlgorithmNode,
+)
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
-from chipiron.utils.small_tools import Interval, intersect_intervals, distance_number_to_interval
+from chipiron.utils.small_tools import (
+    Interval,
+    distance_number_to_interval,
+    intersect_intervals,
+)
 
 
 class NodeExplorationIndexManager(Protocol):

@@ -2,9 +2,15 @@
 This module contains the MinMaxEvaluationUpdater class, which is responsible for updating the min-max evaluation values of AlgorithmNode objects.
 """
 
-from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
+    AlgorithmNode,
+)
+
 from .updates_file import UpdateInstructionsTowardsOneParentNode
-from .value_block import ValueUpdateInstructionsTowardsOneParentNode, ValueUpdateInstructionsFromOneNode
+from .value_block import (
+    ValueUpdateInstructionsFromOneNode,
+    ValueUpdateInstructionsTowardsOneParentNode,
+)
 
 
 class MinMaxEvaluationUpdater:

@@ -5,15 +5,22 @@ import chess
 import pytest
 import torch
 
-from chipiron.environments.chess.board import IBoard, create_board, BoardModificationP
+from chipiron.environments.chess.board import BoardModificationP, IBoard, create_board
 from chipiron.environments.chess.board.utils import FenPlusHistory, bitboard_rotate
 from chipiron.environments.chess.move.imove import moveKey
-from chipiron.players.boardevaluators.neural_networks.input_converters.RepresentationType import RepresentationType
-from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import Representation364, \
-    BoardRepresentation
-from chipiron.players.boardevaluators.neural_networks.input_converters.factory import RepresentationFactory
-from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import \
-    create_board_representation_factory
+from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import (
+    BoardRepresentation,
+    Representation364,
+)
+from chipiron.players.boardevaluators.neural_networks.input_converters.factory import (
+    RepresentationFactory,
+)
+from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
+    create_board_representation_factory,
+)
+from chipiron.players.boardevaluators.neural_networks.input_converters.RepresentationType import (
+    RepresentationType,
+)
 
 
 @pytest.mark.parametrize(('use_rust_boards'), (True, False))

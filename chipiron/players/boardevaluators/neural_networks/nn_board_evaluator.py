@@ -6,10 +6,15 @@ import chess
 import torch
 
 import chipiron.environments.chess.board as boards
-from chipiron.players.boardevaluators.board_evaluation.board_evaluation import FloatyBoardEvaluation
-from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_input import BoardToInput
-from chipiron.players.boardevaluators.neural_networks.output_converters.output_value_converter import \
-    OutputValueConverter
+from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
+    FloatyBoardEvaluation,
+)
+from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_input import (
+    BoardToInput,
+)
+from chipiron.players.boardevaluators.neural_networks.output_converters.output_value_converter import (
+    OutputValueConverter,
+)
 from chipiron.utils.chi_nn import ChiNN
 
 

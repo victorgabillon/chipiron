@@ -4,7 +4,7 @@ Module that contains the NullObject class.
 
 """
 
-from typing import Self, Any
+from typing import Any, Self
 
 
 class NullObject:

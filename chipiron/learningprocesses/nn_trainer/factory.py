@@ -10,7 +10,10 @@ import torch.optim as optim
 
 from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
 from chipiron.players.boardevaluators.neural_networks import NeuralNetBoardEvalArgs
-from chipiron.players.boardevaluators.neural_networks.factory import get_folder_path_from, get_nn_param_file_path_from
+from chipiron.players.boardevaluators.neural_networks.factory import (
+    get_folder_path_from,
+    get_nn_param_file_path_from,
+)
 from chipiron.utils.chi_nn import ChiNN
 from chipiron.utils.small_tools import mkdir
 

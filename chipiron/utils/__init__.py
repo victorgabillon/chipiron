@@ -2,8 +2,15 @@
 Module that contains small tools that are used in the project.
 
 """
-from .small_tools import mkdir, yaml_fetch_args_in_file, dict_alphabetic_str, unique_int_from_list, rec_merge_dic, path, \
-    seed
+from .small_tools import (
+    dict_alphabetic_str,
+    mkdir,
+    path,
+    rec_merge_dic,
+    seed,
+    unique_int_from_list,
+    yaml_fetch_args_in_file,
+)
 
 __all__ = [
     "yaml_fetch_args_in_file",

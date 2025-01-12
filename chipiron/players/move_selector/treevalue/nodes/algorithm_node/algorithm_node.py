@@ -10,9 +10,15 @@ import chess
 import chipiron.environments.chess.board as boards
 from chipiron.environments.chess.board.iboard import LegalMoveKeyGeneratorP
 from chipiron.environments.chess.move.imove import moveKey
-from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import BoardRepresentation
-from chipiron.players.move_selector.treevalue.indices.node_indices import NodeExplorationData
-from chipiron.players.move_selector.treevalue.nodes.algorithm_node.node_minmax_evaluation import NodeMinmaxEvaluation
+from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import (
+    BoardRepresentation,
+)
+from chipiron.players.move_selector.treevalue.indices.node_indices import (
+    NodeExplorationData,
+)
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.node_minmax_evaluation import (
+    NodeMinmaxEvaluation,
+)
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 

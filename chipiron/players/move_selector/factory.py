@@ -3,16 +3,13 @@ This module provides a factory function for creating the main move selector base
 """
 import queue
 import random
-from typing import Any
-from typing import TypeAlias
+from typing import Any, TypeAlias
 
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
-from . import human
-from . import move_selector
-from . import stockfish
-from . import treevalue
-from .random import Random, create_random
+
 from ...utils.dataclass import IsDataclass
+from . import human, move_selector, stockfish, treevalue
+from .random import Random, create_random
 
 AllMoveSelectorArgs: TypeAlias = (
         treevalue.TreeAndValuePlayerArgs |
