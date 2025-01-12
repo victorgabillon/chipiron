@@ -25,3 +25,13 @@ class FenPlusHistory:
     current_fen: fen
     historical_moves: list[moveUci] = field(default_factory=list)
     historical_boards: list[chess._BoardState] = field(default_factory=list)
+
+
+def square_rotate(square: chess.Square) -> chess.Square:
+    """Rotates the square 180."""
+    return square ^ 0x3F
+
+
+def bitboard_rotate(bitboard: chess.Bitboard) -> chess.Bitboard:
+    """Rotates the square 180."""
+    return chess.flip_horizontal(bb=chess.flip_vertical(bb=bitboard))

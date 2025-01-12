@@ -14,5 +14,5 @@ main_move_selector:
   board_evaluator:
     type: basic_evaluation
     syzygy_evaluation: True
-    representation: 'no'
+    representation_type: 'no'
 syzygy_play: True

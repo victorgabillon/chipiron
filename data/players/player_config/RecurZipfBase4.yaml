@@ -16,6 +16,6 @@ main_move_selector:
     neural_network:
       nn_type: pp2d2_2
       nn_param_folder_name: 'base'
-    representation: '364'
+    representation_type: '364_bug'
     syzygy_evaluation: True
 syzygy_play: True

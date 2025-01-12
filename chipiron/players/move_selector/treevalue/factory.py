@@ -18,8 +18,9 @@ from typing import Any
 from typing import Literal
 
 import chipiron.players.move_selector.treevalue.search_factory as search_factories
-from chipiron.players.boardevaluators.neural_networks.input_converters.factory import create_board_representation, \
-    Representation364Factory
+from chipiron.players.boardevaluators.neural_networks.input_converters.factory import RepresentationFactory
+from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import \
+    create_board_representation_factory
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 from chipiron.players.move_selector.treevalue import node_factory
@@ -79,9 +80,9 @@ def create_tree_and_value_builders(
         node_factory_name=node_factory_name
     )
 
-    board_representation_factory: Representation364Factory | None
-    board_representation_factory = create_board_representation(
-        board_representation_str=args.board_evaluator.representation
+    board_representation_factory: RepresentationFactory[Any] | None
+    board_representation_factory = create_board_representation_factory(
+        board_representation_factory_type=args.board_evaluator.representation_type
     )
 
     search_factory: search_factories.SearchFactoryP = search_factories.SearchFactory(

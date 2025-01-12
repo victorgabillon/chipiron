@@ -79,3 +79,35 @@ class Representation364(BoardRepresentation):
         tensor_2 = torch.cat((tensor, tensor_castling), 0)
 
         return tensor_2
+
+
+@dataclass(slots=True)
+class Representation364_2(BoardRepresentation):
+    """
+    Dataclass representing a board representation with 364 features.
+    """
+
+    tensor: torch.Tensor
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Representation364_2):
+            return False
+        else:
+            return (
+                torch.equal(self.tensor, other.tensor)
+            )
+
+    def get_evaluator_input(
+            self,
+            color_to_play: chess.Color
+    ) -> torch.Tensor:
+        """
+        Returns the evaluator input tensor for the given color to play.
+
+        Args:
+            color_to_play: The color to play, either chess.WHITE or chess.BLACK.
+
+        Returns:
+            The evaluator input tensor.
+        """
+        return self.tensor

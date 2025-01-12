@@ -53,7 +53,10 @@ def create_node_evaluator(
             )
         case NodeEvaluatorTypes.NeuralNetwork:
             assert isinstance(arg_board_evaluator, neural_networks.NeuralNetNodeEvalArgs)
-            board_evaluator_nn: NNBoardEvaluator = create_nn_board_eval(arg=arg_board_evaluator.neural_network)
+            board_evaluator_nn: NNBoardEvaluator = create_nn_board_eval(
+                arg=arg_board_evaluator.neural_network,
+                representation_type=arg_board_evaluator.representation_type
+            )
             node_evaluator = NNNodeEvaluator(
                 nn_board_evaluator=board_evaluator_nn,
                 syzygy=syzygy_

@@ -8,6 +8,7 @@ Classes:
 
 from dataclasses import dataclass
 
+from chipiron.players.boardevaluators.neural_networks.input_converters.RepresentationType import RepresentationType
 from .all_node_evaluators import NodeEvaluatorTypes
 
 
@@ -24,4 +25,4 @@ class NodeEvaluatorArgs:
     """
     type: NodeEvaluatorTypes
     syzygy_evaluation: bool
-    representation: str  # this should maybe be optional and involves creates wrapper? but i am lazy at the moment
+    representation_type: RepresentationType  # this should maybe be optional and involves creates wrapper? but i am lazy at the moment

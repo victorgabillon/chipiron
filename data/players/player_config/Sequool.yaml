@@ -19,7 +19,7 @@ main_move_selector:
     neural_network:
       nn_type: pp2d2_2_prelu
       nn_param_folder_name: 'param_prelu'
-    representation: '364'
+    representation_type: '364_bug'
     syzygy_evaluation: True
 syzygy_play: True
 

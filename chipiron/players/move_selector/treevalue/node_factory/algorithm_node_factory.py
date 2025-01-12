@@ -10,7 +10,7 @@ import chipiron.players.move_selector.treevalue.nodes as node
 from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import BoardRepresentation
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import Representation364
-from chipiron.players.boardevaluators.neural_networks.input_converters.factory import Representation364Factory
+from chipiron.players.boardevaluators.neural_networks.input_converters.factory import RepresentationFactory
 from chipiron.players.move_selector.treevalue.node_factory.base import Base
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.node_minmax_evaluation import NodeMinmaxEvaluation
@@ -23,7 +23,7 @@ class AlgorithmNodeFactory:
     The classe creating Algorithm Nodes
     """
     tree_node_factory: Base[Any]
-    board_representation_factory: Representation364Factory | None
+    board_representation_factory: RepresentationFactory[Any] | None
     exploration_index_data_create: node_indices.ExplorationIndexDataFactory
 
     def create(
