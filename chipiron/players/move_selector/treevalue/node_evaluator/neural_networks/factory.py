@@ -5,7 +5,10 @@ This module provides a factory for creating neural network node evaluators.
 from dataclasses import dataclass
 
 import chipiron.players.boardevaluators.neural_networks as board_nn
-from chipiron.players.move_selector.treevalue.node_evaluator.all_node_evaluators import NodeEvaluatorTypes
+from chipiron.players.move_selector.treevalue.node_evaluator.all_node_evaluators import (
+    NodeEvaluatorTypes,
+)
+
 from ..node_evaluator_args import NodeEvaluatorArgs
 
 

@@ -22,7 +22,9 @@ from sortedcollections import ValueSortedDict
 import chipiron.environments.chess.board as boards
 from chipiron.environments import HalfMove
 from chipiron.players.move_selector.treevalue.nodes import ITreeNode
-from chipiron.players.move_selector.treevalue.nodes.tree_traversal import get_descendants
+from chipiron.players.move_selector.treevalue.nodes.tree_traversal import (
+    get_descendants,
+)
 
 
 class Descendants:

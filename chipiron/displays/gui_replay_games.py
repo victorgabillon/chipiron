@@ -10,7 +10,7 @@ import chess
 from PySide6.QtCore import Slot
 from PySide6.QtGui import QIcon, QKeyEvent
 from PySide6.QtSvgWidgets import QSvgWidget
-from PySide6.QtWidgets import QWidget, QPushButton
+from PySide6.QtWidgets import QPushButton, QWidget
 
 from chipiron.environments.chess.board.board_chi import BoardChi
 

@@ -14,8 +14,13 @@ import chess
 
 from chipiron.environments.chess.move import moveUci
 from chipiron.environments.chess.move.imove import moveKey
-from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
-from chipiron.players.move_selector.treevalue.nodes.algorithm_node.node_minmax_evaluation import NodeMinmaxEvaluation
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
+    AlgorithmNode,
+)
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.node_minmax_evaluation import (
+    NodeMinmaxEvaluation,
+)
+
 from .itree_node import ITreeNode
 from .tree_node import TreeNode
 

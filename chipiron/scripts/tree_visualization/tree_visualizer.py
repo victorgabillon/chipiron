@@ -22,8 +22,12 @@ import typing
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from chipiron.players.move_selector.treevalue.trees.move_and_value_tree import MoveAndValueTree
-from chipiron.players.move_selector.treevalue.trees.tree_visualization import display_special
+from chipiron.players.move_selector.treevalue.trees.move_and_value_tree import (
+    MoveAndValueTree,
+)
+from chipiron.players.move_selector.treevalue.trees.tree_visualization import (
+    display_special,
+)
 from chipiron.scripts.script import Script
 
 

@@ -1,12 +1,12 @@
-from flask import Flask, render_template,request
-from chipiron.environments.chess.board import BoardChi
-from chipiron.players.factory import create_chipiron_player
+import json
 
-from chipiron.players.move_selector.move_selector import MoveRecommendation
+from flask import Flask, render_template, request
 from flask_bootstrap import Bootstrap4
 
-import json
-from chipiron.environments.chess.board import create_board_chi
+from chipiron.environments.chess.board import BoardChi, create_board_chi
+from chipiron.players.factory import create_chipiron_player
+from chipiron.players.move_selector.move_selector import MoveRecommendation
+
 # Uncomment and populate this variable in your code:
 PROJECT = 'chipironchess'
 

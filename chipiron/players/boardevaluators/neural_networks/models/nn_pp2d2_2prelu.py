@@ -22,7 +22,9 @@ Helper Functions:
 import torch
 import torch.nn as nn
 
-from chipiron.players.boardevaluators.board_evaluation.board_evaluation import PointOfView
+from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
+    PointOfView,
+)
 from chipiron.utils.chi_nn import ChiNN
 
 

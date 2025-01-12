@@ -9,7 +9,7 @@ from .node_selector_args import NodeSelectorArgs
 from .node_selector_types import NodeSelectorType
 from .opening_instructions import OpeningInstructor
 from .recurzipf.recur_zipf_base import RecurZipfBase, RecurZipfBaseArgs
-from .sequool import create_sequool, SequoolArgs
+from .sequool import SequoolArgs, create_sequool
 from .uniform import Uniform
 
 AllNodeSelectorArgs = RecurZipfBaseArgs | SequoolArgs | NodeSelectorArgs

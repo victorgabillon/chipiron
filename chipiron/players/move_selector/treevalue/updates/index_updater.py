@@ -3,9 +3,17 @@ This module contains the IndexUpdater class, which is responsible for updating t
 """
 
 from chipiron.environments.chess.move.imove import moveKey
-from chipiron.players.move_selector.treevalue.indices.node_indices.index_data import MaxDepthDescendants
-from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
-from .index_block import IndexUpdateInstructionsFromOneNode, IndexUpdateInstructionsTowardsOneParentNode
+from chipiron.players.move_selector.treevalue.indices.node_indices.index_data import (
+    MaxDepthDescendants,
+)
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
+    AlgorithmNode,
+)
+
+from .index_block import (
+    IndexUpdateInstructionsFromOneNode,
+    IndexUpdateInstructionsTowardsOneParentNode,
+)
 from .updates_file import UpdateInstructionsTowardsOneParentNode
 
 

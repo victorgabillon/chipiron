@@ -10,12 +10,18 @@ The AlgorithmNodeUpdater class provides methods for creating update instructions
 import typing
 from dataclasses import dataclass
 
-from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
+    AlgorithmNode,
+)
+
 from .index_block import IndexUpdateInstructionsFromOneNode
 from .index_updater import IndexUpdater
 from .minmax_evaluation_updater import MinMaxEvaluationUpdater
-from .updates_file import UpdateInstructionsFromOneNode, UpdateInstructionsTowardsOneParentNode, \
-    UpdateInstructionsTowardsMultipleNodes
+from .updates_file import (
+    UpdateInstructionsFromOneNode,
+    UpdateInstructionsTowardsMultipleNodes,
+    UpdateInstructionsTowardsOneParentNode,
+)
 from .value_block import ValueUpdateInstructionsFromOneNode
 
 if typing.TYPE_CHECKING:

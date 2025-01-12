@@ -13,11 +13,12 @@ from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.players.player_args import PlayerArgs
 from chipiron.players.utils import fetch_player_args_convert_and_save
+
+from ..utils.dataclass import IsDataclass
 from . import move_selector
 from .game_player import GamePlayer
 from .player import Player
 from .player_args import PlayerFactoryArgs
-from ..utils.dataclass import IsDataclass
 
 
 def create_chipiron_player(

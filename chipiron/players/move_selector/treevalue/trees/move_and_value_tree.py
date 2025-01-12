@@ -4,10 +4,12 @@ MoveAndValueTree
 from typing import Any
 
 import chipiron.players.move_selector.treevalue.nodes as nodes
-from chipiron.players.boardevaluators.board_evaluation.board_evaluation import BoardEvaluation
+from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
+    BoardEvaluation,
+)
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node import AlgorithmNode
-from .descendants import RangedDescendants
 
+from .descendants import RangedDescendants
 
 # todo should we use a discount? and discounted per round reward?
 # todo maybe convenient to seperate this object into openner updater and dsiplayer

@@ -13,7 +13,9 @@ from chipiron.players import Player
 from chipiron.players.factory import create_chipiron_player
 from chipiron.players.move_selector.treevalue.nodes import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node import AlgorithmNode
-from chipiron.players.move_selector.treevalue.tree_and_value_move_selector import TreeAndValueMoveSelector
+from chipiron.players.move_selector.treevalue.tree_and_value_move_selector import (
+    TreeAndValueMoveSelector,
+)
 from chipiron.players.move_selector.treevalue.tree_exploration import TreeExploration
 
 

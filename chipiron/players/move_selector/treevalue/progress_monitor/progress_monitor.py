@@ -15,7 +15,7 @@ It also includes helper classes and functions for creating and managing stopping
 import abc
 from dataclasses import dataclass
 from enum import Enum
-from typing import Protocol, runtime_checkable, Callable
+from typing import Callable, Protocol, runtime_checkable
 
 from chipiron.players.move_selector.treevalue import node_selector as node_sel
 from chipiron.players.move_selector.treevalue.trees import MoveAndValueTree

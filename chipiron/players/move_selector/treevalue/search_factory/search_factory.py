@@ -22,15 +22,21 @@ Functions:
 import random
 from dataclasses import dataclass
 from functools import partial
-from typing import Any
-from typing import Protocol, Callable
+from typing import Any, Callable, Protocol
 
 import chipiron.players.move_selector.treevalue.indices.node_indices as node_indices
 import chipiron.players.move_selector.treevalue.node_selector as node_selectors
 import chipiron.players.move_selector.treevalue.nodes as nodes
-from chipiron.players.move_selector.treevalue.indices.node_indices.factory import create_exploration_index_data
-from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningType, OpeningInstructor
-from chipiron.players.move_selector.treevalue.node_selector.sequool.factory import SequoolArgs
+from chipiron.players.move_selector.treevalue.indices.node_indices.factory import (
+    create_exploration_index_data,
+)
+from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import (
+    OpeningInstructor,
+    OpeningType,
+)
+from chipiron.players.move_selector.treevalue.node_selector.sequool.factory import (
+    SequoolArgs,
+)
 from chipiron.players.move_selector.treevalue.updates.index_updater import IndexUpdater
 
 NodeSelectorFactory = Callable[[], node_selectors.NodeSelector]

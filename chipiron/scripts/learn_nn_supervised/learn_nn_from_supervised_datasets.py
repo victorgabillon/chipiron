@@ -23,17 +23,27 @@ from typing import Any
 
 from torch.utils.data import DataLoader
 
-from chipiron.learningprocesses.nn_trainer.factory import NNTrainerArgs
-from chipiron.learningprocesses.nn_trainer.factory import create_nn_trainer, safe_nn_param_save, safe_nn_trainer_save
+from chipiron.learningprocesses.nn_trainer.factory import (
+    NNTrainerArgs,
+    create_nn_trainer,
+    safe_nn_param_save,
+    safe_nn_trainer_save,
+)
 from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
 from chipiron.players.boardevaluators.datasets.datasets import FenAndValueDataSet
 from chipiron.players.boardevaluators.neural_networks.factory import create_nn
-from chipiron.players.boardevaluators.neural_networks.input_converters.RepresentationType import RepresentationType
-from chipiron.players.boardevaluators.neural_networks.input_converters.factory import RepresentationFactory
-from chipiron.players.boardevaluators.neural_networks.input_converters.representation_364_bti import \
-    RepresentationBTI
-from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import \
-    create_board_representation_factory
+from chipiron.players.boardevaluators.neural_networks.input_converters.factory import (
+    RepresentationFactory,
+)
+from chipiron.players.boardevaluators.neural_networks.input_converters.representation_364_bti import (
+    RepresentationBTI,
+)
+from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
+    create_board_representation_factory,
+)
+from chipiron.players.boardevaluators.neural_networks.input_converters.RepresentationType import (
+    RepresentationType,
+)
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.chi_nn import ChiNN

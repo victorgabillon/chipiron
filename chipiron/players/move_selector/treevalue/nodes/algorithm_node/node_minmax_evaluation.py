@@ -16,19 +16,21 @@ import math
 import typing
 from dataclasses import dataclass, field
 from random import choice
-from typing import Protocol, Any, Self
+from typing import Any, Protocol, Self
 
 import chess
 
 from chipiron.environments.chess.move.imove import moveKey
-from chipiron.players.boardevaluators.board_evaluation.board_evaluation import FloatyBoardEvaluation, ForcedOutcome, \
-    BoardEvaluation
+from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
+    BoardEvaluation,
+    FloatyBoardEvaluation,
+    ForcedOutcome,
+)
 from chipiron.players.boardevaluators.over_event import OverEvent
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 from chipiron.utils.my_value_sorted_dict import sort_dic
 from chipiron.utils.small_tools import nth_key
-
 
 # todo maybe further split values from over?
 

@@ -9,9 +9,9 @@ import chess
 import shakmaty_python_binding
 
 from .board_chi import BoardChi, LegalMoveKeyGenerator
-from .iboard import IBoard, compute_key, boardKey
-from .rusty_board import RustyBoardChi, LegalMoveKeyGeneratorRust
-from .utils import fen, FenPlusHistory
+from .iboard import IBoard, boardKey, compute_key
+from .rusty_board import LegalMoveKeyGeneratorRust, RustyBoardChi
+from .utils import FenPlusHistory, fen
 
 
 class BoardFactory(Protocol):

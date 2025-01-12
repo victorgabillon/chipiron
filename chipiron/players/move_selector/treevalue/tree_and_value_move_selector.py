@@ -16,13 +16,16 @@ from dataclasses import dataclass
 
 import chipiron.environments.chess.board as boards
 from chipiron.players.move_selector.move_selector import MoveRecommendation
-from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import AllStoppingCriterionArgs
+from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
+    AllStoppingCriterionArgs,
+)
 from chipiron.players.move_selector.treevalue.search_factory import NodeSelectorFactory
 from chipiron.utils import seed
 from chipiron.utils.dataclass import IsDataclass
+
 from . import recommender_rule
 from . import tree_manager as tree_man
-from .tree_exploration import create_tree_exploration, TreeExploration
+from .tree_exploration import TreeExploration, create_tree_exploration
 from .trees.factory import MoveAndValueTreeFactory
 
 

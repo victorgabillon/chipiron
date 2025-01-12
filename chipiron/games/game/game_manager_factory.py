@@ -12,20 +12,27 @@ import chipiron.environments.chess.board as boards
 import chipiron.players as players_m
 from chipiron.games.game.game_args import GameArgs
 from chipiron.players import PlayerFactoryArgs
-from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator, ObservableBoardEvaluator
-from chipiron.players.factory_higher_level import MoveFunction, create_player_observer_factory, PlayerObserverFactory
-from chipiron.utils import path
-from chipiron.utils import seed
+from chipiron.players.boardevaluators.board_evaluator import (
+    IGameBoardEvaluator,
+    ObservableBoardEvaluator,
+)
+from chipiron.players.factory_higher_level import (
+    MoveFunction,
+    PlayerObserverFactory,
+    create_player_observer_factory,
+)
+from chipiron.utils import path, seed
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage
 from chipiron.utils.dataclass import IsDataclass
-from .game import Game, ObservableGame
-from .game_manager import GameManager
-from .progress_collector import PlayerProgressCollectorObservable
+
 from ...environments.chess.board.utils import FenPlusHistory
 from ...environments.chess.move_factory import MoveFactory
 from ...players.boardevaluators.table_base import SyzygyTable
 from ...players.player_ids import PlayerConfigFile
 from ...scripts.chipiron_args import ImplementationArgs
+from .game import Game, ObservableGame
+from .game_manager import GameManager
+from .progress_collector import PlayerProgressCollectorObservable
 
 
 @dataclass

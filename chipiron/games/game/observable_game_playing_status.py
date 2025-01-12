@@ -4,6 +4,7 @@ Module that defines an observable version of GamePlayingStatus
 import queue
 
 from chipiron.utils.communication.gui_messages import GameStatusMessage
+
 from .game_playing_status import GamePlayingStatus, PlayingStatus
 
 

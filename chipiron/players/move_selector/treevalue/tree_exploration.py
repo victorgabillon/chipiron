@@ -22,13 +22,18 @@ from typing import Callable
 import chipiron.environments.chess.board as boards
 from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.move_selector.move_selector import MoveRecommendation
-from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import ProgressMonitor, \
-    create_stopping_criterion, AllStoppingCriterionArgs
-from chipiron.players.move_selector.treevalue.recommender_rule.recommender_rule import \
-    recommend_move_after_exploration_generic
+from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
+    AllStoppingCriterionArgs,
+    ProgressMonitor,
+    create_stopping_criterion,
+)
+from chipiron.players.move_selector.treevalue.recommender_rule.recommender_rule import (
+    recommend_move_after_exploration_generic,
+)
 from chipiron.players.move_selector.treevalue.search_factory import NodeSelectorFactory
 from chipiron.utils.communication.gui_messages import PlayerProgressMessage
 from chipiron.utils.dataclass import IsDataclass
+
 from . import node_selector as node_sel
 from . import recommender_rule
 from . import tree_manager as tree_man

@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from chipiron.games.game.final_game_result import FinalGameResult
 from chipiron.utils.communication.gui_messages.gui_messages import MatchResultsMessage
 from chipiron.utils.dataclass import IsDataclass
+
 from .match_results import MatchResults, SimpleResults
 
 

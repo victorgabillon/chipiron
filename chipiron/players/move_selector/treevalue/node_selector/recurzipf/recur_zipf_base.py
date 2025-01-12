@@ -14,12 +14,21 @@ from dataclasses import dataclass
 
 from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.move_selector.treevalue import trees
-from chipiron.players.move_selector.treevalue.node_selector.move_explorer import ZipfMoveExplorer
-from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import OpeningInstructions, \
-    OpeningInstructor, \
-    create_instructions_to_open_all_moves
-from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
-from chipiron.players.move_selector.treevalue.nodes.utils import best_node_sequence_from_node
+from chipiron.players.move_selector.treevalue.node_selector.move_explorer import (
+    ZipfMoveExplorer,
+)
+from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import (
+    OpeningInstructions,
+    OpeningInstructor,
+    create_instructions_to_open_all_moves,
+)
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
+    AlgorithmNode,
+)
+from chipiron.players.move_selector.treevalue.nodes.utils import (
+    best_node_sequence_from_node,
+)
+
 from ..move_explorer import SamplingPriorities
 from ..node_selector_args import NodeSelectorArgs
 

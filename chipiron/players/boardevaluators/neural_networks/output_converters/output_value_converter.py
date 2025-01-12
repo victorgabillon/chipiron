@@ -6,7 +6,10 @@ from abc import ABC, abstractmethod
 import chess
 import torch
 
-from chipiron.players.boardevaluators.board_evaluation.board_evaluation import FloatyBoardEvaluation, PointOfView
+from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
+    FloatyBoardEvaluation,
+    PointOfView,
+)
 
 
 class OutputValueConverter(ABC):

@@ -3,7 +3,7 @@ Module to check if an object is a dataclass
 """
 from collections.abc import Iterable
 from enum import Enum
-from typing import ClassVar, Protocol, Any
+from typing import Any, ClassVar, Protocol
 
 
 class DataClass(Protocol):

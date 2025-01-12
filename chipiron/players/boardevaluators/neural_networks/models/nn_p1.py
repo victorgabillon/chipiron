@@ -5,7 +5,9 @@ This module defines the NetP1 class, which is a neural network model for board e
 import torch
 import torch.nn as nn
 
-from chipiron.players.boardevaluators.neural_networks.board_to_tensor import transform_board_pieces_one_side
+from chipiron.players.boardevaluators.neural_networks.board_to_tensor import (
+    transform_board_pieces_one_side,
+)
 from chipiron.utils.chi_nn import ChiNN
 
 

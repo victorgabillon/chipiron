@@ -2,11 +2,16 @@
 This module contains the factory function to create a node exploration index manager based on the given index computation
 """
 
-from chipiron.players.move_selector.treevalue.indices.index_manager.node_exploration_manager import \
-    UpdateIndexZipfFactoredProba, \
-    UpdateIndexGlobalMinChange, \
-    UpdateIndexLocalMinChange, NodeExplorationIndexManager, NullNodeExplorationIndexManager
-from chipiron.players.move_selector.treevalue.indices.node_indices.index_types import IndexComputationType
+from chipiron.players.move_selector.treevalue.indices.index_manager.node_exploration_manager import (
+    NodeExplorationIndexManager,
+    NullNodeExplorationIndexManager,
+    UpdateIndexGlobalMinChange,
+    UpdateIndexLocalMinChange,
+    UpdateIndexZipfFactoredProba,
+)
+from chipiron.players.move_selector.treevalue.indices.node_indices.index_types import (
+    IndexComputationType,
+)
 
 
 def create_exploration_index_manager(

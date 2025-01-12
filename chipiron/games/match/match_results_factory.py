@@ -11,7 +11,7 @@ Classes:
 
 import queue
 
-from chipiron.games.match.match_results import MatchResults, IMatchResults
+from chipiron.games.match.match_results import IMatchResults, MatchResults
 from chipiron.games.match.observable_match_result import ObservableMatchResults
 from chipiron.utils.dataclass import IsDataclass
 

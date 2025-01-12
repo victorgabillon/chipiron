@@ -9,8 +9,8 @@ from typing import Any
 from chipiron.utils.small_tools import Interval
 
 if typing.TYPE_CHECKING:
-    from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
     from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
+    from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 
 
 @dataclass

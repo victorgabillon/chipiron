@@ -5,6 +5,7 @@ import shakmaty_python_binding
 
 from chipiron.environments.chess.board.iboard import IBoard
 from chipiron.environments.chess.move.imove import IMove
+
 from .board import RustyBoardChi
 from .move import moveUci
 

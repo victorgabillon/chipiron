@@ -9,12 +9,22 @@ from typing import Any
 import chipiron.players.move_selector.treevalue.trees as trees
 import chipiron.players.move_selector.treevalue.updates as upda
 from chipiron.environments.chess.move.imove import moveKey
-from chipiron.players.move_selector.treevalue.indices.index_manager import NodeExplorationIndexManager
-from chipiron.players.move_selector.treevalue.indices.index_manager.node_exploration_manager import update_all_indices
-from chipiron.players.move_selector.treevalue.node_evaluator import NodeEvaluator, EvaluationQueries
-from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
+from chipiron.players.move_selector.treevalue.indices.index_manager import (
+    NodeExplorationIndexManager,
+)
+from chipiron.players.move_selector.treevalue.indices.index_manager.node_exploration_manager import (
+    update_all_indices,
+)
+from chipiron.players.move_selector.treevalue.node_evaluator import (
+    EvaluationQueries,
+    NodeEvaluator,
+)
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
+    AlgorithmNode,
+)
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
+
 from .tree_expander import TreeExpansion, TreeExpansions
 from .tree_manager import TreeManager
 

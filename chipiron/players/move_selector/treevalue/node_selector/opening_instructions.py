@@ -5,12 +5,14 @@ This module contains classes and functions related to opening instructions in a 
 import random
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Iterator, Self, ItemsView, ValuesView
+from typing import Any, ItemsView, Iterator, Self, ValuesView
 
 import chipiron.players.move_selector.treevalue.nodes as nodes
 from chipiron.environments.chess.move.imove import moveKey
-from chipiron.players.move_selector.treevalue.nodes.utils import a_move_key_sequence_from_root, \
-    a_move_uci_sequence_from_root
+from chipiron.players.move_selector.treevalue.nodes.utils import (
+    a_move_key_sequence_from_root,
+    a_move_uci_sequence_from_root,
+)
 
 
 @dataclass(slots=True)

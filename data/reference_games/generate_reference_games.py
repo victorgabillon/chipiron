@@ -1,11 +1,13 @@
-from chipiron.games.match.match_args import MatchArgs
+import os
+from dataclasses import asdict
+
+import yaml
+
 import chipiron as ch
+from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_factories import create_match_manager_from_args
 from chipiron.games.match.match_results import MatchReport
-import os
 from chipiron.utils import mkdir, path
-import yaml
-from dataclasses import asdict
 
 algos: list[str] = ['Uniform']
 

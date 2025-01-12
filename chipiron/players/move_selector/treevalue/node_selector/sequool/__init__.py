@@ -14,7 +14,7 @@ Example usage:
 
 """
 
-from .factory import create_sequool, SequoolArgs
+from .factory import SequoolArgs, create_sequool
 
 __all__ = [
     "create_sequool",

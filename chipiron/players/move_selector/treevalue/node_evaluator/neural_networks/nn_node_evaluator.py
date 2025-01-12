@@ -7,9 +7,14 @@ from typing import Any
 import torch
 
 import chipiron.players.boardevaluators.neural_networks as board_nn
-from chipiron.players.boardevaluators.board_evaluation.board_evaluation import FloatyBoardEvaluation
+from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
+    FloatyBoardEvaluation,
+)
 from chipiron.players.boardevaluators.table_base import SyzygyTable
-from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
+    AlgorithmNode,
+)
+
 from ..node_evaluator import NodeEvaluator
 
 

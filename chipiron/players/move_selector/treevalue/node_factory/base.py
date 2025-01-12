@@ -6,7 +6,9 @@ from typing import Any
 import chipiron.environments.chess.board as board_mod
 import chipiron.environments.chess.board as boards
 from chipiron.environments.chess.move.imove import moveKey
-from chipiron.players.move_selector.treevalue.node_factory.node_factory import TreeNodeFactory
+from chipiron.players.move_selector.treevalue.node_factory.node_factory import (
+    TreeNodeFactory,
+)
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 

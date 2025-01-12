@@ -7,7 +7,7 @@ import chess.syzygy
 
 from chipiron.environments.chess.board import IBoard
 from chipiron.environments.chess.move.imove import moveKey
-from chipiron.players.boardevaluators.over_event import Winner, HowOver, OverTags
+from chipiron.players.boardevaluators.over_event import HowOver, OverTags, Winner
 
 
 class SyzygyTable[T_Board:IBoard](Protocol):

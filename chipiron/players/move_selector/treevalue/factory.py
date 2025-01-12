@@ -14,18 +14,23 @@ node evaluator, node selector, tree factory, and tree manager.
 import queue
 import random
 from dataclasses import dataclass
-from typing import Any
-from typing import Literal
+from typing import Any, Literal
 
 import chipiron.players.move_selector.treevalue.search_factory as search_factories
-from chipiron.players.boardevaluators.neural_networks.input_converters.factory import RepresentationFactory
-from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import \
-    create_board_representation_factory
+from chipiron.players.boardevaluators.neural_networks.input_converters.factory import (
+    RepresentationFactory,
+)
+from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
+    create_board_representation_factory,
+)
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 from chipiron.players.move_selector.treevalue import node_factory
-from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import AllStoppingCriterionArgs
+from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
+    AllStoppingCriterionArgs,
+)
 from chipiron.utils.dataclass import IsDataclass
+
 from . import node_evaluator as node_eval
 from . import node_selector as node_selector_m
 from . import recommender_rule

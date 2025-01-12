@@ -6,6 +6,7 @@ import shakmaty_python_binding
 import chipiron.environments.chess.board as boards
 from chipiron.environments.chess.board import RustyBoardChi
 from chipiron.utils import path
+
 from .syzygy_table import SyzygyTable
 
 

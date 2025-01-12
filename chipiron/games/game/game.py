@@ -13,6 +13,7 @@ from chipiron.utils import seed, unique_int_from_list
 from chipiron.utils.communication.gui_messages import GameStatusMessage
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.dataclass import IsDataclass
+
 from .game_playing_status import GamePlayingStatus
 
 

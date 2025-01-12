@@ -2,8 +2,17 @@ import chess
 import pytest
 
 from chipiron.environments.chess import BoardChi
-from chipiron.environments.chess.board import fen, IBoard, create_board, BoardModificationP, create_board_chi
-from chipiron.environments.chess.board.board_modification import PieceInSquare, compute_modifications
+from chipiron.environments.chess.board import (
+    BoardModificationP,
+    IBoard,
+    create_board,
+    create_board_chi,
+    fen,
+)
+from chipiron.environments.chess.board.board_modification import (
+    PieceInSquare,
+    compute_modifications,
+)
 from chipiron.environments.chess.board.utils import FenPlusHistory
 from chipiron.environments.chess.move import moveUci
 

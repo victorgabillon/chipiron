@@ -4,7 +4,10 @@ This module provides a function to create a node factory based on the given node
 
 from typing import Any
 
-from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import AlgorithmNode
+from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
+    AlgorithmNode,
+)
+
 from .base import Base
 
 

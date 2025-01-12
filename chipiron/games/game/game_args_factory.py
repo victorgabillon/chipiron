@@ -13,6 +13,7 @@ import chess
 import chipiron.players as players
 from chipiron.utils import seed
 from chipiron.utils.small_tools import unique_int_from_list
+
 from .game_args import GameArgs
 
 if typing.TYPE_CHECKING:

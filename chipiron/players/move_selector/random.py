@@ -17,6 +17,7 @@ from typing import Literal
 import chipiron.environments.chess.board as boards
 from chipiron.environments.chess.move.imove import moveKey
 from chipiron.utils import seed
+
 from .move_selector import MoveRecommendation
 from .move_selector_types import MoveSelectorTypes
 

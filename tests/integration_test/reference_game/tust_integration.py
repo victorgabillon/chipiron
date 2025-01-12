@@ -1,13 +1,14 @@
+import os
+import pickle
+
+import dacite
 import yaml
 
-import pickle
-import os
+from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_factories import create_match_manager_from_args
+from chipiron.games.match.match_manager import MatchManager
 from chipiron.games.match.match_results import MatchReport
 from chipiron.utils import path
-from chipiron.games.match.match_manager import MatchManager
-import dacite
-from chipiron.games.match.match_args import MatchArgs
 
 os.chdir('../../')
 print(os.getcwd())

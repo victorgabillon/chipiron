@@ -240,9 +240,9 @@ def test_randomness():
     # cases
 
     import chipiron as ch
+    from chipiron.games.match.match_args import MatchArgs
     from chipiron.games.match.match_factories import create_match_manager_from_args
     from chipiron.games.match.match_results import MatchReport
-    from chipiron.games.match.match_args import MatchArgs
 
     match_args: MatchArgs = MatchArgs()
     match_args.seed = 0
@@ -286,9 +286,9 @@ def test_randomness():
 
 def test_same_game_with_or_without_rust():
     import chipiron as ch
+    from chipiron.games.match.match_args import MatchArgs
     from chipiron.games.match.match_factories import create_match_manager_from_args
     from chipiron.games.match.match_results import MatchReport
-    from chipiron.games.match.match_args import MatchArgs
 
     match_args: MatchArgs = MatchArgs()
     match_args.seed = 0

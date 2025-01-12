@@ -6,13 +6,18 @@ from typing import Iterator
 
 import chess
 import chess.polyglot
-from chess import _BoardState, Outcome
+from chess import Outcome, _BoardState
 
-from chipiron.environments.chess.board.board_modification import BoardModification, PieceInSquare, \
-    compute_modifications, BoardModificationP
+from chipiron.environments.chess.board.board_modification import (
+    BoardModification,
+    BoardModificationP,
+    PieceInSquare,
+    compute_modifications,
+)
 from chipiron.environments.chess.move import moveUci
 from chipiron.environments.chess.move.imove import moveKey
-from .iboard import IBoard, boardKey, compute_key, LegalMoveKeyGeneratorP
+
+from .iboard import IBoard, LegalMoveKeyGeneratorP, boardKey, compute_key
 from .utils import FenPlusHistory, fen
 
 # todo check if we need this here

@@ -2,16 +2,15 @@
 This module contains the Script class which is responsible for launching scripts.
 It handles computing execution time, profiling, and parsing arguments.
 """
-import os
 import cProfile
 import io
+import os
 import pprint
 import pstats
 import time
 from enum import Enum
 from pstats import SortKey
-from typing import Any
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 import dacite
 
