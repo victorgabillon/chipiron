@@ -118,7 +118,7 @@ def create_board_evaluator(
     return board_evaluator
 
 
-def create_game_board_evaluator_not_observable() -> GameBoardEvaluator:
+def create_game_board_evaluator_not_observable(can_stockfish:bool) -> GameBoardEvaluator:
     """Create a game board evaluator that is not observable.
 
     This function creates a game board evaluator that consists of two board evaluators:
@@ -129,9 +129,14 @@ def create_game_board_evaluator_not_observable() -> GameBoardEvaluator:
     Returns:
         GameBoardEvaluator: The created game board evaluator.
     """
-    board_evaluator_stock: BoardEvaluator = create_board_evaluator(
-        args_board_evaluator=StockfishBoardEvalArgs()
-    )
+    board_evaluator_stock: BoardEvaluator | None
+    if can_stockfish:
+        board_evaluator_stock = create_board_evaluator(
+                args_board_evaluator=StockfishBoardEvalArgs()
+        )
+    else:
+        board_evaluator_stock =None
+
     chi_board_eval_yaml_path: str = (
         "data/players/board_evaluator_config/base_chipiron_board_eval.yaml"
     )
@@ -152,10 +157,11 @@ def create_game_board_evaluator_not_observable() -> GameBoardEvaluator:
         board_evaluator_stock=board_evaluator_stock,
         board_evaluator_chi=board_evaluator_chi,
     )
+
     return game_board_evaluator
 
 
-def create_game_board_evaluator(gui: bool) -> IGameBoardEvaluator:
+def create_game_board_evaluator(gui: bool, can_stockfish:bool) -> IGameBoardEvaluator:
     """Create a game board evaluator based on the given GUI flag.
 
     Args:
@@ -167,7 +173,7 @@ def create_game_board_evaluator(gui: bool) -> IGameBoardEvaluator:
     """
     game_board_evaluator_res: IGameBoardEvaluator
     game_board_evaluator: GameBoardEvaluator = (
-        create_game_board_evaluator_not_observable()
+        create_game_board_evaluator_not_observable(can_stockfish=can_stockfish)
     )
     if gui:
         game_board_evaluator_res = ObservableBoardEvaluator(
