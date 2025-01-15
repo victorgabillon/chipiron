@@ -66,17 +66,17 @@ class GameBoardEvaluator:
     board_evaluator_chi: BoardEvaluator
 
     def __init__(
-        self, board_evaluator_stock: BoardEvaluator, board_evaluator_chi: BoardEvaluator
+        self, board_evaluator_stock: BoardEvaluator|None, board_evaluator_chi: BoardEvaluator
     ):
         self.board_evaluator_stock = board_evaluator_stock
         self.board_evaluator_chi = board_evaluator_chi
 
-    def evaluate(self, board: boards.IBoard) -> tuple[float, float]:
+    def evaluate(self, board: boards.IBoard) -> tuple[float, float|None]:
         """
         Evaluates a board and returns the evaluation values for stock and chi.
         """
         evaluation_chi = self.board_evaluator_chi.value_white(board=board)
-        evaluation_stock = self.board_evaluator_stock.value_white(board=board)
+        evaluation_stock = self.board_evaluator_stock.value_white(board=board) if self.board_evaluator_stock is not None else None
         return evaluation_stock, evaluation_chi
 
     def add_evaluation(

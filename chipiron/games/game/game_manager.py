@@ -47,15 +47,35 @@ class GameManager:
     Object in charge of playing one game
     """
 
+    # The game object that is managed
     game: ObservableGame
+
+    # A SyzygyTable
     syzygy: SyzygyTable[Any] | None
+
+    # Evaluators that just evaluates the boards but are not players (just spectators) for display info of who is winning
+    # according to them
     display_board_evaluator: IGameBoardEvaluator
+
+    # folder to log results
     output_folder_path: path | None
+
+    # args of the Game
     args: GameArgs
+
+    # Dictionary mapping colors to player names?
     player_color_to_id: dict[chess.Color, str]
+
+    # A Queue for receiving messages from other process or functions such as players or Gui
     main_thread_mailbox: queue.Queue[IsDataclass]
+
+    # The list of players
     players: list[players_m.PlayerProcess | players_m.GamePlayer]
+
+    # A move factory
     move_factory: MoveFactory
+
+    # an object for collecting how advances each player is in its thinking/computation of the moves
     progress_collector: PlayerProgressCollectorP
 
     def __init__(

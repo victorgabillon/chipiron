@@ -54,6 +54,7 @@ class GamePlayer:
         """
 
         assert seed_int is not None
+        assert self.color == board.turn
         best_move: MoveRecommendation = self._player.select_move(
             board=board, seed_int=seed_int
         )
@@ -81,7 +82,7 @@ def game_player_computes_move_on_board_and_send_move_in_queue(
         move_recommendation: MoveRecommendation = game_player.select_move(
             board=board, seed_int=seed_int
         )
-        message = MoveMessage(
+        message :MoveMessage= MoveMessage(
             move=move_recommendation.move,
             corresponding_board=board.fen,
             player_name=game_player.player.id,

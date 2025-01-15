@@ -64,6 +64,17 @@ class StockfishPlayer:
         Returns:
             MoveRecommendation: A MoveRecommendation object representing the selected move.
         """
+
+        engine = chess.engine.SimpleEngine.popen_uci(
+                            r"stockfish/stockfish/stockfish-ubuntu-x86-64-avx2"
+        )
+
+        board = chess.Board()
+        while not board.is_game_over():
+            result = engine.play(board, chess.engine.Limit(time=0.1))
+            board.push(result.move)
+
+        engine.quit()
         if self.engine is None:
             # if this object is created in the init then sending the object
             # self.engine = chess.engine.SimpleEngine.popen_uci(
@@ -79,12 +90,14 @@ class StockfishPlayer:
             fen_with_history=FenPlusHistory(
                 current_fen=board.fen,
                 historical_moves=board.move_history_stack,
-                # note that we dont give here historical_boards, hope this does not create but related to 3 fold repetition computation
+                # note that we do not give here historical_boards, hope this does not create but related to 3 fold repetition computation
             )
         )
         result = self.engine.play(
             board_chi.chess_board, chess.engine.Limit(self.time_limit)
         )
+
+
         self.engine.quit()
         self.engine = None
         move_key: moveKey = board.get_move_key_from_uci(move_uci=result.move.uci())
