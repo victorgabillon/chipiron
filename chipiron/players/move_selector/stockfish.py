@@ -65,16 +65,6 @@ class StockfishPlayer:
             MoveRecommendation: A MoveRecommendation object representing the selected move.
         """
 
-        engine = chess.engine.SimpleEngine.popen_uci(
-                            r"stockfish/stockfish/stockfish-ubuntu-x86-64-avx2"
-        )
-
-        board = chess.Board()
-        while not board.is_game_over():
-            result = engine.play(board, chess.engine.Limit(time=0.1))
-            board.push(result.move)
-
-        engine.quit()
         if self.engine is None:
             # if this object is created in the init then sending the object
             # self.engine = chess.engine.SimpleEngine.popen_uci(
@@ -96,7 +86,6 @@ class StockfishPlayer:
         result = self.engine.play(
             board_chi.chess_board, chess.engine.Limit(self.time_limit)
         )
-
 
         self.engine.quit()
         self.engine = None

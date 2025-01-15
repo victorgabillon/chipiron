@@ -67,8 +67,12 @@ def create_match_manager(
     player_one_name: str = args_player_one.name
     player_two_name: str = args_player_two.name
 
-    can_stockfish :bool = not args_player_one.name in ['Stockfishu'] and not args_player_two.name in ['Stockfishu']
-    game_board_evaluator: IGameBoardEvaluator = create_game_board_evaluator(gui=gui, can_stockfish=can_stockfish)
+    can_stockfish: bool = not args_player_one.name in [
+        "Stockfishu"
+    ] and not args_player_two.name in ["Stockfishu"]
+    game_board_evaluator: IGameBoardEvaluator = create_game_board_evaluator(
+        gui=gui, can_stockfish=can_stockfish
+    )
 
     board_factory: BoardFactory = create_board_factory(
         use_rust_boards=implementation_args.use_rust_boards,

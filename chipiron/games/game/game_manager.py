@@ -124,7 +124,7 @@ class GameManager:
         self.move_factory = move_factory
         self.progress_collector = progress_collector
 
-    def external_eval(self) -> tuple[float, float]:
+    def external_eval(self) -> tuple[float | None, float]:
         """Evaluates the game board using the display board evaluator.
 
         Returns:
