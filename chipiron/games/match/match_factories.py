@@ -67,9 +67,9 @@ def create_match_manager(
     player_one_name: str = args_player_one.name
     player_two_name: str = args_player_two.name
 
-    can_stockfish: bool = not args_player_one.name in [
+    can_stockfish: bool = args_player_one.name not in [
         "Stockfishu"
-    ] and not args_player_two.name in ["Stockfishu"]
+    ] and args_player_two.name not in ["Stockfishu"]
     game_board_evaluator: IGameBoardEvaluator = create_game_board_evaluator(
         gui=gui, can_stockfish=can_stockfish
     )
