@@ -53,7 +53,7 @@ class NetPP2D2_2_LEAKY(ChiNN):
         x = self.tanh(x)
         return x
 
-    def init_weights(self, file: str) -> None:
+    def init_weights(self) -> None:
         """
         Initialize weights of the neural network model.
 

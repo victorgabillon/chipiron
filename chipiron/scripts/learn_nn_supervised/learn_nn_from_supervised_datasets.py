@@ -28,10 +28,19 @@ from chipiron.learningprocesses.nn_trainer.factory import (
     create_nn_trainer,
     safe_nn_param_save,
     safe_nn_trainer_save,
+    safe_nn_architecture_save,
 )
 from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
 from chipiron.players.boardevaluators.datasets.datasets import FenAndValueDataSet
-from chipiron.players.boardevaluators.neural_networks.factory import create_nn
+from chipiron.players.boardevaluators.neural_networks.factory import (
+    create_nn,
+    create_nn_from_folder_path_and_existing_model,
+    get_architecture_args_from_file,
+)
+from chipiron.players.boardevaluators.neural_networks.input_converters.TensorRepresentationType import (
+    InternalTensorRepresentationType,
+    get_default_internal_representation,
+)
 from chipiron.players.boardevaluators.neural_networks.input_converters.factory import (
     RepresentationFactory,
 )
@@ -41,8 +50,8 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.represent
 from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
     create_board_representation_factory,
 )
-from chipiron.players.boardevaluators.neural_networks.input_converters.RepresentationType import (
-    RepresentationType,
+from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
+    NeuralNetArchitectureArgs,
 )
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
@@ -50,13 +59,12 @@ from chipiron.utils.chi_nn import ChiNN
 
 
 @dataclass
-class LearnNNScriptArgs(BaseScriptArgs):
+class LearnNNScriptArgs:
     """
     Represents the arguments for the LearnNNScript.
 
     Attributes:
         nn_trainer_args (NNTrainerArgs): The arguments for the NNTrainer.
-        create_nn_file (bool): Whether to create an NN file.
         stockfish_boards_train_file_name (str): The file name for the training dataset.
         stockfish_boards_test_file_name (str): The file name for the test dataset.
         preprocessing_data_set (bool): Whether to preprocess the dataset.
@@ -68,10 +76,10 @@ class LearnNNScriptArgs(BaseScriptArgs):
         min_lr (float): The minimum learning rate.
     """
 
+    base_script_args: BaseScriptArgs = field(default_factory=BaseScriptArgs)
     nn_trainer_args: NNTrainerArgs = field(default_factory=NNTrainerArgs)
-    create_nn_file: bool = True
     stockfish_boards_train_file_name: str = (
-        "data/datasets/goodgames_plusvariation_stockfish_eval_train_t.1_merge"
+        "data/datasets/goodgames_plusvariation_stockfish_eval_train_t.1_merge.pi"
     )
     stockfish_boards_test_file_name: str = (
         "data/datasets/goodgames_plusvariation_stockfish_eval_test"
@@ -83,6 +91,8 @@ class LearnNNScriptArgs(BaseScriptArgs):
     saving_intermediate_copy_interval: int = 10000
     min_interval_lr_change: int = 1000000
     min_lr: float = 0.001
+    epochs_number: int = 1
+    test: bool = False  # hack to test fast, change at some point
 
 
 class LearnNNScript:
@@ -110,6 +120,8 @@ class LearnNNScript:
     nn: ChiNN
     args: LearnNNScriptArgs
 
+    nn_architecture_args: NeuralNetArchitectureArgs
+
     def __init__(
         self,
         base_script: Script,
@@ -132,18 +144,38 @@ class LearnNNScript:
             experiment_output_folder=self.base_experiment_output_folder,
         )
 
-        self.nn = create_nn(
-            args=self.args.nn_trainer_args.neural_network,
-            create_file=self.args.create_nn_file,
-        )
+        if self.args.nn_trainer_args.reuse_existing_model:
+            self.nn, self.nn_architecture_args = (
+                create_nn_from_folder_path_and_existing_model(
+                    folder_path=self.args.nn_trainer_args.neural_network_folder_path
+                )
+            )
+
+        else:
+            assert (
+                self.args.nn_trainer_args.nn_architecture_file_if_not_reusing_existing_one
+                is not None
+            )
+            self.nn_architecture_args: NeuralNetArchitectureArgs = (
+                get_architecture_args_from_file(
+                    architecture_file_name=self.args.nn_trainer_args.nn_architecture_file_if_not_reusing_existing_one
+                )
+            )
+            self.nn = create_nn(nn_type=self.nn_architecture_args.model_type)
+            self.nn.init_weights()
         self.nn.print_param()
         self.nn_trainer: NNPytorchTrainer = create_nn_trainer(
             args=self.args.nn_trainer_args, nn=self.nn
         )
 
+        internal_tensor_representation_type: InternalTensorRepresentationType = (
+            get_default_internal_representation(
+                tensor_representation_type=self.nn_architecture_args.tensor_representation_type
+            )
+        )
         board_representation_factory: RepresentationFactory[Any] | None = (
             create_board_representation_factory(
-                board_representation_factory_type=RepresentationType.NOBUG364
+                board_representation_factory_type=internal_tensor_representation_type
             )
         )
         assert board_representation_factory is not None
@@ -200,7 +232,7 @@ class LearnNNScript:
         sum_loss_train_print: float = 0.0
         previous_dict: Any | None = None
         previous_train_loss: float | None = None
-        for i in range(100):
+        for i in range(self.args.epochs_number):
             for i_batch, sample_batched in enumerate(
                 self.data_loader_stockfish_boards_train
             ):
@@ -216,7 +248,16 @@ class LearnNNScript:
                         self.nn_trainer.scheduler.get_last_lr(),
                     )
                     sum_loss_train_print = 0
-                    self.compute_test_error()
+                    self.nn_trainer.compute_test_error_on_dataset(
+                        data_test=self.data_loader_stockfish_boards_test
+                    )
+
+                if (
+                    count_train_step % 20000 == 0
+                    and count_train_step > 0
+                    and self.args.test
+                ):
+                    break
 
                 # every self.args['min_interval_lr_change'] steps we check for possibly decreasing the learning rate
                 if (
@@ -253,7 +294,7 @@ class LearnNNScript:
                                 previous_dict.values(), self.nn.state_dict().values()
                             )
                         )
-                        print("diff_weighs", diff_weighs)
+                        print("diff_weights", diff_weighs)
                     previous_dict = copy.deepcopy(self.nn.state_dict())
 
                     previous_train_loss = sum_loss_train
@@ -268,28 +309,6 @@ class LearnNNScript:
                 # saving the learning process
                 self.saving_things_to_file(count_train_step)
 
-    def compute_test_error(self) -> None:
-        """
-        Computes the test error of the neural network model.
-
-        This method iterates over a test dataset and calculates the average loss
-        for a given number of iterations. The test error is then computed as the
-        average loss divided by the number of iterations.
-
-        Returns:
-            None
-        """
-        sum_loss_test = 0.0
-        count_test = 0
-        for i in range(100):
-            sample_batched_test = next(iter(self.data_loader_stockfish_boards_test))
-            loss_test = self.nn_trainer.test(
-                sample_batched_test[0], sample_batched_test[1]
-            )
-            sum_loss_test += float(loss_test)
-            count_test += 1
-        print("test error", float(sum_loss_test / float(count_test)))
-
     def saving_things_to_file(self, count_train_step: int) -> None:
         """
         Saves the neural network parameters and trainer to file.
@@ -301,16 +320,24 @@ class LearnNNScript:
             None
         """
         if count_train_step % self.args.saving_interval == 0:
-            safe_nn_param_save(self.nn, self.args.nn_trainer_args.neural_network)
+            safe_nn_param_save(
+                self.nn, self.args.nn_trainer_args.neural_network_folder_path
+            )
+            safe_nn_architecture_save(
+                nn_architecture_args=self.nn_architecture_args,
+                nn_param_folder_name=self.args.nn_trainer_args.neural_network_folder_path,
+            )
             safe_nn_trainer_save(
-                self.nn_trainer, self.args.nn_trainer_args.neural_network
+                self.nn_trainer, self.args.nn_trainer_args.neural_network_folder_path
             )
         if (
             self.args.nn_trainer_args.saving_intermediate_copy
             and count_train_step % self.args.saving_intermediate_copy_interval == 0
         ):
             safe_nn_param_save(
-                self.nn, self.args.nn_trainer_args.neural_network, training_copy=True
+                self.nn,
+                self.args.nn_trainer_args.neural_network_folder_path,
+                training_copy=True,
             )
 
     def terminate(self) -> None:

@@ -3,10 +3,49 @@ This module contains the definition of the NNPytorchTrainer class, which is resp
 """
 
 import typing
+from typing import Callable
 
 import torch
+from torch.utils.data import DataLoader
 
 from chipiron.utils.chi_nn import ChiNN
+
+
+def compute_loss(
+    net: ChiNN,
+    criterion: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
+    input_layer: torch.Tensor,
+    target_value: torch.Tensor,
+) -> torch.Tensor:
+    prediction_with_player_to_move_as_white: torch.Tensor = net(input_layer)
+    loss: torch.Tensor = criterion(
+        prediction_with_player_to_move_as_white, target_value
+    )
+    return loss
+
+
+def compute_test_error_on_dataset(
+    net: ChiNN,
+    criterion: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
+    data_test: DataLoader[tuple[torch.Tensor, torch.Tensor]],
+    number_of_tests: int = 100,
+) -> float:
+    sum_loss_test = 0.0
+    count_test = 0
+    loss_test: torch.Tensor
+    for i in range(number_of_tests):
+        sample_batched_test = next(iter(data_test))
+        loss_test = compute_loss(
+            net=net,
+            criterion=criterion,
+            input_layer=sample_batched_test[0],
+            target_value=sample_batched_test[1],
+        )
+        sum_loss_test += float(loss_test)
+        count_test += 1
+    print("test error", float(sum_loss_test / float(count_test)))
+    test_error: float = float(sum_loss_test / float(count_test))
+    return test_error
 
 
 class NNPytorchTrainer:
@@ -68,9 +107,11 @@ class NNPytorchTrainer:
         """
         self.net.train()
         self.optimizer.zero_grad()
-        prediction_with_player_to_move_as_white = self.net(input_layer)
-        loss: torch.Tensor = self.criterion(
-            prediction_with_player_to_move_as_white, target_value
+        loss: torch.Tensor = compute_loss(
+            net=self.net,
+            criterion=self.criterion,
+            input_layer=input_layer,
+            target_value=target_value,
         )
         loss.backward()
         self.optimizer.step()
@@ -90,9 +131,11 @@ class NNPytorchTrainer:
             torch.Tensor: The loss value.
         """
         self.net.eval()
-        prediction_with_player_to_move_as_white = self.net(input_layer)
-        loss: torch.Tensor = self.criterion(
-            prediction_with_player_to_move_as_white, target_value
+        loss: torch.Tensor = compute_loss(
+            net=self.net,
+            criterion=self.criterion,
+            input_layer=input_layer,
+            target_value=target_value,
         )
         self.net.train()
         return loss
@@ -120,3 +163,23 @@ class NNPytorchTrainer:
         loss = self.criterion(prediction_with_player_to_move_as_white, target_value)
         loss.backward()
         self.optimizer.step()
+
+    def compute_test_error_on_dataset(
+        self, data_test: DataLoader[tuple[torch.Tensor, torch.Tensor]]
+    ) -> None:
+        """
+        Computes the test error of the neural network model.
+
+        This method iterates over a test dataset and calculates the average loss
+        for a given number of iterations. The test error is then computed as the
+        average loss divided by the number of iterations.
+
+        Returns:
+            None
+        """
+
+        self.net.eval()
+        compute_test_error_on_dataset(
+            net=self.net, criterion=self.criterion, data_test=data_test
+        )
+        self.net.train()

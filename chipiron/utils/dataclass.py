@@ -29,6 +29,7 @@ class IsDataclass(Protocol):
     __dataclass_fields__: ClassVar[dict[Any, Any]]
 
 
+# used as factory function in one of the option of as_dict in order to make the enum be replaced by str (useful for yamlization)
 def custom_asdict_factory(data: Iterable[Any]) -> dict[Any, Any]:
     def convert_value(obj: Any) -> Any:
         if isinstance(obj, Enum):

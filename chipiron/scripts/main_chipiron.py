@@ -48,7 +48,7 @@ def get_script_and_args(
             args_obj
         )  # converting into dictionary format
 
-        print("command line arguments:", args_command_line)
+        # print("command line arguments:", args_command_line)
 
         # the script name must be specified otherwise fail
         if args_command_line["script_name"] is None:
@@ -61,7 +61,7 @@ def get_script_and_args(
 
         extra_args = {}
 
-    print("extra_args", extra_args)
+    # print("extra_args", extra_args)
     return script_type, extra_args
 
 

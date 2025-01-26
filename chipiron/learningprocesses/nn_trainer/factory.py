@@ -2,21 +2,29 @@
 Module to create and save neural network trainers and their parameters
 """
 
+import os.path
 import pickle
-from dataclasses import dataclass, field
+from dataclasses import dataclass, asdict
 from datetime import datetime
 
 import torch
 import torch.optim as optim
+import yaml
 
 from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
 from chipiron.players.boardevaluators.neural_networks import NeuralNetBoardEvalArgs
+from chipiron.players.boardevaluators.neural_networks.NNModelType import NNModelType
 from chipiron.players.boardevaluators.neural_networks.factory import (
-    get_folder_path_from,
     get_nn_param_file_path_from,
+    get_nn_architecture_file_path_from,
 )
+from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
+    NeuralNetArchitectureArgs,
+)
+from chipiron.utils import path
 from chipiron.utils.chi_nn import ChiNN
-from chipiron.utils.small_tools import mkdir
+from chipiron.utils.dataclass import custom_asdict_factory
+from chipiron.utils.small_tools import mkdir_if_not_existing
 
 
 @dataclass
@@ -34,20 +42,29 @@ class NNTrainerArgs:
         saving_intermediate_copy (bool): Whether to save intermediate copies.
     """
 
-    neural_network: NeuralNetBoardEvalArgs = field(
-        default_factory=lambda: NeuralNetBoardEvalArgs(
-            nn_type="pp2d2_2_leaky", nn_param_folder_name="foo"
-        )
+    neural_network_folder_path: path = (
+        "chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/test_to_keep"
     )
-    reuse_existing_trainer: bool = False
+    nn_architecture_file_if_not_reusing_existing_one: path | None = None
+    reuse_existing_model: bool = True
+    reuse_existing_trainer: bool = True
     starting_lr: float = 0.1
     momentum_op: float = 0.9
     scheduler_step_size: int = 1
     scheduler_gamma: float = 0.5
     saving_intermediate_copy: bool = True
 
+    def __post_init__(self) -> None:
+        if not self.reuse_existing_model:
+            if self.nn_architecture_file_if_not_reusing_existing_one is None:
+                raise Exception(
+                    "Problem because you are asking for a reuse of existing model without specifying an"
+                    f" architecture file as we have: reuse_existing_model {self.reuse_existing_model}"
+                    f" nn_architecture_file_if_not_reusing_existing_one {self.nn_architecture_file_if_not_reusing_existing_one}"
+                )
 
-def get_optimizer_file_path_from(folder_path: str) -> str:
+
+def get_optimizer_file_path_from(folder_path: path) -> str:
     """
     Returns the file path for the optimizer file in the given folder path.
 
@@ -58,11 +75,11 @@ def get_optimizer_file_path_from(folder_path: str) -> str:
         str: The file path for the optimizer file.
 
     """
-    file_path = folder_path + "/optimizer.pi"
+    file_path: str = os.path.join(folder_path, "optimizer.pi")
     return file_path
 
 
-def get_scheduler_file_path_from(folder_path: str) -> str:
+def get_scheduler_file_path_from(folder_path: path) -> str:
     """Get the file path for the scheduler file in the given folder path.
 
     Args:
@@ -71,11 +88,11 @@ def get_scheduler_file_path_from(folder_path: str) -> str:
     Returns:
         str: The file path of the scheduler file.
     """
-    file_path = folder_path + "/scheduler.pi"
+    file_path: str = os.path.join(folder_path, "scheduler.pi")
     return file_path
 
 
-def get_folder_training_copies_path_from(folder_path: str) -> str:
+def get_folder_training_copies_path_from(folder_path: path) -> str:
     """
     Returns the path to the 'training_copies' folder within the given folder path.
 
@@ -85,7 +102,7 @@ def get_folder_training_copies_path_from(folder_path: str) -> str:
     Returns:
         str: The path to the 'training_copies' folder.
     """
-    return folder_path + "/training_copies"
+    return os.path.join(folder_path, "training_copies")
 
 
 def create_nn_trainer(args: NNTrainerArgs, nn: ChiNN) -> NNPytorchTrainer:
@@ -100,19 +117,19 @@ def create_nn_trainer(args: NNTrainerArgs, nn: ChiNN) -> NNPytorchTrainer:
         NNPytorchTrainer: An instance of NNPytorchTrainer.
 
     """
-    args_nn = args.neural_network
-    nn_folder_path = get_folder_path_from(
-        nn_type=args_nn.nn_type, nn_param_folder_name=args_nn.nn_param_folder_name
-    )
 
     optimizer: torch.optim.Optimizer
     scheduler: torch.optim.lr_scheduler.LRScheduler
     if args.reuse_existing_trainer:
-        file_optimizer_path = get_optimizer_file_path_from(nn_folder_path)
+        file_optimizer_path = get_optimizer_file_path_from(
+            folder_path=args.neural_network_folder_path
+        )
         with open(file_optimizer_path, "rb") as file_optimizer:
             optimizer = pickle.load(file_optimizer)
 
-        file_scheduler_path = get_scheduler_file_path_from(nn_folder_path)
+        file_scheduler_path = get_scheduler_file_path_from(
+            folder_path=args.neural_network_folder_path
+        )
         with open(file_scheduler_path, "rb") as file_scheduler:
             scheduler = pickle.load(file_scheduler)
 
@@ -129,35 +146,56 @@ def create_nn_trainer(args: NNTrainerArgs, nn: ChiNN) -> NNPytorchTrainer:
 
     if args.saving_intermediate_copy:
         folder_path_training_copies = get_folder_training_copies_path_from(
-            nn_folder_path
+            args.neural_network_folder_path
         )
-        mkdir(folder_path_training_copies)
+        mkdir_if_not_existing(folder_path_training_copies)
 
     return NNPytorchTrainer(net=nn, optimizer=optimizer, scheduler=scheduler)
 
 
+def safe_nn_architecture_save(
+    nn_architecture_args: NeuralNetArchitectureArgs, nn_param_folder_name: path
+) -> None:
+    """ """
+    path_to_param_file = get_nn_architecture_file_path_from(nn_param_folder_name)
+    try:
+        print(f"saving architecture to file: {path_to_param_file}")
+        with open(path_to_param_file, "w") as file_architecture:
+            yaml.dump(
+                asdict(
+                    nn_architecture_args,
+                    dict_factory=custom_asdict_factory,
+                ),
+                file_architecture,
+                default_flow_style=False,
+            )
+    except KeyboardInterrupt:
+        exit(-1)
+
+
 def safe_nn_param_save(
-    nn: ChiNN, args: NeuralNetBoardEvalArgs, training_copy: bool = False
+    nn: ChiNN, nn_param_folder_name: path, training_copy: bool = False
 ) -> None:
     """
     Save the parameters of a neural network to a file.
 
     Args:
         nn (ChiNN): The neural network to save.
-        args (NeuralNetBoardEvalArgs): The arguments containing information about the neural network.
         training_copy (bool, optional): Whether to save a training copy of the parameters. Defaults to False.
     """
-    folder_path = get_folder_path_from(args.nn_type, args.nn_param_folder_name)
+    folder_path = nn_param_folder_name
     folder_path_training_copies = get_folder_training_copies_path_from(folder_path)
     nn_file_path = get_nn_param_file_path_from(folder_path)
+    path_to_param_file: path
     if training_copy:
         now = datetime.now()  # current date and time
-        path_to_param_file = (
-            folder_path_training_copies + "/" + now.strftime("%A-%m-%d-%Y--%H:%M:%S:%f")
+        path_to_param_file = os.path.join(
+            folder_path_training_copies, now.strftime("%A-%m-%d-%Y--%H:%M:%S:%f")
         )
     else:
         path_to_param_file = nn_file_path
     try:
+        print(f"saving to file: {path_to_param_file}")
         with open(path_to_param_file, "wb") as fileNNW:
             torch.save(nn.state_dict(), fileNNW)
         with open(path_to_param_file + "_save", "wb") as fileNNW:
@@ -168,9 +206,7 @@ def safe_nn_param_save(
         exit(-1)
 
 
-def safe_nn_trainer_save(
-    nn_trainer: NNPytorchTrainer, args: NeuralNetBoardEvalArgs
-) -> None:
+def safe_nn_trainer_save(nn_trainer: NNPytorchTrainer, nn_folder_path: path) -> None:
     """
     Safely saves the optimizer and scheduler of the given NNPytorchTrainer object to files.
 
@@ -181,7 +217,6 @@ def safe_nn_trainer_save(
     Returns:
         None
     """
-    nn_folder_path = get_folder_path_from(args.nn_type, args.nn_param_folder_name)
     file_optimizer_path = get_optimizer_file_path_from(nn_folder_path)
     file_scheduler_path = get_scheduler_file_path_from(nn_folder_path)
     try:
@@ -189,7 +224,7 @@ def safe_nn_trainer_save(
             pickle.dump(nn_trainer.optimizer, file_optimizer)
         with open(file_scheduler_path, "wb") as file_scheduler:
             pickle.dump(nn_trainer.scheduler, file_scheduler)
-        with open(file_optimizer_path + "_save", "wb") as file_optimizer:
+        with open(str(file_optimizer_path) + "_save", "wb") as file_optimizer:
             pickle.dump(nn_trainer.optimizer, file_optimizer)
         with open(file_scheduler_path + "_save", "wb") as file_scheduler:
             pickle.dump(nn_trainer.scheduler, file_scheduler)

@@ -73,6 +73,7 @@ def create_tree_and_value_builders(
         TreeAndValueMoveSelector: The created TreeAndValueMoveSelector object.
 
     """
+
     node_evaluator: node_eval.NodeEvaluator = node_eval.create_node_evaluator(
         arg_board_evaluator=args.board_evaluator, syzygy=syzygy
     )
@@ -86,7 +87,7 @@ def create_tree_and_value_builders(
 
     board_representation_factory: RepresentationFactory[Any] | None
     board_representation_factory = create_board_representation_factory(
-        board_representation_factory_type=args.board_evaluator.representation_type
+        board_representation_factory_type=args.board_evaluator.internal_representation_type
     )
 
     search_factory: search_factories.SearchFactoryP = search_factories.SearchFactory(

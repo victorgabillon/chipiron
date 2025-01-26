@@ -62,8 +62,8 @@ def create_node_evaluator(
                 arg_board_evaluator, neural_networks.NeuralNetNodeEvalArgs
             )
             board_evaluator_nn: NNBoardEvaluator = create_nn_board_eval(
-                arg=arg_board_evaluator.neural_network,
-                representation_type=arg_board_evaluator.representation_type,
+                path_to_nn_folder=arg_board_evaluator.path_to_nn_folder,
+                internal_representation_type=arg_board_evaluator.internal_representation_type,
             )
             node_evaluator = NNNodeEvaluator(
                 nn_board_evaluator=board_evaluator_nn, syzygy=syzygy_

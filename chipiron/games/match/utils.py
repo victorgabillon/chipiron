@@ -57,7 +57,7 @@ def fetch_match_games_args_convert_and_save(
 
     if experiment_output_folder is not None:
         path_games: path = os.path.join(experiment_output_folder, "games")
-        ch.tool.mkdir(path_games)
+        ch.tool.mkdir_if_not_existing(path_games)
         copyfile(
             src=path_game_setting, dst=os.path.join(experiment_output_folder, file_game)
         )

@@ -83,11 +83,11 @@ class MyParser:
         args_command_line_without_none: dict[str, Any] = {
             key: value for key, value in args_command_line.items() if value is not None
         }
-        print(
-            "Here are the command line arguments of the script",
-            args_command_line_without_none,
-            sys.argv,
-        )
+        # print(
+        #    "Here are the command line arguments of the script",
+        #    args_command_line_without_none,
+        #    sys.argv,
+        # )
 
         args_command_line_without_none_unflatten = unflatten(
             args_command_line_without_none
@@ -157,7 +157,8 @@ class MyParser:
             except Exception:
                 raise Exception(
                     "The Args dataclass should have all its attribute"
-                    " have default value to have a default instantiation"
+                    " have default value to have a default instantiation."
+                    f" When dealing with {self.args_class_name()}"
                 )
         else:
             self.parse_config_file_arguments(config_file_path)
@@ -166,10 +167,10 @@ class MyParser:
         #  the gui input  overwrite  the command line arguments
         #  that overwrite the config file arguments that overwrite the default arguments
         self.merged_args = self.args_config_file | first_merged_args
-        print(
-            f"Here are the merged arguments of the script {self.merged_args}\n{self.args_config_file}"
-            f"\n{self.args_command_line}\n{extra_args}"
-        )
+        # print(
+        #    f"Here are the merged arguments of the script {self.merged_args}\n{self.args_config_file}"
+        #    f"\n{self.args_command_line}\n{extra_args}"
+        # )
 
         return self.merged_args
 

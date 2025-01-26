@@ -10,8 +10,8 @@ import chess
 import chipiron.environments.chess.board as boards
 from chipiron.environments.chess.board.iboard import LegalMoveKeyGeneratorP
 from chipiron.environments.chess.move.imove import moveKey
-
 from .itree_node import ITreeNode
+
 
 # todo replace the any with a defaut value in ITReenode when availble in python; 3.13?
 

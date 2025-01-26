@@ -19,7 +19,7 @@ from chipiron.scripts.parsers.parser import MyParser
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
 from chipiron.utils.dataclass import IsDataclass
-from chipiron.utils.small_tools import mkdir
+from chipiron.utils.small_tools import mkdir_if_not_existing
 
 
 @runtime_checkable
@@ -108,12 +108,8 @@ class Script:
             self.experiment_script_type_output_folder,
             final_args.base_script_args.relative_script_instance_experiment_output_folder,
         )
-        print(
-            "debug tt",
-            final_args.base_script_args.relative_script_instance_experiment_output_folder,
-        )
-        mkdir(final_args.base_script_args.experiment_output_folder)
-        mkdir(
+        mkdir_if_not_existing(final_args.base_script_args.experiment_output_folder)
+        mkdir_if_not_existing(
             os.path.join(
                 final_args.base_script_args.experiment_output_folder,
                 "inputs_and_parsing",

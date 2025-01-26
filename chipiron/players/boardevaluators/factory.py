@@ -27,7 +27,9 @@ from .board_evaluator import (
     IGameBoardEvaluator,
     ObservableBoardEvaluator,
 )
-from .neural_networks.input_converters.RepresentationType import RepresentationType
+from .neural_networks.input_converters.TensorRepresentationType import (
+    InternalTensorRepresentationType,
+)
 
 
 class TableBaseArgs:
@@ -106,8 +108,8 @@ def create_board_evaluator(
             board_evaluator = BasicEvaluation()
         case NeuralNetBoardEvalArgs():
             board_evaluator = create_nn_board_eval(
-                arg=args_board_evaluator,
-                representation_type=RepresentationType.NOBUG364,
+                path_to_nn_folder=args_board_evaluator.nn_param_folder_name,
+                internal_representation_type=InternalTensorRepresentationType.NOBUG364,
             )
 
         #  case TableBaseArgs():

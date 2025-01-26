@@ -42,7 +42,7 @@ class NetPP1(ChiNN):
         x = self.tanh(x)
         return x
 
-    def init_weights(self, file: str) -> None:
+    def init_weights(self) -> None:
         """
         Initializes the weights of the neural network.
 
@@ -53,7 +53,6 @@ class NetPP1(ChiNN):
         ran = ran.unsqueeze(0)
         self.fc1.weight = torch.nn.Parameter(ran)
         nn.init.constant(self.fc1.bias, 0.0)
-        torch.save(self.state_dict(), file)
         for param in self.parameters():
             print(param.data)
 
