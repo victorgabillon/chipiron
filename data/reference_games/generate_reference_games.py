@@ -7,14 +7,14 @@ import chipiron as ch
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_factories import create_match_manager_from_args
 from chipiron.games.match.match_results import MatchReport
-from chipiron.utils import mkdir, path
+from chipiron.utils import mkdir_if_not_existing, path
 
 algos: list[str] = ["Uniform"]
 
 algo: str
 for algo in algos:
     path_folder: path = os.path.join("data/reference_games", algo)
-    mkdir(folder_path=path_folder)
+    mkdir_if_not_existing(folder_path=path_folder)
     args: MatchArgs = MatchArgs()
     args.seed = 11
     args.file_name_player_one = f"players_for_test_purposes/{algo}.yaml"
@@ -22,7 +22,7 @@ for algo in algos:
     args.file_name_match_setting = "setting_tron.yaml"
     args.experiment_output_folder = path_folder
 
-    mkdir(folder_path=os.path.join(path_folder, "inputs_and_parsing"))
+    mkdir_if_not_existing(folder_path=os.path.join(path_folder, "inputs_and_parsing"))
 
     # saving the arguments of the script
     with open(

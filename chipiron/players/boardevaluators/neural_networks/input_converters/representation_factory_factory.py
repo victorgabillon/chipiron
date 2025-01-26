@@ -9,11 +9,11 @@ from .rep_364_bug import create_from_board as create_from_board_364_bug
 from .rep_364_bug import (
     create_from_board_and_from_parent as create_from_board_and_from_parent_364_bug,
 )
-from .RepresentationType import RepresentationType
+from .TensorRepresentationType import InternalTensorRepresentationType
 
 
 def create_board_representation_factory(
-    board_representation_factory_type: RepresentationType,
+    board_representation_factory_type: InternalTensorRepresentationType,
 ) -> RepresentationFactory[Any] | None:
     """
     Create a board representation based on the given string.
@@ -30,17 +30,17 @@ def create_board_representation_factory(
     """
     board_representation_factory: RepresentationFactory[Any] | None
     match board_representation_factory_type:
-        case RepresentationType.BUG364:
+        case InternalTensorRepresentationType.BUG364:
             board_representation_factory = RepresentationFactory(
                 create_from_board=create_from_board_364_bug,
                 create_from_board_and_from_parent=create_from_board_and_from_parent_364_bug,
             )
-        case RepresentationType.NOBUG364:
+        case InternalTensorRepresentationType.NOBUG364:
             board_representation_factory = RepresentationFactory(
                 create_from_board=create_from_board_364_no_bug,
                 create_from_board_and_from_parent=create_from_board_and_from_parent_364_no_bug,
             )
-        case RepresentationType.NO:
+        case InternalTensorRepresentationType.NO:
             board_representation_factory = None
         case other:
             raise Exception(f"trying to create {other} in file {__name__}")

@@ -13,9 +13,7 @@ main_move_selector:
       tree_move_limit: 100
   board_evaluator:
     type: neural_network
-    neural_network:
-        nn_type: pp2d2_2_prelu
-        nn_param_folder_name: 'param_prelu'
-    representation_type: '364_bug'
+    path_to_nn_folder: 'data/players/board_evaluators/nn_pytorch/nn_pp2d2_2_prelu/param_prelu'
+    internal_representation_type: '364_bug'
     syzygy_evaluation: True
 syzygy_play: True

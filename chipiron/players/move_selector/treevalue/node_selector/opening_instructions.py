@@ -28,7 +28,6 @@ class OpeningInstruction:
         """
         Prints information about the opening instruction.
         """
-        # print('ttt',self.node_to_open.board.chess_,self.node_to_open.board.legal_moves_)
         print(
             f"OpeningInstruction: node_to_open {self.node_to_open.id} at hm {self.node_to_open.half_move} {self.node_to_open.board.fen}| "
             f"a path from root to node_to_open is {a_move_key_sequence_from_root(self.node_to_open)} {a_move_uci_sequence_from_root(self.node_to_open)}| "

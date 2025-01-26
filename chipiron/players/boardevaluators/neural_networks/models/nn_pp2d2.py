@@ -57,7 +57,7 @@ class NetPP2D2(ChiNN):
         x = self.tanh(self.fc2(x))
         return x
 
-    def init_weights(self, file: str) -> None:
+    def init_weights(self) -> None:
         """
         Initialize the weights of the neural network.
 

@@ -18,15 +18,16 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.factory i
 from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
     create_board_representation_factory,
 )
-from chipiron.players.boardevaluators.neural_networks.input_converters.RepresentationType import (
-    RepresentationType,
+from chipiron.players.boardevaluators.neural_networks.input_converters.TensorRepresentationType import (
+    InternalTensorRepresentationType,
 )
 
 
 @pytest.mark.parametrize(("use_rust_boards"), (True, False))
 @pytest.mark.parametrize(("board_representation_factory_type"), ["364_no_bug"])
 def test_representation(
-    use_rust_boards: bool, board_representation_factory_type: RepresentationType
+    use_rust_boards: bool,
+    board_representation_factory_type: InternalTensorRepresentationType,
 ) -> None:
     board: IBoard = create_board(
         use_rust_boards=use_rust_boards,
@@ -70,7 +71,7 @@ def test_representation(
 @pytest.mark.parametrize(("use_board_modification"), (True, False))
 def test_representation364(
     use_rust_boards: bool,
-    board_representation_factory_type: RepresentationType,
+    board_representation_factory_type: InternalTensorRepresentationType,
     use_board_modification: bool,
 ) -> None:
     # 'rnb2bnr/ppp2ppp/2k3q1/8/8/1Q3K2/PPP2PPP/RNB2BNR w - - 0 1'
@@ -150,10 +151,12 @@ def test_representation364(
 
 if __name__ == "__main__":
     use_rusty_board: bool
-    board_representation_factory_type: RepresentationType
+    board_representation_factory_type: InternalTensorRepresentationType
     use_board_modification: bool
     for use_rusty_board in [True, False]:
-        for board_representation_factory_type in [RepresentationType.NOBUG364]:
+        for board_representation_factory_type in [
+            InternalTensorRepresentationType.NOBUG364
+        ]:
             test_representation(
                 use_rust_boards=use_rusty_board,
                 board_representation_factory_type=board_representation_factory_type,

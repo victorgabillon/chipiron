@@ -24,7 +24,7 @@ path = typing.Annotated[str | os.PathLike[str], "path"]
 seed = typing.Annotated[int, "seed"]
 
 
-def mkdir(folder_path: path) -> None:
+def mkdir_if_not_existing(folder_path: path) -> None:
     """
     Create a directory at the specified path.
 

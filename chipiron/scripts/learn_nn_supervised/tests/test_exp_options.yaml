@@ -19,4 +19,5 @@ momentum_op: .9
 scheduler_step_size: 1
 scheduler_gamma: .5
 reuse_existing_trainer: False
-epochs_number: 100
+epochs_number: 1
+test: True

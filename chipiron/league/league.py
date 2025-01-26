@@ -20,7 +20,7 @@ from chipiron.games.match.match_results import MatchReport, MatchResults
 from chipiron.games.match.utils import fetch_match_games_args_convert_and_save
 from chipiron.players.utils import fetch_player_args_convert_and_save
 from chipiron.scripts.chipiron_args import ImplementationArgs
-from chipiron.utils.small_tools import mkdir, path
+from chipiron.utils.small_tools import mkdir_if_not_existing, path
 
 
 @dataclass(slots=True)
@@ -60,9 +60,9 @@ class League:
         print(f"init league from folder: {self.folder_league}")
         self.check_for_players()
         path_logs_folder: path = os.path.join(self.folder_league, "logs")
-        mkdir(path_logs_folder)
+        mkdir_if_not_existing(path_logs_folder)
         path_logs_games_folder: path = os.path.join(path_logs_folder, "games")
-        mkdir(path_logs_games_folder)
+        mkdir_if_not_existing(path_logs_games_folder)
 
     def check_for_players(self) -> None:
         """
@@ -106,7 +106,7 @@ class League:
         current_player_folder: path = os.path.join(
             self.folder_league, "current_players"
         )
-        mkdir(current_player_folder)
+        mkdir_if_not_existing(current_player_folder)
         shutil.move(file_player, current_player_folder)
 
         print("elo", self.players_elo)
@@ -138,11 +138,11 @@ class League:
         path_logs_game_folder: path = os.path.join(
             self.folder_league, f"logs/games/game{self.games_already_played}"
         )
-        mkdir(path_logs_game_folder)
+        mkdir_if_not_existing(path_logs_game_folder)
         path_logs_game_folder_temp: path = os.path.join(
             self.folder_league, f"logs/games/game{self.games_already_played}/games"
         )
-        mkdir(path_logs_game_folder_temp)
+        mkdir_if_not_existing(path_logs_game_folder_temp)
 
         match_seed = self.seed + self.games_already_played
         match_manager: ch.game.MatchManager = create_match_manager(
