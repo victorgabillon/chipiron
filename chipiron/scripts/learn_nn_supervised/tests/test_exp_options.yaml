@@ -4,8 +4,8 @@ nn_trainer_args:
   reuse_existing_trainer:  False
   nn_architecture_file_if_not_reusing_existing_one: 'chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/test_to_keep/architecture.yaml'
 config_file_name: 'scripts/learn_nn_supervised/exp_options.yaml'
-stockfish_boards_train_file_name: 'data/datasets/goodgames_plusvariation_stockfish_eval_train_t.1_merge.pi'
-stockfish_boards_test_file_name: 'data/datasets/goodgames_plusvariation_stockfish_eval_test'
+stockfish_boards_train_file_name: 'chipiron/scripts/learn_nn_supervised/tests/small_dataset.pi'
+stockfish_boards_test_file_name: 'chipiron/scripts/learn_nn_supervised/tests/small_dataset.pi'
 preprocessing_data_set: False
 batch_size_train: 32
 batch_size_test: 10
