@@ -25,6 +25,7 @@ from chipiron.environments.chess.board.utils import FenPlusHistory
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_input import (
     BoardToInputFunction,
 )
+from chipiron.utils import path
 
 
 class MyDataSet(Dataset[Any]):
@@ -45,7 +46,7 @@ class MyDataSet(Dataset[Any]):
     data: pandas.DataFrame | list[tuple[torch.Tensor, torch.Tensor]] | None
     len: int | None
 
-    def __init__(self, file_name: str, preprocessing: bool) -> None:
+    def __init__(self, file_name: path, preprocessing: bool) -> None:
         """
         Initializes a new instance of the MyDataSet class.
 
@@ -175,7 +176,7 @@ class FenAndValueDataSet(MyDataSet):
 
     def __init__(
         self,
-        file_name: str,
+        file_name: path,
         preprocessing: bool = False,
         transform_board_function: str | BoardToInputFunction = "identity",
         transform_value_function: str = "",
