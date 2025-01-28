@@ -14,6 +14,7 @@ def test_evaluate_model() -> None:
     evaluate_models(
         folders_of_models_to_evaluate=test_folders_of_models_to_evaluate,
         evaluation_report_file="chipiron/scripts/evaluate_models/tests/test_evaluation_report.yaml",
+        dataset_file_name="chipiron/scripts/learn_nn_supervised/tests/small_dataset.pi",
     )
 
 

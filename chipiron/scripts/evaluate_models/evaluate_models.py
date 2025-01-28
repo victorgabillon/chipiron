@@ -54,6 +54,7 @@ EvaluatedModels = dict[path, ModelEvaluation]
 def evaluate_models(
     folders_of_models_to_evaluate: list[path],
     evaluation_report_file: path = "chipiron/scripts/evaluate_models/evaluation_report.yaml",
+    dataset_file_name: path = "data/datasets/goodgames_plusvariation_stockfish_eval_test",
 ) -> None:
     """
     Evaluates the models in the list models_to_evaluate.
@@ -154,7 +155,7 @@ def evaluate_models(
                 )
 
                 stockfish_boards_test = FenAndValueDataSet(
-                    file_name="data/datasets/goodgames_plusvariation_stockfish_eval_test",
+                    file_name=dataset_file_name,
                     preprocessing=False,
                     transform_board_function=board_to_input.convert,
                     transform_value_function="stockfish",
