@@ -10,7 +10,7 @@ main_move_selector:
     temperature: 2
   stopping_criterion:
       type: tree_move_limit
-      tree_move_limit: 100
+      tree_move_limit: 1000
   board_evaluator:
     type: neural_network
     path_to_nn_folder: 'data/players/board_evaluators/nn_pytorch/nn_pp2d2_2_prelu/param_prelu'

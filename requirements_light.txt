@@ -15,6 +15,7 @@ customtkinter
 pyarrow
 shakmaty_python_binding>=0.1.5
 gprof2dot
+torchinfo
 
 # for the web app
 flask

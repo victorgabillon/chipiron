@@ -15,14 +15,18 @@ Example:
     learn_script.terminate()
 """
 
+import torch
 import copy
 import os
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from typing import Any
 
+import chipiron.utils.path_variables
+from chipiron.utils import path
+import mlflow
 from torch.utils.data import DataLoader
-
+from torchinfo import summary
 from chipiron.learningprocesses.nn_trainer.factory import (
     NNTrainerArgs,
     create_nn_trainer,
@@ -56,6 +60,7 @@ from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.chi_nn import ChiNN
+from mlflow.models.signature import infer_signature, ModelSignature
 
 
 @dataclass
@@ -123,8 +128,8 @@ class LearnNNScript:
     nn_architecture_args: NeuralNetArchitectureArgs
 
     def __init__(
-        self,
-        base_script: Script,
+            self,
+            base_script: Script,
     ) -> None:
         """
         Initializes the LearnNNFromSupervisedDatasets class.
@@ -144,6 +149,9 @@ class LearnNNScript:
             experiment_output_folder=self.base_experiment_output_folder,
         )
 
+        # taking care of random
+        chipiron.set_seeds(seed=self.args.base_script_args.seed)
+
         if self.args.nn_trainer_args.reuse_existing_model:
             self.nn, self.nn_architecture_args = (
                 create_nn_from_folder_path_and_existing_model(
@@ -153,8 +161,8 @@ class LearnNNScript:
 
         else:
             assert (
-                self.args.nn_trainer_args.nn_architecture_file_if_not_reusing_existing_one
-                is not None
+                    self.args.nn_trainer_args.nn_architecture_file_if_not_reusing_existing_one
+                    is not None
             )
             self.nn_architecture_args: NeuralNetArchitectureArgs = (
                 get_architecture_args_from_file(
@@ -216,6 +224,31 @@ class LearnNNScript:
             num_workers=1,
         )
 
+        mlflow.set_tracking_uri(uri=chipiron.utils.path_variables.ML_FLOW_URI_PATH)
+
+    def print_and_log_metrics(self, count_train_step :int ,training_loss :float,test_error:float):
+        print(
+            "count_train_step",
+            count_train_step,
+            "training loss",
+            training_loss,
+            "lr",
+            self.nn_trainer.scheduler.get_last_lr(),
+        )
+        mlflow.log_metric(
+            "training_loss",
+            f"{training_loss:3f}",
+            step=count_train_step,
+        )
+        mlflow.log_metric(
+            "test_error",
+            f"{test_error:3f}",
+            step=count_train_step,
+        )
+        mlflow.log_metric("lr", f"{self.nn_trainer.scheduler.get_last_lr()[-1]:3f}",
+                          step=count_train_step
+                          )
+
     def run(self) -> None:
         """Running the learning of the NN.
 
@@ -227,89 +260,107 @@ class LearnNNScript:
             None
         """
         print("Starting to learn the NN")
-        count_train_step = 0
-        sum_loss_train: float = 0.0
-        sum_loss_train_print: float = 0.0
-        previous_dict: Any | None = None
-        previous_train_loss: float | None = None
-        for i in range(self.args.epochs_number):
-            for i_batch, sample_batched in enumerate(
-                self.data_loader_stockfish_boards_train
-            ):
 
-                # printing info to console
-                if count_train_step % 10000 == 0 and count_train_step > 0:
-                    print(
-                        "count_train_step",
-                        count_train_step,
-                        "training loss",
-                        sum_loss_train_print / 10000,
-                        "lr",
-                        self.nn_trainer.scheduler.get_last_lr(),
-                    )
-                    sum_loss_train_print = 0
-                    self.nn_trainer.compute_test_error_on_dataset(
-                        data_test=self.data_loader_stockfish_boards_test
-                    )
+        with mlflow.start_run():
 
-                if (
-                    count_train_step % 20000 == 0
-                    and count_train_step > 0
-                    and self.args.test
-                ):
-                    break
+            params = asdict(self.args) | asdict(self.nn_architecture_args)
+            mlflow.log_params(params)
 
-                # every self.args['min_interval_lr_change'] steps we check for possibly decreasing the learning rate
-                if (
-                    count_train_step % self.args.min_interval_lr_change == 0
-                    and count_train_step > 0
+            # Log model summary.
+            model_summary_file_name: path = os.path.join(
+                self.args.nn_trainer_args.neural_network_folder_path,
+                "model_summary.txt",
+            )
+            with open(model_summary_file_name, "w") as f:
+                f.write(str(summary(self.nn)))
+            mlflow.log_artifact(model_summary_file_name)
+
+            count_train_step = 0
+            sum_loss_train: float = 0.0
+            sum_loss_train_print: float = 0.0
+            previous_dict: Any | None = None
+            previous_train_loss: float | None = None
+            for i in range(self.args.epochs_number):
+                for i_batch, sample_batched in enumerate(
+                        self.data_loader_stockfish_boards_train
                 ):
 
-                    # condition to decrease the learning rate
-                    if (
-                        previous_train_loss is not None
-                        and sum_loss_train > previous_train_loss
-                        and self.nn_trainer.scheduler.get_last_lr()[-1]
-                        > self.args.min_lr
-                    ):
-                        self.nn_trainer.scheduler.step()
-                        print(
-                            "decaying the learning rate to",
-                            self.nn_trainer.scheduler.get_last_lr(),
-                        )
-
-                    print("count_train_step", count_train_step)
-                    print(
-                        "training loss",
-                        sum_loss_train / self.args.min_interval_lr_change,
-                        sum_loss_train,
-                    )
-                    print("previous_train_loss", previous_train_loss)
-                    print("learning rate", self.nn_trainer.scheduler.get_last_lr())
-
-                    if previous_dict is not None:
-                        diff_weighs = sum(
-                            (x - y).abs().sum()
-                            for x, y in zip(
-                                previous_dict.values(), self.nn.state_dict().values()
+                    # printing info to console
+                    if count_train_step % 10000 == 0 and count_train_step > 0:
+                        training_loss: float = sum_loss_train_print / 10000
+                        sum_loss_train_print = 0
+                        test_error: float = (
+                            self.nn_trainer.compute_test_error_on_dataset(
+                                data_test=self.data_loader_stockfish_boards_test
                             )
                         )
-                        print("diff_weights", diff_weighs)
-                    previous_dict = copy.deepcopy(self.nn.state_dict())
+                        self.print_and_log_metrics( count_train_step=count_train_step ,training_loss =training_loss,test_error=test_error)
 
-                    previous_train_loss = sum_loss_train
-                    sum_loss_train = 0.0
+                    if (
+                            count_train_step % 20000 == 0
+                            and count_train_step > 0
+                            and self.args.test
+                    ):
+                        break
 
-                # MAIN: the training bit
-                count_train_step += 1
-                loss_train = self.nn_trainer.train(sample_batched[0], sample_batched[1])
-                sum_loss_train += float(loss_train)
-                sum_loss_train_print += float(loss_train)
+                    # every self.args['min_interval_lr_change'] steps we check for possibly decreasing the learning rate
+                    if (
+                            count_train_step % self.args.min_interval_lr_change == 0
+                            and count_train_step > 0
+                    ):
 
-                # saving the learning process
-                self.saving_things_to_file(count_train_step)
+                        # condition to decrease the learning rate
+                        if (
+                                previous_train_loss is not None
+                                and sum_loss_train > previous_train_loss
+                                and self.nn_trainer.scheduler.get_last_lr()[-1]
+                                > self.args.min_lr
+                        ):
+                            self.nn_trainer.scheduler.step()
+                            print(
+                                "decaying the learning rate to",
+                                self.nn_trainer.scheduler.get_last_lr(),
+                            )
 
-    def saving_things_to_file(self, count_train_step: int) -> None:
+                        print("count_train_step", count_train_step)
+                        print(
+                            "training loss",
+                            sum_loss_train / self.args.min_interval_lr_change,
+                            sum_loss_train,
+                        )
+                        print("previous_train_loss", previous_train_loss)
+                        print("learning rate", self.nn_trainer.scheduler.get_last_lr())
+
+                        if previous_dict is not None:
+                            diff_weighs = sum(
+                                (x - y).abs().sum()
+                                for x, y in zip(
+                                    previous_dict.values(),
+                                    self.nn.state_dict().values(),
+                                )
+                            )
+                            print("diff_weights", diff_weighs)
+                        previous_dict = copy.deepcopy(self.nn.state_dict())
+
+                        previous_train_loss = sum_loss_train
+                        sum_loss_train = 0.0
+
+                    # MAIN: the training bit
+                    count_train_step += 1
+                    loss_train = self.nn_trainer.train(
+                        sample_batched[0], sample_batched[1]
+                    )
+                    sum_loss_train += float(loss_train)
+                    sum_loss_train_print += float(loss_train)
+
+                    # saving the learning process
+                    self.saving_things_to_file(
+                        count_train_step=count_train_step, X_train=sample_batched[0]
+                    )
+
+    def saving_things_to_file(
+            self, count_train_step: int, X_train: torch.Tensor
+    ) -> None:
         """
         Saves the neural network parameters and trainer to file.
 
@@ -330,9 +381,20 @@ class LearnNNScript:
             safe_nn_trainer_save(
                 self.nn_trainer, self.args.nn_trainer_args.neural_network_folder_path
             )
+
+            signature: ModelSignature = infer_signature(
+                X_train.detach().numpy(), self.nn(X_train).detach().numpy()
+            )
+            mlflow.pytorch.log_model(
+                self.nn,
+                "model",
+                signature=signature,
+                conda_env=mlflow.pytorch.get_default_conda_env(),
+            )
+
         if (
-            self.args.nn_trainer_args.saving_intermediate_copy
-            and count_train_step % self.args.saving_intermediate_copy_interval == 0
+                self.args.nn_trainer_args.saving_intermediate_copy
+                and count_train_step % self.args.saving_intermediate_copy_interval == 0
         ):
             safe_nn_param_save(
                 self.nn,

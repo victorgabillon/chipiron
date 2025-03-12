@@ -134,47 +134,48 @@ def evaluate_models(
 
             criterion = torch.nn.L1Loss()
 
-            if data_loader_stockfish_boards_test is None:
-                architecture_args: NeuralNetArchitectureArgs = (
-                    get_architecture_args_from_folder(folder_path=model_folder_path)
-                )
-                internal_tensor_representation_type: (
-                    InternalTensorRepresentationType
-                ) = get_default_internal_representation(
-                    tensor_representation_type=architecture_args.tensor_representation_type
-                )
-                board_representation_factory: RepresentationFactory[Any] | None = (
-                    create_board_representation_factory(
-                        board_representation_factory_type=internal_tensor_representation_type
-                    )
-                )
 
-                assert board_representation_factory is not None
-                board_to_input = RepresentationBTI(
-                    representation_factory=board_representation_factory
+            architecture_args: NeuralNetArchitectureArgs = (
+                get_architecture_args_from_folder(folder_path=model_folder_path)
+            )
+            internal_tensor_representation_type: (
+                InternalTensorRepresentationType
+            ) = get_default_internal_representation(
+                tensor_representation_type=architecture_args.tensor_representation_type
+            )
+            board_representation_factory: RepresentationFactory[Any] | None = (
+                create_board_representation_factory(
+                    board_representation_factory_type=internal_tensor_representation_type
                 )
+            )
 
-                stockfish_boards_test = FenAndValueDataSet(
-                    file_name=dataset_file_name,
-                    preprocessing=False,
-                    transform_board_function=board_to_input.convert,
-                    transform_value_function="stockfish",
-                )
+            assert board_representation_factory is not None
+            board_to_input = RepresentationBTI(
+                representation_factory=board_representation_factory
+            )
 
-                stockfish_boards_test.load()
+            stockfish_boards_test = FenAndValueDataSet(
+                file_name=dataset_file_name,
+                preprocessing=False,
+                transform_board_function=board_to_input.convert,
+                transform_value_function="stockfish",
+            )
 
-                data_loader_stockfish_boards_test = DataLoader(
-                    stockfish_boards_test,
-                    batch_size=10000,
-                    shuffle=False,
-                    num_workers=1,
-                )
-                print(f"Size of test set: {len(data_loader_stockfish_boards_test)}")
+            stockfish_boards_test.load()
+
+            data_loader_stockfish_boards_test = DataLoader(
+                stockfish_boards_test,
+                batch_size=10000,
+                shuffle=False,
+                num_workers=1,
+            )
+            print(f"Size of test set: {len(data_loader_stockfish_boards_test)}")
 
             net: ChiNN
-            net, _ = create_nn_from_folder_path_and_existing_model(
+            net, nn_architecture_args = create_nn_from_folder_path_and_existing_model(
                 folder_path=model_folder_path
             )
+            print("debug archi",nn_architecture_args)
             eval = compute_test_error_on_dataset(
                 net=net,
                 criterion=criterion,
@@ -206,6 +207,9 @@ if __name__ == "__main__":
     folders_of_models_to_evaluate_: list[path] = [
         "data/players/board_evaluators/nn_pytorch/nn_pp2d2_2_prelu/param_prelu",
         "chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/test_to_keep/",
+        "chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/prelu_bug/",
+        "chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/prelu_no_bug/",
+        "chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/prelu_no_bug2/",
     ]
 
     evaluate_models(folders_of_models_to_evaluate=folders_of_models_to_evaluate_)

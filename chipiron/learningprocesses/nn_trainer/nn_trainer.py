@@ -166,7 +166,7 @@ class NNPytorchTrainer:
 
     def compute_test_error_on_dataset(
         self, data_test: DataLoader[tuple[torch.Tensor, torch.Tensor]]
-    ) -> None:
+    ) -> float:
         """
         Computes the test error of the neural network model.
 
@@ -179,7 +179,8 @@ class NNPytorchTrainer:
         """
 
         self.net.eval()
-        compute_test_error_on_dataset(
+        test_error: float = compute_test_error_on_dataset(
             net=self.net, criterion=self.criterion, data_test=data_test
         )
         self.net.train()
+        return test_error
