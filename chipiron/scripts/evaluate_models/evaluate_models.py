@@ -18,7 +18,7 @@ from chipiron.players.boardevaluators.neural_networks.factory import (
     get_nn_param_file_path_from,
     get_architecture_args_from_folder,
 )
-from chipiron.players.boardevaluators.neural_networks.input_converters.TensorRepresentationType import (
+from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
     InternalTensorRepresentationType,
     get_default_internal_representation,
 )
@@ -134,14 +134,13 @@ def evaluate_models(
 
             criterion = torch.nn.L1Loss()
 
-
             architecture_args: NeuralNetArchitectureArgs = (
                 get_architecture_args_from_folder(folder_path=model_folder_path)
             )
-            internal_tensor_representation_type: (
-                InternalTensorRepresentationType
-            ) = get_default_internal_representation(
-                tensor_representation_type=architecture_args.tensor_representation_type
+            internal_tensor_representation_type: InternalTensorRepresentationType = (
+                get_default_internal_representation(
+                    model_input_representation_type=architecture_args.model_input_representation_type
+                )
             )
             board_representation_factory: RepresentationFactory[Any] | None = (
                 create_board_representation_factory(
@@ -175,7 +174,7 @@ def evaluate_models(
             net, nn_architecture_args = create_nn_from_folder_path_and_existing_model(
                 folder_path=model_folder_path
             )
-            print("debug archi",nn_architecture_args)
+            print("debug archi", nn_architecture_args)
             eval = compute_test_error_on_dataset(
                 net=net,
                 criterion=criterion,

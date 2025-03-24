@@ -12,7 +12,10 @@ import torch.optim as optim
 import yaml
 
 from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
-from chipiron.players.boardevaluators.neural_networks import NeuralNetBoardEvalArgs
+from chipiron.players.boardevaluators.neural_networks import (
+    NeuralNetBoardEvalArgs,
+    NNBoardEvaluator,
+)
 from chipiron.players.boardevaluators.neural_networks.NNModelType import NNModelType
 from chipiron.players.boardevaluators.neural_networks.factory import (
     get_nn_param_file_path_from,
@@ -47,7 +50,7 @@ class NNTrainerArgs:
     )
     nn_architecture_file_if_not_reusing_existing_one: path | None = None
     reuse_existing_model: bool = True
-    reuse_existing_trainer: bool = True
+    reuse_existing_trainer: bool = False
     starting_lr: float = 0.1
     momentum_op: float = 0.9
     scheduler_step_size: int = 1

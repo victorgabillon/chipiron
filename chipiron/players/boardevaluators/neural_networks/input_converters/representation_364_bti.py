@@ -53,4 +53,4 @@ class RepresentationBTI:
         tensor: torch.Tensor = representation.get_evaluator_input(
             color_to_play=board.turn
         )
-        return tensor
+        return tensor.float()

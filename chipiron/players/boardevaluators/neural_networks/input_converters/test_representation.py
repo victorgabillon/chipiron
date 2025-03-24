@@ -18,7 +18,7 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.factory i
 from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
     create_board_representation_factory,
 )
-from chipiron.players.boardevaluators.neural_networks.input_converters.TensorRepresentationType import (
+from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
     InternalTensorRepresentationType,
 )
 
