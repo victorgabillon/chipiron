@@ -9,7 +9,7 @@ from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.boardevaluators.over_event import OverEvent
 
 
-class PointOfView(Enum):
+class PointOfView(str, Enum):
     """Represents the point of view in a game.
 
     This enumeration defines the possible points of view in a game, including:
@@ -25,10 +25,10 @@ class PointOfView(Enum):
         NOT_PLAYER_TO_MOVE (PointOfView): The point of view of the player who is not currently making a move.
     """
 
-    WHITE = 0
-    BLACK = 1
-    PLAYER_TO_MOVE = 2
-    NOT_PLAYER_TO_MOVE = 3
+    WHITE = "white"
+    BLACK = "black"
+    PLAYER_TO_MOVE = "player_to_move"
+    NOT_PLAYER_TO_MOVE = "not_player_to_move"
 
 
 @dataclass

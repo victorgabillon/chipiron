@@ -10,9 +10,7 @@ import dacite
 import yaml
 
 from chipiron.players.boardevaluators.basic_evaluation import BasicEvaluation
-from chipiron.players.boardevaluators.neural_networks.factory import (
-    create_nn_board_eval,
-)
+
 from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
     NeuralNetBoardEvalArgs,
 )
@@ -27,7 +25,10 @@ from .board_evaluator import (
     IGameBoardEvaluator,
     ObservableBoardEvaluator,
 )
-from .neural_networks.input_converters.TensorRepresentationType import (
+from .neural_networks.factory import (
+    create_nn_board_eval_from_folder_path_and_existing_model,
+)
+from .neural_networks.input_converters.ModelInputRepresentationType import (
     InternalTensorRepresentationType,
 )
 
@@ -107,9 +108,8 @@ def create_board_evaluator(
         case BasicEvaluationArgs():
             board_evaluator = BasicEvaluation()
         case NeuralNetBoardEvalArgs():
-            board_evaluator = create_nn_board_eval(
+            board_evaluator = create_nn_board_eval_from_folder_path_and_existing_model(
                 path_to_nn_folder=args_board_evaluator.nn_param_folder_name,
-                internal_representation_type=InternalTensorRepresentationType.NOBUG364,
             )
 
         #  case TableBaseArgs():

@@ -11,6 +11,7 @@ from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
 )
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_input import (
     BoardToInput,
+    BoardToInputFunction,
 )
 from chipiron.players.boardevaluators.neural_networks.output_converters.output_value_converter import (
     OutputValueConverter,
@@ -30,13 +31,13 @@ class NNBoardEvaluator:
 
     net: ChiNN
     output_and_value_converter: OutputValueConverter
-    board_to_input_converter: BoardToInput
+    board_to_input_convert: BoardToInputFunction
 
     def __init__(
         self,
         net: ChiNN,
         output_and_value_converter: OutputValueConverter,
-        board_to_input_converter: BoardToInput,
+        board_to_input_convert: BoardToInputFunction,
     ) -> None:
         """
         Initialize the NNBoardEvaluator
@@ -49,7 +50,7 @@ class NNBoardEvaluator:
         self.net = net
         self.my_scripted_model = torch.jit.script(net)
         self.output_and_value_converter = output_and_value_converter
-        self.board_to_input_converter = board_to_input_converter
+        self.board_to_input_convert = board_to_input_convert
 
     def value_white(self, board: boards.IBoard) -> float:
         """
@@ -62,7 +63,7 @@ class NNBoardEvaluator:
             float: The value for the white player
         """
         self.my_scripted_model.eval()
-        input_layer: torch.Tensor = self.board_to_input_converter.convert(board=board)
+        input_layer: torch.Tensor = self.board_to_input_convert(board=board)
         torch.no_grad()
         output_layer: torch.Tensor = self.my_scripted_model(input_layer)
         torch.no_grad()

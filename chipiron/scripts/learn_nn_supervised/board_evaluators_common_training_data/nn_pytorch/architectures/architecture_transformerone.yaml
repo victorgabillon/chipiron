@@ -1,0 +1,4 @@
+model_input_representation_type: piece_map
+model_output_type:
+  point_of_view: white
+model_type: transformerone
