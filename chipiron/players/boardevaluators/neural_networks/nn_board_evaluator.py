@@ -10,7 +10,6 @@ from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
     FloatyBoardEvaluation,
 )
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_input import (
-    BoardToInput,
     BoardToInputFunction,
 )
 from chipiron.players.boardevaluators.neural_networks.output_converters.output_value_converter import (
@@ -26,7 +25,7 @@ class NNBoardEvaluator:
     Attributes:
         net (ChiNN): The neural network model
         output_and_value_converter (OutputValueConverter): The converter for output values
-        board_to_input_converter (BoardToInput): The converter for board to input tensor
+        board_to_input_converter (BoardToInputFunction): The converter for board to input tensor
     """
 
     net: ChiNN
@@ -45,7 +44,7 @@ class NNBoardEvaluator:
         Args:
             net (ChiNN): The neural network model
             output_and_value_converter (OutputValueConverter): The converter for output values
-            board_to_input_converter (BoardToInput): The converter for board to input tensor
+            board_to_input_converter (BoardToInputFunction): The converter for board to input tensor
         """
         self.net = net
         self.my_scripted_model = torch.jit.script(net)

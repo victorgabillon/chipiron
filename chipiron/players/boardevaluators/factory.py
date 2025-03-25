@@ -10,7 +10,6 @@ import dacite
 import yaml
 
 from chipiron.players.boardevaluators.basic_evaluation import BasicEvaluation
-
 from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
     NeuralNetBoardEvalArgs,
 )
@@ -18,7 +17,6 @@ from chipiron.players.boardevaluators.stockfish_board_evaluator import (
     StockfishBoardEvalArgs,
     StockfishBoardEvaluator,
 )
-
 from .board_evaluator import (
     BoardEvaluator,
     GameBoardEvaluator,
@@ -27,9 +25,6 @@ from .board_evaluator import (
 )
 from .neural_networks.factory import (
     create_nn_board_eval_from_folder_path_and_existing_model,
-)
-from .neural_networks.input_converters.ModelInputRepresentationType import (
-    InternalTensorRepresentationType,
 )
 
 

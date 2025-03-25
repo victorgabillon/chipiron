@@ -9,7 +9,6 @@ from typing import Any
 
 import dacite
 
-from chipiron.players.boardevaluators.neural_networks import NeuralNetBoardEvalArgs
 from chipiron.players.boardevaluators.neural_networks.NNModelType import NNModelType
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_input import (
     BoardToInputFunction,
