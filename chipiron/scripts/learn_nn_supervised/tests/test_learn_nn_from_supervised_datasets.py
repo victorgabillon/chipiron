@@ -8,7 +8,8 @@ configs = [
             "reuse_existing_model": False,
             "nn_architecture_file_if_not_reusing_existing_one": "chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/architectures/"
             + architecture_file,
-        }
+        },
+        "test": True,
     }
     for architecture_file in [
         "architecture_p1.yaml",

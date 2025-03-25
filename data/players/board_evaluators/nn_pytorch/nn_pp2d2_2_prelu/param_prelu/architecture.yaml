@@ -1,2 +1,4 @@
 model_type: pp2d2_2_prelu
 model_input_representation_type: "364_bug"
+model_output_type:
+  point_of_view: player_to_move

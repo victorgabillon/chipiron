@@ -232,7 +232,7 @@ class FenAndValueDataSet(MyDataSet):
         )
         input_layer = self.transform_board_function(board)
         target_value_white: float = (
-            self.transform_dataset_value_to_white_value_function(row=row)
+            self.transform_dataset_value_to_white_value_function(row)
         )
         target_value: torch.Tensor = (
             self.transform_white_value_to_model_output_function(

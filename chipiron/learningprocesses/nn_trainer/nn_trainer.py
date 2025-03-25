@@ -23,7 +23,7 @@ def compute_loss(
     return loss
 
 
-def check_model_device(model):
+def check_model_device(model: ChiNN) -> str | torch.device | int:
 
     # Check the device of the first parameter
 

@@ -37,7 +37,7 @@ def test_representation(
 
     representation_factory: RepresentationFactory[Any] | None = (
         create_board_representation_factory(
-            board_representation_factory_type=board_representation_factory_type
+            internal_tensor_representation_type=board_representation_factory_type
         )
     )
     assert representation_factory is not None
@@ -94,7 +94,7 @@ def test_representation364(
 
     representation_factory: RepresentationFactory[Any] | None = (
         create_board_representation_factory(
-            board_representation_factory_type=board_representation_factory_type
+            internal_tensor_representation_type=board_representation_factory_type
         )
     )
     assert representation_factory is not None

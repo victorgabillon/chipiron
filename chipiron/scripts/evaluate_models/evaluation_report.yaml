@@ -1,15 +1,6 @@
-chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/prelu_bug/:
-  evaluation: 0.20137956738471985
-  time_of_evaluation: 2025-03-07 13:47:08.956105
-chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/prelu_no_bug/:
-  evaluation: 0.20343439280986786
-  time_of_evaluation: 2025-03-07 13:47:34.507627
-chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/prelu_no_bug2/:
-  evaluation: 0.20343439280986786
-  time_of_evaluation: 2025-03-07 13:47:58.427816
 chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/test_to_keep/:
-  evaluation: 0.31271862983703613
-  time_of_evaluation: 2025-03-07 10:22:13.430939
+  evaluation: 0.3646606136566381
+  time_of_evaluation: 2025-03-25 08:21:05.882682
 data/players/board_evaluators/nn_pytorch/nn_pp2d2_2_prelu/param_prelu:
-  evaluation: 0.2026243954896927
-  time_of_evaluation: 2025-01-26 12:56:43.086418
+  evaluation: 0.21912601542822968
+  time_of_evaluation: 2025-03-25 08:21:05.449948
