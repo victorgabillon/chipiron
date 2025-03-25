@@ -17,6 +17,7 @@ customtkinter
 pyarrow
 shakmaty_python_binding >=0.1.5
 gprof2dot
+mlflow
 
 # for the web app
 flask
