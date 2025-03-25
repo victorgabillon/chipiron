@@ -10,7 +10,6 @@ import torch
 from chipiron.environments.chess.board import IBoard
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
     FloatyBoardEvaluation,
-    PointOfView,
 )
 
 

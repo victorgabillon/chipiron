@@ -48,7 +48,6 @@ from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args
 )
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
-from chipiron.utils import path
 from chipiron.utils.chi_nn import ChiNN
 
 

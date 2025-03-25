@@ -8,6 +8,7 @@ from typing import Protocol, runtime_checkable
 import torch
 
 import chipiron.environments.chess.board as boards
+from chipiron.environments.chess.board import IBoard
 from chipiron.players.boardevaluators.neural_networks.board_to_tensor import (
     transform_board_pieces_one_side,
 )
@@ -99,14 +100,15 @@ def create_board_to_input(
                 internal_tensor_representation_type=InternalTensorRepresentationType.NOBUG364
             )
         case ModelInputRepresentationType.PIECE_MAP:
-            board_to_input_convert = lambda board: build_transformer_input(
-                board.piece_map(), TransformerArgs()
-            )
+
+            def board_to_input_convert(board: IBoard):
+                return build_transformer_input(board.piece_map(), TransformerArgs())
 
         case ModelInputRepresentationType.PIECE_DIFFERENCE:
-            board_to_input_convert = lambda board: transform_board_pieces_one_side(
-                board, False
-            )
+
+            def board_to_input_convert(board: IBoard):
+                return transform_board_pieces_one_side(board, False)
+
         case other:
             raise Exception(f"no matching case for {other} in {__name__}")
     return board_to_input_convert
