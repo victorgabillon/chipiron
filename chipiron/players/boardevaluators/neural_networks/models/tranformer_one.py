@@ -12,11 +12,11 @@ number_of_squares = len(chess.SQUARES)
 number_pieces_types = len(chess.PIECE_TYPES)
 number_colors = len(chess.COLORS)
 number_occupancy_types = (
-        number_pieces_types * number_colors + 1
+    number_pieces_types * number_colors + 1
 )  # could be empty (+1) or one of the pieces in black or white
 len_square_tensor = number_of_squares * number_occupancy_types
 len_all_possible_tensor_input = (
-        len_square_tensor + 1
+    len_square_tensor + 1
 )  # +1 for the vector that will bear the output embedding
 number_parallel_tracks = number_of_squares + 1
 
@@ -48,7 +48,7 @@ class Head(nn.Module):
         q = self.query(x)  # (B,T,hs)
         # compute attention scores ("affinities")
         wei = (
-                q @ k.transpose(-2, -1) * k.shape[-1] ** -0.5
+            q @ k.transpose(-2, -1) * k.shape[-1] ** -0.5
         )  # (B, T, hs) @ (B, hs, T) -> (B, T, T)
         wei = F.softmax(wei, dim=-1)  # (B, T, T)
         wei = self.dropout(wei)
@@ -61,7 +61,9 @@ class Head(nn.Module):
 class MultiHeadAttention(nn.Module):
     """multiple heads of self-attention in parallel"""
 
-    def __init__(self, num_heads: int, head_size: int, dropout_ratio: float, n_embd: int) -> None:
+    def __init__(
+        self, num_heads: int, head_size: int, dropout_ratio: float, n_embd: int
+    ) -> None:
         super().__init__()
         self.heads = nn.ModuleList(
             [
@@ -98,7 +100,7 @@ class FeedFoward(nn.Module):
         # xx=self.re1(self.lin(x))
         # print('xxxx',xx)
         # a=self.lin2(xx)
-        a :torch.Tensor= self.net(x)
+        a: torch.Tensor = self.net(x)
 
         # print('x',x, a, 'yy',self.net[0].weight, 'rr', self.net[0].weight.grad)
         return a
@@ -130,7 +132,9 @@ class Block(nn.Module):
 
 class TransformerOne(ChiNN):
 
-    def __init__(self, n_embd: int, n_head: int, n_layer: int, dropout_ratio: float) -> None:
+    def __init__(
+        self, n_embd: int, n_head: int, n_layer: int, dropout_ratio: float
+    ) -> None:
         super(TransformerOne, self).__init__()
 
         self.board_embedding_table = nn.Parameter(
@@ -149,27 +153,27 @@ class TransformerOne(ChiNN):
         # better init, not covered in the original GPT video, but important, will cover in followup video
         self.apply(self._init_weights)
 
-    def _init_weights(self, module):
+    def _init_weights(self, module: Any) -> None:
         if isinstance(module, nn.Linear):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
             if module.bias is not None:
                 torch.nn.init.zeros_(module.bias)
 
-    def forward(self, indices: list[list[int]], targets=None) -> torch.Tensor:
+    def forward(self, indices: list[list[int]]) -> torch.Tensor:
 
         # idx and targets are both (B,T) tensor of integers
         y = self.board_embedding_table[
             indices, :
-            ]  # (B,len_all_possible_tensor_input,n_embd)
+        ]  # (B,len_all_possible_tensor_input,n_embd)
         # z = self.blocks(y)  # (B,T,C)
         # w = self.ln_f(z)  # (B,T,C)
         # print('debug w', z)
-        logits = self.lm_head(y.flatten(start_dim=1))  # (B,T,vocab_size)
+        logits: torch.Tensor = self.lm_head(y.flatten(start_dim=1))  # (B,T,vocab_size)
         # print("z",z,"oo", z.sum())
         return logits
 
     def compute_representation(
-            self, node: Any, parent_node: Any, board_modifications: Any
+        self, node: Any, parent_node: Any, board_modifications: Any
     ) -> None:
         """
         Compute the input representation for the given node.

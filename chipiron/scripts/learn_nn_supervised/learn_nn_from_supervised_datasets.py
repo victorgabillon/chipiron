@@ -113,7 +113,7 @@ class LearnNNScript:
     base_script: Script
     nn: ChiNN
     args: LearnNNScriptArgs
-
+    nn_board_evaluator: NNBoardEvaluator
     nn_architecture_args: NeuralNetArchitectureArgs
 
     def __init__(
@@ -145,10 +145,8 @@ class LearnNNScript:
         chipiron.set_seeds(seed=self.args.base_script_args.seed)
 
         if self.args.nn_trainer_args.reuse_existing_model:
-            self.nn_board_evaluator: NNBoardEvaluator = (
-                create_nn_board_eval_from_folder_path_and_existing_model(
-                    path_to_nn_folder=self.args.nn_trainer_args.neural_network_folder_path
-                )
+            self.nn_board_evaluator = create_nn_board_eval_from_folder_path_and_existing_model(
+                path_to_nn_folder=self.args.nn_trainer_args.neural_network_folder_path
             )
 
         else:
@@ -161,10 +159,8 @@ class LearnNNScript:
                     architecture_file_name=self.args.nn_trainer_args.nn_architecture_file_if_not_reusing_existing_one
                 )
             )
-            self.nn_board_evaluator: NNBoardEvaluator = (
-                create_nn_board_eval_from_architecture_args(
-                    nn_architecture_args=self.nn_architecture_args
-                )
+            self.nn_board_evaluator = create_nn_board_eval_from_architecture_args(
+                nn_architecture_args=self.nn_architecture_args
             )
 
         self.nn_trainer: NNPytorchTrainer = create_nn_trainer(
@@ -210,7 +206,7 @@ class LearnNNScript:
 
     def print_and_log_metrics(
         self, count_train_step: int, training_loss: float, test_error: float
-    ):
+    ) -> None:
         print(
             "count_train_step",
             count_train_step,
@@ -223,17 +219,17 @@ class LearnNNScript:
         )
         mlflow.log_metric(
             "training_loss",
-            f"{training_loss:3f}",
+            training_loss,
             step=count_train_step,
         )
         mlflow.log_metric(
             "test_error",
-            f"{test_error:3f}",
+            test_error,
             step=count_train_step,
         )
         mlflow.log_metric(
             "lr",
-            f"{self.nn_trainer.scheduler.get_last_lr()[-1]:3f}",
+            self.nn_trainer.scheduler.get_last_lr()[-1],
             step=count_train_step,
         )
 
@@ -255,7 +251,7 @@ class LearnNNScript:
             mlflow.log_params(params)
 
             # Log model summary.
-            model_summary_file_name: path = os.path.join(
+            model_summary_file_name: str = os.path.join(
                 self.args.nn_trainer_args.neural_network_folder_path,
                 "model_summary.txt",
             )
@@ -289,7 +285,7 @@ class LearnNNScript:
                         )
 
                     if (
-                        count_train_step % 20000 == 0
+                        count_train_step % 2000 == 0
                         and count_train_step > 0
                         and self.args.test
                     ):
