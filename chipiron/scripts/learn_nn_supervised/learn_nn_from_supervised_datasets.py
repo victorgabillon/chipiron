@@ -201,7 +201,12 @@ class LearnNNScript:
             num_workers=1,
         )
 
-        mlflow.set_tracking_uri(uri=chipiron.utils.path_variables.ML_FLOW_URI_PATH)
+        if self.args.test:
+            mlflow.set_tracking_uri(
+                uri=chipiron.utils.path_variables.ML_FLOW_URI_PATH_TEST
+            )
+        else:
+            mlflow.set_tracking_uri(uri=chipiron.utils.path_variables.ML_FLOW_URI_PATH)
 
     def print_and_log_metrics(
         self, count_train_step: int, training_loss: float, test_error: float
