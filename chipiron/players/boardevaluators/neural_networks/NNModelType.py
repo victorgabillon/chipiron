@@ -3,6 +3,7 @@ from enum import Enum
 
 class NNModelType(str, Enum):
     NetP1 = "p1"
+    NetP2 = "p2"
     NetPP1 = "pp1"
     NetPP2 = "pp2"
     NetPP2D2 = "pp2d2"

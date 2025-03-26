@@ -323,11 +323,13 @@ class LearnNNScript:
                                 (x - y).abs().sum()
                                 for x, y in zip(
                                     previous_dict.values(),
-                                    self.nn.state_dict().values(),
+                                    self.nn_board_evaluator.net.state_dict().values(),
                                 )
                             )
                             print("diff_weights", diff_weighs)
-                        previous_dict = copy.deepcopy(self.nn.state_dict())
+                        previous_dict = copy.deepcopy(
+                            self.nn_board_evaluator.net.state_dict()
+                        )
 
                         previous_train_loss = sum_loss_train
                         sum_loss_train = 0.0

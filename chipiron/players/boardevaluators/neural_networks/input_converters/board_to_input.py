@@ -11,6 +11,7 @@ import chipiron.environments.chess.board as boards
 from chipiron.environments.chess.board import IBoard
 from chipiron.players.boardevaluators.neural_networks.board_to_tensor import (
     transform_board_pieces_one_side,
+    transform_board_pieces_two_sides,
 )
 from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
     ModelInputRepresentationType,
@@ -101,13 +102,18 @@ def create_board_to_input(
             )
         case ModelInputRepresentationType.PIECE_MAP:
 
-            def board_to_input_convert(board: IBoard):
+            def board_to_input_convert(board: IBoard) -> torch.Tensor:
                 return build_transformer_input(board.piece_map(), TransformerArgs())
 
         case ModelInputRepresentationType.PIECE_DIFFERENCE:
 
-            def board_to_input_convert(board: IBoard):
+            def board_to_input_convert(board: IBoard) -> torch.Tensor:
                 return transform_board_pieces_one_side(board, False)
+
+        case ModelInputRepresentationType.BOARD_PIECES_TWO_SIDES:
+
+            def board_to_input_convert(board: IBoard) -> torch.Tensor:
+                return transform_board_pieces_two_sides(board, False)
 
         case other:
             raise Exception(f"no matching case for {other} in {__name__}")

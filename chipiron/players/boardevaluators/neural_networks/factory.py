@@ -15,6 +15,7 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_
     create_board_to_input,
 )
 from chipiron.players.boardevaluators.neural_networks.models.nn_p1 import NetP1
+from chipiron.players.boardevaluators.neural_networks.models.nn_p2 import NetP2
 from chipiron.players.boardevaluators.neural_networks.models.nn_pp1 import NetPP1
 from chipiron.players.boardevaluators.neural_networks.models.nn_pp2 import NetPP2
 from chipiron.players.boardevaluators.neural_networks.models.nn_pp2d2 import NetPP2D2
@@ -86,6 +87,8 @@ def create_nn(nn_type: NNModelType) -> ChiNN:
     match nn_type:
         case NNModelType.NetP1:
             net = NetP1()
+        case NNModelType.NetP2:
+            net = NetP2()
         case NNModelType.NetPP1:
             net = NetPP1()
         case NNModelType.NetPP2:

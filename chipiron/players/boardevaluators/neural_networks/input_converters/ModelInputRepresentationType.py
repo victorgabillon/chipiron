@@ -14,6 +14,7 @@ class ModelInputRepresentationType(str, Enum):
     BUG364 = "364_bug"
     PIECE_MAP = "piece_map"
     PIECE_DIFFERENCE = "pieces_difference"
+    BOARD_PIECES_TWO_SIDES = "board_pieces_two_sides"
 
 
 def get_default_internal_representation(
