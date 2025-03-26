@@ -1,6 +1,6 @@
 chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/test_to_keep/:
   evaluation: 0.6047186130891403
-  time_of_evaluation: 2025-03-25 09:28:48.789473
+  time_of_evaluation: 2025-03-26 10:49:51.248699
 data/players/board_evaluators/nn_pytorch/nn_pp2d2_2_prelu/param_prelu:
   evaluation: 0.21912601542822968
-  time_of_evaluation: 2025-03-25 09:28:47.686565
+  time_of_evaluation: 2025-03-26 10:49:51.082617

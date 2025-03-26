@@ -171,10 +171,7 @@ def evaluate_models(
 if __name__ == "__main__":
     folders_of_models_to_evaluate_: list[path] = [
         "data/players/board_evaluators/nn_pytorch/nn_pp2d2_2_prelu/param_prelu",
-        "chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/test_to_keep/",
-        "chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/prelu_bug/",
-        "chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/prelu_no_bug/",
-        "chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/prelu_no_bug2/",
+        "data/players/board_evaluators/nn_pytorch/nn_p1",
     ]
 
     evaluate_models(folders_of_models_to_evaluate=folders_of_models_to_evaluate_)

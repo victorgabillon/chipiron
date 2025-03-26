@@ -226,6 +226,8 @@ class FenAndValueDataSet(MyDataSet):
         - tuple[torch.Tensor, torch.Tensor]: The input and target tensors.
         """
         fen_: fen = row["fen"]
+
+        # todo should we make it general and allow rust boards just for testing all comptabilities ?
         board: BoardChi = create_board_chi(
             fen_with_history=FenPlusHistory(current_fen=fen_),
             use_board_modification=True,
