@@ -8,7 +8,7 @@ Classes:
 
 from dataclasses import dataclass
 
-from chipiron.players.boardevaluators.neural_networks.input_converters.TensorRepresentationType import (
+from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
     InternalTensorRepresentationType,
 )
 
@@ -29,4 +29,6 @@ class NodeEvaluatorArgs:
 
     type: NodeEvaluatorTypes
     syzygy_evaluation: bool
-    internal_representation_type: InternalTensorRepresentationType  # this should maybe be optional and involves creates wrapper? but i am lazy at the moment
+    internal_representation_type: InternalTensorRepresentationType = (
+        InternalTensorRepresentationType.NO
+    )  # this should maybe be optional and involves creates wrapper? but i am lazy at the moment

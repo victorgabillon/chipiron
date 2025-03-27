@@ -11,7 +11,7 @@ DATA_SOURCE="https://drive.google.com/drive/folders/1tvkuiaN-oXC7UAjUw-6cIl1PB0r
 DATA_DESTINATION=${ROOT_DIR}/data/
 
 .PHONY: init
-init:  chipiron/stockfish chipiron/data chipiron/syzygy-tables chipiron/requirements
+init: chipiron/data chipiron/syzygy-tables chipiron/requirements
 
 chipiron/requirements:
 	python3 -m pip install --no-cache-dir -r  requirements.txt

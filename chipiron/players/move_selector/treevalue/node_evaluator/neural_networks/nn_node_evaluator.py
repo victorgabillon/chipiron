@@ -53,12 +53,16 @@ class NNNodeEvaluator(NodeEvaluator):
         node_not_over: AlgorithmNode
 
         for index, node_not_over in enumerate(not_over_nodes):
-            assert node_not_over.board_representation is not None
-            list_of_tensors[index] = (
-                node_not_over.board_representation.get_evaluator_input(
-                    color_to_play=node_not_over.player_to_move
+            if node_not_over.board_representation is not None:
+                list_of_tensors[index] = (
+                    node_not_over.board_representation.get_evaluator_input(
+                        color_to_play=node_not_over.player_to_move
+                    )
                 )
-            )
+            else:
+                list_of_tensors[index] = self.nn_board_evaluator.board_to_input_convert(
+                    node_not_over.board
+                )
 
         input_layers = torch.stack(list_of_tensors, dim=0)
 
