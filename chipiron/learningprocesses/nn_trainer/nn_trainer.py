@@ -8,6 +8,7 @@ from typing import Callable
 import torch
 from torch.utils.data import DataLoader
 
+
 from chipiron.utils.chi_nn import ChiNN
 
 
@@ -17,11 +18,18 @@ def compute_loss(
     input_layer: torch.Tensor,
     target_value: torch.Tensor,
 ) -> torch.Tensor:
-    prediction_with_player_to_move_as_white: torch.Tensor = net(input_layer)
-    loss: torch.Tensor = criterion(
-        prediction_with_player_to_move_as_white, target_value
-    )
+    prediction: torch.Tensor = net(input_layer)
+    loss: torch.Tensor = criterion(prediction, target_value)
     return loss
+
+
+def check_model_device(model: ChiNN) -> str | torch.device | int:
+
+    # Check the device of the first parameter
+
+    first_param_device = next(model.parameters()).device
+
+    return first_param_device
 
 
 def compute_test_error_on_dataset(
@@ -33,13 +41,18 @@ def compute_test_error_on_dataset(
     sum_loss_test = 0.0
     count_test = 0
     loss_test: torch.Tensor
+    device = check_model_device(net)
     for i in range(number_of_tests):
         sample_batched_test = next(iter(data_test))
+        input_layer, target_value = sample_batched_test[0].to(
+            device
+        ), sample_batched_test[1].to(device)
+
         loss_test = compute_loss(
             net=net,
             criterion=criterion,
-            input_layer=sample_batched_test[0],
-            target_value=sample_batched_test[1],
+            input_layer=input_layer,
+            target_value=target_value,
         )
         sum_loss_test += float(loss_test)
         count_test += 1
@@ -91,6 +104,10 @@ class NNPytorchTrainer:
         self.optimizer = optimizer
         self.scheduler = scheduler
 
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.net.to(self.device)
+        print(f"Model put to device {self.device}")
+
     @typing.no_type_check
     def train(
         self, input_layer: torch.Tensor, target_value: torch.Tensor
@@ -106,7 +123,13 @@ class NNPytorchTrainer:
             torch.Tensor: The loss value.
         """
         self.net.train()
+
+        # print("next(model.parameters()).is_cuda", next(self.net.parameters()).is_cuda)
         self.optimizer.zero_grad()
+        input_layer, target_value = input_layer.to(self.device), target_value.to(
+            self.device
+        )
+
         loss: torch.Tensor = compute_loss(
             net=self.net,
             criterion=self.criterion,
@@ -114,6 +137,9 @@ class NNPytorchTrainer:
             target_value=target_value,
         )
         loss.backward()
+        # print("debugrad" , self.net.board_embedding_table.grad )
+        # print("debugradddd" , self.net.blocks[0].ffwd.lin.weight.grad )
+
         self.optimizer.step()
         return loss
 
@@ -131,6 +157,9 @@ class NNPytorchTrainer:
             torch.Tensor: The loss value.
         """
         self.net.eval()
+        input_layer, target_value = input_layer.to(self.device), target_value.to(
+            self.device
+        )
         loss: torch.Tensor = compute_loss(
             net=self.net,
             criterion=self.criterion,
@@ -166,7 +195,7 @@ class NNPytorchTrainer:
 
     def compute_test_error_on_dataset(
         self, data_test: DataLoader[tuple[torch.Tensor, torch.Tensor]]
-    ) -> None:
+    ) -> float:
         """
         Computes the test error of the neural network model.
 
@@ -179,7 +208,8 @@ class NNPytorchTrainer:
         """
 
         self.net.eval()
-        compute_test_error_on_dataset(
+        test_error: float = compute_test_error_on_dataset(
             net=self.net, criterion=self.criterion, data_test=data_test
         )
         self.net.train()
+        return test_error

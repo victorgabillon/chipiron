@@ -12,8 +12,7 @@ import torch.optim as optim
 import yaml
 
 from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
-from chipiron.players.boardevaluators.neural_networks import NeuralNetBoardEvalArgs
-from chipiron.players.boardevaluators.neural_networks.NNModelType import NNModelType
+
 from chipiron.players.boardevaluators.neural_networks.factory import (
     get_nn_param_file_path_from,
     get_nn_architecture_file_path_from,
@@ -33,7 +32,6 @@ class NNTrainerArgs:
     Arguments for the NNTrainer class.
 
     Attributes:
-        neural_network (NeuralNetBoardEvalArgs): The arguments for the neural network.
         reuse_existing_trainer (bool): Whether to reuse an existing trainer.
         starting_lr (float): The starting learning rate.
         momentum_op (float): The momentum value.
@@ -47,7 +45,7 @@ class NNTrainerArgs:
     )
     nn_architecture_file_if_not_reusing_existing_one: path | None = None
     reuse_existing_model: bool = True
-    reuse_existing_trainer: bool = True
+    reuse_existing_trainer: bool = False
     starting_lr: float = 0.1
     momentum_op: float = 0.9
     scheduler_step_size: int = 1
@@ -212,7 +210,6 @@ def safe_nn_trainer_save(nn_trainer: NNPytorchTrainer, nn_folder_path: path) -> 
 
     Args:
         nn_trainer (NNPytorchTrainer): The NNPytorchTrainer object containing the optimizer and scheduler to be saved.
-        args (NeuralNetBoardEvalArgs): The arguments specifying the folder paths and other parameters.
 
     Returns:
         None

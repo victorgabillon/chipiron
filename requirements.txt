@@ -9,6 +9,7 @@ sortedcollections>=2.1.0
 pandas>=2.2.1
 numpy>=1.26.0
 torch>=2.2.1
+torchinfo
 numba>=0.59.0rc1
 graphviz>=0.20.1
 dacite >= 1.8.1
@@ -16,6 +17,7 @@ customtkinter
 pyarrow
 shakmaty_python_binding >=0.1.5
 gprof2dot
+mlflow
 
 
 # for the web app

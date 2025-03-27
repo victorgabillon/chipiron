@@ -9,6 +9,7 @@ class PlayerConfigFile(str, Enum):
     CommandLineHuman = "Command_Line_Human"
     Sequool = "Sequool"
     RecurZipfBase3 = "RecurZipfBase3"
+    RecurZipfBase4 = "RecurZipfBase4"
     UniformDepth = "UniformDepth"
     UniformDepth2 = "UniformDepth2"
     UniformDepth3 = "UniformDepth3"

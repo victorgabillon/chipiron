@@ -13,29 +13,12 @@ from chipiron.learningprocesses.nn_trainer.nn_trainer import (
     compute_test_error_on_dataset,
 )
 from chipiron.players.boardevaluators.datasets.datasets import FenAndValueDataSet
+from chipiron.players.boardevaluators.neural_networks import NNBoardEvaluator
 from chipiron.players.boardevaluators.neural_networks.factory import (
-    create_nn_from_folder_path_and_existing_model,
     get_nn_param_file_path_from,
-    get_architecture_args_from_folder,
-)
-from chipiron.players.boardevaluators.neural_networks.input_converters.TensorRepresentationType import (
-    InternalTensorRepresentationType,
-    get_default_internal_representation,
-)
-from chipiron.players.boardevaluators.neural_networks.input_converters.factory import (
-    RepresentationFactory,
-)
-from chipiron.players.boardevaluators.neural_networks.input_converters.representation_364_bti import (
-    RepresentationBTI,
-)
-from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
-    create_board_representation_factory,
-)
-from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
-    NeuralNetArchitectureArgs,
+    create_nn_board_eval_from_folder_path_and_existing_model,
 )
 from chipiron.utils import path
-from chipiron.utils.chi_nn import ChiNN
 
 
 @dataclass
@@ -134,49 +117,32 @@ def evaluate_models(
 
             criterion = torch.nn.L1Loss()
 
-            if data_loader_stockfish_boards_test is None:
-                architecture_args: NeuralNetArchitectureArgs = (
-                    get_architecture_args_from_folder(folder_path=model_folder_path)
+            nn_board_evaluator: NNBoardEvaluator = (
+                create_nn_board_eval_from_folder_path_and_existing_model(
+                    path_to_nn_folder=model_folder_path
                 )
-                internal_tensor_representation_type: (
-                    InternalTensorRepresentationType
-                ) = get_default_internal_representation(
-                    tensor_representation_type=architecture_args.tensor_representation_type
-                )
-                board_representation_factory: RepresentationFactory[Any] | None = (
-                    create_board_representation_factory(
-                        board_representation_factory_type=internal_tensor_representation_type
-                    )
-                )
-
-                assert board_representation_factory is not None
-                board_to_input = RepresentationBTI(
-                    representation_factory=board_representation_factory
-                )
-
-                stockfish_boards_test = FenAndValueDataSet(
-                    file_name=dataset_file_name,
-                    preprocessing=False,
-                    transform_board_function=board_to_input.convert,
-                    transform_value_function="stockfish",
-                )
-
-                stockfish_boards_test.load()
-
-                data_loader_stockfish_boards_test = DataLoader(
-                    stockfish_boards_test,
-                    batch_size=10000,
-                    shuffle=False,
-                    num_workers=1,
-                )
-                print(f"Size of test set: {len(data_loader_stockfish_boards_test)}")
-
-            net: ChiNN
-            net, _ = create_nn_from_folder_path_and_existing_model(
-                folder_path=model_folder_path
             )
+
+            stockfish_boards_test = FenAndValueDataSet(
+                file_name=dataset_file_name,
+                preprocessing=False,
+                transform_board_function=nn_board_evaluator.board_to_input_convert,
+                transform_dataset_value_to_white_value_function="stockfish",
+                transform_white_value_to_model_output_function=nn_board_evaluator.output_and_value_converter.from_value_white_to_model_output,
+            )
+
+            stockfish_boards_test.load()
+
+            data_loader_stockfish_boards_test = DataLoader(
+                stockfish_boards_test,
+                batch_size=10000,
+                shuffle=False,
+                num_workers=1,
+            )
+            print(f"Size of test set: {len(data_loader_stockfish_boards_test)}")
+
             eval = compute_test_error_on_dataset(
-                net=net,
+                net=nn_board_evaluator.net,
                 criterion=criterion,
                 data_test=data_loader_stockfish_boards_test,
                 number_of_tests=len(data_loader_stockfish_boards_test),
@@ -205,7 +171,7 @@ def evaluate_models(
 if __name__ == "__main__":
     folders_of_models_to_evaluate_: list[path] = [
         "data/players/board_evaluators/nn_pytorch/nn_pp2d2_2_prelu/param_prelu",
-        "chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/test_to_keep/",
+        "data/players/board_evaluators/nn_pytorch/nn_p1",
     ]
 
     evaluate_models(folders_of_models_to_evaluate=folders_of_models_to_evaluate_)

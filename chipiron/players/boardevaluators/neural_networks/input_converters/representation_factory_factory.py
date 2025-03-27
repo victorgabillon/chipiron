@@ -9,17 +9,17 @@ from .rep_364_bug import create_from_board as create_from_board_364_bug
 from .rep_364_bug import (
     create_from_board_and_from_parent as create_from_board_and_from_parent_364_bug,
 )
-from .TensorRepresentationType import InternalTensorRepresentationType
+from .ModelInputRepresentationType import InternalTensorRepresentationType
 
 
 def create_board_representation_factory(
-    board_representation_factory_type: InternalTensorRepresentationType,
+    internal_tensor_representation_type: InternalTensorRepresentationType,
 ) -> RepresentationFactory[Any] | None:
     """
     Create a board representation based on the given string.
 
     Args:
-        board_representation_factory_str (str): The string representing the board representation.
+        internal_tensor_representation_type (InternalTensorRepresentationType): The string representing the board representation.
 
     Returns:
         Representation364Factory | None: The created board representation object, or None if the string is 'no'.
@@ -29,7 +29,7 @@ def create_board_representation_factory(
 
     """
     board_representation_factory: RepresentationFactory[Any] | None
-    match board_representation_factory_type:
+    match internal_tensor_representation_type:
         case InternalTensorRepresentationType.BUG364:
             board_representation_factory = RepresentationFactory(
                 create_from_board=create_from_board_364_bug,
