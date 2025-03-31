@@ -9,7 +9,6 @@ import chipiron.players.boardevaluators.basic_evaluation as basic_evaluation
 from chipiron.players.boardevaluators.neural_networks.factory import (
     create_nn_board_eval_from_folder_path_and_existing_model,
 )
-
 from chipiron.players.boardevaluators.neural_networks.nn_board_evaluator import (
     NNBoardEvaluator,
 )

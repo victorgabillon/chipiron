@@ -11,6 +11,7 @@ from chipiron.players.move_selector.treevalue.node_evaluator.all_node_evaluators
     NodeEvaluatorTypes,
 )
 from chipiron.utils import path
+
 from ..node_evaluator_args import NodeEvaluatorArgs
 
 

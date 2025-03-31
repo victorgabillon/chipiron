@@ -1,13 +1,12 @@
 import chess
+import torch
 
 from chipiron.environments.chess.board import create_board
 from chipiron.environments.chess.board.iboard import PieceMap
-from chipiron.environments.chess.board.utils import FenPlusHistory
+from chipiron.environments.chess.board.utils import FenPlusHistory, square_rotate
 from chipiron.players.boardevaluators.neural_networks.models.tranformer_one import (
     TransformerArgs,
 )
-import torch
-from chipiron.environments.chess.board.utils import square_rotate
 
 
 def build_transformer_input(
