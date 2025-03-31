@@ -1,7 +1,8 @@
-from dataclasses import asdict, dataclass, field
 import os
 import time
+from dataclasses import asdict, dataclass, field
 
+import mlflow
 from torchinfo import summary
 
 import chipiron
@@ -15,8 +16,6 @@ from chipiron.players.boardevaluators.neural_networks.nn_board_evaluator import 
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.chi_nn import ChiNN
-
-import mlflow
 
 
 @dataclass

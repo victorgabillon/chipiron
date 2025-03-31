@@ -8,7 +8,6 @@ from typing import Callable
 import torch
 from torch.utils.data import DataLoader
 
-
 from chipiron.utils.chi_nn import ChiNN
 
 

@@ -16,6 +16,7 @@ from typing import Any, Protocol
 import chipiron.environments.chess.board as boards
 from chipiron.environments.chess.board.iboard import IBoard
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
+
 from .board_representation import BoardRepresentation
 
 

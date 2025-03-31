@@ -17,6 +17,7 @@ from chipiron.players.boardevaluators.stockfish_board_evaluator import (
     StockfishBoardEvalArgs,
     StockfishBoardEvaluator,
 )
+
 from .board_evaluator import (
     BoardEvaluator,
     GameBoardEvaluator,
