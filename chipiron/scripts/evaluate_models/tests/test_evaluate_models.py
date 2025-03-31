@@ -3,7 +3,6 @@ from chipiron.utils import path
 
 test_folders_of_models_to_evaluate: list[path] = [
     "data/players/board_evaluators/nn_pytorch/nn_pp2d2_2_prelu/param_prelu",
-    "chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/test_to_keep/",
 ]
 
 
