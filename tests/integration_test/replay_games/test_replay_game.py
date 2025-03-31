@@ -14,7 +14,7 @@ configs_base = [
 ]
 
 
-def test_replay_match(configs=configs_base):
+def test_replay_match(configs=configs_base) -> None:
     for config in configs:
         print(f"Running the SCRIPT with config {config}")
         script_object: scripts.IScript = create_script(

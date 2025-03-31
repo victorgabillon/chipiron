@@ -62,9 +62,9 @@ def zipf_picks(
         return best_rank
 
 
-def zipf_picks_random[
-    T
-](ordered_list_elements: list[T], random_generator: random.Random) -> T:
+def zipf_picks_random[T](
+    ordered_list_elements: list[T], random_generator: random.Random
+) -> T:
     """
     Selects a random element from an ordered list based on Zipf distribution.
 

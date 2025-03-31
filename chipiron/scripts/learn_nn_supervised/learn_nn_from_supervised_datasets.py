@@ -144,10 +144,11 @@ class LearnNNScript:
         chipiron.set_seeds(seed=self.args.base_script_args.seed)
 
         if self.args.nn_trainer_args.reuse_existing_model:
-            self.nn_board_evaluator = create_nn_board_eval_from_folder_path_and_existing_model(
-                path_to_nn_folder=self.args.nn_trainer_args.neural_network_folder_path
+            self.nn_board_evaluator, self.nn_architecture_args = (
+                create_nn_board_eval_from_folder_path_and_existing_model(
+                    path_to_nn_folder=self.args.nn_trainer_args.neural_network_folder_path
+                )
             )
-
         else:
             assert (
                 self.args.nn_trainer_args.nn_architecture_file_if_not_reusing_existing_one

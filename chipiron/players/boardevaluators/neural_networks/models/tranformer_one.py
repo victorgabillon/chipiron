@@ -150,6 +150,8 @@ class TransformerOne(ChiNN):
         # self.ln_f = nn.LayerNorm(n_embd)  # final layer norm
         self.lm_head = nn.Linear(number_parallel_tracks * n_embd, 1)
 
+        self.tan_h = nn.Tanh()
+
         # better init, not covered in the original GPT video, but important, will cover in followup video
         self.apply(self._init_weights)
 
@@ -168,9 +170,12 @@ class TransformerOne(ChiNN):
         # z = self.blocks(y)  # (B,T,C)
         # w = self.ln_f(z)  # (B,T,C)
         # print('debug w', z)
-        logits: torch.Tensor = self.lm_head(y.flatten(start_dim=1))  # (B,T,vocab_size)
+        x: torch.Tensor = self.lm_head(y.flatten(start_dim=1))  # (B,T,vocab_size)
         # print("z",z,"oo", z.sum())
-        return logits
+
+        x = self.tan_h(x)
+
+        return x
 
     def compute_representation(
         self, node: Any, parent_node: Any, board_modifications: Any

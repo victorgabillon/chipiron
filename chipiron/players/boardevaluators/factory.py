@@ -103,8 +103,10 @@ def create_board_evaluator(
         case BasicEvaluationArgs():
             board_evaluator = BasicEvaluation()
         case NeuralNetBoardEvalArgs():
-            board_evaluator = create_nn_board_eval_from_folder_path_and_existing_model(
-                path_to_nn_folder=args_board_evaluator.nn_param_folder_name,
+            board_evaluator, _ = (
+                create_nn_board_eval_from_folder_path_and_existing_model(
+                    path_to_nn_folder=args_board_evaluator.nn_param_folder_name,
+                )
             )
 
         #  case TableBaseArgs():

@@ -63,9 +63,7 @@ class Script:
         self.profile = None
         self.args: IsDataclass | None = None
 
-    def initiate[
-        _T_co: IsDataclass
-    ](
+    def initiate[_T_co: IsDataclass](
         self,
         args_dataclass_name: type[_T_co],
         experiment_output_folder: str | None = None,

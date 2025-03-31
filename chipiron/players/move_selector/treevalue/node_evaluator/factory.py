@@ -62,7 +62,8 @@ def create_node_evaluator(
             assert isinstance(
                 arg_board_evaluator, neural_networks.NeuralNetNodeEvalArgs
             )
-            board_evaluator_nn: NNBoardEvaluator = (
+            board_evaluator_nn: NNBoardEvaluator
+            board_evaluator_nn, _ = (
                 create_nn_board_eval_from_folder_path_and_existing_model(
                     path_to_nn_folder=arg_board_evaluator.path_to_nn_folder,
                 )
