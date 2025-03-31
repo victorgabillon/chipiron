@@ -418,9 +418,9 @@ class NodeMinmaxEvaluation:
         """
         return value_1 == value_2
 
-    def are_considered_equal_values[
-        T
-    ](self, value_1: tuple[T], value_2: tuple[T]) -> bool:
+    def are_considered_equal_values[T](
+        self, value_1: tuple[T], value_2: tuple[T]
+    ) -> bool:
         """
         Check if two values are considered equal.
 

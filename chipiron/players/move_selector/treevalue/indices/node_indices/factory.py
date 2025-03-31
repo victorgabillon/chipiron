@@ -1,16 +1,16 @@
 """
-    This module provides functions for creating exploration index data for tree nodes.
+This module provides functions for creating exploration index data for tree nodes.
 
-    The main function in this module is `create_exploration_index_data`, which takes a tree node and optional parameters
-    to create the exploration index data for that node.
+The main function in this module is `create_exploration_index_data`, which takes a tree node and optional parameters
+to create the exploration index data for that node.
 
-    The module also defines the `ExplorationIndexDataFactory` type, which is a callable type for creating exploration index data.
+The module also defines the `ExplorationIndexDataFactory` type, which is a callable type for creating exploration index data.
 
-    Functions:
-    - create_exploration_index_data: Creates exploration index data for a given tree node.
+Functions:
+- create_exploration_index_data: Creates exploration index data for a given tree node.
 
-    Types:
-    - ExplorationIndexDataFactory: A callable type for creating exploration index data.
+Types:
+- ExplorationIndexDataFactory: A callable type for creating exploration index data.
 """
 
 from dataclasses import make_dataclass

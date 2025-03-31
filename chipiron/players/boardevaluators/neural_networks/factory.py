@@ -104,7 +104,7 @@ def create_nn(nn_type: NNModelType) -> ChiNN:
         case NNModelType.NetPP2D2_2_PRELU:
             net = NetPP2D2_2_PRELU()
         case NNModelType.TransformerOne:
-            net = TransformerOne(n_embd=3, n_head=1, n_layer=1, dropout_ratio=0.0)
+            net = TransformerOne(n_embd=1, n_head=1, n_layer=1, dropout_ratio=0.0)
         case other:
             sys.exit(f"Create NN: can not find {other} in file {__name__}")
     return net
@@ -153,7 +153,7 @@ def create_nn_from_folder_path_and_existing_model(
 
 def create_nn_board_eval_from_folder_path_and_existing_model(
     path_to_nn_folder: path,
-) -> NNBoardEvaluator:
+) -> tuple[NNBoardEvaluator, NeuralNetArchitectureArgs]:
     """
     Create a neural network board evaluator.
 
@@ -177,11 +177,12 @@ def create_nn_board_eval_from_folder_path_and_existing_model(
         model_output_type=nn_architecture_args.model_output_type
     )
 
-    return NNBoardEvaluator(
+    nn_board_evaluator = NNBoardEvaluator(
         net=net,
         output_and_value_converter=output_and_value_converter,
         board_to_input_convert=board_to_input_convert,
     )
+    return nn_board_evaluator, nn_architecture_args
 
 
 def create_nn_board_eval_from_architecture_args(

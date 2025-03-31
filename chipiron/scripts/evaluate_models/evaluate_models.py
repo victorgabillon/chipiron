@@ -117,7 +117,8 @@ def evaluate_models(
 
             criterion = torch.nn.L1Loss()
 
-            nn_board_evaluator: NNBoardEvaluator = (
+            nn_board_evaluator: NNBoardEvaluator
+            nn_board_evaluator, _ = (
                 create_nn_board_eval_from_folder_path_and_existing_model(
                     path_to_nn_folder=model_folder_path
                 )

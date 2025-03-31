@@ -1,4 +1,4 @@
 model_input_representation_type: piece_map
 model_output_type:
-  point_of_view: white
+  point_of_view: player_to_move
 model_type: transformerone

@@ -167,9 +167,7 @@ def softmax(x: list[float], temperature: float) -> nptyping.NDArray[np.float64]:
 
 
 @typing.dataclass_transform()
-def fetch_args_modify_and_convert[
-    _T_co: IsDataclass
-](
+def fetch_args_modify_and_convert[_T_co: IsDataclass](
     path_to_file: path,  # path to a yaml file
     dataclass_name: type[
         _T_co

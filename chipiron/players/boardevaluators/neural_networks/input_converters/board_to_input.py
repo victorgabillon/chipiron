@@ -103,7 +103,11 @@ def create_board_to_input(
         case ModelInputRepresentationType.PIECE_MAP:
 
             def board_to_input_convert(board: IBoard) -> torch.Tensor:
-                return build_transformer_input(board.piece_map(), TransformerArgs())
+                return build_transformer_input(
+                    piece_map=board.piece_map(),
+                    board_turn=board.turn,
+                    transformer_args=TransformerArgs(),
+                )
 
         case ModelInputRepresentationType.PIECE_DIFFERENCE:
 

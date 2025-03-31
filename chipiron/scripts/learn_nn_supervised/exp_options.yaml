@@ -1,8 +1,8 @@
 nn_trainer_args:
-  neural_network_folder_path: 'chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/nn_p2'
-  reuse_existing_model:  False
+  neural_network_folder_path: 'chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/nn_pp2'
+  reuse_existing_model:  True
   reuse_existing_trainer:  False
-  nn_architecture_file_if_not_reusing_existing_one: 'chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/nn_p2/architecture.yaml'
+  nn_architecture_file_if_not_reusing_existing_one: 'chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/architectures/architecture_pp2.yaml'
   starting_lr: .001
   momentum_op: .9
   scheduler_step_size: 1
