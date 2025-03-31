@@ -2,8 +2,7 @@
 Module for the BoardToInput protocol and BoardToInputFunction protocol.
 """
 
-from typing import Any
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 import torch
 
@@ -13,15 +12,15 @@ from chipiron.players.boardevaluators.neural_networks.board_to_tensor import (
     transform_board_pieces_one_side,
     transform_board_pieces_two_sides,
 )
-from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
-    ModelInputRepresentationType,
-    InternalTensorRepresentationType,
-)
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_transformer_input import (
     build_transformer_input,
 )
 from chipiron.players.boardevaluators.neural_networks.input_converters.factory import (
     RepresentationFactory,
+)
+from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
+    InternalTensorRepresentationType,
+    ModelInputRepresentationType,
 )
 from chipiron.players.boardevaluators.neural_networks.input_converters.representation_364_bti import (
     RepresentationBTI,

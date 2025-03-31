@@ -4,7 +4,7 @@ Module to create and save neural network trainers and their parameters
 
 import os.path
 import pickle
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
 
 import torch
@@ -12,10 +12,9 @@ import torch.optim as optim
 import yaml
 
 from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
-
 from chipiron.players.boardevaluators.neural_networks.factory import (
-    get_nn_param_file_path_from,
     get_nn_architecture_file_path_from,
+    get_nn_param_file_path_from,
 )
 from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
     NeuralNetArchitectureArgs,

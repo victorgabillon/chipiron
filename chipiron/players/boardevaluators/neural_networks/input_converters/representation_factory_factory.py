@@ -1,6 +1,7 @@
 from typing import Any
 
 from .factory import RepresentationFactory
+from .ModelInputRepresentationType import InternalTensorRepresentationType
 from .rep_364 import create_from_board as create_from_board_364_no_bug
 from .rep_364 import (
     create_from_board_and_from_parent as create_from_board_and_from_parent_364_no_bug,
@@ -9,7 +10,6 @@ from .rep_364_bug import create_from_board as create_from_board_364_bug
 from .rep_364_bug import (
     create_from_board_and_from_parent as create_from_board_and_from_parent_364_bug,
 )
-from .ModelInputRepresentationType import InternalTensorRepresentationType
 
 
 def create_board_representation_factory(
