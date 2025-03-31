@@ -5,9 +5,9 @@ from chipiron.players.boardevaluators.neural_networks.output_converters.model_ou
     ModelOutputType,
 )
 from chipiron.players.boardevaluators.neural_networks.output_converters.output_value_converter import (
+    IdentityConverter,
     OutputValueConverter,
     PlayerToMoveValueToValueWhiteConverter,
-    IdentityConverter,
 )
 
 

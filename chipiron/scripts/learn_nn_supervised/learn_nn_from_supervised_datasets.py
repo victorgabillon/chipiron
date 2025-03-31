@@ -18,12 +18,12 @@ Example:
 import copy
 import os
 import time
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from typing import Any
 
 import mlflow
 import torch
-from mlflow.models.signature import infer_signature, ModelSignature
+from mlflow.models.signature import ModelSignature, infer_signature
 from torch.utils.data import DataLoader
 from torchinfo import summary
 
@@ -31,17 +31,17 @@ import chipiron.utils.path_variables
 from chipiron.learningprocesses.nn_trainer.factory import (
     NNTrainerArgs,
     create_nn_trainer,
+    safe_nn_architecture_save,
     safe_nn_param_save,
     safe_nn_trainer_save,
-    safe_nn_architecture_save,
 )
 from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
 from chipiron.players.boardevaluators.datasets.datasets import FenAndValueDataSet
 from chipiron.players.boardevaluators.neural_networks import NNBoardEvaluator
 from chipiron.players.boardevaluators.neural_networks.factory import (
-    get_architecture_args_from_file,
-    create_nn_board_eval_from_folder_path_and_existing_model,
     create_nn_board_eval_from_architecture_args,
+    create_nn_board_eval_from_folder_path_and_existing_model,
+    get_architecture_args_from_file,
 )
 from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
     NeuralNetArchitectureArgs,

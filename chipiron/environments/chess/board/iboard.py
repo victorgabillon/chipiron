@@ -9,6 +9,7 @@ import yaml
 from chipiron.environments.chess.board.board_modification import BoardModificationP
 from chipiron.environments.chess.move import moveUci
 from chipiron.environments.chess.move.imove import moveKey
+
 from .utils import FenPlusHistory, FenPlusMoveHistory, fen
 
 # identifier that should be unique to any position

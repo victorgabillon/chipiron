@@ -1,7 +1,7 @@
 import datetime
 import os
 import time
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from typing import Any
 
 import dacite
@@ -15,8 +15,8 @@ from chipiron.learningprocesses.nn_trainer.nn_trainer import (
 from chipiron.players.boardevaluators.datasets.datasets import FenAndValueDataSet
 from chipiron.players.boardevaluators.neural_networks import NNBoardEvaluator
 from chipiron.players.boardevaluators.neural_networks.factory import (
-    get_nn_param_file_path_from,
     create_nn_board_eval_from_folder_path_and_existing_model,
+    get_nn_param_file_path_from,
 )
 from chipiron.utils import path
 
