@@ -30,6 +30,7 @@ from chipiron.players.boardevaluators.neural_networks.models.nn_pp2d2_2prelu imp
 from chipiron.players.boardevaluators.neural_networks.models.nn_pp2d2_2rrelu import (
     NetPP2D2_2_RRELU,
 )
+from chipiron.players.boardevaluators.neural_networks.models.nn_pp2d3_prelu import NetPP2D3_PRELU
 from chipiron.players.boardevaluators.neural_networks.models.tranformer_one import (
     TransformerOne,
 )
@@ -104,7 +105,9 @@ def create_nn(nn_type: NNModelType) -> ChiNN:
         case NNModelType.NetPP2D2_2_PRELU:
             net = NetPP2D2_2_PRELU()
         case NNModelType.TransformerOne:
-            net = TransformerOne(n_embd=1, n_head=1, n_layer=1, dropout_ratio=0.0)
+            net = TransformerOne(n_embd=27, n_head=3, n_layer=2, dropout_ratio=0.0)
+        case NNModelType.NetPP2D3:
+            net = NetPP2D3_PRELU()
         case other:
             sys.exit(f"Create NN: can not find {other} in file {__name__}")
     return net

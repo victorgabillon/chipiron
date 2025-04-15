@@ -65,13 +65,14 @@ class MultiHeadAttention(nn.Module):
         self, num_heads: int, head_size: int, dropout_ratio: float, n_embd: int
     ) -> None:
         super().__init__()
+        print("debug head", num_heads)
         self.heads = nn.ModuleList(
             [
                 Head(head_size=head_size, n_embd=n_embd, dropout_ratio=dropout_ratio)
                 for _ in range(num_heads)
             ]
-        )
-        self.proj = nn.Linear(head_size * num_heads, n_embd)
+        ) # (B, T, hs) * num_heads
+        self.proj = nn.Linear(head_size * num_heads, n_embd) # (B, T, hs) * num_heads -> (B, T, n_embd)
         self.dropout = nn.Dropout(dropout_ratio)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -115,8 +116,8 @@ class Block(nn.Module):
         head_size = n_embd // n_head
         self.sa = MultiHeadAttention(
             n_head, head_size, dropout_ratio=dropout_ratio, n_embd=n_embd
-        )
-        self.ffwd = FeedFoward(n_embd, dropout_ratio=dropout_ratio)
+        ) # (B, T, n_embd) -> (B, T, n_embd)
+        self.ffwd = FeedFoward(n_embd, dropout_ratio=dropout_ratio) # (B, T, n_embd) -> (B, T, n_embd)
         self.ln1 = nn.LayerNorm(n_embd)
         self.ln2 = nn.LayerNorm(n_embd)
 
@@ -141,13 +142,13 @@ class TransformerOne(ChiNN):
             torch.randn(len_all_possible_tensor_input, n_embd)
         )
 
-        # self.blocks = nn.Sequential(
-        #    *[
-        #        Block(n_embd, n_head=n_head, dropout_ratio=dropout_ratio)
-        #        for _ in range(n_layer)
-        #    ]
-        # )
-        # self.ln_f = nn.LayerNorm(n_embd)  # final layer norm
+        self.blocks = nn.Sequential(
+            *[
+                Block(n_embd, n_head=n_head, dropout_ratio=dropout_ratio)
+                for _ in range(n_layer)
+            ]
+        )
+        self.ln_f = nn.LayerNorm(n_embd)  # final layer norm
         self.lm_head = nn.Linear(number_parallel_tracks * n_embd, 1)
 
         self.tan_h = nn.Tanh()
@@ -167,10 +168,10 @@ class TransformerOne(ChiNN):
         y = self.board_embedding_table[
             indices, :
         ]  # (B,len_all_possible_tensor_input,n_embd)
-        # z = self.blocks(y)  # (B,T,C)
+        z = self.blocks(y)  # (B,T,C)
         # w = self.ln_f(z)  # (B,T,C)
         # print('debug w', z)
-        x: torch.Tensor = self.lm_head(y.flatten(start_dim=1))  # (B,T,vocab_size)
+        x: torch.Tensor = self.lm_head(z.flatten(start_dim=1))  # (B,T,vocab_size)
         # print("z",z,"oo", z.sum())
 
         x = self.tan_h(x)

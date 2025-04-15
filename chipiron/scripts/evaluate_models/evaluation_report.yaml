@@ -1,6 +1,16 @@
-chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/test_to_keep/:
-  evaluation: 0.6047186130891403
-  time_of_evaluation: 2025-03-26 10:49:51.248699
+chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/transformerone:
+  evaluation: 0.18299015520566336
+  number_of_model_parameters: 42499
+  time_of_evaluation: 2025-04-07 04:08:48.466839
+data/players/board_evaluators/nn_pytorch/nn_p1:
+  evaluation: 0.31310745128451917
+  number_of_model_parameters: 6
+  time_of_evaluation: 2025-04-01 14:51:59.951094
+data/players/board_evaluators/nn_pytorch/nn_pp2:
+  evaluation: 0.2491417576750346
+  number_of_model_parameters: 773
+  time_of_evaluation: 2025-04-01 14:52:26.689461
 data/players/board_evaluators/nn_pytorch/nn_pp2d2_2_prelu/param_prelu:
-  evaluation: 0.21912601542822968
-  time_of_evaluation: 2025-03-26 10:49:51.082617
+  evaluation: 0.2026243692439224
+  number_of_model_parameters: 15482
+  time_of_evaluation: 2025-04-01 14:51:44.943400

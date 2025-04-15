@@ -12,3 +12,4 @@ class NNModelType(str, Enum):
     NetPP2D2_2_RRELU = "pp2d2_2_rrelu"
     NetPP2D2_2_PRELU = "pp2d2_2_prelu"
     TransformerOne = "transformerone"
+    NetPP2D3 = "pp2d3_prelu"

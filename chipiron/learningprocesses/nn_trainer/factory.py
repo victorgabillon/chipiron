@@ -51,6 +51,16 @@ class NNTrainerArgs:
     scheduler_gamma: float = 0.5
     saving_intermediate_copy: bool = True
 
+    batch_size_train: int = 32
+    batch_size_test: int = 10
+    saving_interval: int = 1000
+    saving_intermediate_copy_interval: int = 10000
+    min_interval_lr_change: int = 1000000
+    min_lr: float = 0.001
+
+    epochs_number: int=  100
+
+
     def __post_init__(self) -> None:
         if not self.reuse_existing_model:
             if self.nn_architecture_file_if_not_reusing_existing_one is None:

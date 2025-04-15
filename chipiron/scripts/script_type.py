@@ -13,6 +13,7 @@ class ScriptType(str, Enum):
     OneMatch = "one_match"
     League = "league"
     LearnNN = "learn_nn"
+    LearnNNFromScratch = "learn_nn_from_scratch"
     BaseTreeExploration = "base_tree_exploration"
     TreeVisualization = "tree_visualization"
     ReplayMatch = "replay_match"

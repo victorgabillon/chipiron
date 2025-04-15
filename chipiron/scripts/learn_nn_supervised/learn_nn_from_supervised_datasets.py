@@ -36,7 +36,7 @@ from chipiron.learningprocesses.nn_trainer.factory import (
     safe_nn_trainer_save,
 )
 from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
-from chipiron.players.boardevaluators.datasets.datasets import FenAndValueDataSet
+from chipiron.players.boardevaluators.datasets.datasets import FenAndValueDataSet, process_stockfish_value, DataSetArgs
 from chipiron.players.boardevaluators.neural_networks import NNBoardEvaluator
 from chipiron.players.boardevaluators.neural_networks.factory import (
     create_nn_board_eval_from_architecture_args,
@@ -51,6 +51,10 @@ from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.chi_nn import ChiNN
 
 
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
 @dataclass
 class LearnNNScriptArgs:
     """
@@ -58,33 +62,19 @@ class LearnNNScriptArgs:
 
     Attributes:
         nn_trainer_args (NNTrainerArgs): The arguments for the NNTrainer.
-        stockfish_boards_train_file_name (str): The file name for the training dataset.
-        stockfish_boards_test_file_name (str): The file name for the test dataset.
-        preprocessing_data_set (bool): Whether to preprocess the dataset.
-        batch_size_train (int): The batch size for training.
-        batch_size_test (int): The batch size for testing.
-        saving_interval (int): The interval for saving the model.
-        saving_intermediate_copy_interval (int): The interval for saving intermediate copies of the model.
-        min_interval_lr_change (int): The minimum interval for changing the learning rate.
-        min_lr (float): The minimum learning rate.
+
     """
 
     base_script_args: BaseScriptArgs = field(default_factory=BaseScriptArgs)
     nn_trainer_args: NNTrainerArgs = field(default_factory=NNTrainerArgs)
-    stockfish_boards_train_file_name: str = (
-        "data/datasets/goodgames_plusvariation_stockfish_eval_train_t.1_merge.pi"
+    dataset_args: DataSetArgs = field(
+        default_factory=lambda: DataSetArgs(
+            train_file_name="data/datasets/goodgames_plusvariation_stockfish_eval_train_t.1_merge.pi",
+            test_file_name="data/datasets/goodgames_plusvariation_stockfish_eval_test",
+            preprocessing_data_set=False
+        )
     )
-    stockfish_boards_test_file_name: str = (
-        "data/datasets/goodgames_plusvariation_stockfish_eval_test"
-    )
-    preprocessing_data_set: bool = False
-    batch_size_train: int = 32
-    batch_size_test: int = 10
-    saving_interval: int = 1000
-    saving_intermediate_copy_interval: int = 10000
-    min_interval_lr_change: int = 1000000
-    min_lr: float = 0.001
-    epochs_number: int = 1
+
     test: bool = False  # hack to test fast, change at some point
 
 
@@ -116,8 +106,8 @@ class LearnNNScript:
     nn_architecture_args: NeuralNetArchitectureArgs
 
     def __init__(
-        self,
-        base_script: Script,
+            self,
+            base_script: Script,
     ) -> None:
         """
         Initializes the LearnNNFromSupervisedDatasets class.
@@ -151,8 +141,8 @@ class LearnNNScript:
             )
         else:
             assert (
-                self.args.nn_trainer_args.nn_architecture_file_if_not_reusing_existing_one
-                is not None
+                    self.args.nn_trainer_args.nn_architecture_file_if_not_reusing_existing_one
+                    is not None
             )
             self.nn_architecture_args: NeuralNetArchitectureArgs = (
                 get_architecture_args_from_file(
@@ -168,18 +158,18 @@ class LearnNNScript:
         )
 
         self.stockfish_boards_train = FenAndValueDataSet(
-            file_name=self.args.stockfish_boards_train_file_name,
-            preprocessing=self.args.preprocessing_data_set,
+            file_name=self.args.dataset_args.train_file_name,
+            preprocessing=self.args.dataset_args.preprocessing_data_set,
             transform_board_function=self.nn_board_evaluator.board_to_input_convert,
-            transform_dataset_value_to_white_value_function="stockfish",
+            transform_dataset_value_to_white_value_function=process_stockfish_value,
             transform_white_value_to_model_output_function=self.nn_board_evaluator.output_and_value_converter.from_value_white_to_model_output,
         )
 
         self.stockfish_boards_test = FenAndValueDataSet(
-            file_name=self.args.stockfish_boards_test_file_name,
-            preprocessing=self.args.preprocessing_data_set,
+            file_name=self.args.dataset_args.test_file_name,
+            preprocessing=self.args.dataset_args.preprocessing_data_set,
             transform_board_function=self.nn_board_evaluator.board_to_input_convert,
-            transform_dataset_value_to_white_value_function="stockfish",
+            transform_dataset_value_to_white_value_function=process_stockfish_value,
             transform_white_value_to_model_output_function=self.nn_board_evaluator.output_and_value_converter.from_value_white_to_model_output,
         )
 
@@ -190,14 +180,14 @@ class LearnNNScript:
 
         self.data_loader_stockfish_boards_train = DataLoader(
             self.stockfish_boards_train,
-            batch_size=self.args.batch_size_train,
+            batch_size=self.args.nn_trainer_args.batch_size_train,
             shuffle=True,
             num_workers=1,
         )
 
         self.data_loader_stockfish_boards_test = DataLoader(
             self.stockfish_boards_test,
-            batch_size=self.args.batch_size_test,
+            batch_size=self.args.nn_trainer_args.batch_size_test,
             shuffle=True,
             num_workers=1,
         )
@@ -209,8 +199,11 @@ class LearnNNScript:
         else:
             mlflow.set_tracking_uri(uri=chipiron.utils.path_variables.ML_FLOW_URI_PATH)
 
+        number_of_model_parameters: int = count_parameters(self.nn_board_evaluator.net)
+        print(f"TOTAL PARAM: {number_of_model_parameters}")
+
     def print_and_log_metrics(
-        self, count_train_step: int, training_loss: float, test_error: float
+            self, count_train_step: int, training_loss: float, test_error: float
     ) -> None:
         print(
             "count_train_step",
@@ -269,9 +262,11 @@ class LearnNNScript:
             sum_loss_train_print: float = 0.0
             previous_dict: Any | None = None
             previous_train_loss: float | None = None
-            for i in range(self.args.epochs_number):
+
+            i: int
+            for i in range(self.args.nn_trainer_args.epochs_number):
                 for i_batch, sample_batched in enumerate(
-                    self.data_loader_stockfish_boards_train
+                        self.data_loader_stockfish_boards_train
                 ):
 
                     # printing info to console
@@ -290,24 +285,24 @@ class LearnNNScript:
                         )
 
                     if (
-                        count_train_step % 2000 == 0
-                        and count_train_step > 0
-                        and self.args.test
+                            count_train_step % 2000 == 0
+                            and count_train_step > 0
+                            and self.args.test
                     ):
                         break
 
                     # every self.args['min_interval_lr_change'] steps we check for possibly decreasing the learning rate
                     if (
-                        count_train_step % self.args.min_interval_lr_change == 0
-                        and count_train_step > 0
+                            count_train_step % self.args.nn_trainer_args.min_interval_lr_change == 0
+                            and count_train_step > 0
                     ):
 
                         # condition to decrease the learning rate
                         if (
-                            previous_train_loss is not None
-                            and sum_loss_train > previous_train_loss
-                            and self.nn_trainer.scheduler.get_last_lr()[-1]
-                            > self.args.min_lr
+                                previous_train_loss is not None
+                                and sum_loss_train > previous_train_loss
+                                and self.nn_trainer.scheduler.get_last_lr()[-1]
+                                > self.args.nn_trainer_args.min_lr
                         ):
                             self.nn_trainer.scheduler.step()
                             print(
@@ -318,7 +313,7 @@ class LearnNNScript:
                         print("count_train_step", count_train_step)
                         print(
                             "training loss",
-                            sum_loss_train / self.args.min_interval_lr_change,
+                            sum_loss_train / self.args.nn_trainer_args.min_interval_lr_change,
                             sum_loss_train,
                         )
                         print("previous_train_loss", previous_train_loss)
@@ -354,7 +349,7 @@ class LearnNNScript:
                     )
 
     def saving_things_to_file(
-        self, count_train_step: int, X_train: torch.Tensor
+            self, count_train_step: int, X_train: torch.Tensor
     ) -> None:
         """
         Saves the neural network parameters and trainer to file.
@@ -365,7 +360,7 @@ class LearnNNScript:
         Returns:
             None
         """
-        if count_train_step % self.args.saving_interval == 0:
+        if count_train_step % self.args.nn_trainer_args.saving_interval == 0:
             safe_nn_param_save(
                 self.nn_board_evaluator.net,
                 self.args.nn_trainer_args.neural_network_folder_path,
@@ -395,8 +390,8 @@ class LearnNNScript:
             )
 
         if (
-            self.args.nn_trainer_args.saving_intermediate_copy
-            and count_train_step % self.args.saving_intermediate_copy_interval == 0
+                self.args.nn_trainer_args.saving_intermediate_copy
+                and count_train_step % self.args.nn_trainer_args.saving_intermediate_copy_interval == 0
         ):
             safe_nn_param_save(
                 self.nn_board_evaluator.net,

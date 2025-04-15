@@ -1,0 +1,4 @@
+model_type: pp2d3_prelu
+model_input_representation_type: 364_no_bug
+model_output_type:
+  point_of_view: player_to_move

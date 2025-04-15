@@ -1,22 +1,23 @@
 nn_trainer_args:
-  neural_network_folder_path: 'chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/nn_pp2'
+  neural_network_folder_path: 'chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/nn_pp2d3_prelu'
   reuse_existing_model:  True
   reuse_existing_trainer:  False
-  nn_architecture_file_if_not_reusing_existing_one: 'chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/architectures/architecture_pp2.yaml'
+  nn_architecture_file_if_not_reusing_existing_one: 'chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/nn_pp2d3_prelu/architecture_prelu.yaml'
   starting_lr: .001
   momentum_op: .9
   scheduler_step_size: 1
   scheduler_gamma: .5
   saving_intermediate_copy: True
-
-config_file_name: 'scripts/learn_nn_supervised/exp_options.yaml'
-stockfish_boards_train_file_name: 'data/datasets/goodgames_plusvariation_stockfish_eval_train_t.1_merge.pi'
-stockfish_boards_test_file_name: 'data/datasets/goodgames_plusvariation_stockfish_eval_test'
-preprocessing_data_set: False
-batch_size_train: 32
-batch_size_test: 10
-saving_interval: 1000
-saving_intermediate_copy_interval: 100000
-min_interval_lr_change: 100000
-min_lr: .00001
-epochs_number: 100
+  batch_size_train: 32
+  batch_size_test: 10
+  saving_interval: 1000
+  saving_intermediate_copy_interval: 100000
+  min_interval_lr_change: 100000
+  min_lr: .00001
+  epochs_number: 100
+dataset_args:
+  train_file_name: 'data/datasets/goodgames_plusvariation_stockfish_eval_train_t.1_merge.pi'
+  test_file_name: 'data/datasets/goodgames_plusvariation_stockfish_eval_test'
+  preprocessing_data_set: False
+base_script_args:
+  seed: 11

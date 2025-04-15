@@ -3,10 +3,16 @@ import time
 from dataclasses import asdict, dataclass, field
 
 import mlflow
+from torch.utils.data import DataLoader
 from torchinfo import summary
 
 import chipiron
 from chipiron.learningprocesses.nn_trainer.factory import NNTrainerArgs
+from chipiron.players import PlayerArgs
+from chipiron.players.boardevaluators.datasets.datasets import FenAndValueDataSet, DataSetArgs
+from chipiron.players.boardevaluators.neural_networks.factory import \
+    create_nn_board_eval_from_folder_path_and_existing_model, get_architecture_args_from_file, \
+    create_nn_board_eval_from_architecture_args
 from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
     NeuralNetArchitectureArgs,
 )
@@ -26,10 +32,17 @@ class LearnNNFromScratchScriptArgs:
 
     """
 
+    epochs_number_with_respect_to_evaluating_player: int
+    number_of_evaluating_player_per_loop: int
+    number_of_gradient_descent_per_loop: int
+    starting_boards_are_non_labelled: bool
+    test:bool
+
     base_script_args: BaseScriptArgs = field(default_factory=BaseScriptArgs)
     nn_trainer_args: NNTrainerArgs = field(default_factory=NNTrainerArgs)
+    dataset_args: DataSetArgs = field(default_factory=DataSetArgs)
+    evaluating_player_args: PlayerArgs = field(default_factory=PlayerArgs)
 
-    epochs_number: int = 1
 
 
 class LearnNNFromScratchScript:
@@ -62,8 +75,8 @@ class LearnNNFromScratchScript:
     nn_architecture_args: NeuralNetArchitectureArgs
 
     def __init__(
-        self,
-        base_script: Script,
+            self,
+            base_script: Script,
     ) -> None:
         """
         Initializes the LearnNNFromSupervisedDatasets class.
@@ -86,8 +99,64 @@ class LearnNNFromScratchScript:
             experiment_output_folder=self.base_experiment_output_folder,
         )
 
+
+        if self.args.nn_trainer_args.reuse_existing_model:
+            self.nn_board_evaluator, self.nn_architecture_args = (
+                create_nn_board_eval_from_folder_path_and_existing_model(
+                    path_to_nn_folder=self.args.nn_trainer_args.neural_network_folder_path
+                )
+            )
+        else:
+            assert (
+                    self.args.nn_trainer_args.nn_architecture_file_if_not_reusing_existing_one
+                    is not None
+            )
+            self.nn_architecture_args: NeuralNetArchitectureArgs = (
+                get_architecture_args_from_file(
+                    architecture_file_name=self.args.nn_trainer_args.nn_architecture_file_if_not_reusing_existing_one
+                )
+            )
+            self.nn_board_evaluator = create_nn_board_eval_from_architecture_args(
+                nn_architecture_args=self.nn_architecture_args
+            )
+
+
         # taking care of random
         chipiron.set_seeds(seed=self.args.base_script_args.seed)
+
+        if self.args.starting_boards_are_non_labelled:
+            transform_dataset_value_to_white_value_function = lambda _: 0
+        else:
+            transform_dataset_value_to_white_value_function = lambda row: row["value"]
+
+        print("zeez debug",self.args.dataset_args.test_file_name, self.args.dataset_args.train_file_name)
+        self.boards_dataset = FenAndValueDataSet(
+            file_name=self.args.dataset_args.train_file_name,
+            preprocessing=self.args.dataset_args.preprocessing_data_set,
+            transform_board_function=self.nn_board_evaluator.board_to_input_convert,
+            transform_dataset_value_to_white_value_function=transform_dataset_value_to_white_value_function,
+            transform_white_value_to_model_output_function=self.nn_board_evaluator.output_and_value_converter.from_value_white_to_model_output,
+        )
+        self.boards_dataset.load()
+
+
+        self.data_loader_value_function = DataLoader(
+            self.boards_dataset,
+            batch_size=self.args.nn_trainer_args.batch_size_train,
+            shuffle=True,
+            num_workers=1,
+        )
+
+        self.index_evaluating_player_data: int = 0
+
+
+        if self.args.test:
+            mlflow.set_tracking_uri(
+                uri=chipiron.utils.path_variables.ML_FLOW_URI_PATH_TEST
+            )
+        else:
+            mlflow.set_tracking_uri(uri=chipiron.utils.path_variables.ML_FLOW_URI_PATH)
+
 
     def run(self) -> None:
         """Running the learning of the NN from scratch."""
@@ -95,7 +164,6 @@ class LearnNNFromScratchScript:
         print("Starting to learn the NN from scratch")
 
         with mlflow.start_run():
-
             params = asdict(self.args) | asdict(self.nn_architecture_args)
             mlflow.log_params(params)
 
@@ -113,6 +181,26 @@ class LearnNNFromScratchScript:
             # sum_loss_train_print: float = 0.0
             # previous_dict: Any | None = None
             # previous_train_loss: float | None = None
-            for i in range(self.args.epochs_number):
-                ...
-                # play
+            print(" OOHqqHH")
+
+            for i in range(self.args.epochs_number_with_respect_to_evaluating_player):
+                # update the dataset with a tree search with the current model
+                self.update_dataset_value_with_evaluating_player()
+
+                print(" OOHHH")
+                # update the model perform a batch gradient descent with the updated dataset
+                self.learn_model_some_steps()
+
+    def update_dataset_value_with_evaluating_player(self):
+
+        index_range_evaluating_player: int
+        for index_range_evaluating_player in range(self.args.number_of_evaluating_player_per_loop):
+            index_evaluating_player_data_temp: int = self.index_evaluating_player_data + index_range_evaluating_player
+
+            print("debug", self.boards_dataset.data, len(self.boards_dataset.data), index_evaluating_player_data_temp, type(self.boards_dataset.data))
+            board_to_recompute_value = self.boards_dataset[index_evaluating_player_data_temp]
+            self.index_evaluating_player_data += 1
+
+        #record_the_dtaa
+        #set in a
+        #file
