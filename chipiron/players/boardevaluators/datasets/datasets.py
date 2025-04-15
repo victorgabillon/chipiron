@@ -27,6 +27,13 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_
 )
 from chipiron.utils import path
 
+from dataclasses import dataclass
+
+@dataclass
+class DataSetArgs:
+    train_file_name: path
+    test_file_name: path |None =None
+    preprocessing_data_set: bool = False
 
 class MyDataSet(Dataset[Any]):
     """
@@ -183,9 +190,9 @@ class FenAndValueDataSet(MyDataSet):
         transform_white_value_to_model_output_function: Callable[
             [float, IBoard], torch.Tensor
         ],
+        transform_dataset_value_to_white_value_function: Callable[[pandas.Series], float],
         preprocessing: bool = False,
         transform_board_function: str | BoardToInputFunction = "identity",
-        transform_dataset_value_to_white_value_function: str = "",
     ) -> None:
         """
         Initializes a new instance of the FenAndValueDataSet class.
@@ -205,14 +212,12 @@ class FenAndValueDataSet(MyDataSet):
             self.transform_board_function = transform_board_function
 
         # transform function
-        if transform_dataset_value_to_white_value_function == "stockfish":
-            self.transform_dataset_value_to_white_value_function = (
-                process_stockfish_value
-            )
+        self.transform_dataset_value_to_white_value_function = transform_dataset_value_to_white_value_function
 
         self.transform_white_value_to_model_output_function = (
             transform_white_value_to_model_output_function
         )
+
 
     def process_raw_row(self, row: pandas.Series) -> tuple[Any, torch.Tensor]:
         """

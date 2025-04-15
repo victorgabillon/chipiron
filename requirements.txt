@@ -3,12 +3,12 @@ PyYAML
 
 ###### Requirements with Version Specifiers ######
 PySide6==6.6.2
-chess >= 1.11.0
+chess >= 1.11.2
 matplotlib>=3.8.2
 sortedcollections>=2.1.0
-pandas>=2.2.1
+pandas>=2.2.3
 numpy>=1.26.0
-torch>=2.2.1
+torch>=2.6.0
 torchinfo
 numba>=0.59.0rc1
 graphviz>=0.20.1
