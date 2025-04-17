@@ -12,13 +12,17 @@ from torch.utils.data import DataLoader
 from chipiron.learningprocesses.nn_trainer.nn_trainer import (
     compute_test_error_on_dataset,
 )
-from chipiron.players.boardevaluators.datasets.datasets import FenAndValueDataSet, process_stockfish_value
+from chipiron.players.boardevaluators.datasets.datasets import (
+    FenAndValueDataSet,
+    process_stockfish_value,
+)
 from chipiron.players.boardevaluators.neural_networks import NNBoardEvaluator
 from chipiron.players.boardevaluators.neural_networks.factory import (
     create_nn_board_eval_from_folder_path_and_existing_model,
     get_nn_param_file_path_from,
 )
 from chipiron.utils import path
+from chipiron.utils.chi_nn import ChiNN
 
 
 @dataclass
@@ -35,14 +39,14 @@ class ModelEvaluation:
 EvaluatedModels = dict[path, ModelEvaluation]
 
 
-def count_parameters(model):
+def count_parameters(model: ChiNN) -> int:
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
 def evaluate_models(
-        folders_of_models_to_evaluate: list[path],
-        evaluation_report_file: path = "chipiron/scripts/evaluate_models/evaluation_report.yaml",
-        dataset_file_name: path = "data/datasets/goodgames_plusvariation_stockfish_eval_test",
+    folders_of_models_to_evaluate: list[path],
+    evaluation_report_file: path = "chipiron/scripts/evaluate_models/evaluation_report.yaml",
+    dataset_file_name: path = "data/datasets/goodgames_plusvariation_stockfish_eval_test",
 ) -> None:
     """
     Evaluates the models in the list models_to_evaluate.
@@ -62,8 +66,8 @@ def evaluate_models(
             evaluated_model_path: path
             evaluated_model_evaluation_dict: dict[Any, Any]
             for (
-                    evaluated_model_path,
-                    evaluated_model_evaluation_dict,
+                evaluated_model_path,
+                evaluated_model_evaluation_dict,
             ) in evaluated_models_temp.items():
                 model_evaluation_: ModelEvaluation = dacite.from_dict(
                     data_class=ModelEvaluation, data=evaluated_model_evaluation_dict
@@ -155,8 +159,9 @@ def evaluate_models(
             )
             number_of_model_parameters: int = count_parameters(nn_board_evaluator.net)
             model_evaluation = ModelEvaluation(
-                evaluation=eval, time_of_evaluation=datetime.datetime.now(),
-                number_of_model_parameters=number_of_model_parameters
+                evaluation=eval,
+                time_of_evaluation=datetime.datetime.now(),
+                number_of_model_parameters=number_of_model_parameters,
             )
             evaluated_models[model_folder_path] = model_evaluation
             print("Model evaluated!")
@@ -169,7 +174,7 @@ def evaluate_models(
             evaluated_model_evaluation
         )
     with open(
-            "chipiron/scripts/evaluate_models/evaluation_report.yaml", "w"
+        "chipiron/scripts/evaluate_models/evaluation_report.yaml", "w"
     ) as outfile:
         yaml.dump(evaluated_models_final_dict, outfile, default_flow_style=False)
 

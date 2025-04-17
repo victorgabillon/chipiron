@@ -3,6 +3,7 @@ from typing import Protocol
 
 from .utils import moveUci
 
+# numbering scheme for actions in the node of the trees
 moveKey = int
 
 

@@ -27,6 +27,10 @@ base_script_args:
   seed: 11
 
 
+implementation_args:
+  use_board_modification: True
+  use_rust_boards: False
+
 evaluating_player_args:
   name: RecurZipfBase3
   main_move_selector:

@@ -13,6 +13,8 @@ from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.players.player_args import PlayerArgs
 from chipiron.players.utils import fetch_player_args_convert_and_save
+from ..environments.chess.board import BoardFactory, create_board_factory
+from ..scripts.chipiron_args import ImplementationArgs
 
 from ..utils.dataclass import IsDataclass
 from . import move_selector
@@ -23,7 +25,8 @@ from .player_args import PlayerFactoryArgs
 
 def create_chipiron_player(
     depth: int,
-    use_rusty_board: bool,
+    implementation_args: ImplementationArgs,
+    universal_behavior: bool,
     random_generator: random.Random,
     queue_progress_player: queue.Queue[IsDataclass] | None = None,
 ) -> Player:
@@ -37,7 +40,7 @@ def create_chipiron_player(
 
     """
     syzygy_table: table_base.SyzygyTable[Any] | None = create_syzygy(
-        use_rust=use_rusty_board
+        use_rust=implementation_args.use_rust_boards
     )
 
     args_player: PlayerArgs = fetch_player_args_convert_and_save(
@@ -56,15 +59,25 @@ def create_chipiron_player(
 
     assert main_move_selector is not None
 
+    board_factory: BoardFactory = create_board_factory(
+        use_rust_boards=implementation_args.use_rust_boards,
+        use_board_modification=implementation_args.use_board_modification,
+        sort_legal_moves=universal_behavior,
+    )
+
     return Player(
-        name="chipiron", syzygy=syzygy_table, main_move_selector=main_move_selector
+        name="chipiron",
+        syzygy=syzygy_table,
+        main_move_selector=main_move_selector,
+        board_factory=board_factory,
     )
 
 
 def create_player_from_file(
     player_args_file: str,
     random_generator: random.Random,
-    use_rusty_board: bool,
+    implementation_args: ImplementationArgs,
+    universal_behavior: bool,
     queue_progress_player: queue.Queue[IsDataclass] | None = None,
 ) -> Player:
     """Create a player object from a file.
@@ -81,7 +94,7 @@ def create_player_from_file(
     )
 
     syzygy_table: table_base.SyzygyTable[Any] | None = create_syzygy(
-        use_rust=use_rusty_board
+        use_rust=implementation_args.use_rust_boards
     )
 
     print("create player from file")
@@ -94,8 +107,17 @@ def create_player_from_file(
         )
     )
 
+    board_factory: BoardFactory = create_board_factory(
+        use_rust_boards=implementation_args.use_rust_boards,
+        use_board_modification=implementation_args.use_board_modification,
+        sort_legal_moves=universal_behavior,
+    )
+
     return Player(
-        name=args.name, syzygy=syzygy_table, main_move_selector=main_move_selector
+        name=args.name,
+        syzygy=syzygy_table,
+        main_move_selector=main_move_selector,
+        board_factory=board_factory,
     )
 
 
@@ -103,6 +125,8 @@ def create_player(
     args: PlayerArgs,
     syzygy: SyzygyTable[Any] | None,
     random_generator: random.Random,
+    implementation_args: ImplementationArgs,
+    universal_behavior: bool,
     queue_progress_player: queue.Queue[IsDataclass] | None = None,
 ) -> Player:
     """Create a player object.
@@ -127,8 +151,17 @@ def create_player(
         )
     )
 
+    board_factory: BoardFactory = create_board_factory(
+        use_rust_boards=implementation_args.use_rust_boards,
+        use_board_modification=implementation_args.use_board_modification,
+        sort_legal_moves=universal_behavior,
+    )
+
     player: Player = Player(
-        name=args.name, syzygy=syzygy, main_move_selector=main_move_selector
+        name=args.name,
+        syzygy=syzygy,
+        main_move_selector=main_move_selector,
+        board_factory=board_factory,
     )
 
     return player
@@ -139,6 +172,8 @@ def create_game_player(
     player_color: chess.Color,
     syzygy_table: table_base.SyzygyTable[Any] | None,
     queue_progress_player: queue.Queue[IsDataclass] | None,
+    implementation_args: ImplementationArgs,
+    universal_behavior: bool,
 ) -> GamePlayer:
     """Create a game player
 
@@ -157,6 +192,8 @@ def create_game_player(
         syzygy=syzygy_table,
         random_generator=random_generator,
         queue_progress_player=queue_progress_player,
+        implementation_args=implementation_args,
+        universal_behavior=universal_behavior,
     )
     game_player: GamePlayer = GamePlayer(player, player_color)
     return game_player

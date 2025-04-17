@@ -71,8 +71,10 @@ class MultiHeadAttention(nn.Module):
                 Head(head_size=head_size, n_embd=n_embd, dropout_ratio=dropout_ratio)
                 for _ in range(num_heads)
             ]
-        ) # (B, T, hs) * num_heads
-        self.proj = nn.Linear(head_size * num_heads, n_embd) # (B, T, hs) * num_heads -> (B, T, n_embd)
+        )  # (B, T, hs) * num_heads
+        self.proj = nn.Linear(
+            head_size * num_heads, n_embd
+        )  # (B, T, hs) * num_heads -> (B, T, n_embd)
         self.dropout = nn.Dropout(dropout_ratio)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -116,8 +118,10 @@ class Block(nn.Module):
         head_size = n_embd // n_head
         self.sa = MultiHeadAttention(
             n_head, head_size, dropout_ratio=dropout_ratio, n_embd=n_embd
-        ) # (B, T, n_embd) -> (B, T, n_embd)
-        self.ffwd = FeedFoward(n_embd, dropout_ratio=dropout_ratio) # (B, T, n_embd) -> (B, T, n_embd)
+        )  # (B, T, n_embd) -> (B, T, n_embd)
+        self.ffwd = FeedFoward(
+            n_embd, dropout_ratio=dropout_ratio
+        )  # (B, T, n_embd) -> (B, T, n_embd)
         self.ln1 = nn.LayerNorm(n_embd)
         self.ln2 = nn.LayerNorm(n_embd)
 

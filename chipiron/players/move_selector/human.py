@@ -70,6 +70,4 @@ class CommandLineHumanMoveSelector:
 
         assert move_uci in legal_moves_uci
 
-        return MoveRecommendation(
-            move=board.get_move_key_from_uci(move_uci=move_uci), evaluation=None
-        )
+        return MoveRecommendation(move=move_uci, evaluation=None)

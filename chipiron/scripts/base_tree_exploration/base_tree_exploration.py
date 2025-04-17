@@ -67,7 +67,11 @@ class BaseTreeExplorationScript:
         random_generator = random.Random()
         random_generator.seed(self.args.implementation_args.use_rust_boards)
         player = create_player(
-            args=player_one_args, syzygy=syzygy, random_generator=random_generator
+            args=player_one_args,
+            syzygy=syzygy,
+            random_generator=random_generator,
+            implementation_args=self.args.implementation_args,
+            universal_behavior=self.args.base_script_args.universal_behavior,
         )
 
         board = create_board(
@@ -75,7 +79,8 @@ class BaseTreeExplorationScript:
             use_board_modification=self.args.implementation_args.use_board_modification,
         )
         player.select_move(
-            board=board, seed_int=self.args.implementation_args.use_rust_boards
+            fen_plus_history=board.into_fen_plus_history(),
+            seed_int=self.args.implementation_args.use_rust_boards,
         )
 
     def terminate(self) -> None:

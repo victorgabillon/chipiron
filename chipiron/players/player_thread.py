@@ -91,6 +91,8 @@ class PlayerProcess(multiprocessing.Process):
             player_color=player_color,
             syzygy_table=create_syzygy(),
             queue_progress_player=queue_sending_move,
+            implementation_args=implementation_args,
+            universal_behavior=universal_behavior,
         )
         assert self.game_player.player is not None
 
@@ -123,12 +125,12 @@ class PlayerProcess(multiprocessing.Process):
                     fen_plus_moves: FenPlusHistory = board_message.fen_plus_moves
                     board: IBoard = self.board_factory(fen_with_history=fen_plus_moves)
                     seed_: seed | None = board_message.seed
-                    print(f"Player thread got the board {board}")
+                    print(f"Player thread got the board {fen_plus_moves.current_fen}")
                     assert seed_ is not None
 
                     # the game_player computes the move for the board and sends the move in the move queue
                     game_player_computes_move_on_board_and_send_move_in_queue(
-                        board=board,
+                        fen_plus_history=fen_plus_moves,
                         game_player=self.game_player,
                         queue_move=self.queue_sending_move,
                         seed_int=seed_,

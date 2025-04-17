@@ -1,24 +1,37 @@
 import os
+import random
 import time
 from dataclasses import asdict, dataclass, field
+from typing import Any
 
 import mlflow
+import pandas
 from torch.utils.data import DataLoader
 from torchinfo import summary
 
 import chipiron
+from chipiron.environments.chess.board.utils import FenPlusHistory
 from chipiron.learningprocesses.nn_trainer.factory import NNTrainerArgs
 from chipiron.players import PlayerArgs
-from chipiron.players.boardevaluators.datasets.datasets import FenAndValueDataSet, DataSetArgs
-from chipiron.players.boardevaluators.neural_networks.factory import \
-    create_nn_board_eval_from_folder_path_and_existing_model, get_architecture_args_from_file, \
-    create_nn_board_eval_from_architecture_args
+from chipiron.players.boardevaluators.datasets.datasets import (
+    FenAndValueDataSet,
+    DataSetArgs,
+)
+from chipiron.players.boardevaluators.neural_networks.factory import (
+    create_nn_board_eval_from_folder_path_and_existing_model,
+    get_architecture_args_from_file,
+    create_nn_board_eval_from_architecture_args,
+)
 from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
     NeuralNetArchitectureArgs,
 )
 from chipiron.players.boardevaluators.neural_networks.nn_board_evaluator import (
     NNBoardEvaluator,
 )
+from chipiron.players.boardevaluators.table_base import SyzygyTable
+from chipiron.players.boardevaluators.table_base.factory import create_syzygy
+from chipiron.players.factory import create_player
+from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.chi_nn import ChiNN
@@ -36,13 +49,14 @@ class LearnNNFromScratchScriptArgs:
     number_of_evaluating_player_per_loop: int
     number_of_gradient_descent_per_loop: int
     starting_boards_are_non_labelled: bool
-    test:bool
+    test: bool
+
+    dataset_args: DataSetArgs
+    evaluating_player_args: PlayerArgs
 
     base_script_args: BaseScriptArgs = field(default_factory=BaseScriptArgs)
     nn_trainer_args: NNTrainerArgs = field(default_factory=NNTrainerArgs)
-    dataset_args: DataSetArgs = field(default_factory=DataSetArgs)
-    evaluating_player_args: PlayerArgs = field(default_factory=PlayerArgs)
-
+    implementation_args: ImplementationArgs = field(default_factory=ImplementationArgs)
 
 
 class LearnNNFromScratchScript:
@@ -75,8 +89,8 @@ class LearnNNFromScratchScript:
     nn_architecture_args: NeuralNetArchitectureArgs
 
     def __init__(
-            self,
-            base_script: Script,
+        self,
+        base_script: Script,
     ) -> None:
         """
         Initializes the LearnNNFromSupervisedDatasets class.
@@ -99,7 +113,6 @@ class LearnNNFromScratchScript:
             experiment_output_folder=self.base_experiment_output_folder,
         )
 
-
         if self.args.nn_trainer_args.reuse_existing_model:
             self.nn_board_evaluator, self.nn_architecture_args = (
                 create_nn_board_eval_from_folder_path_and_existing_model(
@@ -108,8 +121,8 @@ class LearnNNFromScratchScript:
             )
         else:
             assert (
-                    self.args.nn_trainer_args.nn_architecture_file_if_not_reusing_existing_one
-                    is not None
+                self.args.nn_trainer_args.nn_architecture_file_if_not_reusing_existing_one
+                is not None
             )
             self.nn_architecture_args: NeuralNetArchitectureArgs = (
                 get_architecture_args_from_file(
@@ -120,7 +133,6 @@ class LearnNNFromScratchScript:
                 nn_architecture_args=self.nn_architecture_args
             )
 
-
         # taking care of random
         chipiron.set_seeds(seed=self.args.base_script_args.seed)
 
@@ -129,7 +141,6 @@ class LearnNNFromScratchScript:
         else:
             transform_dataset_value_to_white_value_function = lambda row: row["value"]
 
-        print("zeez debug",self.args.dataset_args.test_file_name, self.args.dataset_args.train_file_name)
         self.boards_dataset = FenAndValueDataSet(
             file_name=self.args.dataset_args.train_file_name,
             preprocessing=self.args.dataset_args.preprocessing_data_set,
@@ -138,7 +149,6 @@ class LearnNNFromScratchScript:
             transform_white_value_to_model_output_function=self.nn_board_evaluator.output_and_value_converter.from_value_white_to_model_output,
         )
         self.boards_dataset.load()
-
 
         self.data_loader_value_function = DataLoader(
             self.boards_dataset,
@@ -149,7 +159,6 @@ class LearnNNFromScratchScript:
 
         self.index_evaluating_player_data: int = 0
 
-
         if self.args.test:
             mlflow.set_tracking_uri(
                 uri=chipiron.utils.path_variables.ML_FLOW_URI_PATH_TEST
@@ -157,6 +166,17 @@ class LearnNNFromScratchScript:
         else:
             mlflow.set_tracking_uri(uri=chipiron.utils.path_variables.ML_FLOW_URI_PATH)
 
+        random_generator = random.Random(self.args.base_script_args.seed)
+        syzygy_table: SyzygyTable[Any] | None = create_syzygy(
+            use_rust=self.args.implementation_args.use_rust_boards,
+        )
+        self.player = create_player(
+            args=self.args.evaluating_player_args,
+            syzygy=syzygy_table,
+            random_generator=random_generator,
+            implementation_args=self.args.implementation_args,
+            universal_behavior=self.args.base_script_args.universal_behavior,
+        )
 
     def run(self) -> None:
         """Running the learning of the NN from scratch."""
@@ -176,31 +196,46 @@ class LearnNNFromScratchScript:
                 f.write(str(summary(self.nn_board_evaluator.net)))
             mlflow.log_artifact(model_summary_file_name)
 
-            # count_train_step = 0
-            # sum_loss_train: float = 0.0
-            # sum_loss_train_print: float = 0.0
-            # previous_dict: Any | None = None
-            # previous_train_loss: float | None = None
-            print(" OOHqqHH")
-
             for i in range(self.args.epochs_number_with_respect_to_evaluating_player):
                 # update the dataset with a tree search with the current model
                 self.update_dataset_value_with_evaluating_player()
 
-                print(" OOHHH")
                 # update the model perform a batch gradient descent with the updated dataset
                 self.learn_model_some_steps()
 
-    def update_dataset_value_with_evaluating_player(self):
+    def learn_model_some_steps(self) -> None: ...
+
+    def update_dataset_value_with_evaluating_player(self) -> None:
 
         index_range_evaluating_player: int
-        for index_range_evaluating_player in range(self.args.number_of_evaluating_player_per_loop):
-            index_evaluating_player_data_temp: int = self.index_evaluating_player_data + index_range_evaluating_player
+        for index_range_evaluating_player in range(
+            self.args.number_of_evaluating_player_per_loop
+        ):
+            index_evaluating_player_data_temp: int = (
+                self.index_evaluating_player_data + index_range_evaluating_player
+            )
 
-            print("debug", self.boards_dataset.data, len(self.boards_dataset.data), index_evaluating_player_data_temp, type(self.boards_dataset.data))
-            board_to_recompute_value = self.boards_dataset[index_evaluating_player_data_temp]
+            board_fen_to_recompute_value = self.boards_dataset.get_unprocessed(
+                idx=index_evaluating_player_data_temp
+            )["fen"]
+
+            assert isinstance(self.boards_dataset.data, pandas.DataFrame)
+            print(
+                "debug",
+                board_fen_to_recompute_value,
+                len(self.boards_dataset.data),
+                index_evaluating_player_data_temp,
+            )
+
+            self.player.select_move(
+                fen_plus_history=FenPlusHistory(
+                    current_fen=board_fen_to_recompute_value
+                ),
+                seed_int=self.args.base_script_args.seed,
+            )
+
             self.index_evaluating_player_data += 1
 
-        #record_the_dtaa
-        #set in a
-        #file
+        # record_the_dtaa
+        # set in a
+        # file

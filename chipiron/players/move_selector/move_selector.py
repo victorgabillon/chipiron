@@ -6,11 +6,11 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from chipiron.environments.chess.board import IBoard
-from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
     BoardEvaluation,
 )
 from chipiron.utils import seed
+from chipiron.environments.chess.move import moveUci
 
 
 @dataclass
@@ -19,8 +19,7 @@ class MoveRecommendation:
     Represents a recommended move to play along with an optional evaluation score.
     """
 
-    # todo should it be a movekey or moveuci? both?
-    move: moveKey
+    move: moveUci
     evaluation: BoardEvaluation | None = None
 
 
