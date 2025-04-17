@@ -29,11 +29,13 @@ from chipiron.utils import path
 
 from dataclasses import dataclass
 
+
 @dataclass
 class DataSetArgs:
     train_file_name: path
-    test_file_name: path |None =None
+    test_file_name: path | None = None
     preprocessing_data_set: bool = False
+
 
 class MyDataSet(Dataset[Any]):
     """
@@ -74,7 +76,7 @@ class MyDataSet(Dataset[Any]):
         start_time = time.time()
         raw_data: pandas.DataFrame = pd.read_pickle(self.file_name)
         print("raw_data", type(raw_data))
-        raw_data = (
+        self.raw_data = (
             raw_data.copy()
         )  # gets read of compatibility problem between various version of panda and pickle
         print("--- LOAD READ PICKLE %s seconds ---" % (time.time() - start_time))
@@ -146,6 +148,14 @@ class MyDataSet(Dataset[Any]):
             raw_row = self.data.iloc[idx % self.len]
             return self.process_raw_row(raw_row)  # to be coded!
 
+    def get_unprocessed(self, idx: int) -> pandas.Series:
+        """ """
+        assert isinstance(self.data, pandas.DataFrame)
+        assert self.len is not None
+
+        raw_row = self.data.iloc[idx % self.len]
+        return raw_row
+
 
 def process_stockfish_value(row: pandas.Series) -> float:
     """
@@ -190,7 +200,9 @@ class FenAndValueDataSet(MyDataSet):
         transform_white_value_to_model_output_function: Callable[
             [float, IBoard], torch.Tensor
         ],
-        transform_dataset_value_to_white_value_function: Callable[[pandas.Series], float],
+        transform_dataset_value_to_white_value_function: Callable[
+            [pandas.Series], float
+        ],
         preprocessing: bool = False,
         transform_board_function: str | BoardToInputFunction = "identity",
     ) -> None:
@@ -212,12 +224,13 @@ class FenAndValueDataSet(MyDataSet):
             self.transform_board_function = transform_board_function
 
         # transform function
-        self.transform_dataset_value_to_white_value_function = transform_dataset_value_to_white_value_function
+        self.transform_dataset_value_to_white_value_function = (
+            transform_dataset_value_to_white_value_function
+        )
 
         self.transform_white_value_to_model_output_function = (
             transform_white_value_to_model_output_function
         )
-
 
     def process_raw_row(self, row: pandas.Series) -> tuple[Any, torch.Tensor]:
         """

@@ -4,12 +4,14 @@ Module for the Player class.
 
 from typing import Any
 
-from chipiron.environments.chess.board import IBoard
+from chipiron.environments.chess.board import IBoard, create_board, BoardFactory
+from chipiron.environments.chess.move import moveUci
 from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.utils import seed
-
 from .move_selector.move_selector import MoveRecommendation, MoveSelector
+from ..environments.chess.board.utils import FenPlusHistory
+from ..scripts.chipiron_args import ImplementationArgs
 
 playerId = str
 
@@ -23,18 +25,24 @@ class Player:
     #  that now a player can be a mixture of multiple decision rules
     id: playerId
     main_move_selector: MoveSelector
+    syzygy: SyzygyTable[Any] | None
+    board_factory: BoardFactory
 
     def __init__(
         self,
         name: str,
         syzygy: SyzygyTable[Any] | None,
         main_move_selector: MoveSelector,
+        board_factory: BoardFactory,
     ):
         self.id = name
         self.main_move_selector: MoveSelector = main_move_selector
         self.syzygy_player = syzygy
+        self.board_factory = board_factory
 
-    def select_move(self, board: IBoard, seed_int: seed) -> MoveRecommendation:
+    def select_move(
+        self, fen_plus_history: FenPlusHistory, seed_int: seed
+    ) -> MoveRecommendation:
         """
         Returns the best move computed by the player.
         The player has the option to ask the syzygy table to play it.
@@ -46,6 +54,8 @@ class Player:
         Returns:
             MoveRecommendation: The recommended move.
         """
+
+        board: IBoard = self.board_factory(fen_with_history=fen_plus_history)
 
         move_recommendation: MoveRecommendation
         # if there is only one possible legal move in the position, do not think, choose it.
@@ -59,8 +69,9 @@ class Player:
                 board
             ):
                 print("Playing with Syzygy")
-                best_move: moveKey = self.syzygy_player.best_move(board)
-                move_recommendation = MoveRecommendation(move=best_move)
+                best_move_key: moveKey = self.syzygy_player.best_move(board)
+                best_move_uci: moveUci = board.get_uci_from_move_key(best_move_key)
+                move_recommendation = MoveRecommendation(move=best_move_uci)
 
             else:
                 print(f"Playing with player (not Syzygy) {self.id}\n{board}")
@@ -68,6 +79,8 @@ class Player:
                     board=board, move_seed=seed_int
                 )
         else:
-            move_recommendation = MoveRecommendation(move=list(board.legal_moves)[0])
+            move_key: moveKey = list(board.legal_moves)[0]
+            move_uci: moveUci = board.get_uci_from_move_key(move_key)
+            move_recommendation = MoveRecommendation(move=move_uci)
 
         return move_recommendation

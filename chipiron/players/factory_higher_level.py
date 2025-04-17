@@ -13,6 +13,7 @@ from chipiron.environments.chess.board import IBoard
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.dataclass import IsDataclass
+from ..environments.chess.board.utils import FenPlusHistory
 
 from ..scripts.chipiron_args import ImplementationArgs
 from .boardevaluators.table_base import SyzygyTable
@@ -40,11 +41,13 @@ class MoveFunction(Protocol):
         None: This function does not return any value.
     """
 
-    def __call__(self, board: IBoard, seed_int: seed) -> None: ...
+    def __call__(self, fen_plus_history: FenPlusHistory, seed_int: seed) -> None: ...
 
 
 def send_board_to_player_process_mailbox(
-    board: IBoard, seed_int: int, player_process_mailbox: queue.Queue[BoardMessage]
+    fen_plus_history: FenPlusHistory,
+    seed_int: int,
+    player_process_mailbox: queue.Queue[BoardMessage],
 ) -> None:
     """Sends the board and seed to the player process mailbox.
 
@@ -56,9 +59,7 @@ def send_board_to_player_process_mailbox(
         seed_int (int): The seed to send.
         player_process_mailbox (queue.Queue[BoardMessage]): The mailbox to put the message into.
     """
-    message: BoardMessage = BoardMessage(
-        fen_plus_moves=board.into_fen_plus_history(), seed=seed_int
-    )
+    message: BoardMessage = BoardMessage(fen_plus_moves=fen_plus_history, seed=seed_int)
     player_process_mailbox.put(item=message)
 
 
@@ -90,7 +91,10 @@ def create_player_observer_factory(
         )
     else:
         player_observer_factory = partial(
-            create_player_observer_mono_process, syzygy_table=syzygy_table
+            create_player_observer_mono_process,
+            syzygy_table=syzygy_table,
+            universal_behavior=universal_behavior,
+            implementation_args=implementation_args,
         )
     return player_observer_factory
 
@@ -149,6 +153,8 @@ def create_player_observer_mono_process(
     player_color: chess.Color,
     main_thread_mailbox: queue.Queue[IsDataclass],
     syzygy_table: SyzygyTable[Any] | None,
+    implementation_args: ImplementationArgs,
+    universal_behavior: bool,
 ) -> tuple[GamePlayer, MoveFunction]:
     """Create a player observer.
 
@@ -174,6 +180,8 @@ def create_player_observer_mono_process(
         player_color=player_color,
         syzygy_table=syzygy_table,
         queue_progress_player=main_thread_mailbox,
+        implementation_args=implementation_args,
+        universal_behavior=universal_behavior,
     )
     move_function = partial(
         game_player_computes_move_on_board_and_send_move_in_queue,

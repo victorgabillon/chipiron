@@ -30,7 +30,9 @@ from chipiron.players.boardevaluators.neural_networks.models.nn_pp2d2_2prelu imp
 from chipiron.players.boardevaluators.neural_networks.models.nn_pp2d2_2rrelu import (
     NetPP2D2_2_RRELU,
 )
-from chipiron.players.boardevaluators.neural_networks.models.nn_pp2d3_prelu import NetPP2D3_PRELU
+from chipiron.players.boardevaluators.neural_networks.models.nn_pp2d3_prelu import (
+    NetPP2D3_PRELU,
+)
 from chipiron.players.boardevaluators.neural_networks.models.tranformer_one import (
     TransformerOne,
 )

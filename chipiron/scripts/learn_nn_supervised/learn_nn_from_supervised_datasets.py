@@ -36,7 +36,11 @@ from chipiron.learningprocesses.nn_trainer.factory import (
     safe_nn_trainer_save,
 )
 from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
-from chipiron.players.boardevaluators.datasets.datasets import FenAndValueDataSet, process_stockfish_value, DataSetArgs
+from chipiron.players.boardevaluators.datasets.datasets import (
+    FenAndValueDataSet,
+    process_stockfish_value,
+    DataSetArgs,
+)
 from chipiron.players.boardevaluators.neural_networks import NNBoardEvaluator
 from chipiron.players.boardevaluators.neural_networks.factory import (
     create_nn_board_eval_from_architecture_args,
@@ -51,7 +55,7 @@ from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.chi_nn import ChiNN
 
 
-def count_parameters(model):
+def count_parameters(model: ChiNN) -> int:
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
@@ -71,7 +75,7 @@ class LearnNNScriptArgs:
         default_factory=lambda: DataSetArgs(
             train_file_name="data/datasets/goodgames_plusvariation_stockfish_eval_train_t.1_merge.pi",
             test_file_name="data/datasets/goodgames_plusvariation_stockfish_eval_test",
-            preprocessing_data_set=False
+            preprocessing_data_set=False,
         )
     )
 
@@ -106,8 +110,8 @@ class LearnNNScript:
     nn_architecture_args: NeuralNetArchitectureArgs
 
     def __init__(
-            self,
-            base_script: Script,
+        self,
+        base_script: Script,
     ) -> None:
         """
         Initializes the LearnNNFromSupervisedDatasets class.
@@ -141,8 +145,8 @@ class LearnNNScript:
             )
         else:
             assert (
-                    self.args.nn_trainer_args.nn_architecture_file_if_not_reusing_existing_one
-                    is not None
+                self.args.nn_trainer_args.nn_architecture_file_if_not_reusing_existing_one
+                is not None
             )
             self.nn_architecture_args: NeuralNetArchitectureArgs = (
                 get_architecture_args_from_file(
@@ -165,6 +169,7 @@ class LearnNNScript:
             transform_white_value_to_model_output_function=self.nn_board_evaluator.output_and_value_converter.from_value_white_to_model_output,
         )
 
+        assert self.args.dataset_args.test_file_name is not None
         self.stockfish_boards_test = FenAndValueDataSet(
             file_name=self.args.dataset_args.test_file_name,
             preprocessing=self.args.dataset_args.preprocessing_data_set,
@@ -203,7 +208,7 @@ class LearnNNScript:
         print(f"TOTAL PARAM: {number_of_model_parameters}")
 
     def print_and_log_metrics(
-            self, count_train_step: int, training_loss: float, test_error: float
+        self, count_train_step: int, training_loss: float, test_error: float
     ) -> None:
         print(
             "count_train_step",
@@ -266,7 +271,7 @@ class LearnNNScript:
             i: int
             for i in range(self.args.nn_trainer_args.epochs_number):
                 for i_batch, sample_batched in enumerate(
-                        self.data_loader_stockfish_boards_train
+                    self.data_loader_stockfish_boards_train
                 ):
 
                     # printing info to console
@@ -285,24 +290,26 @@ class LearnNNScript:
                         )
 
                     if (
-                            count_train_step % 2000 == 0
-                            and count_train_step > 0
-                            and self.args.test
+                        count_train_step % 2000 == 0
+                        and count_train_step > 0
+                        and self.args.test
                     ):
                         break
 
                     # every self.args['min_interval_lr_change'] steps we check for possibly decreasing the learning rate
                     if (
-                            count_train_step % self.args.nn_trainer_args.min_interval_lr_change == 0
-                            and count_train_step > 0
+                        count_train_step
+                        % self.args.nn_trainer_args.min_interval_lr_change
+                        == 0
+                        and count_train_step > 0
                     ):
 
                         # condition to decrease the learning rate
                         if (
-                                previous_train_loss is not None
-                                and sum_loss_train > previous_train_loss
-                                and self.nn_trainer.scheduler.get_last_lr()[-1]
-                                > self.args.nn_trainer_args.min_lr
+                            previous_train_loss is not None
+                            and sum_loss_train > previous_train_loss
+                            and self.nn_trainer.scheduler.get_last_lr()[-1]
+                            > self.args.nn_trainer_args.min_lr
                         ):
                             self.nn_trainer.scheduler.step()
                             print(
@@ -313,7 +320,8 @@ class LearnNNScript:
                         print("count_train_step", count_train_step)
                         print(
                             "training loss",
-                            sum_loss_train / self.args.nn_trainer_args.min_interval_lr_change,
+                            sum_loss_train
+                            / self.args.nn_trainer_args.min_interval_lr_change,
                             sum_loss_train,
                         )
                         print("previous_train_loss", previous_train_loss)
@@ -349,7 +357,7 @@ class LearnNNScript:
                     )
 
     def saving_things_to_file(
-            self, count_train_step: int, X_train: torch.Tensor
+        self, count_train_step: int, X_train: torch.Tensor
     ) -> None:
         """
         Saves the neural network parameters and trainer to file.
@@ -390,8 +398,10 @@ class LearnNNScript:
             )
 
         if (
-                self.args.nn_trainer_args.saving_intermediate_copy
-                and count_train_step % self.args.nn_trainer_args.saving_intermediate_copy_interval == 0
+            self.args.nn_trainer_args.saving_intermediate_copy
+            and count_train_step
+            % self.args.nn_trainer_args.saving_intermediate_copy_interval
+            == 0
         ):
             safe_nn_param_save(
                 self.nn_board_evaluator.net,

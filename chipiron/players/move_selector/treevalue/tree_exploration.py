@@ -169,7 +169,7 @@ class TreeExploration:
         #          f' {child.minmax_evaluation.over_event.get_over_tag()}')
         # print(f'evaluation for white: {self.tree.root_node.minmax_evaluation.get_value_white()}')
 
-        best_move: moveKey = recommend_move_after_exploration_generic(
+        best_move_key: moveKey = recommend_move_after_exploration_generic(
             self.recommend_move_after_exploration,
             tree=self.tree,
             random_generator=random_generator,
@@ -179,8 +179,11 @@ class TreeExploration:
             tree=self.tree
         )  # todo maybe almost best chosen line no?
 
+        best_move_uci = self.tree.root_node.board.get_uci_from_move_key(
+            move_key=best_move_key
+        )
         move_recommendation: MoveRecommendation = MoveRecommendation(
-            move=best_move, evaluation=self.tree.evaluate()
+            move=best_move_uci, evaluation=self.tree.evaluate()
         )
 
         tree_exploration_result: TreeExplorationResult = TreeExplorationResult(

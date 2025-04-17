@@ -17,6 +17,7 @@ from chipiron.players.move_selector.treevalue.tree_and_value_move_selector impor
     TreeAndValueMoveSelector,
 )
 from chipiron.players.move_selector.treevalue.tree_exploration import TreeExploration
+from chipiron.scripts.chipiron_args import ImplementationArgs
 
 
 @pytest.mark.parametrize(("use_rust_boards"), (True, False))
@@ -31,7 +32,10 @@ def test_random(use_rust_boards: bool) -> None:
     random_generator_one: random.Random = random.Random(0)
 
     player_one: Player = create_chipiron_player(
-        depth=1, use_rusty_board=use_rust_boards, random_generator=random_generator_one
+        depth=1,
+        implementation_args=ImplementationArgs(use_rust_boards=use_rust_boards),
+        universal_behavior=True,
+        random_generator=random_generator_one,
     )
 
     main_move_selector_one = player_one.main_move_selector
@@ -53,7 +57,10 @@ def test_random(use_rust_boards: bool) -> None:
 
     random_generator_two: random.Random = random.Random(0)
     player_two: Player = create_chipiron_player(
-        depth=1, use_rusty_board=use_rust_boards, random_generator=random_generator_two
+        depth=1,
+        implementation_args=ImplementationArgs(use_rust_boards=use_rust_boards),
+        universal_behavior=True,
+        random_generator=random_generator_two,
     )
 
     main_move_selector_two = player_two.main_move_selector

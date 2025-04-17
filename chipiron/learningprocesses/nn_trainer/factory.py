@@ -58,8 +58,7 @@ class NNTrainerArgs:
     min_interval_lr_change: int = 1000000
     min_lr: float = 0.001
 
-    epochs_number: int=  100
-
+    epochs_number: int = 100
 
     def __post_init__(self) -> None:
         if not self.reuse_existing_model:

@@ -238,11 +238,11 @@ class GameManager:
                 print("=====================MOVE MESSAGE RECEIVED============")
                 move_message: MoveMessage = message
                 # play the move
-                move_key: moveKey = move_message.move
+                move_uci: moveUci = move_message.move
 
                 print(
-                    "Game Manager: Receiving the move key",
-                    move_key,
+                    "Game Manager: Receiving the move uci",
+                    move_uci,
                     self.game.playing_status,
                     board.fen,
                 )
@@ -254,7 +254,7 @@ class GameManager:
 
                     board.legal_moves.get_all()  # make sure the board has generated the legal moves
 
-                    move_uci: moveUci = board.get_uci_from_move_key(move_key)
+                    move_key: moveKey = board.get_move_key_from_uci(move_uci=move_uci)
 
                     print(
                         f"Game Manager: Play a move {move_uci} at {board} {self.game.board.fen}"

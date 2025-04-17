@@ -14,6 +14,7 @@ from chipiron.utils.communication.player_game_messages import MoveMessage
 from chipiron.utils.dataclass import IsDataclass
 
 from .player import Player
+from ..environments.chess.board.utils import FenPlusHistory
 
 
 class GamePlayer:
@@ -38,7 +39,7 @@ class GamePlayer:
         return self._player
 
     def select_move(
-        self, board: IBoard, seed_int: seed | None = None
+        self, fen_plus_history: FenPlusHistory, seed_int: seed | None = None
     ) -> MoveRecommendation:
         """Selects the best move to play based on the current board position.
 
@@ -54,15 +55,15 @@ class GamePlayer:
         """
 
         assert seed_int is not None
-        assert self.color == board.turn
+        assert self.color == fen_plus_history.current_turn()
         best_move: MoveRecommendation = self._player.select_move(
-            board=board, seed_int=seed_int
+            fen_plus_history=fen_plus_history, seed_int=seed_int
         )
         return best_move
 
 
 def game_player_computes_move_on_board_and_send_move_in_queue(
-    board: IBoard,
+    fen_plus_history: FenPlusHistory,
     game_player: GamePlayer,
     queue_move: queue.Queue[IsDataclass],
     seed_int: seed,
@@ -78,13 +79,14 @@ def game_player_computes_move_on_board_and_send_move_in_queue(
     Returns:
         None
     """
-    if board.turn == game_player.color and not board.is_game_over():
+
+    if fen_plus_history.current_turn() == game_player.color:
         move_recommendation: MoveRecommendation = game_player.select_move(
-            board=board, seed_int=seed_int
+            fen_plus_history=fen_plus_history, seed_int=seed_int
         )
         message: MoveMessage = MoveMessage(
             move=move_recommendation.move,
-            corresponding_board=board.fen,
+            corresponding_board=fen_plus_history.current_fen,
             player_name=game_player.player.id,
             evaluation=move_recommendation.evaluation,
             color_to_play=game_player.color,
@@ -94,4 +96,4 @@ def game_player_computes_move_on_board_and_send_move_in_queue(
         deep_copy_message = copy.deepcopy(message)
         queue_move.put(deep_copy_message)
     else:
-        print("Game player rejects move query", board.fen)
+        print("Game player rejects move query", fen_plus_history.current_fen)

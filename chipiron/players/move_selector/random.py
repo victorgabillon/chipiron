@@ -20,6 +20,7 @@ from chipiron.utils import seed
 
 from .move_selector import MoveRecommendation
 from .move_selector_types import MoveSelectorTypes
+from chipiron.environments.chess.move import moveUci
 
 
 @dataclass
@@ -51,8 +52,11 @@ class Random:
 
         """
         self.random_generator.seed(move_seed)
-        random_move: moveKey = self.random_generator.choice(board.legal_moves.get_all())
-        return MoveRecommendation(move=random_move)
+        random_move_key: moveKey = self.random_generator.choice(
+            board.legal_moves.get_all()
+        )
+        random_move_uci: moveUci = board.get_uci_from_move_key(move_key=random_move_key)
+        return MoveRecommendation(move=random_move_uci)
 
 
 def create_random(random_generator: random.Random) -> Random:
