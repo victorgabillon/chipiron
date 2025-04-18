@@ -27,6 +27,7 @@ from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_nod
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.utils import is_winning
 from chipiron.utils.small_tools import softmax
+from chipiron.utils.logger import chipiron_logger
 
 
 class RecommenderRuleTypes(str, Enum):
@@ -71,7 +72,7 @@ class AlmostEqualLogistic:
                 how_equal="almost_equal_logistic"
             )
         )
-        print("We have as bests: ", [best for best in best_root_moves])
+        chipiron_logger.info(f"We have as bests: {[best for best in best_root_moves]}")
         best_move = random_generator.choice(best_root_moves)
 
         # assert isinstance(best_move, IMove)

@@ -9,7 +9,6 @@ from typing import Any, Protocol
 
 import chess
 
-from chipiron.environments.chess.board import IBoard
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.dataclass import IsDataclass
@@ -55,7 +54,6 @@ def send_board_to_player_process_mailbox(
     and puts it into the player_process_mailbox.
 
     Args:
-        board (IBoard): The board to send.
         seed_int (int): The seed to send.
         player_process_mailbox (queue.Queue[BoardMessage]): The mailbox to put the message into.
     """

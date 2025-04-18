@@ -7,7 +7,6 @@ import queue
 
 import chess
 
-from chipiron.environments.chess.board.iboard import IBoard
 from chipiron.players.move_selector.move_selector import MoveRecommendation
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import MoveMessage
@@ -44,7 +43,6 @@ class GamePlayer:
         """Selects the best move to play based on the current board position.
 
         Args:
-            board (IBoard): The current board position.
             seed_int (seed | None, optional): The seed value for randomization. Defaults to None.
 
         Raises:
@@ -71,7 +69,6 @@ def game_player_computes_move_on_board_and_send_move_in_queue(
     """Computes the move for the game player on the given board and sends the move in the queue.
 
     Args:
-        board (IBoard): The game board.
         game_player (GamePlayer): The game player.
         queue_move (queue.Queue[IsDataclass]): The queue to send the move.
         seed_int (seed): The seed for move selection.

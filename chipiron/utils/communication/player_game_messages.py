@@ -7,7 +7,6 @@ from dataclasses import dataclass
 import chess
 
 from chipiron.environments.chess.board.utils import FenPlusHistory, fen
-from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
     BoardEvaluation,
 )

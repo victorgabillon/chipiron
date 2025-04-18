@@ -317,7 +317,6 @@ class MainWindow(QWidget):
                             move_promote: chess.Move = chess.Move.from_uci(
                                 "{}{}q".format(self.pieceToMove[1], self.coordinates)
                             )
-                            move_key: moveKey
                             if move.uci() in all_legal_moves_uci:
                                 self.send_move_to_main_thread(move_uci=move.uci())
                             elif move_promote.uci() in all_legal_moves_uci:

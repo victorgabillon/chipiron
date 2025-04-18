@@ -49,7 +49,7 @@ class MoveAndValueTreeFactory:
         Returns:
 
         """
-        print()
+
         root_node: ITreeNode[Any] = self.node_factory.create(
             board=starting_board,
             half_move=starting_board.ply(),

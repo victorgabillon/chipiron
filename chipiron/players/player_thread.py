@@ -8,7 +8,6 @@ import queue
 import chess
 
 from chipiron.environments.chess.board.factory import BoardFactory
-from chipiron.environments.chess.board.iboard import IBoard
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.dataclass import DataClass, IsDataclass
@@ -123,7 +122,6 @@ class PlayerProcess(multiprocessing.Process):
                 if isinstance(message, BoardMessage):
                     board_message: BoardMessage = message
                     fen_plus_moves: FenPlusHistory = board_message.fen_plus_moves
-                    board: IBoard = self.board_factory(fen_with_history=fen_plus_moves)
                     seed_: seed | None = board_message.seed
                     print(f"Player thread got the board {fen_plus_moves.current_fen}")
                     assert seed_ is not None

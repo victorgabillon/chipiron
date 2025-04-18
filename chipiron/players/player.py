@@ -4,14 +4,14 @@ Module for the Player class.
 
 from typing import Any
 
-from chipiron.environments.chess.board import IBoard, create_board, BoardFactory
+from chipiron.environments.chess.board import IBoard, BoardFactory
 from chipiron.environments.chess.move import moveUci
 from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.utils import seed
 from .move_selector.move_selector import MoveRecommendation, MoveSelector
 from ..environments.chess.board.utils import FenPlusHistory
-from ..scripts.chipiron_args import ImplementationArgs
+from chipiron.utils.logger import chipiron_logger
 
 playerId = str
 
@@ -68,13 +68,14 @@ class Player:
             if self.syzygy_player is not None and self.syzygy_player.fast_in_table(
                 board
             ):
-                print("Playing with Syzygy")
+                chipiron_logger.info("Playing with Syzygy")
                 best_move_key: moveKey = self.syzygy_player.best_move(board)
                 best_move_uci: moveUci = board.get_uci_from_move_key(best_move_key)
                 move_recommendation = MoveRecommendation(move=best_move_uci)
-
             else:
-                print(f"Playing with player (not Syzygy) {self.id}\n{board}")
+                chipiron_logger.info(
+                    f"Playing with player (not Syzygy) {self.id}\n{board}"
+                )
                 move_recommendation = self.main_move_selector.select_move(
                     board=board, move_seed=seed_int
                 )
