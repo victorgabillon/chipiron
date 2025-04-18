@@ -30,6 +30,12 @@ class FenPlusHistory:
         # copy of some code in the chess python library that cannot be easily extracted or called directly
         parts = self.current_fen.split()
 
+        # Board part.
+        try:
+            _ = parts.pop(0)
+        except IndexError:
+            raise ValueError("empty fen")
+
         # Turn.
         try:
             turn_part = parts.pop(0)
