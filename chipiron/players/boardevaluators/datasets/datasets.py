@@ -75,10 +75,12 @@ class MyDataSet(Dataset[Any]):
         print("Loading the dataset...")
         start_time = time.time()
         raw_data: pandas.DataFrame = pd.read_pickle(self.file_name)
-        print("raw_data", type(raw_data))
-        self.raw_data = (
+        raw_data = (
             raw_data.copy()
-        )  # gets read of compatibility problem between various version of panda and pickle
+        )  # gets rid of compatibility problems between various version of panda and pickle
+        print("raw_data", type(raw_data))
+        self.raw_data = raw_data
+
         print("--- LOAD READ PICKLE %s seconds ---" % (time.time() - start_time))
         print("Dataset  loaded with {} items".format(len(raw_data)))
 

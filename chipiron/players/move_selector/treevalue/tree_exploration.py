@@ -41,6 +41,8 @@ from . import tree_manager as tree_man
 from . import trees
 from .trees.factory import MoveAndValueTreeFactory
 
+from chipiron.utils.logger import chipiron_logger
+
 
 @dataclass
 class TreeExplorationResult:
@@ -95,9 +97,9 @@ class TreeExploration:
         else:
             current_best_move = "?"
         if random_generator.random() < 0.11:
-            print(f"fen: {self.tree.root_node.board.fen}")
+            chipiron_logger.info(f"fen: {self.tree.root_node.board.fen}")
             str_progress = self.stopping_criterion.get_string_of_progress(self.tree)
-            print(
+            chipiron_logger.info(
                 f"{str_progress} | current best move:  {current_best_move} | current white value: {self.tree.root_node.minmax_evaluation.value_white_minmax})"
             )
             # ,end='\r')
@@ -114,7 +116,6 @@ class TreeExploration:
         Returns:
         - MoveRecommendation: The recommended move and its evaluation.
         """
-
         # by default the first tree expansion is the creation of the tree node
         tree_expansions: tree_man.TreeExpansions = tree_man.TreeExpansions()
 
@@ -165,16 +166,15 @@ class TreeExploration:
         # trees.save_raw_data_to_file(tree=self.tree)
         # self.tree_manager.print_some_stats(tree=self.tree)
         # for move, child in self.tree.root_node.moves_children.items():
-        #    print(f'{move} {self.tree.root_node.moves_children[move].minmax_evaluation.get_value_white()}'
+        #    chipiron_logger.info(f'{move} {self.tree.root_node.moves_children[move].minmax_evaluation.get_value_white()}'
         #          f' {child.minmax_evaluation.over_event.get_over_tag()}')
-        # print(f'evaluation for white: {self.tree.root_node.minmax_evaluation.get_value_white()}')
+        # chipiron_logger.info(f'evaluation for white: {self.tree.root_node.minmax_evaluation.get_value_white()}')
 
         best_move_key: moveKey = recommend_move_after_exploration_generic(
             self.recommend_move_after_exploration,
             tree=self.tree,
             random_generator=random_generator,
         )
-
         self.tree_manager.print_best_line(
             tree=self.tree
         )  # todo maybe almost best chosen line no?
@@ -216,15 +216,12 @@ def create_tree_exploration(
     Returns:
     - TreeExploration: The created TreeExploration object.
     """
-
     # creates the tree
     move_and_value_tree: trees.MoveAndValueTree = tree_factory.create(
         starting_board=starting_board
     )
-
     # creates the node selector
     node_selector: node_sel.NodeSelector = node_selector_create()
-
     stopping_criterion: ProgressMonitor = create_stopping_criterion(
         args=stopping_criterion_args, node_selector=node_selector
     )

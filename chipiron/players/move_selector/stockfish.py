@@ -20,7 +20,6 @@ from typing import Any, Literal
 import chess.engine
 
 import chipiron.environments.chess.board as boards
-from chipiron.environments.chess.move.imove import moveKey
 
 from ...environments.chess import BoardChi
 from ...environments.chess.board import create_board_chi

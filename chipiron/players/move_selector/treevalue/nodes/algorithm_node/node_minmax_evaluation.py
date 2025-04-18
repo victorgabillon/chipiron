@@ -32,6 +32,7 @@ from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
 from chipiron.players.boardevaluators.over_event import OverEvent
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
+from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.my_value_sorted_dict import sort_dic
 from chipiron.utils.small_tools import nth_key
 
@@ -329,15 +330,13 @@ class NodeMinmaxEvaluation:
             None
         """
         move: moveKey
-        print(f"here are the {len(self.moves_sorted_by_value)} moves sorted by value: ")
+        chipiron_logger.info(
+            f"here are the {len(self.moves_sorted_by_value)} moves sorted by value: "
+        )
+        string_info: str = ""
         for move, subjective_sort_value in self.moves_sorted_by_value.items():
-            print(
-                self.tree_node.board.get_uci_from_move_key(move),
-                subjective_sort_value[0],
-                end=" $$ ",
-            )
-            # print(move, subjective_sort_value[0],'('+str(child_node.descendants.number_of_descendants)+')', end=' $$ ')
-        print("")
+            string_info += f" {self.tree_node.board.get_uci_from_move_key(move)} {subjective_sort_value[0]} $$ "
+        chipiron_logger.info(string_info)
 
     def print_moves_not_over(self) -> None:
         """
@@ -853,14 +852,14 @@ class NodeMinmaxEvaluation:
         Returns:
             None
         """
-        print("Best line from node " + str(self.tree_node.id) + ":", end=" ")
+        info_string: str = f"Best line from node {str(self.tree_node.id)}: "
         minmax: NodeMinmaxEvaluation = self
         for move in self.best_move_sequence:
             child = minmax.tree_node.moves_children[move]
             assert child is not None
-            print(move, "(" + str(child.tree_node.id) + ")", end=" ")
+            info_string += f"{move} ({str(child.tree_node.id)}) "
             minmax = child.minmax_evaluation
-        print(" ")
+        chipiron_logger.info(info_string)
 
     def my_logit(self, x: float) -> float:
         """

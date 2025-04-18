@@ -3,6 +3,7 @@ import random
 import time
 from dataclasses import asdict, dataclass, field
 from typing import Any
+import logging
 
 import mlflow
 import pandas
@@ -35,6 +36,7 @@ from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.chi_nn import ChiNN
+from chipiron.utils.logger import chipiron_logger, suppress_logging
 
 
 @dataclass
@@ -137,9 +139,19 @@ class LearnNNFromScratchScript:
         chipiron.set_seeds(seed=self.args.base_script_args.seed)
 
         if self.args.starting_boards_are_non_labelled:
-            transform_dataset_value_to_white_value_function = lambda _: 0
+
+            def transform_dataset_value_to_white_value_function(
+                row: pandas.Series,
+            ) -> float:
+                return 0.0
+
         else:
-            transform_dataset_value_to_white_value_function = lambda row: row["value"]
+
+            def transform_dataset_value_to_white_value_function(
+                row: pandas.Series,
+            ) -> float:
+                assert isinstance(row["value"], float)
+                return row["value"]
 
         self.boards_dataset = FenAndValueDataSet(
             file_name=self.args.dataset_args.train_file_name,
@@ -220,22 +232,31 @@ class LearnNNFromScratchScript:
             )["fen"]
 
             assert isinstance(self.boards_dataset.data, pandas.DataFrame)
-            print(
-                "debug",
-                board_fen_to_recompute_value,
-                len(self.boards_dataset.data),
-                index_evaluating_player_data_temp,
-            )
+            # print(
+            #    "debug",
+            #    board_fen_to_recompute_value,
+            #    len(self.boards_dataset.data),
+            #    index_evaluating_player_data_temp,
+            # )
 
-            self.player.select_move(
-                fen_plus_history=FenPlusHistory(
-                    current_fen=board_fen_to_recompute_value
-                ),
-                seed_int=self.args.base_script_args.seed,
-            )
+            with suppress_logging(
+                chipiron_logger, level=logging.WARNING
+            ):  # no logging during the tree search
+                self.player.select_move(
+                    fen_plus_history=FenPlusHistory(
+                        current_fen=board_fen_to_recompute_value
+                    ),
+                    seed_int=self.args.base_script_args.seed,
+                )
 
             self.index_evaluating_player_data += 1
 
         # record_the_dtaa
         # set in a
         # file
+
+    def terminate(self) -> None:
+        """
+        Finishing the script. Profiling or timing.
+        """
+        pass
