@@ -11,8 +11,10 @@ configs = [
             + "board_evaluators_common_training_data/nn_pytorch/architectures/"
             + architecture_file,
         },
-        "stockfish_boards_train_file_name": "chipiron/scripts/learn_nn_supervised/tests/small_dataset.pi",
-        "stockfish_boards_test_file_name": "chipiron/scripts/learn_nn_supervised/tests/small_dataset.pi",
+        "dataset_args": {
+            "train_file_name": "chipiron/scripts/learn_nn_supervised/tests/small_dataset.pi",
+            "test_file_name": "chipiron/scripts/learn_nn_supervised/tests/small_dataset.pi",
+        },
         "test": True,
     }
     for architecture_file in [
