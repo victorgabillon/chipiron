@@ -19,6 +19,7 @@ from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.dataclass import IsDataclass
+from chipiron.utils.logger import chipiron_logger
 
 
 @dataclass
@@ -113,7 +114,7 @@ class OneMatchScript:
 
         """
 
-        print(" Script One Match go")
+        chipiron_logger.info(" Script One Match go")
         # Qt Application needs to be in the main Thread, so we need to distinguish between GUI and no GUI
         if self.gui:  # case with GUI
             # Launching the Match Manager in a Thread
@@ -128,7 +129,7 @@ class OneMatchScript:
         else:  # No GUI
             self.match_manager.play_one_match()
 
-        print("finish the run of the match")
+        chipiron_logger.info("Finish the run of the match")
 
         # TODO check the good closing of processes
 
@@ -136,7 +137,7 @@ class OneMatchScript:
         """
         Terminates the script and cleans up any resources.
         """
-        print("terminating script")
+        chipiron_logger.info("terminating script")
         self.base_script.terminate()
         if self.gui:
             self.process_match_manager.terminate()

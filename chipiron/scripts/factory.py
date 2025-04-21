@@ -4,9 +4,8 @@ factory for scripts module
 
 from typing import Any
 
-from chipiron.scripts.parsers.create_parser import create_parser
-from chipiron.scripts.parsers.parser import MyParser
 from chipiron.utils.dataclass import DataClass
+from parsley_coco import create_parsley, Parsley
 
 from .get_script import get_script_type_from_script_class_name
 from .iscript import IScript
@@ -18,6 +17,7 @@ from .script_type import ScriptType
 def create_script(
     script_type: ScriptType,
     extra_args: dict[str, Any] | None = None,
+    config_file_name: str | None = None,
     should_parse_command_line_arguments: bool = True,
 ) -> IScript:
     """
@@ -41,11 +41,11 @@ def create_script(
 
     # retrieve the name of the class of args associated to this script
     script: Any = get_script_type_from_script_class_name(script_type=script_type)
-    args_class_name: type[DataClass] = script.args_dataclass_name
+    args_dataclass_name: type[DataClass] = script.args_dataclass_name
 
     # create the relevant script
-    parser: MyParser = create_parser(
-        args_class_name=args_class_name,
+    parser: Parsley = create_parsley(
+        args_dataclass_name=args_dataclass_name,
         should_parse_command_line_arguments=should_parse_command_line_arguments,
     )
 

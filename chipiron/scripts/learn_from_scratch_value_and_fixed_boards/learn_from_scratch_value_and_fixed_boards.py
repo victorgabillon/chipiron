@@ -7,6 +7,8 @@ import logging
 
 import mlflow
 import pandas
+from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
+from chipiron.players.move_selector.random import Random
 from torch.utils.data import DataLoader
 from torchinfo import summary
 
@@ -38,6 +40,8 @@ from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.chi_nn import ChiNN
 from chipiron.utils.logger import chipiron_logger, suppress_logging
 
+from typing import cast
+
 
 @dataclass
 class LearnNNFromScratchScriptArgs:
@@ -47,14 +51,26 @@ class LearnNNFromScratchScriptArgs:
 
     """
 
-    epochs_number_with_respect_to_evaluating_player: int
-    number_of_evaluating_player_per_loop: int
-    number_of_gradient_descent_per_loop: int
-    starting_boards_are_non_labelled: bool
-    test: bool
+    epochs_number_with_respect_to_evaluating_player: int = 10
+    number_of_evaluating_player_per_loop: int = 10
+    number_of_gradient_descent_per_loop: int = 10
+    starting_boards_are_non_labelled: bool = True
 
-    dataset_args: DataSetArgs
-    evaluating_player_args: PlayerArgs
+    dataset_args: DataSetArgs = field(
+        default_factory=lambda: DataSetArgs(
+            train_file_name="data/datasets/modified_fen_test.pkl",
+            test_file_name=None,
+            preprocessing_data_set=False,
+        )
+    )
+
+    evaluating_player_args: PlayerArgs = field(
+        default_factory=lambda: PlayerArgs(
+            name="Random",
+            main_move_selector=Random(type=MoveSelectorTypes.Random),
+            syzygy_play=False,
+        )
+    )
 
     base_script_args: BaseScriptArgs = field(default_factory=BaseScriptArgs)
     nn_trainer_args: NNTrainerArgs = field(default_factory=NNTrainerArgs)
@@ -171,7 +187,7 @@ class LearnNNFromScratchScript:
 
         self.index_evaluating_player_data: int = 0
 
-        if self.args.test:
+        if self.args.base_script_args.testing:
             mlflow.set_tracking_uri(
                 uri=chipiron.utils.path_variables.ML_FLOW_URI_PATH_TEST
             )

@@ -3,21 +3,23 @@ nn_trainer_args:
   reuse_existing_model:  False
   reuse_existing_trainer:  False
   nn_architecture_file_if_not_reusing_existing_one: 'chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/test_to_keep/architecture.yaml'
-config_file_name: 'scripts/learn_nn_supervised/exp_options.yaml'
-stockfish_boards_train_file_name: 'chipiron/scripts/learn_nn_supervised/tests/small_dataset.pi'
-stockfish_boards_test_file_name: 'chipiron/scripts/learn_nn_supervised/tests/small_dataset.pi'
-preprocessing_data_set: False
-batch_size_train: 32
-batch_size_test: 10
-saving_interval: 1000
-saving_intermediate_copy: True
-saving_intermediate_copy_interval: 100000
-min_interval_lr_change: 1000000
-starting_lr: .0001
-min_lr: .00001
-momentum_op: .9
-scheduler_step_size: 1
-scheduler_gamma: .5
-reuse_existing_trainer: False
-epochs_number: 1
-test: True
+  starting_lr: .001
+  momentum_op: .9
+  scheduler_step_size: 1
+  scheduler_gamma: .5
+  saving_intermediate_copy: True
+  batch_size_train: 32
+  batch_size_test: 10
+  saving_interval: 1000
+  saving_intermediate_copy_interval: 100000
+  min_interval_lr_change: 100000
+  min_lr: .00001
+  epochs_number: 1
+dataset_args:
+  train_file_name: 'chipiron/scripts/learn_nn_supervised/tests/small_dataset.pi'
+  test_file_name: 'chipiron/scripts/learn_nn_supervised/tests/small_dataset.pi'
+  preprocessing_data_set: False
+base_script_args:
+  seed: 11
+  testing: True
+

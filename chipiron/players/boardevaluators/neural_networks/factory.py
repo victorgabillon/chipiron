@@ -121,7 +121,6 @@ def get_architecture_args_from_file(
     args_dict: dict[Any, Any] = yaml_fetch_args_in_file(
         path_file=architecture_file_name
     )
-    print("debug args_dict", args_dict)
     nn_architecture_args: NeuralNetArchitectureArgs = dacite.from_dict(
         data_class=NeuralNetArchitectureArgs,
         data=args_dict,

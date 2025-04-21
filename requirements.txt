@@ -18,6 +18,7 @@ pyarrow
 shakmaty_python_binding >=0.1.5
 gprof2dot
 mlflow
+parsley_coco==0.1.9
 
 
 # for the web app

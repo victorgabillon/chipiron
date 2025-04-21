@@ -9,17 +9,15 @@ import os
 import pprint
 import pstats
 import time
-from enum import Enum
 from pstats import SortKey
 from typing import Any, Protocol, runtime_checkable
 
-import dacite
-
-from chipiron.scripts.parsers.parser import MyParser
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
 from chipiron.utils.dataclass import IsDataclass
+from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.small_tools import mkdir_if_not_existing
+from parsley_coco import Parsley
 
 
 @runtime_checkable
@@ -38,15 +36,19 @@ class Script:
     """
 
     start_time: float
-    parser: MyParser
+    parser: Parsley
     gui_args: dict[str, Any] | None
     profile: cProfile.Profile | None
     experiment_script_type_output_folder: path | None = None
     base_experiment_output_folder: path = "chipiron/scripts/"
     default_experiment_output_folder: path = "chipiron/scripts/default_output_folder"
+    config_file_name: str | None
 
     def __init__(
-        self, parser: MyParser, extra_args: dict[str, Any] | None = None
+        self,
+        parser: Parsley,
+        extra_args: dict[str, Any] | None = None,
+        config_file_name: str | None = None,
     ) -> None:
         """
         Initializes the Script object.
@@ -59,7 +61,9 @@ class Script:
         self.start_time = time.time()  # start the clock
         self.parser = parser
         self.experiment_script_type_output_folder = None
+        self.config_file_name = config_file_name
         self.extra_args = extra_args
+
         self.profile = None
         self.args: IsDataclass | None = None
 
@@ -90,16 +94,10 @@ class Script:
             )
 
         # parse the arguments
-        args_dict: dict[str, Any] = self.parser.parse_arguments(
-            extra_args=self.extra_args
+        final_args: _T_co = self.parser.parse_arguments(
+            extra_args=self.extra_args, config_file_path=self.config_file_name
         )
 
-        # Converting the args in the standardized dataclass
-        final_args: _T_co = dacite.from_dict(
-            data_class=args_dataclass_name,
-            data=args_dict,
-            config=dacite.Config(cast=[Enum]),
-        )
         assert hasattr(final_args, "base_script_args")
 
         final_args.base_script_args.experiment_output_folder = os.path.join(
@@ -124,23 +122,25 @@ class Script:
             self.profile.enable()
 
         self.args = final_args
-        print("the args of the script are:\n")
-        pprint.pprint(self.args)
+        chipiron_logger.info(
+            f"The args of the script are:\n{pprint.pformat(self.args)}"
+        )
+
         return final_args
 
     def terminate(self) -> None:
         """
         Finishes the script by printing execution time and profiling information (if enabled).
         """
-        print("terminate")
+        chipiron_logger.info("terminate")
         if self.profile is not None:
-            print(f"--- {time.time() - self.start_time} seconds ---")
+            chipiron_logger.info(f"--- {time.time() - self.start_time} seconds ---")
             self.profile.disable()
             string_io = io.StringIO()
             sort_by = SortKey.CUMULATIVE
             stats = pstats.Stats(self.profile, stream=string_io).sort_stats(sort_by)
             stats.print_stats()
-            print(string_io.getvalue())
+            chipiron_logger.info(string_io.getvalue())
             assert self.args is not None
             assert hasattr(self.args, "base_script_args")
 
@@ -159,9 +159,9 @@ class Script:
 
             end_time = time.time()
 
-            print("the args of the script were:\n")
+            chipiron_logger.info("The args of the script were:\n")
             pprint.pprint(self.args)
-            print("execution time", end_time - self.start_time)
+            chipiron_logger.info("Execution time", end_time - self.start_time)
 
     def run(self) -> None:
         """

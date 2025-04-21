@@ -21,6 +21,7 @@ from . import move_selector
 from .game_player import GamePlayer
 from .player import Player
 from .player_args import PlayerFactoryArgs
+from chipiron.utils.logger import chipiron_logger
 
 
 def create_chipiron_player(
@@ -97,7 +98,7 @@ def create_player_from_file(
         use_rust=implementation_args.use_rust_boards
     )
 
-    print("create player from file")
+    chipiron_logger.info("Create player from file")
     main_move_selector: move_selector.MoveSelector = (
         move_selector.create_main_move_selector(
             move_selector_instance_or_args=args.main_move_selector,
@@ -141,7 +142,7 @@ def create_player(
     Returns:
         Player: The created player object.
     """
-    print("create player")
+    chipiron_logger.info("Create player")
     main_move_selector: move_selector.MoveSelector = (
         move_selector.create_main_move_selector(
             move_selector_instance_or_args=args.main_move_selector,
