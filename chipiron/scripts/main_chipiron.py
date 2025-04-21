@@ -16,7 +16,7 @@ sys.path.append("../../")
 
 def get_script_and_args(
     raw_command_line_arguments: list[str],
-) -> tuple[ScriptType, dict[str, Any] | None]:
+) -> tuple[ScriptType, dict[str, Any] | None, str | None]:
     """
 
     Args:
@@ -28,11 +28,12 @@ def get_script_and_args(
     """
     script_type: ScriptType
     extra_args: dict[str, Any] | None = None
+    config_file_name: str | None = None
     # Whether command line arguments are provided or not we ask for more info through a GUI
     if len(raw_command_line_arguments) == 1:  # No args provided
         # use a gui to get user input
         gui_extra_args: dict[str, Any] | None
-        script_type, gui_extra_args = script_gui()
+        script_type, gui_extra_args, config_file_name = script_gui()
         extra_args = gui_extra_args
     else:
         # first parse/retrieve the name of the script then look for the names of the parameters related to this script
@@ -62,7 +63,7 @@ def get_script_and_args(
         extra_args = {}
 
     # print("extra_args", extra_args)
-    return script_type, extra_args
+    return script_type, extra_args, config_file_name
 
 
 def main() -> None:
@@ -79,12 +80,15 @@ def main() -> None:
     extra_args: dict[str, Any] | None
 
     # extracting the script_name and possibly some input arguments from either the gui or a yaml file or command line
-    script_type, extra_args = get_script_and_args(raw_command_line_arguments)
+    script_type, extra_args, config_file_name = get_script_and_args(
+        raw_command_line_arguments
+    )
 
     # creating the script object from its name and arguments
     script_object: IScript = create_script(
         script_type=script_type,
         extra_args=extra_args,
+        config_file_name=config_file_name,
         should_parse_command_line_arguments=True,
     )
 

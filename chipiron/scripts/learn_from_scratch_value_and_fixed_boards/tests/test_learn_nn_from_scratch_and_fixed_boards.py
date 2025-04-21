@@ -2,6 +2,9 @@ import chipiron.scripts as scripts
 from chipiron.learningprocesses.nn_trainer.factory import NNTrainerArgs
 from chipiron.players.boardevaluators.datasets.datasets import DataSetArgs
 from chipiron.scripts.factory import create_script
+from chipiron.scripts.learn_from_scratch_value_and_fixed_boards.learn_from_scratch_value_and_fixed_boards import (
+    LearnNNFromScratchScriptArgs,
+)
 from chipiron.scripts.learn_nn_supervised.learn_nn_from_supervised_datasets import (
     LearnNNScriptArgs,
 )
@@ -9,16 +12,15 @@ from chipiron.scripts.script_args import BaseScriptArgs
 from parsley_coco import make_partial_dataclass_with_optional_paths
 from typing import Any
 
-
-PartialOpLearnNNScriptArgs = make_partial_dataclass_with_optional_paths(
-    cls=LearnNNScriptArgs
+PartialOpLearnNNFromScratchScriptArgs = make_partial_dataclass_with_optional_paths(
+    cls=LearnNNFromScratchScriptArgs
 )
 PartialOpNNTrainerArgs = make_partial_dataclass_with_optional_paths(cls=NNTrainerArgs)
 PartialOpDataSetArgs = make_partial_dataclass_with_optional_paths(cls=DataSetArgs)
 PartialOpBaseScriptArgs = make_partial_dataclass_with_optional_paths(cls=BaseScriptArgs)
 
 configs_dataclasses: list[Any] = [
-    PartialOpLearnNNScriptArgs(
+    PartialOpLearnNNFromScratchScriptArgs(
         nn_trainer_args=PartialOpNNTrainerArgs(
             neural_network_folder_path="chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/"
             + "nn_pytorch/test_to_keep",
@@ -42,10 +44,10 @@ configs_dataclasses: list[Any] = [
 ]
 
 
-def test_learn_nn() -> None:
+def test_learn_nn_from_scratch_and_fixed_boards() -> None:
     for config in configs_dataclasses:
         script_object: scripts.IScript = create_script(
-            script_type=scripts.ScriptType.LearnNN,
+            script_type=scripts.ScriptType.LearnNNFromScratch,
             extra_args=config,
             should_parse_command_line_arguments=False,
         )
@@ -58,4 +60,4 @@ def test_learn_nn() -> None:
 
 
 if __name__ == "__main__":
-    test_learn_nn()
+    test_learn_nn_from_scratch_and_fixed_boards()

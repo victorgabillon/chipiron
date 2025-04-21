@@ -79,8 +79,6 @@ class LearnNNScriptArgs:
         )
     )
 
-    test: bool = False  # hack to test fast, change at some point
-
 
 class LearnNNScript:
     """
@@ -197,7 +195,7 @@ class LearnNNScript:
             num_workers=1,
         )
 
-        if self.args.test:
+        if self.args.base_script_args.testing:
             mlflow.set_tracking_uri(
                 uri=chipiron.utils.path_variables.ML_FLOW_URI_PATH_TEST
             )
@@ -292,7 +290,7 @@ class LearnNNScript:
                     if (
                         count_train_step % 2000 == 0
                         and count_train_step > 0
-                        and self.args.test
+                        and self.args.base_script_args.testing
                     ):
                         break
 

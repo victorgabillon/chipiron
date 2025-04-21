@@ -17,6 +17,7 @@ from chipiron.environments.chess.board.board_modification import (
 )
 from chipiron.environments.chess.move import moveUci
 from chipiron.environments.chess.move.imove import moveKey
+from chipiron.utils.logger import chipiron_logger
 
 from .iboard import IBoard, LegalMoveKeyGeneratorP, boardKey, compute_key
 from .utils import FenPlusHistory, fen
@@ -275,8 +276,8 @@ class BoardChi(IBoard):
         if self.ply() > 0:
             self.chess_board.pop()
         else:
-            print(
-                "Cannot rewind more as self.halfmove_clock equals {}".format(self.ply())
+            chipiron_logger.warning(
+                f"Cannot rewind more as self.halfmove_clock equals {self.ply()}"
             )
 
     @typing.no_type_check
@@ -428,14 +429,7 @@ class BoardChi(IBoard):
 
             self.chess_board._remove_piece_at(move.from_square)
             self.chess_board._remove_piece_at(move.to_square)
-            # start added
-            # remove_king_in_square: PieceInSquare = PieceInSquare(
-            #    square=move.from_square,
-            #    piece=chess.KING,
-            #    color=self.chess_board.turn
-            # )
-            # print('debug here123d',remove_king_in_square)
-            # board_modifications.add_removal(removal=remove_king_in_square)
+
             remove_rook_in_square: PieceInSquare = PieceInSquare(
                 square=move.to_square, piece=chess.ROOK, color=self.chess_board.turn
             )
@@ -526,7 +520,7 @@ class BoardChi(IBoard):
         )
         return string
 
-    def print_chess_board(self) -> None:
+    def print_chess_board(self) -> str:
         """
         Prints the current state of the chess board.
 
@@ -536,8 +530,7 @@ class BoardChi(IBoard):
         Returns:
             None
         """
-        print(self)
-        print(self.chess_board.fen)
+        return str(self.chess_board.fen)
 
     def number_of_pieces_on_the_board(self) -> int:
         """
@@ -722,16 +715,16 @@ class BoardChi(IBoard):
 
     def tell_result(self) -> None:
         if self.chess_board.is_fivefold_repetition():
-            print("is_fivefold_repetition")
+            ("is_fivefold_repetition")
         if self.chess_board.is_seventyfive_moves():
-            print("is seventy five  moves")
+            chipiron_logger.info("is seventy five  moves")
         if self.chess_board.is_insufficient_material():
-            print("is_insufficient_material")
+            chipiron_logger.info("is_insufficient_material")
         if self.chess_board.is_stalemate():
-            print("is_stalemate")
+            chipiron_logger.info("is_stalemate")
         if self.chess_board.is_checkmate():
-            print("is_checkmate")
-        print(self.chess_board.result())
+            chipiron_logger.info("is_checkmate")
+        chipiron_logger.info(self.chess_board.result())
 
     def result(self, claim_draw: bool = False) -> str:
         return self.chess_board.result(claim_draw=claim_draw)

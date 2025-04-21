@@ -14,6 +14,7 @@ from chipiron.utils.dataclass import IsDataclass
 
 from .player import Player
 from ..environments.chess.board.utils import FenPlusHistory
+from chipiron.utils.logger import chipiron_logger
 
 
 class GamePlayer:
@@ -88,9 +89,11 @@ def game_player_computes_move_on_board_and_send_move_in_queue(
             evaluation=move_recommendation.evaluation,
             color_to_play=game_player.color,
         )
-        print("sending ", message)
+        chipiron_logger.info(f"Sending {message}")
 
         deep_copy_message = copy.deepcopy(message)
         queue_move.put(deep_copy_message)
     else:
-        print("Game player rejects move query", fen_plus_history.current_fen)
+        chipiron_logger.warning(
+            f"Game player rejects move query {fen_plus_history.current_fen}",
+        )
