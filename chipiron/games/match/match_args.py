@@ -5,8 +5,13 @@ This module defines the `MatchArgs` class, which represents the input arguments 
 from dataclasses import dataclass, field
 from typing import Any
 
+from chipiron.players import PlayerArgs
 from chipiron.players.player_ids import PlayerConfigFile
 from chipiron.utils import path
+from parsley_coco import make_partial_dataclass_with_optional_paths
+
+
+# PartialOpPlayerArgs = make_partial_dataclass_with_optional_paths(cls=PlayerArgs)
 
 
 @dataclass
@@ -22,6 +27,10 @@ class MatchArgs:
             match (dict[Any, Any]): The dictionary for the match. Defaults to an empty dictionary.
 
     """
+
+    # this def is still a bit all other the place, atm using PlayerConfigFile doesnt allow to use the make_partial_dataclass_with_optional_paths meachnism but make it for very chekable values
+    # having player_one: PartialOpPlayerArgs is nice but is not fullt automatic. as we combine logic here we need a specific fetch/convert function
+    # match: dict[Any, Any] is still in between the above options
 
     file_name_player_one: PlayerConfigFile = PlayerConfigFile.RecurZipfBase3
     file_name_player_two: PlayerConfigFile = PlayerConfigFile.RecurZipfBase3
