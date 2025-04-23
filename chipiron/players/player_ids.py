@@ -39,7 +39,7 @@ class PlayerConfigTag(str, Enum):
         path_player: path
         if self is PlayerConfigTag.Chipiron:
             path_player = os.path.join(
-                "data/players/player_config/chipion/chipiron.yaml"
+                "data/players/player_config/chipiron/chipiron.yaml"
             )
         else:
             path_player = os.path.join(

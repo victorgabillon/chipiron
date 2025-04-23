@@ -9,6 +9,7 @@ import mlflow
 import pandas
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 from chipiron.players.move_selector.random import Random
+from chipiron.players.player_ids import PlayerConfigTag
 from torch.utils.data import DataLoader
 from torchinfo import summary
 
@@ -64,7 +65,7 @@ class LearnNNFromScratchScriptArgs:
         )
     )
 
-    evaluating_player_args: PlayerArgs = field(
+    evaluating_player_args: PlayerArgs | PlayerConfigTag = field(
         default_factory=lambda: PlayerArgs(
             name="Random",
             main_move_selector=Random(type=MoveSelectorTypes.Random),

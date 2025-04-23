@@ -1,7 +1,7 @@
 import os
 from enum import Enum
 
-from chipiron.games.match import MatchSettingsArgs
+from chipiron.games.match.match_settings_args import MatchSettingsArgs
 from chipiron.utils import path
 from chipiron.utils.small_tools import fetch_args_modify_and_convert
 
