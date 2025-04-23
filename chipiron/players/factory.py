@@ -12,7 +12,8 @@ import chipiron.players.boardevaluators.table_base as table_base
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.players.player_args import PlayerArgs
-from chipiron.players.utils import fetch_player_args_convert_and_save
+from chipiron.players.player_ids import PlayerConfigTag
+
 from ..environments.chess.board import BoardFactory, create_board_factory
 from ..scripts.chipiron_args import ImplementationArgs
 
@@ -44,10 +45,7 @@ def create_chipiron_player(
         use_rust=implementation_args.use_rust_boards
     )
 
-    args_player: PlayerArgs = fetch_player_args_convert_and_save(
-        file_name_player="data/players/player_config/chipiron/chipiron.yaml",
-        from_data_folder=False,
-    )
+    args_player: PlayerArgs = PlayerConfigTag.Chipiron.get_players_args()
 
     main_move_selector: move_selector.MoveSelector | None = (
         move_selector.create_main_move_selector(
@@ -75,7 +73,7 @@ def create_chipiron_player(
 
 
 def create_player_from_file(
-    player_args_file: str,
+    player_args: PlayerArgs,
     random_generator: random.Random,
     implementation_args: ImplementationArgs,
     universal_behavior: bool,
@@ -90,9 +88,6 @@ def create_player_from_file(
     Returns:
         Player: The created player object.
     """
-    args: PlayerArgs = fetch_player_args_convert_and_save(
-        file_name_player=player_args_file
-    )
 
     syzygy_table: table_base.SyzygyTable[Any] | None = create_syzygy(
         use_rust=implementation_args.use_rust_boards
@@ -101,7 +96,7 @@ def create_player_from_file(
     chipiron_logger.info("Create player from file")
     main_move_selector: move_selector.MoveSelector = (
         move_selector.create_main_move_selector(
-            move_selector_instance_or_args=args.main_move_selector,
+            move_selector_instance_or_args=player_args.main_move_selector,
             syzygy=syzygy_table,
             random_generator=random_generator,
             queue_progress_player=queue_progress_player,
@@ -115,7 +110,7 @@ def create_player_from_file(
     )
 
     return Player(
-        name=args.name,
+        name=player_args.name,
         syzygy=syzygy_table,
         main_move_selector=main_move_selector,
         board_factory=board_factory,

@@ -5,7 +5,7 @@ from typing import Any
 
 import chipiron.scripts as scripts
 from chipiron.games.match.match_args import MatchArgs
-from chipiron.players.player_ids import PlayerConfigFile
+from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.factory import create_script
 from chipiron.scripts.one_match.one_match import MatchScriptArgs
@@ -32,8 +32,8 @@ configs_base: list[Any] = [
     PartialOpMatchScriptArgs(
         gui=False,
         match_args=PartialOpMatchArgs(
-            file_name_player_one=PlayerConfigFile.Test_Sequool,
-            file_name_player_two=PlayerConfigFile.Random,
+            file_name_player_one=PlayerConfigTag.Test_Sequool,
+            file_name_player_two=PlayerConfigTag.Random,
             file_name_match_setting="setting_cubo.yaml",
         ),
         base_script_args=PartialOpBaseScriptArgs(
@@ -43,8 +43,8 @@ configs_base: list[Any] = [
     PartialOpMatchScriptArgs(
         gui=False,
         match_args=PartialOpMatchArgs(
-            file_name_player_one=PlayerConfigFile.Test_Sequool,
-            file_name_player_two=PlayerConfigFile.Test_RecurZipfSequool,
+            file_name_player_one=PlayerConfigTag.Test_Sequool,
+            file_name_player_two=PlayerConfigTag.Test_RecurZipfSequool,
             file_name_match_setting="setting_cubo.yaml",
         ),
         base_script_args=PartialOpBaseScriptArgs(
@@ -54,8 +54,8 @@ configs_base: list[Any] = [
     PartialOpMatchScriptArgs(
         gui=False,
         match_args=PartialOpMatchArgs(
-            file_name_player_one=PlayerConfigFile.Test_Sequool,
-            file_name_player_two=PlayerConfigFile.Test_RecurZipfBase3,
+            file_name_player_one=PlayerConfigTag.Test_Sequool,
+            file_name_player_two=PlayerConfigTag.Test_RecurZipfBase3,
             file_name_match_setting="setting_cubo.yaml",
         ),
         base_script_args=PartialOpBaseScriptArgs(
@@ -65,8 +65,8 @@ configs_base: list[Any] = [
     PartialOpMatchScriptArgs(
         gui=False,
         match_args=PartialOpMatchArgs(
-            file_name_player_one=PlayerConfigFile.Test_RecurZipfBase4,
-            file_name_player_two=PlayerConfigFile.Test_RecurZipfBase3,
+            file_name_player_one=PlayerConfigTag.Test_RecurZipfBase4,
+            file_name_player_two=PlayerConfigTag.Test_RecurZipfBase3,
             file_name_match_setting="setting_cubo.yaml",
         ),
         base_script_args=PartialOpBaseScriptArgs(
@@ -76,8 +76,8 @@ configs_base: list[Any] = [
     PartialOpMatchScriptArgs(
         gui=False,
         match_args=PartialOpMatchArgs(
-            file_name_player_one=PlayerConfigFile.Test_Uniform,
-            file_name_player_two=PlayerConfigFile.Test_RecurZipfBase3,
+            file_name_player_one=PlayerConfigTag.Test_Uniform,
+            file_name_player_two=PlayerConfigTag.Test_RecurZipfBase3,
             file_name_match_setting="setting_cubo.yaml",
         ),
         base_script_args=PartialOpBaseScriptArgs(
@@ -87,8 +87,8 @@ configs_base: list[Any] = [
     PartialOpMatchScriptArgs(
         gui=False,
         match_args=PartialOpMatchArgs(
-            file_name_player_one=PlayerConfigFile.Test_RecurZipfBase3,
-            file_name_player_two=PlayerConfigFile.Test_RecurZipfBase3,
+            file_name_player_one=PlayerConfigTag.Test_RecurZipfBase3,
+            file_name_player_two=PlayerConfigTag.Test_RecurZipfBase3,
             file_name_match_setting="setting_cubo.yaml",
         ),
         base_script_args=PartialOpBaseScriptArgs(
@@ -99,8 +99,8 @@ configs_base: list[Any] = [
     PartialOpMatchScriptArgs(
         gui=False,
         match_args=PartialOpMatchArgs(
-            file_name_player_one=PlayerConfigFile.Test_Sequool,
-            file_name_player_two=PlayerConfigFile.Random,
+            file_name_player_one=PlayerConfigTag.Test_Sequool,
+            file_name_player_two=PlayerConfigTag.Random,
             file_name_match_setting="setting_cubo.yaml",
         ),
         base_script_args=PartialOpBaseScriptArgs(profiling=True, testing=True, seed=11),
@@ -109,8 +109,8 @@ configs_base: list[Any] = [
     PartialOpMatchScriptArgs(
         gui=False,
         match_args=PartialOpMatchArgs(
-            file_name_player_one=PlayerConfigFile.Test_Sequool,
-            file_name_player_two=PlayerConfigFile.Random,
+            file_name_player_one=PlayerConfigTag.Test_Sequool,
+            file_name_player_two=PlayerConfigTag.Random,
             file_name_match_setting="setting_cubo.yaml",
         ),
         base_script_args=PartialOpBaseScriptArgs(
@@ -121,8 +121,8 @@ configs_base: list[Any] = [
     PartialOpMatchScriptArgs(
         gui=False,
         match_args=PartialOpMatchArgs(
-            file_name_player_one=PlayerConfigFile.Test_Sequool,
-            file_name_player_two=PlayerConfigFile.Random,
+            file_name_player_one=PlayerConfigTag.Test_Sequool,
+            file_name_player_two=PlayerConfigTag.Random,
             file_name_match_setting="setting_tron.yaml",
         ),
         base_script_args=PartialOpBaseScriptArgs(
@@ -184,9 +184,9 @@ def test_randomness():
 
     match_args: MatchArgs = MatchArgs()
     match_args.seed = 0
-    match_args.file_name_player_one = PlayerConfigFile.Test_Uniform
-    match_args.file_name_player_two = PlayerConfigFile.Test_Sequool
-    match_args.file_name_player_two = PlayerConfigFile.Random
+    match_args.file_name_player_one = PlayerConfigTag.Test_Uniform
+    match_args.file_name_player_two = PlayerConfigTag.Test_Sequool
+    match_args.file_name_player_two = PlayerConfigTag.Random
     match_args.file_name_match_setting = "setting_tron.yaml"
 
     implementation_args: ImplementationArgs = ImplementationArgs()
@@ -239,9 +239,9 @@ def test_same_game_with_or_without_rust():
 
     match_args: MatchArgs = MatchArgs()
     match_args.seed = 0
-    match_args.file_name_player_one = PlayerConfigFile.Test_Uniform
-    match_args.file_name_player_two = PlayerConfigFile.Test_Sequool
-    match_args.file_name_player_two = PlayerConfigFile.Random
+    match_args.file_name_player_one = PlayerConfigTag.Test_Uniform
+    match_args.file_name_player_two = PlayerConfigTag.Test_Sequool
+    match_args.file_name_player_two = PlayerConfigTag.Random
     match_args.file_name_match_setting = "setting_tron.yaml"
 
     implementation_args: ImplementationArgs = ImplementationArgs(use_rust_boards=False)

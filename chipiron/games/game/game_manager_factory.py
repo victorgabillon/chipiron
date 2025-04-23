@@ -29,7 +29,7 @@ from chipiron.utils.dataclass import IsDataclass
 from ...environments.chess.board.utils import FenPlusHistory
 from ...environments.chess.move_factory import MoveFactory
 from ...players.boardevaluators.table_base import SyzygyTable
-from ...players.player_ids import PlayerConfigFile
+from ...players.player_ids import PlayerConfigTag
 from ...scripts.chipiron_args import ImplementationArgs
 from .game import Game, ObservableGame
 from .game_manager import GameManager
@@ -135,7 +135,7 @@ class GameManagerFactory:
 
             # Human playing with gui does not need a player, as the playing moves will be generated directly
             # by the GUI and sent directly to the game_manager
-            if player_factory_args.player_args.name != PlayerConfigFile.GuiHuman:
+            if player_factory_args.player_args.name != PlayerConfigTag.GuiHuman:
                 generic_player: players_m.GamePlayer | players_m.PlayerProcess
                 move_function: MoveFunction
                 generic_player, move_function = player_observer_factory(

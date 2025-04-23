@@ -35,7 +35,7 @@ from chipiron.players.move_selector.treevalue import TreeAndValuePlayerArgs
 from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
     TreeMoveLimitArgs,
 )
-from chipiron.players.player_ids import PlayerConfigFile
+from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.utils.communication.gui_messages import (
     BackMessage,
     EvaluationMessage,
@@ -351,7 +351,7 @@ class MainWindow(QWidget):
         message: MoveMessage = MoveMessage(
             move=move_uci,
             corresponding_board=self.board.fen,
-            player_name=PlayerConfigFile.GuiHuman,
+            player_name=PlayerConfigTag.GuiHuman,
             color_to_play=self.board.turn,
         )
         self.main_thread_mailbox.put(item=message)

@@ -2,16 +2,12 @@
 This module defines the `MatchArgs` class, which represents the input arguments needed by the one match script to run.
 """
 
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import dataclass
 
+from chipiron.games.match.match_settings_args import MatchSettingsArgs
+from chipiron.games.match.MatchTag import MatchConfigTag
 from chipiron.players import PlayerArgs
-from chipiron.players.player_ids import PlayerConfigFile
-from chipiron.utils import path
-from parsley_coco import make_partial_dataclass_with_optional_paths
-
-
-# PartialOpPlayerArgs = make_partial_dataclass_with_optional_paths(cls=PlayerArgs)
+from chipiron.players.player_ids import PlayerConfigTag
 
 
 @dataclass
@@ -28,15 +24,6 @@ class MatchArgs:
 
     """
 
-    # this def is still a bit all other the place, atm using PlayerConfigFile doesnt allow to use the make_partial_dataclass_with_optional_paths meachnism but make it for very chekable values
-    # having player_one: PartialOpPlayerArgs is nice but is not fullt automatic. as we combine logic here we need a specific fetch/convert function
-    # match: dict[Any, Any] is still in between the above options
-
-    file_name_player_one: PlayerConfigFile = PlayerConfigFile.RecurZipfBase3
-    file_name_player_two: PlayerConfigFile = PlayerConfigFile.RecurZipfBase3
-    file_name_match_setting: path = "setting_cubo.yaml"
-
-    # For players and match modification of the yaml file specified in a respective dict
-    player_one: dict[Any, Any] = field(default_factory=dict)
-    player_two: dict[Any, Any] = field(default_factory=dict)
-    match: dict[Any, Any] = field(default_factory=dict)
+    player_one: PlayerConfigTag | PlayerArgs = PlayerConfigTag.RecurZipfBase3
+    player_two: PlayerConfigTag | PlayerArgs = PlayerConfigTag.RecurZipfBase3
+    match_setting: MatchConfigTag | MatchSettingsArgs = MatchConfigTag.Cubo

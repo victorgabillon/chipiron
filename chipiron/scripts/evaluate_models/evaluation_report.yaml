@@ -1,4 +1,4 @@
 data/players/board_evaluators/nn_pytorch/nn_pp2d2_2_prelu/param_prelu:
   evaluation: 0.21912601542822968
   number_of_model_parameters: 15482
-  time_of_evaluation: 2025-04-21 21:51:51.128491
+  time_of_evaluation: 2025-04-21 23:36:10.205727

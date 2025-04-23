@@ -13,8 +13,14 @@ from typing import Any
 
 import customtkinter as ctk
 from chipiron import scripts
+from chipiron.games.match.MatchTag import MatchConfigTag
 from chipiron.games.match.match_args import MatchArgs
-from chipiron.players.player_ids import PlayerConfigFile
+from chipiron.players import PlayerArgs
+from chipiron.players.move_selector.treevalue import TreeAndValuePlayerArgs
+from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
+    TreeMoveLimitArgs,
+)
+from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.one_match.one_match import MatchScriptArgs
 from chipiron.scripts.script_args import BaseScriptArgs
 from parsley_coco import make_partial_dataclass_with_optional_paths
@@ -80,16 +86,16 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any], str]:
     message.grid(column=2, row=2)
 
     # Create the list of options
-    chipi_algo_options_list: list[PlayerConfigFile] = [
-        PlayerConfigFile.RecurZipfBase3,
-        PlayerConfigFile.Uniform,
-        PlayerConfigFile.Sequool,
+    chipi_algo_options_list: list[PlayerConfigTag] = [
+        PlayerConfigTag.RecurZipfBase3,
+        PlayerConfigTag.Uniform,
+        PlayerConfigTag.Sequool,
     ]
 
     # Variable to keep track of the option
     # selected in OptionMenu
     chipi_algo_choice = ctk.StringVar(
-        value=PlayerConfigFile.RecurZipfBase3
+        value=PlayerConfigTag.RecurZipfBase3
     )  # set initial value
 
     # chipi_algo_choice = tk.StringVar(root)
@@ -176,8 +182,17 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any], str]:
         cls=MatchScriptArgs
     )
     PartialOpMatchArgs = make_partial_dataclass_with_optional_paths(cls=MatchArgs)
+    PartialOpPlayerArgs = make_partial_dataclass_with_optional_paths(cls=PlayerArgs)
+
     PartialOpBaseScriptArgs = make_partial_dataclass_with_optional_paths(
         cls=BaseScriptArgs
+    )
+
+    PartialOpTreeAndValuePlayerArgs = make_partial_dataclass_with_optional_paths(
+        cls=TreeAndValuePlayerArgs
+    )
+    PartialOpTreeMoveLimitArgs = make_partial_dataclass_with_optional_paths(
+        cls=TreeMoveLimitArgs
     )
 
     config_file_name: str
@@ -187,29 +202,31 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any], str]:
             gui_args = PartialOpMatchScriptArgs(
                 gui=True,
                 base_script_args=PartialOpBaseScriptArgs(profiling=False, seed=0),
-                match_args=PartialOpMatchArgs(
-                    file_name_match_setting="setting_duda.yaml"
-                ),
+                match_args=PartialOpMatchArgs(match_setting=MatchConfigTag.Duda),
             )
             config_file_name = "chipiron/scripts/one_match/inputs/human_play_against_computer/exp_options.yaml"
 
             if output["color_human"] == "White":
-                gui_args.match_args.file_name_player_one = PlayerConfigFile.GuiHuman
-                gui_args.match_args.file_name_player_two = f'{output["chipi_algo"]}'
-                gui_args.match_args.player_two = {
-                    "main_move_selector": {
-                        "stopping_criterion": {"tree_move_limit": tree_move_limit}
-                    }
-                }
+                gui_args.match_args.player_one = PlayerConfigTag.GuiHuman
+                gui_args.match_args.player_two = output["chipi_algo"]
+                gui_args.match_args.player_two_overwrite = PartialOpPlayerArgs(
+                    main_move_selector=PartialOpTreeAndValuePlayerArgs(
+                        stopping_criterion=PartialOpTreeMoveLimitArgs(
+                            tree_move_limit=tree_move_limit
+                        )
+                    )
+                )
             else:
-
-                gui_args.match_args.file_name_player_one = f'{output["chipi_algo"]}'
-                gui_args.match_args.file_name_player_two = PlayerConfigFile.GuiHuman
-                gui_args.match_args.player_one = {
-                    "main_move_selector": {
-                        "stopping_criterion": {"tree_move_limit": tree_move_limit}
-                    }
-                }
+                print("oooo")
+                gui_args.match_args.player_one = output["chipi_algo"]
+                gui_args.match_args.player_two = PlayerConfigTag.GuiHuman
+                gui_args.match_args.player_one_overwrite = PartialOpPlayerArgs(
+                    main_move_selector=PartialOpTreeAndValuePlayerArgs(
+                        stopping_criterion=PartialOpTreeMoveLimitArgs(
+                            tree_move_limit=tree_move_limit
+                        )
+                    )
+                )
             script_type = scripts.ScriptType.OneMatch
         case "play_two_humans":
             config_file_name = "chipiron/scripts/one_match/inputs/human_play_against_human/exp_options.yaml"
@@ -217,13 +234,11 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any], str]:
             gui_args = PartialOpMatchScriptArgs(
                 gui=True,
                 base_script_args=PartialOpBaseScriptArgs(profiling=False, seed=0),
-                match_args=PartialOpMatchArgs(
-                    file_name_match_setting="setting_duda.yaml"
-                ),
+                match_args=PartialOpMatchArgs(match_setting=MatchConfigTag.Duda),
             )
 
-            gui_args.match_args.file_name_player_one = PlayerConfigFile.GuiHuman
-            gui_args.match_args.file_name_player_two = PlayerConfigFile.GuiHuman
+            gui_args.match_args.player_one = PlayerConfigTag.GuiHuman
+            gui_args.match_args.player_two = PlayerConfigTag.GuiHuman
             script_type = scripts.ScriptType.OneMatch
         case "watch_a_game":
             config_file_name = (
@@ -233,9 +248,9 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any], str]:
                 gui=True,
                 base_script_args=PartialOpBaseScriptArgs(profiling=False, seed=0),
                 match_args=PartialOpMatchArgs(
-                    file_name_match_setting="setting_duda.yaml",
-                    file_name_player_one=PlayerConfigFile.RecurZipfBase3,
-                    file_name_player_two=PlayerConfigFile.RecurZipfBase3,
+                    match_setting=MatchConfigTag.Duda,
+                    player_one=PlayerConfigTag.RecurZipfBase3,
+                    player_two=PlayerConfigTag.RecurZipfBase3,
                 ),
             )
 
@@ -275,7 +290,7 @@ def play_against_chipiron(
     output["type"] = "play_against_chipiron"
     output["strength"] = int(strength.get())
     output["color_human"] = str(color.get())
-    output["chipi_algo"] = str(chipi_algo.get())
+    output["chipi_algo"] = PlayerConfigTag(str(chipi_algo.get()))
     return True
 
 

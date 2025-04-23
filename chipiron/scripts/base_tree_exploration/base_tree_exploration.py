@@ -12,8 +12,7 @@ from chipiron.environments.chess.board.factory import create_board
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.players.factory import create_player
 from chipiron.players.player_args import PlayerArgs
-from chipiron.players.player_ids import PlayerConfigFile
-from chipiron.players.utils import fetch_player_args_convert_and_save
+from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
@@ -57,11 +56,7 @@ class BaseTreeExplorationScript:
         """
         syzygy = create_syzygy(use_rust=self.args.implementation_args.use_rust_boards)
 
-        file_name_player = PlayerConfigFile.Uniform
-
-        player_one_args: PlayerArgs = fetch_player_args_convert_and_save(
-            file_name_player=file_name_player
-        )
+        player_one_args: PlayerArgs = PlayerConfigTag.Uniform.get_players_args()
 
         # player_one_args.main_move_selector.stopping_criterion.tree_move_limit = 1000000
         random_generator = random.Random()
