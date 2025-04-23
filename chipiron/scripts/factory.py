@@ -49,7 +49,9 @@ def create_script(
         should_parse_command_line_arguments=should_parse_command_line_arguments,
     )
 
-    base_script: Script = Script(parser=parser, extra_args=extra_args)
+    base_script: Script = Script(
+        parser=parser, extra_args=extra_args, config_file_name=config_file_name
+    )
 
     script_class_name: type[IScript] = get_script_type_from_script_class_name(
         script_type=script_type

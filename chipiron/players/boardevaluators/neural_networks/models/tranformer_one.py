@@ -65,7 +65,6 @@ class MultiHeadAttention(nn.Module):
         self, num_heads: int, head_size: int, dropout_ratio: float, n_embd: int
     ) -> None:
         super().__init__()
-        print("debug head", num_heads)
         self.heads = nn.ModuleList(
             [
                 Head(head_size=head_size, n_embd=n_embd, dropout_ratio=dropout_ratio)
@@ -174,7 +173,6 @@ class TransformerOne(ChiNN):
         ]  # (B,len_all_possible_tensor_input,n_embd)
         z = self.blocks(y)  # (B,T,C)
         # w = self.ln_f(z)  # (B,T,C)
-        # print('debug w', z)
         x: torch.Tensor = self.lm_head(z.flatten(start_dim=1))  # (B,T,vocab_size)
         # print("z",z,"oo", z.sum())
 

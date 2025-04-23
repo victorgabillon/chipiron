@@ -18,7 +18,6 @@ from chipiron.games.match.utils import fetch_match_games_args_convert_and_save
 from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator
 from chipiron.players.boardevaluators.factory import create_game_board_evaluator
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy
-from chipiron.players.utils import fetch_two_players_args_convert_and_save
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
@@ -136,15 +135,11 @@ def create_match_manager_from_args(
     Returns:
         MatchManager: The created match manager.
     """
-    player_one_args: players.PlayerArgs
-    player_two_args: players.PlayerArgs
-    player_one_args, player_two_args = fetch_two_players_args_convert_and_save(
-        file_name_player_one=match_args.file_name_player_one,
-        file_name_player_two=match_args.file_name_player_two,
-        modification_player_one=match_args.player_one,
-        modification_player_two=match_args.player_two,
-        experiment_output_folder=base_script_args.experiment_output_folder,
-    )
+    assert isinstance(match_args.player_one, players.PlayerArgs)
+    assert isinstance(match_args.player_two, players.PlayerArgs)
+
+    player_one_args: players.PlayerArgs = match_args.player_one
+    player_two_args: players.PlayerArgs = match_args.player_two
 
     # Recovering args from yaml file for match and game and merging with extra args and converting
     # to standardized dataclass
@@ -153,8 +148,7 @@ def create_match_manager_from_args(
     match_setting_args, game_args = fetch_match_games_args_convert_and_save(
         profiling=base_script_args.profiling,
         testing=base_script_args.testing,
-        file_name_match_setting=match_args.file_name_match_setting,
-        modification=match_args.match,
+        match_args=match_args,
         experiment_output_folder=base_script_args.experiment_output_folder,
     )
 

@@ -8,7 +8,7 @@ from chipiron.environments.chess.board.utils import FenPlusHistory
 from chipiron.players import Player
 from chipiron.players.factory import create_chipiron_player, create_player_from_file
 from chipiron.players.move_selector.move_selector import MoveRecommendation
-from chipiron.players.player_ids import PlayerConfigFile
+from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 
 
@@ -48,7 +48,7 @@ def test_check_in_two(use_rusty_board: bool):
     for fen, moves in dict_fen_move.items():
         print("fen", fen)
         player = create_player_from_file(
-            player_args_file=PlayerConfigFile.UniformDepth3,
+            player_args_file=PlayerConfigTag.UniformDepth3,
             random_generator=random_generator,
             implementation_args=ImplementationArgs(use_rust_boards=use_rusty_board),
             universal_behavior=True,
