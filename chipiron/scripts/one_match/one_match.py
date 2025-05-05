@@ -46,11 +46,11 @@ class OneMatchScript:
     base_experiment_output_folder = os.path.join(
         Script.base_experiment_output_folder, "one_match/outputs/"
     )
-    base_script: Script
+    base_script: Script[MatchScriptArgs]
 
     def __init__(
         self,
-        base_script: Script,
+        base_script: Script[MatchScriptArgs],
     ) -> None:
         """
         Builds the OneMatchScript object
@@ -61,8 +61,9 @@ class OneMatchScript:
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into args
         args: MatchScriptArgs = self.base_script.initiate(
             experiment_output_folder=self.base_experiment_output_folder,
-            args_dataclass_name=MatchScriptArgs,
         )
+
+        print("debug, args", args)
 
         # creating the match manager
         self.match_manager: ch.game.MatchManager = create_match_manager_from_args(

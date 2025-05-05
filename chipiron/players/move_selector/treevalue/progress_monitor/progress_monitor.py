@@ -17,6 +17,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Callable, Protocol, runtime_checkable
 
+from typing import Literal
+
 from chipiron.players.move_selector.treevalue import node_selector as node_sel
 from chipiron.players.move_selector.treevalue.trees import MoveAndValueTree
 
@@ -173,9 +175,10 @@ class ProgressMonitor:
 
 
 @dataclass
-class TreeMoveLimitArgs(StoppingCriterionArgs):
+class TreeMoveLimitArgs:
     """Arguments for the tree move limit stopping criterion."""
 
+    type: Literal[StoppingCriterionTypes.TreeMoveLimit]
     tree_move_limit: int
 
 
@@ -237,7 +240,7 @@ class TreeMoveLimit(ProgressMonitor):
 
 
 @dataclass
-class DepthLimitArgs(StoppingCriterionArgs):
+class DepthLimitArgs:
     """
     Arguments for the depth limit stopping criterion.
 
@@ -245,6 +248,7 @@ class DepthLimitArgs(StoppingCriterionArgs):
         depth_limit (int): The maximum depth allowed for the search.
     """
 
+    type: Literal[StoppingCriterionTypes.DepthLimit]
     depth_limit: int
 
 

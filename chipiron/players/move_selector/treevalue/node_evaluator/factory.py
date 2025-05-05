@@ -9,7 +9,6 @@ import chipiron.players.boardevaluators.basic_evaluation as basic_evaluation
 from chipiron.players.boardevaluators.neural_networks.factory import (
     create_nn_board_eval_from_nn_parameters_file_and_existing_model,
 )
-
 from chipiron.players.boardevaluators.neural_networks.nn_board_evaluator import (
     NNBoardEvaluator,
 )
@@ -19,7 +18,7 @@ from . import neural_networks
 from .all_node_evaluators import NodeEvaluatorTypes
 from .neural_networks.nn_node_evaluator import NNNodeEvaluator
 from .node_evaluator import NodeEvaluator
-from .node_evaluator_args import NodeEvaluatorArgs, BasicEvaluationNodeEvaluatorArgs
+from .node_evaluator_args import BasicEvaluationNodeEvaluatorArgs, NodeEvaluatorArgs
 
 AllNodeEvaluatorArgs: TypeAlias = (
     neural_networks.NeuralNetNodeEvalArgs | BasicEvaluationNodeEvaluatorArgs

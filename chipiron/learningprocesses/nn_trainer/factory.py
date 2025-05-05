@@ -17,10 +17,6 @@ from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
     PointOfView,
 )
-from chipiron.players.boardevaluators.neural_networks.NNModelType import (
-    NNModelType,
-    ActivationFunctionType,
-)
 from chipiron.players.boardevaluators.neural_networks.factory import (
     get_nn_architecture_file_path_from,
     get_nn_param_file_path_from,
@@ -34,14 +30,18 @@ from chipiron.players.boardevaluators.neural_networks.models.multi_layer_percept
 from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
     NeuralNetArchitectureArgs,
 )
+from chipiron.players.boardevaluators.neural_networks.NNModelType import (
+    ActivationFunctionType,
+    NNModelType,
+)
 from chipiron.players.boardevaluators.neural_networks.output_converters.model_output_type import (
     ModelOutputType,
 )
 from chipiron.utils import path
 from chipiron.utils.chi_nn import ChiNN
 from chipiron.utils.dataclass import custom_asdict_factory
-from chipiron.utils.small_tools import mkdir_if_not_existing
 from chipiron.utils.logger import chipiron_logger
+from chipiron.utils.small_tools import mkdir_if_not_existing
 
 
 @dataclass

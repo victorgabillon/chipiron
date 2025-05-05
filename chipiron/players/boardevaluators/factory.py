@@ -18,6 +18,7 @@ from chipiron.players.boardevaluators.stockfish_board_evaluator import (
     StockfishBoardEvaluator,
 )
 
+from ...utils import yaml_fetch_args_in_file
 from .board_evaluator import (
     BoardEvaluator,
     GameBoardEvaluator,
@@ -27,7 +28,6 @@ from .board_evaluator import (
 from .neural_networks.factory import (
     create_nn_board_eval_from_folder_path_and_existing_model,
 )
-from ...utils import yaml_fetch_args_in_file
 
 
 class TableBaseArgs:

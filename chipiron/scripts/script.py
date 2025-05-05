@@ -12,12 +12,13 @@ import time
 from pstats import SortKey
 from typing import Any, Protocol, runtime_checkable
 
+from parsley_coco import Parsley
+
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
 from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.small_tools import mkdir_if_not_existing
-from parsley_coco import Parsley
 
 
 @runtime_checkable
@@ -29,14 +30,14 @@ class HasBaseScriptArgs(Protocol):
     base_script_args: BaseScriptArgs
 
 
-class Script:
+class Script[T_Dataclass: IsDataclass]:
     """
     The core Script class to launch scripts.
     Takes care of computing execution time, profiling, and parsing arguments.
     """
 
     start_time: float
-    parser: Parsley
+    parser: Parsley[T_Dataclass]
     gui_args: dict[str, Any] | None
     profile: cProfile.Profile | None
     experiment_script_type_output_folder: path | None = None
@@ -46,7 +47,7 @@ class Script:
 
     def __init__(
         self,
-        parser: Parsley,
+        parser: Parsley[T_Dataclass],
         extra_args: dict[str, Any] | None = None,
         config_file_name: str | None = None,
     ) -> None:
@@ -67,11 +68,10 @@ class Script:
         self.profile = None
         self.args: IsDataclass | None = None
 
-    def initiate[_T_co: IsDataclass](
+    def initiate(
         self,
-        args_dataclass_name: type[_T_co],
         experiment_output_folder: str | None = None,
-    ) -> _T_co:
+    ) -> T_Dataclass:
         """
         Initiates the script by parsing arguments and converting them into a standardized dataclass.
 
@@ -93,10 +93,14 @@ class Script:
                 self.default_experiment_output_folder
             )
 
+        print("debug extra args ", self.extra_args)
+
         # parse the arguments
-        final_args: _T_co = self.parser.parse_arguments(
+        final_args: T_Dataclass = self.parser.parse_arguments(
             extra_args=self.extra_args, config_file_path=self.config_file_name
         )
+
+        print("debug final args ", final_args)
 
         assert hasattr(final_args, "base_script_args")
 

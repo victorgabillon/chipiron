@@ -11,10 +11,10 @@ from chipiron.players.move_selector.move_selector import MoveRecommendation
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import MoveMessage
 from chipiron.utils.dataclass import IsDataclass
-
-from .player import Player
-from ..environments.chess.board.utils import FenPlusHistory
 from chipiron.utils.logger import chipiron_logger
+
+from ..environments.chess.board.utils import FenPlusHistory
+from .player import Player
 
 
 class GamePlayer:

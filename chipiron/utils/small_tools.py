@@ -13,6 +13,7 @@ from typing import Any
 import numpy as np
 import numpy.typing as nptyping
 import yaml
+
 from chipiron.utils.logger import chipiron_logger
 
 path = typing.Annotated[str | os.PathLike[str], "path"]

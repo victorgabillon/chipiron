@@ -15,6 +15,9 @@ from typing import Literal
 
 from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.move_selector.treevalue import trees
+from chipiron.players.move_selector.treevalue.node_selector.node_selector_types import (
+    NodeSelectorType,
+)
 from chipiron.players.move_selector.treevalue.node_selector.move_explorer import (
     ZipfMoveExplorer,
 )
@@ -29,7 +32,7 @@ from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_nod
 from chipiron.players.move_selector.treevalue.nodes.utils import (
     best_node_sequence_from_node,
 )
-from chipiron.players.move_selector.treevalue.node_selector import NodeSelectorType
+
 from ..move_explorer import SamplingPriorities
 
 if typing.TYPE_CHECKING:

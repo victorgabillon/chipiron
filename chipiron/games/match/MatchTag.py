@@ -1,5 +1,6 @@
 import os
 from enum import Enum
+
 import parsley_coco
 
 from chipiron.games.match.match_settings_args import MatchSettingsArgs

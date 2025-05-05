@@ -4,16 +4,13 @@ Module for creating neural networks and neural network board evaluators.
 
 import os.path
 import sys
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
 import dacite
 from sympy import N
 
-from chipiron.players.boardevaluators.neural_networks.NNModelType import NNModelType
-from chipiron.players.boardevaluators.neural_networks.NNModelTypeArgs import (
-    NNModelTypeArgs,
-)
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_input import (
     BoardToInputFunction,
     create_board_to_input,
@@ -23,14 +20,18 @@ from chipiron.players.boardevaluators.neural_networks.models.multi_layer_percept
     MultiLayerPerceptronArgs,
 )
 from chipiron.players.boardevaluators.neural_networks.models.tranformer_one import (
-    TransformerOne,
     TransformerArgs,
+    TransformerOne,
 )
 from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
     NeuralNetArchitectureArgs,
 )
 from chipiron.players.boardevaluators.neural_networks.nn_board_evaluator import (
     NNBoardEvaluator,
+)
+from chipiron.players.boardevaluators.neural_networks.NNModelType import NNModelType
+from chipiron.players.boardevaluators.neural_networks.NNModelTypeArgs import (
+    NNModelTypeArgs,
 )
 from chipiron.players.boardevaluators.neural_networks.output_converters.factory import (
     create_output_converter,
@@ -40,8 +41,6 @@ from chipiron.players.boardevaluators.neural_networks.output_converters.output_v
 )
 from chipiron.utils import path, yaml_fetch_args_in_file
 from chipiron.utils.chi_nn import ChiNN
-
-from dataclasses import dataclass
 
 
 @dataclass

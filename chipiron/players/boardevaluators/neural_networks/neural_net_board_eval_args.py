@@ -4,12 +4,12 @@ Module that contains the NeuralNetBoardEvalArgs class.
 
 from dataclasses import dataclass
 
+from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
+    ModelInputRepresentationType,
+)
 from chipiron.players.boardevaluators.neural_networks.NNModelType import NNModelType
 from chipiron.players.boardevaluators.neural_networks.NNModelTypeArgs import (
     NNModelTypeArgs,
-)
-from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
-    ModelInputRepresentationType,
 )
 from chipiron.players.boardevaluators.neural_networks.output_converters.model_output_type import (
     ModelOutputType,

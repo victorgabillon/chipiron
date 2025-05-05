@@ -45,7 +45,7 @@ class ReplayGameScript:
 
     args_dataclass_name: type[ReplayScriptArgs] = ReplayScriptArgs
 
-    base_script: Script
+    base_script: Script[ReplayScriptArgs]
     chess_board: BoardChi
 
     base_experiment_output_folder = os.path.join(
@@ -54,7 +54,7 @@ class ReplayGameScript:
 
     def __init__(
         self,
-        base_script: Script,
+        base_script: Script[ReplayScriptArgs],
     ) -> None:
         """
         Initializes the `ReplayGameScript` object.
@@ -67,7 +67,6 @@ class ReplayGameScript:
 
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into self.args
         self.args: ReplayScriptArgs = self.base_script.initiate(
-            args_dataclass_name=ReplayScriptArgs,
             experiment_output_folder=self.base_experiment_output_folder,
         )
 

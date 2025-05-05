@@ -29,6 +29,7 @@ from chipiron.players.move_selector.treevalue.trees.tree_visualization import (
     display_special,
 )
 from chipiron.scripts.script import Script
+from typing import Any
 
 
 @typing.no_type_check
@@ -405,11 +406,11 @@ class VisualizeTreeScript:
     base_experiment_output_folder = os.path.join(
         Script.base_experiment_output_folder, "tree_visualization/outputs/"
     )
-    base_script: Script
+    base_script: Script[Any]
 
     def __init__(
         self,
-        base_script: Script,
+        base_script: Script[Any],
     ):
         """
         Initializes a TreeVisualizer object.
