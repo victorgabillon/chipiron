@@ -15,11 +15,11 @@ from typing import Literal
 
 from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.move_selector.treevalue import trees
-from chipiron.players.move_selector.treevalue.node_selector.node_selector_types import (
-    NodeSelectorType,
-)
 from chipiron.players.move_selector.treevalue.node_selector.move_explorer import (
     ZipfMoveExplorer,
+)
+from chipiron.players.move_selector.treevalue.node_selector.node_selector_types import (
+    NodeSelectorType,
 )
 from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import (
     OpeningInstructions,

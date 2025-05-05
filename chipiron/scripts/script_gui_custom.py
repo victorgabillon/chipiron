@@ -21,8 +21,8 @@ from chipiron.players import PlayerArgs
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 from chipiron.players.move_selector.treevalue import TreeAndValuePlayerArgs
 from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
-    TreeMoveLimitArgs,
     StoppingCriterionTypes,
+    TreeMoveLimitArgs,
 )
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.one_match.one_match import MatchScriptArgs

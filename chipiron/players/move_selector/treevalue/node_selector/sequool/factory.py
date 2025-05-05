@@ -14,6 +14,7 @@ from chipiron.players.move_selector.treevalue.node_selector.node_selector_types 
 from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import (
     OpeningInstructor,
 )
+
 from .sequool import (
     ConsiderNodesFromHalfMoves,
     HalfMoveSelector,
