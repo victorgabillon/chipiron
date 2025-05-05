@@ -19,6 +19,7 @@ import os
 import pickle
 import sys
 import typing
+from typing import Any
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
@@ -29,7 +30,6 @@ from chipiron.players.move_selector.treevalue.trees.tree_visualization import (
     display_special,
 )
 from chipiron.scripts.script import Script
-from typing import Any
 
 
 @typing.no_type_check

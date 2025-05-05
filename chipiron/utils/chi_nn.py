@@ -68,3 +68,6 @@ class ChiNN(nn.Module):
                     path_to_param_file,
                 )
             )
+
+    def log_readable_model_weights_to_file(self, file_path: str) -> None:
+        raise Exception("not implemented in base class")
