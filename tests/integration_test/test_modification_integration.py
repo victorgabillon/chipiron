@@ -33,7 +33,6 @@ def test_modifications(
 
     random_generator_one: random.Random = random.Random(0)
     player_one: Player = create_chipiron_player(
-        depth=1,
         implementation_args=ImplementationArgs(
             use_rust_boards=use_rust_boards, use_board_modification=False
         ),
@@ -61,7 +60,6 @@ def test_modifications(
     random_generator_two: random.Random = random.Random(0)
 
     player_two: Player = create_chipiron_player(
-        depth=1,
         implementation_args=ImplementationArgs(
             use_rust_boards=use_rust_boards, use_board_modification=True
         ),

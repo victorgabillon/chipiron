@@ -87,15 +87,15 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any], str]:
 
     # Create the list of options
     chipi_algo_options_list: list[PlayerConfigTag] = [
-        PlayerConfigTag.RecurZipfBase3,
-        PlayerConfigTag.Uniform,
-        PlayerConfigTag.Sequool,
+        PlayerConfigTag.RECUR_ZIPF_BASE_3,
+        PlayerConfigTag.UNIFORM,
+        PlayerConfigTag.SEQUOOL,
     ]
 
     # Variable to keep track of the option
     # selected in OptionMenu
     chipi_algo_choice = ctk.StringVar(
-        value=PlayerConfigTag.RecurZipfBase3
+        value=PlayerConfigTag.RECUR_ZIPF_BASE_3
     )  # set initial value
 
     # chipi_algo_choice = tk.StringVar(root)
@@ -207,7 +207,7 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any], str]:
             config_file_name = "chipiron/scripts/one_match/inputs/human_play_against_computer/exp_options.yaml"
 
             if output["color_human"] == "White":
-                gui_args.match_args.player_one = PlayerConfigTag.GuiHuman
+                gui_args.match_args.player_one = PlayerConfigTag.GUI_HUMAN
                 gui_args.match_args.player_two = output["chipi_algo"]
                 gui_args.match_args.player_two_overwrite = PartialOpPlayerArgs(
                     main_move_selector=PartialOpTreeAndValuePlayerArgs(
@@ -219,7 +219,7 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any], str]:
             else:
                 print("oooo")
                 gui_args.match_args.player_one = output["chipi_algo"]
-                gui_args.match_args.player_two = PlayerConfigTag.GuiHuman
+                gui_args.match_args.player_two = PlayerConfigTag.GUI_HUMAN
                 gui_args.match_args.player_one_overwrite = PartialOpPlayerArgs(
                     main_move_selector=PartialOpTreeAndValuePlayerArgs(
                         stopping_criterion=PartialOpTreeMoveLimitArgs(
@@ -237,8 +237,8 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any], str]:
                 match_args=PartialOpMatchArgs(match_setting=MatchConfigTag.Duda),
             )
 
-            gui_args.match_args.player_one = PlayerConfigTag.GuiHuman
-            gui_args.match_args.player_two = PlayerConfigTag.GuiHuman
+            gui_args.match_args.player_one = PlayerConfigTag.GUI_HUMAN
+            gui_args.match_args.player_two = PlayerConfigTag.GUI_HUMAN
             script_type = scripts.ScriptType.OneMatch
         case "watch_a_game":
             config_file_name = (
@@ -249,8 +249,8 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any], str]:
                 base_script_args=PartialOpBaseScriptArgs(profiling=False, seed=0),
                 match_args=PartialOpMatchArgs(
                     match_setting=MatchConfigTag.Duda,
-                    player_one=PlayerConfigTag.RecurZipfBase3,
-                    player_two=PlayerConfigTag.RecurZipfBase3,
+                    player_one=PlayerConfigTag.RECUR_ZIPF_BASE_3,
+                    player_two=PlayerConfigTag.RECUR_ZIPF_BASE_3,
                 ),
             )
 

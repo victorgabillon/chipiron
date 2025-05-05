@@ -1,9 +1,9 @@
 import os
 from enum import Enum
+import parsley_coco
 
 from chipiron.games.match.match_settings_args import MatchSettingsArgs
 from chipiron.utils import path
-from chipiron.utils.small_tools import fetch_args_modify_and_convert
 
 
 class MatchConfigTag(str, Enum):
@@ -19,7 +19,9 @@ class MatchConfigTag(str, Enum):
         return path_player
 
     def get_match_settings_args(self) -> MatchSettingsArgs:
-        match_args: MatchSettingsArgs = fetch_args_modify_and_convert(
-            path_to_file=self.get_yaml_file_path(), dataclass_name=MatchSettingsArgs
+        match_args: MatchSettingsArgs = (
+            parsley_coco.resolve_yaml_file_to_base_dataclass(
+                yaml_path=self.get_yaml_file_path(), base_cls=MatchSettingsArgs
+            )
         )
         return match_args

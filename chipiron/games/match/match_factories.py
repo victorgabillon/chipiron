@@ -135,6 +135,9 @@ def create_match_manager_from_args(
     Returns:
         MatchManager: The created match manager.
     """
+    print("debug , ", match_args.player_one)
+    print("debug , ", match_args.player_two)
+
     assert isinstance(match_args.player_one, players.PlayerArgs)
     assert isinstance(match_args.player_two, players.PlayerArgs)
 

@@ -11,6 +11,7 @@ from .get_script import get_script_type_from_script_class_name
 from .iscript import IScript
 from .script import Script
 from .script_type import ScriptType
+from chipiron.utils.logger import chipiron_logger
 
 
 # instantiate relevant script
@@ -47,6 +48,7 @@ def create_script(
     parser: Parsley = create_parsley(
         args_dataclass_name=args_dataclass_name,
         should_parse_command_line_arguments=should_parse_command_line_arguments,
+        logger=chipiron_logger,
     )
 
     base_script: Script = Script(

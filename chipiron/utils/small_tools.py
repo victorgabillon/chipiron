@@ -7,19 +7,12 @@ import os
 import sys
 import typing
 from dataclasses import dataclass
-from enum import Enum
 from itertools import islice
 from typing import Any
 
-import dacite
 import numpy as np
 import numpy.typing as nptyping
 import yaml
-
-import chipiron
-import chipiron as ch
-from chipiron.utils.dataclass import IsDataclass
-
 from chipiron.utils.logger import chipiron_logger
 
 path = typing.Annotated[str | os.PathLike[str], "path"]
@@ -166,43 +159,6 @@ def softmax(x: list[float], temperature: float) -> nptyping.NDArray[np.float64]:
     e_x: nptyping.NDArray[np.float64] = np.exp((x - np.max(x)) * temperature)
     res: nptyping.NDArray[np.float64] = e_x / e_x.sum(axis=0)  # only difference
     return res
-
-
-@typing.dataclass_transform()
-def fetch_args_modify_and_convert[_T_co: IsDataclass](
-    path_to_file: path,  # path to a yaml file
-    dataclass_name: type[
-        _T_co
-    ],  # the dataclass into which the dictionary will be converted
-    modification: (
-        dict[Any, Any] | None
-    ) = None,  # modification to the dict extracted from the yaml file
-) -> _T_co:
-    """
-    Fetch, modify, and convert arguments from a YAML file to a dataclass.
-
-    Args:
-        path_to_file: The path to the YAML file.
-        dataclass_name: The dataclass into which the dictionary will be converted.
-        modification: The modification to the dictionary extracted from the YAML file.
-
-    Returns:
-        An instance of the dataclass with the modified arguments.
-
-    """
-    if modification is None:
-        modification = {}
-    file_args: dict[Any, Any] = chipiron.utils.yaml_fetch_args_in_file(path_to_file)
-    merged_args_dict: dict[Any, Any] = ch.tool.rec_merge_dic(file_args, modification)
-
-    # formatting the dictionary into the corresponding dataclass
-    dataclass_args: _T_co = dacite.from_dict(
-        data_class=dataclass_name,
-        data=merged_args_dict,
-        config=dacite.Config(cast=[Enum]),
-    )
-
-    return dataclass_args
 
 
 @dataclass

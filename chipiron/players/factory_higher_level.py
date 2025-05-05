@@ -80,6 +80,29 @@ def create_player_observer_factory(
     universal_behavior: bool,
     syzygy_table: SyzygyTable[Any] | None,
 ) -> PlayerObserverFactory:
+    """Create a player observer factory.
+    This function creates a player observer factory based on the given parameters.
+    The factory can create player observers that either run in separate threads or in the same process.
+    The choice is determined by the `each_player_has_its_own_thread` parameter.
+    The factory also takes into account the `implementation_args` and `universal_behavior` parameters
+    to customize the behavior of the created player observers.
+    The `syzygy_table` parameter is used to provide a syzygy table for the player observers.
+    The factory returns a callable that can be used to create player observers with the specified arguments.
+    The created player observers can be used to interact with the game and make moves.
+    The `each_player_has_its_own_thread` parameter determines whether each player runs in its own thread
+    or in the same process.
+    The `implementation_args` parameter provides additional arguments for the implementation of the player observers.
+    The `universal_behavior` parameter determines whether the player observers should exhibit universal behavior.
+
+    Args:
+        each_player_has_its_own_thread (bool): _description_
+        implementation_args (ImplementationArgs): _description_
+        universal_behavior (bool): _description_
+        syzygy_table (SyzygyTable[Any] | None): _description_
+
+    Returns:
+        PlayerObserverFactory: _description_
+    """
     player_observer_factory: PlayerObserverFactory
     if each_player_has_its_own_thread:
         player_observer_factory = partial(

@@ -14,7 +14,6 @@ from typing import Any, Callable
 
 import numpy as np
 import pandas
-import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
@@ -28,6 +27,7 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_
 from chipiron.utils import path
 
 from dataclasses import dataclass
+from chipiron.utils.logger import chipiron_logger
 
 
 @dataclass
@@ -72,34 +72,38 @@ class MyDataSet(Dataset[Any]):
         """
         Loads the dataset from the file.
         """
-        print("Loading the dataset...")
+        chipiron_logger.info("Loading the dataset...")
         start_time = time.time()
-        raw_data: pandas.DataFrame = pd.read_pickle(self.file_name)
+        raw_data: pandas.DataFrame = pandas.read_pickle(self.file_name)
         raw_data = (
             raw_data.copy()
         )  # gets rid of compatibility problems between various version of panda and pickle
-        print("raw_data", type(raw_data))
+        chipiron_logger.info(f"raw_data {type(raw_data)}")
         self.raw_data = raw_data
 
-        print("--- LOAD READ PICKLE %s seconds ---" % (time.time() - start_time))
-        print("Dataset  loaded with {} items".format(len(raw_data)))
+        chipiron_logger.info(
+            "--- LOAD READ PICKLE %s seconds ---" % (time.time() - start_time)
+        )
+        chipiron_logger.info("Dataset  loaded with {} items".format(len(raw_data)))
 
         # preprocessing
         if self.preprocessing:
-            print("preprocessing dataset...")
+            chipiron_logger.info("preprocessing dataset...")
             processed_data: list[tuple[torch.Tensor, torch.Tensor]] = []
 
             for idx in range(len(raw_data)):
                 # print(idx, type(idx),idx % 10 == 0)
                 if idx % 10 == 0:
-                    print("\rloading the data", str(idx / len(raw_data) * 100) + "%")
+                    chipiron_logger.info(
+                        f"\rloading the data {str(idx / len(raw_data) * 100)}%"
+                    )
                 row: pandas.Series = raw_data.iloc[idx % len(raw_data)]
                 processed_data.append(self.process_raw_row(row))
             self.data = processed_data
 
-            print("preprocessing dataset done")
+            chipiron_logger.info("preprocessing dataset done")
         else:
-            print("no preprocessing the dataset")
+            chipiron_logger.info("no preprocessing the dataset")
             self.data = raw_data
 
         self.len = len(self.data)

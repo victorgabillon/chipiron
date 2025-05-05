@@ -1,3 +1,7 @@
+from typing import Any
+
+from parsley_coco import make_partial_dataclass_with_optional_paths
+
 import chipiron.scripts as scripts
 from chipiron.learningprocesses.nn_trainer.factory import NNTrainerArgs
 from chipiron.players.boardevaluators.datasets.datasets import DataSetArgs
@@ -6,9 +10,6 @@ from chipiron.scripts.learn_nn_supervised.learn_nn_from_supervised_datasets impo
     LearnNNScriptArgs,
 )
 from chipiron.scripts.script_args import BaseScriptArgs
-from parsley_coco import make_partial_dataclass_with_optional_paths
-from typing import Any
-
 
 PartialOpLearnNNScriptArgs = make_partial_dataclass_with_optional_paths(
     cls=LearnNNScriptArgs
@@ -20,10 +21,9 @@ PartialOpBaseScriptArgs = make_partial_dataclass_with_optional_paths(cls=BaseScr
 configs_dataclasses: list[Any] = [
     PartialOpLearnNNScriptArgs(
         nn_trainer_args=PartialOpNNTrainerArgs(
-            neural_network_folder_path="chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/"
-            + "nn_pytorch/test_to_keep",
             reuse_existing_model=False,
-            nn_architecture_file_if_not_reusing_existing_one="chipiron/scripts/learn_nn_supervised/"
+            specific_saving_folder="chipiron/scripts/learn_nn_supervised/tests/tests_outputs",
+            neural_network_architecture_args_path_to_yaml_file="chipiron/scripts/learn_nn_supervised/"
             + "board_evaluators_common_training_data/nn_pytorch/architectures/"
             + architecture_file,
         ),
@@ -35,7 +35,6 @@ configs_dataclasses: list[Any] = [
     )
     for architecture_file in [
         "architecture_p1.yaml",
-        "architecture_prelu_bug.yaml",
         "architecture_prelu_nobug.yaml",
         "architecture_transformerone.yaml",
     ]

@@ -16,6 +16,7 @@ if not chipiron_logger.handlers:
     console_handler.setFormatter(formatter)
 
     chipiron_logger.addHandler(console_handler)
+    chipiron_logger.propagate = False
 
 
 @contextmanager

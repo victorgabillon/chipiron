@@ -351,7 +351,7 @@ class MainWindow(QWidget):
         message: MoveMessage = MoveMessage(
             move=move_uci,
             corresponding_board=self.board.fen,
-            player_name=PlayerConfigTag.GuiHuman,
+            player_name=PlayerConfigTag.GUI_HUMAN,
             color_to_play=self.board.turn,
         )
         self.main_thread_mailbox.put(item=message)

@@ -10,7 +10,7 @@ from chipiron.environments.chess.board.utils import FenPlusHistory, fen
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
     BoardEvaluation,
 )
-from chipiron.players.player import playerId
+from chipiron.players.player import PlayerId
 from chipiron.environments.chess.move import moveUci
 
 
@@ -29,7 +29,7 @@ class MoveMessage:
 
     move: moveUci
     corresponding_board: fen
-    player_name: playerId
+    player_name: PlayerId
     color_to_play: chess.Color
     evaluation: BoardEvaluation | None = None
 

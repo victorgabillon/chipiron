@@ -27,6 +27,7 @@ from .board_evaluator import (
 from .neural_networks.factory import (
     create_nn_board_eval_from_folder_path_and_existing_model,
 )
+from ...utils import yaml_fetch_args_in_file
 
 
 class TableBaseArgs:
@@ -43,8 +44,6 @@ class TableBaseArgs:
         None
     """
 
-    ...
-
 
 class BasicEvaluationArgs:
     """A class representing the arguments for basic evaluation.
@@ -57,8 +56,6 @@ class BasicEvaluationArgs:
     Methods:
         None
     """
-
-    ...
 
 
 BoardEvalArgs = (
@@ -142,18 +139,18 @@ def create_game_board_evaluator_not_observable(
     chi_board_eval_yaml_path: str = (
         "data/players/board_evaluator_config/base_chipiron_board_eval.yaml"
     )
-    with open(chi_board_eval_yaml_path, "r") as chi_board_eval_yaml_file:
-        chi_board_eval_dict: dict[Any, Any] = yaml.load(
-            stream=chi_board_eval_yaml_file, Loader=yaml.FullLoader
-        )
 
-        # atm using a wrapper because dacite does not accept unions as data_class argument
-        chi_board_eval_args: BoardEvalArgsWrapper = dacite.from_dict(
-            data_class=BoardEvalArgsWrapper, data=chi_board_eval_dict
-        )
-        board_evaluator_chi: BoardEvaluator = create_board_evaluator(
-            args_board_evaluator=chi_board_eval_args.board_evaluator
-        )
+    chi_board_eval_dict: dict[Any, Any] = yaml_fetch_args_in_file(
+        path_file=chi_board_eval_yaml_path
+    )
+
+    # atm using a wrapper because dacite does not accept unions as data_class argument
+    chi_board_eval_args: BoardEvalArgsWrapper = dacite.from_dict(
+        data_class=BoardEvalArgsWrapper, data=chi_board_eval_dict
+    )
+    board_evaluator_chi: BoardEvaluator = create_board_evaluator(
+        args_board_evaluator=chi_board_eval_args.board_evaluator
+    )
 
     game_board_evaluator: GameBoardEvaluator = GameBoardEvaluator(
         board_evaluator_stock=board_evaluator_stock,

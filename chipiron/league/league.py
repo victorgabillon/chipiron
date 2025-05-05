@@ -138,8 +138,8 @@ class League:
         game_args: game.GameArgs
         match_args, game_args = fetch_match_games_args_convert_and_save(
             match_args=MatchArgs(
-                player_one=PlayerConfigTag.Chipiron,
-                player_two=PlayerConfigTag.Chipiron,
+                player_one=PlayerConfigTag.CHIPIRON,
+                player_two=PlayerConfigTag.CHIPIRON,
                 match_setting=MatchConfigTag(
                     file_match_setting
                 ).get_match_settings_args(),  # probibly to fix as weell and this is a ditry fix to create a martch args please imrpove!!
