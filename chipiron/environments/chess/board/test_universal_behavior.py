@@ -62,7 +62,6 @@ def test_universal_behavior() -> None:
 
     random_generator_rust: random.Random = random.Random(0)
     player_rust: Player = create_chipiron_player(
-        depth=1,
         implementation_args=ImplementationArgs(use_rust_boards=True),
         universal_behavior=True,
         random_generator=random_generator_rust,
@@ -74,7 +73,6 @@ def test_universal_behavior() -> None:
 
     random_generator_chi: random.Random = random.Random(0)
     player_chi: Player = create_chipiron_player(
-        depth=1,
         implementation_args=ImplementationArgs(use_rust_boards=False),
         universal_behavior=True,
         random_generator=random_generator_chi,

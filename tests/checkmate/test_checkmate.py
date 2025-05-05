@@ -1,12 +1,15 @@
 import pickle
 import random
+from typing import Any
 
 import chess
 import pytest
 
 from chipiron.environments.chess.board.utils import FenPlusHistory
 from chipiron.players import Player
-from chipiron.players.factory import create_chipiron_player, create_player_from_file
+from chipiron.players.boardevaluators import table_base
+from chipiron.players.boardevaluators.table_base.factory import create_syzygy
+from chipiron.players.factory import create_chipiron_player, create_player
 from chipiron.players.move_selector.move_selector import MoveRecommendation
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
@@ -17,7 +20,6 @@ def test_check_in_one(use_rusty_board: bool):
     random_generator: random.Random = random.Random(0)
 
     player: Player = create_chipiron_player(
-        depth=1,
         implementation_args=ImplementationArgs(use_rust_boards=use_rusty_board),
         universal_behavior=True,
         random_generator=random_generator,
@@ -47,10 +49,19 @@ def test_check_in_two(use_rusty_board: bool):
     print(f"Testing  check in two on {len(dict_fen_move)} boards.")
     for fen, moves in dict_fen_move.items():
         print("fen", fen)
-        player = create_player_from_file(
-            player_args_file=PlayerConfigTag.UniformDepth3,
+
+        implementation_args = ImplementationArgs(use_rust_boards=use_rusty_board)
+
+        syzygy_table: table_base.SyzygyTable[Any] | None = create_syzygy(
+            use_rust=implementation_args.use_rust_boards
+        )
+
+        print("rrrrrrrrrrrrrrrrrrrrrrrrrrrr")
+        player = create_player(
+            args=PlayerConfigTag.UNIFORM_DEPTH_3.get_players_args(),
+            syzygy=syzygy_table,
             random_generator=random_generator,
-            implementation_args=ImplementationArgs(use_rust_boards=use_rusty_board),
+            implementation_args=implementation_args,
             universal_behavior=True,
         )
         move_reco: MoveRecommendation = player.select_move(
@@ -64,5 +75,6 @@ if __name__ == "__main__":
     test_check_in_one(use_rusty_board=True)
     test_check_in_one(use_rusty_board=False)
 
+    print("EEEEEEEEEEEEEEEEEEE")
     test_check_in_two(use_rusty_board=True)
     test_check_in_two(use_rusty_board=False)

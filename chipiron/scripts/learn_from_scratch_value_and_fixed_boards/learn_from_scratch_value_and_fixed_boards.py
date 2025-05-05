@@ -1,15 +1,12 @@
+import logging
 import os
 import random
 import time
 from dataclasses import asdict, dataclass, field
 from typing import Any
-import logging
 
 import mlflow
 import pandas
-from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
-from chipiron.players.move_selector.random import Random
-from chipiron.players.player_ids import PlayerConfigTag
 from torch.utils.data import DataLoader
 from torchinfo import summary
 
@@ -22,9 +19,8 @@ from chipiron.players.boardevaluators.datasets.datasets import (
     DataSetArgs,
 )
 from chipiron.players.boardevaluators.neural_networks.factory import (
-    create_nn_board_eval_from_folder_path_and_existing_model,
-    get_architecture_args_from_file,
     create_nn_board_eval_from_architecture_args,
+    create_nn_board_eval_from_nn_parameters_file_and_existing_model,
 )
 from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
     NeuralNetArchitectureArgs,
@@ -35,13 +31,15 @@ from chipiron.players.boardevaluators.neural_networks.nn_board_evaluator import 
 from chipiron.players.boardevaluators.table_base import SyzygyTable
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.players.factory import create_player
+from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
+from chipiron.players.move_selector.random import Random
+from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.chi_nn import ChiNN
 from chipiron.utils.logger import chipiron_logger, suppress_logging
-
-from typing import cast
+from chipiron.utils import path
 
 
 @dataclass
@@ -106,6 +104,7 @@ class LearnNNFromScratchScript:
     args: LearnNNFromScratchScriptArgs
     nn_board_evaluator: NNBoardEvaluator
     nn_architecture_args: NeuralNetArchitectureArgs
+    saving_folder: path
 
     def __init__(
         self,
@@ -133,24 +132,24 @@ class LearnNNFromScratchScript:
         )
 
         if self.args.nn_trainer_args.reuse_existing_model:
-            self.nn_board_evaluator, self.nn_architecture_args = (
-                create_nn_board_eval_from_folder_path_and_existing_model(
-                    path_to_nn_folder=self.args.nn_trainer_args.neural_network_folder_path
-                )
-            )
-        else:
             assert (
-                self.args.nn_trainer_args.nn_architecture_file_if_not_reusing_existing_one
+                self.args.nn_trainer_args.nn_parameters_file_if_reusing_existing_one
                 is not None
             )
-            self.nn_architecture_args: NeuralNetArchitectureArgs = (
-                get_architecture_args_from_file(
-                    architecture_file_name=self.args.nn_trainer_args.nn_architecture_file_if_not_reusing_existing_one
-                )
+            self.nn_board_evaluator = create_nn_board_eval_from_nn_parameters_file_and_existing_model(
+                model_weights_file_name=self.args.nn_trainer_args.nn_parameters_file_if_reusing_existing_one,
+                nn_architecture_args=self.args.nn_trainer_args.neural_network_architecture_args,
             )
+        else:
             self.nn_board_evaluator = create_nn_board_eval_from_architecture_args(
-                nn_architecture_args=self.nn_architecture_args
+                nn_architecture_args=self.args.nn_trainer_args.neural_network_architecture_args
             )
+
+        if self.args.nn_trainer_args.specific_saving_folder is not None:
+            self.saving_folder = self.args.nn_trainer_args.specific_saving_folder
+        else:
+            assert self.args.base_script_args.experiment_output_folder is not None
+            self.saving_folder = self.args.base_script_args.experiment_output_folder
 
         # taking care of random
         chipiron.set_seeds(seed=self.args.base_script_args.seed)
@@ -199,6 +198,9 @@ class LearnNNFromScratchScript:
         syzygy_table: SyzygyTable[Any] | None = create_syzygy(
             use_rust=self.args.implementation_args.use_rust_boards,
         )
+        assert isinstance(
+            self.args.evaluating_player_args, PlayerArgs
+        )  # because of the magic automatic parsing transcription, can we remove this assert somehow?
         self.player = create_player(
             args=self.args.evaluating_player_args,
             syzygy=syzygy_table,
@@ -213,12 +215,14 @@ class LearnNNFromScratchScript:
         print("Starting to learn the NN from scratch")
 
         with mlflow.start_run():
-            params = asdict(self.args) | asdict(self.nn_architecture_args)
+            params = asdict(self.args) | asdict(
+                self.args.nn_trainer_args.neural_network_architecture_args
+            )
             mlflow.log_params(params)
 
             # Log model summary.
             model_summary_file_name: str = os.path.join(
-                self.args.nn_trainer_args.neural_network_folder_path,
+                self.saving_folder,
                 "model_summary.txt",
             )
             with open(model_summary_file_name, "w") as f:

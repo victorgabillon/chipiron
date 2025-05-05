@@ -1,11 +1,15 @@
 from dataclasses import dataclass
 from typing import Any
+from typing import Literal
 
 import chess
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
+from chipiron.players.boardevaluators.neural_networks.NNModelType import (
+    NNModelType,
+)
 from chipiron.utils.chi_nn import ChiNN
 
 number_of_squares = len(chess.SQUARES)
@@ -26,6 +30,33 @@ class TransformerArgs:
     number_occupancy_types: int = number_occupancy_types
     len_square_tensor: int = len_square_tensor
     number_pieces_types: int = number_pieces_types
+
+    type: Literal[NNModelType.Transformer] = NNModelType.Transformer
+    n_embd: int = 27
+    n_head: int = 3
+    n_layer: int = 2
+    dropout_ratio: float = 0.0
+
+    def __str__(self) -> str:
+        """
+        Returns a string representation of the TransformerArgs instance.
+        """
+        return (
+            f"TransformerArgs(n_embd={self.n_embd}, "
+            f"n_head={self.n_head}, "
+            f"n_layer={self.n_layer}, "
+            f"dropout_ratio={self.dropout_ratio})"
+        )
+
+    def filename(self) -> str:
+        """
+        Generates a filename based on the TransformerArgs instance.
+        """
+        return (
+            f"transformer_{self.n_embd}embd_"
+            f"{self.n_head}head_{self.n_layer}layer_"
+            f"{self.dropout_ratio:.2f}dropout"
+        )
 
 
 class Head(nn.Module):
@@ -136,23 +167,21 @@ class Block(nn.Module):
 
 class TransformerOne(ChiNN):
 
-    def __init__(
-        self, n_embd: int, n_head: int, n_layer: int, dropout_ratio: float
-    ) -> None:
+    def __init__(self, args: TransformerArgs) -> None:
         super(TransformerOne, self).__init__()
 
         self.board_embedding_table = nn.Parameter(
-            torch.randn(len_all_possible_tensor_input, n_embd)
+            torch.randn(len_all_possible_tensor_input, args.n_embd)
         )
 
         self.blocks = nn.Sequential(
             *[
-                Block(n_embd, n_head=n_head, dropout_ratio=dropout_ratio)
-                for _ in range(n_layer)
+                Block(args.n_embd, n_head=args.n_head, dropout_ratio=args.dropout_ratio)
+                for _ in range(args.n_layer)
             ]
         )
-        self.ln_f = nn.LayerNorm(n_embd)  # final layer norm
-        self.lm_head = nn.Linear(number_parallel_tracks * n_embd, 1)
+        self.ln_f = nn.LayerNorm(args.n_embd)  # final layer norm
+        self.lm_head = nn.Linear(number_parallel_tracks * args.n_embd, 1)
 
         self.tan_h = nn.Tanh()
 

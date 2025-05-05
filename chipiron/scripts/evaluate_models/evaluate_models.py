@@ -20,6 +20,8 @@ from chipiron.players.boardevaluators.neural_networks import NNBoardEvaluator
 from chipiron.players.boardevaluators.neural_networks.factory import (
     create_nn_board_eval_from_folder_path_and_existing_model,
     get_nn_param_file_path_from,
+    NeuralNetModelsAndArchitecture,
+    create_nn_board_eval_from_nn_parameters_file_and_existing_model,
 )
 from chipiron.utils import path
 from chipiron.utils.chi_nn import ChiNN
@@ -36,7 +38,14 @@ class ModelEvaluation:
     number_of_model_parameters: int
 
 
-EvaluatedModels = dict[path, ModelEvaluation]
+EvaluatedModels = dict[str, ModelEvaluation]
+
+
+def compute_model_hask_key(model_and_archi: NeuralNetModelsAndArchitecture) -> str:
+    return (
+        str(model_and_archi.model_weights_file_name)
+        + model_and_archi.nn_architecture_args.filename()
+    )
 
 
 def count_parameters(model: ChiNN) -> int:
@@ -44,7 +53,7 @@ def count_parameters(model: ChiNN) -> int:
 
 
 def evaluate_models(
-    folders_of_models_to_evaluate: list[path],
+    models_to_evaluate: list[NeuralNetModelsAndArchitecture],
     evaluation_report_file: path = "chipiron/scripts/evaluate_models/evaluation_report.yaml",
     dataset_file_name: path = "data/datasets/goodgames_plusvariation_stockfish_eval_test",
 ) -> None:
@@ -56,10 +65,10 @@ def evaluate_models(
     """
     print("Evaluating models...")
     # Load the evaluation report
-    evaluated_models: dict[path, ModelEvaluation] = {}
+    evaluated_models: dict[str, ModelEvaluation] = {}
     with open(evaluation_report_file, "r") as stream:
         try:
-            evaluated_models_temp: dict[path, dict[Any, Any]] | None
+            evaluated_models_temp: dict[str, dict[Any, Any]] | None
             evaluated_models_temp = yaml.safe_load(stream)
             if evaluated_models_temp is None:
                 evaluated_models_temp = {}
@@ -83,21 +92,23 @@ def evaluate_models(
 
     # Evaluate the models if necessary
     data_loader_stockfish_boards_test = None
-    model_folder_path: path
-    for model_folder_path in folders_of_models_to_evaluate:
-        print(f"\nEvaluating model: {model_folder_path}")
+    model_to_evaluate: NeuralNetModelsAndArchitecture
+    for model_to_evaluate in models_to_evaluate:
+        print(f"\nEvaluating model: {model_to_evaluate}")
+
+        model_hash_key: str = compute_model_hask_key(model_to_evaluate)
 
         # Check if the model has already been evaluated
         should_evaluate: bool
-        if model_folder_path in evaluated_models:
-            model_evaluation: ModelEvaluation = evaluated_models[model_folder_path]
+        if model_hash_key in evaluated_models:
+            model_evaluation: ModelEvaluation = evaluated_models[model_hash_key]
             print(
                 "This model has already been evaluated. Now checking if the file has been modified since last evaluation..."
             )
-            model_params_path: path = get_nn_param_file_path_from(
-                folder_path=model_folder_path
-            )
-            modification_time = os.path.getmtime(model_params_path)
+            model_params_path_pt: path
+            model_params_path_pt = model_to_evaluate.model_weights_file_name
+
+            modification_time = os.path.getmtime(model_params_path_pt)
             readable_time = time.ctime(modification_time)
             print(
                 f"Last modification time: {readable_time} and last evaluation time {model_evaluation.time_of_evaluation} "
@@ -127,9 +138,10 @@ def evaluate_models(
             criterion = torch.nn.L1Loss()
 
             nn_board_evaluator: NNBoardEvaluator
-            nn_board_evaluator, _ = (
-                create_nn_board_eval_from_folder_path_and_existing_model(
-                    path_to_nn_folder=model_folder_path
+            nn_board_evaluator = (
+                create_nn_board_eval_from_nn_parameters_file_and_existing_model(
+                    model_weights_file_name=model_to_evaluate.model_weights_file_name,
+                    nn_architecture_args=model_to_evaluate.nn_architecture_args,
                 )
             )
 
@@ -163,7 +175,7 @@ def evaluate_models(
                 time_of_evaluation=datetime.datetime.now(),
                 number_of_model_parameters=number_of_model_parameters,
             )
-            evaluated_models[model_folder_path] = model_evaluation
+            evaluated_models[model_hash_key] = model_evaluation
             print("Model evaluated!")
 
     evaluated_model_path_: path
@@ -182,11 +194,18 @@ def evaluate_models(
 
 
 if __name__ == "__main__":
-    folders_of_models_to_evaluate_: list[path] = [
-        "data/players/board_evaluators/nn_pytorch/nn_pp2d2_2_prelu/param_prelu",
-        "data/players/board_evaluators/nn_pytorch/nn_p1",
-        "data/players/board_evaluators/nn_pytorch/nn_pp2",
-        "chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/transformerone",
+    models_to_evaluate_: list[NeuralNetModelsAndArchitecture] = [
+        NeuralNetModelsAndArchitecture.build_from_folder_path(
+            folder_path="chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/prelu_no_bug"
+        ),
+        NeuralNetModelsAndArchitecture.build_from_folder_path(
+            folder_path="chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/nn_p1_new"
+        ),
+        NeuralNetModelsAndArchitecture.build_from_folder_path(
+            folder_path="chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/nn_pp2_new"
+        ),
+        # NeuralNetModelsAndArchitecture.build_from_folder_path(
+        #     folder_path="chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/transformerone"),
     ]
 
-    evaluate_models(folders_of_models_to_evaluate=folders_of_models_to_evaluate_)
+    evaluate_models(models_to_evaluate=models_to_evaluate_)

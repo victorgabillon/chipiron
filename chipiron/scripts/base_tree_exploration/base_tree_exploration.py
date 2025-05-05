@@ -56,7 +56,7 @@ class BaseTreeExplorationScript:
         """
         syzygy = create_syzygy(use_rust=self.args.implementation_args.use_rust_boards)
 
-        player_one_args: PlayerArgs = PlayerConfigTag.Uniform.get_players_args()
+        player_one_args: PlayerArgs = PlayerConfigTag.UNIFORM.get_players_args()
 
         # player_one_args.main_move_selector.stopping_criterion.tree_move_limit = 1000000
         random_generator = random.Random()

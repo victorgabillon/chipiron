@@ -1,0 +1,14 @@
+model_input_representation_type: 364_no_bug
+model_output_type:
+  point_of_view: player_to_move
+model_type_args:
+  list_of_activation_functions:
+  - parametric_relu
+  - parametric_relu
+  - hyperbolic_tangent
+  number_neurons_per_layer:
+  - 772
+  - 200
+  - 20
+  - 1
+  type: multi_layer_perceptron

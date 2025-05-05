@@ -9,6 +9,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from chipiron.utils.chi_nn import ChiNN
+from chipiron.utils.logger import chipiron_logger
 
 
 def compute_loss(
@@ -55,7 +56,7 @@ def compute_test_error_on_dataset(
         )
         sum_loss_test += float(loss_test)
         count_test += 1
-    print("test error", float(sum_loss_test / float(count_test)))
+    chipiron_logger.info(f"test error {float(sum_loss_test / float(count_test))}")
     test_error: float = float(sum_loss_test / float(count_test))
     return test_error
 
@@ -105,7 +106,7 @@ class NNPytorchTrainer:
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.net.to(self.device)
-        print(f"Model put to device {self.device}")
+        chipiron_logger.info(f"Model put to device {self.device}")
 
     @typing.no_type_check
     def train(
@@ -123,7 +124,6 @@ class NNPytorchTrainer:
         """
         self.net.train()
 
-        # print("next(model.parameters()).is_cuda", next(self.net.parameters()).is_cuda)
         self.optimizer.zero_grad()
         input_layer, target_value = input_layer.to(self.device), target_value.to(
             self.device
@@ -136,8 +136,6 @@ class NNPytorchTrainer:
             target_value=target_value,
         )
         loss.backward()
-        # print("debugrad" , self.net.board_embedding_table.grad )
-        # print("debugradddd" , self.net.blocks[0].ffwd.lin.weight.grad )
 
         self.optimizer.step()
         return loss

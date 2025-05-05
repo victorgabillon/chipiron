@@ -8,7 +8,7 @@ from typing import Any
 
 import chess
 
-import chipiron.players.boardevaluators.table_base as table_base
+from chipiron.players.boardevaluators import table_base
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.players.player_args import PlayerArgs
@@ -26,7 +26,6 @@ from chipiron.utils.logger import chipiron_logger
 
 
 def create_chipiron_player(
-    depth: int,
     implementation_args: ImplementationArgs,
     universal_behavior: bool,
     random_generator: random.Random,
@@ -45,7 +44,9 @@ def create_chipiron_player(
         use_rust=implementation_args.use_rust_boards
     )
 
-    args_player: PlayerArgs = PlayerConfigTag.Chipiron.get_players_args()
+    args_player: PlayerArgs = PlayerConfigTag.CHIPIRON.get_players_args()
+
+    print("debug ARRRGS", args_player)
 
     main_move_selector: move_selector.MoveSelector | None = (
         move_selector.create_main_move_selector(
@@ -66,51 +67,6 @@ def create_chipiron_player(
 
     return Player(
         name="chipiron",
-        syzygy=syzygy_table,
-        main_move_selector=main_move_selector,
-        board_factory=board_factory,
-    )
-
-
-def create_player_from_file(
-    player_args: PlayerArgs,
-    random_generator: random.Random,
-    implementation_args: ImplementationArgs,
-    universal_behavior: bool,
-    queue_progress_player: queue.Queue[IsDataclass] | None = None,
-) -> Player:
-    """Create a player object from a file.
-
-    Args:
-        player_args_file (path): The path to the player arguments file.
-        random_generator (random.Random): The random number generator.
-
-    Returns:
-        Player: The created player object.
-    """
-
-    syzygy_table: table_base.SyzygyTable[Any] | None = create_syzygy(
-        use_rust=implementation_args.use_rust_boards
-    )
-
-    chipiron_logger.info("Create player from file")
-    main_move_selector: move_selector.MoveSelector = (
-        move_selector.create_main_move_selector(
-            move_selector_instance_or_args=player_args.main_move_selector,
-            syzygy=syzygy_table,
-            random_generator=random_generator,
-            queue_progress_player=queue_progress_player,
-        )
-    )
-
-    board_factory: BoardFactory = create_board_factory(
-        use_rust_boards=implementation_args.use_rust_boards,
-        use_board_modification=implementation_args.use_board_modification,
-        sort_legal_moves=universal_behavior,
-    )
-
-    return Player(
-        name=player_args.name,
         syzygy=syzygy_table,
         main_move_selector=main_move_selector,
         board_factory=board_factory,

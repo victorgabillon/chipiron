@@ -11,6 +11,7 @@ Classes:
 import random
 import typing
 from dataclasses import dataclass
+from typing import Literal
 
 from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.move_selector.treevalue import trees
@@ -28,16 +29,15 @@ from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_nod
 from chipiron.players.move_selector.treevalue.nodes.utils import (
     best_node_sequence_from_node,
 )
-
+from chipiron.players.move_selector.treevalue.node_selector import NodeSelectorType
 from ..move_explorer import SamplingPriorities
-from ..node_selector_args import NodeSelectorArgs
 
 if typing.TYPE_CHECKING:
     import chipiron.players.move_selector.treevalue.tree_manager as tree_man
 
 
 @dataclass
-class RecurZipfBaseArgs(NodeSelectorArgs):
+class RecurZipfBaseArgs:
     """
     Arguments for the RecurZipfBase node selector.
 
@@ -45,6 +45,7 @@ class RecurZipfBaseArgs(NodeSelectorArgs):
         move_explorer_priority (SamplingPriorities): The priority for move exploration.
     """
 
+    type: Literal[NodeSelectorType.RecurZipfBase]
     move_explorer_priority: SamplingPriorities
 
 

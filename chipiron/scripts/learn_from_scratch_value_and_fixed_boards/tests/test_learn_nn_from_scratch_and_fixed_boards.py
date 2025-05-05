@@ -19,13 +19,13 @@ PartialOpNNTrainerArgs = make_partial_dataclass_with_optional_paths(cls=NNTraine
 PartialOpDataSetArgs = make_partial_dataclass_with_optional_paths(cls=DataSetArgs)
 PartialOpBaseScriptArgs = make_partial_dataclass_with_optional_paths(cls=BaseScriptArgs)
 
+
 configs_dataclasses: list[Any] = [
     PartialOpLearnNNFromScratchScriptArgs(
         nn_trainer_args=PartialOpNNTrainerArgs(
-            neural_network_folder_path="chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/"
-            + "nn_pytorch/test_to_keep",
             reuse_existing_model=False,
-            nn_architecture_file_if_not_reusing_existing_one="chipiron/scripts/learn_nn_supervised/"
+            specific_saving_folder="chipiron/scripts/learn_from_scratch_value_and_fixed_boards/tests/test_outputs",
+            neural_network_architecture_args_path_to_yaml_file="chipiron/scripts/learn_nn_supervised/"
             + "board_evaluators_common_training_data/nn_pytorch/architectures/"
             + architecture_file,
         ),
@@ -37,7 +37,6 @@ configs_dataclasses: list[Any] = [
     )
     for architecture_file in [
         "architecture_p1.yaml",
-        "architecture_prelu_bug.yaml",
         "architecture_prelu_nobug.yaml",
         "architecture_transformerone.yaml",
     ]

@@ -9,13 +9,13 @@ from typing import Any
 import chipiron as ch
 import chipiron.games.game as game
 from chipiron.utils import path
-from chipiron.utils.small_tools import fetch_args_modify_and_convert
 
 from .match_settings_args import MatchSettingsArgs
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.MatchTag import MatchConfigTag
 import yaml
 from dataclasses import dataclass, asdict
+import parsley_coco
 
 
 def fetch_match_games_args_convert_and_save(
@@ -40,9 +40,11 @@ def fetch_match_games_args_convert_and_save(
 
     if profiling:
         path_match_setting: path = MatchConfigTag.Cubo.get_yaml_file_path()
-        match_setting: MatchSettingsArgs = fetch_args_modify_and_convert(
-            path_to_file=path_match_setting,
-            dataclass_name=MatchSettingsArgs,
+        match_setting: MatchSettingsArgs = (
+            parsley_coco.resolve_yaml_file_to_base_dataclass(
+                yaml_path=path_match_setting,
+                base_cls=MatchSettingsArgs,
+            )
         )
         match_args.match_setting = match_setting
 
@@ -62,8 +64,8 @@ def fetch_match_games_args_convert_and_save(
     game_file_path: path = os.path.join(
         "data/settings/GameSettings", match_args.match_setting.game_setting_file
     )
-    args_game: game.GameArgs = fetch_args_modify_and_convert(
-        path_to_file=game_file_path, dataclass_name=game.GameArgs
+    args_game: game.GameArgs = parsley_coco.resolve_yaml_file_to_base_dataclass(
+        yaml_path=game_file_path, base_cls=game.GameArgs
     )
 
     if profiling:

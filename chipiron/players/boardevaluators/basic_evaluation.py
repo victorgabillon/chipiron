@@ -109,14 +109,16 @@ def value_player_to_move(board: IBoard) -> float:
     Returns:
         float: The value of the player to move.
     """
-    value_white_pieces = value_base(board, chess.WHITE)
-    value_black_pieces = value_base(board, chess.BLACK)
+    value_white_pieces: int = value_base(board, chess.WHITE)
+    value_black_pieces: int = value_base(board, chess.BLACK)
     # value_white_pieces += add_pawns_value_white(board)
     # value_black_pieces += add_pawns_value_black(board)
+    value: float
     if board.turn == chess.WHITE:
-        return sigmoid((value_white_pieces - value_black_pieces) * 0.2)
+        value = sigmoid((value_white_pieces - value_black_pieces) * 0.2)
     else:
-        return sigmoid((value_black_pieces - value_white_pieces) * 0.2)
+        value = sigmoid((value_black_pieces - value_white_pieces) * 0.2)
+    return value
 
 
 class BasicEvaluation(BoardEvaluator):
@@ -132,19 +134,6 @@ class BasicEvaluation(BoardEvaluator):
         value_white: Calculates the value of the board for the white player.
 
     """
-
-    def __init__(self) -> None:
-        """Initialize the BasicEvaluation object.
-
-        This method initializes the BasicEvaluation object.
-
-        Parameters:
-            None
-
-        Returns:
-            None
-        """
-        pass
 
     def value_white(self, board: IBoard) -> float:
         """Calculates the value of the board for the white player.

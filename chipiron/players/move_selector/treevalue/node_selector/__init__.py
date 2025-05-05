@@ -14,11 +14,11 @@ The module includes the following components:
 To use this module, import it and use the provided classes and functions as needed.
 """
 
-from .factory import AllNodeSelectorArgs, create
 from .node_selector import NodeSelector
 from .node_selector_args import NodeSelectorArgs
 from .node_selector_types import NodeSelectorType
 from .opening_instructions import OpeningInstruction, OpeningInstructions, OpeningType
+from .factory import AllNodeSelectorArgs, create
 
 __all__ = [
     "OpeningInstructions",

@@ -89,11 +89,12 @@ def game_player_computes_move_on_board_and_send_move_in_queue(
             evaluation=move_recommendation.evaluation,
             color_to_play=game_player.color,
         )
-        chipiron_logger.info(f"Sending {message}")
+        chipiron_logger.info("Sending %s", message)
 
         deep_copy_message = copy.deepcopy(message)
         queue_move.put(deep_copy_message)
     else:
         chipiron_logger.warning(
-            f"Game player rejects move query {fen_plus_history.current_fen}",
+            "Game player rejects move query %s",
+            fen_plus_history.current_fen,
         )

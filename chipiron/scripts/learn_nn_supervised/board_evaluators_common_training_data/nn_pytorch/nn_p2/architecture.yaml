@@ -2,3 +2,5 @@ model_input_representation_type: board_pieces_two_sides
 model_output_type:
   point_of_view: player_to_move
 model_type: p2
+
+

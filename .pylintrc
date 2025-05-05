@@ -2,7 +2,6 @@
 max-line-length = 88
 
 [MAIN]
-max-line-length=100
+max-line-length=120
 
-extension-pkg-whitelist=PyQt5
-extension-pkg-whitelist=PySide6
+extension-pkg-whitelist=PyQt5,PySide6

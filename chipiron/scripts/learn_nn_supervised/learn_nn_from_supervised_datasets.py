@@ -44,19 +44,13 @@ from chipiron.players.boardevaluators.datasets.datasets import (
 from chipiron.players.boardevaluators.neural_networks import NNBoardEvaluator
 from chipiron.players.boardevaluators.neural_networks.factory import (
     create_nn_board_eval_from_architecture_args,
-    create_nn_board_eval_from_folder_path_and_existing_model,
-    get_architecture_args_from_file,
-)
-from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
-    NeuralNetArchitectureArgs,
+    create_nn_board_eval_from_nn_parameters_file_and_existing_model,
 )
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
+from chipiron.utils import path
 from chipiron.utils.chi_nn import ChiNN
-
-
-def count_parameters(model: ChiNN) -> int:
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+from chipiron.utils.logger import chipiron_logger
 
 
 @dataclass
@@ -105,7 +99,7 @@ class LearnNNScript:
     nn: ChiNN
     args: LearnNNScriptArgs
     nn_board_evaluator: NNBoardEvaluator
-    nn_architecture_args: NeuralNetArchitectureArgs
+    saving_folder: path
 
     def __init__(
         self,
@@ -136,27 +130,29 @@ class LearnNNScript:
         chipiron.set_seeds(seed=self.args.base_script_args.seed)
 
         if self.args.nn_trainer_args.reuse_existing_model:
-            self.nn_board_evaluator, self.nn_architecture_args = (
-                create_nn_board_eval_from_folder_path_and_existing_model(
-                    path_to_nn_folder=self.args.nn_trainer_args.neural_network_folder_path
-                )
-            )
-        else:
             assert (
-                self.args.nn_trainer_args.nn_architecture_file_if_not_reusing_existing_one
+                self.args.nn_trainer_args.nn_parameters_file_if_reusing_existing_one
                 is not None
             )
-            self.nn_architecture_args: NeuralNetArchitectureArgs = (
-                get_architecture_args_from_file(
-                    architecture_file_name=self.args.nn_trainer_args.nn_architecture_file_if_not_reusing_existing_one
-                )
+            self.nn_board_evaluator = create_nn_board_eval_from_nn_parameters_file_and_existing_model(
+                model_weights_file_name=self.args.nn_trainer_args.nn_parameters_file_if_reusing_existing_one,
+                nn_architecture_args=self.args.nn_trainer_args.neural_network_architecture_args,
             )
+        else:
             self.nn_board_evaluator = create_nn_board_eval_from_architecture_args(
-                nn_architecture_args=self.nn_architecture_args
+                nn_architecture_args=self.args.nn_trainer_args.neural_network_architecture_args
             )
 
+        if self.args.nn_trainer_args.specific_saving_folder is not None:
+            self.saving_folder = self.args.nn_trainer_args.specific_saving_folder
+        else:
+            assert self.args.base_script_args.experiment_output_folder is not None
+            self.saving_folder = self.args.base_script_args.experiment_output_folder
+
         self.nn_trainer: NNPytorchTrainer = create_nn_trainer(
-            args=self.args.nn_trainer_args, nn=self.nn_board_evaluator.net
+            args=self.args.nn_trainer_args,
+            nn=self.nn_board_evaluator.net,
+            saving_folder=self.saving_folder,
         )
 
         self.stockfish_boards_train = FenAndValueDataSet(
@@ -178,7 +174,7 @@ class LearnNNScript:
 
         start_time = time.time()
         self.stockfish_boards_train.load()
-        print("--- LOADdd %s seconds ---" % (time.time() - start_time))
+        chipiron_logger.info(f"--- LOAD {time.time() - start_time} seconds --- ")
         self.stockfish_boards_test.load()
 
         self.data_loader_stockfish_boards_train = DataLoader(
@@ -201,9 +197,6 @@ class LearnNNScript:
             )
         else:
             mlflow.set_tracking_uri(uri=chipiron.utils.path_variables.ML_FLOW_URI_PATH)
-
-        number_of_model_parameters: int = count_parameters(self.nn_board_evaluator.net)
-        print(f"TOTAL PARAM: {number_of_model_parameters}")
 
     def print_and_log_metrics(
         self, count_train_step: int, training_loss: float, test_error: float
@@ -244,16 +237,18 @@ class LearnNNScript:
         Returns:
             None
         """
-        print("Starting to learn the NN")
+        chipiron_logger.info("Starting to learn the NN")
 
         with mlflow.start_run():
 
-            params = asdict(self.args) | asdict(self.nn_architecture_args)
+            params = asdict(self.args) | asdict(
+                self.args.nn_trainer_args.neural_network_architecture_args
+            )
             mlflow.log_params(params)
 
             # Log model summary.
             model_summary_file_name: str = os.path.join(
-                self.args.nn_trainer_args.neural_network_folder_path,
+                self.saving_folder,
                 "model_summary.txt",
             )
             with open(model_summary_file_name, "w") as f:
@@ -366,18 +361,18 @@ class LearnNNScript:
         Returns:
             None
         """
+
         if count_train_step % self.args.nn_trainer_args.saving_interval == 0:
             safe_nn_param_save(
-                self.nn_board_evaluator.net,
-                self.args.nn_trainer_args.neural_network_folder_path,
+                nn=self.nn_board_evaluator.net,
+                nn_param_folder_name=self.saving_folder,
+                file_name=self.args.nn_trainer_args.neural_network_architecture_args.filename(),
             )
             safe_nn_architecture_save(
-                nn_architecture_args=self.nn_architecture_args,
-                nn_param_folder_name=self.args.nn_trainer_args.neural_network_folder_path,
+                nn_architecture_args=self.args.nn_trainer_args.neural_network_architecture_args,
+                nn_param_folder_name=self.saving_folder,
             )
-            safe_nn_trainer_save(
-                self.nn_trainer, self.args.nn_trainer_args.neural_network_folder_path
-            )
+            safe_nn_trainer_save(self.nn_trainer, self.saving_folder)
 
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -402,8 +397,8 @@ class LearnNNScript:
             == 0
         ):
             safe_nn_param_save(
-                self.nn_board_evaluator.net,
-                self.args.nn_trainer_args.neural_network_folder_path,
+                nn=self.nn_board_evaluator.net,
+                nn_param_folder_name=self.saving_folder,
                 training_copy=True,
             )
 

@@ -7,7 +7,7 @@ Classes:
 """
 
 from dataclasses import dataclass
-
+from typing import Literal
 from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
     InternalTensorRepresentationType,
 )
@@ -27,8 +27,15 @@ class NodeEvaluatorArgs:
 
     """
 
-    type: NodeEvaluatorTypes
     syzygy_evaluation: bool
-    internal_representation_type: InternalTensorRepresentationType = (
-        InternalTensorRepresentationType.NO
-    )  # this should maybe be optional and involves creates wrapper? but i am lazy at the moment
+    internal_representation_type: InternalTensorRepresentationType
+
+
+@dataclass
+class BasicEvaluationNodeEvaluatorArgs(NodeEvaluatorArgs):
+    """
+    Represents the arguments for a node evaluator.
+
+    """
+
+    type: Literal[NodeEvaluatorTypes.BasicEvaluation]

@@ -17,7 +17,7 @@ shakmaty_python_binding>=0.1.5
 gprof2dot
 torchinfo
 mlflow
-parsley_coco==0.1.9
+parsley_coco==0.1.16
 
 # for the web app
 flask

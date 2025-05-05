@@ -15,9 +15,11 @@ main_move_selector:
       tree_move_limit: 1000
   board_evaluator:
     type: neural_network
-    path_to_nn_folder: 'data/players/board_evaluators/nn_pytorch/nn_pp2d2_2_prelu/param_prelu'
     internal_representation_type: '364_bug'
     syzygy_evaluation: True
+    neural_nets_model_and_architecture:
+      model_weights_file_name: "chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/prelu_no_bug/param_multi_layer_perceptron_772_20_1_parametric_relu_hyperbolic_tangent_364_no_bug_player_to_move.pt"
+      nn_architecture_args_path_to_yaml_file: 'chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/prelu_no_bug/architecture.yaml'
 syzygy_play: True
 
 

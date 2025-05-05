@@ -5,15 +5,18 @@ Module for the Player class.
 from typing import Any
 
 from chipiron.environments.chess.board import IBoard, BoardFactory
+from chipiron.environments.chess.board.utils import FenPlusHistory
 from chipiron.environments.chess.move import moveUci
 from chipiron.environments.chess.move.imove import moveKey
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
+from chipiron.players.move_selector.move_selector import (
+    MoveRecommendation,
+    MoveSelector,
+)
 from chipiron.utils import seed
-from .move_selector.move_selector import MoveRecommendation, MoveSelector
-from ..environments.chess.board.utils import FenPlusHistory
 from chipiron.utils.logger import chipiron_logger
 
-playerId = str
+PlayerId = str
 
 
 class Player:
@@ -23,7 +26,7 @@ class Player:
 
     #  difference between player and treebuilder includes the fact
     #  that now a player can be a mixture of multiple decision rules
-    id: playerId
+    id: PlayerId
     main_move_selector: MoveSelector
     syzygy: SyzygyTable[Any] | None
     board_factory: BoardFactory
@@ -39,6 +42,15 @@ class Player:
         self.main_move_selector: MoveSelector = main_move_selector
         self.syzygy_player = syzygy
         self.board_factory = board_factory
+
+    def get_id(self) -> PlayerId:
+        """
+        Returns the ID of the player.
+
+        Returns:
+            PlayerId: The player's ID.
+        """
+        return self.id
 
     def select_move(
         self, fen_plus_history: FenPlusHistory, seed_int: seed
@@ -60,7 +72,7 @@ class Player:
         move_recommendation: MoveRecommendation
         # if there is only one possible legal move in the position, do not think, choose it.
         if not board.legal_moves:
-            raise Exception("No legal moves in this position")
+            raise ValueError("No legal moves in this position")
         if board.legal_moves.more_than_one_move() or self.id != "Human":
             # if len(list(board.legal_moves))>1 or self.id != 'Human':
 
@@ -74,7 +86,7 @@ class Player:
                 move_recommendation = MoveRecommendation(move=best_move_uci)
             else:
                 chipiron_logger.info(
-                    f"Playing with player (not Syzygy) {self.id}\n{board}"
+                    "Playing with player (not Syzygy) %s\n%s", self.id, board
                 )
                 move_recommendation = self.main_move_selector.select_move(
                     board=board, move_seed=seed_int
