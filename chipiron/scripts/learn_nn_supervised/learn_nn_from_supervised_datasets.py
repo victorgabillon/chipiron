@@ -37,9 +37,9 @@ from chipiron.learningprocesses.nn_trainer.factory import (
 )
 from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
 from chipiron.players.boardevaluators.datasets.datasets import (
+    DataSetArgs,
     FenAndValueDataSet,
     process_stockfish_value,
-    DataSetArgs,
 )
 from chipiron.players.boardevaluators.neural_networks import NNBoardEvaluator
 from chipiron.players.boardevaluators.neural_networks.factory import (
@@ -95,7 +95,7 @@ class LearnNNScript:
         "learn_nn_supervised/learn_nn_supervised_outputs",
     )
 
-    base_script: Script
+    base_script: Script[LearnNNScriptArgs]
     nn: ChiNN
     args: LearnNNScriptArgs
     nn_board_evaluator: NNBoardEvaluator
@@ -103,7 +103,7 @@ class LearnNNScript:
 
     def __init__(
         self,
-        base_script: Script,
+        base_script: Script[LearnNNScriptArgs],
     ) -> None:
         """
         Initializes the LearnNNFromSupervisedDatasets class.
@@ -122,7 +122,6 @@ class LearnNNScript:
 
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into self.args
         self.args: LearnNNScriptArgs = self.base_script.initiate(
-            args_dataclass_name=LearnNNScriptArgs,
             experiment_output_folder=self.base_experiment_output_folder,
         )
 

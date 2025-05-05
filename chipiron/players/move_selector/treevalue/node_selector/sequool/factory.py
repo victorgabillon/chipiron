@@ -8,6 +8,9 @@ from functools import partial
 from typing import Literal
 
 import chipiron.players.move_selector.treevalue.trees as trees
+from chipiron.players.move_selector.treevalue.node_selector.node_selector_types import (
+    NodeSelectorType,
+)
 from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import (
     OpeningInstructor,
 )
@@ -21,7 +24,6 @@ from .sequool import (
     consider_nodes_from_all_lesser_half_moves_in_sub_stree,
     consider_nodes_only_from_half_moves_in_descendants,
 )
-from .. import NodeSelectorType
 
 
 @dataclass

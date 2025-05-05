@@ -18,8 +18,7 @@ Helper Functions:
 """
 
 from dataclasses import dataclass
-from typing import Dict, Any, Callable
-from typing import Literal
+from typing import Any, Callable, Dict, Literal
 
 import torch
 import torch.nn as nn
@@ -27,8 +26,8 @@ import yaml
 
 from chipiron.players.boardevaluators.neural_networks.NNModelType import (
     ActivationFunctionType,
-    activation_map,
     NNModelType,
+    activation_map,
 )
 from chipiron.utils.chi_nn import ChiNN
 from chipiron.utils.logger import chipiron_logger

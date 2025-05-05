@@ -8,6 +8,7 @@ Classes:
 
 from dataclasses import dataclass
 from typing import Literal
+
 from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
     InternalTensorRepresentationType,
 )

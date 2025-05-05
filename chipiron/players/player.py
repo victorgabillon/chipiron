@@ -4,7 +4,7 @@ Module for the Player class.
 
 from typing import Any
 
-from chipiron.environments.chess.board import IBoard, BoardFactory
+from chipiron.environments.chess.board import BoardFactory, IBoard
 from chipiron.environments.chess.board.utils import FenPlusHistory
 from chipiron.environments.chess.move import moveUci
 from chipiron.environments.chess.move.imove import moveKey

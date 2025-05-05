@@ -12,8 +12,8 @@ import chess
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.dataclass import IsDataclass
-from ..environments.chess.board.utils import FenPlusHistory
 
+from ..environments.chess.board.utils import FenPlusHistory
 from ..scripts.chipiron_args import ImplementationArgs
 from .boardevaluators.table_base import SyzygyTable
 from .factory import create_game_player

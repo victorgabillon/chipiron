@@ -1,3 +1,7 @@
+from typing import Any
+
+from parsley_coco import make_partial_dataclass_with_optional_paths
+
 import chipiron.scripts as scripts
 from chipiron.learningprocesses.nn_trainer.factory import NNTrainerArgs
 from chipiron.players.boardevaluators.datasets.datasets import DataSetArgs
@@ -9,8 +13,6 @@ from chipiron.scripts.learn_nn_supervised.learn_nn_from_supervised_datasets impo
     LearnNNScriptArgs,
 )
 from chipiron.scripts.script_args import BaseScriptArgs
-from parsley_coco import make_partial_dataclass_with_optional_paths
-from typing import Any
 
 PartialOpLearnNNFromScratchScriptArgs = make_partial_dataclass_with_optional_paths(
     cls=LearnNNFromScratchScriptArgs

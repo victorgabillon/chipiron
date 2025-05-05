@@ -3,6 +3,7 @@ Factory to build node selectors
 """
 
 import random
+from dataclasses import dataclass
 from typing import Literal, TypeAlias
 
 from .node_selector import NodeSelector
@@ -11,8 +12,6 @@ from .opening_instructions import OpeningInstructor
 from .recurzipf.recur_zipf_base import RecurZipfBase, RecurZipfBaseArgs
 from .sequool import SequoolArgs, create_sequool
 from .uniform import Uniform
-
-from dataclasses import dataclass
 
 
 @dataclass

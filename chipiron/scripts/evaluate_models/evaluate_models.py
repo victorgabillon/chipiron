@@ -18,10 +18,10 @@ from chipiron.players.boardevaluators.datasets.datasets import (
 )
 from chipiron.players.boardevaluators.neural_networks import NNBoardEvaluator
 from chipiron.players.boardevaluators.neural_networks.factory import (
-    create_nn_board_eval_from_folder_path_and_existing_model,
-    get_nn_param_file_path_from,
     NeuralNetModelsAndArchitecture,
+    create_nn_board_eval_from_folder_path_and_existing_model,
     create_nn_board_eval_from_nn_parameters_file_and_existing_model,
+    get_nn_param_file_path_from,
 )
 from chipiron.utils import path
 from chipiron.utils.chi_nn import ChiNN

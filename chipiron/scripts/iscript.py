@@ -12,9 +12,7 @@ class IScript(Protocol):
     The interface for scripts in the application.
     """
 
-    args_dataclass_name: Any
-
-    def __init__(self, base_script: Script) -> None:
+    def __init__(self, base_script: Script[Any]) -> None:
         """
         Initializes the IScript object.
 

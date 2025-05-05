@@ -34,14 +34,13 @@ from chipiron.players.move_selector.treevalue.recommender_rule.recommender_rule 
 from chipiron.players.move_selector.treevalue.search_factory import NodeSelectorFactory
 from chipiron.utils.communication.gui_messages import PlayerProgressMessage
 from chipiron.utils.dataclass import IsDataclass
+from chipiron.utils.logger import chipiron_logger
 
 from . import node_selector as node_sel
 from . import recommender_rule
 from . import tree_manager as tree_man
 from . import trees
 from .trees.factory import MoveAndValueTreeFactory
-
-from chipiron.utils.logger import chipiron_logger
 
 
 @dataclass

@@ -8,8 +8,9 @@ from dataclasses import asdict
 from typing import Any
 
 import chess
-import chipiron.players as players_m
 import yaml
+
+import chipiron.players as players_m
 from chipiron.environments import HalfMove
 from chipiron.environments.chess.board.iboard import IBoard
 from chipiron.environments.chess.move import moveUci

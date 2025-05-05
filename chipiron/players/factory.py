@@ -13,16 +13,15 @@ from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.players.player_args import PlayerArgs
 from chipiron.players.player_ids import PlayerConfigTag
+from chipiron.utils.logger import chipiron_logger
 
 from ..environments.chess.board import BoardFactory, create_board_factory
 from ..scripts.chipiron_args import ImplementationArgs
-
 from ..utils.dataclass import IsDataclass
 from . import move_selector
 from .game_player import GamePlayer
 from .player import Player
 from .player_args import PlayerFactoryArgs
-from chipiron.utils.logger import chipiron_logger
 
 
 def create_chipiron_player(

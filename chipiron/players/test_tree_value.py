@@ -15,12 +15,12 @@ import chess
 import pytest
 
 import chipiron.environments.chess.board as boards
-from chipiron.players.move_selector.treevalue import trees
 from chipiron.environments import HalfMove
 from chipiron.environments.chess.board import IBoard, create_board
 from chipiron.environments.chess.board.utils import FenPlusHistory
 from chipiron.players import Player
 from chipiron.players.factory import create_chipiron_player
+from chipiron.players.move_selector.treevalue import trees
 from chipiron.players.move_selector.treevalue.nodes import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node import AlgorithmNode
 from chipiron.players.move_selector.treevalue.tree_and_value_move_selector import (

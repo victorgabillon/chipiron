@@ -3,19 +3,20 @@ Module to fetch, modify and convert the match settings and game settings.
 """
 
 import os
+from dataclasses import asdict, dataclass
 from shutil import copyfile
 from typing import Any
 
+import parsley_coco
+import yaml
+
 import chipiron as ch
 import chipiron.games.game as game
+from chipiron.games.match.match_args import MatchArgs
+from chipiron.games.match.MatchTag import MatchConfigTag
 from chipiron.utils import path
 
 from .match_settings_args import MatchSettingsArgs
-from chipiron.games.match.match_args import MatchArgs
-from chipiron.games.match.MatchTag import MatchConfigTag
-import yaml
-from dataclasses import dataclass, asdict
-import parsley_coco
 
 
 def fetch_match_games_args_convert_and_save(

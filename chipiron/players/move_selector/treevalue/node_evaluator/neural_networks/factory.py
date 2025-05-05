@@ -8,10 +8,6 @@ from typing import Literal
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
     PointOfView,
 )
-from chipiron.players.boardevaluators.neural_networks.NNModelType import (
-    NNModelType,
-    ActivationFunctionType,
-)
 from chipiron.players.boardevaluators.neural_networks.factory import (
     NeuralNetModelsAndArchitecture,
 )
@@ -24,12 +20,17 @@ from chipiron.players.boardevaluators.neural_networks.models.multi_layer_percept
 from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
     NeuralNetArchitectureArgs,
 )
+from chipiron.players.boardevaluators.neural_networks.NNModelType import (
+    ActivationFunctionType,
+    NNModelType,
+)
 from chipiron.players.boardevaluators.neural_networks.output_converters.model_output_type import (
     ModelOutputType,
 )
 from chipiron.players.move_selector.treevalue.node_evaluator.all_node_evaluators import (
     NodeEvaluatorTypes,
 )
+
 from ..node_evaluator_args import NodeEvaluatorArgs
 
 

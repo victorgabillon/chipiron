@@ -15,8 +15,8 @@ from chipiron.environments.chess.board.utils import FenPlusHistory
 from chipiron.learningprocesses.nn_trainer.factory import NNTrainerArgs
 from chipiron.players import PlayerArgs
 from chipiron.players.boardevaluators.datasets.datasets import (
-    FenAndValueDataSet,
     DataSetArgs,
+    FenAndValueDataSet,
 )
 from chipiron.players.boardevaluators.neural_networks.factory import (
     create_nn_board_eval_from_architecture_args,
@@ -37,9 +37,9 @@ from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
+from chipiron.utils import path
 from chipiron.utils.chi_nn import ChiNN
 from chipiron.utils.logger import chipiron_logger, suppress_logging
-from chipiron.utils import path
 
 
 @dataclass
@@ -99,7 +99,7 @@ class LearnNNFromScratchScript:
         "learn_from_scratch_value_and_fixed_boards/learn_from_scratch_outputs",
     )
 
-    base_script: Script
+    base_script: Script[LearnNNFromScratchScriptArgs]
     nn: ChiNN
     args: LearnNNFromScratchScriptArgs
     nn_board_evaluator: NNBoardEvaluator
@@ -108,7 +108,7 @@ class LearnNNFromScratchScript:
 
     def __init__(
         self,
-        base_script: Script,
+        base_script: Script[LearnNNFromScratchScriptArgs],
     ) -> None:
         """
         Initializes the LearnNNFromSupervisedDatasets class.
@@ -127,7 +127,6 @@ class LearnNNFromScratchScript:
 
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into self.args
         self.args: LearnNNFromScratchScriptArgs = self.base_script.initiate(
-            args_dataclass_name=LearnNNFromScratchScriptArgs,
             experiment_output_folder=self.base_experiment_output_folder,
         )
 

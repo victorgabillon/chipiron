@@ -26,8 +26,8 @@ from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_nod
 )
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.utils import is_winning
-from chipiron.utils.small_tools import softmax
 from chipiron.utils.logger import chipiron_logger
+from chipiron.utils.small_tools import softmax
 
 
 class RecommenderRuleTypes(str, Enum):

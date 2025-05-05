@@ -33,9 +33,9 @@ class BaseTreeExplorationScript:
     base_experiment_output_folder = os.path.join(
         Script.base_experiment_output_folder, "base_tree_exploration/outputs/"
     )
-    base_script: Script
+    base_script: Script[BaseTreeExplorationArgs]
 
-    def __init__(self, base_script: Script) -> None:
+    def __init__(self, base_script: Script[BaseTreeExplorationArgs]) -> None:
         """
         Initializes a new instance of the BaseTreeExploration class.
 
@@ -47,7 +47,6 @@ class BaseTreeExplorationScript:
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into args
         self.args: BaseTreeExplorationArgs = self.base_script.initiate(
             experiment_output_folder=self.base_experiment_output_folder,
-            args_dataclass_name=BaseTreeExplorationArgs,
         )
 
     def run(self) -> None:

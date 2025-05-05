@@ -10,6 +10,7 @@ Functions:
 """
 
 import time
+from dataclasses import dataclass
 from typing import Any, Callable
 
 import numpy as np
@@ -25,8 +26,6 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_
     BoardToInputFunction,
 )
 from chipiron.utils import path
-
-from dataclasses import dataclass
 from chipiron.utils.logger import chipiron_logger
 
 

@@ -7,11 +7,11 @@ import random
 from typing import Any, TypeAlias
 
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
+from chipiron.utils.logger import chipiron_logger
 
 from ...utils.dataclass import IsDataclass
 from . import human, move_selector, stockfish, treevalue
 from .random import Random, create_random
-from chipiron.utils.logger import chipiron_logger
 
 AllMoveSelectorArgs: TypeAlias = (
     treevalue.TreeAndValuePlayerArgs

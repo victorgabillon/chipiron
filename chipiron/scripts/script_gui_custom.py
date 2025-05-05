@@ -12,18 +12,21 @@ Note: This script requires the customtkinter and chipiron modules to be installe
 from typing import Any
 
 import customtkinter as ctk
+from parsley_coco import make_partial_dataclass_with_optional_paths
+
 from chipiron import scripts
-from chipiron.games.match.MatchTag import MatchConfigTag
 from chipiron.games.match.match_args import MatchArgs
+from chipiron.games.match.MatchTag import MatchConfigTag
 from chipiron.players import PlayerArgs
+from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 from chipiron.players.move_selector.treevalue import TreeAndValuePlayerArgs
 from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
     TreeMoveLimitArgs,
+    StoppingCriterionTypes,
 )
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.one_match.one_match import MatchScriptArgs
 from chipiron.scripts.script_args import BaseScriptArgs
-from parsley_coco import make_partial_dataclass_with_optional_paths
 
 
 def script_gui() -> tuple[scripts.ScriptType, dict[str, Any], str]:
@@ -208,22 +211,24 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any], str]:
 
             if output["color_human"] == "White":
                 gui_args.match_args.player_one = PlayerConfigTag.GUI_HUMAN
-                gui_args.match_args.player_two = output["chipi_algo"]
+                gui_args.match_args.player_two = PlayerConfigTag(output["chipi_algo"])
                 gui_args.match_args.player_two_overwrite = PartialOpPlayerArgs(
                     main_move_selector=PartialOpTreeAndValuePlayerArgs(
+                        type=MoveSelectorTypes.TreeAndValue,
                         stopping_criterion=PartialOpTreeMoveLimitArgs(
-                            tree_move_limit=tree_move_limit
-                        )
+                            type=StoppingCriterionTypes.TreeMoveLimit,
+                            tree_move_limit=tree_move_limit,
+                        ),
                     )
                 )
             else:
-                print("oooo")
-                gui_args.match_args.player_one = output["chipi_algo"]
+                gui_args.match_args.player_one = PlayerConfigTag(output["chipi_algo"])
                 gui_args.match_args.player_two = PlayerConfigTag.GUI_HUMAN
                 gui_args.match_args.player_one_overwrite = PartialOpPlayerArgs(
                     main_move_selector=PartialOpTreeAndValuePlayerArgs(
                         stopping_criterion=PartialOpTreeMoveLimitArgs(
-                            tree_move_limit=tree_move_limit
+                            type=StoppingCriterionTypes.TreeMoveLimit,
+                            tree_move_limit=tree_move_limit,
                         )
                     )
                 )

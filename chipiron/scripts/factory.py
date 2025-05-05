@@ -4,14 +4,15 @@ factory for scripts module
 
 from typing import Any
 
+from parsley_coco import Parsley, create_parsley
+
 from chipiron.utils.dataclass import DataClass
-from parsley_coco import create_parsley, Parsley
+from chipiron.utils.logger import chipiron_logger
 
 from .get_script import get_script_type_from_script_class_name
 from .iscript import IScript
 from .script import Script
 from .script_type import ScriptType
-from chipiron.utils.logger import chipiron_logger
 
 
 # instantiate relevant script
@@ -45,13 +46,13 @@ def create_script(
     args_dataclass_name: type[DataClass] = script.args_dataclass_name
 
     # create the relevant script
-    parser: Parsley = create_parsley(
+    parser: Parsley[Any] = create_parsley(
         args_dataclass_name=args_dataclass_name,
         should_parse_command_line_arguments=should_parse_command_line_arguments,
         logger=chipiron_logger,
     )
 
-    base_script: Script = Script(
+    base_script: Script[Any] = Script(
         parser=parser, extra_args=extra_args, config_file_name=config_file_name
     )
 
