@@ -4,6 +4,7 @@
 [![linting: pylint](https://img.shields.io/badge/linting-pylint-yellowgreen)](https://github.com/PyCQA/pylint)
 ![Tests](https://github.com/victorgabillon/chipiron/actions/workflows/ci.yaml/badge.svg)
 [![pytorch](https://img.shields.io/badge/PyTorch-2.1.2-EE4C2C.svg?style=flat&logo=pytorch)](https://pytorch.org)
+<a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
 
 # Chipiron
 
@@ -42,8 +43,8 @@ so you might want to git clone and create a virtual environment as follows:
 ```console
 git clone https://github.com/victorgabillon/chipiron.git
 cd chipiron
-conda create chipiron3.1 python==3.11
-conda activate chipiron3.11
+conda create chipiron3.12 python==3.12
+conda activate chipiron3.12
 conda install -c conda-forge tk=*=xft_*
 make init
 ```
