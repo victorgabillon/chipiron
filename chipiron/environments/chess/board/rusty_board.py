@@ -566,7 +566,7 @@ class RustyBoardChi(IBoard):
         """
         return self.chess_.has_queenside_castling_rights(color)
 
-    def print_chess_board(self) -> None:
+    def print_chess_board(self) -> str:
         """
         Prints the current state of the chess board.
 
@@ -576,7 +576,7 @@ class RustyBoardChi(IBoard):
         Returns:
             None
         """
-        print(self.chess_.fen())
+        return str(self.chess_.fen())
 
     def tell_result(self) -> None: ...
 

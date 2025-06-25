@@ -87,7 +87,7 @@ def create_tree_and_value_builders(
 
     board_representation_factory: RepresentationFactory[Any] | None
     board_representation_factory = create_board_representation_factory(
-        board_representation_factory_type=args.board_evaluator.internal_representation_type
+        internal_tensor_representation_type=args.board_evaluator.internal_representation_type
     )
 
     search_factory: search_factories.SearchFactoryP = search_factories.SearchFactory(

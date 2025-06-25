@@ -1,12 +1,22 @@
 from enum import Enum
-import yaml
+from typing import Callable
+
+import torch.nn as nn
 
 
 class NNModelType(str, Enum):
-    NetPP1 = "pp1"
-    NetPP2 = "pp2"
-    NetPP2D2 = "pp2d2"
-    NetPP2D2_2 = "pp2d2_2"
-    NetPP2D2_2_LEAKY = "pp2d2_2_leaky"
-    NetPP2D2_2_RRELU = "pp2d2_2_rrelu"
-    NetPP2D2_2_PRELU = "pp2d2_2_prelu"
+    MultiLayerPerceptron = "multi_layer_perceptron"
+    Transformer = "transformer"
+
+
+class ActivationFunctionType(str, Enum):
+    TangentHyperbolic = "hyperbolic_tangent"
+    ParametricRelu = "parametric_relu"
+    Relu = "relu"
+
+
+activation_map: dict[ActivationFunctionType, Callable[[], nn.Module]] = {
+    ActivationFunctionType.Relu: nn.ReLU,
+    ActivationFunctionType.TangentHyperbolic: nn.Tanh,
+    ActivationFunctionType.ParametricRelu: nn.PReLU,
+}

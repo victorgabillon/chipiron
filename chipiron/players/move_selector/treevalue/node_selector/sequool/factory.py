@@ -5,13 +5,16 @@ factory for sequool node selector
 import random
 from dataclasses import dataclass
 from functools import partial
+from typing import Literal
 
 import chipiron.players.move_selector.treevalue.trees as trees
+from chipiron.players.move_selector.treevalue.node_selector.node_selector_types import (
+    NodeSelectorType,
+)
 from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import (
     OpeningInstructor,
 )
 
-from ..node_selector_args import NodeSelectorArgs
 from .sequool import (
     ConsiderNodesFromHalfMoves,
     HalfMoveSelector,
@@ -25,7 +28,7 @@ from .sequool import (
 
 
 @dataclass
-class SequoolArgs(NodeSelectorArgs):
+class SequoolArgs:
     """
     Arguments for the Sequool node selector.
 
@@ -35,6 +38,7 @@ class SequoolArgs(NodeSelectorArgs):
         consider_all_lesser_half_move (bool): Flag indicating whether to consider all lesser half moves.
     """
 
+    type: Literal[NodeSelectorType.Sequool]
     recursive_selection_on_all_nodes: bool
     random_depth_pick: bool
     consider_all_lesser_half_move: bool

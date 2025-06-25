@@ -1,7 +1,7 @@
 import datetime
 import os
 import time
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from typing import Any
 
 import dacite
@@ -12,27 +12,16 @@ from torch.utils.data import DataLoader
 from chipiron.learningprocesses.nn_trainer.nn_trainer import (
     compute_test_error_on_dataset,
 )
-from chipiron.players.boardevaluators.datasets.datasets import FenAndValueDataSet
+from chipiron.players.boardevaluators.datasets.datasets import (
+    FenAndValueDataSet,
+    process_stockfish_value,
+)
+from chipiron.players.boardevaluators.neural_networks import NNBoardEvaluator
 from chipiron.players.boardevaluators.neural_networks.factory import (
-    create_nn_from_folder_path_and_existing_model,
+    NeuralNetModelsAndArchitecture,
+    create_nn_board_eval_from_folder_path_and_existing_model,
+    create_nn_board_eval_from_nn_parameters_file_and_existing_model,
     get_nn_param_file_path_from,
-    get_architecture_args_from_folder,
-)
-from chipiron.players.boardevaluators.neural_networks.input_converters.TensorRepresentationType import (
-    InternalTensorRepresentationType,
-    get_default_internal_representation,
-)
-from chipiron.players.boardevaluators.neural_networks.input_converters.factory import (
-    RepresentationFactory,
-)
-from chipiron.players.boardevaluators.neural_networks.input_converters.representation_364_bti import (
-    RepresentationBTI,
-)
-from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
-    create_board_representation_factory,
-)
-from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
-    NeuralNetArchitectureArgs,
 )
 from chipiron.utils import path
 from chipiron.utils.chi_nn import ChiNN
@@ -46,13 +35,25 @@ class ModelEvaluation:
 
     evaluation: float
     time_of_evaluation: datetime.datetime
+    number_of_model_parameters: int
 
 
-EvaluatedModels = dict[path, ModelEvaluation]
+EvaluatedModels = dict[str, ModelEvaluation]
+
+
+def compute_model_hask_key(model_and_archi: NeuralNetModelsAndArchitecture) -> str:
+    return (
+        str(model_and_archi.model_weights_file_name)
+        + model_and_archi.nn_architecture_args.filename()
+    )
+
+
+def count_parameters(model: ChiNN) -> int:
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
 def evaluate_models(
-    folders_of_models_to_evaluate: list[path],
+    models_to_evaluate: list[NeuralNetModelsAndArchitecture],
     evaluation_report_file: path = "chipiron/scripts/evaluate_models/evaluation_report.yaml",
     dataset_file_name: path = "data/datasets/goodgames_plusvariation_stockfish_eval_test",
 ) -> None:
@@ -64,10 +65,10 @@ def evaluate_models(
     """
     print("Evaluating models...")
     # Load the evaluation report
-    evaluated_models: dict[path, ModelEvaluation] = {}
+    evaluated_models: dict[str, ModelEvaluation] = {}
     with open(evaluation_report_file, "r") as stream:
         try:
-            evaluated_models_temp: dict[path, dict[Any, Any]] | None
+            evaluated_models_temp: dict[str, dict[Any, Any]] | None
             evaluated_models_temp = yaml.safe_load(stream)
             if evaluated_models_temp is None:
                 evaluated_models_temp = {}
@@ -91,21 +92,23 @@ def evaluate_models(
 
     # Evaluate the models if necessary
     data_loader_stockfish_boards_test = None
-    model_folder_path: path
-    for model_folder_path in folders_of_models_to_evaluate:
-        print(f"\nEvaluating model: {model_folder_path}")
+    model_to_evaluate: NeuralNetModelsAndArchitecture
+    for model_to_evaluate in models_to_evaluate:
+        print(f"\nEvaluating model: {model_to_evaluate}")
+
+        model_hash_key: str = compute_model_hask_key(model_to_evaluate)
 
         # Check if the model has already been evaluated
         should_evaluate: bool
-        if model_folder_path in evaluated_models:
-            model_evaluation: ModelEvaluation = evaluated_models[model_folder_path]
+        if model_hash_key in evaluated_models:
+            model_evaluation: ModelEvaluation = evaluated_models[model_hash_key]
             print(
                 "This model has already been evaluated. Now checking if the file has been modified since last evaluation..."
             )
-            model_params_path: path = get_nn_param_file_path_from(
-                folder_path=model_folder_path
-            )
-            modification_time = os.path.getmtime(model_params_path)
+            model_params_path_pt: path
+            model_params_path_pt = model_to_evaluate.model_weights_file_name
+
+            modification_time = os.path.getmtime(model_params_path_pt)
             readable_time = time.ctime(modification_time)
             print(
                 f"Last modification time: {readable_time} and last evaluation time {model_evaluation.time_of_evaluation} "
@@ -134,57 +137,45 @@ def evaluate_models(
 
             criterion = torch.nn.L1Loss()
 
-            if data_loader_stockfish_boards_test is None:
-                architecture_args: NeuralNetArchitectureArgs = (
-                    get_architecture_args_from_folder(folder_path=model_folder_path)
+            nn_board_evaluator: NNBoardEvaluator
+            nn_board_evaluator = (
+                create_nn_board_eval_from_nn_parameters_file_and_existing_model(
+                    model_weights_file_name=model_to_evaluate.model_weights_file_name,
+                    nn_architecture_args=model_to_evaluate.nn_architecture_args,
                 )
-                internal_tensor_representation_type: (
-                    InternalTensorRepresentationType
-                ) = get_default_internal_representation(
-                    tensor_representation_type=architecture_args.tensor_representation_type
-                )
-                board_representation_factory: RepresentationFactory[Any] | None = (
-                    create_board_representation_factory(
-                        board_representation_factory_type=internal_tensor_representation_type
-                    )
-                )
-
-                assert board_representation_factory is not None
-                board_to_input = RepresentationBTI(
-                    representation_factory=board_representation_factory
-                )
-
-                stockfish_boards_test = FenAndValueDataSet(
-                    file_name=dataset_file_name,
-                    preprocessing=False,
-                    transform_board_function=board_to_input.convert,
-                    transform_value_function="stockfish",
-                )
-
-                stockfish_boards_test.load()
-
-                data_loader_stockfish_boards_test = DataLoader(
-                    stockfish_boards_test,
-                    batch_size=10000,
-                    shuffle=False,
-                    num_workers=1,
-                )
-                print(f"Size of test set: {len(data_loader_stockfish_boards_test)}")
-
-            net: ChiNN
-            net, _ = create_nn_from_folder_path_and_existing_model(
-                folder_path=model_folder_path
             )
+
+            stockfish_boards_test = FenAndValueDataSet(
+                file_name=dataset_file_name,
+                preprocessing=False,
+                transform_board_function=nn_board_evaluator.board_to_input_convert,
+                transform_dataset_value_to_white_value_function=process_stockfish_value,
+                transform_white_value_to_model_output_function=nn_board_evaluator.output_and_value_converter.from_value_white_to_model_output,
+            )
+
+            stockfish_boards_test.load()
+
+            data_loader_stockfish_boards_test = DataLoader(
+                stockfish_boards_test,
+                batch_size=10000,
+                shuffle=False,
+                num_workers=1,
+            )
+            print(f"Size of test set: {len(data_loader_stockfish_boards_test)}")
+
             eval = compute_test_error_on_dataset(
-                net=net,
+                net=nn_board_evaluator.net,
                 criterion=criterion,
                 data_test=data_loader_stockfish_boards_test,
                 number_of_tests=len(data_loader_stockfish_boards_test),
             )
+            number_of_model_parameters: int = count_parameters(nn_board_evaluator.net)
             model_evaluation = ModelEvaluation(
-                evaluation=eval, time_of_evaluation=datetime.datetime.now()
+                evaluation=eval,
+                time_of_evaluation=datetime.datetime.now(),
+                number_of_model_parameters=number_of_model_parameters,
             )
-            evaluated_models[model_folder_path] = model_evaluation
+            evaluated_models[model_hash_key] = model_evaluation
             print("Model evaluated!")
 
     evaluated_model_path_: path
@@ -203,9 +194,18 @@ def evaluate_models(
 
 
 if __name__ == "__main__":
-    folders_of_models_to_evaluate_: list[path] = [
-        "data/players/board_evaluators/nn_pytorch/nn_pp2d2_2_prelu/param_prelu",
-        "chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/test_to_keep/",
+    models_to_evaluate_: list[NeuralNetModelsAndArchitecture] = [
+        NeuralNetModelsAndArchitecture.build_from_folder_path(
+            folder_path="chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/prelu_no_bug"
+        ),
+        NeuralNetModelsAndArchitecture.build_from_folder_path(
+            folder_path="chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/nn_p1_new"
+        ),
+        NeuralNetModelsAndArchitecture.build_from_folder_path(
+            folder_path="chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/nn_pp2_new"
+        ),
+        # NeuralNetModelsAndArchitecture.build_from_folder_path(
+        #     folder_path="chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/transformerone"),
     ]
 
-    evaluate_models(folders_of_models_to_evaluate=folders_of_models_to_evaluate_)
+    evaluate_models(models_to_evaluate=models_to_evaluate_)

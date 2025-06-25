@@ -57,10 +57,12 @@ class Winner(Enum):
         Returns:
             bool: True if the winner is white, False otherwise.
         """
+        is_white_bool: bool
         if not self.is_none():
-            return bool(self) is chess.WHITE
+            is_white_bool = bool(self) is chess.WHITE
         else:
-            return False
+            is_white_bool = False
+        return is_white_bool
 
     def is_black(self) -> bool:
         """Check if the winner is black.
@@ -68,10 +70,13 @@ class Winner(Enum):
         Returns:
             bool: True if the winner is black, False otherwise.
         """
+        is_black_bool: bool
+
         if not self.is_none():
-            return bool(self) is chess.BLACK
+            is_black_bool = bool(self) is chess.BLACK
         else:
-            return False
+            is_black_bool = False
+        return is_black_bool
 
 
 class OverTags(str, Enum):
@@ -156,19 +161,21 @@ class OverEvent:
         Raises:
             Exception: If the winner is not properly defined.
         """
+        over_tag: OverTags
         if self.how_over == HowOver.WIN:
             if self.who_is_winner.is_white():
-                return OverTags.TAG_WIN_WHITE
+                over_tag = OverTags.TAG_WIN_WHITE
             elif self.who_is_winner.is_black():
-                return OverTags.TAG_WIN_BLACK
+                over_tag = OverTags.TAG_WIN_BLACK
             else:
-                raise Exception("error: winner is not properly defined.")
+                raise ValueError("error: winner is not properly defined.")
         elif self.how_over == HowOver.DRAW:
-            return OverTags.TAG_DRAW
+            over_tag = OverTags.TAG_DRAW
         elif self.how_over == HowOver.DO_NOT_KNOW_OVER:
-            return OverTags.TAG_DO_NOT_KNOW
+            over_tag = OverTags.TAG_DO_NOT_KNOW
         else:
-            raise Exception("error: over is not properly defined.")
+            raise ValueError("error: over is not properly defined.")
+        return over_tag
 
     def __bool__(self) -> None:
         """Raises an exception.
@@ -176,7 +183,7 @@ class OverEvent:
         Raises:
             Exception: Always raises an exception.
         """
-        raise Exception("Nooooooooooo  in over ebvent.py")
+        raise ValueError("Nooooooooooo  in over ebvent.py")
 
     def is_over(self) -> bool:
         """Checks if the game is over.
@@ -184,7 +191,7 @@ class OverEvent:
         Returns:
             bool: True if the game is over, False otherwise.
         """
-        return self.how_over == HowOver.WIN or self.how_over == HowOver.DRAW
+        return self.how_over in {HowOver.WIN, HowOver.DRAW}
 
     def is_win(self) -> bool:
         """Checks if the game ended with a win.
@@ -214,20 +221,19 @@ class OverEvent:
         Raises:
             AssertionError: If the `player` argument is not a valid value from the `chess.Color` enum.
         """
-        assert player == chess.WHITE or player == chess.BLACK
+        assert player in {chess.WHITE, chess.BLACK}
 
+        is_winner: bool
         if self.how_over == HowOver.WIN:
-            if (
+            is_winner = bool(
                 self.who_is_winner == Winner.WHITE
                 and player == chess.WHITE
                 or self.who_is_winner == Winner.BLACK
                 and player == chess.BLACK
-            ):
-                return True
-            else:
-                return False
+            )
         else:
-            return False
+            is_winner = False
+        return is_winner
 
     def print_info(self) -> None:
         """Prints information about the `OverEvent` object."""

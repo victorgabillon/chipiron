@@ -7,18 +7,14 @@ import os
 import sys
 import typing
 from dataclasses import dataclass
-from enum import Enum
 from itertools import islice
 from typing import Any
 
-import dacite
 import numpy as np
 import numpy.typing as nptyping
 import yaml
 
-import chipiron
-import chipiron as ch
-from chipiron.utils.dataclass import IsDataclass
+from chipiron.utils.logger import chipiron_logger
 
 path = typing.Annotated[str | os.PathLike[str], "path"]
 seed = typing.Annotated[int, "seed"]
@@ -42,11 +38,11 @@ def mkdir_if_not_existing(folder_path: path) -> None:
             f"Creation of the directory {folder_path} failed with error {error} in file {__name__}\n with pwd {os.getcwd()}"
         )
     except FileExistsError as error:
-        print(
+        chipiron_logger.error(
             f"the file already exists so no creation needed for {folder_path}, with error {error}  "
         )
     else:
-        print(f"Successfully created the directory {folder_path} ")
+        chipiron_logger.info(f"Successfully created the directory {folder_path} ")
 
 
 def yaml_fetch_args_in_file(path_file: path) -> dict[Any, Any]:
@@ -166,46 +162,6 @@ def softmax(x: list[float], temperature: float) -> nptyping.NDArray[np.float64]:
     return res
 
 
-@typing.dataclass_transform()
-def fetch_args_modify_and_convert[
-    _T_co: IsDataclass
-](
-    path_to_file: path,  # path to a yaml file
-    dataclass_name: type[
-        _T_co
-    ],  # the dataclass into which the dictionary will be converted
-    modification: (
-        dict[Any, Any] | None
-    ) = None,  # modification to the dict extracted from the yaml file
-) -> _T_co:
-    """
-    Fetch, modify, and convert arguments from a YAML file to a dataclass.
-
-    Args:
-        path_to_file: The path to the YAML file.
-        dataclass_name: The dataclass into which the dictionary will be converted.
-        modification: The modification to the dictionary extracted from the YAML file.
-
-    Returns:
-        An instance of the dataclass with the modified arguments.
-
-    """
-    if modification is None:
-        modification = {}
-    file_args: dict[Any, Any] = chipiron.utils.yaml_fetch_args_in_file(path_to_file)
-    merged_args_dict: dict[Any, Any] = ch.tool.rec_merge_dic(file_args, modification)
-
-    print("merged_args_dict", merged_args_dict)
-    # formatting the dictionary into the corresponding dataclass
-    dataclass_args: _T_co = dacite.from_dict(
-        data_class=dataclass_name,
-        data=merged_args_dict,
-        config=dacite.Config(cast=[Enum]),
-    )
-
-    return dataclass_args
-
-
 @dataclass
 class Interval:
     """
@@ -264,16 +220,3 @@ def distance_number_to_interval(value: float, interval: Interval) -> float:
         return value - interval.max_value
     else:
         return 0
-
-
-def unflatten(dictionary: dict[Any, Any]) -> dict[Any, Any]:
-    result_dict: dict[Any, Any] = dict()
-    for key, value in dictionary.items():
-        parts = key.split(".")
-        d = result_dict
-        for part in parts[:-1]:
-            if part not in d:
-                d[part] = dict()
-            d = d[part]
-        d[parts[-1]] = value
-    return result_dict

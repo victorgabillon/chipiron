@@ -15,10 +15,12 @@ import chipiron as ch
 import chipiron.games.game as game
 import chipiron.games.match as match
 import chipiron.players as players
+from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_factories import create_match_manager
 from chipiron.games.match.match_results import MatchReport, MatchResults
+from chipiron.games.match.MatchTag import MatchConfigTag
 from chipiron.games.match.utils import fetch_match_games_args_convert_and_save
-from chipiron.players.utils import fetch_player_args_convert_and_save
+from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.utils.small_tools import mkdir_if_not_existing, path
 
@@ -89,9 +91,12 @@ class League:
         and updating the necessary attributes.
         """
         print("adding player:", file_player)
-        args_player: players.PlayerArgs = fetch_player_args_convert_and_save(
-            file_name_player=file_player, from_data_folder=False
-        )
+
+        player_tag = PlayerConfigTag(
+            file_player
+        )  # probably wrong / to be fixed when reusing the leagu not a big issue
+        args_player: players.PlayerArgs = player_tag.get_players_args()
+
         print(args_player)
 
         args_player.name = f"{args_player.name}_{self.id_for_next_player}"
@@ -132,7 +137,13 @@ class League:
         match_args: match.MatchSettingsArgs
         game_args: game.GameArgs
         match_args, game_args = fetch_match_games_args_convert_and_save(
-            file_name_match_setting=file_match_setting,
+            match_args=MatchArgs(
+                player_one=PlayerConfigTag.CHIPIRON,
+                player_two=PlayerConfigTag.CHIPIRON,
+                match_setting=MatchConfigTag(
+                    file_match_setting
+                ).get_match_settings_args(),  # probibly to fix as weell and this is a ditry fix to create a martch args please imrpove!!
+            )
         )
 
         path_logs_game_folder: path = os.path.join(

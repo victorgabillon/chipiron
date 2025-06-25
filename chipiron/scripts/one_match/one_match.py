@@ -7,6 +7,7 @@ import os
 import queue
 import sys
 from dataclasses import asdict, dataclass, field
+from typing import cast
 
 import yaml
 from PySide6.QtWidgets import QApplication
@@ -19,6 +20,7 @@ from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.dataclass import IsDataclass
+from chipiron.utils.logger import chipiron_logger
 
 
 @dataclass
@@ -45,11 +47,13 @@ class OneMatchScript:
     base_experiment_output_folder = os.path.join(
         Script.base_experiment_output_folder, "one_match/outputs/"
     )
-    base_script: Script
+    base_script: Script[MatchScriptArgs]
+
+    chess_gui: QApplication
 
     def __init__(
         self,
-        base_script: Script,
+        base_script: Script[MatchScriptArgs],
     ) -> None:
         """
         Builds the OneMatchScript object
@@ -60,7 +64,6 @@ class OneMatchScript:
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into args
         args: MatchScriptArgs = self.base_script.initiate(
             experiment_output_folder=self.base_experiment_output_folder,
-            args_dataclass_name=MatchScriptArgs,
         )
 
         # creating the match manager
@@ -92,7 +95,14 @@ class OneMatchScript:
             gui_thread_mailbox: queue.Queue[IsDataclass] = (
                 multiprocessing.Manager().Queue()
             )
-            self.chess_gui: QApplication = QApplication(sys.argv)
+
+            app = QApplication.instance()
+            if app is None:
+                app = QApplication(sys.argv)
+            else:
+                app = cast(QApplication, app)
+            self.chess_gui = app
+
             board_factory: BoardFactory = create_board_factory(
                 use_rust_boards=args.implementation_args.use_rust_boards,
                 sort_legal_moves=args.base_script_args.universal_behavior,
@@ -113,7 +123,7 @@ class OneMatchScript:
 
         """
 
-        print(" Script One Match go")
+        chipiron_logger.info(" Script One Match go")
         # Qt Application needs to be in the main Thread, so we need to distinguish between GUI and no GUI
         if self.gui:  # case with GUI
             # Launching the Match Manager in a Thread
@@ -128,7 +138,7 @@ class OneMatchScript:
         else:  # No GUI
             self.match_manager.play_one_match()
 
-        print("finish the run of the match")
+        chipiron_logger.info("Finish the run of the match")
 
         # TODO check the good closing of processes
 
@@ -136,7 +146,7 @@ class OneMatchScript:
         """
         Terminates the script and cleans up any resources.
         """
-        print("terminating script")
+        chipiron_logger.info("terminating script")
         self.base_script.terminate()
         if self.gui:
             self.process_match_manager.terminate()

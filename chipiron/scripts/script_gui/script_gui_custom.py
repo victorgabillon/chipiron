@@ -12,12 +12,24 @@ Note: This script requires the customtkinter and chipiron modules to be installe
 from typing import Any
 
 import customtkinter as ctk
+from parsley_coco import make_partial_dataclass_with_optional_paths
 
 from chipiron import scripts
-from chipiron.players.player_ids import PlayerConfigFile
+from chipiron.games.match.match_args import MatchArgs
+from chipiron.games.match.MatchTag import MatchConfigTag
+from chipiron.players import PlayerArgs
+from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
+from chipiron.players.move_selector.treevalue import TreeAndValuePlayerArgs
+from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
+    StoppingCriterionTypes,
+    TreeMoveLimitArgs,
+)
+from chipiron.players.player_ids import PlayerConfigTag
+from chipiron.scripts.one_match.one_match import MatchScriptArgs
+from chipiron.scripts.script_args import BaseScriptArgs
 
 
-def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
+def script_gui() -> tuple[scripts.ScriptType, dict[str, Any], str]:
     """
     Creates a graphical user interface (GUI) for interacting with the chipiron program.
 
@@ -77,16 +89,16 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
     message.grid(column=2, row=2)
 
     # Create the list of options
-    chipi_algo_options_list: list[PlayerConfigFile] = [
-        PlayerConfigFile.RecurZipfBase3,
-        PlayerConfigFile.Uniform,
-        PlayerConfigFile.Sequool,
+    chipi_algo_options_list: list[PlayerConfigTag] = [
+        PlayerConfigTag.RECUR_ZIPF_BASE_3,
+        PlayerConfigTag.UNIFORM,
+        PlayerConfigTag.SEQUOOL,
     ]
 
     # Variable to keep track of the option
     # selected in OptionMenu
     chipi_algo_choice = ctk.StringVar(
-        value=PlayerConfigFile.RecurZipfBase3
+        value=PlayerConfigTag.RECUR_ZIPF_BASE_3
     )  # set initial value
 
     # chipi_algo_choice = tk.StringVar(root)
@@ -167,81 +179,105 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
     exit_button.grid(row=10, column=0, padx=10, pady=10)
 
     root.mainloop()
-    gui_args: dict[str, Any]
+
+    return generate_inputs(output=output)
+
+
+def generate_inputs(
+    output: dict[str, Any],
+) -> tuple[scripts.ScriptType, dict[str, Any], str]:
     script_type: scripts.ScriptType
-    # TODO should this be dict or args or directly the right dataclass bu then we might need to change abit the parser init logic
+
+    PartialOpMatchScriptArgs = make_partial_dataclass_with_optional_paths(
+        cls=MatchScriptArgs
+    )
+    PartialOpMatchArgs = make_partial_dataclass_with_optional_paths(cls=MatchArgs)
+    PartialOpPlayerArgs = make_partial_dataclass_with_optional_paths(cls=PlayerArgs)
+
+    PartialOpBaseScriptArgs = make_partial_dataclass_with_optional_paths(
+        cls=BaseScriptArgs
+    )
+
+    PartialOpTreeAndValuePlayerArgs = make_partial_dataclass_with_optional_paths(
+        cls=TreeAndValuePlayerArgs
+    )
+    PartialOpTreeMoveLimitArgs = make_partial_dataclass_with_optional_paths(
+        cls=TreeMoveLimitArgs
+    )
+
+    config_file_name: str
     match output["type"]:
         case "play_against_chipiron":
             tree_move_limit = 4 * 10 ** output["strength"]
-            gui_args = {
-                "config_file_name": "chipiron/scripts/one_match/inputs/human_play_against_computer/exp_options.yaml",
-                "base_script_args": {"profiling": False},
-                "match_args": {
-                    "file_name_match_setting": "setting_duda.yaml",
-                    "seed": 0,
-                },
-                "gui": True,
-            }
+            gui_args = PartialOpMatchScriptArgs(
+                gui=True,
+                base_script_args=PartialOpBaseScriptArgs(profiling=False, seed=0),
+                match_args=PartialOpMatchArgs(match_setting=MatchConfigTag.Duda),
+            )
+            config_file_name = "chipiron/scripts/one_match/inputs/human_play_against_computer/exp_options.yaml"
+
             if output["color_human"] == "White":
-                gui_args["match_args"][
-                    "file_name_player_one"
-                ] = PlayerConfigFile.GuiHuman
-                gui_args["match_args"][
-                    "file_name_player_two"
-                ] = f'{output["chipi_algo"]}'
-                gui_args["match_args"]["player_two"] = {
-                    "main_move_selector": {
-                        "stopping_criterion": {"tree_move_limit": tree_move_limit}
-                    }
-                }
+                gui_args.match_args.player_one = PlayerConfigTag.GUI_HUMAN
+                gui_args.match_args.player_two = PlayerConfigTag(output["chipi_algo"])
+                gui_args.match_args.player_two_overwrite = PartialOpPlayerArgs(
+                    main_move_selector=PartialOpTreeAndValuePlayerArgs(
+                        type=MoveSelectorTypes.TreeAndValue,
+                        stopping_criterion=PartialOpTreeMoveLimitArgs(
+                            type=StoppingCriterionTypes.TreeMoveLimit,
+                            tree_move_limit=tree_move_limit,
+                        ),
+                    )
+                )
             else:
-                gui_args["match_args"][
-                    "file_name_player_two"
-                ] = PlayerConfigFile.GuiHuman
-                gui_args["match_args"][
-                    "file_name_player_one"
-                ] = f'{output["chipi_algo"]}'
-                gui_args["match_args"]["player_one"] = {
-                    "main_move_selector": {
-                        "stopping_criterion": {"tree_move_limit": tree_move_limit}
-                    }
-                }
+                gui_args.match_args.player_one = PlayerConfigTag(output["chipi_algo"])
+                gui_args.match_args.player_two = PlayerConfigTag.GUI_HUMAN
+                gui_args.match_args.player_one_overwrite = PartialOpPlayerArgs(
+                    main_move_selector=PartialOpTreeAndValuePlayerArgs(
+                        stopping_criterion=PartialOpTreeMoveLimitArgs(
+                            type=StoppingCriterionTypes.TreeMoveLimit,
+                            tree_move_limit=tree_move_limit,
+                        )
+                    )
+                )
             script_type = scripts.ScriptType.OneMatch
         case "play_two_humans":
-            gui_args = {
-                "config_file_name": "chipiron/scripts/one_match/inputs/human_play_against_human/exp_options.yaml",
-                "base_script_args": {"profiling": False},
-                "match_args": {
-                    "file_name_match_setting": "setting_duda.yaml",
-                    "seed": 0,
-                },
-                "gui": True,
-            }
-            gui_args["match_args"]["file_name_player_one"] = PlayerConfigFile.GuiHuman
-            gui_args["match_args"]["file_name_player_two"] = PlayerConfigFile.GuiHuman
+            config_file_name = "chipiron/scripts/one_match/inputs/human_play_against_human/exp_options.yaml"
+
+            gui_args = PartialOpMatchScriptArgs(
+                gui=True,
+                base_script_args=PartialOpBaseScriptArgs(profiling=False, seed=0),
+                match_args=PartialOpMatchArgs(match_setting=MatchConfigTag.Duda),
+            )
+
+            gui_args.match_args.player_one = PlayerConfigTag.GUI_HUMAN
+            gui_args.match_args.player_two = PlayerConfigTag.GUI_HUMAN
             script_type = scripts.ScriptType.OneMatch
         case "watch_a_game":
-            gui_args = {
-                "config_file_name": "chipiron/scripts/one_match/inputs/watch_a_game/exp_options.yaml",
-                "match_args": {
-                    "seed": 0,
-                    "gui": True,
-                    "file_name_player_one": PlayerConfigFile.RecurZipfBase3,
-                    "file_name_player_two": PlayerConfigFile.RecurZipfBase3,
-                    "file_name_match_setting": "setting_duda.yaml",
-                },
-            }
+            config_file_name = (
+                "chipiron/scripts/one_match/inputs/watch_a_game/exp_options.yaml"
+            )
+            gui_args = PartialOpMatchScriptArgs(
+                gui=True,
+                base_script_args=PartialOpBaseScriptArgs(profiling=False, seed=0),
+                match_args=PartialOpMatchArgs(
+                    match_setting=MatchConfigTag.Duda,
+                    player_one=PlayerConfigTag.RECUR_ZIPF_BASE_3,
+                    player_two=PlayerConfigTag.RECUR_ZIPF_BASE_3,
+                ),
+            )
+
             script_type = scripts.ScriptType.OneMatch
         case "tree_visualization":
-            gui_args = {
-                "config_file_name": "scripts/tree_visualization/inputs/base/exp_options.yaml",
-            }
+            config_file_name = "scripts/tree_visualization/inputs/base/exp_options.yaml"
+            gui_args = None
             script_type = scripts.ScriptType.TreeVisualization
         case other:
             raise Exception(f"Not a good name: {other}")
 
-    print(f"Gui choices: the script name is {script_type} and the args are {gui_args}")
-    return script_type, gui_args
+    print(
+        f"Gui choices: the script name is {script_type} and the args are {gui_args} and config file {config_file_name}"
+    )
+    return script_type, gui_args, config_file_name
 
 
 def play_against_chipiron(
@@ -266,7 +302,7 @@ def play_against_chipiron(
     output["type"] = "play_against_chipiron"
     output["strength"] = int(strength.get())
     output["color_human"] = str(color.get())
-    output["chipi_algo"] = str(chipi_algo.get())
+    output["chipi_algo"] = PlayerConfigTag(str(chipi_algo.get()))
     return True
 
 

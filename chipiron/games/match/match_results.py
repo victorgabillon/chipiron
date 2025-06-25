@@ -1,4 +1,4 @@
-""" This module contains the classes for match results. """
+"""This module contains the classes for match results."""
 
 from dataclasses import dataclass
 from typing import Protocol

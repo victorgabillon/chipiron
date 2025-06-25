@@ -35,7 +35,7 @@ from chipiron.players.move_selector.treevalue import TreeAndValuePlayerArgs
 from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
     TreeMoveLimitArgs,
 )
-from chipiron.players.player_ids import PlayerConfigFile
+from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.utils.communication.gui_messages import (
     BackMessage,
     EvaluationMessage,
@@ -317,18 +317,13 @@ class MainWindow(QWidget):
                             move_promote: chess.Move = chess.Move.from_uci(
                                 "{}{}q".format(self.pieceToMove[1], self.coordinates)
                             )
-                            move_key: moveKey
                             if move.uci() in all_legal_moves_uci:
-                                move_key = self.board.get_move_key_from_uci(
-                                    move_uci=move.uci()
-                                )
-                                self.send_move_to_main_thread(move_key)
+                                self.send_move_to_main_thread(move_uci=move.uci())
                             elif move_promote.uci() in all_legal_moves_uci:
                                 self.choice_promote()
-                                move_key = self.board.get_move_key_from_uci(
+                                self.send_move_to_main_thread(
                                     move_uci=self.move_promote_asked.uci()
                                 )
-                                self.send_move_to_main_thread(move_key)
                             else:
                                 legal_moves_uci: list[moveUci] = [
                                     self.board.get_uci_from_move_key(move_key)
@@ -343,7 +338,7 @@ class MainWindow(QWidget):
                         piece = None
                     self.pieceToMove = [piece, self.coordinates]
 
-    def send_move_to_main_thread(self, move_key: moveKey) -> None:
+    def send_move_to_main_thread(self, move_uci: moveUci) -> None:
         """
         Sends a move to the main thread for processing.
 
@@ -354,9 +349,9 @@ class MainWindow(QWidget):
             None
         """
         message: MoveMessage = MoveMessage(
-            move=move_key,
+            move=move_uci,
             corresponding_board=self.board.fen,
-            player_name=PlayerConfigFile.GuiHuman,
+            player_name=PlayerConfigTag.GUI_HUMAN,
             color_to_play=self.board.turn,
         )
         self.main_thread_mailbox.put(item=message)

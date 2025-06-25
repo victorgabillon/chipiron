@@ -10,22 +10,30 @@ Functions:
 """
 
 import time
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, Callable
 
-import chess
 import numpy as np
 import pandas
-import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
-from chipiron.environments.chess.board import BoardChi
+from chipiron.environments.chess import BoardChi
+from chipiron.environments.chess.board import IBoard
 from chipiron.environments.chess.board.factory import create_board_chi
-from chipiron.environments.chess.board.utils import FenPlusHistory
+from chipiron.environments.chess.board.utils import FenPlusHistory, fen
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_input import (
     BoardToInputFunction,
 )
 from chipiron.utils import path
+from chipiron.utils.logger import chipiron_logger
+
+
+@dataclass
+class DataSetArgs:
+    train_file_name: path
+    test_file_name: path | None = None
+    preprocessing_data_set: bool = False
 
 
 class MyDataSet(Dataset[Any]):
@@ -63,32 +71,38 @@ class MyDataSet(Dataset[Any]):
         """
         Loads the dataset from the file.
         """
-        print("Loading the dataset...")
+        chipiron_logger.info("Loading the dataset...")
         start_time = time.time()
-        raw_data: pandas.DataFrame = pd.read_pickle(self.file_name)
-        print("raw_data", type(raw_data))
+        raw_data: pandas.DataFrame = pandas.read_pickle(self.file_name)
         raw_data = (
             raw_data.copy()
-        )  # gets read of compatibility problem between various version of panda and pickle
-        print("--- LOAD READ PICKLE %s seconds ---" % (time.time() - start_time))
-        print("Dataset  loaded with {} items".format(len(raw_data)))
+        )  # gets rid of compatibility problems between various version of panda and pickle
+        chipiron_logger.info(f"raw_data {type(raw_data)}")
+        self.raw_data = raw_data
+
+        chipiron_logger.info(
+            "--- LOAD READ PICKLE %s seconds ---" % (time.time() - start_time)
+        )
+        chipiron_logger.info("Dataset  loaded with {} items".format(len(raw_data)))
 
         # preprocessing
         if self.preprocessing:
-            print("preprocessing dataset...")
+            chipiron_logger.info("preprocessing dataset...")
             processed_data: list[tuple[torch.Tensor, torch.Tensor]] = []
 
             for idx in range(len(raw_data)):
                 # print(idx, type(idx),idx % 10 == 0)
                 if idx % 10 == 0:
-                    print("\rloading the data", str(idx / len(raw_data) * 100) + "%")
+                    chipiron_logger.info(
+                        f"\rloading the data {str(idx / len(raw_data) * 100)}%"
+                    )
                 row: pandas.Series = raw_data.iloc[idx % len(raw_data)]
                 processed_data.append(self.process_raw_row(row))
             self.data = processed_data
 
-            print("preprocessing dataset done")
+            chipiron_logger.info("preprocessing dataset done")
         else:
-            print("no preprocessing the dataset")
+            chipiron_logger.info("no preprocessing the dataset")
             self.data = raw_data
 
         self.len = len(self.data)
@@ -139,8 +153,16 @@ class MyDataSet(Dataset[Any]):
             raw_row = self.data.iloc[idx % self.len]
             return self.process_raw_row(raw_row)  # to be coded!
 
+    def get_unprocessed(self, idx: int) -> pandas.Series:
+        """ """
+        assert isinstance(self.data, pandas.DataFrame)
+        assert self.len is not None
 
-def process_stockfish_value(board: BoardChi, row: pandas.Series) -> torch.Tensor:
+        raw_row = self.data.iloc[idx % self.len]
+        return raw_row
+
+
+def process_stockfish_value(row: pandas.Series) -> float:
     """
     Processes the stockfish value for a given board and row.
 
@@ -151,12 +173,9 @@ def process_stockfish_value(board: BoardChi, row: pandas.Series) -> torch.Tensor
     Returns:
     - torch.Tensor: The processed target value tensor.
     """
-    if board.turn == chess.BLACK:
-        target_value = -np.tanh(row["stockfish_value"] / 500.0)
-    else:
-        target_value = np.tanh(row["stockfish_value"] / 500.0)
-    target_value_tensor: torch.Tensor = torch.tensor([target_value])
-    return target_value_tensor
+    # target values are value between -1 and 1 from the point of view of white. (+1 is white win and -1 is white loose)
+    target_value: float = np.tanh(row["stockfish_value"] / 500.0)
+    return target_value
 
 
 class FenAndValueDataSet(MyDataSet):
@@ -172,14 +191,25 @@ class FenAndValueDataSet(MyDataSet):
     - process_raw_rows(dataframe: pandas.DataFrame) -> list[tuple[torch.Tensor, torch.Tensor]]: Processes raw rows into input and target tensors.
     """
 
-    transform_board_function: BoardToInputFunction
+    transform_board_function: BoardToInputFunction  # transform board to model input
+    transform_dataset_value_to_white_value_function: Callable[
+        [pandas.Series], float
+    ]  # transform value in dataset to standardized value white float
+    transform_white_value_to_model_output_function: Callable[
+        [float, IBoard], torch.Tensor
+    ]  # transform white value to model output
 
     def __init__(
         self,
         file_name: path,
+        transform_white_value_to_model_output_function: Callable[
+            [float, IBoard], torch.Tensor
+        ],
+        transform_dataset_value_to_white_value_function: Callable[
+            [pandas.Series], float
+        ],
         preprocessing: bool = False,
         transform_board_function: str | BoardToInputFunction = "identity",
-        transform_value_function: str = "",
     ) -> None:
         """
         Initializes a new instance of the FenAndValueDataSet class.
@@ -199,10 +229,15 @@ class FenAndValueDataSet(MyDataSet):
             self.transform_board_function = transform_board_function
 
         # transform function
-        if transform_value_function == "stockfish":
-            self.transform_value_function = process_stockfish_value
+        self.transform_dataset_value_to_white_value_function = (
+            transform_dataset_value_to_white_value_function
+        )
 
-    def process_raw_row(self, row: pandas.Series) -> tuple[torch.Tensor, torch.Tensor]:
+        self.transform_white_value_to_model_output_function = (
+            transform_white_value_to_model_output_function
+        )
+
+    def process_raw_row(self, row: pandas.Series) -> tuple[Any, torch.Tensor]:
         """
         Processes a raw row into input and target tensors.
 
@@ -212,14 +247,23 @@ class FenAndValueDataSet(MyDataSet):
         Returns:
         - tuple[torch.Tensor, torch.Tensor]: The input and target tensors.
         """
-        fen = row["fen"]
-        board = create_board_chi(
-            fen_with_history=FenPlusHistory(current_fen=fen),
+        fen_: fen = row["fen"]
+
+        # todo should we make it general and allow rust boards just for testing all comptabilities ?
+        board: BoardChi = create_board_chi(
+            fen_with_history=FenPlusHistory(current_fen=fen_),
             use_board_modification=True,
         )
         input_layer = self.transform_board_function(board)
-        target_value = self.transform_value_function(board, row)
-        return input_layer.float(), target_value.float()
+        target_value_white: float = (
+            self.transform_dataset_value_to_white_value_function(row)
+        )
+        target_value: torch.Tensor = (
+            self.transform_white_value_to_model_output_function(
+                target_value_white, board
+            )
+        )
+        return input_layer, target_value
 
     def process_raw_rows(
         self, dataframe: pandas.DataFrame

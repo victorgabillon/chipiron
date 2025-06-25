@@ -1,3 +1,4 @@
+import typing
 from dataclasses import asdict
 from typing import Any, Iterator, Protocol, Self
 
@@ -85,6 +86,14 @@ def compute_key(
         halfmove_clock,
     )
     return string
+
+
+# Note that we do not use Dict[Square, Piece] because of the rust version that would need to transform
+# tuple[chess.PieceType, chess.Color] into Piece and would lose time
+PieceMap = typing.Annotated[
+    dict[chess.Square, tuple[chess.PieceType, chess.Color]],
+    "a dictionary that list the pieces on the board",
+]
 
 
 class IBoard(Protocol):
@@ -255,13 +264,13 @@ class IBoard(Protocol):
 
     def number_of_pieces_on_the_board(self) -> int: ...
 
-    def piece_map(self) -> dict[chess.Square, tuple[int, bool]]: ...
+    def piece_map(self) -> dict[chess.Square, tuple[chess.PieceType, chess.Color]]: ...
 
     def has_kingside_castling_rights(self, color: chess.Color) -> bool: ...
 
     def has_queenside_castling_rights(self, color: chess.Color) -> bool: ...
 
-    def print_chess_board(self) -> None: ...
+    def print_chess_board(self) -> str: ...
 
     def tell_result(self) -> None: ...
 

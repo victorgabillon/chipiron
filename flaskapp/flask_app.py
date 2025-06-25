@@ -1,11 +1,14 @@
 import json
+import random
 
 from flask import Flask, render_template, request
 from flask_bootstrap import Bootstrap4
 
 from chipiron.environments.chess.board import BoardChi, create_board_chi
+from chipiron.environments.chess.board.utils import FenPlusHistory
 from chipiron.players.factory import create_chipiron_player
 from chipiron.players.move_selector.move_selector import MoveRecommendation
+from chipiron.scripts.chipiron_args import ImplementationArgs
 
 # Uncomment and populate this variable in your code:
 PROJECT = "chipironchess"
@@ -52,16 +55,22 @@ def index():
 def get_move(depth, fen):
     print("depth", depth, type(depth))
     print("CalculatingR...")
-    board: BoardChi = create_board_chi(fen=fen)
     print("fen", fen, type(fen))
-    player = create_chipiron_player(depth)
-    move_reco: MoveRecommendation = player.select_move(board=board, seed_=0)
+    random_generator = random.Random()
+    player = create_chipiron_player(
+        depth,
+        implementation_args=ImplementationArgs(),
+        universal_behavior=False,
+        random_generator=random_generator,
+    )
+    move_reco: MoveRecommendation = player.select_move(
+        fen_plus_history=FenPlusHistory(current_fen=fen), seed_int=0
+    )
     print("Move found!", move_reco.move)
     print()
     res = str(move_reco.move)
     del player
     del move_reco
-    del board
     return res
 
 

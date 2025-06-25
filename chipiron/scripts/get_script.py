@@ -4,6 +4,9 @@ from chipiron.scripts.league.runtheleague import RunTheLeagueScript
 
 from .base_tree_exploration.base_tree_exploration import BaseTreeExplorationScript
 from .iscript import IScript
+from .learn_from_scratch_value_and_fixed_boards.learn_from_scratch_value_and_fixed_boards import (
+    LearnNNFromScratchScript,
+)
 from .learn_nn_supervised.learn_nn_from_supervised_datasets import LearnNNScript
 from .one_match.one_match import OneMatchScript
 from .replay_game.replay_game import ReplayGameScript
@@ -18,6 +21,7 @@ script_type_to_script_class_name: dict[ScriptType, Any] = {
     ScriptType.ReplayMatch: ReplayGameScript,
     ScriptType.League: RunTheLeagueScript,
     ScriptType.BaseTreeExploration: BaseTreeExplorationScript,
+    ScriptType.LearnNNFromScratch: LearnNNFromScratchScript,
 }
 
 

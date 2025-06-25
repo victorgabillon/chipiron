@@ -67,6 +67,7 @@ class TreeAndValueMoveSelector:
         """
         tree_exploration: TreeExploration = self.create_tree_exploration(board=board)
         self.random_generator.seed(move_seed)
+
         move_recommendation: MoveRecommendation = tree_exploration.explore(
             random_generator=self.random_generator
         ).move_recommendation

@@ -8,6 +8,7 @@ from chipiron.environments.chess.board.utils import FenPlusHistory
 from chipiron.players import Player
 from chipiron.players.factory import create_chipiron_player
 from chipiron.players.move_selector.move_selector import MoveRecommendation
+from chipiron.scripts.chipiron_args import ImplementationArgs
 
 
 def test_universal_behavior() -> None:
@@ -61,26 +62,30 @@ def test_universal_behavior() -> None:
 
     random_generator_rust: random.Random = random.Random(0)
     player_rust: Player = create_chipiron_player(
-        depth=1, use_rusty_board=True, random_generator=random_generator_rust
+        implementation_args=ImplementationArgs(use_rust_boards=True),
+        universal_behavior=True,
+        random_generator=random_generator_rust,
     )
 
     move_reco_rust: MoveRecommendation = player_rust.select_move(
-        board=board_rust, seed_int=0
+        fen_plus_history=board_rust.into_fen_plus_history(), seed_int=0
     )
 
     random_generator_chi: random.Random = random.Random(0)
     player_chi: Player = create_chipiron_player(
-        depth=1, use_rusty_board=False, random_generator=random_generator_chi
+        implementation_args=ImplementationArgs(use_rust_boards=False),
+        universal_behavior=True,
+        random_generator=random_generator_chi,
     )
 
     move_reco_chi: MoveRecommendation = player_chi.select_move(
-        board=board_chi, seed_int=0
+        fen_plus_history=board_chi.into_fen_plus_history(), seed_int=0
     )
 
     assert move_reco_chi.evaluation == move_reco_rust.evaluation
 
-    chi_move_uci = board_chi.get_uci_from_move_key(move_key=move_reco_chi.move)
-    chi_move_rust = board_rust.get_uci_from_move_key(move_key=move_reco_rust.move)
+    chi_move_uci = move_reco_chi.move
+    chi_move_rust = move_reco_rust.move
 
     assert chi_move_uci == chi_move_rust
 

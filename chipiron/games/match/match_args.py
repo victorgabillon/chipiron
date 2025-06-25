@@ -2,11 +2,12 @@
 This module defines the `MatchArgs` class, which represents the input arguments needed by the one match script to run.
 """
 
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import dataclass
 
-from chipiron.players.player_ids import PlayerConfigFile
-from chipiron.utils import path
+from chipiron.games.match.match_settings_args import MatchSettingsArgs
+from chipiron.games.match.MatchTag import MatchConfigTag
+from chipiron.players import PlayerArgs
+from chipiron.players.player_ids import PlayerConfigTag
 
 
 @dataclass
@@ -23,11 +24,6 @@ class MatchArgs:
 
     """
 
-    file_name_player_one: PlayerConfigFile = PlayerConfigFile.RecurZipfBase3
-    file_name_player_two: PlayerConfigFile = PlayerConfigFile.RecurZipfBase3
-    file_name_match_setting: path = "setting_cubo.yaml"
-
-    # For players and match modification of the yaml file specified in a respective dict
-    player_one: dict[Any, Any] = field(default_factory=dict)
-    player_two: dict[Any, Any] = field(default_factory=dict)
-    match: dict[Any, Any] = field(default_factory=dict)
+    player_one: PlayerConfigTag | PlayerArgs = PlayerConfigTag.RECUR_ZIPF_BASE_3
+    player_two: PlayerConfigTag | PlayerArgs = PlayerConfigTag.RECUR_ZIPF_BASE_3
+    match_setting: MatchConfigTag | MatchSettingsArgs = MatchConfigTag.Cubo

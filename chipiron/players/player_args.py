@@ -23,6 +23,11 @@ class PlayerArgs:
     syzygy_play: bool
 
     def is_human(self) -> bool:
+        """Check if the player is a human player.
+
+        Returns:
+             : bool: True if the player is a human player, False otherwise.
+        """
         return MoveSelectorTypes(self.main_move_selector.type).is_human()
 
 

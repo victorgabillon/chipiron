@@ -7,12 +7,13 @@ import queue
 
 import chess
 
-from chipiron.environments.chess.board.iboard import IBoard
 from chipiron.players.move_selector.move_selector import MoveRecommendation
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import MoveMessage
 from chipiron.utils.dataclass import IsDataclass
+from chipiron.utils.logger import chipiron_logger
 
+from ..environments.chess.board.utils import FenPlusHistory
 from .player import Player
 
 
@@ -38,12 +39,11 @@ class GamePlayer:
         return self._player
 
     def select_move(
-        self, board: IBoard, seed_int: seed | None = None
+        self, fen_plus_history: FenPlusHistory, seed_int: seed | None = None
     ) -> MoveRecommendation:
         """Selects the best move to play based on the current board position.
 
         Args:
-            board (IBoard): The current board position.
             seed_int (seed | None, optional): The seed value for randomization. Defaults to None.
 
         Raises:
@@ -54,15 +54,15 @@ class GamePlayer:
         """
 
         assert seed_int is not None
-        assert self.color == board.turn
+        assert self.color == fen_plus_history.current_turn()
         best_move: MoveRecommendation = self._player.select_move(
-            board=board, seed_int=seed_int
+            fen_plus_history=fen_plus_history, seed_int=seed_int
         )
         return best_move
 
 
 def game_player_computes_move_on_board_and_send_move_in_queue(
-    board: IBoard,
+    fen_plus_history: FenPlusHistory,
     game_player: GamePlayer,
     queue_move: queue.Queue[IsDataclass],
     seed_int: seed,
@@ -70,7 +70,6 @@ def game_player_computes_move_on_board_and_send_move_in_queue(
     """Computes the move for the game player on the given board and sends the move in the queue.
 
     Args:
-        board (IBoard): The game board.
         game_player (GamePlayer): The game player.
         queue_move (queue.Queue[IsDataclass]): The queue to send the move.
         seed_int (seed): The seed for move selection.
@@ -78,20 +77,24 @@ def game_player_computes_move_on_board_and_send_move_in_queue(
     Returns:
         None
     """
-    if board.turn == game_player.color and not board.is_game_over():
+
+    if fen_plus_history.current_turn() == game_player.color:
         move_recommendation: MoveRecommendation = game_player.select_move(
-            board=board, seed_int=seed_int
+            fen_plus_history=fen_plus_history, seed_int=seed_int
         )
         message: MoveMessage = MoveMessage(
             move=move_recommendation.move,
-            corresponding_board=board.fen,
+            corresponding_board=fen_plus_history.current_fen,
             player_name=game_player.player.id,
             evaluation=move_recommendation.evaluation,
             color_to_play=game_player.color,
         )
-        print("sending ", message)
+        chipiron_logger.info("Sending %s", message)
 
         deep_copy_message = copy.deepcopy(message)
         queue_move.put(deep_copy_message)
     else:
-        print("Game player rejects move query", board.fen)
+        chipiron_logger.warning(
+            "Game player rejects move query %s",
+            fen_plus_history.current_fen,
+        )

@@ -7,11 +7,11 @@ from dataclasses import dataclass
 import chess
 
 from chipiron.environments.chess.board.utils import FenPlusHistory, fen
-from chipiron.environments.chess.move.imove import moveKey
+from chipiron.environments.chess.move import moveUci
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
     BoardEvaluation,
 )
-from chipiron.players.player import playerId
+from chipiron.players.player import PlayerId
 
 
 @dataclass
@@ -27,9 +27,9 @@ class MoveMessage:
         evaluation (float | None, optional): The evaluation score of the move. Defaults to None.
     """
 
-    move: moveKey
+    move: moveUci
     corresponding_board: fen
-    player_name: playerId
+    player_name: PlayerId
     color_to_play: chess.Color
     evaluation: BoardEvaluation | None = None
 
