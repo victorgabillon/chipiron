@@ -6,7 +6,9 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Protocol
 
+
 from chipiron.environments.chess.board.board_tools import convert_to_fen
+from typing import Literal
 
 
 class StartingPositionArgsType(str, Enum):
@@ -30,11 +32,12 @@ class StartingPositionArgs(Protocol):
 
 
 @dataclass
-class FenStartingPositionArgs(StartingPositionArgs):
+class FenStartingPositionArgs:
     """
     Dataclass representing the starting position arguments specified by FEN.
     """
 
+    type: Literal[StartingPositionArgsType.fen]
     fen: str
 
     def get_fen(self) -> str:
@@ -47,6 +50,7 @@ class FileStartingPositionArgs(StartingPositionArgs):
     Dataclass representing the starting position arguments specified by a file.
     """
 
+    type: Literal[StartingPositionArgsType.fromFile]
     file_name: str
 
     def get_fen(self) -> str:

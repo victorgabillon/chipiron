@@ -78,7 +78,9 @@ class PlayerConfigTag(str, Enum):
             PlayerArgs: The player arguments as a dataclass.
         """
         player_args: PlayerArgs = parsley_coco.resolve_yaml_file_to_base_dataclass(
-            yaml_path=self.get_yaml_file_path(), base_cls=PlayerArgs
+            yaml_path=self.get_yaml_file_path(),
+            base_cls=PlayerArgs,
+            raise_error_with_nones=False,
         )
         return player_args
 

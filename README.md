@@ -43,7 +43,7 @@ so you might want to git clone and create a virtual environment as follows:
 ```console
 git clone https://github.com/victorgabillon/chipiron.git
 cd chipiron
-conda create chipiron3.12 python==3.12
+conda create --name chipiron3.12 python==3.12
 conda activate chipiron3.12
 conda install -c conda-forge tk=*=xft_*
 make init

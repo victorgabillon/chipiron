@@ -17,7 +17,7 @@ from parsley_coco import Parsley
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
 from chipiron.utils.dataclass import IsDataclass
-from chipiron.utils.logger import chipiron_logger
+from chipiron.utils.logger import chipiron_logger, suppress_logging
 from chipiron.utils.small_tools import mkdir_if_not_existing
 
 
@@ -93,14 +93,9 @@ class Script[T_Dataclass: IsDataclass]:
                 self.default_experiment_output_folder
             )
 
-        print("debug extra args ", self.extra_args)
-
-        # parse the arguments
         final_args: T_Dataclass = self.parser.parse_arguments(
             extra_args=self.extra_args, config_file_path=self.config_file_name
         )
-
-        print("debug final args ", final_args)
 
         assert hasattr(final_args, "base_script_args")
 

@@ -45,8 +45,6 @@ def create_chipiron_player(
 
     args_player: PlayerArgs = PlayerConfigTag.CHIPIRON.get_players_args()
 
-    print("debug ARRRGS", args_player)
-
     main_move_selector: move_selector.MoveSelector | None = (
         move_selector.create_main_move_selector(
             move_selector_instance_or_args=args_player.main_move_selector,
