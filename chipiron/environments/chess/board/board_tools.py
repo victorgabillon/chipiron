@@ -1,4 +1,4 @@
-""" Module to convert an ascii board to a FEN string. """
+"""Module to convert an ascii board to a FEN string."""
 
 from typing import AnyStr
 

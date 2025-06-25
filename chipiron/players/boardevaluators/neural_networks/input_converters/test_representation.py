@@ -15,11 +15,11 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.board_rep
 from chipiron.players.boardevaluators.neural_networks.input_converters.factory import (
     RepresentationFactory,
 )
+from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
+    InternalTensorRepresentationType,
+)
 from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
     create_board_representation_factory,
-)
-from chipiron.players.boardevaluators.neural_networks.input_converters.TensorRepresentationType import (
-    InternalTensorRepresentationType,
 )
 
 
@@ -37,7 +37,7 @@ def test_representation(
 
     representation_factory: RepresentationFactory[Any] | None = (
         create_board_representation_factory(
-            board_representation_factory_type=board_representation_factory_type
+            internal_tensor_representation_type=board_representation_factory_type
         )
     )
     assert representation_factory is not None
@@ -94,7 +94,7 @@ def test_representation364(
 
     representation_factory: RepresentationFactory[Any] | None = (
         create_board_representation_factory(
-            board_representation_factory_type=board_representation_factory_type
+            internal_tensor_representation_type=board_representation_factory_type
         )
     )
     assert representation_factory is not None

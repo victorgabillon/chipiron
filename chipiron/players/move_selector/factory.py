@@ -7,6 +7,7 @@ import random
 from typing import Any, TypeAlias
 
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
+from chipiron.utils.logger import chipiron_logger
 
 from ...utils.dataclass import IsDataclass
 from . import human, move_selector, stockfish, treevalue
@@ -43,7 +44,7 @@ def create_main_move_selector(
 
     """
     main_move_selector: move_selector.MoveSelector
-    print("create main move selector")
+    chipiron_logger.info("Create main move selector")
 
     match move_selector_instance_or_args:
         case Random():

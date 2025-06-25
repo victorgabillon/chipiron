@@ -20,7 +20,6 @@ from typing import Any, Literal
 import chess.engine
 
 import chipiron.environments.chess.board as boards
-from chipiron.environments.chess.move.imove import moveKey
 
 from ...environments.chess import BoardChi
 from ...environments.chess.board import create_board_chi
@@ -89,8 +88,7 @@ class StockfishPlayer:
 
         self.engine.quit()
         self.engine = None
-        move_key: moveKey = board.get_move_key_from_uci(move_uci=result.move.uci())
-        return MoveRecommendation(move=move_key)
+        return MoveRecommendation(move=result.move.uci())
 
     def print_info(self) -> None:
         """

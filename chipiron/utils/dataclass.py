@@ -34,6 +34,11 @@ def custom_asdict_factory(data: Iterable[Any]) -> dict[Any, Any]:
     def convert_value(obj: Any) -> Any:
         if isinstance(obj, Enum):
             return obj.value
-        return obj
+        elif isinstance(obj, list):
+            return [convert_value(item) for item in obj]
+        elif isinstance(obj, dict):
+            return {k: convert_value(v) for k, v in obj.items()}
+        else:
+            return obj
 
     return dict((k, convert_value(v)) for k, v in data)

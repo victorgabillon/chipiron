@@ -7,7 +7,7 @@ from typing import Any, TypeAlias
 
 import chipiron.players.boardevaluators.basic_evaluation as basic_evaluation
 from chipiron.players.boardevaluators.neural_networks.factory import (
-    create_nn_board_eval,
+    create_nn_board_eval_from_nn_parameters_file_and_existing_model,
 )
 from chipiron.players.boardevaluators.neural_networks.nn_board_evaluator import (
     NNBoardEvaluator,
@@ -18,10 +18,10 @@ from . import neural_networks
 from .all_node_evaluators import NodeEvaluatorTypes
 from .neural_networks.nn_node_evaluator import NNNodeEvaluator
 from .node_evaluator import NodeEvaluator
-from .node_evaluator_args import NodeEvaluatorArgs
+from .node_evaluator_args import BasicEvaluationNodeEvaluatorArgs, NodeEvaluatorArgs
 
 AllNodeEvaluatorArgs: TypeAlias = (
-    neural_networks.NeuralNetNodeEvalArgs | NodeEvaluatorArgs
+    neural_networks.NeuralNetNodeEvalArgs | BasicEvaluationNodeEvaluatorArgs
 )
 
 
@@ -50,7 +50,7 @@ def create_node_evaluator(
     node_evaluator: NodeEvaluator
 
     match arg_board_evaluator.type:
-        case "basic_evaluation":
+        case NodeEvaluatorTypes.BasicEvaluation:
             board_evaluator: basic_evaluation.BasicEvaluation = (
                 basic_evaluation.BasicEvaluation()
             )
@@ -61,9 +61,10 @@ def create_node_evaluator(
             assert isinstance(
                 arg_board_evaluator, neural_networks.NeuralNetNodeEvalArgs
             )
-            board_evaluator_nn: NNBoardEvaluator = create_nn_board_eval(
-                path_to_nn_folder=arg_board_evaluator.path_to_nn_folder,
-                internal_representation_type=arg_board_evaluator.internal_representation_type,
+            board_evaluator_nn: NNBoardEvaluator
+            board_evaluator_nn = create_nn_board_eval_from_nn_parameters_file_and_existing_model(
+                model_weights_file_name=arg_board_evaluator.neural_nets_model_and_architecture.model_weights_file_name,
+                nn_architecture_args=arg_board_evaluator.neural_nets_model_and_architecture.nn_architecture_args,
             )
             node_evaluator = NNNodeEvaluator(
                 nn_board_evaluator=board_evaluator_nn, syzygy=syzygy_

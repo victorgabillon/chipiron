@@ -1,6 +1,4 @@
-chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/test_to_keep/:
-  evaluation: 0.3145432472229004
-  time_of_evaluation: 2025-01-26 12:57:25.334503
-data/players/board_evaluators/nn_pytorch/nn_pp2d2_2_prelu/param_prelu:
-  evaluation: 0.2026243954896927
-  time_of_evaluation: 2025-01-26 12:56:43.086418
+? chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/prelu_no_bug/param_multi_layer_perceptron_772_20_1_parametric_relu_hyperbolic_tangent_364_no_bug_player_to_move.ptparam_multi_layer_perceptron_772_20_1_parametric_relu_hyperbolic_tangent_364_no_bug_player_to_move
+: evaluation: 0.2372242442208442
+  number_of_model_parameters: 15482
+  time_of_evaluation: 2025-06-25 17:21:40.677064

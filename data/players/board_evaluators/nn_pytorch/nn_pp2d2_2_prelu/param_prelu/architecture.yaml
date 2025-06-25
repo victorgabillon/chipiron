@@ -1,2 +1,7 @@
-model_type: pp2d2_2_prelu
-tensor_representation_type: "364_bug"
+model_type_args:
+  list_of_activation_functions: [ "parametric_relu","hyperbolic_tangent" ]
+  number_neurons_per_layer: [ 772,20,1 ]
+  type: multi_layer_perceptron
+model_input_representation_type: "364_bug"
+model_output_type:
+  point_of_view: player_to_move

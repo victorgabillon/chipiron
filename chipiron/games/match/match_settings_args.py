@@ -1,4 +1,4 @@
-""" Module to define the MatchSettingsArgs dataclass. """
+"""Module to define the MatchSettingsArgs dataclass."""
 
 from dataclasses import dataclass
 

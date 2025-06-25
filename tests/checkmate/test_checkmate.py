@@ -1,37 +1,38 @@
 import pickle
 import random
+from typing import Any
 
 import chess
 import pytest
 
-from chipiron.environments.chess.board import IBoard, create_board
 from chipiron.environments.chess.board.utils import FenPlusHistory
-from chipiron.environments.chess.move import moveUci
 from chipiron.players import Player
-from chipiron.players.factory import create_chipiron_player, create_player_from_file
+from chipiron.players.boardevaluators import table_base
+from chipiron.players.boardevaluators.table_base.factory import create_syzygy
+from chipiron.players.factory import create_chipiron_player, create_player
 from chipiron.players.move_selector.move_selector import MoveRecommendation
-from chipiron.players.player_ids import PlayerConfigFile
+from chipiron.players.player_ids import PlayerConfigTag
+from chipiron.scripts.chipiron_args import ImplementationArgs
 
 
 @pytest.mark.parametrize(("use_rusty_board"), (True, False))
 def test_check_in_one(use_rusty_board: bool):
-    board: IBoard = create_board(
-        use_rust_boards=use_rusty_board,
-        fen_with_history=FenPlusHistory(
-            current_fen="1nbqkbnr/rpppp2p/6P1/p6Q/8/8/PPPP1PPP/RNB1KBNR w KQk - 1 5"
-        ),
-    )
-
     random_generator: random.Random = random.Random(0)
 
     player: Player = create_chipiron_player(
-        depth=1, use_rusty_board=use_rusty_board, random_generator=random_generator
+        implementation_args=ImplementationArgs(use_rust_boards=use_rusty_board),
+        universal_behavior=True,
+        random_generator=random_generator,
     )
 
-    move_reco: MoveRecommendation = player.select_move(board=board, seed_int=0)
-    move_reco_uci: moveUci = board.get_uci_from_move_key(move_key=move_reco.move)
+    move_reco: MoveRecommendation = player.select_move(
+        fen_plus_history=FenPlusHistory(
+            current_fen="1nbqkbnr/rpppp2p/6P1/p6Q/8/8/PPPP1PPP/RNB1KBNR w KQk - 1 5"
+        ),
+        seed_int=0,
+    )
 
-    assert move_reco_uci == "g6h7" or move_reco_uci == "g6g7"
+    assert move_reco.move == "g6h7" or move_reco.move == "g6g7"
 
 
 @pytest.mark.parametrize(("use_rusty_board"), (True, False))
@@ -48,24 +49,32 @@ def test_check_in_two(use_rusty_board: bool):
     print(f"Testing  check in two on {len(dict_fen_move)} boards.")
     for fen, moves in dict_fen_move.items():
         print("fen", fen)
-        board: IBoard = create_board(
-            use_rust_boards=use_rusty_board,
-            fen_with_history=FenPlusHistory(current_fen=fen),
-        )
-        player = create_player_from_file(
-            player_args_file=PlayerConfigFile.UniformDepth3,
-            random_generator=random_generator,
-            use_rusty_board=use_rusty_board,
-        )
-        move_reco: MoveRecommendation = player.select_move(board=board, seed_int=0)
-        move_reco_uci: moveUci = board.get_uci_from_move_key(move_key=move_reco.move)
 
-        assert move_reco_uci == moves[0].uci()
+        implementation_args = ImplementationArgs(use_rust_boards=use_rusty_board)
+
+        syzygy_table: table_base.SyzygyTable[Any] | None = create_syzygy(
+            use_rust=implementation_args.use_rust_boards
+        )
+
+        print("rrrrrrrrrrrrrrrrrrrrrrrrrrrr")
+        player = create_player(
+            args=PlayerConfigTag.UNIFORM_DEPTH_3.get_players_args(),
+            syzygy=syzygy_table,
+            random_generator=random_generator,
+            implementation_args=implementation_args,
+            universal_behavior=True,
+        )
+        move_reco: MoveRecommendation = player.select_move(
+            fen_plus_history=FenPlusHistory(current_fen=fen), seed_int=0
+        )
+
+        assert move_reco.move == moves[0].uci()
 
 
 if __name__ == "__main__":
     test_check_in_one(use_rusty_board=True)
     test_check_in_one(use_rusty_board=False)
 
+    print("EEEEEEEEEEEEEEEEEEE")
     test_check_in_two(use_rusty_board=True)
     test_check_in_two(use_rusty_board=False)

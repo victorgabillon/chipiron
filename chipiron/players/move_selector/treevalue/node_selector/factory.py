@@ -3,16 +3,28 @@ Factory to build node selectors
 """
 
 import random
+from dataclasses import dataclass
+from typing import Literal, TypeAlias
 
 from .node_selector import NodeSelector
-from .node_selector_args import NodeSelectorArgs
 from .node_selector_types import NodeSelectorType
 from .opening_instructions import OpeningInstructor
 from .recurzipf.recur_zipf_base import RecurZipfBase, RecurZipfBaseArgs
 from .sequool import SequoolArgs, create_sequool
 from .uniform import Uniform
 
-AllNodeSelectorArgs = RecurZipfBaseArgs | SequoolArgs | NodeSelectorArgs
+
+@dataclass
+class UniformArgs:
+    """
+    Arguments for the Uniform node selector.
+
+    """
+
+    type: Literal[NodeSelectorType.Uniform]
+
+
+AllNodeSelectorArgs: TypeAlias = RecurZipfBaseArgs | SequoolArgs | UniformArgs
 
 
 def create(

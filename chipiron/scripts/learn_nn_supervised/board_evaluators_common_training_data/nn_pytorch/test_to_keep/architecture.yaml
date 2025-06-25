@@ -1,2 +1,4 @@
-model_type: pp2d2_2_prelu
-tensor_representation_type: 364_no_bug
+model_input_representation_type: piece_map
+model_output_type:
+  point_of_view: player_to_move
+model_type: transformerone

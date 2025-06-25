@@ -19,6 +19,7 @@ from chipiron.games.match.observable_match_result import ObservableMatchResults
 from chipiron.players import PlayerFactoryArgs
 from chipiron.utils import path, seed
 from chipiron.utils.dataclass import IsDataclass
+from chipiron.utils.logger import chipiron_logger
 
 
 class MatchManager:
@@ -72,8 +73,12 @@ class MatchManager:
         Returns:
             None
         """
-        print("player one is ", self.player_one_id)
-        print("player two is ", self.player_two_id)
+        chipiron_logger.info(
+            f"player one is {self.player_one_id}",
+        )
+        chipiron_logger.info(
+            f"player two is {self.player_two_id}",
+        )
 
     def play_one_match(self) -> MatchReport:
         """Plays one match and returns the match report.
@@ -84,7 +89,7 @@ class MatchManager:
         Returns:
             MatchReport: The report of the match, including the move history and match results.
         """
-        print("Playing the match")
+        chipiron_logger.info("Playing the match")
 
         # creating object for reporting the result of the match and the move history
         match_results: IMatchResults = self.match_results_factory.create()
@@ -127,7 +132,7 @@ class MatchManager:
 
             game_number += 1
 
-        print(match_results)
+        chipiron_logger.info(match_results)
         self.print_stats_to_file(match_results=match_results)
 
         # setting  officially the game to finished state (some subscribers might receive this event as a message,

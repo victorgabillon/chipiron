@@ -43,7 +43,7 @@ so you might want to git clone and create a virtual environment as follows:
 ```console
 git clone https://github.com/victorgabillon/chipiron.git
 cd chipiron
-conda create chipiron3.12 python==3.12
+conda create --name chipiron3.12 python==3.12
 conda activate chipiron3.12
 conda install -c conda-forge tk=*=xft_*
 make init
@@ -53,29 +53,44 @@ make init
 
 ## Usage
 
-### Base case with a gui to play against chipiron or watch it play
+### Base case with a GUI to play against chipiron or watch it play
 
 Starts a gui to choose your options of play.
 
 ```console
-python3 main_chipiron.py 
+python3 chipiron/scripts/main_chipiron.py 
 ```
 
-### Script: one match
+### Other Scripts:
+
+#### One match:
 
 This allows to play a match between two players.
 
 ```console
-python3 main_chipiron.py --script_name one_match --config_file_name scripts/one_match/inputs/base/exp_options.yaml
+python3 chipiron/scripts/main_chipiron.py --script_name one_match --config_file_name chipiron/scripts/one_match/inputs/base/exp_options.yaml
 ```
 
-### Script: league
+#### League
 
 This allows to run a league of selected players and compute their Elo ratings.
 
+
+
+
+
 ```console
-python3 main_chipiron.py --script_name league
+python3 chipiron/scripts/main_chipiron.py --script_name league
 ```
+
+
+#### Lean a NN from a labelled dataset
+
+This learns Neural Networks from a database of labelled boards.
+```console
+python3 chipiron/scripts/main_chipiron.py --script_name learn_nn --config_file_name chipiron/scripts/learn_nn_supervised/exp_options.yaml
+```
+
 
 <!---### Script: learn nn from supervised datasets 
 This learns Neural Networks from a database of labelled boards.

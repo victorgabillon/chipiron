@@ -3,7 +3,6 @@ main_move_selector:
   type: TreeAndValue
   node_selector:
     type: Uniform
-    
   opening_type: all_children
   recommender_rule:
     type: almost_equal_logistic

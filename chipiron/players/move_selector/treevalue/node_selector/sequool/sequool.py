@@ -291,6 +291,7 @@ def get_best_node_from_candidates(
         assert isinstance(node, AlgorithmNode)
         assert node.exploration_index_data is not None
         if node.exploration_index_data.index is not None:
+            assert best_node.exploration_index_data is not None
             if (
                 best_node.exploration_index_data.index is None
                 or (node.exploration_index_data.index, node.half_move) < best_value

@@ -1,0 +1,9 @@
+model_input_representation_type: piece_map
+model_output_type:
+  point_of_view: player_to_move
+model_type_args:
+  n_embd: 27
+  n_head: 3
+  n_layer: 2
+  dropout_ratio: 0.0
+  type: transformer
