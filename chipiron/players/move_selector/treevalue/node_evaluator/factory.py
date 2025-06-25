@@ -58,7 +58,6 @@ def create_node_evaluator(
                 board_evaluator=board_evaluator, syzygy=syzygy_
             )
         case NodeEvaluatorTypes.NeuralNetwork:
-            print("debug", arg_board_evaluator)
             assert isinstance(
                 arg_board_evaluator, neural_networks.NeuralNetNodeEvalArgs
             )

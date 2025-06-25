@@ -5,7 +5,6 @@ Module to fetch, modify and convert the match settings and game settings.
 import os
 from dataclasses import asdict, dataclass
 from shutil import copyfile
-from typing import Any
 
 import parsley_coco
 import yaml
@@ -66,7 +65,7 @@ def fetch_match_games_args_convert_and_save(
         "data/settings/GameSettings", match_args.match_setting.game_setting_file
     )
     args_game: game.GameArgs = parsley_coco.resolve_yaml_file_to_base_dataclass(
-        yaml_path=game_file_path, base_cls=game.GameArgs
+        yaml_path=game_file_path, base_cls=game.GameArgs, raise_error_with_nones=False
     )
 
     if profiling:

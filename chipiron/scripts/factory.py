@@ -2,6 +2,7 @@
 factory for scripts module
 """
 
+import logging
 from typing import Any
 
 from parsley_coco import Parsley, create_parsley
@@ -49,7 +50,8 @@ def create_script(
     parser: Parsley[Any] = create_parsley(
         args_dataclass_name=args_dataclass_name,
         should_parse_command_line_arguments=should_parse_command_line_arguments,
-        logger=chipiron_logger,
+        logger=chipiron_logger,  # not working at the moment
+        verbosity=logging.INFO,
     )
 
     base_script: Script[Any] = Script(

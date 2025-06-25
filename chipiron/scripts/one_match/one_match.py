@@ -7,6 +7,7 @@ import os
 import queue
 import sys
 from dataclasses import asdict, dataclass, field
+from typing import cast
 
 import yaml
 from PySide6.QtWidgets import QApplication
@@ -48,6 +49,8 @@ class OneMatchScript:
     )
     base_script: Script[MatchScriptArgs]
 
+    chess_gui: QApplication
+
     def __init__(
         self,
         base_script: Script[MatchScriptArgs],
@@ -62,8 +65,6 @@ class OneMatchScript:
         args: MatchScriptArgs = self.base_script.initiate(
             experiment_output_folder=self.base_experiment_output_folder,
         )
-
-        print("debug, args", args)
 
         # creating the match manager
         self.match_manager: ch.game.MatchManager = create_match_manager_from_args(
@@ -94,7 +95,14 @@ class OneMatchScript:
             gui_thread_mailbox: queue.Queue[IsDataclass] = (
                 multiprocessing.Manager().Queue()
             )
-            self.chess_gui: QApplication = QApplication(sys.argv)
+
+            app = QApplication.instance()
+            if app is None:
+                app = QApplication(sys.argv)
+            else:
+                app = cast(QApplication, app)
+            self.chess_gui = app
+
             board_factory: BoardFactory = create_board_factory(
                 use_rust_boards=args.implementation_args.use_rust_boards,
                 sort_legal_moves=args.base_script_args.universal_behavior,

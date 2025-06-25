@@ -179,6 +179,13 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any], str]:
     exit_button.grid(row=10, column=0, padx=10, pady=10)
 
     root.mainloop()
+
+    return generate_inputs(output=output)
+
+
+def generate_inputs(
+    output: dict[str, Any],
+) -> tuple[scripts.ScriptType, dict[str, Any], str]:
     script_type: scripts.ScriptType
 
     PartialOpMatchScriptArgs = make_partial_dataclass_with_optional_paths(
