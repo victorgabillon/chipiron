@@ -2,11 +2,11 @@
 PyYAML
 
 ###### Requirements with Version Specifiers ######
-PySide6==6.6.2
+PySide6==6.9.1
 chess >= 1.11.2
 matplotlib>=3.8.2
 sortedcollections>=2.1.0
-pandas>=2.2.3
+pandas>=2.3.0
 numpy>=1.26.0
 torch>=2.6.0
 torchinfo
@@ -19,7 +19,7 @@ shakmaty_python_binding >=0.1.5
 gprof2dot
 mlflow
 parsley_coco==0.1.23
-
+gdown
 
 # for the web app
 flask
