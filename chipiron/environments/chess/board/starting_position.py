@@ -4,11 +4,9 @@ Module defining the starting position arguments for the chess board.
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Protocol
-
+from typing import Literal, Protocol
 
 from chipiron.environments.chess.board.board_tools import convert_to_fen
-from typing import Literal
 
 
 class StartingPositionArgsType(str, Enum):

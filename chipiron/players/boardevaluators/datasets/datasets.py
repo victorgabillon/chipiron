@@ -105,6 +105,10 @@ class MyDataSet(Dataset[Any]):
             chipiron_logger.info("no preprocessing the dataset")
             self.data = raw_data
 
+        self.data = (
+            self.data.copy()
+        )  # gets rid of compatibility problems between various version of panda and pickle
+
         self.len = len(self.data)
 
     def process_raw_row(self, row: pandas.Series) -> tuple[torch.Tensor, torch.Tensor]:

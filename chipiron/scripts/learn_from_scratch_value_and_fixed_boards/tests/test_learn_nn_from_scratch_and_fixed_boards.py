@@ -9,9 +9,6 @@ from chipiron.scripts.factory import create_script
 from chipiron.scripts.learn_from_scratch_value_and_fixed_boards.learn_from_scratch_value_and_fixed_boards import (
     LearnNNFromScratchScriptArgs,
 )
-from chipiron.scripts.learn_nn_supervised.learn_nn_from_supervised_datasets import (
-    LearnNNScriptArgs,
-)
 from chipiron.scripts.script_args import BaseScriptArgs
 
 PartialOpLearnNNFromScratchScriptArgs = make_partial_dataclass_with_optional_paths(
@@ -62,3 +59,4 @@ def test_learn_nn_from_scratch_and_fixed_boards() -> None:
 
 if __name__ == "__main__":
     test_learn_nn_from_scratch_and_fixed_boards()
+    print("all tests passed")

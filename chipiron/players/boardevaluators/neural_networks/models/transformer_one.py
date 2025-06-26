@@ -6,9 +6,7 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
-from chipiron.players.boardevaluators.neural_networks.NNModelType import (
-    NNModelType,
-)
+from chipiron.players.boardevaluators.neural_networks.NNModelType import NNModelType
 from chipiron.utils.chi_nn import ChiNN
 
 number_of_squares = len(chess.SQUARES)
@@ -107,6 +105,7 @@ class MultiHeadAttention(nn.Module):
         self.dropout = nn.Dropout(dropout_ratio)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        out: torch.Tensor = torch.empty(1)  # to make mypy and jit happy
         out = torch.cat([h(x) for h in self.heads], dim=-1)
         out = self.dropout(self.proj(out))
         return out

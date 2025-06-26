@@ -4,7 +4,7 @@ import torch
 from chipiron.environments.chess.board import create_board
 from chipiron.environments.chess.board.iboard import PieceMap
 from chipiron.environments.chess.board.utils import FenPlusHistory, square_rotate
-from chipiron.players.boardevaluators.neural_networks.models.tranformer_one import (
+from chipiron.players.boardevaluators.neural_networks.models.transformer_one import (
     TransformerArgs,
 )
 

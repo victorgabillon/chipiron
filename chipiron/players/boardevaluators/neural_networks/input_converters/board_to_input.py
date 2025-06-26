@@ -28,7 +28,7 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.represent
 from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
     create_board_representation_factory,
 )
-from chipiron.players.boardevaluators.neural_networks.models.tranformer_one import (
+from chipiron.players.boardevaluators.neural_networks.models.transformer_one import (
     TransformerArgs,
 )
 

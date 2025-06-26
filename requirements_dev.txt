@@ -1,6 +1,6 @@
 pytest>=8.4.1
 pytest-cov>=6.0.0
-mypy>=1.15.0
+mypy>=1.16.1
 flake8>=7.1.1
 tox>=4.27.0
 types-PyYAML>=6.0.12.12
