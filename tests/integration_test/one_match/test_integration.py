@@ -3,16 +3,17 @@ import logging
 import time
 from typing import Any
 
+from parsley_coco import make_partial_dataclass_with_optional_paths
+
 import chipiron.scripts as scripts
-from chipiron.games.match.MatchTag import MatchConfigTag
 from chipiron.games.match.match_args import MatchArgs
+from chipiron.games.match.MatchTag import MatchConfigTag
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.factory import create_script
 from chipiron.scripts.one_match.one_match import MatchScriptArgs
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.logger import chipiron_logger, suppress_logging
-from parsley_coco import make_partial_dataclass_with_optional_paths
 
 # we need to not use multiprocessing to be able to use pytest therefore use setting_cubo  and not setting_jime
 

@@ -1,10 +1,12 @@
-import time
 import logging
+import time
+
+from parsley_coco import make_partial_dataclass_with_optional_paths
+
 import chipiron.scripts as scripts
 from chipiron.scripts.factory import create_script
 from chipiron.scripts.replay_game.replay_game import ReplayScriptArgs
 from chipiron.utils.logger import chipiron_logger, suppress_logging
-from parsley_coco import make_partial_dataclass_with_optional_paths
 
 # we need to not use multiprocessing to be able to use pytest therefore use setting_cubo  and not setting_jime
 

@@ -103,7 +103,7 @@ class ITreeNode[T: ITreeNode[Any]](Protocol):
         """
 
     @all_legal_moves_generated.setter
-    def all_legal_moves_generated(self) -> None:
+    def all_legal_moves_generated(self, value: bool) -> None:
         """
         Set the flag indicating that all legal moves have been generated.
         """
