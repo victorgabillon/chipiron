@@ -28,11 +28,15 @@ RUN rm /usr/lib/python*/EXTERNALLY-MANAGED && \
     && pip install --upgrade gdown
 
 
-
-RUN python3 -m pip install torch==2.2.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
-
 ADD ./requirements/base.txt requirements.txt
 ADD ./MakefileForTest.mk Makefile
+
+# Install Python packages
+RUN pip install --upgrade pip
+RUN pip install -r requirements/base.txt --progress-bar=off -v
+RUN python3 -m pip install torch==2.2.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+
+
 
 RUN .venv/bin/pip install --upgrade pip
 
