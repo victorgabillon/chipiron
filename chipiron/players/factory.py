@@ -8,6 +8,7 @@ from typing import Any
 
 import chess
 
+import chipiron.players.move_selector.treevalue as treevalue
 from chipiron.players.boardevaluators import table_base
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
@@ -26,7 +27,6 @@ from . import move_selector
 from .game_player import GamePlayer
 from .player import Player
 from .player_args import PlayerFactoryArgs
-import chipiron.players.move_selector.treevalue as treevalue
 
 
 def create_chipiron_player(

@@ -18,6 +18,7 @@ docs/_build/
 stockfish/*
 .coverage
 
+mlruns/
 
 chipiron/scripts/league/league_data/*
 chipiron/scripts/*/outputs/*
@@ -25,6 +26,8 @@ chipiron/runs/*
 *.egg-info/
 chipiron/scripts/one_match/outputs/*
 chipiron/scripts/learn_nn_supervised/learn_nn_supervised_outputs/*
+chipiron/scripts/learn_from_scratch_value_and_fixed_boards/learn_from_scratch_outputs/*
+
 ## Core latex/pdflatex auxiliary files:
 *.aux
 *.lof

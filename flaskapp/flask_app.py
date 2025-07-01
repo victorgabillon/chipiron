@@ -1,17 +1,15 @@
-from encodings.punycode import T
 import json
 import random
+from encodings.punycode import T
 
 from flask import Flask, render_template, request
 from flask_bootstrap import Bootstrap4
 
 from chipiron.environments.chess.board import BoardChi, create_board_chi
-from chipiron.environments.chess.board.utils import FenPlusHistory
+from chipiron.environments.chess.board.utils import FenPlusHistory, fen
 from chipiron.players.factory import create_chipiron_player
 from chipiron.players.move_selector.move_selector import MoveRecommendation
 from chipiron.scripts.chipiron_args import ImplementationArgs
-from chipiron.environments.chess.board.utils import fen
-
 
 # Uncomment and populate this variable in your code:
 PROJECT = "chipironchess"
