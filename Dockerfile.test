@@ -31,14 +31,19 @@ RUN rm /usr/lib/python*/EXTERNALLY-MANAGED && \
 ADD ./requirements/base.txt requirements.txt
 ADD ./MakefileForTest.mk Makefile
 
+
+RUN .venv/bin/pip install --upgrade pip
+
+
 # Install Python packages
-RUN pip install --upgrade pip
-RUN pip install -r requirements/base.txt --progress-bar=off -v
+RUN apt-get remove -y python3-numpy
+RUN pip install numpy==1.26.4
+
+RUN pip install -r requirements.txt --progress-bar=off -v
 RUN python3 -m pip install torch==2.2.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
 
 
-RUN .venv/bin/pip install --upgrade pip
 
 # Get Rust
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
@@ -67,4 +72,4 @@ USER testuser:test
 # Timeout is set to 0 to disable the timeouts of the workers to allow Cloud Run to handle instance scaling.
 
 
-CMD ["python3, "main_chipiron_.py"]
+CMD ["python3", "chipiron/scripts/main_chipiron.py"]
