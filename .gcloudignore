@@ -13,7 +13,22 @@
 .git
 .gitignore
 
+
 # Python pycache:
 __pycache__/
 # Ignored by the build system
 /setup.cfg
+
+**/*outputs/*
+
+.tox
+.mypy_cache
+
+data/syzygy-tables/
+data/data_chipiron/
+data/puzzles/
+data/reference_games/
+data/trees/
+
+chipiron/scripts/stockfish/
+chipiron/displays

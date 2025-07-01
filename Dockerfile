@@ -1,65 +1,64 @@
-# Dockerfile
-FROM ubuntu:22.04
+# Use official Python 3.12 slim image
+FROM python:3.12-slim
 
-# Allow statements and log messages to immediately appear in the logs
-ENV PYTHONPATH "${PYTHONPATH}:."
-ENV PYTHONUNBUFFERED True
-
-# Copy local code to the container image.
-ENV APP_HOME /back-end
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV APP_HOME=/back-end
 WORKDIR $APP_HOME
 
-RUN set -xe \
-    && apt-get update \
-    && apt-get install python3.11 -y \
-    && apt-get install python3-pip -y
 
-RUN rm -rf /usr/share/dotnet
-RUN rm -rf /opt/ghc
-RUN rm -rf "/usr/local/share/boost"
-RUN rm -rf "$AGENT_TOOLSDIRECTORY"
 
-RUN apt install libegl1 -y
-RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt install python3-opencv -y
-RUN pip install gdown
+RUN apt-get update && apt-get install -y build-essential
+RUN apt-get install -y python3-dev
+RUN apt-get install -y libffi-dev
+RUN apt-get install -y libssl-dev
+RUN apt-get install -y cargo
+RUN apt-get install -y gcc
+RUN apt-get install -y g++
+RUN apt-get install -y make
+RUN apt-get install -y    curl
+RUN apt-get install -y    pkg-config
 
-RUN pip install --no-cache-dir --upgrade pip
-RUN apt-get install python3-tk -y
+RUN pip install --upgrade pip setuptools wheel build
 
-RUN apt-get install wget
-RUN apt-get install curl
+
+# Copy application code
+COPY requirements/ requirements/
+
+
+# Install Rust for building Rust-based Python packages
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+ENV PATH="/root/.cargo/bin:$PATH"
+
+RUN cargo install cargo-update
+RUN cargo search serde || true  # Trigger index fetch early, avoids hanging during `pip install`
+
 RUN apt install libxcb-cursor0  libxcb-xinerama0  '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev -y
-RUN pip3 install torch==2.2.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+RUN apt-get update && apt-get install -y libgl1-mesa-glx libegl1-mesa
 
-ADD ./requirements_light.txt requirements.txt
-ADD ./MakefileForTest.mk Makefile
 
-RUN make init
+# Install Python packages
+RUN pip install --upgrade pip
+RUN pip install -r requirements/base.txt --progress-bar=off -v
+RUN pip install -r requirements/flask.txt --progress-bar=off -v
+RUN pip install torch==2.2.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
-RUN pip uninstall opencv-python
-RUN pip install opencv-python-headless
+# Add and run Makefile
+COPY MakefileForTest.mk Makefile
 
-ADD . .
+# Copy application code
+COPY . .
 
-RUN chmod -R 777 tests
-RUN chmod -R 777 chipiron
+# Fix permissions (Cloud Run uses rootless container runtime)
+RUN chmod -R 777 tests chipiron
+RUN chmod -R 777 flaskapp
 
-RUN addgroup --system test
-RUN adduser --system testuser --ingroup test
 
+# Add non-root user
+RUN addgroup --system test && \
+    adduser --system testuser --ingroup test
 USER testuser:test
 
-
-# Run the web service on container startup. Here we use the gunicorn
-# webserver, with one worker process and 8 threads.
-# For environments with multiple CPU cores, increase the number of workers
-# to be equal to the cores available.
-# Timeout is set to 0 to disable the timeouts of the workers to allow Cloud Run to handle instance scaling.
-
-
-# Run the web service on container startup. Here we use the gunicorn
-# webserver, with one worker process and 8 threads.
-# For environments with multiple CPU cores, increase the number of workers
-# to be equal to the cores available.
-# Timeout is set to 0 to disable the timeouts of the workers to allow Cloud Run to handle instance scaling.
-CMD HOME=/root exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 flaskapp.flask_app:app
+# Cloud Run will inject PORT, so we bind to it
+ENV HOME=/root
+CMD exec gunicorn --bind 0.0.0.0:${PORT} --workers 1 --threads 8 --timeout 0 flaskapp.flask_app:app

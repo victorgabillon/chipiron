@@ -1,3 +1,4 @@
+from encodings.punycode import T
 import json
 import random
 
@@ -9,6 +10,8 @@ from chipiron.environments.chess.board.utils import FenPlusHistory
 from chipiron.players.factory import create_chipiron_player
 from chipiron.players.move_selector.move_selector import MoveRecommendation
 from chipiron.scripts.chipiron_args import ImplementationArgs
+from chipiron.environments.chess.board.utils import fen
+
 
 # Uncomment and populate this variable in your code:
 PROJECT = "chipironchess"
@@ -51,20 +54,20 @@ def index():
 
 
 # @app.route('/move/<int:depth>/')
-@app.route("/move/<int:depth>--<path:fen>/", methods=["GET", "POST"])
-def get_move(depth, fen):
-    print("depth", depth, type(depth))
-    print("CalculatingR...")
-    print("fen", fen, type(fen))
+@app.route("/move/<path:fen_>/", methods=["GET", "POST"])
+def get_move(fen_: fen):
+    print("Calculating...")
+    print("fen", fen_, type(fen_))
     random_generator = random.Random()
     player = create_chipiron_player(
-        depth,
         implementation_args=ImplementationArgs(),
         universal_behavior=False,
         random_generator=random_generator,
+        tree_move_limit=500,
     )
+
     move_reco: MoveRecommendation = player.select_move(
-        fen_plus_history=FenPlusHistory(current_fen=fen), seed_int=0
+        fen_plus_history=FenPlusHistory(current_fen=fen_), seed_int=0
     )
     print("Move found!", move_reco.move)
     print()

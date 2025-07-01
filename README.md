@@ -17,6 +17,12 @@ and its rust version :https://github.com/niklasf/shakmaty
 
 It also integrates code from : https://github.com/oakmac/chessboardjs/
 
+## Play Online against Chipiron
+
+Play at
+[this website](https://chipiron-759534873716.europe-west1.run.app/) !
+
+
 ## Requirements
 
 * Python 3.12
@@ -57,7 +63,7 @@ make init
 Starts a gui to choose your options of play.
 
 ```console
-python3 chipiron/scripts/main_chipiron.py 
+python3 chipiron/scripts/main_chipiron.py
 ```
 
 ### Other Scripts:
@@ -91,12 +97,16 @@ python3 chipiron/scripts/main_chipiron.py --script_name learn_nn --config_file_n
 ```
 
 
-<!---### Script: learn nn from supervised datasets 
+<!---### Script: learn nn from supervised datasets
 This learns Neural Networks from a database of labelled boards.
 ```console
 python3 main_chipiron.py --script_name learn_nn --config_file_name scripts/learn_nn_supervised/exp_options.yaml
 ```
 -->
+
+
+
+
 
 ## Contributing
 
