@@ -14,7 +14,6 @@ from PySide6.QtWidgets import QApplication
 
 import chipiron as ch
 import chipiron.displays as display
-
 from chipiron.environments.chess.board import BoardFactory, create_board_factory
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_factories import create_match_manager_from_args
