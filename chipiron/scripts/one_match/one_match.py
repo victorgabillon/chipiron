@@ -13,6 +13,8 @@ import yaml
 from PySide6.QtWidgets import QApplication
 
 import chipiron as ch
+import chipiron.displays as display
+
 from chipiron.environments.chess.board import BoardFactory, create_board_factory
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_factories import create_match_manager_from_args
@@ -107,7 +109,7 @@ class OneMatchScript:
                 use_rust_boards=args.implementation_args.use_rust_boards,
                 sort_legal_moves=args.base_script_args.universal_behavior,
             )
-            self.window: ch.disp.MainWindow = ch.disp.MainWindow(
+            self.window: display.MainWindow = display.MainWindow(
                 gui_mailbox=gui_thread_mailbox,
                 main_thread_mailbox=self.match_manager.game_manager_factory.main_thread_mailbox,
                 board_factory=board_factory,

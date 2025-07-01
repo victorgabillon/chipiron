@@ -11,6 +11,10 @@ import chess
 from chipiron.players.boardevaluators import table_base
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
+from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
+    StoppingCriterionTypes,
+    TreeMoveLimitArgs,
+)
 from chipiron.players.player_args import PlayerArgs
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.utils.logger import chipiron_logger
@@ -22,6 +26,7 @@ from . import move_selector
 from .game_player import GamePlayer
 from .player import Player
 from .player_args import PlayerFactoryArgs
+import chipiron.players.move_selector.treevalue as treevalue
 
 
 def create_chipiron_player(
@@ -29,6 +34,7 @@ def create_chipiron_player(
     universal_behavior: bool,
     random_generator: random.Random,
     queue_progress_player: queue.Queue[IsDataclass] | None = None,
+    tree_move_limit: int | None = None,
 ) -> Player:
     """
     Creates the chipiron champion/representative/standard/default player
@@ -44,6 +50,19 @@ def create_chipiron_player(
     )
 
     args_player: PlayerArgs = PlayerConfigTag.CHIPIRON.get_players_args()
+
+    if tree_move_limit is not None:
+        # todo find a prettier way to do this
+        assert isinstance(
+            args_player.main_move_selector, treevalue.TreeAndValuePlayerArgs
+        )
+        assert isinstance(
+            args_player.main_move_selector.stopping_criterion, TreeMoveLimitArgs
+        )
+
+        args_player.main_move_selector.stopping_criterion.tree_move_limit = (
+            tree_move_limit
+        )
 
     main_move_selector: move_selector.MoveSelector | None = (
         move_selector.create_main_move_selector(

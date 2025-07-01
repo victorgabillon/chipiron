@@ -13,3 +13,5 @@ chipiron/scripts/stockfish/
 
 .idea
 .git
+.tox
+.mypy_cache
