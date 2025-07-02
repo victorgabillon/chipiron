@@ -1,6 +1,0 @@
-sudo docker run -u=$(id -u $USER):$(id -g $USER) -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw --rm totodock
-
-PORT=8080 && sudo docker run -p 9090:${PORT} -e PORT=${PORT} totodockflask
-
-
-python3 -m twine upload --repository testpypi dist/*.tar.gz
