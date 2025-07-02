@@ -2,6 +2,19 @@
 requires = ["setuptools>=42"]
 build-backend = "setuptools.build_meta"
 
+
+[project]
+name = "chipiron"
+version = "0.1.0"
+description = "chipiron plays chess"
+dependencies = [
+    # tes dépendances ici
+]
+
+[tool.setuptools.packages.find]
+include = ["chipiron"]
+
+
 [tool.pytest.ini_options]
 addopts = "--cov=chipiron"
 testpaths = [
