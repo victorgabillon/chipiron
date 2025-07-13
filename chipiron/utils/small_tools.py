@@ -3,12 +3,15 @@ This module contains utility functions and classes for small tools.
 """
 
 import copy
+import importlib
 import os
 import sys
 import typing
 from dataclasses import dataclass
+from importlib.resources import files
 from itertools import islice
-from typing import Any
+from pathlib import Path
+from typing import Any, Union
 
 import numpy as np
 import numpy.typing as nptyping
@@ -220,3 +223,39 @@ def distance_number_to_interval(value: float, interval: Interval) -> float:
         return value - interval.max_value
     else:
         return 0
+
+
+def resolve_package_path(path_to_file: Union[str, Path]) -> str:
+    """
+    Replace 'package://' at the start of the path with the chipiron package root.
+
+    Args:
+        path_to_file (str or Path): Input path, possibly starting with 'package://'.
+
+    Returns:
+        str: Resolved absolute path.
+    """
+    if isinstance(path_to_file, Path):
+        path_to_file = str(path_to_file)
+
+    if path_to_file.startswith("package://"):
+        relative_path = path_to_file[len("package://") :]
+        resource = files("chipiron").joinpath(relative_path)
+
+        if not resource.is_file() and not resource.is_dir():
+            raise FileNotFoundError(
+                f"Resource not found: {relative_path} in package 'chipiron'"
+            )
+
+        return str(resource)  # You can also use `.as_posix()` if you need POSIX format
+    return str(path_to_file)
+
+
+def get_package_root_path(package_name: str) -> str:
+    spec = importlib.util.find_spec(package_name)
+    if spec is None or spec.origin is None:
+        raise ImportError(f"Cannot find package '{package_name}'")
+
+    # Get the package directory, not just the __init__.py file
+    package_path = os.path.dirname(spec.origin)
+    return package_path

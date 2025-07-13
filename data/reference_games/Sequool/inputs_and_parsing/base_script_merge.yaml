@@ -1,9 +1,0 @@
-experiment_output_folder: scripts/one_match/outputs/Tuesday-02-06-2024--13:42:34:814637
-file_name_match_setting: setting_tron.yaml
-file_name_player_one: Sequool.yaml
-file_name_player_ones: Sequool.yaml
-file_name_player_two: Uniform.yaml
-file_name_player_twos: RecurZipfBase3.yaml
-gui: true
-profiling: false
-seed: 11

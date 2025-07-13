@@ -1,5 +1,6 @@
 import os
 from enum import Enum
+from importlib.resources import as_file, files
 
 import parsley_coco
 
@@ -58,16 +59,17 @@ class PlayerConfigTag(str, Enum):
         Raises:
             ValueError: If the player configuration tag is not recognized.
         """
-        path_player: path
         if self is PlayerConfigTag.CHIPIRON:
-            path_player = os.path.join(
+            resource = files("chipiron").joinpath(
                 "data/players/player_config/chipiron/chipiron.yaml"
             )
         else:
-            path_player = os.path.join(
-                "data/players/player_config", self.value + ".yaml"
+            resource = files("chipiron").joinpath(
+                f"data/players/player_config/{self.value}.yaml"
             )
-        return path_player
+
+        with as_file(resource) as real_path:
+            return str(real_path)  # Or pass it immediately to another function
 
     def get_players_args(self) -> PlayerArgs:
         """Get the player arguments from the YAML file.
@@ -81,6 +83,7 @@ class PlayerConfigTag(str, Enum):
             yaml_path=self.get_yaml_file_path(),
             base_cls=PlayerArgs,
             raise_error_with_nones=False,
+            package_name=files("chipiron"),
         )
         return player_args
 

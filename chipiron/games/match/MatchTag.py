@@ -1,5 +1,6 @@
 import os
 from enum import Enum
+from importlib.resources import as_file, files
 
 import parsley_coco
 
@@ -16,8 +17,11 @@ class MatchConfigTag(str, Enum):
     Tron = "setting_tron"
 
     def get_yaml_file_path(self) -> path:
-        path_player: path = os.path.join("data/settings/OneMatch", self.value + ".yaml")
-        return path_player
+        resource = files("chipiron").joinpath(
+            "data/settings/OneMatch", self.value + ".yaml"
+        )
+        with as_file(resource) as path_player:
+            return path_player
 
     def get_match_settings_args(self) -> MatchSettingsArgs:
         match_args: MatchSettingsArgs = (

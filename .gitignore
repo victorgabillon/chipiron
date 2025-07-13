@@ -13,6 +13,11 @@ data/syzygy-tables/
 data/gui/*
 data/datasets/*
 data/players/board_evaluators/nn*
+
+dist/
+
+external_data/
+
 docs/_build/
 
 stockfish/*

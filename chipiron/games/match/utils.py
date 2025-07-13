@@ -4,6 +4,7 @@ Module to fetch, modify and convert the match settings and game settings.
 
 import os
 from dataclasses import asdict, dataclass
+from importlib.resources import as_file, files
 from shutil import copyfile
 
 import parsley_coco
@@ -50,27 +51,36 @@ def fetch_match_games_args_convert_and_save(
 
     assert isinstance(match_args.match_setting, MatchSettingsArgs)
     file_game: path = match_args.match_setting.game_setting_file
-    path_game_setting: path = os.path.join("data/settings/GameSettings", file_game)
 
-    if experiment_output_folder is not None:
-        path_games: path = os.path.join(experiment_output_folder, "games")
-        ch.tool.mkdir_if_not_existing(path_games)
-        copyfile(
-            src=path_game_setting, dst=os.path.join(experiment_output_folder, file_game)
+    resource = files("chipiron").joinpath("data/settings/GameSettings", str(file_game))
+
+    with as_file(resource) as path_game_setting:
+        if experiment_output_folder is not None:
+            path_games = os.path.join(experiment_output_folder, "games")
+            ch.tool.mkdir_if_not_existing(path_games)
+            copyfile(
+                src=path_game_setting,
+                dst=os.path.join(experiment_output_folder, file_game),
+            )
+            with open(
+                os.path.join(experiment_output_folder, "match_setting"), "w"
+            ) as f:
+                yaml.dump(asdict(match_args), f)
+
+    # Repeat for second resource
+    resource2 = files("chipiron").joinpath(
+        "data/settings/GameSettings", str(match_args.match_setting.game_setting_file)
+    )
+    with as_file(resource2) as game_file_path:
+        args_game: game.GameArgs = parsley_coco.resolve_yaml_file_to_base_dataclass(
+            yaml_path=game_file_path,
+            base_cls=game.GameArgs,
+            raise_error_with_nones=False,
         )
-        with open(os.path.join(experiment_output_folder, "match_setting"), "w") as f:
-            yaml.dump(asdict(match_args), f)
 
-    game_file_path: path = os.path.join(
-        "data/settings/GameSettings", match_args.match_setting.game_setting_file
-    )
-    args_game: game.GameArgs = parsley_coco.resolve_yaml_file_to_base_dataclass(
-        yaml_path=game_file_path, base_cls=game.GameArgs, raise_error_with_nones=False
-    )
+        if profiling:
+            args_game.max_half_moves = 1
+        else:
+            args_game.max_half_moves = None
 
-    if profiling:
-        args_game.max_half_moves = 1
-    else:
-        args_game.max_half_moves = None
-
-    return match_args.match_setting, args_game
+        return match_args.match_setting, args_game

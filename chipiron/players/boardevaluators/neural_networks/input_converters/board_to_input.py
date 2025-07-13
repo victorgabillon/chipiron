@@ -99,25 +99,33 @@ def create_board_to_input(
             board_to_input_convert = create_board_to_input_from_representation(
                 internal_tensor_representation_type=InternalTensorRepresentationType.NOBUG364
             )
+
         case ModelInputRepresentationType.PIECE_MAP:
 
-            def board_to_input_convert(board: IBoard) -> torch.Tensor:
+            def board_to_input_convert_transformer(board: IBoard) -> torch.Tensor:
                 return build_transformer_input(
                     piece_map=board.piece_map(),
                     board_turn=board.turn,
                     transformer_args=TransformerArgs(),
                 )
 
+            board_to_input_convert = board_to_input_convert_transformer
+
         case ModelInputRepresentationType.PIECE_DIFFERENCE:
 
-            def board_to_input_convert(board: IBoard) -> torch.Tensor:
+            def board_to_input_convert_one_side(board: IBoard) -> torch.Tensor:
                 return transform_board_pieces_one_side(board, False)
+
+            board_to_input_convert = board_to_input_convert_one_side
 
         case ModelInputRepresentationType.BOARD_PIECES_TWO_SIDES:
 
-            def board_to_input_convert(board: IBoard) -> torch.Tensor:
+            def board_to_input_convert_two_sides(board: IBoard) -> torch.Tensor:
                 return transform_board_pieces_two_sides(board, False)
+
+            board_to_input_convert = board_to_input_convert_two_sides
 
         case other:
             raise Exception(f"no matching case for {other} in {__name__}")
+
     return board_to_input_convert

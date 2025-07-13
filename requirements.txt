@@ -1,4 +1,0 @@
---requirement requirements/base.txt
---requirement requirements/dev.txt
---requirement requirements/extra.txt
---requirement requirements/flask.txt

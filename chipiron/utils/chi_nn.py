@@ -3,12 +3,14 @@ Module for the ChiNN class
 """
 
 import sys
+import traceback
 
 import torch
 import torch.nn as nn
 
 from chipiron.utils import path
 from chipiron.utils.logger import chipiron_logger
+from chipiron.utils.small_tools import resolve_package_path
 
 
 class ChiNN(nn.Module):
@@ -50,10 +52,10 @@ class ChiNN(nn.Module):
         """
         chipiron_logger.info(f"load_or_init_weights from {path_to_param_file}")
         try:  # load
-            with open(path_to_param_file, "rb") as fileNNR:
-                chipiron_logger.info(
-                    f"loading the existing param file {path_to_param_file}"
-                )
+
+            resolved_path = resolve_package_path(str(path_to_param_file))
+            with open(resolved_path, "rb") as fileNNR:
+                chipiron_logger.info(f"loading the existing param file {resolved_path}")
                 if torch.cuda.is_available():
                     self.load_state_dict(torch.load(fileNNR))
                 else:
@@ -62,7 +64,10 @@ class ChiNN(nn.Module):
                     )
 
         except EnvironmentError:  # init
-            chipiron_logger.error(f"no file {path_to_param_file}")
+            # Print the full traceback to stderr
+            traceback.print_exc()
+
+            chipiron_logger.error(f"no file {path_to_param_file} at {resolved_path}")
             sys.exit(
                 "Error: no NN weights file and no rights to create it for file {}".format(
                     path_to_param_file,

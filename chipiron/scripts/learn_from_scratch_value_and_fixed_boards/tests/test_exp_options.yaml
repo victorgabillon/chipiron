@@ -49,7 +49,7 @@ evaluating_player_args:
       tree_move_limit: 1000
     board_evaluator:
       type: neural_network
-      path_to_nn_folder: 'data/players/board_evaluators/nn_pytorch/nn_pp2d2_2_prelu/param_prelu'
+      path_to_nn_folder: 'chipiron/data/players/board_evaluators/nn_pytorch/nn_pp2d2_2_prelu/param_prelu'
       internal_representation_type: '364_bug'
       syzygy_evaluation: True
   syzygy_play: True

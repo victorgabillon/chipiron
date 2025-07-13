@@ -37,7 +37,7 @@ def test_check_in_one(use_rusty_board: bool):
 
 @pytest.mark.parametrize(("use_rusty_board"), (True, False))
 def test_check_in_two(use_rusty_board: bool):
-    with open("data/puzzles/mate_in_2_db_small.pickle", "rb") as file:
+    with open("external_data/puzzles/mate_in_2_db_small.pickle", "rb") as file:
         dict_fen_move = pickle.load(file=file)
 
     assert dict_fen_move
@@ -56,7 +56,6 @@ def test_check_in_two(use_rusty_board: bool):
             use_rust=implementation_args.use_rust_boards
         )
 
-        print("rrrrrrrrrrrrrrrrrrrrrrrrrrrr")
         player = create_player(
             args=PlayerConfigTag.UNIFORM_DEPTH_3.get_players_args(),
             syzygy=syzygy_table,
@@ -75,6 +74,5 @@ if __name__ == "__main__":
     test_check_in_one(use_rusty_board=True)
     test_check_in_one(use_rusty_board=False)
 
-    print("EEEEEEEEEEEEEEEEEEE")
     test_check_in_two(use_rusty_board=True)
     test_check_in_two(use_rusty_board=False)
