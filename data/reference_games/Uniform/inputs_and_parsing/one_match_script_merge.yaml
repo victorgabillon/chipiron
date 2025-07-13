@@ -1,9 +1,0 @@
-config_file_name: scripts/one_match/inputs/base/exp_options.yaml
-experiment_output_folder: data/reference_games/Uniform
-file_name_match_setting: setting_tron.yaml
-file_name_player_one: players_for_test_purposes/Uniform.yaml
-file_name_player_two: players_for_test_purposes/Uniform.yaml
-match: {}
-player_one: {}
-player_two: {}
-seed: 11

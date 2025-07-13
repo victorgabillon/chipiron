@@ -137,7 +137,7 @@ def create_game_board_evaluator_not_observable(
         board_evaluator_stock = None
 
     chi_board_eval_yaml_path: str = (
-        "data/players/board_evaluator_config/base_chipiron_board_eval.yaml"
+        "chipiron/data/players/board_evaluator_config/base_chipiron_board_eval.yaml"
     )
 
     chi_board_eval_dict: dict[Any, Any] = yaml_fetch_args_in_file(

@@ -1,4 +1,4 @@
 ? chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/prelu_no_bug/param_multi_layer_perceptron_772_20_1_parametric_relu_hyperbolic_tangent_364_no_bug_player_to_move.ptparam_multi_layer_perceptron_772_20_1_parametric_relu_hyperbolic_tangent_364_no_bug_player_to_move
 : evaluation: 0.2372242442208442
   number_of_model_parameters: 15482
-  time_of_evaluation: 2025-06-25 17:21:40.677064
+  time_of_evaluation: 2025-07-13 23:05:52.253849

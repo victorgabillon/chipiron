@@ -9,6 +9,7 @@ test_tree_value.py
 
 import os
 import random
+from importlib.resources import as_file, files
 from typing import Any
 
 import chess
@@ -89,15 +90,19 @@ def test_random(use_rust_boards: bool) -> None:
 # the list in PlayerConfigTag should correspond to files existing in the data/players/player_config folder
 def test_player_config_files_exist() -> None:
     """Test to ensure all player configuration files listed in PlayerConfigTag exist."""
-    base_path = "data/players/player_config"
+    base_resource = files("chipiron").joinpath("data/players/player_config")
+
     for tag in PlayerConfigTag:
-        file_path = os.path.join(base_path, tag.value + ".yaml")
         if tag is PlayerConfigTag.CHIPIRON:
-            file_path = os.path.join(base_path, "chipiron/chipiron.yaml")
-        assert os.path.exists(file_path), f"File does not exist: {file_path}"
+            resource = base_resource.joinpath("chipiron/chipiron.yaml")
+        else:
+            resource = base_resource.joinpath(tag.value + ".yaml")
+
+        with as_file(resource) as file_path:
+            assert file_path.exists(), f"File does not exist: {file_path}"
 
 
 if __name__ == "__main__":
+    test_player_config_files_exist()
     for use_rusty_board in [True, False]:
         test_random(use_rust_boards=use_rusty_board)
-    test_player_config_files_exist()

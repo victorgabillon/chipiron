@@ -1,0 +1,27 @@
+
+
+# Install with: pip install -r requirements-dev.txt
+
+# Automation
+tox>=4.27.0
+types-PyYAML>=6.0.12.12
+
+# Testing
+pytest>=8.4.1
+coverage
+pytest-cov>=6.0.0
+
+# Linting & formatting
+flake8>=7.3.0
+black>=25.1.0
+isort>=6.0.1
+
+# Type checking
+mypy>=1.16.1
+
+# Building & publishing
+build
+twine
+
+# Documentation
+sphinx

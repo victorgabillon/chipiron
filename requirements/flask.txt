@@ -1,6 +1,0 @@
-# for the web app
-flask
-flask_cors
-gunicorn
-werkzeug
-bootstrap-flask

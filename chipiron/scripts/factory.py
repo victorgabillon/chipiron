@@ -3,12 +3,14 @@ factory for scripts module
 """
 
 import logging
+from importlib.metadata import files
 from typing import Any
 
 from parsley_coco import Parsley, create_parsley
 
 from chipiron.utils.dataclass import DataClass
 from chipiron.utils.logger import chipiron_logger
+from chipiron.utils.small_tools import get_package_root_path
 
 from .get_script import get_script_type_from_script_class_name
 from .iscript import IScript
@@ -52,6 +54,7 @@ def create_script(
         should_parse_command_line_arguments=should_parse_command_line_arguments,
         logger=chipiron_logger,  # not working at the moment
         verbosity=logging.INFO,
+        package_name=get_package_root_path("chipiron"),
     )
 
     base_script: Script[Any] = Script(

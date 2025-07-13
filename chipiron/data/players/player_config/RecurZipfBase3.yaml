@@ -1,0 +1,21 @@
+name: RecurZipfBase3
+main_move_selector:
+  type: TreeAndValue
+  node_selector:
+    type: RecurZipfBase
+    move_explorer_priority: priority_best
+  opening_type: all_children
+  recommender_rule:
+    type: almost_equal_logistic
+    temperature: 2
+  stopping_criterion:
+      type: tree_move_limit
+      tree_move_limit: 1000
+  board_evaluator:
+    type: neural_network
+    internal_representation_type: '364_bug'
+    syzygy_evaluation: True
+    neural_nets_model_and_architecture:
+      model_weights_file_name: "chipiron/data/players/board_evaluators/nn_pytorch/prelu_no_bug/param_multi_layer_perceptron_772_20_1_parametric_relu_hyperbolic_tangent_364_no_bug_player_to_move.pt"
+      nn_architecture_args_path_to_yaml_file: 'chipiron/data/players/board_evaluators/nn_pytorch/prelu_no_bug/architecture.yaml'
+syzygy_play: True

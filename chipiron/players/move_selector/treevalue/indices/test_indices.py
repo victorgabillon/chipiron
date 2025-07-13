@@ -249,12 +249,12 @@ def check_index(index_computation: IndexComputationType, tree_file: path) -> Tes
 
     """
     try:
-        tree_path = f"data/trees/{tree_file}/{tree_file}_{index_computation.value}.yaml"
+        tree_path = f"external_data/trees/{tree_file}/{tree_file}_{index_computation.value}.yaml"
     except Exception:
         print(f"!!!!!!Warning!!!!! : no testing file {tree_path}")
         return TestResult.WARNING
 
-    tree_path = f"data/trees/{tree_file}/{tree_file}.yaml"
+    tree_path = f"external_data/trees/{tree_file}/{tree_file}.yaml"
     tree: MoveAndValueTree = make_tree_from_file(
         index_computation=index_computation, file_path=tree_path
     )
@@ -268,7 +268,9 @@ def check_index(index_computation: IndexComputationType, tree_file: path) -> Tes
     # print_all_indices(
     #    tree
     # )
-    file_index = f"data/trees/{tree_file}/{tree_file}_{index_computation.value}.yaml"
+    file_index = (
+        f"external_data/trees/{tree_file}/{tree_file}_{index_computation.value}.yaml"
+    )
     check_from_file(file_path=file_index, tree=tree)
 
     return TestResult.PASSED

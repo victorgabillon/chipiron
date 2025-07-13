@@ -4,6 +4,7 @@ Module defining the starting position arguments for the chess board.
 
 from dataclasses import dataclass
 from enum import Enum
+from importlib.resources import as_file, files
 from typing import Literal, Protocol
 
 from chipiron.environments.chess.board.board_tools import convert_to_fen
@@ -52,9 +53,11 @@ class FileStartingPositionArgs(StartingPositionArgs):
     file_name: str
 
     def get_fen(self) -> str:
-        with open("data/starting_boards/" + self.file_name, "r") as f:
-            ascii_board: str = str(f.read())
-            fen: str = convert_to_fen(ascii_board)
+        resource = files("chipiron").joinpath("data/starting_boards/" + self.file_name)
+        with as_file(resource) as real_path:
+            with open(real_path, "r", encoding="utf-8") as f:
+                ascii_board: str = str(f.read())
+                fen: str = convert_to_fen(ascii_board)
         return fen
 
 
