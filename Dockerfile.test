@@ -29,7 +29,7 @@ RUN rm /usr/lib/python*/EXTERNALLY-MANAGED && \
 
 
 ADD ./requirements/base.txt requirements.txt
-ADD ./MakefileForTest.mk Makefile
+ADD ./Makefile Makefile
 
 
 RUN .venv/bin/pip install --upgrade pip
