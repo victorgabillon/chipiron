@@ -31,7 +31,7 @@ dependencies = [
     "shakmaty_python_binding>=0.1.5",
     "gprof2dot",
     "mlflow",
-    "parsley_coco>=0.1.24",
+    "parsley_coco>=0.1.25",
     "gdown"
 ]
 license = "GPL-3.0-only"
@@ -57,7 +57,9 @@ chipiron = [
   "data/players/**/*.yaml",
   "data/players/**/*.pt",
   "data/settings/*.yaml",
-  "data/starting_boards/*.text"
+  "data/starting_boards/*.text",
+  "scripts/learn_nn_supervised/board_evaluators_common_training_data/**/*.yaml", # think about removing this for cleanliness at some point
+  "scripts/learn_nn_supervised/board_evaluators_common_training_data/**/*.pt",
 ]
 
 [tool.setuptools.packages.find]
