@@ -29,6 +29,7 @@ RUN rm /usr/lib/python*/EXTERNALLY-MANAGED && \
 
 
 ADD ./requirements_dev.txt requirements_dev.txt
+ADD ./pyproject.toml pyproject.toml
 ADD ./Makefile Makefile
 
 
