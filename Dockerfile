@@ -39,7 +39,7 @@ RUN .venv/bin/pip install --upgrade pip
 RUN apt-get remove -y python3-numpy
 RUN pip install numpy==1.26.4
 
-RUN pip install -r requirements.txt --progress-bar=off -v
+RUN pip install -e .
 RUN python3 -m pip install torch==2.2.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
 
