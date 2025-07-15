@@ -28,7 +28,7 @@ RUN rm /usr/lib/python*/EXTERNALLY-MANAGED && \
     && pip install --upgrade gdown
 
 
-ADD ./requirements/base.txt requirements.txt
+ADD ./requirements_dev.txt requirements_dev.txt
 ADD ./Makefile Makefile
 
 
