@@ -4,6 +4,7 @@ Module for creating board evaluators.
 
 import sys
 from dataclasses import dataclass
+from importlib.resources import as_file, files
 from typing import Any
 
 import dacite
@@ -136,8 +137,10 @@ def create_game_board_evaluator_not_observable(
     else:
         board_evaluator_stock = None
 
-    chi_board_eval_yaml_path: str = (
-        "chipiron/data/players/board_evaluator_config/base_chipiron_board_eval.yaml"
+    chi_board_eval_yaml_path: str = str(
+        files("chipiron").joinpath(
+            "data/players/board_evaluator_config/base_chipiron_board_eval.yaml"
+        )
     )
 
     chi_board_eval_dict: dict[Any, Any] = yaml_fetch_args_in_file(

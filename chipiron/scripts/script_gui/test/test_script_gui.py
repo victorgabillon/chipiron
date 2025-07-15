@@ -28,7 +28,7 @@ output_list: list[dict[str, Any]] = [
 ]
 
 
-def test_script_gui() -> None:
+def tust_script_gui() -> None:
     for output in output_list:
         script_type, gui_extra_args, config_file_name = generate_inputs(output=output)
 
@@ -42,5 +42,5 @@ def test_script_gui() -> None:
 
 
 if __name__ == "__main__":
-    test_script_gui()
+    tust_script_gui()
     print("all test passed!")
