@@ -192,9 +192,9 @@ class LearnNNScript:
         )
 
         if self.args.base_script_args.testing:
-            #mlflow.set_tracking_uri(
+            # mlflow.set_tracking_uri(
             #    uri=chipiron.utils.path_variables.ML_FLOW_URI_PATH_TEST
-            #)
+            # )
             with tempfile.TemporaryDirectory() as tmpdir:
                 mlflow.set_tracking_uri(f"file:{tmpdir}")  # <- Key line!
         else:

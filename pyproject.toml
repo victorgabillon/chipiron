@@ -60,8 +60,7 @@ chipiron = [
   "data/starting_boards/*.text",
   "scripts/learn_nn_supervised/board_evaluators_common_training_data/**/*.yaml", # think about removing this for cleanliness at some point
   "scripts/learn_nn_supervised/board_evaluators_common_training_data/**/*.pt",
-  "external_data/trees/**/*.yaml",
-
+  "tests/data/trees/**/*.yaml",
 ]
 
 [tool.setuptools.packages.find]

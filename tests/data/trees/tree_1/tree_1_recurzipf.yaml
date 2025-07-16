@@ -1,0 +1,43 @@
+nodes:
+  - id: 0
+    parents: None
+    value: 3
+    index: 0
+  - id: 1
+    parents : 0
+    value: 1
+    index: -.25    
+  - id: 2
+    parents : 0
+    value: 3
+    index: -.5
+  - id: 3
+    parents : 1
+    value: 1
+    index: -.1666666666666666666666666
+  - id: 4
+    parents : 1
+    value: 4
+    index: -0.08333333333333333333333333333333
+  - id: 5
+    parents : 2
+    value: 1
+    index: -0.33333333333333333333333333333333
+  - id: 6
+    parents : 2
+    value: 8
+    index: -.1666666666666666666666666
+  - id: 7
+    parents : 3
+    value: 1
+    index: -.125
+  - id: 8
+    parents : 3
+    value: 0
+    index: -0.0625
+  - id: 9
+    parents : 7
+    index: -0.1
+  - id: 10
+    parents : 7
+    index: -0.05  
