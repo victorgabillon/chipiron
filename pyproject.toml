@@ -21,7 +21,7 @@ dependencies = [
     "sortedcollections>=2.1.0",
     "pandas==2.2.0",
     "numpy==1.26.0",
-    "torch>=2.7.1",
+    "torch>=2.2.2",
     "torchinfo",
     "numba>=0.59.0rc1",
     "graphviz>=0.20.1",

@@ -18,26 +18,20 @@ RUN rm -f /usr/lib/python*/EXTERNALLY-MANAGED
 # Upgrade pip and install gdown
 RUN .venv/bin/pip install --upgrade pip setuptools wheel gdown
 
-# Copy project files
-COPY . .
+# Install torch first (before installing chipiron!)
+RUN .venv/bin/pip install torch==2.2.2+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
-# Remove system numpy and install required version
-RUN apt-get remove -y python3-numpy
-RUN .venv/bin/pip install numpy==1.26.4
-
-
-# After copying .venv setup
+# Copy only project metadata to install deps
 COPY pyproject.toml .
-COPY README.md .
-RUN .venv/bin/pip install ".[dev]"
-COPY . .
 
+# Install chipiron with dev dependencies
+RUN .venv/bin/pip install ".[dev]"
+
+# Now copy full codebase
+COPY . .
 
 # Install project in editable mode
 RUN .venv/bin/pip install -e .
-
-# Install torch (CPU version)
-RUN python3 -m pip install torch==2.7.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
 # Get Rust
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
