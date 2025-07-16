@@ -15,6 +15,14 @@ RUN python3 -m venv .venv
 # Remove EXTERNALLY-MANAGED if present
 RUN rm -f /usr/lib/python*/EXTERNALLY-MANAGED
 
+
+
+
+# Install required Python packages
+RUN .venv/bin/pip install opencv-python-headless
+
+
+
 # Upgrade pip and install gdown
 RUN .venv/bin/pip install --upgrade pip setuptools wheel gdown
 
@@ -42,10 +50,6 @@ RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 RUN make chipiron/syzygy-tables chipiron/data
-
-
-RUN python3 -m pip uninstall -y opencv-python
-RUN python3 -m pip install opencv-python-headless
 
 RUN chmod -R 777 chipiron
 RUN chmod -R 777 tests
