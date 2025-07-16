@@ -37,7 +37,7 @@ COPY . .
 RUN .venv/bin/pip install -e .
 
 # Install torch (CPU version)
-RUN python3 -m pip install torch==2.2.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+RUN python3 -m pip install torch==2.7.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
 # Get Rust
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
