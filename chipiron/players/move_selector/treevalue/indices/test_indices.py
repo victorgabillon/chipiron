@@ -249,7 +249,7 @@ def check_index(index_computation: IndexComputationType, tree_file: path) -> Tes
 
     """
 
-    tree_path = f"tests/data/{tree_file}/{tree_file}.yaml"
+    tree_path = f"tests/data/trees/{tree_file}/{tree_file}.yaml"
     tree: MoveAndValueTree = make_tree_from_file(
         index_computation=index_computation, file_path=tree_path
     )
