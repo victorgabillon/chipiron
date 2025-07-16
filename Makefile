@@ -15,7 +15,6 @@ DATA_DESTINATION=${ROOT_DIR}/data/
 init: chipiron/data chipiron/syzygy-tables chipiron/requirements
 
 chipiron/requirements:
-	python3 -m pip install --no-cache-dir -r  requirements.txt
 	pip install -e .
 
 chipiron/syzygy-tables:
