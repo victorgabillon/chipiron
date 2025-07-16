@@ -25,6 +25,14 @@ COPY . .
 RUN apt-get remove -y python3-numpy
 RUN .venv/bin/pip install numpy==1.26.4
 
+
+# After copying .venv setup
+COPY pyproject.toml .
+COPY README.md .
+RUN .venv/bin/pip install ".[dev]"
+COPY . .
+
+
 # Install project in editable mode
 RUN .venv/bin/pip install -e .
 
