@@ -4,6 +4,6 @@
 recursive-include chipiron/data/players *.yaml *.pt
 recursive-include chipiron/data/settings *.yaml
 recursive-include chipiron/data/starting_boards *.text
-recursive-include external_data/trees *.yaml
+recursive-include tests/data/trees *.yaml
 
 
