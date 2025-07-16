@@ -41,7 +41,8 @@ RUN .venv/bin/pip install -e .
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-RUN make init
+RUN make chipiron/syzygy-tables chipiron/data
+
 
 RUN python3 -m pip uninstall -y opencv-python
 RUN python3 -m pip install opencv-python-headless
