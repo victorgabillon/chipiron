@@ -17,3 +17,17 @@ python -m build
 
  - Upload to PyPI:
 twine upload dist/*
+
+
+## Docker
+
+docker build -t chipiron-x11 .
+
+
+sudo docker run --rm \
+  -e DISPLAY=$DISPLAY \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  --network=host \
+  -u $(id -u):$(id -g) \
+  chipiron-x11
+

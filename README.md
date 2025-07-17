@@ -33,6 +33,8 @@ Play at
 
 ## Installation
 
+
+### Make
 The following command will install the python packaged listed in requirements.txt, download syzygy tables, install
 stockfish, retrieve datasets and gui images...
 
@@ -55,6 +57,24 @@ make init
 ```
 
 </details>
+
+### Docker
+
+To build the docker:
+```console
+docker build -t chipiron-x11 .
+```
+
+To run the docker with GUI:
+```console
+sudo docker run --rm \
+  -e DISPLAY=$DISPLAY \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  --network=host \
+  -u $(id -u):$(id -g) \
+  chipiron-x11
+```
+
 
 ## Usage
 
