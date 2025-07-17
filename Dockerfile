@@ -63,4 +63,4 @@ RUN adduser --system testuser --ingroup test
 
 USER testuser:test
 
-CMD ["python", "chipiron/scripts/main_chipiron.py"]
+CMD ["/app/.venv/bin/python", "/app/chipiron/scripts/main_chipiron.py"]
