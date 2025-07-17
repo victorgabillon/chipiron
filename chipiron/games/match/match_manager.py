@@ -7,7 +7,7 @@ import queue
 
 import chess
 
-from chipiron.environments.chess.move import moveUci
+from chipiron.environments.chess_env.move import moveUci
 from chipiron.games.game.final_game_result import GameReport
 from chipiron.games.game.game_args import GameArgs
 from chipiron.games.game.game_args_factory import GameArgsFactory

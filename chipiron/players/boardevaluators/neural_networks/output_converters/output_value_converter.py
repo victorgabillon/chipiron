@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 import chess
 import torch
 
-from chipiron.environments.chess.board import IBoard
+from chipiron.environments.chess_env.board import IBoard
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
     FloatyBoardEvaluation,
 )

@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 from torchinfo import summary
 
 import chipiron
-from chipiron.environments.chess.board.utils import FenPlusHistory
+from chipiron.environments.chess_env.board.utils import FenPlusHistory
 from chipiron.learningprocesses.nn_trainer.factory import NNTrainerArgs
 from chipiron.players import PlayerArgs
 from chipiron.players.boardevaluators.datasets.datasets import (

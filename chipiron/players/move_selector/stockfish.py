@@ -19,11 +19,11 @@ from typing import Any, Literal
 
 import chess.engine
 
-import chipiron.environments.chess.board as boards
+import chipiron.environments.chess_env.board as boards
 
-from ...environments.chess import BoardChi
-from ...environments.chess.board import create_board_chi
-from ...environments.chess.board.utils import FenPlusHistory
+from ...environments.chess_env import BoardChi
+from ...environments.chess_env.board import create_board_chi
+from ...environments.chess_env.board.utils import FenPlusHistory
 from .move_selector import MoveRecommendation
 from .move_selector_types import MoveSelectorTypes
 

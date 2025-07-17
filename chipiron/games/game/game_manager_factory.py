@@ -9,7 +9,7 @@ from typing import Any
 import chess
 
 import chipiron as ch
-import chipiron.environments.chess.board as boards
+import chipiron.environments.chess_env.board as boards
 import chipiron.players as players_m
 from chipiron.games.game.game_args import GameArgs
 from chipiron.players import PlayerFactoryArgs
@@ -26,8 +26,8 @@ from chipiron.utils import path, seed
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage
 from chipiron.utils.dataclass import IsDataclass
 
-from ...environments.chess.board.utils import FenPlusHistory
-from ...environments.chess.move_factory import MoveFactory
+from ...environments.chess_env.board.utils import FenPlusHistory
+from ...environments.chess_env.move_factory import MoveFactory
 from ...players.boardevaluators.table_base import SyzygyTable
 from ...players.player_ids import PlayerConfigTag
 from ...scripts.chipiron_args import ImplementationArgs

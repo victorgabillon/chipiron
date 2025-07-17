@@ -8,7 +8,7 @@ from typing import Any, Protocol
 
 import chess
 
-import chipiron.environments.chess.board as boards
+import chipiron.environments.chess_env.board as boards
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
     BoardEvaluation,
 )

@@ -6,8 +6,8 @@ from typing import Any, Protocol, runtime_checkable
 
 import torch
 
-import chipiron.environments.chess.board as boards
-from chipiron.environments.chess.board import IBoard
+import chipiron.environments.chess_env.board as boards
+from chipiron.environments.chess_env.board import IBoard
 from chipiron.players.boardevaluators.neural_networks.board_to_tensor import (
     transform_board_pieces_one_side,
     transform_board_pieces_two_sides,

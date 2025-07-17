@@ -15,7 +15,7 @@ import queue
 import random
 from dataclasses import dataclass
 
-import chipiron.environments.chess.board as boards
+import chipiron.environments.chess_env.board as boards
 from chipiron.players.move_selector.move_selector import MoveRecommendation
 from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
     AllStoppingCriterionArgs,

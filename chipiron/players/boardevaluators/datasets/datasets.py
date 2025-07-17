@@ -18,10 +18,10 @@ import pandas
 import torch
 from torch.utils.data import Dataset
 
-from chipiron.environments.chess import BoardChi
-from chipiron.environments.chess.board import IBoard
-from chipiron.environments.chess.board.factory import create_board_chi
-from chipiron.environments.chess.board.utils import FenPlusHistory, fen
+from chipiron.environments.chess_env import BoardChi
+from chipiron.environments.chess_env.board import IBoard
+from chipiron.environments.chess_env.board.factory import create_board_chi
+from chipiron.environments.chess_env.board.utils import FenPlusHistory, fen
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_input import (
     BoardToInputFunction,
 )

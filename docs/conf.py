@@ -13,6 +13,7 @@ import sys
 sys.path.insert(0, os.path.abspath("../chipiron/"))
 sys.path.insert(0, os.path.abspath(".."))
 
+
 project = "chipiron"
 copyright = "2024, Victor Gabillon"
 author = "Victor Gabillon"

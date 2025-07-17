@@ -12,8 +12,8 @@ from typing import Any
 
 import chess
 
-from chipiron.environments.chess.move import moveUci
-from chipiron.environments.chess.move.imove import moveKey
+from chipiron.environments.chess_env.move import moveUci
+from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
     AlgorithmNode,
 )

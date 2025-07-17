@@ -7,9 +7,9 @@ from typing import Any
 
 import chess
 
-import chipiron.environments.chess.board as boards
-from chipiron.environments.chess.board.iboard import LegalMoveKeyGeneratorP
-from chipiron.environments.chess.move.imove import moveKey
+import chipiron.environments.chess_env.board as boards
+from chipiron.environments.chess_env.board.iboard import LegalMoveKeyGeneratorP
+from chipiron.environments.chess_env.move.imove import moveKey
 
 from .itree_node import ITreeNode
 

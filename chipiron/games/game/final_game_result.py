@@ -5,8 +5,8 @@ Module for the FinalGameResult enum and the GameReport dataclass.
 from dataclasses import dataclass
 from enum import Enum
 
-from chipiron.environments.chess.board.utils import fen
-from chipiron.environments.chess.move import moveUci
+from chipiron.environments.chess_env.board.utils import fen
+from chipiron.environments.chess_env.move import moveUci
 
 
 class FinalGameResult(str, Enum):

@@ -7,13 +7,13 @@ import queue
 
 import chess
 
-from chipiron.environments.chess.board.factory import BoardFactory
+from chipiron.environments.chess_env.board.factory import BoardFactory
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.dataclass import DataClass, IsDataclass
 
-from ..environments.chess.board.factory import create_board_factory
-from ..environments.chess.board.utils import FenPlusHistory
+from ..environments.chess_env.board.factory import create_board_factory
+from ..environments.chess_env.board.utils import FenPlusHistory
 from ..scripts.chipiron_args import ImplementationArgs
 from .boardevaluators.table_base.factory import SyzygyFactory, create_syzygy_factory
 from .factory import create_game_player

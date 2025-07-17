@@ -4,7 +4,7 @@ Module that contains the GameArgs class.
 
 from dataclasses import dataclass
 
-from chipiron.environments.chess.board.starting_position import AllStartingPositionArgs
+from chipiron.environments.chess_env.board.starting_position import AllStartingPositionArgs
 
 
 @dataclass

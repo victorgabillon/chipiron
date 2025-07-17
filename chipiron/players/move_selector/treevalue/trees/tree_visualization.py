@@ -20,7 +20,7 @@ from typing import Any
 
 from graphviz import Digraph
 
-from chipiron.environments.chess.move.imove import moveKey
+from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.players.move_selector.treevalue.nodes import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
     AlgorithmNode,

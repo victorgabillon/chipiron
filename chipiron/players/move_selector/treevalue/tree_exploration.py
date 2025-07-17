@@ -20,8 +20,8 @@ import random
 from dataclasses import dataclass
 from typing import Callable
 
-import chipiron.environments.chess.board as boards
-from chipiron.environments.chess.move.imove import moveKey
+import chipiron.environments.chess_env.board as boards
+from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.players.move_selector.move_selector import MoveRecommendation
 from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
     AllStoppingCriterionArgs,

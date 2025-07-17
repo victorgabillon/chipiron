@@ -2,7 +2,7 @@ import chess.pgn
 import pandas as pd
 from pandas import DataFrame
 
-from chipiron.environments.chess.board.utils import fen
+from chipiron.environments.chess_env.board.utils import fen
 
 # atm this file is not shared on GitHub so download one like this. This one was downloaded from the free online database of lichess
 pgn = open(

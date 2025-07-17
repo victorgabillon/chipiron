@@ -5,9 +5,9 @@ import chess
 import pytest
 import torch
 
-from chipiron.environments.chess.board import BoardModificationP, IBoard, create_board
-from chipiron.environments.chess.board.utils import FenPlusHistory, bitboard_rotate
-from chipiron.environments.chess.move.imove import moveKey
+from chipiron.environments.chess_env.board import BoardModificationP, IBoard, create_board
+from chipiron.environments.chess_env.board.utils import FenPlusHistory, bitboard_rotate
+from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import (
     BoardRepresentation,
     Representation364,

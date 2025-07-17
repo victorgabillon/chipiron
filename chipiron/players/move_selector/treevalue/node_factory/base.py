@@ -4,9 +4,9 @@ Basic class for Creating Tree nodes
 
 from typing import Any
 
-import chipiron.environments.chess.board as board_mod
-import chipiron.environments.chess.board as boards
-from chipiron.environments.chess.move.imove import moveKey
+import chipiron.environments.chess_env.board as board_mod
+import chipiron.environments.chess_env.board as boards
+from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.players.move_selector.treevalue.node_factory.node_factory import (
     TreeNodeFactory,
 )

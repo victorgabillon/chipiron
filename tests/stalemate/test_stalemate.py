@@ -2,10 +2,10 @@ from typing import Any
 
 import pytest
 
-from chipiron.environments.chess.board import BoardFactory, IBoard, create_board_factory
-from chipiron.environments.chess.board.utils import FenPlusHistory
-from chipiron.environments.chess.move import IMove
-from chipiron.environments.chess.move_factory import MoveFactory, create_move_factory
+from chipiron.environments.chess_env.board import BoardFactory, IBoard, create_board_factory
+from chipiron.environments.chess_env.board.utils import FenPlusHistory
+from chipiron.environments.chess_env.move import IMove
+from chipiron.environments.chess_env.move_factory import MoveFactory, create_move_factory
 
 
 @pytest.mark.parametrize(("use_rusty_board"), (True, False))

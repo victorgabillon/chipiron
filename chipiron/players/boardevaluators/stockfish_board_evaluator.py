@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 import chess.engine
 
-import chipiron.environments.chess.board as boards
+import chipiron.environments.chess_env.board as boards
 
 
 # TODO are we calling this?

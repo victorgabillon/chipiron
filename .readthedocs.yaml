@@ -17,7 +17,8 @@ build:
   jobs:
     pre_build:
      - pip install -e .
-     - sphinx-apidoc -o docs .
+     - sphinx-apidoc -o docs chipiron
+
     # You can also specify other tool versions:
 
     # nodejs: "20"

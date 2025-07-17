@@ -1,9 +1,9 @@
 import chess
 import torch
 
-import chipiron.environments.chess.board as boards
-from chipiron.environments.chess.board import IBoard
-from chipiron.environments.chess.board.utils import square_rotate
+import chipiron.environments.chess_env.board as boards
+from chipiron.environments.chess_env.board import IBoard
+from chipiron.environments.chess_env.board.utils import square_rotate
 
 from .board_representation import Representation364
 

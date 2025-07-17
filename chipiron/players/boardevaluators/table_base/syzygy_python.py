@@ -4,7 +4,7 @@ Module for the SyzygyTable class.
 
 import chess.syzygy
 
-import chipiron.environments.chess.board as boards
+import chipiron.environments.chess_env.board as boards
 from chipiron.players.boardevaluators.table_base import SyzygyTable
 from chipiron.utils import path
 

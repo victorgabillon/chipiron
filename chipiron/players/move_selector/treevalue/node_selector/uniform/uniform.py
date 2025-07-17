@@ -9,7 +9,7 @@ Classes:
 
 """
 
-from chipiron.environments.chess.move.imove import moveKey
+from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.players.move_selector.treevalue import tree_manager as tree_man
 from chipiron.players.move_selector.treevalue import trees
 from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import (

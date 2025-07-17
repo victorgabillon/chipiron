@@ -8,7 +8,7 @@ from enum import Enum
 from typing import Any, ItemsView, Iterator, Self, ValuesView
 
 import chipiron.players.move_selector.treevalue.nodes as nodes
-from chipiron.environments.chess.move.imove import moveKey
+from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.players.move_selector.treevalue.nodes.utils import (
     a_move_key_sequence_from_root,
     a_move_uci_sequence_from_root,

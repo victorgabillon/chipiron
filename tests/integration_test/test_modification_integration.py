@@ -4,11 +4,11 @@ from typing import Any
 import chess
 import pytest
 
-import chipiron.environments.chess.board as boards
+import chipiron.environments.chess_env.board as boards
 import chipiron.players.move_selector.treevalue.trees as trees
 from chipiron.environments import HalfMove
-from chipiron.environments.chess.board import IBoard, create_board
-from chipiron.environments.chess.board.utils import FenPlusHistory
+from chipiron.environments.chess_env.board import IBoard, create_board
+from chipiron.environments.chess_env.board.utils import FenPlusHistory
 from chipiron.players import Player
 from chipiron.players.factory import create_chipiron_player
 from chipiron.players.move_selector.treevalue.nodes import ITreeNode

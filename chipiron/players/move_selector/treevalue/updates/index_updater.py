@@ -2,7 +2,7 @@
 This module contains the IndexUpdater class, which is responsible for updating the indices of AlgorithmNode objects in a tree structure.
 """
 
-from chipiron.environments.chess.move.imove import moveKey
+from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.players.move_selector.treevalue.indices.node_indices.index_data import (
     MaxDepthDescendants,
 )

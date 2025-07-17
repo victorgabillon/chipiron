@@ -24,7 +24,7 @@ from typing import Any
 
 import chess
 
-import chipiron.environments.chess.board as boards
+import chipiron.environments.chess_env.board as boards
 import chipiron.players.boardevaluators as board_evals
 from chipiron.players.boardevaluators.over_event import HowOver, OverEvent, Winner
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable

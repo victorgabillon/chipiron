@@ -6,9 +6,9 @@ import chess
 import shakmaty_python_binding
 import yaml
 
-from chipiron.environments.chess.board.board_modification import BoardModificationP
-from chipiron.environments.chess.move import moveUci
-from chipiron.environments.chess.move.imove import moveKey
+from chipiron.environments.chess_env.board.board_modification import BoardModificationP
+from chipiron.environments.chess_env.move import moveUci
+from chipiron.environments.chess_env.move.imove import moveKey
 
 from .utils import FenPlusHistory, FenPlusMoveHistory, fen
 
