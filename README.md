@@ -12,16 +12,25 @@ Chipiron is a Python library that plays chess
 
 ## Acknowledgments
 
-This code is build on top of the chess library https://github.com/niklasf/python-chess
-and its rust version :https://github.com/niklasf/shakmaty
+- Built on top of [python-chess](https://github.com/niklasf/python-chess) and its Rust version [shakmaty](https://github.com/niklasf/shakmaty)
+- Integrates code from [chessboardjs](https://github.com/oakmac/chessboardjs/)
 
-It also integrates code from : https://github.com/oakmac/chessboardjs/
 
 ## Play Online against Chipiron
 
 Play at
 [this website](https://chipiron-759534873716.europe-west1.run.app/) !
 
+## Quickstart
+
+```bash
+git clone https://github.com/victorgabillon/chipiron.git
+cd chipiron
+make init
+python3 chipiron/scripts/main_chipiron.py
+```
+
+---
 
 ## Requirements
 
@@ -33,40 +42,41 @@ Play at
 
 ## Installation
 
+### Using Make
 
-### Make
-The following command will install the python packaged listed in requirements.txt, download syzygy tables, install
-stockfish, retrieve datasets and gui images...
+This will install Python dependencies, download syzygy tables, install Stockfish, retrieve datasets, and GUI images:
 
-```console
+```bash
 make init
 ```
 
-so you might want to git clone and create a virtual environment as follows:
-<details>
-<summary> Click here to see more detailed instructions with conda</summary>
-<br>
+#### (Optional) Using Conda
 
-```console
+<details>
+<summary>Click here for detailed instructions with conda</summary>
+
+```bash
 git clone https://github.com/victorgabillon/chipiron.git
 cd chipiron
 conda create --name chipiron3.12 python==3.12
-`conda activate chipiron3.12
-`conda install -c conda-forge tk=*=xft_*
+conda activate chipiron3.12
+conda install -c conda-forge tk=*=xft_*
 make init
 ```
-
 </details>
+
+---
 
 ### Docker
 
-To build the docker:
-```console
+
+To build the Docker image:
+```bash
 docker build -t chipiron-x11 .
 ```
 
-To run the docker with GUI:
-```console
+To run the Docker container with GUI:
+```bash
 sudo docker run --rm \
   -e DISPLAY=$DISPLAY \
   -v /tmp/.X11-unix:/tmp/.X11-unix \
@@ -74,7 +84,6 @@ sudo docker run --rm \
   -u $(id -u):$(id -g) \
   chipiron-x11
 ```
-
 
 ## Usage
 
@@ -127,9 +136,48 @@ python3 main_chipiron.py --script_name learn_nn --config_file_name scripts/learn
 
 
 
+---
+
+## Documentation
+
+Full documentation is available at [chipiron.readthedocs.io](https://chipiron.readthedocs.io/en/latest/).
+
+To build and view the documentation locally:
+
+```bash
+cd docs
+make clean
+make html
+xdg-open _build/html/index.html
+```
+
+---
+
+## Testing
+
+Run all tests with:
+```bash
+tox
+```
+or
+```bash
+pytest
+```
+
+---
 
 ## Contributing
 
+Contributions are welcome! Please open issues or pull requests on GitHub.
+
+---
+
 ## License
 
-[GPL-3.0](https://choosealicense.com/licenses/gpl-3.0/)
+This project is licensed under the GPL-3.0 License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## Contact
+
+For questions or support, please open an [issue](https://github.com/victorgabillon/chipiron/issues).
