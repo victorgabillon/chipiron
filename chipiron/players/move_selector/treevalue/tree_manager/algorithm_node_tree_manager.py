@@ -8,7 +8,7 @@ from typing import Any
 
 import chipiron.players.move_selector.treevalue.trees as trees
 import chipiron.players.move_selector.treevalue.updates as upda
-from chipiron.environments.chess.move.imove import moveKey
+from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.players.move_selector.treevalue.indices.index_manager import (
     NodeExplorationIndexManager,
 )

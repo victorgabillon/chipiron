@@ -6,8 +6,8 @@ from typing import Protocol
 
 import chess.syzygy
 
-from chipiron.environments.chess.board import IBoard
-from chipiron.environments.chess.move.imove import moveKey
+from chipiron.environments.chess_env.board import IBoard
+from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.players.boardevaluators.over_event import HowOver, OverTags, Winner
 
 

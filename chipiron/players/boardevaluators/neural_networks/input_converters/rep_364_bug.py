@@ -1,8 +1,8 @@
 import chess
 import torch
 
-import chipiron.environments.chess.board as boards
-from chipiron.environments.chess.board.iboard import IBoard
+import chipiron.environments.chess_env.board as boards
+from chipiron.environments.chess_env.board.iboard import IBoard
 
 from .board_representation import Representation364
 

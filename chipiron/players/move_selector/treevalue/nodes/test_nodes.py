@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 import chess
 
-from chipiron.environments.chess.board import IBoard
+from chipiron.environments.chess_env.board import IBoard
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 
 

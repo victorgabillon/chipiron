@@ -4,10 +4,10 @@ Module for the Player class.
 
 from typing import Any
 
-from chipiron.environments.chess.board import BoardFactory, IBoard
-from chipiron.environments.chess.board.utils import FenPlusHistory
-from chipiron.environments.chess.move import moveUci
-from chipiron.environments.chess.move.imove import moveKey
+from chipiron.environments.chess_env.board import BoardFactory, IBoard
+from chipiron.environments.chess_env.board.utils import FenPlusHistory
+from chipiron.environments.chess_env.move import moveUci
+from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.players.move_selector.move_selector import (
     MoveRecommendation,

@@ -13,7 +13,7 @@ from chipiron.utils.communication.player_game_messages import MoveMessage
 from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
 
-from ..environments.chess.board.utils import FenPlusHistory
+from ..environments.chess_env.board.utils import FenPlusHistory
 from .player import Player
 
 

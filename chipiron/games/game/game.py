@@ -5,10 +5,10 @@ Module for the Game class.
 import copy
 import queue
 
-from chipiron.environments.chess.board.iboard import IBoard
-from chipiron.environments.chess.board.utils import fen
-from chipiron.environments.chess.move import moveUci
-from chipiron.environments.chess.move.imove import moveKey
+from chipiron.environments.chess_env.board.iboard import IBoard
+from chipiron.environments.chess_env.board.utils import fen
+from chipiron.environments.chess_env.move import moveUci
+from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.players.factory_higher_level import MoveFunction
 from chipiron.utils import seed, unique_int_from_list
 from chipiron.utils.communication.gui_messages import GameStatusMessage

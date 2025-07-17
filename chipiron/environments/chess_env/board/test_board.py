@@ -1,9 +1,9 @@
 import chess
 import pytest
 
-from chipiron.environments.chess.board import IBoard, create_board, fen
-from chipiron.environments.chess.board.utils import FenPlusHistory
-from chipiron.environments.chess.move import moveUci
+from chipiron.environments.chess_env.board import IBoard, create_board, fen
+from chipiron.environments.chess_env.board.utils import FenPlusHistory
+from chipiron.environments.chess_env.move import moveUci
 
 
 @pytest.mark.parametrize(("use_rusty_board"), (True, False))

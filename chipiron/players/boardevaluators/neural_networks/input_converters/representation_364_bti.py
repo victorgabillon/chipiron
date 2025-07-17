@@ -10,7 +10,7 @@ from typing import Any
 
 import torch
 
-import chipiron.environments.chess.board as boards
+import chipiron.environments.chess_env.board as boards
 
 from .board_representation import BoardRepresentation
 from .factory import RepresentationFactory

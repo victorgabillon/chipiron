@@ -9,14 +9,14 @@ import chess
 import chess.polyglot
 from chess import Outcome, _BoardState
 
-from chipiron.environments.chess.board.board_modification import (
+from chipiron.environments.chess_env.board.board_modification import (
     BoardModification,
     BoardModificationP,
     PieceInSquare,
     compute_modifications,
 )
-from chipiron.environments.chess.move import moveUci
-from chipiron.environments.chess.move.imove import moveKey
+from chipiron.environments.chess_env.move import moveUci
+from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.utils.logger import chipiron_logger
 
 from .iboard import IBoard, LegalMoveKeyGeneratorP, boardKey, compute_key

@@ -5,8 +5,8 @@ This module defines the MoveSelector class and related data structures for selec
 from dataclasses import dataclass
 from typing import Protocol
 
-from chipiron.environments.chess.board import IBoard
-from chipiron.environments.chess.move import moveUci
+from chipiron.environments.chess_env.board import IBoard
+from chipiron.environments.chess_env.move import moveUci
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
     BoardEvaluation,
 )

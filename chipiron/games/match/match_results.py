@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import Protocol
 
-from chipiron.environments.chess.move import moveUci
+from chipiron.environments.chess_env.move import moveUci
 from chipiron.games.game.final_game_result import FinalGameResult
 
 

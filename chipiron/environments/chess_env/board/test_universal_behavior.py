@@ -2,9 +2,9 @@ import random
 
 import chess
 
-from chipiron.environments.chess.board import create_board_chi
-from chipiron.environments.chess.board.factory import create_rust_board
-from chipiron.environments.chess.board.utils import FenPlusHistory
+from chipiron.environments.chess_env.board import create_board_chi
+from chipiron.environments.chess_env.board.factory import create_rust_board
+from chipiron.environments.chess_env.board.utils import FenPlusHistory
 from chipiron.players import Player
 from chipiron.players.factory import create_chipiron_player
 from chipiron.players.move_selector.move_selector import MoveRecommendation

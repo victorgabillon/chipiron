@@ -8,7 +8,7 @@ from typing import Any, Protocol
 import chess
 
 import chipiron.players.move_selector.treevalue.trees as trees
-from chipiron.environments.chess.move.imove import moveKey
+from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.players.move_selector.treevalue.indices.node_indices.index_data import (
     IntervalExplo,
     MinMaxPathValue,

@@ -19,7 +19,7 @@ from enum import Enum
 from typing import Any, Literal, Protocol
 
 import chipiron.players.move_selector.treevalue.trees as trees
-from chipiron.environments.chess.move.imove import moveKey
+from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.players.boardevaluators.basic_evaluation import value_base
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
     AlgorithmNode,

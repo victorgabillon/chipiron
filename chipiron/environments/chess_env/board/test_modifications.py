@@ -1,20 +1,20 @@
 import chess
 import pytest
 
-from chipiron.environments.chess import BoardChi
-from chipiron.environments.chess.board import (
+from chipiron.environments.chess_env import BoardChi
+from chipiron.environments.chess_env.board import (
     BoardModificationP,
     IBoard,
     create_board,
     create_board_chi,
     fen,
 )
-from chipiron.environments.chess.board.board_modification import (
+from chipiron.environments.chess_env.board.board_modification import (
     PieceInSquare,
     compute_modifications,
 )
-from chipiron.environments.chess.board.utils import FenPlusHistory
-from chipiron.environments.chess.move import moveUci
+from chipiron.environments.chess_env.board.utils import FenPlusHistory
+from chipiron.environments.chess_env.move import moveUci
 
 examples: list[tuple[fen, moveUci, list[PieceInSquare], list[PieceInSquare]]] = [
     (

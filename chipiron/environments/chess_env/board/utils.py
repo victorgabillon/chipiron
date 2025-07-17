@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 
 import chess
 
-from chipiron.environments.chess.move import moveUci
+from chipiron.environments.chess_env.move import moveUci
 
 fen = typing.Annotated[str, "a string representing a fen"]
 

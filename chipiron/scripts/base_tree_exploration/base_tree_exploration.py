@@ -8,7 +8,7 @@ import os
 import random
 from dataclasses import dataclass, field
 
-from chipiron.environments.chess.board.factory import create_board
+from chipiron.environments.chess_env.board.factory import create_board
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.players.factory import create_player
 from chipiron.players.player_args import PlayerArgs

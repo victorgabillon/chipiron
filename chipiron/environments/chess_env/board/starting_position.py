@@ -7,7 +7,7 @@ from enum import Enum
 from importlib.resources import as_file, files
 from typing import Literal, Protocol
 
-from chipiron.environments.chess.board.board_tools import convert_to_fen
+from chipiron.environments.chess_env.board.board_tools import convert_to_fen
 
 
 class StartingPositionArgsType(str, Enum):

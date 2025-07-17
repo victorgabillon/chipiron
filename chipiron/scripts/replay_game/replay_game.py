@@ -13,9 +13,9 @@ import yaml
 from PySide6.QtWidgets import QApplication
 
 from chipiron.displays.gui_replay_games import MainWindow
-from chipiron.environments.chess.board.board_chi import BoardChi
-from chipiron.environments.chess.board.factory import create_board_chi
-from chipiron.environments.chess.board.utils import FenPlusHistory
+from chipiron.environments.chess_env.board.board_chi import BoardChi
+from chipiron.environments.chess_env.board.factory import create_board_chi
+from chipiron.environments.chess_env.board.utils import FenPlusHistory
 from chipiron.games.game.final_game_result import GameReport
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs

@@ -5,7 +5,7 @@ from typing import Any
 import chess
 import pytest
 
-from chipiron.environments.chess.board.utils import FenPlusHistory
+from chipiron.environments.chess_env.board.utils import FenPlusHistory
 from chipiron.players import Player
 from chipiron.players.boardevaluators import table_base
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy

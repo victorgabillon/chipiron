@@ -12,7 +12,7 @@ from PySide6.QtGui import QIcon, QKeyEvent
 from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import QPushButton, QWidget
 
-from chipiron.environments.chess.board.board_chi import BoardChi
+from chipiron.environments.chess_env.board.board_chi import BoardChi
 
 
 class MainWindow(QWidget):

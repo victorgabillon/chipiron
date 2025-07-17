@@ -24,10 +24,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from chipiron.environments.chess.board import BoardFactory, IBoard, create_board_chi
-from chipiron.environments.chess.board.utils import FenPlusHistory
-from chipiron.environments.chess.move import moveUci
-from chipiron.environments.chess.move.imove import moveKey
+from chipiron.environments.chess_env.board import BoardFactory, IBoard, create_board_chi
+from chipiron.environments.chess_env.board.utils import FenPlusHistory
+from chipiron.environments.chess_env.move import moveUci
+from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.games.match.match_results import MatchResults, SimpleResults
 from chipiron.players import PlayerFactoryArgs

@@ -16,9 +16,9 @@ from __future__ import annotations
 
 from typing import Any, Protocol
 
-import chipiron.environments.chess.board as boards
-from chipiron.environments.chess.board.iboard import LegalMoveKeyGeneratorP
-from chipiron.environments.chess.move.imove import moveKey
+import chipiron.environments.chess_env.board as boards
+from chipiron.environments.chess_env.board.iboard import LegalMoveKeyGeneratorP
+from chipiron.environments.chess_env.move.imove import moveKey
 
 # to force Any to stay because of weird interaction between flake8 and pycharm
 a: Any = 0
