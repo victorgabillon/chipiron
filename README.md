@@ -13,13 +13,34 @@ Chipiron is a Python library that plays chess
 ## Acknowledgments
 
 - Built on top of [python-chess](https://github.com/niklasf/python-chess) and its Rust version [shakmaty](https://github.com/niklasf/shakmaty)
-- Integrates code from [chessboardjs](https://github.com/oakmac/chessboardjs/)
+- Integrates code from [chessboardjs](https://github.com/oakmac/chessboardjs/) in the website
+
 
 
 ## Play Online against Chipiron
 
 Play at
 [this website](https://chipiron-759534873716.europe-west1.run.app/) !
+
+
+---
+
+## Related Projects
+
+Chipiron integrates and builds upon other personal repositories:
+
+- [shakmaty_python_binding](https://github.com/victorgabillon/shakmaty_python_binding):
+  Python bindings for the Rust chess library [shakmaty](https://github.com/niklasf/shakmaty).
+
+- [parsley_coco](https://github.com/victorgabillon/parsley_coco):
+  A generic parsing library.
+
+- [chipiron-website](https://github.com/victorgabillon/chipiron-website):
+  Source code for the website where you can play against Chipiron online.
+
+
+
+---
 
 ## Quickstart
 
@@ -168,7 +189,7 @@ pytest
 
 ## Contributing
 
-Contributions are welcome! Please open issues or pull requests on GitHub.
+Please open issues or pull requests on GitHub.
 
 ---
 
@@ -181,3 +202,4 @@ This project is licensed under the GPL-3.0 License - see the [LICENSE](LICENSE) 
 ## Contact
 
 For questions or support, please open an [issue](https://github.com/victorgabillon/chipiron/issues).
+
