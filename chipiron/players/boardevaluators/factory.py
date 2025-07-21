@@ -39,10 +39,10 @@ class TableBaseArgs:
     of the TableBase class.
 
     Attributes:
-        None
+        ``None``
 
     Methods:
-        None
+        ``None``
     """
 
 
@@ -52,10 +52,10 @@ class BasicEvaluationArgs:
     This class provides a way to store and access the arguments needed for basic evaluation.
 
     Attributes:
-        None
+        ``None``
 
     Methods:
-        None
+        ``None``
     """
 
 

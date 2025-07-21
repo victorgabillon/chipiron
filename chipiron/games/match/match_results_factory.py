@@ -26,15 +26,6 @@ class MatchResultsFactory:
         player_two_name (str): The name of player two.
         subscribers (list[queue.Queue[IsDataclass]]): A list of subscribers to receive match results.
 
-    Methods:
-        __init__(self, player_one_name: str, player_two_name: str) -> None:
-            Initialize the MatchResultsFactory.
-
-        create(self) -> IMatchResults:
-            Create a MatchResults object.
-
-        subscribe(self, subscriber: queue.Queue[IsDataclass]) -> None:
-            Subscribe a subscriber to receive match results.
     """
 
     player_one_name: str

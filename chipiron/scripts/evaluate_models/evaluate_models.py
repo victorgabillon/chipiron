@@ -55,7 +55,7 @@ def count_parameters(model: ChiNN) -> int:
 def evaluate_models(
     models_to_evaluate: list[NeuralNetModelsAndArchitecture],
     evaluation_report_file: path = "chipiron/scripts/evaluate_models/evaluation_report.yaml",
-    dataset_file_name: path = "data/datasets/goodgames_plusvariation_stockfish_eval_test",
+    dataset_file_name: path = "external_data/data_chipiron/datasets/goodgames_plusvariation_stockfish_eval_test",
 ) -> None:
     """
     Evaluates the models in the list models_to_evaluate.
@@ -157,7 +157,7 @@ def evaluate_models(
 
             data_loader_stockfish_boards_test = DataLoader(
                 stockfish_boards_test,
-                batch_size=10000,
+                batch_size=50000,
                 shuffle=False,
                 num_workers=1,
             )
@@ -203,6 +203,9 @@ if __name__ == "__main__":
         ),
         NeuralNetModelsAndArchitecture.build_from_folder_path(
             folder_path="chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/nn_pp2_new"
+        ),
+        NeuralNetModelsAndArchitecture.build_from_folder_path(
+            folder_path="chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/nn_pp2d3_prelu_new"
         ),
         # NeuralNetModelsAndArchitecture.build_from_folder_path(
         #     folder_path="chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/transformerone"),

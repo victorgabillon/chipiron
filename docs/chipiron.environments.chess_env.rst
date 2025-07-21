@@ -18,21 +18,21 @@ chipiron.environments.chess\_env.move\_factory module
 
 .. automodule:: chipiron.environments.chess_env.move_factory
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 chipiron.environments.chess\_env.transition module
 --------------------------------------------------
 
 .. automodule:: chipiron.environments.chess_env.transition
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 Module contents
 ---------------
 
 .. automodule:: chipiron.environments.chess_env
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

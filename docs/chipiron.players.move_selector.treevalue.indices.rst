@@ -18,13 +18,13 @@ chipiron.players.move\_selector.treevalue.indices.test\_indices module
 
 .. automodule:: chipiron.players.move_selector.treevalue.indices.test_indices
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 Module contents
 ---------------
 
 .. automodule:: chipiron.players.move_selector.treevalue.indices
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

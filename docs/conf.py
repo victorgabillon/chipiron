@@ -45,3 +45,9 @@ html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 
 strip_signature_backslash = True
+
+
+napoleon_use_ivar = True
+napoleon_include_private_with_doc = False
+napoleon_include_special_with_doc = True
+napoleon_attr_annotations = False  # 👈 This disables duplicate field docs from class docstring
