@@ -33,6 +33,12 @@ chipiron/scripts/one_match/outputs/*
 chipiron/scripts/learn_nn_supervised/learn_nn_supervised_outputs/*
 chipiron/scripts/learn_from_scratch_value_and_fixed_boards/learn_from_scratch_outputs/*
 
+**/*training_copies/*
+**/*optimizer.pi*
+**/*scheduler.pi*
+**/*.pt_save*
+**/*.pi_save*
+
 ## Core latex/pdflatex auxiliary files:
 *.aux
 *.lof
