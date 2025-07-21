@@ -21,10 +21,12 @@ from .game_playing_status import GamePlayingStatus
 class Game:
     """
     Class representing a game of chess.
-    Note that a Game and a Board can look similar classes as a Board can (but not necessarily) include a record
-    of previous moves. Board should be more lightweight that Board. Boards are more specific to a special position
-     (but can include history) while Game are more related to the entire Game and the process generating it.
-    Game needs the original fen, all the moves, the seed to generate and maybe more.
+
+    Note:
+        A Game and a Board can look similar as a Board can (but not necessarily) include a record of previous moves.
+        Board should be more lightweight than Game. Boards are more specific to a special position
+        (but can include history) while Game is more related to the entire game and the process generating it.
+        Game needs the original FEN, all the moves, the seed to generate and maybe more.
     """
 
     _playing_status: GamePlayingStatus  # todo should this be here? looks related to gui

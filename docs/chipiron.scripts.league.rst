@@ -9,13 +9,13 @@ chipiron.scripts.league.runtheleague module
 
 .. automodule:: chipiron.scripts.league.runtheleague
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 Module contents
 ---------------
 
 .. automodule:: chipiron.scripts.league
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

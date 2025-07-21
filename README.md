@@ -90,8 +90,15 @@ make init
 
 ### Docker
 
+The Chipiron Docker image is  published to [Docker Hub](https://hub.docker.com/r/victorgabillon/chipiron).
 
-To build the Docker image:
+Simply pull the image
+
+```bash
+docker pull victorgabillon/chipiron:latest
+```
+
+Or, build the Docker image:
 ```bash
 docker build -t chipiron-x11 .
 ```
@@ -103,7 +110,7 @@ sudo docker run --rm \
   -v /tmp/.X11-unix:/tmp/.X11-unix \
   --network=host \
   -u $(id -u):$(id -g) \
-  chipiron-x11
+  <image_name>
 ```
 
 ## Usage

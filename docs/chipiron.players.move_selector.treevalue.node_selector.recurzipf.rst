@@ -9,13 +9,13 @@ chipiron.players.move\_selector.treevalue.node\_selector.recurzipf.recur\_zipf\_
 
 .. automodule:: chipiron.players.move_selector.treevalue.node_selector.recurzipf.recur_zipf_base
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 Module contents
 ---------------
 
 .. automodule:: chipiron.players.move_selector.treevalue.node_selector.recurzipf
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

@@ -22,69 +22,69 @@ chipiron.scripts.chipiron\_args module
 
 .. automodule:: chipiron.scripts.chipiron_args
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 chipiron.scripts.factory module
 -------------------------------
 
 .. automodule:: chipiron.scripts.factory
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 chipiron.scripts.get\_script module
 -----------------------------------
 
 .. automodule:: chipiron.scripts.get_script
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 chipiron.scripts.iscript module
 -------------------------------
 
 .. automodule:: chipiron.scripts.iscript
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 chipiron.scripts.main\_chipiron module
 --------------------------------------
 
 .. automodule:: chipiron.scripts.main_chipiron
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 chipiron.scripts.script module
 ------------------------------
 
 .. automodule:: chipiron.scripts.script
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 chipiron.scripts.script\_args module
 ------------------------------------
 
 .. automodule:: chipiron.scripts.script_args
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 chipiron.scripts.script\_type module
 ------------------------------------
 
 .. automodule:: chipiron.scripts.script_type
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 Module contents
 ---------------
 
 .. automodule:: chipiron.scripts
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

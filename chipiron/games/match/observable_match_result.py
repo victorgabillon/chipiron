@@ -23,14 +23,6 @@ class ObservableMatchResults:
         match_results (MatchResults): The underlying MatchResults object that stores the match results.
         mailboxes (list[queue.Queue[IsDataclass]]): A list of mailboxes to which notifications are sent.
 
-    Methods:
-        subscribe(mailbox: queue.Queue[IsDataclass]) -> None: Subscribes a mailbox to receive notifications.
-        copy_match_result() -> MatchResults: Creates a deep copy of the match results.
-        add_result_one_game(white_player_name_id: str, game_result: FinalGameResult) -> None: Adds the result of a single game to the match results.
-        notify_new_results() -> None: Notifies all subscribed mailboxes about the new match results.
-        get_simple_result() -> SimpleResults: Retrieves a simplified version of the match results.
-        finish() -> None: Marks the match as finished and notifies all subscribed mailboxes.
-        __str__() -> str: Returns a string representation of the match results.
     """
 
     match_results: MatchResults

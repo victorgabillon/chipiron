@@ -20,53 +20,53 @@ chipiron.players.boardevaluators.basic\_evaluation module
 
 .. automodule:: chipiron.players.boardevaluators.basic_evaluation
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 chipiron.players.boardevaluators.board\_evaluator module
 --------------------------------------------------------
 
 .. automodule:: chipiron.players.boardevaluators.board_evaluator
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 chipiron.players.boardevaluators.factory module
 -----------------------------------------------
 
 .. automodule:: chipiron.players.boardevaluators.factory
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 chipiron.players.boardevaluators.over\_event module
 ---------------------------------------------------
 
 .. automodule:: chipiron.players.boardevaluators.over_event
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 chipiron.players.boardevaluators.stockfish\_board\_evaluator module
 -------------------------------------------------------------------
 
 .. automodule:: chipiron.players.boardevaluators.stockfish_board_evaluator
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 chipiron.players.boardevaluators.test\_over\_event module
 ---------------------------------------------------------
 
 .. automodule:: chipiron.players.boardevaluators.test_over_event
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 Module contents
 ---------------
 
 .. automodule:: chipiron.players.boardevaluators
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

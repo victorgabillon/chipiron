@@ -22,5 +22,5 @@ Module contents
 
 .. automodule:: chipiron
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

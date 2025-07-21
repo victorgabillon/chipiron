@@ -9,13 +9,13 @@ chipiron.league.league module
 
 .. automodule:: chipiron.league.league
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 Module contents
 ---------------
 
 .. automodule:: chipiron.league
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
