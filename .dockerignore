@@ -11,6 +11,7 @@ chipiron/scripts/stockfish/
 external_data/syzygy-tables/
 
 **/*outputs/*
+**/*training_copies/*
 
 .idea
 .git
