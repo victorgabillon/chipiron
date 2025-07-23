@@ -60,6 +60,7 @@ python3 chipiron/scripts/main_chipiron.py
 * curl
 * tkinter
 * make
+* libxcb-cursor0
 
 ## Installation
 
@@ -81,7 +82,7 @@ git clone https://github.com/victorgabillon/chipiron.git
 cd chipiron
 conda create --name chipiron3.12 python==3.12
 conda activate chipiron3.12
-conda install -c conda-forge tk=*=xft_*
+conda install -c conda-forge tk=*=xft_* # to fix graphical problems with tkinter
 make init
 ```
 </details>

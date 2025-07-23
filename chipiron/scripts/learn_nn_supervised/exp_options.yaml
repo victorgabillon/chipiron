@@ -17,8 +17,8 @@ nn_trainer_args:
   min_lr: .00001
   epochs_number: 100
 dataset_args:
-  train_file_name: 'data/datasets/goodgames_plusvariation_stockfish_eval_train_t.1_merge.pi'
-  test_file_name: 'data/datasets/goodgames_plusvariation_stockfish_eval_test'
+  train_file_name: 'external_data/data_chipiron/datasets/goodgames_plusvariation_stockfish_eval_train_t.1_merge.pi'
+  test_file_name: 'external_data/data_chipiron/datasets/goodgames_plusvariation_stockfish_eval_test'
   preprocessing_data_set: False
 base_script_args:
   seed: 11
