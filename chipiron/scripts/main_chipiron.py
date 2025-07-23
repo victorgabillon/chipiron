@@ -60,7 +60,7 @@ def get_script_and_args(
         script_type_str: str = args_command_line["script_name"]
         script_type = ScriptType(script_type_str)
 
-        extra_args = {}
+        extra_args = None
 
     # print("extra_args", extra_args)
     return script_type, extra_args, config_file_name

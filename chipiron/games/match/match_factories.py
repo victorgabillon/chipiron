@@ -9,7 +9,10 @@ from typing import Any
 import chipiron as ch
 import chipiron.games.game as game
 import chipiron.players as players
-from chipiron.environments.chess_env.board.factory import BoardFactory, create_board_factory
+from chipiron.environments.chess_env.board.factory import (
+    BoardFactory,
+    create_board_factory,
+)
 from chipiron.games.game.game_manager_factory import GameManagerFactory
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_manager import MatchManager
