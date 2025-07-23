@@ -53,7 +53,7 @@ RUN .venv/bin/pip install -e .
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-RUN make chipiron/syzygy-tables chipiron/data
+RUN make external_data/ external_data/syzygy-tables
 
 RUN chmod -R 777 chipiron
 RUN chmod -R 777 tests
