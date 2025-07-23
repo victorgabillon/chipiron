@@ -12,16 +12,16 @@ DATA_DESTINATION=${ROOT_DIR}/external_data/
 
 .PHONY: init
 
-init: chipiron/data chipiron/syzygy-tables chipiron/requirements
+init: external_data/ external_data/syzygy-tables chipiron/requirements
 
 chipiron/requirements:
 	pip install -e .
 
-chipiron/syzygy-tables:
+external_data/syzygy-tables:
 	echo "downloading SYZYGY"
 	mkdir -p ${SYZYGY_DESTINATION}
 	curl ${SYZYGY_SOURCE} | xargs wget -P ${SYZYGY_DESTINATION}
 
-chipiron/data:
+external_data/:
 	echo "downloading Data"
 	gdown --folder ${DATA_SOURCE} -O ${DATA_DESTINATION}
