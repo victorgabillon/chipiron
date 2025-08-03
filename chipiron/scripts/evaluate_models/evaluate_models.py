@@ -13,7 +13,9 @@ from chipiron.learningprocesses.nn_trainer.nn_trainer import (
     compute_test_error_on_dataset,
 )
 from chipiron.players.boardevaluators.datasets.datasets import (
+    FenAndValueData,
     FenAndValueDataSet,
+    custom_collate_fn_fen_and_value,
     process_stockfish_value,
 )
 from chipiron.players.boardevaluators.neural_networks import NNBoardEvaluator
@@ -155,11 +157,12 @@ def evaluate_models(
 
             stockfish_boards_test.load()
 
-            data_loader_stockfish_boards_test = DataLoader(
+            data_loader_stockfish_boards_test = DataLoader[FenAndValueData](
                 stockfish_boards_test,
                 batch_size=50000,
                 shuffle=False,
                 num_workers=1,
+                collate_fn=custom_collate_fn_fen_and_value,
             )
             print(f"Size of test set: {len(data_loader_stockfish_boards_test)}")
 

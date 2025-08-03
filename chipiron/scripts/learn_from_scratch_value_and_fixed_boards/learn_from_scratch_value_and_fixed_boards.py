@@ -154,20 +154,11 @@ class LearnNNFromScratchScript:
         # taking care of random
         chipiron.set_seeds(seed=self.args.base_script_args.seed)
 
-        if self.args.starting_boards_are_non_labelled:
-
-            def transform_dataset_value_to_white_value_function(
-                row: pandas.Series,
-            ) -> float:
-                return 0.0
-
-        else:
-
-            def transform_dataset_value_to_white_value_function(
-                row: pandas.Series,
-            ) -> float:
-                assert isinstance(row["value"], float)
-                return row["value"]
+        def transform_dataset_value_to_white_value_function(
+            row: pandas.Series,
+        ) -> float:
+            assert isinstance(row["value"], float)
+            return row["value"]
 
         self.boards_dataset = FenAndValueDataSet(
             file_name=self.args.dataset_args.train_file_name,

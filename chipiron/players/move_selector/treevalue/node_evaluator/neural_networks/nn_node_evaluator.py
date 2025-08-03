@@ -7,9 +7,11 @@ from typing import Any
 import torch
 
 import chipiron.players.boardevaluators.neural_networks as board_nn
+from chipiron.environments.chess_env import board
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
     FloatyBoardEvaluation,
 )
+from chipiron.players.boardevaluators.master_board_evaluator import MasterBoardEvaluator
 from chipiron.players.boardevaluators.table_base import SyzygyTable
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
     AlgorithmNode,
@@ -33,7 +35,11 @@ class NNNodeEvaluator(NodeEvaluator):
             nn_board_evaluator (board_nn.NNBoardEvaluator): The neural network board evaluator.
             syzygy (SyzygyTable | None): The Syzygy table or None if not available.
         """
-        super().__init__(board_evaluator=nn_board_evaluator, syzygy=syzygy)
+        super().__init__(
+            master_board_evaluator=MasterBoardEvaluator(
+                board_evaluator=nn_board_evaluator, syzygy=syzygy
+            )
+        )
         self.net = nn_board_evaluator.net
         self.my_scripted_model = torch.jit.script(self.net)
         self.nn_board_evaluator = nn_board_evaluator

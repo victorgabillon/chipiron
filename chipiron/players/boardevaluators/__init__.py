@@ -5,5 +5,6 @@ The board evaluators are used to evaluate the current state of the game board an
 """
 
 from .board_evaluator import BoardEvaluator, ValueWhiteWhenOver
+from .master_board_evaluator import MasterBoardEvaluator
 
-__all__ = ["BoardEvaluator", "ValueWhiteWhenOver"]
+__all__ = ["BoardEvaluator", "ValueWhiteWhenOver", "MasterBoardEvaluator"]

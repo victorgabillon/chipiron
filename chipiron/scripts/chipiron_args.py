@@ -3,6 +3,8 @@ from dataclasses import dataclass
 
 @dataclass
 class ImplementationArgs:
+    """List of arguments that are used to specify the type of implementation of some features in Chipiron."""
+
     # whether to use the speedup given by board_modification.
     # If True the modifications are recorded when a move is played to update fast the tensor
     # representation in pytorch

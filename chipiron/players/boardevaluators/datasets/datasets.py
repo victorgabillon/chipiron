@@ -10,12 +10,15 @@ Functions:
 """
 
 import time
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any, Callable, Protocol
 
 import numpy as np
 import pandas
 import torch
+from flask.cli import F
+from mlflow import get_active_model_id
 from torch.utils.data import Dataset
 
 from chipiron.environments.chess_env import BoardChi
@@ -31,12 +34,17 @@ from chipiron.utils.logger import chipiron_logger
 
 @dataclass
 class DataSetArgs:
+    """Arguments for the dataset."""
+
     train_file_name: path
     test_file_name: path | None = None
     preprocessing_data_set: bool = False
 
 
-class MyDataSet(Dataset[Any]):
+type RawSample = pandas.Series
+
+
+class MyDataSet[ProcessedSample](Dataset[ProcessedSample | RawSample], ABC):
     """
     A custom dataset class that loads and preprocesses data.
 
@@ -51,8 +59,9 @@ class MyDataSet(Dataset[Any]):
     - process_raw_row(row: pandas.Series) -> tuple[torch.Tensor, torch.Tensor]: Processes a raw row into input and target tensors.
     """
 
-    data: pandas.DataFrame | list[tuple[torch.Tensor, torch.Tensor]] | None
+    data: RawSample | list[ProcessedSample] | None
     len: int | None
+    preprocessing: bool
 
     def __init__(self, file_name: path, preprocessing: bool) -> None:
         """
@@ -64,8 +73,7 @@ class MyDataSet(Dataset[Any]):
         """
         self.file_name = file_name
         self.preprocessing = preprocessing
-        self.data = None
-        self.len = None
+        self.data: pandas.DataFrame | list[ProcessedSample] | None = None
 
     def load(self) -> None:
         """
@@ -73,55 +81,45 @@ class MyDataSet(Dataset[Any]):
         """
         chipiron_logger.info("Loading the dataset...")
         start_time = time.time()
-        raw_data: pandas.DataFrame = pandas.read_pickle(self.file_name)
-        raw_data = (
-            raw_data.copy()
-        )  # gets rid of compatibility problems between various version of panda and pickle
-        chipiron_logger.info(f"raw_data {type(raw_data)}")
-        self.raw_data = raw_data
 
+        raw_data = pandas.read_pickle(self.file_name).copy()
+        chipiron_logger.info("raw_data %s", type(raw_data))
         chipiron_logger.info(
-            "--- LOAD READ PICKLE %s seconds ---" % (time.time() - start_time)
+            "--- LOAD READ PICKLE %.2f seconds ---", time.time() - start_time
         )
-        chipiron_logger.info("Dataset  loaded with {} items".format(len(raw_data)))
+        chipiron_logger.info("Dataset loaded with %d items", len(raw_data))
 
-        # preprocessing
         if self.preprocessing:
-            chipiron_logger.info("preprocessing dataset...")
-            processed_data: list[tuple[torch.Tensor, torch.Tensor]] = []
+            chipiron_logger.info("Preprocessing dataset...")
+            processed_data: list[ProcessedSample] = []
 
             for idx in range(len(raw_data)):
-                # print(idx, type(idx),idx % 10 == 0)
                 if idx % 10 == 0:
                     chipiron_logger.info(
-                        f"\rloading the data {str(idx / len(raw_data) * 100)}%"
+                        "Processing progress: %.2f%%", idx / len(raw_data) * 100
                     )
-                row: pandas.Series = raw_data.iloc[idx % len(raw_data)]
+                row = raw_data.iloc[idx]
                 processed_data.append(self.process_raw_row(row))
-            self.data = processed_data
 
-            chipiron_logger.info("preprocessing dataset done")
+            self.data = processed_data
+            chipiron_logger.info("Preprocessing complete.")
         else:
-            chipiron_logger.info("no preprocessing the dataset")
+            chipiron_logger.info("No preprocessing applied.")
             self.data = raw_data
 
-        self.data = (
-            self.data.copy()
-        )  # gets rid of compatibility problems between various version of panda and pickle
+        # Fix pandas pickle compatibility
+        if isinstance(self.data, pandas.DataFrame):
+            self.data = self.data.copy()
+        elif isinstance(self.data, list):
+            self.data = self.data.copy()
 
-        self.len = len(self.data)
-
-    def process_raw_row(self, row: pandas.Series) -> tuple[torch.Tensor, torch.Tensor]:
+    @abstractmethod
+    def process_raw_row(self, row: pandas.Series) -> ProcessedSample:
         """
-        Processes a raw row into input and target tensors.
-
-        Args:
-        - row (pandas.Series): The raw row from the dataset.
-
-        Returns:
-        - tuple[torch.Tensor, torch.Tensor]: The input and target tensors.
+        Converts a raw row into input/target tensors.
+        Subclasses must implement this.
         """
-        raise Exception("should not be called")
+        ...
 
     def __len__(self) -> int:
         """
@@ -130,12 +128,11 @@ class MyDataSet(Dataset[Any]):
         Returns:
         - int: The length of the dataset.
         """
-        assert self.data is not None
+        if self.data is None:
+            raise RuntimeError("Dataset not loaded yet. Call `load()` first.")
         return len(self.data)
 
-    def __getitem__(
-        self, idx: int
-    ) -> tuple[torch.Tensor, torch.Tensor] | pandas.Series:
+    def __getitem__(self, idx: int) -> ProcessedSample | RawSample:
         """
         Returns the item at the given index.
 
@@ -145,25 +142,25 @@ class MyDataSet(Dataset[Any]):
         Returns:
         - tuple[torch.Tensor, torch.Tensor] | pandas.Series: The input and target tensors, or the raw row.
         """
-        assert self.data is not None
+        if self.data is None:
+            raise RuntimeError("Dataset not loaded yet. Call `load()` first.")
 
+        index = idx % len(self)
         if self.preprocessing:
-            assert self.len is not None
-            return self.data[idx % self.len]
+            assert isinstance(self.data, list)
+            return self.data[index]
         else:
             assert isinstance(self.data, pandas.DataFrame)
-            assert self.len is not None
-
-            raw_row = self.data.iloc[idx % self.len]
-            return self.process_raw_row(raw_row)  # to be coded!
+            return self.process_raw_row(self.data.iloc[index])
 
     def get_unprocessed(self, idx: int) -> pandas.Series:
         """ """
-        assert isinstance(self.data, pandas.DataFrame)
-        assert self.len is not None
+        if not isinstance(self.data, pandas.DataFrame):
+            raise RuntimeError("Unprocessed data is not available.")
+        return self.data.iloc[idx % len(self)]
 
-        raw_row = self.data.iloc[idx % self.len]
-        return raw_row
+    def is_preprocessed(self) -> bool:
+        return self.preprocessing and isinstance(self.data, list)
 
 
 def process_stockfish_value(row: pandas.Series) -> float:
@@ -182,7 +179,56 @@ def process_stockfish_value(row: pandas.Series) -> float:
     return target_value
 
 
-class FenAndValueDataSet(MyDataSet):
+class SupervisedData(Protocol):
+    """
+    A protocol that defines the structure for classes that have input and target value attributes.
+    """
+
+    is_batch: bool = False  # Flag to indicate if this contains batched data
+
+    def get_input_layer(self) -> torch.Tensor:
+        """
+        Returns the input layer tensor.
+        """
+
+    def get_target_value(self) -> torch.Tensor:
+        """
+        Returns the target value tensor.
+        """
+
+
+@dataclass
+class FenAndValueData:
+    fen_tensor: torch.Tensor
+    value_tensor: torch.Tensor
+    is_batch: bool = False  # Flag to indicate if this contains batched data
+
+    def get_input_layer(self) -> torch.Tensor:
+        """
+        Returns the input layer tensor.
+        """
+        return self.fen_tensor
+
+    def get_target_value(self) -> torch.Tensor:
+        """
+        Returns the target value tensor.
+        """
+        return self.value_tensor
+
+
+def custom_collate_fn_fen_and_value(batch: list[FenAndValueData]) -> FenAndValueData:
+    inputs = [item.get_input_layer() for item in batch]
+    targets = [item.get_target_value() for item in batch]
+
+    inputs_batch = torch.stack(inputs)
+    targets_batch = torch.stack(targets)
+
+    return FenAndValueData(
+        fen_tensor=inputs_batch, value_tensor=targets_batch, is_batch=True
+    )
+
+
+class FenAndValueDataSet(MyDataSet[FenAndValueData]):
     """
     A subclass of MyDataSet that processes raw rows into input and target value tensors.
 
@@ -212,8 +258,8 @@ class FenAndValueDataSet(MyDataSet):
         transform_dataset_value_to_white_value_function: Callable[
             [pandas.Series], float
         ],
+        transform_board_function: BoardToInputFunction,
         preprocessing: bool = False,
-        transform_board_function: str | BoardToInputFunction = "identity",
     ) -> None:
         """
         Initializes a new instance of the FenAndValueDataSet class.
@@ -225,12 +271,9 @@ class FenAndValueDataSet(MyDataSet):
         - transform_value_function (str): The function to transform the value for a given board and row.
         """
         super().__init__(file_name, preprocessing)
-        # transform function
-        if transform_board_function == "identity":
-            raise Exception(f"tobe coded in {__name__}")
-        else:
-            assert isinstance(transform_board_function, BoardToInputFunction)
-            self.transform_board_function = transform_board_function
+
+        assert isinstance(transform_board_function, BoardToInputFunction)
+        self.transform_board_function = transform_board_function
 
         # transform function
         self.transform_dataset_value_to_white_value_function = (
@@ -241,7 +284,7 @@ class FenAndValueDataSet(MyDataSet):
             transform_white_value_to_model_output_function
         )
 
-    def process_raw_row(self, row: pandas.Series) -> tuple[Any, torch.Tensor]:
+    def process_raw_row(self, row: pandas.Series) -> FenAndValueData:
         """
         Processes a raw row into input and target tensors.
 
@@ -258,7 +301,7 @@ class FenAndValueDataSet(MyDataSet):
             fen_with_history=FenPlusHistory(current_fen=fen_),
             use_board_modification=True,
         )
-        input_layer = self.transform_board_function(board)
+        input_layer: torch.Tensor = self.transform_board_function(board)
         target_value_white: float = (
             self.transform_dataset_value_to_white_value_function(row)
         )
@@ -267,11 +310,9 @@ class FenAndValueDataSet(MyDataSet):
                 target_value_white, board
             )
         )
-        return input_layer, target_value
+        return FenAndValueData(fen_tensor=input_layer, value_tensor=target_value)
 
-    def process_raw_rows(
-        self, dataframe: pandas.DataFrame
-    ) -> list[tuple[torch.Tensor, torch.Tensor]]:
+    def process_raw_rows(self, dataframe: pandas.DataFrame) -> list[FenAndValueData]:
         """
         Processes raw rows into input and target tensors.
 
@@ -279,9 +320,9 @@ class FenAndValueDataSet(MyDataSet):
         - dataframe (pandas.DataFrame): The raw rows from the dataset.
 
         Returns:
-        - list[tuple[torch.Tensor, torch.Tensor]]: The processed input and target tensors.
+        - list[FenAndValueData]: The processed input and target tensors.
         """
-        processed_data: list[tuple[torch.Tensor, torch.Tensor]] = []
+        processed_data: list[FenAndValueData] = []
         row: pandas.Series
         for row in dataframe.iloc:
             processed_data.append(self.process_raw_row(row))
