@@ -8,6 +8,7 @@ from typing import Callable
 import torch
 from torch.utils.data import DataLoader
 
+from chipiron.players.boardevaluators.datasets.datasets import SupervisedData
 from chipiron.utils.chi_nn import ChiNN
 from chipiron.utils.logger import chipiron_logger
 
@@ -35,7 +36,7 @@ def check_model_device(model: ChiNN) -> str | torch.device | int:
 def compute_test_error_on_dataset(
     net: ChiNN,
     criterion: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
-    data_test: DataLoader[tuple[torch.Tensor, torch.Tensor]],
+    data_test: DataLoader[SupervisedData],
     number_of_tests: int = 100,
 ) -> float:
     sum_loss_test = 0.0
@@ -43,10 +44,10 @@ def compute_test_error_on_dataset(
     loss_test: torch.Tensor
     device = check_model_device(net)
     for i in range(number_of_tests):
-        sample_batched_test = next(iter(data_test))
-        input_layer, target_value = sample_batched_test[0].to(
+        sample = next(iter(data_test))
+        input_layer, target_value = sample.get_input_layer().to(
             device
-        ), sample_batched_test[1].to(device)
+        ), sample.get_target_value().to(device)
 
         loss_test = compute_loss(
             net=net,
@@ -191,7 +192,7 @@ class NNPytorchTrainer:
         self.optimizer.step()
 
     def compute_test_error_on_dataset(
-        self, data_test: DataLoader[tuple[torch.Tensor, torch.Tensor]]
+        self, data_test: DataLoader[SupervisedData]
     ) -> float:
         """
         Computes the test error of the neural network model.

@@ -16,6 +16,7 @@ Example:
 """
 
 import copy
+import logging
 import os
 import tempfile
 import time
@@ -24,6 +25,7 @@ from typing import Any
 
 import mlflow
 import torch
+from h11 import Data
 from mlflow.models.signature import ModelSignature, infer_signature
 from torch.utils.data import DataLoader
 from torchinfo import summary
@@ -39,7 +41,9 @@ from chipiron.learningprocesses.nn_trainer.factory import (
 from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
 from chipiron.players.boardevaluators.datasets.datasets import (
     DataSetArgs,
+    FenAndValueData,
     FenAndValueDataSet,
+    custom_collate_fn_fen_and_value,
     process_stockfish_value,
 )
 from chipiron.players.boardevaluators.neural_networks import NNBoardEvaluator
@@ -52,6 +56,8 @@ from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
 from chipiron.utils.chi_nn import ChiNN
 from chipiron.utils.logger import chipiron_logger
+
+logging.basicConfig(level=logging.WARNING)
 
 
 @dataclass
@@ -177,11 +183,12 @@ class LearnNNScript:
         chipiron_logger.info(f"--- LOAD {time.time() - start_time} seconds --- ")
         self.stockfish_boards_test.load()
 
-        self.data_loader_stockfish_boards_train = DataLoader(
+        self.data_loader_stockfish_boards_train = DataLoader[FenAndValueData](
             self.stockfish_boards_train,
             batch_size=self.args.nn_trainer_args.batch_size_train,
             shuffle=True,
             num_workers=1,
+            collate_fn=custom_collate_fn_fen_and_value,
         )
 
         self.data_loader_stockfish_boards_test = DataLoader(
@@ -189,6 +196,7 @@ class LearnNNScript:
             batch_size=self.args.nn_trainer_args.batch_size_test,
             shuffle=True,
             num_workers=1,
+            collate_fn=custom_collate_fn_fen_and_value,
         )
 
         if self.args.base_script_args.testing:
@@ -264,8 +272,9 @@ class LearnNNScript:
             previous_train_loss: float | None = None
 
             i: int
+            fens_and_values_sample_batch: FenAndValueData
             for i in range(self.args.nn_trainer_args.epochs_number):
-                for i_batch, sample_batched in enumerate(
+                for i_batch, fens_and_values_sample_batch in enumerate(
                     self.data_loader_stockfish_boards_train
                 ):
 
@@ -341,14 +350,16 @@ class LearnNNScript:
                     # MAIN: the training bit
                     count_train_step += 1
                     loss_train = self.nn_trainer.train(
-                        sample_batched[0], sample_batched[1]
+                        fens_and_values_sample_batch.get_input_layer(),
+                        fens_and_values_sample_batch.get_target_value(),
                     )
                     sum_loss_train += float(loss_train)
                     sum_loss_train_print += float(loss_train)
 
                     # saving the learning process
                     self.saving_things_to_file(
-                        count_train_step=count_train_step, X_train=sample_batched[0]
+                        count_train_step=count_train_step,
+                        X_train=fens_and_values_sample_batch.get_input_layer(),
                     )
 
     def saving_things_to_file(

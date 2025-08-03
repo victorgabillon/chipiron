@@ -6,6 +6,7 @@ import sys
 from typing import Any, TypeAlias
 
 import chipiron.players.boardevaluators.basic_evaluation as basic_evaluation
+from chipiron.players.boardevaluators import MasterBoardEvaluator
 from chipiron.players.boardevaluators.neural_networks.factory import (
     create_nn_board_eval_from_nn_parameters_file_and_existing_model,
 )
@@ -54,8 +55,11 @@ def create_node_evaluator(
             board_evaluator: basic_evaluation.BasicEvaluation = (
                 basic_evaluation.BasicEvaluation()
             )
-            node_evaluator = NodeEvaluator(
+            master_board_evaluator: MasterBoardEvaluator = MasterBoardEvaluator(
                 board_evaluator=board_evaluator, syzygy=syzygy_
+            )
+            node_evaluator = NodeEvaluator(
+                master_board_evaluator=master_board_evaluator
             )
         case NodeEvaluatorTypes.NeuralNetwork:
             assert isinstance(
