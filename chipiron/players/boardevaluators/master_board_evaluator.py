@@ -3,11 +3,6 @@ from typing import Any
 import chess
 
 import chipiron.environments.chess_env.board as boards
-import chipiron.players.boardevaluators as board_evals
-from chipiron.players.boardevaluators.basic_evaluation import value_white
-from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
-    BoardEvaluation,
-)
 from chipiron.players.boardevaluators.evaluation_scale import (
     EvaluationScale,
     ValueOverEnum,

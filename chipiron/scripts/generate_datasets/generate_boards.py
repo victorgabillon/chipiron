@@ -133,18 +133,16 @@ def save_intermediate_progress(
     new_data_frame_states: DataFrame = pd.DataFrame.from_dict(the_dic)
     recorded_board = len(new_data_frame_states.index)
     print(
-        f"Progress: {recorded_board:,} / {max_boards:,} board positions collected ({recorded_board/max_boards*100:.1f}%)"
+        f"Progress: {recorded_board:,} / {max_boards:,} board positions collected ({recorded_board / max_boards * 100:.1f}%)"
     )
 
     # Enhanced progress with file totals
     games_progress = f"{count_game:,}"
     moves_progress = f"{total_count_move:,}"
     if total_games_in_file:
-        games_progress += (
-            f" / {total_games_in_file:,} ({count_game/total_games_in_file*100:.1f}%)"
-        )
+        games_progress += f" / {total_games_in_file:,} ({count_game / total_games_in_file * 100:.1f}%)"
     if total_moves_in_file:
-        moves_progress += f" / {total_moves_in_file:,} ({total_count_move/total_moves_in_file*100:.1f}%)"
+        moves_progress += f" / {total_moves_in_file:,} ({total_count_move / total_moves_in_file * 100:.1f}%)"
 
     print(f"         Games processed: {games_progress}")
     print(f"         Moves processed: {moves_progress}")
