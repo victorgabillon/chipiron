@@ -54,7 +54,7 @@ jobs:
           sudo apt-get remove -y 'php.*' --fix-missing || true
           sudo apt-get remove -y '^mongodb-.*' --fix-missing || true
           sudo apt-get remove -y '^mysql-.*' --fix-missing || true
-          sudo apt-get remove -y azure-cli google-chrome-stable firefox powershell mono-devel libgl1-mesa-dri --fix-missing || true
+          sudo apt-get remove -y azure-cli google-chrome-stable firefox powershell mono-devel --fix-missing || true
           sudo apt-get remove -y google-cloud-sdk --fix-missing || true
           sudo apt-get remove -y google-cloud-cli --fix-missing || true
           sudo apt-get autoremove -y || true
