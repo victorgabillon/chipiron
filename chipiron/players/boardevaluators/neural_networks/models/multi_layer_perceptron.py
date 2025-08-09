@@ -18,7 +18,7 @@ Helper Functions:
 """
 
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Literal
+from typing import Any, Callable, Dict, Literal, cast
 
 import torch
 import torch.nn as nn
@@ -78,9 +78,11 @@ def extract_sequential_model_data(model: nn.Sequential) -> Dict[str, Any]:
     for idx, layer in enumerate(model):
         layer_info = {}
         if hasattr(layer, "weight") and layer.weight is not None:
-            layer_info["weight"] = layer.weight.detach().cpu().numpy().tolist()
+            weight_tensor = cast(torch.Tensor, layer.weight)
+            layer_info["weight"] = weight_tensor.detach().cpu().numpy().tolist()
         if hasattr(layer, "bias") and layer.bias is not None:
-            layer_info["bias"] = layer.bias.detach().cpu().numpy().tolist()
+            bias_tensor = cast(torch.Tensor, layer.bias)
+            layer_info["bias"] = bias_tensor.detach().cpu().numpy().tolist()
 
         layer_name = f"layer_{idx}_{layer.__class__.__name__}"
         layers_data[layer_name] = layer_info if layer_info else "No parameters"
