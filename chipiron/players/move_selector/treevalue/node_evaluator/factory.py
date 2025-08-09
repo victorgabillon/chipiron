@@ -7,6 +7,9 @@ from typing import Any, TypeAlias
 
 import chipiron.players.boardevaluators.basic_evaluation as basic_evaluation
 from chipiron.players.boardevaluators import MasterBoardEvaluator
+from chipiron.players.boardevaluators.master_board_evaluator import (
+    create_master_board_evaluator,
+)
 from chipiron.players.boardevaluators.neural_networks.factory import (
     create_nn_board_eval_from_nn_parameters_file_and_existing_model,
 )
@@ -55,8 +58,13 @@ def create_node_evaluator(
             board_evaluator: basic_evaluation.BasicEvaluation = (
                 basic_evaluation.BasicEvaluation()
             )
-            master_board_evaluator: MasterBoardEvaluator = MasterBoardEvaluator(
-                board_evaluator=board_evaluator, syzygy=syzygy_
+
+            master_board_evaluator: MasterBoardEvaluator = (
+                create_master_board_evaluator(
+                    board_evaluator=board_evaluator,
+                    syzygy=syzygy_,
+                    evaluation_scale=arg_board_evaluator.evaluation_scale,
+                )
             )
             node_evaluator = NodeEvaluator(
                 master_board_evaluator=master_board_evaluator
@@ -71,7 +79,9 @@ def create_node_evaluator(
                 nn_architecture_args=arg_board_evaluator.neural_nets_model_and_architecture.nn_architecture_args,
             )
             node_evaluator = NNNodeEvaluator(
-                nn_board_evaluator=board_evaluator_nn, syzygy=syzygy_
+                nn_board_evaluator=board_evaluator_nn,
+                syzygy=syzygy_,
+                evaluation_scale=arg_board_evaluator.evaluation_scale,
             )
         case other:
             sys.exit(f"Node Board Eval: can not find {other} in file {__name__}")

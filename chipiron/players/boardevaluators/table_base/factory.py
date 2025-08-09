@@ -8,6 +8,7 @@ from typing import Any, Protocol
 
 from chipiron.players.boardevaluators.table_base.syzygy_python import SyzygyChiTable
 from chipiron.utils import path
+from chipiron.utils.logger import chipiron_logger
 
 from .syzygy_rust import SyzygyRustTable
 from .syzygy_table import SyzygyTable
@@ -28,7 +29,7 @@ def create_syzygy_python() -> SyzygyChiTable | None:
     if is_exist:
         syzygy_table = SyzygyChiTable(path_to_table=path_to_table)
     else:
-        print("WARNING: no folder found for syzygy tables so NOT using it")
+        chipiron_logger.warning("no folder found for syzygy tables so NOT using it")
         syzygy_table = None
 
     return syzygy_table

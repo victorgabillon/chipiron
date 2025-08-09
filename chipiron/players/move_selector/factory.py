@@ -40,11 +40,11 @@ def create_main_move_selector(
         move_selector.MoveSelector: The main move selector.
 
     Raises:
-        ValueError: If the given move selector instance or arguments are invalid.
+        ValueErr    or: If the given move selector instance or arguments are invalid.
 
     """
     main_move_selector: move_selector.MoveSelector
-    chipiron_logger.info("Create main move selector")
+    chipiron_logger.debug("Create main move selector")
 
     match move_selector_instance_or_args:
         case Random():

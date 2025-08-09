@@ -61,6 +61,7 @@ python3 chipiron/scripts/main_chipiron.py
 * tkinter
 * make
 * libxcb-cursor0
+* zstd (for decompressing Lichess PGN databases)
 
 ## Installation
 
@@ -71,6 +72,16 @@ This will install Python dependencies, download syzygy tables, install Stockfish
 ```bash
 make init
 ```
+
+#### Optional: Download Lichess PGN Database
+
+To download a Lichess PGN database for generating training datasets:
+
+```bash
+make lichess-pgn
+```
+
+This downloads and extracts the Lichess database (lichess_db_standard_rated_2015-03.pgn) to `external_data/lichess_pgn/`. This is required if you want to generate custom datasets from real games.
 
 #### (Optional) Using Conda
 
