@@ -42,6 +42,24 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+
+      - name: Update apt cache
+        run: sudo apt-get update
+
+      - name: Remove unnecessary packages
+        run: |
+          sudo apt-get remove -y '^aspnetcore-.*' || true
+          sudo apt-get remove -y '^dotnet-.*' --fix-missing || true
+          sudo apt-get remove -y '^llvm-.*' --fix-missing || true
+          sudo apt-get remove -y 'php.*' --fix-missing || true
+          sudo apt-get remove -y '^mongodb-.*' --fix-missing || true
+          sudo apt-get remove -y '^mysql-.*' --fix-missing || true
+          sudo apt-get remove -y azure-cli google-chrome-stable firefox powershell mono-devel libgl1-mesa-dri --fix-missing || true
+          sudo apt-get remove -y google-cloud-sdk --fix-missing || true
+          sudo apt-get remove -y google-cloud-cli --fix-missing || true
+          sudo apt-get autoremove -y || true
+          sudo apt-get clean || true
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
