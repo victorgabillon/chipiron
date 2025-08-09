@@ -27,13 +27,7 @@ class PlayerConfigTag(str, Enum):
     UNIFORM_DEPTH_3 = "UniformDepth3"
     UNIFORM = "Uniform"
     RANDOM = "Random"
-    Stockfish = "Stockfish"
-
-    Test_Sequool = "players_for_test_purposes/Sequool"
-    Test_RecurZipfSequool = "players_for_test_purposes/RecurZipfSequool"
-    Test_RecurZipfBase3 = "players_for_test_purposes/RecurZipfBase3"
-    Test_RecurZipfBase4 = "players_for_test_purposes/RecurZipfBase4"
-    Test_Uniform = "players_for_test_purposes/Uniform"
+    STOCKFISH = "Stockfish"
 
     def is_human(self) -> bool:
         """Check if the player is human.

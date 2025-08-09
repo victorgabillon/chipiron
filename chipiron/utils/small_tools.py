@@ -42,10 +42,12 @@ def mkdir_if_not_existing(folder_path: path) -> None:
         )
     except FileExistsError as error:
         chipiron_logger.error(
-            f"the file already exists so no creation needed for {folder_path}, with error {error}  "
+            "the file already exists so no creation needed for %s, with error %s",
+            folder_path,
+            error,
         )
     else:
-        chipiron_logger.info(f"Successfully created the directory {folder_path} ")
+        chipiron_logger.info("Successfully created the directory %s ", folder_path)
 
 
 def yaml_fetch_args_in_file(path_file: path) -> dict[Any, Any]:

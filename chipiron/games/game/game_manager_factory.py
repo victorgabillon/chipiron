@@ -25,6 +25,7 @@ from chipiron.players.factory_higher_level import (
 from chipiron.utils import path, seed
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage
 from chipiron.utils.dataclass import IsDataclass
+from chipiron.utils.logger import chipiron_logger
 
 from ...environments.chess_env.board.utils import FenPlusHistory
 from ...environments.chess_env.move_factory import MoveFactory
@@ -83,6 +84,10 @@ class GameManagerFactory:
         # useful if the logic of game generation gets complex
         # in the future, we might want the implementation detail to actually be modified during the
         # match in that case they would come arg_game_manager
+
+        chipiron_logger.debug(
+            " DEBUG Creating GameManager: %s", player_color_to_factory_args
+        )
 
         # CREATING THE BOARD
         starting_fen: str = args_game_manager.starting_position.get_fen()

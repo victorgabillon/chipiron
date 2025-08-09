@@ -111,12 +111,6 @@ class SoftmaxRule:
             values.append(value)
 
         softmax_ = list(softmax(values, self.temperature))
-        print(
-            "SOFTMAX",
-            self.temperature,
-            [i / sum(softmax_) for i in softmax_],
-            sum([i / sum(softmax_) for i in softmax_]),
-        )
 
         move_as_list = random_generator.choices(
             list(tree.root_node.moves_children.keys()), weights=softmax_, k=1

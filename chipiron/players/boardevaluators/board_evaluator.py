@@ -16,16 +16,6 @@ from chipiron.utils.communication.gui_messages import EvaluationMessage
 from chipiron.utils.dataclass import IsDataclass
 
 
-class ValueWhiteWhenOver(float, Enum):
-    """
-    Enum class representing the default values for `value_white` when the node is over.
-    """
-
-    VALUE_WHITE_WHEN_OVER_WHITE_WINS = 1000.0
-    VALUE_WHITE_WHEN_OVER_DRAW = 0.0
-    VALUE_WHITE_WHEN_OVER_BLACK_WINS = -1000.0
-
-
 class BoardEvaluator(Protocol):
     """
     Protocol representing a board evaluator.

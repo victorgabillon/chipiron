@@ -1,7 +1,7 @@
 """Defines the EvaluationScale enum for board evaluation scales."""
 
 from enum import Enum
-from typing import Protocol
+from typing import Type, Union
 
 
 class EvaluationScale(Enum):
@@ -10,24 +10,12 @@ class EvaluationScale(Enum):
     """
 
     SYMMETRIC_UNIT_INTERVAL = "symmetric_unit_interval"  # [-1.0, 1.0]
-    ENTIRE_REAL_AXIS = "entire_real_axis"  # [-inf, +inf] or more pragmatically between a minimum and a maximum value.
-    STOCKFISH_BASED = "stockfish_based"  # based on Stockfish evaluation, typically [-1000, 1000] but often normalized to [-1.0, 1.0] or so... (to be checked)
-
-
-class HasValueOverEnum(Protocol):
-    """
-    Protocol for enums that provide values for white's evaluation when the node is over.
-    """
-
-    VALUE_WHITE_WHEN_OVER_WHITE_WINS: Enum
-    VALUE_WHITE_WHEN_OVER_DRAW: Enum
-    VALUE_WHITE_WHEN_OVER_BLACK_WINS: Enum
+    ENTIRE_REAL_AXIS = "entire_real_axis"  # [-inf, +inf]
+    STOCKFISH_BASED = "stockfish_based"  # based on Stockfish evaluation
 
 
 class ValueWhiteWhenOverEntireRealAxis(float, Enum):
-    """
-    Enum class representing the default values for `value_white` when the node is over.
-    """
+    """Enum class representing values for `value_white` when the node is over."""
 
     VALUE_WHITE_WHEN_OVER_WHITE_WINS = 1000.0
     VALUE_WHITE_WHEN_OVER_DRAW = 0.0
@@ -35,10 +23,30 @@ class ValueWhiteWhenOverEntireRealAxis(float, Enum):
 
 
 class ValueWhiteWhenOverSymmetricUnitInterval(float, Enum):
-    """
-    Enum class representing the default values for `value_white` when the node is over.
-    """
+    """Enum class representing values for `value_white` when the node is over."""
 
-    VALUE_WHITE_WHEN_OVER_WHITE_WINS = 1
+    VALUE_WHITE_WHEN_OVER_WHITE_WINS = 1.0
     VALUE_WHITE_WHEN_OVER_DRAW = 0.0
-    VALUE_WHITE_WHEN_OVER_BLACK_WINS = -1
+    VALUE_WHITE_WHEN_OVER_BLACK_WINS = -1.0
+
+
+# Type alias for the value over enums
+ValueOverEnum = Union[
+    Type[ValueWhiteWhenOverSymmetricUnitInterval],
+    Type[ValueWhiteWhenOverEntireRealAxis],
+]
+
+
+def get_value_over_enum(evaluation_scale: EvaluationScale) -> ValueOverEnum:
+    """
+    Returns the appropriate ValueWhiteWhenOver enum based on the evaluation scale.
+    """
+    match evaluation_scale:
+        case EvaluationScale.SYMMETRIC_UNIT_INTERVAL:
+            return ValueWhiteWhenOverSymmetricUnitInterval
+        case EvaluationScale.ENTIRE_REAL_AXIS:
+            return ValueWhiteWhenOverEntireRealAxis
+        case EvaluationScale.STOCKFISH_BASED:
+            return ValueWhiteWhenOverEntireRealAxis
+        case _:
+            raise ValueError(f"Unsupported evaluation scale: {evaluation_scale}")

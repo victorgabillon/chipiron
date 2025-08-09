@@ -4,8 +4,14 @@ import chess
 
 import chipiron.environments.chess_env.board as boards
 import chipiron.players.boardevaluators as board_evals
+from chipiron.players.boardevaluators.basic_evaluation import value_white
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
     BoardEvaluation,
+)
+from chipiron.players.boardevaluators.evaluation_scale import (
+    EvaluationScale,
+    ValueOverEnum,
+    get_value_over_enum,
 )
 from chipiron.players.boardevaluators.over_event import HowOver, OverEvent, Winner
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
@@ -19,13 +25,20 @@ class MasterBoardEvaluator:
     It uses a board evaluator and a syzygy evaluator to calculate the value of the nodes.
     """
 
+    # The board evaluator used to evaluate the chess board.
     board_evaluator: BoardEvaluator
+
+    # The Syzygy table used for endgame tablebase evaluations, or None if not available.
     syzygy_evaluator: SyzygyTable[Any] | None
+
+    # The value over enum used to determine the value of the node when it is over.
+    value_over_enum: ValueOverEnum
 
     def __init__(
         self,
         board_evaluator: BoardEvaluator,
         syzygy: SyzygyTable[Any] | None,
+        value_over_enum: ValueOverEnum,
     ) -> None:
         """
         Initializes a NodeEvaluator object.
@@ -33,9 +46,11 @@ class MasterBoardEvaluator:
         Args:
             board_evaluator (board_evals.BoardEvaluator): The board evaluator used to evaluate the chess board.
             syzygy (SyzygyTable | None): The Syzygy table used for endgame tablebase evaluations, or None if not available.
+            value_over_enum (ValueOverEnum): The value over enum used to determine the value of the node when it is over.
         """
         self.board_evaluator = board_evaluator
         self.syzygy_evaluator = syzygy
+        self.value_over_enum = value_over_enum
 
     def value_white(self, board: boards.IBoard) -> float:
         """
@@ -120,19 +135,45 @@ class MasterBoardEvaluator:
             evaluation = self.value_white_from_over_event(over_event=over_event)
         return over_event, evaluation
 
-    def value_white_from_over_event(
-        self, over_event: OverEvent
-    ) -> board_evals.ValueWhiteWhenOver:
+    def value_white_from_over_event(self, over_event: OverEvent) -> float:
         """
         Returns the value white given an over event.
         """
         assert over_event.is_over()
+        white_value: Any
         if over_event.is_win():
             assert not over_event.is_draw()
             if over_event.is_winner(chess.WHITE):
-                return board_evals.ValueWhiteWhenOver.VALUE_WHITE_WHEN_OVER_WHITE_WINS
+                white_value = self.value_over_enum.VALUE_WHITE_WHEN_OVER_WHITE_WINS
             else:
-                return board_evals.ValueWhiteWhenOver.VALUE_WHITE_WHEN_OVER_BLACK_WINS
+                white_value = self.value_over_enum.VALUE_WHITE_WHEN_OVER_BLACK_WINS
         else:  # draw
             assert over_event.is_draw()
-            return board_evals.ValueWhiteWhenOver.VALUE_WHITE_WHEN_OVER_DRAW
+            white_value = self.value_over_enum.VALUE_WHITE_WHEN_OVER_DRAW
+        assert isinstance(white_value, float)
+        return white_value
+
+
+def create_master_board_evaluator(
+    board_evaluator: BoardEvaluator,
+    syzygy: SyzygyTable[Any] | None,
+    evaluation_scale: EvaluationScale,
+) -> "MasterBoardEvaluator":
+    """
+    Factory function to create a MasterBoardEvaluator instance.
+
+    Args:
+        board_evaluator (BoardEvaluator): The board evaluator to use.
+        syzygy (SyzygyTable | None): The syzygy table for endgame evaluations.
+        value_over_enum (ValueOverEnum): The value over enum for evaluation.
+
+    Returns:
+        MasterBoardEvaluator: An instance of MasterBoardEvaluator.
+    """
+
+    value_over_enum: ValueOverEnum = get_value_over_enum(
+        evaluation_scale=evaluation_scale
+    )
+    return MasterBoardEvaluator(
+        board_evaluator=board_evaluator, syzygy=syzygy, value_over_enum=value_over_enum
+    )

@@ -109,7 +109,7 @@ def create_player(
     Returns:
         Player: The created player object.
     """
-    chipiron_logger.info("Create player")
+    chipiron_logger.debug("Create player")
     main_move_selector: move_selector.MoveSelector = (
         move_selector.create_main_move_selector(
             move_selector_instance_or_args=args.main_move_selector,

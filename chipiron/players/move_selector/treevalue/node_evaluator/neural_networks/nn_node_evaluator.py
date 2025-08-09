@@ -11,7 +11,11 @@ from chipiron.environments.chess_env import board
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
     FloatyBoardEvaluation,
 )
-from chipiron.players.boardevaluators.master_board_evaluator import MasterBoardEvaluator
+from chipiron.players.boardevaluators.evaluation_scale import EvaluationScale
+from chipiron.players.boardevaluators.master_board_evaluator import (
+    MasterBoardEvaluator,
+    create_master_board_evaluator,
+)
 from chipiron.players.boardevaluators.table_base import SyzygyTable
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
     AlgorithmNode,
@@ -27,6 +31,7 @@ class NNNodeEvaluator(NodeEvaluator):
         self,
         nn_board_evaluator: board_nn.NNBoardEvaluator,
         syzygy: SyzygyTable[Any] | None,
+        evaluation_scale: EvaluationScale,
     ) -> None:
         """
         Initializes an instance of the NNNodeEvaluator class.
@@ -36,8 +41,10 @@ class NNNodeEvaluator(NodeEvaluator):
             syzygy (SyzygyTable | None): The Syzygy table or None if not available.
         """
         super().__init__(
-            master_board_evaluator=MasterBoardEvaluator(
-                board_evaluator=nn_board_evaluator, syzygy=syzygy
+            master_board_evaluator=create_master_board_evaluator(
+                board_evaluator=nn_board_evaluator,
+                syzygy=syzygy,
+                evaluation_scale=evaluation_scale,
             )
         )
         self.net = nn_board_evaluator.net

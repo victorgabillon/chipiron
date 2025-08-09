@@ -31,7 +31,7 @@ dependencies = [
     "shakmaty_python_binding>=0.1.5",
     "gprof2dot",
     "mlflow",
-    "parsley_coco>=0.1.26",
+    "parsley_coco>=0.1.27",
     "gdown"
 ]
 license = "GPL-3.0-only"
