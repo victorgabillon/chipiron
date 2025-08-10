@@ -1,5 +1,13 @@
 """
-This module contains the implementation of the StockfishPlayer class, which is a move selector that uses the Stockfish chess engine to recommend moves.
+This module contains the implementation of the StockfishPlayer class, which i        if self.engine is None:
+            # Check if Stockfish binary exists
+            if not STOCKFISH_BINARY_PATH.exists():
+                raise FileNotFoundError(
+                    f"Stockfish binary not found at {STOCKFISH_BINARY_PATH}.\n"
+                    f"Please install Stockfish by running:\n"
+                    f"    make stockfish\n"
+                    f"This will download and install Stockfish to the appropriate location."
+                )lector that uses the Stockfish chess engine to recommend moves.
 
 The StockfishPlayer class is a dataclass that represents a player that selects moves using the Stockfish engine. It has the following attributes:
 - type: A literal value representing the type of move selector (in this case, MoveSelectorTypes.Stockfish).
@@ -15,11 +23,13 @@ Note: The Stockfish engine is initialized lazily when the first move is selected
 """
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Literal
 
 import chess.engine
 
 import chipiron.environments.chess_env.board as boards
+from chipiron.utils.path_variables import STOCKFISH_BINARY_PATH
 
 from ...environments.chess_env import BoardChi
 from ...environments.chess_env.board import create_board_chi
@@ -52,6 +62,16 @@ class StockfishPlayer:
     time_limit: float = 0.1
     engine: Any = None
 
+    @staticmethod
+    def is_stockfish_available() -> bool:
+        """
+        Check if Stockfish is properly installed and available.
+
+        Returns:
+            bool: True if Stockfish binary exists and appears to be executable.
+        """
+        return STOCKFISH_BINARY_PATH.exists() and STOCKFISH_BINARY_PATH.is_file()
+
     def select_move(self, board: boards.IBoard, move_seed: int) -> MoveRecommendation:
         """
         Selects a move based on the given board state and move seed.
@@ -62,17 +82,33 @@ class StockfishPlayer:
 
         Returns:
             MoveRecommendation: A MoveRecommendation object representing the selected move.
+
+        Raises:
+            FileNotFoundError: If Stockfish binary is not found, with instructions to install it.
         """
 
         if self.engine is None:
-            # if this object is created in the init then sending the object
-            # self.engine = chess.engine.SimpleEngine.popen_uci(
-            #    # TODO: should we remove the hardcoding
-            #    r"stockfish/stockfish_14.1_linux_x64/stockfish_14.1_linux_x64")
-            self.engine = chess.engine.SimpleEngine.popen_uci(
-                # TODO: should we remove the hardcoding
-                r"stockfish/stockfish/stockfish-ubuntu-x86-64-avx2"
-            )
+            # Check if Stockfish binary exists
+            if not STOCKFISH_BINARY_PATH.exists():
+                raise FileNotFoundError(
+                    f"Stockfish binary not found at {STOCKFISH_BINARY_PATH}.\n"
+                    f"Please install Stockfish by running:\n"
+                    f"    make stockfish\n"
+                    f"This will download and install Stockfish 16 (~40MB) to the correct location."
+                )
+
+            try:
+                self.engine = chess.engine.SimpleEngine.popen_uci(
+                    str(STOCKFISH_BINARY_PATH)
+                )
+            except Exception as e:
+                raise RuntimeError(
+                    f"Failed to start Stockfish engine at {STOCKFISH_BINARY_PATH}.\n"
+                    f"The binary may be corrupted. Try reinstalling with:\n"
+                    f"    rm -rf {STOCKFISH_BINARY_PATH.parent}\n"
+                    f"    make stockfish\n"
+                    f"Original error: {e}"
+                ) from e
 
         # transform the board
         board_chi: BoardChi = create_board_chi(

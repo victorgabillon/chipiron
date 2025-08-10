@@ -16,11 +16,12 @@ PROJECT_ROOT = Path(__file__).parents[2]  # Go up from chipiron/utils/ to projec
 EXTERNAL_DATA_DIR = PROJECT_ROOT / "external_data"
 LICHESS_PGN_DIR = EXTERNAL_DATA_DIR / "lichess_pgn"
 SYZYGY_TABLES_DIR = EXTERNAL_DATA_DIR / "syzygy-tables"
-STOCKFISH_DIR = PROJECT_ROOT / "stockfish"
+STOCKFISH_DIR = EXTERNAL_DATA_DIR / "stockfish"
 SCRIPTS_DIR = PROJECT_ROOT / "chipiron" / "scripts"
 
 # Specific file paths
 LICHESS_PGN_FILE = LICHESS_PGN_DIR / "lichess_db_standard_rated_2015-03.pgn"
+STOCKFISH_BINARY_PATH = STOCKFISH_DIR / "stockfish" / "stockfish-ubuntu-x86-64-avx2"
 
 # MLflow paths (keep existing ones but make them relative to project root)
 ML_FLOW_URI_PATH = f"sqlite:///{PROJECT_ROOT}/chipiron/scripts/default_output_folder/mlflow_data/mlruns.db"
@@ -44,6 +45,7 @@ def main() -> None:
     print()
     print("File Paths:")
     print(f"LICHESS_PGN_FILE:    {LICHESS_PGN_FILE.absolute()}")
+    print(f"STOCKFISH_BINARY_PATH: {STOCKFISH_BINARY_PATH.absolute()}")
     print()
     print("MLflow Paths:")
     print(f"ML_FLOW_URI_PATH:    {ML_FLOW_URI_PATH}")

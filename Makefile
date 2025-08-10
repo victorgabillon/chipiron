@@ -3,22 +3,32 @@ ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 SYZYGY_SOURCE="https://syzygy-tables.info/download.txt?source=sesse&max-pieces=5"
 SYZYGY_DESTINATION=${ROOT_DIR}/external_data/syzygy-tables/
 
-STOCKFISH_ZIP_FILE=stock.tar
-STOCKFISH_SOURCE="https://drive.google.com/file/d/1kqmgrZ2_1RwyUjAl6BOktkJx9mcSW3xG"
-STOCKFISH_DESTINATION=${ROOT_DIR}/stockfish/
+STOCKFISH_VERSION=16
+STOCKFISH_URL="https://github.com/official-stockfish/Stockfish/releases/download/sf_$(STOCKFISH_VERSION)/stockfish-ubuntu-x86-64-avx2.tar"
+STOCKFISH_DESTINATION=${ROOT_DIR}/external_data/stockfish/
 
 DATA_SOURCE="https://drive.google.com/drive/folders/1tvkuiaN-oXC7UAjUw-6cIl1PB0r2as7Y?usp=sharing"
 DATA_DESTINATION=${ROOT_DIR}/external_data/
 
-# Lichess PGN database download
-LICHESS_PGN_URL="https://database.lichess.org/standard/lichess_db_standard_rated_2015-03.pgn.zst"
-LICHESS_PGN_DESTINATION=${ROOT_DIR}/external_data/lichess_pgn/
 
-.PHONY: init lichess-pgn
+.PHONY: init lichess-pgn stockfish
 
 init: external_data/ external_data/syzygy-tables chipiron/requirements
 
 lichess-pgn: ${LICHESS_PGN_DESTINATION}lichess_db_standard_rated_2015-03.pgn
+
+stockfish: ${STOCKFISH_DESTINATION}stockfish/stockfish-ubuntu-x86-64-avx2
+	echo "Stockfish setup complete"
+
+${STOCKFISH_DESTINATION}stockfish/stockfish-ubuntu-x86-64-avx2:
+	echo "Downloading and setting up Stockfish..."
+	mkdir -p ${STOCKFISH_DESTINATION}
+	cd ${STOCKFISH_DESTINATION} && \
+	curl -L ${STOCKFISH_URL} -o stockfish-ubuntu-x86-64-avx2.tar && \
+	tar -xf stockfish-ubuntu-x86-64-avx2.tar && \
+	rm stockfish-ubuntu-x86-64-avx2.tar && \
+	chmod +x stockfish/stockfish-ubuntu-x86-64-avx2
+	echo "Stockfish installed at ${STOCKFISH_DESTINATION}stockfish/stockfish-ubuntu-x86-64-avx2"
 
 chipiron/requirements:
 	pip install -e .
@@ -32,9 +42,3 @@ external_data/:
 	echo "downloading Data"
 	gdown --folder ${DATA_SOURCE} -O ${DATA_DESTINATION}
 
-${LICHESS_PGN_DESTINATION}lichess_db_standard_rated_2015-03.pgn:
-	echo "downloading Lichess PGN database"
-	mkdir -p ${LICHESS_PGN_DESTINATION}
-	wget ${LICHESS_PGN_URL} -O ${LICHESS_PGN_DESTINATION}lichess_db_standard_rated_2015-03.pgn.zst
-	zstd -d ${LICHESS_PGN_DESTINATION}lichess_db_standard_rated_2015-03.pgn.zst
-	rm ${LICHESS_PGN_DESTINATION}lichess_db_standard_rated_2015-03.pgn.zst
