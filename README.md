@@ -63,25 +63,29 @@ python3 chipiron/scripts/main_chipiron.py
 * libxcb-cursor0
 * zstd (for decompressing Lichess PGN databases)
 
+**Optional:**
+* Stockfish chess engine (can be installed with `make stockfish`)
+
 ## Installation
 
 ### Using Make
 
-This will install Python dependencies, download syzygy tables, install Stockfish, retrieve datasets, and GUI images:
+This will install Python dependencies, download syzygy tables, retrieve datasets, and GUI images:
 
 ```bash
 make init
 ```
 
-#### Optional: Download Lichess PGN Database
+#### Optional: Install Stockfish Chess Engine
 
-To download a Lichess PGN database for generating training datasets:
+If you want to use the integrated Stockfish player for stronger AI opponents:
 
 ```bash
-make lichess-pgn
+make stockfish
 ```
 
-This downloads and extracts the Lichess database (lichess_db_standard_rated_2015-03.pgn) to `external_data/lichess_pgn/`. This is required if you want to generate custom datasets from real games.
+This downloads and installs Stockfish 16 (~40MB) to the correct location for chipiron integration.
+
 
 #### (Optional) Using Conda
 

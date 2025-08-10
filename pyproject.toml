@@ -32,7 +32,8 @@ dependencies = [
     "gprof2dot",
     "mlflow",
     "parsley_coco>=0.1.27",
-    "gdown"
+    "gdown",
+    "zstandard"
 ]
 license = "GPL-3.0-only"
 license-files = ["LICENSE"]

@@ -20,6 +20,7 @@ from chipiron.games.match.match_results import MatchReport
 from chipiron.games.match.MatchTag import MatchConfigTag
 from chipiron.players import PlayerArgs
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
+from chipiron.players.move_selector.stockfish import StockfishPlayer
 from chipiron.players.move_selector.treevalue import TreeAndValuePlayerArgs
 from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
     StoppingCriterionTypes,
@@ -66,111 +67,144 @@ test_player_overwrite = PartialOpPlayerArgs(
 )
 
 
-configs_base: list[Any] = [
-    # random Player first to have a fast game
-    PartialOpMatchScriptArgs(
-        gui=False,
-        match_args=PartialOpMatchArgs(
-            player_one=PlayerConfigTag.SEQUOOL,
-            player_two=PlayerConfigTag.RANDOM,
-            match_setting=MatchConfigTag.Cubo,
-            player_one_overwrite=test_player_overwrite,
+def _build_base_configs() -> list[Any]:
+    """Build the base configurations, including Stockfish test only if available."""
+    configs = [
+        # random Player first to have a fast game
+        PartialOpMatchScriptArgs(
+            gui=False,
+            match_args=PartialOpMatchArgs(
+                player_one=PlayerConfigTag.SEQUOOL,
+                player_two=PlayerConfigTag.RANDOM,
+                match_setting=MatchConfigTag.Cubo,
+                player_one_overwrite=test_player_overwrite,
+            ),
+            base_script_args=PartialOpBaseScriptArgs(
+                profiling=False, testing=True, seed=11
+            ),
         ),
-        base_script_args=PartialOpBaseScriptArgs(
-            profiling=False, testing=True, seed=11
+        PartialOpMatchScriptArgs(
+            gui=False,
+            match_args=PartialOpMatchArgs(
+                player_one=PlayerConfigTag.SEQUOOL,
+                player_two=PlayerConfigTag.RECUR_ZIPF_BASE_3,
+                match_setting=MatchConfigTag.Cubo,
+                player_one_overwrite=test_player_overwrite,
+                player_two_overwrite=test_player_overwrite,
+            ),
+            base_script_args=PartialOpBaseScriptArgs(
+                profiling=False, testing=True, seed=11
+            ),
         ),
-    ),
-    PartialOpMatchScriptArgs(
-        gui=False,
-        match_args=PartialOpMatchArgs(
-            player_one=PlayerConfigTag.SEQUOOL,
-            player_two=PlayerConfigTag.RECUR_ZIPF_BASE_3,
-            match_setting=MatchConfigTag.Cubo,
-            player_one_overwrite=test_player_overwrite,
-            player_two_overwrite=test_player_overwrite,
+        PartialOpMatchScriptArgs(
+            gui=False,
+            match_args=PartialOpMatchArgs(
+                player_one=PlayerConfigTag.RECUR_ZIPF_BASE_4,
+                player_two=PlayerConfigTag.RECUR_ZIPF_BASE_3,
+                match_setting=MatchConfigTag.Cubo,
+                player_one_overwrite=test_player_overwrite,
+                player_two_overwrite=test_player_overwrite,
+            ),
+            base_script_args=PartialOpBaseScriptArgs(
+                profiling=False, testing=True, seed=11
+            ),
         ),
-        base_script_args=PartialOpBaseScriptArgs(
-            profiling=False, testing=True, seed=11
+        PartialOpMatchScriptArgs(
+            gui=False,
+            match_args=PartialOpMatchArgs(
+                player_one=PlayerConfigTag.UNIFORM,
+                player_two=PlayerConfigTag.RECUR_ZIPF_BASE_3,
+                match_setting=MatchConfigTag.Cubo,
+                player_one_overwrite=test_player_overwrite,
+                player_two_overwrite=test_player_overwrite,
+            ),
+            base_script_args=PartialOpBaseScriptArgs(
+                profiling=False, testing=True, seed=11
+            ),
         ),
-    ),
-    PartialOpMatchScriptArgs(
-        gui=False,
-        match_args=PartialOpMatchArgs(
-            player_one=PlayerConfigTag.RECUR_ZIPF_BASE_4,
-            player_two=PlayerConfigTag.RECUR_ZIPF_BASE_3,
-            match_setting=MatchConfigTag.Cubo,
-            player_one_overwrite=test_player_overwrite,
-            player_two_overwrite=test_player_overwrite,
+        PartialOpMatchScriptArgs(
+            gui=False,
+            match_args=PartialOpMatchArgs(
+                player_one=PlayerConfigTag.RECUR_ZIPF_BASE_3,
+                player_two=PlayerConfigTag.RECUR_ZIPF_BASE_3,
+                match_setting=MatchConfigTag.Cubo,
+                player_one_overwrite=test_player_overwrite,
+                player_two_overwrite=test_player_overwrite,
+            ),
+            base_script_args=PartialOpBaseScriptArgs(
+                profiling=False, testing=True, seed=11
+            ),
         ),
-        base_script_args=PartialOpBaseScriptArgs(
-            profiling=False, testing=True, seed=11
+        # checking profiling
+        PartialOpMatchScriptArgs(
+            gui=False,
+            match_args=PartialOpMatchArgs(
+                player_one=PlayerConfigTag.SEQUOOL,
+                player_two=PlayerConfigTag.RANDOM,
+                match_setting=MatchConfigTag.Cubo,
+                player_one_overwrite=test_player_overwrite,
+            ),
+            base_script_args=PartialOpBaseScriptArgs(
+                profiling=True, testing=True, seed=11
+            ),
         ),
-    ),
-    PartialOpMatchScriptArgs(
-        gui=False,
-        match_args=PartialOpMatchArgs(
-            player_one=PlayerConfigTag.UNIFORM,
-            player_two=PlayerConfigTag.RECUR_ZIPF_BASE_3,
-            match_setting=MatchConfigTag.Cubo,
-            player_one_overwrite=test_player_overwrite,
-            player_two_overwrite=test_player_overwrite,
+        # checking another seed haha
+        PartialOpMatchScriptArgs(
+            gui=False,
+            match_args=PartialOpMatchArgs(
+                player_one=PlayerConfigTag.SEQUOOL,
+                player_two=PlayerConfigTag.RANDOM,
+                match_setting=MatchConfigTag.Cubo,
+                player_one_overwrite=test_player_overwrite,
+            ),
+            base_script_args=PartialOpBaseScriptArgs(
+                profiling=False, testing=True, seed=12
+            ),
         ),
-        base_script_args=PartialOpBaseScriptArgs(
-            profiling=False, testing=True, seed=11
-        ),
-    ),
-    PartialOpMatchScriptArgs(
-        gui=False,
-        match_args=PartialOpMatchArgs(
-            player_one=PlayerConfigTag.RECUR_ZIPF_BASE_3,
-            player_two=PlayerConfigTag.RECUR_ZIPF_BASE_3,
-            match_setting=MatchConfigTag.Cubo,
-            player_one_overwrite=test_player_overwrite,
-            player_two_overwrite=test_player_overwrite,
-        ),
-        base_script_args=PartialOpBaseScriptArgs(
-            profiling=False, testing=True, seed=11
-        ),
-    ),
-    # checking profiling
-    PartialOpMatchScriptArgs(
-        gui=False,
-        match_args=PartialOpMatchArgs(
-            player_one=PlayerConfigTag.SEQUOOL,
-            player_two=PlayerConfigTag.RANDOM,
-            match_setting=MatchConfigTag.Cubo,
-            player_one_overwrite=test_player_overwrite,
-        ),
-        base_script_args=PartialOpBaseScriptArgs(profiling=True, testing=True, seed=11),
-    ),
-    # checking another seed haha
-    PartialOpMatchScriptArgs(
-        gui=False,
-        match_args=PartialOpMatchArgs(
-            player_one=PlayerConfigTag.SEQUOOL,
-            player_two=PlayerConfigTag.RANDOM,
-            match_setting=MatchConfigTag.Cubo,
-            player_one_overwrite=test_player_overwrite,
-        ),
-        base_script_args=PartialOpBaseScriptArgs(
-            profiling=False, testing=True, seed=12
-        ),
-    ),
-    # need a check with two games
-    PartialOpMatchScriptArgs(
-        gui=False,
-        match_args=PartialOpMatchArgs(
-            player_one=PlayerConfigTag.SEQUOOL,
-            player_two=PlayerConfigTag.RANDOM,
-            match_setting=MatchConfigTag.Tron,
-            player_one_overwrite=test_player_overwrite,
-        ),
-        base_script_args=PartialOpBaseScriptArgs(
-            profiling=False, testing=True, seed=11
-        ),
-    ),
-    # todo add basic eval (no neural nets)
-]
+    ]
+
+    # Only add Stockfish test if it's properly installed
+    if StockfishPlayer.is_stockfish_available():
+        configs.append(
+            # checking stockfish
+            PartialOpMatchScriptArgs(
+                gui=False,
+                match_args=PartialOpMatchArgs(
+                    player_one=PlayerConfigTag.STOCKFISH,
+                    player_two=PlayerConfigTag.RANDOM,
+                    match_setting=MatchConfigTag.Cubo,
+                    player_one_overwrite=test_player_overwrite,
+                ),
+                base_script_args=PartialOpBaseScriptArgs(
+                    profiling=False, testing=True, seed=12
+                ),
+            )
+        )
+
+    # Add remaining configs
+    configs.extend(
+        [
+            # need a check with two games
+            PartialOpMatchScriptArgs(
+                gui=False,
+                match_args=PartialOpMatchArgs(
+                    player_one=PlayerConfigTag.SEQUOOL,
+                    player_two=PlayerConfigTag.RANDOM,
+                    match_setting=MatchConfigTag.Tron,
+                    player_one_overwrite=test_player_overwrite,
+                ),
+                base_script_args=PartialOpBaseScriptArgs(
+                    profiling=False, testing=True, seed=11
+                ),
+            ),
+            # todo add basic eval (no neural nets)
+        ]
+    )
+
+    return configs
+
+
+configs_base: list[Any] = _build_base_configs()
 
 PartialOpImplementationArgs = make_partial_dataclass_with_optional_paths(
     cls=ImplementationArgs
@@ -194,6 +228,14 @@ def test_one_matches(configs=None, log_level=logging.ERROR):
     """
     if configs is None:
         configs = configs_base
+
+    # Log Stockfish availability status
+    if StockfishPlayer.is_stockfish_available():
+        chipiron_logger.info("Stockfish is available - including Stockfish tests")
+    else:
+        chipiron_logger.info(
+            "Stockfish not available - skipping Stockfish tests (run 'make stockfish' to enable)"
+        )
 
     index: int = 0
     for config in configs:
