@@ -5,6 +5,27 @@ WORKDIR /app
 
 ENV PYTHONPATH="${PYTHONPATH}:/app"
 
+# Set default environment variables for paths
+ENV EXTERNAL_DATA_DIR=external_data
+ENV LICHESS_PGN_DIR=external_data/lichess_pgn
+ENV SYZYGY_TABLES_DIR=external_data/syzygy-tables
+ENV STOCKFISH_DIR=external_data/stockfish
+ENV GUI_DIR=external_data/gui
+
+# Set external URLs and versions
+ENV STOCKFISH_VERSION=16
+ENV SYZYGY_SOURCE=https://syzygy-tables.info/download.txt?source=sesse&max-pieces=5
+ENV STOCKFISH_URL=https://github.com/official-stockfish/Stockfish/releases/download/sf_16/stockfish-ubuntu-x86-64-avx2.tar
+ENV DATA_SOURCE=https://drive.google.com/drive/folders/1tvkuiaN-oXC7UAjUw-6cIl1PB0r2as7Y?usp=sharing
+
+# Set specific file paths
+ENV LICHESS_PGN_FILE=external_data/lichess_pgn/lichess_db_standard_rated_2015-03.pgn
+ENV STOCKFISH_BINARY_PATH=external_data/stockfish/stockfish/stockfish-ubuntu-x86-64-avx2
+
+# Set MLflow paths
+ENV ML_FLOW_URI_PATH=sqlite:///chipiron/scripts/default_output_folder/mlflow_data/mlruns.db
+ENV ML_FLOW_URI_PATH_TEST=sqlite:///chipiron/scripts/default_output_folder/mlflow_data/mlruns_test.db
+
 # 1. Installer Python + pip et dépendances
 RUN set -xe \
     && apt-get update \
@@ -53,7 +74,10 @@ RUN .venv/bin/pip install -e .
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-RUN make external_data/ external_data/syzygy-tables
+# Copy .env file to use consistent paths
+COPY .env .env
+
+RUN make $(EXTERNAL_DATA_DIR)/ $(SYZYGY_TABLES_DIR)
 
 RUN chmod -R 777 chipiron
 RUN chmod -R 777 tests

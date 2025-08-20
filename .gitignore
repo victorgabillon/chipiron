@@ -51,4 +51,5 @@ chipiron/scripts/learn_from_scratch_value_and_fixed_boards/learn_from_scratch_ou
 *.fot
 *.cb
 *.cb2
-.*.lb
+.*.lb# Local environment configuration
+.env.local
