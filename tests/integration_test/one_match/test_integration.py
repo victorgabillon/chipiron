@@ -170,10 +170,9 @@ def _build_base_configs() -> list[Any]:
             PartialOpMatchScriptArgs(
                 gui=False,
                 match_args=PartialOpMatchArgs(
-                    player_one=PlayerConfigTag.STOCKFISH,
-                    player_two=PlayerConfigTag.RANDOM,
+                    player_one=PlayerConfigTag.RANDOM,
+                    player_two=PlayerConfigTag.STOCKFISH,
                     match_setting=MatchConfigTag.Cubo,
-                    player_one_overwrite=test_player_overwrite,
                 ),
                 base_script_args=PartialOpBaseScriptArgs(
                     profiling=False, testing=True, seed=12

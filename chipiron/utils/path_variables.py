@@ -17,6 +17,7 @@ EXTERNAL_DATA_DIR = PROJECT_ROOT / "external_data"
 LICHESS_PGN_DIR = EXTERNAL_DATA_DIR / "lichess_pgn"
 SYZYGY_TABLES_DIR = EXTERNAL_DATA_DIR / "syzygy-tables"
 STOCKFISH_DIR = EXTERNAL_DATA_DIR / "stockfish"
+GUI_DIR = EXTERNAL_DATA_DIR / "gui"
 SCRIPTS_DIR = PROJECT_ROOT / "chipiron" / "scripts"
 
 # Specific file paths

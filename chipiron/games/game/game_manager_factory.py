@@ -85,10 +85,6 @@ class GameManagerFactory:
         # in the future, we might want the implementation detail to actually be modified during the
         # match in that case they would come arg_game_manager
 
-        chipiron_logger.debug(
-            " DEBUG Creating GameManager: %s", player_color_to_factory_args
-        )
-
         # CREATING THE BOARD
         starting_fen: str = args_game_manager.starting_position.get_fen()
         board: boards.IBoard = self.board_factory(

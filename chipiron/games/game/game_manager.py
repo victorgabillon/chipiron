@@ -134,7 +134,8 @@ class GameManager:
         self.game.play_move(move)
         if self.syzygy is not None and self.syzygy.fast_in_table(self.game.board):
             chipiron_logger.info(
-                f"Theoretically finished with value for white: {self.syzygy.string_result(self.game.board)}",
+                "Theoretically finished with value for white: %s",
+                self.syzygy.string_result(self.game.board),
             )
 
     def rewind_one_move(self) -> None:
@@ -151,7 +152,8 @@ class GameManager:
         self.game.rewind_one_move()
         if self.syzygy is not None and self.syzygy.fast_in_table(self.game.board):
             chipiron_logger.info(
-                f"Theoretically finished with value for white: {self.syzygy.string_result(self.game.board)}",
+                "Theoretically finished with value for white: %s",
+                self.syzygy.string_result(self.game.board),
             )
 
     def play_one_game(self) -> GameReport:
@@ -176,12 +178,16 @@ class GameManager:
             board = self.game.board
             half_move: HalfMove = board.ply()
             chipiron_logger.info(
-                f"Half Move: {half_move} playing status {self.game.playing_status.status} "
+                "Half Move: %s playing status %s",
+                half_move,
+                self.game.playing_status.status,
             )
             color_to_move: chess.Color = board.turn
             color_of_player_to_move_str = color_names[color_to_move]
             chipiron_logger.info(
-                f"{color_of_player_to_move_str} ({self.player_color_to_id[color_to_move]}) to play now..."
+                "%s (%s) to play now...",
+                color_of_player_to_move_str,
+                self.player_color_to_id[color_to_move],
             )
 
             # waiting for a message
@@ -191,12 +197,11 @@ class GameManager:
             board = self.game.board
             if board.is_game_over() or not self.game_continue_conditions():
                 if board.is_game_over():
-                    chipiron_logger.info("The game is other")
+                    chipiron_logger.info("The game is over")
                 if not self.game_continue_conditions():
                     chipiron_logger.info("Game continuation not met")
                 break
-            else:
-                chipiron_logger.info(f"Not game over at {board}")
+            chipiron_logger.info("Not game over at %s", board)
 
         self.tell_results()
         self.terminate_processes()
@@ -234,7 +239,10 @@ class GameManager:
                 move_uci: moveUci = move_message.move
 
                 chipiron_logger.info(
-                    f"Game Manager: Receiving the move uci {move_uci} {self.game.playing_status} {board.fen}"
+                    "Game Manager: Receiving the move uci %s %s %s",
+                    move_uci,
+                    self.game.playing_status,
+                    board.fen,
                 )
                 if (
                     move_message.corresponding_board == board.fen
@@ -247,17 +255,22 @@ class GameManager:
                     move_key: moveKey = board.get_move_key_from_uci(move_uci=move_uci)
 
                     chipiron_logger.info(
-                        f"Game Manager: Play a move {move_uci} at {board} {self.game.board.fen}"
+                        "Game Manager: Play a move %s at %s %s",
+                        move_uci,
+                        board,
+                        self.game.board.fen,
                     )
                     # move: IMove = self.move_factory(move_uci=move_uci, board=board)
                     self.play_one_move(move_key)
                     chipiron_logger.info(
-                        f"Game Manager: Now board is  {self.game.board}"
+                        "Game Manager: Now board is  %s", self.game.board
                     )
 
                     eval_sto, eval_chi = self.external_eval()
                     chipiron_logger.info(
-                        f"Stockfish evaluation:{eval_sto} and chipiron eval{eval_chi}"
+                        "Stockfish evaluation:%s and chipiron eval %s",
+                        eval_sto,
+                        eval_chi,
                     )
                     # Print the board
                     chipiron_logger.info(board.print_chess_board())
@@ -268,13 +281,18 @@ class GameManager:
 
                 else:
                     chipiron_logger.info(
-                        f"the move is rejected because one of the following is false \n"
-                        f" move_message.corresponding_board == board.fen{move_message.corresponding_board == board.fen} \n"
-                        f"self.game.playing_status.is_play() {self.game.playing_status.is_play()}\n"
-                        f"message.player_name == self.player_color_to_id[board.turn] {message.player_name == self.player_color_to_id[board.turn]}"
+                        "the move is rejected because one of the following is false \n"
+                        " move_message.corresponding_board == board.fen%s \n"
+                        "self.game.playing_status.is_play() %s\n"
+                        "message.player_name == self.player_color_to_id[board.turn] %s",
+                        move_message.corresponding_board == board.fen,
+                        self.game.playing_status.is_play(),
+                        message.player_name == self.player_color_to_id[board.turn],
                     )
                     chipiron_logger.info(
-                        f"{message.player_name},{self.player_color_to_id[board.turn]}"
+                        "%s,%s",
+                        message.player_name,
+                        self.player_color_to_id[board.turn],
                     )
                 if message.evaluation is not None:
                     self.display_board_evaluator.add_evaluation(
@@ -345,13 +363,13 @@ class GameManager:
             )
             path_file_obj = f"{path_file}_game_report.yaml"
             path_file_txt = f"{path_file}.txt"
-            with open(path_file_txt, "a") as the_fileText:
+            with open(path_file_txt, "a", encoding="utf-8") as the_fileText:
                 for counter, move in enumerate(self.game.move_history):
                     if counter % 2 == 0:
                         move_1 = move
                     else:
                         the_fileText.write(str(move_1) + " " + str(move) + "\n")
-            with open(path_file_obj, "w") as file:
+            with open(path_file_obj, "w", encoding="utf-8") as file:
                 yaml.dump(
                     asdict(game_report, dict_factory=custom_asdict_factory),
                     file,
@@ -372,7 +390,8 @@ class GameManager:
         board = self.game.board
         if self.syzygy is not None and self.syzygy.fast_in_table(board):
             chipiron_logger.info(
-                f"Syzygy: Theoretical value for white {self.syzygy.string_result(board)}"
+                "Syzygy: Theoretical value for white %s",
+                self.syzygy.string_result(board),
             )
         board.tell_result()
 
@@ -406,7 +425,7 @@ class GameManager:
                 case "1-0":
                     res = FinalGameResult.WIN_FOR_WHITE
                 case other:
-                    raise Exception(
+                    raise ValueError(
                         f"unexpected result value {other} in game manager/simple_results"
                     )
 
