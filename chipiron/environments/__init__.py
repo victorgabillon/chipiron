@@ -7,4 +7,4 @@ The environments package provides classes and functions for creating and managin
 
 from typing import Annotated
 
-HalfMove = Annotated[int, "half move"]
+type HalfMove = Annotated[int, "half move"]

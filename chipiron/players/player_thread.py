@@ -11,6 +11,7 @@ from chipiron.environments.chess_env.board.factory import BoardFactory
 from chipiron.utils import seed
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.dataclass import DataClass, IsDataclass
+from chipiron.utils.logger import chipiron_logger
 
 from ..environments.chess_env.board.factory import create_board_factory
 from ..environments.chess_env.board.utils import FenPlusHistory
@@ -110,7 +111,7 @@ class PlayerProcess(multiprocessing.Process):
         Returns:
             None
         """
-        print("Started player thread:", self.game_player)
+        chipiron_logger.info("Started player thread: %s", self.game_player)
 
         while True:
             try:
@@ -123,7 +124,9 @@ class PlayerProcess(multiprocessing.Process):
                     board_message: BoardMessage = message
                     fen_plus_moves: FenPlusHistory = board_message.fen_plus_moves
                     seed_: seed | None = board_message.seed
-                    print(f"Player thread got the board {fen_plus_moves.current_fen}")
+                    chipiron_logger.info(
+                        "Player thread got the board %s", fen_plus_moves.current_fen
+                    )
                     assert seed_ is not None
 
                     # the game_player computes the move for the board and sends the move in the move queue
@@ -134,6 +137,8 @@ class PlayerProcess(multiprocessing.Process):
                         seed_int=seed_,
                     )
                 else:
-                    print(f"NOT EXPECTING THIS MESSAGE !! :  {message}")
+                    chipiron_logger.warning(
+                        "NOT EXPECTING THIS MESSAGE !! : %s", message
+                    )
 
             # TODO here give option to continue working while the other is thinking

@@ -5,6 +5,7 @@ This module is the execution point of the chess GUI application.
 
 It provides the `MainWindow` class, which creates a surface for the chessboard and handles user interactions.
 """
+import os
 import queue
 import time
 import typing
@@ -46,6 +47,8 @@ from chipiron.utils.communication.gui_messages.gui_messages import MatchResultsM
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage
 from chipiron.utils.communication.player_game_messages import BoardMessage, MoveMessage
 from chipiron.utils.dataclass import IsDataclass
+from chipiron.utils.logger import chipiron_logger
+from chipiron.utils.path_variables import GUI_DIR
 
 
 class MainWindow(QWidget):
@@ -85,7 +88,12 @@ class MainWindow(QWidget):
         self.gui_mailbox = gui_mailbox
         self.main_thread_mailbox = main_thread_mailbox
 
-        self.setWindowIcon(QIcon("data/gui/chipicon.png"))
+        # Set window icon with existence check
+        window_icon_path = os.path.join(GUI_DIR, "chipicon.png")
+        if os.path.exists(window_icon_path):
+            self.setWindowIcon(QIcon(window_icon_path))
+        else:
+            chipiron_logger.warning("Window icon file not found: %s", window_icon_path)
 
         self.setWindowTitle("Chipiron Chess GUI")
         self.setGeometry(300, 300, 1400, 800)
@@ -95,7 +103,9 @@ class MainWindow(QWidget):
 
         self.closeButton = QPushButton(self)
         self.closeButton.setText("Close")  # text
-        self.closeButton.setIcon(QIcon("close.png"))  # icon
+        self._check_and_set_icon(
+            self.closeButton, os.path.join(GUI_DIR, "close.png")
+        )  # icon
         self.closeButton.setShortcut("Ctrl+D")  # shortcut key
         self.closeButton.clicked.connect(self.stopppy)
         self.closeButton.setToolTip("Close the widget")  # Tool tip
@@ -103,28 +113,34 @@ class MainWindow(QWidget):
 
         # self.play_button = QPushButton(self)
         # self.play_button.setText("Play")  # text
-        # self.play_button.setIcon(QIcon("data/gui/play.png"))  # icon
+        # self.play_button.setIcon(QIcon(os.path.join(GUI_DIR, "play.png")))  # icon
         # self.play_button.clicked.connect(self.play_button_clicked)
         # self.play_button.setToolTip("play the game")  # Tool tip
         # self.play_button.move(700, 100)
 
         self.pause_button = QPushButton(self)
         self.pause_button.setText("Pause")  # text
-        self.pause_button.setIcon(QIcon("data/gui/pause.png"))  # icon
+        self._check_and_set_icon(
+            self.pause_button, os.path.join(GUI_DIR, "pause.png")
+        )  # icon
         self.pause_button.clicked.connect(self.pause_button_clicked)
         self.pause_button.setToolTip("pause the game")  # Tool tip
         self.pause_button.move(700, 100)
 
         self.back_button = QPushButton(self)
         self.back_button.setText("Back")  # text
-        self.back_button.setIcon(QIcon("data/gui/back.png"))  # icon
+        self._check_and_set_icon(
+            self.back_button, os.path.join(GUI_DIR, "back.png")
+        )  # icon
         self.back_button.clicked.connect(self.back_button_clicked)
         self.back_button.setToolTip("back one move")  # Tool tip
         self.back_button.move(900, 100)
 
         self.player_white_button = QPushButton(self)
         self.player_white_button.setText("Player")  # text
-        self.player_white_button.setIcon(QIcon("data/gui/white_king.png"))  # icon
+        self._check_and_set_icon(
+            self.player_white_button, os.path.join(GUI_DIR, "white_king.png")
+        )  # icon
         self.player_white_button.setStyleSheet(
             "QPushButton {background-color: white; color: black;}"
         )
@@ -135,7 +151,9 @@ class MainWindow(QWidget):
 
         self.player_black_button = QPushButton(self)
         self.player_black_button.setText("Player")  # text
-        self.player_black_button.setIcon(QIcon("data/gui/black_king.png"))  # icon
+        self._check_and_set_icon(
+            self.player_black_button, os.path.join(GUI_DIR, "black_king.png")
+        )  # icon
         self.player_black_button.setStyleSheet(
             "QPushButton {background-color: black; color: white;}"
         )
@@ -219,6 +237,21 @@ class MainWindow(QWidget):
         self.checkThreadTimer.setInterval(5)  # .5 seconds
         self.checkThreadTimer.timeout.connect(self.process_message)
         self.checkThreadTimer.start()
+
+    def _check_and_set_icon(self, button: QPushButton, icon_path: str) -> None:
+        """
+        Check if icon file exists and set it, otherwise log a warning.
+
+        Args:
+            button: The button to set the icon for
+            icon_path: The path to the icon file
+        """
+        if os.path.exists(icon_path):
+            button.setIcon(QIcon(icon_path))
+        else:
+            chipiron_logger.warning("Icon file not found: %s", icon_path)
+            # Set a default icon or leave empty
+            button.setIcon(QIcon())  # Empty icon
 
     def stopppy(self) -> None:
         """
@@ -499,7 +532,7 @@ class MainWindow(QWidget):
                     self.board: IBoard = self.board_factory(
                         fen_with_history=board_message.fen_plus_moves
                     )
-                    print(f"GUI receiving board {self.board.fen}")
+                    chipiron_logger.info("GUI receiving board %s", self.board.fen)
                     self.draw_board()
                     self.display_move_history()
                 case PlayerProgressMessage():
@@ -704,13 +737,17 @@ class MainWindow(QWidget):
             self.playing_status = play_status
             if play_status == PlayingStatus.PAUSE:
                 self.pause_button.setText("Play")  # text
-                self.pause_button.setIcon(QIcon("data/gui/play.png"))  # icon
+                self._check_and_set_icon(
+                    self.pause_button, os.path.join(GUI_DIR, "play.png")
+                )  # icon
                 self.pause_button.clicked.connect(self.play_button_clicked)
                 self.pause_button.setToolTip("play the game")  # Tool tip
                 self.pause_button.move(700, 100)
             elif play_status == PlayingStatus.PLAY:
                 self.pause_button.setText("Pause")  # text
-                self.pause_button.setIcon(QIcon("data/gui/pause.png"))  # icon
+                self._check_and_set_icon(
+                    self.pause_button, os.path.join(GUI_DIR, "pause.png")
+                )  # icon
                 self.pause_button.clicked.connect(self.pause_button_clicked)
                 self.pause_button.setToolTip("pause the game")  # Tool tip
                 self.pause_button.move(700, 100)

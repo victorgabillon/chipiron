@@ -27,6 +27,93 @@ from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor 
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.one_match.one_match import MatchScriptArgs
 from chipiron.scripts.script_args import BaseScriptArgs
+from chipiron.utils.logger import chipiron_logger
+
+
+def format_gui_args_for_display(gui_args: Any) -> str:
+    """
+    Format GUI arguments for human-readable display in logging.
+
+    Args:
+        gui_args: The GUI arguments object to format
+
+    Returns:
+        A formatted string representation of the arguments
+    """
+    if gui_args is None:
+        return "None"
+
+    args_parts = []
+
+    if hasattr(gui_args, "gui") and gui_args.gui:
+        args_parts.append("GUI: Enabled")
+
+    if hasattr(gui_args, "match_args") and gui_args.match_args:
+        match_args = gui_args.match_args
+        if hasattr(match_args, "player_one") and match_args.player_one:
+            args_parts.append(
+                f"Player One: {match_args.player_one.name if hasattr(match_args.player_one, 'name') else match_args.player_one}"
+            )
+        if hasattr(match_args, "player_two") and match_args.player_two:
+            args_parts.append(
+                f"Player Two: {match_args.player_two.name if hasattr(match_args.player_two, 'name') else match_args.player_two}"
+            )
+        if hasattr(match_args, "match_setting") and match_args.match_setting:
+            args_parts.append(
+                f"Match Setting: {match_args.match_setting.name if hasattr(match_args.match_setting, 'name') else match_args.match_setting}"
+            )
+
+        # Display player overwrite settings
+        if (
+            hasattr(match_args, "player_one_overwrite")
+            and match_args.player_one_overwrite
+        ):
+            overwrite = match_args.player_one_overwrite
+            if (
+                hasattr(overwrite, "main_move_selector")
+                and overwrite.main_move_selector
+            ):
+                selector = overwrite.main_move_selector
+                if (
+                    hasattr(selector, "stopping_criterion")
+                    and selector.stopping_criterion
+                ):
+                    criterion = selector.stopping_criterion
+                    if hasattr(criterion, "tree_move_limit"):
+                        args_parts.append(
+                            f"Player One Strength: {criterion.tree_move_limit} moves"
+                        )
+
+        if (
+            hasattr(match_args, "player_two_overwrite")
+            and match_args.player_two_overwrite
+        ):
+            overwrite = match_args.player_two_overwrite
+            if (
+                hasattr(overwrite, "main_move_selector")
+                and overwrite.main_move_selector
+            ):
+                selector = overwrite.main_move_selector
+                if (
+                    hasattr(selector, "stopping_criterion")
+                    and selector.stopping_criterion
+                ):
+                    criterion = selector.stopping_criterion
+                    if hasattr(criterion, "tree_move_limit"):
+                        args_parts.append(
+                            f"Player Two Strength: {criterion.tree_move_limit} moves"
+                        )
+
+    if hasattr(gui_args, "base_script_args") and gui_args.base_script_args:
+        base_args = gui_args.base_script_args
+        if hasattr(base_args, "profiling") and base_args.profiling is not None:
+            args_parts.append(
+                f"Profiling: {'Enabled' if base_args.profiling else 'Disabled'}"
+            )
+        if hasattr(base_args, "seed") and base_args.seed is not None:
+            args_parts.append(f"Random Seed: {base_args.seed}")
+
+    return "\n    ".join(args_parts) if args_parts else "Default settings"
 
 
 def script_gui() -> tuple[scripts.ScriptType, dict[str, Any], str]:
@@ -272,10 +359,19 @@ def generate_inputs(
             gui_args = None
             script_type = scripts.ScriptType.TreeVisualization
         case other:
-            raise Exception(f"Not a good name: {other}")
+            raise ValueError(f"Not a good name: {other}")
 
-    print(
-        f"Gui choices: the script name is {script_type} and the args are {gui_args} and config file {config_file_name}"
+    # Format arguments for human-readable display
+    args_display = format_gui_args_for_display(gui_args)
+
+    chipiron_logger.info(
+        "GUI Configuration Selected:\n"
+        "  Script Type: %s\n"
+        "  Arguments:\n    %s\n"
+        "  Config File: %s",
+        script_type.name if hasattr(script_type, "name") else script_type,
+        args_display,
+        config_file_name,
     )
     return script_type, gui_args, config_file_name
 

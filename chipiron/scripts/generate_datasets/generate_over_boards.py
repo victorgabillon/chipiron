@@ -1,4 +1,4 @@
-""" Generate chess over boards dataset from Lichess PGN dumps."""
+"""Generate chess over boards dataset from Lichess PGN dumps."""
 
 import random
 from pathlib import Path

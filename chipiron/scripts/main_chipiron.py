@@ -3,6 +3,7 @@ Launching the main chipiron
 """
 
 import argparse
+import logging
 import sys
 from typing import Any
 
@@ -12,6 +13,15 @@ from chipiron.scripts.script_gui.script_gui_custom import script_gui
 from chipiron.scripts.script_type import ScriptType
 
 sys.path.append("../../")
+
+# Configure parsley_coco logging to reduce noise
+try:
+    from parsley_coco.logger import set_verbosity
+
+    set_verbosity(logging.WARNING)
+except ImportError:
+    # parsley_coco might not be available in all environments
+    pass
 
 
 def get_script_and_args(

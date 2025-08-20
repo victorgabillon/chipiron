@@ -14,6 +14,7 @@ from chipiron.utils import seed, unique_int_from_list
 from chipiron.utils.communication.gui_messages import GameStatusMessage
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.dataclass import IsDataclass
+from chipiron.utils.logger import chipiron_logger
 
 from .game_playing_status import GamePlayingStatus
 
@@ -264,7 +265,7 @@ class ObservableGame:
             new_status (GamePlayingStatus): The new playing status of the game.
         """
         self.game.playing_status = new_status
-        raise Exception(
+        raise NotImplementedError(
             "problem no notificaiton implemented. Maybe this function is deadcode?"
         )
 
@@ -307,8 +308,8 @@ class ObservableGame:
         Notifies the display mailboxes with the updated board.
         """
         for mailbox in self.mailboxes_display:
-            print(
-                "sending board to display",
+            chipiron_logger.debug(
+                "Sending board to display - FEN: %s, Move history: %s",
                 self.game.board.fen,
                 self.game.board.move_history_stack,
             )
