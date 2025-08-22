@@ -126,7 +126,7 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any], str]:
     root = ctk.CTk()
     output: dict[str, Any] = {}
     # place a label on the root window
-    root.title("chipiron")
+    root.title("🐙 chess with chipirons 🐙")
 
     # frm = ctk.CTkFrame(root, padding=10)
 
