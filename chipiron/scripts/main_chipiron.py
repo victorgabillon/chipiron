@@ -80,6 +80,15 @@ def main() -> None:
     """
     The main function
     """
+    # Print chipiron startup banner with chipiron-themed icons
+    print("=" * 60)
+    print("              🦑 ♛  CHIPIRON MAIN STARTS  ♛ 🦑")
+    print("           🐙 AI Chess Engine & Learning System 🐙")
+    print("        ♔. Ready to play and learn chess like a pro! .♕")
+    print("       🦑 ~ Swimming through chess possibilities ~ 🦑")
+    print("=" * 60)
+    print()
+
     # Getting the command line arguments from the system
     raw_command_line_arguments: list[str] = sys.argv
 

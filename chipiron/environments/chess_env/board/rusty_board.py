@@ -222,22 +222,6 @@ class RustyBoardChi(IBoard):
         """
         return self.fen
 
-    def play_move_old(
-        self, move: shakmaty_python_binding.MyMove
-    ) -> BoardModification | None:
-        board_modifications: BoardModification | None
-
-        if self.compute_board_modification:
-            # board_modifications = self.chess_.push_and_return_modification(move.uci())
-            ...
-        else:
-            self.chess_.play(move)
-            board_modifications = None
-        self.move_stack.append(move.uci())
-        return board_modifications
-
-    def play_min(self, move: shakmaty_python_binding.MyMove) -> None:
-        self.chess_.play(move)
 
     def play_min_2(self, move: shakmaty_python_binding.MyMove) -> None:
         # _str, ply, turn, is_game_over = self.chess_.play_and_return(move)
@@ -260,7 +244,6 @@ class RustyBoardChi(IBoard):
             self.ep_square_ = None
         else:
             self.ep_square_ = ep_square_int
-        # print('ar',a)
 
     def play_min_3(self, move: shakmaty_python_binding.MyMove) -> BoardModificationRust:
         # _str, ply, turn, is_game_over = self.chess_.play_and_return(move)
@@ -287,7 +270,6 @@ class RustyBoardChi(IBoard):
             self.ep_square_ = None
         else:
             self.ep_square_ = ep_square_int
-        # print('ar',a)
 
         board_modifications: BoardModificationRust = self.convert(appearances, removals)
         # board_modifications: BoardModification = BoardModificationRust(appearances_=appearances,removals_=removals)

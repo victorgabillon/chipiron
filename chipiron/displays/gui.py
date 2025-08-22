@@ -277,7 +277,7 @@ class MainWindow(QWidget):
                 self.play_button_clicked_last_time is None
                 or abs(self.play_button_clicked_last_time - time.time()) > 0.01
             ):
-                print("play_button_clicked")
+                chipiron_logger.info("play_button_clicked")
                 message: GameStatusMessage = GameStatusMessage(
                     status=PlayingStatus.PLAY
                 )
@@ -290,7 +290,7 @@ class MainWindow(QWidget):
 
         This method prints a message and puts a `BackMessage` object into the main thread mailbox.
         """
-        print("back_button_clicked")
+        chipiron_logger.info("back_button_clicked")
         message: BackMessage = BackMessage()
         self.main_thread_mailbox.put(message)
 
@@ -306,7 +306,7 @@ class MainWindow(QWidget):
                 self.pause_button_clicked_last_time is None
                 or abs(self.pause_button_clicked_last_time - time.time()) > 0.01
             ):
-                print("pause_button_clicked")
+                chipiron_logger.info("pause_button_clicked")
                 message: GameStatusMessage = GameStatusMessage(
                     status=PlayingStatus.PAUSE
                 )
@@ -362,12 +362,13 @@ class MainWindow(QWidget):
                                     self.board.get_uci_from_move_key(move_key)
                                     for move_key in all_moves_keys
                                 ]
-                                print(
-                                    f"Looks like the move {move} is a wrong move.. "
-                                    f"The legals moves are {legal_moves_uci} in {self.board}"
+                                chipiron_logger.info(
+                                    "Looks like the move %s is a wrong move.. "
+                                    "The legals moves are %s in %s",
+                                    move, legal_moves_uci, self.board
                                 )
                         except ValueError:
-                            print("Oops!  Doubleclicked?  Try again...")
+                            chipiron_logger.info("Oops!  Doubleclicked?  Try again...")
                         piece = None
                     self.pieceToMove = [piece, self.coordinates]
 
@@ -570,7 +571,7 @@ class MainWindow(QWidget):
                     match_results: MatchResults = match_message.match_results
                     self.update_match_stats(match_results)
                 case GameStatusMessage():
-                    print("GameStatusMessage", message)
+                    chipiron_logger.info("GameStatusMessage", message)
                     game_status_message: GameStatusMessage = message
                     play_status: PlayingStatus = game_status_message.status
                     self.update_game_play_status(play_status)
@@ -731,7 +732,7 @@ class MainWindow(QWidget):
         Args:
             play_status (PlayingStatus): The new playing status.
         """
-        print("update_game_play_status", play_status)
+        chipiron_logger.info("update_game_play_status", play_status)
 
         if self.playing_status != play_status:
             self.playing_status = play_status
@@ -772,8 +773,8 @@ class MainWindow(QWidget):
             + str(simple_results.draws)
         )  # text
 
-        print("update", match_result.match_finished)
+        chipiron_logger.info("update", match_result.match_finished)
         # if the match is over we kill the GUI
         if match_result.match_finished:
-            print("finishing the widget")
+            chipiron_logger.info("finishing the widget")
             self.close()

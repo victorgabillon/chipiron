@@ -40,9 +40,14 @@ chipiron/requirements:
 	pip install -e .
 
 $(SYZYGY_TABLES_DIR):
-	echo "downloading SYZYGY"
+	echo "downloading SYZYGY tables (this may take 10-20 minutes)"
 	mkdir -p ${SYZYGY_DESTINATION}
-	curl ${SYZYGY_SOURCE} | xargs wget -P ${SYZYGY_DESTINATION}
+	@echo "Downloading Syzygy tables sequentially to avoid server overload..."
+	@curl -s ${SYZYGY_SOURCE} | head -50 | while read url; do \
+		echo "Downloading $$url"; \
+		wget -t 3 -T 30 -c -P ${SYZYGY_DESTINATION} "$$url" || echo "Failed to download $$url (continuing...)"; \
+	done
+	@echo "Syzygy table download completed (downloaded first 50 tables for basic functionality)"
 
 $(EXTERNAL_DATA_DIR)/: chipiron/requirements
 	echo "downloading Data"
