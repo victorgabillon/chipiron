@@ -17,9 +17,11 @@ STOCKFISH_DESTINATION?=${ROOT_DIR}/$(STOCKFISH_DIR)
 DATA_SOURCE?=https://drive.google.com/drive/folders/1tvkuiaN-oXC7UAjUw-6cIl1PB0r2as7Y?usp=sharing
 DATA_DESTINATION?=${ROOT_DIR}/$(EXTERNAL_DATA_DIR)
 
-.PHONY: init lichess-pgn stockfish
+.PHONY: init init-no-syzygy lichess-pgn stockfish
 
-init: chipiron/requirements $(EXTERNAL_DATA_DIR)/ $(SYZYGY_TABLES_DIR)
+init: chipiron/requirements $(EXTERNAL_DATA_DIR)/ $(SYZYGY_TABLES_DIR) stockfish
+
+init-no-syzygy: chipiron/requirements $(EXTERNAL_DATA_DIR)/ stockfish
 
 lichess-pgn: ${LICHESS_PGN_DIR}/lichess_db_standard_rated_2015-03.pgn
 
