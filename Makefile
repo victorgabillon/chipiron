@@ -17,11 +17,13 @@ STOCKFISH_DESTINATION?=${ROOT_DIR}/$(STOCKFISH_DIR)
 DATA_SOURCE?=https://drive.google.com/drive/folders/1tvkuiaN-oXC7UAjUw-6cIl1PB0r2as7Y?usp=sharing
 DATA_DESTINATION?=${ROOT_DIR}/$(EXTERNAL_DATA_DIR)
 
-.PHONY: init init-no-syzygy lichess-pgn stockfish
+.PHONY: init init-no-syzygy lichess-pgn stockfish syzygy-tables
 
-init: chipiron/requirements $(EXTERNAL_DATA_DIR)/ $(SYZYGY_TABLES_DIR) stockfish
+init: chipiron/requirements $(EXTERNAL_DATA_DIR)/ $(SYZYGY_TABLES_DIR)/.syzygy-complete stockfish
 
 init-no-syzygy: chipiron/requirements $(EXTERNAL_DATA_DIR)/ stockfish
+
+syzygy-tables: $(SYZYGY_TABLES_DIR)/.syzygy-complete
 
 lichess-pgn: ${LICHESS_PGN_DIR}/lichess_db_standard_rated_2015-03.pgn
 
@@ -41,7 +43,7 @@ ${STOCKFISH_DESTINATION}/stockfish/stockfish-ubuntu-x86-64-avx2:
 chipiron/requirements:
 	pip install -e .
 
-$(SYZYGY_TABLES_DIR):
+$(SYZYGY_TABLES_DIR)/.syzygy-complete:
 	echo "downloading SYZYGY tables (this may take 10-20 minutes)"
 	mkdir -p ${SYZYGY_DESTINATION}
 	@echo "Downloading Syzygy tables sequentially to avoid server overload..."
@@ -50,6 +52,7 @@ $(SYZYGY_TABLES_DIR):
 		wget -t 3 -T 30 -c -P ${SYZYGY_DESTINATION} "$$url" || echo "Failed to download $$url (continuing...)"; \
 	done
 	@echo "Syzygy table download completed (downloaded first 50 tables for basic functionality)"
+	@touch $(SYZYGY_TABLES_DIR)/.syzygy-complete
 
 $(EXTERNAL_DATA_DIR)/: chipiron/requirements
 	echo "downloading Data"
