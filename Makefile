@@ -47,12 +47,18 @@ $(SYZYGY_TABLES_DIR)/.syzygy-complete:
 	echo "downloading SYZYGY tables (this may take 10-20 minutes)"
 	mkdir -p ${SYZYGY_DESTINATION}
 	@echo "Downloading Syzygy tables sequentially to avoid server overload..."
-	@curl -s ${SYZYGY_SOURCE} | head -50 | while read url; do \
+	@curl -s "${SYZYGY_SOURCE}" | head -50 | while read url; do \
 		echo "Downloading $$url"; \
 		wget -t 3 -T 30 -c -P ${SYZYGY_DESTINATION} "$$url" || echo "Failed to download $$url (continuing...)"; \
 	done
 	@echo "Syzygy table download completed (downloaded first 50 tables for basic functionality)"
-	@touch $(SYZYGY_TABLES_DIR)/.syzygy-complete
+	@if [ `find ${SYZYGY_DESTINATION} -name "*.rtb*" | wc -l` -gt 0 ]; then \
+		echo "✅ Verified Syzygy files downloaded successfully"; \
+		touch $(SYZYGY_TABLES_DIR)/.syzygy-complete; \
+	else \
+		echo "❌ No Syzygy files found after download"; \
+		exit 1; \
+	fi
 
 $(EXTERNAL_DATA_DIR)/: chipiron/requirements
 	echo "downloading Data"
