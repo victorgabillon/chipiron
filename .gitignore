@@ -16,7 +16,8 @@ data/players/board_evaluators/nn*
 
 dist/
 
-external_data/
+external_data/*
+!external_data/.gitkeep
 
 docs/_build/
 
