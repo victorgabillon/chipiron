@@ -16,13 +16,14 @@ PROJECT_ROOT = Path(__file__).parents[2]  # Go up from chipiron/utils/ to projec
 # Load .env file if it exists
 env_file = PROJECT_ROOT / ".env"
 if env_file.exists():
-    with open(env_file, 'r', encoding='utf-8') as f:
+    with open(env_file, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
-            if line and not line.startswith('#'):
-                if '=' in line:
-                    key, value = line.split('=', 1)
+            if line and not line.startswith("#"):
+                if "=" in line:
+                    key, value = line.split("=", 1)
                     os.environ.setdefault(key, value)
+
 
 def get_env_path(env_var: str, default: str) -> Path:
     """Get a path from environment variable or use default relative to PROJECT_ROOT."""
@@ -30,6 +31,7 @@ def get_env_path(env_var: str, default: str) -> Path:
     if os.path.isabs(env_value):
         return Path(env_value)
     return PROJECT_ROOT / env_value
+
 
 # Common directory paths
 EXTERNAL_DATA_DIR = get_env_path("EXTERNAL_DATA_DIR", "external_data")
@@ -40,12 +42,24 @@ GUI_DIR = get_env_path("GUI_DIR", "external_data/gui")
 SCRIPTS_DIR = PROJECT_ROOT / "chipiron" / "scripts"
 
 # Specific file paths
-LICHESS_PGN_FILE = get_env_path("LICHESS_PGN_FILE", "external_data/lichess_pgn/lichess_db_standard_rated_2015-03.pgn")
-STOCKFISH_BINARY_PATH = get_env_path("STOCKFISH_BINARY_PATH", "external_data/stockfish/stockfish/stockfish-ubuntu-x86-64-avx2")
+LICHESS_PGN_FILE = get_env_path(
+    "LICHESS_PGN_FILE",
+    "external_data/lichess_pgn/lichess_db_standard_rated_2015-03.pgn",
+)
+STOCKFISH_BINARY_PATH = get_env_path(
+    "STOCKFISH_BINARY_PATH",
+    "external_data/stockfish/stockfish/stockfish-ubuntu-x86-64-avx2",
+)
 
 # MLflow paths (use environment variables with defaults)
-ML_FLOW_URI_PATH = os.getenv("ML_FLOW_URI_PATH", f"sqlite:///{PROJECT_ROOT}/chipiron/scripts/default_output_folder/mlflow_data/mlruns.db")
-ML_FLOW_URI_PATH_TEST = os.getenv("ML_FLOW_URI_PATH_TEST", f"sqlite:///{PROJECT_ROOT}/chipiron/scripts/default_output_folder/mlflow_data/mlruns_test.db")
+ML_FLOW_URI_PATH = os.getenv(
+    "ML_FLOW_URI_PATH",
+    f"sqlite:///{PROJECT_ROOT}/chipiron/scripts/default_output_folder/mlflow_data/mlruns.db",
+)
+ML_FLOW_URI_PATH_TEST = os.getenv(
+    "ML_FLOW_URI_PATH_TEST",
+    f"sqlite:///{PROJECT_ROOT}/chipiron/scripts/default_output_folder/mlflow_data/mlruns_test.db",
+)
 
 
 def main() -> None:
@@ -73,10 +87,17 @@ def main() -> None:
     print(f"ML_FLOW_URI_PATH_TEST: {ML_FLOW_URI_PATH_TEST}")
     print()
     print("Environment Variables Used:")
-    env_vars = ['EXTERNAL_DATA_DIR', 'LICHESS_PGN_DIR', 'SYZYGY_TABLES_DIR',
-                'STOCKFISH_DIR', 'GUI_DIR', 'LICHESS_PGN_FILE', 'STOCKFISH_BINARY_PATH']
+    env_vars = [
+        "EXTERNAL_DATA_DIR",
+        "LICHESS_PGN_DIR",
+        "SYZYGY_TABLES_DIR",
+        "STOCKFISH_DIR",
+        "GUI_DIR",
+        "LICHESS_PGN_FILE",
+        "STOCKFISH_BINARY_PATH",
+    ]
     for var in env_vars:
-        env_value = os.getenv(var, 'NOT SET')
+        env_value = os.getenv(var, "NOT SET")
         print(f"{var}: {env_value}")
     print()
     print("Path Existence Check:")

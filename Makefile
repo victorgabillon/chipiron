@@ -4,6 +4,50 @@ ifneq (,$(wildcard ./.env))
     export
 endif
 
+# Warn if key variables are set in the environment
+ifeq ($(origin EXTERNAL_DATA_DIR), environment)
+    $(warning EXTERNAL_DATA_DIR was set in the environment and will override .env and Makefile defaults)
+endif
+ifeq ($(origin LICHESS_PGN_DIR), environment)
+    $(warning LICHESS_PGN_DIR was set in the environment and will override .env and Makefile defaults)
+endif
+ifeq ($(origin SYZYGY_TABLES_DIR), environment)
+    $(warning SYZYGY_TABLES_DIR was set in the environment and will override .env and Makefile defaults)
+endif
+ifeq ($(origin STOCKFISH_DIR), environment)
+    $(warning STOCKFISH_DIR was set in the environment and will override .env and Makefile defaults)
+endif
+ifeq ($(origin GUI_DIR), environment)
+    $(warning GUI_DIR was set in the environment and will override .env and Makefile defaults)
+endif
+ifeq ($(origin LICHESS_PGN_FILE), environment)
+    $(warning LICHESS_PGN_FILE was set in the environment and will override .env and Makefile defaults)
+endif
+ifeq ($(origin STOCKFISH_BINARY_PATH), environment)
+    $(warning STOCKFISH_BINARY_PATH was set in the environment and will override .env and Makefile defaults)
+endif
+ifeq ($(origin STOCKFISH_VERSION), environment)
+    $(warning STOCKFISH_VERSION was set in the environment and will override .env and Makefile defaults)
+endif
+ifeq ($(origin SYZYGY_SOURCE), environment)
+    $(warning SYZYGY_SOURCE was set in the environment and will override .env and Makefile defaults)
+endif
+ifeq ($(origin STOCKFISH_URL), environment)
+    $(warning STOCKFISH_URL was set in the environment and will override .env and Makefile defaults)
+endif
+ifeq ($(origin DATA_SOURCE), environment)
+    $(warning DATA_SOURCE was set in the environment and will override .env and Makefile defaults)
+endif
+ifeq ($(origin DATA_DESTINATION), environment)
+    $(warning DATA_DESTINATION was set in the environment and will override .env and Makefile defaults)
+endif
+ifeq ($(origin ML_FLOW_URI_PATH), environment)
+    $(warning ML_FLOW_URI_PATH was set in the environment and will override .env and Makefile defaults)
+endif
+ifeq ($(origin ML_FLOW_URI_PATH_TEST), environment)
+    $(warning ML_FLOW_URI_PATH_TEST was set in the environment and will override .env and Makefile defaults)
+endif
+
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
 # Use environment variables with fallbacks

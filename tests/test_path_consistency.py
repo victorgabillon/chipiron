@@ -7,6 +7,7 @@ This test ensures that Python, Makefile, and Dockerfile use the same paths.
 import os
 import sys
 from pathlib import Path
+
 import pytest
 
 # Add project root to Python path
@@ -14,9 +15,14 @@ project_root = Path(__file__).parents[1]
 sys.path.insert(0, str(project_root))
 
 from chipiron.utils.path_variables import (
-    PROJECT_ROOT, EXTERNAL_DATA_DIR, LICHESS_PGN_DIR,
-    SYZYGY_TABLES_DIR, STOCKFISH_DIR, GUI_DIR,
-    LICHESS_PGN_FILE, STOCKFISH_BINARY_PATH
+    EXTERNAL_DATA_DIR,
+    GUI_DIR,
+    LICHESS_PGN_DIR,
+    LICHESS_PGN_FILE,
+    PROJECT_ROOT,
+    STOCKFISH_BINARY_PATH,
+    STOCKFISH_DIR,
+    SYZYGY_TABLES_DIR,
 )
 
 
@@ -25,12 +31,12 @@ def load_env_file():
     env_vars = {}
     env_file = project_root / ".env"
     if env_file.exists():
-        with open(env_file, 'r', encoding='utf-8') as f:
+        with open(env_file, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
-                if line and not line.startswith('#'):
-                    if '=' in line:
-                        key, value = line.split('=', 1)
+                if line and not line.startswith("#"):
+                    if "=" in line:
+                        key, value = line.split("=", 1)
                         env_vars[key] = value
     return env_vars
 
@@ -47,13 +53,23 @@ class TestPathConsistency:
         """Test that all required environment variables are defined in .env."""
         env_vars = load_env_file()
         required_vars = [
-            'EXTERNAL_DATA_DIR', 'LICHESS_PGN_DIR', 'SYZYGY_TABLES_DIR',
-            'STOCKFISH_DIR', 'GUI_DIR', 'LICHESS_PGN_FILE', 'STOCKFISH_BINARY_PATH',
-            'STOCKFISH_VERSION', 'SYZYGY_SOURCE', 'STOCKFISH_URL', 'DATA_SOURCE'
+            "EXTERNAL_DATA_DIR",
+            "LICHESS_PGN_DIR",
+            "SYZYGY_TABLES_DIR",
+            "STOCKFISH_DIR",
+            "GUI_DIR",
+            "LICHESS_PGN_FILE",
+            "STOCKFISH_BINARY_PATH",
+            "STOCKFISH_VERSION",
+            "SYZYGY_SOURCE",
+            "STOCKFISH_URL",
+            "DATA_SOURCE",
         ]
 
         for var in required_vars:
-            assert var in env_vars, f"Required environment variable {var} not found in .env"
+            assert (
+                var in env_vars
+            ), f"Required environment variable {var} not found in .env"
             assert env_vars[var].strip(), f"Environment variable {var} is empty in .env"
 
     def test_python_paths_match_env(self):
@@ -62,11 +78,11 @@ class TestPathConsistency:
 
         # Test directory paths
         path_mappings = {
-            'EXTERNAL_DATA_DIR': EXTERNAL_DATA_DIR,
-            'LICHESS_PGN_DIR': LICHESS_PGN_DIR,
-            'SYZYGY_TABLES_DIR': SYZYGY_TABLES_DIR,
-            'STOCKFISH_DIR': STOCKFISH_DIR,
-            'GUI_DIR': GUI_DIR,
+            "EXTERNAL_DATA_DIR": EXTERNAL_DATA_DIR,
+            "LICHESS_PGN_DIR": LICHESS_PGN_DIR,
+            "SYZYGY_TABLES_DIR": SYZYGY_TABLES_DIR,
+            "STOCKFISH_DIR": STOCKFISH_DIR,
+            "GUI_DIR": GUI_DIR,
         }
 
         for env_key, python_path in path_mappings.items():
@@ -80,10 +96,12 @@ class TestPathConsistency:
     def test_project_root_is_correct(self):
         """Test that PROJECT_ROOT points to the actual project root."""
         # Project root should contain these key files
-        key_files = ['pyproject.toml', 'Makefile', '.env', 'README.md']
+        key_files = ["pyproject.toml", "Makefile", ".env", "README.md"]
         for file_name in key_files:
             file_path = PROJECT_ROOT / file_name
-            assert file_path.exists(), f"Key file {file_name} not found at PROJECT_ROOT: {PROJECT_ROOT}"
+            assert (
+                file_path.exists()
+            ), f"Key file {file_name} not found at PROJECT_ROOT: {PROJECT_ROOT}"
 
     def test_critical_directories_exist(self):
         """Test that critical directories exist."""
@@ -98,17 +116,21 @@ class TestPathConsistency:
         makefile_path = PROJECT_ROOT / "Makefile"
         assert makefile_path.exists(), "Makefile should exist"
 
-        with open(makefile_path, 'r', encoding='utf-8') as f:
+        with open(makefile_path, "r", encoding="utf-8") as f:
             makefile_content = f.read()
 
         # Check that Makefile includes .env
         assert "include .env" in makefile_content, "Makefile should include .env file"
-        assert "export" in makefile_content, "Makefile should export environment variables"
+        assert (
+            "export" in makefile_content
+        ), "Makefile should export environment variables"
 
         # Check that Makefile uses environment variables
         env_var_usage = [
-            "$(EXTERNAL_DATA_DIR)", "$(SYZYGY_TABLES_DIR)",
-            "$(STOCKFISH_DIR)", "${SYZYGY_SOURCE}"
+            "$(EXTERNAL_DATA_DIR)",
+            "$(SYZYGY_TABLES_DIR)",
+            "$(STOCKFISH_DIR)",
+            "${SYZYGY_SOURCE}",
         ]
         for var_usage in env_var_usage:
             assert var_usage in makefile_content, f"Makefile should use {var_usage}"
@@ -118,46 +140,56 @@ class TestPathConsistency:
         dockerfile_path = PROJECT_ROOT / "Dockerfile"
         assert dockerfile_path.exists(), "Dockerfile should exist"
 
-        with open(dockerfile_path, 'r', encoding='utf-8') as f:
+        with open(dockerfile_path, "r", encoding="utf-8") as f:
             dockerfile_content = f.read()
 
         env_vars = load_env_file()
 
         # Check that Dockerfile has ENV statements for key variables
-        key_env_vars = ['EXTERNAL_DATA_DIR', 'SYZYGY_TABLES_DIR', 'STOCKFISH_DIR', 'GUI_DIR']
+        key_env_vars = [
+            "EXTERNAL_DATA_DIR",
+            "SYZYGY_TABLES_DIR",
+            "STOCKFISH_DIR",
+            "GUI_DIR",
+        ]
         for env_var in key_env_vars:
-            assert f"ENV {env_var}=" in dockerfile_content, (
-                f"Dockerfile should define ENV {env_var}"
-            )
+            assert (
+                f"ENV {env_var}=" in dockerfile_content
+            ), f"Dockerfile should define ENV {env_var}"
 
     def test_env_values_are_relative_paths(self):
         """Test that .env path values are relative (not absolute)."""
         env_vars = load_env_file()
 
         path_vars = [
-            'EXTERNAL_DATA_DIR', 'LICHESS_PGN_DIR', 'SYZYGY_TABLES_DIR',
-            'STOCKFISH_DIR', 'GUI_DIR', 'LICHESS_PGN_FILE', 'STOCKFISH_BINARY_PATH'
+            "EXTERNAL_DATA_DIR",
+            "LICHESS_PGN_DIR",
+            "SYZYGY_TABLES_DIR",
+            "STOCKFISH_DIR",
+            "GUI_DIR",
+            "LICHESS_PGN_FILE",
+            "STOCKFISH_BINARY_PATH",
         ]
 
         for var in path_vars:
             if var in env_vars:
                 value = env_vars[var]
-                assert not os.path.isabs(value), (
-                    f"Environment variable {var} should be a relative path, got: {value}"
-                )
+                assert not os.path.isabs(
+                    value
+                ), f"Environment variable {var} should be a relative path, got: {value}"
 
     def test_urls_are_valid_format(self):
         """Test that URL environment variables have valid format."""
         env_vars = load_env_file()
 
-        url_vars = ['SYZYGY_SOURCE', 'STOCKFISH_URL', 'DATA_SOURCE']
+        url_vars = ["SYZYGY_SOURCE", "STOCKFISH_URL", "DATA_SOURCE"]
 
         for var in url_vars:
             if var in env_vars:
                 value = env_vars[var]
-                assert value.startswith(('http://', 'https://')), (
-                    f"URL variable {var} should start with http:// or https://, got: {value}"
-                )
+                assert value.startswith(
+                    ("http://", "https://")
+                ), f"URL variable {var} should start with http:// or https://, got: {value}"
 
 
 if __name__ == "__main__":
