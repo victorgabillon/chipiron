@@ -365,7 +365,9 @@ class MainWindow(QWidget):
                                 chipiron_logger.info(
                                     "Looks like the move %s is a wrong move.. "
                                     "The legals moves are %s in %s",
-                                    move, legal_moves_uci, self.board
+                                    move,
+                                    legal_moves_uci,
+                                    self.board,
                                 )
                         except ValueError:
                             chipiron_logger.info("Oops!  Doubleclicked?  Try again...")

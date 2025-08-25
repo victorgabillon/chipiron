@@ -222,7 +222,6 @@ class RustyBoardChi(IBoard):
         """
         return self.fen
 
-
     def play_min_2(self, move: shakmaty_python_binding.MyMove) -> None:
         # _str, ply, turn, is_game_over = self.chess_.play_and_return(move)
         (
