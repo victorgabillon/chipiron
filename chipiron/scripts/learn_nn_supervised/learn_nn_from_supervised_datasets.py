@@ -1,7 +1,8 @@
 """
 This script learns a neural network (NN) from a supervised dataset of board and evaluation pairs.
 
-The script takes care of setting up the data loader from the evaluation files, creating the NN, and running the learning process.
+The script takes care of setting up the data loader from the evaluation files, creating the NN,
+and running the learning process.
 
 Usage:
 - Instantiate the `LearnNNScript` class with a `base_script` object.
@@ -25,7 +26,6 @@ from typing import Any
 
 import mlflow
 import torch
-from h11 import Data
 from mlflow.models.signature import ModelSignature, infer_signature
 from torch.utils.data import DataLoader
 from torchinfo import summary
@@ -180,7 +180,7 @@ class LearnNNScript:
 
         start_time = time.time()
         self.stockfish_boards_train.load()
-        chipiron_logger.info(f"--- LOAD {time.time() - start_time} seconds --- ")
+        chipiron_logger.info("--- LOAD %s seconds --- ", time.time() - start_time)
         self.stockfish_boards_test.load()
 
         self.data_loader_stockfish_boards_train = DataLoader[FenAndValueData](
@@ -211,14 +211,22 @@ class LearnNNScript:
     def print_and_log_metrics(
         self, count_train_step: int, training_loss: float, test_error: float
     ) -> None:
-        print(
-            "count_train_step",
+        """
+        Print and log training metrics to console and MLflow.
+
+        Args:
+            count_train_step (int): Current training step count.
+            training_loss (float): Current training loss value.
+            test_error (float): Current test error value.
+
+        Returns:
+            None
+        """
+        chipiron_logger.info(
+            "count_train_step: %s, training loss: %s, lr: %s, time_elapsed: %s",
             count_train_step,
-            "training loss",
             training_loss,
-            "lr",
             self.nn_trainer.scheduler.get_last_lr(),
-            "time_elapsed",
             time.time() - self.start_time,
         )
         mlflow.log_metric(
@@ -261,7 +269,7 @@ class LearnNNScript:
                 self.saving_folder,
                 "model_summary.txt",
             )
-            with open(model_summary_file_name, "w") as f:
+            with open(model_summary_file_name, "w", encoding="utf-8") as f:
                 f.write(str(summary(self.nn_board_evaluator.net)))
             mlflow.log_artifact(model_summary_file_name)
 
@@ -271,10 +279,9 @@ class LearnNNScript:
             previous_dict: Any | None = None
             previous_train_loss: float | None = None
 
-            i: int
             fens_and_values_sample_batch: FenAndValueData
-            for i in range(self.args.nn_trainer_args.epochs_number):
-                for i_batch, fens_and_values_sample_batch in enumerate(
+            for _ in range(self.args.nn_trainer_args.epochs_number):
+                for __, fens_and_values_sample_batch in enumerate(
                     self.data_loader_stockfish_boards_train
                 ):
 
@@ -316,20 +323,24 @@ class LearnNNScript:
                             > self.args.nn_trainer_args.min_lr
                         ):
                             self.nn_trainer.scheduler.step()
-                            print(
-                                "decaying the learning rate to",
+                            chipiron_logger.info(
+                                "decaying the learning rate to %s",
                                 self.nn_trainer.scheduler.get_last_lr(),
                             )
 
-                        print("count_train_step", count_train_step)
-                        print(
-                            "training loss",
+                        chipiron_logger.info("count_train_step %s", count_train_step)
+                        chipiron_logger.info(
+                            "training loss: %s, sum_loss_train: %s",
                             sum_loss_train
                             / self.args.nn_trainer_args.min_interval_lr_change,
                             sum_loss_train,
                         )
-                        print("previous_train_loss", previous_train_loss)
-                        print("learning rate", self.nn_trainer.scheduler.get_last_lr())
+                        chipiron_logger.info(
+                            "previous_train_loss %s", previous_train_loss
+                        )
+                        chipiron_logger.info(
+                            "learning rate %s", self.nn_trainer.scheduler.get_last_lr()
+                        )
 
                         if previous_dict is not None:
                             diff_weighs = sum(

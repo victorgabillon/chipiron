@@ -23,6 +23,7 @@ from typing import Callable, Dict, List
 
 import chipiron.players.move_selector.treevalue as treevalue
 from chipiron.environments.chess_env.board.iboard import IBoard
+from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
     TreeMoveLimitArgs,
 )
@@ -101,6 +102,35 @@ class BenchmarkResult:
 
 
 class ChessEngineBenchmark:
+    def benchmark_play_move(self, iterations: int | None = None) -> None:
+        """Benchmark playing a move (applying a legal move to the board)."""
+        print("\n🕹️ Benchmarking Play Move (Board Update)")
+        if iterations is None:
+            iterations = self.move_generation_iterations
+
+        for rust_enabled in [False, True]:
+
+            def play_move_for_positions() -> None:
+                for fen in self.test_positions:
+                    board: IBoard = self.create_board_for_fen(fen, rust_enabled)
+                    moves: list[moveKey] = list(board.legal_moves.get_all())
+                    if not moves:
+                        continue
+                    move = moves[0]  # Play the first legal move
+                    board.play_move_key(move)
+
+            result = self.benchmark_function(
+                play_move_for_positions,
+                "play_move",
+                rust_enabled,
+                iterations,
+            )
+
+            key = "play_move"
+            if key not in self.results:
+                self.results[key] = {}
+            self.results[key][rust_enabled] = result
+
     """Benchmark suite for chess engine functions."""
 
     def __init__(self) -> None:
@@ -404,6 +434,7 @@ class ChessEngineBenchmark:
             with suppress_logging(chipiron_logger, level=logging.ERROR):
                 self.benchmark_move_generation()
                 self.benchmark_base_tree_exploration()
+                self.benchmark_play_move()
         except (ImportError, AttributeError, ValueError) as e:
             print(f"Error during benchmarking: {e}")
             import traceback
