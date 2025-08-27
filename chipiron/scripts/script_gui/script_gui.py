@@ -190,7 +190,7 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
             }
             script_type = scripts.ScriptType.TreeVisualization
         case other:
-            raise Exception(f"Not a good name: {other}")
+            raise ValueError(f"Not a good name: {other}")
 
     print(f"Gui choices: the script name is {script_type} and the args are {gui_args}")
     return script_type, gui_args
