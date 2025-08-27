@@ -129,7 +129,6 @@ class FeedFoward(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # xx=self.re1(self.lin(x))
-        # print('xxxx',xx)
         # a=self.lin2(xx)
         a: torch.Tensor = self.net(x)
 

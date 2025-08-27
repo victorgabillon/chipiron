@@ -242,7 +242,6 @@ class TreeNode[ChildrenType: ITreeNode[Any]]:
         This method is used to test the node.
         It calls the `test_all_legal_moves_generated` method to test all legal moves generated.
         """
-        # print('testing node', selbestf.id)
         self.test_all_legal_moves_generated()
 
     def dot_description(self) -> str:

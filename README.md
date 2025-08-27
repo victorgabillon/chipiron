@@ -208,6 +208,33 @@ or
 pytest
 ```
 
+### Integration Testing
+
+For complete end-to-end validation, use the integration test scripts that test the entire installation process in a clean environment:
+
+```bash
+# Python version (comprehensive logging and reporting)
+python scripts/integration_test.py
+
+# Shell version (lightweight and fast)
+./scripts/integration_test.sh
+
+# Test with custom repository
+python scripts/integration_test.py --repo-url https://github.com/your-fork/chipiron.git
+
+# Keep temporary files for debugging
+python scripts/integration_test.py --keep-temp --verbose
+```
+
+These scripts:
+- Create a temporary conda environment
+- Clone the repository fresh
+- Run complete makefile installation
+- Test all components (Stockfish, Syzygy tables, GUI, chess functionality)
+- Generate detailed reports
+
+See [`scripts/README.md`](scripts/README.md) for detailed documentation.
+
 ---
 
 ## Contributing

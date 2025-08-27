@@ -440,7 +440,6 @@ def update_all_indices(
     half_move: int
     for half_move in tree_nodes:
         # todo how are we sure that the hm comes in order?
-        # print('hmv', half_move)
         parent_node: ITreeNode[Any]
         for parent_node in tree_nodes[half_move].values():
             assert isinstance(parent_node, AlgorithmNode)
@@ -481,7 +480,6 @@ def print_all_indices(
     half_move: int
     for half_move in tree_nodes:
         # todo how are we sure that the hm comes in order?
-        # print('hmv', half_move)
         parent_node: ITreeNode[Any]
         for parent_node in tree_nodes[half_move].values():
             assert isinstance(parent_node, AlgorithmNode)

@@ -16,7 +16,6 @@ def build_transformer_input(
     indices: list[int] = [
         square * transformer_args.number_occupancy_types for square in range(64)
     ] + [transformer_args.len_square_tensor]
-    # print('deb indi', indices)
     square: chess.Square
     piece: tuple[chess.PieceType, chess.Color]
     for square, piece in piece_map.items():
