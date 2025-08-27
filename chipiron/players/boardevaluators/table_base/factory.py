@@ -42,6 +42,7 @@ def create_syzygy_rust() -> SyzygyRustTable | None:
     Returns:
         SyzygyTable | None: The created SyzygyTable object or None if the path does not exist.
     """
+
     syzygy_table: SyzygyRustTable | None
     is_exist: bool = os.path.exists(SYZYGY_TABLES_DIR)
 
