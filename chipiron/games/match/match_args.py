@@ -5,7 +5,7 @@ This module defines the `MatchArgs` class, which represents the input arguments 
 from dataclasses import dataclass
 
 from chipiron.games.match.match_settings_args import MatchSettingsArgs
-from chipiron.games.match.MatchTag import MatchConfigTag
+from chipiron.games.match.match_tag import MatchConfigTag
 from chipiron.players import PlayerArgs
 from chipiron.players.player_ids import PlayerConfigTag
 
@@ -26,4 +26,4 @@ class MatchArgs:
 
     player_one: PlayerConfigTag | PlayerArgs = PlayerConfigTag.RECUR_ZIPF_BASE_3
     player_two: PlayerConfigTag | PlayerArgs = PlayerConfigTag.RECUR_ZIPF_BASE_3
-    match_setting: MatchConfigTag | MatchSettingsArgs = MatchConfigTag.Cubo
+    match_setting: MatchConfigTag | MatchSettingsArgs = MatchConfigTag.CUBO

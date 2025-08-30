@@ -266,7 +266,7 @@ class GameManager:
 
                     eval_sto, eval_chi = self.external_eval()
                     chipiron_logger.info(
-                        "Stockfish evaluation:%s and chipiron eval %s",
+                        "Stockfish evaluation: %s and chipiron eval %s",
                         eval_sto,
                         eval_chi,
                     )

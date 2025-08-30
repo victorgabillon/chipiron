@@ -18,7 +18,7 @@ import chipiron.players as players
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_factories import create_match_manager
 from chipiron.games.match.match_results import MatchReport, MatchResults
-from chipiron.games.match.MatchTag import MatchConfigTag
+from chipiron.games.match.match_tag import MatchConfigTag
 from chipiron.games.match.utils import fetch_match_games_args_convert_and_save
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs

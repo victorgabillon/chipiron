@@ -48,7 +48,7 @@ class RecurZipfBaseArgs:
         move_explorer_priority (SamplingPriorities): The priority for move exploration.
     """
 
-    type: Literal[NodeSelectorType.RecurZipfBase]
+    type: Literal[NodeSelectorType.RECUR_ZIPF_BASE]
     move_explorer_priority: SamplingPriorities
 
 

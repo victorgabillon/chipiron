@@ -283,9 +283,9 @@ def test_indices() -> None:
         None
     """
     index_computations: list[IndexComputationType] = [
-        IndexComputationType.MinGlobalChange,
-        IndexComputationType.RecurZipf,
-        IndexComputationType.MinLocalChange,
+        IndexComputationType.MIN_GLOBAL_CHANGE,
+        IndexComputationType.RECUR_ZIPF,
+        IndexComputationType.MIN_LOCAL_CHANGE,
     ]
 
     tree_files = ["tree_1", "tree_2"]
@@ -294,8 +294,8 @@ def test_indices() -> None:
     for tree_file in tree_files:
         if tree_file == "tree_2":
             index_computations_ = [
-                IndexComputationType.MinGlobalChange,
-                IndexComputationType.MinLocalChange,
+                IndexComputationType.MIN_GLOBAL_CHANGE,
+                IndexComputationType.MIN_LOCAL_CHANGE,
             ]
         else:
             index_computations_ = index_computations

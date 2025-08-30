@@ -36,11 +36,11 @@ def create_exploration_index_manager(
         node_exploration_manager = NullNodeExplorationIndexManager()
     else:
         match index_computation:
-            case IndexComputationType.MinGlobalChange:
+            case IndexComputationType.MIN_GLOBAL_CHANGE:
                 node_exploration_manager = UpdateIndexGlobalMinChange()
-            case IndexComputationType.RecurZipf:
+            case IndexComputationType.RECUR_ZIPF:
                 node_exploration_manager = UpdateIndexZipfFactoredProba()
-            case IndexComputationType.MinLocalChange:
+            case IndexComputationType.MIN_LOCAL_CHANGE:
                 node_exploration_manager = UpdateIndexLocalMinChange()
             case other:
                 raise ValueError(f"player creator: can not find {other} in {__name__}")

@@ -96,7 +96,7 @@ class MainWindow(QWidget):
         else:
             chipiron_logger.warning("Window icon file not found: %s", window_icon_path)
 
-        self.setWindowTitle("Chipiron Chess GUI")
+        self.setWindowTitle("🐙 ♛  Chipiron Chess GUI  ♛ 🐙")
         self.setGeometry(300, 300, 1400, 800)
 
         self.widgetSvg = QSvgWidget(parent=self)
@@ -167,14 +167,14 @@ class MainWindow(QWidget):
         self.tablewidget.setGeometry(1100, 200, 260, 330)
 
         self.score_button = QPushButton(self)
-        self.score_button.setText("Score 0-0")  # text
+        self.score_button.setText("⚖ Score 0-0")  # text
         self.score_button.setStyleSheet(
             "QPushButton {background-color: white; color: black;}"
         )
         self.score_button.setGeometry(620, 400, 370, 30)
 
         self.round_button = QPushButton(self)
-        self.round_button.setText("Round")  # text
+        self.round_button.setText("🎲 Round")  # text
         self.round_button.setStyleSheet(
             "QPushButton {background-color: white; color: black;}"
         )
@@ -201,28 +201,28 @@ class MainWindow(QWidget):
         )
 
         self.eval_button = QPushButton(self)
-        self.eval_button.setText("Stock Eval")  # text
+        self.eval_button.setText("🐟 Eval")  # text
         self.eval_button.setStyleSheet(
             "QPushButton {background-color: white; color: black;}"
         )
         self.eval_button.setGeometry(620, 600, 470, 30)
 
         self.eval_button_chi = QPushButton(self)
-        self.eval_button_chi.setText("Chi Eval")  # text
+        self.eval_button_chi.setText("🐙 Eval")  # text
         self.eval_button_chi.setStyleSheet(
             "QPushButton {background-color: white; color: black;}"
         )
         self.eval_button_chi.setGeometry(620, 650, 470, 30)
 
         self.eval_button_white = QPushButton(self)
-        self.eval_button_white.setText("White Eval")  # text
+        self.eval_button_white.setText("♕ White Eval")  # text
         self.eval_button_white.setStyleSheet(
             "QPushButton {background-color: white; color: black;}"
         )
         self.eval_button_white.setGeometry(620, 700, 470, 30)
 
         self.eval_button_black = QPushButton(self)
-        self.eval_button_black.setText("Black Eval")  # text
+        self.eval_button_black.setText("♛ Black Eval")  # text
         self.eval_button_black.setStyleSheet(
             "QPushButton {background-color: white; color: black;}"
         )
@@ -625,25 +625,37 @@ class MainWindow(QWidget):
         )
         self.boardSvg = board_chi.chess_board._repr_svg_().encode("UTF-8")
         self.drawBoardSvg = self.widgetSvg.load(self.boardSvg)
-        self.round_button.setText("Round: " + str(self.board.fullmove_number))  # text
-        self.fen_button.setText("fen: " + str(self.board.fen))  # text
+        self.round_button.setText(
+            "🎲 Round: " + str(self.board.fullmove_number)
+        )  # text
+        self.fen_button.setText("🔧 <b>fen:</b> " + str(self.board.fen))  # text
 
         all_moves_keys_chi = self.board.legal_moves.get_all()
         all_moves_uci_chi = [
             self.board.get_uci_from_move_key(move_key=move_key)
             for move_key in all_moves_keys_chi
         ]
-        self.legal_moves_button.setText(
-            "legal moves: "
-            + str(all_moves_uci_chi[:8])
-            + "\n "
-            + str(all_moves_uci_chi[8:16])
-            + "\n "
-            + str(all_moves_uci_chi[16:24])
-            + "\n "
-            + str(all_moves_uci_chi[24:32])
-        )  # text
 
+        self.legal_moves_button.setWordWrap(True)
+        self.legal_moves_button.setMinimumHeight(100)
+        lines = []
+
+        # Only add sublists if they are non-empty
+        for sublist in [
+            all_moves_uci_chi[:7],
+            all_moves_uci_chi[7:14],
+            all_moves_uci_chi[14:21],
+            all_moves_uci_chi[21:28],
+        ]:
+            if sublist:  # skip empty
+                lines.append("    " + str(sublist))
+
+        # Join lines with <br>
+        moves_html = "\n".join(lines)
+
+        self.legal_moves_button.setText(
+            f"📋 <b>legal moves:</b><pre>{moves_html}</pre>"
+        )
         return self.drawBoardSvg
 
     def extract_message_from_player(self, player: PlayerFactoryArgs) -> str:
@@ -721,10 +733,14 @@ class MainWindow(QWidget):
         Returns:
             None
         """
-        self.eval_button.setText("eval: " + str(evaluation_stock))  # text
-        self.eval_button_chi.setText("eval: " + str(evaluation_chipiron))  # text
-        self.eval_button_black.setText("eval White: " + str(evaluation_white))  # text
-        self.eval_button_white.setText("eval Black: " + str(evaluation_black))  # text
+        self.eval_button.setText("📊 Eval 🐟: " + str(evaluation_stock))  # text
+        self.eval_button_chi.setText("🧮 Eval 🐙: " + str(evaluation_chipiron))  # text
+        self.eval_button_black.setText(
+            "🧠 Eval White: " + str(evaluation_white)
+        )  # text
+        self.eval_button_white.setText(
+            "🧠 Eval Black: " + str(evaluation_black)
+        )  # text
 
     def update_game_play_status(self, play_status: PlayingStatus) -> None:
         """Update the game play status.
@@ -732,7 +748,7 @@ class MainWindow(QWidget):
         Args:
             play_status (PlayingStatus): The new playing status.
         """
-        chipiron_logger.info("update_game_play_status", play_status)
+        chipiron_logger.info("update_game_play_status %s", play_status)
 
         if self.playing_status != play_status:
             self.playing_status = play_status
@@ -765,7 +781,7 @@ class MainWindow(QWidget):
         """
         simple_results: SimpleResults = match_result.get_simple_result()
         self.score_button.setText(
-            "Score: "
+            "⚖ Score: "
             + str(simple_results.player_one_wins)
             + "-"
             + str(simple_results.player_two_wins)
@@ -773,7 +789,7 @@ class MainWindow(QWidget):
             + str(simple_results.draws)
         )  # text
 
-        chipiron_logger.info("update", match_result.match_finished)
+        chipiron_logger.info("update %s", match_result.match_finished)
         # if the match is over we kill the GUI
         if match_result.match_finished:
             chipiron_logger.info("finishing the widget")

@@ -16,7 +16,7 @@ from parsley_coco import make_partial_dataclass_with_optional_paths
 
 from chipiron import scripts
 from chipiron.games.match.match_args import MatchArgs
-from chipiron.games.match.MatchTag import MatchConfigTag
+from chipiron.games.match.match_tag import MatchConfigTag
 from chipiron.players import PlayerArgs
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 from chipiron.players.move_selector.treevalue import TreeAndValuePlayerArgs
@@ -130,7 +130,7 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any], str]:
 
     # frm = ctk.CTkFrame(root, padding=10)
 
-    window_width: int = 800
+    window_width: int = 900
     window_height: int = 300
 
     # get the screen dimension
@@ -299,7 +299,7 @@ def generate_inputs(
             gui_args = PartialOpMatchScriptArgs(
                 gui=True,
                 base_script_args=PartialOpBaseScriptArgs(profiling=False, seed=0),
-                match_args=PartialOpMatchArgs(match_setting=MatchConfigTag.Duda),
+                match_args=PartialOpMatchArgs(match_setting=MatchConfigTag.DUDA),
             )
             config_file_name = "chipiron/scripts/one_match/inputs/human_play_against_computer/exp_options.yaml"
 
@@ -310,7 +310,7 @@ def generate_inputs(
                     main_move_selector=PartialOpTreeAndValuePlayerArgs(
                         type=MoveSelectorTypes.TreeAndValue,
                         stopping_criterion=PartialOpTreeMoveLimitArgs(
-                            type=StoppingCriterionTypes.TreeMoveLimit,
+                            type=StoppingCriterionTypes.TREE_MOVE_LIMIT,
                             tree_move_limit=tree_move_limit,
                         ),
                     )
@@ -321,24 +321,24 @@ def generate_inputs(
                 gui_args.match_args.player_one_overwrite = PartialOpPlayerArgs(
                     main_move_selector=PartialOpTreeAndValuePlayerArgs(
                         stopping_criterion=PartialOpTreeMoveLimitArgs(
-                            type=StoppingCriterionTypes.TreeMoveLimit,
+                            type=StoppingCriterionTypes.TREE_MOVE_LIMIT,
                             tree_move_limit=tree_move_limit,
                         )
                     )
                 )
-            script_type = scripts.ScriptType.OneMatch
+            script_type = scripts.ScriptType.ONE_MATCH
         case "play_two_humans":
             config_file_name = "chipiron/scripts/one_match/inputs/human_play_against_human/exp_options.yaml"
 
             gui_args = PartialOpMatchScriptArgs(
                 gui=True,
                 base_script_args=PartialOpBaseScriptArgs(profiling=False, seed=0),
-                match_args=PartialOpMatchArgs(match_setting=MatchConfigTag.Duda),
+                match_args=PartialOpMatchArgs(match_setting=MatchConfigTag.DUDA),
             )
 
             gui_args.match_args.player_one = PlayerConfigTag.GUI_HUMAN
             gui_args.match_args.player_two = PlayerConfigTag.GUI_HUMAN
-            script_type = scripts.ScriptType.OneMatch
+            script_type = scripts.ScriptType.ONE_MATCH
         case "watch_a_game":
             config_file_name = (
                 "chipiron/scripts/one_match/inputs/watch_a_game/exp_options.yaml"
@@ -347,17 +347,17 @@ def generate_inputs(
                 gui=True,
                 base_script_args=PartialOpBaseScriptArgs(profiling=False, seed=0),
                 match_args=PartialOpMatchArgs(
-                    match_setting=MatchConfigTag.Duda,
+                    match_setting=MatchConfigTag.DUDA,
                     player_one=PlayerConfigTag.RECUR_ZIPF_BASE_3,
                     player_two=PlayerConfigTag.RECUR_ZIPF_BASE_3,
                 ),
             )
 
-            script_type = scripts.ScriptType.OneMatch
+            script_type = scripts.ScriptType.ONE_MATCH
         case "tree_visualization":
             config_file_name = "scripts/tree_visualization/inputs/base/exp_options.yaml"
             gui_args = None
-            script_type = scripts.ScriptType.TreeVisualization
+            script_type = scripts.ScriptType.TREE_VISUALIZATION
         case other:
             raise ValueError(f"Not a good name: {other}")
 

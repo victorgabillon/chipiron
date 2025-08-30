@@ -103,20 +103,6 @@ class StockfishBoardEvaluator:
                 )
             )
 
-            # Test both approaches to show the difference
-            print(f"DEBUG: Original board FEN: {board.fen}")
-            print(f"DEBUG: Original board move history: {board.move_history_stack}")
-
-            print(f"DEBUG: tyoee of board_chi.chess_board: {type(board)}")
-
-            # The issue is deeper - even with same FENs, there can be engine state issues
-            # Use ONLY the direct approach to avoid any state confusion
-            # info = self.engine.analyse(board.chess_board, chess.engine.Limit(time=0.01))
-            # print(f"DEBUG: Direct board analysis: {info}")
-            # print(f"DEBUG: Direct board FEN: {board.chess_board.fen()}")
-
-            print(f"DEBUG: tyoee of board_chi.chess_board: {type(board)}")
-
             info = self.engine.analyse(
                 board_chi.chess_board, chess.engine.Limit(time=0.01)
             )

@@ -61,9 +61,11 @@ class NNTrainerArgs:
     neural_network_architecture_args: NeuralNetArchitectureArgs = field(
         default_factory=lambda: NeuralNetArchitectureArgs(
             model_type_args=MultiLayerPerceptronArgs(
-                type=NNModelType.MultiLayerPerceptron,
+                type=NNModelType.MULTI_LAYER_PERCEPTRON,
                 number_neurons_per_layer=[5, 1],
-                list_of_activation_functions=[ActivationFunctionType.TangentHyperbolic],
+                list_of_activation_functions=[
+                    ActivationFunctionType.TANGENT_HYPERBOLIC
+                ],
             ),
             model_output_type=ModelOutputType(point_of_view=PointOfView.PLAYER_TO_MOVE),
             model_input_representation_type=ModelInputRepresentationType.PIECE_DIFFERENCE,

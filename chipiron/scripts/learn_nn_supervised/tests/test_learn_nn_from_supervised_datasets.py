@@ -44,7 +44,7 @@ configs_dataclasses: list[Any] = [
 def test_learn_nn() -> None:
     for config in configs_dataclasses:
         script_object: scripts.IScript = create_script(
-            script_type=scripts.ScriptType.LearnNN,
+            script_type=scripts.ScriptType.LEARN_NN,
             extra_args=config,
             should_parse_command_line_arguments=False,
         )

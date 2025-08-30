@@ -34,7 +34,6 @@ class NNNodeEvaluator(NodeEvaluator):
             nn_board_evaluator (board_nn.NNBoardEvaluator): The neural network board evaluator.
             syzygy (SyzygyTable | None): The Syzygy table or None if not available.
         """
-        # board_nn.NNBoardEvaluator
         self.master_board_evaluator = master_board_evaluator
         assert isinstance(master_board_evaluator.board_evaluator, NNBoardEvaluator)
         self.net = master_board_evaluator.board_evaluator.net

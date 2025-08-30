@@ -50,10 +50,10 @@ class NeuralNetBoardEvalArgs:
             model_weights_file_name="*default*",
             nn_architecture_args=NeuralNetArchitectureArgs(
                 model_type_args=MultiLayerPerceptronArgs(
-                    type=NNModelType.MultiLayerPerceptron,
+                    type=NNModelType.MULTI_LAYER_PERCEPTRON,
                     number_neurons_per_layer=[5, 1],
                     list_of_activation_functions=[
-                        ActivationFunctionType.TangentHyperbolic
+                        ActivationFunctionType.TANGENT_HYPERBOLIC
                     ],
                 ),
                 model_output_type=ModelOutputType(

@@ -55,11 +55,11 @@ def create_exploration_index_data(
     match index_computation:
         case None:
             base_index_dataclass_name = None
-        case IndexComputationType.MinLocalChange:
+        case IndexComputationType.MIN_LOCAL_CHANGE:
             base_index_dataclass_name = IntervalExplo
-        case IndexComputationType.MinGlobalChange:
+        case IndexComputationType.MIN_GLOBAL_CHANGE:
             base_index_dataclass_name = MinMaxPathValue
-        case IndexComputationType.RecurZipf:
+        case IndexComputationType.RECUR_ZIPF:
             base_index_dataclass_name = RecurZipfQuoolExplorationData
         case other:
             raise ValueError(f"not finding good case for {other} in file {__name__}")
