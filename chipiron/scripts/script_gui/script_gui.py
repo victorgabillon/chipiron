@@ -173,7 +173,7 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
                         "stopping_criterion": {"tree_move_limit": tree_move_limit}
                     }
                 }
-            script_type = scripts.ScriptType.OneMatch
+            script_type = scripts.ScriptType.ONE_MATCH
         case "watch_a_game":
             gui_args = {
                 "config_file_name": "chipiron/scripts/one_match/exp_options.yaml",
@@ -183,12 +183,12 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
                 "file_name_player_two": "RecurZipfBase4.yaml",
                 "file_name_match_setting": "setting_duda.yaml",
             }
-            script_type = scripts.ScriptType.OneMatch
+            script_type = scripts.ScriptType.ONE_MATCH
         case "tree_visualization":
             gui_args = {
                 "config_file_name": "chipiron/scripts/tree_visualization/exp_options.yaml",
             }
-            script_type = scripts.ScriptType.TreeVisualization
+            script_type = scripts.ScriptType.TREE_VISUALIZATION
         case other:
             raise ValueError(f"Not a good name: {other}")
 

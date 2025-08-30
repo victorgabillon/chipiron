@@ -21,7 +21,7 @@ class UniformArgs:
 
     """
 
-    type: Literal[NodeSelectorType.Uniform]
+    type: Literal[NodeSelectorType.UNIFORM]
 
 
 AllNodeSelectorArgs: TypeAlias = RecurZipfBaseArgs | SequoolArgs | UniformArgs
@@ -39,9 +39,9 @@ def create(
     node_move_opening_selector: NodeSelector
 
     match args.type:
-        case NodeSelectorType.Uniform:
+        case NodeSelectorType.UNIFORM:
             node_move_opening_selector = Uniform(opening_instructor=opening_instructor)
-        case NodeSelectorType.RecurZipfBase:
+        case NodeSelectorType.RECUR_ZIPF_BASE:
             assert isinstance(args, RecurZipfBaseArgs)
             node_move_opening_selector = RecurZipfBase(
                 args=args,
@@ -49,7 +49,7 @@ def create(
                 opening_instructor=opening_instructor,
             )
 
-        case NodeSelectorType.Sequool:
+        case NodeSelectorType.SEQUOOL:
             assert isinstance(args, SequoolArgs)
             node_move_opening_selector = create_sequool(
                 opening_instructor=opening_instructor,

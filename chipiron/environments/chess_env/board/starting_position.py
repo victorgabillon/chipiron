@@ -15,8 +15,8 @@ class StartingPositionArgsType(str, Enum):
     Enum class representing the type of starting position arguments.
     """
 
-    fromFile = "from_file"
-    fen = "fen"
+    FROMFILE = "from_file"
+    FEN = "fen"
 
 
 @dataclass
@@ -27,7 +27,12 @@ class StartingPositionArgs(Protocol):
 
     type: StartingPositionArgsType
 
-    def get_fen(self) -> str: ...
+    def get_fen(self) -> str:
+        """
+        Returns the FEN (Forsyth-Edwards Notation) string representing the current state of the chess board.
+        Returns:
+            str: The FEN string of the current board position.
+        """
 
 
 @dataclass
@@ -36,10 +41,15 @@ class FenStartingPositionArgs:
     Dataclass representing the starting position arguments specified by FEN.
     """
 
-    type: Literal[StartingPositionArgsType.fen]
+    type: Literal[StartingPositionArgsType.FEN]
     fen: str
 
     def get_fen(self) -> str:
+        """
+        Returns the FEN (Forsyth-Edwards Notation) string representing the current state of the chess board.
+        Returns:
+            str: The FEN string of the current board position.
+        """
         return self.fen
 
 
@@ -49,10 +59,15 @@ class FileStartingPositionArgs(StartingPositionArgs):
     Dataclass representing the starting position arguments specified by a file.
     """
 
-    type: Literal[StartingPositionArgsType.fromFile]
+    type: Literal[StartingPositionArgsType.FROMFILE]
     file_name: str
 
     def get_fen(self) -> str:
+        """
+        Returns the FEN (Forsyth-Edwards Notation) string representing the current state of the chess board.
+        Returns:
+            str: The FEN string of the current board position.
+        """
         resource = files("chipiron").joinpath("data/starting_boards/" + self.file_name)
         with as_file(resource) as real_path:
             with open(real_path, "r", encoding="utf-8") as f:

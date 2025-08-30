@@ -1,6 +1,27 @@
+"""
+This script generates datasets of chess board positions by sampling games from the Lichess monthly PGN database.
+It supports dynamic, on-the-fly downloading and decompression of monthly PGN files, extracting board positions at
+specified move intervals, and saving progress with metadata. The dataset creation process is configurable via
+sampling frequency, offset, random seed, and month range. Intermediate and final saves include detailed statistics
+and metadata for reproducibility. The script can be run as a CLI tool to automate dataset generation across multiple
+months, with options to manage downloaded files and control sampling parameters.
+Main functionalities:
+- Download and verify monthly Lichess PGN dumps (.zst format).
+- Decompress PGN files using either the zstd CLI or Python zstandard library.
+- Stream games from PGN files, sample board positions at configurable intervals.
+- Save progress and final datasets as pandas DataFrames with rich metadata.
+- CLI interface for flexible configuration and automation.
+Dependencies:
+- python-chess
+- pandas
+- zstandard
+- chipiron (internal utilities for logging and path management)
+"""
+
 import random
 import shutil
 import subprocess
+import urllib.request
 from datetime import datetime
 from pathlib import Path
 from typing import Generator
@@ -12,6 +33,7 @@ import zstandard
 from pandas import DataFrame
 
 from chipiron.environments.chess_env.board.utils import fen
+from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.path_variables import (
     EXTERNAL_DATA_DIR,  # removed LICHESS_PGN_FILE usage
 )
@@ -66,8 +88,12 @@ def save_dataset_progress(
     recorded_board = len(new_data_frame_states.index)
 
     save_type = "Final" if is_final else "Progress"
-    print(
-        f"{save_type}: {recorded_board:,} / {max_boards:,} board positions collected ({recorded_board / max_boards * 100:.1f}%)"
+    chipiron_logger.info(
+        "%s: %s / %s board positions collected (%.1f%%)",
+        save_type,
+        f"{recorded_board:,}",
+        f"{max_boards:,}",
+        recorded_board / max_boards * 100,
     )
 
     # Enhanced progress with file totals
@@ -78,8 +104,8 @@ def save_dataset_progress(
     if total_moves_in_file:
         moves_progress += f" / {total_moves_in_file:,} ({total_count_move / total_moves_in_file * 100:.1f}%)"
 
-    print(f"         Games processed: {games_progress}")
-    print(f"         Moves processed: {moves_progress}")
+    chipiron_logger.info("         Games processed: %s", games_progress)
+    chipiron_logger.info("         Moves processed: %s", moves_progress)
 
     # Add metadata
     new_data_frame_states.attrs["source_pgn_file"] = input_pgn_file_path
@@ -106,8 +132,11 @@ def save_dataset_progress(
     new_data_frame_states.to_pickle(output_file_path)
 
     if is_final and months_used:
-        print(
-            f"Final dataset saved ({len(new_data_frame_states)} positions) using months {months_used} -> {output_file_path}"
+        chipiron_logger.info(
+            "Final dataset saved (%d positions) using months %s -> %s",
+            len(new_data_frame_states),
+            months_used,
+            output_file_path,
         )
 
     return recorded_board
@@ -193,7 +222,6 @@ def download_month_zst(month: str, dest_dir: Path) -> Path:
     if local_path.exists():
         try:
             # Get remote file size to compare
-            import urllib.request
 
             with urllib.request.urlopen(url) as response:
                 remote_size = int(response.headers.get("Content-Length", 0))
@@ -201,16 +229,23 @@ def download_month_zst(month: str, dest_dir: Path) -> Path:
             local_size = local_path.stat().st_size
 
             if remote_size > 0 and local_size == remote_size:
-                print(f"Compressed file already exists for {month}: {local_path}")
+                chipiron_logger.info(
+                    "Compressed file already exists for %s: %s", month, local_path
+                )
                 return local_path
             else:
-                print(
-                    f"Incomplete file detected for {month} (local: {local_size}, remote: {remote_size}). Re-downloading..."
+                chipiron_logger.info(
+                    "Incomplete file detected for %s (local: %d, remote: %d). Re-downloading...",
+                    month,
+                    local_size,
+                    remote_size,
                 )
-        except Exception as e:
-            print(f"Could not verify file size for {month}: {e}. Re-downloading...")
+        except urllib.error.URLError as e:
+            chipiron_logger.info(
+                "Could not verify file size for %s: %s. Re-downloading...", month, e
+            )
 
-    print(f"Downloading {url} -> {local_path}")
+    chipiron_logger.info("Downloading %s -> %s", url, local_path)
 
     def progress_hook(block_num: int, block_size: int, total_size: int) -> None:
         if total_size > 0:
@@ -218,58 +253,58 @@ def download_month_zst(month: str, dest_dir: Path) -> Path:
             percent = min(100.0, downloaded * 100.0 / total_size)
             downloaded_mb = downloaded / (1024 * 1024)
             total_mb = total_size / (1024 * 1024)
-            print(
-                f"\rProgress: {percent:.1f}% ({downloaded_mb:.1f}/{total_mb:.1f} MB)",
-                end="",
-                flush=True,
+            chipiron_logger.info(
+                "Progress: %.1f%% (%.1f/%.1f MB)", percent, downloaded_mb, total_mb
             )
 
     urllib.request.urlretrieve(url, local_path, reporthook=progress_hook)
-    print()  # New line after download completes
+    chipiron_logger.info("")  # New line after download completes
     return local_path
 
 
 def decompress_zst(zst_path: Path, output_pgn_path: Path) -> None:
     """Decompress .zst to .pgn using zstd command line or Python fallback."""
     if output_pgn_path.exists():
-        print(f"Decompressed PGN already present: {output_pgn_path}")
+        chipiron_logger.info("Decompressed PGN already present: %s", output_pgn_path)
         return
 
-    print(f"Decompressing {zst_path.name}...")
+    chipiron_logger.info("Decompressing %s...", zst_path.name)
 
     # Try zstd command first
     if shutil.which("zstd"):
         try:
             cmd = ["zstd", "-d", "-f", "-o", str(output_pgn_path), str(zst_path)]
-            print(f"Running: {' '.join(cmd)}")
+            chipiron_logger.info("Running: %s", " ".join(cmd))
             subprocess.run(cmd, check=True, capture_output=True, text=True)
-            print("Decompression completed with zstd command")
+            chipiron_logger.info("Decompression completed with zstd command")
             return
         except subprocess.CalledProcessError as e:
-            print(f"zstd command failed (exit code {e.returncode}): {e.stderr}")
-            print("Falling back to Python decompression...")
+            chipiron_logger.info(
+                "zstd command failed (exit code %d): %s", e.returncode, e.stderr
+            )
+            chipiron_logger.info("Falling back to Python decompression...")
 
     # Fall back to Python zstandard
     try:
-        print("Using Python zstandard library for decompression...")
+        chipiron_logger.info("Using Python zstandard library for decompression...")
         dctx = zstandard.ZstdDecompressor()
         with zst_path.open("rb") as src, output_pgn_path.open("wb") as dst:
             dctx.copy_stream(src, dst)
-        print("Decompression completed with Python zstandard")
+        chipiron_logger.info("Decompression completed with Python zstandard")
     except Exception as exc:
         raise RuntimeError(f"Both zstd CLI and Python zstandard failed: {exc}") from exc
 
 
-def ensure_month_pgn(
-    month: str, dest_dir: Path, keep_decompressed: bool = False
-) -> Path:
+def ensure_month_pgn(month: str, dest_dir: Path) -> Path:
     """Ensure decompressed monthly PGN exists; download & decompress if needed; return .pgn path."""
     file_name = MONTHLY_FILE_TEMPLATE.format(month=month)
     pgn_path = dest_dir / file_name.replace(".pgn.zst", ".pgn")
 
     # First check if decompressed file already exists
     if pgn_path.exists():
-        print(f"Decompressed PGN already exists for {month}: {pgn_path}")
+        chipiron_logger.info(
+            "Decompressed PGN already exists for %s: %s", month, pgn_path
+        )
         return pgn_path
 
     # If not, download compressed file and decompress
@@ -279,7 +314,7 @@ def ensure_month_pgn(
     # Always delete compressed file after decompression
     if compressed.exists():
         compressed.unlink(missing_ok=True)
-        print(f"Deleted compressed file: {compressed}")
+    chipiron_logger.info("Deleted compressed file: %s", compressed)
 
     return pgn_path
 
@@ -318,12 +353,10 @@ def generate_board_dataset_multi_months(
     while recorded_board < max_boards:
         month = next(month_iter)
         if max_months is not None and months_processed >= max_months:
-            print("Reached max_months limit.")
+            chipiron_logger.info("Reached max_months limit.")
             break
-        print(f"\n=== Processing month {month} ===")
-        pgn_path = ensure_month_pgn(
-            month, dest_dir, keep_decompressed=not delete_pgn_after_use
-        )
+        chipiron_logger.info("=== Processing month %s ===", month)
+        pgn_path = ensure_month_pgn(month, dest_dir)
         months_used.append(month)
         months_processed += 1
         with open(pgn_path, "r", encoding="utf-8") as pgn_file:
@@ -352,11 +385,13 @@ def generate_board_dataset_multi_months(
                 )
                 recorded_board = len(the_dic)
         if delete_pgn_after_use:
-            print(f"Deleting processed PGN for month {month}: {pgn_path}")
+            chipiron_logger.info(
+                "Deleting processed PGN for month %s: %s", month, pgn_path
+            )
             try:
                 Path(pgn_path).unlink(missing_ok=True)
             except OSError as exc:
-                print(f"Warning: could not delete {pgn_path}: {exc}")
+                chipiron_logger.info("Warning: could not delete %s: %s", pgn_path, exc)
         # continue to next month if need more boards
 
     # Final save using unified function
@@ -415,7 +450,9 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    print("Running dynamic monthly download mode (legacy single-file mode disabled)")
+    chipiron_logger.info(
+        "Running dynamic monthly download mode (legacy single-file mode disabled)"
+    )
     generate_board_dataset_multi_months(
         output_file_path=args.output,
         max_boards=args.max_boards,

@@ -24,11 +24,13 @@ number_parallel_tracks = number_of_squares + 1
 
 @dataclass()
 class TransformerArgs:
+    """Transformer model hyperparameters."""
+
     number_occupancy_types: int = number_occupancy_types
     len_square_tensor: int = len_square_tensor
     number_pieces_types: int = number_pieces_types
 
-    type: Literal[NNModelType.Transformer] = NNModelType.Transformer
+    type: Literal[NNModelType.TRANSFORMER] = NNModelType.TRANSFORMER
     n_embd: int = 27
     n_head: int = 3
     n_layer: int = 2

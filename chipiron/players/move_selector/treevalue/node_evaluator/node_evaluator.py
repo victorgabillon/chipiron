@@ -35,7 +35,7 @@ class NodeEvaluatorTypes(str, Enum):
     Enum class representing different types of node evaluators.
     """
 
-    NeuralNetwork = "neural_network"
+    NEURAL_NETWORK = "neural_network"
 
 
 class EvaluationQueries:

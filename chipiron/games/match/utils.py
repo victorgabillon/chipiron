@@ -13,7 +13,7 @@ import yaml
 import chipiron as ch
 import chipiron.games.game as game
 from chipiron.games.match.match_args import MatchArgs
-from chipiron.games.match.MatchTag import MatchConfigTag
+from chipiron.games.match.match_tag import MatchConfigTag
 from chipiron.utils import path
 
 from .match_settings_args import MatchSettingsArgs
@@ -40,7 +40,7 @@ def fetch_match_games_args_convert_and_save(
     """
 
     if profiling:
-        path_match_setting: path = MatchConfigTag.Cubo.get_yaml_file_path()
+        path_match_setting: path = MatchConfigTag.CUBO.get_yaml_file_path()
         match_setting: MatchSettingsArgs = (
             parsley_coco.resolve_yaml_file_to_base_dataclass(
                 yaml_path=path_match_setting,

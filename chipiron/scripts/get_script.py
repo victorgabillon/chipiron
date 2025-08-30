@@ -15,13 +15,13 @@ from .tree_visualization.tree_visualizer import VisualizeTreeScript
 
 # script_type_to_script_class_name maps Script Type to the class name of the script to instantiate
 script_type_to_script_class_name: dict[ScriptType, Any] = {
-    ScriptType.OneMatch: OneMatchScript,
-    ScriptType.TreeVisualization: VisualizeTreeScript,
-    ScriptType.LearnNN: LearnNNScript,
-    ScriptType.ReplayMatch: ReplayGameScript,
-    ScriptType.League: RunTheLeagueScript,
-    ScriptType.BaseTreeExploration: BaseTreeExplorationScript,
-    ScriptType.LearnNNFromScratch: LearnNNFromScratchScript,
+    ScriptType.ONE_MATCH: OneMatchScript,
+    ScriptType.TREE_VISUALIZATION: VisualizeTreeScript,
+    ScriptType.LEARN_NN: LearnNNScript,
+    ScriptType.REPLAY_MATCH: ReplayGameScript,
+    ScriptType.LEAGUE: RunTheLeagueScript,
+    ScriptType.BASE_TREE_EXPLORATION: BaseTreeExplorationScript,
+    ScriptType.LEARN_NN_FROM_SCRATCH: LearnNNFromScratchScript,
 }
 
 

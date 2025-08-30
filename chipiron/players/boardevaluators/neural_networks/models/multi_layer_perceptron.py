@@ -35,7 +35,7 @@ from chipiron.utils.logger import chipiron_logger
 
 @dataclass
 class MultiLayerPerceptronArgs:
-    type: Literal[NNModelType.MultiLayerPerceptron]
+    type: Literal[NNModelType.MULTI_LAYER_PERCEPTRON]
     number_neurons_per_layer: list[int]
     list_of_activation_functions: list[ActivationFunctionType]
 

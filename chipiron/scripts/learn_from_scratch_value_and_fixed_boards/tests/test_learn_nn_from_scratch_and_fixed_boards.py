@@ -45,7 +45,7 @@ configs_dataclasses: list[Any] = [
 def test_learn_nn_from_scratch_and_fixed_boards() -> None:
     for config in configs_dataclasses:
         script_object: scripts.IScript = create_script(
-            script_type=scripts.ScriptType.LearnNNFromScratch,
+            script_type=scripts.ScriptType.LEARN_NN_FROM_SCRATCH,
             extra_args=config,
             should_parse_command_line_arguments=False,
         )

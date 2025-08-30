@@ -63,8 +63,8 @@ class StoppingCriterionTypes(str, Enum):
     Enum class representing different types of stopping criteria for tree value calculation.
     """
 
-    DepthLimit = "depth_limit"
-    TreeMoveLimit = "tree_move_limit"
+    DEPTH_LIMIT = "depth_limit"
+    TREE_MOVE_LIMIT = "tree_move_limit"
 
 
 @dataclass
@@ -176,7 +176,7 @@ class ProgressMonitor:
 class TreeMoveLimitArgs:
     """Arguments for the tree move limit stopping criterion."""
 
-    type: Literal[StoppingCriterionTypes.TreeMoveLimit]
+    type: Literal[StoppingCriterionTypes.TREE_MOVE_LIMIT]
     tree_move_limit: int
 
 
@@ -246,7 +246,7 @@ class DepthLimitArgs:
         depth_limit (int): The maximum depth allowed for the search.
     """
 
-    type: Literal[StoppingCriterionTypes.DepthLimit]
+    type: Literal[StoppingCriterionTypes.DEPTH_LIMIT]
     depth_limit: int
 
 
@@ -334,13 +334,13 @@ def create_stopping_criterion(
     stopping_criterion: ProgressMonitor
 
     match args.type:
-        case StoppingCriterionTypes.DepthLimit:
+        case StoppingCriterionTypes.DEPTH_LIMIT:
             assert isinstance(node_selector, DepthToExpendP)
             assert isinstance(args, DepthLimitArgs)
             stopping_criterion = DepthLimit(
                 depth_limit=args.depth_limit, node_selector=node_selector
             )
-        case StoppingCriterionTypes.TreeMoveLimit:
+        case StoppingCriterionTypes.TREE_MOVE_LIMIT:
             assert isinstance(args, TreeMoveLimitArgs)
 
             stopping_criterion = TreeMoveLimit(tree_move_limit=args.tree_move_limit)

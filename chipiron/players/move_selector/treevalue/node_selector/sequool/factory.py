@@ -38,7 +38,7 @@ class SequoolArgs:
         consider_all_lesser_half_move (bool): Flag indicating whether to consider all lesser half moves.
     """
 
-    type: Literal[NodeSelectorType.Sequool]
+    type: Literal[NodeSelectorType.SEQUOOL]
     recursive_selection_on_all_nodes: bool
     random_depth_pick: bool
     consider_all_lesser_half_move: bool

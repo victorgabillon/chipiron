@@ -5,7 +5,7 @@ from chipiron.scripts.factory import create_script
 def test_base_tree_exploration() -> None:
     print("Running the SCRIPT with config ")
     script_object: scripts.IScript = create_script(
-        script_type=scripts.ScriptType.BaseTreeExploration,
+        script_type=scripts.ScriptType.BASE_TREE_EXPLORATION,
         should_parse_command_line_arguments=False,
     )
 

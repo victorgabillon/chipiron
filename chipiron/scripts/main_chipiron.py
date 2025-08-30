@@ -11,6 +11,7 @@ from chipiron.scripts.factory import create_script
 from chipiron.scripts.iscript import IScript
 from chipiron.scripts.script_gui.script_gui_custom import script_gui
 from chipiron.scripts.script_type import ScriptType
+from chipiron.utils.logger import chipiron_logger
 
 sys.path.append("../../")
 
@@ -81,12 +82,12 @@ def main() -> None:
     The main function
     """
     # Print chipiron startup banner with chipiron-themed icons
-    print("=" * 60)
-    print("              🦑 ♛  CHIPIRON MAIN STARTS  ♛ 🦑")
-    print("           🐙 AI Chess Engine & Learning System 🐙")
-    print("        ♔. Ready to play and learn chess like a pro! .♕")
-    print("       🦑 ~ Swimming through chess possibilities ~ 🦑")
-    print("=" * 60)
+    chipiron_logger.info("=" * 60)
+    chipiron_logger.info("              🦑 ♛  CHIPIRON MAIN STARTS  ♛ 🦑")
+    chipiron_logger.info("           🐙 AI Chess Engine & Learning System 🐙")
+    chipiron_logger.info("      ♔ • Ready to play and learn chess like a pulpo!  •♕")
+    chipiron_logger.info("       🦑 ~ Swimming through chess possibilities ~ 🦑")
+    chipiron_logger.info("=" * 60)
     print()
 
     # Getting the command line arguments from the system

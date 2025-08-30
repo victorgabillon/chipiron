@@ -196,7 +196,7 @@ class OpeningType(Enum):
     Represents the type of opening to use.
     """
 
-    AllChildren = "all_children"
+    ALL_CHILDREN = "all_children"
 
 
 class OpeningInstructor:
@@ -227,7 +227,7 @@ class OpeningInstructor:
         Returns:
             A list of chess moves.
         """
-        if self.opening_type == OpeningType.AllChildren:
+        if self.opening_type == OpeningType.ALL_CHILDREN:
             node_to_open.all_legal_moves_generated = True
             moves_to_play: list[moveKey] = node_to_open.legal_moves.get_all()
 

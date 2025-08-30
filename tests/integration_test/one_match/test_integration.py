@@ -17,7 +17,7 @@ import chipiron.scripts as scripts
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_factories import create_match_manager_from_args
 from chipiron.games.match.match_results import MatchReport
-from chipiron.games.match.MatchTag import MatchConfigTag
+from chipiron.games.match.match_tag import MatchConfigTag
 from chipiron.players import PlayerArgs
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 from chipiron.players.move_selector.stockfish import StockfishPlayer
@@ -60,7 +60,7 @@ test_player_overwrite = PartialOpPlayerArgs(
     main_move_selector=PartialOpTreeAndValuePlayerArgs(
         type=MoveSelectorTypes.TreeAndValue,
         stopping_criterion=PartialOpTreeMoveLimitArgs(
-            type=StoppingCriterionTypes.TreeMoveLimit,
+            type=StoppingCriterionTypes.TREE_MOVE_LIMIT,
             tree_move_limit=TEST_TREE_MOVE_LIMIT,
         ),
     )
@@ -76,7 +76,7 @@ def _build_base_configs() -> list[Any]:
             match_args=PartialOpMatchArgs(
                 player_one=PlayerConfigTag.SEQUOOL,
                 player_two=PlayerConfigTag.RANDOM,
-                match_setting=MatchConfigTag.Cubo,
+                match_setting=MatchConfigTag.CUBO,
                 player_one_overwrite=test_player_overwrite,
             ),
             base_script_args=PartialOpBaseScriptArgs(
@@ -88,7 +88,7 @@ def _build_base_configs() -> list[Any]:
             match_args=PartialOpMatchArgs(
                 player_one=PlayerConfigTag.SEQUOOL,
                 player_two=PlayerConfigTag.RECUR_ZIPF_BASE_3,
-                match_setting=MatchConfigTag.Cubo,
+                match_setting=MatchConfigTag.CUBO,
                 player_one_overwrite=test_player_overwrite,
                 player_two_overwrite=test_player_overwrite,
             ),
@@ -101,7 +101,7 @@ def _build_base_configs() -> list[Any]:
             match_args=PartialOpMatchArgs(
                 player_one=PlayerConfigTag.RECUR_ZIPF_BASE_4,
                 player_two=PlayerConfigTag.RECUR_ZIPF_BASE_3,
-                match_setting=MatchConfigTag.Cubo,
+                match_setting=MatchConfigTag.CUBO,
                 player_one_overwrite=test_player_overwrite,
                 player_two_overwrite=test_player_overwrite,
             ),
@@ -114,7 +114,7 @@ def _build_base_configs() -> list[Any]:
             match_args=PartialOpMatchArgs(
                 player_one=PlayerConfigTag.UNIFORM,
                 player_two=PlayerConfigTag.RECUR_ZIPF_BASE_3,
-                match_setting=MatchConfigTag.Cubo,
+                match_setting=MatchConfigTag.CUBO,
                 player_one_overwrite=test_player_overwrite,
                 player_two_overwrite=test_player_overwrite,
             ),
@@ -127,7 +127,7 @@ def _build_base_configs() -> list[Any]:
             match_args=PartialOpMatchArgs(
                 player_one=PlayerConfigTag.RECUR_ZIPF_BASE_3,
                 player_two=PlayerConfigTag.RECUR_ZIPF_BASE_3,
-                match_setting=MatchConfigTag.Cubo,
+                match_setting=MatchConfigTag.CUBO,
                 player_one_overwrite=test_player_overwrite,
                 player_two_overwrite=test_player_overwrite,
             ),
@@ -141,7 +141,7 @@ def _build_base_configs() -> list[Any]:
             match_args=PartialOpMatchArgs(
                 player_one=PlayerConfigTag.SEQUOOL,
                 player_two=PlayerConfigTag.RANDOM,
-                match_setting=MatchConfigTag.Cubo,
+                match_setting=MatchConfigTag.CUBO,
                 player_one_overwrite=test_player_overwrite,
             ),
             base_script_args=PartialOpBaseScriptArgs(
@@ -154,7 +154,7 @@ def _build_base_configs() -> list[Any]:
             match_args=PartialOpMatchArgs(
                 player_one=PlayerConfigTag.SEQUOOL,
                 player_two=PlayerConfigTag.RANDOM,
-                match_setting=MatchConfigTag.Cubo,
+                match_setting=MatchConfigTag.CUBO,
                 player_one_overwrite=test_player_overwrite,
             ),
             base_script_args=PartialOpBaseScriptArgs(
@@ -172,7 +172,7 @@ def _build_base_configs() -> list[Any]:
                 match_args=PartialOpMatchArgs(
                     player_one=PlayerConfigTag.RANDOM,
                     player_two=PlayerConfigTag.STOCKFISH,
-                    match_setting=MatchConfigTag.Cubo,
+                    match_setting=MatchConfigTag.CUBO,
                 ),
                 base_script_args=PartialOpBaseScriptArgs(
                     profiling=False, testing=True, seed=12
@@ -189,7 +189,7 @@ def _build_base_configs() -> list[Any]:
                 match_args=PartialOpMatchArgs(
                     player_one=PlayerConfigTag.SEQUOOL,
                     player_two=PlayerConfigTag.RANDOM,
-                    match_setting=MatchConfigTag.Tron,
+                    match_setting=MatchConfigTag.TRON,
                     player_one_overwrite=test_player_overwrite,
                 ),
                 base_script_args=PartialOpBaseScriptArgs(
@@ -253,7 +253,7 @@ def test_one_matches(configs=None, log_level=logging.ERROR):
                 chipiron_logger, level=log_level
             ):  # logging level depends on how the function is called
                 script_object: scripts.IScript = create_script(
-                    script_type=scripts.ScriptType.OneMatch,
+                    script_type=scripts.ScriptType.ONE_MATCH,
                     extra_args=total_config,
                     should_parse_command_line_arguments=False,
                 )
@@ -281,10 +281,10 @@ def test_randomness(log_level=logging.ERROR):
     match_args.seed = 0
     match_args.player_one = PlayerConfigTag.UNIFORM.get_players_args()
     match_args.player_two = PlayerConfigTag.RANDOM.get_players_args()
-    match_args.match_setting = MatchConfigTag.Tron.get_match_settings_args()
+    match_args.match_setting = MatchConfigTag.TRON.get_match_settings_args()
     match_args.player_one = PlayerConfigTag.UNIFORM.get_players_args()
     match_args.player_two = PlayerConfigTag.RANDOM.get_players_args()
-    match_args.match_setting = MatchConfigTag.Tron.get_match_settings_args()
+    match_args.match_setting = MatchConfigTag.TRON.get_match_settings_args()
 
     # Override player two with test tree move limit using parsley_coco
     match_args.player_one_overwrite = test_player_overwrite
@@ -343,18 +343,15 @@ def test_same_game_with_or_without_rust(log_level=logging.ERROR):
     match_args.seed = 0
 
     match_args.player_one = PlayerConfigTag.UNIFORM.get_players_args()
-    print("debugeeed")
 
     match_args.player_two = PlayerConfigTag.RANDOM.get_players_args()
-    match_args.match_setting = MatchConfigTag.Tron.get_match_settings_args()
+    match_args.match_setting = MatchConfigTag.TRON.get_match_settings_args()
     match_args.player_one_overwrite = (
         test_player_overwrite  # Override player one with test tree move limit
     )
 
     # Override player two with test tree move limit using parsley_coco
-    print("debugeee")
     match_args = resolve_extended_object(extended_obj=match_args, base_cls=MatchArgs)
-    print("debugeeeererr")
 
     implementation_args: ImplementationArgs = ImplementationArgs(use_rust_boards=False)
 
