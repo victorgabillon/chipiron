@@ -97,7 +97,6 @@ def get_descendants_candidate_not_over(
     depth: int = 1
     assert max_depth is not None
     while generation and depth <= max_depth:
-
         next_depth_generation: set[ITreeNode[Any]] = set()
         for node in generation:
             assert isinstance(node, AlgorithmNode)

@@ -12,8 +12,8 @@ import zstandard
 from pandas import DataFrame
 
 from chipiron.environments.chess_env.board.utils import fen
-from chipiron.utils.path_variables import (  # removed LICHESS_PGN_FILE usage
-    EXTERNAL_DATA_DIR,
+from chipiron.utils.path_variables import (
+    EXTERNAL_DATA_DIR,  # removed LICHESS_PGN_FILE usage
 )
 
 # Sampling configuration variables

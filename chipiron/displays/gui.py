@@ -5,6 +5,7 @@ This module is the execution point of the chess GUI application.
 
 It provides the `MainWindow` class, which creates a surface for the chessboard and handles user interactions.
 """
+
 import os
 import queue
 import time
@@ -329,7 +330,6 @@ class MainWindow(QWidget):
                     self.margin < event.x() < self.board_size - self.margin
                     and self.margin < event.y() < self.board_size - self.margin
                 ):
-
                     file = int((event.x() - self.margin) / self.squareSize)
                     rank = 7 - int((event.y() - self.margin) / self.squareSize)
                     square = chess.square(file, rank)
@@ -663,9 +663,7 @@ class MainWindow(QWidget):
                 player.player_args.main_move_selector.stopping_criterion,
                 TreeMoveLimitArgs,
             ):
-                tree_move_limit = (
-                    player.player_args.main_move_selector.stopping_criterion.tree_move_limit
-                )
+                tree_move_limit = player.player_args.main_move_selector.stopping_criterion.tree_move_limit
 
         return f"{name} ({tree_move_limit})"
 

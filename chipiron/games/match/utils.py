@@ -3,7 +3,7 @@ Module to fetch, modify and convert the match settings and game settings.
 """
 
 import os
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from importlib.resources import as_file, files
 from shutil import copyfile
 

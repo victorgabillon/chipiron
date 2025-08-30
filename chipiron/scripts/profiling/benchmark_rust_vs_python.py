@@ -145,14 +145,15 @@ class ChessEngineBenchmark:
             # Endgame position
             "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1",
         ]
-        self.move_generation_iterations = 50
-        self.base_tree_exploration_iterations = 5
+        self.move_generation_iterations = 500
+        self.base_tree_exploration_iterations = 50
         self.base_tree_exploration_limits = [1000, 5000, 10000]
 
     def create_implementation_args(self, use_rust: bool) -> ImplementationArgs:
         """Create implementation args for the given configuration."""
         return ImplementationArgs(
-            use_rust_boards=use_rust, use_board_modification=False  # Keep consistent
+            use_rust_boards=use_rust,
+            use_board_modification=False,  # Keep consistent
         )
 
     def create_board_for_fen(self, fen: str, use_rust: bool) -> IBoard:
@@ -255,9 +256,7 @@ class ChessEngineBenchmark:
                         player_args.main_move_selector.stopping_criterion,
                         TreeMoveLimitArgs,
                     )
-                    player_args.main_move_selector.stopping_criterion.tree_move_limit = (
-                        tree_move_limit
-                    )
+                    player_args.main_move_selector.stopping_criterion.tree_move_limit = tree_move_limit
 
                     # Create random generator
                     random_generator = random.Random()

@@ -4,12 +4,14 @@ Module for creating board evaluators.
 
 import sys
 from dataclasses import dataclass
-from importlib.resources import as_file, files
-from typing import Any
+from importlib.resources import files
 
-import dacite
-import yaml
+import parsley_coco
 
+from chipiron.players.boardevaluators.all_board_evaluator_args import (
+    AllBoardEvaluatorArgs,
+    BasicEvaluationBoardEvaluatorArgs,
+)
 from chipiron.players.boardevaluators.basic_evaluation import BasicEvaluation
 from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
     NeuralNetBoardEvalArgs,
@@ -19,7 +21,6 @@ from chipiron.players.boardevaluators.stockfish_board_evaluator import (
     StockfishBoardEvaluator,
 )
 
-from ...utils import yaml_fetch_args_in_file
 from .board_evaluator import (
     BoardEvaluator,
     GameBoardEvaluator,
@@ -27,43 +28,7 @@ from .board_evaluator import (
     ObservableBoardEvaluator,
 )
 from .neural_networks.factory import (
-    create_nn_board_eval_from_folder_path_and_existing_model,
-)
-
-
-class TableBaseArgs:
-    """A class representing the arguments for the TableBase class.
-
-    This class provides a template for the arguments that can be passed to the TableBase class.
-    It serves as a base class for defining specific argument classes for different implementations
-    of the TableBase class.
-
-    Attributes:
-        ``None``
-
-    Methods:
-        ``None``
-    """
-
-
-class BasicEvaluationArgs:
-    """A class representing the arguments for basic evaluation.
-
-    This class provides a way to store and access the arguments needed for basic evaluation.
-
-    Attributes:
-        ``None``
-
-    Methods:
-        ``None``
-    """
-
-
-BoardEvalArgs = (
-    NeuralNetBoardEvalArgs
-    | StockfishBoardEvalArgs
-    | TableBaseArgs
-    | BasicEvaluationArgs
+    create_nn_board_eval_from_nn_parameters_file_and_existing_model,
 )
 
 
@@ -77,11 +42,11 @@ class BoardEvalArgsWrapper:
         board_evaluator (BoardEvalArgs): The BoardEvalArgs object to be wrapped.
     """
 
-    board_evaluator: BoardEvalArgs
+    board_evaluator: AllBoardEvaluatorArgs
 
 
 def create_board_evaluator(
-    args_board_evaluator: BoardEvalArgs,
+    args_board_evaluator: AllBoardEvaluatorArgs,
 ) -> BoardEvaluator:
     """Create a board evaluator based on the given arguments.
 
@@ -99,13 +64,12 @@ def create_board_evaluator(
     match args_board_evaluator:
         case StockfishBoardEvalArgs():
             board_evaluator = StockfishBoardEvaluator(args_board_evaluator)
-        case BasicEvaluationArgs():
+        case BasicEvaluationBoardEvaluatorArgs():
             board_evaluator = BasicEvaluation()
         case NeuralNetBoardEvalArgs():
-            board_evaluator, _ = (
-                create_nn_board_eval_from_folder_path_and_existing_model(
-                    path_to_nn_folder=args_board_evaluator.nn_param_folder_name,
-                )
+            board_evaluator = create_nn_board_eval_from_nn_parameters_file_and_existing_model(
+                model_weights_file_name=args_board_evaluator.neural_nets_model_and_architecture.model_weights_file_name,
+                nn_architecture_args=args_board_evaluator.neural_nets_model_and_architecture.nn_architecture_args,
             )
 
         #  case TableBaseArgs():
@@ -132,7 +96,7 @@ def create_game_board_evaluator_not_observable(
     board_evaluator_stock: BoardEvaluator | None
     if can_stockfish:
         board_evaluator_stock = create_board_evaluator(
-            args_board_evaluator=StockfishBoardEvalArgs()
+            args_board_evaluator=StockfishBoardEvalArgs(depth=20, time_limit=0.1)
         )
     else:
         board_evaluator_stock = None
@@ -143,14 +107,26 @@ def create_game_board_evaluator_not_observable(
         )
     )
 
-    chi_board_eval_dict: dict[Any, Any] = yaml_fetch_args_in_file(
-        path_file=chi_board_eval_yaml_path
+    # chi_board_eval_dict: dict[Any, Any] = yaml_fetch_args_in_file(
+    #    path_file=chi_board_eval_yaml_path
+    # )
+
+    print("DEBUGuhhhh")
+
+    chi_board_eval_args: BoardEvalArgsWrapper = (
+        parsley_coco.resolve_yaml_file_to_base_dataclass(
+            yaml_path=chi_board_eval_yaml_path,
+            base_cls=BoardEvalArgsWrapper,
+            package_name=files("chipiron"),
+        )
     )
 
     # atm using a wrapper because dacite does not accept unions as data_class argument
-    chi_board_eval_args: BoardEvalArgsWrapper = dacite.from_dict(
-        data_class=BoardEvalArgsWrapper, data=chi_board_eval_dict
-    )
+    # chi_board_eval_args: BoardEvalArgsWrapper = dacite.from_dict(
+    #    data_class=BoardEvalArgsWrapper, data=chi_board_eval_dict
+    # )
+    print("DEBUGubbddd", chi_board_eval_args)
+
     board_evaluator_chi: BoardEvaluator = create_board_evaluator(
         args_board_evaluator=chi_board_eval_args.board_evaluator
     )

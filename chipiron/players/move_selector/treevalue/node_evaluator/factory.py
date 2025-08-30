@@ -3,34 +3,24 @@ This module provides a factory function for creating node evaluators based on di
 """
 
 import sys
-from typing import Any, TypeAlias
+from typing import Any
 
-import chipiron.players.boardevaluators.basic_evaluation as basic_evaluation
 from chipiron.players.boardevaluators import MasterBoardEvaluator
+from chipiron.players.boardevaluators.board_evaluator_type import BoardEvalTypes
 from chipiron.players.boardevaluators.master_board_evaluator import (
-    create_master_board_evaluator,
-)
-from chipiron.players.boardevaluators.neural_networks.factory import (
-    create_nn_board_eval_from_nn_parameters_file_and_existing_model,
-)
-from chipiron.players.boardevaluators.neural_networks.nn_board_evaluator import (
-    NNBoardEvaluator,
+    create_master_board_evaluator_from_args,
 )
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
+from chipiron.players.move_selector.treevalue.node_evaluator.node_evaluator_args import (
+    NodeEvaluatorArgs,
+)
 
-from . import neural_networks
-from .all_node_evaluators import NodeEvaluatorTypes
 from .neural_networks.nn_node_evaluator import NNNodeEvaluator
 from .node_evaluator import NodeEvaluator
-from .node_evaluator_args import BasicEvaluationNodeEvaluatorArgs, NodeEvaluatorArgs
-
-AllNodeEvaluatorArgs: TypeAlias = (
-    neural_networks.NeuralNetNodeEvalArgs | BasicEvaluationNodeEvaluatorArgs
-)
 
 
 def create_node_evaluator(
-    arg_board_evaluator: AllNodeEvaluatorArgs, syzygy: SyzygyTable[Any] | None
+    arg_board_evaluator: NodeEvaluatorArgs, syzygy: SyzygyTable[Any] | None
 ) -> NodeEvaluator:
     """
     Create a node evaluator based on the given board evaluator argument and syzygy table.
@@ -46,42 +36,22 @@ def create_node_evaluator(
         SystemExit: If the given board evaluator type is not found.
 
     """
-    if arg_board_evaluator.syzygy_evaluation:
-        syzygy_ = syzygy
-    else:
-        syzygy_ = None
 
-    node_evaluator: NodeEvaluator
+    master_board_evaluator: MasterBoardEvaluator = (
+        create_master_board_evaluator_from_args(
+            arg_board_evaluator.master_board_evaluator,
+            syzygy,
+        )
+    )
 
-    match arg_board_evaluator.type:
-        case NodeEvaluatorTypes.BasicEvaluation:
-            board_evaluator: basic_evaluation.BasicEvaluation = (
-                basic_evaluation.BasicEvaluation()
-            )
-
-            master_board_evaluator: MasterBoardEvaluator = (
-                create_master_board_evaluator(
-                    board_evaluator=board_evaluator,
-                    syzygy=syzygy_,
-                    evaluation_scale=arg_board_evaluator.evaluation_scale,
-                )
-            )
+    match arg_board_evaluator.master_board_evaluator.board_evaluator.type:
+        case BoardEvalTypes.BASIC_EVALUATION_EVAL:
             node_evaluator = NodeEvaluator(
                 master_board_evaluator=master_board_evaluator
             )
-        case NodeEvaluatorTypes.NeuralNetwork:
-            assert isinstance(
-                arg_board_evaluator, neural_networks.NeuralNetNodeEvalArgs
-            )
-            board_evaluator_nn: NNBoardEvaluator
-            board_evaluator_nn = create_nn_board_eval_from_nn_parameters_file_and_existing_model(
-                model_weights_file_name=arg_board_evaluator.neural_nets_model_and_architecture.model_weights_file_name,
-                nn_architecture_args=arg_board_evaluator.neural_nets_model_and_architecture.nn_architecture_args,
-            )
+        case BoardEvalTypes.NEURAL_NET_BOARD_EVAL:
             node_evaluator = NNNodeEvaluator(
-                nn_board_evaluator=board_evaluator_nn,
-                syzygy=syzygy_,
-                evaluation_scale=arg_board_evaluator.evaluation_scale,
+                master_board_evaluator=master_board_evaluator
             )
         case other:
             sys.exit(f"Node Board Eval: can not find {other} in file {__name__}")

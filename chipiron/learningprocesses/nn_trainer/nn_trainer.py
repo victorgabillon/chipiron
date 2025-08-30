@@ -25,7 +25,6 @@ def compute_loss(
 
 
 def check_model_device(model: ChiNN) -> str | torch.device | int:
-
     # Check the device of the first parameter
 
     first_param_device = next(model.parameters()).device
@@ -45,9 +44,10 @@ def compute_test_error_on_dataset(
     device = check_model_device(net)
     for i in range(number_of_tests):
         sample = next(iter(data_test))
-        input_layer, target_value = sample.get_input_layer().to(
-            device
-        ), sample.get_target_value().to(device)
+        input_layer, target_value = (
+            sample.get_input_layer().to(device),
+            sample.get_target_value().to(device),
+        )
 
         loss_test = compute_loss(
             net=net,
@@ -126,8 +126,9 @@ class NNPytorchTrainer:
         self.net.train()
 
         self.optimizer.zero_grad()
-        input_layer, target_value = input_layer.to(self.device), target_value.to(
-            self.device
+        input_layer, target_value = (
+            input_layer.to(self.device),
+            target_value.to(self.device),
         )
 
         loss: torch.Tensor = compute_loss(
@@ -155,8 +156,9 @@ class NNPytorchTrainer:
             torch.Tensor: The loss value.
         """
         self.net.eval()
-        input_layer, target_value = input_layer.to(self.device), target_value.to(
-            self.device
+        input_layer, target_value = (
+            input_layer.to(self.device),
+            target_value.to(self.device),
         )
         loss: torch.Tensor = compute_loss(
             net=self.net,

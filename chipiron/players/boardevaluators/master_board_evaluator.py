@@ -1,12 +1,21 @@
+from dataclasses import dataclass
 from typing import Any
 
 import chess
 
 import chipiron.environments.chess_env.board as boards
+import chipiron.players.boardevaluators.basic_evaluation as basic_evaluation
+from chipiron.players.boardevaluators.all_board_evaluator_args import (
+    AllBoardEvaluatorArgs,
+)
+from chipiron.players.boardevaluators.board_evaluator_type import BoardEvalTypes
 from chipiron.players.boardevaluators.evaluation_scale import (
     EvaluationScale,
     ValueOverEnum,
     get_value_over_enum,
+)
+from chipiron.players.boardevaluators.neural_networks.factory import (
+    create_nn_board_eval_from_nn_parameters_file_and_existing_model,
 )
 from chipiron.players.boardevaluators.over_event import HowOver, OverEvent, Winner
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
@@ -14,10 +23,25 @@ from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from .board_evaluator import BoardEvaluator
 
 
+@dataclass
+class MasterBoardEvaluatorArgs:
+    """
+    Represents the arguments for a master board evaluator.
+    """
+
+    # Whether to use syzygy table for evaluation.
+    syzygy_evaluation: bool
+
+    # The evaluation scale used by the node evaluator. (Default values when nodes are found to be over)
+    evaluation_scale: EvaluationScale
+
+    board_evaluator: AllBoardEvaluatorArgs
+
+
 class MasterBoardEvaluator:
     """
-    The MasterBoardEvaluator class is responsible for evaluating the value of nodes in a tree structure.
-    It uses a board evaluator and a syzygy evaluator to calculate the value of the nodes.
+    The MasterBoardEvaluator class is responsible for evaluating the value of chess positions (that are IBoard).
+    It uses a board evaluator and a syzygy evaluator to calculate the value of the positions.
     """
 
     # The board evaluator used to evaluate the chess board.
@@ -36,7 +60,7 @@ class MasterBoardEvaluator:
         value_over_enum: ValueOverEnum,
     ) -> None:
         """
-        Initializes a NodeEvaluator object.
+        Initializes a MasterBoardEvaluator object.
 
         Args:
             board_evaluator (board_evals.BoardEvaluator): The board evaluator used to evaluate the chess board.
@@ -153,7 +177,7 @@ def create_master_board_evaluator(
     board_evaluator: BoardEvaluator,
     syzygy: SyzygyTable[Any] | None,
     evaluation_scale: EvaluationScale,
-) -> "MasterBoardEvaluator":
+) -> MasterBoardEvaluator:
     """
     Factory function to create a MasterBoardEvaluator instance.
 
@@ -171,4 +195,31 @@ def create_master_board_evaluator(
     )
     return MasterBoardEvaluator(
         board_evaluator=board_evaluator, syzygy=syzygy, value_over_enum=value_over_enum
+    )
+
+
+def create_master_board_evaluator_from_args(
+    master_board_evaluator: MasterBoardEvaluatorArgs,
+    syzygy: SyzygyTable[Any] | None,
+) -> MasterBoardEvaluator:
+    if master_board_evaluator.syzygy_evaluation:
+        syzygy_ = syzygy
+    else:
+        syzygy_ = None
+
+    board_evaluator: BoardEvaluator
+
+    match master_board_evaluator.board_evaluator.type:
+        case BoardEvalTypes.BASIC_EVALUATION_EVAL:
+            board_evaluator = basic_evaluation.BasicEvaluation()
+        case BoardEvalTypes.NEURAL_NET_BOARD_EVAL:
+            board_evaluator = create_nn_board_eval_from_nn_parameters_file_and_existing_model(
+                model_weights_file_name=master_board_evaluator.board_evaluator.neural_nets_model_and_architecture.model_weights_file_name,
+                nn_architecture_args=master_board_evaluator.board_evaluator.neural_nets_model_and_architecture.nn_architecture_args,
+            )
+
+    return create_master_board_evaluator(
+        board_evaluator=board_evaluator,
+        syzygy=syzygy_,
+        evaluation_scale=master_board_evaluator.evaluation_scale,
     )

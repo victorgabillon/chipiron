@@ -11,9 +11,10 @@ main_move_selector:
   stopping_criterion:
       type: tree_move_limit
       tree_move_limit: 1000
-  board_evaluator:
-    type: basic_evaluation
-    syzygy_evaluation: True
-    representation_type: 'no'
-    evaluation_scale: stockfish_based
+  node_evaluator:
+    master_board_evaluator:
+      syzygy_evaluation: True
+      evaluation_scale: entire_real_axis
+      board_evaluator:
+        type: basic_evaluation
 syzygy_play: True

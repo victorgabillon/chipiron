@@ -26,7 +26,6 @@ from chipiron.players.boardevaluators.over_event import OverEvent
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
     AlgorithmNode,
 )
-from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 
 DISCOUNT = 0.99999999  # lokks like at the moment the use is to break ties in the evaluation (not sure if needed or helpful now)
 
@@ -101,9 +100,9 @@ class NodeEvaluator:
                 who_is_winner=over_event.who_is_winner,
                 termination=over_event.termination,
             )
-            assert (
-                evaluation is not None
-            ), "Evaluation should not be None for over nodes"
+            assert evaluation is not None, (
+                "Evaluation should not be None for over nodes"
+            )
             node.minmax_evaluation.set_evaluation(evaluation=evaluation)
 
     def evaluate_all_queried_nodes(self, evaluation_queries: EvaluationQueries) -> None:

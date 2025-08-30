@@ -9,7 +9,7 @@ monthly download functionality.
 import tempfile
 from io import StringIO
 from pathlib import Path
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import patch
 
 import chess
 import chess.pgn
@@ -17,8 +17,6 @@ import pandas as pd
 import pytest
 
 from chipiron.scripts.generate_datasets.generate_boards import (
-    DEFAULT_OFFSET_MIN,
-    DEFAULT_SAMPLING_FREQUENCY,
     generate_board_dataset_multi_months,
     iterate_months,
     process_game,
@@ -264,9 +262,9 @@ class TestDatasetGeneration:
         """Create mock PGN content for testing."""
         pgn_content = ""
         for i in range(num_games):
-            pgn_content += f"""[Event "Test Game {i+1}"]
+            pgn_content += f"""[Event "Test Game {i + 1}"]
 [Site "Test"]
-[Date "2015.03.0{i+1}"]
+[Date "2015.03.0{i + 1}"]
 [Round "1"]
 [White "Player1"]
 [Black "Player2"]
@@ -499,12 +497,12 @@ class TestIntegration:
 
         for i in range(num_games):
             moves = move_sequences[i % len(move_sequences)]
-            game_pgn = f"""[Event "Test Game {i+1}"]
+            game_pgn = f"""[Event "Test Game {i + 1}"]
 [Site "Test Site"]
-[Date "2015.03.{i+1:02d}"]
-[Round "{i+1}"]
-[White "White Player {i+1}"]
-[Black "Black Player {i+1}"]
+[Date "2015.03.{i + 1:02d}"]
+[Round "{i + 1}"]
+[White "White Player {i + 1}"]
+[Black "Black Player {i + 1}"]
 [Result "{moves.split()[-1]}"]
 
 {moves}

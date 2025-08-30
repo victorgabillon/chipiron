@@ -116,16 +116,6 @@ strict_equality = true
 warn_unused_configs = true
 
 
-[tool.isort]
-profile = "black"
-
-[tool.flake8]
-max-line-length = 80
-extend-ignore = ["E203","E501","E701"]
-extend-select = ["B950"]
-
-
-
 [tool.pylint.format]
 max-line-length = "88"
 
@@ -145,3 +135,18 @@ ignore_missing_imports = true
 
 [tool.mypy-PySide6]
 ignore_missing_imports = true
+
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+# Enable import sorting (alphabetical + group order)
+select = ["I", "F", "E"]  # I = imports, F = pyflakes, E = pycodestyle
+
+# Ignore rules you don't care about
+ignore = [ "E501"]
+
+# Optional: add your first-party package to extend the known group
+[tool.ruff.per-file-ignores]
+# If needed, can add file-specific ignores

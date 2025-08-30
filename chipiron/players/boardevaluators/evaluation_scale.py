@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Type, Union
 
 
-class EvaluationScale(Enum):
+class EvaluationScale(str, Enum):
     """
     Enumeration of the evaluation scales used in board evaluations.
     """

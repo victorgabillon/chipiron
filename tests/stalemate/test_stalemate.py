@@ -1,5 +1,3 @@
-from typing import Any
-
 import pytest
 
 from chipiron.environments.chess_env.board import (

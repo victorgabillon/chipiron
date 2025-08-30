@@ -33,7 +33,6 @@ class BaseScriptArgs:
     seed: int = 0
 
     def __post_init__(self) -> None:
-
         # if relative_script_instance_experiment_output_folde is not set, it gets time and day
         if self.relative_script_instance_experiment_output_folder is None:
             now = datetime.now()  # current date and time

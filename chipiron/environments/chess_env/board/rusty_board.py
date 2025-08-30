@@ -6,7 +6,6 @@ import chess
 import shakmaty_python_binding
 
 from chipiron.environments.chess_env.board.board_modification import (
-    BoardModification,
     BoardModificationP,
     BoardModificationRust,
 )
@@ -210,6 +209,9 @@ class RustyBoardChi(IBoard):
     # the move history is kept here because shakmaty_python_binding.MyChess does not have a move stack at the moment
     move_stack: list[moveUci] = field(default_factory=list)
 
+    # the board history is kept here because shakmaty_python_binding.MyChess does not have a board stack at the moment
+    # board_stack: list[chess._BoardState] = field(default_factory=list)
+
     def __post_init__(self) -> None:
         self.rep_to_count[self.fast_representation_without_counters] = 1
 
@@ -245,7 +247,6 @@ class RustyBoardChi(IBoard):
             self.ep_square_ = ep_square_int
 
     def play_min_3(self, move: shakmaty_python_binding.MyMove) -> BoardModificationRust:
-        # _str, ply, turn, is_game_over = self.chess_.play_and_return(move)
         (
             (
                 self.castling_rights_,
@@ -271,7 +272,6 @@ class RustyBoardChi(IBoard):
             self.ep_square_ = ep_square_int
 
         board_modifications: BoardModificationRust = self.convert(appearances, removals)
-        # board_modifications: BoardModification = BoardModificationRust(appearances_=appearances,removals_=removals)
         return board_modifications
 
     def convert(
@@ -283,10 +283,6 @@ class RustyBoardChi(IBoard):
             appearances_=appearances, removals_=removals
         )
 
-        #        board_modifications: BoardModification = BoardModification(
-        #            appearances={PieceInSquare(square=a[0],piece=a[1],color=bool(a[2])) for a in appearances},
-        #            removals={PieceInSquare(square=r[0],piece=r[1],color=bool(r[2])) for r in removals}
-        #        )
         return board_modifications
 
     def play_move(
@@ -376,8 +372,7 @@ class RustyBoardChi(IBoard):
         self.fast_representation_ = fast_representation
         self.rep_to_count.update([self.fast_representation_without_counters])
         self.move_stack.append(move.uci())
-
-        # self.turn_ = not self.turn_
+        # self.board_stack.append(chess._BoardState())
 
         return board_modifications
 
@@ -446,6 +441,7 @@ class RustyBoardChi(IBoard):
         """
         chess_copy: shakmaty_python_binding.MyChess = self.chess_.copy()
         move_stack_ = self.move_stack.copy() if stack else []
+        # board_stack_ = self.board_stack.copy() if stack else []
 
         legal_moves_copy: LegalMoveKeyGeneratorRust
         if deep_copy_legal_moves:
@@ -459,6 +455,7 @@ class RustyBoardChi(IBoard):
         return type(self)(
             chess_=chess_copy,
             move_stack=move_stack_,
+            # board_stack=board_stack_
             compute_board_modification=self.compute_board_modification,
             rep_to_count=self.rep_to_count.copy(),
             fast_representation_=self.fast_representation_,
@@ -565,6 +562,10 @@ class RustyBoardChi(IBoard):
     def move_history_stack(self) -> list[moveUci]:
         return self.move_stack
 
+    # @property
+    # def board_history_stack(self) -> list[chess._BoardState]:
+    #    return self.board_stack
+
     def dump(self, f: Any) -> None: ...
 
     def is_attacked(self, a_color: chess.Color) -> bool:
@@ -624,7 +625,6 @@ class RustyBoardChi(IBoard):
         return self.chess_.occupied()
 
     def result(self, claim_draw: bool = False) -> str:
-
         claim_draw_: bool = True if len(self.move_stack) >= 5 and claim_draw else False
         three_fold_repetition: bool = (
             max(self.rep_to_count.values()) > 2 if claim_draw_ else False

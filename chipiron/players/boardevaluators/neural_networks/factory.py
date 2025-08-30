@@ -9,7 +9,6 @@ from enum import Enum
 from typing import Any
 
 import dacite
-from sympy import N
 
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_input import (
     BoardToInputFunction,
@@ -23,13 +22,12 @@ from chipiron.players.boardevaluators.neural_networks.models.transformer_one imp
     TransformerArgs,
     TransformerOne,
 )
-from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
+from chipiron.players.boardevaluators.neural_networks.neural_net_architecture_args import (
     NeuralNetArchitectureArgs,
 )
 from chipiron.players.boardevaluators.neural_networks.nn_board_evaluator import (
     NNBoardEvaluator,
 )
-from chipiron.players.boardevaluators.neural_networks.NNModelType import NNModelType
 from chipiron.players.boardevaluators.neural_networks.NNModelTypeArgs import (
     NNModelTypeArgs,
 )

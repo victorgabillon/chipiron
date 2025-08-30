@@ -132,7 +132,6 @@ def compute_modifications(
 
     for previous_bitboard_piece, new_bitboard_piece, piece_type in hop:
         for previous_bitboard_color, new_bitboard_color, color in hip:
-
             removals: chess.Bitboard = (
                 previous_bitboard_piece & previous_bitboard_color
             ) & ~(new_bitboard_piece & new_bitboard_color)

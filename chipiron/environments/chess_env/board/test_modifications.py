@@ -145,7 +145,6 @@ def test_compute_modifications() -> None:
 
 
 if __name__ == "__main__":
-
     test_compute_modifications()
     use_rusty_board: bool
     for use_rusty_board in [True, False]:

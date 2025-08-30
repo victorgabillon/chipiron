@@ -159,7 +159,7 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
             }
             if output["color_human"] == "White":
                 gui_args["file_name_player_one"] = "Human.yaml"
-                gui_args["file_name_player_two"] = f'{output["chipi_algo"]}.yaml'
+                gui_args["file_name_player_two"] = f"{output['chipi_algo']}.yaml"
                 gui_args["player_two"] = {
                     "main_move_selector": {
                         "stopping_criterion": {"tree_move_limit": tree_move_limit}
@@ -167,7 +167,7 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
                 }
             else:
                 gui_args["file_name_player_two"] = "Human.yaml"
-                gui_args["file_name_player_one"] = f'{output["chipi_algo"]}.yaml'
+                gui_args["file_name_player_one"] = f"{output['chipi_algo']}.yaml"
                 gui_args["player_one"] = {
                     "main_move_selector": {
                         "stopping_criterion": {"tree_move_limit": tree_move_limit}

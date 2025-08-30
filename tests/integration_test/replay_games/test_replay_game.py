@@ -31,7 +31,6 @@ def test_replay_match(configs=configs_base) -> None:
         with suppress_logging(
             chipiron_logger, level=logging.ERROR
         ):  # only warning and error logging during script run
-
             script_object: scripts.IScript = create_script(
                 script_type=scripts.ScriptType.ReplayMatch,
                 extra_args=config,

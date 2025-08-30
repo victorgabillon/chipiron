@@ -174,7 +174,6 @@ class GameManager:
             self.game.query_move_from_players()
 
         while True:
-
             board = self.game.board
             half_move: HalfMove = board.ply()
             chipiron_logger.info(
@@ -249,7 +248,6 @@ class GameManager:
                     and self.game.playing_status.is_play()
                     and message.player_name == self.player_color_to_id[board.turn]
                 ):
-
                     board.legal_moves.get_all()  # make sure the board has generated the legal moves
 
                     move_key: moveKey = board.get_move_key_from_uci(move_uci=move_uci)
