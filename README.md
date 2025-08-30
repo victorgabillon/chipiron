@@ -1,10 +1,9 @@
 [![python](https://img.shields.io/badge/Python-3.12-blue)](https://www.python.org)
 [![Checked with mypy](http://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
-[![Formatted with isort](https://img.shields.io/badge/isort-checked-green)](https://pycqa.github.io/isort/index.html)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![linting: pylint](https://img.shields.io/badge/linting-pylint-yellowgreen)](https://github.com/PyCQA/pylint)
 ![Tests](https://github.com/victorgabillon/chipiron/actions/workflows/ci.yaml/badge.svg)
 [![pytorch](https://img.shields.io/badge/PyTorch-2.1.2-EE4C2C.svg?style=flat&logo=pytorch)](https://pytorch.org)
-<a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
 
 # Chipiron
 

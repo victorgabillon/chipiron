@@ -252,7 +252,6 @@ def test_one_matches(configs=None, log_level=logging.ERROR):
             with suppress_logging(
                 chipiron_logger, level=log_level
             ):  # logging level depends on how the function is called
-
                 script_object: scripts.IScript = create_script(
                     script_type=scripts.ScriptType.OneMatch,
                     extra_args=total_config,
@@ -298,7 +297,6 @@ def test_randomness(log_level=logging.ERROR):
     with suppress_logging(
         chipiron_logger, level=log_level
     ):  # logging level depends on how the function is called
-
         match_manager: ch.game.MatchManager = create_match_manager_from_args(
             match_args=match_args,
             implementation_args=implementation_args,
@@ -312,7 +310,6 @@ def test_randomness(log_level=logging.ERROR):
         with suppress_logging(
             chipiron_logger, level=log_level
         ):  # logging level depends on how the function is called
-
             match_manager: ch.game.MatchManager = create_match_manager_from_args(
                 match_args=match_args,
                 implementation_args=implementation_args,
@@ -344,7 +341,10 @@ def test_same_game_with_or_without_rust(log_level=logging.ERROR):
 
     match_args: MatchArgs = MatchArgs()
     match_args.seed = 0
+
     match_args.player_one = PlayerConfigTag.UNIFORM.get_players_args()
+    print("debugeeed")
+
     match_args.player_two = PlayerConfigTag.RANDOM.get_players_args()
     match_args.match_setting = MatchConfigTag.Tron.get_match_settings_args()
     match_args.player_one_overwrite = (
@@ -352,7 +352,9 @@ def test_same_game_with_or_without_rust(log_level=logging.ERROR):
     )
 
     # Override player two with test tree move limit using parsley_coco
+    print("debugeee")
     match_args = resolve_extended_object(extended_obj=match_args, base_cls=MatchArgs)
+    print("debugeeeererr")
 
     implementation_args: ImplementationArgs = ImplementationArgs(use_rust_boards=False)
 
@@ -363,7 +365,6 @@ def test_same_game_with_or_without_rust(log_level=logging.ERROR):
     with suppress_logging(
         chipiron_logger, level=log_level
     ):  # logging level depends on how the function is called
-
         match_manager: ch.game.MatchManager = create_match_manager_from_args(
             match_args=match_args,
             implementation_args=implementation_args,
@@ -381,7 +382,6 @@ def test_same_game_with_or_without_rust(log_level=logging.ERROR):
         with suppress_logging(
             chipiron_logger, level=log_level
         ):  # logging level depends on how the function is called
-
             match_manager: ch.game.MatchManager = create_match_manager_from_args(
                 match_args=match_args,
                 implementation_args=implementation_args,

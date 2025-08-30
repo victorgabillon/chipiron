@@ -27,6 +27,12 @@ class MoveSelectorTypes(str, Enum):
     GuiHuman = "GuiHuman"
 
     def is_human(self) -> bool:
+        """
+        Determines if the move selector type represents a human player.
+
+        Returns:
+            bool: True if the move selector type is either GuiHuman or CommandLineHuman, False otherwise.
+        """
         return (
             self is MoveSelectorTypes.GuiHuman
             or self is MoveSelectorTypes.CommandLineHuman

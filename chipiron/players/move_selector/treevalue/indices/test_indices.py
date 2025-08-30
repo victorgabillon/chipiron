@@ -220,7 +220,7 @@ def check_from_file(file_path: path, tree: MoveAndValueTree) -> None:
             print(
                 f"id {parent_node.id} expected value {yaml_index} "
                 f"|| computed value {parent_node.exploration_index_data.index}"
-                f' {type(yaml_nodes[parent_node.id]["index"])}'
+                f" {type(yaml_nodes[parent_node.id]['index'])}"
                 f" {type(parent_node.exploration_index_data.index)}"
                 f"{(yaml_index == parent_node.exploration_index_data.index)}"
             )
@@ -292,7 +292,6 @@ def test_indices() -> None:
 
     results: dict[TestResult, int] = {}
     for tree_file in tree_files:
-
         if tree_file == "tree_2":
             index_computations_ = [
                 IndexComputationType.MinGlobalChange,

@@ -23,7 +23,6 @@ Note: The Stockfish engine is initialized lazily when the first move is selected
 """
 
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, Literal
 
 import chess.engine

@@ -28,9 +28,7 @@ class ReplayScriptArgs:
     """
 
     # path to the yaml file with the Game Report stored
-    file_game_report: str = (
-        "chipiron/scripts/one_match/outputs/Sunday-10-13-2024--22:40:58:049918/games_0_W:Sequool-vs-B:Random_game_report.yaml"
-    )
+    file_game_report: str = "chipiron/scripts/one_match/outputs/Sunday-10-13-2024--22:40:58:049918/games_0_W:Sequool-vs-B:Random_game_report.yaml"
 
     base_script_args: BaseScriptArgs = field(default_factory=BaseScriptArgs)
 

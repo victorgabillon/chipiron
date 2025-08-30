@@ -48,7 +48,6 @@ class LegalMoveKeyGenerator(LegalMoveKeyGeneratorP):
         return self.chess_board.fen()
 
     def __str__(self) -> str:
-
         the_string: str = "Legals Moves: "
         ucis: list[moveUci] = [
             chess_move.uci() for move_key, chess_move in self.generated_moves.items()
@@ -107,7 +106,6 @@ class LegalMoveKeyGenerator(LegalMoveKeyGeneratorP):
         return legal_move_copy
 
     def get_all(self) -> list[moveKey]:
-
         if self.all_generated_keys is None:
             list_keys: list[moveKey]
             if self.sort_legal_moves:
@@ -351,9 +349,9 @@ class BoardChi(IBoard):
 
         board_modifications.add_removal(removal=piece_in_square)
         # end added
-        assert (
-            piece_type is not None
-        ), f"push() expects move to be pseudo-legal, but got {move} in {self.chess_board.board_fen()}"
+        assert piece_type is not None, (
+            f"push() expects move to be pseudo-legal, but got {move} in {self.chess_board.board_fen()}"
+        )
         capture_square = move.to_square
         captured_piece_type = self.chess_board.piece_type_at(capture_square)
         # start added

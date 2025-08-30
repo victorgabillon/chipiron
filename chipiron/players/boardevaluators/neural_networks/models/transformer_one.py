@@ -163,7 +163,6 @@ class Block(nn.Module):
 
 
 class TransformerOne(ChiNN):
-
     def __init__(self, args: TransformerArgs) -> None:
         super(TransformerOne, self).__init__()
 
@@ -192,7 +191,6 @@ class TransformerOne(ChiNN):
                 torch.nn.init.zeros_(module.bias)
 
     def forward(self, indices: list[list[int]]) -> torch.Tensor:
-
         # idx and targets are both (B,T) tensor of integers
         y = self.board_embedding_table[
             indices, :

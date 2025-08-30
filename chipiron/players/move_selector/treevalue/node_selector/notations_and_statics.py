@@ -44,7 +44,6 @@ def zipf_picks(
 
     weights = []
     for rank, value in ranks_values.items():
-
         shifted_rank = rank - shift_rank + 1
         log_term: float = (math.log(math.e * shifted_rank)) ** 2
         weight: float = value * shifted_rank * log_term + 0.0001

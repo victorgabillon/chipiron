@@ -90,7 +90,7 @@ class AlgorithmNodeFactory:
 
             board_representation = (
                 self.board_representation_factory.create_from_transition(
-                    tree_node=tree_node,
+                    board=tree_node.board,
                     parent_node_representation=parent_node_representation,
                     modifications=modifications,
                 )

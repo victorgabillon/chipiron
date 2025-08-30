@@ -2,21 +2,17 @@
 This module contains the implementation of the `NNNodeEvaluator` class, which is a generic neural network class for board evaluation.
 """
 
-from typing import Any
-
 import torch
 
-import chipiron.players.boardevaluators.neural_networks as board_nn
-from chipiron.environments.chess_env import board
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
     FloatyBoardEvaluation,
 )
-from chipiron.players.boardevaluators.evaluation_scale import EvaluationScale
 from chipiron.players.boardevaluators.master_board_evaluator import (
     MasterBoardEvaluator,
-    create_master_board_evaluator,
 )
-from chipiron.players.boardevaluators.table_base import SyzygyTable
+from chipiron.players.boardevaluators.neural_networks.nn_board_evaluator import (
+    NNBoardEvaluator,
+)
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
     AlgorithmNode,
 )
@@ -29,9 +25,7 @@ class NNNodeEvaluator(NodeEvaluator):
 
     def __init__(
         self,
-        nn_board_evaluator: board_nn.NNBoardEvaluator,
-        syzygy: SyzygyTable[Any] | None,
-        evaluation_scale: EvaluationScale,
+        master_board_evaluator: MasterBoardEvaluator,
     ) -> None:
         """
         Initializes an instance of the NNNodeEvaluator class.
@@ -40,16 +34,12 @@ class NNNodeEvaluator(NodeEvaluator):
             nn_board_evaluator (board_nn.NNBoardEvaluator): The neural network board evaluator.
             syzygy (SyzygyTable | None): The Syzygy table or None if not available.
         """
-        super().__init__(
-            master_board_evaluator=create_master_board_evaluator(
-                board_evaluator=nn_board_evaluator,
-                syzygy=syzygy,
-                evaluation_scale=evaluation_scale,
-            )
-        )
-        self.net = nn_board_evaluator.net
+        # board_nn.NNBoardEvaluator
+        self.master_board_evaluator = master_board_evaluator
+        assert isinstance(master_board_evaluator.board_evaluator, NNBoardEvaluator)
+        self.net = master_board_evaluator.board_evaluator.net
         self.my_scripted_model = torch.jit.script(self.net)
-        self.nn_board_evaluator = nn_board_evaluator
+        self.nn_board_evaluator = master_board_evaluator.board_evaluator
 
     def evaluate_all_not_over(self, not_over_nodes: list[AlgorithmNode]) -> None:
         """

@@ -91,7 +91,6 @@ def test_modifications(
 
 
 if __name__ == "__main__":
-
     use_rusty_board: bool
     for use_rusty_board in [True, False]:
         test_modifications(

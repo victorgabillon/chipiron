@@ -258,7 +258,6 @@ class LearnNNScript:
         chipiron_logger.info("Starting to learn the NN")
 
         with mlflow.start_run():
-
             params = asdict(self.args) | asdict(
                 self.args.nn_trainer_args.neural_network_architecture_args
             )
@@ -284,7 +283,6 @@ class LearnNNScript:
                 for __, fens_and_values_sample_batch in enumerate(
                     self.data_loader_stockfish_boards_train
                 ):
-
                     # printing info to console
                     if count_train_step % 10000 == 0 and count_train_step > 0:
                         training_loss: float = sum_loss_train_print / 10000
@@ -314,7 +312,6 @@ class LearnNNScript:
                         == 0
                         and count_train_step > 0
                     ):
-
                         # condition to decrease the learning rate
                         if (
                             previous_train_loss is not None

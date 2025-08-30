@@ -11,11 +11,10 @@ Note: This module is part of the `chipiron` package.
 """
 
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Protocol
 
 import chipiron.environments.chess_env.board as boards
 from chipiron.environments.chess_env.board.iboard import IBoard
-from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 
 from .board_representation import BoardRepresentation
 
@@ -48,7 +47,7 @@ class RepresentationFactory[T_BoardRepresentation: BoardRepresentation]:
 
     def create_from_transition(
         self,
-        tree_node: TreeNode[Any],
+        board: IBoard,
         parent_node_representation: T_BoardRepresentation | None,
         modifications: boards.BoardModificationP | None,
     ) -> T_BoardRepresentation:
@@ -62,17 +61,19 @@ class RepresentationFactory[T_BoardRepresentation: BoardRepresentation]:
 
         Returns:
             Representation364: The created Representation364 object.
+
+
+        This version is supposed to be faster as it only modifies the parent
+        representation with the last move and does not scan fully the new board
         """
-        """  this version is supposed to be faster as it only modifies the parent
-        representation with the last move and does not scan fully the new board"""
         if parent_node_representation is None:  # this is the root_node
-            representation = self.create_from_board(board=tree_node.board)
+            representation = self.create_from_board(board=board)
         else:
             if modifications is None:
-                representation = self.create_from_board(board=tree_node.board)
+                representation = self.create_from_board(board=board)
             else:
                 representation = self.create_from_board_and_from_parent(
-                    board=tree_node.board,
+                    board=board,
                     board_modifications=modifications,
                     parent_node_board_representation=parent_node_representation,
                 )

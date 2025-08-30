@@ -25,7 +25,6 @@ from chipiron.players.factory_higher_level import (
 from chipiron.utils import path, seed
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage
 from chipiron.utils.dataclass import IsDataclass
-from chipiron.utils.logger import chipiron_logger
 
 from ...environments.chess_env.board.utils import FenPlusHistory
 from ...environments.chess_env.move_factory import MoveFactory

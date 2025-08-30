@@ -27,7 +27,7 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInpu
 from chipiron.players.boardevaluators.neural_networks.models.multi_layer_perceptron import (
     MultiLayerPerceptronArgs,
 )
-from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
+from chipiron.players.boardevaluators.neural_networks.neural_net_architecture_args import (
     NeuralNetArchitectureArgs,
 )
 from chipiron.players.boardevaluators.neural_networks.NNModelType import (

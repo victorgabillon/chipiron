@@ -52,7 +52,6 @@ class ChiNN(nn.Module):
         """
         chipiron_logger.info(f"load_or_init_weights from {path_to_param_file}")
         try:  # load
-
             resolved_path = resolve_package_path(str(path_to_param_file))
             with open(resolved_path, "rb") as fileNNR:
                 chipiron_logger.info(f"loading the existing param file {resolved_path}")

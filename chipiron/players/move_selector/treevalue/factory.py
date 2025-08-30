@@ -26,6 +26,9 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.represent
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 from chipiron.players.move_selector.treevalue import node_factory
+from chipiron.players.move_selector.treevalue.node_evaluator.node_evaluator_args import (
+    NodeEvaluatorArgs,
+)
 from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
     AllStoppingCriterionArgs,
 )
@@ -49,7 +52,7 @@ class TreeAndValuePlayerArgs:
     type: Literal[MoveSelectorTypes.TreeAndValue]  # for serialization
     node_selector: node_selector_m.AllNodeSelectorArgs
     opening_type: node_selector_m.OpeningType
-    board_evaluator: node_eval.AllNodeEvaluatorArgs
+    node_evaluator: NodeEvaluatorArgs
     stopping_criterion: AllStoppingCriterionArgs
     recommender_rule: recommender_rule.AllRecommendFunctionsArgs
     index_computation: IndexComputationType | None = None
@@ -75,7 +78,7 @@ def create_tree_and_value_builders(
     """
 
     node_evaluator: node_eval.NodeEvaluator = node_eval.create_node_evaluator(
-        arg_board_evaluator=args.board_evaluator, syzygy=syzygy
+        arg_board_evaluator=args.node_evaluator, syzygy=syzygy
     )
 
     # node_factory_name: str = args['node_factory_name'] if 'node_factory_name' in args else 'Base'
@@ -87,7 +90,7 @@ def create_tree_and_value_builders(
 
     board_representation_factory: RepresentationFactory[Any] | None
     board_representation_factory = create_board_representation_factory(
-        internal_tensor_representation_type=args.board_evaluator.internal_representation_type
+        internal_tensor_representation_type=args.node_evaluator.internal_representation_type
     )
 
     search_factory: search_factories.SearchFactoryP = search_factories.SearchFactory(

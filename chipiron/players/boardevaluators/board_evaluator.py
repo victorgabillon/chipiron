@@ -3,7 +3,6 @@ Module representing the board evaluators.
 """
 
 import queue
-from enum import Enum
 from typing import Any, Protocol
 
 import chess
@@ -67,6 +66,7 @@ class GameBoardEvaluator:
         """
         Evaluates a board and returns the evaluation values for stock and chi.
         """
+
         evaluation_chi = self.board_evaluator_chi.value_white(board=board)
         evaluation_stock = (
             self.board_evaluator_stock.value_white(board=board)

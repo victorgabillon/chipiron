@@ -17,7 +17,7 @@ from parsley_coco import Parsley
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
 from chipiron.utils.dataclass import IsDataclass
-from chipiron.utils.logger import chipiron_logger, suppress_logging
+from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.small_tools import mkdir_if_not_existing
 
 

@@ -23,7 +23,7 @@ from chipiron.players.boardevaluators.neural_networks.factory import (
     create_nn_board_eval_from_architecture_args,
     create_nn_board_eval_from_nn_parameters_file_and_existing_model,
 )
-from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
+from chipiron.players.boardevaluators.neural_networks.neural_net_architecture_args import (
     NeuralNetArchitectureArgs,
 )
 from chipiron.players.boardevaluators.neural_networks.nn_board_evaluator import (
@@ -232,7 +232,6 @@ class LearnNNFromScratchScript:
     def learn_model_some_steps(self) -> None: ...
 
     def update_dataset_value_with_evaluating_player(self) -> None:
-
         index_range_evaluating_player: int
         for index_range_evaluating_player in range(
             self.args.number_of_evaluating_player_per_loop

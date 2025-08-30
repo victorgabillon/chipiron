@@ -37,7 +37,6 @@ def build_transformer_input(
 
 
 if __name__ == "__main__":
-
     board = create_board(
         fen_with_history=FenPlusHistory(
             current_fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1"

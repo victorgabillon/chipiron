@@ -13,7 +13,6 @@ from chipiron.players.boardevaluators import table_base
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
-    StoppingCriterionTypes,
     TreeMoveLimitArgs,
 )
 from chipiron.players.player_args import PlayerArgs

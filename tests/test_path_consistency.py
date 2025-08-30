@@ -18,9 +18,7 @@ from chipiron.utils.path_variables import (
     EXTERNAL_DATA_DIR,
     GUI_DIR,
     LICHESS_PGN_DIR,
-    LICHESS_PGN_FILE,
     PROJECT_ROOT,
-    STOCKFISH_BINARY_PATH,
     STOCKFISH_DIR,
     SYZYGY_TABLES_DIR,
 )
@@ -67,9 +65,9 @@ class TestPathConsistency:
         ]
 
         for var in required_vars:
-            assert (
-                var in env_vars
-            ), f"Required environment variable {var} not found in .env"
+            assert var in env_vars, (
+                f"Required environment variable {var} not found in .env"
+            )
             assert env_vars[var].strip(), f"Environment variable {var} is empty in .env"
 
     def test_python_paths_match_env(self):
@@ -99,9 +97,9 @@ class TestPathConsistency:
         key_files = ["pyproject.toml", "Makefile", ".env", "README.md"]
         for file_name in key_files:
             file_path = PROJECT_ROOT / file_name
-            assert (
-                file_path.exists()
-            ), f"Key file {file_name} not found at PROJECT_ROOT: {PROJECT_ROOT}"
+            assert file_path.exists(), (
+                f"Key file {file_name} not found at PROJECT_ROOT: {PROJECT_ROOT}"
+            )
 
     def test_critical_directories_exist(self):
         """Test that critical directories exist."""
@@ -121,9 +119,9 @@ class TestPathConsistency:
 
         # Check that Makefile includes .env
         assert "include .env" in makefile_content, "Makefile should include .env file"
-        assert (
-            "export" in makefile_content
-        ), "Makefile should export environment variables"
+        assert "export" in makefile_content, (
+            "Makefile should export environment variables"
+        )
 
         # Check that Makefile uses environment variables
         env_var_usage = [
@@ -153,9 +151,9 @@ class TestPathConsistency:
             "GUI_DIR",
         ]
         for env_var in key_env_vars:
-            assert (
-                f"ENV {env_var}=" in dockerfile_content
-            ), f"Dockerfile should define ENV {env_var}"
+            assert f"ENV {env_var}=" in dockerfile_content, (
+                f"Dockerfile should define ENV {env_var}"
+            )
 
     def test_env_values_are_relative_paths(self):
         """Test that .env path values are relative (not absolute)."""
@@ -174,9 +172,9 @@ class TestPathConsistency:
         for var in path_vars:
             if var in env_vars:
                 value = env_vars[var]
-                assert not os.path.isabs(
-                    value
-                ), f"Environment variable {var} should be a relative path, got: {value}"
+                assert not os.path.isabs(value), (
+                    f"Environment variable {var} should be a relative path, got: {value}"
+                )
 
     def test_urls_are_valid_format(self):
         """Test that URL environment variables have valid format."""
@@ -187,9 +185,9 @@ class TestPathConsistency:
         for var in url_vars:
             if var in env_vars:
                 value = env_vars[var]
-                assert value.startswith(
-                    ("http://", "https://")
-                ), f"URL variable {var} should start with http:// or https://, got: {value}"
+                assert value.startswith(("http://", "https://")), (
+                    f"URL variable {var} should start with http:// or https://, got: {value}"
+                )
 
 
 if __name__ == "__main__":

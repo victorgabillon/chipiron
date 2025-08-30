@@ -7,7 +7,6 @@ test_tree_value.py
     to create the trees.
 """
 
-import os
 import random
 from importlib.resources import as_file, files
 from typing import Any

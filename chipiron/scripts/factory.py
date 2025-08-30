@@ -3,7 +3,6 @@ factory for scripts module
 """
 
 import logging
-from importlib.metadata import files
 from typing import Any
 
 from parsley_coco import Parsley, create_parsley
