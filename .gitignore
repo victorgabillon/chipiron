@@ -28,6 +28,8 @@ mlruns/
 
 chipiron/scripts/league/league_data/*
 chipiron/scripts/*/outputs/*
+chipiron/scripts/*/test_outputs/*
+
 chipiron/runs/*
 *.egg-info/
 chipiron/scripts/one_match/outputs/*
@@ -54,3 +56,4 @@ chipiron/scripts/learn_from_scratch_value_and_fixed_boards/learn_from_scratch_ou
 *.cb2
 .*.lb# Local environment configuration
 .env.local
+chipiron/scripts/profiling/benchmark_reports/*

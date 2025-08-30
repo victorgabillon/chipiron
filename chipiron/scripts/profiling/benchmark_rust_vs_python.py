@@ -44,8 +44,6 @@ try:
     import logging
     import random
 
-    import chess
-
     from chipiron.environments.chess_env.board.factory import create_board
     from chipiron.environments.chess_env.board.utils import FenPlusHistory
     from chipiron.players.boardevaluators.table_base.factory import create_syzygy

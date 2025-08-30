@@ -361,7 +361,7 @@ class ChipironIntegrationTester:
         conda_activate = f"source $(conda info --base)/etc/profile.d/conda.sh && conda activate {self.conda_env_name}"
 
         try:
-            result = self.run_command(
+            _ = self.run_command(
                 [
                     "bash",
                     "-c",
@@ -624,7 +624,6 @@ except Exception as e:
                 )
             finally:
                 # Clean up temp file
-                import os
 
                 if os.path.exists(temp_script):
                     os.unlink(temp_script)
@@ -735,7 +734,6 @@ except Exception as e:
                 )
             finally:
                 # Clean up temp file
-                import os
 
                 if os.path.exists(temp_script):
                     os.unlink(temp_script)
@@ -794,7 +792,6 @@ except Exception as e:
                 )
             finally:
                 # Clean up temp file
-                import os
 
                 if os.path.exists(temp_script):
                     os.unlink(temp_script)
@@ -855,8 +852,6 @@ except Exception as e:
                     ]
                 )
             finally:
-                import os
-
                 if os.path.exists(temp_script):
                     os.remove(temp_script)
             if "Syzygy DTZ test passed!" in result.stdout:
@@ -911,8 +906,6 @@ except Exception as e:
                     ]
                 )
             finally:
-                import os
-
                 if os.path.exists(temp_script):
                     os.remove(temp_script)
             if "StockfishPlayer test passed!" in result.stdout:

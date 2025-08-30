@@ -365,12 +365,6 @@ class TestDatasetGeneration:
                 board = chess.Board(fen)
                 assert board.is_valid(), f"Invalid board position: {fen}"
 
-                # Should not be a starting position (since we have offset)
-                starting_fen = (
-                    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-                )
-                # Note: This might not always be true depending on sampling, so we just check format
-
 
 class TestErrorHandling:
     """Test error handling and edge cases."""
@@ -395,7 +389,6 @@ class TestErrorHandling:
 
     def test_invalid_sampling_parameters(self):
         """Test handling of invalid sampling parameters."""
-        moves = ["e4", "e5", "Nf3"]
         game_content = """[Event "Test"]
 [Site "Test"]
 [Date "2015.03.01"]
