@@ -10,10 +10,6 @@ from pathlib import Path
 
 import pytest
 
-# Add project root to Python path
-project_root = Path(__file__).parents[1]
-sys.path.insert(0, str(project_root))
-
 from chipiron.utils.path_variables import (
     EXTERNAL_DATA_DIR,
     GUI_DIR,
@@ -22,6 +18,10 @@ from chipiron.utils.path_variables import (
     STOCKFISH_DIR,
     SYZYGY_TABLES_DIR,
 )
+
+# Add project root to Python path
+project_root = Path(__file__).parents[1]
+sys.path.insert(0, str(project_root))
 
 
 def load_env_file():
@@ -141,7 +141,7 @@ class TestPathConsistency:
         with open(dockerfile_path, "r", encoding="utf-8") as f:
             dockerfile_content = f.read()
 
-        env_vars = load_env_file()
+        _ = load_env_file()
 
         # Check that Dockerfile has ENV statements for key variables
         key_env_vars = [
