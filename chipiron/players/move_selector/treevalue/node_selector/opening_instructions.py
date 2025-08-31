@@ -125,7 +125,7 @@ class OpeningInstructions:
             popped: An OpeningInstructions object to store the popped instructions.
         """
         how_many = min(how_many, len(self.batch))
-        for pop in range(how_many):
+        for _ in range(how_many):
             key, value = self.batch.popitem()
             popped[key] = value
 
@@ -152,7 +152,7 @@ class OpeningInstructions:
         Prints information about the opening instructions in the collection.
         """
         print("OpeningInstructionsBatch: batch contains", len(self.batch), "elements:")
-        for key, opening_instructions in self.batch.items():
+        for _key, opening_instructions in self.batch.items():
             opening_instructions.print_info()
 
     def __len__(self) -> int:

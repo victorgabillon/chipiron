@@ -69,3 +69,6 @@ Open the generated HTML in your browser
 ```console
 xdg-open _build/html/index.html
 ```
+
+## Pylint
+python -m pylint chipiron

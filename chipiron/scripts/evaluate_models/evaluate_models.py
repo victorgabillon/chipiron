@@ -88,7 +88,7 @@ def evaluate_models(
             )
         except yaml.YAMLError as exc:
             print(exc)
-            raise Exception("Error loading the evaluation report")
+            raise yaml.YAMLError("Error loading the evaluation report") from exc
 
     # Evaluate the models if necessary
     data_loader_stockfish_boards_test = None

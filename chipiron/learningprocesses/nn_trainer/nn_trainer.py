@@ -38,11 +38,22 @@ def compute_test_error_on_dataset(
     data_test: DataLoader[SupervisedData],
     number_of_tests: int = 100,
 ) -> float:
+    """Compute the test error on the given dataset.
+
+    Args:
+        net (ChiNN): The neural network model to be tested.
+        criterion (Callable[[torch.Tensor, torch.Tensor], torch.Tensor]): The loss function used for testing.
+        data_test (DataLoader[SupervisedData]): The test dataset.
+        number_of_tests (int, optional): The number of tests to run. Defaults to 100.
+
+    Returns:
+        float: The test error on the given dataset.
+    """
     sum_loss_test = 0.0
     count_test = 0
     loss_test: torch.Tensor
     device = check_model_device(net)
-    for i in range(number_of_tests):
+    for _ in range(number_of_tests):
         sample = next(iter(data_test))
         input_layer, target_value = (
             sample.get_input_layer().to(device),
@@ -57,7 +68,7 @@ def compute_test_error_on_dataset(
         )
         sum_loss_test += float(loss_test)
         count_test += 1
-    chipiron_logger.info(f"test error {float(sum_loss_test / float(count_test))}")
+    chipiron_logger.info("test error %f", float(sum_loss_test / float(count_test)))
     test_error: float = float(sum_loss_test / float(count_test))
     return test_error
 

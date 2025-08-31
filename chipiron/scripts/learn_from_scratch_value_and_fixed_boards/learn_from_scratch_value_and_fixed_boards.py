@@ -218,20 +218,22 @@ class LearnNNFromScratchScript:
                 self.saving_folder,
                 "model_summary.txt",
             )
-            with open(model_summary_file_name, "w") as f:
+            with open(model_summary_file_name, "w", encoding="utf-8") as f:
                 f.write(str(summary(self.nn_board_evaluator.net)))
             mlflow.log_artifact(model_summary_file_name)
 
-            for i in range(self.args.epochs_number_with_respect_to_evaluating_player):
+            for _i in range(self.args.epochs_number_with_respect_to_evaluating_player):
                 # update the dataset with a tree search with the current model
                 self.update_dataset_value_with_evaluating_player()
 
                 # update the model perform a batch gradient descent with the updated dataset
                 self.learn_model_some_steps()
 
-    def learn_model_some_steps(self) -> None: ...
+    def learn_model_some_steps(self) -> None:
+        """Perform a few steps of training on the model."""
 
     def update_dataset_value_with_evaluating_player(self) -> None:
+        """Updates the dataset with the values from the evaluating player."""
         index_range_evaluating_player: int
         for index_range_evaluating_player in range(
             self.args.number_of_evaluating_player_per_loop

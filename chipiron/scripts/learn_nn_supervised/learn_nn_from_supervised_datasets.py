@@ -345,6 +345,7 @@ class LearnNNScript:
                                 for x, y in zip(
                                     previous_dict.values(),
                                     self.nn_board_evaluator.net.state_dict().values(),
+                                    strict=False,
                                 )
                             )
                             print("diff_weights", diff_weighs)
