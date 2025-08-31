@@ -47,6 +47,7 @@ class StockfishBoardEvaluator:
     """
 
     engine: chess.engine.SimpleEngine | None
+    args: StockfishBoardEvalArgs
 
     def __init__(self, args: StockfishBoardEvalArgs) -> None:
         """
@@ -58,6 +59,7 @@ class StockfishBoardEvaluator:
         Returns:
             None
         """
+        self.args = args
         self.engine = None
 
     def value_white(self, board: boards.IBoard) -> float:
@@ -83,11 +85,11 @@ class StockfishBoardEvaluator:
                     try:
                         self.engine = chess.engine.SimpleEngine.popen_uci(path)
                         break
-                    except Exception:
+                    except (FileNotFoundError, OSError):
                         continue
 
                 if self.engine is None:
-                    chipiron_logger.error(
+                    chipiron_logger.warning(
                         "Stockfish binary not found in any of the expected locations."
                     )
                     return 0.0  # Fallback if no Stockfish found
@@ -129,5 +131,5 @@ class StockfishBoardEvaluator:
                 cp_value = white_score.cp if hasattr(white_score, "cp") else 0
                 return float(cp_value) / 100.0
 
-        except Exception:
+        except (chess.engine.EngineError, FileNotFoundError, OSError):
             return 0.0  # Fallback on any error
