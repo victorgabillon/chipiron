@@ -33,7 +33,7 @@ dependencies = [
     "mlflow",
     "parsley_coco>=0.1.27",
     "gdown",
-    "zstandard"
+    "zstandard",
     "rich"
 ]
 license = "GPL-3.0-only"
@@ -117,8 +117,6 @@ strict_equality = true
 warn_unused_configs = true
 
 
-[tool.pylint.format]
-max-line-length = "88"
 
 [[tool.mypy.overrides]]
 module = [
@@ -143,7 +141,7 @@ line-length = 88
 target-version = "py312"
 
 # Enable import sorting (alphabetical + group order)
-lint.select = ["I", "F", "E"]  # I = imports, F = pyflakes, E = pycodestyle
+lint.select = ["I", "F", "E", "B"]  # I = imports, F = pyflakes, E = pycodestyle
 
 # Ignore rules you don't care about
 lint.ignore = [ "E501"]
@@ -151,3 +149,21 @@ lint.ignore = [ "E501"]
 # Optional: add your first-party package to extend the known group
 [tool.ruff.lint.per-file-ignores]
 # If needed, can add file-specific ignores
+
+[tool.black]
+line-length = 88
+target-version = ['py312']
+
+[tool.pylint]
+py-version = "3.12"
+extension-pkg-whitelist = ["PyQt5", "PySide6"]
+
+[tool.pylint.format]
+max-line-length = 88
+
+#[tool.pylint.messages_control]
+disable = ["C0301"]
+
+[tool.pylint.typecheck]
+# Optional: same as init-hook in .pylintrc
+init-hook = "import sys; sys.path.append('.')"

@@ -27,6 +27,7 @@ class FenPlusHistory:
     historical_boards: list[chess._BoardState] = field(default_factory=list)
 
     def current_turn(self) -> chess.Color:
+        """Returns the color of the player to move."""
         # copy of some code in the chess python library that cannot be easily extracted or called directly
         parts = self.current_fen.split()
 
@@ -34,7 +35,7 @@ class FenPlusHistory:
         try:
             _ = parts.pop(0)
         except IndexError:
-            raise ValueError("empty fen")
+            raise ValueError("empty fen") from None
 
         # Turn.
         try:

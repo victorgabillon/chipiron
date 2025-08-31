@@ -108,7 +108,12 @@ class ChessEngineBenchmark:
 
         for rust_enabled in [False, True]:
 
-            def play_move_for_positions() -> None:
+            def play_move_for_positions(rust_enabled: bool = rust_enabled) -> None:
+                """Play a move for each position in the test set.
+
+                Args:
+                    rust_enabled (bool, optional): Whether to use the Rust implementation. Defaults to rust_enabled.
+                """
                 for fen in self.test_positions:
                     board: IBoard = self.create_board_for_fen(fen, rust_enabled)
                     moves: list[moveKey] = list(board.legal_moves.get_all())
@@ -200,7 +205,12 @@ class ChessEngineBenchmark:
 
         for rust_enabled in [False, True]:
 
-            def generate_moves_for_positions() -> None:
+            def generate_moves_for_positions(rust_enabled: bool = rust_enabled) -> None:
+                """Generate legal moves for each position in the test set.
+
+                Args:
+                    rust_enabled (bool, optional): Whether to use the Rust implementation. Defaults to rust_enabled.
+                """
                 for fen in self.test_positions:
                     board = self.create_board_for_fen(fen, rust_enabled)
                     # Generate all legal moves
@@ -236,7 +246,16 @@ class ChessEngineBenchmark:
 
             for rust_enabled in [False, True]:
 
-                def run_base_tree_exploration() -> None:
+                def run_base_tree_exploration(
+                    rust_enabled: bool = rust_enabled,
+                    tree_move_limit: int = tree_move_limit,
+                ) -> None:
+                    """Run base tree exploration for a specific position.
+
+                    Args:
+                        rust_enabled (bool, optional): Whether to use the Rust implementation. Defaults to rust_enabled.
+                        tree_move_limit (int, optional): The maximum number of moves to explore. Defaults to tree_move_limit.
+                    """
                     # Create implementation args
                     implementation_args = self.create_implementation_args(rust_enabled)
 
