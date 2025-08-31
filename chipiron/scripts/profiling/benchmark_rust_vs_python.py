@@ -17,6 +17,7 @@ import os
 import statistics
 import sys
 import time
+import traceback
 import warnings
 from pathlib import Path
 from typing import Callable, Dict, List
@@ -70,36 +71,74 @@ class BenchmarkResult:
     """Container for benchmark results."""
 
     def __init__(self, name: str, rust_enabled: bool):
+        """Initialize a new benchmark result.
+
+        Args:
+            name (str): The name of the benchmark.
+            rust_enabled (bool): Whether the Rust implementation is enabled.
+        """
         self.name = name
         self.rust_enabled = rust_enabled
         self.times: List[float] = []
         self.errors: List[str] = []
 
     def add_time(self, time_seconds: float) -> None:
+        """Add a timing result to the benchmark.
+
+        Args:
+            time_seconds (float): The time taken for the benchmark in seconds.
+        """
         self.times.append(time_seconds)
 
     def add_error(self, error: str) -> None:
+        """Add an error message to the benchmark result.
+
+        Args:
+            error (str): The error message.
+        """
         self.errors.append(error)
 
     @property
     def mean_time(self) -> float:
+        """Calculate the mean time of the benchmark.
+
+        Returns:
+            float: The mean time of the benchmark.
+        """
         return statistics.mean(self.times) if self.times else float("inf")
 
     @property
     def median_time(self) -> float:
+        """Calculate the median time of the benchmark.
+
+        Returns:
+            float: The median time of the benchmark.
+        """
         return statistics.median(self.times) if self.times else float("inf")
 
     @property
     def std_dev(self) -> float:
+        """Calculate the standard deviation of the benchmark times.
+
+        Returns:
+            float: The standard deviation of the times.
+        """
         return statistics.stdev(self.times) if len(self.times) > 1 else 0.0
 
     @property
     def success_rate(self) -> float:
+        """Calculate the success rate of the benchmark.
+
+        Returns:
+            float: The success rate as a percentage.
+        """
         total = len(self.times) + len(self.errors)
         return len(self.times) / total if total > 0 else 0.0
 
 
 class ChessEngineBenchmark:
+    """Benchmark suite for chess engine functions."""
+
     def benchmark_play_move(self, iterations: int | None = None) -> None:
         """Benchmark playing a move (applying a legal move to the board)."""
         print("\n🕹️ Benchmarking Play Move (Board Update)")
@@ -134,9 +173,8 @@ class ChessEngineBenchmark:
                 self.results[key] = {}
             self.results[key][rust_enabled] = result
 
-    """Benchmark suite for chess engine functions."""
-
     def __init__(self) -> None:
+        """Initialize the benchmark results."""
         self.results: Dict[str, Dict[bool, BenchmarkResult]] = {}
         self.test_positions = [
             # Starting position
@@ -453,7 +491,6 @@ class ChessEngineBenchmark:
                 self.benchmark_play_move()
         except (ImportError, AttributeError, ValueError) as e:
             print(f"Error during benchmarking: {e}")
-            import traceback
 
             traceback.print_exc()
 
