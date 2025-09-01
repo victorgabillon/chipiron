@@ -1,4 +1,3 @@
-from typing import Any
 
 from chipiron.scripts.league.runtheleague import RunTheLeagueScript
 
@@ -14,7 +13,7 @@ from .script_type import ScriptType
 from .tree_visualization.tree_visualizer import VisualizeTreeScript
 
 # script_type_to_script_class_name maps Script Type to the class name of the script to instantiate
-script_type_to_script_class_name: dict[ScriptType, Any] = {
+script_type_to_script_class_name: dict[ScriptType, type[IScript]] = {
     ScriptType.ONE_MATCH: OneMatchScript,
     ScriptType.TREE_VISUALIZATION: VisualizeTreeScript,
     ScriptType.LEARN_NN: LearnNNScript,
@@ -25,7 +24,7 @@ script_type_to_script_class_name: dict[ScriptType, Any] = {
 }
 
 
-def get_script_type_from_script_class_name(script_type: ScriptType) -> Any:
+def get_script_type_from_script_class_name(script_type: ScriptType) -> type[IScript]:
     """
     Retrieves the script class name based on the given script type.
 
@@ -41,5 +40,4 @@ def get_script_type_from_script_class_name(script_type: ScriptType) -> Any:
     if script_type in script_type_to_script_class_name:
         script_class_name: type[IScript] = script_type_to_script_class_name[script_type]
         return script_class_name
-    else:
-        raise Exception(f"Cannot find the script type {script_type} in file {__name__}")
+    raise KeyError(f"Cannot find the script type {script_type} in file {__name__}")

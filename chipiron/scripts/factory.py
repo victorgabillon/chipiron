@@ -7,7 +7,7 @@ from typing import Any
 
 from parsley_coco import Parsley, create_parsley
 
-from chipiron.utils.dataclass import DataClass
+from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.small_tools import get_package_root_path
 
@@ -44,15 +44,17 @@ def create_script(
     """
 
     # retrieve the name of the class of args associated to this script
-    script: Any = get_script_type_from_script_class_name(script_type=script_type)
-    args_dataclass_name: type[DataClass] = script.args_dataclass_name
+    script: type[IScript] = get_script_type_from_script_class_name(
+        script_type=script_type
+    )
+    args_dataclass_name: type[IsDataclass] = script.get_args_dataclass_name()
 
     # create the relevant script
     parser: Parsley[Any] = create_parsley(
         args_dataclass_name=args_dataclass_name,
         should_parse_command_line_arguments=should_parse_command_line_arguments,
         logger=chipiron_logger,  # not working at the moment
-        verbosity=logging.INFO,
+        verbosity=logging.WARNING,
         package_name=get_package_root_path("chipiron"),
     )
 

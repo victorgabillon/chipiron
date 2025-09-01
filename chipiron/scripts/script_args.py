@@ -1,3 +1,12 @@
+"""
+This module defines the BaseScriptArgs dataclass, which encapsulates configuration arguments for script execution.
+It includes options for profiling, testing, enforcing universal algorithm behavior, specifying output folders,
+setting random seeds, and configuring logging levels. The output folder names can be automatically generated
+based on the current date and time if not explicitly provided.
+
+"""
+
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -31,6 +40,9 @@ class BaseScriptArgs:
 
     # the seed
     seed: int = 0
+
+    # the logging level
+    logging_level: int = logging.INFO
 
     def __post_init__(self) -> None:
         # if relative_script_instance_experiment_output_folde is not set, it gets time and day

@@ -8,10 +8,11 @@ import random
 from typing import Any
 
 from chipiron.league.league import League
+from chipiron.scripts.iscript import IScript
 from chipiron.scripts.script import Script
 
 
-class RunTheLeagueScript:
+class RunTheLeagueScript(IScript):
     """
     Running a league playing games between
     ers in the league and computing ELOs
@@ -46,7 +47,7 @@ class RunTheLeagueScript:
                 # TODO not use pickle make somehting human readbale and moidifiable
                 self.league = pickle.load(openfile)
             print("Previous league loaded successfully")
-        except Exception:
+        except (FileNotFoundError, pickle.UnpicklingError):
             print("Creation of a new league")
             new_random = random.Random(x=None)
             seed_run: int = new_random.randrange(0, 10**10)

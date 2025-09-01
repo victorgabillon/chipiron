@@ -111,8 +111,6 @@ def create_game_board_evaluator_not_observable(
     #    path_file=chi_board_eval_yaml_path
     # )
 
-    print("DEBUGuhhhh")
-
     chi_board_eval_args: BoardEvalArgsWrapper = (
         parsley_coco.resolve_yaml_file_to_base_dataclass(
             yaml_path=chi_board_eval_yaml_path,
@@ -125,7 +123,6 @@ def create_game_board_evaluator_not_observable(
     # chi_board_eval_args: BoardEvalArgsWrapper = dacite.from_dict(
     #    data_class=BoardEvalArgsWrapper, data=chi_board_eval_dict
     # )
-    print("DEBUGubbddd", chi_board_eval_args)
 
     board_evaluator_chi: BoardEvaluator = create_board_evaluator(
         args_board_evaluator=chi_board_eval_args.board_evaluator

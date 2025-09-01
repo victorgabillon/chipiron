@@ -16,6 +16,7 @@ from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
+from chipiron.utils.dataclass import IsDataclass
 
 
 @dataclass
@@ -82,3 +83,13 @@ class BaseTreeExplorationScript:
         Terminates the base tree exploration script.
         """
         self.base_script.terminate()
+
+    @classmethod
+    def get_args_dataclass_name(cls) -> type[IsDataclass]:
+        """
+        Returns the dataclass type that holds the arguments for the script.
+
+        Returns:
+            type: The dataclass type for the script's arguments.
+        """
+        return BaseTreeExplorationArgs

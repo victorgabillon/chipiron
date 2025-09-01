@@ -33,6 +33,7 @@ class MatchScriptArgs:
     base_script_args: BaseScriptArgs = field(default_factory=BaseScriptArgs)
     match_args: MatchArgs = field(default_factory=MatchArgs)
     implementation_args: ImplementationArgs = field(default_factory=ImplementationArgs)
+
     # whether to display the match in a GUI
     gui: bool = True
 
@@ -51,6 +52,8 @@ class OneMatchScript:
     base_script: Script[MatchScriptArgs]
 
     chess_gui: QApplication
+
+    process_match_manager: multiprocessing.Process
 
     def __init__(
         self,
@@ -82,6 +85,7 @@ class OneMatchScript:
                 "inputs_and_parsing/one_match_script_merge.yaml",
             ),
             "w",
+            encoding="utf-8",
         ) as one_match_script:
             yaml.dump(asdict(args), one_match_script, default_flow_style=False)
 
@@ -120,8 +124,6 @@ class OneMatchScript:
     def run(self) -> None:
         """
         Runs the match either with a GUI or not
-        Returns:
-
         """
 
         chipiron_logger.info(" Script One Match go")
@@ -151,3 +153,13 @@ class OneMatchScript:
         self.base_script.terminate()
         if self.gui:
             self.process_match_manager.terminate()
+
+    @classmethod
+    def get_args_dataclass_name(cls) -> type[IsDataclass]:
+        """
+        Returns the dataclass type that holds the arguments for the script.
+
+        Returns:
+            type: The dataclass type for the script's arguments.
+        """
+        return MatchScriptArgs

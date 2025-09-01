@@ -76,15 +76,11 @@ class Script[T_Dataclass: IsDataclass]:
         Initiates the script by parsing arguments and converting them into a standardized dataclass.
 
         Args:
-            args_dataclass_name: The type of the dataclass to convert the arguments into.
             experiment_output_folder: The base folder for experiment output. If None, uses the default value.
 
         Returns:
             The converted arguments as a dataclass.
         """
-
-        # checking that the dataclass that will contain the script args contains BaseScriptArgs
-        # assert issubclass(args_dataclass_name, HasBaseScriptArgs)
 
         if experiment_output_folder is not None:
             self.experiment_script_type_output_folder = experiment_output_folder
@@ -122,7 +118,7 @@ class Script[T_Dataclass: IsDataclass]:
 
         self.args = final_args
         chipiron_logger.info(
-            f"The args of the script are:\n{pprint.pformat(self.args)}"
+            "The args of the script are:\n%s", pprint.pformat(self.args)
         )
 
         return final_args
@@ -133,7 +129,7 @@ class Script[T_Dataclass: IsDataclass]:
         """
         chipiron_logger.info("terminate")
         if self.profile is not None:
-            chipiron_logger.info(f"--- {time.time() - self.start_time} seconds ---")
+            chipiron_logger.info("--- %s seconds ---", time.time() - self.start_time)
             self.profile.disable()
             string_io = io.StringIO()
             sort_by = SortKey.CUMULATIVE
@@ -160,7 +156,7 @@ class Script[T_Dataclass: IsDataclass]:
 
             chipiron_logger.info("The args of the script were:\n")
             pprint.pprint(self.args)
-            chipiron_logger.info("Execution time", end_time - self.start_time)
+            chipiron_logger.info("Execution time: %s", end_time - self.start_time)
 
     def run(self) -> None:
         """
