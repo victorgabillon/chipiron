@@ -81,14 +81,6 @@ def main() -> None:
     """
     The main function
     """
-    # Print chipiron startup banner with chipiron-themed icons
-    chipiron_logger.info("=" * 60)
-    chipiron_logger.info("              🦑 ♛  CHIPIRON MAIN STARTS  ♛ 🦑")
-    chipiron_logger.info("           🐙 AI Chess Engine & Learning System 🐙")
-    chipiron_logger.info("      ♔ • Ready to play and learn chess like a pulpo!  •♕")
-    chipiron_logger.info("       🦑 ~ Swimming through chess possibilities ~ 🦑")
-    chipiron_logger.info("=" * 60)
-    print()
 
     # Getting the command line arguments from the system
     raw_command_line_arguments: list[str] = sys.argv
@@ -111,6 +103,15 @@ def main() -> None:
         config_file_name=config_file_name,
         should_parse_command_line_arguments=True,
     )
+
+    # Print chipiron startup banner with chipiron-themed icons
+    chipiron_logger.info("=" * 60)
+    chipiron_logger.info("              🦑 ♛  CHIPIRON MAIN STARTS  ♛ 🦑")
+    chipiron_logger.info("           🐙 AI Chess Engine & Learning System 🐙")
+    chipiron_logger.info("      ♔ • Ready to play and learn chess like a pulpo!  •♕")
+    chipiron_logger.info("       🦑 ~ Swimming through chess possibilities ~ 🦑")
+    chipiron_logger.info("=" * 60)
+    print()
 
     # run the script
     script_object.run()

@@ -31,7 +31,24 @@ class IsDataclass(Protocol):
 
 # used as factory function in one of the option of as_dict in order to make the enum be replaced by str (useful for yamlization)
 def custom_asdict_factory(data: Iterable[Any]) -> dict[Any, Any]:
+    """Custom asdict factory function.
+
+    Args:
+        data (Iterable[Any]): The input data to be converted.
+
+    Returns:
+        dict[Any, Any]: The converted dictionary.
+    """
+
     def convert_value(obj: Any) -> Any:
+        """Converts a value to a serializable format.
+
+        Args:
+            obj (Any): The input value to be converted.
+
+        Returns:
+            Any: The converted value.
+        """
         if isinstance(obj, Enum):
             return obj.value
         elif isinstance(obj, list):

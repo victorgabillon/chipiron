@@ -1,3 +1,23 @@
+"""
+This module defines the PlayerConfigTag enumeration, which identifies different player configuration files for the Chipiron chess engine framework. Each tag corresponds to a specific player type, including human interfaces, AI agents, and external engines. The PlayerConfigTag class provides utility methods to determine if a player is human, retrieve the YAML configuration file path for a player, and load player arguments from the configuration file.
+
+Classes:
+    PlayerConfigTag (Enum): Enumeration of player configuration tags with methods for player type checking and configuration retrieval.
+
+Methods:
+    is_human(): Returns True if the player configuration tag represents a human player.
+    get_yaml_file_path(): Returns the file path to the YAML configuration file for the player.
+    get_players_args(): Loads and returns player arguments from the corresponding YAML configuration file.
+
+Dependencies:
+    - enum
+    - importlib.resources
+    - parsley_coco
+    - chipiron.players.PlayerArgs
+    - chipiron.utils.path
+
+"""
+
 from enum import Enum
 from importlib.resources import as_file, files
 

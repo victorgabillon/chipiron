@@ -1,3 +1,7 @@
+"""
+This module defines the arguments for different board evaluators in the Chipiron chess engine framework.
+"""
+
 from dataclasses import dataclass
 from typing import Literal
 

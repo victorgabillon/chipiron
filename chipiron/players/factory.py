@@ -4,14 +4,15 @@ Module for creating players.
 
 import queue
 import random
+from dataclasses import dataclass
 from typing import Any
 
 import chess
 
-import chipiron.players.move_selector.treevalue as treevalue
 from chipiron.players.boardevaluators import table_base
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
+from chipiron.players.move_selector import treevalue
 from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
     TreeMoveLimitArgs,
 )
@@ -26,6 +27,15 @@ from . import move_selector
 from .game_player import GamePlayer
 from .player import Player
 from .player_args import PlayerFactoryArgs
+
+
+@dataclass
+class PlayerCreationArgs:
+    random_generator: random.Random
+    implementation_args: ImplementationArgs
+    universal_behavior: bool
+    queue_progress_player: queue.Queue[IsDataclass] | None = None
+    syzygy: SyzygyTable[Any] | None = None
 
 
 def create_chipiron_player(

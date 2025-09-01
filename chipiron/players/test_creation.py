@@ -1,10 +1,15 @@
+"""
+Test the creation of a Chipiron player.
+"""
+
 import random
+
+from chipiron.players.factory import create_chipiron_player
+from chipiron.scripts.chipiron_args import ImplementationArgs
 
 
 def test_create_chipiron_player() -> None:
     """Test the creation of a Chipiron player."""
-    from chipiron.players.factory import create_chipiron_player
-    from chipiron.scripts.chipiron_args import ImplementationArgs
 
     # Create a Chipiron player with default arguments
     player = create_chipiron_player(

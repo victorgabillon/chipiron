@@ -19,6 +19,7 @@ from chipiron.environments.chess_env.board.utils import FenPlusHistory
 from chipiron.games.game.final_game_result import GameReport
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
+from chipiron.utils.dataclass import IsDataclass
 
 
 @dataclass
@@ -105,4 +106,14 @@ class ReplayGameScript:
         Performs any necessary cleanup or finalization steps.
 
         """
-        ...
+        self.base_script.terminate()
+
+    @classmethod
+    def get_args_dataclass_name(cls) -> type[IsDataclass]:
+        """
+        Returns the dataclass type that holds the arguments for the script.
+
+        Returns:
+            type: The dataclass type for the script's arguments.
+        """
+        return ReplayScriptArgs

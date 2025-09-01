@@ -29,6 +29,7 @@ from chipiron.players.move_selector.treevalue.trees.move_and_value_tree import (
 from chipiron.players.move_selector.treevalue.trees.tree_visualization import (
     display_special,
 )
+from chipiron.scripts.iscript import IScript
 from chipiron.scripts.script import Script
 
 
@@ -55,6 +56,11 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
     @typing.no_type_check
     def __init__(self, parent):
+        """Initializes the PhotoViewer.
+
+        Args:
+            parent (QWidget): The parent widget.
+        """
         super(PhotoViewer, self).__init__(parent)
         self._zoom = 0
         self._empty = True
@@ -87,7 +93,6 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         Args:
             scale (bool): Whether to scale the photo to fit the view. Default is True.
         """
-        pass
 
     @typing.no_type_check
     def set_photo(self, pixmap=None):
@@ -398,7 +403,7 @@ class Window(QtWidgets.QWidget):
         self.load_image()
 
 
-class VisualizeTreeScript:
+class VisualizeTreeScript(IScript):
     """
     This class represents a script for visualizing a tree.
     """
@@ -422,8 +427,6 @@ class VisualizeTreeScript:
             None
         """
 
-        ...
-
     def run(self) -> None:
         """
         Runs the tree visualizer application.
@@ -438,4 +441,3 @@ class VisualizeTreeScript:
         """
         Finishing the script. Profiling or timing.
         """
-        pass

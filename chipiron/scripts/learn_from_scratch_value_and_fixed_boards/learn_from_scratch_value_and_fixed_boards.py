@@ -40,6 +40,7 @@ from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
 from chipiron.utils.chi_nn import ChiNN
+from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger, suppress_logging
 
 
@@ -275,3 +276,13 @@ class LearnNNFromScratchScript:
         Finishing the script. Profiling or timing.
         """
         pass
+
+    @classmethod
+    def get_args_dataclass_name(cls) -> type[IsDataclass]:
+        """
+        Returns the dataclass type that holds the arguments for the script.
+
+        Returns:
+            type: The dataclass type for the script's arguments.
+        """
+        return LearnNNFromScratchScriptArgs
