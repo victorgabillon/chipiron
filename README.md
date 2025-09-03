@@ -130,6 +130,8 @@ sudo docker run --rm \
 
 ## Usage
 
+Every script should be run via `main_chipiron.py` and run from the ROOT_FOLDER. The type of script can be specified via the argument --script_name. Yaml config file can be specified via --config_file_name.
+
 ### Base case with a GUI to play against chipiron or watch it play
 
 Starts a gui to choose your options of play.

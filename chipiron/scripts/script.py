@@ -6,13 +6,13 @@ It handles computing execution time, profiling, and parsing arguments.
 import cProfile
 import io
 import os
-import pprint
 import pstats
 import time
 from pstats import SortKey
 from typing import Any, Protocol, runtime_checkable
 
 from parsley_coco import Parsley
+from rich.pretty import pretty_repr
 
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
@@ -93,7 +93,9 @@ class Script[T_Dataclass: IsDataclass]:
             extra_args=self.extra_args, config_file_path=self.config_file_name
         )
 
-        assert hasattr(final_args, "base_script_args")
+        assert hasattr(final_args, "base_script_args"), "Missing base_script_args"
+
+        chipiron_logger.setLevel(level=final_args.base_script_args.logging_level)
 
         final_args.base_script_args.experiment_output_folder = os.path.join(
             self.experiment_script_type_output_folder,
@@ -117,9 +119,7 @@ class Script[T_Dataclass: IsDataclass]:
             self.profile.enable()
 
         self.args = final_args
-        chipiron_logger.info(
-            "The args of the script are:\n%s", pprint.pformat(self.args)
-        )
+        chipiron_logger.info("The args of the script are:\n%s", pretty_repr(self.args))
 
         return final_args
 
@@ -154,8 +154,9 @@ class Script[T_Dataclass: IsDataclass]:
 
             end_time = time.time()
 
-            chipiron_logger.info("The args of the script were:\n")
-            pprint.pprint(self.args)
+            chipiron_logger.info(
+                "The args of the script were:\n%s", pretty_repr(self.args)
+            )
             chipiron_logger.info("Execution time: %s", end_time - self.start_time)
 
     def run(self) -> None:

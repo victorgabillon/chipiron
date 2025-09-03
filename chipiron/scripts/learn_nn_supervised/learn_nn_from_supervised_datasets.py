@@ -55,7 +55,6 @@ from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
 from chipiron.utils.chi_nn import ChiNN
-from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
 
 logging.basicConfig(level=logging.WARNING)
@@ -432,7 +431,7 @@ class LearnNNScript:
         self.base_script.terminate()
 
     @classmethod
-    def get_args_dataclass_name(cls) -> type[IsDataclass]:
+    def get_args_dataclass_name(cls) -> type[LearnNNScriptArgs]:
         """
         Returns the dataclass type that holds the arguments for the script.
 
