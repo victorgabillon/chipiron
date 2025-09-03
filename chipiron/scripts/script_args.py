@@ -42,7 +42,7 @@ class BaseScriptArgs:
     seed: int = 0
 
     # the logging level
-    logging_level: int = logging.INFO
+    logging_level: int = logging.ERROR
 
     def __post_init__(self) -> None:
         # if relative_script_instance_experiment_output_folde is not set, it gets time and day
