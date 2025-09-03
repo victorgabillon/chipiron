@@ -87,4 +87,5 @@ RUN adduser --system testuser --ingroup test
 
 USER testuser:test
 
-CMD ["/app/.venv/bin/python", "/app/chipiron/scripts/main_chipiron.py"]
+# launch main_chipiron.py with logging set to error (40)
+CMD ["/app/.venv/bin/python", "/app/chipiron/scripts/main_chipiron.py --base_script_args.logging_level 40"]

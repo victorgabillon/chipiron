@@ -155,7 +155,7 @@ class OneMatchScript:
             self.process_match_manager.terminate()
 
     @classmethod
-    def get_args_dataclass_name(cls) -> type[IsDataclass]:
+    def get_args_dataclass_name(cls) -> type[MatchScriptArgs]:
         """
         Returns the dataclass type that holds the arguments for the script.
 
