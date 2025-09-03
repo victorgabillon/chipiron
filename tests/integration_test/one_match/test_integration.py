@@ -6,7 +6,8 @@ import copy
 import logging
 import time
 from typing import Any
-
+import sys
+import argparse
 from parsley_coco import (
     make_partial_dataclass_with_optional_paths,
     resolve_extended_object,
@@ -402,13 +403,19 @@ def test_same_game_with_or_without_rust(log_level=logging.ERROR):
 
 
 if __name__ == "__main__":
-    level = logging.INFO
+
+
+    parser = argparse.ArgumentParser(description="Run one_match integration tests with optional log level.")
+    parser.add_argument("--log_level", type=str, default="INFO", help="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
+    args = parser.parse_args()
+
+    # Convert string log level to logging constant
+    level = getattr(logging, args.log_level.upper(), logging.INFO)
     chipiron_logger.setLevel(level)
 
     test_configs = configs_base
 
-    # Pass INFO level when running from main for more verbose output
-    # todo maybe merege the test that verifiy if two game are unchanged when variying some parameters like ranfom and rust atm
+    # Pass chosen level when running from main for more verbose output
     test_same_game_with_or_without_rust(log_level=level)
     test_randomness(log_level=level)
     test_one_matches(configs=test_configs, log_level=level)
