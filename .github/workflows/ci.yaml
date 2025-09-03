@@ -60,13 +60,18 @@ jobs:
           sudo apt-get autoremove -y || true
           sudo apt-get clean || true
 
+
       - name: Install dependencies
         run: |
+          set -xe
+          apt-get update
+          sed -i 's|http://archive.ubuntu.com/ubuntu|http://mirror.math.princeton.edu/pub/ubuntu|g' /etc/apt/sources.list
           python -m pip install --upgrade pip
           pip install tox tox-gh-actions
-          sudo apt-get update
-          sudo apt -y install libegl1 libgl1
-          sudo apt-get install -y libxkbcommon-x11-0
+          apt-get update
+          apt-get install -y --fix-missing python3-full python3-pip libegl1 libgl1 python3-opencv python3-tk wget curl \
+            libxcb-cursor0 libxcb-xinerama0 '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libxkbcommon-x11-0
+
       - name: Test with tox
         run: tox
 
