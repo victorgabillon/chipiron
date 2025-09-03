@@ -65,7 +65,7 @@ jobs:
         run: |
           set -xe
           sudo apt-get update
-          sed -i 's|http://archive.ubuntu.com/ubuntu|http://mirror.math.princeton.edu/pub/ubuntu|g' /etc/apt/sources.list
+          sudo sed -i 's|http://archive.ubuntu.com/ubuntu|http://mirror.math.princeton.edu/pub/ubuntu|g' /etc/apt/sources.list
           python -m pip install --upgrade pip
           pip install tox tox-gh-actions
           sudo apt-get update
