@@ -1,6 +1,76 @@
 [build-system]
 requires = ["setuptools>=80.9.0"]
-build-backend= "setuptools.build_meta"
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "chipiron"
+version = "0.1.9"
+description = "chipiron plays chess"
+keywords = ["chess", "AI", "torch"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
+]
+requires-python = ">=3.13"
+dependencies = [
+    "PyYAML",
+    "PySide6==6.9.2",
+    "chess>=1.11.2",
+    "matplotlib>=3.8.2",
+    "sortedcollections>=2.1.0",
+    "pandas==2.2.0",
+    "numpy==1.26.4",
+    "torch>=2.8.0",
+    "torchinfo",
+    "numba>=0.61.2",
+    "graphviz>=0.20.1",
+    "dacite>=1.9.2",
+    "customtkinter>=5.2",
+    "pyarrow",
+    "shakmaty_python_binding>=0.1.5",
+    "gprof2dot",
+    "mlflow",
+    "parsley_coco>=0.1.30",
+    "gdown",
+    "zstandard",
+    "rich"
+]
+license = "GPL-3.0-only"
+license-files = ["LICENSE"]
+
+readme = { file = "README.md", content-type = "text/markdown" }
+
+authors = [
+  { name = "Victor Gabillon", email = "victorgabillon@gmail.com" }
+]
+
+[project.urls]
+Homepage = "https://github.com/victorgabillon/chipiron"
+"Bug Tracker" = "https://github.com/victorgabillon/chipiron/issues"
+
+
+[tool.setuptools]
+include-package-data = true
+
+
+[tool.setuptools.package-data]
+chipiron = [
+  "data/players/**/*.yaml",
+  "data/players/**/*.pt",
+  "data/settings/*.yaml",
+  "data/starting_boards/*.text",
+  "scripts/learn_nn_supervised/board_evaluators_common_training_data/**/*.yaml", # think about removing this for cleanliness at some point
+  "scripts/learn_nn_supervised/board_evaluators_common_training_data/**/*.pt",
+  "tests/data/trees/**/*.yaml",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["chipiron", "chipiron.*"]
+exclude = ["tests*", "docs", "examples", "build", "dist", "venv", "env", ".venv", ".env", "__pycache__", "*.egg-info"]
+
+
 
 [tool.pytest.ini_options]
 addopts = "--cov=chipiron"
@@ -68,7 +138,7 @@ ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 88
-target-version = "py312"
+target-version = "py313"
 
 # Enable import sorting (alphabetical + group order)
 lint.select = ["I", "F", "E", "B"]  # I = imports, F = pyflakes, E = pycodestyle
@@ -82,10 +152,10 @@ lint.ignore = [ "E501"]
 
 [tool.black]
 line-length = 88
-target-version = ['py312']
+target-version = ['py313']
 
 [tool.pylint]
-py-version = "3.12"
+py-version = "3.13"
 extension-pkg-whitelist = ["PyQt5", "PySide6"]
 
 [tool.pylint.format]
