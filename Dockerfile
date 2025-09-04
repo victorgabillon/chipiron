@@ -52,7 +52,7 @@ RUN .venv/bin/pip install opencv-python-headless
 RUN .venv/bin/pip install --upgrade pip setuptools wheel gdown
 
 # Install torch first (before installing chipiron!)
-RUN .venv/bin/pip install torch==2.8.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+RUN .venv/bin/pip install torch==2.8.0 -f https://download.pytorch.org/whl/torch_stable.html
 
 # Install numpy (force-reinstall to overwrite system numpy)
 RUN .venv/bin/pip install --upgrade --force-reinstall numpy==1.26.0
