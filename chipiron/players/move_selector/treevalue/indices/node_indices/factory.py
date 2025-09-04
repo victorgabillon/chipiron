@@ -14,7 +14,7 @@ Types:
 """
 
 from dataclasses import make_dataclass
-from typing import Any, Callable, Type
+from typing import Any, Callable
 
 from chipiron.players.move_selector.treevalue.indices.node_indices.index_data import (
     IntervalExplo,
@@ -51,7 +51,7 @@ def create_exploration_index_data(
         ValueError: If the index_computation value is not recognized.
     """
     exploration_index_data: NodeExplorationData | None
-    base_index_dataclass_name: Type[NodeExplorationData] | None
+    base_index_dataclass_name: type[NodeExplorationData] | None
     match index_computation:
         case None:
             base_index_dataclass_name = None

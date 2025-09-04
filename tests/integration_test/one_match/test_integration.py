@@ -2,12 +2,12 @@
 This module contains integration tests for the one match script in the Chipiron project.
 """
 
+import argparse
 import copy
 import logging
 import time
 from typing import Any
-import sys
-import argparse
+
 from parsley_coco import (
     make_partial_dataclass_with_optional_paths,
     resolve_extended_object,
@@ -403,10 +403,15 @@ def test_same_game_with_or_without_rust(log_level=logging.ERROR):
 
 
 if __name__ == "__main__":
-
-
-    parser = argparse.ArgumentParser(description="Run one_match integration tests with optional log level.")
-    parser.add_argument("--log_level", type=str, default="INFO", help="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
+    parser = argparse.ArgumentParser(
+        description="Run one_match integration tests with optional log level."
+    )
+    parser.add_argument(
+        "--log_level",
+        type=str,
+        default="INFO",
+        help="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
+    )
     args = parser.parse_args()
 
     # Convert string log level to logging constant

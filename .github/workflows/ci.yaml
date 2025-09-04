@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - 'main'
-      - '3.12'
+      - '3.13'
 
 
 env:
@@ -19,7 +19,7 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest]
-        python-version: [ '3.12' ]
+        python-version: [ '3.13' ]
 
     steps:
       - uses: jlumbroso/free-disk-space@main

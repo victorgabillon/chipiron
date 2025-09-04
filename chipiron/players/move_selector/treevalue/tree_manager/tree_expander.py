@@ -4,7 +4,7 @@ This module contains classes related to tree expansion in a chess game.
 
 import typing
 from dataclasses import dataclass, field
-from typing import Any, List
+from typing import Any
 
 import chipiron.environments.chess_env.board as board_mod
 import chipiron.players.move_selector.treevalue.nodes as node
@@ -48,8 +48,8 @@ class TreeExpansions:
         expansions_without_node_creation (List[TreeExpansion]): List of expansions where child nodes were not created.
     """
 
-    expansions_with_node_creation: List[TreeExpansion] = field(default_factory=list)
-    expansions_without_node_creation: List[TreeExpansion] = field(default_factory=list)
+    expansions_with_node_creation: list[TreeExpansion] = field(default_factory=list)
+    expansions_without_node_creation: list[TreeExpansion] = field(default_factory=list)
 
     def __iter__(self) -> typing.Iterator[TreeExpansion]:
         return iter(

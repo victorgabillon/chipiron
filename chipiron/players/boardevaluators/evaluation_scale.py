@@ -1,7 +1,6 @@
 """Defines the EvaluationScale enum for board evaluation scales."""
 
 from enum import Enum
-from typing import Type, Union
 
 
 class EvaluationScale(str, Enum):
@@ -31,10 +30,10 @@ class ValueWhiteWhenOverSymmetricUnitInterval(float, Enum):
 
 
 # Type alias for the value over enums
-ValueOverEnum = Union[
-    Type[ValueWhiteWhenOverSymmetricUnitInterval],
-    Type[ValueWhiteWhenOverEntireRealAxis],
-]
+ValueOverEnum = (
+    type[ValueWhiteWhenOverSymmetricUnitInterval]
+    | type[ValueWhiteWhenOverEntireRealAxis]
+)
 
 
 def get_value_over_enum(evaluation_scale: EvaluationScale) -> ValueOverEnum:

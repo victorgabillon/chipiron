@@ -20,7 +20,7 @@ import time
 import traceback
 import warnings
 from pathlib import Path
-from typing import Callable, Dict, List
+from typing import Callable
 
 import chipiron.players.move_selector.treevalue as treevalue
 from chipiron.environments.chess_env.board.iboard import IBoard
@@ -79,8 +79,8 @@ class BenchmarkResult:
         """
         self.name = name
         self.rust_enabled = rust_enabled
-        self.times: List[float] = []
-        self.errors: List[str] = []
+        self.times: list[float] = []
+        self.errors: list[str] = []
 
     def add_time(self, time_seconds: float) -> None:
         """Add a timing result to the benchmark.
@@ -175,7 +175,7 @@ class ChessEngineBenchmark:
 
     def __init__(self) -> None:
         """Initialize the benchmark results."""
-        self.results: Dict[str, Dict[bool, BenchmarkResult]] = {}
+        self.results: dict[str, dict[bool, BenchmarkResult]] = {}
         self.test_positions = [
             # Starting position
             "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
