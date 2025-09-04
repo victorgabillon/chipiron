@@ -1,5 +1,5 @@
 # filepath: /home/victor/chipiron/Dockerfile
-FROM ubuntu:24.04
+FROM ubuntu:25.04
 
 WORKDIR /app
 
