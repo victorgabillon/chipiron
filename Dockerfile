@@ -78,7 +78,7 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 # Copy .env file to use consistent paths
 COPY .env .env
 
-RUN make $(EXTERNAL_DATA_DIR)/ $(SYZYGY_TABLES_DIR)
+RUN make init-no-syzygy
 
 RUN chmod -R 777 chipiron
 RUN chmod -R 777 tests
