@@ -247,25 +247,22 @@ class League:
             elo_list = list(elo)
             elo_list.reverse()  # Reverse to show chronological order
 
-            fig.add_trace(go.Scatter(
-                y=elo_list,
-                mode='lines+markers',
-                name=player_name,
-                line=dict(width=2),
-                marker=dict(size=4)
-            ))
+            fig.add_trace(
+                go.Scatter(
+                    y=elo_list,
+                    mode="lines+markers",
+                    name=player_name,
+                    line=dict(width=2),
+                    marker=dict(size=4),
+                )
+            )
 
         fig.update_layout(
             title="ELO Rating Evolution",
             xaxis_title="Game Number",
             yaxis_title="ELO Rating",
-            legend=dict(
-                yanchor="top",
-                y=0.99,
-                xanchor="left",
-                x=0.01
-            ),
-            hovermode='x unified'
+            legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
+            hovermode="x unified",
         )
 
         # Save as HTML (interactive) and SVG (static)
