@@ -8,7 +8,7 @@ import shutil
 from collections import deque
 from dataclasses import dataclass, field
 
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 from sortedcollections import ValueSortedDict
 
 import chipiron as ch
@@ -240,15 +240,37 @@ class League:
 
         This method updates the Elo rating graph by plotting the Elo ratings of all players in the league.
         """
-        fig = plt.figure(num=1, clear=True)
-        ax = fig.add_subplot()
+        fig = go.Figure()
+
         for player_name, elo in self.players_elo.items():
-            elo.reverse()
-            ax.plot(elo, label=player_name)
-            elo.reverse()
-        # plt.axis([0, 6, 0, 20])
-        plt.legend()
-        plt.savefig(self.folder_league + "/elo.plot.svg", format="svg")
+            # Convert deque to list for plotting
+            elo_list = list(elo)
+            elo_list.reverse()  # Reverse to show chronological order
+
+            fig.add_trace(go.Scatter(
+                y=elo_list,
+                mode='lines+markers',
+                name=player_name,
+                line=dict(width=2),
+                marker=dict(size=4)
+            ))
+
+        fig.update_layout(
+            title="ELO Rating Evolution",
+            xaxis_title="Game Number",
+            yaxis_title="ELO Rating",
+            legend=dict(
+                yanchor="top",
+                y=0.99,
+                xanchor="left",
+                x=0.01
+            ),
+            hovermode='x unified'
+        )
+
+        # Save as HTML (interactive) and SVG (static)
+        fig.write_html(self.folder_league + "/elo.plot.html")
+        fig.write_image(self.folder_league + "/elo.plot.svg", format="svg")
 
     def select_two_players(self) -> tuple[players.PlayerArgs, players.PlayerArgs]:
         """

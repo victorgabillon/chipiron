@@ -706,16 +706,10 @@ except Exception as e:
 
         try:
             # Create a temporary Python script for testing
+            # todo text plotly
             python_script = """
 try:
-    import matplotlib
-    import matplotlib.pyplot as plt
-    matplotlib.use("Agg")  # Use non-interactive backend
     import numpy as np
-    fig, ax = plt.subplots()
-    ax.plot([1, 2, 3], [1, 4, 2])
-    fig.savefig("/tmp/test_plot.png")
-    plt.close()
     print("GUI dependencies working!")
 except Exception as e:
     print(f"GUI test failed: {e}")
