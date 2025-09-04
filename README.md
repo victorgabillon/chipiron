@@ -54,7 +54,7 @@ python3 chipiron/scripts/main_chipiron.py
 
 ## Requirements
 
-* Python 3.12
+* Python 3.13
 * pip
 * curl
 * tkinter
@@ -94,8 +94,8 @@ This downloads and installs Stockfish 16 (~40MB) to the correct location for chi
 ```bash
 git clone https://github.com/victorgabillon/chipiron.git
 cd chipiron
-conda create --name chipiron3.12 python==3.12
-conda activate chipiron3.12
+conda create --name chipiron3.13 python==3.13
+conda activate chipiron3.13
 conda install -c conda-forge tk=*=xft_* # to fix graphical problems with tkinter
 make init
 ```
