@@ -55,7 +55,7 @@ RUN .venv/bin/pip install --upgrade pip setuptools wheel gdown
 RUN .venv/bin/pip install torch==2.8.0 -f https://download.pytorch.org/whl/torch_stable.html
 
 # Install numpy (force-reinstall to overwrite system numpy)
-RUN .venv/bin/pip install --upgrade --force-reinstall numpy==1.26.0
+RUN .venv/bin/pip install --upgrade --force-reinstall numpy==2.2.6
 
 
 # Copy only project metadata to install deps
