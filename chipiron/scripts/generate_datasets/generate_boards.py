@@ -247,15 +247,21 @@ def download_month_zst(month: str, dest_dir: Path) -> Path:
 
     chipiron_logger.info("Downloading %s -> %s", url, local_path)
 
+    progress_thresholds = set()
+
     def progress_hook(block_num: int, block_size: int, total_size: int) -> None:
         if total_size > 0:
             downloaded = block_num * block_size
             percent = min(100.0, downloaded * 100.0 / total_size)
             downloaded_mb = downloaded / (1024 * 1024)
             total_mb = total_size / (1024 * 1024)
-            chipiron_logger.info(
-                "Progress: %.1f%% (%.1f/%.1f MB)", percent, downloaded_mb, total_mb
-            )
+            # Only log when passing a new 10% threshold
+            threshold = int(percent // 10) * 10
+            if threshold not in progress_thresholds and threshold > 0:
+                progress_thresholds.add(threshold)
+                chipiron_logger.info(
+                    "Progress: %d%% (%.1f/%.1f MB)", threshold, downloaded_mb, total_mb
+                )
 
     urllib.request.urlretrieve(url, local_path, reporthook=progress_hook)
     chipiron_logger.info("")  # New line after download completes

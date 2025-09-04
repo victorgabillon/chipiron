@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from importlib.resources import files
 from itertools import islice
 from pathlib import Path
-from typing import Any, Union
+from typing import Any
 
 import numpy as np
 import numpy.typing as nptyping
@@ -227,7 +227,7 @@ def distance_number_to_interval(value: float, interval: Interval) -> float:
         return 0
 
 
-def resolve_package_path(path_to_file: Union[str, Path]) -> str:
+def resolve_package_path(path_to_file: str | Path) -> str:
     """
     Replace 'package://' at the start of the path with the chipiron package root.
 

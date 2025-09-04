@@ -25,7 +25,7 @@ import tempfile
 import time
 import uuid
 from pathlib import Path
-from typing import Dict, List
+from typing import Any
 
 from chipiron.utils.logger import chipiron_logger
 
@@ -40,7 +40,11 @@ class IntegrationTestResult:
         self.warnings = []
 
     def add_result(
-        self, test_name: str, success: bool, message: str = "", details: Dict = None
+        self,
+        test_name: str,
+        success: bool,
+        message: str = "",
+        details: dict[str, Any] | None = None,
     ):
         """Add a test result"""
         self.results[test_name] = {
@@ -58,7 +62,7 @@ class IntegrationTestResult:
         self.warnings.append("%s: %s" % (test_name, message))
         chipiron_logger.warning("⚠️  %s: %s", test_name, message)
 
-    def get_summary(self) -> Dict:
+    def get_summary(self) -> dict[str, Any]:
         """Get test summary"""
         total_tests = len(self.results)
         successful_tests = sum(1 for r in self.results.values() if r["success"])
@@ -140,7 +144,7 @@ class ChipironIntegrationTester:
 
     def run_command(
         self,
-        cmd: List[str],
+        cmd: list[str],
         cwd: str = None,
         check: bool = True,
         capture_output: bool = True,
@@ -986,7 +990,7 @@ except Exception as e:
         # Generate final report
         return self.generate_report()
 
-    def generate_report(self) -> Dict:
+    def generate_report(self) -> dict[Any, Any]:
         """Generate final test report"""
         summary = self.result.get_summary()
 

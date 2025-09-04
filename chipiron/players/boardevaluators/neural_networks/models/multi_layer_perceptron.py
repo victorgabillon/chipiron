@@ -18,7 +18,7 @@ Helper Functions:
 """
 
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Literal, cast
+from typing import Any, Callable, Literal, cast
 
 import torch
 import torch.nn as nn
@@ -63,7 +63,7 @@ def build_sequential(
     return nn.Sequential(*modules)
 
 
-def extract_sequential_model_data(model: nn.Sequential) -> Dict[str, Any]:
+def extract_sequential_model_data(model: nn.Sequential) -> dict[str, Any]:
     """
     Extracts the weights and biases from a Sequential model in a layered dictionary format.
 
