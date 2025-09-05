@@ -1,18 +1,21 @@
 import pickle
 import random
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import chess
 import pytest
 
 from chipiron.environments.chess_env.board.utils import FenPlusHistory
-from chipiron.players import Player
-from chipiron.players.boardevaluators import table_base
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.players.factory import create_chipiron_player, create_player
-from chipiron.players.move_selector.move_selector import MoveRecommendation
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
+
+if TYPE_CHECKING:
+    import chess
+
+    from chipiron.players import Player
+    from chipiron.players.boardevaluators import table_base
+    from chipiron.players.move_selector.move_selector import MoveRecommendation
 
 
 @pytest.mark.parametrize(("use_rusty_board"), (True, False))

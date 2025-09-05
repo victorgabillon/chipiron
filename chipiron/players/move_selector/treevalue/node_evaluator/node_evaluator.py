@@ -20,12 +20,15 @@ Functions:
 """
 
 from enum import Enum
+from typing import TYPE_CHECKING
 
 from chipiron.players.boardevaluators.master_board_evaluator import MasterBoardEvaluator
-from chipiron.players.boardevaluators.over_event import OverEvent
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
     AlgorithmNode,
 )
+
+if TYPE_CHECKING:
+    from chipiron.players.boardevaluators.over_event import OverEvent
 
 DISCOUNT = 0.99999999  # lokks like at the moment the use is to break ties in the evaluation (not sure if needed or helpful now)
 

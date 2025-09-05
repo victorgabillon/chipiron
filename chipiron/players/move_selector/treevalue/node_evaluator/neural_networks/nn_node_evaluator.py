@@ -2,11 +2,10 @@
 This module contains the implementation of the `NNNodeEvaluator` class, which is a generic neural network class for board evaluation.
 """
 
+from typing import TYPE_CHECKING
+
 import torch
 
-from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
-    FloatyBoardEvaluation,
-)
 from chipiron.players.boardevaluators.master_board_evaluator import (
     MasterBoardEvaluator,
 )
@@ -18,6 +17,11 @@ from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_nod
 )
 
 from ..node_evaluator import NodeEvaluator
+
+if TYPE_CHECKING:
+    from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
+        FloatyBoardEvaluation,
+    )
 
 
 class NNNodeEvaluator(NodeEvaluator):

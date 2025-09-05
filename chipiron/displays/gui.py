@@ -12,6 +12,7 @@ import time
 import typing
 
 import chess
+import chess.svg
 import PySide6.QtGui as QtGui
 from PySide6.QtCore import Qt, QTimer, Slot
 from PySide6.QtGui import QIcon
@@ -29,7 +30,6 @@ from PySide6.QtWidgets import (
 from chipiron.environments.chess_env.board import BoardFactory, IBoard, create_board_chi
 from chipiron.environments.chess_env.board.utils import FenPlusHistory
 from chipiron.environments.chess_env.move import moveUci
-from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.games.match.match_results import MatchResults, SimpleResults
 from chipiron.players import PlayerFactoryArgs
@@ -50,6 +50,9 @@ from chipiron.utils.communication.player_game_messages import BoardMessage, Move
 from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.path_variables import GUI_DIR
+
+if typing.TYPE_CHECKING:
+    from chipiron.environments.chess_env.move.imove import moveKey
 
 
 class MainWindow(QWidget):
@@ -573,7 +576,7 @@ class MainWindow(QWidget):
                     match_results: MatchResults = match_message.match_results
                     self.update_match_stats(match_results)
                 case GameStatusMessage():
-                    chipiron_logger.info("GameStatusMessage", message)
+                    chipiron_logger.info("GameStatusMessage %s", message)
                     game_status_message: GameStatusMessage = message
                     play_status: PlayingStatus = game_status_message.status
                     self.update_game_play_status(play_status)
@@ -623,7 +626,19 @@ class MainWindow(QWidget):
                 historical_moves=self.board.move_history_stack,
             )
         )
-        self.boardSvg = board_chi.chess_board._repr_svg_().encode("UTF-8")
+
+        repr_svg: str = chess.svg.board(
+            board=board_chi.chess_board,
+            size=390,
+            lastmove=board_chi.chess_board.peek()
+            if board_chi.chess_board.move_stack
+            else None,
+            check=board_chi.chess_board.king(board_chi.chess_board.turn)
+            if board_chi.chess_board.is_check()
+            else None,
+        )
+
+        self.boardSvg = repr_svg.encode("UTF-8")
         self.drawBoardSvg = self.widgetSvg.load(self.boardSvg)
         self.round_button.setText(
             "🎲 Round: " + str(self.board.fullmove_number)
@@ -638,7 +653,7 @@ class MainWindow(QWidget):
 
         self.legal_moves_button.setWordWrap(True)
         self.legal_moves_button.setMinimumHeight(100)
-        lines = []
+        lines: list[str] = []
 
         # Only add sublists if they are non-empty
         for sublist in [

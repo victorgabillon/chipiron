@@ -3,9 +3,8 @@ This module provides a factory function for creating node evaluators based on di
 """
 
 import sys
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from chipiron.players.boardevaluators import MasterBoardEvaluator
 from chipiron.players.boardevaluators.board_evaluator_type import BoardEvalTypes
 from chipiron.players.boardevaluators.master_board_evaluator import (
     create_master_board_evaluator_from_args,
@@ -17,6 +16,9 @@ from chipiron.players.move_selector.treevalue.node_evaluator.node_evaluator_args
 
 from .neural_networks.nn_node_evaluator import NNNodeEvaluator
 from .node_evaluator import NodeEvaluator
+
+if TYPE_CHECKING:
+    from chipiron.players.boardevaluators import MasterBoardEvaluator
 
 
 def create_node_evaluator(

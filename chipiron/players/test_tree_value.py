@@ -9,26 +9,30 @@ test_tree_value.py
 
 import random
 from importlib.resources import as_file, files
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import chess
 import pytest
 
-import chipiron.environments.chess_env.board as boards
-from chipiron.environments import HalfMove
 from chipiron.environments.chess_env.board import IBoard, create_board
 from chipiron.environments.chess_env.board.utils import FenPlusHistory
 from chipiron.players import Player
 from chipiron.players.factory import create_chipiron_player
 from chipiron.players.move_selector.treevalue import trees
-from chipiron.players.move_selector.treevalue.nodes import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node import AlgorithmNode
 from chipiron.players.move_selector.treevalue.tree_and_value_move_selector import (
     TreeAndValueMoveSelector,
 )
-from chipiron.players.move_selector.treevalue.tree_exploration import TreeExploration
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
+
+if TYPE_CHECKING:
+    import chipiron.environments.chess_env.board as boards
+    from chipiron.environments import HalfMove
+    from chipiron.players.move_selector.treevalue.nodes import ITreeNode
+    from chipiron.players.move_selector.treevalue.tree_exploration import (
+        TreeExploration,
+    )
 
 
 def create_player_and_tree(

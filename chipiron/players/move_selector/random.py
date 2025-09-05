@@ -12,15 +12,17 @@ Example usage:
 
 import random
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 import chipiron.environments.chess_env.board as boards
-from chipiron.environments.chess_env.move import moveUci
-from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.utils import seed
 
 from .move_selector import MoveRecommendation
 from .move_selector_types import MoveSelectorTypes
+
+if TYPE_CHECKING:
+    from chipiron.environments.chess_env.move import moveUci
+    from chipiron.environments.chess_env.move.imove import moveKey
 
 
 @dataclass

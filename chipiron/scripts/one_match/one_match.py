@@ -4,10 +4,9 @@ the one match script
 
 import multiprocessing
 import os
-import queue
 import sys
 from dataclasses import asdict, dataclass, field
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import yaml
 from PySide6.QtWidgets import QApplication
@@ -20,8 +19,12 @@ from chipiron.games.match.match_factories import create_match_manager_from_args
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
-from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
+
+if TYPE_CHECKING:
+    import queue
+
+    from chipiron.utils.dataclass import IsDataclass
 
 
 @dataclass
@@ -105,7 +108,7 @@ class OneMatchScript:
             if app is None:
                 app = QApplication(sys.argv)
             else:
-                app = cast(QApplication, app)
+                app = cast("QApplication", app)
             self.chess_gui = app
 
             board_factory: BoardFactory = create_board_factory(

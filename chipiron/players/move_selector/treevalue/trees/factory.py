@@ -2,7 +2,7 @@
 MoveAndValueTreeFactory
 """
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import chipiron.environments.chess_env.board as boards
 import chipiron.players.move_selector.treevalue.node_factory as nod_fac
@@ -13,10 +13,12 @@ from chipiron.players.move_selector.treevalue.node_evaluator import (
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
     AlgorithmNode,
 )
-from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 
 from .descendants import RangedDescendants
 from .move_and_value_tree import MoveAndValueTree
+
+if TYPE_CHECKING:
+    from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 
 
 class MoveAndValueTreeFactory:

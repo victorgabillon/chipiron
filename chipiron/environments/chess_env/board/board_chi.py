@@ -6,7 +6,6 @@ import typing
 from typing import Iterator
 
 import chess
-import chess.polyglot
 from chess import Outcome, _BoardState
 
 from chipiron.environments.chess_env.board.board_modification import (

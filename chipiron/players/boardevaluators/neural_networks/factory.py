@@ -6,7 +6,7 @@ import os.path
 import sys
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import dacite
 
@@ -34,11 +34,13 @@ from chipiron.players.boardevaluators.neural_networks.NNModelTypeArgs import (
 from chipiron.players.boardevaluators.neural_networks.output_converters.factory import (
     create_output_converter,
 )
-from chipiron.players.boardevaluators.neural_networks.output_converters.output_value_converter import (
-    OutputValueConverter,
-)
 from chipiron.utils import path, yaml_fetch_args_in_file
 from chipiron.utils.chi_nn import ChiNN
+
+if TYPE_CHECKING:
+    from chipiron.players.boardevaluators.neural_networks.output_converters.output_value_converter import (
+        OutputValueConverter,
+    )
 
 
 @dataclass

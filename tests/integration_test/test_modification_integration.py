@@ -1,23 +1,27 @@
 import random
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import chess
 import pytest
 
-import chipiron.environments.chess_env.board as boards
-import chipiron.players.move_selector.treevalue.trees as trees
-from chipiron.environments import HalfMove
 from chipiron.environments.chess_env.board import IBoard, create_board
 from chipiron.environments.chess_env.board.utils import FenPlusHistory
-from chipiron.players import Player
 from chipiron.players.factory import create_chipiron_player
-from chipiron.players.move_selector.treevalue.nodes import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node import AlgorithmNode
 from chipiron.players.move_selector.treevalue.tree_and_value_move_selector import (
     TreeAndValueMoveSelector,
 )
-from chipiron.players.move_selector.treevalue.tree_exploration import TreeExploration
 from chipiron.scripts.chipiron_args import ImplementationArgs
+
+if TYPE_CHECKING:
+    import chipiron.environments.chess_env.board as boards
+    import chipiron.players.move_selector.treevalue.trees as trees
+    from chipiron.environments import HalfMove
+    from chipiron.players import Player
+    from chipiron.players.move_selector.treevalue.nodes import ITreeNode
+    from chipiron.players.move_selector.treevalue.tree_exploration import (
+        TreeExploration,
+    )
 
 
 @pytest.mark.parametrize(("use_rust_boards"), (True, False))

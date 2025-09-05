@@ -14,12 +14,9 @@ node evaluator, node selector, tree factory, and tree manager.
 import queue
 import random
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import chipiron.players.move_selector.treevalue.search_factory as search_factories
-from chipiron.players.boardevaluators.neural_networks.input_converters.factory import (
-    RepresentationFactory,
-)
 from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
     create_board_representation_factory,
 )
@@ -41,6 +38,11 @@ from . import tree_manager as tree_man
 from .indices.node_indices.index_types import IndexComputationType
 from .tree_and_value_move_selector import TreeAndValueMoveSelector
 from .trees.factory import MoveAndValueTreeFactory
+
+if TYPE_CHECKING:
+    from chipiron.players.boardevaluators.neural_networks.input_converters.factory import (
+        RepresentationFactory,
+    )
 
 
 @dataclass

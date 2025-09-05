@@ -9,7 +9,8 @@ Classes:
 
 """
 
-from chipiron.environments.chess_env.move.imove import moveKey
+from typing import TYPE_CHECKING
+
 from chipiron.players.move_selector.treevalue import tree_manager as tree_man
 from chipiron.players.move_selector.treevalue import trees
 from chipiron.players.move_selector.treevalue.node_selector.opening_instructions import (
@@ -18,6 +19,9 @@ from chipiron.players.move_selector.treevalue.node_selector.opening_instructions
     create_instructions_to_open_all_moves,
 )
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node import AlgorithmNode
+
+if TYPE_CHECKING:
+    from chipiron.environments.chess_env.move.imove import moveKey
 
 
 class Uniform:

@@ -5,15 +5,12 @@ Module in charge of managing the game. It is the main class that will be used to
 import os
 import queue
 from dataclasses import asdict
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import chess
 import yaml
 
 import chipiron.players as players_m
-from chipiron.environments import HalfMove
-from chipiron.environments.chess_env.board.iboard import IBoard
-from chipiron.environments.chess_env.move import moveUci
 from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.environments.chess_env.move_factory import MoveFactory
 from chipiron.games.game.game_playing_status import PlayingStatus
@@ -33,6 +30,11 @@ from .final_game_result import FinalGameResult, GameReport
 from .game import ObservableGame
 from .game_args import GameArgs
 from .progress_collector import PlayerProgressCollectorP
+
+if TYPE_CHECKING:
+    from chipiron.environments import HalfMove
+    from chipiron.environments.chess_env.board.iboard import IBoard
+    from chipiron.environments.chess_env.move import moveUci
 
 
 class GameManager:

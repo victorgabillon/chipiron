@@ -5,13 +5,15 @@ Launching the main chipiron
 import argparse
 import logging
 import sys
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from chipiron.scripts.factory import create_script
-from chipiron.scripts.iscript import IScript
 from chipiron.scripts.script_gui.script_gui_custom import script_gui
 from chipiron.scripts.script_type import ScriptType
 from chipiron.utils.logger import chipiron_logger
+
+if TYPE_CHECKING:
+    from chipiron.scripts.iscript import IScript
 
 sys.path.append("../../")
 

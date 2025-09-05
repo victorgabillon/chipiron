@@ -18,10 +18,9 @@ Functions:
 import queue
 import random
 from dataclasses import dataclass
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 import chipiron.environments.chess_env.board as boards
-from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.players.move_selector.move_selector import MoveRecommendation
 from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
     AllStoppingCriterionArgs,
@@ -40,6 +39,9 @@ from . import node_selector as node_sel
 from . import recommender_rule, trees
 from . import tree_manager as tree_man
 from .trees.factory import MoveAndValueTreeFactory
+
+if TYPE_CHECKING:
+    from chipiron.environments.chess_env.move.imove import moveKey
 
 
 @dataclass

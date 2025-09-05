@@ -22,7 +22,7 @@ import os
 import tempfile
 import time
 from dataclasses import asdict, dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import mlflow
 import torch
@@ -38,7 +38,6 @@ from chipiron.learningprocesses.nn_trainer.factory import (
     safe_nn_param_save,
     safe_nn_trainer_save,
 )
-from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
 from chipiron.players.boardevaluators.datasets.datasets import (
     DataSetArgs,
     FenAndValueData,
@@ -56,6 +55,9 @@ from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
 from chipiron.utils.chi_nn import ChiNN
 from chipiron.utils.logger import chipiron_logger
+
+if TYPE_CHECKING:
+    from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
 
 logging.basicConfig(level=logging.WARNING)
 
