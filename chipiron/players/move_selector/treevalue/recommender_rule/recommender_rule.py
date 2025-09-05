@@ -16,7 +16,7 @@ Example usage:
 import random
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Literal, Protocol
+from typing import TYPE_CHECKING, Any, Literal, Protocol
 
 import chipiron.players.move_selector.treevalue.trees as trees
 from chipiron.environments.chess_env.move.imove import moveKey
@@ -24,10 +24,12 @@ from chipiron.players.boardevaluators.basic_evaluation import value_base
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
     AlgorithmNode,
 )
-from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.utils import is_winning
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.small_tools import softmax
+
+if TYPE_CHECKING:
+    from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 
 
 class RecommenderRuleTypes(str, Enum):

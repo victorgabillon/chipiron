@@ -4,7 +4,7 @@ import random
 import tempfile
 import time
 from dataclasses import asdict, dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import mlflow
 import pandas
@@ -29,7 +29,6 @@ from chipiron.players.boardevaluators.neural_networks.neural_net_architecture_ar
 from chipiron.players.boardevaluators.neural_networks.nn_board_evaluator import (
     NNBoardEvaluator,
 )
-from chipiron.players.boardevaluators.table_base import SyzygyTable
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.players.factory import create_player
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
@@ -41,6 +40,9 @@ from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
 from chipiron.utils.chi_nn import ChiNN
 from chipiron.utils.logger import chipiron_logger, suppress_logging
+
+if TYPE_CHECKING:
+    from chipiron.players.boardevaluators.table_base import SyzygyTable
 
 
 @dataclass

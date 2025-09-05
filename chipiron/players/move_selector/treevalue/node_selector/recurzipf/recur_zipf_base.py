@@ -13,7 +13,6 @@ import typing
 from dataclasses import dataclass
 from typing import Literal
 
-from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.players.move_selector.treevalue import trees
 from chipiron.players.move_selector.treevalue.node_selector.move_explorer import (
     ZipfMoveExplorer,
@@ -37,6 +36,7 @@ from ..move_explorer import SamplingPriorities
 
 if typing.TYPE_CHECKING:
     import chipiron.players.move_selector.treevalue.tree_manager as tree_man
+    from chipiron.environments.chess_env.move.imove import moveKey
 
 
 @dataclass

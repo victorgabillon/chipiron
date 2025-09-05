@@ -14,7 +14,6 @@ from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_nod
     AlgorithmNode,
 )
 
-from .index_block import IndexUpdateInstructionsFromOneNode
 from .index_updater import IndexUpdater
 from .minmax_evaluation_updater import MinMaxEvaluationUpdater
 from .updates_file import (
@@ -22,10 +21,12 @@ from .updates_file import (
     UpdateInstructionsTowardsMultipleNodes,
     UpdateInstructionsTowardsOneParentNode,
 )
-from .value_block import ValueUpdateInstructionsFromOneNode
 
 if typing.TYPE_CHECKING:
     import chipiron.players.move_selector.treevalue.tree_manager as tree_man
+
+    from .index_block import IndexUpdateInstructionsFromOneNode
+    from .value_block import ValueUpdateInstructionsFromOneNode
 
 
 @dataclass

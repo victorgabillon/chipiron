@@ -2,12 +2,10 @@
 Module for the Player class.
 """
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from chipiron.environments.chess_env.board import BoardFactory, IBoard
 from chipiron.environments.chess_env.board.utils import FenPlusHistory
-from chipiron.environments.chess_env.move import moveUci
-from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.players.move_selector.move_selector import (
     MoveRecommendation,
@@ -15,6 +13,10 @@ from chipiron.players.move_selector.move_selector import (
 )
 from chipiron.utils import seed
 from chipiron.utils.logger import chipiron_logger
+
+if TYPE_CHECKING:
+    from chipiron.environments.chess_env.move import moveUci
+    from chipiron.environments.chess_env.move.imove import moveKey
 
 PlayerId = str
 

@@ -7,15 +7,18 @@ The BaseTreeExplorationScript class is responsible for running a script that per
 import os
 import random
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 from chipiron.environments.chess_env.board.factory import create_board
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.players.factory import create_player
-from chipiron.players.player_args import PlayerArgs
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
+
+if TYPE_CHECKING:
+    from chipiron.players.player_args import PlayerArgs
 
 
 @dataclass

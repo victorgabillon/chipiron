@@ -141,7 +141,10 @@ line-length = 88
 target-version = "py313"
 
 # Enable import sorting (alphabetical + group order)
-lint.select = ["I", "F", "E", "B"]  # I = imports, F = pyflakes, E = pycodestyle
+lint.select = ["I", "F", "E", "B", "TCH"]  # I = imports, F = pyflakes, E = pycodestyle, TCH = type-checking, B = black
+
+# Allow auto-fixing for imports and type-checking imports
+lint.fixable = ["I", "TCH", "F401"]
 
 # Ignore rules you don't care about
 lint.ignore = [ "E501"]
@@ -167,3 +170,10 @@ disable = ["C0301"]
 [tool.pylint.typecheck]
 # Optional: same as init-hook in .pylintrc
 init-hook = "import sys; sys.path.append('.')"
+
+
+[tool.pyright]
+pythonVersion = "3.13"
+typeCheckingMode = "strict"
+reportMissingImports = true
+reportUnusedImport = true

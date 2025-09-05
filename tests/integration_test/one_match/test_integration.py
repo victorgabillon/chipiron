@@ -6,7 +6,7 @@ import argparse
 import copy
 import logging
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from parsley_coco import (
     make_partial_dataclass_with_optional_paths,
@@ -17,7 +17,6 @@ import chipiron as ch
 import chipiron.scripts as scripts
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_factories import create_match_manager_from_args
-from chipiron.games.match.match_results import MatchReport
 from chipiron.games.match.match_tag import MatchConfigTag
 from chipiron.players import PlayerArgs
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
@@ -33,6 +32,9 @@ from chipiron.scripts.factory import create_script
 from chipiron.scripts.one_match.one_match import MatchScriptArgs
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.logger import chipiron_logger, suppress_logging
+
+if TYPE_CHECKING:
+    from chipiron.games.match.match_results import MatchReport
 
 # we need to not use multiprocessing to be able to use pytest therefore use setting_cubo  and not setting_jime
 

@@ -1,9 +1,13 @@
+from typing import TYPE_CHECKING
+
 import chess
 import pytest
 
 from chipiron.environments.chess_env.board import IBoard, create_board, fen
 from chipiron.environments.chess_env.board.utils import FenPlusHistory
-from chipiron.environments.chess_env.move import moveUci
+
+if TYPE_CHECKING:
+    from chipiron.environments.chess_env.move import moveUci
 
 
 @pytest.mark.parametrize(("use_rusty_board"), (True, False))

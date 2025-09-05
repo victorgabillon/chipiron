@@ -23,18 +23,20 @@ Note: The Stockfish engine is initialized lazily when the first move is selected
 """
 
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import chess.engine
 
 import chipiron.environments.chess_env.board as boards
 from chipiron.utils.path_variables import STOCKFISH_BINARY_PATH
 
-from ...environments.chess_env import BoardChi
 from ...environments.chess_env.board import create_board_chi
 from ...environments.chess_env.board.utils import FenPlusHistory
 from .move_selector import MoveRecommendation
 from .move_selector_types import MoveSelectorTypes
+
+if TYPE_CHECKING:
+    from ...environments.chess_env import BoardChi
 
 
 @dataclass

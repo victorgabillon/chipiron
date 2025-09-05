@@ -78,10 +78,10 @@ def extract_sequential_model_data(model: nn.Sequential) -> dict[str, Any]:
     for idx, layer in enumerate(model):
         layer_info = {}
         if hasattr(layer, "weight") and layer.weight is not None:
-            weight_tensor = cast(torch.Tensor, layer.weight)
+            weight_tensor = cast("torch.Tensor", layer.weight)
             layer_info["weight"] = weight_tensor.detach().cpu().numpy().tolist()
         if hasattr(layer, "bias") and layer.bias is not None:
-            bias_tensor = cast(torch.Tensor, layer.bias)
+            bias_tensor = cast("torch.Tensor", layer.bias)
             layer_info["bias"] = bias_tensor.detach().cpu().numpy().tolist()
 
         layer_name = f"layer_{idx}_{layer.__class__.__name__}"

@@ -3,8 +3,7 @@ This module contains functions for creating match managers in the Chipiron game 
 """
 
 import multiprocessing
-import queue
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import chipiron as ch
 import chipiron.games.game as game
@@ -18,17 +17,22 @@ from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_manager import MatchManager
 from chipiron.games.match.match_results_factory import MatchResultsFactory
 from chipiron.games.match.utils import fetch_match_games_args_convert_and_save
-from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator
 from chipiron.players.boardevaluators.factory import create_game_board_evaluator
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
-from chipiron.utils.dataclass import IsDataclass
 
 from ...environments.chess_env.move_factory import MoveFactory, create_move_factory
-from ...players.boardevaluators.table_base import SyzygyTable
 from .match_settings_args import MatchSettingsArgs
+
+if TYPE_CHECKING:
+    import queue
+
+    from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator
+    from chipiron.utils.dataclass import IsDataclass
+
+    from ...players.boardevaluators.table_base import SyzygyTable
 
 
 def create_match_manager(

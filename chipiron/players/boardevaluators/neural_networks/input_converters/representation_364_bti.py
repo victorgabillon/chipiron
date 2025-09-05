@@ -6,14 +6,16 @@ Classes:
 
 """
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import torch
 
 import chipiron.environments.chess_env.board as boards
 
-from .board_representation import BoardRepresentation
 from .factory import RepresentationFactory
+
+if TYPE_CHECKING:
+    from .board_representation import BoardRepresentation
 
 
 class RepresentationBTI:

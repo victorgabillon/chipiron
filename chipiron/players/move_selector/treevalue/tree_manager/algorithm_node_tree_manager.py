@@ -22,7 +22,6 @@ from chipiron.players.move_selector.treevalue.node_evaluator import (
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
     AlgorithmNode,
 )
-from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 
 from .tree_expander import TreeExpansion, TreeExpansions
@@ -34,6 +33,7 @@ from .tree_manager import TreeManager
 # DISCOUNT = 1/.99999
 if typing.TYPE_CHECKING:
     import chipiron.players.move_selector.treevalue.node_selector as node_sel
+    from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 
 
 @dataclass

@@ -8,12 +8,10 @@ Functions:
 - is_winning(node_minmax_evaluation: NodeMinmaxEvaluation, color: chess.Color) -> bool: Checks if the color to play in the node is winning.
 """
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import chess
 
-from chipiron.environments.chess_env.move import moveUci
-from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
     AlgorithmNode,
 )
@@ -23,6 +21,10 @@ from chipiron.players.move_selector.treevalue.nodes.algorithm_node.node_minmax_e
 
 from .itree_node import ITreeNode
 from .tree_node import TreeNode
+
+if TYPE_CHECKING:
+    from chipiron.environments.chess_env.move import moveUci
+    from chipiron.environments.chess_env.move.imove import moveKey
 
 
 def are_all_moves_and_children_opened(tree_node: TreeNode[Any]) -> bool:

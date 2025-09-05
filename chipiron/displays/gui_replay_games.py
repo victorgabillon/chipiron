@@ -7,6 +7,7 @@ This module is the execution point of the chess GUI application.
 from typing import Any
 
 import chess
+import chess.svg
 from PySide6.QtCore import Slot
 from PySide6.QtGui import QIcon, QKeyEvent
 from PySide6.QtSvgWidgets import QSvgWidget
@@ -111,7 +112,17 @@ class MainWindow(QWidget):
         it for every new move.
         """
 
-        self.boardSvg = self.chess_board._repr_svg_().encode("UTF-8")
+        repr_svg: str = chess.svg.board(
+            board=self.chess_board,
+            size=390,
+            lastmove=self.chess_board.peek() if self.chess_board.move_stack else None,
+            check=self.chess_board.king(self.chess_board.turn)
+            if self.chess_board.is_check()
+            else None,
+        )
+
+        self.boardSvg = repr_svg.encode("UTF-8")
+
         self.drawBoardSvg = self.widgetSvg.load(self.boardSvg)
 
         return self.drawBoardSvg

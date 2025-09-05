@@ -14,11 +14,12 @@ Note: This is an interface and should not be instantiated directly.
 
 from __future__ import annotations
 
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
-import chipiron.environments.chess_env.board as boards
-from chipiron.environments.chess_env.board.iboard import LegalMoveKeyGeneratorP
-from chipiron.environments.chess_env.move.imove import moveKey
+if TYPE_CHECKING:
+    import chipiron.environments.chess_env.board as boards
+    from chipiron.environments.chess_env.board.iboard import LegalMoveKeyGeneratorP
+    from chipiron.environments.chess_env.move.imove import moveKey
 
 # to force Any to stay because of weird interaction between flake8 and pycharm
 a: Any = 0

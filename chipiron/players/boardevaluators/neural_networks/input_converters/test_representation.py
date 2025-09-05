@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import chess
 import pytest
@@ -11,20 +11,22 @@ from chipiron.environments.chess_env.board import (
     create_board,
 )
 from chipiron.environments.chess_env.board.utils import FenPlusHistory, bitboard_rotate
-from chipiron.environments.chess_env.move.imove import moveKey
-from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import (
-    BoardRepresentation,
-    Representation364,
-)
-from chipiron.players.boardevaluators.neural_networks.input_converters.factory import (
-    RepresentationFactory,
-)
 from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
     InternalTensorRepresentationType,
 )
 from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
     create_board_representation_factory,
 )
+
+if TYPE_CHECKING:
+    from chipiron.environments.chess_env.move.imove import moveKey
+    from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import (
+        BoardRepresentation,
+        Representation364,
+    )
+    from chipiron.players.boardevaluators.neural_networks.input_converters.factory import (
+        RepresentationFactory,
+    )
 
 
 @pytest.mark.parametrize(("use_rust_boards"), (True, False))

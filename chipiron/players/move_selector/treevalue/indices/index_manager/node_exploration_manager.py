@@ -3,12 +3,11 @@ Module that contains the logic to compute the exploration index of a node in a t
 """
 
 import math
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 import chess
 
 import chipiron.players.move_selector.treevalue.trees as trees
-from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.players.move_selector.treevalue.indices.node_indices.index_data import (
     IntervalExplo,
     MinMaxPathValue,
@@ -17,12 +16,15 @@ from chipiron.players.move_selector.treevalue.indices.node_indices.index_data im
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
     AlgorithmNode,
 )
-from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.utils.small_tools import (
     Interval,
     distance_number_to_interval,
     intersect_intervals,
 )
+
+if TYPE_CHECKING:
+    from chipiron.environments.chess_env.move.imove import moveKey
+    from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 
 
 class NodeExplorationIndexManager(Protocol):

@@ -10,7 +10,7 @@ The main functions in this module are:
 
 from enum import Enum
 from math import isclose
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import chess
 import yaml
@@ -35,7 +35,6 @@ from chipiron.players.move_selector.treevalue.indices.node_indices.index_types i
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
     AlgorithmNode,
 )
-from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.tree_manager.tree_expander import (
     TreeExpansion,
     TreeExpansions,
@@ -45,6 +44,9 @@ from chipiron.players.move_selector.treevalue.trees.move_and_value_tree import (
     MoveAndValueTree,
 )
 from chipiron.utils.small_tools import path
+
+if TYPE_CHECKING:
+    from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 
 
 class TestResult(Enum):

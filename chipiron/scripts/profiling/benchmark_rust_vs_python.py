@@ -20,11 +20,10 @@ import time
 import traceback
 import warnings
 from pathlib import Path
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 import chipiron.players.move_selector.treevalue as treevalue
 from chipiron.environments.chess_env.board.iboard import IBoard
-from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
     TreeMoveLimitArgs,
 )
@@ -33,6 +32,10 @@ from chipiron.utils.logger import (
     suppress_all_logging,
     suppress_logging,
 )
+
+if TYPE_CHECKING:
+    from chipiron.environments.chess_env.move.imove import moveKey
+    from chipiron.players.player_args import PlayerArgs
 
 # Suppress PyTorch CUDA warnings for benchmarking
 warnings.filterwarnings("ignore", category=UserWarning, module="torch.cuda")
@@ -49,7 +52,6 @@ try:
     from chipiron.environments.chess_env.board.utils import FenPlusHistory
     from chipiron.players.boardevaluators.table_base.factory import create_syzygy
     from chipiron.players.factory import create_player
-    from chipiron.players.player_args import PlayerArgs
     from chipiron.players.player_ids import PlayerConfigTag
     from chipiron.scripts.chipiron_args import ImplementationArgs
 

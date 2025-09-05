@@ -1,7 +1,8 @@
+from typing import TYPE_CHECKING
+
 import chess
 import pytest
 
-from chipiron.environments.chess_env import BoardChi
 from chipiron.environments.chess_env.board import (
     BoardModificationP,
     IBoard,
@@ -15,6 +16,9 @@ from chipiron.environments.chess_env.board.board_modification import (
 )
 from chipiron.environments.chess_env.board.utils import FenPlusHistory
 from chipiron.environments.chess_env.move import moveUci
+
+if TYPE_CHECKING:
+    from chipiron.environments.chess_env import BoardChi
 
 examples: list[tuple[fen, moveUci, list[PieceInSquare], list[PieceInSquare]]] = [
     (
