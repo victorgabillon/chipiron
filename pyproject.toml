@@ -177,3 +177,4 @@ pythonVersion = "3.13"
 typeCheckingMode = "strict"
 reportMissingImports = true
 reportUnusedImport = true
+reportMissingTypeStubs = false

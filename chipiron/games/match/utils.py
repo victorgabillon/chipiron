@@ -43,7 +43,7 @@ def fetch_match_games_args_convert_and_save(
         path_match_setting: path = MatchConfigTag.CUBO.get_yaml_file_path()
         match_setting: MatchSettingsArgs = (
             parsley_coco.resolve_yaml_file_to_base_dataclass(
-                yaml_path=path_match_setting,
+                yaml_path=str(path_match_setting),
                 base_cls=MatchSettingsArgs,
             )
         )
@@ -63,7 +63,9 @@ def fetch_match_games_args_convert_and_save(
                 dst=os.path.join(experiment_output_folder, file_game),
             )
             with open(
-                os.path.join(experiment_output_folder, "match_setting"), "w"
+                os.path.join(experiment_output_folder, "match_setting"),
+                "w",
+                encoding="utf-8",
             ) as f:
                 yaml.dump(asdict(match_args), f)
 
@@ -73,7 +75,7 @@ def fetch_match_games_args_convert_and_save(
     )
     with as_file(resource2) as game_file_path:
         args_game: game.GameArgs = parsley_coco.resolve_yaml_file_to_base_dataclass(
-            yaml_path=game_file_path,
+            yaml_path=str(game_file_path),
             base_cls=game.GameArgs,
             raise_error_with_nones=False,
         )

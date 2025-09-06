@@ -23,6 +23,8 @@ from .utils import FenPlusHistory, fen
 
 
 class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
+    """LegalMoveKeyGeneratorRust is a Rust-compatible implementation of the LegalMoveKeyGeneratorP interface."""
+
     # whether to sort the legal_moves by their respective uci for easy comparison of various implementations
     sort_legal_moves: bool
 
@@ -38,6 +40,13 @@ class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
         chess_rust_binding: shakmaty_python_binding.MyChess,
         generated_moves: list[shakmaty_python_binding.MyMove] | None = None,
     ):
+        """LegalMoveKeyGeneratorRust is a Rust-compatible implementation of the LegalMoveKeyGeneratorP interface.
+
+        Args:
+            sort_legal_moves (bool): Whether to sort the legal moves.
+            chess_rust_binding (shakmaty_python_binding.MyChess): The Rust chess binding.
+            generated_moves (list[shakmaty_python_binding.MyMove] | None, optional): The generated moves. Defaults to None.
+        """
         self.chess_rust_binding = chess_rust_binding
         self.generated_moves = generated_moves
         if generated_moves is not None:
@@ -207,7 +216,7 @@ class RustyBoardChi(IBoard):
     legal_moves_: LegalMoveKeyGeneratorRust
 
     # the move history is kept here because shakmaty_python_binding.MyChess does not have a move stack at the moment
-    move_stack: list[moveUci] = field(default_factory=list)
+    move_stack: list[moveUci] = field(default_factory=lambda: list[moveUci]())
 
     # the board history is kept here because shakmaty_python_binding.MyChess does not have a board stack at the moment
     # board_stack: list[chess._BoardState] = field(default_factory=list)

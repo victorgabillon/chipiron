@@ -9,7 +9,7 @@ import os
 import pstats
 import time
 from pstats import SortKey
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Protocol, cast, runtime_checkable
 
 from parsley_coco import Parsley
 from rich.pretty import pretty_repr
@@ -48,7 +48,7 @@ class Script[T_Dataclass: IsDataclass]:
     def __init__(
         self,
         parser: Parsley[T_Dataclass],
-        extra_args: dict[str, Any] | None = None,
+        extra_args: IsDataclass | None = None,
         config_file_name: str | None = None,
     ) -> None:
         """
@@ -95,26 +95,44 @@ class Script[T_Dataclass: IsDataclass]:
 
         assert hasattr(final_args, "base_script_args"), "Missing base_script_args"
 
-        chipiron_logger.setLevel(level=final_args.base_script_args.logging_level)
+        # Type assertion to help type checker understand the structure
+        final_args_with_base = cast("HasBaseScriptArgs", final_args)
 
-        final_args.base_script_args.experiment_output_folder = os.path.join(
-            self.experiment_script_type_output_folder,
-            final_args.base_script_args.relative_script_instance_experiment_output_folder,
+        chipiron_logger.setLevel(
+            level=final_args_with_base.base_script_args.logging_level
         )
-        mkdir_if_not_existing(final_args.base_script_args.experiment_output_folder)
+
+        # Ensure paths are not None before using them
+        assert self.experiment_script_type_output_folder is not None
+        assert (
+            final_args_with_base.base_script_args.relative_script_instance_experiment_output_folder
+            is not None
+        )
+
+        final_args_with_base.base_script_args.experiment_output_folder = os.path.join(
+            self.experiment_script_type_output_folder,
+            final_args_with_base.base_script_args.relative_script_instance_experiment_output_folder,
+        )
+
+        assert (
+            final_args_with_base.base_script_args.experiment_output_folder is not None
+        )
+        mkdir_if_not_existing(
+            final_args_with_base.base_script_args.experiment_output_folder
+        )
         mkdir_if_not_existing(
             os.path.join(
-                final_args.base_script_args.experiment_output_folder,
+                final_args_with_base.base_script_args.experiment_output_folder,
                 "inputs_and_parsing",
             )
         )
 
         self.parser.log_parser_info(
-            final_args.base_script_args.experiment_output_folder
+            str(final_args_with_base.base_script_args.experiment_output_folder)
         )
 
         # activate profiling is if needed
-        if final_args.base_script_args.profiling:
+        if final_args_with_base.base_script_args.profiling:
             self.profile = cProfile.Profile()
             self.profile.enable()
 
@@ -139,12 +157,18 @@ class Script[T_Dataclass: IsDataclass]:
             assert self.args is not None
             assert hasattr(self.args, "base_script_args")
 
+            # Type assertion for self.args as well
+            args_with_base = cast("HasBaseScriptArgs", self.args)
+
+            # Ensure experiment_output_folder is not None
+            assert args_with_base.base_script_args.experiment_output_folder is not None
+
             path_to_profiling_stats: path = os.path.join(
-                self.args.base_script_args.experiment_output_folder,
+                args_with_base.base_script_args.experiment_output_folder,
                 "profiling_output.stats",
             )
             path_to_profiling_stats_png: path = os.path.join(
-                self.args.base_script_args.experiment_output_folder,
+                args_with_base.base_script_args.experiment_output_folder,
                 "profiling_output.png",
             )
             stats.dump_stats(path_to_profiling_stats)

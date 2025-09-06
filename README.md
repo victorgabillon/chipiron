@@ -65,6 +65,8 @@ python3 chipiron/scripts/main_chipiron.py
 **Optional:**
 * Stockfish chess engine (can be installed with `make stockfish`)
 
+
+
 ## Installation
 
 ### Using Make
@@ -241,6 +243,21 @@ See [`scripts/README.md`](scripts/README.md) for detailed documentation.
 ## Contributing
 
 Please open issues or pull requests on GitHub.
+
+**Development Requirements:**
+
+For development and testing, additional dependencies are listed in `requirements_dev.txt`:
+
+```bash
+pip install -r requirements_dev.txt
+```
+
+This includes tools for:
+- Type checking (mypy)
+- Linting (pylint, ruff)
+- Testing (pytest, tox)
+- Documentation building (sphinx)
+- Code formatting and development tools
 
 ---
 

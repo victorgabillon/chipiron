@@ -1,3 +1,5 @@
+"""Utility functions and data structures for handling chess board states and FEN strings."""
+
 import typing
 from dataclasses import dataclass, field
 

@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 from chipiron.scripts.factory import create_script
 from chipiron.scripts.script_gui.script_gui_custom import script_gui
 from chipiron.scripts.script_type import ScriptType
+from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:
@@ -29,7 +30,7 @@ except ImportError:
 
 def get_script_and_args(
     raw_command_line_arguments: list[str],
-) -> tuple[ScriptType, dict[str, Any] | None, str | None]:
+) -> tuple[ScriptType, IsDataclass | None, str | None]:
     """
 
     Args:
@@ -40,12 +41,12 @@ def get_script_and_args(
 
     """
     script_type: ScriptType
-    extra_args: dict[str, Any] | None = None
+    extra_args: IsDataclass | None = None
     config_file_name: str | None = None
     # Whether command line arguments are provided or not we ask for more info through a GUI
     if len(raw_command_line_arguments) == 1:  # No args provided
         # use a gui to get user input
-        gui_extra_args: dict[str, Any] | None
+        gui_extra_args: IsDataclass | None
         script_type, gui_extra_args, config_file_name = script_gui()
         extra_args = gui_extra_args
     else:
@@ -91,7 +92,7 @@ def main() -> None:
     script_type: ScriptType
 
     # arguments provided to the script from the outside. Here it can be from a gui or command line
-    extra_args: dict[str, Any] | None
+    extra_args: IsDataclass | None
 
     # extracting the script_name and possibly some input arguments from either the gui or a yaml file or command line
     script_type, extra_args, config_file_name = get_script_and_args(

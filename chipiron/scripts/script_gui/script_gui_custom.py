@@ -9,7 +9,7 @@ Note: This script requires the customtkinter and chipiron modules to be installe
 """
 
 # TODO switch to pygame
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 import customtkinter as ctk
 from parsley_coco import make_partial_dataclass_with_optional_paths
@@ -27,7 +27,11 @@ from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor 
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.one_match.one_match import MatchScriptArgs
 from chipiron.scripts.script_args import BaseScriptArgs
+from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
+
+if TYPE_CHECKING:
+    import tkinter as tk
 
 
 def format_gui_args_for_display(gui_args: Any) -> str:
@@ -43,7 +47,7 @@ def format_gui_args_for_display(gui_args: Any) -> str:
     if gui_args is None:
         return "None"
 
-    args_parts = []
+    args_parts: list[str] = []
 
     if hasattr(gui_args, "gui") and gui_args.gui:
         args_parts.append("GUI: Enabled")
@@ -116,14 +120,14 @@ def format_gui_args_for_display(gui_args: Any) -> str:
     return "\n    ".join(args_parts) if args_parts else "Default settings"
 
 
-def script_gui() -> tuple[scripts.ScriptType, dict[str, Any], str]:
+def script_gui() -> tuple[scripts.ScriptType, IsDataclass | None, str]:
     """
     Creates a graphical user interface (GUI) for interacting with the chipiron program.
 
     Returns:
         A tuple containing the script type and the arguments for the selected action.
     """
-    root = ctk.CTk()
+    root: ctk.CTk = ctk.CTk()
     output: dict[str, Any] = {}
     # place a label on the root window
     root.title("🐙 chess with chipirons 🐙")
@@ -143,15 +147,15 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any], str]:
 
     # set the position of the window to the center of the screen
     root.geometry(f"{window_width}x{window_height}+{center_x}+{center_y}")
-    # root.iconbitmap('download.jpeg')
+    # root.iconbitmap('download.jpg')
 
-    message = ctk.CTkLabel(root, text="What to do?")
+    message = cast("tk.Widget", ctk.CTkLabel(root, text="What to do?"))
     message.grid(column=0, row=0)
 
     # exit button
     exit_button = ctk.CTkButton(root, text="Exit", command=lambda: root.quit())
 
-    message = ctk.CTkLabel(root, text="Play ")
+    message = cast("tk.Widget", ctk.CTkLabel(root, text="Play "))
     message.grid(column=0, row=2)
 
     # Create the list of options
@@ -170,10 +174,10 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any], str]:
     strength_menu = ctk.CTkOptionMenu(
         master=root, values=color_options_list, variable=color_choice_human
     )
-    strength_menu.grid(column=1, row=2)
+    cast("tk.Widget", strength_menu).grid(column=1, row=2)
 
     message = ctk.CTkLabel(root, text=" against ")
-    message.grid(column=2, row=2)
+    cast("tk.Widget", message).grid(column=2, row=2)
 
     # Create the list of options
     chipi_algo_options_list: list[PlayerConfigTag] = [
@@ -198,11 +202,11 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any], str]:
     strength_menu = ctk.CTkOptionMenu(
         master=root, values=chipi_algo_options_list, variable=chipi_algo_choice
     )
-    strength_menu.grid(column=3, row=2)
+    cast("tk.Widget", strength_menu).grid(column=3, row=2)
 
     message = ctk.CTkLabel(root, text="  strength: ")
 
-    message.grid(column=5, row=2, padx=10, pady=10)
+    cast("tk.Widget", message).grid(column=5, row=2, padx=10, pady=10)
 
     # Create the list of options
     options_list = ["1", "2", "3", "4", "5"]
@@ -221,7 +225,7 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any], str]:
     strength_menu = ctk.CTkOptionMenu(
         master=root, variable=strength_value, values=options_list
     )
-    strength_menu.grid(column=5, row=2, padx=10, pady=10)
+    cast("tk.Widget", strength_menu).grid(column=5, row=2, padx=10, pady=10)
 
     # play button
     play_against_chipiron_button: ctk.CTkButton = ctk.CTkButton(
@@ -259,20 +263,33 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any], str]:
         command=lambda: [visualize_a_tree(output), root.destroy()],
     )
 
-    play_against_chipiron_button.grid(row=2, column=6, padx=10, pady=10)
-    play_two_humans_button.grid(row=4, column=0, padx=10, pady=10)
-    watch_a_game_button.grid(row=6, column=0, padx=10, pady=10)
-    visualize_a_tree_button.grid(row=8, column=0, padx=10, pady=10)
-    exit_button.grid(row=10, column=0, padx=10, pady=10)
+    cast("tk.Widget", play_against_chipiron_button).grid(
+        row=2, column=6, padx=10, pady=10
+    )
+    cast("tk.Widget", play_two_humans_button).grid(row=4, column=0, padx=10, pady=10)
+    cast("tk.Widget", watch_a_game_button).grid(row=6, column=0, padx=10, pady=10)
+    cast("tk.Widget", visualize_a_tree_button).grid(row=8, column=0, padx=10, pady=10)
+    cast("tk.Widget", exit_button).grid(row=10, column=0, padx=10, pady=10)
 
-    root.mainloop()
+    cast("tk.Tk", root).mainloop()
 
     return generate_inputs(output=output)
 
 
 def generate_inputs(
     output: dict[str, Any],
-) -> tuple[scripts.ScriptType, dict[str, Any], str]:
+) -> tuple[scripts.ScriptType, IsDataclass | None, str]:
+    """Generates script type and arguments based on the GUI output.
+
+    Args:
+        output (dict[str, Any]): The output from the GUI.
+
+    Raises:
+        ValueError: If the output is invalid.
+
+    Returns:
+        tuple[scripts.ScriptType, dict[str, Any], str]: The script type, arguments, and config file name.
+    """
     script_type: scripts.ScriptType
 
     PartialOpMatchScriptArgs = make_partial_dataclass_with_optional_paths(

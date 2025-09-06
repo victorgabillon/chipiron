@@ -3,10 +3,11 @@ factory for scripts module
 """
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from parsley_coco import Parsley, create_parsley
 
+from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.small_tools import get_package_root_path
 
@@ -15,14 +16,11 @@ from .iscript import IScript
 from .script import Script
 from .script_type import ScriptType
 
-if TYPE_CHECKING:
-    from chipiron.utils.dataclass import IsDataclass
-
 
 # instantiate relevant script
 def create_script(
     script_type: ScriptType,
-    extra_args: dict[str, Any] | None = None,
+    extra_args: IsDataclass | None = None,
     config_file_name: str | None = None,
     should_parse_command_line_arguments: bool = True,
 ) -> IScript:
