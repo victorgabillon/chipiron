@@ -1,3 +1,5 @@
+"""Test the script_gui functionality by simulating user inputs and creating scripts."""
+
 from typing import Any
 
 from chipiron.players.player_ids import PlayerConfigTag
@@ -29,6 +31,7 @@ output_list: list[dict[str, Any]] = [
 
 
 def tust_script_gui() -> None:
+    """Test the script_gui functionality by simulating user inputs and creating scripts."""
     for output in output_list:
         script_type, gui_extra_args, config_file_name = generate_inputs(output=output)
 

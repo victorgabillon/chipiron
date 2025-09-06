@@ -25,10 +25,23 @@ class BoardModificationP(Protocol):
     """
 
     @property
-    def removals(self) -> Iterator[PieceInSquare]: ...
+    def removals(self) -> Iterator[PieceInSquare]:
+        """Yields all piece removals from the board modification.
+
+        Yields:
+            Iterator[PieceInSquare]: An iterator over the piece removals.
+        """
 
     @property
-    def appearances(self) -> Iterator[PieceInSquare]: ...
+    def appearances(self) -> Iterator[PieceInSquare]:
+        """Yields all piece appearances from the board modification.
+
+        Returns:
+            _type_: _description_
+
+        Yields:
+            Iterator[PieceInSquare]: An iterator over the piece appearances.
+        """
 
 
 @dataclass
@@ -37,8 +50,10 @@ class BoardModification:
     Represents a modification to a chessboard resulting from a move.
     """
 
-    removals_: set[PieceInSquare] = field(default_factory=set)
-    appearances_: set[PieceInSquare] = field(default_factory=set)
+    removals_: set[PieceInSquare] = field(default_factory=lambda: set[PieceInSquare]())
+    appearances_: set[PieceInSquare] = field(
+        default_factory=lambda: set[PieceInSquare]()
+    )
 
     def add_appearance(self, appearance: PieceInSquare) -> None:
         """
@@ -60,16 +75,30 @@ class BoardModification:
 
     @property
     def removals(self) -> Iterator[PieceInSquare]:
+        """Yields all piece removals from the board modification.
+
+        Returns:
+            Iterator[PieceInSquare]: An iterator over the piece removals.
+        """
         return iter(self.removals_)
 
     @property
     def appearances(self) -> Iterator[PieceInSquare]:
+        """Yields all piece appearances from the board modification.
+
+        Returns:
+            Iterator[PieceInSquare]: An iterator over the piece appearances.
+        """
         return iter(self.appearances_)
 
 
 @dataclass
 class PieceRustIterator:
-    items_: set[tuple[int, int, int]] = field(default_factory=set)
+    """Iterator over PieceInSquare objects stored as tuples for Rust compatibility."""
+
+    items_: set[tuple[int, int, int]] = field(
+        default_factory=lambda: set[tuple[int, int, int]]()
+    )
 
     def __iter__(self) -> Iterator[PieceInSquare]:
         self.it = iter(self.items_)

@@ -115,7 +115,7 @@ def create_game_board_evaluator_not_observable(
         parsley_coco.resolve_yaml_file_to_base_dataclass(
             yaml_path=chi_board_eval_yaml_path,
             base_cls=BoardEvalArgsWrapper,
-            package_name=files("chipiron"),
+            package_name=str(files("chipiron")),
         )
     )
 

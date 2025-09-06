@@ -26,6 +26,8 @@ COLORS = [WHITE, BLACK] = [True, False]
 
 
 class LegalMoveKeyGenerator(LegalMoveKeyGeneratorP):
+    """Generates legal move keys for a chess board."""
+
     generated_moves: dict[moveKey, chess.Move]
     all_generated_keys: list[moveKey] | None
 
@@ -35,6 +37,12 @@ class LegalMoveKeyGenerator(LegalMoveKeyGeneratorP):
     chess_board: chess.Board
 
     def __init__(self, chess_board: chess.Board, sort_legal_moves: bool) -> None:
+        """Initializes the LegalMoveKeyGenerator.
+
+        Args:
+            chess_board (chess.Board): The chess board to generate legal moves for.
+            sort_legal_moves (bool): Whether to sort the legal moves.
+        """
         self.chess_board = chess_board
         self.it: Iterator[chess.Move] = self.chess_board.generate_legal_moves()
         self.generated_moves = {}
@@ -44,28 +52,34 @@ class LegalMoveKeyGenerator(LegalMoveKeyGeneratorP):
 
     @property
     def fen(self) -> fen:
+        """Returns the FEN string of the current chess board."""
         return self.chess_board.fen()
 
     def __str__(self) -> str:
+        """Returns a string representation of the legal move key generator.
+
+        Returns:
+            str: A string representation of the legal move key generator.
+        """
         the_string: str = "Legals Moves: "
         ucis: list[moveUci] = [
-            chess_move.uci() for move_key, chess_move in self.generated_moves.items()
+            chess_move.uci() for chess_move in self.generated_moves.values()
         ]
-        keys: list[moveKey] = [
-            move_key for move_key, chess_move in self.generated_moves.items()
-        ]
+        keys: list[moveKey] = [move_key for move_key in self.generated_moves.keys()]
 
         the_string = the_string + f"Generated ucis {ucis}"
-        the_string = the_string + f" and generated ucis {keys}"
+        the_string = the_string + f" and generated keys {keys}"
 
         return the_string
 
     def __iter__(self) -> Iterator[moveKey]:
+        """Returns an iterator over the legal move keys."""
         self.it = self.chess_board.generate_legal_moves()
         self.count = 0
         return self
 
     def __next__(self) -> moveKey:
+        """Returns the next legal move key."""
         new_move: chess.Move = self.it.__next__()
         # move_key_ = new_move.uci()
         move_key_ = self.count
@@ -76,6 +90,7 @@ class LegalMoveKeyGenerator(LegalMoveKeyGeneratorP):
     def copy(
         self, copied_chess_board: chess.Board | None = None
     ) -> "LegalMoveKeyGenerator":
+        """Returns a copy of the LegalMoveKeyGenerator."""
         if copied_chess_board is None:
             copied_chess_board_ = self.chess_board
         else:
@@ -93,18 +108,21 @@ class LegalMoveKeyGenerator(LegalMoveKeyGeneratorP):
         return legal_move_copy
 
     def reset(self) -> None:
+        """Resets the iterator to the beginning of the legal moves."""
         self.it = self.chess_board.generate_legal_moves()
         self.generated_moves = {}
         self.count = 0
         self.all_generated_keys = None
 
     def copy_with_reset(self) -> "LegalMoveKeyGenerator":
+        """Returns a copy of the LegalMoveKeyGenerator with the iterator reset."""
         legal_move_copy = LegalMoveKeyGenerator(
             chess_board=self.chess_board, sort_legal_moves=self.sort_legal_moves
         )
         return legal_move_copy
 
     def get_all(self) -> list[moveKey]:
+        """Returns a list of all generated move keys."""
         if self.all_generated_keys is None:
             list_keys: list[moveKey]
             if self.sort_legal_moves:
@@ -119,6 +137,11 @@ class LegalMoveKeyGenerator(LegalMoveKeyGeneratorP):
             return self.all_generated_keys
 
     def more_than_one_move(self) -> bool:
+        """Checks if there is more than one legal move available.
+
+        Returns:
+            bool: True if there is more than one legal move, False otherwise.
+        """
         # assume legal_moves not empty
 
         iter_move: Iterator[chess.Move] = self.chess_board.generate_legal_moves()
@@ -162,6 +185,11 @@ class BoardChi(IBoard):
         self.legal_moves_ = legal_moves_
 
     def play_mon(self, move: chess.Move) -> None:
+        """Plays a move on the board.
+
+        Args:
+            move (chess.Move): The move to play.
+        """
         self.chess_board.push(move)
 
     def play_move(
@@ -254,6 +282,15 @@ class BoardChi(IBoard):
         return board_modifications
 
     def play_move_uci(self, move_uci: moveUci) -> BoardModificationP | None:
+        """Plays a move in UCI format.
+
+        Args:
+            move_uci (moveUci): The UCI string representation of the move.
+
+        Returns:
+            BoardModificationP | None: The board modification resulting from the move, or None if the move is invalid.
+        """
+
         chess_move: chess.Move = chess.Move.from_uci(uci=move_uci)
         return self.play_move(move=chess_move)
 
@@ -274,7 +311,7 @@ class BoardChi(IBoard):
             self.chess_board.pop()
         else:
             chipiron_logger.warning(
-                f"Cannot rewind more as self.halfmove_clock equals {self.ply()}"
+                "Cannot rewind more as self.halfmove_clock equals %d", self.ply()
             )
 
     @typing.no_type_check
@@ -626,7 +663,15 @@ class BoardChi(IBoard):
     def piece_map(
         self, mask: chess.Bitboard = chess.BB_ALL
     ) -> dict[chess.Square, tuple[int, bool]]:
-        result = {}
+        """Get a mapping of squares to their piece type and color.
+
+        Args:
+            mask (chess.Bitboard, optional): A bitboard mask to filter the squares. Defaults to chess.BB_ALL.
+
+        Returns:
+            dict[chess.Square, tuple[int, bool]]: A dictionary mapping squares to their piece type and color.
+        """
+        result: dict[chess.Square, tuple[int, bool]] = {}
         for square in chess.scan_reversed(self.chess_board.occupied & mask):
             piece_type: int | None = self.chess_board.piece_type_at(square)
             assert piece_type is not None
@@ -712,7 +757,7 @@ class BoardChi(IBoard):
 
     def tell_result(self) -> None:
         if self.chess_board.is_fivefold_repetition():
-            ("is_fivefold_repetition")
+            chipiron_logger.info("is_fivefold_repetition")
         if self.chess_board.is_seventyfive_moves():
             chipiron_logger.info("is seventy five  moves")
         if self.chess_board.is_insufficient_material():
@@ -724,81 +769,190 @@ class BoardChi(IBoard):
         chipiron_logger.info(self.chess_board.result())
 
     def result(self, claim_draw: bool = False) -> str:
+        """Get the result of the game.
+
+        Args:
+            claim_draw (bool, optional): Whether to claim a draw. Defaults to False.
+
+        Returns:
+            str: The result of the game.
+        """
         return self.chess_board.result(claim_draw=claim_draw)
 
     @property
     def move_history_stack(self) -> list[moveUci]:
+        """Get the history of moves made in the game.
+
+        Returns:
+            list[moveUci]: A list of UCI strings representing the moves made.
+        """
         return [move.uci() for move in self.chess_board.move_stack]
 
     @property
     def pawns(self) -> chess.Bitboard:
+        """Get the pawns on the board.
+
+        Returns:
+            chess.Bitboard: A bitboard representing the positions of the pawns.
+        """
         return self.chess_board.pawns
 
     @property
     def knights(self) -> chess.Bitboard:
+        """Get the knights on the board.
+
+        Returns:
+            chess.Bitboard: A bitboard representing the positions of the knights.
+        """
         return self.chess_board.knights
 
     @property
     def bishops(self) -> chess.Bitboard:
+        """Get the bishops on the board.
+
+        Returns:
+            chess.Bitboard: A bitboard representing the positions of the bishops.
+        """
         return self.chess_board.bishops
 
     @property
     def rooks(self) -> chess.Bitboard:
+        """Get the rooks on the board.
+
+        Returns:
+            chess.Bitboard: A bitboard representing the positions of the rooks.
+        """
         return self.chess_board.rooks
 
     @property
     def queens(self) -> chess.Bitboard:
+        """Get the queens on the board.
+
+        Returns:
+            chess.Bitboard: A bitboard representing the positions of the queens.
+        """
         return self.chess_board.queens
 
     @property
     def kings(self) -> chess.Bitboard:
+        """Get the kings on the board.
+
+        Returns:
+            chess.Bitboard: A bitboard representing the positions of the kings.
+        """
         return self.chess_board.kings
 
     @property
     def white(self) -> chess.Bitboard:
+        """Get the white pieces on the board.
+
+        Returns:
+            chess.Bitboard: A bitboard representing the positions of the white pieces.
+        """
         return self.chess_board.occupied_co[chess.WHITE]
 
     @property
     def black(self) -> chess.Bitboard:
+        """Get the black pieces on the board.
+
+        Returns:
+            chess.Bitboard: A bitboard representing the positions of the black pieces.
+        """
         return self.chess_board.occupied_co[chess.BLACK]
 
     @property
     def castling_rights(self) -> chess.Bitboard:
+        """Get the castling rights for both sides.
+
+        Returns:
+            chess.Bitboard: A bitboard representing the castling rights.
+        """
         return self.chess_board.castling_rights
 
     @property
     def occupied(self) -> chess.Bitboard:
+        """Get the occupied squares on the board.
+
+        Returns:
+            chess.Bitboard: A bitboard representing the occupied squares.
+        """
         return self.chess_board.occupied
 
     def occupied_color(self, color: chess.Color) -> chess.Bitboard:
+        """Get the occupied squares of a specific color.
+
+        Args:
+            color (chess.Color): The color to get the occupied squares for.
+
+        Returns:
+            chess.Bitboard: A bitboard representing the occupied squares of the specified color.
+        """
         return self.chess_board.occupied_co[color]
 
     def termination(self) -> chess.Termination:
+        """Get the termination status of the game.
+
+        Returns:
+            chess.Termination: The termination status of the game.
+        """
         outcome: Outcome | None = self.chess_board.outcome(claim_draw=True)
         assert outcome is not None
         return outcome.termination
 
     @property
     def promoted(self) -> chess.Bitboard:
+        """Get the promoted pieces on the board.
+
+        Returns:
+            chess.Bitboard: A bitboard representing the positions of the promoted pieces.
+        """
         return self.chess_board.promoted
 
     @property
     def fullmove_number(self) -> int:
+        """Get the fullmove number of the game.
+
+        Returns:
+            int: The fullmove number of the game.
+        """
         return self.chess_board.fullmove_number
 
     @property
     def halfmove_clock(self) -> int:
+        """Get the halfmove clock of the game.
+
+        Returns:
+            int: The halfmove clock of the game.
+        """
         return self.chess_board.halfmove_clock
 
     @property
     def ep_square(self) -> int | None:
+        """Get the en passant square of the game.
+
+        Returns:
+            int | None: The en passant square of the game, or None if not applicable.
+        """
         return self.chess_board.ep_square
 
     def is_zeroing(self, move: moveKey) -> bool:
+        """Check if a move is a zeroing move (i.e., it does not change the position of any pieces).
+
+        Args:
+            move (moveKey): The move to check.
+
+        Returns:
+            bool: True if the move is a zeroing move, False otherwise.
+        """
         chess_move: chess.Move = self.legal_moves_.generated_moves[move]
         return self.chess_board.is_zeroing(chess_move)
 
     def into_fen_plus_history(self) -> FenPlusHistory:
+        """Get the FEN string and history of the game.
+
+        Returns:
+            FenPlusHistory: The FEN string and history of the game.
+        """
         return FenPlusHistory(
             current_fen=self.fen,
             historical_moves=self.move_history_stack,

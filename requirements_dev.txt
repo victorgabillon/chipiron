@@ -27,3 +27,6 @@ twine
 sphinx
 sphinx-rtd-theme
 sphinx-autodoc-typehints
+
+# Pre-commit hooks
+pre-commit
