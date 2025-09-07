@@ -178,3 +178,5 @@ typeCheckingMode = "strict"
 reportMissingImports = true
 reportUnusedImport = true
 reportMissingTypeStubs = false
+reportUnknownMemberType = false
+reportPrivateImportUsage = false

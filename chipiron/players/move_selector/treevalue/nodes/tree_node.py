@@ -68,10 +68,12 @@ class TreeNode[ChildrenType: ITreeNode[Any]]:
     # If true the moves are either opened in which case the corresponding opened node is stored in
     # the dictionary self.moves_children, otherwise it is stored in self.non_opened_legal_moves
     all_legal_moves_generated: bool = False
-    non_opened_legal_moves: set[moveKey] = field(default_factory=set)
+    non_opened_legal_moves: set[moveKey] = field(default_factory=lambda: set[moveKey]())
 
     # dictionary mapping moves to children nodes. Node is set to None if not created
-    moves_children_: dict[moveKey, ChildrenType | None] = field(default_factory=dict)
+    moves_children_: dict[moveKey, ChildrenType | None] = field(
+        default_factory=lambda: dict[moveKey, ChildrenType | None]()
+    )
 
     # the color of the player that has to move in the board
     player_to_move_: chess.Color = field(default_factory=chess.Color)

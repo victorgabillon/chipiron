@@ -31,6 +31,7 @@ class BoardModificationP(Protocol):
         Yields:
             Iterator[PieceInSquare]: An iterator over the piece removals.
         """
+        ...
 
     @property
     def appearances(self) -> Iterator[PieceInSquare]:
@@ -42,6 +43,7 @@ class BoardModificationP(Protocol):
         Yields:
             Iterator[PieceInSquare]: An iterator over the piece appearances.
         """
+        ...
 
 
 @dataclass
@@ -115,8 +117,12 @@ class BoardModificationRust:
     Represents a modification to a chessboard resulting from a move.
     """
 
-    removals_: set[tuple[int, int, int]] = field(default_factory=set)
-    appearances_: set[tuple[int, int, int]] = field(default_factory=set)
+    removals_: set[tuple[int, int, int]] = field(
+        default_factory=lambda: set[tuple[int, int, int]]()
+    )
+    appearances_: set[tuple[int, int, int]] = field(
+        default_factory=lambda: set[tuple[int, int, int]]()
+    )
 
     @property
     def removals(self) -> Iterator[PieceInSquare]:

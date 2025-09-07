@@ -259,6 +259,12 @@ This includes tools for:
 - Documentation building (sphinx)
 - Code formatting and development tools
 
+For the prehook to work pleas run
+```bash
+pre-commit install # precommit is supposed to be pip-installed from requirements_dev.txt
+```
+
+
 ---
 
 ## License

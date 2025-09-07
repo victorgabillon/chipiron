@@ -59,7 +59,7 @@ def suppress_all_logging(level: int = logging.ERROR) -> Generator[None, None, No
         None
     """
     logger_dict = logging.getLogger().manager.loggerDict
-    original_levels = {}
+    original_levels: dict[str, int] = {}
 
     for name in logger_dict:
         logger = logging.getLogger(name)

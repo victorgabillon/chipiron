@@ -4,6 +4,8 @@ This module contains utility functions and classes for small tools.
 
 import copy
 import importlib
+import importlib.machinery
+import importlib.util
 import os
 import sys
 import typing
@@ -11,7 +13,7 @@ from dataclasses import dataclass
 from importlib.resources import files
 from itertools import islice
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 import numpy.typing as nptyping
@@ -254,7 +256,20 @@ def resolve_package_path(path_to_file: str | Path) -> str:
 
 
 def get_package_root_path(package_name: str) -> str:
-    spec = importlib.util.find_spec(package_name)
+    """Get the root path of a package."
+
+    Args:
+        package_name (str): The name of the package.
+
+    Raises:
+        ImportError: If the package cannot be found.
+
+    Returns:
+        str: The root path of the package.
+    """
+    spec: Optional[importlib.machinery.ModuleSpec] = importlib.util.find_spec(
+        package_name
+    )
     if spec is None or spec.origin is None:
         raise ImportError(f"Cannot find package '{package_name}'")
 

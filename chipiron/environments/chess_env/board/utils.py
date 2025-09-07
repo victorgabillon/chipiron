@@ -15,7 +15,9 @@ class FenPlusMoves:
     """Represents a FEN string and its subsequent moves."""
 
     original_fen: fen
-    subsequent_moves: list[chess.Move] = field(default_factory=list)
+    subsequent_moves: list[chess.Move] = field(
+        default_factory=lambda: list[chess.Move]()
+    )
 
 
 @dataclass
@@ -23,7 +25,7 @@ class FenPlusMoveHistory:
     """Represents a FEN string and its move history."""
 
     current_fen: fen
-    historical_moves: list[moveUci] = field(default_factory=list)
+    historical_moves: list[moveUci] = field(default_factory=lambda: list[moveUci]())
 
 
 @dataclass
@@ -31,8 +33,10 @@ class FenPlusHistory:
     """Represents a FEN string and its move history, along with historical board states."""
 
     current_fen: fen
-    historical_moves: list[moveUci] = field(default_factory=list)
-    historical_boards: list[chess._BoardState] = field(default_factory=list)
+    historical_moves: list[moveUci] = field(default_factory=lambda: list[moveUci]())
+    historical_boards: list[chess._BoardState] = field(
+        default_factory=lambda: list[chess._BoardState]()
+    )
 
     def current_turn(self) -> chess.Color:
         """Returns the color of the player to move."""
