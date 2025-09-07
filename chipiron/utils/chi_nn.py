@@ -22,16 +22,17 @@ class ChiNN(nn.Module):
         """
         Initializes an instance of the ChiNN class.
         """
-        super(ChiNN, self).__init__()
+        super().__init__()
 
-    def __getstate__(self) -> None:
+    def __getstate__(self) -> dict[str, object]:
         """
         Get the state of the object for pickling.
 
         Returns:
-            None
+            dict: The state dictionary of the object.
         """
-        return None
+        state = self.__dict__.copy()
+        return state
 
     def init_weights(self) -> None:
         """
@@ -50,11 +51,13 @@ class ChiNN(nn.Module):
         Returns:
             None
         """
-        chipiron_logger.info(f"load_or_init_weights from {path_to_param_file}")
+        chipiron_logger.info("load_or_init_weights from %s", path_to_param_file)
         try:  # load
             resolved_path = resolve_package_path(str(path_to_param_file))
             with open(resolved_path, "rb") as fileNNR:
-                chipiron_logger.info(f"loading the existing param file {resolved_path}")
+                chipiron_logger.info(
+                    "loading the existing param file %s", resolved_path
+                )
                 if torch.cuda.is_available():
                     self.load_state_dict(torch.load(fileNNR))
                 else:
@@ -66,12 +69,19 @@ class ChiNN(nn.Module):
             # Print the full traceback to stderr
             traceback.print_exc()
 
-            chipiron_logger.error(f"no file {path_to_param_file} at {resolved_path}")
+            resolved_path = resolve_package_path(str(path_to_param_file))
+            chipiron_logger.error("no file %s at %s", path_to_param_file, resolved_path)
             sys.exit(
-                "Error: no NN weights file and no rights to create it for file {}".format(
-                    path_to_param_file,
-                )
+                f"Error: no NN weights file and no rights to create it for file {path_to_param_file}"
             )
 
     def log_readable_model_weights_to_file(self, file_path: str) -> None:
-        raise Exception("not implemented in base class")
+        """Logs the model weights to a file in a human-readable format.
+
+        Args:
+            file_path (str): The path to the file where the weights will be logged.
+
+        Raises:
+            Exception: If the logging fails.
+        """
+        raise NotImplementedError("not implemented in base class")

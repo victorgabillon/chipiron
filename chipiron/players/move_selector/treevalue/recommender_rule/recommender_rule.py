@@ -104,13 +104,13 @@ class SoftmaxRule:
             chess.Move: The recommended chess move.
         """
         # todo maybe there is a way to code this withtout the assert using the childrensorted value? or smth else
-        values = []
+        values: list[float] = []
         for node in tree.root_node.moves_children.values():
             assert isinstance(node, AlgorithmNode)
             value = tree.root_node.minmax_evaluation.subjective_value_of(
                 node.minmax_evaluation
             )
-            values.append(value)
+            values.append(float(value))
 
         softmax_ = list(softmax(values, self.temperature))
 

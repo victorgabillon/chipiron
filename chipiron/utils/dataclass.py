@@ -4,7 +4,7 @@ Module to check if an object is a dataclass
 
 from collections.abc import Iterable
 from enum import Enum
-from typing import Any, ClassVar, Protocol
+from typing import Any, ClassVar, Protocol, no_type_check
 
 
 class DataClass(Protocol):
@@ -30,16 +30,18 @@ class IsDataclass(Protocol):
 
 
 # used as factory function in one of the option of as_dict in order to make the enum be replaced by str (useful for yamlization)
-def custom_asdict_factory(data: Iterable[Any]) -> dict[Any, Any]:
+# pyright: ignore
+def custom_asdict_factory(data: Iterable[tuple[Any, Any]]) -> dict[Any, Any]:
     """Custom asdict factory function.
 
     Args:
-        data (Iterable[Any]): The input data to be converted.
+        data (Iterable[tuple[Any, Any]]): The input data to be converted.
 
     Returns:
         dict[Any, Any]: The converted dictionary.
     """
 
+    @no_type_check
     def convert_value(obj: Any) -> Any:
         """Converts a value to a serializable format.
 
@@ -54,7 +56,8 @@ def custom_asdict_factory(data: Iterable[Any]) -> dict[Any, Any]:
         elif isinstance(obj, list):
             return [convert_value(item) for item in obj]
         elif isinstance(obj, dict):
-            return {k: convert_value(v) for k, v in obj.items()}
+            result: dict[Any, Any] = {k: convert_value(v) for k, v in obj.items()}
+            return result
         else:
             return obj
 

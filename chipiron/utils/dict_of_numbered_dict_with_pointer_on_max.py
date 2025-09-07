@@ -6,6 +6,8 @@ from typing import Protocol
 
 
 class HasHalfMove(Protocol):
+    """Protocol for objects that have a half_move attribute."""
+
     @property
     def half_move(self) -> int:
         """
@@ -14,6 +16,7 @@ class HasHalfMove(Protocol):
         Returns:
             The half move count of the node.
         """
+        ...
 
 
 class DictOfNumberedDictWithPointerOnMax[T_Key: HasHalfMove, T_Value]:

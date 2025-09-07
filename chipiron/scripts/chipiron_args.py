@@ -1,3 +1,5 @@
+"""Defines the arguments that are used to specify the type of implementation of some features in Chipiron."""
+
 from dataclasses import dataclass
 
 

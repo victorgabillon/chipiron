@@ -25,6 +25,7 @@ from dataclasses import asdict, dataclass, field
 from typing import TYPE_CHECKING, Any
 
 import mlflow
+import mlflow.pytorch
 import torch
 from mlflow.models.signature import ModelSignature, infer_signature
 from torch.utils.data import DataLoader
