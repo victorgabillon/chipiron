@@ -108,7 +108,7 @@ def process_single_game_for_over_positions(
 
         return None
 
-    except Exception as e:
+    except ValueError as e:
         chipiron_logger.warning("Error processing game: %s", e)
         return None
 

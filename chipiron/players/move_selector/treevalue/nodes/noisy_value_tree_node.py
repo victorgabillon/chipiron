@@ -40,13 +40,6 @@ class NoisyValueTreeNode(TreeNode[Any]):
         self.number_of_samples = 0
         self.variance = 0
 
-    def test(self) -> None:
-        """
-        Performs a test.
-
-        """
-        super().test()
-
     def dot_description(self) -> str:
         """
         Returns the dot description of the node.

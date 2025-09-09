@@ -767,7 +767,6 @@ class NodeMinmaxEvaluation:
         This method is used to test the functionality of the algorithm_node's test method.
         It calls various test methods to ensure the correctness of the algorithm_node's behavior.
         """
-        self.tree_node.test()
         self.test_values()
         self.test_over()
         self.test_children_not_over()

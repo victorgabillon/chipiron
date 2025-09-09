@@ -16,6 +16,22 @@ if not chipiron_logger.handlers:
     chipiron_logger.propagate = False
 
 
+def set_chipiron_logger_level(level: int) -> None:
+    """
+    Set the logging level for the chipiron logger and all its handlers.
+
+    This ensures that both the logger and its handlers are set to the same level,
+    so log messages at the specified level will actually be displayed.
+
+    Args:
+        level (int): The logging level to set (e.g., logging.DEBUG, logging.INFO,
+                    logging.WARNING, logging.ERROR, logging.CRITICAL)
+    """
+    chipiron_logger.setLevel(level)
+    for handler in chipiron_logger.handlers:
+        handler.setLevel(level)
+
+
 @contextmanager
 def suppress_logging(
     logger: logging.Logger, level: int = logging.WARNING

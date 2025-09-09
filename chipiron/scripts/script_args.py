@@ -7,10 +7,22 @@ based on the current date and time if not explicitly provided.
 """
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 
 from chipiron.utils import path
+
+
+@dataclass
+class LoggingArgs:
+    """
+    Dataclass representing logging configuration arguments.
+    """
+
+    # the logging level for main chipiron logger
+    chipiron: int = logging.INFO
+    # the logging level for the parsley parser logger
+    parsley: int = logging.ERROR
 
 
 @dataclass
@@ -42,7 +54,7 @@ class BaseScriptArgs:
     seed: int = 0
 
     # the logging level
-    logging_level: int = logging.ERROR
+    logging_levels: LoggingArgs = field(default_factory=LoggingArgs)
 
     def __post_init__(self) -> None:
         # if relative_script_instance_experiment_output_folde is not set, it gets time and day

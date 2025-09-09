@@ -9,6 +9,8 @@ Note: This script requires the customtkinter and chipiron modules to be installe
 """
 
 # TODO switch to pygame
+from dataclasses import dataclass
+from enum import Enum
 from typing import TYPE_CHECKING, Any, cast
 
 import customtkinter as ctk
@@ -32,6 +34,15 @@ from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:
     import tkinter as tk
+
+
+# Move this to module level for access by callback functions
+CHIPI_ALGO_OPTIONS_LIST: list[tuple[str, PlayerConfigTag]] = [
+    ("RecurZipfBase3", PlayerConfigTag.RECUR_ZIPF_BASE_3),
+    ("Uniform", PlayerConfigTag.UNIFORM),
+    ("Sequool", PlayerConfigTag.SEQUOOL),
+    ("Human Player", PlayerConfigTag.GUI_HUMAN),
+]
 
 
 def format_gui_args_for_display(gui_args: Any) -> str:
@@ -120,6 +131,27 @@ def format_gui_args_for_display(gui_args: Any) -> str:
     return "\n    ".join(args_parts) if args_parts else "Default settings"
 
 
+class ScriptGUIType(str, Enum):
+    """The type of script to run based on GUI selection."""
+
+    PLAY_OR_WATCH_A_GAME = "play_or_watch_a_game"
+    TREE_VISUALIZATION = "tree_visualization"
+
+
+@dataclass
+class ArgsChosenByUser:
+    """
+    The arguments chosen by the user in the GUI.
+    """
+
+    type: ScriptGUIType = ScriptGUIType.PLAY_OR_WATCH_A_GAME
+    player_type_white: PlayerConfigTag = PlayerConfigTag.RECUR_ZIPF_BASE_3
+    strength_white: int | None = 1
+    player_type_black: PlayerConfigTag = PlayerConfigTag.RECUR_ZIPF_BASE_3
+    strength_black: int | None = 1
+    starting_position: str = "Standard"  # "Standard" or "Endgame"
+
+
 def script_gui() -> tuple[scripts.ScriptType, IsDataclass | None, str]:
     """
     Creates a graphical user interface (GUI) for interacting with the chipiron program.
@@ -128,14 +160,14 @@ def script_gui() -> tuple[scripts.ScriptType, IsDataclass | None, str]:
         A tuple containing the script type and the arguments for the selected action.
     """
     root: ctk.CTk = ctk.CTk()
-    output: dict[str, Any] = {}
+    args_chosen_by_user: ArgsChosenByUser = ArgsChosenByUser()
     # place a label on the root window
     root.title("🐙 chess with chipirons 🐙")
 
     # frm = ctk.CTkFrame(root, padding=10)
 
     window_width: int = 900
-    window_height: int = 300
+    window_height: int = 400
 
     # get the screen dimension
     screen_width: int = root.winfo_screenwidth()
@@ -155,140 +187,198 @@ def script_gui() -> tuple[scripts.ScriptType, IsDataclass | None, str]:
     # exit button
     exit_button = ctk.CTkButton(root, text="Exit", command=lambda: root.quit())
 
-    message = cast("tk.Widget", ctk.CTkLabel(root, text="Play "))
+    message = cast("tk.Widget", ctk.CTkLabel(root, text="♙ White Player: "))
     message.grid(column=0, row=2)
 
+    message = cast("tk.Widget", ctk.CTkLabel(root, text="♟ Black Player: "))
+    message.grid(column=0, row=3)
+
     # Create the list of options
-    color_options_list: list[str] = ["White", "Black"]
+    chipi_algo_options_list: list[tuple[str, PlayerConfigTag]] = CHIPI_ALGO_OPTIONS_LIST
+
+    ######PLAYER WHITE
 
     # Variable to keep track of the option
     # selected in OptionMenu
-    # color_choice_human = ctk.StringVar(root)
-    color_choice_human = ctk.StringVar(value="White")  # set initial value
+    chipi_algo_choice_white = ctk.StringVar(
+        value=args_chosen_by_user.player_type_white
+    )  # Use display name as default
 
-    # Set the default value of the variable
-    # color_choice_human.set("White")
+    # Helper to get display names and values
+    algo_display_names = [name for name, _ in chipi_algo_options_list]
 
-    # Create the option menu widget and passing
-    # the options_list and value_inside to it.
-    strength_menu = ctk.CTkOptionMenu(
-        master=root, values=color_options_list, variable=color_choice_human
+    # Create the option menu widget and passing the display names
+    algo_menu = ctk.CTkOptionMenu(
+        master=root, values=algo_display_names, variable=chipi_algo_choice_white
     )
-    cast("tk.Widget", strength_menu).grid(column=1, row=2)
+    cast("tk.Widget", algo_menu).grid(column=3, row=2)
 
-    message = ctk.CTkLabel(root, text=" against ")
-    cast("tk.Widget", message).grid(column=2, row=2)
-
-    # Create the list of options
-    chipi_algo_options_list: list[PlayerConfigTag] = [
-        PlayerConfigTag.RECUR_ZIPF_BASE_3,
-        PlayerConfigTag.UNIFORM,
-        PlayerConfigTag.SEQUOOL,
-    ]
-
-    # Variable to keep track of the option
-    # selected in OptionMenu
-    chipi_algo_choice = ctk.StringVar(
-        value=PlayerConfigTag.RECUR_ZIPF_BASE_3
-    )  # set initial value
-
-    # chipi_algo_choice = tk.StringVar(root)
-
-    # Set the default value of the variable
-    # chipi_algo_choice.set("RecurZipfBase3")
-
-    # Create the option menu widget and passing
-    # the options_list and value_inside to it.
-    strength_menu = ctk.CTkOptionMenu(
-        master=root, values=chipi_algo_options_list, variable=chipi_algo_choice
-    )
-    cast("tk.Widget", strength_menu).grid(column=3, row=2)
-
-    message = ctk.CTkLabel(root, text="  strength: ")
-
-    cast("tk.Widget", message).grid(column=5, row=2, padx=10, pady=10)
+    strength_label = ctk.CTkLabel(root, text="  strength: ")
 
     # Create the list of options
     options_list = ["1", "2", "3", "4", "5"]
 
     # Variable to keep track of the option
     # selected in OptionMenu
-    strength_value = ctk.StringVar(value="1")  # set initial value
-
-    # strength_value = tk.StringVar(root)
-
-    # Set the default value of the variable
-    # strength_value.set("1")
+    strength_value_white = ctk.StringVar(value="1")  # set initial value
 
     # Create the option menu widget and passing
     # the options_list and value_inside to it.
     strength_menu = ctk.CTkOptionMenu(
-        master=root, variable=strength_value, values=options_list
+        master=root, variable=strength_value_white, values=options_list
     )
+
+    # Always grid the strength controls to maintain layout consistency
+    cast("tk.Widget", strength_label).grid(column=4, row=2, padx=5, pady=10)
     cast("tk.Widget", strength_menu).grid(column=5, row=2, padx=10, pady=10)
 
-    # play button
-    play_against_chipiron_button: ctk.CTkButton = ctk.CTkButton(
+    # When reading the value, map display name to PlayerConfigTag
+    def get_selected_algo_tag() -> PlayerConfigTag:
+        selected_name = chipi_algo_choice_white.get()
+        for name, tag in chipi_algo_options_list:
+            if name == selected_name:
+                return tag
+        return PlayerConfigTag.RECUR_ZIPF_BASE_3  # fallback
+
+    def update_strength_menu(*_: Any) -> None:
+        # Only show strength menu and label if not human
+        current_tag = get_selected_algo_tag()
+        if current_tag != PlayerConfigTag.GUI_HUMAN:
+            strength_label.configure(text="  strength: ")
+            strength_menu.configure(state="normal")
+            cast("tk.Widget", strength_label).grid(column=4, row=2, padx=5, pady=10)
+            cast("tk.Widget", strength_menu).grid(column=5, row=2, padx=10, pady=10)
+        else:
+            # Make them invisible but keep the space
+            strength_label.configure(text="")
+            strength_menu.grid_remove()
+
+    chipi_algo_choice_white.trace_add("write", update_strength_menu)
+    update_strength_menu()
+
+    ######PLAYER BLACK
+
+    # Variable to keep track of the option
+    # selected in OptionMenu
+    chipi_algo_choice_black = ctk.StringVar(
+        value=args_chosen_by_user.player_type_black
+    )  # set initial value
+
+    # Create the option menu widget and passing
+    # the options_list and value_inside to it.
+    algo_menu_black = ctk.CTkOptionMenu(
+        master=root, values=algo_display_names, variable=chipi_algo_choice_black
+    )
+    cast("tk.Widget", algo_menu_black).grid(column=3, row=3)
+
+    strength_label_black = ctk.CTkLabel(root, text="  strength: ")
+
+    # Variable to keep track of the option
+    # selected in OptionMenu
+    strength_value_black = ctk.StringVar(value="1")  # set initial value
+
+    # Create the option menu widget and passing
+    # the options_list and value_inside to it.
+    strength_menu_black = ctk.CTkOptionMenu(
+        master=root, variable=strength_value_black, values=options_list
+    )
+
+    # Always grid the strength controls to maintain layout consistency
+    cast("tk.Widget", strength_label_black).grid(column=4, row=3, padx=5, pady=10)
+    cast("tk.Widget", strength_menu_black).grid(column=5, row=3, padx=10, pady=10)
+
+    # When reading the value, map display name to PlayerConfigTag for black player
+    def get_selected_algo_tag_black() -> PlayerConfigTag:
+        selected_name = chipi_algo_choice_black.get()
+        for name, tag in chipi_algo_options_list:
+            if name == selected_name:
+                return tag
+        return PlayerConfigTag.RECUR_ZIPF_BASE_3  # fallback
+
+    def update_strength_menu_black(*_: Any) -> None:
+        # Only show strength menu and label if not human
+        current_tag_black = get_selected_algo_tag_black()
+        if current_tag_black != PlayerConfigTag.GUI_HUMAN:
+            # Make them visible
+            strength_label_black.configure(text="  strength: ")
+            strength_menu_black.configure(state="normal")
+            cast("tk.Widget", strength_label_black).grid(
+                column=4, row=3, padx=5, pady=10
+            )
+            cast("tk.Widget", strength_menu_black).grid(
+                column=5, row=3, padx=10, pady=10
+            )
+        else:
+            # Make them invisible but keep the space
+            strength_label_black.configure(text="")
+            strength_menu_black.grid_remove()
+
+    chipi_algo_choice_black.trace_add("write", update_strength_menu_black)
+    update_strength_menu_black()
+
+    ######STARTING POSITION
+
+    # Label for starting position
+    starting_position_label = ctk.CTkLabel(root, text="Starting Position: ")
+    cast("tk.Widget", starting_position_label).grid(column=0, row=4, padx=5, pady=10)
+
+    # Variable to keep track of the starting position selection
+    starting_position_choice = ctk.StringVar(value="Standard")
+
+    # Starting position options
+    starting_position_options = ["Standard", "Endgame"]
+
+    # Create the option menu widget for starting position
+    starting_position_menu = ctk.CTkOptionMenu(
+        master=root, values=starting_position_options, variable=starting_position_choice
+    )
+    cast("tk.Widget", starting_position_menu).grid(column=1, row=4, padx=10, pady=10)
+
+    # play or watch button
+    play_or_watch_a_game_button: ctk.CTkButton = ctk.CTkButton(
         root,
-        text="!Play!",
+        text="Play or Watch a game",
         command=lambda: [
-            play_against_chipiron(
-                output,
-                strength=strength_value,
-                color=color_choice_human,
-                chipi_algo=chipi_algo_choice,
+            play_or_watch_a_game(
+                args_chosen_by_user=args_chosen_by_user,
+                chipi_algo_choice_white=chipi_algo_choice_white,
+                chipi_algo_choice_black=chipi_algo_choice_black,
+                strength_value_white=strength_value_white,
+                strength_value_black=strength_value_black,
+                starting_position_choice=starting_position_choice,
             ),
             root.destroy(),
         ],
-    )
-
-    # play_two_humans button
-    play_two_humans_button: ctk.CTkButton = ctk.CTkButton(
-        root,
-        text="Play between Two Humans",
-        command=lambda: [play_two_humans(output), root.destroy()],
-    )
-
-    # watch button
-    watch_a_game_button: ctk.CTkButton = ctk.CTkButton(
-        root,
-        text="Watch a game",
-        command=lambda: [watch_a_game(output), root.destroy()],
     )
 
     # visualize button
     visualize_a_tree_button: ctk.CTkButton = ctk.CTkButton(
         root,
         text="Visualize a tree",
-        command=lambda: [visualize_a_tree(output), root.destroy()],
+        command=lambda: [visualize_a_tree(args_chosen_by_user), root.destroy()],
     )
 
-    cast("tk.Widget", play_against_chipiron_button).grid(
-        row=2, column=6, padx=10, pady=10
+    cast("tk.Widget", play_or_watch_a_game_button).grid(
+        row=6, column=0, padx=10, pady=10
     )
-    cast("tk.Widget", play_two_humans_button).grid(row=4, column=0, padx=10, pady=10)
-    cast("tk.Widget", watch_a_game_button).grid(row=6, column=0, padx=10, pady=10)
     cast("tk.Widget", visualize_a_tree_button).grid(row=8, column=0, padx=10, pady=10)
     cast("tk.Widget", exit_button).grid(row=10, column=0, padx=10, pady=10)
 
     cast("tk.Tk", root).mainloop()
 
-    return generate_inputs(output=output)
+    return generate_inputs(args_chosen_by_user=args_chosen_by_user)
 
 
 def generate_inputs(
-    output: dict[str, Any],
+    args_chosen_by_user: ArgsChosenByUser,
 ) -> tuple[scripts.ScriptType, IsDataclass | None, str]:
-    """Generates script type and arguments based on the GUI output.
+    """Generates script type and arguments based on the user input.
 
     Args:
-        output (dict[str, Any]): The output from the GUI.
-
-    Raises:
-        ValueError: If the output is invalid.
+        args_chosen_by_user (ArgsChosenByUser): The arguments chosen by the user.
 
     Returns:
-        tuple[scripts.ScriptType, dict[str, Any], str]: The script type, arguments, and config file name.
+        tuple[scripts.ScriptType, IsDataclass | None, str]: The script type, arguments, and config file name.
     """
     script_type: scripts.ScriptType
 
@@ -310,9 +400,8 @@ def generate_inputs(
     )
 
     config_file_name: str
-    match output["type"]:
-        case "play_against_chipiron":
-            tree_move_limit = 4 * 10 ** output["strength"]
+    match args_chosen_by_user.type:
+        case ScriptGUIType.PLAY_OR_WATCH_A_GAME:
             gui_args = PartialOpMatchScriptArgs(
                 gui=True,
                 base_script_args=PartialOpBaseScriptArgs(profiling=False, seed=0),
@@ -320,63 +409,42 @@ def generate_inputs(
             )
             config_file_name = "chipiron/scripts/one_match/inputs/human_play_against_computer/exp_options.yaml"
 
-            if output["color_human"] == "White":
-                gui_args.match_args.player_one = PlayerConfigTag.GUI_HUMAN
-                gui_args.match_args.player_two = PlayerConfigTag(output["chipi_algo"])
+            gui_args.match_args.player_one = PlayerConfigTag(
+                args_chosen_by_user.player_type_white
+            )
+            gui_args.match_args.player_two = PlayerConfigTag(
+                args_chosen_by_user.player_type_black
+            )
+            if args_chosen_by_user.player_type_white != PlayerConfigTag.GUI_HUMAN:
+                assert args_chosen_by_user.strength_white is not None
+                tree_move_limit_white: int = 4 * 10**args_chosen_by_user.strength_white
+                gui_args.match_args.player_one_overwrite = PartialOpPlayerArgs(
+                    main_move_selector=PartialOpTreeAndValuePlayerArgs(
+                        type=MoveSelectorTypes.TreeAndValue,
+                        stopping_criterion=PartialOpTreeMoveLimitArgs(
+                            type=StoppingCriterionTypes.TREE_MOVE_LIMIT,
+                            tree_move_limit=tree_move_limit_white,
+                        ),
+                    )
+                )
+            if args_chosen_by_user.player_type_black != PlayerConfigTag.GUI_HUMAN:
+                assert args_chosen_by_user.strength_black is not None
+                tree_move_limit_black: int = 4 * 10**args_chosen_by_user.strength_black
                 gui_args.match_args.player_two_overwrite = PartialOpPlayerArgs(
                     main_move_selector=PartialOpTreeAndValuePlayerArgs(
                         type=MoveSelectorTypes.TreeAndValue,
                         stopping_criterion=PartialOpTreeMoveLimitArgs(
                             type=StoppingCriterionTypes.TREE_MOVE_LIMIT,
-                            tree_move_limit=tree_move_limit,
+                            tree_move_limit=tree_move_limit_black,
                         ),
                     )
                 )
-            else:
-                gui_args.match_args.player_one = PlayerConfigTag(output["chipi_algo"])
-                gui_args.match_args.player_two = PlayerConfigTag.GUI_HUMAN
-                gui_args.match_args.player_one_overwrite = PartialOpPlayerArgs(
-                    main_move_selector=PartialOpTreeAndValuePlayerArgs(
-                        stopping_criterion=PartialOpTreeMoveLimitArgs(
-                            type=StoppingCriterionTypes.TREE_MOVE_LIMIT,
-                            tree_move_limit=tree_move_limit,
-                        )
-                    )
-                )
-            script_type = scripts.ScriptType.ONE_MATCH
-        case "play_two_humans":
-            config_file_name = "chipiron/scripts/one_match/inputs/human_play_against_human/exp_options.yaml"
-
-            gui_args = PartialOpMatchScriptArgs(
-                gui=True,
-                base_script_args=PartialOpBaseScriptArgs(profiling=False, seed=0),
-                match_args=PartialOpMatchArgs(match_setting=MatchConfigTag.DUDA),
-            )
-
-            gui_args.match_args.player_one = PlayerConfigTag.GUI_HUMAN
-            gui_args.match_args.player_two = PlayerConfigTag.GUI_HUMAN
-            script_type = scripts.ScriptType.ONE_MATCH
-        case "watch_a_game":
-            config_file_name = (
-                "chipiron/scripts/one_match/inputs/watch_a_game/exp_options.yaml"
-            )
-            gui_args = PartialOpMatchScriptArgs(
-                gui=True,
-                base_script_args=PartialOpBaseScriptArgs(profiling=False, seed=0),
-                match_args=PartialOpMatchArgs(
-                    match_setting=MatchConfigTag.DUDA,
-                    player_one=PlayerConfigTag.RECUR_ZIPF_BASE_3,
-                    player_two=PlayerConfigTag.RECUR_ZIPF_BASE_3,
-                ),
-            )
 
             script_type = scripts.ScriptType.ONE_MATCH
-        case "tree_visualization":
+        case ScriptGUIType.TREE_VISUALIZATION:
             config_file_name = "scripts/tree_visualization/inputs/base/exp_options.yaml"
             gui_args = None
             script_type = scripts.ScriptType.TREE_VISUALIZATION
-        case other:
-            raise ValueError(f"Not a good name: {other}")
 
     # Format arguments for human-readable display
     args_display = format_gui_args_for_display(gui_args)
@@ -393,36 +461,17 @@ def generate_inputs(
     return script_type, gui_args, config_file_name
 
 
-def play_against_chipiron(
-    output: dict[str, Any],
-    strength: ctk.StringVar,
-    color: ctk.StringVar,
-    chipi_algo: ctk.StringVar,
+def play_or_watch_a_game(
+    args_chosen_by_user: ArgsChosenByUser,
+    chipi_algo_choice_white: ctk.StringVar,
+    chipi_algo_choice_black: ctk.StringVar,
+    strength_value_white: ctk.StringVar,
+    strength_value_black: ctk.StringVar,
+    starting_position_choice: ctk.StringVar,
 ) -> bool:
     """
-    Callback function for the "Play" button.
-    Sets the output dictionary with the selected options for playing against the chipiron AI.
-
-    Args:
-        output: The output dictionary to store the selected options.
-        strength: The selected strength level.
-        color: The selected color.
-        chipi_algo: The selected chipiron algorithm.
-
-    Returns:
-        True.
-    """
-    output["type"] = "play_against_chipiron"
-    output["strength"] = int(strength.get())
-    output["color_human"] = str(color.get())
-    output["chipi_algo"] = PlayerConfigTag(str(chipi_algo.get()))
-    return True
-
-
-def watch_a_game(output: dict[str, Any]) -> bool:
-    """
-    Callback function for the "Watch a game" button.
-    Sets the output dictionary with the selected options for watching a game.
+    Callback function for the "Play or Watch a game" button.
+    Sets the output dictionary with the selected options for playing or watching a game.
 
     Args:
         output: The output dictionary to store the selected options.
@@ -430,26 +479,47 @@ def watch_a_game(output: dict[str, Any]) -> bool:
     Returns:
         True.
     """
-    output["type"] = "watch_a_game"
+    args_chosen_by_user.type = ScriptGUIType.PLAY_OR_WATCH_A_GAME
+
+    # Map display names to PlayerConfigTag enums
+    selected_white = chipi_algo_choice_white.get()
+    for name, tag in CHIPI_ALGO_OPTIONS_LIST:
+        if name == selected_white:
+            args_chosen_by_user.player_type_white = tag
+            break
+    else:
+        args_chosen_by_user.player_type_white = (
+            PlayerConfigTag.RECUR_ZIPF_BASE_3
+        )  # fallback
+
+    selected_black = chipi_algo_choice_black.get()
+    for name, tag in CHIPI_ALGO_OPTIONS_LIST:
+        if name == selected_black:
+            args_chosen_by_user.player_type_black = tag
+            break
+    else:
+        args_chosen_by_user.player_type_black = (
+            PlayerConfigTag.RECUR_ZIPF_BASE_3
+        )  # fallback
+
+    args_chosen_by_user.strength_white = (
+        int(strength_value_white.get())
+        if args_chosen_by_user.player_type_white != PlayerConfigTag.GUI_HUMAN
+        else None
+    )
+    args_chosen_by_user.strength_black = (
+        int(strength_value_black.get())
+        if args_chosen_by_user.player_type_black != PlayerConfigTag.GUI_HUMAN
+        else None
+    )
+
+    # Capture starting position choice
+    args_chosen_by_user.starting_position = starting_position_choice.get()
+
     return True
 
 
-def play_two_humans(output: dict[str, Any]) -> bool:
-    """
-    Callback function for the "play_two_humans" button.
-    Sets the output dictionary with the selected options for play_two_humans.
-
-    Args:
-        output: The output dictionary to store the selected options.
-
-    Returns:
-        True.
-    """
-    output["type"] = "play_two_humans"
-    return True
-
-
-def visualize_a_tree(output: dict[str, Any]) -> bool:
+def visualize_a_tree(args_chosen_by_user: ArgsChosenByUser) -> bool:
     """
     Callback function for the "Visualize a tree" button.
     Sets the output dictionary with the selected options for tree visualization.
@@ -460,5 +530,5 @@ def visualize_a_tree(output: dict[str, Any]) -> bool:
     Returns:
         True.
     """
-    output["type"] = "tree_visualization"
+    args_chosen_by_user.type = ScriptGUIType.TREE_VISUALIZATION
     return True
