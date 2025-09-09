@@ -17,7 +17,13 @@ import customtkinter as ctk
 from parsley_coco import make_partial_dataclass_with_optional_paths
 
 from chipiron import scripts
+from chipiron.environments.chess_env.board.starting_position import (
+    FenStartingPositionArgs,
+    StartingPositionArgsType,
+)
+from chipiron.games.game.game_args import GameArgs
 from chipiron.games.match.match_args import MatchArgs
+from chipiron.games.match.match_settings_args import MatchSettingsArgs
 from chipiron.games.match.match_tag import MatchConfigTag
 from chipiron.players import PlayerArgs
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
@@ -131,6 +137,27 @@ def format_gui_args_for_display(gui_args: Any) -> str:
     return "\n    ".join(args_parts) if args_parts else "Default settings"
 
 
+class MatchGUIStartingPosition(str, Enum):
+    """The starting position for the chess match."""
+
+    STANDARD = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+    ENDGAME = "6k1/5n2/8/8/8/5n2/1RK5/1N6 w - - 0 1"
+
+    def get_fen(self) -> str:
+        """Get the FEN string corresponding to the starting position.
+
+        Returns:
+            str: The FEN string for the starting position.
+        """
+        return str(self.value)
+
+
+STARTING_POSITION_OPTIONS_DICT: dict[str, MatchGUIStartingPosition] = {
+    "Standard": MatchGUIStartingPosition.STANDARD,
+    "End game": MatchGUIStartingPosition.ENDGAME,
+}
+
+
 class ScriptGUIType(str, Enum):
     """The type of script to run based on GUI selection."""
 
@@ -149,7 +176,9 @@ class ArgsChosenByUser:
     strength_white: int | None = 1
     player_type_black: PlayerConfigTag = PlayerConfigTag.RECUR_ZIPF_BASE_3
     strength_black: int | None = 1
-    starting_position: str = "Standard"  # "Standard" or "Endgame"
+    starting_position: MatchGUIStartingPosition = (
+        MatchGUIStartingPosition.STANDARD
+    )  # "Standard" or "Endgame"
 
 
 def script_gui() -> tuple[scripts.ScriptType, IsDataclass | None, str]:
@@ -326,11 +355,13 @@ def script_gui() -> tuple[scripts.ScriptType, IsDataclass | None, str]:
     starting_position_choice = ctk.StringVar(value="Standard")
 
     # Starting position options
-    starting_position_options = ["Standard", "Endgame"]
+    starting_position_display_names = list(STARTING_POSITION_OPTIONS_DICT.keys())
 
     # Create the option menu widget for starting position
     starting_position_menu = ctk.CTkOptionMenu(
-        master=root, values=starting_position_options, variable=starting_position_choice
+        master=root,
+        values=starting_position_display_names,
+        variable=starting_position_choice,
     )
     cast("tk.Widget", starting_position_menu).grid(column=1, row=4, padx=10, pady=10)
 
@@ -386,6 +417,12 @@ def generate_inputs(
         cls=MatchScriptArgs
     )
     PartialOpMatchArgs = make_partial_dataclass_with_optional_paths(cls=MatchArgs)
+
+    PartialOpMatchSettingsArgs = make_partial_dataclass_with_optional_paths(
+        cls=MatchSettingsArgs
+    )
+    PartialOpGameArgs = make_partial_dataclass_with_optional_paths(cls=GameArgs)
+
     PartialOpPlayerArgs = make_partial_dataclass_with_optional_paths(cls=PlayerArgs)
 
     PartialOpBaseScriptArgs = make_partial_dataclass_with_optional_paths(
@@ -405,7 +442,17 @@ def generate_inputs(
             gui_args = PartialOpMatchScriptArgs(
                 gui=True,
                 base_script_args=PartialOpBaseScriptArgs(profiling=False, seed=0),
-                match_args=PartialOpMatchArgs(match_setting=MatchConfigTag.DUDA),
+                match_args=PartialOpMatchArgs(
+                    match_setting=MatchConfigTag.DUDA,
+                    match_setting_overwrite=PartialOpMatchSettingsArgs(
+                        game_args=PartialOpGameArgs(
+                            starting_position=FenStartingPositionArgs(
+                                type=StartingPositionArgsType.FEN,
+                                fen=args_chosen_by_user.starting_position,
+                            )
+                        )
+                    ),
+                ),
             )
             config_file_name = "chipiron/scripts/one_match/inputs/human_play_against_computer/exp_options.yaml"
 
@@ -514,7 +561,9 @@ def play_or_watch_a_game(
     )
 
     # Capture starting position choice
-    args_chosen_by_user.starting_position = starting_position_choice.get()
+    args_chosen_by_user.starting_position = STARTING_POSITION_OPTIONS_DICT[
+        starting_position_choice.get()
+    ]
 
     return True
 
