@@ -55,7 +55,9 @@ class MatchConfigTag(str, Enum):
         """
         match_args: MatchSettingsArgs = (
             parsley_coco.resolve_yaml_file_to_base_dataclass(
-                yaml_path=str(self.get_yaml_file_path()), base_cls=MatchSettingsArgs
+                yaml_path=str(self.get_yaml_file_path()),
+                base_cls=MatchSettingsArgs,
+                raise_error_with_nones=False,
             )
         )
         return match_args
