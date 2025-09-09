@@ -16,7 +16,6 @@ from chipiron.games.game.game_manager_factory import GameManagerFactory
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_manager import MatchManager
 from chipiron.games.match.match_results_factory import MatchResultsFactory
-from chipiron.games.match.utils import fetch_match_games_args_convert_and_save
 from chipiron.players.boardevaluators.factory import create_game_board_evaluator
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.scripts.chipiron_args import ImplementationArgs
@@ -149,37 +148,29 @@ def create_match_manager_from_args(
     player_one_args: players.PlayerArgs = match_args.player_one
     player_two_args: players.PlayerArgs = match_args.player_two
 
-    # Recovering args from yaml file for match and game and merging with extra args and converting
-    # to standardized dataclass
-    match_setting_args: MatchSettingsArgs
-    game_args: game.GameArgs
-    match_setting_args, game_args = fetch_match_games_args_convert_and_save(
-        profiling=base_script_args.profiling,
-        testing=base_script_args.testing,
-        match_args=match_args,
-        experiment_output_folder=base_script_args.experiment_output_folder,
-    )
+    assert isinstance(match_args.match_setting, MatchSettingsArgs)
+    assert isinstance(match_args.match_setting.game_args, game.GameArgs)
 
     assert (
         player_one_args.name != "Command_Line_Human.yaml"
-        or not game_args.each_player_has_its_own_thread
+        or not match_args.match_setting.game_args.each_player_has_its_own_thread
     )
     assert (
         player_two_args.name != "Command_Line_Human.yaml"
-        or not game_args.each_player_has_its_own_thread
+        or not match_args.match_setting.game_args.each_player_has_its_own_thread
     )
 
     # taking care of random
     ch.set_seeds(seed=base_script_args.seed)
 
     match_manager: MatchManager = create_match_manager(
-        args_match=match_setting_args,
+        args_match=match_args.match_setting,
         args_player_one=player_one_args,
         args_player_two=player_two_args,
         output_folder_path=base_script_args.experiment_output_folder,
         universal_behavior=base_script_args.universal_behavior,
         seed=base_script_args.seed,
-        args_game=game_args,
+        args_game=match_args.match_setting.game_args,
         gui=gui,
         implementation_args=implementation_args,
     )

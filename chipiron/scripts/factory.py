@@ -23,6 +23,7 @@ def create_script(
     extra_args: IsDataclass | None = None,
     config_file_name: str | None = None,
     should_parse_command_line_arguments: bool = True,
+    parsley_logging_level: int = logging.WARNING,
 ) -> IScript:
     """
     Creates the corresponding script
@@ -54,9 +55,13 @@ def create_script(
         args_dataclass_name=args_dataclass_name,
         should_parse_command_line_arguments=should_parse_command_line_arguments,
         logger=chipiron_logger,  # not working at the moment
-        verbosity=logging.WARNING,
+        verbosity=parsley_logging_level,
         package_name=get_package_root_path("chipiron"),
     )
+
+    from parsley_coco.logger import set_verbosity
+
+    set_verbosity(parsley_logging_level)
 
     base_script: Script[Any] = Script(
         parser=parser, extra_args=extra_args, config_file_name=config_file_name

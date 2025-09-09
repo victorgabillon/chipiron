@@ -22,7 +22,6 @@ from chipiron.players.move_selector.treevalue.node_evaluator import (
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
     AlgorithmNode,
 )
-from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 
 from .tree_expander import TreeExpansion, TreeExpansions
 from .tree_manager import TreeManager
@@ -231,37 +230,6 @@ class AlgorithmNodeTreeManager:
         for half_move in tree.descendants:
             sum_ += len(tree.descendants[half_move])
             print("half_move", half_move, len(tree.descendants[half_move]), sum_)
-
-    def test_the_tree(self, tree: trees.MoveAndValueTree) -> None:
-        """
-        Test the given tree by performing various tests on its nodes.
-
-        Args:
-            tree (trees.MoveAndValueTree): The tree to be tested.
-
-        Returns:
-            None
-        """
-        self.test_count(tree=tree)
-        for half_move in tree.descendants:
-            for fen in tree.descendants[half_move]:
-                node = tree.descendants[half_move][fen]
-                assert isinstance(node, TreeNode)
-                node.test()
-
-                # todo add a test for testing if the over match what the board evaluator says!
-
-    def test_count(self, tree: trees.MoveAndValueTree) -> None:
-        """
-        Test the count of nodes in the tree.
-
-        Args:
-            tree (trees.MoveAndValueTree): The tree to be tested.
-
-        Returns:
-            None
-        """
-        assert tree.descendants.get_count() == tree.nodes_count
 
     def print_best_line(self, tree: trees.MoveAndValueTree) -> None:
         """

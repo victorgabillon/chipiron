@@ -6,6 +6,7 @@ This module is the execution point of the chess GUI application.
 It provides the `MainWindow` class, which creates a surface for the chessboard and handles user interactions.
 """
 
+import math
 import os
 import queue
 import time
@@ -474,7 +475,7 @@ class MainWindow(QWidget):
             None
         """
         self.move_promote_asked = chess.Move.from_uci(
-            "{}{}r".format(self.pieceToMove[1], self.coordinates)
+            f"{self.pieceToMove[1]}{self.coordinates}r"
         )
         self.d.close()
 
@@ -489,7 +490,7 @@ class MainWindow(QWidget):
             None
         """
         self.move_promote_asked = chess.Move.from_uci(
-            "{}{}b".format(self.pieceToMove[1], self.coordinates)
+            f"{self.pieceToMove[1]}{self.coordinates}b"
         )
         self.d.close()
 
@@ -505,7 +506,7 @@ class MainWindow(QWidget):
         None
         """
         self.move_promote_asked = chess.Move.from_uci(
-            "{}{}n".format(self.pieceToMove[1], self.coordinates)
+            f"{self.pieceToMove[1]}{self.coordinates}n"
         )
         self.d.close()
 
@@ -597,7 +598,6 @@ class MainWindow(QWidget):
         Returns:
             None
         """
-        import math
 
         num_half_move: int = len(self.board.move_history_stack)
         num_rounds: int = int(math.ceil(num_half_move / 2))

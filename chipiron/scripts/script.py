@@ -17,7 +17,7 @@ from rich.pretty import pretty_repr
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
 from chipiron.utils.dataclass import IsDataclass
-from chipiron.utils.logger import chipiron_logger
+from chipiron.utils.logger import chipiron_logger, set_chipiron_logger_level
 from chipiron.utils.small_tools import mkdir_if_not_existing
 
 
@@ -98,8 +98,8 @@ class Script[T_Dataclass: IsDataclass]:
         # Type assertion to help type checker understand the structure
         final_args_with_base = cast("HasBaseScriptArgs", final_args)
 
-        chipiron_logger.setLevel(
-            level=final_args_with_base.base_script_args.logging_level
+        set_chipiron_logger_level(
+            level=final_args_with_base.base_script_args.logging_levels.chipiron
         )
 
         # Ensure paths are not None before using them

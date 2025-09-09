@@ -12,14 +12,13 @@ import plotly.graph_objects as go
 from sortedcollections import ValueSortedDict
 
 import chipiron as ch
-import chipiron.games.game as game
-import chipiron.games.match as match
 import chipiron.players as players
+from chipiron.games.game.game_args import GameArgs
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_factories import create_match_manager
 from chipiron.games.match.match_results import MatchReport, MatchResults
+from chipiron.games.match.match_settings_args import MatchSettingsArgs
 from chipiron.games.match.match_tag import MatchConfigTag
-from chipiron.games.match.utils import fetch_match_games_args_convert_and_save
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.utils.small_tools import mkdir_if_not_existing, path
@@ -134,16 +133,12 @@ class League:
 
         # Recovering args from yaml file for match and game and merging with extra args and converting
         # to standardized dataclass
-        match_args: match.MatchSettingsArgs
-        game_args: game.GameArgs
-        match_args, game_args = fetch_match_games_args_convert_and_save(
-            match_args=MatchArgs(
-                player_one=PlayerConfigTag.CHIPIRON,
-                player_two=PlayerConfigTag.CHIPIRON,
-                match_setting=MatchConfigTag(
-                    file_match_setting
-                ).get_match_settings_args(),  # probibly to fix as weell and this is a ditry fix to create a martch args please imrpove!!
-            )
+        match_args = MatchArgs(
+            player_one=PlayerConfigTag.CHIPIRON,
+            player_two=PlayerConfigTag.CHIPIRON,
+            match_setting=MatchConfigTag(
+                file_match_setting
+            ).get_match_settings_args(),  # probibly to fix as weell and this is a ditry fix to create a martch args please imrpove!!
         )
 
         path_logs_game_folder: path = os.path.join(
@@ -155,12 +150,15 @@ class League:
         )
         mkdir_if_not_existing(path_logs_game_folder_temp)
 
+        assert isinstance(match_args.match_setting, MatchSettingsArgs)
+        assert isinstance(match_args.match_setting.game_args, GameArgs)
+
         match_seed = self.seed + self.games_already_played
         match_manager: ch.game.MatchManager = create_match_manager(
-            args_match=match_args,
+            args_match=match_args.match_setting,
             args_player_one=args_player_one,
             args_player_two=args_player_two,
-            args_game=game_args,
+            args_game=match_args.match_setting.game_args,
             seed=match_seed,
             output_folder_path=path_logs_game_folder,
             implementation_args=ImplementationArgs(),

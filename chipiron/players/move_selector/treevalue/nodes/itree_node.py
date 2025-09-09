@@ -38,6 +38,7 @@ class ITreeNode[T: ITreeNode[Any]](Protocol):
         Returns:
             The ID of the node.
         """
+        ...
 
     # actually giving access to the boars gives access to a lot of sub fucntion so might
     # be no need to ask for them in the interfacec expicitly
@@ -49,6 +50,7 @@ class ITreeNode[T: ITreeNode[Any]](Protocol):
         Returns:
             The chess board state of the node.
         """
+        ...
 
     @property
     def half_move(self) -> int:
@@ -58,6 +60,7 @@ class ITreeNode[T: ITreeNode[Any]](Protocol):
         Returns:
             The half move count of the node.
         """
+        ...
 
     @property
     def moves_children(self) -> dict[moveKey, T | None]:
@@ -67,6 +70,7 @@ class ITreeNode[T: ITreeNode[Any]](Protocol):
         Returns:
             A bidirectional dictionary mapping chess moves to child nodes.
         """
+        ...
 
     @property
     def parent_nodes(self) -> dict[ITreeNode[T], moveKey]:
@@ -75,6 +79,7 @@ class ITreeNode[T: ITreeNode[Any]](Protocol):
 
         :return: A dictionary of parent nodes of the current tree node with associated move.
         """
+        ...
 
     def add_parent(self, move: moveKey, new_parent_node: ITreeNode[T]) -> None:
         """
@@ -93,6 +98,7 @@ class ITreeNode[T: ITreeNode[Any]](Protocol):
         Returns:
             A string containing the dot description.
         """
+        ...
 
     @property
     def all_legal_moves_generated(self) -> bool:
@@ -102,6 +108,7 @@ class ITreeNode[T: ITreeNode[Any]](Protocol):
         Returns:
             True if all legal moves have been generated, False otherwise.
         """
+        ...
 
     @all_legal_moves_generated.setter
     def all_legal_moves_generated(self, value: bool) -> None:
@@ -117,6 +124,7 @@ class ITreeNode[T: ITreeNode[Any]](Protocol):
         Returns:
             A generator for iterating over the legal moves.
         """
+        ...
 
     @property
     def fast_rep(self) -> boards.boardKey:
@@ -126,6 +134,7 @@ class ITreeNode[T: ITreeNode[Any]](Protocol):
         Returns:
             The fast representation of the node as a string.
         """
+        ...
 
     def is_over(self) -> bool:
         """
@@ -134,3 +143,4 @@ class ITreeNode[T: ITreeNode[Any]](Protocol):
         Returns:
             True if the game is over, False otherwise.
         """
+        ...

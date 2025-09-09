@@ -4,7 +4,7 @@ Module for the SyzygyTable class.
 
 from typing import Protocol
 
-import chess.syzygy
+import chess
 
 from chipiron.environments.chess_env.board import IBoard
 from chipiron.environments.chess_env.move.imove import moveKey
@@ -75,7 +75,19 @@ class SyzygyTable[T_Board: IBoard](Protocol):
             return False
         return True
 
-    def wdl(self, board: T_Board) -> int: ...
+    def wdl(self, board: T_Board) -> int:
+        """
+        Probe the tablebase for the win/draw/loss value of the given board.
+
+        Args:
+            board (T_Board): The board to probe.
+
+        Returns:
+            int: 2 if the side to move is winning, 0 if draw, -2 if losing.
+        """
+        # Example implementation, replace with actual tablebase probing logic
+        # For now, raise NotImplementedError to indicate it must be implemented
+        raise NotImplementedError("wdl method must be implemented in subclass")
 
     def get_over_event(self, board: T_Board) -> tuple[Winner, HowOver]:
         """

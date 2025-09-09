@@ -17,6 +17,9 @@ from chipiron.players.boardevaluators.evaluation_scale import (
 from chipiron.players.boardevaluators.neural_networks.factory import (
     create_nn_board_eval_from_nn_parameters_file_and_existing_model,
 )
+from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
+    NeuralNetBoardEvalArgs,
+)
 from chipiron.players.boardevaluators.over_event import HowOver, OverEvent, Winner
 from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 
@@ -202,6 +205,15 @@ def create_master_board_evaluator_from_args(
     master_board_evaluator: MasterBoardEvaluatorArgs,
     syzygy: SyzygyTable[Any] | None,
 ) -> MasterBoardEvaluator:
+    """Creates a MasterBoardEvaluator instance from the given arguments.
+
+    Args:
+        master_board_evaluator (MasterBoardEvaluatorArgs): args to build the MasterBoardEvaluator
+        syzygy (SyzygyTable[Any] | None): a syzygy table objecct
+
+    Returns:
+        MasterBoardEvaluator: _description_
+    """
     if master_board_evaluator.syzygy_evaluation:
         syzygy_ = syzygy
     else:
@@ -213,9 +225,16 @@ def create_master_board_evaluator_from_args(
         case BoardEvalTypes.BASIC_EVALUATION_EVAL:
             board_evaluator = basic_evaluation.BasicEvaluation()
         case BoardEvalTypes.NEURAL_NET_BOARD_EVAL:
+            assert isinstance(
+                master_board_evaluator.board_evaluator, NeuralNetBoardEvalArgs
+            )
             board_evaluator = create_nn_board_eval_from_nn_parameters_file_and_existing_model(
                 model_weights_file_name=master_board_evaluator.board_evaluator.neural_nets_model_and_architecture.model_weights_file_name,
                 nn_architecture_args=master_board_evaluator.board_evaluator.neural_nets_model_and_architecture.nn_architecture_args,
+            )
+        case other:
+            raise ValueError(
+                f"unknown type of message received by master board evaluator {other} in {__name__}"
             )
 
     return create_master_board_evaluator(
