@@ -97,14 +97,29 @@ PieceMap = typing.Annotated[
 
 
 class IBoard(Protocol):
+    """Interface for a chess board."""
+
     fast_representation_: boardKey
     legal_moves_: LegalMoveKeyGeneratorP
 
     def get_uci_from_move_key(self, move_key: moveKey) -> moveUci:
+        """Returns the UCI string corresponding to the given move key.
+        Args:
+            move_key (moveKey): The move key to convert to UCI.
+        Returns:
+            moveUci: The UCI string corresponding to the given move key."""
         assert self.legal_moves_.generated_moves is not None
         return self.legal_moves_.generated_moves[move_key].uci()
 
     def get_move_key_from_uci(self, move_uci: moveUci) -> moveKey:
+        """Returns the move key corresponding to the given UCI string.
+        Args:
+            move_uci (moveUci): The UCI string to convert to a move key.
+        Returns:
+            moveKey: The move key corresponding to the given UCI string.
+            Raises:
+                KeyError: If the UCI string is not found in the legal moves.
+        """
         number_moves: int = len(self.legal_moves_.get_all())
         i: int
         assert self.legal_moves_.generated_moves is not None
@@ -113,22 +128,45 @@ class IBoard(Protocol):
             if self.legal_moves_.generated_moves[i].uci() == move_uci:
                 return i
 
-        raise Exception(
+        raise KeyError(
             "the code should not have reached this point: problem with"
             " legal moves / uci relation in boards object it seems"
         )
 
-    def play_move_key(self, move: moveKey) -> BoardModificationP | None: ...
+    def play_move_key(self, move: moveKey) -> BoardModificationP | None:
+        """Plays the move corresponding to the given move key.
+        Args:
+            move (moveKey): The move key to play.
+        Returns:
+            BoardModificationP | None: The result of the move, or None if the move is illegal.
+        """
+        ...
 
-    def play_move_uci(self, move_uci: moveUci) -> BoardModificationP | None: ...
+    def play_move_uci(self, move_uci: moveUci) -> BoardModificationP | None:
+        """Plays the move corresponding to the given UCI string.
+        Args:
+            move_uci (moveUci): The UCI string to play.
+        Returns:
+            BoardModificationP | None: The result of the move, or None if the move is illegal.
+        """
+        ...
 
     @property
-    def fen(self) -> fen: ...
+    def fen(self) -> fen:
+        """Returns the FEN string representation of the board.
+        Returns:
+            fen: The FEN string representation of the board."""
+        ...
 
     @property
     def move_history_stack(
         self,
-    ) -> list[moveUci]: ...
+    ) -> list[moveUci]:
+        """Returns the move history stack.
+        Returns:
+            list[moveUci]: The move history stack.
+        """
+        ...
 
     def ply(self) -> int:
         """
@@ -255,7 +293,16 @@ class IBoard(Protocol):
         assert self.fast_representation_ is not None
         return self.fast_representation_[:-2]
 
-    def is_zeroing(self, move: moveKey) -> bool: ...
+    def is_zeroing(self, move: moveKey) -> bool:
+        """Check if a move is a zeroing move (i.e., checks if the given move is a capture or pawn move.
+
+        Args:
+            move (moveKey): The move to check.
+
+        Returns:
+            bool: True if the move is a zeroing move, False otherwise.
+        """
+        ...
 
     def is_attacked(self, a_color: chess.Color) -> bool: ...
 

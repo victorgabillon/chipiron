@@ -222,6 +222,7 @@ class SyzygyTable[T_Board: IBoard](Protocol):
 
         assert all_moves
         best_move: moveKey = all_moves[0]
+        move: moveKey
         for move in all_moves:
             board_copy: T_Board = board.copy(stack=True)
             board_copy.play_move_key(move=move)
@@ -230,13 +231,24 @@ class SyzygyTable[T_Board: IBoard](Protocol):
             dtz_player_next_board = self.dtz(board_copy)
             dtz_player_node = -dtz_player_next_board
             if val_player_node > 0:  # winning position
-                new_value = board.is_zeroing(move) * 100 - dtz_player_node + 1000
+                new_value = (
+                    board.is_zeroing(move) * 100
+                    - dtz_player_node * (1 - int(board.is_zeroing(move)))
+                    + 10000
+                )
             elif val_player_node == 0:
-                new_value = -board.is_zeroing(move) * 100 + dtz_player_node
+                new_value = -board.is_zeroing(move) * 100 + dtz_player_node * (
+                    1 - int(board.is_zeroing(move))
+                )
             elif val_player_node < 0:
-                new_value = -board.is_zeroing(move) * 100 + dtz_player_node - 1000
+                new_value = (
+                    -board.is_zeroing(move) * 100
+                    - dtz_player_node * (1 - int(board.is_zeroing(move)))
+                    - 10000
+                )
 
             if new_value > best_value:
                 best_value = new_value
                 best_move = move
+
         return best_move

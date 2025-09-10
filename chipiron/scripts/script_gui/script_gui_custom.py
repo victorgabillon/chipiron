@@ -141,7 +141,7 @@ class MatchGUIStartingPosition(str, Enum):
     """The starting position for the chess match."""
 
     STANDARD = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-    ENDGAME = "6k1/5n2/8/8/8/5n2/1RK5/1N6 w - - 0 1"
+    ENDGAME = "6k1/p7/8/8/7N/7K/2N5/8 w - - 0 1"
 
     def get_fen(self) -> str:
         """Get the FEN string corresponding to the starting position.
