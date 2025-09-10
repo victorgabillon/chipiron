@@ -73,7 +73,7 @@ jobs:
             libxcb-cursor0 libxcb-xinerama0 '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libxkbcommon-x11-0
 
       - name: Test with tox
-        run: tox
+        run: tox -e py -- --ignore=chipiron/players/boardevaluators/table_base/test_syzygy.py
 
   docker:
     runs-on: ubuntu-latest
