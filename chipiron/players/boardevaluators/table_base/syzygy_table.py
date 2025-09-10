@@ -202,7 +202,9 @@ class SyzygyTable[T_Board: IBoard](Protocol):
         Returns:
             int: The DTZ value for the board.
         """
-        ...
+        # Example implementation, replace with actual tablebase probing logic
+        # For now, return a default value (e.g., 0)
+        raise NotImplementedError("wdl method must be implemented in subclass")
 
     def best_move(self, board: T_Board) -> moveKey:
         """
@@ -236,11 +238,11 @@ class SyzygyTable[T_Board: IBoard](Protocol):
                     - dtz_player_node * (1 - int(board.is_zeroing(move)))
                     + 10000
                 )
-            elif val_player_node == 0:
+            elif val_player_node == 0:  # drawing position
                 new_value = -board.is_zeroing(move) * 100 + dtz_player_node * (
                     1 - int(board.is_zeroing(move))
                 )
-            elif val_player_node < 0:
+            else:  # losing position
                 new_value = (
                     -board.is_zeroing(move) * 100
                     - dtz_player_node * (1 - int(board.is_zeroing(move)))
