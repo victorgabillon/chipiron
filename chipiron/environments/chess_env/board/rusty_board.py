@@ -675,6 +675,14 @@ class RustyBoardChi(IBoard):
         return self.ep_square_
 
     def is_zeroing(self, move: moveKey) -> bool:
+        """Check if a move is a zeroing move (i.e., checks if the given move is a capture or pawn move.
+
+        Args:
+            move (moveKey): The move to check.
+
+        Returns:
+            bool: True if the move is a zeroing move, False otherwise.
+        """
         assert self.legal_moves_.generated_moves is not None
         chess_move: shakmaty_python_binding.MyMove = self.legal_moves_.generated_moves[
             move

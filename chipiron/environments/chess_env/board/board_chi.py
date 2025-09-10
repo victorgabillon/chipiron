@@ -936,7 +936,7 @@ class BoardChi(IBoard):
         return self.chess_board.ep_square
 
     def is_zeroing(self, move: moveKey) -> bool:
-        """Check if a move is a zeroing move (i.e., it does not change the position of any pieces).
+        """Check if a move is a zeroing move (i.e., checks if the given move is a capture or pawn move.
 
         Args:
             move (moveKey): The move to check.

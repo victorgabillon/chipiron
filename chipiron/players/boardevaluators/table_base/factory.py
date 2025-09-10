@@ -56,15 +56,29 @@ def create_syzygy_rust() -> SyzygyRustTable | None:
 
 
 class SyzygyProvider(Protocol):
+    """Protocol for providing a Syzygy table."""
+
     def provide(
         self,
-    ) -> SyzygyChiTable | None: ...
+    ) -> SyzygyChiTable | None:
+        """
+        Provide a Syzygy table.
+        """
+        ...
 
 
 class SyzygyFactory(Protocol):
+    """
+    Protocol for creating a Syzygy table.
+    """
+
     def __call__(
         self,
-    ) -> SyzygyTable[Any] | None: ...
+    ) -> SyzygyTable[Any] | None:
+        """
+        Create a SyzygyTable object.
+        """
+        ...
 
 
 def create_syzygy_factory(use_rust: bool) -> SyzygyFactory:
