@@ -1,6 +1,6 @@
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import Any, Iterator, Self
+from typing import Any, Iterator, Self, no_type_check
 
 import chess
 import shakmaty_python_binding
@@ -28,11 +28,19 @@ class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
     # whether to sort the legal_moves by their respective uci for easy comparison of various implementations
     sort_legal_moves: bool
 
-    generated_moves: list[shakmaty_python_binding.MyMove] | None
-
     all_generated_keys: list[moveKey] | None
 
     chess_rust_binding: shakmaty_python_binding.MyChess
+
+    def get_uci_from_move_key(self, move_key: moveKey) -> moveUci:
+        """Returns the UCI string corresponding to the given move key.
+        Args:
+            move_key (moveKey): The move key to convert to UCI.
+        Returns:
+            moveUci: The UCI string corresponding to the given move key."""
+        assert self.generated_moves is not None
+        chess_move: shakmaty_python_binding.MyMove = self.generated_moves[move_key]
+        return chess_move.uci()
 
     def __init__(
         self,
@@ -80,12 +88,10 @@ class LegalMoveKeyGeneratorRust(LegalMoveKeyGeneratorP):
         self.it = iter(range(self.number_moves))
         self.all_generated_keys = list(range(self.number_moves))
 
-    def copy_with_reset(
-        self, generated_moves: list[shakmaty_python_binding.MyMove] | None = None
-    ) -> "LegalMoveKeyGeneratorRust":
+    def copy_with_reset(self) -> "LegalMoveKeyGeneratorRust":
         legal_move_copy = LegalMoveKeyGeneratorRust(
             chess_rust_binding=self.chess_rust_binding,
-            generated_moves=generated_moves,
+            generated_moves=None,
             sort_legal_moves=self.sort_legal_moves,
         )
         return legal_move_copy
@@ -420,6 +426,7 @@ class RustyBoardChi(IBoard):
         # return bool(self.chess_.turn())
         return self.turn_
 
+    @no_type_check
     def is_game_over(self) -> bool:
         """
         Check if the game is over.
@@ -433,10 +440,17 @@ class RustyBoardChi(IBoard):
         )
         # todo check the move stack : check for repetition as the rust version not do it
         # todo remove this hasatrribute at some point
+
+        chess_game_over: bool = False
+
         if hasattr(self, "is_game_over_"):
-            return three_fold_repetition or self.is_game_over_
+            attr_value: Any = self.is_game_over_
+            chess_game_over = bool(attr_value)
         else:
-            return three_fold_repetition or self.chess_.is_game_over()
+            engine_result: Any = self.chess_.is_game_over()
+            chess_game_over = bool(engine_result)
+
+        return three_fold_repetition or chess_game_over
 
     def copy(self, stack: bool, deep_copy_legal_moves: bool = True) -> Self:
         """
@@ -575,7 +589,9 @@ class RustyBoardChi(IBoard):
     # def board_history_stack(self) -> list[chess._BoardState]:
     #    return self.board_stack
 
-    def dump(self, f: Any) -> None: ...
+    def dump(self, file: Any) -> None:
+        """Dumps the current state of the board to the specified file."""
+        ...
 
     def is_attacked(self, a_color: chess.Color) -> bool:
         """Check if any piece of the color `a_color` is attacked.

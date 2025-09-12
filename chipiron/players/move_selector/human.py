@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Literal
 
 import chipiron.environments.chess_env.board as boards
 from chipiron.utils import seed
+from chipiron.utils.logger import chipiron_logger
 
 from .move_selector import MoveRecommendation
 from .move_selector_types import MoveSelectorTypes
@@ -54,16 +55,17 @@ class CommandLineHumanMoveSelector:
         Raises:
             AssertionError: If the selected move is not a legal move.
         """
-        print(f"Legal Moves {board.legal_moves}")
+        chipiron_logger.info("Legal Moves %s", board.legal_moves)
         legal_moves_uci: list[moveUci] = []
         move: moveKey
         for move in board.legal_moves:
             legal_moves_uci.append(board.get_uci_from_move_key(move))
-        print(f"Legal Moves {legal_moves_uci}")
+        chipiron_logger.info("Legal Moves %s", legal_moves_uci)
 
         good_move: bool = False
+        move_uci: str = ""
         while not good_move:
-            move_uci: str = input("Input your move")
+            move_uci = input("Input your move")
             print(f"choice of move {move_uci}")
             if move_uci in legal_moves_uci:
                 good_move = True

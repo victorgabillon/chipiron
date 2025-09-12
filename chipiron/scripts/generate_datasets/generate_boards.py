@@ -21,6 +21,7 @@ Dependencies:
 import random
 import shutil
 import subprocess
+import urllib.error
 import urllib.request
 from datetime import datetime
 from pathlib import Path

@@ -42,7 +42,9 @@ def create_exploration_index_manager(
                 node_exploration_manager = UpdateIndexZipfFactoredProba()
             case IndexComputationType.MIN_LOCAL_CHANGE:
                 node_exploration_manager = UpdateIndexLocalMinChange()
-            case other:
-                raise ValueError(f"player creator: can not find {other} in {__name__}")
+            case _:
+                raise ValueError(
+                    f"player creator: can not find {index_computation} in {__name__}"
+                )
 
     return node_exploration_manager

@@ -83,7 +83,7 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample | RawSample], ABC):
         start_time = time.time()
 
         raw_data = pandas.read_pickle(self.file_name).copy()
-        chipiron_logger.info("raw_data %s", type(raw_data))
+        chipiron_logger.info("raw_data %s", str(type(raw_data).__name__))
         chipiron_logger.info(
             "--- LOAD READ PICKLE %.2f seconds ---", time.time() - start_time
         )
@@ -154,12 +154,23 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample | RawSample], ABC):
             return self.process_raw_row(self.data.iloc[index])
 
     def get_unprocessed(self, idx: int) -> pandas.Series:
-        """ """
+        """
+        Returns the unprocessed raw row at the given index.
+
+        Args:
+        - idx (int): The index of the item.
+        Returns:
+        - pandas.Series: The raw row."""
         if not isinstance(self.data, pandas.DataFrame):
             raise RuntimeError("Unprocessed data is not available.")
         return self.data.iloc[idx % len(self)]
 
     def is_preprocessed(self) -> bool:
+        """Checks if the dataset is preprocessed.
+
+        Returns:
+            bool: True if the dataset is preprocessed, False otherwise.
+        """
         return self.preprocessing and isinstance(self.data, list)
 
 
@@ -324,7 +335,7 @@ class FenAndValueDataSet(MyDataSet[FenAndValueData]):
         """
         processed_data: list[FenAndValueData] = []
         row: pandas.Series
-        for row in dataframe.iloc:
+        for _, row in dataframe.iterrows():
             processed_data.append(self.process_raw_row(row))
 
         return processed_data

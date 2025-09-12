@@ -48,8 +48,12 @@ class TreeExpansions:
         expansions_without_node_creation (List[TreeExpansion]): List of expansions where child nodes were not created.
     """
 
-    expansions_with_node_creation: list[TreeExpansion] = field(default_factory=list)
-    expansions_without_node_creation: list[TreeExpansion] = field(default_factory=list)
+    expansions_with_node_creation: list[TreeExpansion] = field(
+        default_factory=lambda: list[TreeExpansion]()
+    )
+    expansions_without_node_creation: list[TreeExpansion] = field(
+        default_factory=lambda: list[TreeExpansion]()
+    )
 
     def __iter__(self) -> typing.Iterator[TreeExpansion]:
         return iter(

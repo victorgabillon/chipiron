@@ -7,7 +7,7 @@ import pickle
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, Dict, Iterable, List, Union, cast, no_type_check
 
 import torch
 import torch.optim as optim
@@ -42,6 +42,10 @@ from chipiron.utils.chi_nn import ChiNN
 from chipiron.utils.dataclass import custom_asdict_factory
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.small_tools import mkdir_if_not_existing
+
+SerializableType = Union[
+    str, int, float, bool, None, Dict[str, Any], List[Any], set[Any], frozenset[Any]
+]
 
 
 @dataclass
@@ -187,30 +191,67 @@ def create_nn_trainer(
     return NNPytorchTrainer(net=nn, optimizer=optimizer, scheduler=scheduler)
 
 
-def serialize_for_yaml(obj: Any) -> Any:
+@no_type_check
+def serialize_for_yaml(obj: Any) -> SerializableType:
     """
-    Recursively converts Enums and other non-serializable objects into basic types for safe YAML dumping.
+    Recursively converts Enums and other non-serializable objects
+    into basic types for safe YAML dumping.
     """
+    # Handle None and primitives
+    if obj is None or isinstance(obj, (str, int, float, bool)):
+        return cast("SerializableType", obj)
+
+    # Handle Enums
     if isinstance(obj, Enum):
-        return obj.value
-    elif isinstance(obj, dict):
-        return {k: serialize_for_yaml(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [serialize_for_yaml(i) for i in obj]
-    elif hasattr(obj, "__dict__"):
+        return serialize_for_yaml(obj.value)
+
+    # Handle dictionaries
+    if isinstance(obj, dict):
+        dict_obj = cast("Dict[Any, Any]", obj)
+        dict_result: Dict[str, SerializableType] = {}
+        for key, value in dict_obj.items():
+            str_key: str = str(key)
+            serialized_value: SerializableType = serialize_for_yaml(value)
+            dict_result[str_key] = serialized_value
+        return dict_result
+
+    # Handle lists and tuples
+    if isinstance(obj, (list, tuple)):
+        iterable_obj: Iterable[Any] = cast("Iterable[Any]", obj)
+        list_result: list[SerializableType] = [
+            serialize_for_yaml(item) for item in iterable_obj
+        ]
+        return list_result
+
+    # Handle frozensets
+    if isinstance(obj, frozenset):
+        frozenset_obj = cast("frozenset[Any]", obj)
+        frozenset_result: frozenset[SerializableType] = frozenset(
+            serialize_for_yaml(item) for item in frozenset_obj
+        )
+        return frozenset_result
+
+    # Handle objects with __dict__
+    if hasattr(obj, "__dict__"):
         return serialize_for_yaml(vars(obj))
-    else:
-        return obj
+
+    # Fallback: convert to string
+    return str(obj)
 
 
 def safe_nn_architecture_save(
     nn_architecture_args: NeuralNetArchitectureArgs, nn_param_folder_name: path
 ) -> None:
-    """ """
+    """
+    Save the architecture of a neural network to a file.
+    Args:
+        nn_architecture_args (NeuralNetArchitectureArgs): The architecture arguments of the neural network.
+        nn_param_folder_name (path): The folder path where the architecture file will be saved.
+    """
     path_to_param_file = get_nn_architecture_file_path_from(nn_param_folder_name)
     try:
-        chipiron_logger.info(f"saving architecture to file: {path_to_param_file}")
-        with open(path_to_param_file, "w") as file_architecture:
+        chipiron_logger.info("saving architecture to file: %s", path_to_param_file)
+        with open(path_to_param_file, "w", encoding="utf-8") as file_architecture:
             yaml.dump(
                 asdict(
                     nn_architecture_args,

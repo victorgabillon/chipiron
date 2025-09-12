@@ -1,3 +1,8 @@
+"""
+Learn a neural network from scratch from a supervised dataset of boards and values,
+and from a fixed set of non-labelled boards.
+"""
+
 import logging
 import os
 import random
@@ -9,7 +14,7 @@ from typing import TYPE_CHECKING, Any
 import mlflow
 import pandas
 from torch.utils.data import DataLoader
-from torchinfo import summary
+from torchinfo import summary  # pyright: ignore[reportUnknownVariableType]
 
 import chipiron
 from chipiron.environments.chess_env.board.utils import FenPlusHistory
@@ -40,6 +45,7 @@ from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
 from chipiron.utils.chi_nn import ChiNN
 from chipiron.utils.logger import chipiron_logger, suppress_logging
+from chipiron.utils.path_variables import ML_FLOW_URI_PATH
 
 if TYPE_CHECKING:
     from chipiron.players.boardevaluators.table_base import SyzygyTable
@@ -187,7 +193,7 @@ class LearnNNFromScratchScript:
             with tempfile.TemporaryDirectory() as tmpdir:
                 mlflow.set_tracking_uri(f"file:{tmpdir}")  # <- Key line!
         else:
-            mlflow.set_tracking_uri(uri=chipiron.utils.path_variables.ML_FLOW_URI_PATH)
+            mlflow.set_tracking_uri(uri=ML_FLOW_URI_PATH)
 
         random_generator = random.Random(self.args.base_script_args.seed)
         syzygy_table: SyzygyTable[Any] | None = create_syzygy(
@@ -244,17 +250,11 @@ class LearnNNFromScratchScript:
                 self.index_evaluating_player_data + index_range_evaluating_player
             )
 
-            board_fen_to_recompute_value = self.boards_dataset.get_unprocessed(
+            board_fen_to_recompute_value: str = self.boards_dataset.get_unprocessed(
                 idx=index_evaluating_player_data_temp
             )["fen"]
 
             assert isinstance(self.boards_dataset.data, pandas.DataFrame)
-            # print(
-            #    "debug",
-            #    board_fen_to_recompute_value,
-            #    len(self.boards_dataset.data),
-            #    index_evaluating_player_data_temp,
-            # )
 
             with suppress_logging(
                 chipiron_logger, level=logging.WARNING

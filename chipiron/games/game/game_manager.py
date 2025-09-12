@@ -364,11 +364,13 @@ class GameManager:
             path_file_obj = f"{path_file}_game_report.yaml"
             path_file_txt = f"{path_file}.txt"
             with open(path_file_txt, "a", encoding="utf-8") as the_fileText:
+                move_1 = None
                 for counter, move in enumerate(self.game.move_history):
                     if counter % 2 == 0:
                         move_1 = move
                     else:
-                        the_fileText.write(str(move_1) + " " + str(move) + "\n")
+                        if move_1 is not None:
+                            the_fileText.write(str(move_1) + " " + str(move) + "\n")
             with open(path_file_obj, "w", encoding="utf-8") as file:
                 yaml.dump(
                     asdict(game_report, dict_factory=custom_asdict_factory),

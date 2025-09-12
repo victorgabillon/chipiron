@@ -315,6 +315,7 @@ class UpdateIndexLocalMinChange:
         assert child_node.exploration_index_data is not None
 
         inter_level_interval: Interval | None = None
+        local_index = None
 
         if parent_node.exploration_index_data.index is None:
             child_node.exploration_index_data.index = None

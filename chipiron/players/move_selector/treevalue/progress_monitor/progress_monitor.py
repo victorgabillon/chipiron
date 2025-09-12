@@ -344,9 +344,9 @@ def create_stopping_criterion(
             assert isinstance(args, TreeMoveLimitArgs)
 
             stopping_criterion = TreeMoveLimit(tree_move_limit=args.tree_move_limit)
-        case other:
+        case _:
             raise ValueError(
-                f"stopping criterion builder: can not find {other} in file {__name__}"
+                f"stopping criterion builder: can not find {args.type} in file {__name__}"
             )
 
     return stopping_criterion

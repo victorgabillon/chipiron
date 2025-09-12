@@ -61,8 +61,10 @@ def create_exploration_index_data(
             base_index_dataclass_name = MinMaxPathValue
         case IndexComputationType.RECUR_ZIPF:
             base_index_dataclass_name = RecurZipfQuoolExplorationData
-        case other:
-            raise ValueError(f"not finding good case for {other} in file {__name__}")
+        case _:
+            raise ValueError(
+                f"not finding good case for {index_computation} in file {__name__}"
+            )
 
     index_dataclass_name: Any
     if depth_index:

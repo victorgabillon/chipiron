@@ -25,14 +25,13 @@ class StartingPositionArgs(Protocol):
     Dataclass representing the base class for starting position arguments.
     """
 
-    type: StartingPositionArgsType
-
     def get_fen(self) -> str:
         """
         Returns the FEN (Forsyth-Edwards Notation) string representing the current state of the chess board.
         Returns:
             str: The FEN string of the current board position.
         """
+        ...
 
 
 @dataclass

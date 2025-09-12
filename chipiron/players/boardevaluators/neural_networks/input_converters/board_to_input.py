@@ -75,6 +75,15 @@ class BoardToInput(Protocol):
 def create_board_to_input_from_representation(
     internal_tensor_representation_type: InternalTensorRepresentationType,
 ) -> BoardToInputFunction:
+    """Creates a BoardToInputFunction from an InternalTensorRepresentationType.
+
+    Args:
+        internal_tensor_representation_type (InternalTensorRepresentationType): The internal tensor representation type to use.
+
+    Returns:
+        BoardToInputFunction: A function that converts a chess board to a tensor input.
+    """
+
     representation_factory: RepresentationFactory[Any] | None = (
         create_board_representation_factory(
             internal_tensor_representation_type=internal_tensor_representation_type
@@ -90,6 +99,18 @@ def create_board_to_input_from_representation(
 def create_board_to_input(
     model_input_representation_type: ModelInputRepresentationType,
 ) -> BoardToInputFunction:
+    """Creates a BoardToInputFunction from a ModelInputRepresentationType.
+
+    Args:
+        model_input_representation_type (ModelInputRepresentationType): The model input representation type to use.
+
+    Raises:
+        Exception: If the model input representation type is not supported.
+
+    Returns:
+        BoardToInputFunction: A function that converts a chess board to a tensor input.
+    """
+
     board_to_input_convert: BoardToInputFunction
 
     match model_input_representation_type:
@@ -127,7 +148,9 @@ def create_board_to_input(
 
             board_to_input_convert = board_to_input_convert_two_sides
 
-        case other:
-            raise Exception(f"no matching case for {other} in {__name__}")
+        case _:
+            raise Exception(
+                f"no matching case for {model_input_representation_type} in {__name__}"
+            )
 
     return board_to_input_convert

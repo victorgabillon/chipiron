@@ -71,9 +71,17 @@ class Head(nn.Module):
         # todo investigate gap
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Applies self-attention to the input tensor.
+
+        Args:
+            x (torch.Tensor): Input tensor of shape (batch, time-step, channels).
+
+        Returns:
+            torch.Tensor: Output tensor of shape (batch, time-step, head size).
+        """
         # input of size (batch, time-step, channels)
         # output of size (batch, time-step, head size)
-        B, T, C = x.shape
+        # B, T, C = x.shape
         k = self.key(x)  # (B,T,hs)
         q = self.query(x)  # (B,T,hs)
         # compute attention scores ("affinities")
@@ -189,8 +197,7 @@ class TransformerOne(ChiNN):
     def _init_weights(self, module: Any) -> None:
         if isinstance(module, nn.Linear):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
-            if module.bias is not None:
-                torch.nn.init.zeros_(module.bias)
+            torch.nn.init.zeros_(module.bias)
 
     def forward(self, indices: list[list[int]]) -> torch.Tensor:
         # idx and targets are both (B,T) tensor of integers
