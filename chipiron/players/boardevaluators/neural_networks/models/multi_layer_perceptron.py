@@ -45,6 +45,11 @@ class MultiLayerPerceptronArgs:
         return f"Type: {self.type}, Neurons: [{neurons}], Activations: [{activations}]"
 
     def filename(self) -> str:
+        """Generates a filename for the model based on its architecture.
+
+        Returns:
+            str: A filename-safe string representing the model architecture.
+        """
         # Create a filename-safe version by replacing spaces with underscores and ensuring everything is lowercase
         neurons = "_".join(map(str, self.number_neurons_per_layer))
         activations = "_".join(act.value for act in self.list_of_activation_functions)
@@ -54,6 +59,15 @@ class MultiLayerPerceptronArgs:
 def build_sequential(
     layers: list[int], activations: list[ActivationFunctionType]
 ) -> nn.Sequential:
+    """Build a sequential neural network model.
+
+    Args:
+        layers (list[int]): A list of integers representing the number of neurons in each layer.
+        activations (list[ActivationFunctionType]): A list of activation functions to use in each layer.
+
+    Returns:
+        nn.Sequential: A sequential neural network model.
+    """
     modules: list[nn.Module] = []
     for i in range(len(layers) - 1):
         modules.append(nn.Linear(layers[i], layers[i + 1]))

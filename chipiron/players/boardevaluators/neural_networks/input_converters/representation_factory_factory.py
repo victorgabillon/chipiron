@@ -1,3 +1,7 @@
+"""
+This module contains a factory to create board representations.
+"""
+
 from typing import Any
 
 from .factory import RepresentationFactory
@@ -42,7 +46,9 @@ def create_board_representation_factory(
             )
         case InternalTensorRepresentationType.NO:
             board_representation_factory = None
-        case other:
-            raise Exception(f"trying to create {other} in file {__name__}")
+        case _:
+            raise ValueError(
+                f"trying to create {internal_tensor_representation_type} in file {__name__}"
+            )
 
     return board_representation_factory

@@ -216,7 +216,7 @@ class SyzygyTable[T_Board: IBoard](Protocol):
         Returns:
             chess.Move: The best move according to the tablebase.
         """
-        all_moves: list[moveKey] = board.legal_moves_.get_all()
+        all_moves: list[moveKey] = board.legal_moves.get_all()
         # avoid draws by 50 move rules in winning position, # otherwise look
         # for it to make it last and preserve pieces in case of mistake by opponent
 

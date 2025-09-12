@@ -57,9 +57,9 @@ def create(
                 args=args,
             )
 
-        case other:
+        case _:
             raise ValueError(
-                f"node selector construction: can not find {other}  {args} in file {__name__}"
+                f"node selector construction: can not find {args.type}  {args} in file {__name__}"
             )
 
     return node_move_opening_selector

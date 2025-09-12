@@ -130,7 +130,7 @@ class StockfishBoardEvaluator:
                 return 0.0
             else:
                 # Convert centipawns to pawns (divide by 100)
-                cp_value = white_score.cp if hasattr(white_score, "cp") else 0
+                cp_value = getattr(white_score, "cp", 0)
                 return float(cp_value) / 100.0
 
         except (chess.engine.EngineError, FileNotFoundError, OSError):

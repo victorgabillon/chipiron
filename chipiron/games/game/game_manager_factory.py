@@ -8,10 +8,10 @@ from typing import Any
 
 import chess
 
-import chipiron as ch
 import chipiron.environments.chess_env.board as boards
 import chipiron.players as players_m
 from chipiron.games.game.game_args import GameArgs
+from chipiron.games.game.game_playing_status import GamePlayingStatus
 from chipiron.players import PlayerFactoryArgs
 from chipiron.players.boardevaluators.board_evaluator import (
     IGameBoardEvaluator,
@@ -61,7 +61,9 @@ class GameManagerFactory:
     move_factory: MoveFactory
     implementation_args: ImplementationArgs
     universal_behavior: bool
-    subscribers: list[queue.Queue[IsDataclass]] = field(default_factory=list)
+    subscribers: list[queue.Queue[IsDataclass]] = field(
+        default_factory=lambda: list[queue.Queue[IsDataclass]]()
+    )
 
     def create(
         self,
@@ -103,7 +105,7 @@ class GameManagerFactory:
             self.main_thread_mailbox.get()
 
         # creating the game playing status
-        game_playing_status: ch.games.GamePlayingStatus = ch.games.GamePlayingStatus()
+        game_playing_status: GamePlayingStatus = GamePlayingStatus()
 
         game: Game = Game(
             playing_status=game_playing_status, board=board, seed_=game_seed

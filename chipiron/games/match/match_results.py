@@ -41,6 +41,7 @@ class IMatchResults(Protocol):
         Returns:
             SimpleResults: The simple results of the match.
         """
+        ...
 
     def __str__(self) -> str:
         """
@@ -49,6 +50,7 @@ class IMatchResults(Protocol):
         Returns:
             str: A string representation of the match results.
         """
+        ...
 
     def finish(self) -> None:
         """

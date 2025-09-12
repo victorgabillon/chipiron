@@ -119,8 +119,8 @@ def create_nn(nn_type_args: NNModelTypeArgs) -> ChiNN:
             net = MultiLayerPerceptron(args=nn_type_args)
         case TransformerArgs():
             net = TransformerOne(args=nn_type_args)
-        case other:
-            sys.exit(f"Create NN: can not find {other} in file {__name__}")
+        case _:
+            sys.exit(f"Create NN: can not find {nn_type_args} in file {__name__}")
     return net
 
 
@@ -128,6 +128,14 @@ def create_nn(nn_type_args: NNModelTypeArgs) -> ChiNN:
 def get_architecture_args_from_file(
     architecture_file_name: path,
 ) -> NeuralNetArchitectureArgs:
+    """Get the architecture arguments from a YAML file.
+
+    Args:
+        architecture_file_name (path): The path to the architecture YAML file.
+
+    Returns:
+        NeuralNetArchitectureArgs: The architecture arguments.
+    """
     args_dict: dict[Any, Any] = yaml_fetch_args_in_file(
         path_file=architecture_file_name
     )
@@ -140,11 +148,17 @@ def get_architecture_args_from_file(
 
 
 def get_architecture_args_from_folder(folder_path: path) -> NeuralNetArchitectureArgs:
+    """Get the architecture arguments from a folder.
+    Args:
+        folder_path (path): The path to the folder containing the architecture file.
+    Returns:
+        NeuralNetArchitectureArgs: The architecture arguments.
+    """
     architecture_file_name: path = get_nn_architecture_file_path_from(
         folder_path=folder_path
     )
     if not os.path.isfile(architecture_file_name):
-        raise Exception(f"this is not a file {architecture_file_name}")
+        raise FileNotFoundError(f"this is not a file {architecture_file_name}")
 
     nn_architecture_args: NeuralNetArchitectureArgs = get_architecture_args_from_file(
         architecture_file_name=architecture_file_name
@@ -156,6 +170,13 @@ def get_architecture_args_from_folder(folder_path: path) -> NeuralNetArchitectur
 def create_nn_from_param_path_and_architecture_args(
     model_weights_file_name: path, nn_architecture_args: NeuralNetArchitectureArgs
 ) -> tuple[ChiNN, NeuralNetArchitectureArgs]:
+    """Create a neural network from a parameter file and architecture arguments.
+    Args:
+        model_weights_file_name (path): The path to the model weights file.
+        nn_architecture_args (NeuralNetArchitectureArgs): The architecture arguments.
+    Returns:
+        tuple[ChiNN, NeuralNetArchitectureArgs]: The created neural network and the architecture arguments.
+    """
     net: ChiNN = create_nn(nn_type_args=nn_architecture_args.model_type_args)
     net.load_weights_from_file(path_to_param_file=model_weights_file_name)
     return net, nn_architecture_args
@@ -164,6 +185,14 @@ def create_nn_from_param_path_and_architecture_args(
 def create_nn_from_folder_path_and_existing_model(
     folder_path: path,
 ) -> tuple[ChiNN, NeuralNetArchitectureArgs]:
+    """Create a neural network from a folder path and existing model.
+
+    Args:
+        folder_path (path): The path to the folder containing the model files.
+
+    Returns:
+        tuple[ChiNN, NeuralNetArchitectureArgs]: _description_
+    """
     nn_architecture_args: NeuralNetArchitectureArgs = get_architecture_args_from_folder(
         folder_path=folder_path
     )

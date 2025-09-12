@@ -43,9 +43,13 @@ class League:
 
     folder_league: str
     seed: int
-    players_elo: ValueSortedDict = field(default_factory=ValueSortedDict)
-    players_args: dict[str, players.PlayerArgs] = field(default_factory=dict)
-    players_number_of_games_played: dict[str, int] = field(default_factory=dict)
+    players_elo: ValueSortedDict = field(default_factory=lambda: ValueSortedDict())
+    players_args: dict[str, players.PlayerArgs] = field(
+        default_factory=lambda: dict[str, players.PlayerArgs]()
+    )
+    players_number_of_games_played: dict[str, int] = field(
+        default_factory=lambda: dict[str, int]()
+    )
     id_for_next_player: int = 0
     K: int = 10
     ELO_HISTORY_LENGTH: int = 500
@@ -169,7 +173,7 @@ class League:
 
         # Logs the results
         path_logs_file: path = os.path.join(self.folder_league, "logs/log_results.txt")
-        with open(path_logs_file, "a") as log_file:
+        with open(path_logs_file, "a", encoding="utf-8") as log_file:
             log_file.write(
                 f"Game #{self.games_already_played} || "
                 f"{args_player_one.name} vs {args_player_two.name}: {match_report.match_results.get_player_one_wins()}-"
@@ -222,7 +226,7 @@ class League:
             if player != player_one_name_id and player != player_two_name_id:
                 self.players_elo[player].appendleft(self.players_elo[player][0])
 
-        with open(path_logs_file, "a") as log_file:
+        with open(path_logs_file, "a", encoding="utf-8") as log_file:
             log_file.write(
                 f"{player_one_name_id} increments its elo by {increment_one}: {old_elo_player_one} -> {new_elo_one}\n"
             )

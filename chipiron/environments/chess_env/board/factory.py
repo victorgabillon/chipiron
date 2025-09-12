@@ -46,6 +46,17 @@ def create_board(
     sort_legal_moves: bool = False,
     fen_with_history: FenPlusHistory | None = None,
 ) -> IBoard:
+    """Create a chess board.
+
+    Args:
+        use_rust_boards (bool, optional): Whether to use Rust-based boards. Defaults to False.
+        use_board_modification (bool, optional): Whether to use board modification. Defaults to False.
+        sort_legal_moves (bool, optional): Whether to sort legal moves. Defaults to False.
+        fen_with_history (FenPlusHistory | None, optional): The FEN string with history. Defaults to None.
+
+    Returns:
+        IBoard: The created chess board.
+    """
     board_factory: BoardFactory = create_board_factory(
         use_rust_boards=use_rust_boards,
         use_board_modification=use_board_modification,
@@ -117,7 +128,7 @@ def create_board_chi(
         chess_board.move_stack = [
             chess.Move.from_uci(move) for move in fen_with_history.historical_moves
         ]
-        chess_board._stack = fen_with_history.historical_boards
+        # chess_board._stack = fen_with_history.historical_boards
 
     else:
         chess_board = chess.Board()

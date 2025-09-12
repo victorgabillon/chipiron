@@ -426,8 +426,10 @@ class RangedDescendants(Descendants):
             self.number_of_descendants_at_half_move.pop(half_move)
             self.descendants_at_half_move.pop(half_move)
             if half_move == self.max_half_move:
+                assert self.max_half_move is not None
                 self.max_half_move -= 1
             if half_move == self.min_half_move:
+                assert self.min_half_move is not None
                 self.min_half_move += 1
             assert self.max_half_move is not None
             assert self.min_half_move is not None

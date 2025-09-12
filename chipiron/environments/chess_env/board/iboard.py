@@ -1,9 +1,12 @@
+"""
+Interface for a chess board.
+"""
+
 import typing
 from dataclasses import asdict
 from typing import Any, Iterator, Protocol, Self
 
 import chess
-import shakmaty_python_binding
 import yaml
 
 from chipiron.environments.chess_env.board.board_modification import BoardModificationP
@@ -24,23 +27,52 @@ boardKeyWithoutCounters = tuple[
 
 
 class LegalMoveKeyGeneratorP(Protocol):
-    generated_moves: (
-        dict[moveKey, chess.Move] | list[shakmaty_python_binding.MyMove] | None
-    )
+    """Protocol for a legal move generator that yields move keys."""
+
     all_generated_keys: list[moveKey] | None
     # whether to sort the legal_moves by their respective uci for easy comparison of various implementations
     sort_legal_moves: bool = False
 
-    def __iter__(self) -> Iterator[moveKey]: ...
+    def __iter__(self) -> Iterator[moveKey]:
+        """Returns an iterator over the legal move keys."""
+        ...
 
-    def __next__(self) -> moveKey: ...
+    def __next__(self) -> moveKey:
+        """Returns the next legal move key."""
+        ...
 
-    def more_than_one_move(self) -> bool: ...
+    def more_than_one_move(self) -> bool:
+        """Checks if there is more than one legal move available.
 
-    def get_all(self) -> list[moveKey]: ...
+        Returns:
+            bool: True if there is more than one legal move, False otherwise.
+        """
+        ...
+
+    def get_all(self) -> list[moveKey]:
+        """Returns a list of all legal move keys."""
+        ...
+
+    def get_uci_from_move_key(self, move_key: moveKey) -> moveUci:
+        """Returns the UCI string corresponding to the given move key.
+        Args:
+            move_key (moveKey): The move key to convert to UCI.
+        Returns:
+            moveUci: The UCI string corresponding to the given move key."""
+        ...
+
+    def copy_with_reset(self) -> Self:
+        """Creates a copy of the legal move generator with an optional reset of generated moves.
+
+        Returns:
+            Self: A new instance of the legal move generator with the specified generated moves.
+        """
+        ...
 
     @property
-    def fen(self) -> fen: ...
+    def fen(self) -> fen:
+        """Returns the FEN string representation of the board."""
+        ...
 
 
 def compute_key(
@@ -97,10 +129,9 @@ PieceMap = typing.Annotated[
 
 
 class IBoard(Protocol):
-    """Interface for a chess board."""
-
     fast_representation_: boardKey
-    legal_moves_: LegalMoveKeyGeneratorP
+
+    """Interface for a chess board."""
 
     def get_uci_from_move_key(self, move_key: moveKey) -> moveUci:
         """Returns the UCI string corresponding to the given move key.
@@ -108,8 +139,7 @@ class IBoard(Protocol):
             move_key (moveKey): The move key to convert to UCI.
         Returns:
             moveUci: The UCI string corresponding to the given move key."""
-        assert self.legal_moves_.generated_moves is not None
-        return self.legal_moves_.generated_moves[move_key].uci()
+        return self.legal_moves.get_uci_from_move_key(move_key)
 
     def get_move_key_from_uci(self, move_uci: moveUci) -> moveKey:
         """Returns the move key corresponding to the given UCI string.
@@ -120,12 +150,11 @@ class IBoard(Protocol):
             Raises:
                 KeyError: If the UCI string is not found in the legal moves.
         """
-        number_moves: int = len(self.legal_moves_.get_all())
+        number_moves: int = len(self.legal_moves.get_all())
         i: int
-        assert self.legal_moves_.generated_moves is not None
 
         for i in range(number_moves):
-            if self.legal_moves_.generated_moves[i].uci() == move_uci:
+            if self.legal_moves.get_uci_from_move_key(i) == move_uci:
                 return i
 
         raise KeyError(
@@ -264,7 +293,9 @@ class IBoard(Protocol):
         yaml.dump(asdict(fen_plus_moves), file, default_flow_style=False)
 
     @property
-    def ep_square(self) -> int | None: ...
+    def ep_square(self) -> int | None:
+        """Returns the en passant square if it exists, otherwise None."""
+        ...
 
     @property
     def fast_representation(self) -> boardKey:

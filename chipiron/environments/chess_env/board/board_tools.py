@@ -27,22 +27,25 @@ def convert_line(line: AnyStr, index: int) -> str:
         return str(count) + convert_line(line[count:], index + count)
 
 
-def convert_to_fen(ascii_board: AnyStr) -> str:
+def convert_to_fen(ascii_board: str | bytes) -> str:
     """
     Convert an ascii board to a FEN string.
-
     Args:
-        ascii_board (AnyStr): The ascii board.
-
+        ascii_board (str | bytes): The ascii board.
     Returns:
         str: The converted FEN string.
     """
-    list_ascii_board: list[AnyStr] = ascii_board.splitlines()
+    # Handle bytes input by converting to string
+    if isinstance(ascii_board, bytes):
+        ascii_board = ascii_board.decode("utf-8")
+
+    list_ascii_board: list[str] = ascii_board.splitlines()
     fen: str = ""
-    list_ascii_board2: list[AnyStr] = list_ascii_board[:-1]
-    line: AnyStr
+    list_ascii_board2: list[str] = list_ascii_board[:-1]
+
     for line in list_ascii_board2:
         fen = fen + convert_line(line, 0) + "/"
+
     fen = fen[:-1]
     fen = fen + " " + str(list_ascii_board[-1])
     return fen

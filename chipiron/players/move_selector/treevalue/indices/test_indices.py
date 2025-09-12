@@ -46,6 +46,7 @@ from chipiron.players.move_selector.treevalue.trees.move_and_value_tree import (
 from chipiron.utils.small_tools import path
 
 if TYPE_CHECKING:
+    from chipiron.environments import HalfMove
     from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 
 
@@ -75,9 +76,8 @@ def make_tree_from_file(
     """
 
     # atm it is very ad hoc to test index so takes a lots of shortcut, will be made more general when needed
-    with open(file_path, "r") as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         tree_yaml = yaml.safe_load(file)
-    print("tree", tree_yaml)
     yaml_nodes = tree_yaml["nodes"]
 
     node_factory_name: str = "Base_with_algorithm_tree_node"
@@ -109,10 +109,9 @@ def make_tree_from_file(
         )
     )
 
-    half_moves = {}
-    id_nodes = {}
+    half_moves: dict[int, HalfMove] = {}
+    id_nodes: dict[int, AlgorithmNode] = {}
     for yaml_node in yaml_nodes:
-        # print('yaml_node[id] ',yaml_node['id'] )
         if yaml_node["id"] == 0:
             tree_expansions = TreeExpansions()
 
