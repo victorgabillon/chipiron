@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
 import chipiron.environments.chess_env.board as boards
-from chipiron.utils import seed
+from chipiron.utils import Seed
 from chipiron.utils.logger import chipiron_logger
 
 from .move_selector import MoveRecommendation
@@ -41,7 +41,7 @@ class CommandLineHumanMoveSelector:
     A move selector that allows a human player to select moves through the command line interface.
     """
 
-    def select_move(self, board: boards.IBoard, move_seed: seed) -> MoveRecommendation:
+    def select_move(self, board: boards.IBoard, move_seed: Seed) -> MoveRecommendation:
         """
         Selects a move based on user input through the command line interface.
 

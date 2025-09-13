@@ -12,11 +12,12 @@ Functions:
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Callable, Protocol
+from typing import TYPE_CHECKING, Any, Callable, Protocol, no_type_check
 
 import numpy as np
 import pandas
 import torch
+from pandas import DataFrame
 from torch.utils.data import Dataset
 
 from chipiron.environments.chess_env.board import IBoard
@@ -44,6 +45,7 @@ class DataSetArgs:
 type RawSample = pandas.Series
 
 
+@no_type_check
 class MyDataSet[ProcessedSample](Dataset[ProcessedSample | RawSample], ABC):
     """
     A custom dataset class that loads and preprocesses data.
@@ -73,8 +75,9 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample | RawSample], ABC):
         """
         self.file_name = file_name
         self.preprocessing = preprocessing
-        self.data: pandas.DataFrame | list[ProcessedSample] | None = None
+        self.data = None
 
+    @no_type_check
     def load(self) -> None:
         """
         Loads the dataset from the file.
@@ -82,7 +85,15 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample | RawSample], ABC):
         chipiron_logger.info("Loading the dataset...")
         start_time = time.time()
 
-        raw_data = pandas.read_pickle(self.file_name).copy()
+        raw_data_temp = pandas.read_pickle(self.file_name).copy()
+
+        # Ensure we always work with a DataFrame
+        raw_data: DataFrame
+        if isinstance(raw_data_temp, pandas.Series):
+            raw_data = raw_data_temp.to_frame()
+        else:
+            raw_data = raw_data_temp
+
         chipiron_logger.info("raw_data %s", str(type(raw_data).__name__))
         chipiron_logger.info(
             "--- LOAD READ PICKLE %.2f seconds ---", time.time() - start_time
@@ -93,12 +104,13 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample | RawSample], ABC):
             chipiron_logger.info("Preprocessing dataset...")
             processed_data: list[ProcessedSample] = []
 
+            # Handle DataFrame case
             for idx in range(len(raw_data)):
                 if idx % 10 == 0:
                     chipiron_logger.info(
                         "Processing progress: %.2f%%", idx / len(raw_data) * 100
                     )
-                row = raw_data.iloc[idx]
+                row: pandas.Series[Any] = raw_data.iloc[idx]
                 processed_data.append(self.process_raw_row(row))
 
             self.data = processed_data
@@ -132,6 +144,7 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample | RawSample], ABC):
             raise RuntimeError("Dataset not loaded yet. Call `load()` first.")
         return len(self.data)
 
+    @no_type_check
     def __getitem__(self, idx: int) -> ProcessedSample | RawSample:
         """
         Returns the item at the given index.
@@ -153,6 +166,7 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample | RawSample], ABC):
             assert isinstance(self.data, pandas.DataFrame)
             return self.process_raw_row(self.data.iloc[index])
 
+    @no_type_check
     def get_unprocessed(self, idx: int) -> pandas.Series:
         """
         Returns the unprocessed raw row at the given index.
@@ -174,6 +188,7 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample | RawSample], ABC):
         return self.preprocessing and isinstance(self.data, list)
 
 
+@no_type_check
 def process_stockfish_value(row: pandas.Series) -> float:
     """
     Processes the stockfish value for a given board and row.
@@ -201,15 +216,19 @@ class SupervisedData(Protocol):
         """
         Returns the input layer tensor.
         """
+        ...
 
     def get_target_value(self) -> torch.Tensor:
         """
         Returns the target value tensor.
         """
+        ...
 
 
 @dataclass
 class FenAndValueData:
+    """Represents the FEN and value data for a chess position."""
+
     fen_tensor: torch.Tensor
     value_tensor: torch.Tensor
     is_batch: bool = False  # Flag to indicate if this contains batched data
@@ -295,6 +314,7 @@ class FenAndValueDataSet(MyDataSet[FenAndValueData]):
             transform_white_value_to_model_output_function
         )
 
+    @no_type_check
     def process_raw_row(self, row: pandas.Series) -> FenAndValueData:
         """
         Processes a raw row into input and target tensors.

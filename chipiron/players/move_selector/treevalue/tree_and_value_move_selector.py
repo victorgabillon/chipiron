@@ -21,7 +21,7 @@ from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor 
     AllStoppingCriterionArgs,
 )
 from chipiron.players.move_selector.treevalue.search_factory import NodeSelectorFactory
-from chipiron.utils import seed
+from chipiron.utils import Seed
 from chipiron.utils.dataclass import IsDataclass
 
 from . import recommender_rule
@@ -54,7 +54,7 @@ class TreeAndValueMoveSelector:
     recommend_move_after_exploration: recommender_rule.AllRecommendFunctionsArgs
     queue_progress_player: queue.Queue[IsDataclass] | None
 
-    def select_move(self, board: boards.IBoard, move_seed: seed) -> MoveRecommendation:
+    def select_move(self, board: boards.IBoard, move_seed: Seed) -> MoveRecommendation:
         """
         Selects the best move based on the tree and value strategy.
 

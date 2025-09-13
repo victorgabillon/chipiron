@@ -9,7 +9,7 @@ from typing import Any, Protocol
 
 import chess
 
-from chipiron.utils import seed
+from chipiron.utils import Seed
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.dataclass import IsDataclass
 
@@ -40,7 +40,7 @@ class MoveFunction(Protocol):
         None: This function does not return any value.
     """
 
-    def __call__(self, fen_plus_history: FenPlusHistory, seed_int: seed) -> None: ...
+    def __call__(self, fen_plus_history: FenPlusHistory, seed_int: Seed) -> None: ...
 
 
 def send_board_to_player_process_mailbox(
