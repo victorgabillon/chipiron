@@ -41,17 +41,30 @@ class IndexUpdateInstructionsTowardsOneParentNode:
         moves_with_updated_index (Set[IMove]): A set of children with updated index values.
     """
 
-    moves_with_updated_index: set[moveKey] = field(default_factory=set)
+    moves_with_updated_index: set[moveKey] = field(
+        default_factory=lambda: set[moveKey]()
+    )
 
     def add_update_from_one_child_node(
         self,
         update_from_one_child_node: IndexUpdateInstructionsFromOneNode,
         move_from_parent_to_child: moveKey,
     ) -> None:
+        """Adds an update from a child node to the parent node.
+
+        Args:
+            update_from_one_child_node (IndexUpdateInstructionsFromOneNode): The update instructions from the child node.
+            move_from_parent_to_child (moveKey): The move key representing the parent's move to the child.
+        """
         if update_from_one_child_node.updated_index:
             self.moves_with_updated_index.add(move_from_parent_to_child)
 
     def add_update_toward_one_parent_node(self, another_update: Self) -> None:
+        """Adds an update from another child node to the parent node.
+
+        Args:
+            another_update (Self): The update instructions from another child node.
+        """
         self.moves_with_updated_index = (
             self.moves_with_updated_index | another_update.moves_with_updated_index
         )
@@ -67,4 +80,5 @@ class IndexUpdateInstructionsTowardsOneParentNode:
         return empty_bool
 
     def print_info(self) -> None:
+        """Prints information about the moves with updated indices."""
         print(self.moves_with_updated_index)

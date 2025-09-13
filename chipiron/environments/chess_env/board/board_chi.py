@@ -221,7 +221,7 @@ class BoardChi(IBoard):
 
         if self.compute_board_modification:
             if not use_compute_modification_function:
-                board_modifications = self.push_and_return_modification(move)  # type: ignore
+                board_modifications = self.push_and_return_modification(move)
             else:
                 previous_pawns = self.chess_board.pawns
                 previous_kings = self.chess_board.kings

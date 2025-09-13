@@ -120,10 +120,16 @@ class UpdateInstructionsTowardsOneParentNode:
 
 @dataclass
 class UpdateInstructionsTowardsMultipleNodes:
+    """Represents update instructions towards multiple parent nodes."""
+
     # mapping from nodes to the update instructions that are intended to them for consideration (performing the updates)
     one_node_instructions: DictOfNumberedDictWithPointerOnMax[
         ITreeNode[Any], UpdateInstructionsTowardsOneParentNode
-    ] = field(default_factory=DictOfNumberedDictWithPointerOnMax)
+    ] = field(
+        default_factory=lambda: DictOfNumberedDictWithPointerOnMax[
+            ITreeNode[Any], UpdateInstructionsTowardsOneParentNode
+        ]()
+    )
 
     def add_update_from_one_child_node(
         self,

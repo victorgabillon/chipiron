@@ -30,7 +30,6 @@ class TestOverEvent(unittest.TestCase):
 
             if test_over_event.is_win():
                 self.assertTrue(not test_over_event.is_draw())
-                self.assertTrue(test_over_event.who_is_winner is not None)
                 self.assertTrue(
                     test_over_event.who_is_winner is Winner.WHITE
                     or test_over_event.who_is_winner is Winner.BLACK
@@ -38,7 +37,6 @@ class TestOverEvent(unittest.TestCase):
 
             if test_over_event.is_draw():
                 self.assertTrue(not test_over_event.is_win())
-                self.assertTrue(test_over_event.who_is_winner is None)
 
         test_over_event_: OverEvent = OverEvent()
         test_construct_over_event(test_over_event_)

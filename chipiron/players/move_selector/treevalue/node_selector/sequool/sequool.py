@@ -80,6 +80,7 @@ class HalfMoveSelector(Protocol):
         Returns:
             The selected half-move.
         """
+        ...
 
 
 @dataclass
@@ -91,7 +92,9 @@ class StaticNotOpenedSelector:
     all_nodes_not_opened: Descendants
 
     # counting the visits for each half_move
-    count_visits: dict[HalfMove, int] = field(default_factory=dict)
+    count_visits: dict[HalfMove, int] = field(
+        default_factory=lambda: dict[HalfMove, int]()
+    )
 
     def update_from_expansions(
         self, latest_tree_expansions: "tree_man.TreeExpansions"
