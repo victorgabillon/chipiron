@@ -10,7 +10,7 @@ from chipiron.environments.chess_env.move import moveUci
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
     BoardEvaluation,
 )
-from chipiron.utils import seed
+from chipiron.utils import Seed
 
 
 @dataclass
@@ -30,7 +30,7 @@ class MoveSelector(Protocol):
     Move selectors are responsible for selecting the best move to play given a chess board and a move seed.
     """
 
-    def select_move(self, board: IBoard, move_seed: seed) -> MoveRecommendation:
+    def select_move(self, board: IBoard, move_seed: Seed) -> MoveRecommendation:
         """
         Selects the best move to play given a chess board and a move seed.
 

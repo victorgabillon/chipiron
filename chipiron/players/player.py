@@ -11,7 +11,7 @@ from chipiron.players.move_selector.move_selector import (
     MoveRecommendation,
     MoveSelector,
 )
-from chipiron.utils import seed
+from chipiron.utils import Seed
 from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:
@@ -55,7 +55,7 @@ class Player:
         return self.id
 
     def select_move(
-        self, fen_plus_history: FenPlusHistory, seed_int: seed
+        self, fen_plus_history: FenPlusHistory, seed_int: Seed
     ) -> MoveRecommendation:
         """
         Returns the best move computed by the player.

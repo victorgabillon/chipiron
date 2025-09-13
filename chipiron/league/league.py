@@ -7,12 +7,13 @@ import random
 import shutil
 from collections import deque
 from dataclasses import dataclass, field
+from typing import cast, no_type_check
 
 import plotly.graph_objects as go
 from sortedcollections import ValueSortedDict
 
 import chipiron as ch
-import chipiron.players as players
+from chipiron import players
 from chipiron.games.game.game_args import GameArgs
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_factories import create_match_manager
@@ -24,6 +25,7 @@ from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.utils.small_tools import mkdir_if_not_existing, path
 
 
+@no_type_check
 @dataclass(slots=True)
 class League:
     """
@@ -43,7 +45,8 @@ class League:
 
     folder_league: str
     seed: int
-    players_elo: ValueSortedDict = field(default_factory=lambda: ValueSortedDict())
+    # todo replace ValueSortedDict ed because it screws type anotation
+    players_elo: ValueSortedDict = field(default_factory=ValueSortedDict)
     players_args: dict[str, players.PlayerArgs] = field(
         default_factory=lambda: dict[str, players.PlayerArgs]()
     )
@@ -120,6 +123,7 @@ class League:
         print("elo", self.players_elo)
         print("args", self.players_args)
 
+    @no_type_check
     def run(self) -> None:
         """
         Runs a game in the league.
@@ -188,6 +192,7 @@ class League:
 
         self.games_already_played += 1
 
+    @no_type_check
     def update_elo(self, match_results: MatchResults, path_logs_file: path) -> None:
         """
         Updates the Elo ratings of the players based on the match results.
@@ -201,10 +206,10 @@ class League:
         """
         # coded for one single game!!
         player_one_name_id = match_results.player_one_name_id
-        elo_player_one = self.players_elo[player_one_name_id][0]
+        elo_player_one: float = cast("float", self.players_elo[player_one_name_id][0])
         power_player_one = 10 ** (elo_player_one / 400)
         player_two_name_id = match_results.player_two_name_id
-        elo_player_two = self.players_elo[player_two_name_id][0]
+        elo_player_two: float = cast("float", self.players_elo[player_two_name_id][0])
         power_player_two = 10 ** (elo_player_two / 400)
         Eone = power_player_one / (power_player_one + power_player_two)
         Etwo = power_player_two / (power_player_one + power_player_two)
@@ -212,7 +217,7 @@ class League:
         Perf_one = match_results.get_player_one_wins() + match_results.get_draws() / 2.0
         Perf_two = match_results.get_player_two_wins() + match_results.get_draws() / 2.0
 
-        print(elo_player_one, self.players_elo[player_one_name_id])
+        print(elo_player_one, cast("float", self.players_elo[player_one_name_id][0]))
         old_elo_player_one = elo_player_one
         old_elo_player_two = elo_player_two
         increment_one = self.K * (Perf_one - Eone)
@@ -223,8 +228,10 @@ class League:
         self.players_elo[player_two_name_id].appendleft(new_elo_two)
 
         for player in self.players_elo:
+            player = cast("str", player)
             if player != player_one_name_id and player != player_two_name_id:
-                self.players_elo[player].appendleft(self.players_elo[player][0])
+                player_elo_deque = cast("deque[float]", self.players_elo[player])
+                player_elo_deque.appendleft(player_elo_deque[0])
 
         with open(path_logs_file, "a", encoding="utf-8") as log_file:
             log_file.write(
@@ -236,6 +243,7 @@ class League:
 
         self.update_elo_graph()
 
+    @no_type_check
     def update_elo_graph(self) -> None:
         """
         Updates the Elo rating graph.
@@ -244,9 +252,12 @@ class League:
         """
         fig = go.Figure()
 
-        for player_name, elo in self.players_elo.items():
+        # Type: ignore because ValueSortedDict doesn't support generics
+        for player_name_obj, elo_obj in self.players_elo.items():
             # Convert deque to list for plotting
-            elo_list = list(elo)
+            player_name: str = player_name_obj
+            elo_deque: deque[float] = elo_obj
+            elo_list: list[float] = list(elo_deque)
             elo_list.reverse()  # Reverse to show chronological order
 
             fig.add_trace(

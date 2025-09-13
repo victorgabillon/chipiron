@@ -9,7 +9,7 @@ import typing
 import chess
 
 import chipiron.players as players
-from chipiron.utils import seed
+from chipiron.utils import Seed
 from chipiron.utils.small_tools import unique_int_from_list
 
 from .game_args import GameArgs
@@ -49,7 +49,7 @@ class GameArgsFactory:
 
     def generate_game_args(
         self, game_number: int
-    ) -> tuple[dict[chess.Color, players.PlayerFactoryArgs], GameArgs, seed | None]:
+    ) -> tuple[dict[chess.Color, players.PlayerFactoryArgs], GameArgs, Seed | None]:
         """
         Generate game arguments for a specific game number.
 
@@ -61,7 +61,7 @@ class GameArgsFactory:
             color to factory arguments mapping, game arguments, and the merged seed.
 
         """
-        merged_seed: seed | None = unique_int_from_list([self.seed_, game_number])
+        merged_seed: Seed | None = unique_int_from_list([self.seed_, game_number])
         assert merged_seed is not None
 
         player_one_factory_args: players.PlayerFactoryArgs = players.PlayerFactoryArgs(

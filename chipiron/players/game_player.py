@@ -8,7 +8,7 @@ import queue
 import chess
 
 from chipiron.players.move_selector.move_selector import MoveRecommendation
-from chipiron.utils import seed
+from chipiron.utils import Seed
 from chipiron.utils.communication.player_game_messages import MoveMessage
 from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
@@ -39,7 +39,7 @@ class GamePlayer:
         return self._player
 
     def select_move(
-        self, fen_plus_history: FenPlusHistory, seed_int: seed | None = None
+        self, fen_plus_history: FenPlusHistory, seed_int: Seed | None = None
     ) -> MoveRecommendation:
         """Selects the best move to play based on the current board position.
 
@@ -65,7 +65,7 @@ def game_player_computes_move_on_board_and_send_move_in_queue(
     fen_plus_history: FenPlusHistory,
     game_player: GamePlayer,
     queue_move: queue.Queue[IsDataclass],
-    seed_int: seed,
+    seed_int: Seed,
 ) -> None:
     """Computes the move for the game player on the given board and sends the move in the queue.
 

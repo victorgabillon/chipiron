@@ -24,7 +24,7 @@ from .game_player import (
 from .player_args import PlayerFactoryArgs
 
 if TYPE_CHECKING:
-    from chipiron.utils import seed
+    from chipiron.utils import Seed
 
     from ..environments.chess_env.board.utils import FenPlusHistory
 
@@ -127,7 +127,7 @@ class PlayerProcess(multiprocessing.Process):
                 if isinstance(message, BoardMessage):
                     board_message: BoardMessage = message
                     fen_plus_moves: FenPlusHistory = board_message.fen_plus_moves
-                    seed_: seed | None = board_message.seed
+                    seed_: Seed | None = board_message.seed
                     chipiron_logger.info(
                         "Player thread got the board %s", fen_plus_moves.current_fen
                     )

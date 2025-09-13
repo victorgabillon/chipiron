@@ -35,6 +35,8 @@ from chipiron.utils.logger import chipiron_logger
 
 @dataclass
 class MultiLayerPerceptronArgs:
+    """Arguments for the MultiLayerPerceptron model."""
+
     type: Literal[NNModelType.MULTI_LAYER_PERCEPTRON]
     number_neurons_per_layer: list[int]
     list_of_activation_functions: list[ActivationFunctionType]
@@ -85,16 +87,16 @@ def extract_sequential_model_data(model: nn.Sequential) -> dict[str, Any]:
         model (nn.Sequential): The Sequential model to extract from.
 
     Returns:
-        Dict[str, Any]: A dictionary with layer names as keys and parameter data as values.
+        dict[str, Any]: A dictionary with layer names as keys and parameter data as values.
     """
-    layers_data = {}
+    layers_data: dict[str, Any] = {}
 
     for idx, layer in enumerate(model):
         layer_info = {}
-        if hasattr(layer, "weight") and layer.weight is not None:
+        if hasattr(layer, "weight"):  # and layer.weight is not None:
             weight_tensor = cast("torch.Tensor", layer.weight)
             layer_info["weight"] = weight_tensor.detach().cpu().numpy().tolist()
-        if hasattr(layer, "bias") and layer.bias is not None:
+        if hasattr(layer, "bias"):  # and layer.bias is not None:
             bias_tensor = cast("torch.Tensor", layer.bias)
             layer_info["bias"] = bias_tensor.detach().cpu().numpy().tolist()
 

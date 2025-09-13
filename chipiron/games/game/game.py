@@ -10,7 +10,7 @@ from chipiron.environments.chess_env.board.utils import fen
 from chipiron.environments.chess_env.move import moveUci
 from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.players.factory_higher_level import MoveFunction
-from chipiron.utils import seed, unique_int_from_list
+from chipiron.utils import Seed, unique_int_from_list
 from chipiron.utils.communication.gui_messages import GameStatusMessage
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.dataclass import IsDataclass
@@ -32,7 +32,7 @@ class Game:
 
     _playing_status: GamePlayingStatus  # todo should this be here? looks related to gui
     _current_board: IBoard
-    _seed: seed | None
+    _seed: Seed | None
     _fen_history: list[fen]
     _move_history: list[moveUci]
 
@@ -41,7 +41,7 @@ class Game:
     _board_history: list[IBoard]
 
     def __init__(
-        self, board: IBoard, playing_status: GamePlayingStatus, seed_: seed = 0
+        self, board: IBoard, playing_status: GamePlayingStatus, seed_: Seed = 0
     ):
         """
         Initializes the Game object.
@@ -58,6 +58,16 @@ class Game:
         self._move_history = []
         board_copy: IBoard = board.copy(stack=True)
         self._board_history = [board_copy]
+
+    @property
+    def seed(self) -> Seed | None:
+        """
+        Gets the seed for random number generation.
+
+        Returns:
+            seed: The seed for random number generation.
+        """
+        return self._seed
 
     def play_move(self, move: moveKey) -> None:
         """
@@ -328,7 +338,7 @@ class ObservableGame:
             for move_function in self.move_functions:
                 if not self.game.board.is_game_over():
                     merged_seed: int | None = unique_int_from_list(
-                        [self.game._seed, self.game.board.ply()]
+                        [self.game.seed, self.game.board.ply()]
                     )
                     if merged_seed is not None:
                         move_function(

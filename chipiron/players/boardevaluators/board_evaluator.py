@@ -36,6 +36,7 @@ class IGameBoardEvaluator(Protocol):
         """
         Evaluates a board and returns the evaluation values for stock and chi.
         """
+        ...
 
     def add_evaluation(
         self, player_color: chess.Color, evaluation: BoardEvaluation
@@ -43,6 +44,7 @@ class IGameBoardEvaluator(Protocol):
         """
         Adds an evaluation value for a player.
         """
+        ...
 
 
 class GameBoardEvaluator:

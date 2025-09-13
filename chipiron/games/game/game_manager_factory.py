@@ -22,7 +22,7 @@ from chipiron.players.factory_higher_level import (
     PlayerObserverFactory,
     create_player_observer_factory,
 )
-from chipiron.utils import path, seed
+from chipiron.utils import Seed, path
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage
 from chipiron.utils.dataclass import IsDataclass
 
@@ -69,7 +69,7 @@ class GameManagerFactory:
         self,
         args_game_manager: GameArgs,
         player_color_to_factory_args: dict[chess.Color, PlayerFactoryArgs],
-        game_seed: seed,
+        game_seed: Seed,
     ) -> GameManager:
         """
         Create a GameManager with the given arguments

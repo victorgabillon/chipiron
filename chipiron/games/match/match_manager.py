@@ -16,7 +16,7 @@ from chipiron.games.match.match_results import IMatchResults, MatchReport, Match
 from chipiron.games.match.match_results_factory import MatchResultsFactory
 from chipiron.games.match.observable_match_result import ObservableMatchResults
 from chipiron.players import PlayerFactoryArgs
-from chipiron.utils import path, seed
+from chipiron.utils import Seed, path
 from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
 
@@ -103,7 +103,7 @@ class MatchManager:
         while not self.game_args_factory.is_match_finished():
             args_game: GameArgs
             player_color_to_factory_args: dict[chess.Color, PlayerFactoryArgs]
-            game_seed: seed | None
+            game_seed: Seed | None
             player_color_to_factory_args, args_game, game_seed = (
                 self.game_args_factory.generate_game_args(game_number)
             )
@@ -159,7 +159,7 @@ class MatchManager:
         player_color_to_factory_args: dict[chess.Color, PlayerFactoryArgs],
         args_game: GameArgs,
         game_number: int,
-        game_seed: seed,
+        game_seed: Seed,
     ) -> GameReport:
         """Plays one game and returns the game report.
 

@@ -34,8 +34,8 @@ class FenPlusHistory:
 
     current_fen: fen
     historical_moves: list[moveUci] = field(default_factory=lambda: list[moveUci]())
-    historical_boards: list[chess._BoardState] = field(
-        default_factory=lambda: list[chess._BoardState]()
+    historical_boards: list[chess._BoardState] = field(  # pyright: ignore[reportPrivateUsage]
+        default_factory=lambda: list[chess._BoardState]()  # pyright: ignore[reportPrivateUsage]
     )
 
     def current_turn(self) -> chess.Color:
