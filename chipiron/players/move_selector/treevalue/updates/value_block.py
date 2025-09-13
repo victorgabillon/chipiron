@@ -21,6 +21,8 @@ from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_nod
 
 @dataclass(slots=True)
 class ValueUpdateInstructionsFromOneNode:
+    """Represents update instructions generated from a single node."""
+
     node_sending_update: AlgorithmNode
     is_node_newly_over: bool
     new_value_for_node: bool
@@ -38,15 +40,27 @@ class ValueUpdateInstructionsTowardsOneParentNode:
         moves_with_updated_best_move (Set[AlgorithmNode]): Set of moves with updated 'best_move' value.
     """
 
-    moves_with_updated_over: set[moveKey] = field(default_factory=set)
-    moves_with_updated_value: set[moveKey] = field(default_factory=set)
-    moves_with_updated_best_move: set[moveKey] = field(default_factory=set)
+    moves_with_updated_over: set[moveKey] = field(
+        default_factory=lambda: set[moveKey]()
+    )
+    moves_with_updated_value: set[moveKey] = field(
+        default_factory=lambda: set[moveKey]()
+    )
+    moves_with_updated_best_move: set[moveKey] = field(
+        default_factory=lambda: set[moveKey]()
+    )
 
     def add_update_from_one_child_node(
         self,
         update_from_one_child_node: ValueUpdateInstructionsFromOneNode,
         move_from_parent_to_child: moveKey,
     ) -> None:
+        """Adds an update from a child node to the parent node.
+
+        Args:
+            update_from_one_child_node (ValueUpdateInstructionsFromOneNode): The update instructions from the child node.
+            move_from_parent_to_child (moveKey): The move key representing the move from the parent to the child.
+        """
         if update_from_one_child_node.is_node_newly_over:
             self.moves_with_updated_over.add(move_from_parent_to_child)
         if update_from_one_child_node.new_value_for_node:
@@ -55,6 +69,11 @@ class ValueUpdateInstructionsTowardsOneParentNode:
             self.moves_with_updated_best_move.add(move_from_parent_to_child)
 
     def add_update_toward_one_parent_node(self, another_update: Self) -> None:
+        """Adds an update towards one parent node.
+
+        Args:
+            another_update (Self): The update instructions from another child node.
+        """
         self.moves_with_updated_value = (
             self.moves_with_updated_value | another_update.moves_with_updated_over
         )

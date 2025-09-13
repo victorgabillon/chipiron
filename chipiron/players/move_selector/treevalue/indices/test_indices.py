@@ -111,6 +111,7 @@ def make_tree_from_file(
 
     half_moves: dict[int, HalfMove] = {}
     id_nodes: dict[int, AlgorithmNode] = {}
+    move_and_value_tree: MoveAndValueTree | None = None
     for yaml_node in yaml_nodes:
         if yaml_node["id"] == 0:
             tree_expansions = TreeExpansions()
@@ -133,7 +134,7 @@ def make_tree_from_file(
             id_nodes[yaml_node["id"]] = root_node
 
             descendants.add_descendant(root_node)
-            move_and_value_tree: MoveAndValueTree = MoveAndValueTree(
+            move_and_value_tree = MoveAndValueTree(
                 root_node=root_node, descendants=descendants
             )
             tree_expansions.add(
@@ -158,6 +159,7 @@ def make_tree_from_file(
             board.turn = not parent_node.tree_node.board_.turn
             board_chi = create_board_chi_from_pychess_board(chess_board=board)
 
+            assert move_and_value_tree is not None
             tree_expansion: TreeExpansion = algo_tree_manager.tree_manager.open_node(
                 tree=move_and_value_tree,
                 parent_node=parent_node,
@@ -188,6 +190,7 @@ def make_tree_from_file(
             algo_tree_manager.update_backward(tree_expansions=tree_expansions)
 
     # print('move_and_value_tree', move_and_value_tree.descendants)
+    assert move_and_value_tree is not None
     return move_and_value_tree
 
 

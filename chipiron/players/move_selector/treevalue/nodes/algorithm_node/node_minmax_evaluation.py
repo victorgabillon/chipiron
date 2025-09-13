@@ -82,7 +82,7 @@ class NodeMinmaxEvaluation:
     value_white_minmax: float | None = None
 
     # the sequence of best moves from this node
-    best_move_sequence: list[moveKey] = field(default_factory=list)
+    best_move_sequence: list[moveKey] = field(default_factory=lambda: list[moveKey]())
 
     # the children of the tree node are kept in a dictionary that can be sorted by their evaluations ()
 
@@ -91,7 +91,9 @@ class NodeMinmaxEvaluation:
     # careful, I have hard coded in the self.best_child() function the descending order for
     # fast access to the best element, so please do not change!
     # self.children_sorted_by_value_vsd = ValueSortedDict({})
-    moves_sorted_by_value_: dict[moveKey, Any] = field(default_factory=dict)
+    moves_sorted_by_value_: dict[moveKey, Any] = field(
+        default_factory=lambda: dict[moveKey, Any]()
+    )
 
     # self.children_sorted_by_value = {}
 
@@ -101,7 +103,7 @@ class NodeMinmaxEvaluation:
     # the list of moves that have not yet be found to be over
     # using atm a list instead of set as atm python set are not insertion ordered which adds randomness
     # and makes debug harder
-    moves_not_over: list[moveKey] = field(default_factory=list)
+    moves_not_over: list[moveKey] = field(default_factory=lambda: list[moveKey]())
 
     # creating a base Over event that is set to None
     over_event: OverEvent = field(default_factory=OverEvent)

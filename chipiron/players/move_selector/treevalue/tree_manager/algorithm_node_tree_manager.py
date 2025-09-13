@@ -196,7 +196,7 @@ class AlgorithmNodeTreeManager:
         parent_node: ITreeNode[Any] | None
         move_from_parent: moveKey
         for parent_node, move_from_parent in node_to_update.parent_nodes.items():
-            if parent_node is not None:
+            if parent_node:
                 # there was a test for emptiness here of new updates instructions remove this comment if no bug appear
                 assert (
                     parent_node not in update_instructions_batch.one_node_instructions

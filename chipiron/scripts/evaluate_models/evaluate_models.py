@@ -1,3 +1,8 @@
+"""
+Evaluates neural network models on a test dataset and records their performance.
+Saves the evaluation results to a YAML file.
+"""
+
 import datetime
 import os
 import time
@@ -16,7 +21,7 @@ from chipiron.players.boardevaluators.datasets.datasets import (
     FenAndValueData,
     FenAndValueDataSet,
     custom_collate_fn_fen_and_value,
-    process_stockfish_value,
+    process_stockfish_value,  # pyright: ignore[reportUnknownVariableType]
 )
 from chipiron.players.boardevaluators.neural_networks.factory import (
     NeuralNetModelsAndArchitecture,
@@ -40,10 +45,18 @@ class ModelEvaluation:
     number_of_model_parameters: int
 
 
-EvaluatedModels = dict[str, ModelEvaluation]
+type EvaluatedModels = dict[str, ModelEvaluation]
 
 
-def compute_model_hask_key(model_and_archi: NeuralNetModelsAndArchitecture) -> str:
+def compute_model_hash_key(model_and_archi: NeuralNetModelsAndArchitecture) -> str:
+    """Computes a unique hash key for the model and architecture.
+
+    Args:
+        model_and_archi (NeuralNetModelsAndArchitecture): The model and architecture to compute the hash key for.
+
+    Returns:
+        str: The computed hash key.
+    """
     return (
         str(model_and_archi.model_weights_file_name)
         + model_and_archi.nn_architecture_args.filename()
@@ -51,6 +64,7 @@ def compute_model_hask_key(model_and_archi: NeuralNetModelsAndArchitecture) -> s
 
 
 def count_parameters(model: ChiNN) -> int:
+    """Counts the number of trainable parameters in a model."""
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
@@ -68,7 +82,7 @@ def evaluate_models(
     print("Evaluating models...")
     # Load the evaluation report
     evaluated_models: dict[str, ModelEvaluation] = {}
-    with open(evaluation_report_file, "r") as stream:
+    with open(evaluation_report_file, "r", encoding="utf-8") as stream:
         try:
             evaluated_models_temp: dict[str, dict[Any, Any]] | None
             evaluated_models_temp = yaml.safe_load(stream)
@@ -98,7 +112,7 @@ def evaluate_models(
     for model_to_evaluate in models_to_evaluate:
         print(f"\nEvaluating model: {model_to_evaluate}")
 
-        model_hash_key: str = compute_model_hask_key(model_to_evaluate)
+        model_hash_key: str = compute_model_hash_key(model_to_evaluate)
 
         # Check if the model has already been evaluated
         should_evaluate: bool
@@ -151,7 +165,7 @@ def evaluate_models(
                 file_name=dataset_file_name,
                 preprocessing=False,
                 transform_board_function=nn_board_evaluator.board_to_input_convert,
-                transform_dataset_value_to_white_value_function=process_stockfish_value,
+                transform_dataset_value_to_white_value_function=process_stockfish_value,  # pyright: ignore[reportUnknownArgumentType]
                 transform_white_value_to_model_output_function=nn_board_evaluator.output_and_value_converter.from_value_white_to_model_output,
             )
 
@@ -189,7 +203,7 @@ def evaluate_models(
             evaluated_model_evaluation
         )
     with open(
-        "chipiron/scripts/evaluate_models/evaluation_report.yaml", "w"
+        "chipiron/scripts/evaluate_models/evaluation_report.yaml", "w", encoding="utf-8"
     ) as outfile:
         yaml.dump(evaluated_models_final_dict, outfile, default_flow_style=False)
 

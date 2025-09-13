@@ -44,12 +44,12 @@ class Winner(Enum):
     NO_KNOWN_WINNER = None
 
     def is_none(self) -> bool:
-        """Check if the winner is None.
+        """Check if the winner is NO_KNOWN_WINNER.
 
         Returns:
-            bool: True if the winner is None, False otherwise.
+            bool: True if the winner is NO_KNOWN_WINNER, False otherwise.
         """
-        return self is None
+        return self is Winner.NO_KNOWN_WINNER
 
     def is_white(self) -> bool:
         """Check if the winner is white.
