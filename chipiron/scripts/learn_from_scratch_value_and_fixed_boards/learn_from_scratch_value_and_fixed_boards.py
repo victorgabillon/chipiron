@@ -9,7 +9,7 @@ import random
 import tempfile
 import time
 from dataclasses import asdict, dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import mlflow
 import pandas
@@ -165,8 +165,9 @@ class LearnNNFromScratchScript:
         def transform_dataset_value_to_white_value_function(
             row: pandas.Series,
         ) -> float:
-            assert isinstance(row["value"], float)
-            return row["value"]
+            # Cast to help type checker understand the expected type
+            value = cast("float", row["value"])
+            return float(value)
 
         self.boards_dataset = FenAndValueDataSet(
             file_name=self.args.dataset_args.train_file_name,
@@ -187,9 +188,6 @@ class LearnNNFromScratchScript:
         self.index_evaluating_player_data: int = 0
 
         if self.args.base_script_args.testing:
-            # mlflow.set_tracking_uri(
-            #    uri=chipiron.utils.path_variables.ML_FLOW_URI_PATH_TEST
-            # )
             with tempfile.TemporaryDirectory() as tmpdir:
                 mlflow.set_tracking_uri(f"file:{tmpdir}")  # <- Key line!
         else:
@@ -250,9 +248,12 @@ class LearnNNFromScratchScript:
                 self.index_evaluating_player_data + index_range_evaluating_player
             )
 
-            board_fen_to_recompute_value: str = self.boards_dataset.get_unprocessed(
-                idx=index_evaluating_player_data_temp
-            )["fen"]
+            board_fen_to_recompute_value: str = cast(
+                "str",
+                self.boards_dataset.get_unprocessed(
+                    idx=index_evaluating_player_data_temp
+                )["fen"],
+            )
 
             assert isinstance(self.boards_dataset.data, pandas.DataFrame)
 

@@ -46,22 +46,22 @@ type RawSample = pandas.Series
 
 
 @no_type_check
-class MyDataSet[ProcessedSample](Dataset[ProcessedSample | RawSample], ABC):
+class MyDataSet[ProcessedSample](Dataset[ProcessedSample], ABC):
     """
     A custom dataset class that loads and preprocesses data.
 
     Attributes:
     - file_name (str): The file name of the dataset.
     - preprocessing (bool): Flag indicating whether to preprocess the dataset.
-    - data (pandas.DataFrame | list[tuple[torch.Tensor, torch.Tensor]] | None): The loaded and processed data.
+    - data (pandas.DataFrame | list[ProcessedSample] | None): The loaded and processed data.
     - len (int | None): The length of the dataset.
 
     Methods:
     - load(): Loads the dataset from the file.
-    - process_raw_row(row: pandas.Series) -> tuple[torch.Tensor, torch.Tensor]: Processes a raw row into input and target tensors.
+    - process_raw_row(row: pandas.Series) -> ProcessedSample: Processes a raw row into processed sample.
     """
 
-    data: RawSample | list[ProcessedSample] | None
+    data: pandas.DataFrame | list[ProcessedSample] | None
     len: int | None
     preprocessing: bool
 
@@ -128,7 +128,7 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample | RawSample], ABC):
     @abstractmethod
     def process_raw_row(self, row: pandas.Series) -> ProcessedSample:
         """
-        Converts a raw row into input/target tensors.
+        Converts a raw row into processed sample.
         Subclasses must implement this.
         """
         ...
@@ -145,24 +145,27 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample | RawSample], ABC):
         return len(self.data)
 
     @no_type_check
-    def __getitem__(self, idx: int) -> ProcessedSample | RawSample:
+    def __getitem__(self, idx: int) -> ProcessedSample:
         """
         Returns the item at the given index.
+        Always returns a ProcessedSample, either from preprocessed data or by processing on-the-fly.
 
         Args:
         - idx (int): The index of the item.
 
         Returns:
-        - tuple[torch.Tensor, torch.Tensor] | pandas.Series: The input and target tensors, or the raw row.
+        - ProcessedSample: The processed sample.
         """
         if self.data is None:
             raise RuntimeError("Dataset not loaded yet. Call `load()` first.")
 
         index = idx % len(self)
         if self.preprocessing:
+            # Data is already preprocessed
             assert isinstance(self.data, list)
             return self.data[index]
         else:
+            # Process on-the-fly
             assert isinstance(self.data, pandas.DataFrame)
             return self.process_raw_row(self.data.iloc[index])
 
@@ -194,11 +197,10 @@ def process_stockfish_value(row: pandas.Series) -> float:
     Processes the stockfish value for a given board and row.
 
     Args:
-    - board (BoardChi): The chess board.
     - row (pandas.Series): The row from the dataset.
 
     Returns:
-    - torch.Tensor: The processed target value tensor.
+    - float: The processed target value.
     """
     # target values are value between -1 and 1 from the point of view of white. (+1 is white win and -1 is white loose)
     target_value: float = np.tanh(row["stockfish_value"] / 500.0)
@@ -267,8 +269,8 @@ class FenAndValueDataSet(MyDataSet[FenAndValueData]):
     - transform_value_function (callable): The function to transform the value for a given board and row.
 
     Methods:
-    - process_raw_row(row: pandas.Series) -> tuple[torch.Tensor, torch.Tensor]: Processes a raw row into input and target tensors.
-    - process_raw_rows(dataframe: pandas.DataFrame) -> list[tuple[torch.Tensor, torch.Tensor]]: Processes raw rows into input and target tensors.
+    - process_raw_row(row: pandas.Series) -> FenAndValueData: Processes a raw row into FenAndValueData.
+    - process_raw_rows(dataframe: pandas.DataFrame) -> list[FenAndValueData]: Processes raw rows into FenAndValueData list.
     """
 
     transform_board_function: BoardToInputFunction  # transform board to model input
@@ -297,8 +299,9 @@ class FenAndValueDataSet(MyDataSet[FenAndValueData]):
         Args:
         - file_name (str): The file name of the dataset.
         - preprocessing (bool): Flag indicating whether to preprocess the dataset.
-        - transform_board_function (str | BoardToInputFunction): The function to transform the board into input tensor.
-        - transform_value_function (str): The function to transform the value for a given board and row.
+        - transform_board_function (BoardToInputFunction): The function to transform the board into input tensor.
+        - transform_dataset_value_to_white_value_function: The function to transform dataset values to white values.
+        - transform_white_value_to_model_output_function: The function to transform white values to model output.
         """
         super().__init__(file_name, preprocessing)
 
@@ -317,13 +320,13 @@ class FenAndValueDataSet(MyDataSet[FenAndValueData]):
     @no_type_check
     def process_raw_row(self, row: pandas.Series) -> FenAndValueData:
         """
-        Processes a raw row into input and target tensors.
+        Processes a raw row into FenAndValueData.
 
         Args:
         - row (pandas.Series): The raw row from the dataset.
 
         Returns:
-        - tuple[torch.Tensor, torch.Tensor]: The input and target tensors.
+        - FenAndValueData: The processed data containing input and target tensors.
         """
         fen_: fen = row["fen"]
 

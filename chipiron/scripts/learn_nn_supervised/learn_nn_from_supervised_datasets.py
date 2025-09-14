@@ -27,9 +27,12 @@ from typing import TYPE_CHECKING, Any
 import mlflow
 import mlflow.pytorch
 import torch
-from mlflow.models.signature import ModelSignature, infer_signature
+from mlflow.models.signature import (
+    ModelSignature,
+    infer_signature,  # pyright: ignore[reportUnknownVariableType]
+)
 from torch.utils.data import DataLoader
-from torchinfo import summary
+from torchinfo import summary  # pyright: ignore[reportUnknownVariableType]
 
 import chipiron.utils.path_variables
 from chipiron.learningprocesses.nn_trainer.factory import (
@@ -44,7 +47,7 @@ from chipiron.players.boardevaluators.datasets.datasets import (
     FenAndValueData,
     FenAndValueDataSet,
     custom_collate_fn_fen_and_value,
-    process_stockfish_value,
+    process_stockfish_value,  # pyright: ignore[reportUnknownVariableType]
 )
 from chipiron.players.boardevaluators.neural_networks import NNBoardEvaluator
 from chipiron.players.boardevaluators.neural_networks.factory import (
@@ -168,7 +171,7 @@ class LearnNNScript:
             file_name=self.args.dataset_args.train_file_name,
             preprocessing=self.args.dataset_args.preprocessing_data_set,
             transform_board_function=self.nn_board_evaluator.board_to_input_convert,
-            transform_dataset_value_to_white_value_function=process_stockfish_value,
+            transform_dataset_value_to_white_value_function=process_stockfish_value,  # pyright: ignore[reportUnknownArgumentType]
             transform_white_value_to_model_output_function=self.nn_board_evaluator.output_and_value_converter.from_value_white_to_model_output,
         )
 
@@ -177,7 +180,7 @@ class LearnNNScript:
             file_name=self.args.dataset_args.test_file_name,
             preprocessing=self.args.dataset_args.preprocessing_data_set,
             transform_board_function=self.nn_board_evaluator.board_to_input_convert,
-            transform_dataset_value_to_white_value_function=process_stockfish_value,
+            transform_dataset_value_to_white_value_function=process_stockfish_value,  # pyright: ignore[reportUnknownArgumentType]
             transform_white_value_to_model_output_function=self.nn_board_evaluator.output_and_value_converter.from_value_white_to_model_output,
         )
 

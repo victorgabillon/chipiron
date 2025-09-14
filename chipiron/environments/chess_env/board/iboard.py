@@ -129,9 +129,9 @@ PieceMap = typing.Annotated[
 
 
 class IBoard(Protocol):
-    fast_representation_: boardKey
-
     """Interface for a chess board."""
+
+    fast_representation_: boardKey
 
     def get_uci_from_move_key(self, move_key: moveKey) -> moveUci:
         """Returns the UCI string corresponding to the given move key.

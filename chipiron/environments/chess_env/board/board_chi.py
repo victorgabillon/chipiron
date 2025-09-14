@@ -965,5 +965,7 @@ class BoardChi(IBoard):
             FenPlusHistory: The FEN string and history of the game.
         """
         return FenPlusHistory(
-            current_fen=self.fen, historical_moves=self.move_history_stack
+            current_fen=self.fen,
+            historical_moves=self.move_history_stack,
+            historical_boards=self.chess_board._stack,  # pyright: ignore[reportPrivateUsage]
         )
