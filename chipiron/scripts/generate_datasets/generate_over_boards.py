@@ -14,7 +14,7 @@ Key features:
 
 import random
 from pathlib import Path
-from typing import Any
+from typing import Any, no_type_check
 
 import chess
 import chess.pgn
@@ -197,6 +197,7 @@ def process_month_for_over_boards(
     return current_boards, count_game, total_count_move
 
 
+@no_type_check
 def generate_over_boards_dataset_multi_months(
     output_file_path: str,
     max_boards: int = 1_000_000,
@@ -260,7 +261,7 @@ def generate_over_boards_dataset_multi_months(
 
     # Final save using unified function
     if the_dic:
-        df = pd.DataFrame.from_dict(the_dic)
+        df = pd.DataFrame(the_dic)
 
         # Add over-boards specific metadata
         df.attrs["dataset_type"] = "over_boards"
@@ -268,9 +269,17 @@ def generate_over_boards_dataset_multi_months(
             "game-ending positions: checkmate, stalemate, insufficient material only"
         )
 
-        # Add statistics about game-ending reasons
+        # Add statistics about game-ending reasons with explicit type casting
         if "game_over_reason" in df.columns:
-            reason_counts = df["game_over_reason"].value_counts().to_dict()
+            # Cast to dict[str, int] to help type checker
+            value_counts_series = df["game_over_reason"].value_counts()
+            reason_counts = dict(
+                zip(
+                    [str(k) for k in value_counts_series.index],
+                    [int(v) for v in value_counts_series.values.astype(int)],  # pyright: ignore[reportUnknownArgumentType]
+                    strict=True,
+                )
+            )
             df.attrs["game_over_reason_distribution"] = reason_counts
 
         # Use unified save function for final save
@@ -290,113 +299,19 @@ def generate_over_boards_dataset_multi_months(
             months_used=months_used,
         )
 
-        # Print distribution of game-ending reasons
+        # Print distribution of game-ending reasons with explicit type conversion
         if "game_over_reason" in df.columns:
             chipiron_logger.info("Game-ending reason distribution:")
-            for reason, count in df["game_over_reason"].value_counts().items():
+            value_counts_series = df["game_over_reason"].value_counts()
+            for reason_key, count_value in value_counts_series.items():
+                reason_str = str(reason_key)  # Explicit string conversion
+                count_int = int(count_value)  # Explicit int conversion
                 chipiron_logger.info(
                     "  %s: %s (%s)",
-                    reason,
-                    f"{count:,}",
-                    f"{count / len(df) * 100:.1f}%",
+                    reason_str,
+                    f"{count_int:,}",
+                    f"{count_int / len(df) * 100:.1f}%",
                 )
-
-
-def generate_over_boards_dataset_legacy(
-    input_pgn_file_path: str,
-    output_file_path: str,
-    max_boards: int = 1_000_000,
-    total_games_in_file: int | None = None,
-    total_moves_in_file: int | None = None,
-    intermediate_every_games: int = 10_000,
-) -> None:
-    """
-    Generate a dataset of game-ending chess board positions from a single PGN file.
-    Legacy function for backwards compatibility with the same structure as generate_boards.py
-    """
-    the_dic: list[dict[str, Any]] = []
-    count_game: int = 0
-    total_count_move: int = 0
-    recorded_board = 0
-
-    with open(input_pgn_file_path, "r", encoding="utf-8") as pgn:
-        while recorded_board < max_boards:
-            count_game += 1
-            game: chess.pgn.Game | None = chess.pgn.read_game(pgn)
-
-            if count_game % intermediate_every_games == 0:
-                recorded_board = save_dataset_progress(
-                    the_dic,
-                    output_file_path,
-                    count_game,
-                    total_count_move,
-                    max_boards,
-                    total_games_in_file,
-                    total_moves_in_file,
-                    input_pgn_file_path,
-                    0,  # no sampling frequency for over boards
-                    0,  # no offset for over boards
-                    None,  # no seed for legacy
-                    is_final=False,
-                )
-
-            if game is None:
-                chipiron_logger.info("GAME NONE")
-                break
-            else:
-                # Count moves for statistics
-                moves_list = list(game.mainline_moves())
-                total_count_move += len(moves_list)
-
-                # Process game and add to dataset if it's a game-ending position
-                board_data = process_single_game_for_over_positions(game)
-                if board_data is not None:
-                    the_dic.append(board_data)
-                    recorded_board = len(the_dic)
-
-    # Final save using unified function
-    if the_dic:
-        df = pd.DataFrame.from_dict(the_dic)
-
-        # Add over-boards specific metadata
-        df.attrs["dataset_type"] = "over_boards"
-        df.attrs["filter_criteria"] = (
-            "game-ending positions: checkmate, stalemate, insufficient material only"
-        )
-
-        # Add statistics about game-ending reasons
-        if "game_over_reason" in df.columns:
-            reason_counts = df["game_over_reason"].value_counts().to_dict()
-            df.attrs["game_over_reason_distribution"] = reason_counts
-
-        # Use unified save function for final save
-        save_dataset_progress(
-            the_dic,
-            output_file_path,
-            count_game,
-            total_count_move,
-            max_boards,
-            total_games_in_file,
-            total_moves_in_file,
-            input_pgn_file_path,
-            0,  # no sampling frequency for over boards
-            0,  # no offset for over boards
-            None,  # no seed for legacy
-            is_final=True,
-        )
-
-        # Print distribution of game-ending reasons
-        if "game_over_reason" in df.columns:
-            chipiron_logger.info("Game-ending reason distribution:")
-            for reason, count in df["game_over_reason"].value_counts().items():
-                chipiron_logger.info(
-                    "  %s: %s (%s)",
-                    reason,
-                    f"{count:,}",
-                    f"{count / len(df) * 100:.1f}%",
-                )
-    else:
-        chipiron_logger.info("No over board positions found to save.")
 
 
 # --- CLI integration ---
@@ -438,31 +353,15 @@ if __name__ == "__main__":
         default=10_000,
         help="Games interval for intermediate saves",
     )
-    parser.add_argument(
-        "--legacy-file",
-        type=str,
-        help="Use legacy single file mode with specified PGN file path",
-    )
     args = parser.parse_args()
 
-    if args.legacy_file:
-        chipiron_logger.info(
-            "Running legacy single-file mode with: %s", args.legacy_file
-        )
-        generate_over_boards_dataset_legacy(
-            input_pgn_file_path=args.legacy_file,
-            output_file_path=args.output,
-            max_boards=args.max_boards,
-            intermediate_every_games=args.intermediate_games,
-        )
-    else:
-        chipiron_logger.info("Running dynamic monthly download mode for over boards")
-        generate_over_boards_dataset_multi_months(
-            output_file_path=args.output,
-            max_boards=args.max_boards,
-            seed=args.seed,
-            start_month=args.start_month,
-            max_months=args.max_months,
-            delete_pgn_after_use=not args.keep_pgn,
-            intermediate_every_games=args.intermediate_games,
-        )
+    chipiron_logger.info("Running dynamic monthly download mode for over boards")
+    generate_over_boards_dataset_multi_months(
+        output_file_path=args.output,
+        max_boards=args.max_boards,
+        seed=args.seed,
+        start_month=args.start_month,
+        max_months=args.max_months,
+        delete_pgn_after_use=not args.keep_pgn,
+        intermediate_every_games=args.intermediate_games,
+    )

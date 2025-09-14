@@ -128,7 +128,7 @@ def create_board_chi(
         chess_board.move_stack = [
             chess.Move.from_uci(move) for move in fen_with_history.historical_moves
         ]
-        # chess_board._stack = fen_with_history.historical_boards
+        chess_board._stack = fen_with_history.historical_boards  # pyright: ignore[reportPrivateUsage]
 
     else:
         chess_board = chess.Board()

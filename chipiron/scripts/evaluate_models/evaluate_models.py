@@ -180,7 +180,7 @@ def evaluate_models(
             )
             print(f"Size of test set: {len(data_loader_stockfish_boards_test)}")
 
-            eval = compute_test_error_on_dataset(
+            evalu = compute_test_error_on_dataset(
                 net=nn_board_evaluator.net,
                 criterion=criterion,
                 data_test=data_loader_stockfish_boards_test,
@@ -188,7 +188,7 @@ def evaluate_models(
             )
             number_of_model_parameters: int = count_parameters(nn_board_evaluator.net)
             model_evaluation = ModelEvaluation(
-                evaluation=eval,
+                evaluation=evalu,
                 time_of_evaluation=datetime.datetime.now(),
                 number_of_model_parameters=number_of_model_parameters,
             )

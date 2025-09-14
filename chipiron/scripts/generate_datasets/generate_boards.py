@@ -85,7 +85,7 @@ def save_dataset_progress(
     Returns:
         Number of board positions recorded so far
     """
-    new_data_frame_states: DataFrame = pd.DataFrame.from_dict(the_dic)
+    new_data_frame_states: DataFrame = pd.DataFrame(the_dic)
     recorded_board = len(new_data_frame_states.index)
 
     save_type = "Final" if is_final else "Progress"
@@ -248,7 +248,7 @@ def download_month_zst(month: str, dest_dir: Path) -> Path:
 
     chipiron_logger.info("Downloading %s -> %s", url, local_path)
 
-    progress_thresholds = set()
+    progress_thresholds: set[int] = set()
 
     def progress_hook(block_num: int, block_size: int, total_size: int) -> None:
         if total_size > 0:
