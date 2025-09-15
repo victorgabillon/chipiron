@@ -1,9 +1,10 @@
-[![python](https://img.shields.io/badge/Python-3.12-blue)](https://www.python.org)
+[![python](https://img.shields.io/badge/Python-3.13-blue)](https://www.python.org)
 [![Checked with mypy](http://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![linting: pylint](https://img.shields.io/badge/linting-pylint-yellowgreen)](https://github.com/PyCQA/pylint)
 ![Tests](https://github.com/victorgabillon/chipiron/actions/workflows/ci.yaml/badge.svg)
-[![pytorch](https://img.shields.io/badge/PyTorch-2.1.2-EE4C2C.svg?style=flat&logo=pytorch)](https://pytorch.org)
+[![pytorch](https://img.shields.io/badge/PyTorch-2.8.0-EE4C2C.svg?style=flat&logo=pytorch)](https://pytorch.org)
+[![Pyright](https://img.shields.io/badge/pyright-type%20checked-blue)](https://github.com/microsoft/pyright)
 
 # Chipiron
 
