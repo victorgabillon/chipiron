@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 a: Any = 0
 
 
-class ITreeNode[T: ITreeNode[Any]](Protocol):
+class ITreeNode[T: "ITreeNode"](Protocol):
     """
     The `ITreeNode` protocol represents a node in a tree structure used for selecting chess moves.
     """
