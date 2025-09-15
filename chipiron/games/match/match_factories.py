@@ -3,7 +3,7 @@ This module contains functions for creating match managers in the Chipiron game 
 """
 
 import multiprocessing
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import chipiron as ch
 import chipiron.games.game as game
@@ -17,7 +17,10 @@ from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_manager import MatchManager
 from chipiron.games.match.match_results_factory import MatchResultsFactory
 from chipiron.players.boardevaluators.factory import create_game_board_evaluator
-from chipiron.players.boardevaluators.table_base.factory import create_syzygy
+from chipiron.players.boardevaluators.table_base.factory import (
+    AnySyzygyTable,
+    create_syzygy,
+)
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
@@ -30,8 +33,6 @@ if TYPE_CHECKING:
 
     from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator
     from chipiron.utils.dataclass import IsDataclass
-
-    from ...players.boardevaluators.table_base import SyzygyTable
 
 
 def create_match_manager(
@@ -65,7 +66,7 @@ def create_match_manager(
 
     # Creation of the Syzygy table for perfect play in low pieces cases, needed by the GameManager
     # and can also be used by the players
-    syzygy_table: SyzygyTable[Any] | None = create_syzygy(
+    syzygy_table: AnySyzygyTable | None = create_syzygy(
         use_rust=implementation_args.use_rust_boards,
     )
 

@@ -7,11 +7,14 @@ import os
 from typing import Any, Protocol
 
 from chipiron.players.boardevaluators.table_base.syzygy_python import SyzygyChiTable
+from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.path_variables import SYZYGY_TABLES_DIR
 
 from .syzygy_rust import SyzygyRustTable
-from .syzygy_table import SyzygyTable
+
+# Type alias for any SyzygyTable implementation
+AnySyzygyTable = SyzygyTable[Any]
 
 
 def create_syzygy_python() -> SyzygyChiTable | None:
@@ -60,7 +63,7 @@ class SyzygyProvider(Protocol):
 
     def provide(
         self,
-    ) -> SyzygyChiTable | None:
+    ) -> AnySyzygyTable | None:
         """
         Provide a Syzygy table.
         """
@@ -74,7 +77,7 @@ class SyzygyFactory(Protocol):
 
     def __call__(
         self,
-    ) -> SyzygyTable[Any] | None:
+    ) -> AnySyzygyTable | None:
         """
         Create a SyzygyTable object.
         """
@@ -94,11 +97,11 @@ def create_syzygy_factory(use_rust: bool) -> SyzygyFactory:
     return syzygy_factory
 
 
-def create_syzygy(use_rust: bool) -> SyzygyTable[Any] | None:
+def create_syzygy(use_rust: bool) -> AnySyzygyTable | None:
     """
     Create a SyzygyTable object
     """
-    syzygy_table: SyzygyTable[Any] | None
+    syzygy_table: AnySyzygyTable | None
     if use_rust:
         syzygy_table = create_syzygy_rust()
     else:

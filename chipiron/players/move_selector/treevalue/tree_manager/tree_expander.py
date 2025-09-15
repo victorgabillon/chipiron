@@ -4,7 +4,6 @@ This module contains classes related to tree expansion in a chess game.
 
 import typing
 from dataclasses import dataclass, field
-from typing import Any
 
 import chipiron.environments.chess_env.board as board_mod
 import chipiron.players.move_selector.treevalue.nodes as node
@@ -24,8 +23,8 @@ class TreeExpansion:
         move (chess.Move): the move from parent to child node.
     """
 
-    child_node: node.ITreeNode[Any]
-    parent_node: node.ITreeNode[Any] | None
+    child_node: node.ITreeNode
+    parent_node: node.ITreeNode | None
     board_modifications: board_mod.BoardModificationP | None
     creation_child_node: bool
     move: moveKey | None

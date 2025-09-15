@@ -7,7 +7,7 @@ import multiprocessing
 import queue
 from typing import Any
 
-from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
+from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 
 
 class SyzygyProcess(multiprocessing.Process):
@@ -16,18 +16,18 @@ class SyzygyProcess(multiprocessing.Process):
     This class represents a separate process that runs in parallel with the main program.
 
     Attributes:
-        syzygy_table (SyzygyTable): The SyzygyTable object used for tablebase lookups.
+        syzygy_table (AnySyzygyTable): The SyzygyTable object used for tablebase lookups.
         queue_board (queue.Queue): The queue used for receiving board messages from the main program.
     """
 
     def __init__(
-        self, syzygy_table: SyzygyTable[Any], queue_board: queue.Queue[Any]
+        self, syzygy_table: AnySyzygyTable, queue_board: queue.Queue[Any]
     ) -> None:
         """
         Initializes a new instance of the SyzygyProcess class.
 
         Args:
-            syzygy_table (SyzygyTable): The SyzygyTable object used for tablebase lookups.
+            syzygy_table (AnySyzygyTable): The SyzygyTable object used for tablebase lookups.
             queue_board (queue.Queue): The queue used for receiving board messages from the main program.
         """
         multiprocessing.Process.__init__(self, daemon=False)

@@ -16,7 +16,7 @@ Note: The Descendants and RangedDescendants classes are used in the chipiron pro
 """
 
 import typing
-from typing import Any, Iterator
+from typing import Iterator
 
 from sortedcollections import ValueSortedDict
 
@@ -40,7 +40,7 @@ class Descendants:
         max_half_move (int | None): The maximum half move in the collection, or None if the collection is empty.
     """
 
-    descendants_at_half_move: dict[HalfMove, dict[boards.boardKey, ITreeNode[Any]]]
+    descendants_at_half_move: dict[HalfMove, dict[boards.boardKey, ITreeNode]]
     number_of_descendants: int
     number_of_descendants_at_half_move: dict[HalfMove, int]
     min_half_move: int | None
@@ -68,7 +68,7 @@ class Descendants:
 
     def iter_on_all_nodes(
         self,
-    ) -> Iterator[tuple[HalfMove, boards.boardKey, ITreeNode[Any]]]:
+    ) -> Iterator[tuple[HalfMove, boards.boardKey, ITreeNode]]:
         return (
             (hm, board_key, node)
             for hm, nodes_at_hm in self.descendants_at_half_move.items()
@@ -85,7 +85,7 @@ class Descendants:
         return self.descendants_at_half_move.keys()
 
     def __setitem__(
-        self, half_move: HalfMove, value: dict[boards.boardKey, ITreeNode[Any]]
+        self, half_move: HalfMove, value: dict[boards.boardKey, ITreeNode]
     ) -> None:
         """
         Sets the descendants at a specific half move.
@@ -99,7 +99,7 @@ class Descendants:
         """
         self.descendants_at_half_move[half_move] = value
 
-    def __getitem__(self, half_move: HalfMove) -> dict[boards.boardKey, ITreeNode[Any]]:
+    def __getitem__(self, half_move: HalfMove) -> dict[boards.boardKey, ITreeNode]:
         """
         Retrieve the descendants at a specific half move.
 
@@ -129,7 +129,7 @@ class Descendants:
         """
         return self.number_of_descendants
 
-    def contains_node(self, node: ITreeNode[Any]) -> bool:
+    def contains_node(self, node: ITreeNode) -> bool:
         """
         Checks if the descendants contain a specific node.
 
@@ -147,7 +147,7 @@ class Descendants:
         else:
             return False
 
-    def remove_descendant(self, node: ITreeNode[Any]) -> None:
+    def remove_descendant(self, node: ITreeNode) -> None:
         """
         Removes a descendant node from the tree.
 
@@ -176,7 +176,7 @@ class Descendants:
         """
         return self.number_of_descendants == 0
 
-    def add_descendant(self, node: ITreeNode[Any]) -> None:
+    def add_descendant(self, node: ITreeNode) -> None:
         """
         Adds a descendant node to the tree.
 
@@ -268,7 +268,7 @@ class Descendants:
                 self[half_move]
             )
 
-    def test_2(self, root_node: ITreeNode[Any]) -> None:
+    def test_2(self, root_node: ITreeNode) -> None:
         """
         Test the descendants of a given root node.
 
@@ -376,7 +376,7 @@ class RangedDescendants(Descendants):
         else:
             return True
 
-    def add_descendant(self, node: ITreeNode[Any]) -> None:
+    def add_descendant(self, node: ITreeNode) -> None:
         """
         Adds a descendant node to the tree.
 
@@ -406,7 +406,7 @@ class RangedDescendants(Descendants):
                 self.max_half_move = half_move
         self.number_of_descendants += 1
 
-    def remove_descendant(self, node: ITreeNode[Any]) -> None:
+    def remove_descendant(self, node: ITreeNode) -> None:
         """
         Removes a descendant node from the tree.
 
@@ -572,13 +572,13 @@ class SortedDescendants(Descendants):
     Inherits from the Descendants class.
     """
 
-    sorted_descendants_at_half_move: dict[int, dict[ITreeNode[Any], float]]
+    sorted_descendants_at_half_move: dict[int, dict[ITreeNode, float]]
 
     def __init__(self) -> None:
         super().__init__()
         self.sorted_descendants_at_half_move = {}
 
-    def update_value(self, node: ITreeNode[Any], value: float) -> None:
+    def update_value(self, node: ITreeNode, value: float) -> None:
         """
         Updates the value of a descendant node.
 
@@ -588,7 +588,7 @@ class SortedDescendants(Descendants):
         """
         self.sorted_descendants_at_half_move[node.half_move][node] = value
 
-    def add_descendant_with_val(self, node: ITreeNode[Any], value: float) -> None:
+    def add_descendant_with_val(self, node: ITreeNode, value: float) -> None:
         """
         Adds a descendant node with its corresponding value.
 
@@ -646,7 +646,7 @@ class SortedDescendants(Descendants):
                 )
             print("")
 
-    def remove_descendant(self, node: ITreeNode[Any]) -> None:
+    def remove_descendant(self, node: ITreeNode) -> None:
         """
         Removes a descendant node from the data structure.
 
@@ -660,7 +660,7 @@ class SortedDescendants(Descendants):
             self.sorted_descendants_at_half_move.pop(half_move)
         assert not self.contains_node(node)
 
-    def contains_node(self, node: ITreeNode[Any]) -> bool:
+    def contains_node(self, node: ITreeNode) -> bool:
         """
         Checks if a descendant node is present in the data structure.
 
@@ -697,7 +697,7 @@ class SortedValueDescendants(Descendants):
         super().__init__()
         self.sorted_descendants_at_half_move = {}
 
-    def update_value(self, node: ITreeNode[Any], value: float) -> None:
+    def update_value(self, node: ITreeNode, value: float) -> None:
         """
         Updates the value associated with a given node.
 
@@ -710,7 +710,7 @@ class SortedValueDescendants(Descendants):
         """
         self.sorted_descendants_at_half_move[node.half_move][node] = value
 
-    def add_descendant_val(self, node: ITreeNode[Any], value: float) -> None:
+    def add_descendant_val(self, node: ITreeNode, value: float) -> None:
         """
         Adds a descendant node with an associated value.
 
@@ -775,7 +775,7 @@ class SortedValueDescendants(Descendants):
                 print(str(descendant.id) + "(" + str(value) + ")", end=" ")
             print("")
 
-    def remove_descendant(self, node: ITreeNode[Any]) -> None:
+    def remove_descendant(self, node: ITreeNode) -> None:
         """
         Removes a descendant node.
 

@@ -16,7 +16,6 @@ structure to a file.
 """
 
 import pickle
-from typing import Any
 
 from graphviz import Digraph
 
@@ -29,7 +28,7 @@ from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_nod
 from .move_and_value_tree import MoveAndValueTree
 
 
-def add_dot(dot: Digraph, treenode: ITreeNode[Any]) -> None:
+def add_dot(dot: Digraph, treenode: ITreeNode) -> None:
     """
     Adds a node and edges to the given Dot graph based on the provided tree node.
 
@@ -57,7 +56,7 @@ def add_dot(dot: Digraph, treenode: ITreeNode[Any]) -> None:
 
 
 def display_special(
-    node: ITreeNode[Any], format_str: str, index: dict[moveKey, str]
+    node: ITreeNode, format_str: str, index: dict[moveKey, str]
 ) -> Digraph:
     """
     Display a special visualization of a tree node and its children.

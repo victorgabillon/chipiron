@@ -9,7 +9,7 @@ test_tree_value.py
 
 import random
 from importlib.resources import as_file, files
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import chess
 import pytest
@@ -74,9 +74,9 @@ def test_random(use_rust_boards: bool) -> None:
     _, tree_two = create_player_and_tree(use_rust_boards, use_board_modification=True)
 
     half_move: HalfMove
-    node_one: ITreeNode[Any]
+    node_one: ITreeNode
     board_key: boards.boardKey
-    node_two: ITreeNode[Any]
+    node_two: ITreeNode
     for half_move, board_key, node_one in tree_one.descendants.iter_on_all_nodes():
         node_two = tree_two.descendants.descendants_at_half_move[half_move][board_key]
         assert isinstance(node_one, AlgorithmNode)

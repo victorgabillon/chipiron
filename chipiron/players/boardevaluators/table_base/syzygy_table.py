@@ -19,31 +19,31 @@ class SyzygyTable[T_Board: IBoard](Protocol):
         table_base (chess.syzygy.Tablebase): The Syzygy tablebase object.
 
     Methods:
-        fast_in_table(board: boards.BoardChi) -> bool:
+        fast_in_table(board: T_Board) -> bool:
             Check if the given board is suitable for fast tablebase lookup.
 
-        in_table(board: boards.BoardChi) -> bool:
+        in_table(board: T_Board) -> bool:
             Check if the given board is in the tablebase.
 
-        get_over_event(board: boards.BoardChi) -> tuple[Winner, HowOver]:
+        get_over_event(board: T_Board) -> tuple[Winner, HowOver]:
             Get the winner and how the game is over for the given board.
 
-        val(board: boards.BoardChi) -> int:
+        val(board: T_Board) -> int:
             Get the value of the given board from the tablebase.
 
-        value_white(board: boards.BoardChi) -> int:
+        value_white(board: T_Board) -> int:
             Get the value of the given board for the white player.
 
-        get_over_tag(board: boards.BoardChi) -> OverTags:
+        get_over_tag(board: T_Board) -> OverTags:
             Get the over tag for the given board.
 
-        string_result(board: boards.BoardChi) -> str:
+        string_result(board: T_Board) -> str:
             Get the string representation of the result for the given board.
 
-        dtz(board: boards.BoardChi) -> int:
+        dtz(board: T_Board) -> int:
             Get the distance-to-zero (DTZ) value for the given board.
 
-        best_move(board: boards.BoardChi) -> chess.Move:
+        best_move(board: T_Board) -> moveKey:
             Get the best move according to the tablebase for the given board.
     """
 

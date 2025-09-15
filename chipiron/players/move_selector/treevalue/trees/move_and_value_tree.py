@@ -2,8 +2,6 @@
 MoveAndValueTree
 """
 
-from typing import Any
-
 import chipiron.players.move_selector.treevalue.nodes as nodes
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
     BoardEvaluation,
@@ -65,7 +63,7 @@ class MoveAndValueTree:
         """
         return self._root_node
 
-    def node_depth(self, node: nodes.ITreeNode[Any]) -> int:
+    def node_depth(self, node: nodes.ITreeNode) -> int:
         """
         Calculates the depth of a given node in the tree.
 

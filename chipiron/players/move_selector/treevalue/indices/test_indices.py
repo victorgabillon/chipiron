@@ -120,7 +120,7 @@ def make_tree_from_file(
             board.turn = chess.WHITE
             board_chi = create_board_chi_from_pychess_board(chess_board=board)
 
-            root_node: ITreeNode[Any] = algorithm_node_factory.create(
+            root_node: ITreeNode = algorithm_node_factory.create(
                 board=board_chi,
                 half_move=0,
                 count=yaml_node["id"],
@@ -216,7 +216,7 @@ def check_from_file(file_path: path, tree: MoveAndValueTree) -> None:
     for half_move in tree_nodes:
         # todo how are we sure that the hm comes in order?
         # print('hmv', half_move)
-        parent_node: ITreeNode[Any]
+        parent_node: ITreeNode
         for parent_node in tree_nodes[half_move].values():
             assert isinstance(parent_node, AlgorithmNode)
             yaml_index = eval(str(yaml_nodes[parent_node.id]["index"]))

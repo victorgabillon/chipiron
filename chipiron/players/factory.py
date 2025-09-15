@@ -5,13 +5,13 @@ Module for creating players.
 import queue
 import random
 from dataclasses import dataclass
-from typing import Any
 
 import chess
 
-from chipiron.players.boardevaluators import table_base
-from chipiron.players.boardevaluators.table_base.factory import create_syzygy
-from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
+from chipiron.players.boardevaluators.table_base.factory import (
+    AnySyzygyTable,
+    create_syzygy,
+)
 from chipiron.players.move_selector import treevalue
 from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
     TreeMoveLimitArgs,
@@ -35,7 +35,7 @@ class PlayerCreationArgs:
     implementation_args: ImplementationArgs
     universal_behavior: bool
     queue_progress_player: queue.Queue[IsDataclass] | None = None
-    syzygy: SyzygyTable[Any] | None = None
+    syzygy: AnySyzygyTable | None = None
 
 
 def create_chipiron_player(
@@ -54,7 +54,7 @@ def create_chipiron_player(
     Returns: the player
 
     """
-    syzygy_table: table_base.SyzygyTable[Any] | None = create_syzygy(
+    syzygy_table: AnySyzygyTable | None = create_syzygy(
         use_rust=implementation_args.use_rust_boards
     )
 
@@ -100,7 +100,7 @@ def create_chipiron_player(
 
 def create_player(
     args: PlayerArgs,
-    syzygy: SyzygyTable[Any] | None,
+    syzygy: AnySyzygyTable | None,
     random_generator: random.Random,
     implementation_args: ImplementationArgs,
     universal_behavior: bool,
@@ -112,7 +112,7 @@ def create_player(
 
     Args:
         args (PlayerArgs): The arguments for creating the player.
-        syzygy (SyzygyTable | None): The Syzygy table to be used by the player, or None if not available.
+        syzygy (AnySyzygyTable | None): The Syzygy table to be used by the player, or None if not available.
         random_generator (random.Random): The random number generator to be used by the player.
 
     Returns:
@@ -147,7 +147,7 @@ def create_player(
 def create_game_player(
     player_factory_args: PlayerFactoryArgs,
     player_color: chess.Color,
-    syzygy_table: table_base.SyzygyTable[Any] | None,
+    syzygy_table: AnySyzygyTable | None,
     queue_progress_player: queue.Queue[IsDataclass] | None,
     implementation_args: ImplementationArgs,
     universal_behavior: bool,

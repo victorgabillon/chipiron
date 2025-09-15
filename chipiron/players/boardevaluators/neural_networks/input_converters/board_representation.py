@@ -2,8 +2,6 @@
 Module defining the board representation interface and the 364 features board representation.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import Protocol
 

@@ -21,7 +21,7 @@ class OpeningInstruction:
     Represents an opening instruction for a specific node in the game tree.
     """
 
-    node_to_open: nodes.ITreeNode[Any]
+    node_to_open: nodes.ITreeNode
     move_to_play: moveKey
 
     def print_info(self) -> None:
@@ -166,7 +166,7 @@ class OpeningInstructions:
 
 
 def create_instructions_to_open_all_moves(
-    moves_to_play: list[moveKey], node_to_open: nodes.ITreeNode[Any]
+    moves_to_play: list[moveKey], node_to_open: nodes.ITreeNode
 ) -> OpeningInstructions:
     """
     Creates opening instructions for all possible moves to play from a given node.
@@ -217,7 +217,7 @@ class OpeningInstructor:
         self.opening_type = opening_type
         self.random_generator = random_generator
 
-    def all_moves_to_open(self, node_to_open: nodes.ITreeNode[Any]) -> list[moveKey]:
+    def all_moves_to_open(self, node_to_open: nodes.ITreeNode) -> list[moveKey]:
         """
         Returns a list of all possible moves to open from a given node.
 

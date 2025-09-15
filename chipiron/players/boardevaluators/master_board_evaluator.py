@@ -21,7 +21,7 @@ from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args
     NeuralNetBoardEvalArgs,
 )
 from chipiron.players.boardevaluators.over_event import HowOver, OverEvent, Winner
-from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
+from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 
 from .board_evaluator import BoardEvaluator
 
@@ -51,7 +51,7 @@ class MasterBoardEvaluator:
     board_evaluator: BoardEvaluator
 
     # The Syzygy table used for endgame tablebase evaluations, or None if not available.
-    syzygy_evaluator: SyzygyTable[Any] | None
+    syzygy_evaluator: AnySyzygyTable | None
 
     # The value over enum used to determine the value of the node when it is over.
     value_over_enum: ValueOverEnum
@@ -59,7 +59,7 @@ class MasterBoardEvaluator:
     def __init__(
         self,
         board_evaluator: BoardEvaluator,
-        syzygy: SyzygyTable[Any] | None,
+        syzygy: AnySyzygyTable | None,
         value_over_enum: ValueOverEnum,
     ) -> None:
         """
@@ -178,7 +178,7 @@ class MasterBoardEvaluator:
 
 def create_master_board_evaluator(
     board_evaluator: BoardEvaluator,
-    syzygy: SyzygyTable[Any] | None,
+    syzygy: AnySyzygyTable | None,
     evaluation_scale: EvaluationScale,
 ) -> MasterBoardEvaluator:
     """
@@ -203,13 +203,13 @@ def create_master_board_evaluator(
 
 def create_master_board_evaluator_from_args(
     master_board_evaluator: MasterBoardEvaluatorArgs,
-    syzygy: SyzygyTable[Any] | None,
+    syzygy: AnySyzygyTable | None,
 ) -> MasterBoardEvaluator:
     """Creates a MasterBoardEvaluator instance from the given arguments.
 
     Args:
         master_board_evaluator (MasterBoardEvaluatorArgs): args to build the MasterBoardEvaluator
-        syzygy (SyzygyTable[Any] | None): a syzygy table objecct
+        syzygy (SyzygyTable | None): a syzygy table objecct
 
     Returns:
         MasterBoardEvaluator: _description_

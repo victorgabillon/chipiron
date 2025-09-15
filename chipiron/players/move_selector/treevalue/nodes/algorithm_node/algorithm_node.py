@@ -98,17 +98,17 @@ class AlgorithmNode:
         return self.tree_node.fast_rep
 
     @property
-    def moves_children(self) -> dict[moveKey, ITreeNode[Any] | None]:
+    def moves_children(self) -> dict[moveKey, ITreeNode | None]:
         """
         Returns the bidirectional dictionary of moves and their corresponding child nodes.
 
         Returns:
-            dict[IMove, ITreeNode[Any] | None]: The bidirectional dictionary of moves and their corresponding child nodes.
+            dict[IMove, ITreeNode | None]: The bidirectional dictionary of moves and their corresponding child nodes.
         """
         return self.tree_node.moves_children
 
     @property
-    def parent_nodes(self) -> dict[ITreeNode[Any], moveKey]:
+    def parent_nodes(self) -> dict[ITreeNode, moveKey]:
         """
         Returns the dictionary of parent nodes of the current tree node with associated move.
 
@@ -135,7 +135,7 @@ class AlgorithmNode:
         """
         return self.minmax_evaluation.is_over()
 
-    def add_parent(self, move: moveKey, new_parent_node: ITreeNode[Any]) -> None:
+    def add_parent(self, move: moveKey, new_parent_node: ITreeNode) -> None:
         """
         Adds a parent node.
 

@@ -16,7 +16,7 @@ Example usage:
 import random
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Literal, Protocol
+from typing import TYPE_CHECKING, Literal, Protocol
 
 import chipiron.players.move_selector.treevalue.trees as trees
 from chipiron.environments.chess_env.move.imove import moveKey
@@ -179,7 +179,7 @@ def recommend_move_after_exploration_generic(
             board=tree.root_node.board, color=not tree.root_node.board.turn
         )
 
-        child: ITreeNode[Any] | None
+        child: ITreeNode | None
         best_value: int | None = None
         best_move: moveKey | None = None
         for move, child in tree.root_node.moves_children.items():

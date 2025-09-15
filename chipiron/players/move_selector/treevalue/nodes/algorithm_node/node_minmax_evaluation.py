@@ -39,7 +39,7 @@ from chipiron.utils.small_tools import nth_key
 
 @typing.runtime_checkable
 # Class created to avoid circular import and defines what is seen and needed by the NodeMinmaxEvaluation class
-class NodeWithValue(ITreeNode[Any], Protocol):
+class NodeWithValue(ITreeNode, Protocol):
     """
     Represents a node with a value in a tree structure.
 

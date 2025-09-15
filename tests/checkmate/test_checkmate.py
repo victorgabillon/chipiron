@@ -1,6 +1,6 @@
 import pickle
 import random
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -55,7 +55,7 @@ def test_check_in_two(use_rusty_board: bool):
 
         implementation_args = ImplementationArgs(use_rust_boards=use_rusty_board)
 
-        syzygy_table: table_base.SyzygyTable[Any] | None = create_syzygy(
+        syzygy_table: table_base.SyzygyTable | None = create_syzygy(
             use_rust=implementation_args.use_rust_boards
         )
 

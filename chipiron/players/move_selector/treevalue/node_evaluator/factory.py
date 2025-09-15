@@ -3,13 +3,13 @@ This module provides a factory function for creating node evaluators based on di
 """
 
 import sys
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from chipiron.players.boardevaluators.board_evaluator_type import BoardEvalTypes
 from chipiron.players.boardevaluators.master_board_evaluator import (
     create_master_board_evaluator_from_args,
 )
-from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
+from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 from chipiron.players.move_selector.treevalue.node_evaluator.node_evaluator_args import (
     NodeEvaluatorArgs,
 )
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 
 def create_node_evaluator(
-    arg_board_evaluator: NodeEvaluatorArgs, syzygy: SyzygyTable[Any] | None
+    arg_board_evaluator: NodeEvaluatorArgs, syzygy: AnySyzygyTable | None
 ) -> NodeEvaluator:
     """
     Create a node evaluator based on the given board evaluator argument and syzygy table.
