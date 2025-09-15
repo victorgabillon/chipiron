@@ -2,7 +2,7 @@
 MoveAndValueTreeFactory
 """
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import chipiron.environments.chess_env.board as boards
 import chipiron.players.move_selector.treevalue.node_factory as nod_fac
@@ -52,7 +52,7 @@ class MoveAndValueTreeFactory:
 
         """
 
-        root_node: ITreeNode[Any] = self.node_factory.create(
+        root_node: ITreeNode = self.node_factory.create(
             board=starting_board,
             half_move=starting_board.ply(),
             count=0,

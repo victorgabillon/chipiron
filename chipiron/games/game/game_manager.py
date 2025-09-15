@@ -5,7 +5,7 @@ Module in charge of managing the game. It is the main class that will be used to
 import os
 import queue
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import chess
 import yaml
@@ -15,7 +15,7 @@ from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.environments.chess_env.move_factory import MoveFactory
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator
-from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
+from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 from chipiron.utils import path
 from chipiron.utils.communication.gui_messages import (
     BackMessage,
@@ -46,7 +46,7 @@ class GameManager:
     game: ObservableGame
 
     # A SyzygyTable
-    syzygy: SyzygyTable[Any] | None
+    syzygy: AnySyzygyTable | None
 
     # Evaluators that just evaluates the boards but are not players (just spectators) for display info of who is winning
     # according to them
@@ -76,7 +76,7 @@ class GameManager:
     def __init__(
         self,
         game: ObservableGame,
-        syzygy: SyzygyTable[Any] | None,
+        syzygy: AnySyzygyTable | None,
         display_board_evaluator: IGameBoardEvaluator,
         output_folder_path: path | None,
         args: GameArgs,
@@ -93,7 +93,7 @@ class GameManager:
 
         Args:
             game (ObservableGame): The observable game object.
-            syzygy (SyzygyTable | None): The syzygy table object or None.
+            syzygy (AnySyzygyTable | None): The syzygy table object or None.
             display_board_evaluator (IGameBoardEvaluator): The board evaluator to display an independent evaluation.
             output_folder_path (path | None): The output folder path or None.
             args (GameArgs): The game arguments.

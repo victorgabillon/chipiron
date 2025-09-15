@@ -22,7 +22,7 @@ class NoisyValueTreeNode(TreeNode[Any]):
         board: BoardChi,
         half_move: int,
         id_number: int,
-        parent_node: ITreeNode[Any],
+        parent_node: ITreeNode,
         last_move: chess.Move,
     ) -> None:
         """

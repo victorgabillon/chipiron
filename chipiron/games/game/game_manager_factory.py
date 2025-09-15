@@ -4,7 +4,6 @@ Module for the GameManagerFactory class.
 
 import queue
 from dataclasses import dataclass, field
-from typing import Any
 
 import chess
 
@@ -28,7 +27,7 @@ from chipiron.utils.dataclass import IsDataclass
 
 from ...environments.chess_env.board.utils import FenPlusHistory
 from ...environments.chess_env.move_factory import MoveFactory
-from ...players.boardevaluators.table_base import SyzygyTable
+from ...players.boardevaluators.table_base.factory import AnySyzygyTable
 from ...players.player_ids import PlayerConfigTag
 from ...scripts.chipiron_args import ImplementationArgs
 from .game import Game, ObservableGame
@@ -44,7 +43,7 @@ class GameManagerFactory:
     This class is supposed to be independent of Match-related classes (contrarily to the GameArgsFactory)
 
     Args:
-    syzygy_table (SyzygyTable | None): The syzygy table used for endgame tablebase lookups.
+    syzygy_table (AnySyzygyTable | None): The syzygy table used for endgame tablebase lookups.
     game_manager_board_evaluator (IGameBoardEvaluator): The game board evaluator used for evaluating game positions.
     output_folder_path (path | None): The path to the output folder where game data will be saved.
     main_thread_mailbox (queue.Queue[IsDataclass]): The mailbox used for communication between processes.
@@ -53,7 +52,7 @@ class GameManagerFactory:
 
     # todo we might want to plit this into various part, like maybe a player factory, not sure, think about it
 
-    syzygy_table: SyzygyTable[Any] | None
+    syzygy_table: AnySyzygyTable | None
     output_folder_path: path | None
     main_thread_mailbox: queue.Queue[IsDataclass]
     game_manager_board_evaluator: IGameBoardEvaluator

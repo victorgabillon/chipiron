@@ -4,13 +4,11 @@ This module provides functions for traversing a tree of nodes.
 The functions in this module allow you to retrieve descendants of a given node in a tree structure.
 """
 
-from typing import Any
-
 from .algorithm_node import AlgorithmNode
 from .itree_node import ITreeNode
 
 
-def get_descendants(from_tree_node: ITreeNode[Any]) -> dict[ITreeNode[Any], None]:
+def get_descendants(from_tree_node: ITreeNode) -> dict[ITreeNode, None]:
     """
     Get all descendants of a given tree node.
 
@@ -20,12 +18,12 @@ def get_descendants(from_tree_node: ITreeNode[Any]) -> dict[ITreeNode[Any], None
     Returns:
         dict[ITreeNode, None]: A dictionary containing all descendants of the starting tree node.
     """
-    des: dict[ITreeNode[Any], None] = {from_tree_node: None}  # include itself
-    generation: set[ITreeNode[Any]] = set(
+    des: dict[ITreeNode, None] = {from_tree_node: None}  # include itself
+    generation: set[ITreeNode] = set(
         [node for node in from_tree_node.moves_children.values() if node is not None]
     )
     while generation:
-        next_depth_generation: set[ITreeNode[Any]] = set()
+        next_depth_generation: set[ITreeNode] = set()
         for node in generation:
             assert node is not None
             des[node] = None
@@ -55,13 +53,13 @@ def get_descendants_candidate_to_open(
         des = {from_tree_node: None}  # include itself maybe
     else:
         des = {}
-    generation: set[ITreeNode[Any]] = set(
+    generation: set[ITreeNode] = set(
         [node for node in from_tree_node.moves_children.values() if node is not None]
     )
     depth: int = 1
     assert max_depth is not None
     while generation and depth <= max_depth:
-        next_depth_generation: set[ITreeNode[Any]] = set()
+        next_depth_generation: set[ITreeNode] = set()
         for node in generation:
             assert isinstance(node, AlgorithmNode)
             if not node.all_legal_moves_generated and not node.is_over():
@@ -74,8 +72,8 @@ def get_descendants_candidate_to_open(
 
 
 def get_descendants_candidate_not_over(
-    from_tree_node: ITreeNode[Any], max_depth: int | None = None
-) -> list[ITreeNode[Any]]:
+    from_tree_node: ITreeNode, max_depth: int | None = None
+) -> list[ITreeNode]:
     """
     Get descendants of a given tree node that are not over.
 
@@ -89,15 +87,15 @@ def get_descendants_candidate_not_over(
     assert not from_tree_node.is_over()
     if not from_tree_node.moves_children:
         return [from_tree_node]
-    des: dict[ITreeNode[Any], None] = {}
-    generation: set[ITreeNode[Any]] = set(
+    des: dict[ITreeNode, None] = {}
+    generation: set[ITreeNode] = set(
         [node for node in from_tree_node.moves_children.values() if node is not None]
     )
 
     depth: int = 1
     assert max_depth is not None
     while generation and depth <= max_depth:
-        next_depth_generation: set[ITreeNode[Any]] = set()
+        next_depth_generation: set[ITreeNode] = set()
         for node in generation:
             assert isinstance(node, AlgorithmNode)
             if not node.is_over():

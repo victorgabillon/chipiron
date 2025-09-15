@@ -43,7 +43,7 @@ def are_all_moves_and_children_opened(tree_node: TreeNode[Any]) -> bool:
     )
 
 
-def a_move_key_sequence_from_root(tree_node: ITreeNode[Any]) -> list[str]:
+def a_move_key_sequence_from_root(tree_node: ITreeNode) -> list[str]:
     """
     Returns a list of move sequences from the root node to a given tree node.
 
@@ -54,9 +54,9 @@ def a_move_key_sequence_from_root(tree_node: ITreeNode[Any]) -> list[str]:
         list[str]: A list of move sequences from the root node to the given tree node.
     """
     move_sequence_from_root: list[moveKey] = []
-    child: ITreeNode[Any] = tree_node
+    child: ITreeNode = tree_node
     while child.parent_nodes:
-        parent: ITreeNode[Any] = next(iter(child.parent_nodes))
+        parent: ITreeNode = next(iter(child.parent_nodes))
         move: moveKey = child.parent_nodes[parent]
         move_sequence_from_root.append(move)
         child = parent
@@ -64,7 +64,7 @@ def a_move_key_sequence_from_root(tree_node: ITreeNode[Any]) -> list[str]:
     return [str(i) for i in move_sequence_from_root]
 
 
-def a_move_uci_sequence_from_root(tree_node: ITreeNode[Any]) -> list[str]:
+def a_move_uci_sequence_from_root(tree_node: ITreeNode) -> list[str]:
     """
     Returns a list of move sequences from the root node to a given tree node.
 
@@ -75,9 +75,9 @@ def a_move_uci_sequence_from_root(tree_node: ITreeNode[Any]) -> list[str]:
         list[str]: A list of move sequences from the root node to the given tree node.
     """
     move_sequence_from_root: list[moveUci] = []
-    child: ITreeNode[Any] = tree_node
+    child: ITreeNode = tree_node
     while child.parent_nodes:
-        parent: ITreeNode[Any] = next(iter(child.parent_nodes))
+        parent: ITreeNode = next(iter(child.parent_nodes))
         move: moveKey = child.parent_nodes[parent]
         move_uci: moveUci = parent.board.get_uci_from_move_key(move)
         move_sequence_from_root.append(move_uci)
@@ -88,13 +88,13 @@ def a_move_uci_sequence_from_root(tree_node: ITreeNode[Any]) -> list[str]:
 
 def best_node_sequence_from_node(
     tree_node: AlgorithmNode,
-) -> list[ITreeNode[Any]]:
+) -> list[ITreeNode]:
     """ """
 
     best_move_seq: list[moveKey] = tree_node.minmax_evaluation.best_move_sequence
     index = 0
-    move_sequence: list[ITreeNode[Any]] = [tree_node]
-    child: ITreeNode[Any] = tree_node
+    move_sequence: list[ITreeNode] = [tree_node]
+    child: ITreeNode = tree_node
     while child.moves_children:
         move: moveKey = best_move_seq[index]
         child_ = child.moves_children[move]

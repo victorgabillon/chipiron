@@ -12,20 +12,17 @@ and checking if the game is over.
 Note: This is an interface and should not be instantiated directly.
 """
 
-from __future__ import annotations
+from typing import Any, Protocol
 
-from typing import TYPE_CHECKING, Any, Protocol
-
-if TYPE_CHECKING:
-    import chipiron.environments.chess_env.board as boards
-    from chipiron.environments.chess_env.board.iboard import LegalMoveKeyGeneratorP
-    from chipiron.environments.chess_env.move.imove import moveKey
+import chipiron.environments.chess_env.board as boards
+from chipiron.environments.chess_env.board.iboard import LegalMoveKeyGeneratorP
+from chipiron.environments.chess_env.move.imove import moveKey
 
 # to force Any to stay because of weird interaction between flake8 and pycharm
 a: Any = 0
 
 
-class ITreeNode[T: "ITreeNode"](Protocol):
+class ITreeNode[T: "ITreeNode" = Any](Protocol):
     """
     The `ITreeNode` protocol represents a node in a tree structure used for selecting chess moves.
     """
@@ -73,7 +70,7 @@ class ITreeNode[T: "ITreeNode"](Protocol):
         ...
 
     @property
-    def parent_nodes(self) -> dict[ITreeNode[T], moveKey]:
+    def parent_nodes(self) -> dict["ITreeNode", moveKey]:
         """
         Returns the dictionary of parent nodes of the current tree node with associated move.
 
@@ -81,7 +78,7 @@ class ITreeNode[T: "ITreeNode"](Protocol):
         """
         ...
 
-    def add_parent(self, move: moveKey, new_parent_node: ITreeNode[T]) -> None:
+    def add_parent(self, move: moveKey, new_parent_node: "ITreeNode") -> None:
         """
         Add a parent node to the node.
 

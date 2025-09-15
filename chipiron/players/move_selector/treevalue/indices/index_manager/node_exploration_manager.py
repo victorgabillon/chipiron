@@ -3,7 +3,7 @@ Module that contains the logic to compute the exploration index of a node in a t
 """
 
 import math
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Protocol
 
 import chess
 
@@ -443,10 +443,10 @@ def update_all_indices(
     half_move: int
     for half_move in tree_nodes:
         # todo how are we sure that the hm comes in order?
-        parent_node: ITreeNode[Any]
+        parent_node: ITreeNode
         for parent_node in tree_nodes[half_move].values():
             assert isinstance(parent_node, AlgorithmNode)
-            child_node: ITreeNode[Any] | None
+            child_node: ITreeNode | None
             # for child_node in parent_node.moves_children.values():
             move_rank: int
             move: moveKey
@@ -483,7 +483,7 @@ def print_all_indices(
     half_move: int
     for half_move in tree_nodes:
         # todo how are we sure that the hm comes in order?
-        parent_node: ITreeNode[Any]
+        parent_node: ITreeNode
         for parent_node in tree_nodes[half_move].values():
             assert isinstance(parent_node, AlgorithmNode)
             if parent_node.exploration_index_data is not None:

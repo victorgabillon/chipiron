@@ -1,5 +1,5 @@
 import random
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import chess
 import pytest
@@ -85,9 +85,9 @@ def test_modifications(
     half_move: HalfMove
     board_key: boards.boardKey
     for half_move, board_key, node_one in tree_one.descendants.iter_on_all_nodes():
-        node_two: ITreeNode[Any] = tree_two.descendants.descendants_at_half_move[
-            half_move
-        ][board_key]
+        node_two: ITreeNode = tree_two.descendants.descendants_at_half_move[half_move][
+            board_key
+        ]
         assert isinstance(node_one, AlgorithmNode)
         assert isinstance(node_two, AlgorithmNode)
 

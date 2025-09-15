@@ -20,7 +20,7 @@ import chipiron.players.move_selector.treevalue.search_factory as search_factori
 from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
     create_board_representation_factory,
 )
-from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
+from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 from chipiron.players.move_selector.treevalue import node_factory
 from chipiron.players.move_selector.treevalue.node_evaluator.node_evaluator_args import (
@@ -62,7 +62,7 @@ class TreeAndValuePlayerArgs:
 
 def create_tree_and_value_builders(
     args: TreeAndValuePlayerArgs,
-    syzygy: SyzygyTable[Any] | None,
+    syzygy: AnySyzygyTable | None,
     random_generator: random.Random,
     queue_progress_player: queue.Queue[IsDataclass] | None,
 ) -> TreeAndValueMoveSelector:

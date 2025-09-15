@@ -4,7 +4,6 @@ Defining the AlgorithmNodeTreeManager class
 
 import typing
 from dataclasses import dataclass
-from typing import Any
 
 import chipiron.players.move_selector.treevalue.trees as trees
 import chipiron.players.move_selector.treevalue.updates as upda
@@ -149,7 +148,7 @@ class AlgorithmNodeTreeManager:
         )
 
         while update_instructions_batch:
-            node_to_update: ITreeNode[Any]
+            node_to_update: ITreeNode
             update_instructions: upda.UpdateInstructionsTowardsOneParentNode
             node_to_update, update_instructions = update_instructions_batch.pop_item()
             extra_update_instructions_batch: upda.UpdateInstructionsTowardsMultipleNodes
@@ -159,7 +158,7 @@ class AlgorithmNodeTreeManager:
             )
             # merge
             while extra_update_instructions_batch.one_node_instructions:
-                parent_node_to_update: ITreeNode[Any]
+                parent_node_to_update: ITreeNode
                 update: upda.UpdateInstructionsTowardsOneParentNode
                 parent_node_to_update, update = (
                     extra_update_instructions_batch.pop_item()
@@ -193,7 +192,7 @@ class AlgorithmNodeTreeManager:
 
         update_instructions_batch: upda.UpdateInstructionsTowardsMultipleNodes
         update_instructions_batch = upda.UpdateInstructionsTowardsMultipleNodes()
-        parent_node: ITreeNode[Any] | None
+        parent_node: ITreeNode | None
         move_from_parent: moveKey
         for parent_node, move_from_parent in node_to_update.parent_nodes.items():
             if parent_node:

@@ -5,7 +5,7 @@ Module for creating player observers.
 import multiprocessing
 import queue
 from functools import partial
-from typing import Any, Protocol
+from typing import Protocol
 
 import chess
 
@@ -15,7 +15,7 @@ from chipiron.utils.dataclass import IsDataclass
 
 from ..environments.chess_env.board.utils import FenPlusHistory
 from ..scripts.chipiron_args import ImplementationArgs
-from .boardevaluators.table_base import SyzygyTable
+from .boardevaluators.table_base.factory import AnySyzygyTable
 from .factory import create_game_player
 from .game_player import (
     GamePlayer,
@@ -78,7 +78,7 @@ def create_player_observer_factory(
     each_player_has_its_own_thread: bool,
     implementation_args: ImplementationArgs,
     universal_behavior: bool,
-    syzygy_table: SyzygyTable[Any] | None,
+    syzygy_table: AnySyzygyTable | None,
 ) -> PlayerObserverFactory:
     """Create a player observer factory.
     This function creates a player observer factory based on the given parameters.
@@ -98,7 +98,7 @@ def create_player_observer_factory(
         each_player_has_its_own_thread (bool): _description_
         implementation_args (ImplementationArgs): _description_
         universal_behavior (bool): _description_
-        syzygy_table (SyzygyTable[Any] | None): _description_
+        syzygy_table (AnySyzygyTable | None): _description_
 
     Returns:
         PlayerObserverFactory: _description_
@@ -173,7 +173,7 @@ def create_player_observer_mono_process(
     player_factory_args: PlayerFactoryArgs,
     player_color: chess.Color,
     main_thread_mailbox: queue.Queue[IsDataclass],
-    syzygy_table: SyzygyTable[Any] | None,
+    syzygy_table: AnySyzygyTable | None,
     implementation_args: ImplementationArgs,
     universal_behavior: bool,
 ) -> tuple[GamePlayer, MoveFunction]:

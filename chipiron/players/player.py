@@ -2,11 +2,11 @@
 Module for the Player class.
 """
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from chipiron.environments.chess_env.board import BoardFactory, IBoard
 from chipiron.environments.chess_env.board.utils import FenPlusHistory
-from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
+from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 from chipiron.players.move_selector.move_selector import (
     MoveRecommendation,
     MoveSelector,
@@ -30,13 +30,13 @@ class Player:
     #  that now a player can be a mixture of multiple decision rules
     id: PlayerId
     main_move_selector: MoveSelector
-    syzygy: SyzygyTable[Any] | None
+    syzygy: AnySyzygyTable | None
     board_factory: BoardFactory
 
     def __init__(
         self,
         name: str,
-        syzygy: SyzygyTable[Any] | None,
+        syzygy: AnySyzygyTable | None,
         main_move_selector: MoveSelector,
         board_factory: BoardFactory,
     ):

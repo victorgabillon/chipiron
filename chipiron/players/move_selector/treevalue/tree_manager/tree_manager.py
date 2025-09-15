@@ -3,7 +3,6 @@ This module contains the TreeManager class, which is responsible for managing a 
 """
 
 import typing
-from typing import Any
 
 import chipiron.environments.chess_env.board as board_mod
 import chipiron.players.move_selector.treevalue.nodes as node
@@ -33,15 +32,15 @@ class TreeManager:
     This class manages a tree by opening new nodes and updating the values and indexes on the nodes.
     """
 
-    node_factory: TreeNodeFactory[node.ITreeNode[Any]]
+    node_factory: TreeNodeFactory[node.ITreeNode]
 
-    def __init__(self, node_factory: TreeNodeFactory[node.ITreeNode[Any]]) -> None:
+    def __init__(self, node_factory: TreeNodeFactory[node.ITreeNode]) -> None:
         self.node_factory = node_factory
 
     def open_node_move(
         self,
         tree: trees.MoveAndValueTree,
-        parent_node: node.ITreeNode[Any],
+        parent_node: node.ITreeNode,
         move: moveKey,
     ) -> TreeExpansion:
         """
@@ -82,7 +81,7 @@ class TreeManager:
     def open_node(
         self,
         tree: trees.MoveAndValueTree,
-        parent_node: node.ITreeNode[Any],
+        parent_node: node.ITreeNode,
         board: board_mod.IBoard,
         modifications: board_mod.BoardModificationP | None,
         move: moveKey,
@@ -107,7 +106,7 @@ class TreeManager:
         half_move: int = parent_node.half_move + 1
         fast_rep: board_mod.boardKey = board.fast_representation
 
-        child_node: node.ITreeNode[Any]
+        child_node: node.ITreeNode
         need_creation_child_node: bool = (
             tree.descendants.is_new_generation(half_move)
             or fast_rep not in tree.descendants.descendants_at_half_move[half_move]

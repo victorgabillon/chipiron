@@ -41,7 +41,7 @@ class AlgorithmNodeFactory:
         board: board_mod.IBoard,
         half_move: int,
         count: int,
-        parent_node: ITreeNode[Any] | None,
+        parent_node: ITreeNode | None,
         move_from_parent: moveKey | None,
         modifications: board_mod.BoardModificationP | None,
     ) -> AlgorithmNode:

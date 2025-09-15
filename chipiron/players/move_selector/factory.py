@@ -4,9 +4,9 @@ This module provides a factory function for creating the main move selector base
 
 import queue
 import random
-from typing import Any, TypeAlias
+from typing import TypeAlias
 
-from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
+from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 from chipiron.utils.logger import chipiron_logger
 
 from ...utils.dataclass import IsDataclass
@@ -24,7 +24,7 @@ AllMoveSelectorArgs: TypeAlias = (
 
 def create_main_move_selector(
     move_selector_instance_or_args: AllMoveSelectorArgs,
-    syzygy: SyzygyTable[Any] | None,
+    syzygy: AnySyzygyTable | None,
     random_generator: random.Random,
     queue_progress_player: queue.Queue[IsDataclass] | None,
 ) -> move_selector.MoveSelector:
