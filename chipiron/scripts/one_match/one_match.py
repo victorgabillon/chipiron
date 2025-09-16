@@ -17,7 +17,7 @@ from chipiron.environments.chess_env.board import BoardFactory, create_board_fac
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_factories import create_match_manager_from_args
 from chipiron.scripts.chipiron_args import ImplementationArgs
-from chipiron.scripts.script import AnyScript, Script
+from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.logger import chipiron_logger
 
@@ -52,7 +52,7 @@ class OneMatchScript:
     base_experiment_output_folder = os.path.join(
         Script.base_experiment_output_folder, "one_match/outputs/"
     )
-    base_script: AnyScript
+    base_script: Script[MatchScriptArgs]
 
     chess_gui: QApplication
 
@@ -60,7 +60,7 @@ class OneMatchScript:
 
     def __init__(
         self,
-        base_script: AnyScript,
+        base_script: Script[MatchScriptArgs],
     ) -> None:
         """
         Builds the OneMatchScript object
@@ -69,11 +69,8 @@ class OneMatchScript:
         self.base_script = base_script
 
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into args
-        args: MatchScriptArgs = cast(
-            "MatchScriptArgs",
-            self.base_script.initiate(
-                experiment_output_folder=self.base_experiment_output_folder,
-            ),
+        args: MatchScriptArgs = self.base_script.initiate(
+            experiment_output_folder=self.base_experiment_output_folder,
         )
 
         # creating the match manager
