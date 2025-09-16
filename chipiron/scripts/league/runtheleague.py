@@ -28,9 +28,9 @@ class RunTheLeagueScript(IScript):
     folder_league: str = os.path.join(
         Script.base_experiment_output_folder, "league/league_data/league_10_001"
     )
-    base_script: Script[Any]
+    base_script: Script
 
-    def __init__(self, base_script: Script[Any]) -> None:
+    def __init__(self, base_script: Script) -> None:
         """
         Initialize the RunTheLeague class.
 

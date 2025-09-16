@@ -19,7 +19,6 @@ import os
 import pickle
 import sys
 import typing
-from typing import Any
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
@@ -411,11 +410,11 @@ class VisualizeTreeScript(IScript):
     base_experiment_output_folder = os.path.join(
         Script.base_experiment_output_folder, "tree_visualization/outputs/"
     )
-    base_script: Script[Any]
+    base_script: Script
 
     def __init__(
         self,
-        base_script: Script[Any],
+        base_script: Script,
     ):
         """
         Initializes a TreeVisualizer object.

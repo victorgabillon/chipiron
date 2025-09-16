@@ -9,28 +9,19 @@ import os
 import pstats
 import time
 from pstats import SortKey
-from typing import Any, Protocol, cast, runtime_checkable
+from typing import Any, cast
 
 from parsley_coco import Parsley
 from rich.pretty import pretty_repr
 
-from chipiron.scripts.script_args import BaseScriptArgs
+from chipiron.scripts.default_script_args import DataClassWithBaseScriptArgs
 from chipiron.utils import path
 from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger, set_chipiron_logger_level
 from chipiron.utils.small_tools import mkdir_if_not_existing
 
 
-@runtime_checkable
-class HasBaseScriptArgs(Protocol):
-    """
-    Protocol of generic ScriptArgs that contains the BaseScriptArgs
-    """
-
-    base_script_args: BaseScriptArgs
-
-
-class Script[T_Dataclass: IsDataclass]:
+class Script[T_Dataclass: DataClassWithBaseScriptArgs = DataClassWithBaseScriptArgs]:
     """
     The core Script class to launch scripts.
     Takes care of computing execution time, profiling, and parsing arguments.
@@ -96,7 +87,7 @@ class Script[T_Dataclass: IsDataclass]:
         assert hasattr(final_args, "base_script_args"), "Missing base_script_args"
 
         # Type assertion to help type checker understand the structure
-        final_args_with_base = cast("HasBaseScriptArgs", final_args)
+        final_args_with_base = cast("DataClassWithBaseScriptArgs", final_args)
 
         set_chipiron_logger_level(
             level=final_args_with_base.base_script_args.logging_levels.chipiron
@@ -158,7 +149,7 @@ class Script[T_Dataclass: IsDataclass]:
             assert hasattr(self.args, "base_script_args")
 
             # Type assertion for self.args as well
-            args_with_base = cast("HasBaseScriptArgs", self.args)
+            args_with_base = cast("DataClassWithBaseScriptArgs", self.args)
 
             # Ensure experiment_output_folder is not None
             assert args_with_base.base_script_args.experiment_output_folder is not None
@@ -187,3 +178,7 @@ class Script[T_Dataclass: IsDataclass]:
         """
         Runs the script.
         """
+
+
+# Type alias to handle Script generic variance issues
+type AnyScript = Script[Any]
