@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from chipiron.environments.chess_env.move.imove import moveKey
 
 
-def are_all_moves_and_children_opened(tree_node: TreeNode[Any]) -> bool:
+def are_all_moves_and_children_opened(tree_node: TreeNode) -> bool:
     """
     Checks if all moves and children of a tree node are opened.
 

@@ -9,21 +9,21 @@ chipiron.displays.gui module
 
 .. automodule:: chipiron.displays.gui
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 chipiron.displays.gui\_replay\_games module
 -------------------------------------------
 
 .. automodule:: chipiron.displays.gui_replay_games
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 Module contents
 ---------------
 
 .. automodule:: chipiron.displays
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:

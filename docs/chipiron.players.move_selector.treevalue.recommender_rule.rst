@@ -9,13 +9,13 @@ chipiron.players.move\_selector.treevalue.recommender\_rule.recommender\_rule mo
 
 .. automodule:: chipiron.players.move_selector.treevalue.recommender_rule.recommender_rule
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 Module contents
 ---------------
 
 .. automodule:: chipiron.players.move_selector.treevalue.recommender_rule
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:

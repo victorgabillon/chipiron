@@ -8,6 +8,7 @@ Subpackages
    :maxdepth: 4
 
    chipiron.scripts.base_tree_exploration
+   chipiron.scripts.generate_datasets
    chipiron.scripts.league
    chipiron.scripts.learn_nn_supervised
    chipiron.scripts.one_match
@@ -22,69 +23,77 @@ chipiron.scripts.chipiron\_args module
 
 .. automodule:: chipiron.scripts.chipiron_args
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
+
+chipiron.scripts.default\_script\_args module
+---------------------------------------------
+
+.. automodule:: chipiron.scripts.default_script_args
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 chipiron.scripts.factory module
 -------------------------------
 
 .. automodule:: chipiron.scripts.factory
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 chipiron.scripts.get\_script module
 -----------------------------------
 
 .. automodule:: chipiron.scripts.get_script
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 chipiron.scripts.iscript module
 -------------------------------
 
 .. automodule:: chipiron.scripts.iscript
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 chipiron.scripts.main\_chipiron module
 --------------------------------------
 
 .. automodule:: chipiron.scripts.main_chipiron
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 chipiron.scripts.script module
 ------------------------------
 
 .. automodule:: chipiron.scripts.script
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 chipiron.scripts.script\_args module
 ------------------------------------
 
 .. automodule:: chipiron.scripts.script_args
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 chipiron.scripts.script\_type module
 ------------------------------------
 
 .. automodule:: chipiron.scripts.script_type
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 Module contents
 ---------------
 
 .. automodule:: chipiron.scripts
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:

@@ -15,5 +15,5 @@ Module contents
 
 .. automodule:: chipiron.games
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:

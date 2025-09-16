@@ -84,7 +84,7 @@ def create_board_to_input_from_representation(
         BoardToInputFunction: A function that converts a chess board to a tensor input.
     """
 
-    representation_factory: RepresentationFactory[Any] | None = (
+    representation_factory: RepresentationFactory | None = (
         create_board_representation_factory(
             internal_tensor_representation_type=internal_tensor_representation_type
         )

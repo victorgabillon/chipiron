@@ -35,7 +35,9 @@ class CreateFromBoardAndFromParent[T_BoardRepresentation: BoardRepresentation](
 
 
 @dataclass
-class RepresentationFactory[T_BoardRepresentation: BoardRepresentation]:
+class RepresentationFactory[
+    T_BoardRepresentation: BoardRepresentation = BoardRepresentation
+]:
     """
     Factory class  for creating instances of BoardFactory
     """

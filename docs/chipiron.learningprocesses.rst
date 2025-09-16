@@ -14,5 +14,5 @@ Module contents
 
 .. automodule:: chipiron.learningprocesses
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:

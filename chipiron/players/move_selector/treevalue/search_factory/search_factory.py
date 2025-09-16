@@ -22,7 +22,7 @@ Functions:
 import random
 from dataclasses import dataclass
 from functools import partial
-from typing import Any, Callable, Protocol
+from typing import Callable, Protocol
 
 import chipiron.players.move_selector.treevalue.indices.node_indices as node_indices
 import chipiron.players.move_selector.treevalue.node_selector as node_selectors
@@ -70,7 +70,7 @@ class SearchFactoryP(Protocol):
         ...
 
     def node_index_create(
-        self, tree_node: nodes.TreeNode[Any]
+        self, tree_node: nodes.TreeNode
     ) -> node_indices.NodeExplorationData | None:
         """
         Creates a node index for the given tree node.
@@ -164,7 +164,7 @@ class SearchFactory:
         return index_updater
 
     def node_index_create(
-        self, tree_node: nodes.TreeNode[Any]
+        self, tree_node: nodes.TreeNode
     ) -> node_indices.NodeExplorationData | None:
         """
         Creates node indices for a given tree node.
