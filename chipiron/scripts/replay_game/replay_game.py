@@ -6,7 +6,7 @@ import os
 import sys
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, cast
+from typing import Any
 
 import dacite
 import yaml
@@ -17,7 +17,7 @@ from chipiron.environments.chess_env.board.board_chi import BoardChi
 from chipiron.environments.chess_env.board.factory import create_board_chi
 from chipiron.environments.chess_env.board.utils import FenPlusHistory
 from chipiron.games.game.final_game_result import GameReport
-from chipiron.scripts.script import AnyScript, Script
+from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
 
 
@@ -43,7 +43,7 @@ class ReplayGameScript:
 
     args_dataclass_name: type[ReplayScriptArgs] = ReplayScriptArgs
 
-    base_script: AnyScript
+    base_script: Script[ReplayScriptArgs]
     chess_board: BoardChi
 
     base_experiment_output_folder = os.path.join(
@@ -52,7 +52,7 @@ class ReplayGameScript:
 
     def __init__(
         self,
-        base_script: AnyScript,
+        base_script: Script[ReplayScriptArgs],
     ) -> None:
         """
         Initializes the `ReplayGameScript` object.
@@ -64,14 +64,11 @@ class ReplayGameScript:
         self.base_script = base_script
 
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into self.args
-        self.args: ReplayScriptArgs = cast(
-            "ReplayScriptArgs",
-            self.base_script.initiate(
-                experiment_output_folder=self.base_experiment_output_folder,
-            ),
+        self.args: ReplayScriptArgs = self.base_script.initiate(
+            experiment_output_folder=self.base_experiment_output_folder,
         )
 
-        with open(self.args.file_game_report, "r") as fileGame:
+        with open(self.args.file_game_report, "r", encoding="utf-8") as fileGame:
             game_report_dict: dict[Any, Any] = yaml.safe_load(fileGame)
             game_report: GameReport = dacite.from_dict(
                 data_class=GameReport,

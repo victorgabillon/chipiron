@@ -84,10 +84,7 @@ class Script[T_Dataclass: DataClassWithBaseScriptArgs = DataClassWithBaseScriptA
             extra_args=self.extra_args, config_file_path=self.config_file_name
         )
 
-        assert hasattr(final_args, "base_script_args"), "Missing base_script_args"
-
-        # Type assertion to help type checker understand the structure
-        final_args_with_base = cast("DataClassWithBaseScriptArgs", final_args)
+        final_args_with_base = final_args
 
         set_chipiron_logger_level(
             level=final_args_with_base.base_script_args.logging_levels.chipiron
