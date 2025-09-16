@@ -22,7 +22,7 @@ import os
 import tempfile
 import time
 from dataclasses import asdict, dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import mlflow
 import mlflow.pytorch
@@ -54,7 +54,7 @@ from chipiron.players.boardevaluators.neural_networks.factory import (
     create_nn_board_eval_from_architecture_args,
     create_nn_board_eval_from_nn_parameters_file_and_existing_model,
 )
-from chipiron.scripts.script import Script
+from chipiron.scripts.script import AnyScript, Script
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
 from chipiron.utils.chi_nn import ChiNN
@@ -108,7 +108,7 @@ class LearnNNScript:
         "learn_nn_supervised/learn_nn_supervised_outputs",
     )
 
-    base_script: Script[LearnNNScriptArgs]
+    base_script: AnyScript
     nn: ChiNN
     args: LearnNNScriptArgs
     nn_board_evaluator: NNBoardEvaluator
@@ -116,7 +116,7 @@ class LearnNNScript:
 
     def __init__(
         self,
-        base_script: Script[LearnNNScriptArgs],
+        base_script: AnyScript,
     ) -> None:
         """
         Initializes the LearnNNFromSupervisedDatasets class.
@@ -134,8 +134,11 @@ class LearnNNScript:
         self.base_script = base_script
 
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into self.args
-        self.args: LearnNNScriptArgs = self.base_script.initiate(
-            experiment_output_folder=self.base_experiment_output_folder,
+        self.args: LearnNNScriptArgs = cast(
+            "LearnNNScriptArgs",
+            self.base_script.initiate(
+                experiment_output_folder=self.base_experiment_output_folder,
+            ),
         )
 
         # taking care of random

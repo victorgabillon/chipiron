@@ -63,7 +63,7 @@ def create_script(
 
     set_verbosity(parsley_logging_level)
 
-    base_script: Script[Any] = Script(
+    base_script: Script = Script(
         parser=parser, extra_args=extra_args, config_file_name=config_file_name
     )
 

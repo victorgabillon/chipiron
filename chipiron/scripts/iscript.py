@@ -2,30 +2,10 @@
 This module defines the IScript interface, which serves as the interface for scripts in the application.
 """
 
-from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Protocol
 
-from chipiron.scripts.script_args import BaseScriptArgs
-from chipiron.utils.dataclass import IsDataclass
-
-from .script import Script
-
-
-@dataclass
-class DefaultScriptArgs:
-    """Default arguments for the script."""
-
-    base_script_args: BaseScriptArgs
-
-
-class HasBaseScriptArgs(Protocol):
-    """Mixin class that provides access to the base_script_args attribute."""
-
-    base_script_args: BaseScriptArgs
-
-
-class DataClassWithBaseScriptArgs(HasBaseScriptArgs, IsDataclass, Protocol):
-    """Data class that includes base_script_args."""
+from .default_script_args import DataClassWithBaseScriptArgs, DefaultScriptArgs
+from .script import AnyScript
 
 
 class IScript(Protocol):
@@ -33,7 +13,7 @@ class IScript(Protocol):
     The interface for scripts in the application.
     """
 
-    base_script: Script[Any]
+    base_script: AnyScript
 
     @classmethod
     def get_args_dataclass_name(cls) -> type[DataClassWithBaseScriptArgs]:
@@ -45,7 +25,7 @@ class IScript(Protocol):
         """
         return DefaultScriptArgs  # could be overridden by subclasses
 
-    def __init__(self, base_script: Script[Any]) -> None:
+    def __init__(self, base_script: AnyScript) -> None:
         """
         Initializes the IScript object.
 
