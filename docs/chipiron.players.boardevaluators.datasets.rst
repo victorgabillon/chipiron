@@ -9,13 +9,13 @@ chipiron.players.boardevaluators.datasets.datasets module
 
 .. automodule:: chipiron.players.boardevaluators.datasets.datasets
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 Module contents
 ---------------
 
 .. automodule:: chipiron.players.boardevaluators.datasets
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:

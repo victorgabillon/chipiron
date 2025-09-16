@@ -49,7 +49,7 @@ class NodeWithValue(ITreeNode, Protocol):
     """
 
     minmax_evaluation: "NodeMinmaxEvaluation"
-    tree_node: TreeNode[Any]
+    tree_node: TreeNode
 
 
 @dataclass(slots=True)

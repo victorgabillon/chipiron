@@ -18,7 +18,7 @@ from .rep_364_bug import (
 
 def create_board_representation_factory(
     internal_tensor_representation_type: InternalTensorRepresentationType,
-) -> RepresentationFactory[Any] | None:
+) -> RepresentationFactory | None:
     """
     Create a board representation based on the given string.
 

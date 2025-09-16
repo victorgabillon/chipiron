@@ -27,29 +27,29 @@ chipiron.players.move\_selector.treevalue.factory module
 
 .. automodule:: chipiron.players.move_selector.treevalue.factory
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 chipiron.players.move\_selector.treevalue.tree\_and\_value\_move\_selector module
 ---------------------------------------------------------------------------------
 
 .. automodule:: chipiron.players.move_selector.treevalue.tree_and_value_move_selector
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 chipiron.players.move\_selector.treevalue.tree\_exploration module
 ------------------------------------------------------------------
 
 .. automodule:: chipiron.players.move_selector.treevalue.tree_exploration
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 Module contents
 ---------------
 
 .. automodule:: chipiron.players.move_selector.treevalue
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:

@@ -1,3 +1,7 @@
+"""
+Tests for the board representation.
+"""
+
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 
@@ -35,6 +39,12 @@ def test_representation(
     use_rust_boards: bool,
     board_representation_factory_type: InternalTensorRepresentationType,
 ) -> None:
+    """Test the board representation factory.
+
+    Args:
+        use_rust_boards (bool): Whether to use Rust boards.
+        board_representation_factory_type (InternalTensorRepresentationType): The type of board representation factory to use.
+    """
     board: IBoard = create_board(
         use_rust_boards=use_rust_boards,
         use_board_modification=True,

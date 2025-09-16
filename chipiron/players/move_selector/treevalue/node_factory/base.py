@@ -12,7 +12,7 @@ from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 
 
-class Base[T: ITreeNode](TreeNodeFactory[T]):
+class Base[T: ITreeNode = ITreeNode](TreeNodeFactory[T]):
     """
     Basic class for Creating Tree nodes
     """

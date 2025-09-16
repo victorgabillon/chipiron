@@ -6,7 +6,7 @@ Classes:
 
 """
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import torch
 
@@ -28,7 +28,7 @@ class RepresentationBTI:
 
     """
 
-    def __init__(self, representation_factory: RepresentationFactory[Any]):
+    def __init__(self, representation_factory: RepresentationFactory):
         """
         Initializes the Representation364BTI object.
 

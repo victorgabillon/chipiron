@@ -9,21 +9,21 @@ chipiron.players.move\_selector.treevalue.node\_evaluator.neural\_networks.facto
 
 .. automodule:: chipiron.players.move_selector.treevalue.node_evaluator.neural_networks.factory
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 chipiron.players.move\_selector.treevalue.node\_evaluator.neural\_networks.nn\_node\_evaluator module
 -----------------------------------------------------------------------------------------------------
 
 .. automodule:: chipiron.players.move_selector.treevalue.node_evaluator.neural_networks.nn_node_evaluator
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 Module contents
 ---------------
 
 .. automodule:: chipiron.players.move_selector.treevalue.node_evaluator.neural_networks
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:

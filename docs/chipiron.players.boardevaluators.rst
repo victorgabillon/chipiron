@@ -15,58 +15,90 @@ Subpackages
 Submodules
 ----------
 
+chipiron.players.boardevaluators.all\_board\_evaluator\_args module
+-------------------------------------------------------------------
+
+.. automodule:: chipiron.players.boardevaluators.all_board_evaluator_args
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 chipiron.players.boardevaluators.basic\_evaluation module
 ---------------------------------------------------------
 
 .. automodule:: chipiron.players.boardevaluators.basic_evaluation
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 chipiron.players.boardevaluators.board\_evaluator module
 --------------------------------------------------------
 
 .. automodule:: chipiron.players.boardevaluators.board_evaluator
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
+
+chipiron.players.boardevaluators.board\_evaluator\_type module
+--------------------------------------------------------------
+
+.. automodule:: chipiron.players.boardevaluators.board_evaluator_type
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+chipiron.players.boardevaluators.evaluation\_scale module
+---------------------------------------------------------
+
+.. automodule:: chipiron.players.boardevaluators.evaluation_scale
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 chipiron.players.boardevaluators.factory module
 -----------------------------------------------
 
 .. automodule:: chipiron.players.boardevaluators.factory
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
+
+chipiron.players.boardevaluators.master\_board\_evaluator module
+----------------------------------------------------------------
+
+.. automodule:: chipiron.players.boardevaluators.master_board_evaluator
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 chipiron.players.boardevaluators.over\_event module
 ---------------------------------------------------
 
 .. automodule:: chipiron.players.boardevaluators.over_event
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 chipiron.players.boardevaluators.stockfish\_board\_evaluator module
 -------------------------------------------------------------------
 
 .. automodule:: chipiron.players.boardevaluators.stockfish_board_evaluator
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 chipiron.players.boardevaluators.test\_over\_event module
 ---------------------------------------------------------
 
 .. automodule:: chipiron.players.boardevaluators.test_over_event
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 Module contents
 ---------------
 
 .. automodule:: chipiron.players.boardevaluators
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
