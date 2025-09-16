@@ -28,11 +28,11 @@ from chipiron.players.move_selector.treevalue.indices.node_indices.index_types i
 )
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 
-ExplorationIndexDataFactory = Callable[[TreeNode[Any]], NodeExplorationData | None]
+ExplorationIndexDataFactory = Callable[[TreeNode], NodeExplorationData | None]
 
 
 def create_exploration_index_data(
-    tree_node: TreeNode[Any],
+    tree_node: TreeNode,
     index_computation: IndexComputationType | None = None,
     depth_index: bool = False,
 ) -> NodeExplorationData | None:

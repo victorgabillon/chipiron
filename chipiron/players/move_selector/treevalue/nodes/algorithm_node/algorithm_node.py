@@ -3,8 +3,6 @@ This module defines the AlgorithmNode class, which is a generic node used by the
 It wraps tree nodes with values, minimax computation, and exploration tools.
 """
 
-from typing import Any
-
 import chess
 
 import chipiron.environments.chess_env.board as boards
@@ -29,7 +27,7 @@ class AlgorithmNode:
     It wraps tree nodes with values, minimax computation and exploration tools
     """
 
-    tree_node: TreeNode[Any]  # the reference to the tree node that is wrapped
+    tree_node: TreeNode  # the reference to the tree node that is wrapped
     minmax_evaluation: NodeMinmaxEvaluation  # the object computing the value
     exploration_index_data: (
         NodeExplorationData | None
@@ -38,7 +36,7 @@ class AlgorithmNode:
 
     def __init__(
         self,
-        tree_node: TreeNode[Any],
+        tree_node: TreeNode,
         minmax_evaluation: NodeMinmaxEvaluation,
         exploration_index_data: NodeExplorationData | None,
         board_representation: BoardRepresentation | None,
