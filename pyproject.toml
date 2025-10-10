@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chipiron"
-version = "0.1.9"
+version = "0.1.10"
 description = "chipiron plays chess"
 keywords = ["chess", "AI", "torch"]
 classifiers = [
@@ -34,7 +34,9 @@ dependencies = [
     "parsley_coco>=0.1.30",
     "gdown",
     "zstandard",
-    "rich"
+    "rich",
+    "valanga @ git+https://github.com/victorgabillon/valanga.git@main",
+
 ]
 license = "GPL-3.0-only"
 license-files = ["LICENSE"]

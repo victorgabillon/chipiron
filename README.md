@@ -62,6 +62,7 @@ python3 chipiron/scripts/main_chipiron.py
 * make
 * libxcb-cursor0
 * zstd (for decompressing Lichess PGN databases)
+* cc (or else to build some rust dependencies)
 
 **Optional:**
 * Stockfish chess engine (can be installed with `make stockfish`)

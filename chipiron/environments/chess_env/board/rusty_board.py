@@ -4,6 +4,7 @@ from typing import Any, Iterator, Self, no_type_check
 
 import chess
 import shakmaty_python_binding
+from valanga import Colors
 
 from chipiron.environments.chess_env.board.board_modification import (
     BoardModificationP,
@@ -416,7 +417,7 @@ class RustyBoardChi(IBoard):
         return ply
 
     @property
-    def turn(self) -> chess.Color:
+    def turn(self) -> Colors:
         """
         Get the current turn color.
 
