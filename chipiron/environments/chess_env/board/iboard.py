@@ -7,6 +7,7 @@ from dataclasses import asdict
 from typing import Any, Iterator, Protocol, Self
 
 import chess
+import valanga
 import yaml
 
 from chipiron.environments.chess_env.board.board_modification import BoardModificationP
@@ -207,7 +208,7 @@ class IBoard(Protocol):
         ...
 
     @property
-    def turn(self) -> chess.Color:
+    def turn(self) -> valanga.Colors:
         """
         Get the current turn color.
 

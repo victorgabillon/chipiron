@@ -7,6 +7,7 @@ from typing import Iterator, Self
 
 import chess
 from chess import Outcome, _BoardState  # pyright: ignore[reportPrivateUsage]
+from valanga import Colors
 
 from chipiron.environments.chess_env.board.board_modification import (
     BoardModification,
@@ -630,14 +631,14 @@ class BoardChi(IBoard):
         return self.chess_board.ply()
 
     @property
-    def turn(self) -> chess.Color:
+    def turn(self) -> Colors:
         """
         Get the current turn color.
 
         Returns:
             chess.Color: The color of the current turn.
         """
-        return self.chess_board.turn
+        return Colors(self.chess_board.turn)
 
     @property
     def fen(self) -> fen:
