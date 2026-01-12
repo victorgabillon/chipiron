@@ -129,23 +129,6 @@ def rec_merge_dic(a: dict[Any, Any], b: dict[Any, Any]) -> dict[Any, Any]:
     return merged
 
 
-def softmax(x: list[float], temperature: float) -> nptyping.NDArray[np.float64]:
-    """
-    Compute softmax values for each set of scores in x.
-
-    Args:
-        x: The list of scores.
-        temperature: The temperature parameter.
-
-    Returns:
-        The softmax values.
-
-    """
-    e_x: nptyping.NDArray[np.float64] = np.exp((x - np.max(x)) * temperature)
-    res: nptyping.NDArray[np.float64] = e_x / e_x.sum(axis=0)  # only difference
-    return res
-
-
 def resolve_package_path(path_to_file: str | Path) -> str:
     """
     Replace 'package://' at the start of the path with the chipiron package root.
