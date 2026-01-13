@@ -73,6 +73,10 @@ class TreeAndValueMoveSelector:
             random_generator=self.random_generator
         ).move_recommendation
 
+        #assert(0==1)  # To be removed after testing
+       #TODO add tie breaking logic that is in the git history of recommandation rul thatbreaks tie if game iswon in many diffrent way and choose the fastest way to end the game
+
+
         return move_recommendation
 
     def create_tree_exploration(
