@@ -2,74 +2,35 @@
 Module for the BoardToInput protocol and BoardToInputFunction protocol.
 """
 
-from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING
 
 import torch
-
-import chipiron.environments.chess_env.board as boards
-from chipiron.environments.chess_env.board import IBoard
-from chipiron.players.boardevaluators.neural_networks.board_to_tensor import (
+from atomheart.board import IBoard
+from coral.neural_networks.board_to_tensor import (
     transform_board_pieces_one_side,
     transform_board_pieces_two_sides,
 )
-from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_transformer_input import (
+from coral.neural_networks.input_converters.board_to_transformer_input import (
     build_transformer_input,
 )
-from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
+from coral.neural_networks.input_converters.ModelInputRepresentationType import (
     InternalTensorRepresentationType,
     ModelInputRepresentationType,
 )
-from chipiron.players.boardevaluators.neural_networks.input_converters.representation_364_bti import (
+from coral.neural_networks.input_converters.representation_364_bti import (
     RepresentationBTI,
 )
-from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
+from coral.neural_networks.input_converters.representation_factory_factory import (
     create_board_representation_factory,
 )
-from chipiron.players.boardevaluators.neural_networks.models.transformer_one import (
+from coral.neural_networks.models.transformer_one import (
     TransformerArgs,
 )
 
 if TYPE_CHECKING:
-    from chipiron.players.boardevaluators.neural_networks.input_converters.factory import (
+    from coral.neural_networks.input_converters.factory import (
         RepresentationFactory,
     )
-
-
-@runtime_checkable
-class BoardToInputFunction(Protocol):
-    """
-    Protocol for a callable object that converts a chess board to a tensor input for a neural network.
-    """
-
-    def __call__(self, board: boards.IBoard) -> Any:
-        """
-        Converts the given chess board to a tensor input.
-
-        Args:
-            board (BoardChi): The chess board to convert.
-
-        Returns:
-            torch.Tensor: The tensor input representing the chess board.
-        """
-        ...
-
-
-class BoardToInput(Protocol):
-    """
-    Protocol for converting a chess board to a tensor input for a neural network.
-    """
-
-    def convert(self, board: boards.IBoard) -> torch.Tensor:
-        """
-        Converts the given chess board to a tensor input.
-
-        Args:
-            board (BoardChi): The chess board to convert.
-
-        Returns:
-            torch.Tensor: The tensor input representing the chess board.
-        """
-        ...
 
 
 def create_board_to_input_from_representation(

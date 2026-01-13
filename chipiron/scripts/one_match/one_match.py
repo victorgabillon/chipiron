@@ -9,11 +9,11 @@ from dataclasses import asdict, dataclass, field
 from typing import TYPE_CHECKING, cast
 
 import yaml
+from atomheart.board import BoardFactory, create_board_factory
 from PySide6.QtWidgets import QApplication
 
 import chipiron as ch
 import chipiron.displays as display
-from chipiron.environments.chess_env.board import BoardFactory, create_board_factory
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_factories import create_match_manager_from_args
 from chipiron.scripts.chipiron_args import ImplementationArgs

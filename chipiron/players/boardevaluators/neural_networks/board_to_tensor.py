@@ -4,8 +4,7 @@ Module to transform the board into a tensor representation.
 
 import chess
 import torch
-
-from chipiron.environments.chess_env.board import IBoard
+from atomheart.board import IBoard
 
 
 def transform_board_pieces_one_side(

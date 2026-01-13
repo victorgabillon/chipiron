@@ -22,8 +22,9 @@ import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable
 
+from atomheart.board.iboard import IBoard
+
 import chipiron.players.move_selector.treevalue as treevalue
-from chipiron.environments.chess_env.board.iboard import IBoard
 from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
     TreeMoveLimitArgs,
 )
@@ -34,7 +35,8 @@ from chipiron.utils.logger import (
 )
 
 if TYPE_CHECKING:
-    from chipiron.environments.chess_env.move.imove import moveKey
+    from atomheart.move.imove import moveKey
+
     from chipiron.players.player_args import PlayerArgs
 
 # Suppress PyTorch CUDA warnings for benchmarking
@@ -48,8 +50,9 @@ try:
     import logging
     import random
 
-    from chipiron.environments.chess_env.board.factory import create_board
-    from chipiron.environments.chess_env.board.utils import FenPlusHistory
+    from atomheart.board.factory import create_board
+    from atomheart.board.utils import FenPlusHistory
+
     from chipiron.players.boardevaluators.table_base.factory import create_syzygy
     from chipiron.players.factory import create_player
     from chipiron.players.player_ids import PlayerConfigTag

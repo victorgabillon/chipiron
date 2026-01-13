@@ -27,6 +27,11 @@ from typing import TYPE_CHECKING, Any
 import mlflow
 import mlflow.pytorch
 import torch
+from coral.neural_networks import NNBoardEvaluator
+from coral.neural_networks.factory import (
+    create_nn_board_eval_from_architecture_args,
+    create_nn_board_eval_from_nn_parameters_file_and_existing_model,
+)
 from mlflow.models.signature import (
     ModelSignature,
     infer_signature,  # pyright: ignore[reportUnknownVariableType]
@@ -48,11 +53,6 @@ from chipiron.players.boardevaluators.datasets.datasets import (
     FenAndValueDataSet,
     custom_collate_fn_fen_and_value,
     process_stockfish_value,  # pyright: ignore[reportUnknownVariableType]
-)
-from chipiron.players.boardevaluators.neural_networks import NNBoardEvaluator
-from chipiron.players.boardevaluators.neural_networks.factory import (
-    create_nn_board_eval_from_architecture_args,
-    create_nn_board_eval_from_nn_parameters_file_and_existing_model,
 )
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs

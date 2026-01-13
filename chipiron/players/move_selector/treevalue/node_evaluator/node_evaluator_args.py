@@ -8,10 +8,11 @@ Classes:
 
 from dataclasses import dataclass
 
-from chipiron.players.boardevaluators import master_board_evaluator
-from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
+from coral.neural_networks.input_converters.ModelInputRepresentationType import (
     InternalTensorRepresentationType,
 )
+
+from chipiron.players.boardevaluators import master_board_evaluator
 
 
 @dataclass

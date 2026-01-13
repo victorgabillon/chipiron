@@ -5,9 +5,9 @@ Module for the GameManagerFactory class.
 import queue
 from dataclasses import dataclass, field
 
+import atomheart.board as boards
 import chess
 
-import chipiron.environments.chess_env.board as boards
 import chipiron.players as players_m
 from chipiron.games.game.game_args import GameArgs
 from chipiron.games.game.game_playing_status import GamePlayingStatus

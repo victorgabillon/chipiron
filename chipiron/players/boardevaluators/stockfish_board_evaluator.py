@@ -5,16 +5,16 @@ Module where we define the Stockfish Board Evaluator
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal
 
+import atomheart.board as boards
 import chess.engine
+from atomheart.board.factory import create_board_chi
+from atomheart.board.utils import FenPlusHistory
 
-import chipiron.environments.chess_env.board as boards
-from chipiron.environments.chess_env.board.factory import create_board_chi
-from chipiron.environments.chess_env.board.utils import FenPlusHistory
 from chipiron.players.boardevaluators.board_evaluator_type import BoardEvalTypes
 from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:
-    from chipiron.environments.chess_env.board.board_chi import BoardChi
+    from atomheart.board.board_chi import BoardChi
 
 
 @dataclass

@@ -4,6 +4,8 @@ This module defines the different types of board evaluators used in the tree val
 
 from enum import Enum
 
+from coral.neural_networks.neural_net_board_eval_args import NN_NET_EVAL_LITERAL_STRING
+
 
 class BoardEvalTypes(str, Enum):
     """
@@ -16,7 +18,7 @@ class BoardEvalTypes(str, Enum):
         BASIC_EVALUATION: Argument type for basic/static board evaluation.
     """
 
-    NEURAL_NET_BOARD_EVAL = "neural_network"
+    NEURAL_NET_BOARD_EVAL = NN_NET_EVAL_LITERAL_STRING
     STOCKFISH_BOARD_EVAL = "stockfish"
     TABLE_BASE_EVAL = "table_base"
     BASIC_EVALUATION_EVAL = "basic_evaluation"

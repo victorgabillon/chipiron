@@ -5,17 +5,18 @@ AlgorithmNodeFactory
 from dataclasses import dataclass
 from typing import Any
 
-import chipiron.environments.chess_env.board as board_mod
-import chipiron.players.move_selector.treevalue.indices.node_indices as node_indices
-import chipiron.players.move_selector.treevalue.nodes as node
-from chipiron.environments.chess_env.move.imove import moveKey
-from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import (
+import atomheart.board as board_mod
+from atomheart.move.imove import moveKey
+from coral.neural_networks.input_converters.board_representation import (
     BoardRepresentation,
     Representation364,
 )
-from chipiron.players.boardevaluators.neural_networks.input_converters.factory import (
+from coral.neural_networks.input_converters.factory import (
     RepresentationFactory,
 )
+
+import chipiron.players.move_selector.treevalue.indices.node_indices as node_indices
+import chipiron.players.move_selector.treevalue.nodes as node
 from chipiron.players.move_selector.treevalue.node_factory.base import Base
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
     AlgorithmNode,

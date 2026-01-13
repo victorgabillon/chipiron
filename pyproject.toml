@@ -16,28 +16,28 @@ requires-python = ">=3.13"
 dependencies = [
     "PyYAML",
     "PySide6==6.9.2",
-    "chess>=1.11.2",
     "plotly>=6.3.0",
     "sortedcollections>=2.1.0",
     "pandas==2.3.2",
     "numpy==2.2.6",
-    "torch>=2.8.0",
-    "torchinfo",
     "numba>=0.61.2",
     "graphviz>=0.20.1",
     "dacite>=1.9.2",
     "customtkinter>=5.2",
     "pyarrow",
-    "shakmaty_python_binding>=0.1.5",
     "gprof2dot",
     "mlflow",
     "parsley_coco>=0.1.30",
     "gdown",
     "zstandard",
     "rich",
-    "valanga @ git+https://github.com/victorgabillon/valanga.git@main",
-
+    "valanga @ file:///home/pompote/valanga",
+    "atomheart>=0.1.1",
+    "algorhino-coral",
+    "algorhino-anemone"
 ]
+
+
 license = "GPL-3.0-only"
 license-files = ["LICENSE"]
 
@@ -45,6 +45,35 @@ readme = { file = "README.md", content-type = "text/markdown" }
 
 authors = [
   { name = "Victor Gabillon", email = "victorgabillon@gmail.com" }
+]
+
+[project.optional-dependencies]
+test = [
+  "pytest>=8.4.1",
+  "coverage",
+  "pytest-cov>=6.0.0",
+]
+
+lint = [
+  "ruff>=0.14.1",
+  "pylint>=3.3.8",
+]
+
+typecheck = [
+  "mypy>=1.18.2",
+  "pyright[nodejs]>=1.1.408",
+  "types-PyYAML>=6.0.12.12",
+]
+
+dev = [
+  "tox>=4.30.2",
+  "black>=25.1.0",
+  "build",
+  "twine",
+  "sphinx",
+  "sphinx-rtd-theme",
+  "sphinx-autodoc-typehints",
+  "pre-commit",
 ]
 
 [project.urls]
@@ -182,3 +211,119 @@ reportUnusedImport = true
 reportMissingTypeStubs = false
 reportUnknownMemberType = false
 reportPrivateImportUsage = false
+
+
+#################### TOX ####################
+
+[tool.tox]
+min_version = "4.30.2"
+env_list = ["py313", "lint", "typecheck"]
+isolated_build = true
+
+[tool.tox.env_run_base]
+base_python = ["python3.13"]
+
+# ----------------
+# Tests (realistic)
+# ----------------
+[tool.tox.env.py313]
+description = "Build + install package, run tests"
+extras = ["test"]
+changedir = "{envtmpdir}"
+commands_pre = [
+  ["python", "-c", "import shutil; shutil.rmtree(r'{toxinidir}/dist', ignore_errors=True)"],
+  ["python", "-m", "build", "--sdist", "--wheel", "--outdir", "{toxinidir}/dist", "{toxinidir}"],
+  ["python", "-c", "import shutil, os; src=os.path.join(r'{toxinidir}', 'tests'); dst='tests'; shutil.copytree(src, dst, dirs_exist_ok=True) if os.path.abspath(src) != os.path.abspath(dst) else print('Skipping self-copy')"],
+  ["python", "-c", "import shutil; shutil.copytree(r'{toxinidir}/chipiron/scripts', 'chipiron/scripts', dirs_exist_ok=True)"],
+  ["python", "-c", "import shutil, os; src=r'{toxinidir}/tests/data/trees'; dst='external_data/trees'; shutil.copytree(src, dst, dirs_exist_ok=True) if os.path.exists(src) else print(f'Skipping copy: {src} does not exist')"],
+  ["python", "-c", "import os; print(os.listdir(r'{toxinidir}/dist'))"],
+  ["python", "-c", "import glob, subprocess; subprocess.check_call(['pip','install', glob.glob(r'{toxinidir}/dist/*.tar.gz')[0]])"],
+]
+commands = [
+  ["python", "-c", "import chipiron; print(chipiron.__file__)"],
+  ["pytest", "--pyargs", "chipiron", "--basetemp={envtmpdir}/pytest-tmp",
+   "--ignore=chipiron/scripts/script_gui/test/test_script_gui.py",
+   "--ignore=chipiron/players/boardevaluators/table_base/test_syzygy.py",
+   "{posargs}"],
+]
+
+# ----------------
+# Lint (fast)
+# ----------------
+[tool.tox.env.lint]
+description = "ruff + pylint (fast)"
+package = "skip"
+deps = [
+  "ruff>=0.14.1",
+  "pylint>=3.3.8",
+  # optional: if pylint needs to import chipiron deps for module resolution
+  # but usually it imports your code, so keep runtime deps available:
+  "PyYAML",
+  "PySide6==6.9.2",
+  "plotly>=6.3.0",
+  "sortedcollections>=2.1.0",
+  "pandas==2.3.2",
+  "numpy==2.2.6",
+  "numba>=0.61.2",
+  "graphviz>=0.20.1",
+  "dacite>=1.9.2",
+  "customtkinter>=5.2",
+  "pyarrow",
+  "gprof2dot",
+  "mlflow",
+  "parsley_coco>=0.1.30",
+  "gdown",
+  "zstandard",
+  "rich",
+  "valanga",
+  "atomheart",
+  "algorhino-coral",
+  "algorhino-anemone",
+]
+set_env = { PYTHONPATH = "{toxinidir}" }
+commands = [
+  ["python", "-m", "ruff", "format", "--check", "chipiron"],
+  ["python", "-m", "ruff", "check", "chipiron"],
+  ["python", "-m", "pylint", "chipiron"],
+]
+
+# ----------------
+# Typecheck (fast)
+# ----------------
+[tool.tox.env.typecheck]
+description = "mypy + pyright (fast)"
+package = "skip"
+deps = [
+  "mypy>=1.18.2",
+  "pyright[nodejs]>=1.1.408",
+  "types-PyYAML>=6.0.12.12",
+  # runtime deps for import resolution (same list as lint)
+  "PyYAML",
+  "PySide6==6.9.2",
+  "plotly>=6.3.0",
+  "sortedcollections>=2.1.0",
+  "pandas==2.3.2",
+  "numpy==2.2.6",
+  "numba>=0.61.2",
+  "graphviz>=0.20.1",
+  "dacite>=1.9.2",
+  "customtkinter>=5.2",
+  "pyarrow",
+  "gprof2dot",
+  "mlflow",
+  "parsley_coco>=0.1.30",
+  "gdown",
+  "zstandard",
+  "rich",
+  "valanga",
+  "atomheart",
+  "algorhino-coral",
+  "algorhino-anemone",
+]
+set_env = { MYPYPATH = "{toxinidir}" }
+commands = [
+  ["python", "-m", "mypy", "--strict", "chipiron"],
+  ["python", "-m", "pyright", "chipiron"],
+]
+
+#################### END TOX ####################

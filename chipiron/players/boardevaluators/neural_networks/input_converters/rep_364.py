@@ -1,9 +1,8 @@
+import atomheart.board as boards
 import chess
 import torch
-
-import chipiron.environments.chess_env.board as boards
-from chipiron.environments.chess_env.board import IBoard
-from chipiron.environments.chess_env.board.utils import square_rotate
+from atomheart.board import IBoard
+from atomheart.board.utils import square_rotate
 
 from .board_representation import Representation364
 

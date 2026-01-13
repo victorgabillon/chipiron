@@ -2,10 +2,10 @@
 Module for the SyzygyTable class.
 """
 
+import atomheart.board as boards
 import shakmaty_python_binding
+from atomheart.board import RustyBoardChi
 
-import chipiron.environments.chess_env.board as boards
-from chipiron.environments.chess_env.board import RustyBoardChi
 from chipiron.utils import path
 
 from .syzygy_table import SyzygyTable

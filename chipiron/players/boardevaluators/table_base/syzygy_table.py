@@ -2,13 +2,12 @@
 Module for the SyzygyTable class.
 """
 
-from typing import Protocol
+from typing import Protocol, Sequence
 
 import chess
-
-from chipiron.environments.chess_env.board import IBoard
-from chipiron.environments.chess_env.move.imove import moveKey
-from chipiron.players.boardevaluators.over_event import HowOver, OverTags, Winner
+from atomheart.board import IBoard
+from atomheart.move.imove import MoveKey
+from valanga.over_event import HowOver, OverTags, Winner
 
 
 class SyzygyTable[T_Board: IBoard](Protocol):
@@ -206,7 +205,7 @@ class SyzygyTable[T_Board: IBoard](Protocol):
         # For now, return a default value (e.g., 0)
         raise NotImplementedError("wdl method must be implemented in subclass")
 
-    def best_move(self, board: T_Board) -> moveKey:
+    def best_move(self, board: T_Board) -> MoveKey:
         """
         Get the best move according to the tablebase for the given board.
 
@@ -216,15 +215,15 @@ class SyzygyTable[T_Board: IBoard](Protocol):
         Returns:
             chess.Move: The best move according to the tablebase.
         """
-        all_moves: list[moveKey] = board.legal_moves.get_all()
+        all_moves: Sequence[MoveKey] = board.legal_moves.get_all()
         # avoid draws by 50 move rules in winning position, # otherwise look
         # for it to make it last and preserve pieces in case of mistake by opponent
 
         best_value = -1000000000000000000000
 
         assert all_moves
-        best_move: moveKey = all_moves[0]
-        move: moveKey
+        best_move: MoveKey = all_moves[0]
+        move: MoveKey
         for move in all_moves:
             board_copy: T_Board = board.copy(stack=True)
             board_copy.play_move_key(move=move)

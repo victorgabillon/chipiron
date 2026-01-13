@@ -3,8 +3,8 @@ import random
 from typing import TYPE_CHECKING
 
 import pytest
+from atomheart.board.utils import FenPlusHistory
 
-from chipiron.environments.chess_env.board.utils import FenPlusHistory
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.players.factory import create_chipiron_player, create_player
 from chipiron.players.player_ids import PlayerConfigTag

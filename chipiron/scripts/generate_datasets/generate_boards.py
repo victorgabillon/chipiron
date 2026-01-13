@@ -31,9 +31,9 @@ import chess
 import chess.pgn
 import pandas as pd
 import zstandard
+from atomheart.board.utils import fen
 from pandas import DataFrame
 
-from chipiron.environments.chess_env.board.utils import fen
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.path_variables import (
     EXTERNAL_DATA_DIR,  # removed LICHESS_PGN_FILE usage

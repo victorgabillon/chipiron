@@ -3,8 +3,8 @@ This module contains the NoisyValueTreeNode class, which is a subclass of TreeNo
 """
 
 import chess
+from atomheart.board.board_chi import BoardChi
 
-from chipiron.environments.chess_env.board.board_chi import BoardChi
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.tree_node import TreeNode
 

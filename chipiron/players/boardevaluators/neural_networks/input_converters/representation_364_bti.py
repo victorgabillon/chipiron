@@ -8,9 +8,8 @@ Classes:
 
 from typing import TYPE_CHECKING
 
+import atomheart.board as boards
 import torch
-
-import chipiron.environments.chess_env.board as boards
 
 from .factory import RepresentationFactory
 

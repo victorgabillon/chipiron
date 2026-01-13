@@ -6,11 +6,9 @@ import queue
 from typing import Any, Protocol
 
 import chess
+from atomheart.board import IBoard
+from valanga import State, StateEvaluation
 
-import chipiron.environments.chess_env.board as boards
-from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
-    BoardEvaluation,
-)
 from chipiron.utils.communication.gui_messages import EvaluationMessage
 from chipiron.utils.dataclass import IsDataclass
 
@@ -20,7 +18,7 @@ class BoardEvaluator(Protocol):
     Protocol representing a board evaluator.
     """
 
-    def value_white(self, board: boards.IBoard) -> float:
+    def value_white(self, board: IBoard) -> float:
         """
         Evaluates a board and returns the value for white.
         """
@@ -32,14 +30,14 @@ class IGameBoardEvaluator(Protocol):
     Protocol representing a game board evaluator.
     """
 
-    def evaluate(self, board: boards.IBoard) -> tuple[float | None, float]:
+    def evaluate(self, state: State) -> tuple[float | None, float]:
         """
         Evaluates a board and returns the evaluation values for stock and chi.
         """
         ...
 
     def add_evaluation(
-        self, player_color: chess.Color, evaluation: BoardEvaluation
+        self, player_color: chess.Color, evaluation: StateEvaluation
     ) -> None:
         """
         Adds an evaluation value for a player.
@@ -64,14 +62,14 @@ class GameBoardEvaluator:
         self.board_evaluator_stock = board_evaluator_stock
         self.board_evaluator_chi = board_evaluator_chi
 
-    def evaluate(self, board: boards.IBoard) -> tuple[float | None, float]:
+    def evaluate(self, state: State) -> tuple[float | None, float]:
         """
         Evaluates a board and returns the evaluation values for stock and chi.
         """
 
-        evaluation_chi = self.board_evaluator_chi.value_white(board=board)
+        evaluation_chi = self.board_evaluator_chi.value_white(state=state)
         evaluation_stock = (
-            self.board_evaluator_stock.value_white(board=board)
+            self.board_evaluator_stock.value_white(state=state)
             if self.board_evaluator_stock is not None
             else None
         )
@@ -79,7 +77,7 @@ class GameBoardEvaluator:
         return evaluation_stock, evaluation_chi
 
     def add_evaluation(
-        self, player_color: chess.Color, evaluation: BoardEvaluation
+        self, player_color: chess.Color, evaluation: StateEvaluation
     ) -> None:
         """
         Adds an evaluation value for a player.
@@ -115,19 +113,19 @@ class ObservableBoardEvaluator:
         """
         self.mailboxes.append(mailbox)
 
-    def evaluate(self, board: boards.IBoard) -> tuple[float | None, float]:
+    def evaluate(self, state: State) -> tuple[float | None, float]:
         """
         Evaluates a board and returns the evaluation values for stock and chi.
         """
         self.evaluation_stock, self.evaluation_chi = self.game_board_evaluator.evaluate(
-            board=board
+            state=state
         )
 
         self.notify_new_results()
         return self.evaluation_stock, self.evaluation_chi
 
     def add_evaluation(
-        self, player_color: chess.Color, evaluation: BoardEvaluation
+        self, player_color: chess.Color, evaluation: StateEvaluation
     ) -> None:
         """
         Adds an evaluation value for a player.

@@ -21,7 +21,8 @@ from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:
-    from chipiron.environments.chess_env.move import moveUci
+    from atomheart.move import MoveUci
+
     from chipiron.games.game.game_manager import GameManager
 
 
@@ -96,7 +97,7 @@ class MatchManager:
 
         # creating object for reporting the result of the match and the move history
         match_results: IMatchResults = self.match_results_factory.create()
-        match_move_history: dict[int, list[moveUci]] = {}
+        match_move_history: dict[int, list[MoveUci]] = {}
 
         # Main loop of playing various games
         game_number: int = 0

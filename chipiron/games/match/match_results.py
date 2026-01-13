@@ -3,7 +3,8 @@
 from dataclasses import dataclass
 from typing import Protocol
 
-from chipiron.environments.chess_env.move import moveUci
+from atomheart.move import MoveUci
+
 from chipiron.games.game.final_game_result import FinalGameResult
 
 
@@ -199,4 +200,4 @@ class MatchReport:
     """
 
     match_results: MatchResults
-    match_move_history: dict[int, list[moveUci]]
+    match_move_history: dict[int, list[MoveUci]]

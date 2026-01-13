@@ -4,9 +4,9 @@ from typing import Any, Literal
 import chess
 import torch
 import torch.nn as nn
+from coral.neural_networks.NNModelType import NNModelType
 from torch.nn import functional as F
 
-from chipiron.players.boardevaluators.neural_networks.NNModelType import NNModelType
 from chipiron.utils.chi_nn import ChiNN
 
 number_of_squares = len(chess.SQUARES)

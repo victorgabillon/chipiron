@@ -14,9 +14,9 @@ Note: This is an interface and should not be instantiated directly.
 
 from typing import Any, Protocol
 
-import chipiron.environments.chess_env.board as boards
-from chipiron.environments.chess_env.board.iboard import LegalMoveKeyGeneratorP
-from chipiron.environments.chess_env.move.imove import moveKey
+import atomheart.board as boards
+from atomheart.board.iboard import LegalMoveKeyGeneratorP
+from atomheart.move.imove import moveKey
 
 # to force Any to stay because of weird interaction between flake8 and pycharm
 a: Any = 0

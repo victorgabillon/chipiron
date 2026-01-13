@@ -5,9 +5,9 @@ Module to define the messages that are sent between the players and the game.
 from dataclasses import dataclass
 
 import chess
+from atomheart.board.utils import FenPlusHistory, fen
+from atomheart.move import MoveUci
 
-from chipiron.environments.chess_env.board.utils import FenPlusHistory, fen
-from chipiron.environments.chess_env.move import moveUci
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
     BoardEvaluation,
 )
@@ -27,7 +27,7 @@ class MoveMessage:
         evaluation (float | None, optional): The evaluation score of the move. Defaults to None.
     """
 
-    move: moveUci
+    move: MoveUci
     corresponding_board: fen
     player_name: PlayerId
     color_to_play: chess.Color

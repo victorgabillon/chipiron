@@ -9,10 +9,10 @@ from typing import TYPE_CHECKING
 
 import chess
 import yaml
+from atomheart.move.imove import moveKey
+from atomheart.move_factory import MoveFactory
 
 import chipiron.players as players_m
-from chipiron.environments.chess_env.move.imove import moveKey
-from chipiron.environments.chess_env.move_factory import MoveFactory
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator
 from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
@@ -32,9 +32,10 @@ from .game_args import GameArgs
 from .progress_collector import PlayerProgressCollectorP
 
 if TYPE_CHECKING:
+    from atomheart.board.iboard import IBoard
+    from atomheart.move import MoveUci
+
     from chipiron.environments import HalfMove
-    from chipiron.environments.chess_env.board.iboard import IBoard
-    from chipiron.environments.chess_env.move import moveUci
 
 
 class GameManager:
@@ -237,7 +238,7 @@ class GameManager:
                 )
                 move_message: MoveMessage = message
                 # play the move
-                move_uci: moveUci = move_message.move
+                move_uci: MoveUci = move_message.move
 
                 chipiron_logger.info(
                     "Game Manager: Receiving the move uci %s %s %s",

@@ -14,22 +14,21 @@ env:
 jobs:
 
 
-  test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ ubuntu-latest]
-        python-version: [ '3.13' ]
+name: ci
 
+on:
+  push:
+    branches: [ main, "3.13" ]
+  pull_request:
+
+jobs:
+
+  test:
+    runs-on: ubuntu-latest
     steps:
       - uses: jlumbroso/free-disk-space@main
         with:
-          # this might remove tools that are actually needed,
-          # if set to "true" but frees about 6 GB
           tool-cache: false
-
-          # all of these default to true, but feel free to set to
-          # "false" if necessary for your workflow
           android: true
           dotnet: true
           haskell: true
@@ -38,42 +37,31 @@ jobs:
           swap-storage: true
 
       - uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
+
+      - name: Set up Python 3.13
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.13"
+          cache: "pip"
 
-      - name: Update apt cache
-        run: sudo apt-get update
-
-      - name: Remove unnecessary packages
+      - name: Install system deps (Qt + OpenGL bits)
         run: |
-          sudo apt-get remove -y '^aspnetcore-.*' || true
-          sudo apt-get remove -y '^dotnet-.*' --fix-missing || true
-          sudo apt-get remove -y '^llvm-.*' --fix-missing || true
-          sudo apt-get remove -y 'php.*' --fix-missing || true
-          sudo apt-get remove -y '^mongodb-.*' --fix-missing || true
-          sudo apt-get remove -y '^mysql-.*' --fix-missing || true
-          sudo apt-get remove -y azure-cli google-chrome-stable firefox powershell mono-devel --fix-missing || true
-          sudo apt-get remove -y google-cloud-sdk --fix-missing || true
-          sudo apt-get remove -y google-cloud-cli --fix-missing || true
-          sudo apt-get autoremove -y || true
-          sudo apt-get clean || true
-
-
-      - name: Install dependencies
-        run: |
-          set -xe
           sudo apt-get update
-          sudo sed -i 's|http://archive.ubuntu.com/ubuntu|http://mirror.math.princeton.edu/pub/ubuntu|g' /etc/apt/sources.list
+          sudo apt-get install -y --fix-missing \
+            libegl1 libgl1 libglu1-mesa-dev libxrender-dev libxi-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev libxkbcommon-x11-0 \
+            libxcb-cursor0 libxcb-xinerama0 libx11-xcb-dev
+
+      - name: Install tox
+        run: |
           python -m pip install --upgrade pip
-          pip install tox tox-gh-actions
-          sudo apt-get update
-          sudo apt-get install -y --fix-missing python3-full python3-pip libegl1 libgl1 python3-opencv python3-tk wget curl \
-            libxcb-cursor0 libxcb-xinerama0 '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libxkbcommon-x11-0
+          python -m pip install tox build
 
-      - name: Test with tox
+      - name: Run tox
+        env:
+          PIP_NO_CACHE_DIR: "1"
         run: tox
+
 
   docker:
     runs-on: ubuntu-latest

@@ -22,8 +22,8 @@ from random import choice
 from typing import Any, Protocol, Self
 
 import chess
+from atomheart.move.imove import moveKey
 
-from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
     BoardEvaluation,
     FloatyBoardEvaluation,

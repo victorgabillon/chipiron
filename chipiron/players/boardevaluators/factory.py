@@ -7,15 +7,15 @@ from dataclasses import dataclass
 from importlib.resources import files
 
 import parsley_coco
+from coral.neural_networks.neural_net_board_eval_args import (
+    NeuralNetBoardEvalArgs,
+)
 
 from chipiron.players.boardevaluators.all_board_evaluator_args import (
     AllBoardEvaluatorArgs,
     BasicEvaluationBoardEvaluatorArgs,
 )
 from chipiron.players.boardevaluators.basic_evaluation import BasicEvaluation
-from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
-    NeuralNetBoardEvalArgs,
-)
 from chipiron.players.boardevaluators.stockfish_board_evaluator import (
     StockfishBoardEvalArgs,
     StockfishBoardEvaluator,

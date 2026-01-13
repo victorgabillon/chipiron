@@ -2,8 +2,12 @@ from dataclasses import dataclass
 from typing import Any
 
 import chess
+from atomheart.board import IBoard
+from coral.neural_networks.neural_net_board_eval_args import (
+    NeuralNetBoardEvalArgs,
+)
+from valanga.over_event import HowOver, OverEvent, Winner
 
-import chipiron.environments.chess_env.board as boards
 import chipiron.players.boardevaluators.basic_evaluation as basic_evaluation
 from chipiron.players.boardevaluators.all_board_evaluator_args import (
     AllBoardEvaluatorArgs,
@@ -14,13 +18,6 @@ from chipiron.players.boardevaluators.evaluation_scale import (
     ValueOverEnum,
     get_value_over_enum,
 )
-from chipiron.players.boardevaluators.neural_networks.factory import (
-    create_nn_board_eval_from_nn_parameters_file_and_existing_model,
-)
-from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
-    NeuralNetBoardEvalArgs,
-)
-from chipiron.players.boardevaluators.over_event import HowOver, OverEvent, Winner
 from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 
 from .board_evaluator import BoardEvaluator
@@ -74,7 +71,7 @@ class MasterBoardEvaluator:
         self.syzygy_evaluator = syzygy
         self.value_over_enum = value_over_enum
 
-    def value_white(self, board: boards.IBoard) -> float:
+    def value_white(self, board: IBoard) -> float:
         """
         Calculates the value for the white player of a given node.
         If the value can be obtained from the syzygy evaluator, it is used.
@@ -88,7 +85,7 @@ class MasterBoardEvaluator:
             value_white_float = value_white
         return value_white_float
 
-    def syzygy_value_white(self, board: boards.IBoard) -> float | None:
+    def syzygy_value_white(self, board: IBoard) -> float | None:
         """
         Calculates the value for the white player of a given board using the syzygy evaluator.
         If the syzygy evaluator is not available or the board is not in the syzygy table, None is returned.
@@ -102,7 +99,7 @@ class MasterBoardEvaluator:
             return val
 
     def check_obvious_over_events(
-        self, board: boards.IBoard
+        self, board: IBoard
     ) -> tuple[OverEvent | None, float | None]:
         """
         Checks if the given board is in an obvious game-over state and returns the corresponding OverEvent and evaluation.

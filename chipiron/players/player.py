@@ -4,8 +4,9 @@ Module for the Player class.
 
 from typing import TYPE_CHECKING
 
-from chipiron.environments.chess_env.board import BoardFactory, IBoard
-from chipiron.environments.chess_env.board.utils import FenPlusHistory
+from atomheart.board import BoardFactory, IBoard
+from atomheart.board.utils import FenPlusHistory
+
 from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 from chipiron.players.move_selector.move_selector import (
     MoveRecommendation,
@@ -15,8 +16,8 @@ from chipiron.utils import Seed
 from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:
-    from chipiron.environments.chess_env.move import moveUci
-    from chipiron.environments.chess_env.move.imove import moveKey
+    from atomheart.move import MoveUci
+    from atomheart.move.imove import moveKey
 
 PlayerId = str
 
@@ -84,7 +85,7 @@ class Player:
             ):
                 chipiron_logger.info("Playing with Syzygy")
                 best_move_key: moveKey = self.syzygy_player.best_move(board)
-                best_move_uci: moveUci = board.get_uci_from_move_key(best_move_key)
+                best_move_uci: MoveUci = board.get_uci_from_move_key(best_move_key)
                 move_recommendation = MoveRecommendation(move=best_move_uci)
             else:
                 chipiron_logger.info(
@@ -95,7 +96,7 @@ class Player:
                 )
         else:
             move_key: moveKey = list(board.legal_moves)[0]
-            move_uci: moveUci = board.get_uci_from_move_key(move_key)
+            move_uci: MoveUci = board.get_uci_from_move_key(move_key)
             move_recommendation = MoveRecommendation(move=move_uci)
 
         return move_recommendation
