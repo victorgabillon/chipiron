@@ -16,7 +16,7 @@ The StockfishPlayer class is a dataclass that represents a player that selects m
 - engine: An instance of the Stockfish engine.
 
 The StockfishPlayer class has the following methods:
-- select_move: Selects a move based on the given board state and move seed. Returns a MoveRecommendation object.
+- select_move: Selects a move based on the given board state and move seed. Returns a Recommendation object.
 - print_info: Prints the type of move selector.
 
 Note: The Stockfish engine is initialized lazily when the first move is selected, and it is automatically closed after each move is selected.
@@ -30,13 +30,14 @@ import chess.engine
 
 from chipiron.utils.path_variables import STOCKFISH_BINARY_PATH
 
-from ...environments.chess_env.board import create_board_chi
-from ...environments.chess_env.board.utils import FenPlusHistory
-from .move_selector import MoveRecommendation
+from atomheart.board import create_board_chi
+from atomheart.board.utils import FenPlusHistory
 from .move_selector_types import MoveSelectorTypes
 
+from valanga.policy import Recommendation
+
 if TYPE_CHECKING:
-    from ...environments.chess_env import BoardChi
+    from atomheart import BoardChi
 
 
 @dataclass
@@ -51,7 +52,7 @@ class StockfishPlayer:
         engine (Any): The Stockfish chess engine instance.
 
     Methods:
-        select_move(board: boards.BoardChi, move_seed: int) -> MoveRecommendation:
+        select_move(board: boards.BoardChi, move_seed: int) -> Recommendation:
             Selects a move based on the given board state and move seed.
 
         print_info() -> None:
@@ -73,7 +74,7 @@ class StockfishPlayer:
         """
         return STOCKFISH_BINARY_PATH.exists() and STOCKFISH_BINARY_PATH.is_file()
 
-    def select_move(self, board: boards.IBoard, move_seed: int) -> MoveRecommendation:
+    def select_move(self, board: boards.IBoard, move_seed: int) -> Recommendation:
         """
         Selects a move based on the given board state and move seed.
 
@@ -82,7 +83,7 @@ class StockfishPlayer:
             move_seed (int): The seed for move selection.
 
         Returns:
-            MoveRecommendation: A MoveRecommendation object representing the selected move.
+            Recommendation: A Recommendation object representing the selected move.
 
         Raises:
             FileNotFoundError: If Stockfish binary is not found, with instructions to install it.
@@ -125,7 +126,7 @@ class StockfishPlayer:
 
         self.engine.quit()
         self.engine = None
-        return MoveRecommendation(move=result.move.uci())
+        return Recommendation(recommended_key=result.move.uci(), evaluation=None)
 
     def print_info(self) -> None:
         """

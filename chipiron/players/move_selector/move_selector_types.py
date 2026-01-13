@@ -14,7 +14,7 @@ Attributes:
 
 from enum import Enum
 
-from anemone import TreeAndValueLiteralString
+from anemone.factory import TREE_AND_VALUE_LITERAL_STRING
 
 
 class MoveSelectorTypes(str, Enum):
@@ -23,7 +23,7 @@ class MoveSelectorTypes(str, Enum):
     """
 
     Random = "Random"
-    TreeAndValue = TreeAndValueLiteralString
+    TreeAndValue = TREE_AND_VALUE_LITERAL_STRING
     Stockfish = "Stockfish"
     CommandLineHuman = "CommandLineHuman"
     GuiHuman = "GuiHuman"

@@ -42,7 +42,7 @@ class SyzygyTable[T_Board: IBoard](Protocol):
         dtz(board: T_Board) -> int:
             Get the distance-to-zero (DTZ) value for the given board.
 
-        best_move(board: T_Board) -> moveKey:
+        best_move(board: T_Board) -> MoveKey:
             Get the best move according to the tablebase for the given board.
     """
 

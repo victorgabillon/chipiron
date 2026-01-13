@@ -10,11 +10,15 @@ from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 from chipiron.utils.logger import chipiron_logger
 
 from ...utils.dataclass import IsDataclass
-from . import human, move_selector, stockfish, treevalue
+from . import human, stockfish
 from .random import Random, create_random
 
+from valanga.policy import BranchSelector
+
+from anemone import TreeAndValuePlayerArgs, create_tree_and_value_branch_selector
+
 AllMoveSelectorArgs: TypeAlias = (
-    treevalue.TreeAndValuePlayerArgs
+    TreeAndValuePlayerArgs
     | human.CommandLineHumanPlayerArgs
     | human.GuiHumanPlayerArgs
     | Random
@@ -27,7 +31,7 @@ def create_main_move_selector(
     syzygy: AnySyzygyTable | None,
     random_generator: random.Random,
     queue_progress_player: queue.Queue[IsDataclass] | None,
-) -> move_selector.MoveSelector:
+) -> BranchSelector:
     """
     Create the main move selector based on the given arguments.
 
@@ -49,9 +53,9 @@ def create_main_move_selector(
     match move_selector_instance_or_args:
         case Random():
             main_move_selector = create_random(random_generator=random_generator)
-        case treevalue.TreeAndValuePlayerArgs():
-            tree_args: treevalue.TreeAndValuePlayerArgs = move_selector_instance_or_args
-            main_move_selector = treevalue.create_tree_and_value_builders(
+        case TreeAndValuePlayerArgs():
+            tree_args: TreeAndValuePlayerArgs = move_selector_instance_or_args
+            main_move_selector = create_tree_and_value_builders(
                 args=tree_args,
                 syzygy=syzygy,
                 random_generator=random_generator,

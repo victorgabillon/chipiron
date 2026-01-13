@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
     from chipiron.players import Player
     from chipiron.players.boardevaluators import table_base
-    from chipiron.players.move_selector.move_selector import MoveRecommendation
+    from valanga.policy import Recommendation
 
 
 @pytest.mark.parametrize(("use_rusty_board"), (True, False))
@@ -28,7 +28,7 @@ def test_check_in_one(use_rusty_board: bool):
         random_generator=random_generator,
     )
 
-    move_reco: MoveRecommendation = player.select_move(
+    move_reco: Recommendation = player.select_move(
         fen_plus_history=FenPlusHistory(
             current_fen="1nbqkbnr/rpppp2p/6P1/p6Q/8/8/PPPP1PPP/RNB1KBNR w KQk - 1 5"
         ),
@@ -66,7 +66,7 @@ def test_check_in_two(use_rusty_board: bool):
             implementation_args=implementation_args,
             universal_behavior=True,
         )
-        move_reco: MoveRecommendation = player.select_move(
+        move_reco: Recommendation = player.select_move(
             fen_plus_history=FenPlusHistory(current_fen=fen), seed_int=0
         )
 

@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 import chess
 import yaml
-from atomheart.move.imove import moveKey
+from atomheart.move.imove import MoveKey
 from atomheart.move_factory import MoveFactory
 
 import chipiron.players as players_m
@@ -128,7 +128,7 @@ class GameManager:
         """
         return self.display_board_evaluator.evaluate(self.game.board)
 
-    def play_one_move(self, move: moveKey) -> None:
+    def play_one_move(self, move: MoveKey) -> None:
         """Play one move in the game.
 
         Args:
@@ -253,7 +253,7 @@ class GameManager:
                 ):
                     board.legal_moves.get_all()  # make sure the board has generated the legal moves
 
-                    move_key: moveKey = board.get_move_key_from_uci(move_uci=move_uci)
+                    move_key: MoveKey = board.get_move_key_from_uci(move_uci=move_uci)
 
                     chipiron_logger.info(
                         "Game Manager: Play a move %s at %s %s",

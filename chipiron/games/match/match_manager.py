@@ -16,7 +16,7 @@ from chipiron.games.match.match_results import IMatchResults, MatchReport, Match
 from chipiron.games.match.match_results_factory import MatchResultsFactory
 from chipiron.games.match.observable_match_result import ObservableMatchResults
 from chipiron.players import PlayerFactoryArgs
-from chipiron.utils import Seed, path
+from valanga.game import Seed, path
 from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
 

@@ -9,7 +9,7 @@ from atomheart.board.factory import (
 from atomheart.board.utils import (
     FenPlusHistory,
 )
-from atomheart.move.imove import moveKey
+from atomheart.move.imove import MoveKey
 
 from chipiron.players.boardevaluators.table_base.factory import (
     create_syzygy_python,
@@ -40,9 +40,9 @@ def test_best_move_syzygy_table() -> None:
             current_fen="6k1/p7/8/8/7N/7K/2N5/8 w - - 0 1",
         )
     )
-    best_move_chi: moveKey = syzygy_table_chi.best_move(board_chi)
+    best_move_chi: MoveKey = syzygy_table_chi.best_move(board_chi)
 
-    assert "h3g4" == board_chi.get_uci_from_move_key(moveKey(best_move_chi))
+    assert "h3g4" == board_chi.get_uci_from_move_key(MoveKey(best_move_chi))
 
     syzygy_table: SyzygyTable[RustyBoardChi] | None
     syzygy_table = create_syzygy_rust()
@@ -54,9 +54,9 @@ def test_best_move_syzygy_table() -> None:
             current_fen="6k1/p7/8/8/7N/7K/2N5/8 w - - 0 1",
         )
     )
-    best_move_rust: moveKey = syzygy_table.best_move(board_rust)
+    best_move_rust: MoveKey = syzygy_table.best_move(board_rust)
 
-    assert "h3g4" == board_rust.get_uci_from_move_key(moveKey(best_move_rust))
+    assert "h3g4" == board_rust.get_uci_from_move_key(MoveKey(best_move_rust))
 
 
 if __name__ == "__main__":

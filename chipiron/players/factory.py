@@ -20,7 +20,7 @@ from chipiron.players.player_args import PlayerArgs
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.utils.logger import chipiron_logger
 
-from ..environments.chess_env.board import BoardFactory, create_board_factory
+from atomheart import BoardFactory, create_board_factory
 from ..scripts.chipiron_args import ImplementationArgs
 from ..utils.dataclass import IsDataclass
 from . import move_selector

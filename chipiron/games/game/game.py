@@ -11,7 +11,7 @@ from atomheart.move import MoveUci
 from atomheart.move.imove import MoveKey
 
 from chipiron.players.factory_higher_level import MoveFunction
-from chipiron.utils import Seed, unique_int_from_list
+from valanga.game import Seed, unique_int_from_list
 from chipiron.utils.communication.gui_messages import GameStatusMessage
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.dataclass import IsDataclass
