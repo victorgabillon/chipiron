@@ -22,7 +22,7 @@ from coral.neural_networks.input_converters.representation_factory_factory impor
 )
 
 if TYPE_CHECKING:
-    from atomheart.move.imove import moveKey
+    from atomheart.move.imove import MoveKey
     from coral.neural_networks.input_converters.board_representation import (
         BoardRepresentation,
         Representation364,
@@ -61,7 +61,7 @@ def test_representation(
         representation_factory.create_from_board(board=board)
     )
 
-    all_moves_keys_chi: list[moveKey] = board.legal_moves.get_all()
+    all_moves_keys_chi: list[MoveKey] = board.legal_moves.get_all()
     board_modification: BoardModificationP | None = board.play_move_key(
         move=all_moves_keys_chi[0]
     )

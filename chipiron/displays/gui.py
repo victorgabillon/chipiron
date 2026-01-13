@@ -53,7 +53,7 @@ from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.path_variables import GUI_DIR
 
 if typing.TYPE_CHECKING:
-    from atomheart.move.imove import moveKey
+    from atomheart.move.imove import MoveKey
 
 
 class MainWindow(QWidget):
@@ -341,7 +341,7 @@ class MainWindow(QWidget):
                     self.coordinates = f"{chr(file + 97)}{rank + 1}"
                     if self.pieceToMove[0] is not None:
                         try:
-                            all_moves_keys: list[moveKey] = (
+                            all_moves_keys: list[MoveKey] = (
                                 self.board.legal_moves.get_all()
                             )
                             all_legal_moves_uci: list[MoveUci] = [

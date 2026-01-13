@@ -35,7 +35,7 @@ from chipiron.utils.logger import (
 )
 
 if TYPE_CHECKING:
-    from atomheart.move.imove import moveKey
+    from atomheart.move.imove import MoveKey
 
     from chipiron.players.player_args import PlayerArgs
 
@@ -160,7 +160,7 @@ class ChessEngineBenchmark:
                 """
                 for fen in self.test_positions:
                     board: IBoard = self.create_board_for_fen(fen, rust_enabled)
-                    moves: list[moveKey] = list(board.legal_moves.get_all())
+                    moves: list[MoveKey] = list(board.legal_moves.get_all())
                     if not moves:
                         continue
                     move = moves[0]  # Play the first legal move

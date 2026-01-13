@@ -9,7 +9,7 @@ import typing
 import chess
 
 import chipiron.players as players
-from chipiron.utils import Seed
+from valanga.game import Seed
 from chipiron.utils.small_tools import unique_int_from_list
 
 from .game_args import GameArgs

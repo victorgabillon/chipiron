@@ -328,7 +328,7 @@ class FenAndValueDataSet(MyDataSet[FenAndValueData]):
         Returns:
         - FenAndValueData: The processed data containing input and target tensors.
         """
-        fen_: fen = row["fen"]
+        fen_: Fen= row["fen"]
 
         # todo should we make it general and allow rust boards just for testing all comptabilities ?
         board: BoardChi = create_board_chi(

@@ -8,15 +8,15 @@ from typing import TYPE_CHECKING, Literal
 
 import atomheart.board as boards
 
-from chipiron.utils import Seed
+from valanga.game import Seed
+from valanga.policy import Recommendation
 from chipiron.utils.logger import chipiron_logger
 
-from .move_selector import MoveRecommendation
 from .move_selector_types import MoveSelectorTypes
 
 if TYPE_CHECKING:
     from atomheart.move import MoveUci
-    from atomheart.move.imove import moveKey
+    from atomheart.move.imove import MoveKey
 
 
 @dataclass
@@ -42,7 +42,7 @@ class CommandLineHumanMoveSelector:
     A move selector that allows a human player to select moves through the command line interface.
     """
 
-    def select_move(self, board: boards.IBoard, move_seed: Seed) -> MoveRecommendation:
+    def select_move(self, board: boards.IBoard, move_seed: Seed) -> Recommendation:
         """
         Selects a move based on user input through the command line interface.
 
@@ -51,14 +51,14 @@ class CommandLineHumanMoveSelector:
             move_seed (seed): The seed used for move selection.
 
         Returns:
-            MoveRecommendation: The selected move recommendation.
+            Recommendation: The selected move recommendation.
 
         Raises:
             AssertionError: If the selected move is not a legal move.
         """
         chipiron_logger.info("Legal Moves %s", board.legal_moves)
         legal_moves_uci: list[MoveUci] = []
-        move: moveKey
+        move: MoveKey
         for move in board.legal_moves:
             legal_moves_uci.append(board.get_uci_from_move_key(move))
         chipiron_logger.info("Legal Moves %s", legal_moves_uci)
@@ -75,4 +75,4 @@ class CommandLineHumanMoveSelector:
 
         assert move_uci in legal_moves_uci
 
-        return MoveRecommendation(move=move_uci, evaluation=None)
+        return Recommendation(recommended_key=move_uci, evaluation=None)

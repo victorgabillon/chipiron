@@ -13,7 +13,7 @@ from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.dataclass import DataClass, IsDataclass
 from chipiron.utils.logger import chipiron_logger
 
-from ..environments.chess_env.board.factory import create_board_factory
+from atomheart.factory import create_board_factory
 from ..scripts.chipiron_args import ImplementationArgs
 from .boardevaluators.table_base.factory import SyzygyFactory, create_syzygy_factory
 from .factory import create_game_player
@@ -24,9 +24,9 @@ from .game_player import (
 from .player_args import PlayerFactoryArgs
 
 if TYPE_CHECKING:
-    from chipiron.utils import Seed
+    from valanga.game import Seed
 
-    from ..environments.chess_env.board.utils import FenPlusHistory
+    from atomheart.utils import FenPlusHistory
 
 
 # A class that extends the Thread class

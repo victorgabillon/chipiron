@@ -20,7 +20,6 @@ import yaml
 from chipiron.utils.logger import chipiron_logger
 
 path = typing.Annotated[str | os.PathLike[str], "path"]
-Seed = typing.Annotated[int, "seed"]
 
 
 def mkdir_if_not_existing(folder_path: path) -> None:

@@ -9,11 +9,11 @@ from typing import Protocol
 
 import chess
 
-from chipiron.utils import Seed
+from valanga.game import Seed
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.dataclass import IsDataclass
 
-from ..environments.chess_env.board.utils import FenPlusHistory
+from atomheart.utils import FenPlusHistory
 from ..scripts.chipiron_args import ImplementationArgs
 from .boardevaluators.table_base.factory import AnySyzygyTable
 from .factory import create_game_player

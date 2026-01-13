@@ -11,7 +11,7 @@ from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
     from chipiron.players import Player
-    from chipiron.players.move_selector.move_selector import MoveRecommendation
+    from valanga.policy import Recommendation
 
 
 def test_universal_behavior() -> None:
@@ -70,7 +70,7 @@ def test_universal_behavior() -> None:
         random_generator=random_generator_rust,
     )
 
-    move_reco_rust: MoveRecommendation = player_rust.select_move(
+    move_reco_rust: Recommendation = player_rust.select_move(
         fen_plus_history=board_rust.into_fen_plus_history(), seed_int=0
     )
 
@@ -81,7 +81,7 @@ def test_universal_behavior() -> None:
         random_generator=random_generator_chi,
     )
 
-    move_reco_chi: MoveRecommendation = player_chi.select_move(
+    move_reco_chi: Recommendation = player_chi.select_move(
         fen_plus_history=board_chi.into_fen_plus_history(), seed_int=0
     )
 
