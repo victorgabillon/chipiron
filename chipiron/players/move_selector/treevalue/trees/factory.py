@@ -4,7 +4,8 @@ MoveAndValueTreeFactory
 
 from typing import TYPE_CHECKING
 
-import chipiron.environments.chess_env.board as boards
+import atomheart.board as boards
+
 import chipiron.players.move_selector.treevalue.node_factory as nod_fac
 from chipiron.players.move_selector.treevalue.node_evaluator import (
     EvaluationQueries,

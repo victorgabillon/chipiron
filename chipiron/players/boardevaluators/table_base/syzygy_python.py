@@ -2,9 +2,9 @@
 Module for the SyzygyTable class.
 """
 
+import atomheart.board as boards
 import chess.syzygy
 
-import chipiron.environments.chess_env.board as boards
 from chipiron.players.boardevaluators.table_base import SyzygyTable
 from chipiron.utils import path
 

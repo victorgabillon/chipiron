@@ -3,32 +3,14 @@ Module defining the board representation interface and the 364 features board re
 """
 
 from dataclasses import dataclass
-from typing import Protocol
 
 import chess
 import torch
-
-
-class BoardRepresentation(Protocol):
-    """
-    Protocol defining the interface for a board representation.
-    """
-
-    def get_evaluator_input(self, color_to_play: chess.Color) -> torch.Tensor:
-        """
-        Returns the evaluator input tensor for the given color to play.
-
-        Args:
-            color_to_play: The color to play, either chess.WHITE or chess.BLACK.
-
-        Returns:
-            The evaluator input tensor.
-        """
-        ...
+from valanga import ContentRepresentation
 
 
 @dataclass(slots=True)
-class Representation364(BoardRepresentation):
+class Representation364(ContentRepresentation):
     """
     Dataclass representing a board representation with 364 features.
     """

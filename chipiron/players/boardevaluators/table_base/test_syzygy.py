@@ -2,22 +2,24 @@
 
 from typing import TYPE_CHECKING
 
-from chipiron.environments.chess_env.board.factory import (
+from atomheart.board.factory import (
     create_board_chi,
     create_rust_board,
 )
-from chipiron.environments.chess_env.board.utils import (
+from atomheart.board.utils import (
     FenPlusHistory,
 )
-from chipiron.environments.chess_env.move.imove import moveKey
+from atomheart.move.imove import moveKey
+
 from chipiron.players.boardevaluators.table_base.factory import (
     create_syzygy_python,
     create_syzygy_rust,
 )
 
 if TYPE_CHECKING:
-    from chipiron.environments.chess_env.board.board_chi import BoardChi
-    from chipiron.environments.chess_env.board.rusty_board import RustyBoardChi
+    from atomheart.board.board_chi import BoardChi
+    from atomheart.board.rusty_board import RustyBoardChi
+
     from chipiron.players.boardevaluators.table_base import SyzygyTable
 
 

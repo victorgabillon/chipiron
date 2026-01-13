@@ -18,9 +18,9 @@ Note: The Descendants and RangedDescendants classes are used in the chipiron pro
 import typing
 from typing import Iterator
 
+import atomheart.board as boards
 from sortedcollections import ValueSortedDict
 
-import chipiron.environments.chess_env.board as boards
 from chipiron.environments import HalfMove
 from chipiron.players.move_selector.treevalue.nodes import ITreeNode
 from chipiron.players.move_selector.treevalue.nodes.tree_traversal import (

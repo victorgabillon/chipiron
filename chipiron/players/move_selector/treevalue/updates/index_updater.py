@@ -18,7 +18,7 @@ from .index_block import (
 from .updates_file import UpdateInstructionsTowardsOneParentNode
 
 if TYPE_CHECKING:
-    from chipiron.environments.chess_env.move.imove import moveKey
+    from atomheart.move.imove import moveKey
 
 
 class IndexUpdater:

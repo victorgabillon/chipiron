@@ -35,8 +35,9 @@ from chipiron.players.move_selector.treevalue.nodes.utils import (
 from ..move_explorer import SamplingPriorities
 
 if typing.TYPE_CHECKING:
+    from atomheart.move.imove import moveKey
+
     import chipiron.players.move_selector.treevalue.tree_manager as tree_man
-    from chipiron.environments.chess_env.move.imove import moveKey
 
 
 @dataclass

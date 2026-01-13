@@ -14,14 +14,14 @@ from typing import TYPE_CHECKING, Any
 
 import chess
 import yaml
+from atomheart.board.factory import (
+    create_board_chi_from_pychess_board,
+)
 
 import chipiron.players.move_selector.treevalue.node_factory as node_factory
 import chipiron.players.move_selector.treevalue.search_factory as search_factories
 import chipiron.players.move_selector.treevalue.tree_manager as tree_manager
 import chipiron.players.move_selector.treevalue.trees as trees
-from chipiron.environments.chess_env.board.factory import (
-    create_board_chi_from_pychess_board,
-)
 from chipiron.players.move_selector.treevalue.indices.index_manager.factory import (
     create_exploration_index_manager,
 )

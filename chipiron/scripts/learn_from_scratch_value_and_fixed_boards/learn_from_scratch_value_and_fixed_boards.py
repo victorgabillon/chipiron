@@ -13,26 +13,26 @@ from typing import cast
 
 import mlflow
 import pandas
+from atomheart.board.utils import FenPlusHistory
+from coral.neural_networks.factory import (
+    create_nn_board_eval_from_architecture_args,
+    create_nn_board_eval_from_nn_parameters_file_and_existing_model,
+)
+from coral.neural_networks.neural_net_architecture_args import (
+    NeuralNetArchitectureArgs,
+)
+from coral.neural_networks.nn_board_evaluator import (
+    NNBoardEvaluator,
+)
 from torch.utils.data import DataLoader
 from torchinfo import summary  # pyright: ignore[reportUnknownVariableType]
 
 import chipiron
-from chipiron.environments.chess_env.board.utils import FenPlusHistory
 from chipiron.learningprocesses.nn_trainer.factory import NNTrainerArgs
 from chipiron.players import PlayerArgs
 from chipiron.players.boardevaluators.datasets.datasets import (
     DataSetArgs,
     FenAndValueDataSet,
-)
-from chipiron.players.boardevaluators.neural_networks.factory import (
-    create_nn_board_eval_from_architecture_args,
-    create_nn_board_eval_from_nn_parameters_file_and_existing_model,
-)
-from chipiron.players.boardevaluators.neural_networks.neural_net_architecture_args import (
-    NeuralNetArchitectureArgs,
-)
-from chipiron.players.boardevaluators.neural_networks.nn_board_evaluator import (
-    NNBoardEvaluator,
 )
 from chipiron.players.boardevaluators.table_base.factory import (
     AnySyzygyTable,

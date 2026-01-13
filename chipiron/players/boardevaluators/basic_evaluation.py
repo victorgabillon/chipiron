@@ -5,9 +5,9 @@ Module for the basic evaluation of a chess board.
 import math
 
 import chess
+from atomheart.board import IBoard
 from chess import Square
 
-from chipiron.environments.chess_env.board import IBoard
 from chipiron.players.boardevaluators.board_evaluator import BoardEvaluator
 
 

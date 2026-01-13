@@ -21,7 +21,7 @@ from chipiron.players.move_selector.treevalue.node_selector.opening_instructions
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node import AlgorithmNode
 
 if TYPE_CHECKING:
-    from chipiron.environments.chess_env.move.imove import moveKey
+    from atomheart.move.imove import moveKey
 
 
 class Uniform:

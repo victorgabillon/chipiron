@@ -4,11 +4,10 @@ This module defines the TreeNode class, which represents a node in a tree struct
 
 from dataclasses import dataclass, field
 
+import atomheart.board as boards
 import chess
-
-import chipiron.environments.chess_env.board as boards
-from chipiron.environments.chess_env.board.iboard import LegalMoveKeyGeneratorP
-from chipiron.environments.chess_env.move.imove import moveKey
+from atomheart.board.iboard import LegalMoveKeyGeneratorP
+from atomheart.move.imove import moveKey
 
 from .itree_node import ITreeNode
 

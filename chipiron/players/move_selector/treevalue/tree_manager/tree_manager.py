@@ -4,10 +4,11 @@ This module contains the TreeManager class, which is responsible for managing a 
 
 import typing
 
-import chipiron.environments.chess_env.board as board_mod
+import atomheart.board as board_mod
+from atomheart.move.imove import moveKey
+
 import chipiron.players.move_selector.treevalue.nodes as node
 import chipiron.players.move_selector.treevalue.trees as trees
-from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.players.move_selector.treevalue.node_factory.node_factory import (
     TreeNodeFactory,
 )

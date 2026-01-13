@@ -5,10 +5,11 @@ Module for the Game class.
 import copy
 import queue
 
-from chipiron.environments.chess_env.board.iboard import IBoard
-from chipiron.environments.chess_env.board.utils import fen
-from chipiron.environments.chess_env.move import moveUci
-from chipiron.environments.chess_env.move.imove import moveKey
+from atomheart.board import IBoard
+from atomheart.board.utils import Fen
+from atomheart.move import MoveUci
+from atomheart.move.imove import MoveKey
+
 from chipiron.players.factory_higher_level import MoveFunction
 from chipiron.utils import Seed, unique_int_from_list
 from chipiron.utils.communication.gui_messages import GameStatusMessage
@@ -33,8 +34,8 @@ class Game:
     _playing_status: GamePlayingStatus  # todo should this be here? looks related to gui
     _current_board: IBoard
     _seed: Seed | None
-    _fen_history: list[fen]
-    _move_history: list[moveUci]
+    _fen_history: list[Fen]
+    _move_history: list[MoveUci]
 
     # list of boards object to implement rewind function without having to necessarily code it in the Board object.
     # this let the board object a bit more lightweight to speed up the Monte Carlo tree search
@@ -69,7 +70,7 @@ class Game:
         """
         return self._seed
 
-    def play_move(self, move: moveKey) -> None:
+    def play_move(self, move: MoveKey) -> None:
         """
         Plays a move on the chess board.
 
@@ -176,7 +177,7 @@ class Game:
         return self._current_board
 
     @property
-    def move_history(self) -> list[moveUci]:
+    def move_history(self) -> list[MoveUci]:
         """
         Gets the history of move.
 
@@ -186,12 +187,12 @@ class Game:
         return self._move_history
 
     @property
-    def fen_history(self) -> list[fen]:
+    def fen_history(self) -> list[Fen]:
         """
         Gets the history of fen.
 
         Returns:
-            list[fen]: The history of fen.
+            list[Fen]: The history of fen.
         """
         return self._fen_history
 
@@ -239,7 +240,7 @@ class ObservableGame:
         """
         self.move_functions.append(move_function)
 
-    def play_move(self, move: moveKey) -> None:
+    def play_move(self, move: MoveKey) -> None:
         """
         Plays a move on the chess board.
 
@@ -368,7 +369,7 @@ class ObservableGame:
         return self.game.board
 
     @property
-    def move_history(self) -> list[moveUci]:
+    def move_history(self) -> list[MoveUci]:
         """
         Gets the history of move.
 
@@ -378,11 +379,11 @@ class ObservableGame:
         return self.game.move_history
 
     @property
-    def fen_history(self) -> list[fen]:
+    def fen_history(self) -> list[Fen]:
         """
         Gets the history of fen.
 
         Returns:
-            list[fen]: The history of fen.
+            list[Fen]: The history of fen.
         """
         return self.game.fen_history

@@ -2,25 +2,11 @@
 This module defines the MoveSelector class and related data structures for selecting moves in a chess game.
 """
 
-from dataclasses import dataclass
 from typing import Protocol
 
-from chipiron.environments.chess_env.board import IBoard
-from chipiron.environments.chess_env.move import moveUci
-from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
-    BoardEvaluation,
-)
+from atomheart.board import IBoard
+
 from chipiron.utils import Seed
-
-
-@dataclass
-class MoveRecommendation:
-    """
-    Represents a recommended move to play along with an optional evaluation score.
-    """
-
-    move: moveUci
-    evaluation: BoardEvaluation | None = None
 
 
 class MoveSelector(Protocol):

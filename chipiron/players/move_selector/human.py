@@ -6,7 +6,8 @@ This module contains the implementation of the CommandLineHumanMoveSelector clas
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
-import chipiron.environments.chess_env.board as boards
+import atomheart.board as boards
+
 from chipiron.utils import Seed
 from chipiron.utils.logger import chipiron_logger
 
@@ -14,8 +15,8 @@ from .move_selector import MoveRecommendation
 from .move_selector_types import MoveSelectorTypes
 
 if TYPE_CHECKING:
-    from chipiron.environments.chess_env.move import moveUci
-    from chipiron.environments.chess_env.move.imove import moveKey
+    from atomheart.move import MoveUci
+    from atomheart.move.imove import moveKey
 
 
 @dataclass
@@ -56,7 +57,7 @@ class CommandLineHumanMoveSelector:
             AssertionError: If the selected move is not a legal move.
         """
         chipiron_logger.info("Legal Moves %s", board.legal_moves)
-        legal_moves_uci: list[moveUci] = []
+        legal_moves_uci: list[MoveUci] = []
         move: moveKey
         for move in board.legal_moves:
             legal_moves_uci.append(board.get_uci_from_move_key(move))

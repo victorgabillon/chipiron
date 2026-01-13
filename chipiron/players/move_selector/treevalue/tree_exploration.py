@@ -20,7 +20,8 @@ import random
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable
 
-import chipiron.environments.chess_env.board as boards
+import atomheart.board as boards
+
 from chipiron.players.move_selector.move_selector import MoveRecommendation
 from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
     AllStoppingCriterionArgs,
@@ -41,7 +42,7 @@ from . import tree_manager as tree_man
 from .trees.factory import MoveAndValueTreeFactory
 
 if TYPE_CHECKING:
-    from chipiron.environments.chess_env.move.imove import moveKey
+    from atomheart.move.imove import moveKey
 
 
 @dataclass

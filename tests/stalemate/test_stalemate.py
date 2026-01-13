@@ -1,20 +1,19 @@
 from typing import TYPE_CHECKING
 
 import pytest
-
-from chipiron.environments.chess_env.board import (
+from atomheart.board import (
     BoardFactory,
     IBoard,
     create_board_factory,
 )
-from chipiron.environments.chess_env.board.utils import FenPlusHistory
-from chipiron.environments.chess_env.move_factory import (
+from atomheart.board.utils import FenPlusHistory
+from atomheart.move_factory import (
     MoveFactory,
     create_move_factory,
 )
 
 if TYPE_CHECKING:
-    from chipiron.environments.chess_env.move import IMove
+    from atomheart.move import IMove
 
 
 @pytest.mark.parametrize(("use_rusty_board"), (True, False))

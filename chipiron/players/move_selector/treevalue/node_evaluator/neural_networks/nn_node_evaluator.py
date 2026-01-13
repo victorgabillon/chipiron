@@ -5,12 +5,12 @@ This module contains the implementation of the `NNNodeEvaluator` class, which is
 from typing import TYPE_CHECKING
 
 import torch
+from coral.neural_networks.nn_board_evaluator import (
+    NNBoardEvaluator,
+)
 
 from chipiron.players.boardevaluators.master_board_evaluator import (
     MasterBoardEvaluator,
-)
-from chipiron.players.boardevaluators.neural_networks.nn_board_evaluator import (
-    NNBoardEvaluator,
 )
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
     AlgorithmNode,

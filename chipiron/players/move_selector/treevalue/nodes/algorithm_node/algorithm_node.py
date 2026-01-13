@@ -3,14 +3,14 @@ This module defines the AlgorithmNode class, which is a generic node used by the
 It wraps tree nodes with values, minimax computation, and exploration tools.
 """
 
+import atomheart.board as boards
 import chess
-
-import chipiron.environments.chess_env.board as boards
-from chipiron.environments.chess_env.board.iboard import LegalMoveKeyGeneratorP
-from chipiron.environments.chess_env.move.imove import moveKey
-from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import (
+from atomheart.board.iboard import LegalMoveKeyGeneratorP
+from atomheart.move.imove import moveKey
+from coral.neural_networks.input_converters.board_representation import (
     BoardRepresentation,
 )
+
 from chipiron.players.move_selector.treevalue.indices.node_indices import (
     NodeExplorationData,
 )

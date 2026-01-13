@@ -7,7 +7,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   chipiron.environments.chess_env
+   atomheart
 
 Module contents
 ---------------

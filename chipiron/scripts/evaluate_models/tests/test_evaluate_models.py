@@ -1,6 +1,7 @@
-from chipiron.players.boardevaluators.neural_networks.factory import (
+from coral.neural_networks.factory import (
     NeuralNetModelsAndArchitecture,
 )
+
 from chipiron.scripts.evaluate_models.evaluate_models import evaluate_models
 
 test_models_to_evaluate_: list[NeuralNetModelsAndArchitecture] = [

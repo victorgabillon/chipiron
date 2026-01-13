@@ -14,15 +14,16 @@ import random
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal
 
-import chipiron.environments.chess_env.board as boards
+import atomheart.board as boards
+
 from chipiron.utils import Seed
 
 from .move_selector import MoveRecommendation
 from .move_selector_types import MoveSelectorTypes
 
 if TYPE_CHECKING:
-    from chipiron.environments.chess_env.move import moveUci
-    from chipiron.environments.chess_env.move.imove import moveKey
+    from atomheart.move import MoveUci
+    from atomheart.move.imove import moveKey
 
 
 @dataclass
@@ -57,7 +58,7 @@ class Random:
         random_move_key: moveKey = self.random_generator.choice(
             board.legal_moves.get_all()
         )
-        random_move_uci: moveUci = board.get_uci_from_move_key(move_key=random_move_key)
+        random_move_uci: MoveUci = board.get_uci_from_move_key(move_key=random_move_key)
         return MoveRecommendation(move=random_move_uci)
 
 

@@ -7,8 +7,8 @@ import queue
 from typing import TYPE_CHECKING
 
 import chess
+from atomheart.board.factory import BoardFactory
 
-from chipiron.environments.chess_env.board.factory import BoardFactory
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.dataclass import DataClass, IsDataclass
 from chipiron.utils.logger import chipiron_logger

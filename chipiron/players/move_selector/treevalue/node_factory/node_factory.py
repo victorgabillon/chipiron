@@ -4,10 +4,11 @@ TreeNodeFactory Protocol
 
 from typing import Protocol
 
-import chipiron.environments.chess_env.board as board_mod
-import chipiron.environments.chess_env.board as boards
+import atomheart.board as board_mod
+import atomheart.board as boards
+from atomheart.move.imove import moveKey
+
 import chipiron.players.move_selector.treevalue.nodes as node
-from chipiron.environments.chess_env.move.imove import moveKey
 from chipiron.players.move_selector.treevalue.nodes.itree_node import ITreeNode
 
 

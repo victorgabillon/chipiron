@@ -16,10 +16,11 @@ import random
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal
 
-import chipiron.players.move_selector.treevalue.search_factory as search_factories
-from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
+from coral.neural_networks.input_converters.representation_factory_factory import (
     create_board_representation_factory,
 )
+
+import chipiron.players.move_selector.treevalue.search_factory as search_factories
 from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 from chipiron.players.move_selector.treevalue import node_factory
@@ -40,7 +41,7 @@ from .tree_and_value_move_selector import TreeAndValueMoveSelector
 from .trees.factory import MoveAndValueTreeFactory
 
 if TYPE_CHECKING:
-    from chipiron.players.boardevaluators.neural_networks.input_converters.factory import (
+    from coral.neural_networks.input_converters.factory import (
         RepresentationFactory,
     )
 

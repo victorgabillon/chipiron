@@ -15,6 +15,9 @@ import typing
 import chess
 import chess.svg
 import PySide6.QtGui as QtGui
+from atomheart.board import BoardFactory, IBoard, create_board_chi
+from atomheart.board.utils import FenPlusHistory
+from atomheart.move import MoveUci
 from PySide6.QtCore import Qt, QTimer, Slot
 from PySide6.QtGui import QIcon
 from PySide6.QtSvgWidgets import QSvgWidget
@@ -28,9 +31,6 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from chipiron.environments.chess_env.board import BoardFactory, IBoard, create_board_chi
-from chipiron.environments.chess_env.board.utils import FenPlusHistory
-from chipiron.environments.chess_env.move import moveUci
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.games.match.match_results import MatchResults, SimpleResults
 from chipiron.players import PlayerFactoryArgs
@@ -53,7 +53,7 @@ from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.path_variables import GUI_DIR
 
 if typing.TYPE_CHECKING:
-    from chipiron.environments.chess_env.move.imove import moveKey
+    from atomheart.move.imove import moveKey
 
 
 class MainWindow(QWidget):
@@ -344,7 +344,7 @@ class MainWindow(QWidget):
                             all_moves_keys: list[moveKey] = (
                                 self.board.legal_moves.get_all()
                             )
-                            all_legal_moves_uci: list[moveUci] = [
+                            all_legal_moves_uci: list[MoveUci] = [
                                 self.board.legal_moves.generated_moves[move_key].uci()
                                 for move_key in all_moves_keys
                             ]
@@ -362,7 +362,7 @@ class MainWindow(QWidget):
                                     move_uci=self.move_promote_asked.uci()
                                 )
                             else:
-                                legal_moves_uci: list[moveUci] = [
+                                legal_moves_uci: list[MoveUci] = [
                                     self.board.get_uci_from_move_key(move_key)
                                     for move_key in all_moves_keys
                                 ]
@@ -378,7 +378,7 @@ class MainWindow(QWidget):
                         piece = None
                     self.pieceToMove = [piece, self.coordinates]
 
-    def send_move_to_main_thread(self, move_uci: moveUci) -> None:
+    def send_move_to_main_thread(self, move_uci: MoveUci) -> None:
         """
         Sends a move to the main thread for processing.
 

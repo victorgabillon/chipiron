@@ -5,10 +5,11 @@ This module defines the arguments for different board evaluators in the Chipiron
 from dataclasses import dataclass
 from typing import Literal
 
-from chipiron.players.boardevaluators.board_evaluator_type import BoardEvalTypes
-from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
+from coral.neural_networks.neural_net_board_eval_args import (
     NeuralNetBoardEvalArgs,
 )
+
+from chipiron.players.boardevaluators.board_evaluator_type import BoardEvalTypes
 from chipiron.players.boardevaluators.stockfish_board_evaluator import (
     StockfishBoardEvalArgs,
 )

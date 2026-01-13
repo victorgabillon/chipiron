@@ -3,9 +3,9 @@ from typing import TYPE_CHECKING
 
 import chess
 import pytest
+from atomheart.board import IBoard, create_board
+from atomheart.board.utils import FenPlusHistory
 
-from chipiron.environments.chess_env.board import IBoard, create_board
-from chipiron.environments.chess_env.board.utils import FenPlusHistory
 from chipiron.players.factory import create_chipiron_player
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node import AlgorithmNode
 from chipiron.players.move_selector.treevalue.tree_and_value_move_selector import (
@@ -14,7 +14,8 @@ from chipiron.players.move_selector.treevalue.tree_and_value_move_selector impor
 from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
-    import chipiron.environments.chess_env.board as boards
+    import atomheart.board as boards
+
     import chipiron.players.move_selector.treevalue.trees as trees
     from chipiron.environments import HalfMove
     from chipiron.players import Player

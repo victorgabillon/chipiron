@@ -5,9 +5,10 @@ This module contains classes related to tree expansion in a chess game.
 import typing
 from dataclasses import dataclass, field
 
-import chipiron.environments.chess_env.board as board_mod
+import atomheart.board as board_mod
+from atomheart.move.imove import moveKey
+
 import chipiron.players.move_selector.treevalue.nodes as node
-from chipiron.environments.chess_env.move.imove import moveKey
 
 
 @dataclass(slots=True)

@@ -5,8 +5,8 @@ Module for the FinalGameResult enum and the GameReport dataclass.
 from dataclasses import dataclass
 from enum import Enum
 
-from chipiron.environments.chess_env.board.utils import fen
-from chipiron.environments.chess_env.move import moveUci
+from atomheart.board.utils import fen
+from atomheart.move import MoveUci
 
 
 class FinalGameResult(str, Enum):
@@ -22,5 +22,5 @@ class GameReport:
     """Dataclass representing a game report."""
 
     final_game_result: FinalGameResult
-    move_history: list[moveUci]
+    move_history: list[MoveUci]
     fen_history: list[fen]

@@ -762,7 +762,7 @@ except Exception as e:
             # Create a temporary Python script for testing
             python_script = """
 try:
-    from chipiron.environments.chess_env.board import create_board_chi
+    from atomheart.board import create_board_chi
     print("Attempting to create chess board...")
     board = create_board_chi()
     print(f"Initial board created: {len(str(board))} characters")
@@ -823,7 +823,7 @@ except Exception as e:
             python_script = """
 import sys
 from chipiron.players.boardevaluators.table_base.syzygy_python import SyzygyChiTable
-from chipiron.environments.chess_env.board import create_board_chi
+from atomheart.board import create_board_chi
 from chipiron.utils.path_variables import SYZYGY_TABLES_DIR
 
 # KQ vs K position (should be in tablebase)
@@ -877,7 +877,7 @@ except Exception as e:
             python_script = """
 import sys
 from chipiron.players.move_selector.stockfish import StockfishPlayer
-from chipiron.environments.chess_env.board import create_board_chi
+from atomheart.board import create_board_chi
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 
 # Simple position: starting position

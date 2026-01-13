@@ -9,36 +9,36 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 import dacite
-
-from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_input import (
+from coral.neural_networks.input_converters.board_to_input import (
     BoardToInputFunction,
     create_board_to_input,
 )
-from chipiron.players.boardevaluators.neural_networks.models.multi_layer_perceptron import (
+from coral.neural_networks.models.multi_layer_perceptron import (
     MultiLayerPerceptron,
     MultiLayerPerceptronArgs,
 )
-from chipiron.players.boardevaluators.neural_networks.models.transformer_one import (
+from coral.neural_networks.models.transformer_one import (
     TransformerArgs,
     TransformerOne,
 )
-from chipiron.players.boardevaluators.neural_networks.neural_net_architecture_args import (
+from coral.neural_networks.neural_net_architecture_args import (
     NeuralNetArchitectureArgs,
 )
-from chipiron.players.boardevaluators.neural_networks.nn_board_evaluator import (
+from coral.neural_networks.nn_board_evaluator import (
     NNBoardEvaluator,
 )
-from chipiron.players.boardevaluators.neural_networks.NNModelTypeArgs import (
+from coral.neural_networks.NNModelTypeArgs import (
     NNModelTypeArgs,
 )
-from chipiron.players.boardevaluators.neural_networks.output_converters.factory import (
+from coral.neural_networks.output_converters.factory import (
     create_output_converter,
 )
+
 from chipiron.utils import path, yaml_fetch_args_in_file
 from chipiron.utils.chi_nn import ChiNN
 
 if TYPE_CHECKING:
-    from chipiron.players.boardevaluators.neural_networks.output_converters.output_value_converter import (
+    from coral.neural_networks.output_converters.output_value_converter import (
         OutputValueConverter,
     )
 

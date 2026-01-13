@@ -10,7 +10,8 @@ about the block.
 from dataclasses import dataclass, field
 from typing import Self
 
-from chipiron.environments.chess_env.move.imove import moveKey
+from atomheart.move.imove import moveKey
+
 from chipiron.players.move_selector.treevalue.nodes.algorithm_node.algorithm_node import (
     AlgorithmNode,
 )

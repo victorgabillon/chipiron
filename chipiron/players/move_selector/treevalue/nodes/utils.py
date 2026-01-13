@@ -23,8 +23,8 @@ from .itree_node import ITreeNode
 from .tree_node import TreeNode
 
 if TYPE_CHECKING:
-    from chipiron.environments.chess_env.move import moveUci
-    from chipiron.environments.chess_env.move.imove import moveKey
+    from atomheart.move import MoveUci
+    from atomheart.move.imove import moveKey
 
 
 def are_all_moves_and_children_opened(tree_node: TreeNode) -> bool:
@@ -74,12 +74,12 @@ def a_move_uci_sequence_from_root(tree_node: ITreeNode) -> list[str]:
     Returns:
         list[str]: A list of move sequences from the root node to the given tree node.
     """
-    move_sequence_from_root: list[moveUci] = []
+    move_sequence_from_root: list[MoveUci] = []
     child: ITreeNode = tree_node
     while child.parent_nodes:
         parent: ITreeNode = next(iter(child.parent_nodes))
         move: moveKey = child.parent_nodes[parent]
-        move_uci: moveUci = parent.board.get_uci_from_move_key(move)
+        move_uci: MoveUci = parent.board.get_uci_from_move_key(move)
         move_sequence_from_root.append(move_uci)
         child = parent
     move_sequence_from_root.reverse()

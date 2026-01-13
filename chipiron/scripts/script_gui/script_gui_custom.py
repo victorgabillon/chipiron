@@ -14,13 +14,13 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, cast
 
 import customtkinter as ctk
-from parsley_coco import make_partial_dataclass_with_optional_paths
-
-from chipiron import scripts
-from chipiron.environments.chess_env.board.starting_position import (
+from atomheart.board.starting_position import (
     FenStartingPositionArgs,
     StartingPositionArgsType,
 )
+from parsley_coco import make_partial_dataclass_with_optional_paths
+
+from chipiron import scripts
 from chipiron.games.game.game_args import GameArgs
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_settings_args import MatchSettingsArgs
