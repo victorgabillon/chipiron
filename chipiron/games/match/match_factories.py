@@ -9,6 +9,7 @@ from atomheart.board.factory import (
     BoardFactory,
     create_board_factory,
 )
+from atomheart.move_factory import MoveFactory, create_move_factory
 
 import chipiron as ch
 import chipiron.games.game as game
@@ -26,7 +27,6 @@ from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
 
-from ...environments.chess_env.move_factory import MoveFactory, create_move_factory
 from .match_settings_args import MatchSettingsArgs
 
 if TYPE_CHECKING:

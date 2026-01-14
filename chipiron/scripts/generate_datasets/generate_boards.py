@@ -31,7 +31,7 @@ import chess
 import chess.pgn
 import pandas as pd
 import zstandard
-from atomheart.board.utils import fen
+from atomheart.board.utils import Fen
 from pandas import DataFrame
 
 from chipiron.utils.logger import chipiron_logger
@@ -50,7 +50,7 @@ MONTHLY_FILE_TEMPLATE = "lichess_db_standard_rated_{month}.pgn.zst"  # month = Y
 
 
 def save_dataset_progress(
-    the_dic: list[dict[str, fen]],
+    the_dic: list[dict[str, Fen]],
     output_file_path: str,
     count_game: int,
     total_count_move: int,
@@ -146,7 +146,7 @@ def save_dataset_progress(
 def process_game(
     game: chess.pgn.GameNode,
     total_count_move: int,
-    the_dic: list[dict[str, fen]],
+    the_dic: list[dict[str, Fen]],
     sampling_frequency: int,
     offset_min: int = DEFAULT_OFFSET_MIN,
 ) -> int:
@@ -348,7 +348,7 @@ def generate_board_dataset_multi_months(
         dest_dir = EXTERNAL_DATA_DIR / "lichess_pgn"
     dest_dir.mkdir(parents=True, exist_ok=True)
 
-    the_dic: list[dict[str, fen]] = []
+    the_dic: list[dict[str, Fen]] = []
     months_used: list[str] = []
     count_game = 0
     total_count_move = 0

@@ -7,6 +7,9 @@ from dataclasses import dataclass, field
 
 import atomheart.board as boards
 import chess
+from atomheart.board.utils import FenPlusHistory
+from atomheart.move_factory import MoveFactory
+from valanga.game import Seed
 
 import chipiron.players as players_m
 from chipiron.games.game.game_args import GameArgs
@@ -21,12 +24,10 @@ from chipiron.players.factory_higher_level import (
     PlayerObserverFactory,
     create_player_observer_factory,
 )
-from valanga.game import Seed, path
+from chipiron.utils import path
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage
 from chipiron.utils.dataclass import IsDataclass
 
-from .atomheart.utils import FenPlusHistory
-from ...environments.chess_env.move_factory import MoveFactory
 from ...players.boardevaluators.table_base.factory import AnySyzygyTable
 from ...players.player_ids import PlayerConfigTag
 from ...scripts.chipiron_args import ImplementationArgs

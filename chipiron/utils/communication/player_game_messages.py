@@ -4,13 +4,13 @@ Module to define the messages that are sent between the players and the game.
 
 from dataclasses import dataclass
 
-import chess
-from atomheart.board.utils import FenPlusHistory, Fen
+from atomheart.board.utils import Fen, FenPlusHistory
 from atomheart.move import MoveUci
-
 from valanga.evaluations import (
     StateEvaluation,
 )
+from valanga import Color
+
 from chipiron.players.player import PlayerId
 
 
@@ -30,7 +30,7 @@ class MoveMessage:
     move: MoveUci
     corresponding_board: Fen
     player_name: PlayerId
-    color_to_play: chess.Color
+    color_to_play: Color
     evaluation: StateEvaluation | None = None
 
 

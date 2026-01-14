@@ -10,11 +10,10 @@ from typing import TYPE_CHECKING
 
 import atomheart.board as boards
 import torch
-
-from .factory import RepresentationFactory
+from valanga.representation_factory import RepresentationFactory
 
 if TYPE_CHECKING:
-    from .board_representation import BoardRepresentation
+    from valanga.represention_for_evaluation import ContentRepresentation
 
 
 class RepresentationBTI:
@@ -48,7 +47,7 @@ class RepresentationBTI:
         - tensor (torch.Tensor): The tensor representation of the chess board.
 
         """
-        representation: BoardRepresentation = (
+        representation: ContentRepresentation = (
             self.representation_factory.create_from_board(board=board)
         )
         tensor: torch.Tensor = representation.get_evaluator_input(

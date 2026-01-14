@@ -8,8 +8,8 @@ main_move_selector:
     type: softmax
     temperature: 2
   stopping_criterion:
-      type: tree_move_limit
-      tree_move_limit: 100000
+      type: tree_branch_limit
+      tree_branch_limit: 100000
   node_evaluator:
     internal_representation_type: '364_bug'
     master_board_evaluator:

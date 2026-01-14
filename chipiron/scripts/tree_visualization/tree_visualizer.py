@@ -20,14 +20,11 @@ import pickle
 import sys
 import typing
 
-from PySide6 import QtCore, QtGui, QtWidgets
-
-from chipiron.players.move_selector.treevalue.trees.move_and_value_tree import (
-    MoveAndValueTree,
-)
-from chipiron.players.move_selector.treevalue.trees.tree_visualization import (
+from anemone.trees.tree_visualization import (
     display_special,
 )
+from PySide6 import QtCore, QtGui, QtWidgets
+
 from chipiron.scripts.iscript import IScript
 from chipiron.scripts.script import Script
 

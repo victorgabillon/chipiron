@@ -150,7 +150,7 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
     script_type: scripts.ScriptType
     match output["type"]:
         case "play_against_chipiron":
-            tree_move_limit = 4 * 10 ** output["strength"]
+            tree_branch_limit = 4 * 10 ** output["strength"]
             gui_args = {
                 "config_file_name": "chipiron/scripts/one_match/exp_options.yaml",
                 "seed": 0,
@@ -162,7 +162,7 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
                 gui_args["file_name_player_two"] = f"{output['chipi_algo']}.yaml"
                 gui_args["player_two"] = {
                     "main_move_selector": {
-                        "stopping_criterion": {"tree_move_limit": tree_move_limit}
+                        "stopping_criterion": {"tree_branch_limit": tree_branch_limit}
                     }
                 }
             else:
@@ -170,7 +170,7 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
                 gui_args["file_name_player_one"] = f"{output['chipi_algo']}.yaml"
                 gui_args["player_one"] = {
                     "main_move_selector": {
-                        "stopping_criterion": {"tree_move_limit": tree_move_limit}
+                        "stopping_criterion": {"tree_branch_limit": tree_branch_limit}
                     }
                 }
             script_type = scripts.ScriptType.ONE_MATCH

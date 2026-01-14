@@ -22,12 +22,12 @@ import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable
 
+from anemone import TreeAndValuePlayerArgs
+from anemone.progress_monitor.progress_monitor import (
+    TreeBranchLimitArgs,
+)
 from atomheart.board.iboard import IBoard
 
-import chipiron.players.move_selector.treevalue as treevalue
-from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
-    TreeMoveLimitArgs,
-)
 from chipiron.utils.logger import (
     chipiron_logger,
     suppress_all_logging,
@@ -282,22 +282,22 @@ class ChessEngineBenchmark:
         print("\n🌲 Benchmarking Base Tree Exploration (Real Implementation)")
         if iterations is None:
             iterations = self.base_tree_exploration_iterations
-        tree_move_limits = self.base_tree_exploration_limits
+        tree_branch_limits = self.base_tree_exploration_limits
 
-        for tree_move_limit in tree_move_limits:
-            print(f"\n  Testing with TreeMoveLimit: {tree_move_limit}")
+        for tree_branch_limit in tree_branch_limits:
+            print(f"\n  Testing with TreeMoveLimit: {tree_branch_limit}")
 
             for rust_enabled in [False, True]:
 
                 def run_base_tree_exploration(
                     rust_enabled: bool = rust_enabled,
-                    tree_move_limit: int = tree_move_limit,
+                    tree_branch_limit: int = tree_branch_limit,
                 ) -> None:
                     """Run base tree exploration for a specific position.
 
                     Args:
                         rust_enabled (bool, optional): Whether to use the Rust implementation. Defaults to rust_enabled.
-                        tree_move_limit (int, optional): The maximum number of moves to explore. Defaults to tree_move_limit.
+                        tree_branch_limit (int, optional): The maximum number of moves to explore. Defaults to tree_branch_limit.
                     """
                     # Create implementation args
                     implementation_args = self.create_implementation_args(rust_enabled)
@@ -310,13 +310,13 @@ class ChessEngineBenchmark:
 
                     # todo find a prettier way to do this
                     assert isinstance(
-                        player_args.main_move_selector, treevalue.TreeAndValuePlayerArgs
+                        player_args.main_move_selector, TreeAndValuePlayerArgs
                     )
                     assert isinstance(
                         player_args.main_move_selector.stopping_criterion,
-                        TreeMoveLimitArgs,
+                        TreeBranchLimitArgs,
                     )
-                    player_args.main_move_selector.stopping_criterion.tree_move_limit = tree_move_limit
+                    player_args.main_move_selector.stopping_criterion.tree_branch_limit = tree_branch_limit
 
                     # Create random generator
                     random_generator = random.Random()
@@ -345,12 +345,12 @@ class ChessEngineBenchmark:
 
                 result = self.benchmark_function(
                     run_base_tree_exploration,
-                    f"base_tree_exploration_{tree_move_limit}",
+                    f"base_tree_exploration_{tree_branch_limit}",
                     rust_enabled,
                     iterations,
                 )
 
-                key = f"base_tree_exploration_{tree_move_limit}"
+                key = f"base_tree_exploration_{tree_branch_limit}"
                 if key not in self.results:
                     self.results[key] = {}
                 self.results[key][rust_enabled] = result

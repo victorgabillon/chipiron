@@ -1,48 +1,53 @@
 """
-Module for the BoardToInput protocol and BoardToInputFunction protocol.
+Module for the BoardToInput protocol and ContentToInputFunction protocol.
 """
 
 from typing import TYPE_CHECKING
 
 import torch
 from atomheart.board import IBoard
-from coral.neural_networks.board_to_tensor import (
-    transform_board_pieces_one_side,
-    transform_board_pieces_two_sides,
-)
-from coral.neural_networks.input_converters.board_to_transformer_input import (
-    build_transformer_input,
-)
-from coral.neural_networks.input_converters.ModelInputRepresentationType import (
-    InternalTensorRepresentationType,
-    ModelInputRepresentationType,
-)
-from coral.neural_networks.input_converters.representation_364_bti import (
-    RepresentationBTI,
-)
-from coral.neural_networks.input_converters.representation_factory_factory import (
-    create_board_representation_factory,
+from coral.neural_networks.input_converters.content_to_input import (
+    ContentToInput,
+    ContentToInputFunction,
 )
 from coral.neural_networks.models.transformer_one import (
     TransformerArgs,
 )
 
+from chipiron.players.boardevaluators.neural_networks.board_to_tensor import (
+    transform_board_pieces_one_side,
+    transform_board_pieces_two_sides,
+)
+from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_transformer_input import (
+    build_transformer_input,
+)
+from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
+    InternalTensorRepresentationType,
+    ModelInputRepresentationType,
+)
+from chipiron.players.boardevaluators.neural_networks.input_converters.representation_364_bti import (
+    RepresentationBTI,
+)
+from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
+    create_board_representation_factory,
+)
+
 if TYPE_CHECKING:
-    from coral.neural_networks.input_converters.factory import (
+    from valanga.representation_factory import (
         RepresentationFactory,
     )
 
 
 def create_board_to_input_from_representation(
     internal_tensor_representation_type: InternalTensorRepresentationType,
-) -> BoardToInputFunction:
-    """Creates a BoardToInputFunction from an InternalTensorRepresentationType.
+) -> ContentToInputFunction:
+    """Creates a ContentToInputFunction from an InternalTensorRepresentationType.
 
     Args:
         internal_tensor_representation_type (InternalTensorRepresentationType): The internal tensor representation type to use.
 
     Returns:
-        BoardToInputFunction: A function that converts a chess board to a tensor input.
+        ContentToInputFunction: A function that converts a chess board to a tensor input.
     """
 
     representation_factory: RepresentationFactory | None = (
@@ -51,7 +56,7 @@ def create_board_to_input_from_representation(
         )
     )
     assert representation_factory is not None
-    board_to_input_convert: BoardToInput = RepresentationBTI(
+    board_to_input_convert: ContentToInput = RepresentationBTI(
         representation_factory=representation_factory
     )
     return board_to_input_convert.convert
@@ -59,8 +64,8 @@ def create_board_to_input_from_representation(
 
 def create_board_to_input(
     model_input_representation_type: ModelInputRepresentationType,
-) -> BoardToInputFunction:
-    """Creates a BoardToInputFunction from a ModelInputRepresentationType.
+) -> ContentToInputFunction:
+    """Creates a ContentToInputFunction from a ModelInputRepresentationType.
 
     Args:
         model_input_representation_type (ModelInputRepresentationType): The model input representation type to use.
@@ -69,10 +74,10 @@ def create_board_to_input(
         Exception: If the model input representation type is not supported.
 
     Returns:
-        BoardToInputFunction: A function that converts a chess board to a tensor input.
+        ContentToInputFunction: A function that converts a chess board to a tensor input.
     """
 
-    board_to_input_convert: BoardToInputFunction
+    board_to_input_convert: ContentToInputFunction
 
     match model_input_representation_type:
         case ModelInputRepresentationType.BUG364:

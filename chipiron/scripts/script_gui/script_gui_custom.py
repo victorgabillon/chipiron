@@ -14,6 +14,11 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, cast
 
 import customtkinter as ctk
+from anemone import TreeAndValuePlayerArgs
+from anemone.progress_monitor.progress_monitor import (
+    StoppingCriterionTypes,
+    TreeBranchLimitArgs,
+)
 from atomheart.board.starting_position import (
     FenStartingPositionArgs,
     StartingPositionArgsType,
@@ -27,11 +32,6 @@ from chipiron.games.match.match_settings_args import MatchSettingsArgs
 from chipiron.games.match.match_tag import MatchConfigTag
 from chipiron.players import PlayerArgs
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
-from chipiron.players.move_selector.treevalue import TreeAndValuePlayerArgs
-from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
-    StoppingCriterionTypes,
-    TreeMoveLimitArgs,
-)
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.one_match.one_match import MatchScriptArgs
 from chipiron.scripts.script_args import BaseScriptArgs
@@ -100,9 +100,9 @@ def format_gui_args_for_display(gui_args: Any) -> str:
                     and selector.stopping_criterion
                 ):
                     criterion = selector.stopping_criterion
-                    if hasattr(criterion, "tree_move_limit"):
+                    if hasattr(criterion, "tree_branch_limit"):
                         args_parts.append(
-                            f"Player One Strength: {criterion.tree_move_limit} moves"
+                            f"Player One Strength: {criterion.tree_branch_limit} moves"
                         )
 
         if (
@@ -120,9 +120,9 @@ def format_gui_args_for_display(gui_args: Any) -> str:
                     and selector.stopping_criterion
                 ):
                     criterion = selector.stopping_criterion
-                    if hasattr(criterion, "tree_move_limit"):
+                    if hasattr(criterion, "tree_branch_limit"):
                         args_parts.append(
-                            f"Player Two Strength: {criterion.tree_move_limit} moves"
+                            f"Player Two Strength: {criterion.tree_branch_limit} moves"
                         )
 
     if hasattr(gui_args, "base_script_args") and gui_args.base_script_args:
@@ -432,8 +432,8 @@ def generate_inputs(
     PartialOpTreeAndValuePlayerArgs = make_partial_dataclass_with_optional_paths(
         cls=TreeAndValuePlayerArgs
     )
-    PartialOpTreeMoveLimitArgs = make_partial_dataclass_with_optional_paths(
-        cls=TreeMoveLimitArgs
+    PartialOpTreeBranchLimitArgs = make_partial_dataclass_with_optional_paths(
+        cls=TreeBranchLimitArgs
     )
 
     config_file_name: str
@@ -464,25 +464,29 @@ def generate_inputs(
             )
             if args_chosen_by_user.player_type_white != PlayerConfigTag.GUI_HUMAN:
                 assert args_chosen_by_user.strength_white is not None
-                tree_move_limit_white: int = 4 * 10**args_chosen_by_user.strength_white
+                tree_branch_limit_white: int = (
+                    4 * 10**args_chosen_by_user.strength_white
+                )
                 gui_args.match_args.player_one_overwrite = PartialOpPlayerArgs(
                     main_move_selector=PartialOpTreeAndValuePlayerArgs(
                         type=MoveSelectorTypes.TreeAndValue,
-                        stopping_criterion=PartialOpTreeMoveLimitArgs(
-                            type=StoppingCriterionTypes.TREE_MOVE_LIMIT,
-                            tree_move_limit=tree_move_limit_white,
+                        stopping_criterion=PartialOpTreeBranchLimitArgs(
+                            type=StoppingCriterionTypes.TREE_BRANCH_LIMIT,
+                            tree_branch_limit=tree_branch_limit_white,
                         ),
                     )
                 )
             if args_chosen_by_user.player_type_black != PlayerConfigTag.GUI_HUMAN:
                 assert args_chosen_by_user.strength_black is not None
-                tree_move_limit_black: int = 4 * 10**args_chosen_by_user.strength_black
+                tree_branch_limit_black: int = (
+                    4 * 10**args_chosen_by_user.strength_black
+                )
                 gui_args.match_args.player_two_overwrite = PartialOpPlayerArgs(
                     main_move_selector=PartialOpTreeAndValuePlayerArgs(
                         type=MoveSelectorTypes.TreeAndValue,
-                        stopping_criterion=PartialOpTreeMoveLimitArgs(
-                            type=StoppingCriterionTypes.TREE_MOVE_LIMIT,
-                            tree_move_limit=tree_move_limit_black,
+                        stopping_criterion=PartialOpTreeBranchLimitArgs(
+                            type=StoppingCriterionTypes.TREE_BRANCH_LIMIT,
+                            tree_branch_limit=tree_branch_limit_black,
                         ),
                     )
                 )

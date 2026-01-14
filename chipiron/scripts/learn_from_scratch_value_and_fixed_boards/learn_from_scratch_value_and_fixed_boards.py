@@ -15,14 +15,14 @@ import mlflow
 import pandas
 from atomheart.board.utils import FenPlusHistory
 from coral.neural_networks.factory import (
-    create_nn_board_eval_from_architecture_args,
-    create_nn_board_eval_from_nn_parameters_file_and_existing_model,
+    create_nn_content_eval_from_architecture_args,
+    create_nn_content_eval_from_nn_parameters_file_and_existing_model,
 )
 from coral.neural_networks.neural_net_architecture_args import (
     NeuralNetArchitectureArgs,
 )
-from coral.neural_networks.nn_board_evaluator import (
-    NNBoardEvaluator,
+from coral.neural_networks.nn_content_evaluator import (
+    NNBWContentEvaluator,
 )
 from torch.utils.data import DataLoader
 from torchinfo import summary  # pyright: ignore[reportUnknownVariableType]
@@ -46,7 +46,7 @@ from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
-from chipiron.utils.chi_nn import ChiNN
+from coral.chi_nn import ChiNN
 from chipiron.utils.logger import chipiron_logger, suppress_logging
 from chipiron.utils.path_variables import ML_FLOW_URI_PATH
 
@@ -111,7 +111,7 @@ class LearnNNFromScratchScript:
     base_script: Script[LearnNNFromScratchScriptArgs]
     nn: ChiNN
     args: LearnNNFromScratchScriptArgs
-    nn_board_evaluator: NNBoardEvaluator
+    nn_board_evaluator: NNBWContentEvaluator
     nn_architecture_args: NeuralNetArchitectureArgs
     saving_folder: path
 
@@ -144,12 +144,12 @@ class LearnNNFromScratchScript:
                 self.args.nn_trainer_args.nn_parameters_file_if_reusing_existing_one
                 is not None
             )
-            self.nn_board_evaluator = create_nn_board_eval_from_nn_parameters_file_and_existing_model(
+            self.nn_board_evaluator = create_nn_content_eval_from_nn_parameters_file_and_existing_model(
                 model_weights_file_name=self.args.nn_trainer_args.nn_parameters_file_if_reusing_existing_one,
                 nn_architecture_args=self.args.nn_trainer_args.neural_network_architecture_args,
             )
         else:
-            self.nn_board_evaluator = create_nn_board_eval_from_architecture_args(
+            self.nn_board_evaluator = create_nn_content_eval_from_architecture_args(
                 nn_architecture_args=self.args.nn_trainer_args.neural_network_architecture_args
             )
 

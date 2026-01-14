@@ -27,14 +27,13 @@ from typing import TYPE_CHECKING, Any, Literal
 
 import atomheart.board as boards
 import chess.engine
+from atomheart.board import create_board_chi
+from atomheart.board.utils import FenPlusHistory
+from valanga.policy import Recommendation
 
 from chipiron.utils.path_variables import STOCKFISH_BINARY_PATH
 
-from atomheart.board import create_board_chi
-from atomheart.board.utils import FenPlusHistory
 from .move_selector_types import MoveSelectorTypes
-
-from valanga.policy import Recommendation
 
 if TYPE_CHECKING:
     from atomheart import BoardChi

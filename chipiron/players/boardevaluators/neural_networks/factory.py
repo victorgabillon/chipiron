@@ -9,9 +9,8 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 import dacite
-from coral.neural_networks.input_converters.board_to_input import (
-    BoardToInputFunction,
-    create_board_to_input,
+from coral.neural_networks.input_converters.content_to_input import (
+    ContentToInputFunction,
 )
 from coral.neural_networks.models.multi_layer_perceptron import (
     MultiLayerPerceptron,
@@ -24,18 +23,21 @@ from coral.neural_networks.models.transformer_one import (
 from coral.neural_networks.neural_net_architecture_args import (
     NeuralNetArchitectureArgs,
 )
-from coral.neural_networks.nn_board_evaluator import (
-    NNBoardEvaluator,
+from coral.neural_networks.nn_content_evaluator import (
+    NNBWContentEvaluator,
 )
-from coral.neural_networks.NNModelTypeArgs import (
+from coral.neural_networks.nn_model_type_args import (
     NNModelTypeArgs,
 )
 from coral.neural_networks.output_converters.factory import (
     create_output_converter,
 )
 
+from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_input import (
+    create_board_to_input,
+)
 from chipiron.utils import path, yaml_fetch_args_in_file
-from chipiron.utils.chi_nn import ChiNN
+from coral.chi_nn import ChiNN
 
 if TYPE_CHECKING:
     from coral.neural_networks.output_converters.output_value_converter import (
@@ -206,7 +208,7 @@ def create_nn_from_folder_path_and_existing_model(
 
 def create_nn_board_eval_from_folder_path_and_existing_model(
     path_to_nn_folder: path,
-) -> tuple[NNBoardEvaluator, NeuralNetArchitectureArgs]:
+) -> tuple[NNBWContentEvaluator, NeuralNetArchitectureArgs]:
     """
     Create a neural network board evaluator.
 
@@ -214,7 +216,7 @@ def create_nn_board_eval_from_folder_path_and_existing_model(
         path_to_nn_folder (path): the path to the folder where the model is defined.
 
     Returns:
-        NNBoardEvaluator: The created neural network board evaluator.
+        NNBWContentEvaluator: The created neural network board evaluator.
     """
     net: ChiNN
     nn_architecture_args: NeuralNetArchitectureArgs
@@ -231,8 +233,8 @@ def create_nn_board_eval_from_folder_path_and_existing_model(
 def create_nn_board_eval_from_nn_and_architecture_args(
     nn_architecture_args: NeuralNetArchitectureArgs,
     nn: ChiNN,
-) -> NNBoardEvaluator:
-    board_to_input_convert: BoardToInputFunction = create_board_to_input(
+) -> NNBWContentEvaluator:
+    board_to_input_convert: ContentToInputFunction = create_board_to_input(
         model_input_representation_type=nn_architecture_args.model_input_representation_type
     )
 
@@ -240,7 +242,7 @@ def create_nn_board_eval_from_nn_and_architecture_args(
         model_output_type=nn_architecture_args.model_output_type
     )
 
-    return NNBoardEvaluator(
+    return NNBWContentEvaluator(
         net=nn,
         output_and_value_converter=output_and_value_converter,
         board_to_input_convert=board_to_input_convert,
@@ -249,7 +251,7 @@ def create_nn_board_eval_from_nn_and_architecture_args(
 
 def create_nn_board_eval_from_architecture_args(
     nn_architecture_args: NeuralNetArchitectureArgs,
-) -> NNBoardEvaluator:
+) -> NNBWContentEvaluator:
     nn = create_nn(nn_type_args=nn_architecture_args.model_type_args)
     nn.init_weights()
 
@@ -260,7 +262,7 @@ def create_nn_board_eval_from_architecture_args(
 
 def create_nn_board_eval_from_nn_parameters_file_and_existing_model(
     model_weights_file_name: path, nn_architecture_args: NeuralNetArchitectureArgs
-) -> NNBoardEvaluator:
+) -> NNBWContentEvaluator:
     net: ChiNN
     net, nn_architecture_args = create_nn_from_param_path_and_architecture_args(
         model_weights_file_name=model_weights_file_name,

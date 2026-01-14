@@ -9,13 +9,14 @@ from atomheart.board import IBoard
 from atomheart.board.utils import Fen
 from atomheart.move import MoveUci
 from atomheart.move.imove import MoveKey
+from valanga.game import Seed
 
 from chipiron.players.factory_higher_level import MoveFunction
-from valanga.game import Seed, unique_int_from_list
 from chipiron.utils.communication.gui_messages import GameStatusMessage
 from chipiron.utils.communication.player_game_messages import BoardMessage
 from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
+from chipiron.utils.small_tools import unique_int_from_list
 
 from .game_playing_status import GamePlayingStatus
 

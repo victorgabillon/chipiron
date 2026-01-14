@@ -7,6 +7,7 @@ import queue
 from typing import TYPE_CHECKING
 
 import chess
+from valanga.game import Seed
 
 from chipiron.games.game.final_game_result import GameReport
 from chipiron.games.game.game_args import GameArgs
@@ -16,7 +17,7 @@ from chipiron.games.match.match_results import IMatchResults, MatchReport, Match
 from chipiron.games.match.match_results_factory import MatchResultsFactory
 from chipiron.games.match.observable_match_result import ObservableMatchResults
 from chipiron.players import PlayerFactoryArgs
-from valanga.game import Seed, path
+from chipiron.utils import path
 from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
 

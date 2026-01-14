@@ -61,7 +61,7 @@ class Representation364(ContentRepresentation):
 
 
 @dataclass(slots=True)
-class Representation364_2(BoardRepresentation):
+class Representation364_2(ContentRepresentation):
     """
     Dataclass representing a board representation with 364 features.
     """

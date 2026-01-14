@@ -13,27 +13,27 @@ from typing import TYPE_CHECKING
 
 import chess
 import pytest
+from anemone import trees
+from anemone.nodes.algorithm_node import AlgorithmNode
+from anemone.tree_and_value_branch_selector import (
+    TreeAndValueBranchSelector,
+)
 from atomheart.board import IBoard, create_board
 from atomheart.board.utils import FenPlusHistory
 
 from chipiron.players import Player
 from chipiron.players.factory import create_chipiron_player
-from chipiron.players.move_selector.treevalue import trees
-from chipiron.players.move_selector.treevalue.nodes.algorithm_node import AlgorithmNode
-from chipiron.players.move_selector.treevalue.tree_and_value_move_selector import (
-    TreeAndValueMoveSelector,
-)
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
     import atomheart.board as boards
-
-    from chipiron.environments import HalfMove
-    from chipiron.players.move_selector.treevalue.nodes import ITreeNode
-    from chipiron.players.move_selector.treevalue.tree_exploration import (
+    from anemone.nodes import ITreeNode
+    from anemone.tree_exploration import (
         TreeExploration,
     )
+
+    from chipiron.environments import HalfMove
 
 
 def create_player_and_tree(
@@ -56,12 +56,12 @@ def create_player_and_tree(
     )
 
     main_move_selector = player.main_move_selector
-    assert isinstance(main_move_selector, TreeAndValueMoveSelector)
+    assert isinstance(main_move_selector, TreeAndValueBranchSelector)
 
     tree_exploration: TreeExploration = main_move_selector.create_tree_exploration(
         board=board
     )
-    tree: trees.MoveAndValueTree = tree_exploration.explore(
+    tree: trees.Tree = tree_exploration.explore(
         random_generator=random_generator
     ).tree
 
@@ -70,7 +70,7 @@ def create_player_and_tree(
 
 @pytest.mark.parametrize(("use_rust_boards"), (True, False))
 def test_random(use_rust_boards: bool) -> None:
-    """Test the TreeAndValueMoveSelector class."""
+    """Test the TreeAndValueBranchSelector class."""
     _, tree_one = create_player_and_tree(use_rust_boards, use_board_modification=False)
     _, tree_two = create_player_and_tree(use_rust_boards, use_board_modification=True)
 

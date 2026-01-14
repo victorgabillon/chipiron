@@ -9,7 +9,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from chipiron.players.boardevaluators.datasets.datasets import SupervisedData
-from chipiron.utils.chi_nn import ChiNN
+from coral.chi_nn import ChiNN
 from chipiron.utils.logger import chipiron_logger
 
 

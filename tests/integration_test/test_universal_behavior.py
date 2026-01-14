@@ -10,8 +10,9 @@ from chipiron.players.factory import create_chipiron_player
 from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
-    from chipiron.players import Player
     from valanga.policy import Recommendation
+
+    from chipiron.players import Player
 
 
 def test_universal_behavior() -> None:
