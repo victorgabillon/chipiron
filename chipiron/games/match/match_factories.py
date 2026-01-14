@@ -32,7 +32,7 @@ from .match_settings_args import MatchSettingsArgs
 if TYPE_CHECKING:
     import queue
 
-    from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator
+    from chipiron.players.boardevaluators.board_evaluator import IGameStateEvaluator
     from chipiron.utils.dataclass import IsDataclass
 
 
@@ -77,7 +77,7 @@ def create_match_manager(
     can_stockfish: bool = args_player_one.name not in [
         "Stockfish"
     ] and args_player_two.name not in ["Stockfish"]
-    game_board_evaluator: IGameBoardEvaluator = create_game_board_evaluator(
+    game_board_evaluator: IGameStateEvaluator = create_game_board_evaluator(
         gui=gui, can_stockfish=can_stockfish
     )
 

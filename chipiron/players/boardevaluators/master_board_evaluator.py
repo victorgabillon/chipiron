@@ -20,7 +20,7 @@ from chipiron.players.boardevaluators.evaluation_scale import (
 )
 from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 
-from .board_evaluator import BoardEvaluator
+from .board_evaluator import StateEvaluator
 
 
 @dataclass
@@ -45,7 +45,7 @@ class MasterBoardEvaluator:
     """
 
     # The board evaluator used to evaluate the chess board.
-    board_evaluator: BoardEvaluator
+    board_evaluator: StateEvaluator
 
     # The Syzygy table used for endgame tablebase evaluations, or None if not available.
     syzygy_evaluator: AnySyzygyTable | None
@@ -55,7 +55,7 @@ class MasterBoardEvaluator:
 
     def __init__(
         self,
-        board_evaluator: BoardEvaluator,
+        board_evaluator: StateEvaluator,
         syzygy: AnySyzygyTable | None,
         value_over_enum: ValueOverEnum,
     ) -> None:
@@ -174,7 +174,7 @@ class MasterBoardEvaluator:
 
 
 def create_master_board_evaluator(
-    board_evaluator: BoardEvaluator,
+    board_evaluator: StateEvaluator,
     syzygy: AnySyzygyTable | None,
     evaluation_scale: EvaluationScale,
 ) -> MasterBoardEvaluator:
@@ -216,7 +216,7 @@ def create_master_board_evaluator_from_args(
     else:
         syzygy_ = None
 
-    board_evaluator: BoardEvaluator
+    board_evaluator: StateEvaluator
 
     match master_board_evaluator.board_evaluator.type:
         case BoardEvalTypes.BASIC_EVALUATION_EVAL:

@@ -14,7 +14,7 @@ from atomheart.move_factory import MoveFactory
 
 import chipiron.players as players_m
 from chipiron.games.game.game_playing_status import PlayingStatus
-from chipiron.players.boardevaluators.board_evaluator import IGameBoardEvaluator
+from chipiron.players.boardevaluators.board_evaluator import IGameStateEvaluator
 from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 from chipiron.utils import path
 from chipiron.utils.communication.gui_messages import (
@@ -38,7 +38,7 @@ if TYPE_CHECKING:
     from atomheart.move.utils import HalfMove
 
 
-class GameManager:
+class GameManager[StateT]:
     """
     Object in charge of playing one game
     """
@@ -51,7 +51,7 @@ class GameManager:
 
     # Evaluators that just evaluates the boards but are not players (just spectators) for display info of who is winning
     # according to them
-    display_board_evaluator: IGameBoardEvaluator
+    display_board_evaluator: IGameStateEvaluator[StateT]
 
     # folder to log results
     output_folder_path: path | None
@@ -78,7 +78,7 @@ class GameManager:
         self,
         game: ObservableGame,
         syzygy: AnySyzygyTable | None,
-        display_board_evaluator: IGameBoardEvaluator,
+        display_board_evaluator: IGameStateEvaluator[StateT],
         output_folder_path: path | None,
         args: GameArgs,
         player_color_to_id: dict[chess.Color, str],
@@ -126,7 +126,7 @@ class GameManager:
         Returns:
             tuple[float, float]: A tuple containing the evaluation scores.
         """
-        return self.display_board_evaluator.evaluate(self.game.board)
+        return self.display_board_evaluator.evaluate(self.game.state)
 
     def play_one_move(self, move: MoveKey) -> None:
         """Play one move in the game.
@@ -135,10 +135,10 @@ class GameManager:
             move (chess.Move): The move to be played.
         """
         self.game.play_move(move)
-        if self.syzygy is not None and self.syzygy.fast_in_table(self.game.board):
+        if self.syzygy is not None and self.syzygy.fast_in_table(self.game.state):
             chipiron_logger.info(
                 "Theoretically finished with value for white: %s",
-                self.syzygy.string_result(self.game.board),
+                self.syzygy.string_result(self.game.state),
             )
 
     def rewind_one_move(self) -> None:
@@ -153,10 +153,10 @@ class GameManager:
             None
         """
         self.game.rewind_one_move()
-        if self.syzygy is not None and self.syzygy.fast_in_table(self.game.board):
+        if self.syzygy is not None and self.syzygy.fast_in_table(self.game.state):
             chipiron_logger.info(
                 "Theoretically finished with value for white: %s",
-                self.syzygy.string_result(self.game.board),
+                self.syzygy.string_result(self.game.state),
             )
 
     def play_one_game(self) -> GameReport:
@@ -177,7 +177,7 @@ class GameManager:
             self.game.query_move_from_players()
 
         while True:
-            board = self.game.board
+            board = self.game.state
             half_move: HalfMove = board.ply()
             chipiron_logger.info(
                 "Half Move: %s playing status %s",
@@ -196,7 +196,7 @@ class GameManager:
             mail = self.main_thread_mailbox.get()
             self.processing_mail(mail)
 
-            board = self.game.board
+            board = self.game.state
             if board.is_game_over() or not self.game_continue_conditions():
                 if board.is_game_over():
                     chipiron_logger.info("The game is over")
@@ -213,8 +213,8 @@ class GameManager:
 
         game_report: GameReport = GameReport(
             final_game_result=game_results,
-            move_history=[move for move in self.game.move_history],
-            fen_history=self.game.fen_history,
+            move_history=[move for move in self.game.action_history],
+            fen_history=self.game.state_tag_history,
         )
         return game_report
 
@@ -229,7 +229,7 @@ class GameManager:
             None
         """
 
-        board: IBoard = self.game.board
+        board: IBoard = self.game.state
 
         match message:
             case MoveMessage():
@@ -259,12 +259,12 @@ class GameManager:
                         "Game Manager: Play a move %s at %s %s",
                         move_uci,
                         board,
-                        self.game.board.fen,
+                        self.game.state.fen,
                     )
                     # move: IMove = self.move_factory(move_uci=move_uci, board=board)
                     self.play_one_move(move_key)
                     chipiron_logger.info(
-                        "Game Manager: Now board is  %s", self.game.board
+                        "Game Manager: Now board is  %s", self.game.state
                     )
 
                     eval_sto, eval_chi = self.external_eval()
@@ -335,7 +335,7 @@ class GameManager:
         Returns:
             bool: True if the game should continue, False otherwise.
         """
-        half_move: HalfMove = self.game.board.ply()
+        half_move: HalfMove = self.game.state.ply()
         continue_bool: bool = True
         if (
             self.args.max_half_moves is not None
@@ -366,7 +366,7 @@ class GameManager:
             path_file_txt = f"{path_file}.txt"
             with open(path_file_txt, "a", encoding="utf-8") as the_fileText:
                 move_1 = None
-                for counter, move in enumerate(self.game.move_history):
+                for counter, move in enumerate(self.game.action_history):
                     if counter % 2 == 0:
                         move_1 = move
                     else:
@@ -390,7 +390,7 @@ class GameManager:
         Returns:
             None
         """
-        board = self.game.board
+        board = self.game.state
         if self.syzygy is not None and self.syzygy.fast_in_table(board):
             chipiron_logger.info(
                 "Syzygy: Theoretical value for white %s",
@@ -405,7 +405,7 @@ class GameManager:
         Returns:
             FinalGameResult: The final result of the game.
         """
-        board = self.game.board
+        board = self.game.state
 
         res: FinalGameResult | None = None
         result: str = board.result(claim_draw=True)

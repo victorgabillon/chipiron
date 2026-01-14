@@ -16,7 +16,7 @@ from chipiron.games.game.game_args import GameArgs
 from chipiron.games.game.game_playing_status import GamePlayingStatus
 from chipiron.players import PlayerFactoryArgs
 from chipiron.players.boardevaluators.board_evaluator import (
-    IGameBoardEvaluator,
+    IGameStateEvaluator,
     ObservableBoardEvaluator,
 )
 from chipiron.players.factory_higher_level import (
@@ -56,7 +56,7 @@ class GameManagerFactory:
     syzygy_table: AnySyzygyTable | None
     output_folder_path: path | None
     main_thread_mailbox: queue.Queue[IsDataclass]
-    game_manager_board_evaluator: IGameBoardEvaluator
+    game_manager_board_evaluator: IGameStateEvaluator
     board_factory: boards.BoardFactory
     move_factory: MoveFactory
     implementation_args: ImplementationArgs
@@ -108,7 +108,7 @@ class GameManagerFactory:
         game_playing_status: GamePlayingStatus = GamePlayingStatus()
 
         game: Game = Game(
-            playing_status=game_playing_status, board=board, seed_=game_seed
+            playing_status=game_playing_status, state=board, seed_=game_seed
         )
         observable_game: ObservableGame = ObservableGame(game=game)
 

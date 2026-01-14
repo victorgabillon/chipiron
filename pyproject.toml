@@ -31,10 +31,10 @@ dependencies = [
     "gdown",
     "zstandard",
     "rich",
-    "valanga @ file:///home/juno/valanga",
-    "atomheart @ file:///home/juno/atomheart",
-    "algorhino-coral   @ file:///home/juno/coral",
-    "algorhino-anemone @file:///home/juno/anemone",
+    "valanga @ git+https://github.com/victorgabillon/valanga.git",
+    "atomheart @ git+https://github.com/victorgabillon/atomheart.git",
+    "algorhino-coral   @ git+https://github.com/victorgabillon/coral.git",
+    "algorhino-anemone @  git+https://github.com/victorgabillon/anemone.git",
 ]
 
 
