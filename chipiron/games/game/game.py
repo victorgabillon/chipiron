@@ -5,11 +5,10 @@ Module for the Game class.
 import copy
 import queue
 
-from atomheart.board import IBoard
-from atomheart.board.utils import Fen
-from atomheart.move import MoveUci
 from atomheart.move.imove import MoveKey
+from valanga import State, StateTag
 from valanga.game import Seed
+from valanga.evaluations import ActionKey # TODO Action Key should not be defined in evaluations
 
 from chipiron.players.factory_higher_level import MoveFunction
 from chipiron.utils.communication.gui_messages import GameStatusMessage
@@ -21,7 +20,7 @@ from chipiron.utils.small_tools import unique_int_from_list
 from .game_playing_status import GamePlayingStatus
 
 
-class Game:
+class Game[StateT:State=State]:
     """
     Class representing a game of chess.
 
@@ -33,17 +32,17 @@ class Game:
     """
 
     _playing_status: GamePlayingStatus  # todo should this be here? looks related to gui
-    _current_board: IBoard
+    _current_state: StateT
     _seed: Seed | None
-    _fen_history: list[Fen]
-    _move_history: list[MoveUci]
+    _state_tag_history: list[StateTag]
+    _action_history: list[ActionKey]
 
     # list of boards object to implement rewind function without having to necessarily code it in the Board object.
     # this let the board object a bit more lightweight to speed up the Monte Carlo tree search
-    _board_history: list[IBoard]
+    _state_history: list[StateT]
 
     def __init__(
-        self, board: IBoard, playing_status: GamePlayingStatus, seed_: Seed = 0
+        self, state: StateT, playing_status: GamePlayingStatus, seed_: Seed = 0
     ):
         """
         Initializes the Game object.
@@ -53,13 +52,13 @@ class Game:
             playing_status (GamePlayingStatus): The playing status of the game.
             seed_ (seed): The seed for random number generation.
         """
-        self._current_board = board
+        self._current_state = state
         self._playing_status = playing_status
         self._seed = seed_
-        self._fen_history = [board.fen]
-        self._move_history = []
-        board_copy: IBoard = board.copy(stack=True)
-        self._board_history = [board_copy]
+        self._state_tag_history = [state.tag]
+        self._action_history = []
+        state_copy: StateT = state.copy(stack=True)
+        self._state_history = [state_copy]
 
     @property
     def seed(self) -> Seed | None:
@@ -82,19 +81,19 @@ class Game:
             AssertionError: If the move is not valid or the game status is not play.
         """
         if self._playing_status.is_play():
-            assert move in [i for i in self._current_board.legal_moves]
+            assert move in [i for i in self._current_state.branch_keys]
 
-            self.move_history.append(
-                self._current_board.get_uci_from_move_key(move_key=move)
+            self._action_history.append(
+                self._current_state.branch_name_from_key(key=move)
             )
 
-            self._current_board.play_move_key(move)
+            self._current_state.step(branch_key=move)
 
-            self.fen_history.append(self._current_board.fen)
-            current_board_copy: IBoard = self._current_board.copy(
+            self._state_tag_history.append(self._current_state.tag)
+            current_state_copy: StateT = self._current_state.copy(
                 stack=True, deep_copy_legal_moves=True
             )
-            self._board_history.append(current_board_copy)
+            self._state_history.append(current_state_copy)
         else:
             print(
                 f"Cannot play move if the game status is PAUSE {self._playing_status.status}"
@@ -109,9 +108,9 @@ class Game:
         """
 
         if self._playing_status.is_paused():
-            if len(self._board_history) > 1:
-                del self._board_history[-1]
-                self._current_board = self._board_history[-1].copy(
+            if len(self._state_history) > 1:
+                del self._state_history[-1]
+                self._current_state = self._state_history[-1].copy(
                     stack=True, deep_copy_legal_moves=True
                 )
         else:
@@ -168,49 +167,49 @@ class Game:
         return self._playing_status.is_play()
 
     @property
-    def board(self) -> IBoard:
+    def state(self) -> StateT:
         """
         Gets the chess board.
 
         Returns:
             BoardChi: The chess board.
         """
-        return self._current_board
+        return self._current_state
 
     @property
-    def move_history(self) -> list[MoveUci]:
+    def action_history(self) -> list[ActionKey]:
         """
         Gets the history of move.
 
         Returns:
             list[chess.Move]: The history of move.
         """
-        return self._move_history
+        return self._action_history
 
     @property
-    def fen_history(self) -> list[Fen]:
+    def state_tag_history(self) -> list[StateTag]:
         """
         Gets the history of fen.
 
         Returns:
             list[Fen]: The history of fen.
         """
-        return self._fen_history
+        return self._state_tag_history
 
 
-class ObservableGame:
+class ObservableGame[StateT: State=State]:
     """
     Represents an observable version of the Game object.
     """
 
-    game: Game
+    game: Game[StateT]
     mailboxes_display: list[queue.Queue[IsDataclass]]
 
     # function that will be called by the observable game when the board is updated, which should query
     # at least one player to compute a move
     move_functions: list[MoveFunction]
 
-    def __init__(self, game: Game) -> None:
+    def __init__(self, game: Game[StateT]) -> None:
         """
         Initializes the ObservableGame object.
 
@@ -322,12 +321,12 @@ class ObservableGame:
         for mailbox in self.mailboxes_display:
             chipiron_logger.debug(
                 "Sending board to display - FEN: %s, Move history: %s",
-                self.game.board.fen,
-                self.game.board.move_history_stack,
+                self.game.state.tag,
+                self.game.state.move_history_stack,
             )
 
             message: BoardMessage = BoardMessage(
-                fen_plus_moves=self.game.board.into_fen_plus_history()
+                fen_plus_moves=self.game.state.into_fen_plus_history()
             )
             mailbox.put(item=message)
 
@@ -335,16 +334,16 @@ class ObservableGame:
         """
         Notifies the players to ask for a move.
         """
-        if not self.game.board.is_game_over():
+        if not self.game.state.is_game_over():
             move_function: MoveFunction
             for move_function in self.move_functions:
-                if not self.game.board.is_game_over():
+                if not self.game.state.is_game_over():
                     merged_seed: int | None = unique_int_from_list(
-                        [self.game.seed, self.game.board.ply()]
+                        [self.game.seed, self.game.state.ply()]
                     )
                     if merged_seed is not None:
                         move_function(
-                            fen_plus_history=self.game.board.into_fen_plus_history(),
+                            fen_plus_history=self.game.state.into_fen_plus_history(),
                             seed_int=merged_seed,
                         )
 
@@ -360,31 +359,31 @@ class ObservableGame:
             mailbox.put(message)
 
     @property
-    def board(self) -> IBoard:
+    def state(self) -> StateT:
         """
         Gets the chess board.
 
         Returns:
             BoardChi: The chess board.
         """
-        return self.game.board
+        return self.game.state
 
     @property
-    def move_history(self) -> list[MoveUci]:
+    def action_history(self) -> list[ActionKey]:
         """
         Gets the history of move.
 
         Returns:
             list[chess.Move]: The history of move.
         """
-        return self.game.move_history
+        return self.game.action_history
 
     @property
-    def fen_history(self) -> list[Fen]:
+    def state_tag_history(self) -> list[StateTag]:
         """
         Gets the history of fen.
 
         Returns:
             list[Fen]: The history of fen.
         """
-        return self.game.fen_history
+        return self.game.state_tag_history

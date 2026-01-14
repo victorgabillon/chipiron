@@ -22,9 +22,9 @@ from chipiron.players.boardevaluators.stockfish_board_evaluator import (
 )
 
 from .board_evaluator import (
-    BoardEvaluator,
-    GameBoardEvaluator,
-    IGameBoardEvaluator,
+    StateEvaluator,
+    GameStateEvaluator,
+    IGameStateEvaluator,
     ObservableBoardEvaluator,
 )
 from .neural_networks.factory import (
@@ -47,7 +47,7 @@ class BoardEvalArgsWrapper:
 
 def create_board_evaluator(
     args_board_evaluator: AllBoardEvaluatorArgs,
-) -> BoardEvaluator:
+) -> StateEvaluator:
     """Create a board evaluator based on the given arguments.
 
     Args:
@@ -60,7 +60,7 @@ def create_board_evaluator(
         SystemExit: If the given arguments do not match any supported board evaluator.
 
     """
-    board_evaluator: BoardEvaluator
+    board_evaluator: StateEvaluator
     match args_board_evaluator:
         case StockfishBoardEvalArgs():
             board_evaluator = StockfishBoardEvaluator(args_board_evaluator)
@@ -82,7 +82,7 @@ def create_board_evaluator(
 
 def create_game_board_evaluator_not_observable(
     can_stockfish: bool,
-) -> GameBoardEvaluator:
+) -> GameStateEvaluator:
     """Create a game board evaluator that is not observable.
 
     This function creates a game board evaluator that consists of two board evaluators:
@@ -93,7 +93,7 @@ def create_game_board_evaluator_not_observable(
     Returns:
         GameBoardEvaluator: The created game board evaluator.
     """
-    board_evaluator_stock: BoardEvaluator | None
+    board_evaluator_stock: StateEvaluator | None
     if can_stockfish:
         board_evaluator_stock = create_board_evaluator(
             args_board_evaluator=StockfishBoardEvalArgs(depth=20, time_limit=0.1)
@@ -124,11 +124,11 @@ def create_game_board_evaluator_not_observable(
     #    data_class=BoardEvalArgsWrapper, data=chi_board_eval_dict
     # )
 
-    board_evaluator_chi: BoardEvaluator = create_board_evaluator(
+    board_evaluator_chi: StateEvaluator = create_board_evaluator(
         args_board_evaluator=chi_board_eval_args.board_evaluator
     )
 
-    game_board_evaluator: GameBoardEvaluator = GameBoardEvaluator(
+    game_board_evaluator: GameStateEvaluator = GameStateEvaluator(
         board_evaluator_stock=board_evaluator_stock,
         board_evaluator_chi=board_evaluator_chi,
     )
@@ -136,7 +136,7 @@ def create_game_board_evaluator_not_observable(
     return game_board_evaluator
 
 
-def create_game_board_evaluator(gui: bool, can_stockfish: bool) -> IGameBoardEvaluator:
+def create_game_board_evaluator(gui: bool, can_stockfish: bool) -> IGameStateEvaluator:
     """Create a game board evaluator based on the given GUI flag.
 
     Args:
@@ -146,8 +146,8 @@ def create_game_board_evaluator(gui: bool, can_stockfish: bool) -> IGameBoardEva
         IGameBoardEvaluator: An instance of the game board evaluator.
 
     """
-    game_board_evaluator_res: IGameBoardEvaluator
-    game_board_evaluator: GameBoardEvaluator = (
+    game_board_evaluator_res: IGameStateEvaluator
+    game_board_evaluator: GameStateEvaluator = (
         create_game_board_evaluator_not_observable(can_stockfish=can_stockfish)
     )
     if gui:

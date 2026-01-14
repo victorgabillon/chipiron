@@ -6,31 +6,30 @@ import queue
 from typing import Any, Protocol
 
 import chess
-from atomheart.board import IBoard
 from valanga import State, StateEvaluation
 
 from chipiron.utils.communication.gui_messages import EvaluationMessage
 from chipiron.utils.dataclass import IsDataclass
 
 
-class BoardEvaluator(Protocol):
+class StateEvaluator[StateT](Protocol):
     """
     Protocol representing a board evaluator.
     """
 
-    def value_white(self, board: IBoard) -> float:
+    def value_white(self, state: StateT) -> float:
         """
         Evaluates a board and returns the value for white.
         """
         ...
 
 
-class IGameBoardEvaluator(Protocol):
+class IGameStateEvaluator[StateT](Protocol):
     """
     Protocol representing a game board evaluator.
     """
 
-    def evaluate(self, state: State) -> tuple[float | None, float]:
+    def evaluate(self, state: StateT) -> tuple[float | None, float]:
         """
         Evaluates a board and returns the evaluation values for stock and chi.
         """
@@ -45,19 +44,19 @@ class IGameBoardEvaluator(Protocol):
         ...
 
 
-class GameBoardEvaluator:
+class GameStateEvaluator:
     """
     This class is a collection of evaluators that display their analysis during the game.
     They are not players, just external analysis and display.
     """
 
-    board_evaluator_stock: BoardEvaluator | None
-    board_evaluator_chi: BoardEvaluator
+    board_evaluator_stock: StateEvaluator | None
+    board_evaluator_chi: StateEvaluator
 
     def __init__(
         self,
-        board_evaluator_stock: BoardEvaluator | None,
-        board_evaluator_chi: BoardEvaluator,
+        board_evaluator_stock: StateEvaluator | None,
+        board_evaluator_chi: StateEvaluator,
     ):
         self.board_evaluator_stock = board_evaluator_stock
         self.board_evaluator_chi = board_evaluator_chi
@@ -89,14 +88,14 @@ class ObservableBoardEvaluator:
     This class represents an observable board evaluator.
     """
 
-    game_board_evaluator: GameBoardEvaluator
+    game_board_evaluator: GameStateEvaluator
     mailboxes: list[queue.Queue[IsDataclass]]
     evaluation_stock: Any
     evaluation_chi: Any
     evaluation_player_black: Any
     evaluation_player_white: Any
 
-    def __init__(self, game_board_evaluator: GameBoardEvaluator):
+    def __init__(self, game_board_evaluator: GameStateEvaluator):
         self.game_board_evaluator = game_board_evaluator
         self.mailboxes = []
         self.evaluation_stock = None
