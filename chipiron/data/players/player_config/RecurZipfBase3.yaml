@@ -9,8 +9,8 @@ main_move_selector:
     type: almost_equal_logistic
     temperature: 2
   stopping_criterion:
-      type: tree_move_limit
-      tree_move_limit: 1000
+      type: tree_branch_limit
+      tree_branch_limit: 1000
   node_evaluator:
     internal_representation_type: '364_bug'
     master_board_evaluator:

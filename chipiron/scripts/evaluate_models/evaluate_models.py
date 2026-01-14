@@ -28,10 +28,10 @@ from chipiron.players.boardevaluators.datasets.datasets import (
     process_stockfish_value,  # pyright: ignore[reportUnknownVariableType]
 )
 from chipiron.utils import path
-from chipiron.utils.chi_nn import ChiNN
+from coral.chi_nn import ChiNN
 
 if TYPE_CHECKING:
-    from coral.neural_networks import NNBoardEvaluator
+    from coral.neural_networks import NNBWContentEvaluator
 
 
 @dataclass
@@ -153,7 +153,7 @@ def evaluate_models(
 
             criterion = torch.nn.L1Loss()
 
-            nn_board_evaluator: NNBoardEvaluator
+            nn_board_evaluator: NNBWContentEvaluator
             nn_board_evaluator = (
                 create_nn_board_eval_from_nn_parameters_file_and_existing_model(
                     model_weights_file_name=model_to_evaluate.model_weights_file_name,

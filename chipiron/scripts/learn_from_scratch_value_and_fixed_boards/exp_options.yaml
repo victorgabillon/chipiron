@@ -43,8 +43,8 @@ evaluating_player_args:
       type: almost_equal_logistic
       temperature: 2
     stopping_criterion:
-        type: tree_move_limit
-        tree_move_limit: 100000
+        type: tree_branch_limit
+        tree_branch_limit: 100000
     board_evaluator:
       type: neural_network
       internal_representation_type: '364_bug'

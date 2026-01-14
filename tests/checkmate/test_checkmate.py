@@ -12,10 +12,10 @@ from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
     import chess
+    from valanga.policy import Recommendation
 
     from chipiron.players import Player
     from chipiron.players.boardevaluators import table_base
-    from valanga.policy import Recommendation
 
 
 @pytest.mark.parametrize(("use_rusty_board"), (True, False))

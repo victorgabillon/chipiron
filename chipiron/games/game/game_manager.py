@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from atomheart.board.iboard import IBoard
     from atomheart.move import MoveUci
 
-    from chipiron.environments import HalfMove
+    from atomheart.move.utils import HalfMove
 
 
 class GameManager:

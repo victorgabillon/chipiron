@@ -5,7 +5,7 @@ Module for the FinalGameResult enum and the GameReport dataclass.
 from dataclasses import dataclass
 from enum import Enum
 
-from atomheart.board.utils import fen
+from atomheart.board.utils import Fen
 from atomheart.move import MoveUci
 
 
@@ -23,4 +23,4 @@ class GameReport:
 
     final_game_result: FinalGameResult
     move_history: list[MoveUci]
-    fen_history: list[fen]
+    fen_history: list[Fen]

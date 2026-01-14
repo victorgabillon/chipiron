@@ -7,20 +7,21 @@ import random
 from dataclasses import dataclass
 
 import chess
+from anemone import TreeAndValuePlayerArgs
+from anemone.progress_monitor.progress_monitor import (
+    TreeBranchLimitArgs,
+)
+from atomheart.board import BoardFactory, create_board_factory
+from valanga.policy import BranchSelector
 
 from chipiron.players.boardevaluators.table_base.factory import (
     AnySyzygyTable,
     create_syzygy,
 )
-from chipiron.players.move_selector import treevalue
-from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
-    TreeMoveLimitArgs,
-)
 from chipiron.players.player_args import PlayerArgs
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.utils.logger import chipiron_logger
 
-from atomheart import BoardFactory, create_board_factory
 from ..scripts.chipiron_args import ImplementationArgs
 from ..utils.dataclass import IsDataclass
 from . import move_selector
@@ -43,7 +44,7 @@ def create_chipiron_player(
     universal_behavior: bool,
     random_generator: random.Random,
     queue_progress_player: queue.Queue[IsDataclass] | None = None,
-    tree_move_limit: int | None = None,
+    tree_branch_limit: int | None = None,
 ) -> Player:
     """
     Creates the chipiron champion/representative/standard/default player
@@ -60,26 +61,22 @@ def create_chipiron_player(
 
     args_player: PlayerArgs = PlayerConfigTag.CHIPIRON.get_players_args()
 
-    if tree_move_limit is not None:
+    if tree_branch_limit is not None:
         # todo find a prettier way to do this
+        assert isinstance(args_player.main_move_selector, TreeAndValuePlayerArgs)
         assert isinstance(
-            args_player.main_move_selector, treevalue.TreeAndValuePlayerArgs
-        )
-        assert isinstance(
-            args_player.main_move_selector.stopping_criterion, TreeMoveLimitArgs
+            args_player.main_move_selector.stopping_criterion, TreeBranchLimitArgs
         )
 
-        args_player.main_move_selector.stopping_criterion.tree_move_limit = (
-            tree_move_limit
+        args_player.main_move_selector.stopping_criterion.tree_branch_limit = (
+            tree_branch_limit
         )
 
-    main_move_selector: move_selector.MoveSelector | None = (
-        move_selector.create_main_move_selector(
-            move_selector_instance_or_args=args_player.main_move_selector,
-            syzygy=syzygy_table,
-            random_generator=random_generator,
-            queue_progress_player=queue_progress_player,
-        )
+    main_move_selector: BranchSelector | None = move_selector.create_main_move_selector(
+        move_selector_instance_or_args=args_player.main_move_selector,
+        syzygy=syzygy_table,
+        random_generator=random_generator,
+        queue_progress_player=queue_progress_player,
     )
 
     assert main_move_selector is not None
@@ -119,13 +116,11 @@ def create_player(
         Player: The created player object.
     """
     chipiron_logger.debug("Create player")
-    main_move_selector: move_selector.MoveSelector = (
-        move_selector.create_main_move_selector(
-            move_selector_instance_or_args=args.main_move_selector,
-            syzygy=syzygy,
-            random_generator=random_generator,
-            queue_progress_player=queue_progress_player,
-        )
+    main_move_selector: BranchSelector = move_selector.create_main_move_selector(
+        move_selector_instance_or_args=args.main_move_selector,
+        syzygy=syzygy,
+        random_generator=random_generator,
+        queue_progress_player=queue_progress_player,
     )
 
     board_factory: BoardFactory = create_board_factory(

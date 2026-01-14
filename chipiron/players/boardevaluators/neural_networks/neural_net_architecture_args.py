@@ -1,13 +1,14 @@
 from dataclasses import dataclass
 
-from coral.neural_networks.input_converters.ModelInputRepresentationType import (
-    ModelInputRepresentationType,
-)
-from coral.neural_networks.NNModelTypeArgs import (
+from coral.neural_networks.nn_model_type_args import (
     NNModelTypeArgs,
 )
 from coral.neural_networks.output_converters.model_output_type import (
     ModelOutputType,
+)
+
+from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
+    ModelInputRepresentationType,
 )
 
 

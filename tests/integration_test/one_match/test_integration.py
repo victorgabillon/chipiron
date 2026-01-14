@@ -8,6 +8,11 @@ import logging
 import time
 from typing import TYPE_CHECKING, Any
 
+from anemone import TreeAndValuePlayerArgs
+from anemone.progress_monitor.progress_monitor import (
+    StoppingCriterionTypes,
+    TreeBranchLimitArgs,
+)
 from parsley_coco import (
     make_partial_dataclass_with_optional_paths,
     resolve_extended_object,
@@ -21,11 +26,6 @@ from chipiron.games.match.match_tag import MatchConfigTag
 from chipiron.players import PlayerArgs
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 from chipiron.players.move_selector.stockfish import StockfishPlayer
-from chipiron.players.move_selector.treevalue import TreeAndValuePlayerArgs
-from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
-    StoppingCriterionTypes,
-    TreeMoveLimitArgs,
-)
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.factory import create_script
@@ -53,18 +53,18 @@ PartialOpPlayerArgs = make_partial_dataclass_with_optional_paths(cls=PlayerArgs)
 PartialOpTreeAndValuePlayerArgs = make_partial_dataclass_with_optional_paths(
     cls=TreeAndValuePlayerArgs
 )
-PartialOpTreeMoveLimitArgs = make_partial_dataclass_with_optional_paths(
-    cls=TreeMoveLimitArgs
+PartialOpTreeBranchLimitArgs = make_partial_dataclass_with_optional_paths(
+    cls=TreeBranchLimitArgs
 )
 
-# Create a common overwrite for test players with tree move limit of 100
-TEST_TREE_MOVE_LIMIT = 100
+# Create a common overwrite for test players with tree branch limit of 100
+TEST_TREE_BRANCH_LIMIT = 100
 test_player_overwrite = PartialOpPlayerArgs(
     main_move_selector=PartialOpTreeAndValuePlayerArgs(
         type=MoveSelectorTypes.TreeAndValue,
-        stopping_criterion=PartialOpTreeMoveLimitArgs(
-            type=StoppingCriterionTypes.TREE_MOVE_LIMIT,
-            tree_move_limit=TEST_TREE_MOVE_LIMIT,
+        stopping_criterion=PartialOpTreeBranchLimitArgs(
+            type=StoppingCriterionTypes.TREE_BRANCH_LIMIT,
+            tree_branch_limit=TEST_TREE_BRANCH_LIMIT,
         ),
     )
 )

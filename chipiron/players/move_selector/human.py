@@ -7,9 +7,9 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
 import atomheart.board as boards
-
 from valanga.game import Seed
 from valanga.policy import Recommendation
+
 from chipiron.utils.logger import chipiron_logger
 
 from .move_selector_types import MoveSelectorTypes

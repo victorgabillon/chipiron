@@ -14,21 +14,23 @@ from atomheart.board import (
     create_board,
 )
 from atomheart.board.utils import FenPlusHistory, bitboard_rotate
-from coral.neural_networks.input_converters.ModelInputRepresentationType import (
+
+from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
     InternalTensorRepresentationType,
 )
-from coral.neural_networks.input_converters.representation_factory_factory import (
+from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
     create_board_representation_factory,
 )
 
 if TYPE_CHECKING:
     from atomheart.move.imove import MoveKey
-    from coral.neural_networks.input_converters.board_representation import (
-        BoardRepresentation,
-        Representation364,
-    )
-    from coral.neural_networks.input_converters.factory import (
+    from valanga.representation_factory import (
         RepresentationFactory,
+    )
+    from valanga.represention_for_evaluation import ContentRepresentation
+
+    from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import (
+        Representation364,
     )
 
 
@@ -67,10 +69,10 @@ def test_representation(
     )
 
     assert board_modification is not None
-    direct_rep: BoardRepresentation = representation_factory.create_from_board(
+    direct_rep: ContentRepresentation = representation_factory.create_from_board(
         board=board
     )
-    rep_from_parents: BoardRepresentation = (
+    rep_from_parents: ContentRepresentation = (
         representation_factory.create_from_board_and_from_parent(
             board=board,
             board_modifications=board_modification,

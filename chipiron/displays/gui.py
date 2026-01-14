@@ -15,6 +15,10 @@ import typing
 import chess
 import chess.svg
 import PySide6.QtGui as QtGui
+from anemone import TreeAndValuePlayerArgs
+from anemone.progress_monitor.progress_monitor import (
+    TreeBranchLimitArgs,
+)
 from atomheart.board import BoardFactory, IBoard, create_board_chi
 from atomheart.board.utils import FenPlusHistory
 from atomheart.move import MoveUci
@@ -34,10 +38,6 @@ from PySide6.QtWidgets import (
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.games.match.match_results import MatchResults, SimpleResults
 from chipiron.players import PlayerFactoryArgs
-from chipiron.players.move_selector.treevalue import TreeAndValuePlayerArgs
-from chipiron.players.move_selector.treevalue.progress_monitor.progress_monitor import (
-    TreeMoveLimitArgs,
-)
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.utils.communication.gui_messages import (
     BackMessage,
@@ -684,15 +684,15 @@ class MainWindow(QWidget):
             str: The extracted message.
         """
         name: str = player.player_args.name
-        tree_move_limit: str | int = ""
+        tree_branch_limit: str | int = ""
         if isinstance(player.player_args.main_move_selector, TreeAndValuePlayerArgs):
             if isinstance(
                 player.player_args.main_move_selector.stopping_criterion,
-                TreeMoveLimitArgs,
+                TreeBranchLimitArgs,
             ):
-                tree_move_limit = player.player_args.main_move_selector.stopping_criterion.tree_move_limit
+                tree_branch_limit = player.player_args.main_move_selector.stopping_criterion.tree_branch_limit
 
-        return f"{name} ({tree_move_limit})"
+        return f"{name} ({tree_branch_limit})"
 
     def update_players_color_to_id(
         self, players_color_to_player: dict[chess.Color, PlayerFactoryArgs]

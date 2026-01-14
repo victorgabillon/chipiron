@@ -6,10 +6,10 @@ from typing import TYPE_CHECKING
 
 from atomheart.board import BoardFactory, IBoard
 from atomheart.board.utils import FenPlusHistory
+from valanga.game import Seed
+from valanga.policy import BranchSelector, Recommendation
 
 from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
-from valanga.policy import Recommendation, BranchSelector
-from valanga.game import Seed
 from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:

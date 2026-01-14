@@ -6,14 +6,14 @@ import copy
 import queue
 
 import chess
-
-from valanga.policy import Recommendation
+from atomheart.board.utils import FenPlusHistory
 from valanga.game import Seed
+from valanga.policy import Recommendation
+
 from chipiron.utils.communication.player_game_messages import MoveMessage
 from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
 
-from atomheart.utils import FenPlusHistory
 from .player import Player
 
 

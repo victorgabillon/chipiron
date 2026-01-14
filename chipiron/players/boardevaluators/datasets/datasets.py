@@ -19,9 +19,9 @@ import pandas
 import torch
 from atomheart.board import IBoard
 from atomheart.board.factory import create_board_chi
-from atomheart.board.utils import FenPlusHistory, fen
-from coral.neural_networks.input_converters.board_to_input import (
-    BoardToInputFunction,
+from atomheart.board.utils import Fen, FenPlusHistory
+from coral.neural_networks.input_converters.content_to_input import (
+    ContentToInputFunction,
 )
 from pandas import DataFrame
 from torch.utils.data import Dataset
@@ -265,7 +265,7 @@ class FenAndValueDataSet(MyDataSet[FenAndValueData]):
     A subclass of MyDataSet that processes raw rows into input and target value tensors.
 
     Attributes:
-    - transform_board_function (BoardToInputFunction): The function to transform the board into input tensor.
+    - transform_board_function (ContentToInputFunction): The function to transform the board into input tensor.
     - transform_value_function (callable): The function to transform the value for a given board and row.
 
     Methods:
@@ -273,7 +273,7 @@ class FenAndValueDataSet(MyDataSet[FenAndValueData]):
     - process_raw_rows(dataframe: pandas.DataFrame) -> list[FenAndValueData]: Processes raw rows into FenAndValueData list.
     """
 
-    transform_board_function: BoardToInputFunction  # transform board to model input
+    transform_board_function: ContentToInputFunction  # transform board to model input
     transform_dataset_value_to_white_value_function: Callable[
         [pandas.Series], float
     ]  # transform value in dataset to standardized value white float
@@ -290,7 +290,7 @@ class FenAndValueDataSet(MyDataSet[FenAndValueData]):
         transform_dataset_value_to_white_value_function: Callable[
             [pandas.Series], float
         ],
-        transform_board_function: BoardToInputFunction,
+        transform_board_function: ContentToInputFunction,
         preprocessing: bool = False,
     ) -> None:
         """
@@ -299,13 +299,13 @@ class FenAndValueDataSet(MyDataSet[FenAndValueData]):
         Args:
         - file_name (str): The file name of the dataset.
         - preprocessing (bool): Flag indicating whether to preprocess the dataset.
-        - transform_board_function (BoardToInputFunction): The function to transform the board into input tensor.
+        - transform_board_function (ContentToInputFunction): The function to transform the board into input tensor.
         - transform_dataset_value_to_white_value_function: The function to transform dataset values to white values.
         - transform_white_value_to_model_output_function: The function to transform white values to model output.
         """
         super().__init__(file_name, preprocessing)
 
-        assert isinstance(transform_board_function, BoardToInputFunction)
+        assert isinstance(transform_board_function, ContentToInputFunction)
         self.transform_board_function = transform_board_function
 
         # transform function
@@ -328,7 +328,7 @@ class FenAndValueDataSet(MyDataSet[FenAndValueData]):
         Returns:
         - FenAndValueData: The processed data containing input and target tensors.
         """
-        fen_: Fen= row["fen"]
+        fen_: Fen = row["fen"]
 
         # todo should we make it general and allow rust boards just for testing all comptabilities ?
         board: BoardChi = create_board_chi(

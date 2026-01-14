@@ -27,10 +27,10 @@ from typing import TYPE_CHECKING, Any
 import mlflow
 import mlflow.pytorch
 import torch
-from coral.neural_networks import NNBoardEvaluator
+from coral.neural_networks import NNBWContentEvaluator
 from coral.neural_networks.factory import (
-    create_nn_board_eval_from_architecture_args,
-    create_nn_board_eval_from_nn_parameters_file_and_existing_model,
+    create_nn_content_eval_from_architecture_args,
+    create_nn_content_eval_from_nn_parameters_file_and_existing_model,
 )
 from mlflow.models.signature import (
     ModelSignature,
@@ -57,7 +57,7 @@ from chipiron.players.boardevaluators.datasets.datasets import (
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
-from chipiron.utils.chi_nn import ChiNN
+from coral.chi_nn import ChiNN
 from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:
@@ -111,7 +111,7 @@ class LearnNNScript:
     base_script: Script[LearnNNScriptArgs]
     nn: ChiNN
     args: LearnNNScriptArgs
-    nn_board_evaluator: NNBoardEvaluator
+    nn_board_evaluator: NNBWContentEvaluator
     saving_folder: path
 
     def __init__(
@@ -146,12 +146,12 @@ class LearnNNScript:
                 self.args.nn_trainer_args.nn_parameters_file_if_reusing_existing_one
                 is not None
             )
-            self.nn_board_evaluator = create_nn_board_eval_from_nn_parameters_file_and_existing_model(
+            self.nn_board_evaluator = create_nn_content_eval_from_nn_parameters_file_and_existing_model(
                 model_weights_file_name=self.args.nn_trainer_args.nn_parameters_file_if_reusing_existing_one,
                 nn_architecture_args=self.args.nn_trainer_args.neural_network_architecture_args,
             )
         else:
-            self.nn_board_evaluator = create_nn_board_eval_from_architecture_args(
+            self.nn_board_evaluator = create_nn_content_eval_from_architecture_args(
                 nn_architecture_args=self.args.nn_trainer_args.neural_network_architecture_args
             )
 

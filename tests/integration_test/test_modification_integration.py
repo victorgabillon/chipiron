@@ -3,26 +3,26 @@ from typing import TYPE_CHECKING
 
 import chess
 import pytest
+from anemone.nodes.algorithm_node import AlgorithmNode
+from anemone.tree_and_value_branch_selector import (
+    TreeAndValueBranchSelector,
+)
 from atomheart.board import IBoard, create_board
 from atomheart.board.utils import FenPlusHistory
 
 from chipiron.players.factory import create_chipiron_player
-from chipiron.players.move_selector.treevalue.nodes.algorithm_node import AlgorithmNode
-from chipiron.players.move_selector.treevalue.tree_and_value_move_selector import (
-    TreeAndValueMoveSelector,
-)
 from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
     import atomheart.board as boards
-
     import chipiron.players.move_selector.treevalue.trees as trees
-    from chipiron.environments import HalfMove
-    from chipiron.players import Player
-    from chipiron.players.move_selector.treevalue.nodes import ITreeNode
-    from chipiron.players.move_selector.treevalue.tree_exploration import (
+    from anemone.nodes import ITreeNode
+    from anemone.tree_exploration import (
         TreeExploration,
     )
+
+    from chipiron.environments import HalfMove
+    from chipiron.players import Player
 
 
 @pytest.mark.parametrize(("use_rust_boards"), (True, False))
@@ -46,7 +46,7 @@ def test_modifications(
     )
 
     main_move_selector_one = player_one.main_move_selector
-    assert isinstance(main_move_selector_one, TreeAndValueMoveSelector)
+    assert isinstance(main_move_selector_one, TreeAndValueBranchSelector)
 
     tree_exploration_one: TreeExploration = (
         main_move_selector_one.create_tree_exploration(board=board_one)
@@ -73,7 +73,7 @@ def test_modifications(
     )
 
     main_move_selector_two = player_two.main_move_selector
-    assert isinstance(main_move_selector_two, TreeAndValueMoveSelector)
+    assert isinstance(main_move_selector_two, TreeAndValueBranchSelector)
 
     tree_exploration_two: TreeExploration = (
         main_move_selector_two.create_tree_exploration(board=board_two)

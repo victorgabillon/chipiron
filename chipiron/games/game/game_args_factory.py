@@ -7,9 +7,9 @@ This module defines the GameArgsFactory class, which is responsible for creating
 import typing
 
 import chess
+from valanga.game import Seed
 
 import chipiron.players as players
-from valanga.game import Seed
 from chipiron.utils.small_tools import unique_int_from_list
 
 from .game_args import GameArgs

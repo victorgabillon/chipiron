@@ -5,11 +5,11 @@ Module that contains the NeuralNetBoardEvalArgs class.
 from dataclasses import dataclass, field
 from typing import Literal
 
+from coral.board_evaluation import (
+    PointOfView,
+)
 from coral.neural_networks.factory import (
     NeuralNetModelsAndArchitecture,
-)
-from coral.neural_networks.input_converters.ModelInputRepresentationType import (
-    ModelInputRepresentationType,
 )
 from coral.neural_networks.models.multi_layer_perceptron import (
     MultiLayerPerceptronArgs,
@@ -17,7 +17,7 @@ from coral.neural_networks.models.multi_layer_perceptron import (
 from coral.neural_networks.neural_net_architecture_args import (
     NeuralNetArchitectureArgs,
 )
-from coral.neural_networks.NNModelType import (
+from coral.neural_networks.nn_model_type import (
     ActivationFunctionType,
     NNModelType,
 )
@@ -25,10 +25,10 @@ from coral.neural_networks.output_converters.model_output_type import (
     ModelOutputType,
 )
 
-from chipiron.players.boardevaluators.board_evaluation.board_evaluation import (
-    PointOfView,
-)
 from chipiron.players.boardevaluators.board_evaluator_type import BoardEvalTypes
+from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
+    ModelInputRepresentationType,
+)
 
 
 @dataclass

@@ -4,7 +4,8 @@ This module contains a factory to create board representations.
 
 from typing import Any
 
-from .factory import RepresentationFactory
+from valanga.representation_factory import RepresentationFactory
+
 from .ModelInputRepresentationType import InternalTensorRepresentationType
 from .rep_364 import create_from_board as create_from_board_364_no_bug
 from .rep_364 import (

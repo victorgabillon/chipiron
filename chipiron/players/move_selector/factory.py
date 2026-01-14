@@ -6,16 +6,15 @@ import queue
 import random
 from typing import TypeAlias
 
+from anemone import TreeAndValuePlayerArgs
+from valanga.policy import BranchSelector
+
 from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 from chipiron.utils.logger import chipiron_logger
 
 from ...utils.dataclass import IsDataclass
 from . import human, stockfish
 from .random import Random, create_random
-
-from valanga.policy import BranchSelector
-
-from anemone import TreeAndValuePlayerArgs, create_tree_and_value_branch_selector
 
 AllMoveSelectorArgs: TypeAlias = (
     TreeAndValuePlayerArgs
@@ -41,13 +40,13 @@ def create_main_move_selector(
         random_generator (random.Random): The random number generator.
 
     Returns:
-        move_selector.MoveSelector: The main move selector.
+        BranchSelector: The main move selector.
 
     Raises:
         ValueErr    or: If the given move selector instance or arguments are invalid.
 
     """
-    main_move_selector: move_selector.MoveSelector
+    main_move_selector: BranchSelector
     chipiron_logger.debug("Create main move selector")
 
     match move_selector_instance_or_args:

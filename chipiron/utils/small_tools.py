@@ -13,8 +13,6 @@ from importlib.resources import files
 from pathlib import Path
 from typing import Any, Optional
 
-import numpy as np
-import numpy.typing as nptyping
 import yaml
 
 from chipiron.utils.logger import chipiron_logger

@@ -15,7 +15,6 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal
 
 import atomheart.board as boards
-
 from valanga.game import Seed
 from valanga.policy import Recommendation
 
@@ -60,6 +59,7 @@ class Random:
         )
         random_move_uci: MoveUci = board.get_uci_from_move_key(move_key=random_move_key)
         return Recommendation(recommended_key=random_move_uci, evaluation=None)
+
 
 def create_random(random_generator: random.Random) -> Random:
     """
