@@ -4,12 +4,13 @@ Module to define the messages that are sent between the players and the game.
 
 from dataclasses import dataclass
 
-from atomheart.board.utils import Fen, FenPlusHistory
+from atomheart.board.utils import Fen
 from atomheart.move import MoveUci
 from valanga.evaluations import (
     StateEvaluation,
 )
-from valanga import Color
+from valanga import Color, TurnState
+from valanga.game import TurnStatePlusHistory
 
 from chipiron.players.player import PlayerId
 
@@ -35,7 +36,7 @@ class MoveMessage:
 
 
 @dataclass
-class BoardMessage:
+class StatePlusHistoryMessage[StateT: TurnState=TurnState]:
     """
     Represents a message containing the current state of the chess board.
 
@@ -44,5 +45,5 @@ class BoardMessage:
         seed (int | None, optional): The seed used for random number generation. Defaults to None.
     """
 
-    fen_plus_moves: FenPlusHistory
+    state_plus_history: TurnStatePlusHistory[StateT]
     seed: int | None = None

@@ -18,6 +18,7 @@ from chipiron.games.match.match_results_factory import MatchResultsFactory
 from chipiron.games.match.observable_match_result import ObservableMatchResults
 from chipiron.players import PlayerFactoryArgs
 from chipiron.utils import path
+from chipiron.utils.communication.gui_publisher import GuiPublisher
 from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
 
@@ -208,11 +209,12 @@ class MatchManager:
             # print('tt', type(match_report))
             # pickle.dump(match_report, the_file)
 
-    def subscribe(self, subscriber: queue.Queue[IsDataclass]) -> None:
-        """Subscribe a subscriber to receive updates from the match manager.
-
+    def subscribe(self, pub: GuiPublisher) -> None:
+        """Subscribe a publisher to receive updates from the match manager.
         Args:
-            subscriber (queue.Queue[IsDataclass]): The subscriber to be added to the list of subscribers.
+            pub (GuiPublisher): The publisher to subscribe.
+        Returns:    
+            None
         """
-        self.game_manager_factory.subscribe(subscriber)
-        self.match_results_factory.subscribe(subscriber)
+            self.game_manager_factory.subscribe(pub)
+            self.match_results_factory.subscribe(pub)

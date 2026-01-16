@@ -13,6 +13,7 @@ import queue
 
 from chipiron.games.match.match_results import IMatchResults, MatchResults
 from chipiron.games.match.observable_match_result import ObservableMatchResults
+from chipiron.utils.communication.gui_publisher import GuiPublisher
 from chipiron.utils.dataclass import IsDataclass
 
 
@@ -30,7 +31,7 @@ class MatchResultsFactory:
 
     player_one_name: str
     player_two_name: str
-    subscribers: list[queue.Queue[IsDataclass]] = []
+    subscribers: list[GuiPublisher] = []
 
     def __init__(self, player_one_name: str, player_two_name: str) -> None:
         """
@@ -65,10 +66,13 @@ class MatchResultsFactory:
         else:
             return match_result
 
-    def subscribe(self, subscriber: queue.Queue[IsDataclass]) -> None:
-        """Subscribe a subscriber to receive match results.
 
+    def subscribe(self, pub: GuiPublisher) -> None:
+        """ 
+        Subscribe a publisher to receive match results.
         Args:
-            subscriber (queue.Queue[IsDataclass]): The subscriber to be added to the list of subscribers.
+            pub (GuiPublisher): The publisher to subscribe. 
+        Returns:
+            None
         """
-        self.subscribers.append(subscriber)
+        self.subscribers.append(pub)

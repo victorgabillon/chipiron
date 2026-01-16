@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 import chess
 from atomheart.board.factory import BoardFactory, create_board_factory
 
-from chipiron.utils.communication.player_game_messages import BoardMessage
+from chipiron.utils.communication.player_game_messages import StatePlusHistoryMessage
 from chipiron.utils.dataclass import DataClass, IsDataclass
 from chipiron.utils.logger import chipiron_logger
 
@@ -122,9 +122,9 @@ class PlayerProcess(multiprocessing.Process):
                 pass
             else:
                 # Handle task here and call q.task_done()
-                if isinstance(message, BoardMessage):
-                    board_message: BoardMessage = message
-                    fen_plus_moves: FenPlusHistory = board_message.fen_plus_moves
+                if isinstance(message, StatePlusHistoryMessage):
+                    board_message: StatePlusHistoryMessage = message
+                    fen_plus_moves: FenPlusHistory = board_message.state_plus_history
                     seed_: Seed | None = board_message.seed
                     chipiron_logger.info(
                         "Player thread got the board %s", fen_plus_moves.current_fen

@@ -8,6 +8,8 @@ from atomheart.board.starting_position import (
     AllStartingPositionArgs,
 )
 
+from chipiron.environments.types import GameKind
+
 
 @dataclass
 class GameArgs:
@@ -20,6 +22,7 @@ class GameArgs:
         each_player_has_its_own_thread (bool, optional): Whether each player has its own thread. Defaults to False.
     """
 
+    game_kind: GameKind
     starting_position: AllStartingPositionArgs
     max_half_moves: int | None = None
     each_player_has_its_own_thread: bool = False

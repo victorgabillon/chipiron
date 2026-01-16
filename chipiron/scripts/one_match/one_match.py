@@ -19,6 +19,7 @@ from chipiron.games.match.match_factories import create_match_manager_from_args
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
+from chipiron.utils.communication.gui_messages.gui_messages import GuiUpdate
 from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:
@@ -100,7 +101,7 @@ class OneMatchScript:
         if args.gui:
             # if we use a graphic user interface (GUI) we create it its own thread and
             # create its mailbox to communicate with other threads
-            gui_thread_mailbox: queue.Queue[IsDataclass] = (
+            gui_thread_mailbox: queue.Queue[GuiUpdate] = (
                 multiprocessing.Manager().Queue()
             )
 

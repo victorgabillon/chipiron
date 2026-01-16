@@ -9,9 +9,9 @@ from typing import Protocol
 
 import chess
 from atomheart.board.utils import FenPlusHistory
-from valanga.game import Seed
+from valanga.game import Seed, TurnStatePlusHistory
 
-from chipiron.utils.communication.player_game_messages import BoardMessage
+from chipiron.utils.communication.player_game_messages import StatePlusHistoryMessage
 from chipiron.utils.dataclass import IsDataclass
 
 from ..scripts.chipiron_args import ImplementationArgs
@@ -40,13 +40,13 @@ class MoveFunction(Protocol):
         None: This function does not return any value.
     """
 
-    def __call__(self, fen_plus_history: FenPlusHistory, seed_int: Seed) -> None: ...
+    def __call__(self, state_tag_plus_history: TurnStatePlusHistory, seed_int: Seed) -> None: ...
 
 
 def send_board_to_player_process_mailbox(
     fen_plus_history: FenPlusHistory,
     seed_int: int,
-    player_process_mailbox: queue.Queue[BoardMessage],
+    player_process_mailbox: queue.Queue[StatePlusHistoryMessage],
 ) -> None:
     """Sends the board and seed to the player process mailbox.
 
@@ -57,7 +57,7 @@ def send_board_to_player_process_mailbox(
         seed_int (int): The seed to send.
         player_process_mailbox (queue.Queue[BoardMessage]): The mailbox to put the message into.
     """
-    message: BoardMessage = BoardMessage(fen_plus_moves=fen_plus_history, seed=seed_int)
+    message: StatePlusHistoryMessage = StatePlusHistoryMessage(state_plus_history=fen_plus_history, seed=seed_int)
     player_process_mailbox.put(item=message)
 
 

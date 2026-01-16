@@ -2,25 +2,30 @@
 Module for the Game class.
 """
 
-import copy
-import queue
+from typing import Annotated
 
 from atomheart.move.imove import MoveKey
-from valanga import State, StateTag
+from valanga import StateTag, TurnState
 from valanga.game import Seed
-from valanga.evaluations import ActionKey # TODO Action Key should not be defined in evaluations
+from valanga.game import ActionKey , TurnStatePlusHistory
 
 from chipiron.players.factory_higher_level import MoveFunction
-from chipiron.utils.communication.gui_messages import GameStatusMessage
-from chipiron.utils.communication.player_game_messages import BoardMessage
-from chipiron.utils.dataclass import IsDataclass
+from chipiron.utils.communication.gui_encoder import GuiEncoder
+from chipiron.utils.communication.gui_publisher import GuiPublisher
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.small_tools import unique_int_from_list
 
-from .game_playing_status import GamePlayingStatus
+from .game_playing_status import GamePlayingStatus, PlayingStatus
+from chipiron.utils.communication.gui_messages.gui_messages import (
+    UpdatePayload
+)
 
 
-class Game[StateT:State=State]:
+
+
+type Ply = Annotated[int, "The number of one turn taken by one of the players in the game so far"]
+
+class Game[StateT:TurnState=TurnState]:
     """
     Class representing a game of chess.
 
@@ -36,6 +41,7 @@ class Game[StateT:State=State]:
     _seed: Seed | None
     _state_tag_history: list[StateTag]
     _action_history: list[ActionKey]
+    _ply : Ply
 
     # list of boards object to implement rewind function without having to necessarily code it in the Board object.
     # this let the board object a bit more lightweight to speed up the Monte Carlo tree search
@@ -59,7 +65,19 @@ class Game[StateT:State=State]:
         self._action_history = []
         state_copy: StateT = state.copy(stack=True)
         self._state_history = [state_copy]
+        self._ply = 0
 
+
+    @property
+    def ply(self) -> Ply:
+        """
+        Gets the number of turns taken so far in the game.
+
+        Returns:
+            Ply: The number of turns taken so far in the game.
+        """
+        return self._ply
+    
     @property
     def seed(self) -> Seed | None:
         """
@@ -94,10 +112,13 @@ class Game[StateT:State=State]:
                 stack=True, deep_copy_legal_moves=True
             )
             self._state_history.append(current_state_copy)
+            self._ply += 1
         else:
             print(
                 f"Cannot play move if the game status is PAUSE {self._playing_status.status}"
             )
+
+
 
     def rewind_one_move(self) -> None:
         """
@@ -113,6 +134,7 @@ class Game[StateT:State=State]:
                 self._current_state = self._state_history[-1].copy(
                     stack=True, deep_copy_legal_moves=True
                 )
+                self._ply -= 1
         else:
             print(f"Cannot rewind move if the game status is {self._playing_status}")
 
@@ -196,38 +218,58 @@ class Game[StateT:State=State]:
         """
         return self._state_tag_history
 
+    def into_state_tag_plus_history(self) -> TurnStatePlusHistory[StateT]:
+        """
+        Converts the current game state into a StatePlusHistoryMessage.
 
-class ObservableGame[StateT: State=State]:
+        Returns:
+            StatePlusHistoryMessage: The StatePlusHistoryMessage representing the current game state.
+        """
+        return TurnStatePlusHistory[StateT](
+            current_state_tag=self._current_state.tag,
+            turn=self.state.turn,
+            historical_actions=self._action_history,
+            historical_states=self._state_history,
+        )
+
+    
+class ObservableGame[StateT: TurnState = TurnState]:
     """
     Represents an observable version of the Game object.
     """
-
     game: Game[StateT]
-    mailboxes_display: list[queue.Queue[IsDataclass]]
+    encoder: GuiEncoder[StateT]
+    game_id: str
+    mailboxes_display: list[GuiPublisher]
 
     # function that will be called by the observable game when the board is updated, which should query
     # at least one player to compute a move
     move_functions: list[MoveFunction]
 
-    def __init__(self, game: Game[StateT]) -> None:
+    def __init__(self, game: Game[StateT], encoder: GuiEncoder[StateT]) -> None:
         """
         Initializes the ObservableGame object.
-
         Args:
-            game (Game): The underlying Game object.
-        """
+            game (Game): The game object to be observed.
+            encoder (GuiEncoder): The GUI encoder for the game.
+            game_id (str): The unique identifier for the game.
+        """       
         self.game = game
-        self.mailboxes_display = []  # mailboxes for board to be displayed
-        self.move_functions = []  # mailboxes for board to be played
+        self.encoder = encoder
+
+        self.mailboxes_display = []   # mailboxes for board to be displayed
+        self.move_functions = [] # mailboxes for board to be played
         # the difference between the two is that board can be modified without asking the player to play
         # (for instance when using the button back)
 
-    def register_display(self, mailbox: queue.Queue[IsDataclass]) -> None:
+
+
+    def register_display(self, mailbox: GuiPublisher) -> None:
         """
         Registers a mailbox for displaying the board.
 
         Args:
-            mailbox (queue.Queue[IsDataclass]): The mailbox for board to be displayed.
+            mailbox (GuiPublisher): The mailbox for board to be displayed.
         """
         self.mailboxes_display.append(mailbox)
 
@@ -314,21 +356,27 @@ class ObservableGame[StateT: State=State]:
         """
         return self.game.is_play()
 
+
+
     def notify_display(self) -> None:
         """
         Notifies the display mailboxes with the updated board.
         """
-        for mailbox in self.mailboxes_display:
+        # Build payload from domain state
+        payload = self.encoder.make_state_payload(
+            state=self.game.state,
+            seed=self.game.seed,
+        )
+        for pub in self.mailboxes_display:
             chipiron_logger.debug(
                 "Sending board to display - FEN: %s, Move history: %s",
                 self.game.state.tag,
-                self.game.state.move_history_stack,
+                self.game.action_history,
             )
+            pub.publish(payload)
 
-            message: BoardMessage = BoardMessage(
-                fen_plus_moves=self.game.state.into_fen_plus_history()
-            )
-            mailbox.put(item=message)
+
+
 
     def query_move_from_players(self) -> None:
         """
@@ -339,24 +387,29 @@ class ObservableGame[StateT: State=State]:
             for move_function in self.move_functions:
                 if not self.game.state.is_game_over():
                     merged_seed: int | None = unique_int_from_list(
-                        [self.game.seed, self.game.state.ply()]
+                        [self.game.seed, self.game.ply]
                     )
                     if merged_seed is not None:
                         move_function(
-                            fen_plus_history=self.game.state.into_fen_plus_history(),
+                            state_tag_plus_history=self.game.into_state_tag_plus_history(),
                             seed_int=merged_seed,
                         )
+
 
     def notify_status(self) -> None:
         """
         Notifies the status mailboxes with the updated game status.
         """
-        print("notify game", self.game.playing_status.status)
+        chipiron_logger.debug("notify game %s", self.game.playing_status.status)
 
-        observable_copy = copy.copy(self.game.playing_status.status)
-        message: GameStatusMessage = GameStatusMessage(status=observable_copy)
+        # Map internal playing status to transport enum
+        status = PlayingStatus.PLAY if self.game.is_play() else PlayingStatus.PAUSE
+
+        payload: UpdatePayload = self.encoder.make_status_payload(status=status)
+
         for mailbox in self.mailboxes_display:
-            mailbox.put(message)
+            mailbox.publish(payload)
+
 
     @property
     def state(self) -> StateT:

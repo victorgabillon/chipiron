@@ -9,6 +9,7 @@ import atomheart.board as boards
 import chess
 from atomheart.board.utils import FenPlusHistory
 from atomheart.move_factory import MoveFactory
+from valanga import TurnState
 from valanga.game import Seed
 
 import chipiron.players as players_m
@@ -25,7 +26,11 @@ from chipiron.players.factory_higher_level import (
     create_player_observer_factory,
 )
 from chipiron.utils import path
+from chipiron.utils.communication.gui_encoder import GuiEncoder
+from chipiron.utils.communication.gui_encoder_factory import make_gui_encoder
+from chipiron.utils.communication.gui_messages.gui_messages import GuiUpdate
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage
+from chipiron.utils.communication.gui_publisher import GuiPublisher
 from chipiron.utils.dataclass import IsDataclass
 
 from ...players.boardevaluators.table_base.factory import AnySyzygyTable
@@ -34,6 +39,8 @@ from ...scripts.chipiron_args import ImplementationArgs
 from .game import Game, ObservableGame
 from .game_manager import GameManager
 from .progress_collector import PlayerProgressCollectorObservable
+
+import uuid
 
 
 @dataclass
@@ -61,9 +68,8 @@ class GameManagerFactory:
     move_factory: MoveFactory
     implementation_args: ImplementationArgs
     universal_behavior: bool
-    subscribers: list[queue.Queue[IsDataclass]] = field(
-        default_factory=lambda: list[queue.Queue[IsDataclass]]()
-    )
+    publishers: list[GuiPublisher]
+
 
     def create(
         self,
@@ -110,11 +116,18 @@ class GameManagerFactory:
         game: Game = Game(
             playing_status=game_playing_status, state=board, seed_=game_seed
         )
-        observable_game: ObservableGame = ObservableGame(game=game)
 
-        if self.subscribers:
-            for subscriber in self.subscribers:
-                observable_game.register_display(subscriber)
+
+        encoder : GuiEncoder[TurnState]  = make_gui_encoder(game_kind=args_game_manager.game_kind, state_type=type(board))
+
+        observable_game: ObservableGame = ObservableGame(
+            game=game,
+            encoder=encoder,
+        ) 
+
+        # register displays using the raw queues from publishers (ObservableGame expects Queue[GuiUpdate])
+        for pub in self.publishers:
+            observable_game.register_display(pub)
 
         # CREATING THE PLAYERS
         player_observer_factory: PlayerObserverFactory = create_player_observer_factory(
@@ -125,7 +138,7 @@ class GameManagerFactory:
         )
 
         player_progress_collector: PlayerProgressCollectorObservable = (
-            PlayerProgressCollectorObservable(subscribers=self.subscribers)
+            PlayerProgressCollectorObservable(subscribers=self.publishers)
         )
 
         players: list[players_m.GamePlayer | players_m.PlayerProcess] = []
@@ -172,7 +185,7 @@ class GameManagerFactory:
 
         return game_manager
 
-    def subscribe(self, subscriber: queue.Queue[IsDataclass]) -> None:
+    def subscribe(self, subscriber: GuiPublisher) -> None:
         """
         Subscribe to the GameManagerFactory to get the PlayersColorToPlayerMessage
         As well as subscribing to the game_manager_board_evaluator to get the EvaluationMessage
@@ -180,6 +193,8 @@ class GameManagerFactory:
         Args:
             subscriber: the subscriber queue
         """
-        self.subscribers.append(subscriber)
+        self.publishers.append(subscriber)
         assert isinstance(self.game_manager_board_evaluator, ObservableBoardEvaluator)
         self.game_manager_board_evaluator.subscribe(subscriber)
+
+
