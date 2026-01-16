@@ -2,14 +2,13 @@
 Module collecting the progress of computing moves by each player
 """
 
-import queue
 from dataclasses import dataclass, field
 from typing import Protocol
 
-import chess
+from valanga import Color
 
-from chipiron.utils.communication.gui_messages import PlayerProgressMessage
-from chipiron.utils.dataclass import IsDataclass
+from chipiron.utils.communication.gui_messages.gui_messages import UpdPlayerProgress
+from chipiron.utils.communication.gui_publisher import GuiPublisher
 
 
 class PlayerProgressCollectorP(Protocol):
@@ -68,32 +67,37 @@ class PlayerProgressCollector:
         self.progress_black_ = value
 
 
-@dataclass
-class PlayerProgressCollectorObservable:
-    """
-    Object in charge of collecting the progress of computing moves by each player
-    """
 
-    progress_collector: PlayerProgressCollector = field(
-        default_factory=PlayerProgressCollector
-    )
-    subscribers: list[queue.Queue[IsDataclass]] = field(
-        default_factory=lambda: list[queue.Queue[IsDataclass]]()
-    )
+
+@dataclass(slots=True)
+class PlayerProgressCollectorObservable(PlayerProgressCollectorP):
+    """Collects progress and publishes GUI payloads."""
+
+    publishers: list[GuiPublisher] = field(default_factory=list)
+    progress_collector: PlayerProgressCollector = field(default_factory=PlayerProgressCollector)
 
     def progress_white(self, value: int | None) -> None:
-        """Sets the progress of the white player and notifies subscribers."""
-        self.progress_collector.progress_white = value
-        self.notify(color=chess.WHITE, value=value)
+        self.progress_collector.progress_white=value
+        self._publish(color=Color.WHITE, value=value)
 
     def progress_black(self, value: int | None) -> None:
-        """Sets the progress of the black player and notifies subscribers."""
-        self.progress_collector.progress_black = value
-        self.notify(color=chess.BLACK, value=value)
+        self.progress_collector.progress_black=value    
+        self._publish(color=Color.BLACK, value=value)
 
-    def notify(self, color: chess.Color, value: int | None) -> None:
-        """Notifies subscribers of the progress of the given player color."""
-        for subscriber in self.subscribers:
-            subscriber.put(
-                PlayerProgressMessage(player_color=color, progress_percent=value)
-            )
+    # If you still receive chess.Color from elsewhere, keep this helper:
+    def progress_for_chess_color(self, color: Color, value: int | None) -> None:
+        if color == Color.WHITE:
+            self.progress_collector.progress_white=value
+        else:
+            self.progress_collector.progress_black=value
+        self._publish(color=color, value=value)
+
+
+    def _publish(self, color: Color, value: int | None) -> None:
+        payload = UpdPlayerProgress(
+            kind="player_progress",
+            player_color=color,
+            progress_percent=value,
+        )
+        for pub in self.publishers:
+            pub.publish(payload)

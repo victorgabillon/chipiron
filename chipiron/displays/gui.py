@@ -45,9 +45,9 @@ from chipiron.utils.communication.gui_messages import (
     GameStatusMessage,
     PlayerProgressMessage,
 )
-from chipiron.utils.communication.gui_messages.gui_messages import MatchResultsMessage
+from chipiron.utils.communication.gui_messages.gui_messages import GuiUpdate, UpdStateChess
 from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage
-from chipiron.utils.communication.player_game_messages import BoardMessage, MoveMessage
+from chipiron.utils.communication.player_game_messages import StatePlusHistoryMessage, MoveMessage
 from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.path_variables import GUI_DIR
@@ -71,7 +71,7 @@ class MainWindow(QWidget):
 
     def __init__(
         self,
-        gui_mailbox: queue.Queue[IsDataclass],
+        gui_mailbox: queue.Queue[GuiUpdate],
         main_thread_mailbox: queue.Queue[IsDataclass],
         board_factory: BoardFactory,
     ) -> None:
@@ -532,14 +532,14 @@ class MainWindow(QWidget):
         None
         """
         if not self.gui_mailbox.empty():
-            message = self.gui_mailbox.get()
-            match message:
-                case BoardMessage():
-                    board_message: BoardMessage = message
-                    self.board: IBoard = self.board_factory(
-                        fen_with_history=board_message.fen_plus_moves
-                    )
+            msg: GuiUpdate = self.gui_mailbox.get()
+            payload = msg.payload
+
+            match payload:
+                case UpdStateChess():
+                    # convert payload -> board model
                     chipiron_logger.info("GUI receiving board %s", self.board.fen)
+                    self.board = self.board_factory(fen_with_history=payload.fen_plus_history)
                     self.draw_board()
                     self.display_move_history()
                 case PlayerProgressMessage():

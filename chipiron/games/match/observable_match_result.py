@@ -3,17 +3,16 @@ This module contains the ObservableMatchResults class, which is a wrapper around
 """
 
 import copy
-import queue
 from dataclasses import dataclass, field
 
 from chipiron.games.game.final_game_result import FinalGameResult
-from chipiron.utils.communication.gui_messages.gui_messages import MatchResultsMessage
-from chipiron.utils.dataclass import IsDataclass
+from chipiron.utils.communication.gui_messages.gui_messages import UpdMatchResults
+from chipiron.utils.communication.gui_publisher import GuiPublisher
 
 from .match_results import MatchResults, SimpleResults
 
 
-@dataclass
+@dataclass(slots=True)
 class ObservableMatchResults:
     """
     The ObservableMatchResults class provides a way to observe and subscribe to changes in the match results.
@@ -26,20 +25,22 @@ class ObservableMatchResults:
     """
 
     match_results: MatchResults
-    mailboxes: "list[queue.Queue[IsDataclass]]" = field(
-        default_factory=lambda: list[queue.Queue[IsDataclass]]()
-    )
+    publishers: list[GuiPublisher] = field(default_factory=list)
 
-    def subscribe(self, mailbox: "queue.Queue[IsDataclass]") -> None:
-        """Subscribes a mailbox to receive notifications.
+
+    def subscribe(self, pub: GuiPublisher) -> None:
+
+        """
+        Subscribes a publisher to receive notifications.
 
         Args:
-            mailbox (queue.Queue[IsDataclass]): The mailbox to subscribe.
+            pub (GuiPublisher): The publisher to subscribe.
 
         Returns:
             None
         """
-        self.mailboxes.append(mailbox)
+        self.publishers.append(pub)
+
 
     def copy_match_result(self) -> MatchResults:
         """Creates a deep copy of the match results.
@@ -65,18 +66,30 @@ class ObservableMatchResults:
         self.match_results.add_result_one_game(white_player_name_id, game_result)
         self.notify_new_results()
 
+
     def notify_new_results(self) -> None:
         """Notifies all subscribed mailboxes about the new match results.
 
         Returns:
             None
         """
-        for mailbox in self.mailboxes:
-            match_result_copy: MatchResults = self.copy_match_result()
-            message: "MatchResultsMessage" = MatchResultsMessage(
-                match_results=match_result_copy
-            )
-            mailbox.put(item=message)
+        # Map your MatchResults into stable scalar fields
+        simple = self.match_results.get_simple_result()
+        # If you don't have games_played already, define it consistently:
+        games_played = simple.player_one_wins + simple.player_two_wins + simple.draws
+
+        payload = UpdMatchResults(
+            kind="match_results",
+            wins_white=simple.player_one_wins,
+            wins_black=simple.player_two_wins,
+            draws=simple.draws,
+            games_played=games_played,
+            match_finished=self.match_results.match_finished,
+        )
+
+        for pub in self.publishers:
+            pub.publish(payload)
+
 
     def get_simple_result(self) -> SimpleResults:
         """Retrieves a simplified version of the match results.

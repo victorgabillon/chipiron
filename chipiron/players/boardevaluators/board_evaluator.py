@@ -2,14 +2,14 @@
 Module representing the board evaluators.
 """
 
-import queue
 from typing import Any, Protocol
 
 import chess
 from valanga import State, StateEvaluation
 
-from chipiron.utils.communication.gui_messages import EvaluationMessage
-from chipiron.utils.dataclass import IsDataclass
+from chipiron.environments.types import GameKind
+from chipiron.utils.communication.gui_messages.gui_messages import  UpdEvaluation
+from chipiron.utils.communication.gui_publisher import GuiPublisher
 
 
 class StateEvaluator[StateT](Protocol):
@@ -88,29 +88,33 @@ class ObservableBoardEvaluator:
     This class represents an observable board evaluator.
     """
 
+    publishers: list[GuiPublisher]
+
     game_board_evaluator: GameStateEvaluator
-    mailboxes: list[queue.Queue[IsDataclass]]
     evaluation_stock: Any
     evaluation_chi: Any
     evaluation_player_black: Any
     evaluation_player_white: Any
 
-    def __init__(self, game_board_evaluator: GameStateEvaluator):
+    def __init__(self, game_board_evaluator: GameStateEvaluator, game_id: str, game_kind: GameKind):
         self.game_board_evaluator = game_board_evaluator
         self.mailboxes = []
         self.evaluation_stock = None
         self.evaluation_chi = None
         self.evaluation_player_black = None
         self.evaluation_player_white = None
+        self.game_id = game_id
+        self.game_kind = game_kind
 
-    def subscribe(self, mailbox: queue.Queue[IsDataclass]) -> None:
+
+    def subscribe(self, pub: GuiPublisher) -> None:
         """
         Subscribe to the ObservableBoardEvaluator to get the EvaluationMessage.
 
         Args:
             mailbox: The mailbox queue.
         """
-        self.mailboxes.append(mailbox)
+        self.publishers.append(pub)
 
     def evaluate(self, state: State) -> tuple[float | None, float]:
         """
@@ -135,15 +139,19 @@ class ObservableBoardEvaluator:
             self.evaluation_player_white = evaluation
         self.notify_new_results()
 
+
+
     def notify_new_results(self) -> None:
         """
         Notifies the subscribers about the new evaluation results.
         """
-        for mailbox in self.mailboxes:
-            message: EvaluationMessage = EvaluationMessage(
-                evaluation_stock=self.evaluation_stock,
-                evaluation_chipiron=self.evaluation_chi,
-                evaluation_player_white=self.evaluation_player_white,
-                evaluation_player_black=self.evaluation_player_black,
+        payload=UpdEvaluation(
+                kind="evaluation",
+                stock=self.evaluation_stock,
+                chipiron=self.evaluation_chi,
+                white=self.evaluation_player_white,
+                black=self.evaluation_player_black,
             )
-            mailbox.put(item=message)
+        for pub in self.publishers:
+            pub.publish(payload=payload)
+
