@@ -27,6 +27,7 @@ from typing import TYPE_CHECKING, Any
 import mlflow
 import mlflow.pytorch
 import torch
+from coral.chi_nn import ChiNN
 from coral.neural_networks import NNBWContentEvaluator
 from coral.neural_networks.factory import (
     create_nn_content_eval_from_architecture_args,
@@ -57,7 +58,6 @@ from chipiron.players.boardevaluators.datasets.datasets import (
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
-from coral.chi_nn import ChiNN
 from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:

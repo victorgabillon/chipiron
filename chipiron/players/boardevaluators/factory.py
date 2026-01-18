@@ -22,10 +22,10 @@ from chipiron.players.boardevaluators.stockfish_board_evaluator import (
 )
 
 from .board_evaluator import (
-    StateEvaluator,
     GameStateEvaluator,
     IGameStateEvaluator,
     ObservableBoardEvaluator,
+    StateEvaluator,
 )
 from .neural_networks.factory import (
     create_nn_board_eval_from_nn_parameters_file_and_existing_model,

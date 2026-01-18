@@ -23,13 +23,13 @@ from typing import Any, Callable, Literal, cast
 import torch
 import torch.nn as nn
 import yaml
+from coral.chi_nn import ChiNN
 from coral.neural_networks.nn_model_type import (
     ActivationFunctionType,
     NNModelType,
     activation_map,
 )
 
-from coral.chi_nn import ChiNN
 from chipiron.utils.logger import chipiron_logger
 
 

@@ -11,10 +11,11 @@ Classes:
 
 import queue
 
+from chipiron.displays.gui_protocol import GuiUpdate, Scope
+from chipiron.environments.types import GameKind
 from chipiron.games.match.match_results import IMatchResults, MatchResults
 from chipiron.games.match.observable_match_result import ObservableMatchResults
 from chipiron.utils.communication.gui_publisher import GuiPublisher
-from chipiron.utils.dataclass import IsDataclass
 
 
 class MatchResultsFactory:
@@ -25,13 +26,13 @@ class MatchResultsFactory:
     Attributes:
         player_one_name (str): The name of player one.
         player_two_name (str): The name of player two.
-        subscribers (list[queue.Queue[IsDataclass]]): A list of subscribers to receive match results.
+        subscriber_queues (list[queue.Queue[GuiUpdate]]): A list of GUI queues to receive match results.
 
     """
 
     player_one_name: str
     player_two_name: str
-    subscribers: list[GuiPublisher] = []
+    subscriber_queues: list[queue.Queue[GuiUpdate]]
 
     def __init__(self, player_one_name: str, player_two_name: str) -> None:
         """
@@ -43,7 +44,7 @@ class MatchResultsFactory:
         """
         self.player_one_name = player_one_name
         self.player_two_name = player_two_name
-        self.subscribers = []
+        self.subscriber_queues = []
 
     def create(self) -> IMatchResults:
         """
@@ -56,23 +57,18 @@ class MatchResultsFactory:
             player_one_name_id=self.player_one_name,
             player_two_name_id=self.player_two_name,
         )
-        if self.subscribers:
-            obs_match_result: ObservableMatchResults = ObservableMatchResults(
-                match_result
-            )
-            for subscriber in self.subscribers:
-                obs_match_result.subscribe(subscriber)
-            return obs_match_result
-        else:
-            return match_result
+        if self.subscriber_queues:
+            return ObservableMatchResults(match_result)
+        return match_result
 
+    def subscribe(self, subscriber_queue: queue.Queue[GuiUpdate]) -> None:
+        """Register a GUI queue to receive match result updates."""
+        self.subscriber_queues.append(subscriber_queue)
 
-    def subscribe(self, pub: GuiPublisher) -> None:
-        """ 
-        Subscribe a publisher to receive match results.
-        Args:
-            pub (GuiPublisher): The publisher to subscribe. 
-        Returns:
-            None
-        """
-        self.subscribers.append(pub)
+    def build_publishers(
+        self, *, scope: Scope, game_kind: GameKind
+    ) -> list[GuiPublisher]:
+        return [
+            GuiPublisher(out=q, schema_version=1, game_kind=game_kind, scope=scope)
+            for q in self.subscriber_queues
+        ]

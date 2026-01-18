@@ -3,6 +3,7 @@ This module contains functions for creating match managers in the Chipiron game 
 """
 
 import multiprocessing
+import uuid
 from typing import TYPE_CHECKING
 
 from atomheart.board.factory import (
@@ -65,6 +66,9 @@ def create_match_manager(
     """
     main_thread_mailbox: queue.Queue[IsDataclass] = multiprocessing.Manager().Queue()
 
+    session_id: str = uuid.uuid4().hex
+    match_id: str = uuid.uuid4().hex
+
     # Creation of the Syzygy table for perfect play in low pieces cases, needed by the GameManager
     # and can also be used by the players
     syzygy_table: AnySyzygyTable | None = create_syzygy(
@@ -100,6 +104,8 @@ def create_match_manager(
         implementation_args=implementation_args,
         move_factory=move_factory,
         universal_behavior=universal_behavior,
+        session_id=session_id,
+        match_id=match_id,
     )
 
     match_results_factory: MatchResultsFactory = MatchResultsFactory(

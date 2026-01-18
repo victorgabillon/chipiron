@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 import dacite
 import torch
 import yaml
+from coral.chi_nn import ChiNN
 from coral.neural_networks.factory import (
     NeuralNetModelsAndArchitecture,
     create_nn_board_eval_from_nn_parameters_file_and_existing_model,
@@ -28,7 +29,6 @@ from chipiron.players.boardevaluators.datasets.datasets import (
     process_stockfish_value,  # pyright: ignore[reportUnknownVariableType]
 )
 from chipiron.utils import path
-from coral.chi_nn import ChiNN
 
 if TYPE_CHECKING:
     from coral.neural_networks import NNBWContentEvaluator

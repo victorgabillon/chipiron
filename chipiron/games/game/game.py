@@ -2,13 +2,13 @@
 Module for the Game class.
 """
 
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
-from atomheart.move.imove import MoveKey
 from valanga import StateTag, TurnState
-from valanga.game import Seed
-from valanga.game import ActionKey , TurnStatePlusHistory
+from valanga.game import ActionKey, Seed
 
+from chipiron.displays.gui_protocol import Scope
+from chipiron.players.communications.player_request_encoder import PlayerRequestEncoder
 from chipiron.players.factory_higher_level import MoveFunction
 from chipiron.utils.communication.gui_encoder import GuiEncoder
 from chipiron.utils.communication.gui_publisher import GuiPublisher
@@ -16,16 +16,17 @@ from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.small_tools import unique_int_from_list
 
 from .game_playing_status import GamePlayingStatus, PlayingStatus
-from chipiron.utils.communication.gui_messages.gui_messages import (
-    UpdatePayload
-)
+
+if TYPE_CHECKING:
+    from chipiron.players.communications.player_message import PlayerRequest
+    from chipiron.utils.communication.gui_messages.gui_messages import UpdatePayload
+
+type Ply = Annotated[
+    int, "The number of one turn taken by one of the players in the game so far"
+]
 
 
-
-
-type Ply = Annotated[int, "The number of one turn taken by one of the players in the game so far"]
-
-class Game[StateT:TurnState=TurnState]:
+class Game[StateT: TurnState = TurnState]:
     """
     Class representing a game of chess.
 
@@ -41,7 +42,7 @@ class Game[StateT:TurnState=TurnState]:
     _seed: Seed | None
     _state_tag_history: list[StateTag]
     _action_history: list[ActionKey]
-    _ply : Ply
+    _ply: Ply
 
     # list of boards object to implement rewind function without having to necessarily code it in the Board object.
     # this let the board object a bit more lightweight to speed up the Monte Carlo tree search
@@ -67,7 +68,6 @@ class Game[StateT:TurnState=TurnState]:
         self._state_history = [state_copy]
         self._ply = 0
 
-
     @property
     def ply(self) -> Ply:
         """
@@ -77,7 +77,7 @@ class Game[StateT:TurnState=TurnState]:
             Ply: The number of turns taken so far in the game.
         """
         return self._ply
-    
+
     @property
     def seed(self) -> Seed | None:
         """
@@ -88,24 +88,24 @@ class Game[StateT:TurnState=TurnState]:
         """
         return self._seed
 
-    def play_move(self, move: MoveKey) -> None:
+    def play_move(self, action: ActionKey) -> None:
         """
         Plays a move on the chess board.
 
         Args:
-            move (chess.Move): The move to be played.
+            action (ActionKey): The action to be played.
 
         Raises:
-            AssertionError: If the move is not valid or the game status is not play.
+            AssertionError: If the action is not valid or the game status is not play.
         """
         if self._playing_status.is_play():
-            assert move in [i for i in self._current_state.branch_keys]
+            assert action in [i for i in self._current_state.branch_keys]
 
             self._action_history.append(
-                self._current_state.branch_name_from_key(key=move)
+                self._current_state.branch_name_from_key(key=action)
             )
 
-            self._current_state.step(branch_key=move)
+            self._current_state.step(branch_key=action)
 
             self._state_tag_history.append(self._current_state.tag)
             current_state_copy: StateT = self._current_state.copy(
@@ -117,8 +117,6 @@ class Game[StateT:TurnState=TurnState]:
             print(
                 f"Cannot play move if the game status is PAUSE {self._playing_status.status}"
             )
-
-
 
     def rewind_one_move(self) -> None:
         """
@@ -218,51 +216,40 @@ class Game[StateT:TurnState=TurnState]:
         """
         return self._state_tag_history
 
-    def into_state_tag_plus_history(self) -> TurnStatePlusHistory[StateT]:
-        """
-        Converts the current game state into a StatePlusHistoryMessage.
 
-        Returns:
-            StatePlusHistoryMessage: The StatePlusHistoryMessage representing the current game state.
-        """
-        return TurnStatePlusHistory[StateT](
-            current_state_tag=self._current_state.tag,
-            turn=self.state.turn,
-            historical_actions=self._action_history,
-            historical_states=self._state_history,
-        )
-
-    
 class ObservableGame[StateT: TurnState = TurnState]:
     """
     Represents an observable version of the Game object.
     """
+
     game: Game[StateT]
-    encoder: GuiEncoder[StateT]
-    game_id: str
+    player_encoder: PlayerRequestEncoder[StateT]
+    gui_encoder: GuiEncoder[StateT]
+    scope: Scope
     mailboxes_display: list[GuiPublisher]
 
     # function that will be called by the observable game when the board is updated, which should query
     # at least one player to compute a move
     move_functions: list[MoveFunction]
 
-    def __init__(self, game: Game[StateT], encoder: GuiEncoder[StateT]) -> None:
+    def __init__(
+        self, game: Game[StateT], gui_encoder: GuiEncoder[StateT], scope: Scope
+    ) -> None:
         """
         Initializes the ObservableGame object.
         Args:
             game (Game): The game object to be observed.
             encoder (GuiEncoder): The GUI encoder for the game.
-            game_id (str): The unique identifier for the game.
-        """       
+            scope (Scope): Routing scope for this game.
+        """
         self.game = game
-        self.encoder = encoder
+        self.gui_encoder = gui_encoder
+        self.scope = scope
 
-        self.mailboxes_display = []   # mailboxes for board to be displayed
-        self.move_functions = [] # mailboxes for board to be played
+        self.mailboxes_display = []  # mailboxes for board to be displayed
+        self.move_functions = []  # mailboxes for board to be played
         # the difference between the two is that board can be modified without asking the player to play
         # (for instance when using the button back)
-
-
 
     def register_display(self, mailbox: GuiPublisher) -> None:
         """
@@ -282,14 +269,14 @@ class ObservableGame[StateT: TurnState = TurnState]:
         """
         self.move_functions.append(move_function)
 
-    def play_move(self, move: MoveKey) -> None:
+    def play_move(self, action: ActionKey) -> None:
         """
         Plays a move on the chess board.
 
         Args:
-            move (chess.Move): The move to be played.
+            action (ActionKey): The action to be played.
         """
-        self.game.play_move(move)
+        self.game.play_move(action)
         self.notify_display()
 
     def rewind_one_move(self) -> None:
@@ -356,14 +343,12 @@ class ObservableGame[StateT: TurnState = TurnState]:
         """
         return self.game.is_play()
 
-
-
     def notify_display(self) -> None:
         """
         Notifies the display mailboxes with the updated board.
         """
         # Build payload from domain state
-        payload = self.encoder.make_state_payload(
+        payload = self.gui_encoder.make_state_payload(
             state=self.game.state,
             seed=self.game.seed,
         )
@@ -375,26 +360,25 @@ class ObservableGame[StateT: TurnState = TurnState]:
             )
             pub.publish(payload)
 
-
-
-
     def query_move_from_players(self) -> None:
         """
         Notifies the players to ask for a move.
         """
-        if not self.game.state.is_game_over():
-            move_function: MoveFunction
-            for move_function in self.move_functions:
-                if not self.game.state.is_game_over():
-                    merged_seed: int | None = unique_int_from_list(
-                        [self.game.seed, self.game.ply]
-                    )
-                    if merged_seed is not None:
-                        move_function(
-                            state_tag_plus_history=self.game.into_state_tag_plus_history(),
-                            seed_int=merged_seed,
-                        )
+        if self.game.state.is_game_over():
+            return
 
+        merged_seed: int | None = unique_int_from_list([self.game.seed, self.game.ply])
+        if merged_seed is None:
+            merged_seed = int(self.game.ply)  # deterministic fallback
+        request: PlayerRequest = self.player_encoder.make_move_request(
+            state=self.game.state, seed=merged_seed, scope=self.scope
+        )
+
+        move_function: MoveFunction
+        for move_function in self.move_functions:
+            if self.game.state.is_game_over():
+                break
+            move_function(request)
 
     def notify_status(self) -> None:
         """
@@ -405,11 +389,10 @@ class ObservableGame[StateT: TurnState = TurnState]:
         # Map internal playing status to transport enum
         status = PlayingStatus.PLAY if self.game.is_play() else PlayingStatus.PAUSE
 
-        payload: UpdatePayload = self.encoder.make_status_payload(status=status)
+        payload: UpdatePayload = self.gui_encoder.make_status_payload(status=status)
 
         for mailbox in self.mailboxes_display:
             mailbox.publish(payload)
-
 
     @property
     def state(self) -> StateT:
@@ -440,3 +423,13 @@ class ObservableGame[StateT: TurnState = TurnState]:
             list[Fen]: The history of fen.
         """
         return self.game.state_tag_history
+
+    @property
+    def ply(self) -> Ply:
+        """
+        Gets the number of turns taken so far in the game.
+
+        Returns:
+            Ply: The number of turns taken so far in the game.
+        """
+        return self.game.ply

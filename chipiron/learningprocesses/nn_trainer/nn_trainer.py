@@ -6,10 +6,10 @@ import typing
 from typing import Callable
 
 import torch
+from coral.chi_nn import ChiNN
 from torch.utils.data import DataLoader
 
 from chipiron.players.boardevaluators.datasets.datasets import SupervisedData
-from coral.chi_nn import ChiNN
 from chipiron.utils.logger import chipiron_logger
 
 

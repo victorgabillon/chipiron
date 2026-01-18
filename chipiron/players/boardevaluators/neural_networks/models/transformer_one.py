@@ -4,10 +4,9 @@ from typing import Any, Literal
 import chess
 import torch
 import torch.nn as nn
+from coral.chi_nn import ChiNN
 from coral.neural_networks.nn_model_type import NNModelType
 from torch.nn import functional as F
-
-from coral.chi_nn import ChiNN
 
 number_of_squares = len(chess.SQUARES)
 number_pieces_types = len(chess.PIECE_TYPES)
