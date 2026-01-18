@@ -14,6 +14,7 @@ from typing import cast
 import mlflow
 import pandas
 from atomheart.board.utils import FenPlusHistory
+from coral.chi_nn import ChiNN
 from coral.neural_networks.factory import (
     create_nn_content_eval_from_architecture_args,
     create_nn_content_eval_from_nn_parameters_file_and_existing_model,
@@ -46,7 +47,6 @@ from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
-from coral.chi_nn import ChiNN
 from chipiron.utils.logger import chipiron_logger, suppress_logging
 from chipiron.utils.path_variables import ML_FLOW_URI_PATH
 

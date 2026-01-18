@@ -2,7 +2,6 @@
 This module provides a factory function for creating the main move selector based on the given arguments.
 """
 
-import queue
 import random
 from typing import TypeAlias
 
@@ -13,6 +12,7 @@ from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 from chipiron.utils.logger import chipiron_logger
 
 from ...utils.dataclass import IsDataclass
+from ...utils.queue_protocols import PutQueue
 from . import human, stockfish
 from .random import Random, create_random
 
@@ -29,7 +29,7 @@ def create_main_move_selector(
     move_selector_instance_or_args: AllMoveSelectorArgs,
     syzygy: AnySyzygyTable | None,
     random_generator: random.Random,
-    queue_progress_player: queue.Queue[IsDataclass] | None,
+    queue_progress_player: PutQueue[IsDataclass] | None,
 ) -> BranchSelector:
     """
     Create the main move selector based on the given arguments.

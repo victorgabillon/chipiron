@@ -67,35 +67,33 @@ class PlayerProgressCollector:
         self.progress_black_ = value
 
 
-
-
 @dataclass(slots=True)
 class PlayerProgressCollectorObservable(PlayerProgressCollectorP):
     """Collects progress and publishes GUI payloads."""
 
     publishers: list[GuiPublisher] = field(default_factory=list)
-    progress_collector: PlayerProgressCollector = field(default_factory=PlayerProgressCollector)
+    progress_collector: PlayerProgressCollector = field(
+        default_factory=PlayerProgressCollector
+    )
 
     def progress_white(self, value: int | None) -> None:
-        self.progress_collector.progress_white=value
+        self.progress_collector.progress_white = value
         self._publish(color=Color.WHITE, value=value)
 
     def progress_black(self, value: int | None) -> None:
-        self.progress_collector.progress_black=value    
+        self.progress_collector.progress_black = value
         self._publish(color=Color.BLACK, value=value)
 
     # If you still receive chess.Color from elsewhere, keep this helper:
     def progress_for_chess_color(self, color: Color, value: int | None) -> None:
         if color == Color.WHITE:
-            self.progress_collector.progress_white=value
+            self.progress_collector.progress_white = value
         else:
-            self.progress_collector.progress_black=value
+            self.progress_collector.progress_black = value
         self._publish(color=color, value=value)
-
 
     def _publish(self, color: Color, value: int | None) -> None:
         payload = UpdPlayerProgress(
-            kind="player_progress",
             player_color=color,
             progress_percent=value,
         )

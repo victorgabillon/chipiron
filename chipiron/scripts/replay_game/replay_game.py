@@ -77,8 +77,8 @@ class ReplayGameScript:
             )
             self.chess_board: BoardChi = create_board_chi(
                 fen_with_history=FenPlusHistory(
-                    current_fen=game_report.fen_history[0],
-                    historical_moves=game_report.move_history,
+                    current_fen=game_report.state_tag_history[0],
+                    historical_moves=game_report.action_history,
                 )
             )
 

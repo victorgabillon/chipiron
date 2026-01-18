@@ -15,6 +15,7 @@ import yaml
 from coral.board_evaluation import (
     PointOfView,
 )
+from coral.chi_nn import ChiNN
 from coral.neural_networks.factory import (
     get_nn_architecture_file_path_from,
     get_nn_param_file_path_from,
@@ -38,7 +39,6 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInpu
     ModelInputRepresentationType,
 )
 from chipiron.utils import path
-from coral.chi_nn import ChiNN
 from chipiron.utils.dataclass import custom_asdict_factory
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.small_tools import mkdir_if_not_existing

@@ -15,10 +15,6 @@ import typing
 import chess
 import chess.svg
 import PySide6.QtGui as QtGui
-from anemone import TreeAndValuePlayerArgs
-from anemone.progress_monitor.progress_monitor import (
-    TreeBranchLimitArgs,
-)
 from atomheart.board import BoardFactory, IBoard, create_board_chi
 from atomheart.board.utils import FenPlusHistory
 from atomheart.move import MoveUci
@@ -34,20 +30,24 @@ from PySide6.QtWidgets import (
     QTableWidgetItem,
     QWidget,
 )
+from valanga import Color
 
-from chipiron.games.game.game_playing_status import PlayingStatus
-from chipiron.games.match.match_results import MatchResults, SimpleResults
-from chipiron.players import PlayerFactoryArgs
-from chipiron.players.player_ids import PlayerConfigTag
-from chipiron.utils.communication.gui_messages import (
-    BackMessage,
-    EvaluationMessage,
-    GameStatusMessage,
-    PlayerProgressMessage,
+from chipiron.displays.gui_protocol import (
+    CmdBackOneMove,
+    CmdHumanMoveUci,
+    CmdSetStatus,
+    GuiCommand,
+    GuiUpdate,
+    PlayerUiInfo,
+    Scope,
+    UpdEvaluation,
+    UpdGameStatus,
+    UpdMatchResults,
+    UpdPlayerProgress,
+    UpdPlayersInfo,
+    UpdStateChess,
 )
-from chipiron.utils.communication.gui_messages.gui_messages import GuiUpdate, UpdStateChess
-from chipiron.utils.communication.gui_player_message import PlayersColorToPlayerMessage
-from chipiron.utils.communication.player_game_messages import StatePlusHistoryMessage, MoveMessage
+from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.path_variables import GUI_DIR
@@ -93,6 +93,8 @@ class MainWindow(QWidget):
         self.gui_mailbox = gui_mailbox
         self.main_thread_mailbox = main_thread_mailbox
 
+        self.scope: Scope | None = None
+
         # Set window icon with existence check
         window_icon_path = os.path.join(GUI_DIR, "chipicon.png")
         if os.path.exists(window_icon_path):
@@ -115,13 +117,6 @@ class MainWindow(QWidget):
         self.closeButton.clicked.connect(self.stopppy)
         self.closeButton.setToolTip("Close the widget")  # Tool tip
         self.closeButton.move(800, 20)
-
-        # self.play_button = QPushButton(self)
-        # self.play_button.setText("Play")  # text
-        # self.play_button.setIcon(QIcon(os.path.join(GUI_DIR, "play.png")))  # icon
-        # self.play_button.clicked.connect(self.play_button_clicked)
-        # self.play_button.setToolTip("play the game")  # Tool tip
-        # self.play_button.move(700, 100)
 
         self.pause_button = QPushButton(self)
         self.pause_button.setText("Pause")  # text
@@ -243,6 +238,35 @@ class MainWindow(QWidget):
         self.checkThreadTimer.timeout.connect(self.process_message)
         self.checkThreadTimer.start()
 
+        # Start with an empty/initial board so click-handling works before first update.
+        self.board: IBoard = self.board_factory(
+            fen_with_history=FenPlusHistory(current_fen=chess.STARTING_FEN)
+        )
+        self.draw_board()
+
+    def _should_accept_scope(self, incoming: Scope) -> bool:
+        """Routing policy.
+
+        For now (single GUI view):
+        - accept first scope
+        - accept scope changes within the same session (and same match_id when both are set)
+        - ignore updates from other sessions/matches to avoid mixing across runs
+        """
+        if self.scope is None:
+            return True
+
+        if incoming.session_id != self.scope.session_id:
+            return False
+
+        if (
+            self.scope.match_id is not None
+            and incoming.match_id is not None
+            and incoming.match_id != self.scope.match_id
+        ):
+            return False
+
+        return True
+
     def _check_and_set_icon(self, button: QPushButton, icon_path: str) -> None:
         """
         Check if icon file exists and set it, otherwise log a warning.
@@ -277,17 +301,22 @@ class MainWindow(QWidget):
         This method prints a message indicating that the play button has been clicked,
         and sends a GameStatusMessage with the status set to PlayingStatus.PLAY to the main thread mailbox.
         """
-        if self.playing_status == PlayingStatus.PAUSE:
-            if (
-                self.play_button_clicked_last_time is None
-                or abs(self.play_button_clicked_last_time - time.time()) > 0.01
-            ):
-                chipiron_logger.info("play_button_clicked")
-                message: GameStatusMessage = GameStatusMessage(
-                    status=PlayingStatus.PLAY
-                )
-                self.main_thread_mailbox.put(message)
-                self.play_button_clicked_last_time = time.time()
+        if self.playing_status != PlayingStatus.PAUSE:
+            return
+        if self.scope is None:
+            return
+        if (
+            self.play_button_clicked_last_time is None
+            or abs(self.play_button_clicked_last_time - time.time()) > 0.01
+        ):
+            chipiron_logger.info("play_button_clicked")
+            cmd = GuiCommand(
+                schema_version=1,
+                scope=self.scope,
+                payload=CmdSetStatus(status=PlayingStatus.PLAY),
+            )
+            self.main_thread_mailbox.put(cmd)
+            self.play_button_clicked_last_time = time.time()
 
     def back_button_clicked(self) -> None:
         """
@@ -296,8 +325,14 @@ class MainWindow(QWidget):
         This method prints a message and puts a `BackMessage` object into the main thread mailbox.
         """
         chipiron_logger.info("back_button_clicked")
-        message: BackMessage = BackMessage()
-        self.main_thread_mailbox.put(message)
+        if self.scope is None:
+            return
+        cmd = GuiCommand(
+            schema_version=1,
+            scope=self.scope,
+            payload=CmdBackOneMove(),
+        )
+        self.main_thread_mailbox.put(cmd)
 
     def pause_button_clicked(self) -> None:
         """
@@ -306,17 +341,22 @@ class MainWindow(QWidget):
         Prints 'pause_button_clicked' and sends a GameStatusMessage with the status set to PlayingStatus.PAUSE
         to the main thread mailbox.
         """
-        if self.playing_status == PlayingStatus.PLAY:
-            if (
-                self.pause_button_clicked_last_time is None
-                or abs(self.pause_button_clicked_last_time - time.time()) > 0.01
-            ):
-                chipiron_logger.info("pause_button_clicked")
-                message: GameStatusMessage = GameStatusMessage(
-                    status=PlayingStatus.PAUSE
-                )
-                self.main_thread_mailbox.put(message)
-                self.pause_button_clicked_last_time = time.time()
+        if self.playing_status != PlayingStatus.PLAY:
+            return
+        if self.scope is None:
+            return
+        if (
+            self.pause_button_clicked_last_time is None
+            or abs(self.pause_button_clicked_last_time - time.time()) > 0.01
+        ):
+            chipiron_logger.info("pause_button_clicked")
+            cmd = GuiCommand(
+                schema_version=1,
+                scope=self.scope,
+                payload=CmdSetStatus(status=PlayingStatus.PAUSE),
+            )
+            self.main_thread_mailbox.put(cmd)
+            self.pause_button_clicked_last_time = time.time()
 
     @typing.no_type_check
     @Slot(QWidget)
@@ -388,13 +428,35 @@ class MainWindow(QWidget):
         Returns:
             None
         """
-        message: MoveMessage = MoveMessage(
-            move=move_uci,
-            corresponding_board=self.board.fen,
-            player_name=PlayerConfigTag.GUI_HUMAN,
-            color_to_play=self.board.turn,
+        if self.scope is None:
+            return
+        cmd = GuiCommand(
+            schema_version=1,
+            scope=self.scope,
+            payload=CmdHumanMoveUci(
+                move_uci=str(move_uci),
+                corresponding_fen=self.board.fen,
+                color_to_play=self.board.turn,
+            ),
         )
-        self.main_thread_mailbox.put(item=message)
+        self.main_thread_mailbox.put(cmd)
+
+    def reset_for_new_game(self, scope: Scope) -> None:
+        self.tablewidget.clearContents()
+        self.tablewidget.setRowCount(1)
+        self.progress_white.reset()
+        self.progress_black.reset()
+        self.progress_white.setValue(0)
+        self.progress_black.setValue(0)
+        self.eval_button.setText("🐟 Eval")
+        self.eval_button_chi.setText("🐙 Eval")
+        self.eval_button_white.setText("♕ White Eval")
+        self.eval_button_black.setText("♛ Black Eval")
+        self.pieceToMove = [None, None]
+        self.board = self.board_factory(
+            fen_with_history=FenPlusHistory(current_fen=chess.STARTING_FEN)
+        )
+        self.draw_board()
 
     @typing.no_type_check
     def choice_promote(self):
@@ -531,60 +593,67 @@ class MainWindow(QWidget):
         Returns:
         None
         """
-        if not self.gui_mailbox.empty():
-            msg: GuiUpdate = self.gui_mailbox.get()
-            payload = msg.payload
+        if self.gui_mailbox.empty():
+            return
 
-            match payload:
-                case UpdStateChess():
-                    # convert payload -> board model
-                    chipiron_logger.info("GUI receiving board %s", self.board.fen)
-                    self.board = self.board_factory(fen_with_history=payload.fen_plus_history)
-                    self.draw_board()
-                    self.display_move_history()
-                case PlayerProgressMessage():
-                    progress_message: PlayerProgressMessage = message
-                    if (
-                        progress_message.player_color == chess.WHITE
-                        and progress_message.progress_percent is not None
-                    ):
-                        self.progress_white.setValue(progress_message.progress_percent)
-                    if (
-                        progress_message.player_color == chess.BLACK
-                        and progress_message.progress_percent is not None
-                    ):
-                        self.progress_black.setValue(progress_message.progress_percent)
-                case EvaluationMessage():
-                    evaluation_message: EvaluationMessage = message
-                    evaluation_stock = evaluation_message.evaluation_stock
-                    evaluation_chipiron = evaluation_message.evaluation_chipiron
-                    evaluation_black = evaluation_message.evaluation_player_black
-                    evaluation_white = evaluation_message.evaluation_player_white
-                    self.update_evaluation(
-                        evaluation_stock=evaluation_stock,
-                        evaluation_chipiron=evaluation_chipiron,
-                        evaluation_white=evaluation_white,
-                        evaluation_black=evaluation_black,
-                    )
-                case PlayersColorToPlayerMessage():
-                    player_color_message: PlayersColorToPlayerMessage = message
-                    players_color_to_player: dict[chess.Color, PlayerFactoryArgs] = (
-                        player_color_message.player_color_to_factory_args
-                    )
-                    self.update_players_color_to_id(players_color_to_player)
-                case MatchResultsMessage():
-                    match_message: MatchResultsMessage = message
-                    match_results: MatchResults = match_message.match_results
-                    self.update_match_stats(match_results)
-                case GameStatusMessage():
-                    chipiron_logger.info("GameStatusMessage %s", message)
-                    game_status_message: GameStatusMessage = message
-                    play_status: PlayingStatus = game_status_message.status
-                    self.update_game_play_status(play_status)
-                case other:
-                    raise ValueError(
-                        f"unknown type of message received by gui {other} in {__name__}"
-                    )
+        msg: GuiUpdate = self.gui_mailbox.get()
+
+        if not self._should_accept_scope(msg.scope):
+            chipiron_logger.debug(
+                "Ignoring GuiUpdate from other scope: %s (current=%s)",
+                msg.scope,
+                self.scope,
+            )
+            return
+
+        if self.scope is None:
+            self.scope = msg.scope
+        elif msg.scope != self.scope:
+            # sequential-games policy: accept new scope and reset UI
+            self.reset_for_new_game(msg.scope)
+            self.scope = msg.scope
+
+        payload = msg.payload
+
+        match payload:
+            case UpdStateChess():
+                self.board = self.board_factory(
+                    fen_with_history=payload.fen_plus_history
+                )
+                self.draw_board()
+                self.display_move_history()
+
+            case UpdPlayerProgress():
+                if (
+                    payload.player_color == Color.WHITE
+                    and payload.progress_percent is not None
+                ):
+                    self.progress_white.setValue(payload.progress_percent)
+                elif (
+                    payload.player_color == Color.BLACK
+                    and payload.progress_percent is not None
+                ):
+                    self.progress_black.setValue(payload.progress_percent)
+
+            case UpdEvaluation():
+                self.update_evaluation(
+                    evaluation_stock=payload.stock,
+                    evaluation_chipiron=payload.chipiron,
+                    evaluation_white=payload.white,
+                    evaluation_black=payload.black,
+                )
+
+            case UpdPlayersInfo():
+                self.update_players_info(payload.white, payload.black)
+
+            case UpdMatchResults():
+                self.update_match_stats(payload)
+
+            case UpdGameStatus():
+                self.update_game_play_status(payload.status)
+
+            case _:
+                raise AssertionError(f"Unhandled GuiUpdate payload: {payload!r}")
 
     def display_move_history(self) -> None:
         """
@@ -673,56 +742,18 @@ class MainWindow(QWidget):
         )
         return self.drawBoardSvg
 
-    def extract_message_from_player(self, player: PlayerFactoryArgs) -> str:
-        """
-        Extracts a message from a player to be shown in the GUI.
+    def update_players_info(self, white: PlayerUiInfo, black: PlayerUiInfo) -> None:
+        self.player_white_button.setText(" White: " + white.label)
+        self.player_black_button.setText(" Black: " + black.label)
 
-        Args:
-            player (PlayerFactoryArgs): The factory arguments for the player.
-
-        Returns:
-            str: The extracted message.
-        """
-        name: str = player.player_args.name
-        tree_branch_limit: str | int = ""
-        if isinstance(player.player_args.main_move_selector, TreeAndValuePlayerArgs):
-            if isinstance(
-                player.player_args.main_move_selector.stopping_criterion,
-                TreeBranchLimitArgs,
-            ):
-                tree_branch_limit = player.player_args.main_move_selector.stopping_criterion.tree_branch_limit
-
-        return f"{name} ({tree_branch_limit})"
-
-    def update_players_color_to_id(
-        self, players_color_to_player: dict[chess.Color, PlayerFactoryArgs]
-    ) -> None:
-        """
-        Update the player buttons with the corresponding player names.
-
-        Args:
-            players_color_to_player (dict[chess.Color, str]): A dictionary mapping chess.Color to player names.
-
-        Returns:
-            None
-        """
-        self.player_white_button.setText(
-            " White: "
-            + self.extract_message_from_player(players_color_to_player[chess.WHITE])
-        )  # text
-        self.player_black_button.setText(
-            " Black: "
-            + self.extract_message_from_player(players_color_to_player[chess.BLACK])
-        )  # text
-
-        if players_color_to_player[chess.BLACK].player_args.is_human():
+        if black.is_human:
             self.progress_black.setTextVisible(True)
             self.progress_black.setValue(100)
             self.progress_black.setFormat("Think Human!")
         else:
             self.progress_black.setValue(0)
 
-        if players_color_to_player[chess.WHITE].player_args.is_human():
+        if white.is_human:
             self.progress_white.setTextVisible(True)
             self.progress_white.setValue(100)
             self.progress_white.setFormat("Think Human!")
@@ -731,31 +762,27 @@ class MainWindow(QWidget):
 
     def update_evaluation(
         self,
-        evaluation_stock: float,
-        evaluation_chipiron: float,
-        evaluation_white: float,
-        evaluation_black: float,
+        evaluation_stock: float | None,
+        evaluation_chipiron: float | None,
+        evaluation_white: float | None,
+        evaluation_black: float | None,
     ) -> None:
         """
         Update the evaluation values displayed on the GUI.
 
         Args:
-            evaluation_stock (float): The evaluation value for the stock.
-            evaluation_chipiron (float): The evaluation value for the chipiron.
-            evaluation_white (float): The evaluation value for the white.
-            evaluation_black (float): The evaluation value for the black.
+            evaluation_stock (float | None): The evaluation value for the stock.
+            evaluation_chipiron (float | None): The evaluation value for the chipiron.
+            evaluation_white (float | None): The evaluation value for white.
+            evaluation_black (float | None): The evaluation value for black.
 
         Returns:
             None
         """
-        self.eval_button.setText("📊 Eval 🐟: " + str(evaluation_stock))  # text
-        self.eval_button_chi.setText("🧮 Eval 🐙: " + str(evaluation_chipiron))  # text
-        self.eval_button_black.setText(
-            "🧠 Eval White: " + str(evaluation_white)
-        )  # text
-        self.eval_button_white.setText(
-            "🧠 Eval Black: " + str(evaluation_black)
-        )  # text
+        self.eval_button.setText("📊 Eval 🐟: " + str(evaluation_stock))
+        self.eval_button_chi.setText("🧮 Eval 🐙: " + str(evaluation_chipiron))
+        self.eval_button_black.setText("🧠 Eval White: " + str(evaluation_white))
+        self.eval_button_white.setText("🧠 Eval Black: " + str(evaluation_black))
 
     def update_game_play_status(self, play_status: PlayingStatus) -> None:
         """Update the game play status.
@@ -784,28 +811,12 @@ class MainWindow(QWidget):
                 self.pause_button.setToolTip("pause the game")  # Tool tip
                 self.pause_button.move(700, 100)
 
-    def update_match_stats(self, match_result: MatchResults) -> None:
-        """
-        Update the match statistics and display them on the GUI.
-
-        Args:
-            match_result (MatchResults): The result of the match.
-
-        Returns:
-            None
-        """
-        simple_results: SimpleResults = match_result.get_simple_result()
+    def update_match_stats(self, upd: UpdMatchResults) -> None:
         self.score_button.setText(
-            "⚖ Score: "
-            + str(simple_results.player_one_wins)
-            + "-"
-            + str(simple_results.player_two_wins)
-            + "-"
-            + str(simple_results.draws)
-        )  # text
+            f"⚖ Score: {upd.wins_white}-{upd.wins_black}-{upd.draws}"
+        )
 
-        chipiron_logger.info("update %s", match_result.match_finished)
-        # if the match is over we kill the GUI
-        if match_result.match_finished:
+        chipiron_logger.info("update match_finished=%s", upd.match_finished)
+        if upd.match_finished:
             chipiron_logger.info("finishing the widget")
             self.close()

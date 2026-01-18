@@ -9,9 +9,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 import dacite
-from coral.neural_networks.input_converters.content_to_input import (
-    ContentToInputFunction,
-)
+from coral.chi_nn import ChiNN
 from coral.neural_networks.models.multi_layer_perceptron import (
     MultiLayerPerceptron,
     MultiLayerPerceptronArgs,
@@ -37,9 +35,11 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_
     create_board_to_input,
 )
 from chipiron.utils import path, yaml_fetch_args_in_file
-from coral.chi_nn import ChiNN
 
 if TYPE_CHECKING:
+    from coral.neural_networks.input_converters.content_to_input import (
+        ContentToInputFunction,
+    )
     from coral.neural_networks.output_converters.output_value_converter import (
         OutputValueConverter,
     )
