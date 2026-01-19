@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 import atomheart.board as boards
 from atomheart.board.utils import FenPlusHistory
 from atomheart.move_factory import MoveFactory
-from valanga import Color, TurnState
+from valanga import Color
 from valanga.game import Seed
 
 from chipiron.displays.gui_protocol import (
@@ -28,30 +28,23 @@ from chipiron.players.boardevaluators.board_evaluator import (
     IGameStateEvaluator,
     ObservableBoardEvaluator,
 )
-from chipiron.players.communications.player_request_encoder import make_player_encoder
-from chipiron.players.factory_higher_level import (
-    MoveFunction,
-    PlayerObserverFactory,
-    create_player_observer_factory,
-)
+from chipiron.environments.environment import make_environment
+from chipiron.players.factory_higher_level import MoveFunction, PlayerObserverFactory
 from chipiron.utils import path
-from chipiron.utils.communication.gui_encoder_factory import make_gui_encoder
 from chipiron.utils.communication.gui_messages.gui_messages import (
     make_players_info_payload,
 )
 from chipiron.utils.communication.gui_publisher import GuiPublisher
-from chipiron.utils.dataclass import IsDataclass
 
 from ...players.boardevaluators.table_base.factory import AnySyzygyTable
 from ...players.player_ids import PlayerConfigTag
 from ...scripts.chipiron_args import ImplementationArgs
 from .game import Game, ObservableGame
-from .game_manager import GameManager
+from .game_manager import GameManager, MainMailboxMessage
 from .progress_collector import PlayerProgressCollectorObservable
 
 if TYPE_CHECKING:
     import chipiron.players as players_m
-    from chipiron.utils.communication.gui_encoder import GuiEncoder
 
 
 @dataclass
@@ -65,7 +58,7 @@ class GameManagerFactory:
     syzygy_table (AnySyzygyTable | None): The syzygy table used for endgame tablebase lookups.
     game_manager_board_evaluator (IGameBoardEvaluator): The game board evaluator used for evaluating game positions.
     output_folder_path (path | None): The path to the output folder where game data will be saved.
-    main_thread_mailbox (queue.Queue[IsDataclass]): The mailbox used for communication between processes.
+    main_thread_mailbox (queue.Queue[MainMailboxMessage]): The mailbox used for communication between processes.
 
     """
 
@@ -73,7 +66,7 @@ class GameManagerFactory:
 
     syzygy_table: AnySyzygyTable | None
     output_folder_path: path | None
-    main_thread_mailbox: queue.Queue[IsDataclass]
+    main_thread_mailbox: queue.Queue[MainMailboxMessage]
     game_manager_board_evaluator: IGameStateEvaluator
     board_factory: boards.BoardFactory
     move_factory: MoveFactory
@@ -161,18 +154,14 @@ class GameManagerFactory:
             playing_status=game_playing_status, state=board, seed_=game_seed
         )
 
-        player_encoder = make_player_encoder(
-            game_kind=args_game_manager.game_kind, state_type=type(board)
-        )
-
-        gui_encoder: GuiEncoder[TurnState] = make_gui_encoder(
-            game_kind=args_game_manager.game_kind, state_type=type(board)
+        environment = make_environment(
+            game_kind=args_game_manager.game_kind, syzygy_table=self.syzygy_table
         )
 
         observable_game: ObservableGame = ObservableGame(
             game=game,
-            gui_encoder=gui_encoder,
-            player_encoder=player_encoder,
+            gui_encoder=environment.gui_encoder,
+            player_encoder=environment.player_encoder,
             scope=scope,
         )
 
@@ -180,12 +169,12 @@ class GameManagerFactory:
             observable_game.register_display(pub)
 
         # CREATING THE PLAYERS
-        player_observer_factory: PlayerObserverFactory = create_player_observer_factory(
-            game_kind=args_game_manager.game_kind,
-            each_player_has_its_own_thread=args_game_manager.each_player_has_its_own_thread,
-            implementation_args=self.implementation_args,
-            syzygy_table=self.syzygy_table,
-            universal_behavior=self.universal_behavior,
+        player_observer_factory: PlayerObserverFactory = (
+            environment.make_player_observer_factory(
+                each_player_has_its_own_thread=args_game_manager.each_player_has_its_own_thread,
+                implementation_args=self.implementation_args,
+                universal_behavior=self.universal_behavior,
+            )
         )
 
         player_progress_collector: PlayerProgressCollectorObservable = (
@@ -223,7 +212,6 @@ class GameManagerFactory:
         game_manager: GameManager
         game_manager = GameManager(
             game=observable_game,
-            syzygy=self.syzygy_table,
             display_state_evaluator=display_state_evaluator,
             output_folder_path=self.output_folder_path,
             args=args_game_manager,
@@ -232,6 +220,7 @@ class GameManagerFactory:
             players=players,
             move_factory=self.move_factory,
             progress_collector=player_progress_collector,
+            rules=environment.rules,
         )
 
         return game_manager
