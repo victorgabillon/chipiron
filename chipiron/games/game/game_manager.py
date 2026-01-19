@@ -5,7 +5,7 @@ Module in charge of managing the game. It is the main class that will be used to
 import os
 import queue
 from dataclasses import asdict
-from typing import TypeAlias
+from typing import Literal, TypeAlias, assert_never
 
 import yaml
 from atomheart.move_factory import MoveFactory
@@ -28,7 +28,7 @@ from chipiron.displays.gui_protocol import (
     CmdSetStatus,
     GuiCommand,
 )
-from chipiron.utils.dataclass import IsDataclass, custom_asdict_factory
+from chipiron.utils.dataclass import custom_asdict_factory
 from chipiron.utils.logger import chipiron_logger
 
 from .final_game_result import FinalGameResult, GameReport
@@ -56,6 +56,7 @@ class GameManager[StateT: TurnState = TurnState]:
 
     # folder to log results
     output_folder_path: path | None
+    path_to_store_result: path | None
 
     # args of the Game
     args: GameArgs
@@ -100,7 +101,7 @@ class GameManager[StateT: TurnState = TurnState]:
             output_folder_path (path | None): The output folder path or None.
             args (GameArgs): The game arguments.
             player_color_to_id (dict[chess.Color, str]): The dictionary mapping player color to player ID.
-            main_thread_mailbox (queue.Queue[IsDataclass]): The main thread mailbox.
+            main_thread_mailbox (queue.Queue[MainMailboxMessage]): The main thread mailbox.
             players (list[players_m.PlayerProcess | players_m.GamePlayer]): The list of players.
 
         Returns:
@@ -168,7 +169,10 @@ class GameManager[StateT: TurnState = TurnState]:
             GameReport: The report of the game.
         """
 
-        color_names = ["Black", "White"]
+        color_names = {
+            Color.WHITE: "White",
+            Color.BLACK: "Black",
+        }
 
         # sending the current board to the gui
         self.game.notify_display()
@@ -219,107 +223,113 @@ class GameManager[StateT: TurnState = TurnState]:
         )
         return game_report
 
-    def processing_mail(self, message: IsDataclass) -> None:
+    def processing_mail(self, message: MainMailboxMessage) -> None:
         """
         Process the incoming mail message.
 
         Args:
-            message (IsDataclass): The incoming mail message.
+            message (MainMailboxMessage): The incoming mail message.
 
         Returns:
             None
         """
 
-        state: TurnState = self.game.state
-
         match message:
             case GuiCommand():
-                if message.scope != self.game.scope:
-                    chipiron_logger.debug(
-                        "Ignoring stale GuiCommand for scope=%s (current=%s)",
-                        message.scope,
-                        self.game.scope,
-                    )
+                if self._ignore_if_stale_scope(message.scope):
                     return
-
-                match message.payload:
-                    case CmdSetStatus():
-                        if message.payload.status == PlayingStatus.PLAY:
-                            self.game.set_play_status()
-                            self.game.query_move_from_players()
-                        elif message.payload.status == PlayingStatus.PAUSE:
-                            self.game.set_pause_status()
-                        else:
-                            chipiron_logger.warning(
-                                "Unhandled PlayingStatus: %s", message.payload.status
-                            )
-
-                    case CmdBackOneMove():
-                        self.game.set_pause_status()
-                        self.rewind_one_move()
-
-                    case CmdHumanMoveUci():
-                        # Convert GUI move into the SAME move pipeline as players
-                        ev = EvMove(
-                            branch_name=message.payload.move_uci,
-                            corresponding_state_tag=message.payload.corresponding_fen,
-                            player_name=self.player_color_to_id[
-                                state.turn
-                            ],  # or message.payload.player_name if you have it
-                            color_to_play=state.turn,
-                            evaluation=None,
-                        )
-                        self._handle_move_attempt(
-                            source="gui",
-                            branch_name=ev.branch_name,
-                            corresponding_state_tag=ev.corresponding_state_tag,
-                            player_name=ev.player_name,
-                            color_to_play=ev.color_to_play,
-                            evaluation=ev.evaluation,
-                        )
-
-                    case _:
-                        raise ValueError(
-                            f"Unhandled GuiCommand payload in file {__name__}: {message.payload!r}"
-                        )
-
+                self._handle_gui_command(message)
             case PlayerEvent():
-                if message.scope != self.game.scope:
-                    chipiron_logger.debug(
-                        "Ignoring stale PlayerEvent for scope=%s (current=%s)",
-                        message.scope,
-                        self.game.scope,
+                if self._ignore_if_stale_scope(message.scope):
+                    return
+                self._handle_player_event(message)
+            case _:
+                assert_never(message)
+
+    def _ignore_if_stale_scope(self, scope: object) -> bool:
+        if scope != self.game.scope:
+            chipiron_logger.debug(
+                "Ignoring stale message scope=%s (current=%s)",
+                scope,
+                self.game.scope,
+            )
+            return True
+        return False
+
+    def _handle_gui_command(self, message: GuiCommand) -> None:
+        state: TurnState = self.game.state
+
+        match message.payload:
+            case CmdSetStatus():
+                if message.payload.status == PlayingStatus.PLAY:
+                    self.game.set_play_status()
+                    self.game.query_move_from_players()
+                elif message.payload.status == PlayingStatus.PAUSE:
+                    self.game.set_pause_status()
+                else:
+                    chipiron_logger.warning(
+                        "Unhandled PlayingStatus: %s", message.payload.status
+                    )
+
+            case CmdBackOneMove():
+                self.game.set_pause_status()
+                self.rewind_one_move()
+
+            case CmdHumanMoveUci():
+                # Convert GUI move into the SAME move pipeline as players
+                if message.payload.corresponding_fen is None:
+                    chipiron_logger.info(
+                        "[gui] MOVE REJECTED: missing corresponding_state_tag for %s",
+                        message.payload.move_uci,
                     )
                     return
-
-                match message.payload:
-                    case EvMove():
-                        self._handle_move_attempt(
-                            source="player",
-                            branch_name=message.payload.branch_name,
-                            corresponding_state_tag=message.payload.corresponding_state_tag,
-                            player_name=message.payload.player_name,
-                            color_to_play=message.payload.color_to_play,
-                            evaluation=message.payload.evaluation,
-                        )
-                    case EvProgress():
-                        # forward to your progress collector
-                        if message.payload.player_color == Color.WHITE:
-                            self.progress_collector.progress_white(
-                                value=message.payload.progress_percent
-                            )
-                        else:
-                            self.progress_collector.progress_black(
-                                value=message.payload.progress_percent
-                            )
-
-                    case _:
-                        raise ValueError(
-                            f"Unhandled PlayerEvent payload in {__name__}: {message.payload!r}"
-                        )
+                self._handle_move_attempt(
+                    source="gui",
+                    branch_name=message.payload.move_uci,
+                    corresponding_state_tag=message.payload.corresponding_fen,
+                    player_name=self.player_color_to_id[
+                        state.turn
+                    ],  # or message.payload.player_name if you have it
+                    color_to_play=state.turn,
+                    evaluation=None,
+                )
 
             case _:
-                raise ValueError(f"Unexpected message type in {__name__}: {message!r}")
+                chipiron_logger.warning(
+                    "Unhandled GuiCommand payload in file %s: %r",
+                    __name__,
+                    message.payload,
+                )
+                return
+
+    def _handle_player_event(self, message: PlayerEvent) -> None:
+        match message.payload:
+            case EvMove():
+                self._handle_move_attempt(
+                    source="player",
+                    branch_name=message.payload.branch_name,
+                    corresponding_state_tag=message.payload.corresponding_state_tag,
+                    player_name=message.payload.player_name,
+                    color_to_play=message.payload.color_to_play,
+                    evaluation=message.payload.evaluation,
+                )
+            case EvProgress():
+                # forward to your progress collector
+                if message.payload.player_color == Color.WHITE:
+                    self.progress_collector.progress_white(
+                        value=message.payload.progress_percent
+                    )
+                else:
+                    self.progress_collector.progress_black(
+                        value=message.payload.progress_percent
+                    )
+            case _:
+                chipiron_logger.warning(
+                    "Unhandled PlayerEvent payload in file %s: %r",
+                    __name__,
+                    message.payload,
+                )
+                return
 
     def game_continue_conditions(self) -> bool:
         """
@@ -372,9 +382,9 @@ class GameManager[StateT: TurnState = TurnState]:
     def _handle_move_attempt(
         self,
         *,
-        source: str,  # "player" or "gui"
+        source: Literal["player", "gui"],
         branch_name: str,  # stable transport action name (for chess, this is UCI)
-        corresponding_state_tag: StateTag,  # StateTag/Fen
+        corresponding_state_tag: StateTag,
         player_name: str,
         color_to_play: Color,
         evaluation: StateEvaluation | None,  # your real type
@@ -420,10 +430,27 @@ class GameManager[StateT: TurnState = TurnState]:
             return
 
         # Ensure legal moves generated
-        state.branch_keys.get_all()
+        try:
+            state.branch_keys.get_all()
+        except Exception:
+            chipiron_logger.info(
+                "[%s] MOVE REJECTED: failed to generate legal moves",
+                source,
+                exc_info=True,
+            )
+            return
 
         # Convert name->ActionKey
-        action_key: ActionKey = state.branch_key_from_name(name=branch_name)
+        try:
+            action_key = state.branch_key_from_name(name=branch_name)
+        except Exception:
+            chipiron_logger.info(
+                "[%s] MOVE REJECTED: invalid branch_name=%s",
+                source,
+                branch_name,
+                exc_info=True,
+            )
+            return
 
         chipiron_logger.info("[%s] MOVE ACCEPTED: %s", source, branch_name)
 
