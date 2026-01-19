@@ -22,7 +22,7 @@ from chipiron.players.communications.player_message import (
     PlayerEvent,
 )
 from chipiron.utils import path
-from chipiron.utils.communication.gui_messages.gui_messages import (
+from chipiron.displays.gui_protocol import (
     CmdBackOneMove,
     CmdHumanMoveUci,
     CmdSetStatus,
