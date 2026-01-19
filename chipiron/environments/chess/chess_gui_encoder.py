@@ -6,7 +6,7 @@ from valanga.game import Seed
 from chipiron.environments.types import GameKind
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.utils.communication.gui_encoder import GuiEncoder
-from chipiron.utils.communication.gui_messages.gui_messages import (
+from chipiron.displays.gui_protocol import (
     UpdatePayload,
     UpdGameStatus,
     UpdStateChess,
