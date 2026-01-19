@@ -15,7 +15,6 @@ from valanga.game import ActionKey
 import chipiron.players as players_m
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.players.boardevaluators.board_evaluator import IGameStateEvaluator
-from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 from chipiron.players.communications.player_message import (
     EvMove,
     EvProgress,
@@ -34,6 +33,13 @@ from chipiron.utils.logger import chipiron_logger
 from .final_game_result import FinalGameResult, GameReport
 from .game import ObservableGame, Ply
 from .game_args import GameArgs
+from .game_rules import (
+    GameOutcome,
+    GameRules,
+    OutcomeKind,
+    OutcomeSource,
+    outcome_to_final_game_result,
+)
 from .progress_collector import PlayerProgressCollectorP
 
 MainMailboxMessage: TypeAlias = GuiCommand | PlayerEvent
@@ -46,9 +52,6 @@ class GameManager[StateT: TurnState = TurnState]:
 
     # The game object that is managed
     game: ObservableGame[StateT]
-
-    # A SyzygyTable
-    syzygy: AnySyzygyTable | None
 
     # Evaluators that just evaluates the boards but are not players (just spectators) for display info of who is winning
     # according to them
@@ -76,10 +79,12 @@ class GameManager[StateT: TurnState = TurnState]:
     # an object for collecting how advances each player is in its thinking/computation of the moves
     progress_collector: PlayerProgressCollectorP
 
+    # Game-specific rules adapter
+    rules: GameRules[StateT]
+
     def __init__(
         self,
         game: ObservableGame[StateT],
-        syzygy: AnySyzygyTable | None,
         display_state_evaluator: IGameStateEvaluator[StateT],
         output_folder_path: path | None,
         args: GameArgs,
@@ -88,6 +93,7 @@ class GameManager[StateT: TurnState = TurnState]:
         players: list[players_m.PlayerHandle],
         move_factory: MoveFactory,
         progress_collector: PlayerProgressCollectorP,
+        rules: GameRules[StateT],
     ) -> None:
         """
         Constructor for the GameManager Class. If the args, and players are not given a value it is set to None,
@@ -96,7 +102,6 @@ class GameManager[StateT: TurnState = TurnState]:
 
         Args:
             game (ObservableGame): The observable game object.
-            syzygy (AnySyzygyTable | None): The syzygy table object or None.
             display_board_evaluator (IGameBoardEvaluator): The board evaluator to display an independent evaluation.
             output_folder_path (path | None): The output folder path or None.
             args (GameArgs): The game arguments.
@@ -108,7 +113,6 @@ class GameManager[StateT: TurnState = TurnState]:
             None
         """
         self.game = game
-        self.syzygy = syzygy
         self.path_to_store_result = (
             os.path.join(output_folder_path, "games")
             if output_folder_path is not None
@@ -121,6 +125,7 @@ class GameManager[StateT: TurnState = TurnState]:
         self.players = players
         self.move_factory = move_factory
         self.progress_collector = progress_collector
+        self.rules = rules
 
     def external_eval(self) -> tuple[float | None, float]:
         """Evaluates the game board using the display board evaluator.
@@ -137,29 +142,17 @@ class GameManager[StateT: TurnState = TurnState]:
             action (ActionKey): The action to be played.
         """
         self.game.play_move(action)
-        if self.syzygy is not None and self.syzygy.fast_in_table(self.game.state):
-            chipiron_logger.info(
-                "Theoretically finished with value for white: %s",
-                self.syzygy.string_result(self.game.state),
-            )
 
     def rewind_one_move(self) -> None:
         """
         Rewinds the game by one move.
 
         This method rewinds the game by one move, undoing the last move made.
-        If the game has a Syzygy tablebase loaded and the current board position is in the tablebase,
-        it prints the theoretically finished value for white.
 
         Returns:
             None
         """
         self.game.rewind_one_move()
-        if self.syzygy is not None and self.syzygy.fast_in_table(self.game.state):
-            chipiron_logger.info(
-                "Theoretically finished with value for white: %s",
-                self.syzygy.string_result(self.game.state),
-            )
 
     def play_one_game(self) -> GameReport:
         """
@@ -471,20 +464,18 @@ class GameManager[StateT: TurnState = TurnState]:
         """
         Prints the results of the game based on the current state of the board.
 
-        The method checks various conditions on the board and prints the corresponding result.
-        It also checks for specific conditions like syzygy, fivefold repetition, seventy-five moves,
-        insufficient material, stalemate, and checkmate.
-
         Returns:
             None
         """
         state = self.game.state
-        if self.syzygy is not None and self.syzygy.fast_in_table(state):
-            chipiron_logger.info(
-                "Syzygy: Theoretical value for white %s",
-                self.syzygy.string_result(state),
-            )
-        state.tell_result()
+        outcome = self.rules.outcome(state)
+        if outcome is None:
+            chipiron_logger.info("No terminal outcome available to report.")
+        else:
+            chipiron_logger.info(self.rules.pretty_result(state, outcome))
+        assessment = self.rules.assessment(state)
+        if assessment is not None:
+            chipiron_logger.info(self.rules.pretty_assessment(state, assessment))
 
     def simple_results(self) -> FinalGameResult:
         """
@@ -493,35 +484,15 @@ class GameManager[StateT: TurnState = TurnState]:
         Returns:
             FinalGameResult: The final result of the game.
         """
-        board = self.game.state
-
-        res: FinalGameResult | None = None
-        result: str = board.result(claim_draw=True)
-        if result == "*":
-            if self.syzygy is None or not self.syzygy.fast_in_table(board):
-                # useful when a game is stopped
-                # before the end, for instance for debugging and profiling
-                res = FinalGameResult.DRAW  # arbitrary meaningless choice
-                # raise ValueError(f'Problem with figuring our game results in {__name__}')
-            else:
-                raise ValueError(
-                    "this case is not coded atm think of what is the right thing to do here!"
-                )
-        else:
-            match result:
-                case "1/2-1/2":
-                    res = FinalGameResult.DRAW
-                case "0-1":
-                    res = FinalGameResult.WIN_FOR_BLACK
-                case "1-0":
-                    res = FinalGameResult.WIN_FOR_WHITE
-                case other:
-                    raise ValueError(
-                        f"unexpected result value {other} in game manager/simple_results"
-                    )
-
-        assert isinstance(res, FinalGameResult)
-        return res
+        state = self.game.state
+        outcome = self.rules.outcome(state)
+        if outcome is None:
+            outcome = GameOutcome(
+                kind=OutcomeKind.UNKNOWN,
+                reason="no_terminal_outcome",
+                source=OutcomeSource.TERMINAL,
+            )
+        return outcome_to_final_game_result(outcome)
 
     def terminate_processes(self) -> None:
         """
