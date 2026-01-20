@@ -8,7 +8,6 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import atomheart.board as boards
-from atomheart.board.utils import FenPlusHistory
 from atomheart.move_factory import MoveFactory
 from valanga import Color
 from valanga.game import Seed
@@ -28,7 +27,7 @@ from chipiron.players.boardevaluators.board_evaluator import (
     IGameStateEvaluator,
     ObservableGameStateEvaluator,
 )
-from chipiron.environments.environment import make_environment
+from chipiron.environments.environment import EnvironmentDeps, make_environment
 from chipiron.players.factory_higher_level import MoveFunction, PlayerObserverFactory
 from chipiron.utils import path
 from chipiron.utils.communication.gui_messages.gui_messages import (
@@ -137,11 +136,15 @@ class GameManagerFactory[StateT]:
         else:
             display_state_evaluator = self.game_manager_state_evaluator
 
-        # CREATING THE BOARD
-        starting_fen: str = args_game_manager.starting_position.get_fen()
-        board: boards.IBoard = self.board_factory(
-            fen_with_history=FenPlusHistory(current_fen=starting_fen)
+        environment = make_environment(
+            game_kind=args_game_manager.game_kind,
+            syzygy_table=self.syzygy_table,
+            deps=EnvironmentDeps(board_factory=self.board_factory),
         )
+
+        start_tag = args_game_manager.starting_position.get_start_tag()
+        normalized_start_tag = environment.normalize_start_tag(start_tag)
+        board = environment.make_initial_state(normalized_start_tag)
         for publisher in publishers:
             payload = make_players_info_payload(
                 player_color_to_factory_args=player_color_to_factory_args
@@ -156,10 +159,6 @@ class GameManagerFactory[StateT]:
 
         game: Game = Game(
             playing_status=game_playing_status, state=board, seed_=game_seed
-        )
-
-        environment = make_environment(
-            game_kind=args_game_manager.game_kind, syzygy_table=self.syzygy_table
         )
 
         observable_game: ObservableGame = ObservableGame(
