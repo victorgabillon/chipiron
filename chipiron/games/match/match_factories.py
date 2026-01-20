@@ -97,7 +97,7 @@ def create_match_manager(
 
     game_manager_factory: GameManagerFactory = GameManagerFactory(
         syzygy_table=syzygy_table,
-        game_manager_board_evaluator=game_board_evaluator,
+        game_manager_state_evaluator=game_board_evaluator,
         output_folder_path=output_folder_path,
         main_thread_mailbox=main_thread_mailbox,
         board_factory=board_factory,
