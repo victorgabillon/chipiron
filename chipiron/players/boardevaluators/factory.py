@@ -24,7 +24,7 @@ from chipiron.players.boardevaluators.stockfish_board_evaluator import (
 from .board_evaluator import (
     GameStateEvaluator,
     IGameStateEvaluator,
-    ObservableBoardEvaluator,
+    ObservableGameStateEvaluator,
     StateEvaluator,
 )
 from .neural_networks.factory import (
@@ -151,7 +151,7 @@ def create_game_board_evaluator(gui: bool, can_stockfish: bool) -> IGameStateEva
         create_game_board_evaluator_not_observable(can_stockfish=can_stockfish)
     )
     if gui:
-        game_board_evaluator_res = ObservableBoardEvaluator(
+        game_board_evaluator_res = ObservableGameStateEvaluator(
             game_board_evaluator=game_board_evaluator
         )
     else:

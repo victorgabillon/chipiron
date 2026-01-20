@@ -4,7 +4,7 @@ Module for the GameManagerFactory class.
 
 import queue
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import atomheart.board as boards
@@ -26,7 +26,7 @@ from chipiron.games.game.game_playing_status import GamePlayingStatus
 from chipiron.players import PlayerFactoryArgs
 from chipiron.players.boardevaluators.board_evaluator import (
     IGameStateEvaluator,
-    ObservableBoardEvaluator,
+    ObservableGameStateEvaluator,
 )
 from chipiron.environments.environment import make_environment
 from chipiron.players.factory_higher_level import MoveFunction, PlayerObserverFactory
@@ -34,7 +34,7 @@ from chipiron.utils import path
 from chipiron.utils.communication.gui_messages.gui_messages import (
     make_players_info_payload,
 )
-from chipiron.utils.communication.gui_publisher import GuiPublisher
+from chipiron.displays.gui_publisher import GuiPublisher
 
 from ...players.boardevaluators.table_base.factory import AnySyzygyTable
 from ...players.player_ids import PlayerConfigTag
@@ -47,8 +47,10 @@ if TYPE_CHECKING:
     import chipiron.players as players_m
 
 
+def make_subscriber_queues() -> list[queue.Queue[GuiUpdate]]:
+        return []
 @dataclass
-class GameManagerFactory:
+class GameManagerFactory[StateT]:
     """
     The GameManagerFactory creates GameManager once the players and rules have been decided.
     Calling create ask for the creation of a GameManager depending on args and players.
@@ -67,15 +69,17 @@ class GameManagerFactory:
     syzygy_table: AnySyzygyTable | None
     output_folder_path: path | None
     main_thread_mailbox: queue.Queue[MainMailboxMessage]
-    game_manager_board_evaluator: IGameStateEvaluator
+    game_manager_state_evaluator: IGameStateEvaluator[StateT]
     board_factory: boards.BoardFactory
     move_factory: MoveFactory
     implementation_args: ImplementationArgs
     universal_behavior: bool
-    subscriber_queues: list[queue.Queue[GuiUpdate]] = field(default_factory=list)
-
+    subscriber_queues: list[queue.Queue[GuiUpdate]] = make_subscriber_queues()
     session_id: SessionId = ""
     match_id: MatchId | None = None
+
+
+
 
     def create(
         self,
@@ -123,15 +127,15 @@ class GameManagerFactory:
 
         # If the evaluator is observable, avoid mutating the shared instance.
         # Create a per-game wrapper so publisher scoping is isolated.
-        display_state_evaluator: IGameStateEvaluator
-        if isinstance(self.game_manager_board_evaluator, ObservableBoardEvaluator):
-            display_state_evaluator = ObservableBoardEvaluator(
-                game_board_evaluator=self.game_manager_board_evaluator.game_board_evaluator
+        display_state_evaluator: IGameStateEvaluator[StateT]
+        if isinstance(self.game_manager_state_evaluator, ObservableGameStateEvaluator):
+            display_state_evaluator = ObservableGameStateEvaluator(
+                game_state_evaluator=self.game_manager_state_evaluator.game_state_evaluator
             )
             for pub in publishers:
                 display_state_evaluator.subscribe(pub)
         else:
-            display_state_evaluator = self.game_manager_board_evaluator
+            display_state_evaluator = self.game_manager_state_evaluator
 
         # CREATING THE BOARD
         starting_fen: str = args_game_manager.starting_position.get_fen()
