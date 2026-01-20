@@ -1,5 +1,7 @@
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar, cast
+
+from valanga import StateTag
 
 from chipiron.environments.types import GameKind
 from chipiron.games.game.game_rules import GameRules
@@ -10,9 +12,12 @@ from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
     from chipiron.players.factory_higher_level import PlayerObserverFactory
+    import atomheart.board as boards
+    from atomheart.board.utils import FenPlusHistory
 
 StateT = TypeVar("StateT")
 StateSnapT = TypeVar("StateSnapT")
+TagT = TypeVar("TagT")
 
 class PlayerObserverFactoryBuilder(Protocol):
     def __call__(
@@ -24,24 +29,52 @@ class PlayerObserverFactoryBuilder(Protocol):
     ) -> "PlayerObserverFactory": ...
 
 
+class ChessBoardFactory(Protocol):
+    def __call__(self, *, fen_with_history: "FenPlusHistory") -> "boards.IBoard": ...
+
+
+class TagNormalizer(Protocol[TagT]):
+    def __call__(self, tag: StateTag) -> TagT: ...
+
+
+class InitialStateFactory(Protocol[StateT, TagT]):
+    def __call__(self, tag: TagT) -> StateT: ...
+
+
 @dataclass(frozen=True)
-class Environment(Generic[StateT, StateSnapT]):
+class Environment(Generic[StateT, StateSnapT, TagT]):
     game_kind: GameKind
     rules: GameRules[StateT]
     gui_encoder: GuiEncoder[StateT]
     player_encoder: PlayerRequestEncoder[StateT, StateSnapT]
     make_player_observer_factory: PlayerObserverFactoryBuilder
+    normalize_start_tag: TagNormalizer[TagT]
+    make_initial_state: InitialStateFactory[StateT, TagT]
+
+
+@dataclass(frozen=True)
+class EnvironmentDeps:
+    board_factory: Any | None = None
 
 
 def make_environment(
     *,
     game_kind: GameKind,
     syzygy_table: AnySyzygyTable | None,
-) -> Environment[Any, Any]:
+    deps: EnvironmentDeps,
+) -> Environment[Any, Any, Any]:
     match game_kind:
         case GameKind.CHESS:
+            if deps.board_factory is None:
+                raise ValueError("board_factory is required for chess environments")
+            board_factory = cast(ChessBoardFactory, deps.board_factory)
+
+            import atomheart.board as boards
+            from atomheart.board.utils import FenPlusHistory
+
             from chipiron.environments.chess.chess_gui_encoder import ChessGuiEncoder
             from chipiron.environments.chess.chess_rules import ChessRules
+            from chipiron.environments.chess.tags import ChessStartTag
             from chipiron.players.communications.player_request_encoder import (
                 ChessPlayerRequestEncoder,
             )
@@ -63,12 +96,26 @@ def make_environment(
                     syzygy_table=syzygy_table,
                 )
 
+            def normalize_start_tag(tag: StateTag) -> ChessStartTag:
+                if not isinstance(tag, ChessStartTag):
+                    raise TypeError(
+                        "Chess environment expects a ChessStartTag for initial state."
+                    )
+                return tag
+
+            def make_initial_state(tag: ChessStartTag) -> boards.IBoard:
+                return board_factory(
+                    fen_with_history=FenPlusHistory(current_fen=tag.fen)
+                )
+
             return Environment(
                 game_kind=game_kind,
                 rules=ChessRules(syzygy=syzygy_table),
                 gui_encoder=ChessGuiEncoder(),
                 player_encoder=ChessPlayerRequestEncoder(),
                 make_player_observer_factory=build_player_observer_factory,
+                normalize_start_tag=normalize_start_tag,
+                make_initial_state=make_initial_state,
             )
         case GameKind.CHECKERS:
             raise NotImplementedError(
