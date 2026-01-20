@@ -19,7 +19,7 @@ from anemone.progress_monitor.progress_monitor import (
     StoppingCriterionTypes,
     TreeBranchLimitArgs,
 )
-from atomheart.board.starting_position import (
+from chipiron.environments.chess.starting_position_args import (
     FenStartingPositionArgs,
     StartingPositionArgsType,
 )
