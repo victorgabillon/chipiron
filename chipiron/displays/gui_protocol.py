@@ -56,6 +56,11 @@ class UpdPlayerProgress:
 
 @dataclass(frozen=True, slots=True)
 class UpdEvaluation:
+    """Evaluation update payload.
+
+    Note: ``stock`` carries the external oracle evaluation (Stockfish for chess).
+    """
+
     stock: float | None
     chipiron: float | None
     white: float | None = None

@@ -131,19 +131,19 @@ class SyzygyTable[T_Board: IBoard](Protocol):
         val: int = self.wdl(board)
         return val
 
-    def value_white(self, board: T_Board) -> int:
+    def value_white(self, state: T_Board) -> int:
         """
         Get the value of the given board for the white player.
 
         Args:
-            board (boards.BoardChi): The board to get the value for.
+            state (boards.BoardChi): The board to get the value for.
 
         Returns:
             int: The value of the board for the white player.
         """
         # tablebase.probe_wdl Returns 2 if the side to move is winning, 0 if the position is a draw and -2 if the side to move is losing.
-        val: int = self.wdl(board)
-        if board.turn == chess.WHITE:
+        val: int = self.wdl(state)
+        if state.turn == chess.WHITE:
             return val * 100000
         else:
             return val * -10000
