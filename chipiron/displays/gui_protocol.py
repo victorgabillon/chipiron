@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Never, TypeAlias
 
+from valanga.evaluations import StateEvaluation
+
 if TYPE_CHECKING:
     from atomheart.board.utils import FenPlusHistory
     from valanga import Color
@@ -57,14 +59,12 @@ class UpdPlayerProgress:
 @dataclass(frozen=True, slots=True)
 class UpdEvaluation:
     """Evaluation update payload.
-
-    Note: ``stock`` carries the external oracle evaluation (Stockfish for chess).
     """
 
-    stock: float | None
-    chipiron: float | None
-    white: float | None = None
-    black: float | None = None
+    oracle: StateEvaluation | None
+    chipiron: StateEvaluation | None
+    white: StateEvaluation | None = None
+    black: StateEvaluation | None = None
 
 
 @dataclass(frozen=True, slots=True)

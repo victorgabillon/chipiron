@@ -9,7 +9,8 @@ from typing import Literal, TypeAlias, assert_never
 
 import yaml
 from atomheart.move_factory import MoveFactory
-from valanga import Color, StateEvaluation, StateTag, TurnState
+from valanga import Color, StateTag, TurnState
+from valanga.evaluations import StateEvaluation
 from valanga.game import ActionKey
 
 import chipiron.players as players_m
@@ -127,11 +128,11 @@ class GameManager[StateT: TurnState = TurnState]:
         self.progress_collector = progress_collector
         self.rules = rules
 
-    def external_eval(self) -> tuple[float | None, float]:
+    def external_eval(self) -> tuple[StateEvaluation | None, StateEvaluation]:
         """Evaluates the game board using the display board evaluator.
 
         Returns:
-            tuple[float, float]: A tuple containing the evaluation scores.
+            tuple[StateEvaluation | None, StateEvaluation]: A tuple containing the evaluation scores.
         """
         return self.display_state_evaluator.evaluate(self.game.state)
 

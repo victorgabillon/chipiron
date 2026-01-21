@@ -31,6 +31,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 from valanga import Color
+from valanga.evaluations import ForcedOutcome, FloatyStateEvaluation, StateEvaluation
 
 from chipiron.displays.gui_protocol import (
     CmdBackOneMove,
@@ -54,6 +55,20 @@ from chipiron.utils.path_variables import GUI_DIR
 
 if typing.TYPE_CHECKING:
     from atomheart.move.imove import MoveKey
+
+
+def format_state_eval(ev: StateEvaluation | None) -> str:
+    if ev is None:
+        return "—"
+    match ev:
+        case FloatyStateEvaluation(value_white=value_white):
+            return "—" if value_white is None else f"{value_white:+.2f}"
+        case ForcedOutcome(outcome=outcome, line=line):
+            line_str = " ".join(map(str, line[:6]))
+            suffix = " …" if len(line) > 6 else ""
+            return f"{outcome} | {line_str}{suffix}"
+        case _:
+            return str(ev)
 
 
 class MainWindow(QWidget):
@@ -637,7 +652,7 @@ class MainWindow(QWidget):
 
             case UpdEvaluation():
                 self.update_evaluation(
-                    evaluation_stock=payload.stock,
+                    evaluation_oracle=payload.oracle,
                     evaluation_chipiron=payload.chipiron,
                     evaluation_white=payload.white,
                     evaluation_black=payload.black,
@@ -762,27 +777,35 @@ class MainWindow(QWidget):
 
     def update_evaluation(
         self,
-        evaluation_stock: float | None,
-        evaluation_chipiron: float | None,
-        evaluation_white: float | None,
-        evaluation_black: float | None,
+        evaluation_oracle: StateEvaluation | None,
+        evaluation_chipiron: StateEvaluation | None,
+        evaluation_white: StateEvaluation | None,
+        evaluation_black: StateEvaluation | None,
     ) -> None:
         """
         Update the evaluation values displayed on the GUI.
 
         Args:
-            evaluation_stock (float | None): The evaluation value for the stock.
-            evaluation_chipiron (float | None): The evaluation value for the chipiron.
-            evaluation_white (float | None): The evaluation value for white.
-            evaluation_black (float | None): The evaluation value for black.
+            evaluation_oracle (StateEvaluation | None): The evaluation value for the oracle.
+            evaluation_chipiron (StateEvaluation | None): The evaluation value for chipiron.
+            evaluation_white (StateEvaluation | None): The evaluation value for white.
+            evaluation_black (StateEvaluation | None): The evaluation value for black.
 
         Returns:
             None
         """
-        self.eval_button.setText("📊 Eval 🐟: " + str(evaluation_stock))
-        self.eval_button_chi.setText("🧮 Eval 🐙: " + str(evaluation_chipiron))
-        self.eval_button_black.setText("🧠 Eval White: " + str(evaluation_white))
-        self.eval_button_white.setText("🧠 Eval Black: " + str(evaluation_black))
+        self.eval_button.setText(
+            "📊 Eval 🐟: " + format_state_eval(evaluation_oracle)
+        )
+        self.eval_button_chi.setText(
+            "🧮 Eval 🐙: " + format_state_eval(evaluation_chipiron)
+        )
+        self.eval_button_white.setText(
+            "🧠 Eval White: " + format_state_eval(evaluation_white)
+        )
+        self.eval_button_black.setText(
+            "🧠 Eval Black: " + format_state_eval(evaluation_black)
+        )
 
     def update_game_play_status(self, play_status: PlayingStatus) -> None:
         """Update the game play status.
