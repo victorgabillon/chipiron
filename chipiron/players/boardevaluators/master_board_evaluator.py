@@ -71,16 +71,16 @@ class MasterBoardEvaluator:
         self.syzygy_evaluator = syzygy
         self.value_over_enum = value_over_enum
 
-    def value_white(self, board: IBoard) -> float:
+    def value_white(self, state: IBoard) -> float:
         """
         Calculates the value for the white player of a given node.
         If the value can be obtained from the syzygy evaluator, it is used.
         Otherwise, the board evaluator is used.
         """
-        value_white: float | None = self.syzygy_value_white(board)
+        value_white: float | None = self.syzygy_value_white(state)
         value_white_float: float
         if value_white is None:
-            value_white_float = self.board_evaluator.value_white(board)
+            value_white_float = self.board_evaluator.value_white(state)
         else:
             value_white_float = value_white
         return value_white_float

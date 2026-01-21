@@ -4,7 +4,7 @@ This module contains functions for creating match managers in the Chipiron game 
 
 import multiprocessing
 import uuid
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from atomheart.board.factory import (
     BoardFactory,
@@ -21,7 +21,9 @@ from chipiron.games.game.game_manager_factory import GameManagerFactory
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_manager import MatchManager
 from chipiron.games.match.match_results_factory import MatchResultsFactory
-from chipiron.players.boardevaluators.factory import create_game_board_evaluator
+from chipiron.players.boardevaluators.factory import (
+    create_game_board_evaluator_for_game_kind,
+)
 from chipiron.players.boardevaluators.table_base.factory import (
     AnySyzygyTable,
     create_syzygy,
@@ -79,11 +81,16 @@ def create_match_manager(
     player_one_name: str = args_player_one.name
     player_two_name: str = args_player_two.name
 
-    can_stockfish: bool = args_player_one.name not in [
+    can_oracle: bool = args_player_one.name not in [
         "Stockfish"
     ] and args_player_two.name not in ["Stockfish"]
-    game_board_evaluator: IGameStateEvaluator[StateT] = create_game_board_evaluator(
-        gui=gui, can_stockfish=can_stockfish
+    game_board_evaluator = cast(
+        "IGameStateEvaluator[StateT]",
+        create_game_board_evaluator_for_game_kind(
+            game_kind=args_game.game_kind,
+            gui=gui,
+            can_oracle=can_oracle,
+        ),
     )
 
     board_factory: BoardFactory = create_board_factory(
