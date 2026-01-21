@@ -64,12 +64,12 @@ class StockfishBoardEvaluator:
         self.args = args
         self.engine = None
 
-    def value_white(self, board: boards.IBoard) -> float:
+    def value_white(self, state: boards.IBoard) -> float:
         """
         Computes the value of the board for the white player.
 
         Args:
-            board (boards.BoardChi): The board object representing the current state of the game.
+            state (boards.IBoard): The board object representing the current state of the game.
 
         Returns:
             float: The value of the board for the white player.
@@ -100,7 +100,7 @@ class StockfishBoardEvaluator:
             # transform the board
             board_chi: BoardChi = create_board_chi(
                 fen_with_history=FenPlusHistory(
-                    current_fen=board.fen,
+                    current_fen=state.fen,
                     # historical_moves=board.move_history_stack,
                     # historical_boards=board.board_history_stack,  # type: ignore
                     # note that we do not give here historical_boards, hope this does not create but related to 3 fold repetition computation

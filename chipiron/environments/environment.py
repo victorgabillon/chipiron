@@ -15,9 +15,19 @@ if TYPE_CHECKING:
     import atomheart.board as boards
     from atomheart.board.utils import FenPlusHistory
 
-StateT = TypeVar("StateT")
+StateT = TypeVar("StateT", covariant=True)
 StateSnapT = TypeVar("StateSnapT")
-TagT = TypeVar("TagT")
+
+StartTagT = TypeVar("StartTagT", covariant=True)          # produced by normalize_start_tag
+StartTagInT = TypeVar("StartTagInT", contravariant=True)  # consumed by make_initial_state
+
+class TagNormalizer(Protocol[StartTagT]):
+    def __call__(self, tag: StateTag) -> StartTagT: ...
+
+class InitialStateFactory(Protocol[StateT, StartTagInT]):
+    def __call__(self, tag: StartTagInT) -> StateT: ...
+
+
 
 class PlayerObserverFactoryBuilder(Protocol):
     def __call__(
@@ -33,23 +43,15 @@ class ChessBoardFactory(Protocol):
     def __call__(self, *, fen_with_history: "FenPlusHistory") -> "boards.IBoard": ...
 
 
-class TagNormalizer(Protocol[TagT]):
-    def __call__(self, tag: StateTag) -> TagT: ...
-
-
-class InitialStateFactory(Protocol[StateT, TagT]):
-    def __call__(self, tag: TagT) -> StateT: ...
-
-
 @dataclass(frozen=True)
-class Environment(Generic[StateT, StateSnapT, TagT]):
+class Environment(Generic[StateT, StateSnapT, StartTagT]):
     game_kind: GameKind
     rules: GameRules[StateT]
     gui_encoder: GuiEncoder[StateT]
     player_encoder: PlayerRequestEncoder[StateT, StateSnapT]
     make_player_observer_factory: PlayerObserverFactoryBuilder
-    normalize_start_tag: TagNormalizer[TagT]
-    make_initial_state: InitialStateFactory[StateT, TagT]
+    normalize_start_tag: TagNormalizer[StartTagT]
+    make_initial_state: InitialStateFactory[StateT, StartTagT]
 
 
 @dataclass(frozen=True)

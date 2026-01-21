@@ -22,6 +22,7 @@ from chipiron.players.player_handle import InProcessPlayerHandle, PlayerHandle
 from chipiron.players.player_thread import PlayerProcess
 from chipiron.players.wirings.checkers_wiring import CHECKERS_WIRING
 from chipiron.players.wirings.chess_wiring import CHESS_WIRING
+from chipiron.games.game.game_manager import MainMailboxMessage
 
 if TYPE_CHECKING:
     from valanga import Color
@@ -39,12 +40,13 @@ class MoveFunction(Protocol):
     def __call__(self, request: PlayerRequest[object]) -> None: ...
 
 
+
 class PlayerObserverFactory(Protocol):
     def __call__(
         self,
         player_factory_args: PlayerFactoryArgs,
         player_color: Color,
-        main_thread_mailbox: PutQueue[IsDataclass],
+        main_thread_mailbox: PutQueue[MainMailboxMessage],
     ) -> tuple[PlayerHandle, MoveFunction]: ...
 
 
@@ -134,8 +136,8 @@ def _create_player_observer_distributed(
 def _create_player_observer_mono_process(
     player_factory_args: PlayerFactoryArgs,
     player_color: Color,
-    main_thread_mailbox: PutQueue[IsDataclass],
-    *,
+    main_thread_mailbox: PutQueue[MainMailboxMessage],
+            *,
     wiring: ObserverWiring[object, object, object],
     syzygy_table: AnySyzygyTable | None,
     implementation_args: object,
@@ -157,7 +159,7 @@ def _create_player_observer_mono_process(
     def run_request_inline(
         request: PlayerRequest[object],
         *,
-        queue_move: PutQueue[IsDataclass],
+        queue_move: PutQueue[MainMailboxMessage],
     ) -> None:
         handle_player_request(
             request=request, game_player=game_player, out_queue=queue_move

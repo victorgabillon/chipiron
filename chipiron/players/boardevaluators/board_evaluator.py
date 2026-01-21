@@ -2,32 +2,36 @@
 Module representing the board evaluators.
 """
 
-from typing import Any, Protocol
+from typing import  Protocol
 
 from valanga import Color, StateEvaluation
 
 from chipiron.displays.gui_protocol import UpdEvaluation
 from chipiron.displays.gui_publisher import GuiPublisher
 
+from typing import Protocol, TypeVar
 
-class StateEvaluator[StateT](Protocol):
+StateT_contra = TypeVar("StateT_contra", contravariant=True)
+
+class StateEvaluator(Protocol[StateT_contra]):
+
     """
     Protocol representing a board evaluator.
     """
 
-    def value_white(self, state: StateT) -> float:
+    def value_white(self, state: StateT_contra) -> float:
         """
         Evaluates a board and returns the value for white.
         """
         ...
 
 
-class IGameStateEvaluator[StateT](Protocol):
+class IGameStateEvaluator(Protocol[StateT_contra]):
     """
     Protocol representing a game board evaluator.
     """
 
-    def evaluate(self, state: StateT) -> tuple[float | None, float]:
+    def evaluate(self, state: StateT_contra) -> tuple[float | None, float]:
         """
         Evaluates a board and returns the evaluation values for stock and chi.
         """
@@ -38,43 +42,21 @@ class IGameStateEvaluator[StateT](Protocol):
         Adds an evaluation value for a player.
         """
         ...
-
 
 class GameStateEvaluator[StateT]:
-    """
-    This class is a collection of evaluators that display their analysis during the game.
-    They are not players, just external analysis and display.
-    """
-
-    board_evaluator_stock: StateEvaluator[StateT] | None
-    board_evaluator_chi: StateEvaluator[StateT]
-
     def __init__(
         self,
-        board_evaluator_stock: StateEvaluator[StateT] | None,
-        board_evaluator_chi: StateEvaluator[StateT],
-    ):
-        self.board_evaluator_stock = board_evaluator_stock
-        self.board_evaluator_chi = board_evaluator_chi
+        *,
+        chi: StateEvaluator[StateT],
+        oracle: StateEvaluator[StateT] | None,
+    ) -> None:
+        self._chi = chi
+        self._oracle = oracle
 
     def evaluate(self, state: StateT) -> tuple[float | None, float]:
-        """
-        Evaluates a board and returns the evaluation values for stock and chi.
-        """
-
-        evaluation_chi = self.board_evaluator_chi.value_white(state=state)
-        evaluation_stock = (
-            self.board_evaluator_stock.value_white(state=state)
-            if self.board_evaluator_stock is not None
-            else None
-        )
-
-        return evaluation_stock, evaluation_chi
-
-    def add_evaluation(self, player_color: Color, evaluation: StateEvaluation) -> None:
-        """
-        Adds an evaluation value for a player.
-        """
+        chi = self._chi.value_white(state)
+        oracle = self._oracle.value_white(state) if self._oracle else None
+        return oracle, chi
 
 
 class ObservableGameStateEvaluator[StateT]:
@@ -84,13 +66,13 @@ class ObservableGameStateEvaluator[StateT]:
 
     publishers: list[GuiPublisher]
 
-    game_state_evaluator: GameStateEvaluator[StateT]
-    evaluation_stock: Any
-    evaluation_chi: Any
-    evaluation_player_black: Any
-    evaluation_player_white: Any
+    game_state_evaluator: IGameStateEvaluator[StateT]
+    evaluation_stock: float | None = None
+    evaluation_chi: float | None = None
+    evaluation_player_black: StateEvaluation | None = None
+    evaluation_player_white: StateEvaluation | None = None
 
-    def __init__(self, game_state_evaluator: GameStateEvaluator[StateT]):
+    def __init__(self, game_state_evaluator: IGameStateEvaluator[StateT]):
         self.game_state_evaluator = game_state_evaluator
         self.publishers = []
         self.evaluation_stock = None

@@ -233,7 +233,7 @@ class ObservableGame[StateT: TurnState = TurnState]:
     move_functions: list[MoveFunction]
 
     def __init__(
-        self, game: Game[StateT], gui_encoder: GuiEncoder[StateT], scope: Scope
+        self, game: Game[StateT], gui_encoder: GuiEncoder[StateT], scope: Scope, player_encoder: PlayerRequestEncoder[StateT]
     ) -> None:
         """
         Initializes the ObservableGame object.
@@ -244,6 +244,7 @@ class ObservableGame[StateT: TurnState = TurnState]:
         """
         self.game = game
         self.gui_encoder = gui_encoder
+        self.player_encoder = player_encoder
         self.scope = scope
 
         self.mailboxes_display = []  # mailboxes for board to be displayed

@@ -1,15 +1,16 @@
 """
-Module for creating board evaluators.
+Module for building game state evaluators (stockfish + chipiron) with optional GUI publishing.
 """
 
-import sys
+from __future__ import annotations
+
 from dataclasses import dataclass
 from importlib.resources import files
+from typing import TypeVar
 
 import parsley_coco
-from coral.neural_networks.neural_net_board_eval_args import (
-    NeuralNetBoardEvalArgs,
-)
+
+from valanga import StateEvaluation
 
 from chipiron.players.boardevaluators.all_board_evaluator_args import (
     AllBoardEvaluatorArgs,
@@ -20,6 +21,7 @@ from chipiron.players.boardevaluators.stockfish_board_evaluator import (
     StockfishBoardEvalArgs,
     StockfishBoardEvaluator,
 )
+from coral.neural_networks.neural_net_board_eval_args import NeuralNetBoardEvalArgs
 
 from .board_evaluator import (
     GameStateEvaluator,
@@ -31,130 +33,89 @@ from .neural_networks.factory import (
     create_nn_board_eval_from_nn_parameters_file_and_existing_model,
 )
 
+StateT = TypeVar("StateT")
 
-@dataclass
+from typing import Protocol, TypeVar
+
+StateT = TypeVar("StateT")
+
+class EvaluatorWiring(Protocol[StateT]):
+    def build_chi(self) -> StateEvaluator[StateT]: ...
+    def build_oracle(self) -> StateEvaluator[StateT] | None: ...
+
+
+# ---------------- IO (config loading) ----------------
+
+@dataclass(frozen=True, slots=True)
 class BoardEvalArgsWrapper:
-    """A wrapper class for the BoardEvalArgs object.
-
-    This class provides a convenient way to access the board_evaluator attribute of the BoardEvalArgs object.
-
-    Attributes:
-        board_evaluator (BoardEvalArgs): The BoardEvalArgs object to be wrapped.
-    """
-
     board_evaluator: AllBoardEvaluatorArgs
 
 
-def create_board_evaluator(
-    args_board_evaluator: AllBoardEvaluatorArgs,
-) -> StateEvaluator:
-    """Create a board evaluator based on the given arguments.
-
-    Args:
-        args_board_evaluator (BoardEvalArgs): The arguments for the board evaluator.
-
-    Returns:
-        BoardEvaluator: The created board evaluator.
-
-    Raises:
-        SystemExit: If the given arguments do not match any supported board evaluator.
-
-    """
-    board_evaluator: StateEvaluator
-    match args_board_evaluator:
-        case StockfishBoardEvalArgs():
-            board_evaluator = StockfishBoardEvaluator(args_board_evaluator)
-        case BasicEvaluationBoardEvaluatorArgs():
-            board_evaluator = BasicEvaluation()
-        case NeuralNetBoardEvalArgs():
-            board_evaluator = create_nn_board_eval_from_nn_parameters_file_and_existing_model(
-                model_weights_file_name=args_board_evaluator.neural_nets_model_and_architecture.model_weights_file_name,
-                nn_architecture_args=args_board_evaluator.neural_nets_model_and_architecture.nn_architecture_args,
-            )
-
-        #  case TableBaseArgs():
-        #      board_evaluator = None
-        case other:
-            sys.exit(f"Board Eval: cannot find {other} in file {__name__}")
-
-    return board_evaluator
-
-
-def create_game_board_evaluator_not_observable(
-    can_stockfish: bool,
-) -> GameStateEvaluator:
-    """Create a game board evaluator that is not observable.
-
-    This function creates a game board evaluator that consists of two board evaluators:
-    - board_evaluator_stock: A board evaluator created using the StockfishBoardEvalArgs.
-    - board_evaluator_chi: A board evaluator created using the board evaluator configuration
-    specified in the 'base_chipiron_board_eval.yaml' file.
-
-    Returns:
-        GameBoardEvaluator: The created game board evaluator.
-    """
-    board_evaluator_stock: StateEvaluator | None
-    if can_stockfish:
-        board_evaluator_stock = create_board_evaluator(
-            args_board_evaluator=StockfishBoardEvalArgs(depth=20, time_limit=0.1)
-        )
-    else:
-        board_evaluator_stock = None
-
-    chi_board_eval_yaml_path: str = str(
+def load_chipiron_eval_args() -> AllBoardEvaluatorArgs:
+    chi_board_eval_yaml_path = str(
         files("chipiron").joinpath(
             "data/players/board_evaluator_config/base_chipiron_board_eval.yaml"
         )
     )
 
-    # chi_board_eval_dict: dict[Any, Any] = yaml_fetch_args_in_file(
-    #    path_file=chi_board_eval_yaml_path
-    # )
+    wrapper: BoardEvalArgsWrapper = parsley_coco.resolve_yaml_file_to_base_dataclass(
+        yaml_path=chi_board_eval_yaml_path,
+        base_cls=BoardEvalArgsWrapper,
+        package_name=str(files("chipiron")),
+    )
+    return wrapper.board_evaluator
 
-    chi_board_eval_args: BoardEvalArgsWrapper = (
-        parsley_coco.resolve_yaml_file_to_base_dataclass(
-            yaml_path=chi_board_eval_yaml_path,
-            base_cls=BoardEvalArgsWrapper,
-            package_name=str(files("chipiron")),
-        )
+
+# ---------------- Pure builders ----------------
+
+def build_state_evaluator[StateT](args: AllBoardEvaluatorArgs) -> StateEvaluator[StateT]:
+    match args:
+        case StockfishBoardEvalArgs():
+            return StockfishBoardEvaluator(args)
+        case BasicEvaluationBoardEvaluatorArgs():
+            return BasicEvaluation()
+        case NeuralNetBoardEvalArgs():
+            nn = args.neural_nets_model_and_architecture
+            return create_nn_board_eval_from_nn_parameters_file_and_existing_model(
+                model_weights_file_name=nn.model_weights_file_name,
+                nn_architecture_args=nn.nn_architecture_args,
+            )
+        case _:
+            raise ValueError(f"Unsupported evaluator args: {args!r}")
+
+
+def build_game_state_evaluator[StateT](
+    *,
+    chi: StateEvaluator[StateT],
+    stock: StateEvaluator[StateT] | None,
+) -> GameStateEvaluator[StateT]:
+    return GameStateEvaluator(
+        board_evaluator_stock=stock,
+        board_evaluator_chi=chi,
     )
 
-    # atm using a wrapper because dacite does not accept unions as data_class argument
-    # chi_board_eval_args: BoardEvalArgsWrapper = dacite.from_dict(
-    #    data_class=BoardEvalArgsWrapper, data=chi_board_eval_dict
-    # )
 
-    board_evaluator_chi: StateEvaluator = create_board_evaluator(
-        args_board_evaluator=chi_board_eval_args.board_evaluator
-    )
+# ---------------- Public entrypoint ----------------
 
-    game_board_evaluator: GameStateEvaluator = GameStateEvaluator(
-        board_evaluator_stock=board_evaluator_stock,
-        board_evaluator_chi=board_evaluator_chi,
-    )
+def make_game_state_evaluator[StateT](
+    *,
+    gui: bool,
+    can_stockfish: bool,
+    chi_args: AllBoardEvaluatorArgs | None = None,
+    stockfish_args: StockfishBoardEvalArgs = StockfishBoardEvalArgs(depth=20, time_limit=0.1),
+) -> IGameStateEvaluator[StateT]:
+    if chi_args is None:
+        chi_args = load_chipiron_eval_args()
 
-    return game_board_evaluator
+    chi = build_state_evaluator[StateT](chi_args)
 
+    stock: StateEvaluator[StateT] | None = None
+    if can_stockfish:
+        stock = build_state_evaluator[StateT](stockfish_args)
 
-def create_game_board_evaluator(gui: bool, can_stockfish: bool) -> IGameStateEvaluator:
-    """Create a game board evaluator based on the given GUI flag.
+    base: IGameStateEvaluator[StateT] = build_game_state_evaluator(chi=chi, stock=stock)
 
-    Args:
-        gui (bool): A flag indicating whether the GUI is enabled or not.
-
-    Returns:
-        IGameBoardEvaluator: An instance of the game board evaluator.
-
-    """
-    game_board_evaluator_res: IGameStateEvaluator
-    game_board_evaluator: GameStateEvaluator = (
-        create_game_board_evaluator_not_observable(can_stockfish=can_stockfish)
-    )
     if gui:
-        game_board_evaluator_res = ObservableGameStateEvaluator(
-            game_board_evaluator=game_board_evaluator
-        )
-    else:
-        game_board_evaluator_res = game_board_evaluator
+        return ObservableGameStateEvaluator(base)
 
-    return game_board_evaluator_res
+    return base

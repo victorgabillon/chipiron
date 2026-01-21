@@ -14,6 +14,8 @@ from atomheart.move_factory import MoveFactory, create_move_factory
 
 import chipiron as ch
 import chipiron.games.game as game
+from chipiron.games.game.game_manager import MainMailboxMessage
+from chipiron.games.game.game_rules import StateT
 import chipiron.players as players
 from chipiron.games.game.game_manager_factory import GameManagerFactory
 from chipiron.games.match.match_args import MatchArgs
@@ -34,7 +36,6 @@ if TYPE_CHECKING:
     import queue
 
     from chipiron.players.boardevaluators.board_evaluator import IGameStateEvaluator
-    from chipiron.utils.dataclass import IsDataclass
 
 
 def create_match_manager(
@@ -64,7 +65,7 @@ def create_match_manager(
     Returns:
         MatchManager: The created match manager.
     """
-    main_thread_mailbox: queue.Queue[IsDataclass] = multiprocessing.Manager().Queue()
+    main_thread_mailbox: queue.Queue[MainMailboxMessage] = multiprocessing.Manager().Queue()
 
     session_id: str = uuid.uuid4().hex
     match_id: str = uuid.uuid4().hex
@@ -81,7 +82,7 @@ def create_match_manager(
     can_stockfish: bool = args_player_one.name not in [
         "Stockfish"
     ] and args_player_two.name not in ["Stockfish"]
-    game_board_evaluator: IGameStateEvaluator = create_game_board_evaluator(
+    game_board_evaluator: IGameStateEvaluator[StateT] = create_game_board_evaluator(
         gui=gui, can_stockfish=can_stockfish
     )
 
@@ -95,7 +96,7 @@ def create_match_manager(
         use_rust_boards=implementation_args.use_rust_boards
     )
 
-    game_manager_factory: GameManagerFactory = GameManagerFactory(
+    game_manager_factory: GameManagerFactory[StateT] = GameManagerFactory[StateT](
         syzygy_table=syzygy_table,
         game_manager_state_evaluator=game_board_evaluator,
         output_folder_path=output_folder_path,

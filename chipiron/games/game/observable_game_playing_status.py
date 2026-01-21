@@ -2,9 +2,9 @@
 Module that defines an observable version of GamePlayingStatus
 """
 
-import queue
 
-from chipiron.utils.communication.gui_messages import GameStatusMessage
+from chipiron.displays.gui_protocol import UpdGameStatus
+from chipiron.displays.gui_publisher import GuiPublisher
 
 from .game_playing_status import GamePlayingStatus, PlayingStatus
 
@@ -15,18 +15,22 @@ class ObservableGamePlayingStatus:
     Players and GUI can then decide what to do with this information.
     """
 
+
+    game_playing_status : GamePlayingStatus
+    _publishers: list[GuiPublisher] = []
+
     def __init__(self, game_playing_status: GamePlayingStatus) -> None:
         self.game_playing_status = game_playing_status
-        self._mailboxes: list[queue.Queue[GameStatusMessage]] = []
+        self._publishers: list[GuiPublisher] = []
 
-    def subscribe(self, mailboxes: list[queue.Queue[GameStatusMessage]]) -> None:
+    def subscribe(self, publishers: list[GuiPublisher]) -> None:
         """
         Subscribes the given mailboxes to receive game status updates.
 
         Args:
-            mailboxes (list[queue.Queue[GameStatusMessage]]): The mailboxes to subscribe.
+            publishers (list[GuiPublisher]): The publishers to subscribe.
         """
-        self._mailboxes += mailboxes
+        self._publishers += publishers
 
     @property
     def status(self) -> PlayingStatus:
@@ -86,8 +90,6 @@ class ObservableGamePlayingStatus:
         Notifies the subscribers with the current game status.
         """
         print("notify observable game playing")
-        message: GameStatusMessage = GameStatusMessage(
-            status=self.game_playing_status.status
-        )
-        for mailbox in self._mailboxes:
-            mailbox.put(item=message)
+        payload = UpdGameStatus(status=self.game_playing_status.status)
+        for pub in self._publishers:
+            pub.publish(payload)

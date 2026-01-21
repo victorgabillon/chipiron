@@ -10,7 +10,7 @@ from valanga import Color
 
 from .final_game_result import FinalGameResult
 
-StateT = TypeVar("StateT")
+StateT = TypeVar("StateT",contravariant=True)
 
 
 class OutcomeKind(str, Enum):

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypeVar
 
+from chipiron.games.game.game_manager import MainMailboxMessage
 from chipiron.players.communications.player_message import (
     EvMove,
     PlayerEvent,
@@ -19,7 +20,6 @@ from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:
     from chipiron.players.game_player import GamePlayer
-    from chipiron.utils.dataclass import IsDataclass
     from chipiron.utils.queue_protocols import PutQueue
 
 StateSnapT = TypeVar("StateSnapT")
@@ -30,7 +30,7 @@ def handle_player_request(
     *,
     request: PlayerRequest[StateSnapT],
     game_player: GamePlayer[StateSnapT, RuntimeStateT],
-    out_queue: PutQueue[IsDataclass],
+    out_queue: PutQueue[MainMailboxMessage],
 ) -> None:
     state: TurnStatePlusHistory[StateSnapT] = request.state
 
