@@ -7,8 +7,8 @@ from typing import Protocol
 
 from valanga import Color
 
-from chipiron.utils.communication.gui_messages.gui_messages import UpdPlayerProgress
-from chipiron.utils.communication.gui_publisher import GuiPublisher
+from chipiron.displays.gui_protocol import UpdPlayerProgress
+from chipiron.displays.gui_publisher import GuiPublisher
 
 
 class PlayerProgressCollectorP(Protocol):
@@ -66,12 +66,14 @@ class PlayerProgressCollector:
         """
         self.progress_black_ = value
 
+def make_publishers() -> list[GuiPublisher]:
+    return []
 
 @dataclass(slots=True)
 class PlayerProgressCollectorObservable(PlayerProgressCollectorP):
     """Collects progress and publishes GUI payloads."""
 
-    publishers: list[GuiPublisher] = field(default_factory=list)
+    publishers: list[GuiPublisher] = make_publishers()
     progress_collector: PlayerProgressCollector = field(
         default_factory=PlayerProgressCollector
     )

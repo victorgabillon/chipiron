@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from chipiron.games.game.game_manager import MainMailboxMessage
+
 from typing import TYPE_CHECKING, Generic, Protocol, TypeVar
 
 if TYPE_CHECKING:
     from chipiron.players.game_player import GamePlayer
-    from chipiron.utils.dataclass import IsDataclass
     from chipiron.utils.queue_protocols import PutQueue
 
 SnapT = TypeVar("SnapT")
@@ -16,7 +17,7 @@ BuildArgsT_contra = TypeVar("BuildArgsT_contra", contravariant=True)
 
 class BuildGamePlayer(Protocol[SnapT, RuntimeT, BuildArgsT_contra]):
     def __call__(
-        self, args: BuildArgsT_contra, queue_out: PutQueue[IsDataclass]
+        self, args: BuildArgsT_contra, queue_out: PutQueue[MainMailboxMessage],
     ) -> GamePlayer[SnapT, RuntimeT]: ...
 
 

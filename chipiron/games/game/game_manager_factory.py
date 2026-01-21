@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 import atomheart.board as boards
 from atomheart.move_factory import MoveFactory
-from valanga import Color
+from valanga import Color, TurnState
 from valanga.game import Seed
 
 from chipiron.displays.gui_protocol import (
@@ -49,7 +49,7 @@ if TYPE_CHECKING:
 def make_subscriber_queues() -> list[queue.Queue[GuiUpdate]]:
         return []
 @dataclass
-class GameManagerFactory[StateT]:
+class GameManagerFactory[StateT:TurnState]:
     """
     The GameManagerFactory creates GameManager once the players and rules have been decided.
     Calling create ask for the creation of a GameManager depending on args and players.
@@ -85,7 +85,7 @@ class GameManagerFactory[StateT]:
         args_game_manager: GameArgs,
         player_color_to_factory_args: dict[Color, PlayerFactoryArgs],
         game_seed: Seed,
-    ) -> GameManager:
+    ) -> GameManager[StateT]:
         """
         Create a GameManager with the given arguments
 
@@ -157,11 +157,11 @@ class GameManagerFactory[StateT]:
         # creating the game playing status
         game_playing_status: GamePlayingStatus = GamePlayingStatus()
 
-        game: Game = Game(
+        game: Game[StateT] = Game[StateT](
             playing_status=game_playing_status, state=board, seed_=game_seed
         )
 
-        observable_game: ObservableGame = ObservableGame(
+        observable_game: ObservableGame[StateT] = ObservableGame[StateT](
             game=game,
             gui_encoder=environment.gui_encoder,
             player_encoder=environment.player_encoder,
@@ -212,8 +212,8 @@ class GameManagerFactory[StateT]:
             for color, player_factory_args in player_color_to_factory_args.items()
         }
 
-        game_manager: GameManager
-        game_manager = GameManager(
+        game_manager: GameManager[StateT]
+        game_manager = GameManager[StateT](
             game=observable_game,
             display_state_evaluator=display_state_evaluator,
             output_folder_path=self.output_folder_path,
