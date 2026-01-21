@@ -2,13 +2,18 @@
 This module contains the ObservableMatchResults class, which is a wrapper around the MatchResults class.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from chipiron.games.game.final_game_result import FinalGameResult
-from chipiron.utils.communication.gui_messages.gui_messages import UpdMatchResults
-from chipiron.utils.communication.gui_publisher import GuiPublisher
+from chipiron.displays.gui_protocol import UpdMatchResults
+from chipiron.displays.gui_publisher import GuiPublisher
 
 from .match_results import MatchResults, SimpleResults
+
+
+def make_publishers() -> list[GuiPublisher]:
+    """Helper function to create an empty list of GuiPublisher."""
+    return []
 
 
 @dataclass(slots=True)
@@ -24,7 +29,7 @@ class ObservableMatchResults:
     """
 
     match_results: MatchResults
-    publishers: list[GuiPublisher] = field(default_factory=list)
+    publishers: list[GuiPublisher] = make_publishers()
 
     def subscribe(self, pub: GuiPublisher) -> None:
         """

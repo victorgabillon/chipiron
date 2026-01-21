@@ -9,7 +9,6 @@ from atomheart.board import IBoard
 from chess import Square
 
 
-
 def value_base(board: IBoard, color: chess.Color) -> int:
     """Calculate the base value of the given board for the specified color.
 

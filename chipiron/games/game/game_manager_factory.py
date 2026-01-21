@@ -47,9 +47,11 @@ if TYPE_CHECKING:
 
 
 def make_subscriber_queues() -> list[queue.Queue[GuiUpdate]]:
-        return []
+    return []
+
+
 @dataclass
-class GameManagerFactory[StateT:TurnState]:
+class GameManagerFactory[StateT: TurnState]:
     """
     The GameManagerFactory creates GameManager once the players and rules have been decided.
     Calling create ask for the creation of a GameManager depending on args and players.
@@ -76,9 +78,6 @@ class GameManagerFactory[StateT:TurnState]:
     subscriber_queues: list[queue.Queue[GuiUpdate]] = make_subscriber_queues()
     session_id: SessionId = ""
     match_id: MatchId | None = None
-
-
-
 
     def create(
         self,
@@ -172,12 +171,10 @@ class GameManagerFactory[StateT:TurnState]:
             observable_game.register_display(pub)
 
         # CREATING THE PLAYERS
-        player_observer_factory: PlayerObserverFactory = (
-            environment.make_player_observer_factory(
-                each_player_has_its_own_thread=args_game_manager.each_player_has_its_own_thread,
-                implementation_args=self.implementation_args,
-                universal_behavior=self.universal_behavior,
-            )
+        player_observer_factory: PlayerObserverFactory = environment.make_player_observer_factory(
+            each_player_has_its_own_thread=args_game_manager.each_player_has_its_own_thread,
+            implementation_args=self.implementation_args,
+            universal_behavior=self.universal_behavior,
         )
 
         player_progress_collector: PlayerProgressCollectorObservable = (

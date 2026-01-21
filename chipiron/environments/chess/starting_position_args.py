@@ -39,9 +39,7 @@ class FileStartingPositionArgs(StartingPositionArgs):
         return ChessStartTag(fen=fen)
 
 
-AllStartingPositionArgs: TypeAlias = (
-    FenStartingPositionArgs | FileStartingPositionArgs
-)
+AllStartingPositionArgs: TypeAlias = FenStartingPositionArgs | FileStartingPositionArgs
 
 
 def _load_fen_from_file(file_name: str) -> str:
@@ -56,18 +54,14 @@ def _load_fen_from_file(file_name: str) -> str:
 
 def _resolve_starting_board_path(file_name: str) -> Path:
     try:
-        starting_boards = resources.files("chipiron.data").joinpath(
-            "starting_boards"
-        )
+        starting_boards = resources.files("chipiron.data").joinpath("starting_boards")
     except ModuleNotFoundError as exc:
         raise FileNotFoundError(
             f"Starting position file not found: {file_name}"
         ) from exc
     resource_path = starting_boards.joinpath(file_name)
     if not resource_path.is_file():
-        raise FileNotFoundError(
-            f"Starting position file not found: {file_name}"
-        )
+        raise FileNotFoundError(f"Starting position file not found: {file_name}")
     with resources.as_file(resource_path) as resolved:
         return resolved
 

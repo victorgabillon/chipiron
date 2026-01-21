@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from chipiron.environments.chess.types import ChessState
 from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:
@@ -61,6 +62,6 @@ class ChessAdapter:
 
         return None
 
-    def recommend(self, runtime_state: IBoard, seed: Seed) -> Recommendation:
+    def recommend(self, runtime_state: ChessState, seed: Seed) -> Recommendation:
         # `valanga.policy.BranchSelector` is `recommend(state, seed)`.
         return self.main_move_selector.recommend(state=runtime_state, seed=seed)

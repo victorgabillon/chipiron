@@ -12,8 +12,8 @@ from chipiron.displays.gui_publisher import GuiPublisher
 StateT_contra = TypeVar("StateT_contra", contravariant=True)
 StateT = TypeVar("StateT")
 
-class StateEvaluator(Protocol[StateT_contra]):
 
+class StateEvaluator(Protocol[StateT_contra]):
     """
     Protocol representing a board evaluator.
     """
@@ -25,12 +25,12 @@ class StateEvaluator(Protocol[StateT_contra]):
         ...
 
 
-class IGameStateEvaluator(Protocol[StateT]):
+class IGameStateEvaluator(Protocol[StateT_contra]):
     """
     Protocol representing a game board evaluator.
     """
 
-    def evaluate(self, state: StateT) -> tuple[float | None, float]:
+    def evaluate(self, state: StateT_contra) -> tuple[float | None, float]:
         """
         Evaluates a board and returns the evaluation values for oracle and chi.
         """
@@ -41,6 +41,7 @@ class IGameStateEvaluator(Protocol[StateT]):
         Adds an evaluation value for a player.
         """
         ...
+
 
 class GameStateEvaluator[StateT]:
     def __init__(

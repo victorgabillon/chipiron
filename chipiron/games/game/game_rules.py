@@ -6,11 +6,11 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Protocol, TypeVar
 
-from valanga import Color
+from valanga import Color, TurnState
 
 from .final_game_result import FinalGameResult
 
-StateT = TypeVar("StateT",contravariant=True)
+StateT = TypeVar("StateT", contravariant=True, bound=TurnState)
 
 
 class OutcomeKind(str, Enum):
@@ -46,7 +46,7 @@ class PositionAssessment:
     reason: str | None = None
 
 
-class GameRules(Protocol[StateT]):
+class GameRules[StateT](Protocol):
     def outcome(self, state: StateT) -> GameOutcome | None:
         """Return None if not terminal; otherwise a GameOutcome."""
         ...
@@ -59,9 +59,7 @@ class GameRules(Protocol[StateT]):
         """Return a non-terminal assessment such as tablebase verdicts."""
         ...
 
-    def pretty_assessment(
-        self, state: StateT, assessment: PositionAssessment
-    ) -> str:
+    def pretty_assessment(self, state: StateT, assessment: PositionAssessment) -> str:
         """Return a human-friendly string describing the assessment."""
         ...
 

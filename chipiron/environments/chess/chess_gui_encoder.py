@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
-from atomheart.board.iboard import IBoard
 from valanga.game import Seed
 
+from chipiron.environments.chess.types import ChessState
 from chipiron.environments.types import GameKind
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.utils.communication.gui_encoder import GuiEncoder
@@ -14,13 +14,13 @@ from chipiron.displays.gui_protocol import (
 
 
 @dataclass(frozen=True, slots=True)
-class ChessGuiEncoder(GuiEncoder[IBoard]):
+class ChessGuiEncoder(GuiEncoder[ChessState]):
     game_kind: GameKind = GameKind.CHESS
 
     def make_state_payload(
         self,
         *,
-        state: IBoard,
+        state: ChessState,
         seed: Seed | None,
     ) -> UpdatePayload:
         return UpdStateChess(

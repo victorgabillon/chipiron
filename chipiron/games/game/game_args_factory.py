@@ -6,7 +6,7 @@ This module defines the GameArgsFactory class, which is responsible for creating
 
 import typing
 
-import chess
+from valanga import Color
 from valanga.game import Seed
 
 import chipiron.players as players
@@ -49,7 +49,7 @@ class GameArgsFactory:
 
     def generate_game_args(
         self, game_number: int
-    ) -> tuple[dict[chess.Color, players.PlayerFactoryArgs], GameArgs, Seed | None]:
+    ) -> tuple[dict[Color, players.PlayerFactoryArgs], GameArgs, Seed | None]:
         """
         Generate game arguments for a specific game number.
 
@@ -71,16 +71,16 @@ class GameArgsFactory:
             player_args=self.args_player_two, seed=merged_seed
         )
 
-        player_color_to_factory_args: dict[chess.Color, players.PlayerFactoryArgs]
+        player_color_to_factory_args: dict[Color, players.PlayerFactoryArgs]
         if game_number < self.args_match.number_of_games_player_one_white:
             player_color_to_factory_args = {
-                chess.WHITE: player_one_factory_args,
-                chess.BLACK: player_two_factory_args,
+                Color.WHITE: player_one_factory_args,
+                Color.BLACK: player_two_factory_args,
             }
         else:
             player_color_to_factory_args = {
-                chess.WHITE: player_two_factory_args,
-                chess.BLACK: player_one_factory_args,
+                Color.WHITE: player_two_factory_args,
+                Color.BLACK: player_one_factory_args,
             }
         self.game_number += 1
 
