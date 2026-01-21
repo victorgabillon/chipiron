@@ -1,121 +1,92 @@
 """
-Module for building game state evaluators (stockfish + chipiron) with optional GUI publishing.
+Module for building game state evaluators (oracle + chipiron) with optional GUI publishing.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from importlib.resources import files
-from typing import TypeVar
+from typing import Literal, TypeVar, assert_never, cast, overload
 
-import parsley_coco
-
-from valanga import StateEvaluation
-
-from chipiron.players.boardevaluators.all_board_evaluator_args import (
-    AllBoardEvaluatorArgs,
-    BasicEvaluationBoardEvaluatorArgs,
-)
-from chipiron.players.boardevaluators.basic_evaluation import BasicEvaluation
-from chipiron.players.boardevaluators.stockfish_board_evaluator import (
-    StockfishBoardEvalArgs,
-    StockfishBoardEvaluator,
-)
-from coral.neural_networks.neural_net_board_eval_args import NeuralNetBoardEvalArgs
+from chipiron.environments.types import GameKind
+from chipiron.environments.chess.types import ChessState
+from chipiron.players.boardevaluators.wirings.chess_eval_wiring import ChessEvalWiring
+from chipiron.players.boardevaluators.wirings.null_eval_wiring import NullEvalWiring
+from chipiron.players.boardevaluators.wirings.protocols import EvaluatorWiring
 
 from .board_evaluator import (
     GameStateEvaluator,
     IGameStateEvaluator,
     ObservableGameStateEvaluator,
-    StateEvaluator,
-)
-from .neural_networks.factory import (
-    create_nn_board_eval_from_nn_parameters_file_and_existing_model,
 )
 
 StateT = TypeVar("StateT")
 
-from typing import Protocol, TypeVar
 
-StateT = TypeVar("StateT")
-
-class EvaluatorWiring(Protocol[StateT]):
-    def build_chi(self) -> StateEvaluator[StateT]: ...
-    def build_oracle(self) -> StateEvaluator[StateT] | None: ...
+@overload
+def _select_eval_wiring(
+    game_kind: Literal[GameKind.CHESS], *, can_oracle: bool
+) -> EvaluatorWiring[ChessState]: ...
 
 
-# ---------------- IO (config loading) ----------------
-
-@dataclass(frozen=True, slots=True)
-class BoardEvalArgsWrapper:
-    board_evaluator: AllBoardEvaluatorArgs
-
-
-def load_chipiron_eval_args() -> AllBoardEvaluatorArgs:
-    chi_board_eval_yaml_path = str(
-        files("chipiron").joinpath(
-            "data/players/board_evaluator_config/base_chipiron_board_eval.yaml"
-        )
-    )
-
-    wrapper: BoardEvalArgsWrapper = parsley_coco.resolve_yaml_file_to_base_dataclass(
-        yaml_path=chi_board_eval_yaml_path,
-        base_cls=BoardEvalArgsWrapper,
-        package_name=str(files("chipiron")),
-    )
-    return wrapper.board_evaluator
+@overload
+def _select_eval_wiring(
+    game_kind: Literal[GameKind.CHECKERS], *, can_oracle: bool
+) -> EvaluatorWiring[object]: ...
 
 
-# ---------------- Pure builders ----------------
-
-def build_state_evaluator[StateT](args: AllBoardEvaluatorArgs) -> StateEvaluator[StateT]:
-    match args:
-        case StockfishBoardEvalArgs():
-            return StockfishBoardEvaluator(args)
-        case BasicEvaluationBoardEvaluatorArgs():
-            return BasicEvaluation()
-        case NeuralNetBoardEvalArgs():
-            nn = args.neural_nets_model_and_architecture
-            return create_nn_board_eval_from_nn_parameters_file_and_existing_model(
-                model_weights_file_name=nn.model_weights_file_name,
-                nn_architecture_args=nn.nn_architecture_args,
-            )
+def _select_eval_wiring(
+    game_kind: GameKind, *, can_oracle: bool
+) -> EvaluatorWiring[object]:
+    match game_kind:
+        case GameKind.CHESS:
+            return cast(EvaluatorWiring[object], ChessEvalWiring(can_oracle=can_oracle))
+        case GameKind.CHECKERS:
+            return cast(EvaluatorWiring[object], NullEvalWiring())
         case _:
-            raise ValueError(f"Unsupported evaluator args: {args!r}")
+            assert_never(game_kind)
 
 
-def build_game_state_evaluator[StateT](
+def create_game_board_evaluator(
     *,
-    chi: StateEvaluator[StateT],
-    stock: StateEvaluator[StateT] | None,
-) -> GameStateEvaluator[StateT]:
-    return GameStateEvaluator(
-        board_evaluator_stock=stock,
-        board_evaluator_chi=chi,
-    )
-
-
-# ---------------- Public entrypoint ----------------
-
-def make_game_state_evaluator[StateT](
-    *,
+    wiring: EvaluatorWiring[StateT],
     gui: bool,
-    can_stockfish: bool,
-    chi_args: AllBoardEvaluatorArgs | None = None,
-    stockfish_args: StockfishBoardEvalArgs = StockfishBoardEvalArgs(depth=20, time_limit=0.1),
 ) -> IGameStateEvaluator[StateT]:
-    if chi_args is None:
-        chi_args = load_chipiron_eval_args()
-
-    chi = build_state_evaluator[StateT](chi_args)
-
-    stock: StateEvaluator[StateT] | None = None
-    if can_stockfish:
-        stock = build_state_evaluator[StateT](stockfish_args)
-
-    base: IGameStateEvaluator[StateT] = build_game_state_evaluator(chi=chi, stock=stock)
+    base: IGameStateEvaluator[StateT] = GameStateEvaluator(
+        chi=wiring.build_chi(),
+        oracle=wiring.build_oracle(),
+    )
 
     if gui:
         return ObservableGameStateEvaluator(base)
 
     return base
+
+
+@overload
+def create_game_board_evaluator_for_game_kind(
+    *,
+    game_kind: Literal[GameKind.CHESS],
+    gui: bool,
+    can_oracle: bool,
+) -> IGameStateEvaluator[ChessState]: ...
+
+
+@overload
+def create_game_board_evaluator_for_game_kind(
+    *,
+    game_kind: Literal[GameKind.CHECKERS],
+    gui: bool,
+    can_oracle: bool,
+) -> IGameStateEvaluator[object]: ...
+
+
+def create_game_board_evaluator_for_game_kind(
+    *,
+    game_kind: GameKind,
+    gui: bool,
+    can_oracle: bool,
+) -> IGameStateEvaluator[object]:
+    wiring = _select_eval_wiring(game_kind, can_oracle=can_oracle)
+    return create_game_board_evaluator(
+        wiring=cast("EvaluatorWiring[object]", wiring),
+        gui=gui,
+    )

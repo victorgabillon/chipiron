@@ -3,6 +3,7 @@ Module where we define the Stockfish Board Evaluator
 """
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 import atomheart.board as boards
@@ -11,6 +12,7 @@ from atomheart.board.factory import create_board_chi
 from atomheart.board.utils import FenPlusHistory
 
 from chipiron.players.boardevaluators.board_evaluator_type import BoardEvalTypes
+from chipiron.utils.path_variables import STOCKFISH_BINARY_PATH
 from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:
@@ -64,6 +66,19 @@ class StockfishBoardEvaluator:
         self.args = args
         self.engine = None
 
+    @staticmethod
+    def _candidate_paths() -> list[str]:
+        return [
+            str(STOCKFISH_BINARY_PATH),
+            "/usr/games/stockfish",
+            "stockfish",
+            r"stockfish/stockfish/stockfish-ubuntu-x86-64-avx2",
+        ]
+
+    @staticmethod
+    def is_available() -> bool:
+        return any(Path(path).exists() for path in StockfishBoardEvaluator._candidate_paths())
+
     def value_white(self, state: boards.IBoard) -> float:
         """
         Computes the value of the board for the white player.
@@ -77,13 +92,7 @@ class StockfishBoardEvaluator:
         try:
             if self.engine is None:
                 # Try multiple possible Stockfish paths
-                stockfish_paths = [
-                    "/usr/games/stockfish",
-                    "stockfish",
-                    r"stockfish/stockfish/stockfish-ubuntu-x86-64-avx2",
-                ]
-
-                for path in stockfish_paths:
+                for path in self._candidate_paths():
                     try:
                         self.engine = chess.engine.SimpleEngine.popen_uci(path)
                         break
