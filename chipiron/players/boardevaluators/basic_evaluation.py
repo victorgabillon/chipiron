@@ -8,7 +8,6 @@ import chess
 from atomheart.board import IBoard
 from chess import Square
 
-from chipiron.players.boardevaluators.board_evaluator import StateEvaluator
 
 
 def value_base(board: IBoard, color: chess.Color) -> int:
@@ -121,7 +120,7 @@ def value_player_to_move(board: IBoard) -> float:
     return value
 
 
-class BasicEvaluation(StateEvaluator):
+class BasicEvaluation:
     """A basic board evaluator that calculates the value of the board for the white player.
 
     Args:
@@ -135,20 +134,20 @@ class BasicEvaluation(StateEvaluator):
 
     """
 
-    def value_white(self, board: IBoard) -> float:
+    def value_white(self, state: IBoard) -> float:
         """Calculates the value of the board for the white player.
 
         Args:
-            board (BoardChi): The chess board.
+            state (BoardChi): The chess board.
 
         Returns:
             float: The value of the board for the white player.
 
         """
-        value_white_pieces: float = float(value_base(board, chess.WHITE))
-        value_black_pieces: float = float(value_base(board, chess.BLACK))
-        value_white_pieces += add_pawns_value_white(board)
-        value_black_pieces += add_pawns_value_black(board)
+        value_white_pieces: float = float(value_base(state, chess.WHITE))
+        value_black_pieces: float = float(value_base(state, chess.BLACK))
+        value_white_pieces += add_pawns_value_white(state)
+        value_black_pieces += add_pawns_value_black(state)
 
         return (
             value_white_pieces - value_black_pieces
