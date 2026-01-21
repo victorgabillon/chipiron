@@ -3,9 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol, TypeVar, cast
 
-from atomheart.board.iboard import IBoard
 from atomheart.board.utils import FenPlusHistory
 
+from chipiron.environments.chess.types import ChessState
 from chipiron.environments.types import GameKind
 from chipiron.players.communications.player_message import (
     PlayerRequest,
@@ -36,11 +36,11 @@ class PlayerRequestEncoder(Protocol[StateT_contra, StateSnapT]):
 
 
 @dataclass(frozen=True, slots=True)
-class ChessPlayerRequestEncoder(PlayerRequestEncoder[IBoard, FenPlusHistory]):
+class ChessPlayerRequestEncoder(PlayerRequestEncoder[ChessState, FenPlusHistory]):
     game_kind: GameKind = GameKind.CHESS
 
     def make_move_request(
-        self, *, state: IBoard, seed: Seed, scope: Scope
+        self, *, state: ChessState, seed: Seed, scope: Scope
     ) -> PlayerRequest[FenPlusHistory]:
         fen_plus_history: FenPlusHistory = state.into_fen_plus_history()
 

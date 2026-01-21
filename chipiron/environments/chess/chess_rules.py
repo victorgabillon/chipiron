@@ -4,10 +4,10 @@ Chess-specific rules adapter.
 
 from dataclasses import dataclass
 
-from atomheart.board import IBoard
 from valanga import Color
 from valanga.over_event import HowOver, Winner
 
+from chipiron.environments.chess.types import ChessState
 from chipiron.games.game.game_rules import (
     GameOutcome,
     GameRules,
@@ -19,15 +19,15 @@ from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 
 
 @dataclass(frozen=True)
-class ChessRules(GameRules[IBoard]):
+class ChessRules(GameRules[ChessState]):
     syzygy: AnySyzygyTable | None = None
 
-    def outcome(self, state: IBoard) -> GameOutcome | None:
+    def outcome(self, state: ChessState) -> GameOutcome | None:
         if state.is_game_over():
             return self._outcome_from_board(state)
         return None
 
-    def pretty_result(self, state: IBoard, outcome: GameOutcome) -> str:
+    def pretty_result(self, state: ChessState, outcome: GameOutcome) -> str:
         result_str = self._result_string_outcome(outcome)
         reason = outcome.reason
         if reason is None and state.is_game_over():
@@ -37,13 +37,15 @@ class ChessRules(GameRules[IBoard]):
             message = f"{message} ({reason})"
         return message
 
-    def assessment(self, state: IBoard) -> PositionAssessment | None:
+    def assessment(self, state: ChessState) -> PositionAssessment | None:
         if self.syzygy is None or not self.syzygy.fast_in_table(state):
             return None
         winner, how_over = self.syzygy.get_over_event(board=state)
         return self._assessment_from_over_event(winner, how_over, reason="syzygy")
 
-    def pretty_assessment(self, state: IBoard, assessment: PositionAssessment) -> str:
+    def pretty_assessment(
+        self, state: ChessState, assessment: PositionAssessment
+    ) -> str:
         result_str = self._result_string_assessment(assessment)
         message = f"Assessment: {result_str}"
         if assessment.reason:
@@ -53,14 +55,18 @@ class ChessRules(GameRules[IBoard]):
             message = f"{message} | Syzygy: {syzygy_str}"
         return message
 
-    def _outcome_from_board(self, state: IBoard) -> GameOutcome:
+    def _outcome_from_board(self, state: ChessState) -> GameOutcome:
         result = state.result(claim_draw=True)
         reason = self._termination_reason(state)
         match result:
             case "1-0":
-                return GameOutcome(kind=OutcomeKind.WIN, winner=Color.WHITE, reason=reason)
+                return GameOutcome(
+                    kind=OutcomeKind.WIN, winner=Color.WHITE, reason=reason
+                )
             case "0-1":
-                return GameOutcome(kind=OutcomeKind.WIN, winner=Color.BLACK, reason=reason)
+                return GameOutcome(
+                    kind=OutcomeKind.WIN, winner=Color.BLACK, reason=reason
+                )
             case "1/2-1/2":
                 return GameOutcome(kind=OutcomeKind.DRAW, reason=reason)
             case "*":
@@ -109,7 +115,7 @@ class ChessRules(GameRules[IBoard]):
         return "*"
 
     @staticmethod
-    def _termination_reason(state: IBoard) -> str | None:
+    def _termination_reason(state: ChessState) -> str | None:
         termination = state.termination()
         if termination is None:
             return None

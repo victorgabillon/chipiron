@@ -6,7 +6,7 @@ import os
 import queue
 from typing import TYPE_CHECKING
 
-import chess
+from valanga import Color, TurnState
 from valanga.game import Seed
 
 from chipiron.displays.gui_protocol import GuiUpdate, Scope
@@ -20,14 +20,13 @@ from chipiron.games.match.observable_match_result import ObservableMatchResults
 from chipiron.players import PlayerFactoryArgs
 from chipiron.utils import path
 from chipiron.utils.logger import chipiron_logger
+from valanga.game import ActionName
 
 if TYPE_CHECKING:
-    from atomheart.move import MoveUci
-
     from chipiron.games.game.game_manager import GameManager
 
 
-class MatchManager:
+class MatchManager[StateT: TurnState]:
     """
     Object in charge of playing one match
 
@@ -44,7 +43,7 @@ class MatchManager:
         self,
         player_one_id: str,
         player_two_id: str,
-        game_manager_factory: GameManagerFactory,
+        game_manager_factory: GameManagerFactory[StateT],
         game_args_factory: GameArgsFactory,
         match_results_factory: MatchResultsFactory,
         output_folder_path: path | None = None,
@@ -98,7 +97,7 @@ class MatchManager:
 
         # creating object for reporting the result of the match and the move history
         match_results: IMatchResults = self.match_results_factory.create()
-        match_move_history: dict[int, list[MoveUci]] = {}
+        match_move_history: dict[int, list[ActionName]] = {}
 
         last_scope: Scope | None = None
         last_game_kind = None
@@ -107,7 +106,7 @@ class MatchManager:
         game_number: int = 0
         while not self.game_args_factory.is_match_finished():
             args_game: GameArgs
-            player_color_to_factory_args: dict[chess.Color, PlayerFactoryArgs]
+            player_color_to_factory_args: dict[Color, PlayerFactoryArgs]
             game_seed: Seed | None
             player_color_to_factory_args, args_game, game_seed = (
                 self.game_args_factory.generate_game_args(game_number)
@@ -141,7 +140,7 @@ class MatchManager:
             # Update the reporting of the ongoing match with the report of the finished game
             match_results.add_result_one_game(
                 white_player_name_id=player_color_to_factory_args[
-                    chess.WHITE
+                    Color.WHITE
                 ].player_args.name,
                 game_result=game_report.final_game_result,
             )
@@ -149,7 +148,7 @@ class MatchManager:
 
             # ad hoc waiting time in case we play against a human and the game is finished
             # (so that the human as the time to view the final position before the automatic start of a new game)
-            if player_color_to_factory_args[chess.WHITE].player_args.is_human():
+            if player_color_to_factory_args[Color.WHITE].player_args.is_human():
                 import time
 
                 time.sleep(30)
@@ -187,7 +186,7 @@ class MatchManager:
 
     def play_one_game(
         self,
-        player_color_to_factory_args: dict[chess.Color, PlayerFactoryArgs],
+        player_color_to_factory_args: dict[Color, PlayerFactoryArgs],
         args_game: GameArgs,
         game_number: int,
         game_seed: Seed,
@@ -195,15 +194,15 @@ class MatchManager:
         """Plays one game and returns the game report.
 
         Args:
-            player_color_to_factory_args (dict[chess.Color, PlayerFactoryArgs]): A dictionary mapping player colors to their factory arguments.
+            player_color_to_factory_args (dict[Color, PlayerFactoryArgs]): A dictionary mapping player colors to their factory arguments.
             args_game (GameArgs): The arguments for the game.
             game_number (int): The number of the game.
-            game_seed (seed): The seed for the game.
+            game_seed (Seed): The seed for the game.
 
         Returns:
             GameReport: The report of the game.
         """
-        game_manager: GameManager = self.game_manager_factory.create(
+        game_manager: GameManager[StateT] = self.game_manager_factory.create(
             args_game_manager=args_game,
             player_color_to_factory_args=player_color_to_factory_args,
             game_seed=game_seed,

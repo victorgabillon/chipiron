@@ -34,6 +34,8 @@ from coral.neural_networks.output_converters.model_output_type import (
     ModelOutputType,
 )
 
+from chipiron.environments.types import GameKind
+from chipiron.environments.types import GameKind
 from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
 from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
     ModelInputRepresentationType,
@@ -46,6 +48,12 @@ from chipiron.utils.small_tools import mkdir_if_not_existing
 SerializableType = Union[
     str, int, float, bool, None, Dict[str, Any], List[Any], set[Any], frozenset[Any]
 ]
+
+
+@dataclass(frozen=True, slots=True)
+class GameInputArgs:
+    game_kind: GameKind
+    representation: ModelInputRepresentationType
 
 
 @dataclass
@@ -72,7 +80,12 @@ class NNTrainerArgs:
                 ],
             ),
             model_output_type=ModelOutputType(point_of_view=PointOfView.PLAYER_TO_MOVE),
-            model_input_representation_type=ModelInputRepresentationType.PIECE_DIFFERENCE,
+        )
+    )
+    game_input: GameInputArgs = field(
+        default_factory=lambda: GameInputArgs(
+            game_kind=GameKind.CHESS,
+            representation=ModelInputRepresentationType.PIECE_DIFFERENCE,
         )
     )
     nn_parameters_file_if_reusing_existing_one: path | None = None

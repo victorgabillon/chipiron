@@ -5,7 +5,7 @@ Module for the Game class.
 from typing import TYPE_CHECKING, Annotated
 
 from valanga import StateTag, TurnState
-from valanga.game import ActionKey, Seed
+from valanga.game import ActionKey, Seed, ActionName
 
 from chipiron.displays.gui_protocol import Scope
 from chipiron.players.communications.player_request_encoder import PlayerRequestEncoder
@@ -41,7 +41,7 @@ class Game[StateT: TurnState = TurnState]:
     _current_state: StateT
     _seed: Seed | None
     _state_tag_history: list[StateTag]
-    _action_history: list[ActionKey]
+    _action_history: list[ActionName]
     _ply: Ply
 
     # list of boards object to implement rewind function without having to necessarily code it in the Board object.
@@ -197,7 +197,7 @@ class Game[StateT: TurnState = TurnState]:
         return self._current_state
 
     @property
-    def action_history(self) -> list[ActionKey]:
+    def action_history(self) -> list[ActionName]:
         """
         Gets the history of move.
 
@@ -233,7 +233,11 @@ class ObservableGame[StateT: TurnState = TurnState]:
     move_functions: list[MoveFunction]
 
     def __init__(
-        self, game: Game[StateT], gui_encoder: GuiEncoder[StateT], scope: Scope, player_encoder: PlayerRequestEncoder[StateT]
+        self,
+        game: Game[StateT],
+        gui_encoder: GuiEncoder[StateT],
+        scope: Scope,
+        player_encoder: PlayerRequestEncoder[StateT],
     ) -> None:
         """
         Initializes the ObservableGame object.
@@ -406,7 +410,7 @@ class ObservableGame[StateT: TurnState = TurnState]:
         return self.game.state
 
     @property
-    def action_history(self) -> list[ActionKey]:
+    def action_history(self) -> list[ActionName]:
         """
         Gets the history of move.
 

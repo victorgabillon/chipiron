@@ -7,6 +7,7 @@ from .game import Game
 from .game_playing_status import GamePlayingStatus
 from atomheart.board.valanga_adapter import ValangaChessState
 
+
 @pytest.mark.parametrize(("use_rust_boards"), (True, False))
 def test_game_rewind(use_rust_boards: bool) -> None:
     board: IBoard = create_board(

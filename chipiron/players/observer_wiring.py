@@ -17,7 +17,9 @@ BuildArgsT_contra = TypeVar("BuildArgsT_contra", contravariant=True)
 
 class BuildGamePlayer(Protocol[SnapT, RuntimeT, BuildArgsT_contra]):
     def __call__(
-        self, args: BuildArgsT_contra, queue_out: PutQueue[MainMailboxMessage],
+        self,
+        args: BuildArgsT_contra,
+        queue_out: PutQueue[MainMailboxMessage],
     ) -> GamePlayer[SnapT, RuntimeT]: ...
 
 

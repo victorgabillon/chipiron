@@ -2,7 +2,6 @@
 Module that defines an observable version of GamePlayingStatus
 """
 
-
 from chipiron.displays.gui_protocol import UpdGameStatus
 from chipiron.displays.gui_publisher import GuiPublisher
 
@@ -15,8 +14,7 @@ class ObservableGamePlayingStatus:
     Players and GUI can then decide what to do with this information.
     """
 
-
-    game_playing_status : GamePlayingStatus
+    game_playing_status: GamePlayingStatus
     _publishers: list[GuiPublisher] = []
 
     def __init__(self, game_playing_status: GamePlayingStatus) -> None:

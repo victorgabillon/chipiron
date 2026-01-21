@@ -40,7 +40,6 @@ class MoveFunction(Protocol):
     def __call__(self, request: PlayerRequest[object]) -> None: ...
 
 
-
 class PlayerObserverFactory(Protocol):
     def __call__(
         self,
@@ -137,7 +136,7 @@ def _create_player_observer_mono_process(
     player_factory_args: PlayerFactoryArgs,
     player_color: Color,
     main_thread_mailbox: PutQueue[MainMailboxMessage],
-            *,
+    *,
     wiring: ObserverWiring[object, object, object],
     syzygy_table: AnySyzygyTable | None,
     implementation_args: object,

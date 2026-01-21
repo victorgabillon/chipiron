@@ -1,8 +1,10 @@
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Protocol, TypeVar, cast
 
+from atomheart import ValangaChessState
 from valanga import StateTag
 
+from chipiron.environments.chess.types import ChessState
 from chipiron.environments.types import GameKind
 from chipiron.games.game.game_rules import GameRules
 from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
@@ -18,15 +20,18 @@ if TYPE_CHECKING:
 StateT = TypeVar("StateT", covariant=True)
 StateSnapT = TypeVar("StateSnapT")
 
-StartTagT = TypeVar("StartTagT", covariant=True)          # produced by normalize_start_tag
-StartTagInT = TypeVar("StartTagInT", contravariant=True)  # consumed by make_initial_state
+StartTagT = TypeVar("StartTagT", covariant=True)  # produced by normalize_start_tag
+StartTagInT = TypeVar(
+    "StartTagInT", contravariant=True
+)  # consumed by make_initial_state
+
 
 class TagNormalizer(Protocol[StartTagT]):
     def __call__(self, tag: StateTag) -> StartTagT: ...
 
+
 class InitialStateFactory(Protocol[StateT, StartTagInT]):
     def __call__(self, tag: StartTagInT) -> StateT: ...
-
 
 
 class PlayerObserverFactoryBuilder(Protocol):
@@ -44,7 +49,7 @@ class ChessBoardFactory(Protocol):
 
 
 @dataclass(frozen=True)
-class Environment(Generic[StateT, StateSnapT, StartTagT]):
+class Environment[StateT, StateSnapT, StartTagT]:
     game_kind: GameKind
     rules: GameRules[StateT]
     gui_encoder: GuiEncoder[StateT]
@@ -71,7 +76,6 @@ def make_environment(
                 raise ValueError("board_factory is required for chess environments")
             board_factory = cast(ChessBoardFactory, deps.board_factory)
 
-            import atomheart.board as boards
             from atomheart.board.utils import FenPlusHistory
 
             from chipiron.environments.chess.chess_gui_encoder import ChessGuiEncoder
@@ -105,12 +109,12 @@ def make_environment(
                     )
                 return tag
 
-            def make_initial_state(tag: ChessStartTag) -> boards.IBoard:
-                return board_factory(
-                    fen_with_history=FenPlusHistory(current_fen=tag.fen)
+            def make_initial_state(tag: ChessStartTag) -> ChessState:
+                return ValangaChessState(
+                    board_factory(fen_with_history=FenPlusHistory(current_fen=tag.fen))
                 )
 
-            return Environment(
+            return Environment[ChessState, FenPlusHistory, ChessStartTag](
                 game_kind=game_kind,
                 rules=ChessRules(syzygy=syzygy_table),
                 gui_encoder=ChessGuiEncoder(),
@@ -120,8 +124,6 @@ def make_environment(
                 make_initial_state=make_initial_state,
             )
         case GameKind.CHECKERS:
-            raise NotImplementedError(
-                "Environment for CHECKERS is not implemented yet"
-            )
+            raise NotImplementedError("Environment for CHECKERS is not implemented yet")
         case _:
             raise ValueError(f"No Environment for game_kind={game_kind!r}")

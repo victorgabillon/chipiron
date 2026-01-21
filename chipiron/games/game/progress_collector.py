@@ -66,8 +66,10 @@ class PlayerProgressCollector:
         """
         self.progress_black_ = value
 
+
 def make_publishers() -> list[GuiPublisher]:
     return []
+
 
 @dataclass(slots=True)
 class PlayerProgressCollectorObservable(PlayerProgressCollectorP):

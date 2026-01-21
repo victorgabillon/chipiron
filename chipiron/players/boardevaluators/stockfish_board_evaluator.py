@@ -77,7 +77,9 @@ class StockfishBoardEvaluator:
 
     @staticmethod
     def is_available() -> bool:
-        return any(Path(path).exists() for path in StockfishBoardEvaluator._candidate_paths())
+        return any(
+            Path(path).exists() for path in StockfishBoardEvaluator._candidate_paths()
+        )
 
     def value_white(self, state: boards.IBoard) -> float:
         """

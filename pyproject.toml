@@ -32,8 +32,8 @@ dependencies = [
     "zstandard",
     "rich",
     "valanga>=0.1.4",
-    "atomheart>=0.1.3",
-    "algorhino-coral",
+    "atomheart>=0.1.5",
+    "algorhino-coral>=0.1.1",
     "algorhino-anemone>=0.1.3",
 ]
 
@@ -276,9 +276,9 @@ deps = [
   "zstandard",
   "rich",
   "valanga>=0.1.4",
-  "atomheart=0.1.3",
-  "algorhino-coral",
-  "algorhino-anemone=0.1.3",
+  "atomheart>=0.1.5",
+  "algorhino-coral>=0.1.1",
+  "algorhino-anemone>=0.1.3",
 ]
 set_env = { PYTHONPATH = "{toxinidir}" }
 commands = [
@@ -315,10 +315,10 @@ deps = [
   "gdown",
   "zstandard",
   "rich",
-  "valanga=0.1.4",
-  "atomheart=0.1.3",
-  "algorhino-coral",
-  "algorhino-anemone=0.1.3",
+  "valanga>=0.1.4",
+  "atomheart>=0.1.5",
+  "algorhino-coral>=0.1.1",
+  "algorhino-anemone>=0.1.3",
 ]
 set_env = { MYPYPATH = "{toxinidir}" }
 commands = [

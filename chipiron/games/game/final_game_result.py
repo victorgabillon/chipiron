@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from valanga import StateTag
-from valanga.game import ActionKey
+from valanga.game import ActionName
 
 
 class FinalGameResult(str, Enum):
@@ -22,5 +22,5 @@ class GameReport:
     """Dataclass representing a game report."""
 
     final_game_result: FinalGameResult
-    action_history: list[ActionKey]
+    action_history: list[ActionName]
     state_tag_history: list[StateTag]
