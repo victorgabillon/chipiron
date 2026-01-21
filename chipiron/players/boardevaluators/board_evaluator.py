@@ -4,7 +4,8 @@ Module representing the board evaluators.
 
 from typing import Protocol, TypeVar
 
-from valanga import Color, StateEvaluation
+from valanga import Color
+from valanga.evaluations import FloatyStateEvaluation, StateEvaluation
 
 from chipiron.displays.gui_protocol import UpdEvaluation
 from chipiron.displays.gui_publisher import GuiPublisher
@@ -25,12 +26,12 @@ class StateEvaluator(Protocol[StateT_contra]):
         ...
 
 
-class IGameStateEvaluator(Protocol[StateT_contra]):
+class IGameStateEvaluator(Protocol[StateT]):
     """
     Protocol representing a game board evaluator.
     """
 
-    def evaluate(self, state: StateT_contra) -> tuple[float | None, float]:
+    def evaluate(self, state: StateT) -> tuple[StateEvaluation | None, StateEvaluation]:
         """
         Evaluates a board and returns the evaluation values for oracle and chi.
         """
@@ -53,9 +54,14 @@ class GameStateEvaluator[StateT]:
         self._chi = chi
         self._oracle = oracle
 
-    def evaluate(self, state: StateT) -> tuple[float | None, float]:
-        chi = self._chi.value_white(state)
-        oracle = self._oracle.value_white(state) if self._oracle else None
+    def evaluate(self, state: StateT) -> tuple[StateEvaluation | None, StateEvaluation]:
+        chi_value = self._chi.value_white(state)
+        chi = FloatyStateEvaluation(value_white=chi_value)
+        oracle = (
+            FloatyStateEvaluation(value_white=self._oracle.value_white(state))
+            if self._oracle
+            else None
+        )
         return oracle, chi
 
     def add_evaluation(self, player_color: Color, evaluation: StateEvaluation) -> None:
@@ -71,8 +77,8 @@ class ObservableGameStateEvaluator[StateT]:
     publishers: list[GuiPublisher]
 
     game_state_evaluator: IGameStateEvaluator[StateT]
-    evaluation_oracle: float | None = None
-    evaluation_chi: float | None = None
+    evaluation_oracle: StateEvaluation | None = None
+    evaluation_chi: StateEvaluation | None = None
     evaluation_player_black: StateEvaluation | None = None
     evaluation_player_white: StateEvaluation | None = None
 
@@ -93,16 +99,18 @@ class ObservableGameStateEvaluator[StateT]:
         """
         self.publishers.append(pub)
 
-    def evaluate(self, state: StateT) -> tuple[float | None, float]:
+    def evaluate(self, state: StateT) -> tuple[StateEvaluation | None, StateEvaluation]:
         """
         Evaluates a board and returns the evaluation values for oracle and chi.
         """
-        self.evaluation_oracle, self.evaluation_chi = (
-            self.game_state_evaluator.evaluate(state=state)
+        evaluation_oracle, evaluation_chi = self.game_state_evaluator.evaluate(
+            state=state
         )
+        self.evaluation_oracle = evaluation_oracle
+        self.evaluation_chi = evaluation_chi
 
         self.notify_new_results()
-        return self.evaluation_oracle, self.evaluation_chi
+        return evaluation_oracle, evaluation_chi
 
     def add_evaluation(self, player_color: Color, evaluation: StateEvaluation) -> None:
         """
@@ -119,7 +127,7 @@ class ObservableGameStateEvaluator[StateT]:
         Notifies the subscribers about the new evaluation results.
         """
         payload = UpdEvaluation(
-            stock=self.evaluation_oracle,
+            oracle=self.evaluation_oracle,
             chipiron=self.evaluation_chi,
             white=self.evaluation_player_white,
             black=self.evaluation_player_black,
