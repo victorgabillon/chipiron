@@ -26,12 +26,14 @@ class StateEvaluator(Protocol[StateT_contra]):
         ...
 
 
-class IGameStateEvaluator(Protocol[StateT]):
+class IGameStateEvaluator(Protocol[StateT_contra]):
     """
     Protocol representing a game board evaluator.
     """
 
-    def evaluate(self, state: StateT) -> tuple[StateEvaluation | None, StateEvaluation]:
+    def evaluate(
+        self, state: StateT_contra
+    ) -> tuple[StateEvaluation | None, StateEvaluation]:
         """
         Evaluates a board and returns the evaluation values for oracle and chi.
         """

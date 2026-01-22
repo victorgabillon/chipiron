@@ -12,10 +12,10 @@ Classes:
 import queue
 
 from chipiron.displays.gui_protocol import GuiUpdate, Scope
+from chipiron.displays.gui_publisher import GuiPublisher
 from chipiron.environments.types import GameKind
 from chipiron.games.match.match_results import IMatchResults, MatchResults
 from chipiron.games.match.observable_match_result import ObservableMatchResults
-from chipiron.displays.gui_publisher import GuiPublisher
 
 
 class MatchResultsFactory:

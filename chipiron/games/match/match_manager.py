@@ -7,7 +7,7 @@ import queue
 from typing import TYPE_CHECKING
 
 from valanga import Color, TurnState
-from valanga.game import Seed
+from valanga.game import ActionName, Seed
 
 from chipiron.displays.gui_protocol import GuiUpdate, Scope
 from chipiron.games.game.final_game_result import GameReport
@@ -20,7 +20,6 @@ from chipiron.games.match.observable_match_result import ObservableMatchResults
 from chipiron.players import PlayerFactoryArgs
 from chipiron.utils import path
 from chipiron.utils.logger import chipiron_logger
-from valanga.game import ActionName
 
 if TYPE_CHECKING:
     from chipiron.games.game.game_manager import GameManager

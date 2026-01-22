@@ -58,8 +58,7 @@ class UpdPlayerProgress:
 
 @dataclass(frozen=True, slots=True)
 class UpdEvaluation:
-    """Evaluation update payload.
-    """
+    """Evaluation update payload."""
 
     oracle: StateEvaluation | None
     chipiron: StateEvaluation | None

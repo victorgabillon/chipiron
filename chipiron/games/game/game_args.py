@@ -5,7 +5,6 @@ Module that contains the GameArgs class.
 from dataclasses import dataclass
 
 from chipiron.environments.starting_position import StartingPositionArgs
-
 from chipiron.environments.types import GameKind
 
 

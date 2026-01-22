@@ -9,13 +9,14 @@ from chipiron.environments.types import GameKind
 from chipiron.games.game.game_rules import GameRules
 from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 from chipiron.players.communications.player_request_encoder import PlayerRequestEncoder
-from chipiron.utils.communication.gui_encoder import GuiEncoder
 from chipiron.scripts.chipiron_args import ImplementationArgs
+from chipiron.utils.communication.gui_encoder import GuiEncoder
 
 if TYPE_CHECKING:
-    from chipiron.players.factory_higher_level import PlayerObserverFactory
     import atomheart.board as boards
     from atomheart.board.utils import FenPlusHistory
+
+    from chipiron.players.factory_higher_level import PlayerObserverFactory
 
 StateT = TypeVar("StateT", covariant=True)
 StateSnapT = TypeVar("StateSnapT")
@@ -74,7 +75,7 @@ def make_environment(
         case GameKind.CHESS:
             if deps.board_factory is None:
                 raise ValueError("board_factory is required for chess environments")
-            board_factory = cast(ChessBoardFactory, deps.board_factory)
+            board_factory = cast("ChessBoardFactory", deps.board_factory)
 
             from atomheart.board.utils import FenPlusHistory
 

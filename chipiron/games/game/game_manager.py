@@ -14,6 +14,12 @@ from valanga.evaluations import StateEvaluation
 from valanga.game import ActionKey
 
 import chipiron.players as players_m
+from chipiron.displays.gui_protocol import (
+    CmdBackOneMove,
+    CmdHumanMoveUci,
+    CmdSetStatus,
+    GuiCommand,
+)
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.players.boardevaluators.board_evaluator import IGameStateEvaluator
 from chipiron.players.communications.player_message import (
@@ -22,12 +28,6 @@ from chipiron.players.communications.player_message import (
     PlayerEvent,
 )
 from chipiron.utils import path
-from chipiron.displays.gui_protocol import (
-    CmdBackOneMove,
-    CmdHumanMoveUci,
-    CmdSetStatus,
-    GuiCommand,
-)
 from chipiron.utils.dataclass import custom_asdict_factory
 from chipiron.utils.logger import chipiron_logger
 

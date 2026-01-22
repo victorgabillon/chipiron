@@ -12,8 +12,8 @@ from atomheart.board.factory import create_board_chi
 from atomheart.board.utils import FenPlusHistory
 
 from chipiron.players.boardevaluators.board_evaluator_type import BoardEvalTypes
-from chipiron.utils.path_variables import STOCKFISH_BINARY_PATH
 from chipiron.utils.logger import chipiron_logger
+from chipiron.utils.path_variables import STOCKFISH_BINARY_PATH
 
 if TYPE_CHECKING:
     from atomheart.board.board_chi import BoardChi

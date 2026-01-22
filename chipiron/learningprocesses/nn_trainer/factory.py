@@ -35,7 +35,6 @@ from coral.neural_networks.output_converters.model_output_type import (
 )
 
 from chipiron.environments.types import GameKind
-from chipiron.environments.types import GameKind
 from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
 from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
     ModelInputRepresentationType,

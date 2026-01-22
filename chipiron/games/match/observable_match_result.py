@@ -4,9 +4,9 @@ This module contains the ObservableMatchResults class, which is a wrapper around
 
 from dataclasses import dataclass
 
-from chipiron.games.game.final_game_result import FinalGameResult
 from chipiron.displays.gui_protocol import UpdMatchResults
 from chipiron.displays.gui_publisher import GuiPublisher
+from chipiron.games.game.final_game_result import FinalGameResult
 
 from .match_results import MatchResults, SimpleResults
 

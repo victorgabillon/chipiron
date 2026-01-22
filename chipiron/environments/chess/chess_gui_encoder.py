@@ -2,15 +2,15 @@ from dataclasses import dataclass
 
 from valanga.game import Seed
 
-from chipiron.environments.chess.types import ChessState
-from chipiron.environments.types import GameKind
-from chipiron.games.game.game_playing_status import PlayingStatus
-from chipiron.utils.communication.gui_encoder import GuiEncoder
 from chipiron.displays.gui_protocol import (
     UpdatePayload,
     UpdGameStatus,
     UpdStateChess,
 )
+from chipiron.environments.chess.types import ChessState
+from chipiron.environments.types import GameKind
+from chipiron.games.game.game_playing_status import PlayingStatus
+from chipiron.utils.communication.gui_encoder import GuiEncoder
 
 
 @dataclass(frozen=True, slots=True)

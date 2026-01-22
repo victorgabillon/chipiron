@@ -5,21 +5,21 @@ Module for the Game class.
 from typing import TYPE_CHECKING, Annotated
 
 from valanga import StateTag, TurnState
-from valanga.game import ActionKey, Seed, ActionName
+from valanga.game import ActionKey, ActionName, Seed
 
 from chipiron.displays.gui_protocol import Scope
+from chipiron.displays.gui_publisher import GuiPublisher
 from chipiron.players.communications.player_request_encoder import PlayerRequestEncoder
 from chipiron.players.factory_higher_level import MoveFunction
 from chipiron.utils.communication.gui_encoder import GuiEncoder
-from chipiron.displays.gui_publisher import GuiPublisher
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.small_tools import unique_int_from_list
 
 from .game_playing_status import GamePlayingStatus, PlayingStatus
 
 if TYPE_CHECKING:
-    from chipiron.players.communications.player_message import PlayerRequest
     from chipiron.displays.gui_protocol import UpdatePayload
+    from chipiron.players.communications.player_message import PlayerRequest
 
 type Ply = Annotated[
     int, "The number of one turn taken by one of the players in the game so far"
