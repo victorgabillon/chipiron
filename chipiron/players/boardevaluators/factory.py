@@ -4,10 +4,10 @@ Module for building game state evaluators (oracle + chipiron) with optional GUI 
 
 from __future__ import annotations
 
-from typing import Literal, TypeVar, assert_never, cast, overload
+from typing import Any, Literal, TypeVar, assert_never, cast, overload
 
-from chipiron.environments.types import GameKind
 from chipiron.environments.chess.types import ChessState
+from chipiron.environments.types import GameKind
 from chipiron.players.boardevaluators.wirings.chess_eval_wiring import ChessEvalWiring
 from chipiron.players.boardevaluators.wirings.null_eval_wiring import NullEvalWiring
 from chipiron.players.boardevaluators.wirings.protocols import EvaluatorWiring
@@ -35,12 +35,12 @@ def _select_eval_wiring(
 
 def _select_eval_wiring(
     game_kind: GameKind, *, can_oracle: bool
-) -> EvaluatorWiring[object]:
+) -> EvaluatorWiring[Any]:
     match game_kind:
         case GameKind.CHESS:
-            return cast(EvaluatorWiring[object], ChessEvalWiring(can_oracle=can_oracle))
+            return cast("EvaluatorWiring[object]", ChessEvalWiring(can_oracle=can_oracle))
         case GameKind.CHECKERS:
-            return cast(EvaluatorWiring[object], NullEvalWiring())
+            return cast("EvaluatorWiring[object]", NullEvalWiring())
         case _:
             assert_never(game_kind)
 
@@ -84,9 +84,9 @@ def create_game_board_evaluator_for_game_kind(
     game_kind: GameKind,
     gui: bool,
     can_oracle: bool,
-) -> IGameStateEvaluator[object]:
+) -> IGameStateEvaluator[Any]:
     wiring = _select_eval_wiring(game_kind, can_oracle=can_oracle)
     return create_game_board_evaluator(
-        wiring=cast("EvaluatorWiring[object]", wiring),
+        wiring=wiring,
         gui=gui,
     )

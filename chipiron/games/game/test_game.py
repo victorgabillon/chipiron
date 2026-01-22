@@ -2,10 +2,10 @@ import chess
 import pytest
 from atomheart.board import IBoard, create_board
 from atomheart.board.utils import FenPlusHistory
+from atomheart.board.valanga_adapter import ValangaChessState
 
 from .game import Game
 from .game_playing_status import GamePlayingStatus
-from atomheart.board.valanga_adapter import ValangaChessState
 
 
 @pytest.mark.parametrize(("use_rust_boards"), (True, False))

@@ -15,8 +15,8 @@ from valanga import TurnState
 
 import chipiron as ch
 import chipiron.games.game as game
-from chipiron.games.game.game_manager import MainMailboxMessage
 import chipiron.players as players
+from chipiron.games.game.game_manager import MainMailboxMessage
 from chipiron.games.game.game_manager_factory import GameManagerFactory
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_manager import MatchManager

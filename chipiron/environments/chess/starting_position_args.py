@@ -6,9 +6,10 @@ from importlib import resources
 from pathlib import Path
 from typing import TypeAlias
 
+from valanga import StateTag
+
 from chipiron.environments.chess.tags import ChessStartTag
 from chipiron.environments.starting_position import StartingPositionArgs
-from valanga import StateTag
 
 
 class StartingPositionArgsType(str, Enum):

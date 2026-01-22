@@ -7,11 +7,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from importlib.resources import files
 
-from atomheart.board import IBoard
-from chipiron.environments.chess.types import ChessState
 import parsley_coco
-
+from atomheart.board import IBoard
 from coral.neural_networks.neural_net_board_eval_args import NeuralNetBoardEvalArgs
+
+from chipiron.environments.chess.types import ChessState
 from chipiron.players.boardevaluators.all_board_evaluator_args import (
     AllBoardEvaluatorArgs,
     BasicEvaluationBoardEvaluatorArgs,

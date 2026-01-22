@@ -31,7 +31,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 from valanga import Color
-from valanga.evaluations import ForcedOutcome, FloatyStateEvaluation, StateEvaluation
+from valanga.evaluations import FloatyStateEvaluation, ForcedOutcome, StateEvaluation
 
 from chipiron.displays.gui_protocol import (
     CmdBackOneMove,
@@ -794,9 +794,7 @@ class MainWindow(QWidget):
         Returns:
             None
         """
-        self.eval_button.setText(
-            "📊 Eval 🐟: " + format_state_eval(evaluation_oracle)
-        )
+        self.eval_button.setText("📊 Eval 🐟: " + format_state_eval(evaluation_oracle))
         self.eval_button_chi.setText(
             "🧮 Eval 🐙: " + format_state_eval(evaluation_chipiron)
         )

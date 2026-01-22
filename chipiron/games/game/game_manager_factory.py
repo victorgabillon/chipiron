@@ -20,6 +20,8 @@ from chipiron.displays.gui_protocol import (
     make_scope,
     scope_for_new_game,
 )
+from chipiron.displays.gui_publisher import GuiPublisher
+from chipiron.environments.environment import EnvironmentDeps, make_environment
 from chipiron.games.game.game_args import GameArgs
 from chipiron.games.game.game_playing_status import GamePlayingStatus
 from chipiron.players import PlayerFactoryArgs
@@ -27,13 +29,11 @@ from chipiron.players.boardevaluators.board_evaluator import (
     IGameStateEvaluator,
     ObservableGameStateEvaluator,
 )
-from chipiron.environments.environment import EnvironmentDeps, make_environment
 from chipiron.players.factory_higher_level import MoveFunction, PlayerObserverFactory
 from chipiron.utils import path
 from chipiron.utils.communication.gui_messages.gui_messages import (
     make_players_info_payload,
 )
-from chipiron.displays.gui_publisher import GuiPublisher
 
 from ...players.boardevaluators.table_base.factory import AnySyzygyTable
 from ...players.player_ids import PlayerConfigTag
