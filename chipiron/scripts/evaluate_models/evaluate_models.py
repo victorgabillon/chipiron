@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 import dacite
 import torch
 import yaml
+from coral.chi_nn import ChiNN
 from coral.neural_networks.factory import (
     NeuralNetModelsAndArchitecture,
     create_nn_board_eval_from_nn_parameters_file_and_existing_model,
@@ -27,8 +28,11 @@ from chipiron.players.boardevaluators.datasets.datasets import (
     custom_collate_fn_fen_and_value,
     process_stockfish_value,  # pyright: ignore[reportUnknownVariableType]
 )
+from chipiron.players.boardevaluators.neural_networks.chipiron_nn_args import (
+    create_content_to_input_from_model_weights,
+    load_chipiron_nn_args,
+)
 from chipiron.utils import path
-from coral.chi_nn import ChiNN
 
 if TYPE_CHECKING:
     from coral.neural_networks import NNBWContentEvaluator
@@ -57,9 +61,15 @@ def compute_model_hash_key(model_and_archi: NeuralNetModelsAndArchitecture) -> s
     Returns:
         str: The computed hash key.
     """
+    chipiron_nn_args = load_chipiron_nn_args(
+        folder_path=os.path.dirname(model_and_archi.model_weights_file_name)
+    )
     return (
         str(model_and_archi.model_weights_file_name)
         + model_and_archi.nn_architecture_args.filename()
+        + str(chipiron_nn_args.version)
+        + chipiron_nn_args.game_kind.value
+        + chipiron_nn_args.input_representation
     )
 
 
@@ -158,6 +168,9 @@ def evaluate_models(
                 create_nn_board_eval_from_nn_parameters_file_and_existing_model(
                     model_weights_file_name=model_to_evaluate.model_weights_file_name,
                     nn_architecture_args=model_to_evaluate.nn_architecture_args,
+                    content_to_input_convert=create_content_to_input_from_model_weights(
+                        model_to_evaluate.model_weights_file_name
+                    ),
                 )
             )
 

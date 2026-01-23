@@ -5,68 +5,74 @@ Module in charge of managing the game. It is the main class that will be used to
 import os
 import queue
 from dataclasses import asdict
-from typing import TYPE_CHECKING
+from typing import Literal, TypeAlias, assert_never
 
-import chess
 import yaml
-from atomheart.move.imove import MoveKey
 from atomheart.move_factory import MoveFactory
+from valanga import Color, StateTag, TurnState
+from valanga.evaluations import StateEvaluation
+from valanga.game import ActionKey
 
 import chipiron.players as players_m
+from chipiron.displays.gui_protocol import (
+    CmdBackOneMove,
+    CmdHumanMoveUci,
+    CmdSetStatus,
+    GuiCommand,
+)
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.players.boardevaluators.board_evaluator import IGameStateEvaluator
-from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
-from chipiron.utils import path
-from chipiron.utils.communication.gui_messages import (
-    BackMessage,
-    GameStatusMessage,
-    PlayerProgressMessage,
+from chipiron.players.communications.player_message import (
+    EvMove,
+    EvProgress,
+    PlayerEvent,
 )
-from chipiron.utils.communication.player_game_messages import MoveMessage
-from chipiron.utils.dataclass import IsDataclass, custom_asdict_factory
+from chipiron.utils import path
+from chipiron.utils.dataclass import custom_asdict_factory
 from chipiron.utils.logger import chipiron_logger
 
 from .final_game_result import FinalGameResult, GameReport
-from .game import ObservableGame
+from .game import ObservableGame, Ply
 from .game_args import GameArgs
+from .game_rules import (
+    GameOutcome,
+    GameRules,
+    OutcomeKind,
+    OutcomeSource,
+    outcome_to_final_game_result,
+)
 from .progress_collector import PlayerProgressCollectorP
 
-if TYPE_CHECKING:
-    from atomheart.board.iboard import IBoard
-    from atomheart.move import MoveUci
-
-    from atomheart.move.utils import HalfMove
+MainMailboxMessage: TypeAlias = GuiCommand | PlayerEvent
 
 
-class GameManager[StateT]:
+class GameManager[StateT: TurnState = TurnState]:
     """
     Object in charge of playing one game
     """
 
     # The game object that is managed
-    game: ObservableGame
-
-    # A SyzygyTable
-    syzygy: AnySyzygyTable | None
+    game: ObservableGame[StateT]
 
     # Evaluators that just evaluates the boards but are not players (just spectators) for display info of who is winning
     # according to them
-    display_board_evaluator: IGameStateEvaluator[StateT]
+    display_state_evaluator: IGameStateEvaluator[StateT]
 
     # folder to log results
     output_folder_path: path | None
+    path_to_store_result: path | None
 
     # args of the Game
     args: GameArgs
 
     # Dictionary mapping colors to player names?
-    player_color_to_id: dict[chess.Color, str]
+    player_color_to_id: dict[Color, str]
 
     # A Queue for receiving messages from other process or functions such as players or Gui
-    main_thread_mailbox: queue.Queue[IsDataclass]
+    main_thread_mailbox: queue.Queue[MainMailboxMessage]
 
-    # The list of players
-    players: list[players_m.PlayerProcess | players_m.GamePlayer]
+    # The list of players (lifecycle handles)
+    players: list[players_m.PlayerHandle]
 
     # A move factory
     move_factory: MoveFactory
@@ -74,18 +80,21 @@ class GameManager[StateT]:
     # an object for collecting how advances each player is in its thinking/computation of the moves
     progress_collector: PlayerProgressCollectorP
 
+    # Game-specific rules adapter
+    rules: GameRules[StateT]
+
     def __init__(
         self,
-        game: ObservableGame,
-        syzygy: AnySyzygyTable | None,
-        display_board_evaluator: IGameStateEvaluator[StateT],
+        game: ObservableGame[StateT],
+        display_state_evaluator: IGameStateEvaluator[StateT],
         output_folder_path: path | None,
         args: GameArgs,
-        player_color_to_id: dict[chess.Color, str],
-        main_thread_mailbox: queue.Queue[IsDataclass],
-        players: list[players_m.PlayerProcess | players_m.GamePlayer],
+        player_color_to_id: dict[Color, str],
+        main_thread_mailbox: queue.Queue[MainMailboxMessage],
+        players: list[players_m.PlayerHandle],
         move_factory: MoveFactory,
         progress_collector: PlayerProgressCollectorP,
+        rules: GameRules[StateT],
     ) -> None:
         """
         Constructor for the GameManager Class. If the args, and players are not given a value it is set to None,
@@ -94,70 +103,57 @@ class GameManager[StateT]:
 
         Args:
             game (ObservableGame): The observable game object.
-            syzygy (AnySyzygyTable | None): The syzygy table object or None.
             display_board_evaluator (IGameBoardEvaluator): The board evaluator to display an independent evaluation.
             output_folder_path (path | None): The output folder path or None.
             args (GameArgs): The game arguments.
             player_color_to_id (dict[chess.Color, str]): The dictionary mapping player color to player ID.
-            main_thread_mailbox (queue.Queue[IsDataclass]): The main thread mailbox.
+            main_thread_mailbox (queue.Queue[MainMailboxMessage]): The main thread mailbox.
             players (list[players_m.PlayerProcess | players_m.GamePlayer]): The list of players.
 
         Returns:
             None
         """
         self.game = game
-        self.syzygy = syzygy
         self.path_to_store_result = (
             os.path.join(output_folder_path, "games")
             if output_folder_path is not None
             else None
         )
-        self.display_board_evaluator = display_board_evaluator
+        self.display_state_evaluator = display_state_evaluator
         self.args = args
         self.player_color_to_id = player_color_to_id
         self.main_thread_mailbox = main_thread_mailbox
         self.players = players
         self.move_factory = move_factory
         self.progress_collector = progress_collector
+        self.rules = rules
 
-    def external_eval(self) -> tuple[float | None, float]:
+    def external_eval(self) -> tuple[StateEvaluation | None, StateEvaluation]:
         """Evaluates the game board using the display board evaluator.
 
         Returns:
-            tuple[float, float]: A tuple containing the evaluation scores.
+            tuple[StateEvaluation | None, StateEvaluation]: A tuple containing the evaluation scores.
         """
-        return self.display_board_evaluator.evaluate(self.game.state)
+        return self.display_state_evaluator.evaluate(self.game.state)
 
-    def play_one_move(self, move: MoveKey) -> None:
+    def play_one_move(self, action: ActionKey) -> None:
         """Play one move in the game.
 
         Args:
-            move (chess.Move): The move to be played.
+            action (ActionKey): The action to be played.
         """
-        self.game.play_move(move)
-        if self.syzygy is not None and self.syzygy.fast_in_table(self.game.state):
-            chipiron_logger.info(
-                "Theoretically finished with value for white: %s",
-                self.syzygy.string_result(self.game.state),
-            )
+        self.game.play_move(action)
 
     def rewind_one_move(self) -> None:
         """
         Rewinds the game by one move.
 
         This method rewinds the game by one move, undoing the last move made.
-        If the game has a Syzygy tablebase loaded and the current board position is in the tablebase,
-        it prints the theoretically finished value for white.
 
         Returns:
             None
         """
         self.game.rewind_one_move()
-        if self.syzygy is not None and self.syzygy.fast_in_table(self.game.state):
-            chipiron_logger.info(
-                "Theoretically finished with value for white: %s",
-                self.syzygy.string_result(self.game.state),
-            )
 
     def play_one_game(self) -> GameReport:
         """
@@ -167,7 +163,10 @@ class GameManager[StateT]:
             GameReport: The report of the game.
         """
 
-        color_names = ["Black", "White"]
+        color_names = {
+            Color.WHITE: "White",
+            Color.BLACK: "Black",
+        }
 
         # sending the current board to the gui
         self.game.notify_display()
@@ -177,14 +176,14 @@ class GameManager[StateT]:
             self.game.query_move_from_players()
 
         while True:
-            board = self.game.state
-            half_move: HalfMove = board.ply()
+            state = self.game.state
+            ply: Ply = self.game.ply
             chipiron_logger.info(
                 "Half Move: %s playing status %s",
-                half_move,
+                ply,
                 self.game.playing_status.status,
             )
-            color_to_move: chess.Color = board.turn
+            color_to_move: Color = state.turn
             color_of_player_to_move_str = color_names[color_to_move]
             chipiron_logger.info(
                 "%s (%s) to play now...",
@@ -196,14 +195,14 @@ class GameManager[StateT]:
             mail = self.main_thread_mailbox.get()
             self.processing_mail(mail)
 
-            board = self.game.state
-            if board.is_game_over() or not self.game_continue_conditions():
-                if board.is_game_over():
+            state = self.game.state
+            if state.is_game_over() or not self.game_continue_conditions():
+                if state.is_game_over():
                     chipiron_logger.info("The game is over")
                 if not self.game_continue_conditions():
                     chipiron_logger.info("Game continuation not met")
                 break
-            chipiron_logger.info("Not game over at %s", board)
+            chipiron_logger.info("Not game over at %s", state)
 
         self.tell_results()
         self.terminate_processes()
@@ -213,120 +212,118 @@ class GameManager[StateT]:
 
         game_report: GameReport = GameReport(
             final_game_result=game_results,
-            move_history=[move for move in self.game.action_history],
-            fen_history=self.game.state_tag_history,
+            action_history=[move for move in self.game.action_history],
+            state_tag_history=self.game.state_tag_history,
         )
         return game_report
 
-    def processing_mail(self, message: IsDataclass) -> None:
+    def processing_mail(self, message: MainMailboxMessage) -> None:
         """
         Process the incoming mail message.
 
         Args:
-            message (IsDataclass): The incoming mail message.
+            message (MainMailboxMessage): The incoming mail message.
 
         Returns:
             None
         """
 
-        board: IBoard = self.game.state
-
         match message:
-            case MoveMessage():
-                chipiron_logger.info(
-                    "=====================MOVE MESSAGE RECEIVED============"
-                )
-                move_message: MoveMessage = message
-                # play the move
-                move_uci: MoveUci = move_message.move
+            case GuiCommand():
+                if self._ignore_if_stale_scope(message.scope):
+                    return
+                self._handle_gui_command(message)
+            case PlayerEvent():
+                if self._ignore_if_stale_scope(message.scope):
+                    return
+                self._handle_player_event(message)
+            case _:
+                assert_never(message)
 
-                chipiron_logger.info(
-                    "Game Manager: Receiving the move uci %s %s %s",
-                    move_uci,
-                    self.game.playing_status,
-                    board.fen,
-                )
-                if (
-                    move_message.corresponding_board == board.fen
-                    and self.game.playing_status.is_play()
-                    and message.player_name == self.player_color_to_id[board.turn]
-                ):
-                    board.legal_moves.get_all()  # make sure the board has generated the legal moves
+    def _ignore_if_stale_scope(self, scope: object) -> bool:
+        if scope != self.game.scope:
+            chipiron_logger.debug(
+                "Ignoring stale message scope=%s (current=%s)",
+                scope,
+                self.game.scope,
+            )
+            return True
+        return False
 
-                    move_key: MoveKey = board.get_move_key_from_uci(move_uci=move_uci)
+    def _handle_gui_command(self, message: GuiCommand) -> None:
+        state: TurnState = self.game.state
 
-                    chipiron_logger.info(
-                        "Game Manager: Play a move %s at %s %s",
-                        move_uci,
-                        board,
-                        self.game.state.fen,
-                    )
-                    # move: IMove = self.move_factory(move_uci=move_uci, board=board)
-                    self.play_one_move(move_key)
-                    chipiron_logger.info(
-                        "Game Manager: Now board is  %s", self.game.state
-                    )
-
-                    eval_sto, eval_chi = self.external_eval()
-                    chipiron_logger.info(
-                        "Stockfish evaluation: %s and chipiron eval %s",
-                        eval_sto,
-                        eval_chi,
-                    )
-                    # Print the board
-                    chipiron_logger.info(board.print_chess_board())
-
-                    # sending the current board to the player  and asking for a move
-                    if self.game.is_play():
-                        self.game.query_move_from_players()
-
-                else:
-                    chipiron_logger.info(
-                        "the move is rejected because one of the following is false \n"
-                        " move_message.corresponding_board == board.fen%s \n"
-                        "self.game.playing_status.is_play() %s\n"
-                        "message.player_name == self.player_color_to_id[board.turn] %s",
-                        move_message.corresponding_board == board.fen,
-                        self.game.playing_status.is_play(),
-                        message.player_name == self.player_color_to_id[board.turn],
-                    )
-                    chipiron_logger.info(
-                        "%s,%s",
-                        message.player_name,
-                        self.player_color_to_id[board.turn],
-                    )
-                if message.evaluation is not None:
-                    self.display_board_evaluator.add_evaluation(
-                        player_color=message.color_to_play,
-                        evaluation=message.evaluation,
-                    )
-            case PlayerProgressMessage():
-                player_progress_message: PlayerProgressMessage = message
-                if player_progress_message.player_color == chess.WHITE:
-                    self.progress_collector.progress_white(
-                        value=player_progress_message.progress_percent
-                    )
-                if player_progress_message.player_color == chess.BLACK:
-                    self.progress_collector.progress_black(
-                        value=player_progress_message.progress_percent
-                    )
-            case GameStatusMessage():
-                game_status_message: GameStatusMessage = message
-                # update game status
-                if game_status_message.status == PlayingStatus.PLAY:
+        match message.payload:
+            case CmdSetStatus():
+                if message.payload.status == PlayingStatus.PLAY:
                     self.game.set_play_status()
                     self.game.query_move_from_players()
-
-                if game_status_message.status == PlayingStatus.PAUSE:
+                elif message.payload.status == PlayingStatus.PAUSE:
                     self.game.set_pause_status()
-            case BackMessage():
+                else:
+                    chipiron_logger.warning(
+                        "Unhandled PlayingStatus: %s", message.payload.status
+                    )
+
+            case CmdBackOneMove():
                 self.game.set_pause_status()
                 self.rewind_one_move()
 
-            case other:
-                raise ValueError(
-                    f"type of message received is not recognized {other} in file {__name__}"
+            case CmdHumanMoveUci():
+                # Convert GUI move into the SAME move pipeline as players
+                if message.payload.corresponding_fen is None:
+                    chipiron_logger.info(
+                        "[gui] MOVE REJECTED: missing corresponding_state_tag for %s",
+                        message.payload.move_uci,
+                    )
+                    return
+                self._handle_move_attempt(
+                    source="gui",
+                    branch_name=message.payload.move_uci,
+                    corresponding_state_tag=message.payload.corresponding_fen,
+                    player_name=self.player_color_to_id[
+                        state.turn
+                    ],  # or message.payload.player_name if you have it
+                    color_to_play=state.turn,
+                    evaluation=None,
                 )
+
+            case _:
+                chipiron_logger.warning(
+                    "Unhandled GuiCommand payload in file %s: %r",
+                    __name__,
+                    message.payload,
+                )
+                return
+
+    def _handle_player_event(self, message: PlayerEvent) -> None:
+        match message.payload:
+            case EvMove():
+                self._handle_move_attempt(
+                    source="player",
+                    branch_name=message.payload.branch_name,
+                    corresponding_state_tag=message.payload.corresponding_state_tag,
+                    player_name=message.payload.player_name,
+                    color_to_play=message.payload.color_to_play,
+                    evaluation=message.payload.evaluation,
+                )
+            case EvProgress():
+                # forward to your progress collector
+                if message.payload.player_color == Color.WHITE:
+                    self.progress_collector.progress_white(
+                        value=message.payload.progress_percent
+                    )
+                else:
+                    self.progress_collector.progress_black(
+                        value=message.payload.progress_percent
+                    )
+            case _:
+                chipiron_logger.warning(
+                    "Unhandled PlayerEvent payload in file %s: %r",
+                    __name__,
+                    message.payload,
+                )
+                return
 
     def game_continue_conditions(self) -> bool:
         """
@@ -335,12 +332,9 @@ class GameManager[StateT]:
         Returns:
             bool: True if the game should continue, False otherwise.
         """
-        half_move: HalfMove = self.game.state.ply()
+        ply: Ply = self.game.ply
         continue_bool: bool = True
-        if (
-            self.args.max_half_moves is not None
-            and half_move >= self.args.max_half_moves
-        ):
+        if self.args.max_half_moves is not None and ply >= self.args.max_half_moves:
             continue_bool = False
 
         return continue_bool
@@ -359,8 +353,8 @@ class GameManager[StateT]:
         # todo probably the txt file should be a valid PGN file : https://en.wikipedia.org/wiki/Portable_Game_Notation
         if self.path_to_store_result is not None:
             path_file: path = (
-                f"{self.path_to_store_result}_{idx}_W:{self.player_color_to_id[chess.WHITE]}"
-                f"-vs-B:{self.player_color_to_id[chess.BLACK]}"
+                f"{self.path_to_store_result}_{idx}_W:{self.player_color_to_id[Color.WHITE]}"
+                f"-vs-B:{self.player_color_to_id[Color.BLACK]}"
             )
             path_file_obj = f"{path_file}_game_report.yaml"
             path_file_txt = f"{path_file}.txt"
@@ -379,24 +373,110 @@ class GameManager[StateT]:
                     default_flow_style=False,
                 )
 
+    def _handle_move_attempt(
+        self,
+        *,
+        source: Literal["player", "gui"],
+        branch_name: str,  # stable transport action name (for chess, this is UCI)
+        corresponding_state_tag: StateTag,
+        player_name: str,
+        color_to_play: Color,
+        evaluation: StateEvaluation | None,  # your real type
+    ) -> None:
+        """
+        Single move-application path used by BOTH GUI and players.
+        Keeps the stricter checks/logging from the player path.
+        """
+        state: TurnState = self.game.state
+
+        chipiron_logger.info(
+            "[%s] MOVE ATTEMPT: move=%s player=%s color_to_play=%s is_play=%s current_tag=%s msg_tag=%s",
+            source,
+            branch_name,
+            player_name,
+            color_to_play,
+            self.game.playing_status.is_play(),
+            state.tag,
+            corresponding_state_tag,
+        )
+
+        # --- check 1: scope is handled outside (caller ensures correct scope) ---
+
+        # --- check 2: current position must match ---
+        fen_ok = corresponding_state_tag == state.tag
+
+        # --- check 3: must be in PLAY mode ---
+        play_ok = self.game.playing_status.is_play()
+
+        # --- check 4: the sender must match "who should play" ---
+        expected_player = self.player_color_to_id[state.turn]
+        player_ok = player_name == expected_player
+
+        if not (fen_ok and play_ok and player_ok):
+            chipiron_logger.info(
+                "[%s] MOVE REJECTED: fen_ok=%s play_ok=%s player_ok=%s expected_player=%s",
+                source,
+                fen_ok,
+                play_ok,
+                player_ok,
+                expected_player,
+            )
+            return
+
+        # Ensure legal moves generated
+        try:
+            state.branch_keys.get_all()
+        except Exception:
+            chipiron_logger.info(
+                "[%s] MOVE REJECTED: failed to generate legal moves",
+                source,
+                exc_info=True,
+            )
+            return
+
+        # Convert name->ActionKey
+        try:
+            action_key = state.branch_key_from_name(name=branch_name)
+        except Exception:
+            chipiron_logger.info(
+                "[%s] MOVE REJECTED: invalid branch_name=%s",
+                source,
+                branch_name,
+                exc_info=True,
+            )
+            return
+
+        chipiron_logger.info("[%s] MOVE ACCEPTED: %s", source, branch_name)
+
+        self.play_one_move(action_key)
+
+        # optional: store evaluation
+        if evaluation is not None:
+            self.display_state_evaluator.add_evaluation(
+                player_color=color_to_play,
+                evaluation=evaluation,
+            )
+
+        # query next move if still playing and game not over
+        if self.game.is_play() and not self.game.state.is_game_over():
+            self.game.query_move_from_players()
+
     def tell_results(self) -> None:
         """
         Prints the results of the game based on the current state of the board.
 
-        The method checks various conditions on the board and prints the corresponding result.
-        It also checks for specific conditions like syzygy, fivefold repetition, seventy-five moves,
-        insufficient material, stalemate, and checkmate.
-
         Returns:
             None
         """
-        board = self.game.state
-        if self.syzygy is not None and self.syzygy.fast_in_table(board):
-            chipiron_logger.info(
-                "Syzygy: Theoretical value for white %s",
-                self.syzygy.string_result(board),
-            )
-        board.tell_result()
+        state = self.game.state
+        outcome = self.rules.outcome(state)
+        if outcome is None:
+            chipiron_logger.info("No terminal outcome available to report.")
+        else:
+            chipiron_logger.info(self.rules.pretty_result(state, outcome))
+        assessment = self.rules.assessment(state)
+        if assessment is not None:
+            chipiron_logger.info(self.rules.pretty_assessment(state, assessment))
 
     def simple_results(self) -> FinalGameResult:
         """
@@ -405,35 +485,15 @@ class GameManager[StateT]:
         Returns:
             FinalGameResult: The final result of the game.
         """
-        board = self.game.state
-
-        res: FinalGameResult | None = None
-        result: str = board.result(claim_draw=True)
-        if result == "*":
-            if self.syzygy is None or not self.syzygy.fast_in_table(board):
-                # useful when a game is stopped
-                # before the end, for instance for debugging and profiling
-                res = FinalGameResult.DRAW  # arbitrary meaningless choice
-                # raise ValueError(f'Problem with figuring our game results in {__name__}')
-            else:
-                raise ValueError(
-                    "this case is not coded atm think of what is the right thing to do here!"
-                )
-        else:
-            match result:
-                case "1/2-1/2":
-                    res = FinalGameResult.DRAW
-                case "0-1":
-                    res = FinalGameResult.WIN_FOR_BLACK
-                case "1-0":
-                    res = FinalGameResult.WIN_FOR_WHITE
-                case other:
-                    raise ValueError(
-                        f"unexpected result value {other} in game manager/simple_results"
-                    )
-
-        assert isinstance(res, FinalGameResult)
-        return res
+        state = self.game.state
+        outcome = self.rules.outcome(state)
+        if outcome is None:
+            outcome = GameOutcome(
+                kind=OutcomeKind.UNKNOWN,
+                reason="no_terminal_outcome",
+                source=OutcomeSource.TERMINAL,
+            )
+        return outcome_to_final_game_result(outcome)
 
     def terminate_processes(self) -> None:
         """
@@ -448,9 +508,5 @@ class GameManager[StateT]:
         Returns:
         None
         """
-        player: players_m.PlayerProcess | players_m.GamePlayer
         for player in self.players:
-            if isinstance(player, players_m.PlayerProcess):
-                player.terminate()
-                chipiron_logger.info("Stopping the thread")
-                chipiron_logger.info("Thread stopped")
+            player.close()

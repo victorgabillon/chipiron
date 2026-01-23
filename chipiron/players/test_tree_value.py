@@ -61,9 +61,7 @@ def create_player_and_tree(
     tree_exploration: TreeExploration = main_move_selector.create_tree_exploration(
         board=board
     )
-    tree: trees.Tree = tree_exploration.explore(
-        random_generator=random_generator
-    ).tree
+    tree: trees.Tree = tree_exploration.explore(random_generator=random_generator).tree
 
     return player, tree
 

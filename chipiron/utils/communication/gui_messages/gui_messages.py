@@ -1,144 +1,43 @@
+"""Backwards-compatible import surface for GUI protocol types.
+
+Canonical message types live in `chipiron.displays.gui_protocol`.
+This module re-exports them to avoid touching all call sites at once,
+while keeping a couple helper functions used by factories.
 """
-Module that contains the GUI messages that are sent to the GUI from the game.
-"""
 
-from dataclasses import dataclass
-
-import chess
-
-from chipiron.games.game.game_playing_status import PlayingStatus
-
-
-from chipiron.environments.types import GameKind
-
-
-from dataclasses import dataclass
-from typing import   Literal, Mapping, Optional, TypeAlias, Union
-
+from anemone import TreeAndValuePlayerArgs
+from anemone.progress_monitor.progress_monitor import TreeBranchLimitArgs
 from valanga import Color
 
-from dataclasses import dataclass
-from typing import   Literal, Mapping, Optional, TypeAlias, Union, Never
-
-from atomheart.board.utils import FenPlusHistory
-
-# --- tiny helper for exhaustiveness ---
-def assert_never(x: Never) -> Never:
-    raise AssertionError(f"Unhandled value: {x!r}")
+from chipiron.displays.gui_protocol import PlayerUiInfo, UpdPlayersInfo
+from chipiron.players import PlayerFactoryArgs
 
 
-# --- ids ---
-GameId: TypeAlias = str
-SchemaVersion: TypeAlias = int
+def format_player_label(player: PlayerFactoryArgs) -> str:
+    name: str = player.player_args.name
 
-# pyright: reportPrivateUsage=false  
-BoardStateStack: TypeAlias = list[chess._BoardState]  # pyright: ignore[reportPrivateUsage]
+    tree_branch_limit: str | int = ""
+    sel = player.player_args.main_move_selector
 
-# ---------- Updates (game -> gui) ----------
-# ---------- Updates (game -> gui) ----------
-@dataclass(frozen=True, slots=True)
-class UpdStateChess:
-    kind: Literal["state_chess"]
-    fen_plus_history: FenPlusHistory
-    seed: Optional[int] = None
+    if isinstance(sel, TreeAndValuePlayerArgs):
+        stop = sel.stopping_criterion
+        if isinstance(stop, TreeBranchLimitArgs):
+            tree_branch_limit = stop.tree_branch_limit
+
+    return f"{name} ({tree_branch_limit})"
 
 
-@dataclass(frozen=True, slots=True)
-class UpdPlayerProgress:
-    kind: Literal["player_progress"]
-    player_color: Color
-    progress_percent: Optional[int]  # 0..100
+def make_players_info_payload(
+    player_color_to_factory_args: dict[Color, PlayerFactoryArgs],
+) -> UpdPlayersInfo:
+    w = player_color_to_factory_args[Color.WHITE]
+    b = player_color_to_factory_args[Color.BLACK]
 
-
-@dataclass(frozen=True, slots=True)
-class UpdEvaluation:
-    kind: Literal["evaluation"]
-    stock: Optional[float]
-    chipiron: Optional[float]
-    white: Optional[float] = None
-    black: Optional[float] = None
-
-
-@dataclass(frozen=True, slots=True)
-class PlayerInfo:
-    name: str
-    engine_kind: str
-    extra: Mapping[str, str]  # keep it simple & stable
-
-
-@dataclass(frozen=True, slots=True)
-class UpdPlayersInfo:
-    kind: Literal["players_info"]
-    white: PlayerInfo
-    black: PlayerInfo
-
-
-@dataclass(frozen=True, slots=True)
-class UpdMatchResults:
-    kind: Literal["match_results"]
-    wins_white: int
-    wins_black: int
-    draws: int
-    games_played: int
-    match_finished: bool
-
-
-@dataclass(frozen=True, slots=True)
-class UpdGameStatus:
-    kind: Literal["game_status"]
-    status: PlayingStatus
-
-
-UpdatePayload: TypeAlias = Union[
-    UpdStateChess,
-    UpdPlayerProgress,
-    UpdEvaluation,
-    UpdPlayersInfo,
-    UpdMatchResults,
-    UpdGameStatus,
-]
-
-
-@dataclass(frozen=True, slots=True)
-class GuiUpdate:
-    schema_version: SchemaVersion
-    game_kind: GameKind
-    game_id: GameId
-    payload: UpdatePayload
-
-
-# ---------- Commands (gui -> game) ----------
-@dataclass(frozen=True, slots=True)
-class CmdBackOneMove:
-    kind: Literal["back_one_move"]
-
-
-@dataclass(frozen=True, slots=True)
-class CmdSetStatus:
-    kind: Literal["set_status"]
-    status: PlayingStatus
-
-
-@dataclass(frozen=True, slots=True)
-class CmdHumanMoveUci:
-    kind: Literal["human_move_uci"]
-    move_uci: str
-    # optional context for validation / debug:
-    corresponding_fen: Optional[str] = None
-    player_name: Optional[str] = None
-    color_to_play: Optional[Color] = None
-
-
-CommandPayload: TypeAlias = Union[
-    CmdBackOneMove,
-    CmdSetStatus,
-    CmdHumanMoveUci,
-]
-
-
-@dataclass(frozen=True, slots=True)
-class GuiCommand:
-    schema_version: SchemaVersion
-    game_id: GameId
-    payload: CommandPayload
-
+    return UpdPlayersInfo(
+        white=PlayerUiInfo(
+            label=format_player_label(w), is_human=w.player_args.is_human()
+        ),
+        black=PlayerUiInfo(
+            label=format_player_label(b), is_human=b.player_args.is_human()
+        ),
+    )

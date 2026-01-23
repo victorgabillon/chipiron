@@ -6,9 +6,10 @@ import os
 import queue
 from typing import TYPE_CHECKING
 
-import chess
-from valanga.game import Seed
+from valanga import Color, TurnState
+from valanga.game import ActionName, Seed
 
+from chipiron.displays.gui_protocol import GuiUpdate, Scope
 from chipiron.games.game.final_game_result import GameReport
 from chipiron.games.game.game_args import GameArgs
 from chipiron.games.game.game_args_factory import GameArgsFactory
@@ -18,17 +19,13 @@ from chipiron.games.match.match_results_factory import MatchResultsFactory
 from chipiron.games.match.observable_match_result import ObservableMatchResults
 from chipiron.players import PlayerFactoryArgs
 from chipiron.utils import path
-from chipiron.utils.communication.gui_publisher import GuiPublisher
-from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:
-    from atomheart.move import MoveUci
-
     from chipiron.games.game.game_manager import GameManager
 
 
-class MatchManager:
+class MatchManager[StateT: TurnState]:
     """
     Object in charge of playing one match
 
@@ -45,7 +42,7 @@ class MatchManager:
         self,
         player_one_id: str,
         player_two_id: str,
-        game_manager_factory: GameManagerFactory,
+        game_manager_factory: GameManagerFactory[StateT],
         game_args_factory: GameArgsFactory,
         match_results_factory: MatchResultsFactory,
         output_folder_path: path | None = None,
@@ -99,13 +96,16 @@ class MatchManager:
 
         # creating object for reporting the result of the match and the move history
         match_results: IMatchResults = self.match_results_factory.create()
-        match_move_history: dict[int, list[MoveUci]] = {}
+        match_move_history: dict[int, list[ActionName]] = {}
+
+        last_scope: Scope | None = None
+        last_game_kind = None
 
         # Main loop of playing various games
         game_number: int = 0
         while not self.game_args_factory.is_match_finished():
             args_game: GameArgs
-            player_color_to_factory_args: dict[chess.Color, PlayerFactoryArgs]
+            player_color_to_factory_args: dict[Color, PlayerFactoryArgs]
             game_seed: Seed | None
             player_color_to_factory_args, args_game, game_seed = (
                 self.game_args_factory.generate_game_args(game_number)
@@ -120,18 +120,34 @@ class MatchManager:
                 game_seed=game_seed,
             )
 
+            # refresh match-results publishers to tag updates with the current scope
+            if hasattr(self, "_last_scope"):
+                last_scope = self._last_scope
+                last_game_kind = self._last_game_kind
+
+            if (
+                last_scope is not None
+                and last_game_kind is not None
+                and isinstance(match_results, ObservableMatchResults)
+            ):
+                match_results.replace_publishers(
+                    self.match_results_factory.build_publishers(
+                        scope=last_scope, game_kind=last_game_kind
+                    )
+                )
+
             # Update the reporting of the ongoing match with the report of the finished game
             match_results.add_result_one_game(
                 white_player_name_id=player_color_to_factory_args[
-                    chess.WHITE
+                    Color.WHITE
                 ].player_args.name,
                 game_result=game_report.final_game_result,
             )
-            match_move_history[game_number] = game_report.move_history
+            match_move_history[game_number] = game_report.action_history
 
             # ad hoc waiting time in case we play against a human and the game is finished
             # (so that the human as the time to view the final position before the automatic start of a new game)
-            if player_color_to_factory_args[chess.WHITE].player_args.is_human():
+            if player_color_to_factory_args[Color.WHITE].player_args.is_human():
                 import time
 
                 time.sleep(30)
@@ -143,6 +159,16 @@ class MatchManager:
 
         # setting  officially the game to finished state (some subscribers might receive this event as a message,
         # when a gui is present it might action it to close itself)
+        if (
+            last_scope is not None
+            and last_game_kind is not None
+            and isinstance(match_results, ObservableMatchResults)
+        ):
+            match_results.replace_publishers(
+                self.match_results_factory.build_publishers(
+                    scope=last_scope, game_kind=last_game_kind
+                )
+            )
         match_results.finish()
 
         if not isinstance(match_results, MatchResults):
@@ -159,7 +185,7 @@ class MatchManager:
 
     def play_one_game(
         self,
-        player_color_to_factory_args: dict[chess.Color, PlayerFactoryArgs],
+        player_color_to_factory_args: dict[Color, PlayerFactoryArgs],
         args_game: GameArgs,
         game_number: int,
         game_seed: Seed,
@@ -167,19 +193,24 @@ class MatchManager:
         """Plays one game and returns the game report.
 
         Args:
-            player_color_to_factory_args (dict[chess.Color, PlayerFactoryArgs]): A dictionary mapping player colors to their factory arguments.
+            player_color_to_factory_args (dict[Color, PlayerFactoryArgs]): A dictionary mapping player colors to their factory arguments.
             args_game (GameArgs): The arguments for the game.
             game_number (int): The number of the game.
-            game_seed (seed): The seed for the game.
+            game_seed (Seed): The seed for the game.
 
         Returns:
             GameReport: The report of the game.
         """
-        game_manager: GameManager = self.game_manager_factory.create(
+        game_manager: GameManager[StateT] = self.game_manager_factory.create(
             args_game_manager=args_game,
             player_color_to_factory_args=player_color_to_factory_args,
             game_seed=game_seed,
         )
+
+        # stash current ids so play_one_match can tag match-result updates
+        self._last_scope = game_manager.game.scope
+        self._last_game_kind = args_game.game_kind
+
         game_report: GameReport = game_manager.play_one_game()
         game_manager.print_to_file(idx=game_number, game_report=game_report)
 
@@ -209,12 +240,7 @@ class MatchManager:
             # print('tt', type(match_report))
             # pickle.dump(match_report, the_file)
 
-    def subscribe(self, pub: GuiPublisher) -> None:
-        """Subscribe a publisher to receive updates from the match manager.
-        Args:
-            pub (GuiPublisher): The publisher to subscribe.
-        Returns:    
-            None
-        """
-            self.game_manager_factory.subscribe(pub)
-            self.match_results_factory.subscribe(pub)
+    def subscribe(self, gui_queue: queue.Queue[GuiUpdate]) -> None:
+        """Subscribe a GUI queue to receive updates from games and match results."""
+        self.game_manager_factory.subscribe(gui_queue)
+        self.match_results_factory.subscribe(gui_queue)

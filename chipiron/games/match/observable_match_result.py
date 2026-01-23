@@ -2,14 +2,18 @@
 This module contains the ObservableMatchResults class, which is a wrapper around the MatchResults class.
 """
 
-import copy
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
+from chipiron.displays.gui_protocol import UpdMatchResults
+from chipiron.displays.gui_publisher import GuiPublisher
 from chipiron.games.game.final_game_result import FinalGameResult
-from chipiron.utils.communication.gui_messages.gui_messages import UpdMatchResults
-from chipiron.utils.communication.gui_publisher import GuiPublisher
 
 from .match_results import MatchResults, SimpleResults
+
+
+def make_publishers() -> list[GuiPublisher]:
+    """Helper function to create an empty list of GuiPublisher."""
+    return []
 
 
 @dataclass(slots=True)
@@ -25,11 +29,9 @@ class ObservableMatchResults:
     """
 
     match_results: MatchResults
-    publishers: list[GuiPublisher] = field(default_factory=list)
-
+    publishers: list[GuiPublisher] = make_publishers()
 
     def subscribe(self, pub: GuiPublisher) -> None:
-
         """
         Subscribes a publisher to receive notifications.
 
@@ -41,15 +43,8 @@ class ObservableMatchResults:
         """
         self.publishers.append(pub)
 
-
-    def copy_match_result(self) -> MatchResults:
-        """Creates a deep copy of the match results.
-
-        Returns:
-            MatchResults: A deep copy of the match results.
-        """
-        match_result_copy: MatchResults = copy.deepcopy(self.match_results)
-        return match_result_copy
+    def replace_publishers(self, pubs: list[GuiPublisher]) -> None:
+        self.publishers = list(pubs)
 
     def add_result_one_game(
         self, white_player_name_id: str, game_result: FinalGameResult
@@ -66,7 +61,6 @@ class ObservableMatchResults:
         self.match_results.add_result_one_game(white_player_name_id, game_result)
         self.notify_new_results()
 
-
     def notify_new_results(self) -> None:
         """Notifies all subscribed mailboxes about the new match results.
 
@@ -79,7 +73,6 @@ class ObservableMatchResults:
         games_played = simple.player_one_wins + simple.player_two_wins + simple.draws
 
         payload = UpdMatchResults(
-            kind="match_results",
             wins_white=simple.player_one_wins,
             wins_black=simple.player_two_wins,
             draws=simple.draws,
@@ -89,7 +82,6 @@ class ObservableMatchResults:
 
         for pub in self.publishers:
             pub.publish(payload)
-
 
     def get_simple_result(self) -> SimpleResults:
         """Retrieves a simplified version of the match results.

@@ -1,146 +1,129 @@
+"""player_thread.py
+
+Generic, game-agnostic player worker process.
+
+This process:
+- reads `PlayerRequest[SnapT]` from an input queue
+- calls the generic runtime handler
+- emits dataclass events to an output queue
 """
-player_thread.py
-"""
+
+from __future__ import annotations
 
 import multiprocessing
 import queue
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Generic, Protocol, TypeVar
 
-import chess
-from atomheart.board.factory import BoardFactory, create_board_factory
-
-from chipiron.utils.communication.player_game_messages import StatePlusHistoryMessage
-from chipiron.utils.dataclass import DataClass, IsDataclass
+from chipiron.players.communications.player_runtime import handle_player_request
 from chipiron.utils.logger import chipiron_logger
 
-from ..scripts.chipiron_args import ImplementationArgs
-from .boardevaluators.table_base.factory import SyzygyFactory, create_syzygy_factory
-from .factory import create_game_player
-from .game_player import (
-    GamePlayer,
-    game_player_computes_move_on_board_and_send_move_in_queue,
-)
-from .player_args import PlayerFactoryArgs
-
 if TYPE_CHECKING:
-    from atomheart.board.utils import FenPlusHistory
-    from valanga.game import Seed
+    from chipiron.players.communications.player_message import PlayerRequest
+    from chipiron.players.game_player import GamePlayer
+    from chipiron.utils.dataclass import IsDataclass
+    from chipiron.utils.queue_protocols import PutGetQueue, PutQueue
+
+SnapT = TypeVar("SnapT")
+RuntimeT = TypeVar("RuntimeT")
+BuildArgsT = TypeVar("BuildArgsT")
 
 
-# A class that extends the Thread class
-class PlayerProcess(multiprocessing.Process):
-    """A class representing a player process.
+class StopEvent(Protocol):
+    def is_set(self) -> bool: ...
 
-    This class extends the `multiprocessing.Process` class and is responsible for running a player
-     in a separate process.
+    def set(self) -> None: ...
 
-    Attributes:
-        game_player (GamePlayer): The game player object.
-        queue_board (queue.Queue[DataClass]): The queue for receiving board messages.
-        queue_move (queue.Queue[IsDataclass]): The queue for sending move messages.
-        player_color (chess.Color): The color of the player.
 
-    Args:
-        player_factory_args (PlayerFactoryArgs): The arguments for creating the game player.
-        queue_board (queue.Queue[DataClass]): The queue for receiving board messages.
-        queue_move (queue.Queue[IsDataclass]): The queue for sending move messages.
-        player_color (chess.Color): The color of the player.
+class BuildGamePlayer(Protocol[SnapT, RuntimeT]):
+    def __call__(
+        self, args: object, queue_out: PutQueue[IsDataclass]
+    ) -> GamePlayer[SnapT, RuntimeT]: ...
+
+
+class PlayerProcess(multiprocessing.Process, Generic[SnapT, RuntimeT, BuildArgsT]):
+    """Run a `GamePlayer` in a separate process.
+
+    This is intentionally game-agnostic: game construction is injected via `build_game_player`.
     """
 
-    game_player: GamePlayer
-    queue_receiving_board: queue.Queue[DataClass]
-    queue_sending_move: queue.Queue[IsDataclass]
-    player_color: chess.Color
-    board_factory: BoardFactory
+    queue_in: PutGetQueue[PlayerRequest[SnapT] | None]
+    queue_out: PutQueue[IsDataclass]
+    _build_game_player: BuildGamePlayer[SnapT, RuntimeT]
+    _build_args: BuildArgsT
+    _stop_event: StopEvent
 
     def __init__(
         self,
-        player_factory_args: PlayerFactoryArgs,
-        queue_receiving_board: queue.Queue[DataClass],
-        queue_sending_move: queue.Queue[IsDataclass],
-        player_color: chess.Color,
-        implementation_args: ImplementationArgs,
-        universal_behavior: bool,
+        *,
+        build_game_player: BuildGamePlayer[SnapT, RuntimeT],
+        build_args: BuildArgsT,
+        queue_in: PutGetQueue[PlayerRequest[SnapT] | None],
+        queue_out: PutQueue[IsDataclass],
+        daemon: bool = False,
     ) -> None:
-        """Initialize the PlayerThread object.
-
-        Args:
-            player_factory_args (PlayerFactoryArgs): The arguments required to create the player.
-            queue_receiving_board (queue.Queue[DataClass]): The queue for receiving board data.
-            queue_move (queue.Queue[IsDataclass]): The queue for sending move data.
-            player_color (chess.Color): The color of the player.
-
-        """
-        # Call the Thread class's init function
-        multiprocessing.Process.__init__(self, daemon=False)
+        super().__init__(daemon=daemon)
         self._stop_event = multiprocessing.Event()
-        self.queue_sending_move = queue_sending_move
-        self.queue_receiving_board = queue_receiving_board
-        self.player_color = player_color
+        self.queue_in = queue_in
+        self.queue_out = queue_out
+        self._build_game_player = build_game_player
+        self._build_args = build_args
 
-        self.board_factory: BoardFactory = create_board_factory(
-            use_rust_boards=implementation_args.use_rust_boards,
-            use_board_modification=implementation_args.use_board_modification,
-            sort_legal_moves=universal_behavior,
-        )
+    def stop(self) -> None:
+        """Request a clean stop.
 
-        create_syzygy: SyzygyFactory = create_syzygy_factory(
-            use_rust=implementation_args.use_rust_boards
-        )
-
-        self.game_player: GamePlayer = create_game_player(
-            player_factory_args=player_factory_args,
-            player_color=player_color,
-            syzygy_table=create_syzygy(),
-            queue_progress_player=queue_sending_move,
-            implementation_args=implementation_args,
-            universal_behavior=universal_behavior,
-        )
-        assert self.game_player.player is not None
-
-    # Override the run() function of Thread class
-    def run(self) -> None:
+        Note: calling `stop()` from the parent process only works if the `PlayerProcess`
+        is still alive and shares the IPC primitives. As an additional spawn-safe option,
+        we also try to send a poison-pill (`None`) into the input queue.
         """
-        Executes the player thread.
+        self._stop_event.set()
+        try:
+            self.queue_in.put(None)
+        except Exception:
+            # Best-effort: if the queue is already closed or not writable, termination
+            # is still handled by external process control.
+            pass
 
-        This method is called when the player thread is started. It continuously checks for messages in the message queue
-        and handles them accordingly. If a message is a `BoardMessage`, it retrieves the board and seed from the message,
-        computes the move for the board using the `game_player`, and sends the move to the move queue. If the message is
-        not a `BoardMessage`, it simply prints the message.
+    def close(self) -> None:
+        """Shutdown hook used by the game manager.
 
-        Note: This method runs indefinitely until the thread is stopped externally.
-
-        Returns:
-            None
+        Tries a graceful stop first (poison-pill) and then falls back to
+        `terminate()` if the process doesn't exit quickly.
         """
-        chipiron_logger.info("Started player thread: %s", self.game_player)
+        self.stop()
 
-        while True:
+        try:
+            self.join(timeout=1.0)
+        except Exception:
+            # If join isn't possible for some reason, fall back to terminate.
+            pass
+
+        if self.is_alive():
             try:
-                message = self.queue_receiving_board.get(False)
-            except queue.Empty:
+                self.terminate()
+                self.join(timeout=1.0)
+            except Exception:
                 pass
-            else:
-                # Handle task here and call q.task_done()
-                if isinstance(message, StatePlusHistoryMessage):
-                    board_message: StatePlusHistoryMessage = message
-                    fen_plus_moves: FenPlusHistory = board_message.state_plus_history
-                    seed_: Seed | None = board_message.seed
-                    chipiron_logger.info(
-                        "Player thread got the board %s", fen_plus_moves.current_fen
-                    )
-                    assert seed_ is not None
 
-                    # the game_player computes the move for the board and sends the move in the move queue
-                    game_player_computes_move_on_board_and_send_move_in_queue(
-                        fen_plus_history=fen_plus_moves,
-                        game_player=self.game_player,
-                        queue_move=self.queue_sending_move,
-                        seed_int=seed_,
-                    )
-                else:
-                    chipiron_logger.warning(
-                        "NOT EXPECTING THIS MESSAGE !! : %s", message
-                    )
+    def run(self) -> None:
+        """Main loop.
 
-            # TODO here give option to continue working while the other is thinking
+        Receives `PlayerRequest[SnapT]` objects from `queue_in` and dispatches them
+        through `handle_player_request`. If a `None` is received, the process exits.
+        """
+        game_player = self._build_game_player(self._build_args, self.queue_out)
+        chipiron_logger.info("Started player process: %s", game_player)
+
+        while not self._stop_event.is_set():
+            try:
+                request = self.queue_in.get(timeout=0.1)
+            except queue.Empty:
+                continue
+
+            if request is None:
+                break
+
+            handle_player_request(
+                request=request,
+                game_player=game_player,
+                out_queue=self.queue_out,
+            )
