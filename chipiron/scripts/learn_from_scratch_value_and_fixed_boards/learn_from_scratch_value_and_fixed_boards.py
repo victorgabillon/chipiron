@@ -35,6 +35,11 @@ from chipiron.players.boardevaluators.datasets.datasets import (
     DataSetArgs,
     FenAndValueDataSet,
 )
+from chipiron.players.boardevaluators.neural_networks.chipiron_nn_args import (
+    ChipironNNArgs,
+    create_content_to_input_convert,
+    create_content_to_input_from_model_weights,
+)
 from chipiron.players.boardevaluators.table_base.factory import (
     AnySyzygyTable,
     create_syzygy,
@@ -144,13 +149,24 @@ class LearnNNFromScratchScript:
                 self.args.nn_trainer_args.nn_parameters_file_if_reusing_existing_one
                 is not None
             )
+            content_to_input_convert = create_content_to_input_from_model_weights(
+                self.args.nn_trainer_args.nn_parameters_file_if_reusing_existing_one
+            )
             self.nn_board_evaluator = create_nn_content_eval_from_nn_parameters_file_and_existing_model(
                 model_weights_file_name=self.args.nn_trainer_args.nn_parameters_file_if_reusing_existing_one,
                 nn_architecture_args=self.args.nn_trainer_args.neural_network_architecture_args,
+                content_to_input_convert=content_to_input_convert,
             )
         else:
+            chipiron_nn_args = ChipironNNArgs(
+                version=1,
+                game_kind=self.args.nn_trainer_args.game_input.game_kind,
+                input_representation=self.args.nn_trainer_args.game_input.representation.value,
+            )
+            content_to_input_convert = create_content_to_input_convert(chipiron_nn_args)
             self.nn_board_evaluator = create_nn_content_eval_from_architecture_args(
-                nn_architecture_args=self.args.nn_trainer_args.neural_network_architecture_args
+                nn_architecture_args=self.args.nn_trainer_args.neural_network_architecture_args,
+                content_to_input_convert=content_to_input_convert,
             )
 
         if self.args.nn_trainer_args.specific_saving_folder is not None:

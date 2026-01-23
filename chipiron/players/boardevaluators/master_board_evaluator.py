@@ -20,6 +20,9 @@ from chipiron.players.boardevaluators.board_evaluator_type import (
     BoardEvalTypes,
     to_board_eval_type,
 )
+from chipiron.players.boardevaluators.neural_networks.chipiron_nn_args import (
+    create_content_to_input_from_model_weights,
+)
 from chipiron.players.boardevaluators.evaluation_scale import (
     EvaluationScale,
     ValueOverEnum,
@@ -238,6 +241,9 @@ def create_master_board_evaluator_from_args(
             board_evaluator = create_nn_content_eval_from_nn_parameters_file_and_existing_model(
                 model_weights_file_name=master_board_evaluator.board_evaluator.neural_nets_model_and_architecture.model_weights_file_name,
                 nn_architecture_args=master_board_evaluator.board_evaluator.neural_nets_model_and_architecture.nn_architecture_args,
+                content_to_input_convert=create_content_to_input_from_model_weights(
+                    master_board_evaluator.board_evaluator.neural_nets_model_and_architecture.model_weights_file_name
+                ),
             )
         case other:
             raise ValueError(

@@ -21,6 +21,9 @@ from chipiron.players.boardevaluators.board_evaluator import StateEvaluator
 from chipiron.players.boardevaluators.neural_networks.factory import (
     create_nn_board_eval_from_nn_parameters_file_and_existing_model,
 )
+from chipiron.players.boardevaluators.neural_networks.chipiron_nn_args import (
+    create_content_to_input_from_model_weights,
+)
 from chipiron.players.boardevaluators.stockfish_board_evaluator import (
     StockfishBoardEvalArgs,
     StockfishBoardEvaluator,
@@ -66,6 +69,9 @@ def _build_chi() -> StateEvaluator[ChessState]:
                 create_nn_board_eval_from_nn_parameters_file_and_existing_model(
                     model_weights_file_name=nn.model_weights_file_name,
                     nn_architecture_args=nn.nn_architecture_args,
+                    content_to_input_convert=create_content_to_input_from_model_weights(
+                        nn.model_weights_file_name
+                    ),
                 )
             )
         case _:
