@@ -1,0 +1,3 @@
+version: 1
+game_kind: chess
+input_representation: board_pieces_two_sides
