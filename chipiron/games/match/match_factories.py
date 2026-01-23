@@ -3,22 +3,28 @@ This module contains functions for creating match managers in the Chipiron game 
 """
 
 import multiprocessing
-from typing import TYPE_CHECKING
+import uuid
+from typing import TYPE_CHECKING, cast
 
 from atomheart.board.factory import (
     BoardFactory,
     create_board_factory,
 )
 from atomheart.move_factory import MoveFactory, create_move_factory
+from valanga import TurnState
 
 import chipiron as ch
 import chipiron.games.game as game
 import chipiron.players as players
+from chipiron.games.game.game_manager import MainMailboxMessage
 from chipiron.games.game.game_manager_factory import GameManagerFactory
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_manager import MatchManager
 from chipiron.games.match.match_results_factory import MatchResultsFactory
-from chipiron.players.boardevaluators.factory import create_game_board_evaluator
+from chipiron.players.boardevaluators.board_evaluator import IGameStateEvaluator
+from chipiron.players.boardevaluators.factory import (
+    create_game_board_evaluator_for_game_kind,
+)
 from chipiron.players.boardevaluators.table_base.factory import (
     AnySyzygyTable,
     create_syzygy,
@@ -32,9 +38,6 @@ from .match_settings_args import MatchSettingsArgs
 if TYPE_CHECKING:
     import queue
 
-    from chipiron.players.boardevaluators.board_evaluator import IGameStateEvaluator
-    from chipiron.utils.dataclass import IsDataclass
-
 
 def create_match_manager(
     args_match: MatchSettingsArgs,
@@ -46,7 +49,7 @@ def create_match_manager(
     seed: int | None = None,
     output_folder_path: path | None = None,
     gui: bool = False,
-) -> MatchManager:
+) -> MatchManager[TurnState]:
     """
     Create a match manager for running matches between two players.
 
@@ -63,7 +66,12 @@ def create_match_manager(
     Returns:
         MatchManager: The created match manager.
     """
-    main_thread_mailbox: queue.Queue[IsDataclass] = multiprocessing.Manager().Queue()
+    main_thread_mailbox: queue.Queue[MainMailboxMessage] = (
+        multiprocessing.Manager().Queue()
+    )
+
+    session_id: str = uuid.uuid4().hex
+    match_id: str = uuid.uuid4().hex
 
     # Creation of the Syzygy table for perfect play in low pieces cases, needed by the GameManager
     # and can also be used by the players
@@ -74,11 +82,13 @@ def create_match_manager(
     player_one_name: str = args_player_one.name
     player_two_name: str = args_player_two.name
 
-    can_stockfish: bool = args_player_one.name not in [
+    can_oracle: bool = args_player_one.name not in [
         "Stockfish"
     ] and args_player_two.name not in ["Stockfish"]
-    game_board_evaluator: IGameStateEvaluator = create_game_board_evaluator(
-        gui=gui, can_stockfish=can_stockfish
+    game_board_evaluator = create_game_board_evaluator_for_game_kind(
+        game_kind=args_game.game_kind,
+        gui=gui,
+        can_oracle=can_oracle,
     )
 
     board_factory: BoardFactory = create_board_factory(
@@ -91,15 +101,19 @@ def create_match_manager(
         use_rust_boards=implementation_args.use_rust_boards
     )
 
-    game_manager_factory: GameManagerFactory = GameManagerFactory(
+    game_manager_factory: GameManagerFactory[TurnState] = GameManagerFactory(
         syzygy_table=syzygy_table,
-        game_manager_board_evaluator=game_board_evaluator,
+        game_manager_state_evaluator=cast(
+            "IGameStateEvaluator[TurnState]", game_board_evaluator
+        ),
         output_folder_path=output_folder_path,
         main_thread_mailbox=main_thread_mailbox,
         board_factory=board_factory,
         implementation_args=implementation_args,
         move_factory=move_factory,
         universal_behavior=universal_behavior,
+        session_id=session_id,
+        match_id=match_id,
     )
 
     match_results_factory: MatchResultsFactory = MatchResultsFactory(
@@ -114,7 +128,7 @@ def create_match_manager(
         args_game=args_game,
     )
 
-    match_manager: MatchManager = MatchManager(
+    match_manager: MatchManager[TurnState] = MatchManager(
         player_one_id=player_one_name,
         player_two_id=player_two_name,
         game_manager_factory=game_manager_factory,
@@ -130,7 +144,7 @@ def create_match_manager_from_args(
     base_script_args: BaseScriptArgs,
     implementation_args: ImplementationArgs,
     gui: bool = False,
-) -> MatchManager:
+) -> MatchManager[TurnState]:
     """
     Create a match manager from the given arguments.
 
@@ -165,7 +179,7 @@ def create_match_manager_from_args(
     # taking care of random
     ch.set_seeds(seed=base_script_args.seed)
 
-    match_manager: MatchManager = create_match_manager(
+    match_manager: MatchManager[TurnState] = create_match_manager(
         args_match=match_args.match_setting,
         args_player_one=player_one_args,
         args_player_two=player_two_args,

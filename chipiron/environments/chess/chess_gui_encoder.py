@@ -1,29 +1,29 @@
+from dataclasses import dataclass
 
-from valanga.game import  Seed
+from valanga.game import Seed
 
-from chipiron.environments.types import GameKind
-from chipiron.games.game.game_playing_status import PlayingStatus
-from chipiron.utils.communication.gui_messages.gui_messages import (
+from chipiron.displays.gui_protocol import (
+    UpdatePayload,
     UpdGameStatus,
     UpdStateChess,
-    UpdatePayload,
 )
-from atomheart.board.iboard import IBoard
-
+from chipiron.environments.chess.types import ChessState
+from chipiron.environments.types import GameKind
+from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.utils.communication.gui_encoder import GuiEncoder
 
-@dataclass(frozen=True, slots=True)
-class ChessGuiEncoder(GuiEncoder[IBoard]):
 
+@dataclass(frozen=True, slots=True)
+class ChessGuiEncoder(GuiEncoder[ChessState]):
     game_kind: GameKind = GameKind.CHESS
+
     def make_state_payload(
         self,
         *,
-        state: IBoard,
+        state: ChessState,
         seed: Seed | None,
     ) -> UpdatePayload:
         return UpdStateChess(
-            kind="state_chess",
             fen_plus_history=state.into_fen_plus_history(),
             seed=seed,
         )
@@ -33,4 +33,4 @@ class ChessGuiEncoder(GuiEncoder[IBoard]):
         *,
         status: PlayingStatus,
     ) -> UpdatePayload:
-        return UpdGameStatus(kind="game_status", status=status)
+        return UpdGameStatus(status=status)

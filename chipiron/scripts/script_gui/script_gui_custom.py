@@ -19,13 +19,13 @@ from anemone.progress_monitor.progress_monitor import (
     StoppingCriterionTypes,
     TreeBranchLimitArgs,
 )
-from atomheart.board.starting_position import (
-    FenStartingPositionArgs,
-    StartingPositionArgsType,
-)
 from parsley_coco import make_partial_dataclass_with_optional_paths
 
 from chipiron import scripts
+from chipiron.environments.chess.starting_position_args import (
+    FenStartingPositionArgs,
+    StartingPositionArgsType,
+)
 from chipiron.games.game.game_args import GameArgs
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_settings_args import MatchSettingsArgs

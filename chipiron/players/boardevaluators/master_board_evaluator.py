@@ -1,18 +1,28 @@
 from dataclasses import dataclass
 from typing import Any
 
-import chess
 from atomheart.board import IBoard
+from coral.neural_networks.factory import (
+    create_nn_content_eval_from_nn_parameters_file_and_existing_model,
+)
 from coral.neural_networks.neural_net_board_eval_args import (
     NeuralNetBoardEvalArgs,
 )
+from valanga import Color
 from valanga.over_event import HowOver, OverEvent, Winner
 
 import chipiron.players.boardevaluators.basic_evaluation as basic_evaluation
+from chipiron.environments.chess.types import ChessState
 from chipiron.players.boardevaluators.all_board_evaluator_args import (
     AllBoardEvaluatorArgs,
 )
-from chipiron.players.boardevaluators.board_evaluator_type import BoardEvalTypes
+from chipiron.players.boardevaluators.board_evaluator_type import (
+    BoardEvalTypes,
+    to_board_eval_type,
+)
+from chipiron.players.boardevaluators.neural_networks.chipiron_nn_args import (
+    create_content_to_input_from_model_weights,
+)
 from chipiron.players.boardevaluators.evaluation_scale import (
     EvaluationScale,
     ValueOverEnum,
@@ -45,7 +55,7 @@ class MasterBoardEvaluator:
     """
 
     # The board evaluator used to evaluate the chess board.
-    board_evaluator: StateEvaluator
+    board_evaluator: StateEvaluator[ChessState]
 
     # The Syzygy table used for endgame tablebase evaluations, or None if not available.
     syzygy_evaluator: AnySyzygyTable | None
@@ -55,7 +65,7 @@ class MasterBoardEvaluator:
 
     def __init__(
         self,
-        board_evaluator: StateEvaluator,
+        board_evaluator: StateEvaluator[ChessState],
         syzygy: AnySyzygyTable | None,
         value_over_enum: ValueOverEnum,
     ) -> None:
@@ -71,16 +81,16 @@ class MasterBoardEvaluator:
         self.syzygy_evaluator = syzygy
         self.value_over_enum = value_over_enum
 
-    def value_white(self, board: IBoard) -> float:
+    def value_white(self, state: ChessState) -> float:
         """
         Calculates the value for the white player of a given node.
         If the value can be obtained from the syzygy evaluator, it is used.
         Otherwise, the board evaluator is used.
         """
-        value_white: float | None = self.syzygy_value_white(board)
+        value_white: float | None = self.syzygy_value_white(state.board)
         value_white_float: float
         if value_white is None:
-            value_white_float = self.board_evaluator.value_white(board)
+            value_white_float = self.board_evaluator.value_white(state)
         else:
             value_white_float = value_white
         return value_white_float
@@ -162,7 +172,7 @@ class MasterBoardEvaluator:
         white_value: Any
         if over_event.is_win():
             assert not over_event.is_draw()
-            if over_event.is_winner(chess.WHITE):
+            if over_event.is_winner(Color.WHITE):
                 white_value = self.value_over_enum.VALUE_WHITE_WHEN_OVER_WHITE_WINS
             else:
                 white_value = self.value_over_enum.VALUE_WHITE_WHEN_OVER_BLACK_WINS
@@ -174,7 +184,7 @@ class MasterBoardEvaluator:
 
 
 def create_master_board_evaluator(
-    board_evaluator: StateEvaluator,
+    board_evaluator: StateEvaluator[ChessState],
     syzygy: AnySyzygyTable | None,
     evaluation_scale: EvaluationScale,
 ) -> MasterBoardEvaluator:
@@ -216,18 +226,24 @@ def create_master_board_evaluator_from_args(
     else:
         syzygy_ = None
 
-    board_evaluator: StateEvaluator
+    board_evaluator: StateEvaluator[ChessState]
 
-    match master_board_evaluator.board_evaluator.type:
+    kind: BoardEvalTypes = to_board_eval_type(
+        master_board_evaluator.board_evaluator.type
+    )
+    match kind:
         case BoardEvalTypes.BASIC_EVALUATION_EVAL:
             board_evaluator = basic_evaluation.BasicEvaluation()
         case BoardEvalTypes.NEURAL_NET_BOARD_EVAL:
             assert isinstance(
                 master_board_evaluator.board_evaluator, NeuralNetBoardEvalArgs
             )
-            board_evaluator = create_nn_board_eval_from_nn_parameters_file_and_existing_model(
+            board_evaluator = create_nn_content_eval_from_nn_parameters_file_and_existing_model(
                 model_weights_file_name=master_board_evaluator.board_evaluator.neural_nets_model_and_architecture.model_weights_file_name,
                 nn_architecture_args=master_board_evaluator.board_evaluator.neural_nets_model_and_architecture.nn_architecture_args,
+                content_to_input_convert=create_content_to_input_from_model_weights(
+                    master_board_evaluator.board_evaluator.neural_nets_model_and_architecture.model_weights_file_name
+                ),
             )
         case other:
             raise ValueError(

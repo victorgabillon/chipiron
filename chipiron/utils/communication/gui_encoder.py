@@ -1,15 +1,15 @@
-from __future__ import annotations
-from typing import Protocol
+from typing import Protocol, TypeVar
 
-from pyparsing import TypeVar
+from valanga.game import Seed
+
+from chipiron.displays.gui_protocol import UpdatePayload
 
 # chipiron/utils/communication/gui_encoder.py
 from chipiron.environments.types import GameKind
 from chipiron.games.game.game_playing_status import PlayingStatus
-from chipiron.utils.communication.gui_messages.gui_messages import  UpdatePayload
-from valanga.game import Seed
 
 StateT_contra = TypeVar("StateT_contra", contravariant=True)
+
 
 class GuiEncoder(Protocol[StateT_contra]):
     game_kind: GameKind

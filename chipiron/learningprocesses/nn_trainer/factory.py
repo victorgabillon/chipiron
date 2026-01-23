@@ -15,6 +15,7 @@ import yaml
 from coral.board_evaluation import (
     PointOfView,
 )
+from coral.chi_nn import ChiNN
 from coral.neural_networks.factory import (
     get_nn_architecture_file_path_from,
     get_nn_param_file_path_from,
@@ -33,12 +34,12 @@ from coral.neural_networks.output_converters.model_output_type import (
     ModelOutputType,
 )
 
+from chipiron.environments.types import GameKind
 from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
 from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
     ModelInputRepresentationType,
 )
 from chipiron.utils import path
-from coral.chi_nn import ChiNN
 from chipiron.utils.dataclass import custom_asdict_factory
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.small_tools import mkdir_if_not_existing
@@ -46,6 +47,12 @@ from chipiron.utils.small_tools import mkdir_if_not_existing
 SerializableType = Union[
     str, int, float, bool, None, Dict[str, Any], List[Any], set[Any], frozenset[Any]
 ]
+
+
+@dataclass(frozen=True, slots=True)
+class GameInputArgs:
+    game_kind: GameKind
+    representation: ModelInputRepresentationType
 
 
 @dataclass
@@ -72,7 +79,12 @@ class NNTrainerArgs:
                 ],
             ),
             model_output_type=ModelOutputType(point_of_view=PointOfView.PLAYER_TO_MOVE),
-            model_input_representation_type=ModelInputRepresentationType.PIECE_DIFFERENCE,
+        )
+    )
+    game_input: GameInputArgs = field(
+        default_factory=lambda: GameInputArgs(
+            game_kind=GameKind.CHESS,
+            representation=ModelInputRepresentationType.PIECE_DIFFERENCE,
         )
     )
     nn_parameters_file_if_reusing_existing_one: path | None = None

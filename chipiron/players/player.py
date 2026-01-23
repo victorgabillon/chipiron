@@ -1,99 +1,70 @@
+"""Module for the (game-agnostic) Player shell.
+
+The core `Player` is generic and delegates all game-specific logic to a `GameAdapter`:
+- snapshot -> runtime state
+- legal action enumeration
+- optional oracle fast-path (e.g. syzygy in chess)
 """
-Module for the Player class.
-"""
 
-from typing import TYPE_CHECKING
+from __future__ import annotations
 
-from atomheart.board import BoardFactory, IBoard
-from atomheart.board.utils import FenPlusHistory
-from valanga.game import Seed
-from valanga.policy import BranchSelector, Recommendation
+from typing import TYPE_CHECKING, Generic, Protocol, TypeVar
 
-from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
-from chipiron.utils.logger import chipiron_logger
+from valanga.policy import Recommendation
 
 if TYPE_CHECKING:
-    from atomheart.move import MoveUci
-    from atomheart.move.imove import MoveKey
+    from valanga.game import BranchName, Seed
 
 PlayerId = str
 
+StateSnapT = TypeVar("StateSnapT")
+RuntimeStateT = TypeVar("RuntimeStateT")
 
-class Player:
-    """
-    Player selects moves on a given board
-    """
 
-    #  difference between player and treebuilder includes the fact
-    #  that now a player can be a mixture of multiple decision rules
+class GameAdapter(Protocol[StateSnapT, RuntimeStateT]):
+    """Game-specific behavior injected into the generic `Player`."""
+
+    def build_runtime_state(self, snapshot: StateSnapT) -> RuntimeStateT: ...
+
+    def legal_action_count(self, runtime_state: RuntimeStateT) -> int: ...
+
+    def only_action_name(self, runtime_state: RuntimeStateT) -> BranchName: ...
+
+    def oracle_action_name(self, runtime_state: RuntimeStateT) -> BranchName | None: ...
+
+    def recommend(self, runtime_state: RuntimeStateT, seed: Seed) -> Recommendation: ...
+
+
+class Player(Generic[StateSnapT, RuntimeStateT]):
+    """Fully game-agnostic player: recommends an action given a snapshot."""
+
     id: PlayerId
-    main_move_selector: BranchSelector
-    syzygy: AnySyzygyTable | None
-    board_factory: BoardFactory
+    adapter: GameAdapter[StateSnapT, RuntimeStateT]
 
     def __init__(
-        self,
-        name: str,
-        syzygy: AnySyzygyTable | None,
-        main_move_selector: BranchSelector,
-        board_factory: BoardFactory,
-    ):
+        self, name: str, adapter: GameAdapter[StateSnapT, RuntimeStateT]
+    ) -> None:
         self.id = name
-        self.main_move_selector: BranchSelector = main_move_selector
-        self.syzygy_player = syzygy
-        self.board_factory = board_factory
+        self.adapter = adapter
 
     def get_id(self) -> PlayerId:
-        """
-        Returns the ID of the player.
-
-        Returns:
-            PlayerId: The player's ID.
-        """
         return self.id
 
-    def select_move(
-        self, fen_plus_history: FenPlusHistory, seed_int: Seed
-    ) -> Recommendation:
-        """
-        Returns the best move computed by the player.
-        The player has the option to ask the syzygy table to play it.
+    def select_move(self, snapshot: StateSnapT, seed: Seed) -> Recommendation:
+        runtime_state = self.adapter.build_runtime_state(snapshot)
 
-        Args:
-            board (BoardChi): The current board state.
-            seed_int (seed): The seed for move selection.
-
-        Returns:
-            Recommendation: The recommended move.
-        """
-
-        board: IBoard = self.board_factory(fen_with_history=fen_plus_history)
-
-        move_recommendation: Recommendation
-        # if there is only one possible legal move in the position, do not think, choose it.
-        if not board.legal_moves:
+        n = self.adapter.legal_action_count(runtime_state)
+        if n == 0:
             raise ValueError("No legal moves in this position")
-        if board.legal_moves.more_than_one_move() or self.id != "Human":
-            # if len(list(board.legal_moves))>1 or self.id != 'Human':
 
-            # if the play with syzygy option is on test if the position is in the database to play syzygy
-            if self.syzygy_player is not None and self.syzygy_player.fast_in_table(
-                board
-            ):
-                chipiron_logger.info("Playing with Syzygy")
-                best_move_key: MoveKey = self.syzygy_player.best_move(board)
-                best_move_uci: MoveUci = board.get_uci_from_move_key(best_move_key)
-                move_recommendation = Recommendation(move=best_move_uci)
-            else:
-                chipiron_logger.info(
-                    "Playing with player (not Syzygy) %s\n%s", self.id, board
-                )
-                move_recommendation = self.main_move_selector.select_move(
-                    board=board, move_seed=seed_int
-                )
-        else:
-            move_key: MoveKey = list(board.legal_moves)[0]
-            move_uci: MoveUci = board.get_uci_from_move_key(move_key)
-            move_recommendation = Recommendation(move=move_uci)
+        # Fast path: if only one legal action, skip selection/search for humans.
+        if n == 1 and self.id == "Human":
+            only_name = self.adapter.only_action_name(runtime_state)
+            return Recommendation(recommended_key=only_name)
 
-        return move_recommendation
+        # Optional oracle fast-path (e.g., Syzygy). Return None if not applicable.
+        oracle_name = self.adapter.oracle_action_name(runtime_state)
+        if oracle_name is not None:
+            return Recommendation(recommended_key=oracle_name)
+
+        return self.adapter.recommend(runtime_state, seed)

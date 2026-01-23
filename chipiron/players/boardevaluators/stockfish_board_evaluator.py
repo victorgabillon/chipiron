@@ -3,6 +3,7 @@ Module where we define the Stockfish Board Evaluator
 """
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 import atomheart.board as boards
@@ -12,6 +13,7 @@ from atomheart.board.utils import FenPlusHistory
 
 from chipiron.players.boardevaluators.board_evaluator_type import BoardEvalTypes
 from chipiron.utils.logger import chipiron_logger
+from chipiron.utils.path_variables import STOCKFISH_BINARY_PATH
 
 if TYPE_CHECKING:
     from atomheart.board.board_chi import BoardChi
@@ -64,12 +66,27 @@ class StockfishBoardEvaluator:
         self.args = args
         self.engine = None
 
-    def value_white(self, board: boards.IBoard) -> float:
+    @staticmethod
+    def _candidate_paths() -> list[str]:
+        return [
+            str(STOCKFISH_BINARY_PATH),
+            "/usr/games/stockfish",
+            "stockfish",
+            r"stockfish/stockfish/stockfish-ubuntu-x86-64-avx2",
+        ]
+
+    @staticmethod
+    def is_available() -> bool:
+        return any(
+            Path(path).exists() for path in StockfishBoardEvaluator._candidate_paths()
+        )
+
+    def value_white(self, state: boards.IBoard) -> float:
         """
         Computes the value of the board for the white player.
 
         Args:
-            board (boards.BoardChi): The board object representing the current state of the game.
+            state (boards.IBoard): The board object representing the current state of the game.
 
         Returns:
             float: The value of the board for the white player.
@@ -77,13 +94,7 @@ class StockfishBoardEvaluator:
         try:
             if self.engine is None:
                 # Try multiple possible Stockfish paths
-                stockfish_paths = [
-                    "/usr/games/stockfish",
-                    "stockfish",
-                    r"stockfish/stockfish/stockfish-ubuntu-x86-64-avx2",
-                ]
-
-                for path in stockfish_paths:
+                for path in self._candidate_paths():
                     try:
                         self.engine = chess.engine.SimpleEngine.popen_uci(path)
                         break
@@ -100,7 +111,7 @@ class StockfishBoardEvaluator:
             # transform the board
             board_chi: BoardChi = create_board_chi(
                 fen_with_history=FenPlusHistory(
-                    current_fen=board.fen,
+                    current_fen=state.fen,
                     # historical_moves=board.move_history_stack,
                     # historical_boards=board.board_history_stack,  # type: ignore
                     # note that we do not give here historical_boards, hope this does not create but related to 3 fold repetition computation

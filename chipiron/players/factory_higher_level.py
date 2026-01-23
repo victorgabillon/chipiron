@@ -1,213 +1,168 @@
+"""Module for creating player observers.
+
+This module is game-agnostic orchestration:
+- selects game-specific wiring by `GameKind`
+- creates either a multi-process PlayerProcess or an in-process GamePlayer
+- returns a `PlayerHandle` + a move-request function
+
+Typing strategy:
+- strong typing lives inside each wiring module
+- a single cast occurs when selecting wiring by runtime `game_kind`
 """
-Module for creating player observers.
-"""
+
+from __future__ import annotations
 
 import multiprocessing
-import queue
 from functools import partial
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol, assert_never, cast
 
-import chess
-from atomheart.board.utils import FenPlusHistory
-from valanga.game import Seed, TurnStatePlusHistory
+from chipiron.environments.types import GameKind
+from chipiron.games.game.game_manager import MainMailboxMessage
+from chipiron.players.communications.player_runtime import handle_player_request
+from chipiron.players.player_handle import InProcessPlayerHandle, PlayerHandle
+from chipiron.players.player_thread import PlayerProcess
+from chipiron.players.wirings.checkers_wiring import CHECKERS_WIRING
+from chipiron.players.wirings.chess_wiring import CHESS_WIRING
 
-from chipiron.utils.communication.player_game_messages import StatePlusHistoryMessage
-from chipiron.utils.dataclass import IsDataclass
+if TYPE_CHECKING:
+    from valanga import Color
 
-from ..scripts.chipiron_args import ImplementationArgs
-from .boardevaluators.table_base.factory import AnySyzygyTable
-from .factory import create_game_player
-from .game_player import (
-    GamePlayer,
-    game_player_computes_move_on_board_and_send_move_in_queue,
-)
-from .player_args import PlayerFactoryArgs
-from .player_thread import PlayerProcess
+    from chipiron.players.communications.player_message import PlayerRequest
+    from chipiron.players.observer_wiring import ObserverWiring
+    from chipiron.players.player_args import PlayerFactoryArgs
+    from chipiron.utils.dataclass import IsDataclass
+    from chipiron.utils.queue_protocols import PutGetQueue, PutQueue
+
+    from .boardevaluators.table_base.factory import AnySyzygyTable
 
 
-# function that will be called by the observable game when the board is updated, which should query at least one player
-# to compute a move
-# MoveFunction = Callable[[BoardChi, seed], None]
 class MoveFunction(Protocol):
-    """
-    Represents a move function that can be called on a game board.
-
-    Args:
-        board (BoardChi): The game board on which the move function is applied.
-        seed_int (seed): The seed used for the move function.
-
-    Returns:
-        None: This function does not return any value.
-    """
-
-    def __call__(self, state_tag_plus_history: TurnStatePlusHistory, seed_int: Seed) -> None: ...
-
-
-def send_board_to_player_process_mailbox(
-    fen_plus_history: FenPlusHistory,
-    seed_int: int,
-    player_process_mailbox: queue.Queue[StatePlusHistoryMessage],
-) -> None:
-    """Sends the board and seed to the player process mailbox.
-
-    This function creates a BoardMessage object with the given board and seed,
-    and puts it into the player_process_mailbox.
-
-    Args:
-        seed_int (int): The seed to send.
-        player_process_mailbox (queue.Queue[BoardMessage]): The mailbox to put the message into.
-    """
-    message: StatePlusHistoryMessage = StatePlusHistoryMessage(state_plus_history=fen_plus_history, seed=seed_int)
-    player_process_mailbox.put(item=message)
+    def __call__(self, request: PlayerRequest[object]) -> None: ...
 
 
 class PlayerObserverFactory(Protocol):
-    """
-    creates the player and the means to communicate with it
-    """
-
     def __call__(
         self,
         player_factory_args: PlayerFactoryArgs,
-        player_color: chess.Color,
-        main_thread_mailbox: queue.Queue[IsDataclass],
-    ) -> tuple[GamePlayer | PlayerProcess, MoveFunction]: ...
+        player_color: Color,
+        main_thread_mailbox: PutQueue[MainMailboxMessage],
+    ) -> tuple[PlayerHandle, MoveFunction]: ...
+
+
+def _select_wiring(game_kind: GameKind) -> ObserverWiring[object, object, object]:
+    match game_kind:
+        case GameKind.CHESS:
+            return cast("ObserverWiring[object, object, object]", CHESS_WIRING)
+        case GameKind.CHECKERS:
+            return cast("ObserverWiring[object, object, object]", CHECKERS_WIRING)
+        case _:
+            assert_never(game_kind)
 
 
 def create_player_observer_factory(
+    *,
+    game_kind: GameKind,
     each_player_has_its_own_thread: bool,
-    implementation_args: ImplementationArgs,
+    implementation_args: object,
     universal_behavior: bool,
     syzygy_table: AnySyzygyTable | None,
 ) -> PlayerObserverFactory:
-    """Create a player observer factory.
-    This function creates a player observer factory based on the given parameters.
-    The factory can create player observers that either run in separate threads or in the same process.
-    The choice is determined by the `each_player_has_its_own_thread` parameter.
-    The factory also takes into account the `implementation_args` and `universal_behavior` parameters
-    to customize the behavior of the created player observers.
-    The `syzygy_table` parameter is used to provide a syzygy table for the player observers.
-    The factory returns a callable that can be used to create player observers with the specified arguments.
-    The created player observers can be used to interact with the game and make moves.
-    The `each_player_has_its_own_thread` parameter determines whether each player runs in its own thread
-    or in the same process.
-    The `implementation_args` parameter provides additional arguments for the implementation of the player observers.
-    The `universal_behavior` parameter determines whether the player observers should exhibit universal behavior.
+    wiring = _select_wiring(game_kind)
 
-    Args:
-        each_player_has_its_own_thread (bool): _description_
-        implementation_args (ImplementationArgs): _description_
-        universal_behavior (bool): _description_
-        syzygy_table (AnySyzygyTable | None): _description_
-
-    Returns:
-        PlayerObserverFactory: _description_
-    """
-    player_observer_factory: PlayerObserverFactory
     if each_player_has_its_own_thread:
-        player_observer_factory = partial(
-            create_player_observer_distributed_players,
-            implementation_args=implementation_args,
-            universal_behavior=universal_behavior,
+        return cast(
+            "PlayerObserverFactory",
+            partial(
+                _create_player_observer_distributed,
+                wiring=wiring,
+                implementation_args=implementation_args,
+                universal_behavior=universal_behavior,
+            ),
         )
-    else:
-        player_observer_factory = partial(
-            create_player_observer_mono_process,
+
+    return cast(
+        "PlayerObserverFactory",
+        partial(
+            _create_player_observer_mono_process,
+            wiring=wiring,
             syzygy_table=syzygy_table,
-            universal_behavior=universal_behavior,
             implementation_args=implementation_args,
-        )
-    return player_observer_factory
+            universal_behavior=universal_behavior,
+        ),
+    )
 
 
-def create_player_observer_distributed_players(
+def _create_player_observer_distributed(
     player_factory_args: PlayerFactoryArgs,
-    player_color: chess.Color,
-    main_thread_mailbox: queue.Queue[IsDataclass],
-    implementation_args: ImplementationArgs,
+    player_color: Color,
+    main_thread_mailbox: PutQueue[IsDataclass],
+    *,
+    wiring: ObserverWiring[object, object, object],
+    implementation_args: object,
     universal_behavior: bool,
-) -> tuple[GamePlayer | PlayerProcess, MoveFunction]:
-    """Create a player observer.
+) -> tuple[PlayerHandle, MoveFunction]:
+    mgr = multiprocessing.Manager()
+    player_process_mailbox: PutGetQueue[PlayerRequest[object] | None] = mgr.Queue()
 
-    This function creates a player observer based on the given parameters.
-
-    Args:
-        board_factory: the board factory to create a board
-        player_factory_args (PlayerFactoryArgs): The arguments for creating the player.
-        player_color (chess.Color): The color of the player.
-        main_thread_mailbox (queue.Queue[IsDataclass]): The mailbox for communication between the main thread
-        and the player.
-
-    Returns:
-        tuple[ PlayerProcess, MoveFunction]: A tuple containing the player observer and the move function.
-
-    """
-    generic_player: PlayerProcess
-    move_function: MoveFunction
-
-    # case with multiprocessing when each player is a separate process
-    # creating objects Queue that is the mailbox for the player thread
-    player_process_mailbox = multiprocessing.Manager().Queue()
-
-    # creating and starting the thread for the player
-    player_process: PlayerProcess = PlayerProcess(
+    # `ObserverWiring.build_args_type` is game-specific; after type-erasure it must be
+    # instantiated via a local cast.
+    build_args_type = cast("type", wiring.build_args_type)
+    build_args = build_args_type(
         player_factory_args=player_factory_args,
         player_color=player_color,
-        queue_receiving_board=player_process_mailbox,
-        queue_sending_move=main_thread_mailbox,
         implementation_args=implementation_args,
         universal_behavior=universal_behavior,
     )
-    player_process.start()
-    generic_player = player_process
 
-    move_function = partial(
-        send_board_to_player_process_mailbox,
-        player_process_mailbox=player_process_mailbox,
+    proc: PlayerProcess[object, object, object] = PlayerProcess(
+        build_game_player=wiring.build_game_player,
+        build_args=build_args,
+        queue_in=player_process_mailbox,
+        queue_out=main_thread_mailbox,
     )
+    proc.start()
 
-    return generic_player, move_function
+    def send_request_to_mailbox(
+        request: PlayerRequest[object],
+        mailbox: PutQueue[PlayerRequest[object] | None],
+    ) -> None:
+        mailbox.put(request)
+
+    move_function = partial(send_request_to_mailbox, mailbox=player_process_mailbox)
+    return proc, cast("MoveFunction", move_function)
 
 
-def create_player_observer_mono_process(
+def _create_player_observer_mono_process(
     player_factory_args: PlayerFactoryArgs,
-    player_color: chess.Color,
-    main_thread_mailbox: queue.Queue[IsDataclass],
+    player_color: Color,
+    main_thread_mailbox: PutQueue[MainMailboxMessage],
+    *,
+    wiring: ObserverWiring[object, object, object],
     syzygy_table: AnySyzygyTable | None,
-    implementation_args: ImplementationArgs,
+    implementation_args: object,
     universal_behavior: bool,
-) -> tuple[GamePlayer, MoveFunction]:
-    """Create a player observer.
-
-    This function creates a player observer based on the given parameters.
-
-    Args:
-        player_factory_args (PlayerFactoryArgs): The arguments for creating the player.
-        player_color (chess.Color): The color of the player.
-        main_thread_mailbox (queue.Queue[IsDataclass]): The mailbox for communication between the main thread
-        and the player.
-
-    Returns:
-        tuple[GamePlayer | PlayerProcess, MoveFunction]: A tuple containing the player observer and the move function.
-
-    """
-    generic_player: GamePlayer
-    move_function: MoveFunction
-
-    # case without multiprocessing all players and match manager in the same process
-
-    generic_player = create_game_player(
+) -> tuple[PlayerHandle, MoveFunction]:
+    build_args_type = cast("type", wiring.build_args_type)
+    build_args = build_args_type(
         player_factory_args=player_factory_args,
         player_color=player_color,
-        syzygy_table=syzygy_table,
-        queue_progress_player=main_thread_mailbox,
         implementation_args=implementation_args,
         universal_behavior=universal_behavior,
-    )
-    move_function = partial(
-        game_player_computes_move_on_board_and_send_move_in_queue,
-        game_player=generic_player,
-        queue_move=main_thread_mailbox,
+        syzygy_table=syzygy_table,
     )
 
-    return generic_player, move_function
+    game_player = wiring.build_game_player(build_args, main_thread_mailbox)
+
+    handle: PlayerHandle = InProcessPlayerHandle(game_player)
+
+    def run_request_inline(
+        request: PlayerRequest[object],
+        *,
+        queue_move: PutQueue[MainMailboxMessage],
+    ) -> None:
+        handle_player_request(
+            request=request, game_player=game_player, out_queue=queue_move
+        )
+
+    move_function = partial(run_request_inline, queue_move=main_thread_mailbox)
+    return handle, cast("MoveFunction", move_function)
