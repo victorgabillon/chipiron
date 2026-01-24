@@ -31,6 +31,7 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.represent
 from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
     create_board_representation_factory,
 )
+from chipiron.environments.chess.types import ChessState
 
 if TYPE_CHECKING:
     from valanga.representation_factory import (
@@ -40,7 +41,7 @@ if TYPE_CHECKING:
 
 def create_board_to_input_from_representation(
     internal_tensor_representation_type: InternalTensorRepresentationType,
-) -> ContentToInputFunction:
+) -> ContentToInputFunction[IBoard]:
     """Creates a ContentToInputFunction from an InternalTensorRepresentationType.
 
     Args:
@@ -56,7 +57,7 @@ def create_board_to_input_from_representation(
         )
     )
     assert representation_factory is not None
-    board_to_input_convert: ContentToInput = RepresentationBTI(
+    board_to_input_convert: ContentToInput[IBoard] = RepresentationBTI(
         representation_factory=representation_factory
     )
     return board_to_input_convert.convert
@@ -64,7 +65,7 @@ def create_board_to_input_from_representation(
 
 def create_board_to_input(
     model_input_representation_type: ModelInputRepresentationType,
-) -> ContentToInputFunction:
+) -> ContentToInputFunction[IBoard]:
     """Creates a ContentToInputFunction from a ModelInputRepresentationType.
 
     Args:
@@ -77,7 +78,7 @@ def create_board_to_input(
         ContentToInputFunction: A function that converts a chess board to a tensor input.
     """
 
-    board_to_input_convert: ContentToInputFunction
+    board_to_input_convert: ContentToInputFunction[IBoard]
 
     match model_input_representation_type:
         case ModelInputRepresentationType.BUG364:
@@ -120,3 +121,14 @@ def create_board_to_input(
             )
 
     return board_to_input_convert
+
+
+def create_chess_state_to_input(
+    model_input_representation_type: ModelInputRepresentationType,
+) -> ContentToInputFunction[ChessState]:
+    board_fn = create_board_to_input(model_input_representation_type)
+
+    def state_to_input(state: ChessState) -> torch.Tensor:
+        return board_fn(state.board)
+
+    return state_to_input
