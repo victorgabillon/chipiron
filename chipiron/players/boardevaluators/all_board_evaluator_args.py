@@ -3,11 +3,9 @@ This module defines the arguments for different board evaluators in the Chipiron
 """
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, TypeAlias
 
-from coral.neural_networks.neural_net_board_eval_args import (
-    NeuralNetBoardEvalArgs,
-)
+from coral.neural_networks.neural_net_board_eval_args import NeuralNetBoardEvalArgs
 
 from chipiron.players.boardevaluators.board_evaluator_type import BoardEvalTypes
 from chipiron.players.boardevaluators.stockfish_board_evaluator import (
@@ -30,7 +28,7 @@ class TableBaseArgs:
         ``None``
     """
 
-    type: Literal[BoardEvalTypes.TABLE_BASE_EVAL]
+    type: Literal["table_base"] = BoardEvalTypes.TABLE_BASE_EVAL.value
 
 
 @dataclass
@@ -40,12 +38,12 @@ class BasicEvaluationBoardEvaluatorArgs:
 
     """
 
-    type: Literal[BoardEvalTypes.BASIC_EVALUATION_EVAL]
+    type: Literal["basic_evaluation"] = BoardEvalTypes.BASIC_EVALUATION_EVAL.value
 
 
-AllBoardEvaluatorArgs = (
-    NeuralNetBoardEvalArgs
+AllBoardEvaluatorArgs: TypeAlias = (
+    BasicEvaluationBoardEvaluatorArgs
+    | NeuralNetBoardEvalArgs
     | StockfishBoardEvalArgs
     | TableBaseArgs
-    | BasicEvaluationBoardEvaluatorArgs
 )
