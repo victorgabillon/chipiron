@@ -3,7 +3,7 @@ from typing import Any
 
 from atomheart.board import IBoard
 from coral.neural_networks.factory import (
-    create_nn_content_eval_from_nn_parameters_file_and_existing_model,
+    create_nn_state_eval_from_nn_parameters_file_and_existing_model,
 )
 from coral.neural_networks.neural_net_board_eval_args import (
     NeuralNetBoardEvalArgs,
@@ -20,13 +20,13 @@ from chipiron.players.boardevaluators.board_evaluator_type import (
     BoardEvalTypes,
     to_board_eval_type,
 )
-from chipiron.players.boardevaluators.neural_networks.chipiron_nn_args import (
-    create_content_to_input_from_model_weights,
-)
 from chipiron.players.boardevaluators.evaluation_scale import (
     EvaluationScale,
     ValueOverEnum,
     get_value_over_enum,
+)
+from chipiron.players.boardevaluators.neural_networks.chipiron_nn_args import (
+    create_content_to_input_from_model_weights,
 )
 from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 
@@ -238,7 +238,9 @@ def create_master_board_evaluator_from_args(
             assert isinstance(
                 master_board_evaluator.board_evaluator, NeuralNetBoardEvalArgs
             )
-            board_evaluator = create_nn_content_eval_from_nn_parameters_file_and_existing_model(
+            board_evaluator = create_nn_state_eval_from_nn_parameters_file_and_existing_model[
+                ChessState
+            ](
                 model_weights_file_name=master_board_evaluator.board_evaluator.neural_nets_model_and_architecture.model_weights_file_name,
                 nn_architecture_args=master_board_evaluator.board_evaluator.neural_nets_model_and_architecture.nn_architecture_args,
                 content_to_input_convert=create_content_to_input_from_model_weights(

@@ -38,7 +38,9 @@ def _select_eval_wiring(
 ) -> EvaluatorWiring[Any]:
     match game_kind:
         case GameKind.CHESS:
-            return cast("EvaluatorWiring[object]", ChessEvalWiring(can_oracle=can_oracle))
+            return cast(
+                "EvaluatorWiring[object]", ChessEvalWiring(can_oracle=can_oracle)
+            )
         case GameKind.CHECKERS:
             return cast("EvaluatorWiring[object]", NullEvalWiring())
         case _:

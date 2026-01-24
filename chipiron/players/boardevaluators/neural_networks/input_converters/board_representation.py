@@ -4,9 +4,8 @@ Module defining the board representation interface and the 364 features board re
 
 from dataclasses import dataclass
 
-import chess
 import torch
-from valanga import ContentRepresentation
+from valanga import Color, ContentRepresentation, TurnState
 
 
 @dataclass(slots=True)
@@ -31,22 +30,22 @@ class Representation364(ContentRepresentation):
                 and torch.equal(self.tensor_castling_white, other.tensor_castling_white)
             )
 
-    def get_evaluator_input(self, color_to_play: chess.Color) -> torch.Tensor:
+    def get_evaluator_input(self, state: TurnState) -> torch.Tensor:
         """
         Returns the evaluator input tensor for the given color to play.
 
         Args:
-            color_to_play: The color to play, either chess.WHITE or chess.BLACK.
+            state: The current turn state.
 
         Returns:
             The evaluator input tensor.
         """
-        if color_to_play == chess.WHITE:
+        if state.turn == Color.WHITE:
             tensor = torch.cat((self.tensor_white, self.tensor_black), 0)
         else:
             tensor = torch.cat((self.tensor_black, self.tensor_white), 0)
 
-        if color_to_play == chess.WHITE:
+        if state.turn == Color.WHITE:
             tensor_castling = torch.cat(
                 (self.tensor_castling_white, self.tensor_castling_black), 0
             )
@@ -74,7 +73,7 @@ class Representation364_2(ContentRepresentation):
         else:
             return torch.equal(self.tensor, other.tensor)
 
-    def get_evaluator_input(self, color_to_play: chess.Color) -> torch.Tensor:
+    def get_evaluator_input(self, state: TurnState) -> torch.Tensor:
         """
         Returns the evaluator input tensor for the given color to play.
 

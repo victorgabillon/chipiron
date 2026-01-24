@@ -1,34 +1,32 @@
-"""Chipiron-specific neural network wiring arguments."""
-
 from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import Callable
+from typing import Any, Callable, Mapping, cast
 
 import yaml
 from coral.neural_networks.input_converters.content_to_input import (
     ContentToInputFunction,
 )
+from dacite import Config, from_dict
 
 from chipiron.environments.types import GameKind
-from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
-    ModelInputRepresentationType,
-)
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_input import (
     create_board_to_input,
 )
+from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
+    ModelInputRepresentationType,
+)
 from chipiron.utils import path
-
 
 CHIPIRON_NN_ARGS_FILENAME = "chipiron_nn.yaml"
 
 
 @dataclass(frozen=True, slots=True)
 class ChipironNNArgs:
-    version: int
-    game_kind: GameKind
-    input_representation: str
+    version: int = 1
+    game_kind: GameKind = GameKind.CHESS
+    input_representation: str = "piece_difference"
 
 
 ContentToInputBuilder = Callable[[str], ContentToInputFunction]
@@ -54,33 +52,28 @@ def save_chipiron_nn_args(args: ChipironNNArgs, folder_path: path) -> None:
 
 def load_chipiron_nn_args(folder_path: path) -> ChipironNNArgs:
     file_path = get_chipiron_nn_args_file_path_from(folder_path)
-    with open(file_path, "r", encoding="utf-8") as handle:
-        payload = yaml.safe_load(handle)
-    if not isinstance(payload, dict):
-        raise ValueError(f"Invalid chipiron NN args in {file_path!r}.")
-    try:
-        version_raw = payload.get("version", 1)
-        version = int(version_raw)
-        game_kind = GameKind(str(payload["game_kind"]))
-        input_representation = str(payload["input_representation"])
-    except KeyError as exc:
-        raise ValueError(
-            f"Missing {exc.args[0]!r} in chipiron NN args at {file_path!r}."
-        ) from exc
-    except (TypeError, ValueError) as exc:
-        raise ValueError(
-            f"Invalid chipiron NN args values in {file_path!r}."
-        ) from exc
-    return ChipironNNArgs(
-        version=version,
-        game_kind=game_kind,
-        input_representation=input_representation,
+    with open(file_path, "r", encoding="utf-8") as f:
+        raw = yaml.safe_load(f)
+
+    if not isinstance(raw, dict):
+        raise ValueError(f"Invalid chipiron NN args in {file_path!r}: expected mapping")
+
+    data = cast("Mapping[str, Any]", raw)
+
+    return from_dict(
+        data_class=ChipironNNArgs,
+        data=data,
+        config=Config(
+            cast=[int],  # lets version be "1" etc.
+            type_hooks={
+                GameKind: lambda x: GameKind(str(x)),
+            },
+            strict=False,  # allow extra keys for forward compat
+        ),
     )
 
 
-def _create_chess_content_to_input(
-    input_representation: str,
-) -> ContentToInputFunction:
+def _create_chess_content_to_input(input_representation: str) -> ContentToInputFunction:
     representation = ModelInputRepresentationType(input_representation)
     return create_board_to_input(representation)
 

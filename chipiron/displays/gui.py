@@ -15,8 +15,6 @@ import typing
 import chess
 import chess.svg
 import PySide6.QtGui as QtGui
-
-from atomheart.board import BoardFactory, create_board_chi
 from atomheart.board import BoardFactory, IBoard, create_board_chi
 from atomheart.board.utils import FenPlusHistory
 from atomheart.move import MoveUci

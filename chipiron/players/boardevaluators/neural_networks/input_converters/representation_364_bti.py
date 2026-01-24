@@ -8,7 +8,6 @@ Classes:
 
 from typing import TYPE_CHECKING
 
-import atomheart.board as boards
 import torch
 from valanga.representation_factory import RepresentationFactory
 
@@ -36,7 +35,7 @@ class RepresentationBTI:
         """
         self.representation_factory = representation_factory
 
-    def convert(self, board: boards.IBoard) -> torch.Tensor:
+    def convert(self, state: State) -> torch.Tensor:
         """
         Converts the chess board into a tensor representation.
 
