@@ -15,12 +15,12 @@ from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
     import atomheart.board as boards
-    import chipiron.players.move_selector.treevalue.trees as trees
     from anemone.nodes import ITreeNode
     from anemone.tree_exploration import (
         TreeExploration,
     )
 
+    import chipiron.players.move_selector.treevalue.trees as trees
     from chipiron.environments import HalfMove
     from chipiron.players import Player
 

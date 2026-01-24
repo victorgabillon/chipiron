@@ -23,7 +23,7 @@ def transform_board_pieces_one_side(
     # normalisation of the board so that it is white turn (possible color inversion if it was black's turn)
 
     if board.turn == chess.BLACK:
-        color_turn = board.turn
+        color_turn = chess.BLACK
         color_not_turn = chess.WHITE
     else:
         color_turn = chess.WHITE
@@ -69,7 +69,7 @@ def transform_board_pieces_two_sides(
     # normalisation of the board so that it is white turn (possible color inversion if it was black's turn)
 
     if board.turn == chess.BLACK:
-        color_turn = board.turn
+        color_turn = chess.BLACK
         color_not_turn = chess.WHITE
     else:
         color_turn = chess.WHITE
