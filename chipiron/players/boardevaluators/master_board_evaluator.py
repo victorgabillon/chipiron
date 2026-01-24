@@ -5,20 +5,16 @@ from atomheart.board import IBoard
 from coral.neural_networks.factory import (
     create_nn_state_eval_from_nn_parameters_file_and_existing_model,
 )
-from coral.neural_networks.neural_net_board_eval_args import (
-    NeuralNetBoardEvalArgs,
-)
 from valanga import Color
 from valanga.over_event import HowOver, OverEvent, Winner
 
 import chipiron.players.boardevaluators.basic_evaluation as basic_evaluation
 from chipiron.environments.chess.types import ChessState
+from coral.neural_networks.neural_net_board_eval_args import NeuralNetBoardEvalArgs
+
 from chipiron.players.boardevaluators.all_board_evaluator_args import (
     AllBoardEvaluatorArgs,
-)
-from chipiron.players.boardevaluators.board_evaluator_type import (
-    BoardEvalTypes,
-    to_board_eval_type,
+    BasicEvaluationBoardEvaluatorArgs,
 )
 from chipiron.players.boardevaluators.evaluation_scale import (
     EvaluationScale,
@@ -226,30 +222,23 @@ def create_master_board_evaluator_from_args(
     else:
         syzygy_ = None
 
-    board_evaluator: StateEvaluator[ChessState]
-
-    kind: BoardEvalTypes = to_board_eval_type(
-        master_board_evaluator.board_evaluator.type
-    )
-    match kind:
-        case BoardEvalTypes.BASIC_EVALUATION_EVAL:
+    args = master_board_evaluator.board_evaluator
+    match args:
+        case BasicEvaluationBoardEvaluatorArgs():
             board_evaluator = basic_evaluation.BasicEvaluation()
-        case BoardEvalTypes.NEURAL_NET_BOARD_EVAL:
-            assert isinstance(
-                master_board_evaluator.board_evaluator, NeuralNetBoardEvalArgs
-            )
+        case NeuralNetBoardEvalArgs(neural_nets_model_and_architecture=model):
             board_evaluator = create_nn_state_eval_from_nn_parameters_file_and_existing_model[
                 ChessState
             ](
-                model_weights_file_name=master_board_evaluator.board_evaluator.neural_nets_model_and_architecture.model_weights_file_name,
-                nn_architecture_args=master_board_evaluator.board_evaluator.neural_nets_model_and_architecture.nn_architecture_args,
+                model_weights_file_name=model.model_weights_file_name,
+                nn_architecture_args=model.nn_architecture_args,
                 content_to_input_convert=create_content_to_input_from_model_weights(
-                    master_board_evaluator.board_evaluator.neural_nets_model_and_architecture.model_weights_file_name
+                    model.model_weights_file_name
                 ),
             )
-        case other:
+        case _:
             raise ValueError(
-                f"unknown type of message received by master board evaluator {other} in {__name__}"
+                f"unknown type of message received by master board evaluator {args.type} in {__name__}"
             )
 
     return create_master_board_evaluator(

@@ -9,9 +9,9 @@ from importlib.resources import files
 
 import parsley_coco
 from atomheart.board import IBoard
+from chipiron.environments.chess.types import ChessState
 from coral.neural_networks.neural_net_board_eval_args import NeuralNetBoardEvalArgs
 
-from chipiron.environments.chess.types import ChessState
 from chipiron.players.boardevaluators.all_board_evaluator_args import (
     AllBoardEvaluatorArgs,
     BasicEvaluationBoardEvaluatorArgs,
@@ -63,8 +63,7 @@ def _build_chi() -> StateEvaluator[ChessState]:
     match args:
         case BasicEvaluationBoardEvaluatorArgs():
             return ValangaBoardEvaluator(BasicEvaluation())
-        case NeuralNetBoardEvalArgs():
-            nn = args.neural_nets_model_and_architecture
+        case NeuralNetBoardEvalArgs(neural_nets_model_and_architecture=nn):
             return ValangaBoardEvaluator(
                 create_nn_board_eval_from_nn_parameters_file_and_existing_model(
                     model_weights_file_name=nn.model_weights_file_name,
