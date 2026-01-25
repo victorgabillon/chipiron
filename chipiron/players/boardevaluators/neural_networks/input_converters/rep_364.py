@@ -1,17 +1,27 @@
+from typing import Protocol, cast
+
 import atomheart.board as boards
 import chess
 import torch
 from atomheart.board.utils import square_rotate
+from valanga.represention_for_evaluation import ContentRepresentation
 
 from chipiron.environments.chess.types import ChessState
 
 from .board_representation import Representation364
 
 
+class _Rep364Like(ContentRepresentation[ChessState, torch.Tensor], Protocol):
+    tensor_white: torch.Tensor
+    tensor_black: torch.Tensor
+    tensor_castling_white: torch.Tensor
+    tensor_castling_black: torch.Tensor
+
+
 def create_from_state_and_modifications(
     state: ChessState,
     state_modifications: boards.BoardModificationP,
-    previous_state_representation: Representation364,
+    previous_state_representation: ContentRepresentation[ChessState, torch.Tensor],
 ) -> Representation364:
     """
     Converts the node, board modifications, and parent node into a tensor representation.
@@ -24,13 +34,10 @@ def create_from_state_and_modifications(
     Returns:
         Representation364: The tensor representation of the node, board modifications, and parent node.
     """
+    prev364 = cast("_Rep364Like", previous_state_representation)
 
-    tensor_white = torch.empty_like(previous_state_representation.tensor_white).copy_(
-        previous_state_representation.tensor_white
-    )
-    tensor_black = torch.empty_like(previous_state_representation.tensor_black).copy_(
-        previous_state_representation.tensor_black
-    )
+    tensor_white = torch.empty_like(prev364.tensor_white).copy_(prev364.tensor_white)
+    tensor_black = torch.empty_like(prev364.tensor_black).copy_(prev364.tensor_black)
 
     for removal in state_modifications.removals:
         piece_type = removal.piece
