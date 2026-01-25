@@ -1,56 +1,34 @@
 """
-This module provides a class for converting a chess board into a tensor representation using a 364-dimensional input.
-
-Classes:
-- Representation364BTI: Converts a chess board into a tensor representation.
-
+This module provides a class for converting a chess board into a representation input.
 """
 
-from typing import TYPE_CHECKING
+from __future__ import annotations
 
-import torch
+from typing import Callable
+
 from valanga import State
 from valanga.representation_factory import RepresentationFactory
-
-if TYPE_CHECKING:
-    from valanga.represention_for_evaluation import ContentRepresentation
+from valanga.represention_for_evaluation import ContentRepresentation
 
 
-class RepresentationBTI[StateT: State, EvalIn, StateModT]:
-    """
-    Converts a chess board into a tensor representation using a 364-dimensional input.
-
-    Methods:
-    - __init__: Initializes the Representation364BTI object.
-    - convert: Converts the chess board into a tensor representation.
-
-    """
+class RepresentationBTI[StateT: State, EvalIn, ModsT]:
+    """Converts a content state into a representation input."""
 
     def __init__(
-        self, representation_factory: RepresentationFactory[StateT, EvalIn, StateModT]
+        self,
+        representation_factory: RepresentationFactory[
+            StateT, ContentRepresentation[StateT, EvalIn], ModsT
+        ],
+        postprocess: Callable[[EvalIn], EvalIn] | None = None,
     ) -> None:
-        """
-        Initializes the Representation364BTI object.
-
-        Parameters:
-        - representation_factory (RepresentationFactory[StateT, EvalIn, StateModT]): The factory object for creating the board representation.
-
-        """
+        """Initialize the RepresentationBTI instance."""
         self.representation_factory = representation_factory
+        self._postprocess = postprocess
 
-    def convert(self, state: StateT) -> torch.Tensor:
-        """
-        Converts the chess board into a tensor representation.
-
-        Parameters:
-        - board (BoardChi): The chess board to convert.
-
-        Returns:
-        - tensor (torch.Tensor): The tensor representation of the chess board.
-
-        """
+    def convert(self, state: StateT) -> EvalIn:
+        """Convert a state into an evaluator input."""
         representation: ContentRepresentation[StateT, EvalIn] = (
             self.representation_factory.create_from_state(state=state)
         )
-        tensor: torch.Tensor = representation.get_evaluator_input(state=state)
-        return tensor.float()
+        output: EvalIn = representation.get_evaluator_input(state=state)
+        return self._postprocess(output) if self._postprocess else output
