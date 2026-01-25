@@ -42,7 +42,7 @@ def test_best_move_syzygy_table() -> None:
     )
     best_move_chi: MoveKey = syzygy_table_chi.best_move(board_chi)
 
-    assert "h3g4" == board_chi.get_uci_from_move_key(MoveKey(best_move_chi))
+    assert "h3g4" == board_chi.get_uci_from_move_key(best_move_chi)
 
     syzygy_table: SyzygyTable[RustyBoardChi] | None
     syzygy_table = create_syzygy_rust()
@@ -56,7 +56,7 @@ def test_best_move_syzygy_table() -> None:
     )
     best_move_rust: MoveKey = syzygy_table.best_move(board_rust)
 
-    assert "h3g4" == board_rust.get_uci_from_move_key(MoveKey(best_move_rust))
+    assert "h3g4" == board_rust.get_uci_from_move_key(best_move_rust)
 
 
 if __name__ == "__main__":

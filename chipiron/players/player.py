@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 PlayerId = str
 
-StateSnapT = TypeVar("StateSnapT")
+StateSnapT = TypeVar("StateSnapT", contravariant=True)
 RuntimeStateT = TypeVar("RuntimeStateT")
 
 
@@ -60,11 +60,11 @@ class Player(Generic[StateSnapT, RuntimeStateT]):
         # Fast path: if only one legal action, skip selection/search for humans.
         if n == 1 and self.id == "Human":
             only_name = self.adapter.only_action_name(runtime_state)
-            return Recommendation(recommended_key=only_name)
+            return Recommendation(recommended_name=only_name)
 
         # Optional oracle fast-path (e.g., Syzygy). Return None if not applicable.
         oracle_name = self.adapter.oracle_action_name(runtime_state)
         if oracle_name is not None:
-            return Recommendation(recommended_key=oracle_name)
+            return Recommendation(recommended_name=oracle_name)
 
         return self.adapter.recommend(runtime_state, seed)

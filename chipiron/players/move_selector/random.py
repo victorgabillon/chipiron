@@ -14,15 +14,14 @@ import random
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal
 
-import atomheart.board as boards
-from valanga.game import Seed
+from valanga import BranchKey
+from valanga.game import Seed, State
 from valanga.policy import Recommendation
 
 from .move_selector_types import MoveSelectorTypes
 
 if TYPE_CHECKING:
     from atomheart.move import MoveUci
-    from atomheart.move.imove import MoveKey
 
 
 @dataclass
@@ -41,24 +40,24 @@ class Random:
     type: Literal[MoveSelectorTypes.Random]  # for serialization
     random_generator: random.Random = field(default_factory=random.Random)
 
-    def select_move(self, board: boards.IBoard, move_seed: Seed) -> Recommendation:
+    def recommend(self, state: State, seed: Seed) -> Recommendation:
         """
         Selects a random move from the given chess board.
 
         Args:
-            board (boards.BoardChi): The chess board.
-            move_seed (seed): The seed for the random number generator.
+            board (boards.IBoard): The chess board.
+            move_seed (Seed): The seed for the random number generator.
 
         Returns:
             Recommendation: The selected move recommendation.
 
         """
-        self.random_generator.seed(move_seed)
-        random_move_key: MoveKey = self.random_generator.choice(
-            board.legal_moves.get_all()
+        self.random_generator.seed(seed)
+        random_move_key: BranchKey = self.random_generator.choice(
+            state.branch_keys.get_all()
         )
-        random_move_uci: MoveUci = board.get_uci_from_move_key(move_key=random_move_key)
-        return Recommendation(recommended_key=random_move_uci, evaluation=None)
+        random_move_uci: MoveUci = state.branch_name_from_key(key=random_move_key)
+        return Recommendation(recommended_name=random_move_uci, evaluation=None)
 
 
 def create_random(random_generator: random.Random) -> Random:

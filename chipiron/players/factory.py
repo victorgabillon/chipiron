@@ -10,10 +10,11 @@ from anemone import TreeAndValuePlayerArgs
 from anemone.progress_monitor.progress_monitor import (
     TreeBranchLimitArgs,
 )
-from atomheart.board import BoardFactory, IBoard, create_board_factory
+from atomheart.board import BoardFactory, create_board_factory
 from atomheart.board.utils import FenPlusHistory
 from valanga import Color
 
+from chipiron.environments.chess.types import ChessState
 from chipiron.players.adapters.chess_adapter import ChessAdapter
 from chipiron.players.boardevaluators.table_base.factory import (
     AnySyzygyTable,
@@ -50,7 +51,7 @@ def create_chipiron_player(
     random_generator: random.Random,
     queue_progress_player: PutQueue[IsDataclass] | None = None,
     tree_branch_limit: int | None = None,
-) -> Player[FenPlusHistory, IBoard]:
+) -> Player[FenPlusHistory, ChessState]:
     """
     Creates the chipiron champion/representative/standard/default player
 
@@ -97,7 +98,7 @@ def create_chipiron_player(
         main_move_selector=main_move_selector,
         syzygy=syzygy_table,
     )
-    return Player[FenPlusHistory, IBoard](name="chipiron", adapter=adapter)
+    return Player[FenPlusHistory, ChessState](name="chipiron", adapter=adapter)
 
 
 def create_player(
@@ -107,7 +108,7 @@ def create_player(
     implementation_args: ImplementationArgs,
     universal_behavior: bool,
     queue_progress_player: PutQueue[IsDataclass] | None = None,
-) -> Player[FenPlusHistory, IBoard]:
+) -> Player[FenPlusHistory, ChessState]:
     """Create a player object.
 
     This function creates a player object based on the provided arguments.
@@ -140,7 +141,7 @@ def create_player(
         syzygy=syzygy,
     )
 
-    return Player[FenPlusHistory, IBoard](name=args.name, adapter=adapter)
+    return Player[FenPlusHistory, ChessState](name=args.name, adapter=adapter)
 
 
 def create_game_player(
@@ -150,7 +151,7 @@ def create_game_player(
     queue_progress_player: PutQueue[IsDataclass] | None,
     implementation_args: ImplementationArgs,
     universal_behavior: bool,
-) -> GamePlayer[FenPlusHistory, IBoard]:
+) -> GamePlayer[FenPlusHistory, ChessState]:
     """Create a game player
 
     This function creates a game player using the provided player factory arguments and player color.
@@ -163,7 +164,7 @@ def create_game_player(
         GamePlayer: The created game player.
     """
     random_generator = random.Random(player_factory_args.seed)
-    player: Player[FenPlusHistory, IBoard] = create_player(
+    player: Player[FenPlusHistory, ChessState] = create_player(
         args=player_factory_args.player_args,
         syzygy=syzygy_table,
         random_generator=random_generator,
@@ -171,5 +172,7 @@ def create_game_player(
         implementation_args=implementation_args,
         universal_behavior=universal_behavior,
     )
-    game_player: GamePlayer[FenPlusHistory, IBoard] = GamePlayer(player, player_color)
+    game_player: GamePlayer[FenPlusHistory, ChessState] = GamePlayer(
+        player, player_color
+    )
     return game_player

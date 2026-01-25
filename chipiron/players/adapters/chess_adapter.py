@@ -6,7 +6,7 @@ from chipiron.environments.chess.types import ChessState
 from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:
-    from atomheart.board import BoardFactory, IBoard
+    from atomheart.board import BoardFactory
     from atomheart.board.utils import FenPlusHistory
     from atomheart.move import MoveUci
     from atomheart.move.imove import MoveKey
@@ -35,14 +35,14 @@ class ChessAdapter:
         self.main_move_selector = main_move_selector
         self.syzygy = syzygy
 
-    def build_runtime_state(self, snapshot: FenPlusHistory) -> IBoard:
-        return self.board_factory(fen_with_history=snapshot)
+    def build_runtime_state(self, snapshot: FenPlusHistory) -> ChessState:
+        return ChessState(self.board_factory(fen_with_history=snapshot))
 
-    def legal_action_count(self, runtime_state: IBoard) -> int:
+    def legal_action_count(self, runtime_state: ChessState) -> int:
         # Keep the API generic; for chess we count legal moves.
         return len(runtime_state.legal_moves.get_all())
 
-    def only_action_name(self, runtime_state: IBoard) -> BranchName:
+    def only_action_name(self, runtime_state: ChessState) -> BranchName:
         keys = runtime_state.legal_moves.get_all()
         if len(keys) != 1:
             raise ValueError("only_action_name called but position has != 1 legal move")
@@ -50,7 +50,7 @@ class ChessAdapter:
         move_uci: MoveUci = runtime_state.get_uci_from_move_key(move_key)
         return move_uci
 
-    def oracle_action_name(self, runtime_state: IBoard) -> BranchName | None:
+    def oracle_action_name(self, runtime_state: ChessState) -> BranchName | None:
         if self.syzygy is None:
             return None
 
