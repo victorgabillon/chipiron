@@ -9,13 +9,14 @@ Classes:
 from typing import TYPE_CHECKING
 
 import torch
+from valanga import State
 from valanga.representation_factory import RepresentationFactory
 
 if TYPE_CHECKING:
     from valanga.represention_for_evaluation import ContentRepresentation
 
 
-class RepresentationBTI:
+class RepresentationBTI[StateT: State, EvalIn, StateModT]:
     """
     Converts a chess board into a tensor representation using a 364-dimensional input.
 
@@ -25,17 +26,19 @@ class RepresentationBTI:
 
     """
 
-    def __init__(self, representation_factory: RepresentationFactory):
+    def __init__(
+        self, representation_factory: RepresentationFactory[StateT, EvalIn, StateModT]
+    ) -> None:
         """
         Initializes the Representation364BTI object.
 
         Parameters:
-        - representation_factory (Representation364Factory): The factory object for creating the board representation.
+        - representation_factory (RepresentationFactory[StateT, EvalIn, StateModT]): The factory object for creating the board representation.
 
         """
         self.representation_factory = representation_factory
 
-    def convert(self, state: State) -> torch.Tensor:
+    def convert(self, state: StateT) -> torch.Tensor:
         """
         Converts the chess board into a tensor representation.
 
@@ -46,10 +49,8 @@ class RepresentationBTI:
         - tensor (torch.Tensor): The tensor representation of the chess board.
 
         """
-        representation: ContentRepresentation = (
-            self.representation_factory.create_from_board(board=board)
+        representation: ContentRepresentation[StateT, EvalIn] = (
+            self.representation_factory.create_from_state(state=state)
         )
-        tensor: torch.Tensor = representation.get_evaluator_input(
-            color_to_play=board.turn
-        )
+        tensor: torch.Tensor = representation.get_evaluator_input(state=state)
         return tensor.float()

@@ -5,7 +5,6 @@ Module for the BoardToInput protocol and ContentToInputFunction protocol.
 from typing import TYPE_CHECKING
 
 import torch
-from atomheart.board import IBoard
 from coral.neural_networks.input_converters.content_to_input import (
     ContentToInput,
     ContentToInputFunction,
@@ -14,9 +13,13 @@ from coral.neural_networks.models.transformer_one import (
     TransformerArgs,
 )
 
+from chipiron.environments.chess.types import ChessState
 from chipiron.players.boardevaluators.neural_networks.board_to_tensor import (
     transform_board_pieces_one_side,
     transform_board_pieces_two_sides,
+)
+from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import (
+    Representation364,
 )
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_transformer_input import (
     build_transformer_input,
@@ -31,7 +34,6 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.represent
 from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
     create_board_representation_factory,
 )
-from chipiron.environments.chess.types import ChessState
 
 if TYPE_CHECKING:
     from valanga.representation_factory import (
@@ -41,7 +43,7 @@ if TYPE_CHECKING:
 
 def create_board_to_input_from_representation(
     internal_tensor_representation_type: InternalTensorRepresentationType,
-) -> ContentToInputFunction[IBoard]:
+) -> ContentToInputFunction[ChessState]:
     """Creates a ContentToInputFunction from an InternalTensorRepresentationType.
 
     Args:
@@ -51,13 +53,13 @@ def create_board_to_input_from_representation(
         ContentToInputFunction: A function that converts a chess board to a tensor input.
     """
 
-    representation_factory: RepresentationFactory | None = (
-        create_board_representation_factory(
-            internal_tensor_representation_type=internal_tensor_representation_type
-        )
+    representation_factory: (
+        RepresentationFactory[ChessState, Representation364] | None
+    ) = create_board_representation_factory(
+        internal_tensor_representation_type=internal_tensor_representation_type
     )
     assert representation_factory is not None
-    board_to_input_convert: ContentToInput[IBoard] = RepresentationBTI(
+    board_to_input_convert: ContentToInput[ChessState] = RepresentationBTI(
         representation_factory=representation_factory
     )
     return board_to_input_convert.convert
@@ -65,7 +67,7 @@ def create_board_to_input_from_representation(
 
 def create_board_to_input(
     model_input_representation_type: ModelInputRepresentationType,
-) -> ContentToInputFunction[IBoard]:
+) -> ContentToInputFunction[ChessState]:
     """Creates a ContentToInputFunction from a ModelInputRepresentationType.
 
     Args:
@@ -78,7 +80,7 @@ def create_board_to_input(
         ContentToInputFunction: A function that converts a chess board to a tensor input.
     """
 
-    board_to_input_convert: ContentToInputFunction[IBoard]
+    board_to_input_convert: ContentToInputFunction[ChessState]
 
     match model_input_representation_type:
         case ModelInputRepresentationType.BUG364:
@@ -92,10 +94,10 @@ def create_board_to_input(
 
         case ModelInputRepresentationType.PIECE_MAP:
 
-            def board_to_input_convert_transformer(board: IBoard) -> torch.Tensor:
+            def board_to_input_convert_transformer(state: ChessState) -> torch.Tensor:
                 return build_transformer_input(
-                    piece_map=board.piece_map(),
-                    board_turn=board.turn,
+                    piece_map=state.board.piece_map(),
+                    board_turn=state.board.turn,
                     transformer_args=TransformerArgs(),
                 )
 
@@ -103,15 +105,15 @@ def create_board_to_input(
 
         case ModelInputRepresentationType.PIECE_DIFFERENCE:
 
-            def board_to_input_convert_one_side(board: IBoard) -> torch.Tensor:
-                return transform_board_pieces_one_side(board, False)
+            def board_to_input_convert_one_side(state: ChessState) -> torch.Tensor:
+                return transform_board_pieces_one_side(state.board, False)
 
             board_to_input_convert = board_to_input_convert_one_side
 
         case ModelInputRepresentationType.BOARD_PIECES_TWO_SIDES:
 
-            def board_to_input_convert_two_sides(board: IBoard) -> torch.Tensor:
-                return transform_board_pieces_two_sides(board, False)
+            def board_to_input_convert_two_sides(state: ChessState) -> torch.Tensor:
+                return transform_board_pieces_two_sides(state.board, False)
 
             board_to_input_convert = board_to_input_convert_two_sides
 
@@ -129,6 +131,6 @@ def create_chess_state_to_input(
     board_fn = create_board_to_input(model_input_representation_type)
 
     def state_to_input(state: ChessState) -> torch.Tensor:
-        return board_fn(state.board)
+        return board_fn(state)
 
     return state_to_input

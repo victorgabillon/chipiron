@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any, Callable, TypeGuard, cast
 
 import yaml
 from coral.neural_networks.input_converters.content_to_input import (
@@ -52,17 +52,22 @@ def save_chipiron_nn_args(args: ChipironNNArgs, folder_path: path) -> None:
         yaml.safe_dump(_serialize_chipiron_nn_args(args), handle)
 
 
-def _as_mapping(obj: object, *, file_path: str) -> dict[str, Any]:
+def _is_str_key_mapping(obj: object) -> TypeGuard[Mapping[str, Any]]:
     if not isinstance(obj, Mapping):
-        raise ValueError(f"Invalid chipiron NN args in {file_path!r}: expected mapping")
-    output: dict[str, Any] = {}
-    for key, value in obj.items():
-        if not isinstance(key, str):
-            raise ValueError(
-                f"Invalid chipiron NN args in {file_path!r}: non-string key {key!r}"
-            )
-        output[key] = value
-    return output
+        return False
+
+    m = cast(
+        "Mapping[object, object]", obj
+    )  # key/value types become object (not Unknown)
+    return all(isinstance(k, str) for k in m.keys())
+
+
+def _as_mapping(obj: object, *, file_path: str) -> Mapping[str, Any]:
+    if not _is_str_key_mapping(obj):
+        raise ValueError(
+            f"Invalid chipiron NN args in {file_path!r}: expected mapping with string keys"
+        )
+    return obj
 
 
 def load_chipiron_nn_args(folder_path: path) -> ChipironNNArgs:
