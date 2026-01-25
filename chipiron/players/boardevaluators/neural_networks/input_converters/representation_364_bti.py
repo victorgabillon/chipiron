@@ -16,9 +16,7 @@ class RepresentationBTI[StateT: State, EvalIn, ModsT]:
 
     def __init__(
         self,
-        representation_factory: RepresentationFactory[
-            StateT, ContentRepresentation[StateT, EvalIn], ModsT
-        ],
+        representation_factory: RepresentationFactory[StateT, EvalIn, ModsT],
         postprocess: Callable[[EvalIn], EvalIn] | None = None,
     ) -> None:
         """Initialize the RepresentationBTI instance."""

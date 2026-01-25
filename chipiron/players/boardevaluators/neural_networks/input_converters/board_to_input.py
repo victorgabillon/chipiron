@@ -18,9 +18,6 @@ from chipiron.players.boardevaluators.neural_networks.board_to_tensor import (
     transform_board_pieces_one_side,
     transform_board_pieces_two_sides,
 )
-from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import (
-    Representation364,
-)
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_transformer_input import (
     build_transformer_input,
 )
@@ -54,16 +51,20 @@ def create_board_to_input_from_representation(
     """
 
     representation_factory: (
-        RepresentationFactory[ChessState, Representation364, BoardModificationP] | None
+        RepresentationFactory[ChessState, torch.Tensor, BoardModificationP] | None
     ) = create_board_representation_factory(
         internal_tensor_representation_type=internal_tensor_representation_type
     )
     assert representation_factory is not None
-    converter: RepresentationBTI[
-        ChessState, torch.Tensor, BoardModificationP
-    ] = RepresentationBTI(
-        representation_factory=representation_factory,
-        postprocess=lambda tensor: tensor.float(),
+
+    def _to_float(t: torch.Tensor) -> torch.Tensor:
+        return t.float()
+
+    converter: RepresentationBTI[ChessState, torch.Tensor, BoardModificationP] = (
+        RepresentationBTI(
+            representation_factory=representation_factory,
+            postprocess=_to_float,
+        )
     )
     return converter.convert
 
