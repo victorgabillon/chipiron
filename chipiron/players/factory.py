@@ -16,6 +16,7 @@ from valanga import Color
 
 from chipiron.environments.chess.types import ChessState
 from chipiron.players.adapters.chess_adapter import ChessAdapter
+from chipiron.players.adapters.chess_syzygy_oracle import ChessSyzygyOracle
 from chipiron.players.boardevaluators.table_base.factory import (
     AnySyzygyTable,
     create_syzygy,
@@ -83,6 +84,7 @@ def create_chipiron_player(
         syzygy=syzygy_table,
         random_generator=random_generator,
         queue_progress_player=queue_progress_player,
+        state_type=ChessState,
     )
 
     assert main_move_selector is not None
@@ -93,10 +95,11 @@ def create_chipiron_player(
         sort_legal_moves=universal_behavior,
     )
 
+    oracle = ChessSyzygyOracle(syzygy_table) if syzygy_table is not None else None
     adapter = ChessAdapter(
         board_factory=board_factory,
         main_move_selector=main_move_selector,
-        syzygy=syzygy_table,
+        oracle=oracle,
     )
     return Player[FenPlusHistory, ChessState](name="chipiron", adapter=adapter)
 
@@ -127,6 +130,7 @@ def create_player(
         syzygy=syzygy,
         random_generator=random_generator,
         queue_progress_player=queue_progress_player,
+        state_type=ChessState,
     )
 
     board_factory: BoardFactory = create_board_factory(
@@ -135,10 +139,11 @@ def create_player(
         sort_legal_moves=universal_behavior,
     )
 
+    oracle = ChessSyzygyOracle(syzygy) if syzygy is not None else None
     adapter = ChessAdapter(
         board_factory=board_factory,
         main_move_selector=main_move_selector,
-        syzygy=syzygy,
+        oracle=oracle,
     )
 
     return Player[FenPlusHistory, ChessState](name=args.name, adapter=adapter)
