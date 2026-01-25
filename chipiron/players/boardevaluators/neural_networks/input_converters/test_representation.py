@@ -3,7 +3,7 @@ Tests for the board representation.
 """
 
 from copy import deepcopy
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import chess
 import pytest
@@ -15,6 +15,7 @@ from atomheart.board import (
 )
 from atomheart.board.utils import FenPlusHistory, bitboard_rotate
 
+from chipiron.environments.chess.types import ChessState
 from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
     InternalTensorRepresentationType,
 )
@@ -24,9 +25,6 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.represent
 
 if TYPE_CHECKING:
     from atomheart.move.imove import MoveKey
-    from valanga.representation_factory import (
-        RepresentationFactory,
-    )
     from valanga.represention_for_evaluation import ContentRepresentation
 
     from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import (
@@ -51,32 +49,32 @@ def test_representation(
         use_board_modification=True,
         fen_with_history=FenPlusHistory(current_fen=chess.STARTING_FEN),
     )
+    state = ChessState(board=board)
 
-    representation_factory: RepresentationFactory[Any] | None = (
-        create_board_representation_factory(
-            internal_tensor_representation_type=board_representation_factory_type
-        )
+    representation_factory = create_board_representation_factory(
+        internal_tensor_representation_type=board_representation_factory_type
     )
     assert representation_factory is not None
 
     parent_node_board_representation: Representation364 = (
-        representation_factory.create_from_board(board=board)
+        representation_factory.create_from_state(state=state)
     )
 
     all_moves_keys_chi: list[MoveKey] = board.legal_moves.get_all()
     board_modification: BoardModificationP | None = board.play_move_key(
         move=all_moves_keys_chi[0]
     )
+    state_after_move = ChessState(board=board)
 
     assert board_modification is not None
-    direct_rep: ContentRepresentation = representation_factory.create_from_board(
-        board=board
+    direct_rep: ContentRepresentation = representation_factory.create_from_state(
+        state=state_after_move
     )
     rep_from_parents: ContentRepresentation = (
-        representation_factory.create_from_board_and_from_parent(
-            board=board,
-            board_modifications=board_modification,
-            parent_node_board_representation=parent_node_board_representation,
+        representation_factory.create_from_state_and_modifications(
+            state=state_after_move,
+            state_modifications=board_modification,
+            previous_state_representation=parent_node_board_representation,
         )
     )
 
@@ -108,21 +106,21 @@ def test_representation364(
             current_fen="rnb2bnr/ppp2ppp/2k3q1/8/8/1Q3K2/PPP2PPP/RNB2BNR b - - 0 1"
         ),
     )
+    state_one = ChessState(board=board_one)
+    state_two = ChessState(board=board_two)
 
-    representation_factory: RepresentationFactory[Any] | None = (
-        create_board_representation_factory(
-            internal_tensor_representation_type=board_representation_factory_type
-        )
+    representation_factory = create_board_representation_factory(
+        internal_tensor_representation_type=board_representation_factory_type
     )
     assert representation_factory is not None
 
     assert board_one.occupied == bitboard_rotate(board_two.occupied)
 
     board_representation_one_copy: Representation364 = deepcopy(
-        representation_factory.create_from_board(board=board_one)
+        representation_factory.create_from_state(state=state_one)
     )
     board_representation_two_copy: Representation364 = deepcopy(
-        representation_factory.create_from_board(board=board_two)
+        representation_factory.create_from_state(state=state_two)
     )
 
     board_representation_one: Representation364
@@ -134,34 +132,36 @@ def test_representation364(
         board_modification_two: BoardModificationP | None = board_two.play_move_uci(
             move_uci="h7h6"
         )
+        state_one = ChessState(board=board_one)
+        state_two = ChessState(board=board_two)
         assert board_modification_one is not None
         assert board_modification_two is not None
         assert board_one.occupied == bitboard_rotate(board_two.occupied)
         board_representation_one = (
-            representation_factory.create_from_board_and_from_parent(
-                board=board_one,
-                board_modifications=board_modification_one,
-                parent_node_board_representation=board_representation_one_copy,
+            representation_factory.create_from_state_and_modifications(
+                state=state_one,
+                state_modifications=board_modification_one,
+                previous_state_representation=board_representation_one_copy,
             )
         )
         board_representation_two = (
-            representation_factory.create_from_board_and_from_parent(
-                board=board_two,
-                board_modifications=board_modification_two,
-                parent_node_board_representation=board_representation_two_copy,
+            representation_factory.create_from_state_and_modifications(
+                state=state_two,
+                state_modifications=board_modification_two,
+                previous_state_representation=board_representation_two_copy,
             )
         )
     else:
-        board_representation_one = representation_factory.create_from_board(
-            board=board_one
+        board_representation_one = representation_factory.create_from_state(
+            state=state_one
         )
-        board_representation_two = representation_factory.create_from_board(
-            board=board_two
+        board_representation_two = representation_factory.create_from_state(
+            state=state_two
         )
 
-    inputs_one = board_representation_one.get_evaluator_input(board_one.turn)
+    inputs_one = board_representation_one.get_evaluator_input(state_one)
 
-    inputs_two = board_representation_two.get_evaluator_input(board_two.turn)
+    inputs_two = board_representation_two.get_evaluator_input(state_two)
 
     assert torch.equal(inputs_one, inputs_two)
 
