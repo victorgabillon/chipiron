@@ -5,8 +5,8 @@ Module for the BoardToInput protocol and ContentToInputFunction protocol.
 from typing import TYPE_CHECKING
 
 import torch
+from atomheart.board import BoardModificationP
 from coral.neural_networks.input_converters.content_to_input import (
-    ContentToInput,
     ContentToInputFunction,
 )
 from coral.neural_networks.models.transformer_one import (
@@ -54,15 +54,18 @@ def create_board_to_input_from_representation(
     """
 
     representation_factory: (
-        RepresentationFactory[ChessState, Representation364] | None
+        RepresentationFactory[ChessState, Representation364, BoardModificationP] | None
     ) = create_board_representation_factory(
         internal_tensor_representation_type=internal_tensor_representation_type
     )
     assert representation_factory is not None
-    board_to_input_convert: ContentToInput[ChessState] = RepresentationBTI(
-        representation_factory=representation_factory
+    converter: RepresentationBTI[
+        ChessState, torch.Tensor, BoardModificationP
+    ] = RepresentationBTI(
+        representation_factory=representation_factory,
+        postprocess=lambda tensor: tensor.float(),
     )
-    return board_to_input_convert.convert
+    return converter.convert
 
 
 def create_board_to_input(
@@ -128,9 +131,4 @@ def create_board_to_input(
 def create_chess_state_to_input(
     model_input_representation_type: ModelInputRepresentationType,
 ) -> ContentToInputFunction[ChessState]:
-    board_fn = create_board_to_input(model_input_representation_type)
-
-    def state_to_input(state: ChessState) -> torch.Tensor:
-        return board_fn(state)
-
-    return state_to_input
+    return create_board_to_input(model_input_representation_type)
