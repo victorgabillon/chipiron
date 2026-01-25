@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from valanga.game import BranchName, Seed
     from valanga.policy import BranchSelector, Recommendation
 
-    from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
+    from chipiron.players.oracle import Oracle
 
 
 class ChessAdapter:
@@ -29,11 +29,11 @@ class ChessAdapter:
         *,
         board_factory: BoardFactory,
         main_move_selector: BranchSelector,
-        syzygy: AnySyzygyTable | None,
+        oracle: Oracle[ChessState] | None,
     ) -> None:
         self.board_factory = board_factory
         self.main_move_selector = main_move_selector
-        self.syzygy = syzygy
+        self.oracle = oracle
 
     def build_runtime_state(self, snapshot: FenPlusHistory) -> ChessState:
         return ChessState(self.board_factory(fen_with_history=snapshot))
@@ -51,14 +51,12 @@ class ChessAdapter:
         return move_uci
 
     def oracle_action_name(self, runtime_state: ChessState) -> BranchName | None:
-        if self.syzygy is None:
+        if self.oracle is None:
             return None
 
-        if self.syzygy.fast_in_table(runtime_state):
-            chipiron_logger.info("Playing with Syzygy")
-            best_move_key: MoveKey = self.syzygy.best_move(runtime_state)
-            best_move_uci: MoveUci = runtime_state.get_uci_from_move_key(best_move_key)
-            return best_move_uci
+        if self.oracle.supports(runtime_state):
+            chipiron_logger.info("Playing with oracle")
+            return self.oracle.recommend(runtime_state)
 
         return None
 
