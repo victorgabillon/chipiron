@@ -5,11 +5,13 @@ Module defining the board representation interface and the 364 features board re
 from dataclasses import dataclass
 
 import torch
-from valanga import Color, ContentRepresentation, TurnState
+from valanga import Color, ContentRepresentation
+
+from chipiron.environments.chess.types import ChessState
 
 
 @dataclass(slots=True)
-class Representation364(ContentRepresentation):
+class Representation364(ContentRepresentation[ChessState, torch.Tensor]):
     """
     Dataclass representing a board representation with 364 features.
     """
@@ -30,7 +32,7 @@ class Representation364(ContentRepresentation):
                 and torch.equal(self.tensor_castling_white, other.tensor_castling_white)
             )
 
-    def get_evaluator_input(self, state: TurnState) -> torch.Tensor:
+    def get_evaluator_input(self, state: ChessState) -> torch.Tensor:
         """
         Returns the evaluator input tensor for the given color to play.
 
@@ -60,7 +62,7 @@ class Representation364(ContentRepresentation):
 
 
 @dataclass(slots=True)
-class Representation364_2(ContentRepresentation):
+class Representation364_2(ContentRepresentation[ChessState, torch.Tensor]):
     """
     Dataclass representing a board representation with 364 features.
     """
@@ -73,7 +75,7 @@ class Representation364_2(ContentRepresentation):
         else:
             return torch.equal(self.tensor, other.tensor)
 
-    def get_evaluator_input(self, state: TurnState) -> torch.Tensor:
+    def get_evaluator_input(self, state: ChessState) -> torch.Tensor:
         """
         Returns the evaluator input tensor for the given color to play.
 

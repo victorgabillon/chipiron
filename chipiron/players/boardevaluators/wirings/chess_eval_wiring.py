@@ -9,9 +9,9 @@ from importlib.resources import files
 
 import parsley_coco
 from atomheart.board import IBoard
-from chipiron.environments.chess.types import ChessState
 from coral.neural_networks.neural_net_board_eval_args import NeuralNetBoardEvalArgs
 
+from chipiron.environments.chess.types import ChessState
 from chipiron.players.boardevaluators.all_board_evaluator_args import (
     AllBoardEvaluatorArgs,
     BasicEvaluationBoardEvaluatorArgs,

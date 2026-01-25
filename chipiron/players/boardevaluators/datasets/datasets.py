@@ -26,6 +26,7 @@ from coral.neural_networks.input_converters.content_to_input import (
 from pandas import DataFrame
 from torch.utils.data import Dataset
 
+from chipiron.environments.chess.types import ChessState
 from chipiron.utils import path
 from chipiron.utils.logger import chipiron_logger
 
@@ -273,7 +274,9 @@ class FenAndValueDataSet(MyDataSet[FenAndValueData]):
     - process_raw_rows(dataframe: pandas.DataFrame) -> list[FenAndValueData]: Processes raw rows into FenAndValueData list.
     """
 
-    transform_board_function: ContentToInputFunction  # transform board to model input
+    transform_board_function: ContentToInputFunction[
+        ChessState
+    ]  # transform board to model input
     transform_dataset_value_to_white_value_function: Callable[
         [pandas.Series], float
     ]  # transform value in dataset to standardized value white float
@@ -290,7 +293,7 @@ class FenAndValueDataSet(MyDataSet[FenAndValueData]):
         transform_dataset_value_to_white_value_function: Callable[
             [pandas.Series], float
         ],
-        transform_board_function: ContentToInputFunction,
+        transform_board_function: ContentToInputFunction[ChessState],
         preprocessing: bool = False,
     ) -> None:
         """

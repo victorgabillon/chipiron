@@ -1,37 +1,37 @@
 import atomheart.board as boards
 import chess
 import torch
-from atomheart.board.iboard import IBoard
+
+from chipiron.environments.chess.types import ChessState
 
 from .board_representation import Representation364
 
 
-def create_from_board_and_from_parent(
-    board: IBoard,
-    board_modifications: boards.BoardModificationP,
-    parent_node_board_representation: Representation364,
+def create_from_state_and_modifications(
+    state: ChessState,
+    state_modifications: boards.BoardModificationP,
+    previous_state_representation: Representation364,
 ) -> Representation364:
     """
     Converts the node, board modifications, and parent node into a tensor representation.
 
     Args:
-        board (IBoard): The current board in the tree.
-        board_modifications (board_mod.BoardModification): The modifications made to the board.
-        parent_node (AlgorithmNode): The parent node of the current node.
+        state (ChessState): The current state in the tree.
+        state_modifications (boards.BoardModificationP): The modifications made to the board.
+        previous_state_representation: The previous state representation.
 
     Returns:
         Representation364: The tensor representation of the node, board modifications, and parent node.
     """
 
-    assert isinstance(parent_node_board_representation, Representation364)
-    tensor_white = torch.empty_like(
-        parent_node_board_representation.tensor_white
-    ).copy_(parent_node_board_representation.tensor_white)
-    tensor_black = torch.empty_like(
-        parent_node_board_representation.tensor_black
-    ).copy_(parent_node_board_representation.tensor_black)
+    tensor_white = torch.empty_like(previous_state_representation.tensor_white).copy_(
+        previous_state_representation.tensor_white
+    )
+    tensor_black = torch.empty_like(previous_state_representation.tensor_black).copy_(
+        previous_state_representation.tensor_black
+    )
 
-    for removal in board_modifications.removals:
+    for removal in state_modifications.removals:
         piece_type = removal.piece
         piece_color = removal.color
         square = removal.square
@@ -45,7 +45,7 @@ def create_from_board_and_from_parent(
             index = 64 * piece_code + square_index
             tensor_white[index] = 0
 
-    for appearance in board_modifications.appearances:
+    for appearance in state_modifications.appearances:
         # print('app',appearance)
         piece_type = appearance.piece
         piece_color = appearance.color
@@ -63,6 +63,7 @@ def create_from_board_and_from_parent(
     tensor_castling_white = torch.zeros(2, requires_grad=False, dtype=torch.float)
     tensor_castling_black = torch.zeros(2, requires_grad=False, dtype=torch.float)
 
+    board = state.board
     tensor_castling_white[0] = bool(board.castling_rights & chess.BB_A1)
     tensor_castling_white[1] = bool(board.castling_rights & chess.BB_H1)
     tensor_castling_black[0] = bool(board.castling_rights & chess.BB_A8)
@@ -78,12 +79,12 @@ def create_from_board_and_from_parent(
     return representation
 
 
-def create_from_board(board: boards.IBoard) -> Representation364:
+def create_from_board(state: ChessState) -> Representation364:
     """
     Create a Representation364 object from a board.
 
     Args:
-        board (BoardChi): The chess board.
+        state (ChessState): The chess state.
 
     Returns:
         Representation364: The created Representation364 object.
@@ -95,6 +96,7 @@ def create_from_board(board: boards.IBoard) -> Representation364:
     castling_black: torch.Tensor
     white, black, castling_black, castling_white = d()
 
+    board: boards.IBoard = state.board
     p: dict[chess.Square, tuple[int, bool]] = e(board)
     a(black, white, p)
     b(board, castling_black, castling_white)
