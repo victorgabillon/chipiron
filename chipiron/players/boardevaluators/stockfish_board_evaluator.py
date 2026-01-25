@@ -6,11 +6,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
-import atomheart.board as boards
 import chess.engine
 from atomheart.board.factory import create_board_chi
 from atomheart.board.utils import FenPlusHistory
 
+from chipiron.environments.chess.types import ChessState
 from chipiron.players.boardevaluators.board_evaluator_type import BoardEvalTypes
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.path_variables import STOCKFISH_BINARY_PATH
@@ -81,16 +81,17 @@ class StockfishBoardEvaluator:
             Path(path).exists() for path in StockfishBoardEvaluator._candidate_paths()
         )
 
-    def value_white(self, state: boards.IBoard) -> float:
+    def value_white(self, state: ChessState) -> float:
         """
         Computes the value of the board for the white player.
 
         Args:
-            state (boards.IBoard): The board object representing the current state of the game.
+            state (ChessState): The state object representing the current state of the game.
 
         Returns:
             float: The value of the board for the white player.
         """
+        board = state.board
         try:
             if self.engine is None:
                 # Try multiple possible Stockfish paths
@@ -111,7 +112,7 @@ class StockfishBoardEvaluator:
             # transform the board
             board_chi: BoardChi = create_board_chi(
                 fen_with_history=FenPlusHistory(
-                    current_fen=state.fen,
+                    current_fen=board.fen,
                     # historical_moves=board.move_history_stack,
                     # historical_boards=board.board_history_stack,  # type: ignore
                     # note that we do not give here historical_boards, hope this does not create but related to 3 fold repetition computation

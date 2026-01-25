@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypeVar
 
+from valanga.policy import Recommendation
+
 from chipiron.games.game.game_manager import MainMailboxMessage
 from chipiron.players.communications.player_message import (
     EvMove,
@@ -43,12 +45,12 @@ def handle_player_request(
         )
         return
 
-    rec = game_player.select_move_from_snapshot(
+    rec: Recommendation = game_player.select_move_from_snapshot(
         snapshot=state.snapshot, seed=request.seed
     )
 
     # `valanga.policy.Recommendation` uses `recommended_key`.
-    branch_name = rec.recommended_key
+    branch_name = rec.recommended_name
 
     ev = EvMove(
         branch_name=branch_name,

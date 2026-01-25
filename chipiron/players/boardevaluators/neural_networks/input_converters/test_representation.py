@@ -3,7 +3,7 @@ Tests for the board representation.
 """
 
 from copy import deepcopy
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Sequence
 
 import chess
 import pytest
@@ -26,10 +26,6 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.represent
 if TYPE_CHECKING:
     from atomheart.move.imove import MoveKey
     from valanga.represention_for_evaluation import ContentRepresentation
-
-    from chipiron.players.boardevaluators.neural_networks.input_converters.board_representation import (
-        Representation364,
-    )
 
 
 @pytest.mark.parametrize(("use_rust_boards"), (True, False))
@@ -56,21 +52,21 @@ def test_representation(
     )
     assert representation_factory is not None
 
-    parent_node_board_representation: Representation364 = (
-        representation_factory.create_from_state(state=state)
-    )
+    parent_node_board_representation: ContentRepresentation[
+        ChessState, torch.Tensor
+    ] = representation_factory.create_from_state(state=state)
 
-    all_moves_keys_chi: list[MoveKey] = board.legal_moves.get_all()
+    all_moves_keys_chi: Sequence[MoveKey] = board.branch_keys.get_all()
     board_modification: BoardModificationP | None = board.play_move_key(
         move=all_moves_keys_chi[0]
     )
     state_after_move = ChessState(board=board)
 
     assert board_modification is not None
-    direct_rep: ContentRepresentation = representation_factory.create_from_state(
-        state=state_after_move
+    direct_rep: ContentRepresentation[ChessState, torch.Tensor] = (
+        representation_factory.create_from_state(state=state_after_move)
     )
-    rep_from_parents: ContentRepresentation = (
+    rep_from_parents: ContentRepresentation[ChessState, torch.Tensor] = (
         representation_factory.create_from_state_and_modifications(
             state=state_after_move,
             state_modifications=board_modification,
@@ -116,15 +112,15 @@ def test_representation364(
 
     assert board_one.occupied == bitboard_rotate(board_two.occupied)
 
-    board_representation_one_copy: Representation364 = deepcopy(
-        representation_factory.create_from_state(state=state_one)
+    board_representation_one_copy: ContentRepresentation[ChessState, torch.Tensor] = (
+        deepcopy(representation_factory.create_from_state(state=state_one))
     )
-    board_representation_two_copy: Representation364 = deepcopy(
-        representation_factory.create_from_state(state=state_two)
+    board_representation_two_copy: ContentRepresentation[ChessState, torch.Tensor] = (
+        deepcopy(representation_factory.create_from_state(state=state_two))
     )
 
-    board_representation_one: Representation364
-    board_representation_two: Representation364
+    board_representation_one: ContentRepresentation[ChessState, torch.Tensor]
+    board_representation_two: ContentRepresentation[ChessState, torch.Tensor]
     if use_board_modification:
         board_modification_one: BoardModificationP | None = board_one.play_move_uci(
             move_uci="a2a3"

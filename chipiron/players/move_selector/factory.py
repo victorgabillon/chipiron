@@ -3,11 +3,15 @@ This module provides a factory function for creating the main move selector base
 """
 
 import random
-from typing import TypeAlias
+from typing import Type, TypeAlias
 
-from anemone import TreeAndValuePlayerArgs
+from anemone import TreeAndValuePlayerArgs, create_tree_and_value_branch_selector
+from valanga import State
 from valanga.policy import BranchSelector
 
+from chipiron.players.boardevaluators.master_board_evaluator import (
+    create_master_board_evaluator,
+)
 from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 from chipiron.utils.logger import chipiron_logger
 
@@ -25,7 +29,7 @@ AllMoveSelectorArgs: TypeAlias = (
 )
 
 
-def create_main_move_selector(
+def create_main_move_selector[StateT: State](
     move_selector_instance_or_args: AllMoveSelectorArgs,
     syzygy: AnySyzygyTable | None,
     random_generator: random.Random,
@@ -36,7 +40,7 @@ def create_main_move_selector(
 
     Args:
         move_selector_instance_or_args (AllMoveSelectorArgs): The arguments or instance of the move selector.
-        syzygy (SyzygyTable | None): The syzygy table.
+        syzygy (AnySyzygyTable | None): The syzygy table.
         random_generator (random.Random): The random number generator.
 
     Returns:
@@ -54,7 +58,14 @@ def create_main_move_selector(
             main_move_selector = create_random(random_generator=random_generator)
         case TreeAndValuePlayerArgs():
             tree_args: TreeAndValuePlayerArgs = move_selector_instance_or_args
-            main_move_selector = create_tree_and_value_builders(
+            main_state_evaluator = create_master_board_evaluator(
+                board_evaluator=tree_args.board_evaluator,
+                syzygy=syzygy,
+                evaluation_scale=tree_args.evaluation_scale,
+            )
+            main_move_selector = create_tree_and_value_branch_selector(
+                state_type=Type(StateT),
+                master_state_evaluator=main_state_evaluator,
                 args=tree_args,
                 syzygy=syzygy,
                 random_generator=random_generator,
