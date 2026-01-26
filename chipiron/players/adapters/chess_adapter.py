@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from valanga.game import BranchName, Seed
     from valanga.policy import BranchSelector, Recommendation
 
-    from chipiron.players.oracle import Oracle
+    from chipiron.players.oracles import PolicyOracle
 
 
 class ChessAdapter:
@@ -29,7 +29,7 @@ class ChessAdapter:
         *,
         board_factory: BoardFactory,
         main_move_selector: BranchSelector[ChessState],
-        oracle: Oracle[ChessState] | None,
+        oracle: PolicyOracle[ChessState] | None,
     ) -> None:
         self.board_factory = board_factory
         self.main_move_selector = main_move_selector

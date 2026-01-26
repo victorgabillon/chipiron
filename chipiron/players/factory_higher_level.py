@@ -33,7 +33,6 @@ if TYPE_CHECKING:
     from chipiron.utils.dataclass import IsDataclass
     from chipiron.utils.queue_protocols import PutGetQueue, PutQueue
 
-    from .boardevaluators.table_base.factory import AnySyzygyTable
 
 
 class MoveFunction(Protocol):
@@ -65,7 +64,6 @@ def create_player_observer_factory(
     each_player_has_its_own_thread: bool,
     implementation_args: object,
     universal_behavior: bool,
-    syzygy_table: AnySyzygyTable | None,
 ) -> PlayerObserverFactory:
     wiring = _select_wiring(game_kind)
 
@@ -85,7 +83,6 @@ def create_player_observer_factory(
         partial(
             _create_player_observer_mono_process,
             wiring=wiring,
-            syzygy_table=syzygy_table,
             implementation_args=implementation_args,
             universal_behavior=universal_behavior,
         ),
@@ -138,7 +135,6 @@ def _create_player_observer_mono_process(
     main_thread_mailbox: PutQueue[MainMailboxMessage],
     *,
     wiring: ObserverWiring[object, object, object],
-    syzygy_table: AnySyzygyTable | None,
     implementation_args: object,
     universal_behavior: bool,
 ) -> tuple[PlayerHandle, MoveFunction]:
@@ -148,7 +144,6 @@ def _create_player_observer_mono_process(
         player_color=player_color,
         implementation_args=implementation_args,
         universal_behavior=universal_behavior,
-        syzygy_table=syzygy_table,
     )
 
     game_player = wiring.build_game_player(build_args, main_thread_mailbox)

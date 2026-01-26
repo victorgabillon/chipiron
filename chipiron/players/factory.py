@@ -18,14 +18,19 @@ from valanga import Color
 
 from chipiron.environments.chess.types import ChessState
 from chipiron.players.adapters.chess_adapter import ChessAdapter
-from chipiron.players.adapters.chess_syzygy_oracle import ChessSyzygyOracle
+from chipiron.players.adapters.chess_syzygy_oracle import (
+    ChessSyzygyPolicyOracle,
+    ChessSyzygyTerminalOracle,
+    ChessSyzygyValueOracle,
+)
 from chipiron.players.boardevaluators.master_board_evaluator import (
-    create_master_board_evaluator,
+    create_master_state_evaluator,
 )
 from chipiron.players.boardevaluators.table_base.factory import (
     AnySyzygyTable,
     create_syzygy,
 )
+from chipiron.players.oracles import PolicyOracle, TerminalOracle, ValueOracle
 from chipiron.players.player_args import PlayerArgs
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.utils.logger import chipiron_logger
@@ -48,7 +53,9 @@ class PlayerCreationArgs:
     implementation_args: ImplementationArgs
     universal_behavior: bool
     queue_progress_player: PutQueue[IsDataclass] | None = None
-    syzygy: AnySyzygyTable | None = None
+    policy_oracle: PolicyOracle[ChessState] | None = None
+    value_oracle: ValueOracle[ChessState] | None = None
+    terminal_oracle: TerminalOracle[ChessState] | None = None
 
 
 def create_chipiron_player(
@@ -70,6 +77,15 @@ def create_chipiron_player(
     syzygy_table: AnySyzygyTable | None = create_syzygy(
         use_rust=implementation_args.use_rust_boards
     )
+    policy_oracle = (
+        ChessSyzygyPolicyOracle(syzygy_table) if syzygy_table is not None else None
+    )
+    value_oracle = (
+        ChessSyzygyValueOracle(syzygy_table) if syzygy_table is not None else None
+    )
+    terminal_oracle = (
+        ChessSyzygyTerminalOracle(syzygy_table) if syzygy_table is not None else None
+    )
 
     args_player: PlayerArgs = PlayerConfigTag.CHIPIRON.get_players_args()
 
@@ -87,9 +103,10 @@ def create_chipiron_player(
     main_move_selector: BranchSelector[ChessState]
     match args_player.main_move_selector:
         case TreeAndValuePlayerArgs() as tree_args:
-            master_state_evaluator = create_master_board_evaluator(
+            master_state_evaluator = create_master_state_evaluator(
                 board_evaluator=tree_args.board_evaluator,
-                syzygy=syzygy_table,
+                value_oracle=value_oracle,
+                terminal_oracle=terminal_oracle,
                 evaluation_scale=tree_args.evaluation_scale,
             )
             main_move_selector = move_selector.create_tree_and_value_move_selector(
@@ -112,18 +129,19 @@ def create_chipiron_player(
         sort_legal_moves=universal_behavior,
     )
 
-    oracle = ChessSyzygyOracle(syzygy_table) if syzygy_table is not None else None
     adapter = ChessAdapter(
         board_factory=board_factory,
         main_move_selector=main_move_selector,
-        oracle=oracle,
+        oracle=policy_oracle,
     )
     return Player[FenPlusHistory, ChessState](name="chipiron", adapter=adapter)
 
 
 def create_player(
     args: PlayerArgs,
-    syzygy: AnySyzygyTable | None,
+    policy_oracle: PolicyOracle[ChessState] | None,
+    value_oracle: ValueOracle[ChessState] | None,
+    terminal_oracle: TerminalOracle[ChessState] | None,
     random_generator: random.Random,
     implementation_args: ImplementationArgs,
     universal_behavior: bool,
@@ -135,7 +153,9 @@ def create_player(
 
     Args:
         args (PlayerArgs): The arguments for creating the player.
-        syzygy (AnySyzygyTable | None): The Syzygy table to be used by the player, or None if not available.
+        policy_oracle (PolicyOracle | None): The policy oracle for best-move shortcuts.
+        value_oracle (ValueOracle | None): The value oracle for exact evaluations.
+        terminal_oracle (TerminalOracle | None): The terminal oracle for endgame metadata.
         random_generator (random.Random): The random number generator to be used by the player.
 
     Returns:
@@ -145,9 +165,10 @@ def create_player(
     main_move_selector: BranchSelector[ChessState]
     match args.main_move_selector:
         case TreeAndValuePlayerArgs() as tree_args:
-            master_state_evaluator = create_master_board_evaluator(
+            master_state_evaluator = create_master_state_evaluator(
                 board_evaluator=tree_args.board_evaluator,
-                syzygy=syzygy,
+                value_oracle=value_oracle,
+                terminal_oracle=terminal_oracle,
                 evaluation_scale=tree_args.evaluation_scale,
             )
             main_move_selector = move_selector.create_tree_and_value_move_selector(
@@ -170,11 +191,10 @@ def create_player(
         sort_legal_moves=universal_behavior,
     )
 
-    oracle = ChessSyzygyOracle(syzygy) if syzygy is not None else None
     adapter = ChessAdapter(
         board_factory=board_factory,
         main_move_selector=main_move_selector,
-        oracle=oracle,
+        oracle=policy_oracle,
     )
 
     return Player[FenPlusHistory, ChessState](name=args.name, adapter=adapter)
@@ -183,7 +203,9 @@ def create_player(
 def create_game_player(
     player_factory_args: PlayerFactoryArgs,
     player_color: Color,
-    syzygy_table: AnySyzygyTable | None,
+    policy_oracle: PolicyOracle[ChessState] | None,
+    value_oracle: ValueOracle[ChessState] | None,
+    terminal_oracle: TerminalOracle[ChessState] | None,
     queue_progress_player: PutQueue[IsDataclass] | None,
     implementation_args: ImplementationArgs,
     universal_behavior: bool,
@@ -202,7 +224,9 @@ def create_game_player(
     random_generator = random.Random(player_factory_args.seed)
     player: Player[FenPlusHistory, ChessState] = create_player(
         args=player_factory_args.player_args,
-        syzygy=syzygy_table,
+        policy_oracle=policy_oracle,
+        value_oracle=value_oracle,
+        terminal_oracle=terminal_oracle,
         random_generator=random_generator,
         queue_progress_player=queue_progress_player,
         implementation_args=implementation_args,

@@ -100,7 +100,6 @@ def make_environment(
                     each_player_has_its_own_thread=each_player_has_its_own_thread,
                     implementation_args=implementation_args,
                     universal_behavior=universal_behavior,
-                    syzygy_table=syzygy_table,
                 )
 
             def normalize_start_tag(tag: StateTag) -> ChessStartTag:
