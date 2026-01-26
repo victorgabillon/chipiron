@@ -11,7 +11,7 @@ from anemone import TreeAndValuePlayerArgs, create_tree_and_value_branch_selecto
 from valanga import State, TurnState
 from valanga.policy import BranchSelector
 
-from chipiron.players.move_selector.tree_and_value_args import TreeAndValueChipironArgs
+from chipiron.environments.chess.types import ChessState
 from chipiron.utils.logger import chipiron_logger
 
 from ...utils.dataclass import IsDataclass
@@ -22,8 +22,6 @@ from .random import Random, create_random
 NonTreeMoveSelectorArgs: TypeAlias = (
     human.CommandLineHumanPlayerArgs | Random | stockfish.StockfishPlayer
 )
-
-AllMoveSelectorArgs: TypeAlias = TreeAndValueChipironArgs | NonTreeMoveSelectorArgs
 
 TurnStateT = TypeVar("TurnStateT", bound=TurnState)
 
@@ -39,7 +37,7 @@ def create_main_move_selector(
     move_selector_instance_or_args: NonTreeMoveSelectorArgs,
     *,
     random_generator: random.Random,
-) -> BranchSelector[State]:
+) -> BranchSelector[ChessState]:
     """
     Create the main move selector based on the given arguments.
 
@@ -54,7 +52,7 @@ def create_main_move_selector(
         ValueErr    or: If the given move selector instance or arguments are invalid.
 
     """
-    main_move_selector: BranchSelector[State]
+    main_move_selector: BranchSelector[ChessState]
     chipiron_logger.debug("Create main move selector")
 
     match move_selector_instance_or_args:
