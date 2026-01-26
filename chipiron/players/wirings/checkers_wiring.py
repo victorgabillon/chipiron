@@ -24,7 +24,6 @@ class BuildCheckersGamePlayerArgs:
     player_color: Color
     implementation_args: object
     universal_behavior: bool
-    syzygy_table: object | None = None
 
 
 def build_checkers_game_player(

@@ -3,7 +3,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from chipiron.environments.chess.types import ChessState
-from chipiron.players.oracle import Oracle
+from valanga.over_event import OverEvent
+
+from chipiron.players.oracles import PolicyOracle, TerminalOracle, ValueOracle
 
 if TYPE_CHECKING:
     from atomheart.move import MoveUci
@@ -13,8 +15,8 @@ if TYPE_CHECKING:
     from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 
 
-class ChessSyzygyOracle(Oracle[ChessState]):
-    """Oracle wrapper around Syzygy for chess-specific best-move queries."""
+class ChessSyzygyPolicyOracle(PolicyOracle[ChessState]):
+    """Policy oracle wrapper around Syzygy for chess-specific best-move queries."""
 
     def __init__(self, syzygy: AnySyzygyTable) -> None:
         self._syzygy = syzygy
@@ -26,3 +28,34 @@ class ChessSyzygyOracle(Oracle[ChessState]):
         best_move_key: MoveKey = self._syzygy.best_move(state.board)
         best_move_uci: MoveUci = state.get_uci_from_move_key(best_move_key)
         return best_move_uci
+
+
+class ChessSyzygyValueOracle(ValueOracle[ChessState]):
+    """Value oracle wrapper around Syzygy for chess-specific evaluations."""
+
+    def __init__(self, syzygy: AnySyzygyTable) -> None:
+        self._syzygy = syzygy
+
+    def supports(self, state: ChessState) -> bool:
+        return self._syzygy.fast_in_table(state.board)
+
+    def value_white(self, state: ChessState) -> float:
+        return float(self._syzygy.val(state.board))
+
+
+class ChessSyzygyTerminalOracle(TerminalOracle[ChessState]):
+    """Terminal oracle wrapper around Syzygy for chess-specific endgame metadata."""
+
+    def __init__(self, syzygy: AnySyzygyTable) -> None:
+        self._syzygy = syzygy
+
+    def supports(self, state: ChessState) -> bool:
+        return self._syzygy.fast_in_table(state.board)
+
+    def over_event(self, state: ChessState) -> OverEvent:
+        who_is_winner, how_over = self._syzygy.get_over_event(board=state.board)
+        return OverEvent(
+            how_over=how_over,
+            who_is_winner=who_is_winner,
+            termination=None,
+        )
