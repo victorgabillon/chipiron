@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from chipiron.environments.chess.types import ChessState
 from valanga.over_event import OverEvent
 
+from chipiron.environments.chess.types import ChessState
 from chipiron.players.oracles import PolicyOracle, TerminalOracle, ValueOracle
 
 if TYPE_CHECKING:

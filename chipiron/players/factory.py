@@ -25,11 +25,13 @@ from chipiron.players.adapters.chess_syzygy_oracle import (
 )
 from chipiron.players.boardevaluators.master_board_evaluator import (
     create_master_state_evaluator,
+    create_master_state_evaluator_from_args,
 )
 from chipiron.players.boardevaluators.table_base.factory import (
     AnySyzygyTable,
     create_syzygy,
 )
+from chipiron.players.move_selector.tree_and_value_args import TreeAndValueChipironArgs
 from chipiron.players.oracles import PolicyOracle, TerminalOracle, ValueOracle
 from chipiron.players.player_args import PlayerArgs
 from chipiron.players.player_ids import PlayerConfigTag
@@ -164,15 +166,14 @@ def create_player(
     chipiron_logger.debug("Create player")
     main_move_selector: BranchSelector[ChessState]
     match args.main_move_selector:
-        case TreeAndValuePlayerArgs() as tree_args:
-            master_state_evaluator = create_master_state_evaluator(
-                board_evaluator=tree_args.board_evaluator,
+        case TreeAndValueChipironArgs() as tree_args:
+            master_state_evaluator = create_master_state_evaluator_from_args(
+                master_board_evaluator=tree_args.evaluator_args,
                 value_oracle=value_oracle,
                 terminal_oracle=terminal_oracle,
-                evaluation_scale=tree_args.evaluation_scale,
             )
             main_move_selector = move_selector.create_tree_and_value_move_selector(
-                tree_args,
+                args=tree_args.anemone_args,
                 state_type=ChessState,
                 master_state_evaluator=master_state_evaluator,
                 state_representation_factory=None,

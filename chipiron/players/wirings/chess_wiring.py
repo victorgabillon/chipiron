@@ -3,14 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from chipiron.players.boardevaluators.table_base.factory import (
-    AnySyzygyTable,
-    create_syzygy_factory,
-)
 from chipiron.players.adapters.chess_syzygy_oracle import (
     ChessSyzygyPolicyOracle,
     ChessSyzygyTerminalOracle,
     ChessSyzygyValueOracle,
+)
+from chipiron.players.boardevaluators.table_base.factory import (
+    AnySyzygyTable,
+    create_syzygy_factory,
 )
 from chipiron.players.factory import create_game_player
 from chipiron.players.observer_wiring import ObserverWiring
@@ -19,9 +19,9 @@ if TYPE_CHECKING:
     from atomheart.board.utils import FenPlusHistory
     from valanga import Color
 
+    from chipiron.environments.chess.types import ChessState
     from chipiron.players.game_player import GamePlayer
     from chipiron.players.player_args import PlayerFactoryArgs
-    from chipiron.environments.chess.types import ChessState
     from chipiron.scripts.chipiron_args import ImplementationArgs
     from chipiron.utils.dataclass import IsDataclass
     from chipiron.utils.queue_protocols import PutQueue
@@ -44,9 +44,7 @@ def build_chess_game_player(
         use_rust=args.implementation_args.use_rust_boards
     )
     syzygy = args.syzygy_table if args.syzygy_table is not None else create_syzygy()
-    policy_oracle = (
-        ChessSyzygyPolicyOracle(syzygy) if syzygy is not None else None
-    )
+    policy_oracle = ChessSyzygyPolicyOracle(syzygy) if syzygy is not None else None
     value_oracle = ChessSyzygyValueOracle(syzygy) if syzygy is not None else None
     terminal_oracle = ChessSyzygyTerminalOracle(syzygy) if syzygy is not None else None
     return create_game_player(
@@ -61,9 +59,7 @@ def build_chess_game_player(
     )
 
 
-CHESS_WIRING: ObserverWiring[
-    FenPlusHistory, ChessState, BuildChessGamePlayerArgs
-] = (
+CHESS_WIRING: ObserverWiring[FenPlusHistory, ChessState, BuildChessGamePlayerArgs] = (
     ObserverWiring(
         build_game_player=build_chess_game_player,
         build_args_type=BuildChessGamePlayerArgs,
