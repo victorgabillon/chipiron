@@ -11,6 +11,7 @@ from anemone import TreeAndValuePlayerArgs, create_tree_and_value_branch_selecto
 from valanga import State, TurnState
 from valanga.policy import BranchSelector
 
+from chipiron.players.move_selector.tree_and_value_args import TreeAndValueChipironArgs
 from chipiron.utils.logger import chipiron_logger
 
 from ...utils.dataclass import IsDataclass
@@ -19,12 +20,10 @@ from . import human, stockfish
 from .random import Random, create_random
 
 NonTreeMoveSelectorArgs: TypeAlias = (
-    human.CommandLineHumanPlayerArgs
-    | Random
-    | stockfish.StockfishPlayer
+    human.CommandLineHumanPlayerArgs | Random | stockfish.StockfishPlayer
 )
 
-AllMoveSelectorArgs: TypeAlias = TreeAndValuePlayerArgs | NonTreeMoveSelectorArgs
+AllMoveSelectorArgs: TypeAlias = TreeAndValueChipironArgs | NonTreeMoveSelectorArgs
 
 TurnStateT = TypeVar("TurnStateT", bound=TurnState)
 

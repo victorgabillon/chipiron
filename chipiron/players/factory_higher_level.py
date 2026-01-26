@@ -34,7 +34,6 @@ if TYPE_CHECKING:
     from chipiron.utils.queue_protocols import PutGetQueue, PutQueue
 
 
-
 class MoveFunction(Protocol):
     def __call__(self, request: PlayerRequest[object]) -> None: ...
 
