@@ -84,29 +84,27 @@ def create_chipiron_player(
             tree_branch_limit
         )
 
-    if isinstance(args_player.main_move_selector, TreeAndValuePlayerArgs):
-        master_state_evaluator = create_master_board_evaluator(
-            board_evaluator=args_player.main_move_selector.board_evaluator,
-            syzygy=syzygy_table,
-            evaluation_scale=args_player.main_move_selector.evaluation_scale,
-        )
-        main_move_selector: BranchSelector[ChessState] | None = (
-            move_selector.create_tree_and_value_move_selector(
-                args_player.main_move_selector,
+    main_move_selector: BranchSelector[ChessState]
+    match args_player.main_move_selector:
+        case TreeAndValuePlayerArgs() as tree_args:
+            master_state_evaluator = create_master_board_evaluator(
+                board_evaluator=tree_args.board_evaluator,
+                syzygy=syzygy_table,
+                evaluation_scale=tree_args.evaluation_scale,
+            )
+            main_move_selector = move_selector.create_tree_and_value_move_selector(
+                tree_args,
                 state_type=ChessState,
                 master_state_evaluator=master_state_evaluator,
                 state_representation_factory=None,
                 random_generator=random_generator,
                 queue_progress_player=queue_progress_player,
             )
-        )
-    else:
-        main_move_selector = move_selector.create_main_move_selector(
-            args_player.main_move_selector,
-            random_generator=random_generator,
-        )
-
-    assert main_move_selector is not None
+        case _:
+            main_move_selector = move_selector.create_main_move_selector(
+                args_player.main_move_selector,
+                random_generator=random_generator,
+            )
 
     board_factory: BoardFactory = create_board_factory(
         use_rust_boards=implementation_args.use_rust_boards,
@@ -144,27 +142,27 @@ def create_player(
         Player: The created player object.
     """
     chipiron_logger.debug("Create player")
-    if isinstance(args.main_move_selector, TreeAndValuePlayerArgs):
-        master_state_evaluator = create_master_board_evaluator(
-            board_evaluator=args.main_move_selector.board_evaluator,
-            syzygy=syzygy,
-            evaluation_scale=args.main_move_selector.evaluation_scale,
-        )
-        main_move_selector: BranchSelector[ChessState] = (
-            move_selector.create_tree_and_value_move_selector(
-                args.main_move_selector,
+    main_move_selector: BranchSelector[ChessState]
+    match args.main_move_selector:
+        case TreeAndValuePlayerArgs() as tree_args:
+            master_state_evaluator = create_master_board_evaluator(
+                board_evaluator=tree_args.board_evaluator,
+                syzygy=syzygy,
+                evaluation_scale=tree_args.evaluation_scale,
+            )
+            main_move_selector = move_selector.create_tree_and_value_move_selector(
+                tree_args,
                 state_type=ChessState,
                 master_state_evaluator=master_state_evaluator,
                 state_representation_factory=None,
                 random_generator=random_generator,
                 queue_progress_player=queue_progress_player,
             )
-        )
-    else:
-        main_move_selector = move_selector.create_main_move_selector(
-            args.main_move_selector,
-            random_generator=random_generator,
-        )
+        case _:
+            main_move_selector = move_selector.create_main_move_selector(
+                args.main_move_selector,
+                random_generator=random_generator,
+            )
 
     board_factory: BoardFactory = create_board_factory(
         use_rust_boards=implementation_args.use_rust_boards,

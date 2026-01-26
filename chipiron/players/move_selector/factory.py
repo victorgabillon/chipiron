@@ -20,7 +20,6 @@ from .random import Random, create_random
 
 NonTreeMoveSelectorArgs: TypeAlias = (
     human.CommandLineHumanPlayerArgs
-    | human.GuiHumanPlayerArgs
     | Random
     | stockfish.StockfishPlayer
 )
@@ -66,8 +65,6 @@ def create_main_move_selector(
             main_move_selector = move_selector_instance_or_args
         case human.CommandLineHumanPlayerArgs():
             main_move_selector = human.CommandLineHumanMoveSelector()
-        case human.GuiHumanPlayerArgs():
-            raise NotImplementedError("GuiHumanMoveSelector is not implemented")
         case other:
             raise ValueError(
                 f"player creator: can not find {other} of type {type(other)}"
