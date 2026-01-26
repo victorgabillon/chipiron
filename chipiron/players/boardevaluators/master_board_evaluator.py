@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import Any
 
-from atomheart.board import IBoard
 from coral.neural_networks.factory import (
     create_nn_state_eval_from_nn_parameters_file_and_existing_model,
 )
@@ -23,7 +22,7 @@ from chipiron.players.boardevaluators.evaluation_scale import (
 from chipiron.players.boardevaluators.neural_networks.chipiron_nn_args import (
     create_content_to_input_from_model_weights,
 )
-from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
+from chipiron.players.oracles import TerminalOracle, ValueOracle
 
 from .board_evaluator import StateEvaluator
 
@@ -52,8 +51,11 @@ class MasterBoardEvaluator:
     # The board evaluator used to evaluate the chess board.
     board_evaluator: StateEvaluator[ChessState]
 
-    # The Syzygy table used for endgame tablebase evaluations, or None if not available.
-    syzygy_evaluator: AnySyzygyTable | None
+    # The optional value oracle used for exact evaluations.
+    value_oracle: ValueOracle[ChessState] | None
+
+    # The optional terminal oracle used for endgame metadata.
+    terminal_oracle: TerminalOracle[ChessState] | None
 
     # The value over enum used to determine the value of the node when it is over.
     value_over_enum: ValueOverEnum
@@ -61,7 +63,8 @@ class MasterBoardEvaluator:
     def __init__(
         self,
         board_evaluator: StateEvaluator[ChessState],
-        syzygy: AnySyzygyTable | None,
+        value_oracle: ValueOracle[ChessState] | None,
+        terminal_oracle: TerminalOracle[ChessState] | None,
         value_over_enum: ValueOverEnum,
     ) -> None:
         """
@@ -69,11 +72,13 @@ class MasterBoardEvaluator:
 
         Args:
             board_evaluator (board_evals.BoardEvaluator): The board evaluator used to evaluate the chess board.
-            syzygy (SyzygyTable | None): The Syzygy table used for endgame tablebase evaluations, or None if not available.
+            value_oracle (ValueOracle | None): The value oracle used for exact evaluations, or None if not available.
+            terminal_oracle (TerminalOracle | None): The terminal oracle used for endgame metadata.
             value_over_enum (ValueOverEnum): The value over enum used to determine the value of the node when it is over.
         """
         self.board_evaluator = board_evaluator
-        self.syzygy_evaluator = syzygy
+        self.value_oracle = value_oracle
+        self.terminal_oracle = terminal_oracle
         self.value_over_enum = value_over_enum
 
     def value_white(self, state: ChessState) -> float:
@@ -82,7 +87,7 @@ class MasterBoardEvaluator:
         If the value can be obtained from the syzygy evaluator, it is used.
         Otherwise, the board evaluator is used.
         """
-        value_white: float | None = self.syzygy_value_white(state.board)
+        value_white: float | None = self.oracle_value_white(state)
         value_white_float: float
         if value_white is None:
             value_white_float = self.board_evaluator.value_white(state)
@@ -90,27 +95,23 @@ class MasterBoardEvaluator:
             value_white_float = value_white
         return value_white_float
 
-    def syzygy_value_white(self, board: IBoard) -> float | None:
+    def oracle_value_white(self, state: ChessState) -> float | None:
         """
-        Calculates the value for the white player of a given board using the syzygy evaluator.
-        If the syzygy evaluator is not available or the board is not in the syzygy table, None is returned.
+        Calculates the value for the white player of a given state using the value oracle.
+        If the value oracle is not available or the state is not supported, None is returned.
         """
-        if self.syzygy_evaluator is None or not self.syzygy_evaluator.fast_in_table(
-            board
-        ):
+        if self.value_oracle is None or not self.value_oracle.supports(state):
             return None
-        else:
-            val: int = self.syzygy_evaluator.val(board)
-            return val
+        return self.value_oracle.value_white(state)
 
     def check_obvious_over_events(
-        self, board: IBoard
+        self, state: ChessState
     ) -> tuple[OverEvent | None, float | None]:
         """
         Checks if the given board is in an obvious game-over state and returns the corresponding OverEvent and evaluation.
 
         Args:
-            board (boards.IBoard): The board to evaluate for game-over conditions.
+            state (ChessState): The state to evaluate for game-over conditions.
 
         Raises:
             ValueError: If the board result string is not recognized.
@@ -120,6 +121,7 @@ class MasterBoardEvaluator:
             (if the game is over or can be determined from Syzygy tables, otherwise None) and the evaluation score from White's perspective.
             The evaluation is especially useful when training models.
         """
+        board = state.board
         game_over: bool = board.is_game_over()
         over_event: OverEvent | None = None
         evaluation: float | None = None
@@ -146,15 +148,8 @@ class MasterBoardEvaluator:
                 termination=board.termination(),
             )
 
-        elif self.syzygy_evaluator and self.syzygy_evaluator.fast_in_table(board):
-            who_is_winner_, how_over_ = self.syzygy_evaluator.get_over_event(
-                board=board
-            )
-            over_event = OverEvent(
-                how_over=how_over_,
-                who_is_winner=who_is_winner_,
-                termination=None,  # not sure how to retrieve this info more precisely atm
-            )
+        elif self.terminal_oracle and self.terminal_oracle.supports(state):
+            over_event = self.terminal_oracle.over_event(state)
         if over_event is not None:
             evaluation = self.value_white_from_over_event(over_event=over_event)
         return over_event, evaluation
@@ -178,9 +173,10 @@ class MasterBoardEvaluator:
         return white_value
 
 
-def create_master_board_evaluator(
+def create_master_state_evaluator(
     board_evaluator: StateEvaluator[ChessState],
-    syzygy: AnySyzygyTable | None,
+    value_oracle: ValueOracle[ChessState] | None,
+    terminal_oracle: TerminalOracle[ChessState] | None,
     evaluation_scale: EvaluationScale,
 ) -> MasterBoardEvaluator:
     """
@@ -188,7 +184,8 @@ def create_master_board_evaluator(
 
     Args:
         board_evaluator (BoardEvaluator): The board evaluator to use.
-        syzygy (SyzygyTable | None): The syzygy table for endgame evaluations.
+        value_oracle (ValueOracle | None): The value oracle for exact evaluations.
+        terminal_oracle (TerminalOracle | None): The terminal oracle for endgame metadata.
         value_over_enum (ValueOverEnum): The value over enum for evaluation.
 
     Returns:
@@ -199,27 +196,34 @@ def create_master_board_evaluator(
         evaluation_scale=evaluation_scale
     )
     return MasterBoardEvaluator(
-        board_evaluator=board_evaluator, syzygy=syzygy, value_over_enum=value_over_enum
+        board_evaluator=board_evaluator,
+        value_oracle=value_oracle,
+        terminal_oracle=terminal_oracle,
+        value_over_enum=value_over_enum,
     )
 
 
-def create_master_board_evaluator_from_args(
+def create_master_state_evaluator_from_args(
     master_board_evaluator: MasterBoardEvaluatorArgs,
-    syzygy: AnySyzygyTable | None,
+    value_oracle: ValueOracle[ChessState] | None,
+    terminal_oracle: TerminalOracle[ChessState] | None,
 ) -> MasterBoardEvaluator:
     """Creates a MasterBoardEvaluator instance from the given arguments.
 
     Args:
         master_board_evaluator (MasterBoardEvaluatorArgs): args to build the MasterBoardEvaluator
-        syzygy (SyzygyTable | None): a syzygy table objecct
+        value_oracle (ValueOracle | None): a value oracle object
+        terminal_oracle (TerminalOracle | None): a terminal oracle object
 
     Returns:
         MasterBoardEvaluator: _description_
     """
     if master_board_evaluator.syzygy_evaluation:
-        syzygy_ = syzygy
+        value_oracle_ = value_oracle
+        terminal_oracle_ = terminal_oracle
     else:
-        syzygy_ = None
+        value_oracle_ = None
+        terminal_oracle_ = None
 
     board_evaluator: StateEvaluator[ChessState]
     args = master_board_evaluator.board_evaluator
@@ -241,8 +245,37 @@ def create_master_board_evaluator_from_args(
                 f"unknown type of message received by master board evaluator {args.type} in {__name__}"
             )
 
-    return create_master_board_evaluator(
+    return create_master_state_evaluator(
         board_evaluator=board_evaluator,
-        syzygy=syzygy_,
+        value_oracle=value_oracle_,
+        terminal_oracle=terminal_oracle_,
         evaluation_scale=master_board_evaluator.evaluation_scale,
+    )
+
+
+def create_master_board_evaluator(
+    board_evaluator: StateEvaluator[ChessState],
+    value_oracle: ValueOracle[ChessState] | None,
+    terminal_oracle: TerminalOracle[ChessState] | None,
+    evaluation_scale: EvaluationScale,
+) -> MasterBoardEvaluator:
+    """Backward-compatible wrapper for older callers."""
+    return create_master_state_evaluator(
+        board_evaluator=board_evaluator,
+        value_oracle=value_oracle,
+        terminal_oracle=terminal_oracle,
+        evaluation_scale=evaluation_scale,
+    )
+
+
+def create_master_board_evaluator_from_args(
+    master_board_evaluator: MasterBoardEvaluatorArgs,
+    value_oracle: ValueOracle[ChessState] | None,
+    terminal_oracle: TerminalOracle[ChessState] | None,
+) -> MasterBoardEvaluator:
+    """Backward-compatible wrapper for older callers."""
+    return create_master_state_evaluator_from_args(
+        master_board_evaluator=master_board_evaluator,
+        value_oracle=value_oracle,
+        terminal_oracle=terminal_oracle,
     )
