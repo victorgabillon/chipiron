@@ -20,10 +20,12 @@ Dependencies:
 
 from enum import Enum
 from importlib.resources import as_file, files
+from typing import cast
 
 import parsley_coco
 
-from chipiron.players import PlayerArgs
+from chipiron.players.chess_player_args import ChessPlayerArgs
+from chipiron.players.player_args import PlayerArgs
 from chipiron.utils import path
 
 
@@ -84,7 +86,7 @@ class PlayerConfigTag(str, Enum):
         with as_file(resource) as real_path:
             return str(real_path)  # Or pass it immediately to another function
 
-    def get_players_args(self) -> PlayerArgs:
+    def get_players_args(self) -> ChessPlayerArgs:
         """Get the player arguments from the YAML file.
         This method fetches the player arguments from the YAML file
         corresponding to the player's configuration tag.
@@ -98,7 +100,7 @@ class PlayerConfigTag(str, Enum):
             raise_error_with_nones=False,
             package_name=str(files("chipiron")),
         )
-        return player_args
+        return cast(ChessPlayerArgs, player_args)
 
 
 if __name__ == "__main__":
