@@ -3,23 +3,29 @@ Module for player arguments.
 """
 
 from dataclasses import dataclass
+from typing import Generic, Protocol, TypeVar
 
-from . import move_selector
 from .move_selector.move_selector_types import MoveSelectorTypes
+
+class HasMoveSelectorType(Protocol):
+    type: str
+
+
+MoveSelectorArgsT = TypeVar("MoveSelectorArgsT", bound=HasMoveSelectorType)
 
 
 @dataclass
-class PlayerArgs:
+class PlayerArgs(Generic[MoveSelectorArgsT]):
     """Represents the arguments for a player.
 
     Attributes:
         name (str): The name of the player.
-        main_move_selector (move_selector.AllMoveSelectorArgs): The main move selector for the player.
+        main_move_selector (MoveSelectorArgsT): The main move selector for the player.
         syzygy_play (bool): Whether to play with syzygy when possible.
     """
 
     name: str
-    main_move_selector: move_selector.AllMoveSelectorArgs
+    main_move_selector: MoveSelectorArgsT
     syzygy_play: bool
 
     def is_human(self) -> bool:
@@ -32,7 +38,7 @@ class PlayerArgs:
 
 
 @dataclass
-class PlayerFactoryArgs:
+class PlayerFactoryArgs(Generic[MoveSelectorArgsT]):
     """A class representing the arguments for creating a player factory.
 
     Attributes:
@@ -40,5 +46,5 @@ class PlayerFactoryArgs:
         seed (int): The seed value for random number generation.
     """
 
-    player_args: PlayerArgs
+    player_args: PlayerArgs[MoveSelectorArgsT]
     seed: int
