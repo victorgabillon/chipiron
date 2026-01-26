@@ -2,6 +2,8 @@
 Module for creating players.
 """
 
+from __future__ import annotations
+
 import random
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -17,6 +19,9 @@ from valanga import Color
 from chipiron.environments.chess.types import ChessState
 from chipiron.players.adapters.chess_adapter import ChessAdapter
 from chipiron.players.adapters.chess_syzygy_oracle import ChessSyzygyOracle
+from chipiron.players.boardevaluators.master_board_evaluator import (
+    create_master_board_evaluator,
+)
 from chipiron.players.boardevaluators.table_base.factory import (
     AnySyzygyTable,
     create_syzygy,
@@ -79,13 +84,27 @@ def create_chipiron_player(
             tree_branch_limit
         )
 
-    main_move_selector: BranchSelector | None = move_selector.create_main_move_selector(
-        move_selector_instance_or_args=args_player.main_move_selector,
-        syzygy=syzygy_table,
-        random_generator=random_generator,
-        queue_progress_player=queue_progress_player,
-        state_type=ChessState,
-    )
+    if isinstance(args_player.main_move_selector, TreeAndValuePlayerArgs):
+        master_state_evaluator = create_master_board_evaluator(
+            board_evaluator=args_player.main_move_selector.board_evaluator,
+            syzygy=syzygy_table,
+            evaluation_scale=args_player.main_move_selector.evaluation_scale,
+        )
+        main_move_selector: BranchSelector[ChessState] | None = (
+            move_selector.create_tree_and_value_move_selector(
+                args_player.main_move_selector,
+                state_type=ChessState,
+                master_state_evaluator=master_state_evaluator,
+                state_representation_factory=None,
+                random_generator=random_generator,
+                queue_progress_player=queue_progress_player,
+            )
+        )
+    else:
+        main_move_selector = move_selector.create_main_move_selector(
+            args_player.main_move_selector,
+            random_generator=random_generator,
+        )
 
     assert main_move_selector is not None
 
@@ -125,13 +144,27 @@ def create_player(
         Player: The created player object.
     """
     chipiron_logger.debug("Create player")
-    main_move_selector: BranchSelector = move_selector.create_main_move_selector(
-        move_selector_instance_or_args=args.main_move_selector,
-        syzygy=syzygy,
-        random_generator=random_generator,
-        queue_progress_player=queue_progress_player,
-        state_type=ChessState,
-    )
+    if isinstance(args.main_move_selector, TreeAndValuePlayerArgs):
+        master_state_evaluator = create_master_board_evaluator(
+            board_evaluator=args.main_move_selector.board_evaluator,
+            syzygy=syzygy,
+            evaluation_scale=args.main_move_selector.evaluation_scale,
+        )
+        main_move_selector: BranchSelector[ChessState] = (
+            move_selector.create_tree_and_value_move_selector(
+                args.main_move_selector,
+                state_type=ChessState,
+                master_state_evaluator=master_state_evaluator,
+                state_representation_factory=None,
+                random_generator=random_generator,
+                queue_progress_player=queue_progress_player,
+            )
+        )
+    else:
+        main_move_selector = move_selector.create_main_move_selector(
+            args.main_move_selector,
+            random_generator=random_generator,
+        )
 
     board_factory: BoardFactory = create_board_factory(
         use_rust_boards=implementation_args.use_rust_boards,
