@@ -28,7 +28,7 @@ class ChessAdapter:
         self,
         *,
         board_factory: BoardFactory,
-        main_move_selector: BranchSelector,
+        main_move_selector: BranchSelector[ChessState],
         oracle: Oracle[ChessState] | None,
     ) -> None:
         self.board_factory = board_factory
