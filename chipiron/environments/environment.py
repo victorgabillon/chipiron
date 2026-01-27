@@ -1,38 +1,41 @@
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Protocol, TypeVar, cast
+from __future__ import annotations
 
-from atomheart import ValangaChessState
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Literal, Protocol, TypeVar, overload
+
 from valanga import StateTag
 
+from chipiron.environments.chess.tags import ChessStartTag
 from chipiron.environments.chess.types import ChessState
+from chipiron.environments.deps import CheckersEnvironmentDeps, ChessEnvironmentDeps
 from chipiron.environments.types import GameKind
 from chipiron.games.game.game_rules import GameRules
-from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 from chipiron.players.communications.player_request_encoder import PlayerRequestEncoder
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.utils.communication.gui_encoder import GuiEncoder
 
 if TYPE_CHECKING:
-    import atomheart.board as boards
     from atomheart.board.utils import FenPlusHistory
 
     from chipiron.players.factory_higher_level import PlayerObserverFactory
 
-StateT = TypeVar("StateT", covariant=True)
+StateT = TypeVar("StateT")
 StateSnapT = TypeVar("StateSnapT")
 
-StartTagT = TypeVar("StartTagT", covariant=True)  # produced by normalize_start_tag
+StartTagT = TypeVar("StartTagT")  # produced by normalize_start_tag
+StartTagOutT = TypeVar("StartTagOutT", covariant=True)
 StartTagInT = TypeVar(
     "StartTagInT", contravariant=True
 )  # consumed by make_initial_state
+StateOutT = TypeVar("StateOutT", covariant=True)
 
 
-class TagNormalizer(Protocol[StartTagT]):
-    def __call__(self, tag: StateTag) -> StartTagT: ...
+class TagNormalizer(Protocol[StartTagOutT]):
+    def __call__(self, tag: StateTag) -> StartTagOutT: ...
 
 
-class InitialStateFactory(Protocol[StateT, StartTagInT]):
-    def __call__(self, tag: StartTagInT) -> StateT: ...
+class InitialStateFactory(Protocol[StateOutT, StartTagInT]):
+    def __call__(self, tag: StartTagInT) -> StateOutT: ...
 
 
 class PlayerObserverFactoryBuilder(Protocol):
@@ -43,10 +46,6 @@ class PlayerObserverFactoryBuilder(Protocol):
         implementation_args: ImplementationArgs,
         universal_behavior: bool,
     ) -> "PlayerObserverFactory": ...
-
-
-class ChessBoardFactory(Protocol):
-    def __call__(self, *, fen_with_history: "FenPlusHistory") -> "boards.IBoard": ...
 
 
 @dataclass(frozen=True)
@@ -60,70 +59,46 @@ class Environment[StateT, StateSnapT, StartTagT]:
     make_initial_state: InitialStateFactory[StateT, StartTagT]
 
 
-@dataclass(frozen=True)
-class EnvironmentDeps:
-    board_factory: Any | None = None
+EnvDeps = ChessEnvironmentDeps | CheckersEnvironmentDeps
+
+
+@overload
+def make_environment(
+    *,
+    game_kind: Literal[GameKind.CHESS],
+    deps: ChessEnvironmentDeps,
+) -> Environment[ChessState, FenPlusHistory, ChessStartTag]: ...
+
+
+@overload
+def make_environment(
+    *,
+    game_kind: Literal[GameKind.CHECKERS],
+    deps: CheckersEnvironmentDeps,
+) -> Environment[object, object, object]: ...
+
+
+@overload
+def make_environment(
+    *,
+    game_kind: GameKind,
+    deps: EnvDeps,
+) -> Environment[Any, Any, Any]: ...
 
 
 def make_environment(
     *,
     game_kind: GameKind,
-    syzygy_table: AnySyzygyTable | None,
-    deps: EnvironmentDeps,
+    deps: EnvDeps,
 ) -> Environment[Any, Any, Any]:
     match game_kind:
         case GameKind.CHESS:
-            if deps.board_factory is None:
-                raise ValueError("board_factory is required for chess environments")
-            board_factory = cast("ChessBoardFactory", deps.board_factory)
+            from chipiron.environments.chess.environment import make_chess_environment
 
-            from atomheart.board.utils import FenPlusHistory
-
-            from chipiron.environments.chess.chess_gui_encoder import ChessGuiEncoder
-            from chipiron.environments.chess.chess_rules import ChessRules
-            from chipiron.environments.chess.tags import ChessStartTag
-            from chipiron.players.communications.player_request_encoder import (
-                ChessPlayerRequestEncoder,
-            )
-            from chipiron.players.factory_higher_level import (
-                create_player_observer_factory,
-            )
-
-            def build_player_observer_factory(
-                *,
-                each_player_has_its_own_thread: bool,
-                implementation_args: ImplementationArgs,
-                universal_behavior: bool,
-            ) -> "PlayerObserverFactory":
-                return create_player_observer_factory(
-                    game_kind=GameKind.CHESS,
-                    each_player_has_its_own_thread=each_player_has_its_own_thread,
-                    implementation_args=implementation_args,
-                    universal_behavior=universal_behavior,
-                )
-
-            def normalize_start_tag(tag: StateTag) -> ChessStartTag:
-                if not isinstance(tag, ChessStartTag):
-                    raise TypeError(
-                        "Chess environment expects a ChessStartTag for initial state."
-                    )
-                return tag
-
-            def make_initial_state(tag: ChessStartTag) -> ChessState:
-                return ValangaChessState(
-                    board_factory(fen_with_history=FenPlusHistory(current_fen=tag.fen))
-                )
-
-            return Environment[ChessState, FenPlusHistory, ChessStartTag](
-                game_kind=game_kind,
-                rules=ChessRules(syzygy=syzygy_table),
-                gui_encoder=ChessGuiEncoder(),
-                player_encoder=ChessPlayerRequestEncoder(),
-                make_player_observer_factory=build_player_observer_factory,
-                normalize_start_tag=normalize_start_tag,
-                make_initial_state=make_initial_state,
-            )
+            assert isinstance(deps, ChessEnvironmentDeps)
+            return make_chess_environment(deps=deps)
         case GameKind.CHECKERS:
+            assert isinstance(deps, CheckersEnvironmentDeps)
             raise NotImplementedError("Environment for CHECKERS is not implemented yet")
         case _:
             raise ValueError(f"No Environment for game_kind={game_kind!r}")

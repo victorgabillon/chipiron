@@ -4,9 +4,9 @@ Module in charge of playing one match
 
 import os
 import queue
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from valanga import Color, TurnState
+from valanga import Color
 from valanga.game import ActionName, Seed
 
 from chipiron.displays.gui_protocol import GuiUpdate, Scope
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from chipiron.games.game.game_manager import GameManager
 
 
-class MatchManager[StateT: TurnState, MoveSelectorArgsT: HasMoveSelectorType]:
+class MatchManager[MoveSelectorArgsT: HasMoveSelectorType]:
     """
     Object in charge of playing one match
 
@@ -43,7 +43,7 @@ class MatchManager[StateT: TurnState, MoveSelectorArgsT: HasMoveSelectorType]:
         self,
         player_one_id: str,
         player_two_id: str,
-        game_manager_factory: GameManagerFactory[StateT],
+        game_manager_factory: GameManagerFactory,
         game_args_factory: GameArgsFactory[MoveSelectorArgsT],
         match_results_factory: MatchResultsFactory,
         output_folder_path: path | None = None,
@@ -204,7 +204,7 @@ class MatchManager[StateT: TurnState, MoveSelectorArgsT: HasMoveSelectorType]:
         Returns:
             GameReport: The report of the game.
         """
-        game_manager: GameManager[StateT] = self.game_manager_factory.create(
+        game_manager: GameManager[Any] = self.game_manager_factory.create(
             args_game_manager=args_game,
             player_color_to_factory_args=player_color_to_factory_args,
             game_seed=game_seed,

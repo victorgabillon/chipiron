@@ -4,18 +4,19 @@ This module contains functions for creating match managers in the Chipiron game 
 
 import multiprocessing
 import uuid
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from atomheart.board.factory import (
     BoardFactory,
     create_board_factory,
 )
 from atomheart.move_factory import MoveFactory, create_move_factory
-from valanga import TurnState
 
 import chipiron as ch
 import chipiron.games.game as game
 import chipiron.players as players
+from chipiron.environments.deps import CheckersEnvironmentDeps, ChessEnvironmentDeps
+from chipiron.environments.types import GameKind
 from chipiron.games.game.game_manager import MainMailboxMessage
 from chipiron.games.game.game_manager_factory import GameManagerFactory
 from chipiron.games.match.match_args import MatchArgs
@@ -25,10 +26,7 @@ from chipiron.players.boardevaluators.board_evaluator import IGameStateEvaluator
 from chipiron.players.boardevaluators.factory import (
     create_game_board_evaluator_for_game_kind,
 )
-from chipiron.players.boardevaluators.table_base.factory import (
-    AnySyzygyTable,
-    create_syzygy,
-)
+from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.players.player_args import HasMoveSelectorType
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script_args import BaseScriptArgs
@@ -50,7 +48,7 @@ def create_match_manager[MoveSelectorArgsT: HasMoveSelectorType](
     seed: int | None = None,
     output_folder_path: path | None = None,
     gui: bool = False,
-) -> MatchManager[TurnState, MoveSelectorArgsT]:
+) -> MatchManager[MoveSelectorArgsT]:
     """
     Create a match manager for running matches between two players.
 
@@ -74,10 +72,11 @@ def create_match_manager[MoveSelectorArgsT: HasMoveSelectorType](
     session_id: str = uuid.uuid4().hex
     match_id: str = uuid.uuid4().hex
 
-    # Creation of the Syzygy table for perfect play in low pieces cases, needed by the GameManager
-    # and can also be used by the players
-    syzygy_table: AnySyzygyTable | None = create_syzygy(
-        use_rust=implementation_args.use_rust_boards,
+    # Creation of the Syzygy table for perfect play in low pieces cases (chess-only).
+    syzygy_table = (
+        create_syzygy(use_rust=implementation_args.use_rust_boards)
+        if args_game.game_kind == GameKind.CHESS
+        else None
     )
 
     player_one_name: str = args_player_one.name
@@ -102,14 +101,23 @@ def create_match_manager[MoveSelectorArgsT: HasMoveSelectorType](
         use_rust_boards=implementation_args.use_rust_boards
     )
 
-    game_manager_factory: GameManagerFactory[TurnState] = GameManagerFactory(
-        syzygy_table=syzygy_table,
+    if args_game.game_kind == GameKind.CHESS:
+        env_deps = ChessEnvironmentDeps(
+            board_factory=board_factory,
+            syzygy_table=syzygy_table,
+        )
+    elif args_game.game_kind == GameKind.CHECKERS:
+        env_deps = CheckersEnvironmentDeps()
+    else:
+        raise ValueError(f"No environment deps for game_kind={args_game.game_kind!r}")
+
+    game_manager_factory: GameManagerFactory = GameManagerFactory(
+        env_deps=env_deps,
         game_manager_state_evaluator=cast(
-            "IGameStateEvaluator[TurnState]", game_board_evaluator
+            "IGameStateEvaluator[Any]", game_board_evaluator
         ),
         output_folder_path=output_folder_path,
         main_thread_mailbox=main_thread_mailbox,
-        board_factory=board_factory,
         implementation_args=implementation_args,
         move_factory=move_factory,
         universal_behavior=universal_behavior,
@@ -129,7 +137,7 @@ def create_match_manager[MoveSelectorArgsT: HasMoveSelectorType](
         args_game=args_game,
     )
 
-    match_manager: MatchManager[TurnState, MoveSelectorArgsT] = MatchManager(
+    match_manager: MatchManager[MoveSelectorArgsT] = MatchManager(
         player_one_id=player_one_name,
         player_two_id=player_two_name,
         game_manager_factory=game_manager_factory,
@@ -145,7 +153,7 @@ def create_match_manager_from_args[MoveSelectorArgsT: HasMoveSelectorType](
     base_script_args: BaseScriptArgs,
     implementation_args: ImplementationArgs,
     gui: bool = False,
-) -> MatchManager[TurnState, MoveSelectorArgsT]:
+) -> MatchManager[MoveSelectorArgsT]:
     """
     Create a match manager from the given arguments.
 
@@ -179,7 +187,7 @@ def create_match_manager_from_args[MoveSelectorArgsT: HasMoveSelectorType](
     # taking care of random
     ch.set_seeds(seed=base_script_args.seed)
 
-    match_manager: MatchManager[TurnState, MoveSelectorArgsT] = create_match_manager(
+    match_manager: MatchManager[MoveSelectorArgsT] = create_match_manager(
         args_match=match_args.match_setting,
         args_player_one=player_one_args,
         args_player_two=player_two_args,

@@ -5,11 +5,10 @@ Module for the GameManagerFactory class.
 import queue
 import uuid
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
-import atomheart.board as boards
 from atomheart.move_factory import MoveFactory
-from valanga import Color, TurnState
+from valanga import Color
 from valanga.game import Seed
 
 from chipiron.displays.gui_protocol import (
@@ -21,7 +20,7 @@ from chipiron.displays.gui_protocol import (
     scope_for_new_game,
 )
 from chipiron.displays.gui_publisher import GuiPublisher
-from chipiron.environments.environment import EnvironmentDeps, make_environment
+from chipiron.environments.environment import EnvDeps, Environment, make_environment
 from chipiron.games.game.game_args import GameArgs
 from chipiron.games.game.game_playing_status import GamePlayingStatus
 from chipiron.players import PlayerFactoryArgs
@@ -30,12 +29,12 @@ from chipiron.players.boardevaluators.board_evaluator import (
     ObservableGameStateEvaluator,
 )
 from chipiron.players.factory_higher_level import MoveFunction, PlayerObserverFactory
+from chipiron.players.player_args import HasMoveSelectorType
 from chipiron.utils import path
 from chipiron.utils.communication.gui_messages.gui_messages import (
     make_players_info_payload,
 )
 
-from ...players.boardevaluators.table_base.factory import AnySyzygyTable
 from ...players.player_ids import PlayerConfigTag
 from ...scripts.chipiron_args import ImplementationArgs
 from .game import Game, ObservableGame
@@ -51,14 +50,14 @@ def make_subscriber_queues() -> list[queue.Queue[GuiUpdate]]:
 
 
 @dataclass
-class GameManagerFactory[StateT: TurnState]:
+class GameManagerFactory:
     """
     The GameManagerFactory creates GameManager once the players and rules have been decided.
     Calling create ask for the creation of a GameManager depending on args and players.
     This class is supposed to be independent of Match-related classes (contrarily to the GameArgsFactory)
 
     Args:
-    syzygy_table (AnySyzygyTable | None): The syzygy table used for endgame tablebase lookups.
+    env_deps (EnvDeps): Game-specific environment dependencies.
     game_manager_board_evaluator (IGameBoardEvaluator): The game board evaluator used for evaluating game positions.
     output_folder_path (path | None): The path to the output folder where game data will be saved.
     main_thread_mailbox (queue.Queue[MainMailboxMessage]): The mailbox used for communication between processes.
@@ -67,11 +66,10 @@ class GameManagerFactory[StateT: TurnState]:
 
     # todo we might want to plit this into various part, like maybe a player factory, not sure, think about it
 
-    syzygy_table: AnySyzygyTable | None
+    env_deps: EnvDeps
     output_folder_path: path | None
     main_thread_mailbox: queue.Queue[MainMailboxMessage]
-    game_manager_state_evaluator: IGameStateEvaluator[StateT]
-    board_factory: boards.BoardFactory
+    game_manager_state_evaluator: IGameStateEvaluator[Any]
     move_factory: MoveFactory
     implementation_args: ImplementationArgs
     universal_behavior: bool
@@ -79,12 +77,12 @@ class GameManagerFactory[StateT: TurnState]:
     session_id: SessionId = ""
     match_id: MatchId | None = None
 
-    def create(
+    def create[MoveSelectorArgsT: HasMoveSelectorType](
         self,
         args_game_manager: GameArgs,
-        player_color_to_factory_args: dict[Color, PlayerFactoryArgs],
+        player_color_to_factory_args: dict[Color, PlayerFactoryArgs[MoveSelectorArgsT]],
         game_seed: Seed,
-    ) -> GameManager[StateT]:
+    ) -> GameManager[Any]:
         """
         Create a GameManager with the given arguments
 
@@ -125,7 +123,7 @@ class GameManagerFactory[StateT: TurnState]:
 
         # If the evaluator is observable, avoid mutating the shared instance.
         # Create a per-game wrapper so publisher scoping is isolated.
-        display_state_evaluator: IGameStateEvaluator[StateT]
+        display_state_evaluator: IGameStateEvaluator[Any]
         if isinstance(self.game_manager_state_evaluator, ObservableGameStateEvaluator):
             display_state_evaluator = ObservableGameStateEvaluator(
                 game_state_evaluator=self.game_manager_state_evaluator.game_state_evaluator
@@ -135,10 +133,9 @@ class GameManagerFactory[StateT: TurnState]:
         else:
             display_state_evaluator = self.game_manager_state_evaluator
 
-        environment = make_environment(
+        environment: Environment[Any, Any, Any] = make_environment(
             game_kind=args_game_manager.game_kind,
-            syzygy_table=self.syzygy_table,
-            deps=EnvironmentDeps(board_factory=self.board_factory),
+            deps=self.env_deps,
         )
 
         start_tag = args_game_manager.starting_position.get_start_tag()
@@ -156,11 +153,13 @@ class GameManagerFactory[StateT: TurnState]:
         # creating the game playing status
         game_playing_status: GamePlayingStatus = GamePlayingStatus()
 
-        game: Game[StateT] = Game[StateT](
-            playing_status=game_playing_status, state=board, seed_=game_seed
+        game = Game(
+            playing_status=game_playing_status,
+            state=board,
+            seed_=game_seed,
         )
 
-        observable_game: ObservableGame[StateT] = ObservableGame[StateT](
+        observable_game = ObservableGame(
             game=game,
             gui_encoder=environment.gui_encoder,
             player_encoder=environment.player_encoder,
@@ -184,9 +183,7 @@ class GameManagerFactory[StateT: TurnState]:
         players: list[players_m.PlayerHandle] = []
         # Creating the players
         for player_color in (Color.WHITE, Color.BLACK):
-            player_factory_args: players_m.PlayerFactoryArgs = (
-                player_color_to_factory_args[player_color]
-            )
+            player_factory_args = player_color_to_factory_args[player_color]
 
             # Human playing with gui does not need a player, as the playing moves will be generated directly
             # by the GUI and sent directly to the game_manager
@@ -195,7 +192,7 @@ class GameManagerFactory[StateT: TurnState]:
                 move_function: MoveFunction
                 generic_player, move_function = player_observer_factory(
                     player_color=player_color,
-                    player_factory_args=player_factory_args,
+                    player_factory_args=cast("PlayerFactoryArgs", player_factory_args),
                     main_thread_mailbox=self.main_thread_mailbox,
                     # player_progress_collector=player_progress_collector
                 )
@@ -209,8 +206,7 @@ class GameManagerFactory[StateT: TurnState]:
             for color, player_factory_args in player_color_to_factory_args.items()
         }
 
-        game_manager: GameManager[StateT]
-        game_manager = GameManager[StateT](
+        game_manager = GameManager(
             game=observable_game,
             display_state_evaluator=display_state_evaluator,
             output_folder_path=self.output_folder_path,
