@@ -75,4 +75,4 @@ class CommandLineHumanMoveSelector:
 
         assert move_uci in legal_moves_uci
 
-        return Recommendation(recommended_key=move_uci, evaluation=None)
+        return Recommendation(recommended_name=move_uci, evaluation=None)

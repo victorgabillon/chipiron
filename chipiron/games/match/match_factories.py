@@ -29,6 +29,7 @@ from chipiron.players.boardevaluators.table_base.factory import (
     AnySyzygyTable,
     create_syzygy,
 )
+from chipiron.players.player_args import HasMoveSelectorType
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
@@ -39,17 +40,17 @@ if TYPE_CHECKING:
     import queue
 
 
-def create_match_manager(
+def create_match_manager[MoveSelectorArgsT: HasMoveSelectorType](
     args_match: MatchSettingsArgs,
-    args_player_one: players.PlayerArgs,
-    args_player_two: players.PlayerArgs,
+    args_player_one: players.PlayerArgs[MoveSelectorArgsT],
+    args_player_two: players.PlayerArgs[MoveSelectorArgsT],
     args_game: game.GameArgs,
     implementation_args: ImplementationArgs,
     universal_behavior: bool = False,
     seed: int | None = None,
     output_folder_path: path | None = None,
     gui: bool = False,
-) -> MatchManager[TurnState]:
+) -> MatchManager[TurnState, MoveSelectorArgsT]:
     """
     Create a match manager for running matches between two players.
 
@@ -120,7 +121,7 @@ def create_match_manager(
         player_one_name=player_one_name, player_two_name=player_two_name
     )
 
-    game_args_factory: game.GameArgsFactory = game.GameArgsFactory(
+    game_args_factory: game.GameArgsFactory[MoveSelectorArgsT] = game.GameArgsFactory(
         args_match=args_match,
         args_player_one=args_player_one,
         args_player_two=args_player_two,
@@ -128,7 +129,7 @@ def create_match_manager(
         args_game=args_game,
     )
 
-    match_manager: MatchManager[TurnState] = MatchManager(
+    match_manager: MatchManager[TurnState, MoveSelectorArgsT] = MatchManager(
         player_one_id=player_one_name,
         player_two_id=player_two_name,
         game_manager_factory=game_manager_factory,
@@ -139,30 +140,29 @@ def create_match_manager(
     return match_manager
 
 
-def create_match_manager_from_args(
-    match_args: MatchArgs,
+def create_match_manager_from_args[MoveSelectorArgsT: HasMoveSelectorType](
+    match_args: MatchArgs[MoveSelectorArgsT],
     base_script_args: BaseScriptArgs,
     implementation_args: ImplementationArgs,
     gui: bool = False,
-) -> MatchManager[TurnState]:
+) -> MatchManager[TurnState, MoveSelectorArgsT]:
     """
     Create a match manager from the given arguments.
 
     Args:
         implementation_args(ImplementationArgs): The implementation args
-        match_args (MatchArgs): The match arguments.
+        match_args (MatchArgs[MoveSelectorArgsT]): The match arguments.
         base_script_args (ScriptArgs) The script arguments.
         gui (bool, optional): Flag indicating whether to enable GUI. Defaults to False.
 
     Returns:
         MatchManager: The created match manager.
     """
-
     assert isinstance(match_args.player_one, players.PlayerArgs)
     assert isinstance(match_args.player_two, players.PlayerArgs)
 
-    player_one_args: players.PlayerArgs = match_args.player_one
-    player_two_args: players.PlayerArgs = match_args.player_two
+    player_one_args: players.PlayerArgs[MoveSelectorArgsT] = match_args.player_one
+    player_two_args: players.PlayerArgs[MoveSelectorArgsT] = match_args.player_two
 
     assert isinstance(match_args.match_setting, MatchSettingsArgs)
     assert isinstance(match_args.match_setting.game_args, game.GameArgs)
@@ -179,7 +179,7 @@ def create_match_manager_from_args(
     # taking care of random
     ch.set_seeds(seed=base_script_args.seed)
 
-    match_manager: MatchManager[TurnState] = create_match_manager(
+    match_manager: MatchManager[TurnState, MoveSelectorArgsT] = create_match_manager(
         args_match=match_args.match_setting,
         args_player_one=player_one_args,
         args_player_two=player_two_args,

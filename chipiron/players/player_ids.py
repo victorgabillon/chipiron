@@ -100,7 +100,7 @@ class PlayerConfigTag(str, Enum):
             raise_error_with_nones=False,
             package_name=str(files("chipiron")),
         )
-        return cast(ChessPlayerArgs, player_args)
+        return cast("ChessPlayerArgs", player_args)
 
 
 if __name__ == "__main__":

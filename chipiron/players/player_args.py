@@ -3,19 +3,18 @@ Module for player arguments.
 """
 
 from dataclasses import dataclass
-from typing import Generic, Protocol, TypeVar
+from typing import Protocol
 
 from .move_selector.move_selector_types import MoveSelectorTypes
 
+
 class HasMoveSelectorType(Protocol):
-    type: str
-
-
-MoveSelectorArgsT = TypeVar("MoveSelectorArgsT", bound=HasMoveSelectorType)
+    @property
+    def type(self) -> MoveSelectorTypes: ...
 
 
 @dataclass
-class PlayerArgs(Generic[MoveSelectorArgsT]):
+class PlayerArgs[MoveSelectorArgsT: HasMoveSelectorType = HasMoveSelectorType]:
     """Represents the arguments for a player.
 
     Attributes:
@@ -38,7 +37,7 @@ class PlayerArgs(Generic[MoveSelectorArgsT]):
 
 
 @dataclass
-class PlayerFactoryArgs(Generic[MoveSelectorArgsT]):
+class PlayerFactoryArgs[MoveSelectorArgsT: HasMoveSelectorType = HasMoveSelectorType]:
     """A class representing the arguments for creating a player factory.
 
     Attributes:

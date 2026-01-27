@@ -7,11 +7,12 @@ from dataclasses import dataclass
 from chipiron.games.match.match_settings_args import MatchSettingsArgs
 from chipiron.games.match.match_tag import MatchConfigTag
 from chipiron.players import PlayerArgs
+from chipiron.players.player_args import HasMoveSelectorType
 from chipiron.players.player_ids import PlayerConfigTag
 
 
 @dataclass
-class MatchArgs:
+class MatchArgs[MoveSelectorArgsT: HasMoveSelectorType]:
     """
     The input arguments needed by the one match script to run
 
@@ -24,6 +25,10 @@ class MatchArgs:
 
     """
 
-    player_one: PlayerConfigTag | PlayerArgs = PlayerConfigTag.RECUR_ZIPF_BASE_3
-    player_two: PlayerConfigTag | PlayerArgs = PlayerConfigTag.RECUR_ZIPF_BASE_3
+    player_one: PlayerConfigTag | PlayerArgs[MoveSelectorArgsT] = (
+        PlayerConfigTag.RECUR_ZIPF_BASE_3
+    )
+    player_two: PlayerConfigTag | PlayerArgs[MoveSelectorArgsT] = (
+        PlayerConfigTag.RECUR_ZIPF_BASE_3
+    )
     match_setting: MatchConfigTag | MatchSettingsArgs = MatchConfigTag.CUBO

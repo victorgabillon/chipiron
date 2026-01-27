@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Generic, TypeVar
+from typing import Generic, Literal, TypeVar
 
 from anemone import TreeAndValuePlayerArgs as AnemoneTreeArgs
 from valanga import TurnState
 
 StateT = TypeVar("StateT", bound=TurnState)
 EvalArgsT = TypeVar("EvalArgsT")
+
+TREE_AND_VALUE_LITERAL_STRING: Literal["TreeAndValue"] = "TreeAndValue"
 
 
 @dataclass(frozen=True)
@@ -18,3 +20,4 @@ class TreeAndValueAppArgs(Generic[StateT, EvalArgsT]):
 
     anemone_args: AnemoneTreeArgs
     evaluator_args: EvalArgsT
+    type: Literal["TreeAndValue"] = TREE_AND_VALUE_LITERAL_STRING
