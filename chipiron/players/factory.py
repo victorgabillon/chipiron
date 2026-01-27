@@ -32,11 +32,11 @@ from chipiron.players.boardevaluators.table_base.factory import (
     AnySyzygyTable,
     create_syzygy,
 )
-from chipiron.players.oracles import PolicyOracle, TerminalOracle, ValueOracle
 from chipiron.players.chess_player_args import (
     ChessPlayerArgs,
     ChessPlayerFactoryArgs,
 )
+from chipiron.players.oracles import PolicyOracle, TerminalOracle, ValueOracle
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.utils.logger import chipiron_logger
 
@@ -203,9 +203,7 @@ def create_player(
     """
     policy_oracle = ChessSyzygyPolicyOracle(syzygy) if syzygy is not None else None
     value_oracle = ChessSyzygyValueOracle(syzygy) if syzygy is not None else None
-    terminal_oracle = (
-        ChessSyzygyTerminalOracle(syzygy) if syzygy is not None else None
-    )
+    terminal_oracle = ChessSyzygyTerminalOracle(syzygy) if syzygy is not None else None
     return create_chess_player(
         args=args,
         policy_oracle=policy_oracle,

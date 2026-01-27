@@ -8,7 +8,7 @@ import random
 from typing import TYPE_CHECKING, TypeAlias, TypeVar
 
 from anemone import TreeAndValuePlayerArgs, create_tree_and_value_branch_selector
-from valanga import State, TurnState
+from valanga import TurnState
 from valanga.policy import BranchSelector
 
 from chipiron.environments.chess.types import ChessState
