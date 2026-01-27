@@ -8,6 +8,8 @@ from typing import Generic, Literal, TypeVar
 from anemone import TreeAndValuePlayerArgs as AnemoneTreeArgs
 from valanga import TurnState
 
+from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
+
 StateT = TypeVar("StateT", bound=TurnState)
 EvalArgsT = TypeVar("EvalArgsT")
 
@@ -20,4 +22,7 @@ class TreeAndValueAppArgs(Generic[StateT, EvalArgsT]):
 
     anemone_args: AnemoneTreeArgs
     evaluator_args: EvalArgsT
-    type: Literal["TreeAndValue"] = TREE_AND_VALUE_LITERAL_STRING
+
+    @property
+    def type(self) -> MoveSelectorTypes:
+        return MoveSelectorTypes.TreeAndValue

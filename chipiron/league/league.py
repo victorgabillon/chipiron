@@ -13,13 +13,13 @@ import plotly.graph_objects as go
 from sortedcollections import ValueSortedDict
 
 import chipiron as ch
-from chipiron import players
 from chipiron.games.game.game_args import GameArgs
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_factories import create_match_manager
 from chipiron.games.match.match_results import MatchReport, MatchResults
 from chipiron.games.match.match_settings_args import MatchSettingsArgs
 from chipiron.games.match.match_tag import MatchConfigTag
+from chipiron.players.player_args import AnyPlayerArgs
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.utils.small_tools import mkdir_if_not_existing, path
@@ -47,8 +47,8 @@ class League:
     seed: int
     # todo replace ValueSortedDict ed because it screws type anotation
     players_elo: ValueSortedDict = field(default_factory=ValueSortedDict)
-    players_args: dict[str, players.PlayerArgs] = field(
-        default_factory=lambda: dict[str, players.PlayerArgs]()
+    players_args: dict[str, AnyPlayerArgs] = field(
+        default_factory=lambda: dict[str, AnyPlayerArgs]()
     )
     players_number_of_games_played: dict[str, int] = field(
         default_factory=lambda: dict[str, int]()
@@ -101,8 +101,7 @@ class League:
         player_tag = PlayerConfigTag(
             file_player
         )  # probably wrong / to be fixed when reusing the leagu not a big issue
-        args_player: players.PlayerArgs = player_tag.get_players_args()
-
+        args_player = cast("AnyPlayerArgs", player_tag.get_players_args())
         print(args_player)
 
         args_player.name = f"{args_player.name}_{self.id_for_next_player}"
@@ -282,7 +281,7 @@ class League:
         fig.write_html(self.folder_league + "/elo.plot.html")
         fig.write_image(self.folder_league + "/elo.plot.svg", format="svg")
 
-    def select_two_players(self) -> tuple[players.PlayerArgs, players.PlayerArgs]:
+    def select_two_players(self) -> tuple[AnyPlayerArgs, AnyPlayerArgs]:
         """
         Selects two players from the league.
 
