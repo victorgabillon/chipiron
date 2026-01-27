@@ -14,3 +14,8 @@ class MoveSelectorArgs(Protocol):
 
     def is_human(self) -> bool:
         return self.type.is_human()
+
+
+class AnyMoveSelectorArgs(Protocol):
+    @property
+    def type(self) -> MoveSelectorTypes: ...

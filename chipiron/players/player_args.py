@@ -5,6 +5,8 @@ Module for player arguments.
 from dataclasses import dataclass
 from typing import Protocol
 
+from chipiron.players.move_selector.move_selector_args import AnyMoveSelectorArgs
+
 from .move_selector.move_selector_types import MoveSelectorTypes
 
 
@@ -47,3 +49,6 @@ class PlayerFactoryArgs[MoveSelectorArgsT: HasMoveSelectorType = HasMoveSelector
 
     player_args: PlayerArgs[MoveSelectorArgsT]
     seed: int
+
+
+AnyPlayerArgs = PlayerArgs[AnyMoveSelectorArgs]
