@@ -23,8 +23,11 @@ from chipiron.players.adapters.chess_syzygy_oracle import (
     ChessSyzygyTerminalOracle,
     ChessSyzygyValueOracle,
 )
+from chipiron.players.boardevaluators.anemone_adapter import (
+    MasterBoardEvaluatorAsAnemone,
+    TerminalOracleOverDetector,
+)
 from chipiron.players.boardevaluators.master_board_evaluator import (
-    MasterBoardEvaluator,
     MasterBoardEvaluatorArgs,
     create_master_state_evaluator_from_args,
 )
@@ -49,6 +52,9 @@ from .game_player import GamePlayer
 from .player import Player
 
 if TYPE_CHECKING:
+    from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
+        MasterStateEvaluator,
+    )
     from valanga.policy import BranchSelector
 
 
@@ -147,11 +153,15 @@ def create_chess_player(
         evaluator_args: MasterBoardEvaluatorArgs,
         value_oracle_in: ValueOracle[ChessState] | None,
         terminal_oracle_in: TerminalOracle[ChessState] | None,
-    ) -> MasterBoardEvaluator:
-        return create_master_state_evaluator_from_args(
+    ) -> "MasterStateEvaluator":
+        master_board_evaluator = create_master_state_evaluator_from_args(
             master_board_evaluator=evaluator_args,
             value_oracle=value_oracle_in,
             terminal_oracle=terminal_oracle_in,
+        )
+        return MasterBoardEvaluatorAsAnemone(
+            inner=master_board_evaluator,
+            over=TerminalOracleOverDetector(terminal_oracle_in),
         )
 
     def adapter_builder(
