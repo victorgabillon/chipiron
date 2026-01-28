@@ -75,7 +75,7 @@ def make_publishers() -> list[GuiPublisher]:
 class PlayerProgressCollectorObservable(PlayerProgressCollectorP):
     """Collects progress and publishes GUI payloads."""
 
-    publishers: list[GuiPublisher] = make_publishers()
+    publishers: list[GuiPublisher] = field(default_factory=make_publishers)
     progress_collector: PlayerProgressCollector = field(
         default_factory=PlayerProgressCollector
     )

@@ -14,7 +14,7 @@ from valanga import TurnState
 from valanga.policy import BranchSelector
 
 from chipiron.environments.chess.types import ChessState
-from chipiron.games.game.game_manager import MainMailboxMessage
+from chipiron.utils.communication.mailbox import MainMailboxMessage
 from chipiron.utils.logger import chipiron_logger
 
 from ...utils.queue_protocols import PutQueue

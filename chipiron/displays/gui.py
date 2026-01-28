@@ -48,8 +48,8 @@ from chipiron.displays.gui_protocol import (
     UpdPlayersInfo,
     UpdStateChess,
 )
-from chipiron.games.game.game_manager import MainMailboxMessage
 from chipiron.games.game.game_playing_status import PlayingStatus
+from chipiron.utils.communication.mailbox import MainMailboxMessage
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.path_variables import GUI_DIR
 

@@ -2,7 +2,7 @@
 This module contains the ObservableMatchResults class, which is a wrapper around the MatchResults class.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from chipiron.displays.gui_protocol import UpdMatchResults
 from chipiron.displays.gui_publisher import GuiPublisher
@@ -29,7 +29,7 @@ class ObservableMatchResults:
     """
 
     match_results: MatchResults
-    publishers: list[GuiPublisher] = make_publishers()
+    publishers: list[GuiPublisher] = field(default_factory=make_publishers)
 
     def subscribe(self, pub: GuiPublisher) -> None:
         """

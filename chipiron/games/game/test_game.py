@@ -4,8 +4,8 @@ from atomheart.board import IBoard, create_board
 from atomheart.board.utils import FenPlusHistory
 from atomheart.board.valanga_adapter import ValangaChessState
 
-from .game import Game
-from .game_playing_status import GamePlayingStatus
+from chipiron.games.game import Game
+from chipiron.games.game.game_playing_status import GamePlayingStatus
 
 
 @pytest.mark.parametrize(("use_rust_boards"), (True, False))

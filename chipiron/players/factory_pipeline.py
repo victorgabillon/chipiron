@@ -11,13 +11,13 @@ from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import
 from valanga import TurnState
 from valanga.policy import BranchSelector
 
-from chipiron.games.game.game_manager import MainMailboxMessage
 from chipiron.players.move_selector import factory as move_selector_factory
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
 from chipiron.players.oracles import PolicyOracle, TerminalOracle, ValueOracle
 from chipiron.players.player import GameAdapter, Player
 from chipiron.players.player_args import HasMoveSelectorType
+from chipiron.utils.communication.mailbox import MainMailboxMessage
 
 from ..utils.queue_protocols import PutQueue
 

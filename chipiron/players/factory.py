@@ -17,7 +17,6 @@ from atomheart.board.utils import FenPlusHistory
 from valanga import Color
 
 from chipiron.environments.chess.types import ChessState
-from chipiron.games.game.game_manager import MainMailboxMessage
 from chipiron.players.adapters.chess_adapter import ChessAdapter
 from chipiron.players.adapters.chess_syzygy_oracle import (
     ChessSyzygyPolicyOracle,
@@ -42,6 +41,7 @@ from chipiron.players.chess_player_args import (
 )
 from chipiron.players.oracles import PolicyOracle, TerminalOracle, ValueOracle
 from chipiron.players.player_ids import PlayerConfigTag
+from chipiron.utils.communication.mailbox import MainMailboxMessage
 from chipiron.utils.logger import chipiron_logger
 
 from ..scripts.chipiron_args import ImplementationArgs

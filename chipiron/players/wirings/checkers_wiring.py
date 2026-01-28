@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from chipiron.games.game.game_manager import MainMailboxMessage
 from chipiron.players.observer_wiring import ObserverWiring
+from chipiron.utils.communication.mailbox import MainMailboxMessage
 
 if TYPE_CHECKING:
     from valanga import Color

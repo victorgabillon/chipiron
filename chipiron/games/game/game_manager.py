@@ -5,7 +5,7 @@ Module in charge of managing the game. It is the main class that will be used to
 import os
 import queue
 from dataclasses import asdict
-from typing import Literal, TypeAlias, assert_never
+from typing import Literal, assert_never
 
 import yaml
 from atomheart.move_factory import MoveFactory
@@ -28,6 +28,7 @@ from chipiron.players.communications.player_message import (
     PlayerEvent,
 )
 from chipiron.utils import path
+from chipiron.utils.communication.mailbox import MainMailboxMessage
 from chipiron.utils.dataclass import custom_asdict_factory
 from chipiron.utils.logger import chipiron_logger
 
@@ -42,8 +43,6 @@ from .game_rules import (
     outcome_to_final_game_result,
 )
 from .progress_collector import PlayerProgressCollectorP
-
-MainMailboxMessage: TypeAlias = GuiCommand | PlayerEvent
 
 
 class GameManager[StateT: TurnState = TurnState]:

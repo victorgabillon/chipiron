@@ -17,12 +17,12 @@ from functools import partial
 from typing import TYPE_CHECKING, Protocol, assert_never, cast
 
 from chipiron.environments.types import GameKind
-from chipiron.games.game.game_manager import MainMailboxMessage
 from chipiron.players.communications.player_runtime import handle_player_request
 from chipiron.players.player_handle import InProcessPlayerHandle, PlayerHandle
 from chipiron.players.player_thread import PlayerProcess
 from chipiron.players.wirings.checkers_wiring import CHECKERS_WIRING
 from chipiron.players.wirings.chess_wiring import CHESS_WIRING
+from chipiron.utils.communication.mailbox import MainMailboxMessage
 
 if TYPE_CHECKING:
     from valanga import Color

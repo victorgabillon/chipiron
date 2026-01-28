@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from chipiron.games.game.game_manager import MainMailboxMessage
 from chipiron.players.adapters.chess_syzygy_oracle import (
     ChessSyzygyPolicyOracle,
     ChessSyzygyTerminalOracle,
@@ -16,6 +15,7 @@ from chipiron.players.boardevaluators.table_base.factory import (
 from chipiron.players.chess_player_args import ChessPlayerFactoryArgs
 from chipiron.players.factory import create_game_player
 from chipiron.players.observer_wiring import ObserverWiring
+from chipiron.utils.communication.mailbox import MainMailboxMessage
 
 if TYPE_CHECKING:
     from atomheart.board.utils import FenPlusHistory

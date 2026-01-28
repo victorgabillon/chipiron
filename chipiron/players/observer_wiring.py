@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Generic, Protocol, TypeVar
 
-from chipiron.games.game.game_manager import MainMailboxMessage
+from chipiron.utils.communication.mailbox import MainMailboxMessage
 
 if TYPE_CHECKING:
     from chipiron.players.game_player import GamePlayer

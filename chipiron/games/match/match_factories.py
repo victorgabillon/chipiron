@@ -17,7 +17,6 @@ import chipiron.games.game as game
 import chipiron.players as players
 from chipiron.environments.deps import CheckersEnvironmentDeps, ChessEnvironmentDeps
 from chipiron.environments.types import GameKind
-from chipiron.games.game.game_manager import MainMailboxMessage
 from chipiron.games.game.game_manager_factory import GameManagerFactory
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_manager import MatchManager
@@ -31,6 +30,7 @@ from chipiron.players.player_args import HasMoveSelectorType
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
+from chipiron.utils.communication.mailbox import MainMailboxMessage
 
 from .match_settings_args import MatchSettingsArgs
 
