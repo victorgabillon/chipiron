@@ -5,16 +5,18 @@ This module provides a factory function for creating the main move selector base
 from __future__ import annotations
 
 import random
-from typing import TYPE_CHECKING, TypeAlias, TypeVar
+from queue import Queue
+from typing import TYPE_CHECKING, TypeAlias, TypeVar, cast
 
 from anemone import TreeAndValuePlayerArgs, create_tree_and_value_branch_selector
+from anemone.utils.dataclass import IsDataclass as AnemoneIsDataclass
 from valanga import TurnState
 from valanga.policy import BranchSelector
 
 from chipiron.environments.chess.types import ChessState
+from chipiron.games.game.game_manager import MainMailboxMessage
 from chipiron.utils.logger import chipiron_logger
 
-from ...utils.dataclass import IsDataclass
 from ...utils.queue_protocols import PutQueue
 from . import human, stockfish
 from .random import Random, create_random
@@ -62,10 +64,7 @@ def create_main_move_selector(
             main_move_selector = move_selector_instance_or_args
         case human.CommandLineHumanPlayerArgs():
             main_move_selector = human.CommandLineHumanMoveSelector()
-        case other:
-            raise ValueError(
-                f"player creator: can not find {other} of type {type(other)}"
-            )
+
     return main_move_selector
 
 
@@ -78,7 +77,7 @@ def create_tree_and_value_move_selector(
         RepresentationFactory[TurnStateT, StateModifications, EvaluatorInput] | None
     ),
     random_generator: random.Random,
-    queue_progress_player: PutQueue[IsDataclass] | None,
+    queue_progress_player: PutQueue[MainMailboxMessage] | None,
 ) -> BranchSelector[TurnStateT]:
     """
     Create a tree-and-value move selector with a prebuilt evaluator.
@@ -89,5 +88,7 @@ def create_tree_and_value_move_selector(
         state_representation_factory=state_representation_factory,
         args=args,
         random_generator=random_generator,
-        queue_progress_player=queue_progress_player,
+        queue_progress_player=cast(
+            "Queue[AnemoneIsDataclass] | None", queue_progress_player
+        ),
     )

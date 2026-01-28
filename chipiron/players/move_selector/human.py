@@ -7,9 +7,10 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
 import atomheart.board as boards
-from valanga.game import Seed
+from valanga.game import BranchName, Seed
 from valanga.policy import Recommendation
 
+from chipiron.environments.chess.types import ChessState
 from chipiron.utils.logger import chipiron_logger
 
 from .move_selector_types import MoveSelectorTypes
@@ -41,6 +42,13 @@ class CommandLineHumanMoveSelector:
     """
     A move selector that allows a human player to select moves through the command line interface.
     """
+
+    def recommend(self, state: ChessState, seed: Seed) -> Recommendation:
+        # seed can be ignored (stockfish is deterministic unless you randomize)
+        best: BranchName = self.select_move(
+            state.board, move_seed=seed
+        ).recommended_name
+        return Recommendation(recommended_name=best)
 
     def select_move(self, board: boards.IBoard, move_seed: Seed) -> Recommendation:
         """

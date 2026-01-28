@@ -31,12 +31,14 @@ from atomheart.board import create_board_chi
 from atomheart.board.utils import FenPlusHistory
 from valanga.policy import Recommendation
 
+from chipiron.environments.chess.types import ChessState
 from chipiron.utils.path_variables import STOCKFISH_BINARY_PATH
 
 from .move_selector_types import MoveSelectorTypes
 
 if TYPE_CHECKING:
     from atomheart import BoardChi
+from valanga.game import BranchName, Seed
 
 
 @dataclass
@@ -72,6 +74,13 @@ class StockfishPlayer:
             bool: True if Stockfish binary exists and appears to be executable.
         """
         return STOCKFISH_BINARY_PATH.exists() and STOCKFISH_BINARY_PATH.is_file()
+
+    def recommend(self, state: ChessState, seed: Seed) -> Recommendation:
+        # seed can be ignored (stockfish is deterministic unless you randomize)
+        best: BranchName = self.select_move(
+            state.board, move_seed=seed
+        ).recommended_name
+        return Recommendation(recommended_name=best)
 
     def select_move(self, board: boards.IBoard, move_seed: int) -> Recommendation:
         """
@@ -125,7 +134,7 @@ class StockfishPlayer:
 
         self.engine.quit()
         self.engine = None
-        return Recommendation(recommended_key=result.move.uci(), evaluation=None)
+        return Recommendation(recommended_name=result.move.uci(), evaluation=None)
 
     def print_info(self) -> None:
         """

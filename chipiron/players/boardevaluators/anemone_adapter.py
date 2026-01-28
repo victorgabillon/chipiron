@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, cast
 
 from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
     MasterStateEvaluator,
 )
+from valanga import State
 
 from chipiron.environments.chess.types import ChessState
 from chipiron.players.boardevaluators.master_board_evaluator import MasterBoardEvaluator
-from chipiron.players.oracles import TerminalOracle
 
 if TYPE_CHECKING:
     from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
@@ -20,18 +20,34 @@ if TYPE_CHECKING:
     from valanga.over_event import OverEvent
 
 
-@dataclass(frozen=True)
-class TerminalOracleOverDetector:
-    """Bridge a terminal oracle into an Anemone-style over detector."""
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, cast
 
-    terminal_oracle: TerminalOracle[ChessState] | None
+from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
+    MasterStateEvaluator,
+)
+from valanga import State
 
-    def __call__(self, state: ChessState) -> OverEvent | None:
-        if self.terminal_oracle is None:
-            return None
-        if self.terminal_oracle.supports(state):
-            return self.terminal_oracle.over_event(state)
-        return None
+from chipiron.environments.chess.types import ChessState
+from chipiron.players.boardevaluators.master_board_evaluator import MasterBoardEvaluator
+
+if TYPE_CHECKING:
+    from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
+        OverEventDetector,
+    )
+    from valanga.over_event import OverEvent
+
+
+@dataclass
+class MasterBoardOverEventDetector:
+    """Bridge Chipiron's 'check_obvious_over_events' into Anemone's OverEventDetector protocol."""
+
+    evaluator: MasterBoardEvaluator
+
+    def check_obvious_over_events(
+        self, state: State
+    ) -> tuple["OverEvent | None", float | None]:
+        return self.evaluator.check_obvious_over_events(cast("ChessState", state))
 
 
 @dataclass
@@ -41,5 +57,5 @@ class MasterBoardEvaluatorAsAnemone(MasterStateEvaluator):
     inner: MasterBoardEvaluator
     over: "OverEventDetector"
 
-    def value_white(self, state: ChessState) -> float:
-        return self.inner.value_white(state)
+    def value_white(self, state: State) -> float:
+        return self.inner.value_white(cast("ChessState", state))

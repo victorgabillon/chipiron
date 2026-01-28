@@ -6,13 +6,13 @@ import os
 import sys
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Any, cast
 
 import dacite
 import yaml
 from atomheart.board.board_chi import BoardChi
 from atomheart.board.factory import create_board_chi
-from atomheart.board.utils import FenPlusHistory
+from atomheart.board.utils import Fen, FenPlusHistory
 from PySide6.QtWidgets import QApplication
 
 from chipiron.displays.gui_replay_games import MainWindow
@@ -77,7 +77,7 @@ class ReplayGameScript:
             )
             self.chess_board: BoardChi = create_board_chi(
                 fen_with_history=FenPlusHistory(
-                    current_fen=game_report.state_tag_history[0],
+                    current_fen=cast("Fen", game_report.state_tag_history[0]),
                     historical_moves=game_report.action_history,
                 )
             )

@@ -50,8 +50,8 @@ class Player(Generic[StateSnapT, RuntimeStateT]):
     def get_id(self) -> PlayerId:
         return self.id
 
-    def select_move(self, snapshot: StateSnapT, seed: Seed) -> Recommendation:
-        runtime_state = self.adapter.build_runtime_state(snapshot)
+    def select_move(self, state_snapshot: StateSnapT, seed: Seed) -> Recommendation:
+        runtime_state = self.adapter.build_runtime_state(state_snapshot)
 
         n = self.adapter.legal_action_count(runtime_state)
         if n == 0:

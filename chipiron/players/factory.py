@@ -17,6 +17,7 @@ from atomheart.board.utils import FenPlusHistory
 from valanga import Color
 
 from chipiron.environments.chess.types import ChessState
+from chipiron.games.game.game_manager import MainMailboxMessage
 from chipiron.players.adapters.chess_adapter import ChessAdapter
 from chipiron.players.adapters.chess_syzygy_oracle import (
     ChessSyzygyPolicyOracle,
@@ -25,7 +26,7 @@ from chipiron.players.adapters.chess_syzygy_oracle import (
 )
 from chipiron.players.boardevaluators.anemone_adapter import (
     MasterBoardEvaluatorAsAnemone,
-    TerminalOracleOverDetector,
+    MasterBoardOverEventDetector,
 )
 from chipiron.players.boardevaluators.master_board_evaluator import (
     MasterBoardEvaluatorArgs,
@@ -131,7 +132,7 @@ def create_chess_player(
     random_generator: random.Random,
     implementation_args: ImplementationArgs,
     universal_behavior: bool,
-    queue_progress_player: PutQueue[IsDataclass] | None = None,
+    queue_progress_player: PutQueue[MainMailboxMessage] | None = None,
 ) -> Player[FenPlusHistory, ChessState]:
     """Create a chess player object.
 
@@ -161,7 +162,7 @@ def create_chess_player(
         )
         return MasterBoardEvaluatorAsAnemone(
             inner=master_board_evaluator,
-            over=TerminalOracleOverDetector(terminal_oracle_in),
+            over=MasterBoardOverEventDetector(master_board_evaluator),
         )
 
     def adapter_builder(
@@ -232,7 +233,7 @@ def create_game_player(
     policy_oracle: PolicyOracle[ChessState] | None,
     value_oracle: ValueOracle[ChessState] | None,
     terminal_oracle: TerminalOracle[ChessState] | None,
-    queue_progress_player: PutQueue[IsDataclass] | None,
+    queue_progress_player: PutQueue[MainMailboxMessage] | None,
     implementation_args: ImplementationArgs,
     universal_behavior: bool,
 ) -> GamePlayer[FenPlusHistory, ChessState]:

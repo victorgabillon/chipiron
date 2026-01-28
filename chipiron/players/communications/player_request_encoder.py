@@ -11,10 +11,8 @@ from chipiron.players.communications.player_message import (
     PlayerRequest,
     TurnStatePlusHistory,
 )
-from chipiron.utils.color import to_valanga_color
 
 if TYPE_CHECKING:
-    from valanga import Color
     from valanga.game import Seed
 
     from chipiron.displays.gui_protocol import Scope
@@ -44,19 +42,13 @@ class ChessPlayerRequestEncoder(PlayerRequestEncoder[ChessState, FenPlusHistory]
     ) -> PlayerRequest[FenPlusHistory]:
         fen_plus_history: FenPlusHistory = state.into_fen_plus_history()
 
-        # Minimal, picklable snapshot: carry only the latest FenPlusHistory.
-        # The request stays game-agnostic; players decode/consume the snapshot.
-        turn: Color = to_valanga_color(
-            getattr(state, "turn", fen_plus_history.current_turn())
-        )
-
         return PlayerRequest(
             schema_version=1,
             scope=scope,
             seed=seed,
             state=TurnStatePlusHistory(
-                current_state_tag=getattr(state, "tag", fen_plus_history.current_fen),
-                turn=turn,
+                current_state_tag=state.tag,
+                turn=state.turn,
                 snapshot=fen_plus_history,
                 historical_actions=None,
             ),

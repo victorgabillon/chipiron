@@ -15,11 +15,11 @@ import queue
 from typing import TYPE_CHECKING, Generic, Protocol, TypeVar
 
 from chipiron.players.communications.player_runtime import handle_player_request
+from chipiron.players.observer_wiring import BuildGamePlayer
 from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:
     from chipiron.players.communications.player_message import PlayerRequest
-    from chipiron.players.game_player import GamePlayer
     from chipiron.utils.dataclass import IsDataclass
     from chipiron.utils.queue_protocols import PutGetQueue, PutQueue
 
@@ -34,12 +34,6 @@ class StopEvent(Protocol):
     def set(self) -> None: ...
 
 
-class BuildGamePlayer(Protocol[SnapT, RuntimeT]):
-    def __call__(
-        self, args: object, queue_out: PutQueue[IsDataclass]
-    ) -> GamePlayer[SnapT, RuntimeT]: ...
-
-
 class PlayerProcess(multiprocessing.Process, Generic[SnapT, RuntimeT, BuildArgsT]):
     """Run a `GamePlayer` in a separate process.
 
@@ -48,14 +42,14 @@ class PlayerProcess(multiprocessing.Process, Generic[SnapT, RuntimeT, BuildArgsT
 
     queue_in: PutGetQueue[PlayerRequest[SnapT] | None]
     queue_out: PutQueue[IsDataclass]
-    _build_game_player: BuildGamePlayer[SnapT, RuntimeT]
+    _build_game_player: BuildGamePlayer[SnapT, RuntimeT, BuildArgsT]
     _build_args: BuildArgsT
     _stop_event: StopEvent
 
     def __init__(
         self,
         *,
-        build_game_player: BuildGamePlayer[SnapT, RuntimeT],
+        build_game_player: BuildGamePlayer[SnapT, RuntimeT, BuildArgsT],
         build_args: BuildArgsT,
         queue_in: PutGetQueue[PlayerRequest[SnapT] | None],
         queue_out: PutQueue[IsDataclass],

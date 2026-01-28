@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from chipiron.games.game.game_manager import GameManager
 
 
-class MatchManager[MoveSelectorArgsT: HasMoveSelectorType]:
+class MatchManager[MoveSelectorArgsT: HasMoveSelectorType = HasMoveSelectorType]:
     """
     Object in charge of playing one match
 

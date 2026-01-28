@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
+from chipiron.games.game.game_manager import MainMailboxMessage
 from chipiron.players.observer_wiring import ObserverWiring
 
 if TYPE_CHECKING:
@@ -10,7 +11,6 @@ if TYPE_CHECKING:
 
     from chipiron.players.game_player import GamePlayer
     from chipiron.players.player_args import PlayerFactoryArgs
-    from chipiron.utils.dataclass import IsDataclass
     from chipiron.utils.queue_protocols import PutQueue
 
 # Placeholder types until checkers runtime exists
@@ -28,7 +28,7 @@ class BuildCheckersGamePlayerArgs:
 
 def build_checkers_game_player(
     args: BuildCheckersGamePlayerArgs,
-    queue_out: PutQueue[IsDataclass],
+    queue_out: PutQueue[MainMailboxMessage],
 ) -> GamePlayer[CheckersSnap, CheckersRuntime]:
     raise NotImplementedError("checkers player building not wired yet")
 

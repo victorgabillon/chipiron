@@ -24,7 +24,7 @@ from chipiron.utils.logger import chipiron_logger
 if TYPE_CHECKING:
     import queue
 
-    from chipiron.utils.communication.gui_messages.gui_messages import GuiUpdate
+    from chipiron.displays.gui_protocol import GuiUpdate
 
 
 @dataclass

@@ -16,21 +16,27 @@ import pandas
 from atomheart.board.utils import FenPlusHistory
 from coral.chi_nn import ChiNN
 from coral.neural_networks.factory import (
-    create_nn_content_eval_from_architecture_args,
-    create_nn_content_eval_from_nn_parameters_file_and_existing_model,
+    create_nn_state_eval_from_architecture_args,
+    create_nn_state_eval_from_nn_parameters_file_and_existing_model,
 )
 from coral.neural_networks.neural_net_architecture_args import (
     NeuralNetArchitectureArgs,
 )
-from coral.neural_networks.nn_content_evaluator import (
-    NNBWContentEvaluator,
+from coral.neural_networks.nn_state_evaluator import (
+    NNBWStateEvaluator,
 )
 from torch.utils.data import DataLoader
 from torchinfo import summary  # pyright: ignore[reportUnknownVariableType]
 
 import chipiron
+from chipiron.environments.chess.types import ChessState
 from chipiron.learningprocesses.nn_trainer.factory import NNTrainerArgs
 from chipiron.players import PlayerArgs
+from chipiron.players.adapters.chess_syzygy_oracle import (
+    ChessSyzygyPolicyOracle,
+    ChessSyzygyTerminalOracle,
+    ChessSyzygyValueOracle,
+)
 from chipiron.players.boardevaluators.datasets.datasets import (
     DataSetArgs,
     FenAndValueDataSet,
@@ -44,7 +50,8 @@ from chipiron.players.boardevaluators.table_base.factory import (
     AnySyzygyTable,
     create_syzygy,
 )
-from chipiron.players.factory import create_player
+from chipiron.players.chess_player_args import ChessPlayerArgs
+from chipiron.players.factory import create_chess_player
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 from chipiron.players.move_selector.random import Random
 from chipiron.players.player_ids import PlayerConfigTag
@@ -116,7 +123,7 @@ class LearnNNFromScratchScript:
     base_script: Script[LearnNNFromScratchScriptArgs]
     nn: ChiNN
     args: LearnNNFromScratchScriptArgs
-    nn_board_evaluator: NNBWContentEvaluator
+    nn_board_evaluator: NNBWStateEvaluator[ChessState]
     nn_architecture_args: NeuralNetArchitectureArgs
     saving_folder: path
 
@@ -152,7 +159,7 @@ class LearnNNFromScratchScript:
             content_to_input_convert = create_content_to_input_from_model_weights(
                 self.args.nn_trainer_args.nn_parameters_file_if_reusing_existing_one
             )
-            self.nn_board_evaluator = create_nn_content_eval_from_nn_parameters_file_and_existing_model(
+            self.nn_board_evaluator = create_nn_state_eval_from_nn_parameters_file_and_existing_model(
                 model_weights_file_name=self.args.nn_trainer_args.nn_parameters_file_if_reusing_existing_one,
                 nn_architecture_args=self.args.nn_trainer_args.neural_network_architecture_args,
                 content_to_input_convert=content_to_input_convert,
@@ -164,7 +171,7 @@ class LearnNNFromScratchScript:
                 input_representation=self.args.nn_trainer_args.game_input.representation.value,
             )
             content_to_input_convert = create_content_to_input_convert(chipiron_nn_args)
-            self.nn_board_evaluator = create_nn_content_eval_from_architecture_args(
+            self.nn_board_evaluator = create_nn_state_eval_from_architecture_args(
                 nn_architecture_args=self.args.nn_trainer_args.neural_network_architecture_args,
                 content_to_input_convert=content_to_input_convert,
             )
@@ -188,7 +195,7 @@ class LearnNNFromScratchScript:
         self.boards_dataset = FenAndValueDataSet(
             file_name=self.args.dataset_args.train_file_name,
             preprocessing=self.args.dataset_args.preprocessing_data_set,
-            transform_board_function=self.nn_board_evaluator.board_to_input_convert,
+            transform_board_function=self.nn_board_evaluator.content_to_input_convert,
             transform_dataset_value_to_white_value_function=transform_dataset_value_to_white_value_function,
             transform_white_value_to_model_output_function=self.nn_board_evaluator.output_and_value_converter.from_value_white_to_model_output,
         )
@@ -213,12 +220,22 @@ class LearnNNFromScratchScript:
         syzygy_table: AnySyzygyTable | None = create_syzygy(
             use_rust=self.args.implementation_args.use_rust_boards,
         )
-        assert isinstance(
-            self.args.evaluating_player_args, PlayerArgs
-        )  # because of the magic automatic parsing transcription, can we remove this assert somehow?
-        self.player = create_player(
-            args=self.args.evaluating_player_args,
-            syzygy=syzygy_table,
+
+        assert not isinstance(self.args.evaluating_player_args, PlayerConfigTag), (
+            "PlayerConfigTag is not supported in this script."
+        )
+        chess_args = cast("ChessPlayerArgs", self.args.evaluating_player_args)
+        self.player = create_chess_player(
+            args=chess_args,
+            terminal_oracle=ChessSyzygyTerminalOracle(syzygy_table)
+            if syzygy_table is not None
+            else None,
+            value_oracle=ChessSyzygyValueOracle(syzygy_table)
+            if syzygy_table is not None
+            else None,
+            policy_oracle=ChessSyzygyPolicyOracle(syzygy_table)
+            if syzygy_table is not None
+            else None,
             random_generator=random_generator,
             implementation_args=self.args.implementation_args,
             universal_behavior=self.args.base_script_args.universal_behavior,
@@ -277,10 +294,10 @@ class LearnNNFromScratchScript:
                 chipiron_logger, level=logging.WARNING
             ):  # no logging during the tree search
                 self.player.select_move(
-                    fen_plus_history=FenPlusHistory(
+                    state_snapshot=FenPlusHistory(
                         current_fen=board_fen_to_recompute_value
                     ),
-                    seed_int=self.args.base_script_args.seed,
+                    seed=self.args.base_script_args.seed,
                 )
 
             self.index_evaluating_player_data += 1

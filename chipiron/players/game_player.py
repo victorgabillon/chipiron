@@ -35,4 +35,4 @@ class GamePlayer(Generic[StateSnapT, RuntimeStateT]):
     def select_move_from_snapshot(
         self, snapshot: StateSnapT, seed: Seed
     ) -> Recommendation:
-        return self._player.select_move(snapshot=snapshot, seed=seed)
+        return self._player.select_move(state_snapshot=snapshot, seed=seed)
