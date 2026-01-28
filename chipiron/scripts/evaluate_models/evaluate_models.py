@@ -15,10 +15,11 @@ import yaml
 from coral.chi_nn import ChiNN
 from coral.neural_networks.factory import (
     NeuralNetModelsAndArchitecture,
-    create_nn_board_eval_from_nn_parameters_file_and_existing_model,
+    create_nn_state_eval_from_nn_parameters_file_and_existing_model,
 )
 from torch.utils.data import DataLoader
 
+from chipiron.environments.chess.types import ChessState
 from chipiron.learningprocesses.nn_trainer.nn_trainer import (
     compute_test_error_on_dataset,
 )
@@ -35,7 +36,7 @@ from chipiron.players.boardevaluators.neural_networks.chipiron_nn_args import (
 from chipiron.utils import path
 
 if TYPE_CHECKING:
-    from coral.neural_networks import NNBWContentEvaluator
+    from coral.neural_networks import NNBWStateEvaluator
 
 
 @dataclass
@@ -163,9 +164,9 @@ def evaluate_models(
 
             criterion = torch.nn.L1Loss()
 
-            nn_board_evaluator: NNBWContentEvaluator
+            nn_board_evaluator: NNBWStateEvaluator[ChessState]
             nn_board_evaluator = (
-                create_nn_board_eval_from_nn_parameters_file_and_existing_model(
+                create_nn_state_eval_from_nn_parameters_file_and_existing_model(
                     model_weights_file_name=model_to_evaluate.model_weights_file_name,
                     nn_architecture_args=model_to_evaluate.nn_architecture_args,
                     content_to_input_convert=create_content_to_input_from_model_weights(
@@ -177,7 +178,7 @@ def evaluate_models(
             stockfish_boards_test = FenAndValueDataSet(
                 file_name=dataset_file_name,
                 preprocessing=False,
-                transform_board_function=nn_board_evaluator.board_to_input_convert,
+                transform_board_function=nn_board_evaluator.content_to_input_convert,
                 transform_dataset_value_to_white_value_function=process_stockfish_value,  # pyright: ignore[reportUnknownArgumentType]
                 transform_white_value_to_model_output_function=nn_board_evaluator.output_and_value_converter.from_value_white_to_model_output,
             )

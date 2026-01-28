@@ -28,6 +28,7 @@ from anemone.progress_monitor.progress_monitor import (
 )
 from atomheart.board.iboard import IBoard
 
+from chipiron.players.chess_player_args import ChessPlayerArgs
 from chipiron.utils.logger import (
     chipiron_logger,
     suppress_all_logging,
@@ -37,7 +38,6 @@ from chipiron.utils.logger import (
 if TYPE_CHECKING:
     from atomheart.move.imove import MoveKey
 
-    from chipiron.players.player_args import PlayerArgs
 
 # Suppress PyTorch CUDA warnings for benchmarking
 warnings.filterwarnings("ignore", category=UserWarning, module="torch.cuda")
@@ -306,7 +306,9 @@ class ChessEngineBenchmark:
                     syzygy = create_syzygy(use_rust=implementation_args.use_rust_boards)
 
                     # Create player args and set tree move limit
-                    player_args: PlayerArgs = PlayerConfigTag.UNIFORM.get_players_args()
+                    player_args: ChessPlayerArgs = (
+                        PlayerConfigTag.UNIFORM.get_players_args()
+                    )
 
                     # todo find a prettier way to do this
                     assert isinstance(
@@ -339,8 +341,8 @@ class ChessEngineBenchmark:
 
                     # Run tree exploration
                     player.select_move(
-                        fen_plus_history=board.into_fen_plus_history(),
-                        seed_int=42,
+                        state_snapshot=board.into_fen_plus_history(),
+                        seed=42,
                     )
 
                 result = self.benchmark_function(

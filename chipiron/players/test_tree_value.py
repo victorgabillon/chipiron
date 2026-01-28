@@ -9,36 +9,35 @@ test_tree_value.py
 
 import random
 from importlib.resources import as_file, files
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import chess
 import pytest
-from anemone import trees
 from anemone.nodes.algorithm_node import AlgorithmNode
 from anemone.tree_and_value_branch_selector import (
     TreeAndValueBranchSelector,
 )
 from atomheart.board import IBoard, create_board
 from atomheart.board.utils import FenPlusHistory
+from valanga import StateTag
 
+from chipiron.environments.chess.types import ChessState
 from chipiron.players import Player
+from chipiron.players.adapters.chess_adapter import ChessAdapter
 from chipiron.players.factory import create_chipiron_player
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
-    import atomheart.board as boards
+    from anemone.basics import TreeDepth
     from anemone.nodes import ITreeNode
-    from anemone.tree_exploration import (
-        TreeExploration,
-    )
-
-    from chipiron.environments import HalfMove
+    from anemone.tree_exploration import TreeExploration
+    from anemone.trees import Tree
 
 
 def create_player_and_tree(
     use_rust_boards: bool, use_board_modification: bool
-) -> tuple[Player, trees.MoveAndValueTree]:
+) -> tuple[Player[FenPlusHistory, ChessState], Tree[AlgorithmNode[Any]]]:
     """Helper function to create a player and its corresponding tree."""
     board: IBoard = create_board(
         use_rust_boards=use_rust_boards,
@@ -49,21 +48,25 @@ def create_player_and_tree(
 
     random_generator: random.Random = random.Random(0)
 
-    player: Player = create_chipiron_player(
+    player: Player[FenPlusHistory, ChessState] = create_chipiron_player(
         implementation_args=ImplementationArgs(use_rust_boards=use_rust_boards),
         universal_behavior=True,
         random_generator=random_generator,
     )
 
-    main_move_selector = player.main_move_selector
+    assert isinstance(player.adapter, ChessAdapter)
+
+    main_move_selector = player.adapter.main_move_selector
     assert isinstance(main_move_selector, TreeAndValueBranchSelector)
 
     tree_exploration: TreeExploration = main_move_selector.create_tree_exploration(
-        board=board
+        state=ChessState(board=board)
     )
-    tree: trees.Tree = tree_exploration.explore(random_generator=random_generator).tree
+    tree_exploration_result: Tree[AlgorithmNode[Any]] = tree_exploration.explore(
+        random_generator=random_generator
+    ).tree
 
-    return player, tree
+    return player, tree_exploration_result
 
 
 @pytest.mark.parametrize(("use_rust_boards"), (True, False))
@@ -72,18 +75,18 @@ def test_random(use_rust_boards: bool) -> None:
     _, tree_one = create_player_and_tree(use_rust_boards, use_board_modification=False)
     _, tree_two = create_player_and_tree(use_rust_boards, use_board_modification=True)
 
-    half_move: HalfMove
+    tree_depth: TreeDepth
     node_one: ITreeNode
-    board_key: boards.boardKey
+    state_tag: StateTag
     node_two: ITreeNode
-    for half_move, board_key, node_one in tree_one.descendants.iter_on_all_nodes():
-        node_two = tree_two.descendants.descendants_at_half_move[half_move][board_key]
+    for tree_depth, state_tag, node_one in tree_one.descendants.iter_on_all_nodes():
+        node_two = tree_two.descendants.descendants_at_tree_depth[tree_depth][state_tag]
         assert isinstance(node_one, AlgorithmNode)
         assert isinstance(node_two, AlgorithmNode)
         assert node_one.id == node_two.id
 
-    for half_move, board_key, node_two in tree_two.descendants.iter_on_all_nodes():
-        node_one = tree_one.descendants.descendants_at_half_move[half_move][board_key]
+    for tree_depth, state_tag, node_two in tree_two.descendants.iter_on_all_nodes():
+        node_one = tree_one.descendants.descendants_at_tree_depth[tree_depth][state_tag]
         assert isinstance(node_one, AlgorithmNode)
         assert isinstance(node_two, AlgorithmNode)
         assert node_one.id == node_two.id

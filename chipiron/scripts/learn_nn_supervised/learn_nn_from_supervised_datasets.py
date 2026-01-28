@@ -28,10 +28,10 @@ import mlflow
 import mlflow.pytorch
 import torch
 from coral.chi_nn import ChiNN
-from coral.neural_networks import NNBWContentEvaluator
+from coral.neural_networks import NNBWStateEvaluator
 from coral.neural_networks.factory import (
-    create_nn_content_eval_from_architecture_args,
-    create_nn_content_eval_from_nn_parameters_file_and_existing_model,
+    create_nn_state_eval_from_architecture_args,
+    create_nn_state_eval_from_nn_parameters_file_and_existing_model,
 )
 from mlflow.models.signature import (
     ModelSignature,
@@ -41,6 +41,7 @@ from torch.utils.data import DataLoader
 from torchinfo import summary  # pyright: ignore[reportUnknownVariableType]
 
 import chipiron.utils.path_variables
+from chipiron.environments.chess.types import ChessState
 from chipiron.learningprocesses.nn_trainer.factory import (
     NNTrainerArgs,
     create_nn_trainer,
@@ -117,7 +118,7 @@ class LearnNNScript:
     base_script: Script[LearnNNScriptArgs]
     nn: ChiNN
     args: LearnNNScriptArgs
-    nn_board_evaluator: NNBWContentEvaluator
+    nn_board_evaluator: NNBWStateEvaluator[ChessState]
     saving_folder: path
 
     def __init__(
@@ -155,7 +156,7 @@ class LearnNNScript:
             content_to_input_convert = create_content_to_input_from_model_weights(
                 self.args.nn_trainer_args.nn_parameters_file_if_reusing_existing_one
             )
-            self.nn_board_evaluator = create_nn_content_eval_from_nn_parameters_file_and_existing_model(
+            self.nn_board_evaluator = create_nn_state_eval_from_nn_parameters_file_and_existing_model(
                 model_weights_file_name=self.args.nn_trainer_args.nn_parameters_file_if_reusing_existing_one,
                 nn_architecture_args=self.args.nn_trainer_args.neural_network_architecture_args,
                 content_to_input_convert=content_to_input_convert,
@@ -167,7 +168,7 @@ class LearnNNScript:
                 input_representation=self.args.nn_trainer_args.game_input.representation.value,
             )
             content_to_input_convert = create_content_to_input_convert(chipiron_nn_args)
-            self.nn_board_evaluator = create_nn_content_eval_from_architecture_args(
+            self.nn_board_evaluator = create_nn_state_eval_from_architecture_args(
                 nn_architecture_args=self.args.nn_trainer_args.neural_network_architecture_args,
                 content_to_input_convert=content_to_input_convert,
             )
@@ -187,7 +188,7 @@ class LearnNNScript:
         self.stockfish_boards_train = FenAndValueDataSet(
             file_name=self.args.dataset_args.train_file_name,
             preprocessing=self.args.dataset_args.preprocessing_data_set,
-            transform_board_function=self.nn_board_evaluator.board_to_input_convert,
+            transform_board_function=self.nn_board_evaluator.content_to_input_convert,
             transform_dataset_value_to_white_value_function=process_stockfish_value,  # pyright: ignore[reportUnknownArgumentType]
             transform_white_value_to_model_output_function=self.nn_board_evaluator.output_and_value_converter.from_value_white_to_model_output,
         )
@@ -196,7 +197,7 @@ class LearnNNScript:
         self.stockfish_boards_test = FenAndValueDataSet(
             file_name=self.args.dataset_args.test_file_name,
             preprocessing=self.args.dataset_args.preprocessing_data_set,
-            transform_board_function=self.nn_board_evaluator.board_to_input_convert,
+            transform_board_function=self.nn_board_evaluator.content_to_input_convert,
             transform_dataset_value_to_white_value_function=process_stockfish_value,  # pyright: ignore[reportUnknownArgumentType]
             transform_white_value_to_model_output_function=self.nn_board_evaluator.output_and_value_converter.from_value_white_to_model_output,
         )

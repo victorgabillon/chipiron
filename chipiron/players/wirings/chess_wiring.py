@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from chipiron.games.game.game_manager import MainMailboxMessage
 from chipiron.players.adapters.chess_syzygy_oracle import (
     ChessSyzygyPolicyOracle,
     ChessSyzygyTerminalOracle,
@@ -12,6 +13,7 @@ from chipiron.players.boardevaluators.table_base.factory import (
     AnySyzygyTable,
     create_syzygy_factory,
 )
+from chipiron.players.chess_player_args import ChessPlayerFactoryArgs
 from chipiron.players.factory import create_game_player
 from chipiron.players.observer_wiring import ObserverWiring
 
@@ -21,15 +23,13 @@ if TYPE_CHECKING:
 
     from chipiron.environments.chess.types import ChessState
     from chipiron.players.game_player import GamePlayer
-    from chipiron.players.player_args import PlayerFactoryArgs
     from chipiron.scripts.chipiron_args import ImplementationArgs
-    from chipiron.utils.dataclass import IsDataclass
     from chipiron.utils.queue_protocols import PutQueue
 
 
 @dataclass(frozen=True)
 class BuildChessGamePlayerArgs:
-    player_factory_args: PlayerFactoryArgs
+    player_factory_args: ChessPlayerFactoryArgs
     player_color: Color
     implementation_args: ImplementationArgs
     universal_behavior: bool
@@ -38,7 +38,7 @@ class BuildChessGamePlayerArgs:
 
 def build_chess_game_player(
     args: BuildChessGamePlayerArgs,
-    queue_out: PutQueue[IsDataclass],
+    queue_out: PutQueue[MainMailboxMessage],
 ) -> GamePlayer[FenPlusHistory, ChessState]:
     create_syzygy = create_syzygy_factory(
         use_rust=args.implementation_args.use_rust_boards

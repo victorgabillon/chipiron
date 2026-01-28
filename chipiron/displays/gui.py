@@ -48,8 +48,8 @@ from chipiron.displays.gui_protocol import (
     UpdPlayersInfo,
     UpdStateChess,
 )
+from chipiron.games.game.game_manager import MainMailboxMessage
 from chipiron.games.game.game_playing_status import PlayingStatus
-from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.path_variables import GUI_DIR
 
@@ -87,7 +87,7 @@ class MainWindow(QWidget):
     def __init__(
         self,
         gui_mailbox: queue.Queue[GuiUpdate],
-        main_thread_mailbox: queue.Queue[IsDataclass],
+        main_thread_mailbox: queue.Queue[MainMailboxMessage],
         board_factory: BoardFactory,
     ) -> None:
         """

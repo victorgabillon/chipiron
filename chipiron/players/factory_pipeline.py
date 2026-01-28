@@ -11,6 +11,7 @@ from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import
 from valanga import TurnState
 from valanga.policy import BranchSelector
 
+from chipiron.games.game.game_manager import MainMailboxMessage
 from chipiron.players.move_selector import factory as move_selector_factory
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
@@ -18,7 +19,6 @@ from chipiron.players.oracles import PolicyOracle, TerminalOracle, ValueOracle
 from chipiron.players.player import GameAdapter, Player
 from chipiron.players.player_args import HasMoveSelectorType
 
-from ..utils.dataclass import IsDataclass
 from ..utils.queue_protocols import PutQueue
 
 SnapT = TypeVar("SnapT")
@@ -45,7 +45,7 @@ def create_player_with_pipeline(
     ],
     create_non_tree_selector: Callable[[NonTreeArgsT], BranchSelector[StateT]],
     random_generator: random.Random,
-    queue_progress_player: PutQueue[IsDataclass] | None,
+    queue_progress_player: PutQueue[MainMailboxMessage] | None,
 ) -> Player[SnapT, StateT]:
     """Create a player using a generic selection pipeline with game-specific builders."""
 

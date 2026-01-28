@@ -8,7 +8,7 @@ from valanga.game import BranchName
 if TYPE_CHECKING:
     from valanga.over_event import OverEvent
 
-StateT = TypeVar("StateT", bound=State)
+StateT = TypeVar("StateT", bound=State, contravariant=True)
 
 
 class PolicyOracle(Protocol[StateT]):

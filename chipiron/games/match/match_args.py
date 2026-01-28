@@ -12,7 +12,7 @@ from chipiron.players.player_ids import PlayerConfigTag
 
 
 @dataclass
-class MatchArgs[MoveSelectorArgsT: HasMoveSelectorType]:
+class MatchArgs[MoveSelectorArgsT: HasMoveSelectorType = HasMoveSelectorType]:
     """
     The input arguments needed by the one match script to run
 
