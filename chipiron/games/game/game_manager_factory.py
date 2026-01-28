@@ -4,7 +4,7 @@ Module for the GameManagerFactory class.
 
 import queue
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, cast
 
 from atomheart.move_factory import MoveFactory
@@ -73,7 +73,9 @@ class GameManagerFactory:
     move_factory: MoveFactory
     implementation_args: ImplementationArgs
     universal_behavior: bool
-    subscriber_queues: list[queue.Queue[GuiUpdate]] = make_subscriber_queues()
+    subscriber_queues: list[queue.Queue[GuiUpdate]] = field(
+        default_factory=make_subscriber_queues
+    )
     session_id: SessionId = ""
     match_id: MatchId | None = None
 

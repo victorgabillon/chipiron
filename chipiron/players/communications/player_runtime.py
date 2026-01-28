@@ -11,13 +11,13 @@ from typing import TYPE_CHECKING, TypeVar
 
 from valanga.policy import Recommendation
 
-from chipiron.games.game.game_manager import MainMailboxMessage
 from chipiron.players.communications.player_message import (
     EvMove,
     PlayerEvent,
     PlayerRequest,
     TurnStatePlusHistory,
 )
+from chipiron.utils.communication.mailbox import MainMailboxMessage
 from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:
