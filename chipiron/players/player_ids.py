@@ -20,7 +20,6 @@ Dependencies:
 
 from enum import Enum
 from importlib.resources import as_file, files
-from typing import cast
 
 import parsley_coco
 
@@ -100,7 +99,7 @@ class PlayerConfigTag(str, Enum):
             raise_error_with_nones=False,
             package_name=str(files("chipiron")),
         )
-        return cast("ChessPlayerArgs", player_args)
+        return player_args
 
 
 if __name__ == "__main__":

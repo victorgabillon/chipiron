@@ -50,7 +50,6 @@ from chipiron.players.boardevaluators.table_base.factory import (
     AnySyzygyTable,
     create_syzygy,
 )
-from chipiron.players.chess_player_args import ChessPlayerArgs
 from chipiron.players.factory import create_chess_player
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 from chipiron.players.move_selector.random import Random
@@ -224,7 +223,7 @@ class LearnNNFromScratchScript:
         assert not isinstance(self.args.evaluating_player_args, PlayerConfigTag), (
             "PlayerConfigTag is not supported in this script."
         )
-        chess_args = cast("ChessPlayerArgs", self.args.evaluating_player_args)
+        chess_args = self.args.evaluating_player_args
         self.player = create_chess_player(
             args=chess_args,
             terminal_oracle=ChessSyzygyTerminalOracle(syzygy_table)

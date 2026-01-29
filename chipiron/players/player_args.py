@@ -7,7 +7,6 @@ from typing import Protocol
 
 from chipiron.players.move_selector.move_selector_args import (
     AnyMoveSelectorArgs,
-    resolve_move_selector_args,
 )
 
 from .move_selector.move_selector_types import MoveSelectorTypes
@@ -39,9 +38,6 @@ class PlayerArgs:
              : bool: True if the player is a human player, False otherwise.
         """
         return MoveSelectorTypes(self.main_move_selector.type).is_human()
-
-    def __post_init__(self) -> None:
-        self.main_move_selector = resolve_move_selector_args(self.main_move_selector)
 
 
 @dataclass
