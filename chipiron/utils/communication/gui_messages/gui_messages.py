@@ -11,12 +11,8 @@ from valanga import Color
 
 from chipiron.displays.gui_protocol import PlayerUiInfo, UpdPlayersInfo
 from chipiron.players import PlayerFactoryArgs
-from chipiron.players.player_args import HasMoveSelectorType
 
-
-def format_player_label[MoveSelectorArgsT: HasMoveSelectorType](
-    player: PlayerFactoryArgs[MoveSelectorArgsT],
-) -> str:
+def format_player_label(player: PlayerFactoryArgs) -> str:
     name: str = player.player_args.name
 
     tree_branch_limit: str | int = ""
@@ -30,8 +26,8 @@ def format_player_label[MoveSelectorArgsT: HasMoveSelectorType](
     return f"{name} ({tree_branch_limit})"
 
 
-def make_players_info_payload[MoveSelectorArgsT: HasMoveSelectorType](
-    player_color_to_factory_args: dict[Color, PlayerFactoryArgs[MoveSelectorArgsT]],
+def make_players_info_payload(
+    player_color_to_factory_args: dict[Color, PlayerFactoryArgs],
 ) -> UpdPlayersInfo:
     w = player_color_to_factory_args[Color.WHITE]
     b = player_color_to_factory_args[Color.BLACK]

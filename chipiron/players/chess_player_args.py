@@ -11,5 +11,5 @@ from chipiron.players.move_selector.factory import NonTreeMoveSelectorArgs
 from chipiron.players.player_args import PlayerArgs, PlayerFactoryArgs
 
 ChessMoveSelectorArgs: TypeAlias = TreeAndValueChipironArgs | NonTreeMoveSelectorArgs
-ChessPlayerArgs: TypeAlias = PlayerArgs[ChessMoveSelectorArgs]
-ChessPlayerFactoryArgs: TypeAlias = PlayerFactoryArgs[ChessMoveSelectorArgs]
+ChessPlayerArgs: TypeAlias = PlayerArgs
+ChessPlayerFactoryArgs: TypeAlias = PlayerFactoryArgs
