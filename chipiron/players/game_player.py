@@ -4,8 +4,8 @@
 It stays generic and does not depend on any specific game snapshot/runtime types.
 """
 
-from __future__ import annotations
 
+from __future__ import annotations
 from typing import TYPE_CHECKING, Generic, TypeVar
 
 if TYPE_CHECKING:

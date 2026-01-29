@@ -20,6 +20,7 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInpu
     ModelInputRepresentationType,
 )
 from chipiron.utils import path
+from chipiron.utils.small_tools import resolve_package_path
 
 CHIPIRON_NN_ARGS_FILENAME = "chipiron_nn.yaml"
 
@@ -127,5 +128,6 @@ def create_content_to_input_from_folder(
 def create_content_to_input_from_model_weights(
     model_weights_file_name: path,
 ) -> ContentToInputFunction[ChessState]:
+    model_weights_file_name = resolve_package_path(str(model_weights_file_name))
     folder_path = os.path.dirname(model_weights_file_name)
     return create_content_to_input_from_folder(folder_path)
