@@ -10,7 +10,6 @@ from valanga import Color
 from valanga.game import Seed
 
 import chipiron.players as players
-from chipiron.players.player_args import HasMoveSelectorType
 from chipiron.utils.small_tools import unique_int_from_list
 
 from .game_args import GameArgs
@@ -19,7 +18,7 @@ if typing.TYPE_CHECKING:
     import chipiron.games.match as match
 
 
-class GameArgsFactory[MoveSelectorArgsT: HasMoveSelectorType]:
+class GameArgsFactory:
     """
     The GameArgsFactory creates the players and decides the rules.
     So far quite simple
@@ -28,16 +27,16 @@ class GameArgsFactory[MoveSelectorArgsT: HasMoveSelectorType]:
 
     args_match: "match.MatchSettingsArgs"
     seed_: int | None
-    args_player_one: players.PlayerArgs[MoveSelectorArgsT]
-    args_player_two: players.PlayerArgs[MoveSelectorArgsT]
+    args_player_one: players.PlayerArgs
+    args_player_two: players.PlayerArgs
     args_game: GameArgs
     game_number: int
 
     def __init__(
         self,
         args_match: "match.MatchSettingsArgs",
-        args_player_one: players.PlayerArgs[MoveSelectorArgsT],
-        args_player_two: players.PlayerArgs[MoveSelectorArgsT],
+        args_player_one: players.PlayerArgs,
+        args_player_two: players.PlayerArgs,
         seed_: int | None,
         args_game: GameArgs,
     ):
@@ -50,9 +49,7 @@ class GameArgsFactory[MoveSelectorArgsT: HasMoveSelectorType]:
 
     def generate_game_args(
         self, game_number: int
-    ) -> tuple[
-        dict[Color, players.PlayerFactoryArgs[MoveSelectorArgsT]], GameArgs, Seed | None
-    ]:
+    ) -> tuple[dict[Color, players.PlayerFactoryArgs], GameArgs, Seed | None]:
         """
         Generate game arguments for a specific game number.
 
@@ -67,20 +64,14 @@ class GameArgsFactory[MoveSelectorArgsT: HasMoveSelectorType]:
         merged_seed: Seed | None = unique_int_from_list([self.seed_, game_number])
         assert merged_seed is not None
 
-        player_one_factory_args: players.PlayerFactoryArgs[MoveSelectorArgsT] = (
-            players.PlayerFactoryArgs(
-                player_args=self.args_player_one, seed=merged_seed
-            )
+        player_one_factory_args = players.PlayerFactoryArgs(
+            player_args=self.args_player_one, seed=merged_seed
         )
-        player_two_factory_args: players.PlayerFactoryArgs[MoveSelectorArgsT] = (
-            players.PlayerFactoryArgs(
-                player_args=self.args_player_two, seed=merged_seed
-            )
+        player_two_factory_args = players.PlayerFactoryArgs(
+            player_args=self.args_player_two, seed=merged_seed
         )
 
-        player_color_to_factory_args: dict[
-            Color, players.PlayerFactoryArgs[MoveSelectorArgsT]
-        ]
+        player_color_to_factory_args: dict[Color, players.PlayerFactoryArgs]
         if game_number < self.args_match.number_of_games_player_one_white:
             player_color_to_factory_args = {
                 Color.WHITE: player_one_factory_args,
