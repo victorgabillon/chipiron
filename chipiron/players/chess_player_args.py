@@ -1,6 +1,5 @@
 """Chess-specific player argument aliases."""
 
-from __future__ import annotations
 
 from typing import TypeAlias
 

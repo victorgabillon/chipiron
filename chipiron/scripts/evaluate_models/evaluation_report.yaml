@@ -1,4 +1,4 @@
 ? chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/prelu_no_bug/param_multi_layer_perceptron_772_20_1_parametric_relu_hyperbolic_tangent_player_to_move.ptparam_multi_layer_perceptron_772_20_1_parametric_relu_hyperbolic_tangent_player_to_move1chess364_no_bug
-: evaluation: 0.23722425338505831
+: evaluation: 0.2372242442208442
   number_of_model_parameters: 15482
-  time_of_evaluation: 2026-01-29 10:50:53.335377
+  time_of_evaluation: 2026-01-29 17:14:57.510942

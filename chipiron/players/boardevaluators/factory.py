@@ -2,7 +2,7 @@
 Module for building game state evaluators (oracle + chipiron) with optional GUI publishing.
 """
 
-from __future__ import annotations
+
 
 from typing import Any, Literal, TypeVar, assert_never, cast, overload
 
