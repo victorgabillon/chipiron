@@ -219,7 +219,7 @@ configs_implementation = [
 ]
 
 
-def test_one_matches(configs=None, log_level=logging.ERROR):
+def test_one_matches(configs: list[Any] | None = None, log_level: int = logging.ERROR):
     """
     Runs integration tests for one match using provided configurations.
     If no configs are provided, uses the default configs_base.
@@ -268,7 +268,7 @@ def test_one_matches(configs=None, log_level=logging.ERROR):
                 script_object.terminate()
 
 
-def test_randomness(log_level=logging.ERROR):
+def test_randomness(log_level: int = logging.ERROR):
     """
     Test that running the same match twice with a fixed seed produces identical results.
 

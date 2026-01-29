@@ -338,7 +338,8 @@ class FenAndValueDataSet(MyDataSet[FenAndValueData]):
             fen_with_history=FenPlusHistory(current_fen=fen_),
             use_board_modification=True,
         )
-        input_layer: torch.Tensor = self.transform_board_function(board)
+
+        input_layer: torch.Tensor = self.transform_board_function(ChessState(board))
         target_value_white: float = (
             self.transform_dataset_value_to_white_value_function(row)
         )
