@@ -5,7 +5,7 @@ Module for the GameManagerFactory class.
 import queue
 import uuid
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from atomheart.move_factory import MoveFactory
 from valanga import Color
@@ -193,7 +193,7 @@ class GameManagerFactory:
                 move_function: MoveFunction
                 generic_player, move_function = player_observer_factory(
                     player_color=player_color,
-                    player_factory_args=cast("PlayerFactoryArgs", player_factory_args),
+                    player_factory_args=player_factory_args,
                     main_thread_mailbox=self.main_thread_mailbox,
                     # player_progress_collector=player_progress_collector
                 )

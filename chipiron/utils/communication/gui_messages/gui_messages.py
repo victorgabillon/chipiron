@@ -12,6 +12,7 @@ from valanga import Color
 from chipiron.displays.gui_protocol import PlayerUiInfo, UpdPlayersInfo
 from chipiron.players import PlayerFactoryArgs
 
+
 def format_player_label(player: PlayerFactoryArgs) -> str:
     name: str = player.player_args.name
 

@@ -101,7 +101,7 @@ class League:
         player_tag = PlayerConfigTag(
             file_player
         )  # probably wrong / to be fixed when reusing the leagu not a big issue
-        args_player = cast("AnyPlayerArgs", player_tag.get_players_args())
+        args_player = player_tag.get_players_args()
         print(args_player)
 
         args_player.name = f"{args_player.name}_{self.id_for_next_player}"
