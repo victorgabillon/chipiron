@@ -18,7 +18,6 @@ from chipiron.games.match.match_results import IMatchResults, MatchReport, Match
 from chipiron.games.match.match_results_factory import MatchResultsFactory
 from chipiron.games.match.observable_match_result import ObservableMatchResults
 from chipiron.players import PlayerFactoryArgs
-from chipiron.players.player_args import HasMoveSelectorType
 from chipiron.utils import path
 from chipiron.utils.logger import chipiron_logger
 
@@ -26,7 +25,7 @@ if TYPE_CHECKING:
     from chipiron.games.game.game_manager import GameManager
 
 
-class MatchManager[MoveSelectorArgsT: HasMoveSelectorType = HasMoveSelectorType]:
+class MatchManager:
     """
     Object in charge of playing one match
 
@@ -44,7 +43,7 @@ class MatchManager[MoveSelectorArgsT: HasMoveSelectorType = HasMoveSelectorType]
         player_one_id: str,
         player_two_id: str,
         game_manager_factory: GameManagerFactory,
-        game_args_factory: GameArgsFactory[MoveSelectorArgsT],
+        game_args_factory: GameArgsFactory,
         match_results_factory: MatchResultsFactory,
         output_folder_path: path | None = None,
     ) -> None:
@@ -106,9 +105,7 @@ class MatchManager[MoveSelectorArgsT: HasMoveSelectorType = HasMoveSelectorType]
         game_number: int = 0
         while not self.game_args_factory.is_match_finished():
             args_game: GameArgs
-            player_color_to_factory_args: dict[
-                Color, PlayerFactoryArgs[MoveSelectorArgsT]
-            ]
+            player_color_to_factory_args: dict[Color, PlayerFactoryArgs]
             game_seed: Seed | None
             player_color_to_factory_args, args_game, game_seed = (
                 self.game_args_factory.generate_game_args(game_number)
@@ -188,7 +185,7 @@ class MatchManager[MoveSelectorArgsT: HasMoveSelectorType = HasMoveSelectorType]
 
     def play_one_game(
         self,
-        player_color_to_factory_args: dict[Color, PlayerFactoryArgs[MoveSelectorArgsT]],
+        player_color_to_factory_args: dict[Color, PlayerFactoryArgs],
         args_game: GameArgs,
         game_number: int,
         game_seed: Seed,
