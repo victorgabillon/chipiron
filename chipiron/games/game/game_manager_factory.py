@@ -29,7 +29,6 @@ from chipiron.players.boardevaluators.board_evaluator import (
     ObservableGameStateEvaluator,
 )
 from chipiron.players.factory_higher_level import MoveFunction, PlayerObserverFactory
-from chipiron.players.player_args import HasMoveSelectorType
 from chipiron.utils import path
 from chipiron.utils.communication.gui_messages.gui_messages import (
     make_players_info_payload,
@@ -79,10 +78,10 @@ class GameManagerFactory:
     session_id: SessionId = ""
     match_id: MatchId | None = None
 
-    def create[MoveSelectorArgsT: HasMoveSelectorType](
+    def create(
         self,
         args_game_manager: GameArgs,
-        player_color_to_factory_args: dict[Color, PlayerFactoryArgs[MoveSelectorArgsT]],
+        player_color_to_factory_args: dict[Color, PlayerFactoryArgs],
         game_seed: Seed,
     ) -> GameManager[Any]:
         """
