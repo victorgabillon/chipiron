@@ -1,8 +1,9 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
+from atomheart.board.utils import FenPlusHistory
+from valanga import Color
+
+from chipiron.environments.chess.types import ChessState
 from chipiron.players.adapters.chess_syzygy_oracle import (
     ChessSyzygyPolicyOracle,
     ChessSyzygyTerminalOracle,
@@ -14,17 +15,11 @@ from chipiron.players.boardevaluators.table_base.factory import (
 )
 from chipiron.players.chess_player_args import ChessPlayerFactoryArgs
 from chipiron.players.factory import create_game_player
+from chipiron.players.game_player import GamePlayer
 from chipiron.players.observer_wiring import ObserverWiring
+from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.utils.communication.mailbox import MainMailboxMessage
-
-if TYPE_CHECKING:
-    from atomheart.board.utils import FenPlusHistory
-    from valanga import Color
-
-    from chipiron.environments.chess.types import ChessState
-    from chipiron.players.game_player import GamePlayer
-    from chipiron.scripts.chipiron_args import ImplementationArgs
-    from chipiron.utils.queue_protocols import PutQueue
+from chipiron.utils.queue_protocols import PutQueue
 
 
 @dataclass(frozen=True)

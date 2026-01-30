@@ -7,24 +7,28 @@ The BaseTreeExplorationScript class is responsible for running a script that per
 import os
 import random
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 from atomheart.board.factory import create_board
-from atomheart.board.utils import FenPlusHistory
 
-from chipiron.environments.chess.types import ChessState
 from chipiron.players.adapters.chess_syzygy_oracle import (
     ChessSyzygyPolicyOracle,
     ChessSyzygyTerminalOracle,
     ChessSyzygyValueOracle,
 )
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy
-from chipiron.players.chess_player_args import ChessPlayerArgs
 from chipiron.players.factory import create_chess_player
-from chipiron.players.player import Player
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
+
+if TYPE_CHECKING:
+    from atomheart.board.utils import FenPlusHistory
+
+    from chipiron.environments.chess.types import ChessState
+    from chipiron.players.chess_player_args import ChessPlayerArgs
+    from chipiron.players.player import Player
 
 
 @dataclass

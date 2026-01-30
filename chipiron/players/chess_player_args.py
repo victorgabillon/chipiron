@@ -1,6 +1,5 @@
 """Chess-specific player argument aliases."""
 
-
 from typing import TypeAlias
 
 from chipiron.players.move_selector.chess_tree_and_value_args import (

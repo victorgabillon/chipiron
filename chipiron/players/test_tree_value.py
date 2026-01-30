@@ -20,7 +20,6 @@ from anemone.tree_and_value_branch_selector import (
 from anemone.trees import Tree
 from atomheart.board import IBoard, create_board
 from atomheart.board.utils import FenPlusHistory
-from valanga import StateTag
 
 from chipiron.environments.chess.types import ChessState
 from chipiron.players import Player
@@ -33,6 +32,7 @@ if TYPE_CHECKING:
     from anemone.basics import TreeDepth
     from anemone.nodes import ITreeNode
     from anemone.tree_exploration import TreeExploration
+    from valanga import StateTag
 
 
 def create_player_and_tree(

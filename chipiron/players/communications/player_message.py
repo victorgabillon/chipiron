@@ -1,13 +1,10 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, TypeAlias
+from typing import TypeAlias
 
-if TYPE_CHECKING:
-    from valanga import Color, StateEvaluation, StateTag
-    from valanga.game import BranchName, Seed
+from valanga import Color, StateEvaluation, StateTag
+from valanga.game import BranchName, Seed
 
-    from chipiron.displays.gui_protocol import Scope
+from chipiron.displays.gui_protocol import Scope
 
 
 @dataclass(frozen=True, slots=True)

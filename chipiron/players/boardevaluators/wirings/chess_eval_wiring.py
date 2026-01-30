@@ -2,8 +2,6 @@
 Chess-specific wiring for board evaluators.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from importlib.resources import files
 

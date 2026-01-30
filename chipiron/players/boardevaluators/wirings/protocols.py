@@ -2,8 +2,6 @@
 Protocols for wiring game-specific evaluators.
 """
 
-from __future__ import annotations
-
 from typing import Protocol, TypeVar
 
 from chipiron.players.boardevaluators.board_evaluator import StateEvaluator

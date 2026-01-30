@@ -1,7 +1,5 @@
 """Adapter between Chipiron board evaluators and Anemone's evaluator protocol."""
 
-
-
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
@@ -19,23 +17,7 @@ if TYPE_CHECKING:
     )
     from valanga.over_event import OverEvent
 
-
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, cast
-
-from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
-    MasterStateEvaluator,
-)
-from valanga import State
-
-from chipiron.environments.chess.types import ChessState
-from chipiron.players.boardevaluators.master_board_evaluator import MasterBoardEvaluator
-
-if TYPE_CHECKING:
-    from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
-        OverEventDetector,
-    )
-    from valanga.over_event import OverEvent
+    from chipiron.environments.chess.types import ChessState
 
 
 @dataclass

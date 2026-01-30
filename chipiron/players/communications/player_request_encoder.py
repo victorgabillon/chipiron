@@ -1,21 +1,16 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Protocol, TypeVar, cast
+from typing import Any, Protocol, TypeVar, cast
 
 from atomheart.board.utils import FenPlusHistory
+from valanga.game import Seed
 
+from chipiron.displays.gui_protocol import Scope
 from chipiron.environments.chess.types import ChessState
 from chipiron.environments.types import GameKind
 from chipiron.players.communications.player_message import (
     PlayerRequest,
     TurnStatePlusHistory,
 )
-
-if TYPE_CHECKING:
-    from valanga.game import Seed
-
-    from chipiron.displays.gui_protocol import Scope
 
 StateT_contra = TypeVar("StateT_contra", contravariant=True)
 StateSnapT = TypeVar("StateSnapT", default=Any)

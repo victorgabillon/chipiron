@@ -2,8 +2,6 @@
 Fallback evaluator wiring for games without a specific evaluator.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 from chipiron.players.boardevaluators.board_evaluator import StateEvaluator

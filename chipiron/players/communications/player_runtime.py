@@ -5,11 +5,7 @@ incoming `PlayerRequest`, asks the `GamePlayer` to select a move, and emits a
 `PlayerEvent`.
 """
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, TypeVar
-
-from valanga.policy import Recommendation
 
 from chipiron.players.communications.player_message import (
     EvMove,
@@ -17,12 +13,13 @@ from chipiron.players.communications.player_message import (
     PlayerRequest,
     TurnStatePlusHistory,
 )
+from chipiron.players.game_player import GamePlayer
 from chipiron.utils.communication.mailbox import MainMailboxMessage
 from chipiron.utils.logger import chipiron_logger
+from chipiron.utils.queue_protocols import PutQueue
 
 if TYPE_CHECKING:
-    from chipiron.players.game_player import GamePlayer
-    from chipiron.utils.queue_protocols import PutQueue
+    from valanga.policy import Recommendation
 
 StateSnapT = TypeVar("StateSnapT")
 RuntimeStateT = TypeVar("RuntimeStateT")

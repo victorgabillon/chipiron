@@ -1,7 +1,5 @@
 """Tree-and-value move selector args with game-specific evaluator inputs."""
 
-
-
 from dataclasses import dataclass
 from typing import Literal
 
@@ -41,7 +39,4 @@ class TreeAndValueAppArgs:
 
     anemone_args: AnemoneTreeArgs
     evaluator_args: NodeEvaluatorArgs
-
-    @property
-    def type(self) -> MoveSelectorTypes:
-        return MoveSelectorTypes.TreeAndValue
+    type: Literal[MoveSelectorTypes.TreeAndValue] = MoveSelectorTypes.TreeAndValue

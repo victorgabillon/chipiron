@@ -21,7 +21,6 @@ from chipiron.games.game.game_manager_factory import GameManagerFactory
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_manager import MatchManager
 from chipiron.games.match.match_results_factory import MatchResultsFactory
-from chipiron.players.boardevaluators.board_evaluator import IGameStateEvaluator
 from chipiron.players.boardevaluators.factory import (
     create_game_board_evaluator_for_game_kind,
 )
@@ -29,12 +28,14 @@ from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
-from chipiron.utils.communication.mailbox import MainMailboxMessage
 
 from .match_settings_args import MatchSettingsArgs
 
 if TYPE_CHECKING:
     import queue
+
+    from chipiron.players.boardevaluators.board_evaluator import IGameStateEvaluator
+    from chipiron.utils.communication.mailbox import MainMailboxMessage
 
 
 def create_match_manager(

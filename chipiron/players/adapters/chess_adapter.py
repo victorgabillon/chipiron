@@ -1,19 +1,17 @@
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
+from atomheart.board import BoardFactory
+from atomheart.board.utils import FenPlusHistory
+from valanga.game import BranchName, Seed
+from valanga.policy import BranchSelector, Recommendation
+
 from chipiron.environments.chess.types import ChessState
+from chipiron.players.oracles import PolicyOracle
 from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:
-    from atomheart.board import BoardFactory
-    from atomheart.board.utils import FenPlusHistory
     from atomheart.move import MoveUci
     from atomheart.move.imove import MoveKey
-    from valanga.game import BranchName, Seed
-    from valanga.policy import BranchSelector, Recommendation
-
-    from chipiron.players.oracles import PolicyOracle
 
 
 class ChessAdapter:

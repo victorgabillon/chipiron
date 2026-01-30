@@ -1,10 +1,7 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Generic, Protocol, TypeVar
+from typing import Generic, Protocol, TypeVar
 
-if TYPE_CHECKING:
-    from chipiron.players.game_player import GamePlayer
+from chipiron.players.game_player import GamePlayer
 
 SnapT = TypeVar("SnapT")
 RuntimeT = TypeVar("RuntimeT")

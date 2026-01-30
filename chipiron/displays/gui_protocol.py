@@ -1,16 +1,12 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Never, TypeAlias
+from typing import Never, TypeAlias
 
+from atomheart.board.utils import FenPlusHistory
+from valanga import Color
 from valanga.evaluations import StateEvaluation
 
-if TYPE_CHECKING:
-    from atomheart.board.utils import FenPlusHistory
-    from valanga import Color
-
-    from chipiron.environments.types import GameKind
-    from chipiron.games.game.game_playing_status import PlayingStatus
+from chipiron.environments.types import GameKind
+from chipiron.games.game.game_playing_status import PlayingStatus
 
 SchemaVersion: TypeAlias = int
 SessionId: TypeAlias = str

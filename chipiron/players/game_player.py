@@ -4,15 +4,12 @@
 It stays generic and does not depend on any specific game snapshot/runtime types.
 """
 
+from typing import Generic, TypeVar
 
-from __future__ import annotations
-from typing import TYPE_CHECKING, Generic, TypeVar
+from valanga.game import Color, Seed
+from valanga.policy import Recommendation
 
-if TYPE_CHECKING:
-    from valanga.game import Color, Seed
-    from valanga.policy import Recommendation
-
-    from .player import Player
+from .player import Player
 
 StateSnapT = TypeVar("StateSnapT")
 RuntimeStateT = TypeVar("RuntimeStateT")

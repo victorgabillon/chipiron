@@ -14,7 +14,6 @@ import random
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal
 
-from valanga import BranchKey
 from valanga.game import Seed, State
 from valanga.policy import Recommendation
 
@@ -22,6 +21,7 @@ from .move_selector_types import MoveSelectorTypes
 
 if TYPE_CHECKING:
     from atomheart.move import MoveUci
+    from valanga import BranchKey
 
 
 @dataclass

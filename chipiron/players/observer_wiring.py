@@ -1,13 +1,9 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Generic, Protocol, TypeVar
+from typing import Generic, Protocol, TypeVar
 
+from chipiron.players.game_player import GamePlayer
 from chipiron.utils.communication.mailbox import MainMailboxMessage
-
-if TYPE_CHECKING:
-    from chipiron.players.game_player import GamePlayer
-    from chipiron.utils.queue_protocols import PutQueue
+from chipiron.utils.queue_protocols import PutQueue
 
 SnapT = TypeVar("SnapT")
 RuntimeT = TypeVar("RuntimeT")

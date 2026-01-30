@@ -9,7 +9,6 @@ from atomheart.board.factory import (
 from atomheart.board.utils import (
     FenPlusHistory,
 )
-from atomheart.move.imove import MoveKey
 
 from chipiron.players.boardevaluators.table_base.factory import (
     create_syzygy_python,
@@ -19,6 +18,7 @@ from chipiron.players.boardevaluators.table_base.factory import (
 if TYPE_CHECKING:
     from atomheart.board.board_chi import BoardChi
     from atomheart.board.rusty_board import RustyBoardChi
+    from atomheart.move.imove import MoveKey
 
     from chipiron.players.boardevaluators.table_base import SyzygyTable
 

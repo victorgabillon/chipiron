@@ -28,7 +28,6 @@ from chipiron.players.boardevaluators.board_evaluator import (
     IGameStateEvaluator,
     ObservableGameStateEvaluator,
 )
-from chipiron.players.factory_higher_level import MoveFunction, PlayerObserverFactory
 from chipiron.utils import path
 from chipiron.utils.communication.gui_messages.gui_messages import (
     make_players_info_payload,
@@ -42,6 +41,10 @@ from .progress_collector import PlayerProgressCollectorObservable
 
 if TYPE_CHECKING:
     import chipiron.players as players_m
+    from chipiron.players.factory_higher_level import (
+        MoveFunction,
+        PlayerObserverFactory,
+    )
 
 
 def make_subscriber_queues() -> list[queue.Queue[GuiUpdate]]:
