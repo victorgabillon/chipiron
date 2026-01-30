@@ -1,12 +1,8 @@
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, Protocol, TypeVar
+from typing import Protocol, TypeVar
 
 from valanga import State
 from valanga.game import BranchName
-
-if TYPE_CHECKING:
-    from valanga.over_event import OverEvent
+from valanga.over_event import OverEvent
 
 StateT = TypeVar("StateT", bound=State, contravariant=True)
 

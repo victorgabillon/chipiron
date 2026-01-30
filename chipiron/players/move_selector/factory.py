@@ -2,18 +2,19 @@
 This module provides a factory function for creating the main move selector based on the given arguments.
 """
 
-from __future__ import annotations
-
 import random
-from queue import Queue
-from typing import TYPE_CHECKING, TypeAlias, TypeVar, cast
+from typing import TYPE_CHECKING, TypeVar, cast
 
 from anemone import TreeAndValuePlayerArgs, create_tree_and_value_branch_selector
-from anemone.utils.dataclass import IsDataclass as AnemoneIsDataclass
-from valanga import TurnState
+from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
+    MasterStateEvaluator,
+)
+from valanga import RepresentationFactory, StateModifications, TurnState
+from valanga.evaluator_types import EvaluatorInput
 from valanga.policy import BranchSelector
 
 from chipiron.environments.chess.types import ChessState
+from chipiron.players.move_selector.move_selector_args import NonTreeMoveSelectorArgs
 from chipiron.utils.communication.mailbox import MainMailboxMessage
 from chipiron.utils.logger import chipiron_logger
 
@@ -21,18 +22,12 @@ from ...utils.queue_protocols import PutQueue
 from . import human, stockfish
 from .random import Random, create_random
 
-NonTreeMoveSelectorArgs: TypeAlias = (
-    human.CommandLineHumanPlayerArgs | Random | stockfish.StockfishPlayer
-)
+if TYPE_CHECKING:
+    from queue import Queue
+
+    from anemone.utils.dataclass import IsDataclass as AnemoneIsDataclass
 
 TurnStateT = TypeVar("TurnStateT", bound=TurnState)
-
-if TYPE_CHECKING:
-    from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
-        MasterStateEvaluator,
-    )
-    from valanga import RepresentationFactory, StateModifications
-    from valanga.evaluator_types import EvaluatorInput
 
 
 def create_main_move_selector(

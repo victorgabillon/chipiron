@@ -1,20 +1,22 @@
 name: Sequool
 main_move_selector:
   type: TreeAndValue
-  node_selector:
-    type: Sequool
-    recursive_selection_on_all_nodes: True
-    random_depth_pick: False
-    consider_all_lesser_half_move: False
-  index_computation : min_global_change
-  opening_type: all_children
-  recommender_rule:
-    type: almost_equal_logistic
-    temperature: 2
-  stopping_criterion:
-      type: tree_branch_limit
-      tree_branch_limit: 1000
-  node_evaluator:
+  anemone_args: 
+    type: TreeAndValue
+    node_selector:
+      type: Sequool
+      recursive_selection_on_all_nodes: True
+      random_depth_pick: False
+      consider_all_lesser_tree_depth: False
+    index_computation : min_global_change
+    opening_type: all_children
+    recommender_rule:
+      type: almost_equal_logistic
+      temperature: 2
+    stopping_criterion:
+        type: tree_branch_limit
+        tree_branch_limit: 1000
+  evaluator_args:
     internal_representation_type: '364_bug'
     master_board_evaluator:
       syzygy_evaluation: True
@@ -22,7 +24,7 @@ main_move_selector:
       board_evaluator:
         type: neural_network
         neural_nets_model_and_architecture:
-          model_weights_file_name: "package://data/players/board_evaluators/nn_pytorch/prelu_no_bug/param_multi_layer_perceptron_772_20_1_parametric_relu_hyperbolic_tangent_364_no_bug_player_to_move.pt"
+          model_weights_file_name: "package://data/players/board_evaluators/nn_pytorch/prelu_no_bug/param_multi_layer_perceptron_772_20_1_parametric_relu_hyperbolic_tangent_player_to_move.pt"
           nn_architecture_args_path_to_yaml_file: 'package://data/players/board_evaluators/nn_pytorch/prelu_no_bug/architecture.yaml'
 syzygy_play: True
 

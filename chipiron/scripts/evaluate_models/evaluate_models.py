@@ -19,7 +19,6 @@ from coral.neural_networks.factory import (
 )
 from torch.utils.data import DataLoader
 
-from chipiron.environments.chess.types import ChessState
 from chipiron.learningprocesses.nn_trainer.nn_trainer import (
     compute_test_error_on_dataset,
 )
@@ -37,6 +36,8 @@ from chipiron.utils import path
 
 if TYPE_CHECKING:
     from coral.neural_networks import NNBWStateEvaluator
+
+    from chipiron.environments.chess.types import ChessState
 
 
 @dataclass

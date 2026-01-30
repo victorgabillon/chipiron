@@ -1,8 +1,7 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal, Protocol, TypeVar, overload
 
+from atomheart.board.utils import FenPlusHistory
 from valanga import StateTag
 
 from chipiron.environments.chess.tags import ChessStartTag
@@ -15,8 +14,6 @@ from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.utils.communication.gui_encoder import GuiEncoder
 
 if TYPE_CHECKING:
-    from atomheart.board.utils import FenPlusHistory
-
     from chipiron.players.factory_higher_level import PlayerObserverFactory
 
 StateT = TypeVar("StateT")

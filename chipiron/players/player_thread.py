@@ -8,20 +8,16 @@ This process:
 - emits dataclass events to an output queue
 """
 
-from __future__ import annotations
-
 import multiprocessing
 import queue
-from typing import TYPE_CHECKING, Generic, Protocol, TypeVar
+from typing import Generic, Protocol, TypeVar
 
+from chipiron.players.communications.player_message import PlayerRequest
 from chipiron.players.communications.player_runtime import handle_player_request
 from chipiron.players.observer_wiring import BuildGamePlayer
+from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
-
-if TYPE_CHECKING:
-    from chipiron.players.communications.player_message import PlayerRequest
-    from chipiron.utils.dataclass import IsDataclass
-    from chipiron.utils.queue_protocols import PutGetQueue, PutQueue
+from chipiron.utils.queue_protocols import PutGetQueue, PutQueue
 
 SnapT = TypeVar("SnapT")
 RuntimeT = TypeVar("RuntimeT")

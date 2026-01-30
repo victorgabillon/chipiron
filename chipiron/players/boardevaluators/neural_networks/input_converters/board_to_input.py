@@ -5,7 +5,6 @@ Module for the BoardToInput protocol and ContentToInputFunction protocol.
 from typing import TYPE_CHECKING
 
 import torch
-from atomheart.board import BoardModificationP
 from coral.neural_networks.input_converters.content_to_input import (
     ContentToInputFunction,
 )
@@ -33,6 +32,7 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.represent
 )
 
 if TYPE_CHECKING:
+    from atomheart.board import BoardModificationP
     from valanga.representation_factory import (
         RepresentationFactory,
     )

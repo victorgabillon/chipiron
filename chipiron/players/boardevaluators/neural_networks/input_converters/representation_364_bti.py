@@ -2,13 +2,13 @@
 This module provides a class for converting a chess board into a representation input.
 """
 
-from __future__ import annotations
-
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 from valanga import State
 from valanga.representation_factory import RepresentationFactory
-from valanga.represention_for_evaluation import ContentRepresentation
+
+if TYPE_CHECKING:
+    from valanga.represention_for_evaluation import ContentRepresentation
 
 
 class RepresentationBTI[StateT: State, EvalIn, ModsT]:

@@ -1,18 +1,15 @@
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
+from valanga.game import BranchName
 from valanga.over_event import OverEvent
 
 from chipiron.environments.chess.types import ChessState
+from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 from chipiron.players.oracles import PolicyOracle, TerminalOracle, ValueOracle
 
 if TYPE_CHECKING:
     from atomheart.move import MoveUci
     from atomheart.move.imove import MoveKey
-    from valanga.game import BranchName
-
-    from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 
 
 class ChessSyzygyPolicyOracle(PolicyOracle[ChessState]):

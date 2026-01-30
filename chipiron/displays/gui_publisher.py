@@ -1,14 +1,9 @@
-from __future__ import annotations
-
+import queue
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+
+from chipiron.environments.types import GameKind
 
 from .gui_protocol import GuiUpdate, SchemaVersion, Scope, UpdatePayload
-
-if TYPE_CHECKING:
-    import queue
-
-    from chipiron.environments.types import GameKind
 
 
 @dataclass(frozen=True, slots=True)

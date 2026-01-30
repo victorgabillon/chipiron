@@ -13,6 +13,9 @@ main_move_selector:
     stopping_criterion:
         type: tree_branch_limit
         tree_branch_limit: 100000
+
+
+
   evaluator_args:
     internal_representation_type: '364_bug'
     master_board_evaluator:

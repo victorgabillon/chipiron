@@ -1,17 +1,13 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
+from valanga import Color
+
+from chipiron.players.game_player import GamePlayer
 from chipiron.players.observer_wiring import ObserverWiring
+from chipiron.players.player_args import PlayerFactoryArgs
 from chipiron.utils.communication.mailbox import MainMailboxMessage
-
-if TYPE_CHECKING:
-    from valanga import Color
-
-    from chipiron.players.game_player import GamePlayer
-    from chipiron.players.player_args import PlayerFactoryArgs
-    from chipiron.utils.queue_protocols import PutQueue
+from chipiron.utils.queue_protocols import PutQueue
 
 # Placeholder types until checkers runtime exists
 CheckersSnap = Any

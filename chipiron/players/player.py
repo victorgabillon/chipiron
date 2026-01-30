@@ -6,14 +6,10 @@ The core `Player` is generic and delegates all game-specific logic to a `GameAda
 - optional oracle fast-path (e.g. syzygy in chess)
 """
 
-from __future__ import annotations
+from typing import Generic, Protocol, TypeVar
 
-from typing import TYPE_CHECKING, Generic, Protocol, TypeVar
-
+from valanga.game import BranchName, Seed
 from valanga.policy import Recommendation
-
-if TYPE_CHECKING:
-    from valanga.game import BranchName, Seed
 
 PlayerId = str
 

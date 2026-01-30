@@ -1,13 +1,8 @@
 """Generic player construction pipeline with game-specific builders."""
 
-from __future__ import annotations
-
 import random
-from typing import Callable, TypeVar
+from typing import TYPE_CHECKING, Callable, TypeVar
 
-from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
-    MasterStateEvaluator,
-)
 from valanga import TurnState
 from valanga.policy import BranchSelector
 
@@ -24,6 +19,11 @@ from chipiron.players.player_args import HasMoveSelectorType
 from chipiron.utils.communication.mailbox import MainMailboxMessage
 
 from ..utils.queue_protocols import PutQueue
+
+if TYPE_CHECKING:
+    from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
+        MasterStateEvaluator,
+    )
 
 SnapT = TypeVar("SnapT")
 StateT = TypeVar("StateT", bound=TurnState)

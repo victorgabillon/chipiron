@@ -28,7 +28,6 @@ from anemone.progress_monitor.progress_monitor import (
 )
 from atomheart.board.iboard import IBoard
 
-from chipiron.players.chess_player_args import ChessPlayerArgs
 from chipiron.utils.logger import (
     chipiron_logger,
     suppress_all_logging,
@@ -37,6 +36,8 @@ from chipiron.utils.logger import (
 
 if TYPE_CHECKING:
     from atomheart.move.imove import MoveKey
+
+    from chipiron.players.chess_player_args import ChessPlayerArgs
 
 
 # Suppress PyTorch CUDA warnings for benchmarking

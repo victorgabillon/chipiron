@@ -7,12 +7,11 @@ import random
 import shutil
 from collections import deque
 from dataclasses import dataclass, field
-from typing import cast, no_type_check
+from typing import TYPE_CHECKING, cast, no_type_check
 
 import plotly.graph_objects as go
 from sortedcollections import ValueSortedDict
 
-import chipiron as ch
 from chipiron.games.game.game_args import GameArgs
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_factories import create_match_manager
@@ -23,6 +22,9 @@ from chipiron.players.player_args import AnyPlayerArgs
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.utils.small_tools import mkdir_if_not_existing, path
+
+if TYPE_CHECKING:
+    import chipiron as ch
 
 
 @no_type_check

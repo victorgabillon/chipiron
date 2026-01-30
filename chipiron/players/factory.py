@@ -2,8 +2,6 @@
 Module for creating players.
 """
 
-from __future__ import annotations
-
 import random
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -15,6 +13,7 @@ from anemone.progress_monitor.progress_monitor import (
 from atomheart.board import BoardFactory, create_board_factory
 from atomheart.board.utils import FenPlusHistory
 from valanga import Color
+from valanga.policy import BranchSelector
 
 from chipiron.environments.chess.types import ChessState
 from chipiron.players.adapters.chess_adapter import ChessAdapter
@@ -56,7 +55,6 @@ if TYPE_CHECKING:
     from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
         MasterStateEvaluator,
     )
-    from valanga.policy import BranchSelector
 
 
 @dataclass
@@ -70,7 +68,8 @@ class PlayerCreationArgs:
     terminal_oracle: TerminalOracle[ChessState] | None = None
 
 
-def create_chipiron_player(
+def create_tag_player(
+    tag: PlayerConfigTag,
     implementation_args: ImplementationArgs,
     universal_behavior: bool,
     random_generator: random.Random,
@@ -99,7 +98,7 @@ def create_chipiron_player(
         ChessSyzygyTerminalOracle(syzygy_table) if syzygy_table is not None else None
     )
 
-    args_player: ChessPlayerArgs = PlayerConfigTag.CHIPIRON.get_players_args()
+    args_player: ChessPlayerArgs = tag.get_players_args()
 
     if tree_branch_limit is not None:
         # todo find a prettier way to do this
@@ -121,6 +120,36 @@ def create_chipiron_player(
         implementation_args=implementation_args,
         universal_behavior=universal_behavior,
         queue_progress_player=queue_progress_player,
+    )
+
+
+def create_chipiron_player(
+    implementation_args: ImplementationArgs,
+    universal_behavior: bool,
+    random_generator: random.Random,
+    queue_progress_player: PutQueue[IsDataclass] | None = None,
+    tree_branch_limit: int | None = None,
+) -> Player[FenPlusHistory, ChessState]:
+    """Create the Chipiron champion/representative/default player.
+
+    This function creates the default Chipiron player using the provided
+    implementation arguments and random generator.
+
+    Args:
+        implementation_args (ImplementationArgs): The implementation arguments.
+        universal_behavior (bool): Whether to use universal behavior.
+        random_generator (random.Random): The random number generator.
+
+    Returns:
+        Player: The created Chipiron player.
+    """
+    return create_tag_player(
+        tag=PlayerConfigTag.CHIPIRON,
+        implementation_args=implementation_args,
+        universal_behavior=universal_behavior,
+        random_generator=random_generator,
+        queue_progress_player=queue_progress_player,
+        tree_branch_limit=tree_branch_limit,
     )
 
 

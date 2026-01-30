@@ -2,8 +2,6 @@
 Module for building game state evaluators (oracle + chipiron) with optional GUI publishing.
 """
 
-
-
 from typing import Any, Literal, TypeVar, assert_never, cast, overload
 
 from chipiron.environments.chess.types import ChessState
