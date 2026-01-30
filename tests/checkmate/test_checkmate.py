@@ -5,7 +5,8 @@ from typing import TYPE_CHECKING
 import pytest
 from atomheart.board.utils import FenPlusHistory
 
-from chipiron.players.boardevaluators.table_base.factory import create_syzygy
+from chipiron.environments.chess.types import ChessState
+from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable, create_syzygy
 from chipiron.players.factory import create_chipiron_player, create_player
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
@@ -15,27 +16,26 @@ if TYPE_CHECKING:
     from valanga.policy import Recommendation
 
     from chipiron.players import Player
-    from chipiron.players.boardevaluators import table_base
 
 
 @pytest.mark.parametrize(("use_rusty_board"), (True, False))
 def test_check_in_one(use_rusty_board: bool):
     random_generator: random.Random = random.Random(0)
 
-    player: Player = create_chipiron_player(
+    player: Player[FenPlusHistory, ChessState] = create_chipiron_player(
         implementation_args=ImplementationArgs(use_rust_boards=use_rusty_board),
         universal_behavior=True,
         random_generator=random_generator,
     )
 
     move_reco: Recommendation = player.select_move(
-        fen_plus_history=FenPlusHistory(
+        state_snapshot=FenPlusHistory(
             current_fen="1nbqkbnr/rpppp2p/6P1/p6Q/8/8/PPPP1PPP/RNB1KBNR w KQk - 1 5"
         ),
-        seed_int=0,
+        seed=0,
     )
 
-    assert move_reco.move == "g6h7" or move_reco.move == "g6g7"
+    assert move_reco.recommended_name == "g6h7" or move_reco.recommended_name == "g6g7"
 
 
 @pytest.mark.parametrize(("use_rusty_board"), (True, False))
@@ -55,7 +55,7 @@ def test_check_in_two(use_rusty_board: bool):
 
         implementation_args = ImplementationArgs(use_rust_boards=use_rusty_board)
 
-        syzygy_table: table_base.SyzygyTable | None = create_syzygy(
+        syzygy_table: AnySyzygyTable | None = create_syzygy(
             use_rust=implementation_args.use_rust_boards
         )
 
@@ -67,10 +67,10 @@ def test_check_in_two(use_rusty_board: bool):
             universal_behavior=True,
         )
         move_reco: Recommendation = player.select_move(
-            fen_plus_history=FenPlusHistory(current_fen=fen), seed_int=0
+            state_snapshot=FenPlusHistory(current_fen=fen), seed=0
         )
 
-        assert move_reco.move == moves[0].uci()
+        assert move_reco.recommended_name == moves[0].uci()
 
 
 if __name__ == "__main__":
