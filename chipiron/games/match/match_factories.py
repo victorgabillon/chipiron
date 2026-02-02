@@ -15,6 +15,7 @@ from atomheart.move_factory import MoveFactory, create_move_factory
 import chipiron as ch
 import chipiron.games.game as game
 import chipiron.players as players
+from chipiron.utils.logger import chipiron_logger
 from chipiron.environments.deps import CheckersEnvironmentDeps, ChessEnvironmentDeps
 from chipiron.environments.types import GameKind
 from chipiron.games.game.game_manager_factory import GameManagerFactory
@@ -28,6 +29,8 @@ from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import path
+
+from parsley_coco import resolve_extended_object
 
 from .match_settings_args import MatchSettingsArgs
 
@@ -166,6 +169,8 @@ def create_match_manager_from_args(
     Returns:
         MatchManager: The created match manager.
     """
+    match_args = resolve_extended_object(extended_obj=match_args, base_cls=MatchArgs)
+
     assert isinstance(match_args.player_one, players.PlayerArgs)
     assert isinstance(match_args.player_two, players.PlayerArgs)
 
@@ -187,6 +192,12 @@ def create_match_manager_from_args(
     # taking care of random
     ch.set_seeds(seed=base_script_args.seed)
 
+    _apply_tree_branch_limit_overrides(
+        player_one_args=player_one_args,
+        player_two_args=player_two_args,
+        match_args=match_args,
+    )
+
     match_manager = create_match_manager(
         args_match=match_args.match_setting,
         args_player_one=player_one_args,
@@ -200,3 +211,50 @@ def create_match_manager_from_args(
     )
 
     return match_manager
+
+
+def _apply_tree_branch_limit_overrides(
+    player_one_args: players.PlayerArgs,
+    player_two_args: players.PlayerArgs,
+    match_args: MatchArgs,
+) -> None:
+    tree_branch_limit = match_args.tree_branch_limit_override
+    if match_args.player_one_tree_branch_limit_override is not None:
+        _apply_tree_branch_limit(
+            player_args=player_one_args,
+            tree_branch_limit=match_args.player_one_tree_branch_limit_override,
+        )
+    elif tree_branch_limit is not None:
+        _apply_tree_branch_limit(
+            player_args=player_one_args, tree_branch_limit=tree_branch_limit
+        )
+
+    if match_args.player_two_tree_branch_limit_override is not None:
+        _apply_tree_branch_limit(
+            player_args=player_two_args,
+            tree_branch_limit=match_args.player_two_tree_branch_limit_override,
+        )
+    elif tree_branch_limit is not None:
+        _apply_tree_branch_limit(
+            player_args=player_two_args, tree_branch_limit=tree_branch_limit
+        )
+
+
+def _apply_tree_branch_limit(
+    player_args: players.PlayerArgs,
+    tree_branch_limit: int,
+) -> None:
+    selector = player_args.main_move_selector
+    anemone_args = getattr(selector, "anemone_args", selector)
+    stopping_criterion = getattr(anemone_args, "stopping_criterion", None)
+
+    if stopping_criterion is None or not hasattr(
+        stopping_criterion, "tree_branch_limit"
+    ):
+        chipiron_logger.warning(
+            "Tree-branch override ignored for player %s: move selector does not support tree_branch_limit.",
+            player_args.name,
+        )
+        return
+
+    stopping_criterion.tree_branch_limit = tree_branch_limit

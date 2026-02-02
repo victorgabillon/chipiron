@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from atomheart.move import MoveUci
     from valanga import BranchKey
 
+from valanga.policy import NotifyProgressCallable
 
 @dataclass
 class Random:
@@ -40,13 +41,14 @@ class Random:
     type: Literal[MoveSelectorTypes.Random]  # for serialization
     random_generator: random.Random = field(default_factory=random.Random)
 
-    def recommend(self, state: State, seed: Seed) -> Recommendation:
+    def recommend(self, state: State, seed: Seed, notify_progress: NotifyProgressCallable | None = None) -> Recommendation:
         """
         Selects a random move from the given chess board.
 
         Args:
             board (boards.IBoard): The chess board.
             move_seed (Seed): The seed for the random number generator.
+            _notify_progress (NotifyProgressCallable | None): Optional callback for progress notification.
 
         Returns:
             Recommendation: The selected move recommendation.

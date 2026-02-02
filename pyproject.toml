@@ -34,7 +34,7 @@ dependencies = [
     "valanga>=0.1.13",
     "atomheart>=0.1.6",
     "algorhino-coral>=0.1.8",
-    "algorhino-anemone>=0.1.10",
+    "algorhino-anemone>=0.1.10 @ file:/home/pompote/oldata/victor/anemone/",
 ]
 
 
