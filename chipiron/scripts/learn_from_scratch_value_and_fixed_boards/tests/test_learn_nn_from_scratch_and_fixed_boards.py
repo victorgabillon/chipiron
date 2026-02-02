@@ -5,6 +5,7 @@ from parsley_coco import make_partial_dataclass_with_optional_paths
 import chipiron.scripts as scripts
 from chipiron.learningprocesses.nn_trainer.factory import NNTrainerArgs
 from chipiron.players.boardevaluators.datasets.datasets import DataSetArgs
+from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.factory import create_script
 from chipiron.scripts.learn_from_scratch_value_and_fixed_boards.learn_from_scratch_value_and_fixed_boards import (
     LearnNNFromScratchScriptArgs,
@@ -32,6 +33,7 @@ configs_dataclasses: list[Any] = [
             train_file_name="chipiron/scripts/learn_nn_supervised/tests/small_dataset.pi",
             test_file_name="chipiron/scripts/learn_nn_supervised/tests/small_dataset.pi",
         ),
+        evaluating_player_args=PlayerConfigTag.RANDOM,
         base_script_args=PartialOpBaseScriptArgs(testing=True),
     )
     for architecture_file in [

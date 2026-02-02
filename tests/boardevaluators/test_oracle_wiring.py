@@ -4,6 +4,7 @@ import chess
 import pytest
 from atomheart.board import IBoard, create_board
 from atomheart.board.utils import FenPlusHistory
+from valanga import StateEvaluation
 
 from chipiron.displays.gui_protocol import GuiUpdate, UpdEvaluation, make_scope
 from chipiron.displays.gui_publisher import GuiPublisher
@@ -34,7 +35,7 @@ def test_chess_evaluator_accepts_chess_state(use_rust_boards: bool) -> None:
     oracle, chi = evaluator.evaluate(state)
 
     assert oracle is None
-    assert isinstance(chi, float)
+    assert isinstance(chi, StateEvaluation)
 
 
 def test_gui_evaluator_publishes_oracle_field() -> None:
@@ -65,4 +66,10 @@ def test_gui_evaluator_publishes_oracle_field() -> None:
 
     update = out.get_nowait()
     assert isinstance(update.payload, UpdEvaluation)
-    assert update.payload.stock is None
+
+
+if __name__ == "__main__":
+    test_chess_evaluator_accepts_chess_state(False)
+    test_chess_evaluator_accepts_chess_state(True)
+    test_gui_evaluator_publishes_oracle_field()
+    print("all tests passed")

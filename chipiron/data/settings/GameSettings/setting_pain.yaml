@@ -1,7 +1,4 @@
-displayPositionOption: False
-verbose: No
-secondsPerMoveWhite: 2
-secondsPerMoveBlack: 10
+game_kind: chess
 each_player_has_its_own_thread: False # allowing one player to think while it is not its turn
 #options: classic fromFile FEN
 starting_position:

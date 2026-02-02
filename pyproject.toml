@@ -31,10 +31,10 @@ dependencies = [
     "gdown",
     "zstandard",
     "rich",
-    "valanga>=0.1.10",
+    "valanga>=0.1.13",
     "atomheart>=0.1.6",
-    "algorhino-coral>=0.1.6",
-    "algorhino-anemone>=0.1.9",
+    "algorhino-coral>=0.1.8",
+    "algorhino-anemone>=0.1.10",
 ]
 
 
@@ -275,10 +275,10 @@ deps = [
   "gdown",
   "zstandard",
   "rich",
-    "valanga>=0.1.10",
+    "valanga>=0.1.13",
     "atomheart>=0.1.6",
-    "algorhino-coral>=0.1.6",
-    "algorhino-anemone>=0.1.9",
+    "algorhino-coral>=0.1.8",
+    "algorhino-anemone>=0.1.10 @ file:/home/juno/anemone",
 ]
 set_env = { PYTHONPATH = "{toxinidir}" }
 commands = [
@@ -315,10 +315,10 @@ deps = [
   "gdown",
   "zstandard",
   "rich",
-    "valanga>=0.1.10",
+     "valanga>=0.1.13",
     "atomheart>=0.1.6",
-    "algorhino-coral>=0.1.6",
-    "algorhino-anemone>=0.1.9",
+    "algorhino-coral>=0.1.8",
+    "algorhino-anemone>=0.1.10",
 ]
 set_env = { MYPYPATH = "{toxinidir}" }
 commands = [

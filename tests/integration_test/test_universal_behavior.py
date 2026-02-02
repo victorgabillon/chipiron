@@ -72,7 +72,7 @@ def test_universal_behavior() -> None:
     )
 
     move_reco_rust: Recommendation = player_rust.select_move(
-        fen_plus_history=board_rust.into_fen_plus_history(), seed_int=0
+        state_snapshot=board_rust.into_fen_plus_history(), seed=0
     )
 
     random_generator_chi: random.Random = random.Random(0)
@@ -83,13 +83,13 @@ def test_universal_behavior() -> None:
     )
 
     move_reco_chi: Recommendation = player_chi.select_move(
-        fen_plus_history=board_chi.into_fen_plus_history(), seed_int=0
+        state_snapshot=board_chi.into_fen_plus_history(), seed=0
     )
 
     assert move_reco_chi.evaluation == move_reco_rust.evaluation
 
-    chi_move_uci = move_reco_chi.move
-    chi_move_rust = move_reco_rust.move
+    chi_move_uci = move_reco_chi.recommended_name
+    chi_move_rust = move_reco_rust.recommended_name
 
     assert chi_move_uci == chi_move_rust
 

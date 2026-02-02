@@ -4,9 +4,14 @@ Module for the FinalGameResult enum and the GameReport dataclass.
 
 from dataclasses import dataclass
 from enum import Enum
+from typing import TYPE_CHECKING
 
-from valanga import StateTag
-from valanga.game import ActionName
+if TYPE_CHECKING:
+    from valanga import StateTag
+    from valanga.game import ActionName
+else:
+    ActionName = str
+    StateTag = str
 
 
 class FinalGameResult(str, Enum):

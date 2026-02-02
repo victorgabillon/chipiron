@@ -6,8 +6,8 @@ import random
 from typing import TYPE_CHECKING
 
 from chipiron.players.factory import create_chipiron_player, create_tag_player
-from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.players.player_ids import PlayerConfigTag
+from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
     from atomheart.board.utils import FenPlusHistory
@@ -30,6 +30,7 @@ def test_create_chipiron_player() -> None:
     assert player is not None
     assert player.adapter is not None
 
+
 def test_tag_player_creation() -> None:
     """Test the creation of players from all PlayerConfigTag values."""
 
@@ -47,6 +48,7 @@ def test_tag_player_creation() -> None:
         )
         assert player is not None
         assert player.adapter is not None
+
 
 if __name__ == "__main__":
     test_create_chipiron_player()

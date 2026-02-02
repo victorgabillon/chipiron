@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 from importlib import resources
 from pathlib import Path
-from typing import TypeAlias
+from typing import Literal, TypeAlias
 
 from valanga import StateTag
 
@@ -17,7 +17,7 @@ class StartingPositionArgsType(str, Enum):
 
 @dataclass(frozen=True)
 class FenStartingPositionArgs(StartingPositionArgs):
-    type: StartingPositionArgsType = StartingPositionArgsType.FEN
+    type: Literal[StartingPositionArgsType.FEN] = StartingPositionArgsType.FEN
     fen: str = ""
 
     def get_start_tag(self) -> StateTag:
@@ -28,7 +28,9 @@ class FenStartingPositionArgs(StartingPositionArgs):
 
 @dataclass(frozen=True)
 class FileStartingPositionArgs(StartingPositionArgs):
-    type: StartingPositionArgsType = StartingPositionArgsType.FROM_FILE
+    type: Literal[StartingPositionArgsType.FROM_FILE] = (
+        StartingPositionArgsType.FROM_FILE
+    )
     file_name: str = ""
 
     def get_start_tag(self) -> StateTag:

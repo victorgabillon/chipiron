@@ -47,3 +47,4 @@ def test_replay_match(configs=configs_base) -> None:
 if __name__ == "__main__":
     test_replay_match()
     chipiron_logger.info("ALL OK for REPLAY")
+    print("all tests passed")
