@@ -6,7 +6,10 @@ import pytest
 from atomheart.board.utils import FenPlusHistory
 
 from chipiron.environments.chess.types import ChessState
-from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable, create_syzygy
+from chipiron.players.boardevaluators.table_base.factory import (
+    AnySyzygyTable,
+    create_syzygy,
+)
 from chipiron.players.factory import create_chipiron_player, create_player
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs

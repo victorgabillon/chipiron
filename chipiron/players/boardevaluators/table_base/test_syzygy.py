@@ -61,3 +61,4 @@ def test_best_move_syzygy_table() -> None:
 
 if __name__ == "__main__":
     test_best_move_syzygy_table()
+    print("all tests passed")

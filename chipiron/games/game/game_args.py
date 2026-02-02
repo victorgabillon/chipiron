@@ -4,7 +4,7 @@ Module that contains the GameArgs class.
 
 from dataclasses import dataclass
 
-from chipiron.environments.starting_position import StartingPositionArgs
+from chipiron.environments.chess.starting_position_args import AllStartingPositionArgs
 from chipiron.environments.types import GameKind
 
 
@@ -20,6 +20,6 @@ class GameArgs:
     """
 
     game_kind: GameKind
-    starting_position: StartingPositionArgs
+    starting_position: AllStartingPositionArgs
     max_half_moves: int | None = None
     each_player_has_its_own_thread: bool = False
