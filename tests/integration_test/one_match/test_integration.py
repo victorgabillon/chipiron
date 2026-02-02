@@ -19,6 +19,7 @@ from parsley_coco import (
 )
 
 import chipiron as ch
+from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
 import chipiron.scripts as scripts
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_factories import create_match_manager_from_args
@@ -53,19 +54,26 @@ PartialOpPlayerArgs = make_partial_dataclass_with_optional_paths(cls=PlayerArgs)
 PartialOpTreeAndValuePlayerArgs = make_partial_dataclass_with_optional_paths(
     cls=TreeAndValuePlayerArgs
 )
+PartialOpTreeAndValueAppArgs = make_partial_dataclass_with_optional_paths(
+    cls=TreeAndValueAppArgs
+)
 PartialOpTreeBranchLimitArgs = make_partial_dataclass_with_optional_paths(
     cls=TreeBranchLimitArgs
 )
 
+
 # Create a common overwrite for test players with tree branch limit of 100
 TEST_TREE_BRANCH_LIMIT = 100
 test_player_overwrite = PartialOpPlayerArgs(
-    main_move_selector=PartialOpTreeAndValuePlayerArgs(
+    main_move_selector=PartialOpTreeAndValueAppArgs(
         type=MoveSelectorTypes.TreeAndValue,
-        stopping_criterion=PartialOpTreeBranchLimitArgs(
-            type=StoppingCriterionTypes.TREE_BRANCH_LIMIT,
-            tree_branch_limit=TEST_TREE_BRANCH_LIMIT,
-        ),
+        anemone_args=PartialOpTreeAndValuePlayerArgs(
+            type=MoveSelectorTypes.TreeAndValue,
+            stopping_criterion=PartialOpTreeBranchLimitArgs(
+                type=StoppingCriterionTypes.TREE_BRANCH_LIMIT,
+                tree_branch_limit=TEST_TREE_BRANCH_LIMIT,
+            ),
+        )
     )
 )
 
@@ -281,7 +289,6 @@ def test_randomness(log_level: int = logging.ERROR):
     # cases
 
     match_args: MatchArgs = MatchArgs()
-    match_args.seed = 0
     match_args.player_one = PlayerConfigTag.UNIFORM.get_players_args()
     match_args.player_two = PlayerConfigTag.RANDOM.get_players_args()
     match_args.match_setting = MatchConfigTag.TRON.get_match_settings_args()
@@ -292,6 +299,19 @@ def test_randomness(log_level: int = logging.ERROR):
     # Override player two with test tree move limit using parsley_coco
     match_args.player_one_overwrite = test_player_overwrite
     match_args = resolve_extended_object(extended_obj=match_args, base_cls=MatchArgs)
+
+    assert isinstance(match_args.player_one, PlayerArgs)
+    print(f"match_args.player_one.main_move_selector{match_args.player_one.main_move_selector}, type: {type(match_args.player_one.main_move_selector)}  ")
+    assert isinstance(match_args.player_one.main_move_selector, TreeAndValueAppArgs)
+    assert isinstance(
+            match_args.player_one.main_move_selector.anemone_args.stopping_criterion, TreeBranchLimitArgs
+        )
+
+    print(f" args_tree_branch_limit: {match_args.player_one.main_move_selector.anemone_args.stopping_criterion.tree_branch_limit} , Target branch limit{ TEST_TREE_BRANCH_LIMIT}")
+    assert (match_args.player_one.main_move_selector.anemone_args.stopping_criterion.tree_branch_limit
+            == TEST_TREE_BRANCH_LIMIT)
+    
+
 
     implementation_args: ImplementationArgs = ImplementationArgs()
     base_script_args: BaseScriptArgs = BaseScriptArgs()
@@ -343,7 +363,6 @@ def test_same_game_with_or_without_rust(log_level=logging.ERROR):
     """
 
     match_args: MatchArgs = MatchArgs()
-    match_args.seed = 0
 
     match_args.player_one = PlayerConfigTag.UNIFORM.get_players_args()
 
@@ -355,6 +374,19 @@ def test_same_game_with_or_without_rust(log_level=logging.ERROR):
 
     # Override player two with test tree move limit using parsley_coco
     match_args = resolve_extended_object(extended_obj=match_args, base_cls=MatchArgs)
+
+
+    assert isinstance(match_args.player_one, PlayerArgs)
+    print(f"match_args.player_one.main_move_selector{match_args.player_one.main_move_selector}, type: {type(match_args.player_one.main_move_selector)}  ")
+    assert isinstance(match_args.player_one.main_move_selector, TreeAndValueAppArgs)
+    assert isinstance(
+            match_args.player_one.main_move_selector.anemone_args.stopping_criterion, TreeBranchLimitArgs
+        )
+
+    print(f" args_tree_branch_limit: {match_args.player_one.main_move_selector.anemone_args.stopping_criterion.tree_branch_limit} , Target branch limit{ TEST_TREE_BRANCH_LIMIT}")
+    assert (match_args.player_one.main_move_selector.anemone_args.stopping_criterion.tree_branch_limit
+            == TEST_TREE_BRANCH_LIMIT)
+    
 
     implementation_args: ImplementationArgs = ImplementationArgs(use_rust_boards=False)
 

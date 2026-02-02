@@ -3,13 +3,13 @@ This module provides a factory function for creating the main move selector base
 """
 
 import random
-from typing import TYPE_CHECKING, TypeVar, cast
+from typing import  TypeVar
 
 from anemone import TreeAndValuePlayerArgs, create_tree_and_value_branch_selector
 from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
     MasterStateEvaluator,
 )
-from valanga import RepresentationFactory, StateModifications, TurnState
+from valanga import  RepresentationFactory, StateModifications, TurnState
 from valanga.evaluator_types import EvaluatorInput
 from valanga.policy import BranchSelector
 
@@ -21,11 +21,6 @@ from chipiron.utils.logger import chipiron_logger
 from ...utils.queue_protocols import PutQueue
 from . import human, stockfish
 from .random import Random, create_random
-
-if TYPE_CHECKING:
-    from queue import Queue
-
-    from anemone.utils.dataclass import IsDataclass as AnemoneIsDataclass
 
 TurnStateT = TypeVar("TurnStateT", bound=TurnState)
 
@@ -77,13 +72,11 @@ def create_tree_and_value_move_selector(
     """
     Create a tree-and-value move selector with a prebuilt evaluator.
     """
+
     return create_tree_and_value_branch_selector(
         state_type=state_type,
         master_state_evaluator=master_state_evaluator,
         state_representation_factory=state_representation_factory,
         args=args,
         random_generator=random_generator,
-        queue_progress_player=cast(
-            "Queue[AnemoneIsDataclass] | None", queue_progress_player
-        ),
     )

@@ -8,6 +8,8 @@ from typing import Generic, TypeVar
 
 from valanga.game import Color, Seed
 from valanga.policy import Recommendation
+from valanga.policy import NotifyProgressCallable
+
 
 from .player import Player
 
@@ -30,6 +32,8 @@ class GamePlayer(Generic[StateSnapT, RuntimeStateT]):
         return self._player
 
     def select_move_from_snapshot(
-        self, snapshot: StateSnapT, seed: Seed
+        self, snapshot: StateSnapT, seed: Seed, notify_percent_function: NotifyProgressCallable
     ) -> Recommendation:
-        return self._player.select_move(state_snapshot=snapshot, seed=seed)
+        
+
+        return self._player.select_move(state_snapshot=snapshot, seed=seed, notify_percent_function=notify_percent_function)

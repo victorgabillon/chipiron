@@ -9,6 +9,9 @@ from chipiron.environments.chess.types import ChessState
 from chipiron.players.oracles import PolicyOracle
 from chipiron.utils.logger import chipiron_logger
 
+from valanga.policy import NotifyProgressCallable
+
+
 if TYPE_CHECKING:
     from atomheart.move import MoveUci
     from atomheart.move.imove import MoveKey
@@ -58,6 +61,6 @@ class ChessAdapter:
 
         return None
 
-    def recommend(self, runtime_state: ChessState, seed: Seed) -> Recommendation:
+    def recommend(self, runtime_state: ChessState, seed: Seed, notify_progress: NotifyProgressCallable | None = None) -> Recommendation:
         # `valanga.policy.BranchSelector` is `recommend(state, seed)`.
-        return self.main_move_selector.recommend(state=runtime_state, seed=seed)
+        return self.main_move_selector.recommend(state=runtime_state, seed=seed, notify_progress=notify_progress)
