@@ -15,7 +15,9 @@ from chipiron.players.factory import create_chipiron_player
 from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
+    import anemone.trees as trees
     import atomheart.board as boards
+    from anemone.basics import TreeDepth
     from anemone.nodes import ITreeNode
     from anemone.tree_exploration import (
         TreeExploration,
@@ -42,6 +44,7 @@ def test_modifications(
         ),
         random_generator=random_generator_one,
         universal_behavior=True,
+        tree_branch_limit=1000,
     )
 
     main_move_selector_one = player_one.adapter.main_move_selector
@@ -52,7 +55,7 @@ def test_modifications(
             state=ChessState(board=board_one)
         )
     )
-    tree_one: trees.MoveAndValueTree = tree_exploration_one.explore(
+    tree_one: trees.Tree = tree_exploration_one.explore(
         random_generator=random_generator_one
     ).tree
 
@@ -71,6 +74,7 @@ def test_modifications(
         ),
         universal_behavior=True,
         random_generator=random_generator_two,
+        tree_branch_limit=1000,
     )
 
     main_move_selector_two = player_two.adapter.main_move_selector

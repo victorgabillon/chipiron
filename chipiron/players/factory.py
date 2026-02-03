@@ -38,6 +38,7 @@ from chipiron.players.chess_player_args import (
     ChessPlayerArgs,
     ChessPlayerFactoryArgs,
 )
+from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
 from chipiron.players.oracles import PolicyOracle, TerminalOracle, ValueOracle
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.utils.communication.mailbox import MainMailboxMessage
@@ -102,14 +103,16 @@ def create_tag_player(
 
     if tree_branch_limit is not None:
         # todo find a prettier way to do this
-        assert isinstance(args_player.main_move_selector, TreeAndValuePlayerArgs)
+        assert isinstance(args_player.main_move_selector, TreeAndValueAppArgs)
         assert isinstance(
-            args_player.main_move_selector.stopping_criterion, TreeBranchLimitArgs
+            args_player.main_move_selector.anemone_args, TreeAndValuePlayerArgs
+        )
+        assert isinstance(
+            args_player.main_move_selector.anemone_args.stopping_criterion,
+            TreeBranchLimitArgs,
         )
 
-        args_player.main_move_selector.stopping_criterion.tree_branch_limit = (
-            tree_branch_limit
-        )
+        args_player.main_move_selector.anemone_args.stopping_criterion.tree_branch_limit = tree_branch_limit
 
     return create_chess_player(
         args=args_player,

@@ -3,14 +3,11 @@ from typing import TYPE_CHECKING
 from atomheart.board import BoardFactory
 from atomheart.board.utils import FenPlusHistory
 from valanga.game import BranchName, Seed
-from valanga.policy import BranchSelector, Recommendation
+from valanga.policy import BranchSelector, NotifyProgressCallable, Recommendation
 
 from chipiron.environments.chess.types import ChessState
 from chipiron.players.oracles import PolicyOracle
 from chipiron.utils.logger import chipiron_logger
-
-from valanga.policy import NotifyProgressCallable
-
 
 if TYPE_CHECKING:
     from atomheart.move import MoveUci
@@ -61,6 +58,13 @@ class ChessAdapter:
 
         return None
 
-    def recommend(self, runtime_state: ChessState, seed: Seed, notify_progress: NotifyProgressCallable | None = None) -> Recommendation:
+    def recommend(
+        self,
+        runtime_state: ChessState,
+        seed: Seed,
+        notify_progress: NotifyProgressCallable | None = None,
+    ) -> Recommendation:
         # `valanga.policy.BranchSelector` is `recommend(state, seed)`.
-        return self.main_move_selector.recommend(state=runtime_state, seed=seed, notify_progress=notify_progress)
+        return self.main_move_selector.recommend(
+            state=runtime_state, seed=seed, notify_progress=notify_progress
+        )

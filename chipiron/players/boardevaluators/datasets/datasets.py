@@ -87,6 +87,11 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample], ABC):
         start_time = time.time()
 
         raw_data_temp = pandas.read_pickle(self.file_name).copy()
+        print("DEBUG columns", raw_data_temp.columns)
+        print(
+            "DEBUG first row types",
+            {c: type(raw_data_temp.iloc[0][c]) for c in raw_data_temp.columns},
+        )
 
         # Ensure we always work with a DataFrame
         raw_data: DataFrame

@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 
 from valanga.policy import NotifyProgressCallable
 
+
 @dataclass
 class Random:
     """
@@ -41,7 +42,12 @@ class Random:
     type: Literal[MoveSelectorTypes.Random]  # for serialization
     random_generator: random.Random = field(default_factory=random.Random)
 
-    def recommend(self, state: State, seed: Seed, notify_progress: NotifyProgressCallable | None = None) -> Recommendation:
+    def recommend(
+        self,
+        state: State,
+        seed: Seed,
+        notify_progress: NotifyProgressCallable | None = None,
+    ) -> Recommendation:
         """
         Selects a random move from the given chess board.
 

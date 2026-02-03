@@ -29,13 +29,13 @@ import atomheart.board as boards
 import chess.engine
 from atomheart.board import create_board_chi
 from atomheart.board.utils import FenPlusHistory
-from valanga.policy import Recommendation
+from valanga.policy import NotifyProgressCallable, Recommendation
 
 from chipiron.environments.chess.types import ChessState
 from chipiron.utils.path_variables import STOCKFISH_BINARY_PATH
 
 from .move_selector_types import MoveSelectorTypes
-from valanga.policy import NotifyProgressCallable
+
 if TYPE_CHECKING:
     from atomheart import BoardChi
 from valanga.game import BranchName, Seed
@@ -75,14 +75,24 @@ class StockfishPlayer:
         """
         return STOCKFISH_BINARY_PATH.exists() and STOCKFISH_BINARY_PATH.is_file()
 
-    def recommend(self, state: ChessState, seed: Seed, notify_progress: NotifyProgressCallable | None = None) -> Recommendation:
+    def recommend(
+        self,
+        state: ChessState,
+        seed: Seed,
+        notify_progress: NotifyProgressCallable | None = None,
+    ) -> Recommendation:
         # seed can be ignored (stockfish is deterministic unless you randomize)
         best: BranchName = self.select_move(
             state.board, move_seed=seed
         ).recommended_name
         return Recommendation(recommended_name=best)
 
-    def select_move(self, board: boards.IBoard, move_seed: int, notify_progress: NotifyProgressCallable | None = None) -> Recommendation:
+    def select_move(
+        self,
+        board: boards.IBoard,
+        move_seed: int,
+        notify_progress: NotifyProgressCallable | None = None,
+    ) -> Recommendation:
         """
         Selects a move based on the given board state and move seed.
 

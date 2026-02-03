@@ -7,17 +7,49 @@ SCRIPT_PATH = os.path.join(
 )
 
 
-def test_main_chipiron_one_match_executes():
-    """Test that main_chipiron.py runs with --script_name one_match without error."""
-    result = subprocess.run(
-        [sys.executable, SCRIPT_PATH, "--script_name", "one_match"],
-        capture_output=True,
+def run_with_live_output(cmd, env):
+    # Merge stderr into stdout so ordering is preserved
+    p = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
         text=True,
+        bufsize=1,  # line-buffered
+        universal_newlines=True,
+        env=env,
     )
-    assert result.returncode == 0, f"Process failed: {result.stderr}"
-    assert "error" not in result.stderr.lower(), f"Error in output: {result.stderr}"
-    # Optionally check for expected output in result.stdout
+
+    lines = []
+    assert p.stdout is not None
+    for line in p.stdout:
+        print(line, end="")  # live to terminal
+        lines.append(line)  # capture
+
+    returncode = p.wait()
+    output = "".join(lines)
+    return returncode, output
+
+
+def test_main_chipiron_one_match_executes():
+    cmd = [
+        sys.executable,
+        SCRIPT_PATH,
+        "--script_name",
+        "one_match",
+        "--match_args.player_one_overwrite.main_move_selector.anemone_args.stopping_criterion.tree_branch_limit",
+        "100",
+    ]
+
+    env = os.environ.copy()
+    env["QT_QPA_PLATFORM"] = "offscreen"
+    env["MPLBACKEND"] = "Agg"
+
+    returncode, output = run_with_live_output(cmd, env)
+
+    assert returncode == 0, f"Process failed:\n{output}"
+    assert "error" not in output.lower(), f"Error in output:\n{output}"
 
 
 if __name__ == "__main__":
     test_main_chipiron_one_match_executes()
+    print("Test passed.")

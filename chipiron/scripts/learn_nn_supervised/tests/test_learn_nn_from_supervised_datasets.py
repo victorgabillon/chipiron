@@ -3,8 +3,12 @@ from typing import Any
 from parsley_coco import make_partial_dataclass_with_optional_paths
 
 import chipiron.scripts as scripts
-from chipiron.learningprocesses.nn_trainer.factory import NNTrainerArgs
+from chipiron.environments.types import GameKind
+from chipiron.learningprocesses.nn_trainer.factory import GameInputArgs, NNTrainerArgs
 from chipiron.players.boardevaluators.datasets.datasets import DataSetArgs
+from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
+    ModelInputRepresentationType,
+)
 from chipiron.scripts.factory import create_script
 from chipiron.scripts.learn_nn_supervised.learn_nn_from_supervised_datasets import (
     LearnNNScriptArgs,
@@ -18,6 +22,17 @@ PartialOpNNTrainerArgs = make_partial_dataclass_with_optional_paths(cls=NNTraine
 PartialOpDataSetArgs = make_partial_dataclass_with_optional_paths(cls=DataSetArgs)
 PartialOpBaseScriptArgs = make_partial_dataclass_with_optional_paths(cls=BaseScriptArgs)
 
+
+ARCH_TO_REP = {
+    "architecture_p1.yaml": ModelInputRepresentationType.PIECE_DIFFERENCE,
+    "architecture_prelu_nobug.yaml": ModelInputRepresentationType.NOBUG364,
+    "architecture_transformerone.yaml": ModelInputRepresentationType.PIECE_MAP,
+}
+
+
+PartialOpGameInputArgs = make_partial_dataclass_with_optional_paths(cls=GameInputArgs)
+
+
 configs_dataclasses: list[Any] = [
     PartialOpLearnNNScriptArgs(
         nn_trainer_args=PartialOpNNTrainerArgs(
@@ -26,6 +41,10 @@ configs_dataclasses: list[Any] = [
             neural_network_architecture_args_path_to_yaml_file="chipiron/scripts/learn_nn_supervised/"
             + "board_evaluators_common_training_data/nn_pytorch/architectures/"
             + architecture_file,
+            game_input=PartialOpGameInputArgs(
+                game_kind=GameKind.CHESS,
+                representation=ARCH_TO_REP[architecture_file],
+            ),
         ),
         dataset_args=PartialOpDataSetArgs(
             train_file_name="chipiron/scripts/learn_nn_supervised/tests/small_dataset.pi",
