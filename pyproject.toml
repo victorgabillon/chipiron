@@ -32,7 +32,7 @@ dependencies = [
     "zstandard",
     "rich",
     "valanga>=0.1.13",
-    "atomheart>=0.1.6",
+    "atomheart>=0.1.6  @ file:/home/pompote/oldata/victor/atomheart/",
     "algorhino-coral>=0.1.8",
     "algorhino-anemone>=0.1.10 @ file:/home/pompote/oldata/victor/anemone/",
 ]
@@ -60,7 +60,7 @@ lint = [
 ]
 
 typecheck = [
-  "mypy>=1.18.2",
+  "mypy>=1.19.1",
   "pyright[nodejs]>=1.1.408",
   "types-PyYAML>=6.0.12.12",
 ]
@@ -294,7 +294,7 @@ commands = [
 description = "mypy + pyright (fast)"
 package = "skip"
 deps = [
-  "mypy>=1.18.2",
+  "mypy>=1.19.1",
   "pyright[nodejs]>=1.1.408",
   "types-PyYAML>=6.0.12.12",
   # runtime deps for import resolution (same list as lint)

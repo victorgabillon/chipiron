@@ -22,12 +22,12 @@ import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable
 
-from anemone import TreeAndValuePlayerArgs
 from anemone.progress_monitor.progress_monitor import (
     TreeBranchLimitArgs,
 )
 from atomheart.board.iboard import IBoard
 
+from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
 from chipiron.utils.logger import (
     chipiron_logger,
     suppress_all_logging,
@@ -313,13 +313,13 @@ class ChessEngineBenchmark:
 
                     # todo find a prettier way to do this
                     assert isinstance(
-                        player_args.main_move_selector, TreeAndValuePlayerArgs
+                        player_args.main_move_selector, TreeAndValueAppArgs
                     )
                     assert isinstance(
-                        player_args.main_move_selector.stopping_criterion,
+                        player_args.main_move_selector.anemone_args.stopping_criterion,
                         TreeBranchLimitArgs,
                     )
-                    player_args.main_move_selector.stopping_criterion.tree_branch_limit = tree_branch_limit
+                    player_args.main_move_selector.anemone_args.stopping_criterion.tree_branch_limit = tree_branch_limit
 
                     # Create random generator
                     random_generator = random.Random()

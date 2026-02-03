@@ -5,12 +5,12 @@ This module re-exports them to avoid touching all call sites at once,
 while keeping a couple helper functions used by factories.
 """
 
-from anemone import TreeAndValuePlayerArgs
 from anemone.progress_monitor.progress_monitor import TreeBranchLimitArgs
 from valanga import Color
 
 from chipiron.displays.gui_protocol import PlayerUiInfo, UpdPlayersInfo
 from chipiron.players import PlayerFactoryArgs
+from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
 
 
 def format_player_label(player: PlayerFactoryArgs) -> str:
@@ -19,8 +19,8 @@ def format_player_label(player: PlayerFactoryArgs) -> str:
     tree_branch_limit: str | int = ""
     sel = player.player_args.main_move_selector
 
-    if isinstance(sel, TreeAndValuePlayerArgs):
-        stop = sel.stopping_criterion
+    if isinstance(sel, TreeAndValueAppArgs):
+        stop = sel.anemone_args.stopping_criterion
         if isinstance(stop, TreeBranchLimitArgs):
             tree_branch_limit = stop.tree_branch_limit
 

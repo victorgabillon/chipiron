@@ -4,9 +4,9 @@ Module for the SyzygyTable class.
 
 from typing import Protocol, Sequence
 
-import chess
 from atomheart.board import IBoard
 from atomheart.move.imove import MoveKey
+from valanga import Color
 from valanga.over_event import HowOver, OverTags, Winner
 
 
@@ -106,11 +106,11 @@ class SyzygyTable[T_Board: IBoard](Protocol):
             how_over_ = HowOver.WIN
             if val > 0:
                 who_is_winner_ = (
-                    Winner.WHITE if board.turn == chess.WHITE else Winner.BLACK
+                    Winner.WHITE if board.turn == Color.WHITE else Winner.BLACK
                 )
             if val < 0:
                 who_is_winner_ = (
-                    Winner.WHITE if board.turn == chess.BLACK else Winner.BLACK
+                    Winner.WHITE if board.turn == Color.BLACK else Winner.BLACK
                 )
         else:
             how_over_ = HowOver.DRAW
@@ -143,7 +143,7 @@ class SyzygyTable[T_Board: IBoard](Protocol):
         """
         # tablebase.probe_wdl Returns 2 if the side to move is winning, 0 if the position is a draw and -2 if the side to move is losing.
         val: int = self.wdl(state)
-        if state.turn == chess.WHITE:
+        if state.turn == Color.WHITE:
             return val * 100000
         else:
             return val * -10000
@@ -160,14 +160,14 @@ class SyzygyTable[T_Board: IBoard](Protocol):
         """
         val = self.wdl(board)
         if val > 0:
-            if board.turn == chess.WHITE:
+            if board.turn == Color.WHITE:
                 return OverTags.TAG_WIN_WHITE
             else:
                 return OverTags.TAG_WIN_BLACK
         elif val == 0:
             return OverTags.TAG_DRAW
         else:
-            if board.turn == chess.WHITE:
+            if board.turn == Color.WHITE:
                 return OverTags.TAG_WIN_BLACK
             else:
                 return OverTags.TAG_WIN_WHITE
@@ -183,7 +183,7 @@ class SyzygyTable[T_Board: IBoard](Protocol):
             str: The string representation of the result.
         """
         val = self.wdl(board)
-        player_to_move = "white" if board.turn == chess.WHITE else "black"
+        player_to_move = "white" if board.turn == Color.WHITE else "black"
         if val > 0:
             return "WIN for player " + player_to_move
         elif val == 0:

@@ -19,7 +19,9 @@ import os
 import pickle
 import sys
 import typing
+from typing import Any
 
+from anemone.trees.tree import Tree
 from anemone.trees.tree_visualization import (
     display_special,
 )
@@ -247,9 +249,7 @@ class Window(QtWidgets.QWidget):
 
         pic = pickle.load(open("chipiron/debugTreeData_1white-#.td", "rb"))
 
-        self.tree: MoveAndValueTree = MoveAndValueTree(
-            root_node=pic[1], descendants=pic[0]
-        )
+        self.tree: Tree[Any] = Tree(root_node=pic[1], descendants=pic[0])
         self.tree.descendants = pic[0]
 
         self.current_node = self.tree.root_node

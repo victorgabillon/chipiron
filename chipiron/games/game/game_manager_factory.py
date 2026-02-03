@@ -32,11 +32,12 @@ from chipiron.utils import path
 from chipiron.utils.communication.gui_messages.gui_messages import (
     make_players_info_payload,
 )
+from chipiron.utils.communication.mailbox import MainMailboxMessage
 
 from ...players.player_ids import PlayerConfigTag
 from ...scripts.chipiron_args import ImplementationArgs
 from .game import Game, ObservableGame
-from .game_manager import GameManager, MainMailboxMessage
+from .game_manager import GameManager
 from .progress_collector import PlayerProgressCollectorObservable
 
 if TYPE_CHECKING:
