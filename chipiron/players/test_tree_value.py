@@ -52,6 +52,7 @@ def create_player_and_tree(
         implementation_args=ImplementationArgs(use_rust_boards=use_rust_boards),
         universal_behavior=True,
         random_generator=random_generator,
+        tree_branch_limit=1000,
     )
 
     assert isinstance(player.adapter, ChessAdapter)

@@ -24,16 +24,6 @@ class MatchArgs:
 
     """
 
-        player_one: PlayerConfigTag | PlayerArgs = PlayerConfigTag.RECUR_ZIPF_BASE_3
-        player_two: PlayerConfigTag | PlayerArgs = PlayerConfigTag.RECUR_ZIPF_BASE_3
-        match_setting: MatchConfigTag | MatchSettingsArgs = MatchConfigTag.CUBO
-
-        # Optional overwrite blocks (merged via parsley_coco.resolve_extended_object)
-        player_one_overwrite: PlayerArgs | None = None
-        player_two_overwrite: PlayerArgs | None = None
-        match_setting_overwrite: MatchSettingsArgs | None = None
-
-        # Convenience overrides for fast experiments
-        tree_branch_limit_override: int | None = None
-        player_one_tree_branch_limit_override: int | None = None
-        player_two_tree_branch_limit_override: int | None = None
+    player_one: PlayerConfigTag | PlayerArgs = PlayerConfigTag.RECUR_ZIPF_BASE_3
+    player_two: PlayerConfigTag | PlayerArgs = PlayerConfigTag.RECUR_ZIPF_BASE_3
+    match_setting: MatchConfigTag | MatchSettingsArgs = MatchConfigTag.CUBO

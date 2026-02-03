@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 import pytest
 from atomheart.board.utils import FenPlusHistory
 
-from chipiron.environments.chess.types import ChessState
 from chipiron.players.boardevaluators.table_base.factory import (
     AnySyzygyTable,
     create_syzygy,
@@ -18,6 +17,7 @@ if TYPE_CHECKING:
     import chess
     from valanga.policy import Recommendation
 
+    from chipiron.environments.chess.types import ChessState
     from chipiron.players import Player
 
 

@@ -9,9 +9,7 @@ The core `Player` is generic and delegates all game-specific logic to a `GameAda
 from typing import Generic, Protocol, TypeVar
 
 from valanga.game import BranchName, Seed
-from valanga.policy import Recommendation
-
-from valanga.policy import NotifyProgressCallable
+from valanga.policy import NotifyProgressCallable, Recommendation
 
 PlayerId = str
 
@@ -30,7 +28,12 @@ class GameAdapter(Protocol[StateSnapT, RuntimeStateT]):
 
     def oracle_action_name(self, runtime_state: RuntimeStateT) -> BranchName | None: ...
 
-    def recommend(self, runtime_state: RuntimeStateT, seed: Seed, notify_progress: NotifyProgressCallable | None = None ) -> Recommendation: ...
+    def recommend(
+        self,
+        runtime_state: RuntimeStateT,
+        seed: Seed,
+        notify_progress: NotifyProgressCallable | None = None,
+    ) -> Recommendation: ...
 
 
 class Player(Generic[StateSnapT, RuntimeStateT]):
@@ -48,7 +51,12 @@ class Player(Generic[StateSnapT, RuntimeStateT]):
     def get_id(self) -> PlayerId:
         return self.id
 
-    def select_move(self, state_snapshot: StateSnapT, seed: Seed, notify_percent_function:NotifyProgressCallable|None =None) -> Recommendation:
+    def select_move(
+        self,
+        state_snapshot: StateSnapT,
+        seed: Seed,
+        notify_percent_function: NotifyProgressCallable | None = None,
+    ) -> Recommendation:
         runtime_state = self.adapter.build_runtime_state(state_snapshot)
 
         n = self.adapter.legal_action_count(runtime_state)
@@ -65,4 +73,6 @@ class Player(Generic[StateSnapT, RuntimeStateT]):
         if oracle_name is not None:
             return Recommendation(recommended_name=oracle_name)
 
-        return self.adapter.recommend(runtime_state, seed, notify_progress = notify_percent_function)
+        return self.adapter.recommend(
+            runtime_state, seed, notify_progress=notify_percent_function
+        )

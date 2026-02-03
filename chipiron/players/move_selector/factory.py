@@ -3,13 +3,13 @@ This module provides a factory function for creating the main move selector base
 """
 
 import random
-from typing import  TypeVar
+from typing import TypeVar
 
 from anemone import TreeAndValuePlayerArgs, create_tree_and_value_branch_selector
 from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
     MasterStateEvaluator,
 )
-from valanga import  RepresentationFactory, StateModifications, TurnState
+from valanga import RepresentationFactory, StateModifications, TurnState
 from valanga.evaluator_types import EvaluatorInput
 from valanga.policy import BranchSelector
 

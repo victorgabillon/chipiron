@@ -19,7 +19,6 @@ from parsley_coco import (
 )
 
 import chipiron as ch
-from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
 import chipiron.scripts as scripts
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_factories import create_match_manager_from_args
@@ -27,6 +26,7 @@ from chipiron.games.match.match_tag import MatchConfigTag
 from chipiron.players import PlayerArgs
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 from chipiron.players.move_selector.stockfish import StockfishPlayer
+from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.factory import create_script
@@ -73,7 +73,7 @@ test_player_overwrite = PartialOpPlayerArgs(
                 type=StoppingCriterionTypes.TREE_BRANCH_LIMIT,
                 tree_branch_limit=TEST_TREE_BRANCH_LIMIT,
             ),
-        )
+        ),
     )
 )
 
@@ -301,17 +301,22 @@ def test_randomness(log_level: int = logging.ERROR):
     match_args = resolve_extended_object(extended_obj=match_args, base_cls=MatchArgs)
 
     assert isinstance(match_args.player_one, PlayerArgs)
-    print(f"match_args.player_one.main_move_selector{match_args.player_one.main_move_selector}, type: {type(match_args.player_one.main_move_selector)}  ")
+    print(
+        f"match_args.player_one.main_move_selector{match_args.player_one.main_move_selector}, type: {type(match_args.player_one.main_move_selector)}  "
+    )
     assert isinstance(match_args.player_one.main_move_selector, TreeAndValueAppArgs)
     assert isinstance(
-            match_args.player_one.main_move_selector.anemone_args.stopping_criterion, TreeBranchLimitArgs
-        )
+        match_args.player_one.main_move_selector.anemone_args.stopping_criterion,
+        TreeBranchLimitArgs,
+    )
 
-    print(f" args_tree_branch_limit: {match_args.player_one.main_move_selector.anemone_args.stopping_criterion.tree_branch_limit} , Target branch limit{ TEST_TREE_BRANCH_LIMIT}")
-    assert (match_args.player_one.main_move_selector.anemone_args.stopping_criterion.tree_branch_limit
-            == TEST_TREE_BRANCH_LIMIT)
-    
-
+    print(
+        f" args_tree_branch_limit: {match_args.player_one.main_move_selector.anemone_args.stopping_criterion.tree_branch_limit} , Target branch limit{TEST_TREE_BRANCH_LIMIT}"
+    )
+    assert (
+        match_args.player_one.main_move_selector.anemone_args.stopping_criterion.tree_branch_limit
+        == TEST_TREE_BRANCH_LIMIT
+    )
 
     implementation_args: ImplementationArgs = ImplementationArgs()
     base_script_args: BaseScriptArgs = BaseScriptArgs()
@@ -375,18 +380,23 @@ def test_same_game_with_or_without_rust(log_level=logging.ERROR):
     # Override player two with test tree move limit using parsley_coco
     match_args = resolve_extended_object(extended_obj=match_args, base_cls=MatchArgs)
 
-
     assert isinstance(match_args.player_one, PlayerArgs)
-    print(f"match_args.player_one.main_move_selector{match_args.player_one.main_move_selector}, type: {type(match_args.player_one.main_move_selector)}  ")
+    print(
+        f"match_args.player_one.main_move_selector{match_args.player_one.main_move_selector}, type: {type(match_args.player_one.main_move_selector)}  "
+    )
     assert isinstance(match_args.player_one.main_move_selector, TreeAndValueAppArgs)
     assert isinstance(
-            match_args.player_one.main_move_selector.anemone_args.stopping_criterion, TreeBranchLimitArgs
-        )
+        match_args.player_one.main_move_selector.anemone_args.stopping_criterion,
+        TreeBranchLimitArgs,
+    )
 
-    print(f" args_tree_branch_limit: {match_args.player_one.main_move_selector.anemone_args.stopping_criterion.tree_branch_limit} , Target branch limit{ TEST_TREE_BRANCH_LIMIT}")
-    assert (match_args.player_one.main_move_selector.anemone_args.stopping_criterion.tree_branch_limit
-            == TEST_TREE_BRANCH_LIMIT)
-    
+    print(
+        f" args_tree_branch_limit: {match_args.player_one.main_move_selector.anemone_args.stopping_criterion.tree_branch_limit} , Target branch limit{TEST_TREE_BRANCH_LIMIT}"
+    )
+    assert (
+        match_args.player_one.main_move_selector.anemone_args.stopping_criterion.tree_branch_limit
+        == TEST_TREE_BRANCH_LIMIT
+    )
 
     implementation_args: ImplementationArgs = ImplementationArgs(use_rust_boards=False)
 

@@ -69,6 +69,7 @@ def test_universal_behavior() -> None:
         implementation_args=ImplementationArgs(use_rust_boards=True),
         universal_behavior=True,
         random_generator=random_generator_rust,
+        tree_branch_limit=1000,
     )
 
     move_reco_rust: Recommendation = player_rust.select_move(
@@ -80,6 +81,7 @@ def test_universal_behavior() -> None:
         implementation_args=ImplementationArgs(use_rust_boards=False),
         universal_behavior=True,
         random_generator=random_generator_chi,
+        tree_branch_limit=1000,
     )
 
     move_reco_chi: Recommendation = player_chi.select_move(
