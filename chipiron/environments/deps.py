@@ -21,3 +21,6 @@ class ChessEnvironmentDeps:
 @dataclass(frozen=True)
 class CheckersEnvironmentDeps:
     pass
+
+
+EnvDeps = ChessEnvironmentDeps | CheckersEnvironmentDeps

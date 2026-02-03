@@ -7,6 +7,7 @@ import math
 import chess
 from atomheart.board import IBoard
 from chess import Square
+from valanga import Color
 
 from chipiron.environments.chess.types import ChessState
 
@@ -114,7 +115,7 @@ def value_player_to_move(board: IBoard) -> float:
     # value_white_pieces += add_pawns_value_white(board)
     # value_black_pieces += add_pawns_value_black(board)
     value: float
-    if board.turn == chess.WHITE:
+    if board.turn == Color.WHITE:
         value = sigmoid((value_white_pieces - value_black_pieces) * 0.2)
     else:
         value = sigmoid((value_black_pieces - value_white_pieces) * 0.2)

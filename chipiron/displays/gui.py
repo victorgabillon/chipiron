@@ -68,7 +68,7 @@ def format_state_eval(ev: StateEvaluation | None) -> str:
             suffix = " …" if len(line) > 6 else ""
             return f"{outcome} | {line_str}{suffix}"
         case _:
-            return str(ev)
+            return str(ev)  # type: ignore[unreachable]
 
 
 class MainWindow(QWidget):

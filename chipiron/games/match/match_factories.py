@@ -4,7 +4,7 @@ This module contains functions for creating match managers in the Chipiron game 
 
 import multiprocessing
 import uuid
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING
 
 from atomheart.board.factory import (
     BoardFactory,
@@ -16,7 +16,11 @@ from parsley_coco import resolve_extended_object
 import chipiron as ch
 import chipiron.games.game as game
 import chipiron.players as players
-from chipiron.environments.deps import CheckersEnvironmentDeps, ChessEnvironmentDeps
+from chipiron.environments.deps import (
+    CheckersEnvironmentDeps,
+    ChessEnvironmentDeps,
+    EnvDeps,
+)
 from chipiron.environments.types import GameKind
 from chipiron.games.game.game_manager_factory import GameManagerFactory
 from chipiron.games.match.match_args import MatchArgs
@@ -35,7 +39,6 @@ from .match_settings_args import MatchSettingsArgs
 if TYPE_CHECKING:
     import queue
 
-    from chipiron.players.boardevaluators.board_evaluator import IGameStateEvaluator
     from chipiron.utils.communication.mailbox import MainMailboxMessage
 
 
@@ -102,6 +105,7 @@ def create_match_manager(
         use_rust_boards=implementation_args.use_rust_boards
     )
 
+    env_deps: EnvDeps
     if args_game.game_kind == GameKind.CHESS:
         env_deps = ChessEnvironmentDeps(
             board_factory=board_factory,
@@ -110,13 +114,11 @@ def create_match_manager(
     elif args_game.game_kind == GameKind.CHECKERS:
         env_deps = CheckersEnvironmentDeps()
     else:
-        raise ValueError(f"No environment deps for game_kind={args_game.game_kind!r}")
+        raise ValueError
 
     game_manager_factory: GameManagerFactory = GameManagerFactory(
         env_deps=env_deps,
-        game_manager_state_evaluator=cast(
-            "IGameStateEvaluator[Any]", game_board_evaluator
-        ),
+        game_manager_state_evaluator=game_board_evaluator,
         output_folder_path=output_folder_path,
         main_thread_mailbox=main_thread_mailbox,
         implementation_args=implementation_args,

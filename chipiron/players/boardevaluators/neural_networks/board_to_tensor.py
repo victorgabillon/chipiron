@@ -5,6 +5,7 @@ Module to transform the board into a tensor representation.
 import chess
 import torch
 from atomheart.board import IBoard
+from valanga import Color
 
 
 def transform_board_pieces_one_side(
@@ -22,7 +23,7 @@ def transform_board_pieces_one_side(
     """
     # normalisation of the board so that it is white turn (possible color inversion if it was black's turn)
 
-    if board.turn == chess.BLACK:
+    if board.turn == Color.BLACK:
         color_turn = chess.BLACK
         color_not_turn = chess.WHITE
     else:
@@ -68,7 +69,7 @@ def transform_board_pieces_two_sides(
     """
     # normalisation of the board so that it is white turn (possible color inversion if it was black's turn)
 
-    if board.turn == chess.BLACK:
+    if board.turn == Color.BLACK:
         color_turn = chess.BLACK
         color_not_turn = chess.WHITE
     else:

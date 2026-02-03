@@ -260,7 +260,7 @@ class GameManager[StateT: TurnState = TurnState]:
                 elif message.payload.status == PlayingStatus.PAUSE:
                     self.game.set_pause_status()
                 else:
-                    chipiron_logger.warning(
+                    chipiron_logger.warning(  # type: ignore[unreachable]
                         "Unhandled PlayingStatus: %s", message.payload.status
                     )
 
@@ -288,7 +288,7 @@ class GameManager[StateT: TurnState = TurnState]:
                 )
 
             case _:
-                chipiron_logger.warning(
+                chipiron_logger.warning(  # type: ignore[unreachable]
                     "Unhandled GuiCommand payload in file %s: %r",
                     __name__,
                     message.payload,
@@ -317,7 +317,7 @@ class GameManager[StateT: TurnState = TurnState]:
                         value=message.payload.progress_percent
                     )
             case _:
-                chipiron_logger.warning(
+                chipiron_logger.warning(  # type: ignore[unreachable]
                     "Unhandled PlayerEvent payload in file %s: %r",
                     __name__,
                     message.payload,
