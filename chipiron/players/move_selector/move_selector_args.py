@@ -16,6 +16,7 @@ class MoveSelectorArgs(Protocol):
     type: MoveSelectorTypes
 
     def is_human(self) -> bool:
+        """Return whether human."""
         return self.type.is_human()
 
 

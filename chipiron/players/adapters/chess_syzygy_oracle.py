@@ -1,3 +1,4 @@
+"""Module for chess syzygy oracle."""
 from typing import TYPE_CHECKING
 
 from valanga.game import BranchName
@@ -16,12 +17,15 @@ class ChessSyzygyPolicyOracle(PolicyOracle[ChessState]):
     """Policy oracle wrapper around Syzygy for chess-specific best-move queries."""
 
     def __init__(self, syzygy: AnySyzygyTable) -> None:
+        """Initialize the instance."""
         self._syzygy = syzygy
 
     def supports(self, state: ChessState) -> bool:
+        """Supports."""
         return self._syzygy.fast_in_table(state.board)
 
     def recommend(self, state: ChessState) -> BranchName:
+        """Recommend."""
         best_move_key: MoveKey = self._syzygy.best_move(state.board)
         best_move_uci: MoveUci = state.get_uci_from_move_key(best_move_key)
         return best_move_uci
@@ -31,12 +35,15 @@ class ChessSyzygyValueOracle(ValueOracle[ChessState]):
     """Value oracle wrapper around Syzygy for chess-specific evaluations."""
 
     def __init__(self, syzygy: AnySyzygyTable) -> None:
+        """Initialize the instance."""
         self._syzygy = syzygy
 
     def supports(self, state: ChessState) -> bool:
+        """Supports."""
         return self._syzygy.fast_in_table(state.board)
 
     def value_white(self, state: ChessState) -> float:
+        """Value white."""
         return float(self._syzygy.val(state.board))
 
 
@@ -44,12 +51,15 @@ class ChessSyzygyTerminalOracle(TerminalOracle[ChessState]):
     """Terminal oracle wrapper around Syzygy for chess-specific endgame metadata."""
 
     def __init__(self, syzygy: AnySyzygyTable) -> None:
+        """Initialize the instance."""
         self._syzygy = syzygy
 
     def supports(self, state: ChessState) -> bool:
+        """Supports."""
         return self._syzygy.fast_in_table(state.board)
 
     def over_event(self, state: ChessState) -> OverEvent:
+        """Over event."""
         who_is_winner, how_over = self._syzygy.get_over_event(board=state.board)
         return OverEvent(
             how_over=how_over,

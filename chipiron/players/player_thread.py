@@ -25,9 +25,15 @@ BuildArgsT = TypeVar("BuildArgsT")
 
 
 class StopEvent(Protocol):
-    def is_set(self) -> bool: ...
+    """Protocol for stop event primitives used by player processes."""
 
-    def set(self) -> None: ...
+    def is_set(self) -> bool:
+        """Return whether the stop event has been signaled."""
+        ...
+
+    def set(self) -> None:
+        """Signal the stop event."""
+        ...
 
 
 class PlayerProcess(multiprocessing.Process, Generic[SnapT, RuntimeT, BuildArgsT]):
@@ -51,6 +57,7 @@ class PlayerProcess(multiprocessing.Process, Generic[SnapT, RuntimeT, BuildArgsT
         queue_out: PutQueue[IsDataclass],
         daemon: bool = False,
     ) -> None:
+        """Initialize the instance."""
         super().__init__(daemon=daemon)
         self._stop_event = multiprocessing.Event()
         self.queue_in = queue_in

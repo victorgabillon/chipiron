@@ -1,3 +1,4 @@
+"""Module for get script."""
 from chipiron.scripts.league.runtheleague import RunTheLeagueScript
 
 from .base_tree_exploration.base_tree_exploration import BaseTreeExplorationScript

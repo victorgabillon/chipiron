@@ -25,4 +25,5 @@ class BoardEvalTypes(str, Enum):
 
 
 def to_board_eval_type(value: str) -> BoardEvalTypes:
+    """To board eval type."""
     return BoardEvalTypes(value)

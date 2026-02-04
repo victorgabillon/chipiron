@@ -1,3 +1,4 @@
+"""Module for test modification integration."""
 import random
 from typing import TYPE_CHECKING
 
@@ -30,6 +31,7 @@ if TYPE_CHECKING:
 def test_modifications(
     use_rust_boards: bool,
 ) -> None:
+    """Test modifications."""
     board_one: IBoard = create_board(
         use_rust_boards=use_rust_boards,
         use_board_modification=False,

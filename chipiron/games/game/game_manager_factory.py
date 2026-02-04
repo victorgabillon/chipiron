@@ -49,6 +49,7 @@ if TYPE_CHECKING:
 
 
 def make_subscriber_queues() -> list[queue.Queue[GuiUpdate]]:
+    """Create subscriber queues."""
     return []
 
 

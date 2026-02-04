@@ -1,3 +1,4 @@
+"""Module for board to transformer input."""
 import chess
 import torch
 from atomheart.board import create_board

@@ -34,6 +34,7 @@ class IntegrationTestResult:
     """Container for test results"""
 
     def __init__(self):
+        """Initialize the instance."""
         self.results = {}
         self.start_time = time.time()
         self.errors = []
@@ -91,6 +92,7 @@ class ChipironIntegrationTester:
         skip_syzygy: bool = False,
         conda_env: str = None,
     ):
+        """Initialize the instance."""
         self.repo_url = repo_url
         self.keep_temp = keep_temp
         self.verbose = verbose

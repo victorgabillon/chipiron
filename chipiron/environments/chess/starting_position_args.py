@@ -1,3 +1,4 @@
+"""Module for starting position args."""
 from dataclasses import dataclass
 from enum import Enum
 from importlib import resources
@@ -11,16 +12,19 @@ from chipiron.environments.starting_position import StartingPositionArgs
 
 
 class StartingPositionArgsType(str, Enum):
+    """Startingpositionargstype implementation."""
     FEN = "fen"
     FROM_FILE = "from_file"
 
 
 @dataclass(frozen=True)
 class FenStartingPositionArgs(StartingPositionArgs):
+    """Fenstartingpositionargs implementation."""
     type: Literal[StartingPositionArgsType.FEN] = StartingPositionArgsType.FEN
     fen: str = ""
 
     def get_start_tag(self) -> StateTag:
+        """Return start tag."""
         if not self.fen:
             raise ValueError("Empty fen in FenStartingPositionArgs")
         return ChessStartTag(fen=self.fen)
@@ -28,12 +32,14 @@ class FenStartingPositionArgs(StartingPositionArgs):
 
 @dataclass(frozen=True)
 class FileStartingPositionArgs(StartingPositionArgs):
+    """Filestartingpositionargs implementation."""
     type: Literal[StartingPositionArgsType.FROM_FILE] = (
         StartingPositionArgsType.FROM_FILE
     )
     file_name: str = ""
 
     def get_start_tag(self) -> StateTag:
+        """Return start tag."""
         if not self.file_name:
             raise ValueError("Empty file_name in FileStartingPositionArgs")
         fen = _load_fen_from_file(self.file_name)
@@ -44,6 +50,7 @@ AllStartingPositionArgs: TypeAlias = FenStartingPositionArgs | FileStartingPosit
 
 
 def _load_fen_from_file(file_name: str) -> str:
+    """Load a FEN string from a file or packaged resource."""
     path = Path(file_name)
     if not path.is_file():
         path = _resolve_starting_board_path(file_name)
@@ -54,6 +61,7 @@ def _load_fen_from_file(file_name: str) -> str:
 
 
 def _resolve_starting_board_path(file_name: str) -> Path:
+    """Resolve a packaged starting-board path by filename."""
     try:
         starting_boards = resources.files("chipiron.data").joinpath("starting_boards")
     except ModuleNotFoundError as exc:
@@ -68,6 +76,7 @@ def _resolve_starting_board_path(file_name: str) -> Path:
 
 
 def _load_fen_from_path(path: Path) -> str:
+    """Load and normalize FEN content from a path."""
     contents = path.read_text(encoding="utf-8").strip()
     if not contents:
         return ""
@@ -83,6 +92,7 @@ def _load_fen_from_path(path: Path) -> str:
 
 
 def _looks_like_fen(contents: str) -> bool:
+    """Return whether the contents resemble a FEN header."""
     parts = contents.split()
     if len(parts) < 6:
         return False
@@ -91,6 +101,7 @@ def _looks_like_fen(contents: str) -> bool:
 
 
 def _compress_rank(rank: str) -> str:
+    """Compress a board rank into FEN digit form."""
     if len(rank) != 8:
         raise ValueError(f"Invalid board rank: {rank!r}")
     result: list[str] = []

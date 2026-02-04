@@ -20,14 +20,17 @@ from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 
 @dataclass(frozen=True)
 class ChessRules(GameRules[ChessState]):
+    """Chessrules implementation."""
     syzygy: AnySyzygyTable | None = None
 
     def outcome(self, state: ChessState) -> GameOutcome | None:
+        """Outcome."""
         if state.is_game_over():
             return self._outcome_from_board(state)
         return None
 
     def pretty_result(self, state: ChessState, outcome: GameOutcome) -> str:
+        """Pretty result."""
         result_str = self._result_string_outcome(outcome)
         reason = outcome.reason
         if reason is None and state.is_game_over():
@@ -38,6 +41,7 @@ class ChessRules(GameRules[ChessState]):
         return message
 
     def assessment(self, state: ChessState) -> PositionAssessment | None:
+        """Assessment."""
         if self.syzygy is None or not self.syzygy.fast_in_table(state):
             return None
         winner, how_over = self.syzygy.get_over_event(board=state)
@@ -46,6 +50,7 @@ class ChessRules(GameRules[ChessState]):
     def pretty_assessment(
         self, state: ChessState, assessment: PositionAssessment
     ) -> str:
+        """Pretty assessment."""
         result_str = self._result_string_assessment(assessment)
         message = f"Assessment: {result_str}"
         if assessment.reason:
@@ -56,6 +61,7 @@ class ChessRules(GameRules[ChessState]):
         return message
 
     def _outcome_from_board(self, state: ChessState) -> GameOutcome:
+        """Derive a GameOutcome from the current board result."""
         result = state.result(claim_draw=True)
         reason = self._termination_reason(state)
         match result:
@@ -79,6 +85,7 @@ class ChessRules(GameRules[ChessState]):
     def _assessment_from_over_event(
         self, winner: Winner, how_over: HowOver, reason: str | None = None
     ) -> PositionAssessment:
+        """Map a terminal event into a position assessment."""
         if how_over is HowOver.DRAW:
             return PositionAssessment(kind=VerdictKind.DRAW, reason=reason)
         if how_over is HowOver.WIN:
@@ -96,6 +103,7 @@ class ChessRules(GameRules[ChessState]):
 
     @staticmethod
     def _result_string_outcome(outcome: GameOutcome) -> str:
+        """Return the PGN result string for a GameOutcome."""
         if outcome.kind is OutcomeKind.WIN and outcome.winner is Color.WHITE:
             return "1-0"
         if outcome.kind is OutcomeKind.WIN and outcome.winner is Color.BLACK:
@@ -106,6 +114,7 @@ class ChessRules(GameRules[ChessState]):
 
     @staticmethod
     def _result_string_assessment(assessment: PositionAssessment) -> str:
+        """Return the PGN result string for a PositionAssessment."""
         if assessment.kind is VerdictKind.WIN and assessment.winner is Color.WHITE:
             return "1-0"
         if assessment.kind is VerdictKind.WIN and assessment.winner is Color.BLACK:
@@ -116,6 +125,7 @@ class ChessRules(GameRules[ChessState]):
 
     @staticmethod
     def _termination_reason(state: ChessState) -> str | None:
+        """Return a termination reason string when the game is over."""
         termination = state.termination()
         if termination is None:
             return None

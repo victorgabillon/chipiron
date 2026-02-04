@@ -13,15 +13,20 @@ from chipiron.utils.small_tools import get_package_root_path
 
 @dataclass
 class _PlayerArgContainer:
+    """Container for parsing a single player argument."""
+
     player: PlayerArgs | PlayerConfigTag = PlayerConfigTag.RANDOM
 
 
 @dataclass
 class _MatchArgsContainer:
+    """Container for parsing a match argument."""
+
     match_args: MatchSettingsArgs | MatchConfigTag = MatchConfigTag.CUBO
 
 
 def _create_parser() -> Parsley[_PlayerArgContainer]:
+    """Create a parser configured for player argument containers."""
     return create_parsley(
         args_dataclass_name=_PlayerArgContainer,
         should_parse_command_line_arguments=False,
@@ -31,6 +36,7 @@ def _create_parser() -> Parsley[_PlayerArgContainer]:
 
 
 def _create_match_parser() -> Parsley[_MatchArgsContainer]:
+    """Create a parser configured for match argument containers."""
     return create_parsley(
         args_dataclass_name=_MatchArgsContainer,
         should_parse_command_line_arguments=False,
@@ -40,6 +46,7 @@ def _create_match_parser() -> Parsley[_MatchArgsContainer]:
 
 
 def test_player_config_tags_parse_to_player_args() -> None:
+    """Test player config tags parse to player args."""
     parser = _create_parser()
 
     tag: PlayerConfigTag
@@ -52,6 +59,7 @@ def test_player_config_tags_parse_to_player_args() -> None:
 
 
 def test_match_config_tags_parse_to_match_args() -> None:
+    """Test match config tags parse to match args."""
     parser = _create_match_parser()
 
     tag: MatchConfigTag

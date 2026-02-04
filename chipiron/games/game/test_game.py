@@ -1,3 +1,4 @@
+"""Module for test game."""
 import chess
 import pytest
 from atomheart.board import IBoard, create_board
@@ -10,6 +11,7 @@ from chipiron.games.game.game_playing_status import GamePlayingStatus
 
 @pytest.mark.parametrize(("use_rust_boards"), (True, False))
 def test_game_rewind(use_rust_boards: bool) -> None:
+    """Test game rewind."""
     board: IBoard = create_board(
         use_rust_boards=use_rust_boards,
         fen_with_history=FenPlusHistory(current_fen=chess.STARTING_FEN),
