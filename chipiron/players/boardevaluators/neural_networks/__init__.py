@@ -1,3 +1,1 @@
-"""
-Module for neural network board evaluators.
-"""
+"""Module for neural network board evaluators."""

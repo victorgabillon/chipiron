@@ -1,6 +1,4 @@
-"""
-Module for the basic evaluation of a chess board.
-"""
+"""Module for the basic evaluation of a chess board."""
 
 import math
 
@@ -21,6 +19,7 @@ def value_base(board: IBoard, color: chess.Color) -> int:
 
     Returns:
         int: The base value of the board for the specified color.
+
     """
     value_white_: int = (
         bin(board.pawns & board.occupied_color(color)).count("1")
@@ -40,6 +39,7 @@ def add_pawns_value_white(board: IBoard) -> float:
 
     Returns:
         float: The additional value for white pawns.
+
     """
     add_value: float = 0
     pawn: Square
@@ -59,6 +59,7 @@ def add_pawns_value_black(board: IBoard) -> float:
 
     Returns:
         float: The value to be added for black pawns.
+
     """
     add_value: float = 0
     pawn: Square
@@ -77,6 +78,7 @@ def value_white(board: IBoard) -> float:
 
     Returns:
         float: The value of the white pieces on the board.
+
     """
     value_white_pieces = value_base(board, chess.WHITE)
     value_black_pieces = value_base(board, chess.BLACK)
@@ -86,14 +88,14 @@ def value_white(board: IBoard) -> float:
 
 
 def sigmoid(x: float) -> float:
-    """
-    Calculate the sigmoid function of a given input.
+    """Calculate the sigmoid function of a given input.
 
     Args:
         x (float): The input value.
 
     Returns:
         float: The result of the sigmoid function.
+
     """
     return 1 / (1 + math.exp(-x))
 
@@ -109,6 +111,7 @@ def value_player_to_move(board: IBoard) -> float:
 
     Returns:
         float: The value of the player to move.
+
     """
     value_white_pieces: int = value_base(board, chess.WHITE)
     value_black_pieces: int = value_base(board, chess.BLACK)
@@ -137,7 +140,7 @@ class BasicEvaluation:
     """
 
     def value_white(self, state: ChessState) -> float:
-        """Calculates the value of the board for the white player.
+        """Calculate the value of the board for the white player.
 
         Args:
             state (BoardChi): The chess board.

@@ -1,5 +1,4 @@
-"""
-This module contains classes for visualizing a tree structure and interacting with it.
+"""Document the module contains classes for visualizing a tree structure and interacting with it.
 
 Classes:
 - PhotoViewer: A QGraphicsView widget for displaying and interacting with an image.
@@ -13,6 +12,7 @@ Usage:
 4. Call the terminate() method to finish the script.
 
 Note: This code requires the PySide6 library and the chipiron package to be installed.
+
 """
 
 import os
@@ -33,8 +33,7 @@ from chipiron.scripts.script import Script
 
 @typing.no_type_check
 class PhotoViewer(QtWidgets.QGraphicsView):
-    """
-    A custom QGraphicsView widget for displaying photos.
+    """A custom QGraphicsView widget for displaying photos.
 
     Signals:
         - photoClicked: Signal emitted when the photo is clicked. It provides the position of the click as a QPoint.
@@ -48,16 +47,18 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         - mousePressEvent(event): Handle the mouse press event.
         - zoomin(): Zoom in the photo.
         - zoomout(): Zoom out the photo.
+
     """
 
     photoClicked = QtCore.Signal(QtCore.QPoint)
 
     @typing.no_type_check
     def __init__(self, parent):
-        """Initializes the PhotoViewer.
+        """Initialize the PhotoViewer.
 
         Args:
             parent (QWidget): The parent widget.
+
         """
         super(PhotoViewer, self).__init__(parent)
         self._zoom = 0
@@ -75,30 +76,29 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
     @typing.no_type_check
     def hasPhoto(self):
-        """
-        Check if the viewer has a photo loaded.
+        """Check if the viewer has a photo loaded.
 
         Returns:
             bool: True if a photo is loaded, False otherwise.
+
         """
         return not self._empty
 
     @typing.no_type_check
     def fitInView(self, scale=True):
-        """
-        Fit the photo within the view.
+        """Fit the photo within the view.
 
         Args:
             scale (bool): Whether to scale the photo to fit the view. Default is True.
-        """
 
+        """
     @typing.no_type_check
     def set_photo(self, pixmap=None):
-        """
-        Set the photo to be displayed.
+        """Set the photo to be displayed.
 
         Args:
             pixmap (QPixmap): The photo to be displayed. If None, the viewer will be empty.
+
         """
         self._zoom = 0
         if pixmap and not pixmap.isNull():
@@ -113,11 +113,11 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
     @typing.no_type_check
     def wheelEvent(self, event):
-        """
-        Handle the wheel event for zooming.
+        """Handle the wheel event for zooming.
 
         Args:
             event (QWheelEvent): The wheel event object.
+
         """
         if self.hasPhoto():
             if event.angleDelta().y() > 0:
@@ -135,9 +135,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
     @typing.no_type_check
     def toggleDragMode(self):
-        """
-        Toggle the drag mode between ScrollHandDrag and NoDrag.
-        """
+        """Toggle the drag mode between ScrollHandDrag and NoDrag."""
         if self.dragMode() == QtWidgets.QGraphicsView.ScrollHandDrag:
             self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
         elif not self._photo.pixmap().isNull():
@@ -145,11 +143,11 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
     @typing.no_type_check
     def mousePressEvent(self, event):
-        """
-        Handle the mouse press event.
+        """Handle the mouse press event.
 
         Args:
             event (QMouseEvent): The mouse press event object.
+
         """
         if self._photo.isUnderMouse():
             self.photoClicked.emit(self.mapToScene(event.pos()).toPoint())
@@ -157,9 +155,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
     @typing.no_type_check
     def zoomin(self):
-        """
-        Zoom in the photo.
-        """
+        """Zoom in the photo."""
         factor = 1.25
         self._zoom += 1
         if self._zoom > 0:
@@ -171,9 +167,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
     @typing.no_type_check
     def zoomout(self):
-        """
-        Zoom out the photo.
-        """
+        """Zoom out the photo."""
         factor = 1 / 1.25
         self._zoom -= 1
         if self._zoom > 0:
@@ -186,8 +180,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
 @typing.no_type_check
 class Window(QtWidgets.QWidget):
-    """
-    A class representing a window for tree visualization.
+    """A class representing a window for tree visualization.
 
     Attributes:
         viewer (PhotoViewer): The photo viewer widget.
@@ -208,12 +201,12 @@ class Window(QtWidgets.QWidget):
         keyPressEvent(): Handles the key press event.
         father(): Moves to the parent node.
         move_to_son(): Moves to the specified child node.
+
     """
 
     @typing.no_type_check
     def __init__(self):
-        """
-        Initializes the Window class.
+        """Initialize the Window class.
 
         This method sets up the GUI elements and initializes the necessary variables.
         It also loads the image, builds the subtree, and displays the subtree.
@@ -223,6 +216,7 @@ class Window(QtWidgets.QWidget):
 
         Returns:
             None
+
         """
         super(Window, self).__init__()
         self.viewer = PhotoViewer(self)
@@ -259,14 +253,14 @@ class Window(QtWidgets.QWidget):
 
     @typing.no_type_check
     def build_subtree(self):
-        """
-        Builds the subtree of the current node.
+        """Build the subtree of the current node.
 
         This method iterates over the moves of the current node and assigns an index to each move.
         The index is stored in the `index` dictionary, where the move is the key and the index is the value.
 
         Returns:
             None
+
         """
         self.index = {}
         for ind, move in enumerate(self.current_node.moves_children):
@@ -274,8 +268,7 @@ class Window(QtWidgets.QWidget):
 
     @typing.no_type_check
     def display_subtree(self):
-        """
-        Displays the subtree rooted at the current node.
+        """Display the subtree rooted at the current node.
 
         This method generates a visualization of the subtree rooted at the current node and saves it as a JPG image file.
 
@@ -284,6 +277,7 @@ class Window(QtWidgets.QWidget):
 
         Returns:
             None
+
         """
         dot = display_special(
             node=self.current_node, format_str="jpg", index=self.index
@@ -292,8 +286,7 @@ class Window(QtWidgets.QWidget):
 
     @typing.no_type_check
     def load_image(self):
-        """
-        Loads an image and sets it as the photo for the viewer.
+        """Load an image and sets it as the photo for the viewer.
 
         The image is loaded from the file 'chipiron/runs/treedisplays/TreeVisualtemp.jpg'.
 
@@ -302,6 +295,7 @@ class Window(QtWidgets.QWidget):
 
         Returns:
             None
+
         """
         self.viewer.set_photo(
             QtGui.QPixmap("chipiron/runs/treedisplays/TreeVisualtemp.jpg")
@@ -309,44 +303,44 @@ class Window(QtWidgets.QWidget):
 
     @typing.no_type_check
     def pixInfo(self):
-        """
-        Toggles the drag mode of the viewer.
+        """Toggles the drag mode of the viewer.
 
         This method is used to toggle the drag mode of the viewer. It switches between the modes of dragging and not dragging
         the image.
 
-        Parameters:
+        Args:
             None
 
         Returns:
             None
+
         """
         self.viewer.toggleDragMode()
 
     @typing.no_type_check
     def photoClicked(self, pos):
-        """
-        Handle the event when a photo is clicked.
+        """Handle the event when a photo is clicked.
 
         Args:
             pos (QPoint): The position of the click.
 
         Returns:
             None
+
         """
         if self.viewer.dragMode() == QtWidgets.QGraphicsView.NoDrag:
             self.editPixInfo.setText("%d, %d" % (pos.x(), pos.y()))
 
     @typing.no_type_check
     def keyPressEvent(self, event):
-        """
-        Handles key press events.
+        """Handle key press events.
 
         Args:
             event (QKeyEvent): The key press event.
 
         Returns:
             None
+
         """
         print(event.text())
         key = event.text()
@@ -363,9 +357,7 @@ class Window(QtWidgets.QWidget):
 
     @typing.no_type_check
     def father(self):
-        """
-        Move to the parent node of the current node and perform necessary operations.
-        """
+        """Move to the parent node of the current node and perform necessary operations."""
         qq = list(self.current_node.parent_nodes.keys())
         father_node = qq[0]  # by default!
         if father_node is not None:
@@ -376,8 +368,7 @@ class Window(QtWidgets.QWidget):
 
     @typing.no_type_check
     def move_to_son(self, key):
-        """
-        Moves to the specified son node based on the given key.
+        """Move to the specified son node based on the given key.
 
         Args:
             key: The key of the son node to move to.
@@ -387,6 +378,7 @@ class Window(QtWidgets.QWidget):
 
         Raises:
             None
+
         """
         for move, ind in self.index.items():
             if key == ind:
@@ -400,9 +392,7 @@ class Window(QtWidgets.QWidget):
 
 
 class VisualizeTreeScript(IScript):
-    """
-    This class represents a script for visualizing a tree.
-    """
+    """Describe the class represents a script for visualizing a tree."""
 
     base_experiment_output_folder = os.path.join(
         Script.base_experiment_output_folder, "tree_visualization/outputs/"
@@ -413,20 +403,17 @@ class VisualizeTreeScript(IScript):
         self,
         base_script: Script,
     ):
-        """
-        Initializes a TreeVisualizer object.
+        """Initialize a TreeVisualizer object.
 
         Args:
             base_script (Script): The base script to visualize.
 
         Returns:
             None
-        """
 
+        """
     def run(self) -> None:
-        """
-        Runs the tree visualizer application.
-        """
+        """Run the tree visualizer application."""
         app = QtWidgets.QApplication(sys.argv)
         window = Window()
         window.setGeometry(0, 0, 1800, 1600)
@@ -434,6 +421,4 @@ class VisualizeTreeScript(IScript):
         sys.exit(app.exec_())
 
     def terminate(self) -> None:
-        """
-        Finishing the script. Profiling or timing.
-        """
+        """Finishing the script. Profiling or timing."""

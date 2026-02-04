@@ -1,6 +1,4 @@
-"""
-Module to transform the board into a tensor representation.
-"""
+"""Module to transform the board into a tensor representation."""
 
 import chess
 import torch
@@ -11,8 +9,7 @@ from valanga import Color
 def transform_board_pieces_one_side(
     board: IBoard, requires_grad_bool: bool
 ) -> torch.Tensor:
-    """
-    Transform the board pieces for one side into a tensor representation.
+    """Transform the board pieces for one side into a tensor representation.
 
     Args:
         board (BoardChi): The chess board.
@@ -20,6 +17,7 @@ def transform_board_pieces_one_side(
 
     Returns:
         torch.Tensor: The transformed board pieces tensor.
+
     """
     # normalisation of the board so that it is white turn (possible color inversion if it was black's turn)
 
@@ -57,8 +55,7 @@ def transform_board_pieces_one_side(
 def transform_board_pieces_two_sides(
     board: IBoard, requires_grad_bool: bool
 ) -> torch.Tensor:
-    """
-    Transform the board pieces for both sides into a tensor representation.
+    """Transform the board pieces for both sides into a tensor representation.
 
     Args:
         board (BoardChi): The chess board.
@@ -66,6 +63,7 @@ def transform_board_pieces_two_sides(
 
     Returns:
         torch.Tensor: The transformed board pieces tensor.
+
     """
     # normalisation of the board so that it is white turn (possible color inversion if it was black's turn)
 
@@ -98,8 +96,7 @@ def get_tensor_from_tensors(
     tensor_castling_black: torch.Tensor,
     color_to_play: chess.Color,
 ) -> torch.Tensor:
-    """
-    Get the final tensor representation from individual tensors.
+    """Get the final tensor representation from individual tensors.
 
     Args:
         tensor_white (torch.Tensor): The tensor representation for white pieces.
@@ -110,6 +107,7 @@ def get_tensor_from_tensors(
 
     Returns:
         torch.Tensor: The final tensor representation.
+
     """
     if color_to_play == chess.WHITE:
         tensor = tensor_white - tensor_black

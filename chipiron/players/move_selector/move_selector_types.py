@@ -1,5 +1,4 @@
-"""
-This module defines an enumeration class for Move Selector Types.
+"""Document the module defines an enumeration class for Move Selector Types.
 
 The MoveSelectorTypes class is a subclass of the str class and the Enum class.
 It represents different types of move selectors that can be used in a game.
@@ -10,6 +9,7 @@ Attributes:
     Stockfish: Represents a move selector using the Stockfish engine.
     CommandLineHuman: Represents a move selector for a human player using the command line.
     GuiHuman: Represents a move selector for a human player using a graphical user interface.
+
 """
 
 from enum import Enum
@@ -18,9 +18,7 @@ from anemone.factory import TREE_AND_VALUE_LITERAL_STRING
 
 
 class MoveSelectorTypes(str, Enum):
-    """
-    Enumeration class representing different types of move selectors.
-    """
+    """Enumeration class representing different types of move selectors."""
 
     Random = "Random"
     TreeAndValue = TREE_AND_VALUE_LITERAL_STRING
@@ -29,11 +27,11 @@ class MoveSelectorTypes(str, Enum):
     GuiHuman = "GuiHuman"
 
     def is_human(self) -> bool:
-        """
-        Determines if the move selector type represents a human player.
+        """Determine if the move selector type represents a human player.
 
         Returns:
             bool: True if the move selector type is either GuiHuman or CommandLineHuman, False otherwise.
+
         """
         return (
             self is MoveSelectorTypes.GuiHuman

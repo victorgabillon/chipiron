@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""
-Test that all path configurations are consistent across the project.
+"""Test that all path configurations are consistent across the project.
+
 This test ensures that Python, Makefile, and Dockerfile use the same paths.
 """
 

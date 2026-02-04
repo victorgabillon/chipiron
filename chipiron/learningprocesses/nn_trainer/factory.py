@@ -1,6 +1,4 @@
-"""
-Module to create and save neural network trainers and their parameters
-"""
+"""Module to create and save neural network trainers and their parameters."""
 
 import os.path
 import pickle
@@ -52,14 +50,14 @@ SerializableType = Union[
 @dataclass(frozen=True, slots=True)
 class GameInputArgs:
     """Gameinputargs implementation."""
+
     game_kind: GameKind
     representation: ModelInputRepresentationType
 
 
 @dataclass
 class NNTrainerArgs:
-    """
-    Arguments for the NNTrainer class.
+    """Arguments for the NNTrainer class.
 
     Attributes:
         reuse_existing_trainer (bool): Whether to reuse an existing trainer.
@@ -68,6 +66,7 @@ class NNTrainerArgs:
         scheduler_step_size (int): The step size for the scheduler.
         scheduler_gamma (float): The gamma value for the scheduler.
         saving_intermediate_copy (bool): Whether to save intermediate copies.
+
     """
 
     neural_network_architecture_args: NeuralNetArchitectureArgs = field(
@@ -108,7 +107,7 @@ class NNTrainerArgs:
     epochs_number: int = 100
 
     def __post_init__(self) -> None:
-        """  post init  ."""
+        """Run post-init."""
         if self.reuse_existing_model:
             if self.nn_parameters_file_if_reusing_existing_one is None:
                 raise Exception(
@@ -119,8 +118,7 @@ class NNTrainerArgs:
 
 
 def get_optimizer_file_path_from(folder_path: path) -> str:
-    """
-    Returns the file path for the optimizer file in the given folder path.
+    """Return the file path for the optimizer file in the given folder path.
 
     Args:
         folder_path (str): The path to the folder containing the optimizer file.
@@ -141,29 +139,29 @@ def get_scheduler_file_path_from(folder_path: path) -> str:
 
     Returns:
         str: The file path of the scheduler file.
+
     """
     file_path: str = os.path.join(folder_path, "scheduler.pi")
     return file_path
 
 
 def get_folder_training_copies_path_from(folder_path: path) -> str:
-    """
-    Returns the path to the 'training_copies' folder within the given folder path.
+    """Return the path to the 'training_copies' folder within the given folder path.
 
-    Parameters:
+    Args:
         folder_path (str): The path to the folder.
 
     Returns:
         str: The path to the 'training_copies' folder.
+
     """
     return os.path.join(folder_path, "training_copies")
 
 
-def create_nn_trainer(
+def create_nn_trainer(  # noqa: D417
     args: NNTrainerArgs, nn: ChiNN, saving_folder: path
 ) -> NNPytorchTrainer:
-    """
-    Creates an instance of NNPytorchTrainer based on the provided arguments and neural network.
+    """Create an instance of NNPytorchTrainer based on the provided arguments and neural network.
 
     Args:
         args (NNTrainerArgs): The arguments for the NNTrainer.
@@ -173,7 +171,6 @@ def create_nn_trainer(
         NNPytorchTrainer: An instance of NNPytorchTrainer.
 
     """
-
     optimizer: torch.optim.Optimizer
     scheduler: torch.optim.lr_scheduler.LRScheduler
     if args.reuse_existing_trainer:
@@ -207,8 +204,8 @@ def create_nn_trainer(
 
 @no_type_check
 def serialize_for_yaml(obj: Any) -> SerializableType:
-    """
-    Recursively converts Enums and other non-serializable objects
+    """Recursively converts Enums and other non-serializable objects.
+
     into basic types for safe YAML dumping.
     """
     # Handle None and primitives
@@ -256,11 +253,12 @@ def serialize_for_yaml(obj: Any) -> SerializableType:
 def safe_nn_architecture_save(
     nn_architecture_args: NeuralNetArchitectureArgs, nn_param_folder_name: path
 ) -> None:
-    """
-    Save the architecture of a neural network to a file.
+    """Save the architecture of a neural network to a file.
+
     Args:
         nn_architecture_args (NeuralNetArchitectureArgs): The architecture arguments of the neural network.
         nn_param_folder_name (path): The folder path where the architecture file will be saved.
+
     """
     path_to_param_file = get_nn_architecture_file_path_from(nn_param_folder_name)
     try:
@@ -278,18 +276,18 @@ def safe_nn_architecture_save(
         exit(-1)
 
 
-def safe_nn_param_save(
+def safe_nn_param_save(  # noqa: D417
     nn: ChiNN,
     nn_param_folder_name: path,
     file_name: str | None = None,
     training_copy: bool = False,
 ) -> None:
-    """
-    Save the parameters of a neural network to a file.
+    """Save the parameters of a neural network to a file.
 
     Args:
         nn (ChiNN): The neural network to save.
         training_copy (bool, optional): Whether to save a training copy of the parameters. Defaults to False.
+
     """
     folder_path = nn_param_folder_name
     folder_path_training_copies = get_folder_training_copies_path_from(folder_path)
@@ -320,15 +318,15 @@ def safe_nn_param_save(
         exit(-1)
 
 
-def safe_nn_trainer_save(nn_trainer: NNPytorchTrainer, nn_folder_path: path) -> None:
-    """
-    Safely saves the optimizer and scheduler of the given NNPytorchTrainer object to files.
+def safe_nn_trainer_save(nn_trainer: NNPytorchTrainer, nn_folder_path: path) -> None:  # noqa: D417
+    """Safely saves the optimizer and scheduler of the given NNPytorchTrainer object to files.
 
     Args:
         nn_trainer (NNPytorchTrainer): The NNPytorchTrainer object containing the optimizer and scheduler to be saved.
 
     Returns:
         None
+
     """
     file_optimizer_path = get_optimizer_file_path_from(nn_folder_path)
     file_scheduler_path = get_scheduler_file_path_from(nn_folder_path)

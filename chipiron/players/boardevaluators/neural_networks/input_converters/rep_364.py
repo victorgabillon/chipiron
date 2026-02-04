@@ -21,13 +21,12 @@ class _Rep364Like(ContentRepresentation[ChessState, torch.Tensor], Protocol):
     tensor_castling_black: torch.Tensor
 
 
-def create_from_state_and_modifications(
+def create_from_state_and_modifications(  # noqa: D417
     state: ChessState,
     state_modifications: boards.BoardModificationP,
     previous_state_representation: ContentRepresentation[ChessState, torch.Tensor],
 ) -> Representation364:
-    """
-    Converts the node, board modifications, and parent node into a tensor representation.
+    """Convert the node, board modifications, and parent node into a tensor representation.
 
     Args:
         state (ChessState): The current state in the tree.
@@ -36,6 +35,7 @@ def create_from_state_and_modifications(
 
     Returns:
         Representation364: The tensor representation of the node, board modifications, and parent node.
+
     """
     prev364 = cast("_Rep364Like", previous_state_representation)
 
@@ -91,14 +91,14 @@ def create_from_state_and_modifications(
 
 
 def create_from_board(state: ChessState) -> Representation364:
-    """
-    Create a Representation364 object from a board.
+    """Create a Representation364 object from a board.
 
     Args:
         state (ChessState): The chess state.
 
     Returns:
         Representation364: The created Representation364 object.
+
     """
     white: torch.Tensor
     black: torch.Tensor
@@ -161,7 +161,7 @@ def a(
     white: torch.Tensor,
     piece_map: dict[chess.Square, tuple[int, bool]],
 ) -> None:
-    """A."""
+    """Populate piece tensors."""
     square: chess.Square
     piece: tuple[int, bool]
     for square, piece in piece_map.items():

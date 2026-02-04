@@ -1,6 +1,4 @@
-"""
-Module that contains the SyzygyProcess class.
-"""
+"""Module that contains the SyzygyProcess class."""
 
 import copy
 import multiprocessing
@@ -11,24 +9,25 @@ from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 
 
 class SyzygyProcess(multiprocessing.Process):
-    """
-    A class that extends the Process class from the multiprocessing module.
+    """A class that extends the Process class from the multiprocessing module.
+
     This class represents a separate process that runs in parallel with the main program.
 
     Attributes:
         syzygy_table (AnySyzygyTable): The SyzygyTable object used for tablebase lookups.
         queue_board (queue.Queue): The queue used for receiving board messages from the main program.
+
     """
 
     def __init__(
         self, syzygy_table: AnySyzygyTable, queue_board: queue.Queue[Any]
     ) -> None:
-        """
-        Initializes a new instance of the SyzygyProcess class.
+        """Initialize a new instance of the SyzygyProcess class.
 
         Args:
             syzygy_table (AnySyzygyTable): The SyzygyTable object used for tablebase lookups.
             queue_board (queue.Queue): The queue used for receiving board messages from the main program.
+
         """
         multiprocessing.Process.__init__(self, daemon=False)
         self._stop_event = multiprocessing.Event()
@@ -36,8 +35,8 @@ class SyzygyProcess(multiprocessing.Process):
         self.queue_board = queue_board
 
     def run(self) -> None:
-        """
-        Overrides the run() method of the Process class.
+        """Override the Process run method.
+
         This method is called when the process is started.
 
         It continuously listens for board messages from the main program,
@@ -67,16 +66,14 @@ class SyzygyProcess(multiprocessing.Process):
                     queue_reply.put(deep_copy_message)
 
     def stop(self) -> None:
-        """
-        Stops the SyzygyProcess by setting the stop event.
-        """
+        """Stop the SyzygyProcess by setting the stop event."""
         self._stop_event.set()
 
     def stopped(self) -> bool:
-        """
-        Checks if the SyzygyProcess is stopped.
+        """Check if the SyzygyProcess is stopped.
 
         Returns:
             bool: True if the process is stopped, False otherwise.
+
         """
         return self._stop_event.is_set()

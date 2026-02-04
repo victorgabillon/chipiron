@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Chipiron Integration Test Script
+"""Chipiron Integration Test Script.
 
 This script performs a complete end-to-end test of the Chipiron installation:
 1. Creates a temporary conda environment
@@ -31,7 +30,7 @@ from chipiron.utils.logger import chipiron_logger
 
 
 class IntegrationTestResult:
-    """Container for test results"""
+    """Container for test results."""
 
     def __init__(self):
         """Initialize the instance."""
@@ -47,7 +46,7 @@ class IntegrationTestResult:
         message: str = "",
         details: dict[str, Any] | None = None,
     ):
-        """Add a test result"""
+        """Add a test result."""
         self.results[test_name] = {
             "success": success,
             "message": message,
@@ -59,12 +58,12 @@ class IntegrationTestResult:
         chipiron_logger.info("%s %s: %s", "✅" if success else "❌", test_name, message)
 
     def add_warning(self, test_name: str, message: str):
-        """Add a warning"""
+        """Add a warning."""
         self.warnings.append("%s: %s" % (test_name, message))
         chipiron_logger.warning("⚠️  %s: %s", test_name, message)
 
     def get_summary(self) -> dict[str, Any]:
-        """Get test summary"""
+        """Get test summary."""
         total_tests = len(self.results)
         successful_tests = sum(1 for r in self.results.values() if r["success"])
         duration = time.time() - self.start_time
@@ -82,7 +81,7 @@ class IntegrationTestResult:
 
 
 class ChipironIntegrationTester:
-    """Main integration tester class"""
+    """Main integration tester class."""
 
     def __init__(
         self,
@@ -105,7 +104,7 @@ class ChipironIntegrationTester:
         self.python_version = None
 
     def get_python_version_from_pyproject(self) -> str:
-        """Extract Python version requirement from pyproject.toml"""
+        """Extract Python version requirement from pyproject.toml."""
         pyproject_path = Path(self.project_dir) / "pyproject.toml"
 
         if not pyproject_path.exists():
@@ -153,7 +152,7 @@ class ChipironIntegrationTester:
         timeout: int = 300,
         show_progress: bool = False,
     ) -> subprocess.CompletedProcess:
-        """Run a command with proper error handling and logging"""
+        """Run a command with proper error handling and logging."""
         if self.verbose:
             chipiron_logger.info(
                 "Running: %s in %s", " ".join(cmd), cwd or "current dir"
@@ -238,7 +237,7 @@ class ChipironIntegrationTester:
             raise
 
     def setup_temporary_environment(self):
-        """Create temporary directory and setup for conda environment"""
+        """Create temporary directory and setup for conda environment."""
         chipiron_logger.info("🚀 Setting up temporary environment...")
 
         # Create temporary directory
@@ -257,7 +256,7 @@ class ChipironIntegrationTester:
         )
 
     def create_conda_environment(self):
-        """Create conda environment with the correct Python version"""
+        """Create conda environment with the correct Python version."""
         chipiron_logger.info("🐍 Creating conda environment...")
 
         # Determine Python version from pyproject.toml
@@ -290,7 +289,7 @@ class ChipironIntegrationTester:
             raise
 
     def clone_repository(self):
-        """Clone the repository to temporary directory"""
+        """Clone the repository to temporary directory."""
         chipiron_logger.info("📦 Cloning repository...")
 
         self.project_dir = Path(self.temp_dir) / "chipiron"
@@ -307,7 +306,7 @@ class ChipironIntegrationTester:
             raise
 
     def run_makefile_installation(self):
-        """Run the makefile installation process"""
+        """Run the makefile installation process."""
         chipiron_logger.info("🔧 Running makefile installation...")
         chipiron_logger.info(
             "⏳ This includes downloading Stockfish, dependencies, and optionally Syzygy tables..."
@@ -361,7 +360,7 @@ class ChipironIntegrationTester:
             raise
 
     def test_python_installation(self):
-        """Test if chipiron can be imported"""
+        """Test if chipiron can be imported."""
         chipiron_logger.info("🐍 Testing Python installation...")
 
         conda_activate = f"source $(conda info --base)/etc/profile.d/conda.sh && conda activate {self.conda_env_name}"
@@ -384,7 +383,7 @@ class ChipironIntegrationTester:
             )
 
     def test_stockfish_installation(self):
-        """Test if Stockfish is properly installed and accessible"""
+        """Test if Stockfish is properly installed and accessible."""
         chipiron_logger.info("♟️  Testing Stockfish installation...")
 
         conda_activate = f"source $(conda info --base)/etc/profile.d/conda.sh && conda activate {self.conda_env_name}"
@@ -465,7 +464,7 @@ except Exception as e:
             )
 
     def _download_syzygy_tables(self):
-        """Download Syzygy tables if they're missing"""
+        """Download Syzygy tables if they're missing."""
         chipiron_logger.info("📥 Downloading Syzygy tables for testing...")
 
         conda_activate = f"source $(conda info --base)/etc/profile.d/conda.sh && conda activate {self.conda_env_name}"
@@ -491,7 +490,7 @@ except Exception as e:
             # Don't fail the test completely, just note that tables aren't available
 
     def test_syzygy_tables(self):
-        """Test if Syzygy tables are accessible"""
+        """Test if Syzygy tables are accessible."""
         chipiron_logger.info("📊 Testing Syzygy tables...")
 
         conda_activate = f"source $(conda info --base)/etc/profile.d/conda.sh && conda activate {self.conda_env_name}"
@@ -701,7 +700,7 @@ except Exception as e:
             )
 
     def test_gui_functionality(self):
-        """Test GUI functionality (PNG display capability)"""
+        """Test GUI functionality (PNG display capability)."""
         chipiron_logger.info("🖼️  Testing GUI functionality...")
 
         conda_activate = f"source $(conda info --base)/etc/profile.d/conda.sh && conda activate {self.conda_env_name}"
@@ -755,7 +754,7 @@ except Exception as e:
             )
 
     def test_basic_game_functionality(self):
-        """Test basic game functionality"""
+        """Test basic game functionality."""
         chipiron_logger.info("🎮 Testing basic game functionality...")
 
         conda_activate = f"source $(conda info --base)/etc/profile.d/conda.sh && conda activate {self.conda_env_name}"
@@ -928,7 +927,7 @@ except Exception as e:
             )
 
     def cleanup(self):
-        """Clean up temporary resources"""
+        """Clean up temporary resources."""
         chipiron_logger.info("🧹 Cleaning up...")
 
         # Remove conda environment
@@ -958,7 +957,7 @@ except Exception as e:
             chipiron_logger.info("Keeping temporary directory: %s", self.temp_dir)
 
     def run_full_test_suite(self):
-        """Run the complete integration test suite"""
+        """Run the complete integration test suite."""
         chipiron_logger.info("🔬 Starting Chipiron Integration Test Suite")
         try:
             # Setup phase
@@ -987,7 +986,7 @@ except Exception as e:
         return self.generate_report()
 
     def generate_report(self) -> dict[Any, Any]:
-        """Generate final test report"""
+        """Generate final test report."""
         summary = self.result.get_summary()
 
         chipiron_logger.info("📋 INTEGRATION TEST REPORT")
@@ -1018,7 +1017,7 @@ except Exception as e:
 
 
 def main():
-    """Main entry point"""
+    """Run the main entry point."""
     parser = argparse.ArgumentParser(description="Chipiron Integration Test Suite")
     parser.add_argument(
         "--repo-url",

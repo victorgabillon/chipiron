@@ -1,8 +1,6 @@
 #! /usr/bin/env python
 
-"""
-This module is the execution point of the chess GUI application.
-"""
+"""Document the module is the execution point of the chess GUI application."""
 
 from typing import Any
 
@@ -16,14 +14,10 @@ from PySide6.QtWidgets import QPushButton, QWidget
 
 
 class MainWindow(QWidget):
-    """
-    Create a surface for the chessboard.
-    """
+    """Create a surface for the chessboard."""
 
     def __init__(self, chess_board: BoardChi) -> None:
-        """
-        Initialize the chessboard.
-        """
+        """Initialize the chessboard."""
         super().__init__()
 
         self.chess_board_recorded = chess_board
@@ -80,6 +74,7 @@ class MainWindow(QWidget):
 
         Args:
             event (QKeyEvent): The key event object.
+
         """
         print(event.text())
         key = event.text()
@@ -106,11 +101,10 @@ class MainWindow(QWidget):
                 self.drawBoard()
 
     def drawBoard(self) -> Any:
-        """
-        Draw a chessboard with the starting position and then redraw
+        """Draw a chessboard with the starting position and then redraw.
+
         it for every new move.
         """
-
         repr_svg: str = chess.svg.board(
             board=self.chess_board,
             size=390,

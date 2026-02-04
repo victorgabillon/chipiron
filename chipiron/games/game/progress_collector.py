@@ -1,6 +1,4 @@
-"""
-Module collecting the progress of computing moves by each player
-"""
+"""Module collecting the progress of computing moves by each player."""
 
 from dataclasses import dataclass, field
 from typing import Protocol
@@ -12,9 +10,7 @@ from chipiron.displays.gui_publisher import GuiPublisher
 
 
 class PlayerProgressCollectorP(Protocol):
-    """
-    Object defining the protocol for setting the progress values
-    """
+    """Object defining the protocol for setting the progress values."""
 
     def progress_white(self, value: int | None) -> None:
         """Progress white."""
@@ -24,46 +20,48 @@ class PlayerProgressCollectorP(Protocol):
         ...
 @dataclass
 class PlayerProgressCollector:
-    """
-    Object in charge of collecting the progress of computing moves by each player
-    """
+    """Object in charge of collecting the progress of computing moves by each player."""
 
     progress_white_: int | None = None
     progress_black_: int | None = None
 
     @property
     def progress_white(self) -> int | None:
-        """Gets the progress of the white player.
+        """Get the progress of the white player.
 
         Returns:
             int | None: The progress of the white player.
+
         """
         return self.progress_white_
 
     @progress_white.setter
     def progress_white(self, value: int | None) -> None:
-        """Sets the progress of the white player.
+        """Set the progress of the white player.
 
         Args:
             value (int | None): The progress of the white player.
+
         """
         self.progress_white_ = value
 
     @property
     def progress_black(self) -> int | None:
-        """Gets the progress of the black player.
+        """Get the progress of the black player.
 
         Returns:
             int | None: The progress of the black player.
+
         """
         return self.progress_black_
 
     @progress_black.setter
     def progress_black(self, value: int | None) -> None:
-        """Sets the progress of the black player.
+        """Set the progress of the black player.
 
         Args:
             value (int | None): The progress of the black player.
+
         """
         self.progress_black_ = value
 

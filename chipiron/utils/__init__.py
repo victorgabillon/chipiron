@@ -1,7 +1,4 @@
-"""
-Module that contains small tools that are used in the project.
-
-"""
+"""Module that contains small tools that are used in the project."""
 
 from .small_tools import (
     dict_alphabetic_str,

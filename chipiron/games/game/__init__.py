@@ -1,5 +1,4 @@
-"""
-This module contains the game logic and the game arguments.
+"""Document the module contains the game logic and the game arguments.
 
 The `game` module provides the following classes:
 - `ObservableGame`: A class that represents an observable game.

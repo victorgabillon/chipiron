@@ -1,5 +1,5 @@
-"""
-Evaluates neural network models on a test dataset and records their performance.
+"""Evaluate neural network models on a test dataset and records their performance.
+
 Saves the evaluation results to a YAML file.
 """
 
@@ -42,9 +42,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class ModelEvaluation:
-    """
-    Represents a model evaluation.
-    """
+    """Represents a model evaluation."""
 
     evaluation: float
     time_of_evaluation: datetime.datetime
@@ -55,13 +53,14 @@ type EvaluatedModels = dict[str, ModelEvaluation]
 
 
 def compute_model_hash_key(model_and_archi: NeuralNetModelsAndArchitecture) -> str:
-    """Computes a unique hash key for the model and architecture.
+    """Compute a unique hash key for the model and architecture.
 
     Args:
         model_and_archi (NeuralNetModelsAndArchitecture): The model and architecture to compute the hash key for.
 
     Returns:
         str: The computed hash key.
+
     """
     chipiron_nn_args = load_chipiron_nn_args(
         folder_path=os.path.dirname(model_and_archi.model_weights_file_name)
@@ -76,7 +75,7 @@ def compute_model_hash_key(model_and_archi: NeuralNetModelsAndArchitecture) -> s
 
 
 def count_parameters(model: ChiNN) -> int:
-    """Counts the number of trainable parameters in a model."""
+    """Count the number of trainable parameters in a model."""
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
@@ -85,11 +84,11 @@ def evaluate_models(
     evaluation_report_file: path = "chipiron/scripts/evaluate_models/evaluation_report.yaml",
     dataset_file_name: path = "external_data/data_chipiron/datasets/goodgames_plusvariation_stockfish_eval_test",
 ) -> None:
-    """
-    Evaluates the models in the list models_to_evaluate.
+    """Evaluate the models in the list models_to_evaluate.
 
     Raises:
         Exception: If there is an error loading the evaluation report.
+
     """
     print("Evaluating models...")
     # Load the evaluation report

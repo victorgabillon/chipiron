@@ -14,6 +14,7 @@ StateT_contra = TypeVar("StateT_contra", contravariant=True)
 
 class GuiEncoder(Protocol[StateT_contra]):
     """Guiencoder implementation."""
+
     game_kind: GameKind
 
     def make_state_payload(

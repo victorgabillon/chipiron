@@ -1,6 +1,4 @@
-"""
-Module for creating players.
-"""
+"""Module for creating players."""
 
 import random
 from dataclasses import dataclass
@@ -61,6 +59,7 @@ if TYPE_CHECKING:
 @dataclass
 class PlayerCreationArgs:
     """Data container for PlayerCreationArgs."""
+
     random_generator: random.Random
     implementation_args: ImplementationArgs
     universal_behavior: bool
@@ -70,7 +69,7 @@ class PlayerCreationArgs:
     terminal_oracle: TerminalOracle[ChessState] | None = None
 
 
-def create_tag_player(
+def create_tag_player(  # noqa: D417
     tag: PlayerConfigTag,
     implementation_args: ImplementationArgs,
     universal_behavior: bool,
@@ -78,8 +77,7 @@ def create_tag_player(
     queue_progress_player: PutQueue[IsDataclass] | None = None,
     tree_branch_limit: int | None = None,
 ) -> Player[FenPlusHistory, ChessState]:
-    """
-    Creates the chipiron champion/representative/standard/default player
+    """Create the chipiron champion/representative/standard/default player.
 
     Args:
         depth: int, the depth at which computation should be made.
@@ -127,7 +125,7 @@ def create_tag_player(
     )
 
 
-def create_chipiron_player(
+def create_chipiron_player(  # noqa: D417
     implementation_args: ImplementationArgs,
     universal_behavior: bool,
     random_generator: random.Random,
@@ -146,6 +144,7 @@ def create_chipiron_player(
 
     Returns:
         Player: The created Chipiron player.
+
     """
     return create_tag_player(
         tag=PlayerConfigTag.CHIPIRON,
@@ -157,7 +156,7 @@ def create_chipiron_player(
     )
 
 
-def create_chess_player(
+def create_chess_player(  # noqa: D417
     args: ChessPlayerArgs,
     policy_oracle: PolicyOracle[ChessState] | None,
     value_oracle: ValueOracle[ChessState] | None,
@@ -180,6 +179,7 @@ def create_chess_player(
 
     Returns:
         Player: The created player object.
+
     """
     chipiron_logger.debug("Create player")
 
@@ -260,7 +260,7 @@ def create_player(
     )
 
 
-def create_game_player(
+def create_game_player(  # noqa: D417
     player_factory_args: ChessPlayerFactoryArgs,
     player_color: Color,
     policy_oracle: PolicyOracle[ChessState] | None,
@@ -270,7 +270,7 @@ def create_game_player(
     implementation_args: ImplementationArgs,
     universal_behavior: bool,
 ) -> GamePlayer[FenPlusHistory, ChessState]:
-    """Create a game player
+    """Create a game player.
 
     This function creates a game player using the provided player factory arguments and player color.
 
@@ -280,6 +280,7 @@ def create_game_player(
 
     Returns:
         GamePlayer: The created game player.
+
     """
     random_generator = random.Random(player_factory_args.seed)
     player: Player[FenPlusHistory, ChessState] = create_chess_player(

@@ -1,5 +1,5 @@
-"""
-Learn a neural network from scratch from a supervised dataset of boards and values,
+"""Learn a neural network from scratch from a supervised dataset of boards and values,.
+
 and from a fixed set of non-labelled boards.
 """
 
@@ -64,11 +64,7 @@ from chipiron.utils.path_variables import ML_FLOW_URI_PATH
 
 @dataclass
 class LearnNNFromScratchScriptArgs:
-    """
-    Represents the arguments for the LearnNNFromScratchScript.
-
-
-    """
+    """Represents the arguments for the LearnNNFromScratchScript."""
 
     epochs_number_with_respect_to_evaluating_player: int = 10
     number_of_evaluating_player_per_loop: int = 10
@@ -97,8 +93,7 @@ class LearnNNFromScratchScriptArgs:
 
 
 class LearnNNFromScratchScript:
-    """
-    Script that learns a NN from a supervised dataset pairs of board and evaluation
+    """Script that learns a NN from a supervised dataset pairs of board and evaluation.
 
     Args:
         base_script (Script): The base script object.
@@ -130,16 +125,15 @@ class LearnNNFromScratchScript:
         self,
         base_script: Script[LearnNNFromScratchScriptArgs],
     ) -> None:
-        """
-        Initializes the LearnNNFromSupervisedDatasets class.
+        """Initialize the LearnNNFromSupervisedDatasets class.
 
         Args:
             base_script (Script): The base script object.
 
         Returns:
             None
-        """
 
+        """
         self.start_time = time.time()
 
         # Setting up the dataloader from the evaluation files
@@ -241,8 +235,7 @@ class LearnNNFromScratchScript:
         )
 
     def run(self) -> None:
-        """Running the learning of the NN from scratch."""
-
+        """Run the learning of the NN from scratch."""
         print("Starting to learn the NN from scratch")
 
         with mlflow.start_run():
@@ -269,9 +262,8 @@ class LearnNNFromScratchScript:
 
     def learn_model_some_steps(self) -> None:
         """Perform a few steps of training on the model."""
-
     def update_dataset_value_with_evaluating_player(self) -> None:
-        """Updates the dataset with the values from the evaluating player."""
+        """Update the dataset with the values from the evaluating player."""
         index_range_evaluating_player: int
         for index_range_evaluating_player in range(
             self.args.number_of_evaluating_player_per_loop
@@ -306,17 +298,15 @@ class LearnNNFromScratchScript:
         # file
 
     def terminate(self) -> None:
-        """
-        Finishing the script. Profiling or timing.
-        """
+        """Finishing the script. Profiling or timing."""
         pass
 
     @classmethod
     def get_args_dataclass_name(cls) -> type[LearnNNFromScratchScriptArgs]:
-        """
-        Returns the dataclass type that holds the arguments for the script.
+        """Return the dataclass type that holds the arguments for the script.
 
         Returns:
             type: The dataclass type for the script's arguments.
+
         """
         return LearnNNFromScratchScriptArgs

@@ -1,6 +1,4 @@
-"""
-This module contains integration tests for the one match script in the Chipiron project.
-"""
+"""Document the module contains integration tests for the one match script in the Chipiron project."""
 
 import argparse
 import copy
@@ -228,13 +226,14 @@ configs_implementation = [
 
 
 def test_one_matches(configs: list[Any] | None = None, log_level: int = logging.ERROR):
-    """
-    Runs integration tests for one match using provided configurations.
+    """Run integration tests for one match using provided configurations.
+
     If no configs are provided, uses the default configs_base.
 
     Args:
         configs: List of test configurations to run
         log_level: Logging level to use during test execution (ERROR for pytest, INFO for main)
+
     """
     if configs is None:
         configs = configs_base
@@ -277,11 +276,11 @@ def test_one_matches(configs: list[Any] | None = None, log_level: int = logging.
 
 
 def test_randomness(log_level: int = logging.ERROR):
-    """
-    Test that running the same match twice with a fixed seed produces identical results.
+    """Test that running the same match twice with a fixed seed produces identical results.
 
     Args:
         log_level: Logging level to use during test execution (ERROR for pytest, INFO for main)
+
     """
     chipiron_logger.info("test randomness")
 
@@ -360,13 +359,12 @@ def test_randomness(log_level: int = logging.ERROR):
 
 
 def test_same_game_with_or_without_rust(log_level=logging.ERROR):
-    """
-    Test that running the same match with and without Rust boards produces identical results.
+    """Test that running the same match with and without Rust boards produces identical results.
 
     Args:
         log_level: Logging level to use during test execution (ERROR for pytest, INFO for main)
-    """
 
+    """
     match_args: MatchArgs = MatchArgs()
 
     match_args.player_one = PlayerConfigTag.UNIFORM.get_players_args()

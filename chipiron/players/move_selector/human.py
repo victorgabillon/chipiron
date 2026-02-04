@@ -1,6 +1,6 @@
-"""
-This module contains the implementation of the CommandLineHumanMoveSelector class, which allows a human player
- to select moves through the command line interface.
+"""Document the module contains the implementation of the CommandLineHumanMoveSelector class, which allows a human player.
+
+to select moves through the command line interface.
 """
 
 from dataclasses import dataclass
@@ -22,26 +22,20 @@ if TYPE_CHECKING:
 
 @dataclass
 class CommandLineHumanPlayerArgs:
-    """
-    Represents the arguments for a human player that selects moves through the command line interface.
-    """
+    """Represents the arguments for a human player that selects moves through the command line interface."""
 
     type: Literal[MoveSelectorTypes.CommandLineHuman]  # for serialization
 
 
 @dataclass
 class GuiHumanPlayerArgs:
-    """
-    Represents the arguments for a human player that selects moves through the GUI.
-    """
+    """Represents the arguments for a human player that selects moves through the GUI."""
 
     type: Literal[MoveSelectorTypes.GuiHuman]  # for serialization
 
 
 class CommandLineHumanMoveSelector:
-    """
-    A move selector that allows a human player to select moves through the command line interface.
-    """
+    """A move selector that allows a human player to select moves through the command line interface."""
 
     def recommend(
         self,
@@ -56,14 +50,13 @@ class CommandLineHumanMoveSelector:
         ).recommended_name
         return Recommendation(recommended_name=best)
 
-    def select_move(
+    def select_move(  # noqa: D417
         self,
         board: boards.IBoard,
         move_seed: Seed,
         notify_progress: NotifyProgressCallable | None = None,
     ) -> Recommendation:
-        """
-        Selects a move based on user input through the command line interface.
+        """Select a move based on user input through the command line interface.
 
         Args:
             board (boards.BoardChi): The current state of the chess board.
@@ -74,6 +67,7 @@ class CommandLineHumanMoveSelector:
 
         Raises:
             AssertionError: If the selected move is not a legal move.
+
         """
         chipiron_logger.info("Legal Moves %s", board.legal_moves)
         legal_moves_uci: list[MoveUci] = []

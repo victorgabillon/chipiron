@@ -1,5 +1,4 @@
-"""
-This script learns a neural network (NN) from a supervised dataset of board and evaluation pairs.
+"""Describe script learns a neural network (NN) from a supervised dataset of board and evaluation pairs.
 
 The script takes care of setting up the data loader from the evaluation files, creating the NN,
 and running the learning process.
@@ -14,6 +13,7 @@ Example:
     learn_script = LearnNNScript(base_script)
     learn_script.run()
     learn_script.terminate()
+
 """
 
 import copy
@@ -75,8 +75,7 @@ logging.basicConfig(level=logging.WARNING)
 
 @dataclass
 class LearnNNScriptArgs:
-    """
-    Represents the arguments for the LearnNNScript.
+    """Represents the arguments for the LearnNNScript.
 
     Attributes:
         nn_trainer_args (NNTrainerArgs): The arguments for the NNTrainer.
@@ -95,8 +94,7 @@ class LearnNNScriptArgs:
 
 
 class LearnNNScript:
-    """
-    Script that learns a NN from a supervised dataset pairs of board and evaluation
+    """Script that learns a NN from a supervised dataset pairs of board and evaluation.
 
     Args:
         base_script (Script): The base script object.
@@ -125,16 +123,15 @@ class LearnNNScript:
         self,
         base_script: Script[LearnNNScriptArgs],
     ) -> None:
-        """
-        Initializes the LearnNNFromSupervisedDatasets class.
+        """Initialize the LearnNNFromSupervisedDatasets class.
 
         Args:
             base_script (Script): The base script object.
 
         Returns:
             None
-        """
 
+        """
         self.start_time = time.time()
 
         # Setting up the dataloader from the evaluation files
@@ -235,8 +232,7 @@ class LearnNNScript:
     def print_and_log_metrics(
         self, count_train_step: int, training_loss: float, test_error: float
     ) -> None:
-        """
-        Print and log training metrics to console and MLflow.
+        """Print and log training metrics to console and MLflow.
 
         Args:
             count_train_step (int): Current training step count.
@@ -245,6 +241,7 @@ class LearnNNScript:
 
         Returns:
             None
+
         """
         chipiron_logger.info(
             "count_train_step: %s, training loss: %s, lr: %s, time_elapsed: %s",
@@ -270,7 +267,7 @@ class LearnNNScript:
         )
 
     def run(self) -> None:
-        """Running the learning of the NN.
+        """Run the learning of the NN.
 
         This method performs the training of the neural network. It iterates over the training data batches,
         computes the training loss, and updates the learning rate if necessary. It also prints the training
@@ -278,6 +275,7 @@ class LearnNNScript:
 
         Returns:
             None
+
         """
         chipiron_logger.info("Starting to learn the NN")
 
@@ -395,19 +393,18 @@ class LearnNNScript:
                         X_train=fens_and_values_sample_batch.get_input_layer(),
                     )
 
-    def saving_things_to_file(
+    def saving_things_to_file(  # noqa: D417
         self, count_train_step: int, X_train: torch.Tensor
     ) -> None:
-        """
-        Saves the neural network parameters and trainer to file.
+        """Save the neural network parameters and trainer to file.
 
         Args:
             count_train_step (int): The current training step count.
 
         Returns:
             None
-        """
 
+        """
         if count_train_step % self.args.nn_trainer_args.saving_interval == 0:
             safe_nn_param_save(
                 nn=self.nn_board_evaluator.net,
@@ -457,17 +454,15 @@ class LearnNNScript:
             )
 
     def terminate(self) -> None:
-        """
-        Finishing the script. Profiling or timing.
-        """
+        """Finishing the script. Profiling or timing."""
         self.base_script.terminate()
 
     @classmethod
     def get_args_dataclass_name(cls) -> type[LearnNNScriptArgs]:
-        """
-        Returns the dataclass type that holds the arguments for the script.
+        """Return the dataclass type that holds the arguments for the script.
 
         Returns:
             type: The dataclass type for the script's arguments.
+
         """
         return LearnNNScriptArgs

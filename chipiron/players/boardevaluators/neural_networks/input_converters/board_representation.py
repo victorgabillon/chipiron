@@ -1,6 +1,4 @@
-"""
-Module defining the board representation interface and the 364 features board representation.
-"""
+"""Module defining the board representation interface and the 364 features board representation."""
 
 from dataclasses import dataclass
 
@@ -12,9 +10,7 @@ from chipiron.environments.chess.types import ChessState
 
 @dataclass(slots=True)
 class Representation364(ContentRepresentation[ChessState, torch.Tensor]):
-    """
-    Dataclass representing a board representation with 364 features.
-    """
+    """Dataclass representing a board representation with 364 features."""
 
     tensor_white: torch.Tensor
     tensor_black: torch.Tensor
@@ -22,7 +18,7 @@ class Representation364(ContentRepresentation[ChessState, torch.Tensor]):
     tensor_castling_black: torch.Tensor
 
     def __eq__(self, other: object) -> bool:
-        """  eq  ."""
+        """Check equality."""
         if not isinstance(other, Representation364):
             return False
         else:
@@ -34,14 +30,14 @@ class Representation364(ContentRepresentation[ChessState, torch.Tensor]):
             )
 
     def get_evaluator_input(self, state: ChessState) -> torch.Tensor:
-        """
-        Returns the evaluator input tensor for the given color to play.
+        """Return the evaluator input tensor for the given color to play.
 
         Args:
             state: The current turn state.
 
         Returns:
             The evaluator input tensor.
+
         """
         if state.turn == Color.WHITE:
             tensor = torch.cat((self.tensor_white, self.tensor_black), 0)
@@ -64,27 +60,25 @@ class Representation364(ContentRepresentation[ChessState, torch.Tensor]):
 
 @dataclass(slots=True)
 class Representation364_2(ContentRepresentation[ChessState, torch.Tensor]):
-    """
-    Dataclass representing a board representation with 364 features.
-    """
+    """Dataclass representing a board representation with 364 features."""
 
     tensor: torch.Tensor
 
     def __eq__(self, other: object) -> bool:
-        """  eq  ."""
+        """Check equality."""
         if not isinstance(other, Representation364_2):
             return False
         else:
             return torch.equal(self.tensor, other.tensor)
 
-    def get_evaluator_input(self, state: ChessState) -> torch.Tensor:
-        """
-        Returns the evaluator input tensor for the given color to play.
+    def get_evaluator_input(self, state: ChessState) -> torch.Tensor:  # noqa: D417
+        """Return the evaluator input tensor for the given color to play.
 
         Args:
             color_to_play: The color to play, either chess.WHITE or chess.BLACK.
 
         Returns:
             The evaluator input tensor.
+
         """
         return self.tensor

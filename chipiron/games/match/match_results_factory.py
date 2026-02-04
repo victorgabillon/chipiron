@@ -1,12 +1,10 @@
-"""
-Module to create a MatchResults object.
+"""Module to create a MatchResults object.
 
 This module provides a MatchResultsFactory class that is responsible for creating MatchResults objects.
 It also provides a way to subscribe to the MatchResults object and receive updates.
 
 Classes:
 - MatchResultsFactory: A factory class to create MatchResults objects and manage subscribers.
-
 """
 
 import queue
@@ -35,23 +33,23 @@ class MatchResultsFactory:
     subscriber_queues: list[queue.Queue[GuiUpdate]]
 
     def __init__(self, player_one_name: str, player_two_name: str) -> None:
-        """
-        Initialize the MatchResultsFactory.
+        """Initialize the MatchResultsFactory.
 
         Args:
             player_one_name (str): The name of player one.
             player_two_name (str): The name of player two.
+
         """
         self.player_one_name = player_one_name
         self.player_two_name = player_two_name
         self.subscriber_queues = []
 
     def create(self) -> IMatchResults:
-        """
-        Create a MatchResults object.
+        """Create a MatchResults object.
 
         Returns:
             IMatchResults: The created MatchResults object.
+
         """
         match_result: MatchResults = MatchResults(
             player_one_name_id=self.player_one_name,

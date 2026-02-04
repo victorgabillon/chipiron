@@ -81,24 +81,18 @@ def make_environment(
     game_kind: Literal[GameKind.CHESS],
     deps: ChessEnvironmentDeps,
 ) -> Environment[ChessState, FenPlusHistory, ChessStartTag]: ...
-
-
 @overload
 def make_environment(
     *,
     game_kind: Literal[GameKind.CHECKERS],
     deps: CheckersEnvironmentDeps,
 ) -> Environment[object, object, object]: ...
-
-
 @overload
 def make_environment(
     *,
     game_kind: GameKind,
     deps: EnvDeps,
 ) -> Environment[Any, Any, Any]: ...
-
-
 def make_environment(
     *,
     game_kind: GameKind,
