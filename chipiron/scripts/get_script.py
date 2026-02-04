@@ -25,8 +25,7 @@ script_type_to_script_class_name: dict[ScriptType, type[IScript]] = {
 
 
 def get_script_type_from_script_class_name(script_type: ScriptType) -> type[IScript]:
-    """
-    Retrieves the script class name based on the given script type.
+    """Retrieve the script class name based on the given script type.
 
     Args:
         script_type (ScriptType): The script type.
@@ -36,6 +35,7 @@ def get_script_type_from_script_class_name(script_type: ScriptType) -> type[IScr
 
     Raises:
         Exception: If the script type is not found.
+
     """
     if script_type in script_type_to_script_class_name:
         script_class_name: type[IScript] = script_type_to_script_class_name[script_type]

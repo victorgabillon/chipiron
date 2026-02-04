@@ -1,5 +1,5 @@
-"""
-This script defines a graphical user interface (GUI) for interacting with the chipiron program.
+"""Describe script defines a graphical user interface (GUI) for interacting with the chipiron program.
+
 The GUI allows the user to select various options and perform different actions such as playing against the chipiron AI, watching a game, or visualizing a tree.
 
 The script_gui function creates the GUI window and handles the user interactions.
@@ -52,14 +52,14 @@ CHIPI_ALGO_OPTIONS_LIST: list[tuple[str, PlayerConfigTag]] = [
 
 
 def format_gui_args_for_display(gui_args: Any) -> str:
-    """
-    Format GUI arguments for human-readable display in logging.
+    """Format GUI arguments for human-readable display in logging.
 
     Args:
         gui_args: The GUI arguments object to format
 
     Returns:
         A formatted string representation of the arguments
+
     """
     if gui_args is None:
         return "None"
@@ -148,6 +148,7 @@ class MatchGUIStartingPosition(str, Enum):
 
         Returns:
             str: The FEN string for the starting position.
+
         """
         return str(self.value)
 
@@ -167,9 +168,7 @@ class ScriptGUIType(str, Enum):
 
 @dataclass
 class ArgsChosenByUser:
-    """
-    The arguments chosen by the user in the GUI.
-    """
+    """The arguments chosen by the user in the GUI."""
 
     type: ScriptGUIType = ScriptGUIType.PLAY_OR_WATCH_A_GAME
     player_type_white: PlayerConfigTag = PlayerConfigTag.RECUR_ZIPF_BASE_3
@@ -182,11 +181,11 @@ class ArgsChosenByUser:
 
 
 def script_gui() -> tuple[scripts.ScriptType, IsDataclass | None, str]:
-    """
-    Creates a graphical user interface (GUI) for interacting with the chipiron program.
+    """Create a graphical user interface (GUI) for interacting with the chipiron program.
 
     Returns:
         A tuple containing the script type and the arguments for the selected action.
+
     """
     root: ctk.CTk = ctk.CTk()
     args_chosen_by_user: ArgsChosenByUser = ArgsChosenByUser()
@@ -403,13 +402,14 @@ def script_gui() -> tuple[scripts.ScriptType, IsDataclass | None, str]:
 def generate_inputs(
     args_chosen_by_user: ArgsChosenByUser,
 ) -> tuple[scripts.ScriptType, IsDataclass | None, str]:
-    """Generates script type and arguments based on the user input.
+    """Generate script type and arguments based on the user input.
 
     Args:
         args_chosen_by_user (ArgsChosenByUser): The arguments chosen by the user.
 
     Returns:
         tuple[scripts.ScriptType, IsDataclass | None, str]: The script type, arguments, and config file name.
+
     """
     script_type: scripts.ScriptType
 
@@ -512,7 +512,7 @@ def generate_inputs(
     return script_type, gui_args, config_file_name
 
 
-def play_or_watch_a_game(
+def play_or_watch_a_game(  # noqa: D417
     args_chosen_by_user: ArgsChosenByUser,
     chipi_algo_choice_white: ctk.StringVar,
     chipi_algo_choice_black: ctk.StringVar,
@@ -520,8 +520,8 @@ def play_or_watch_a_game(
     strength_value_black: ctk.StringVar,
     starting_position_choice: ctk.StringVar,
 ) -> bool:
-    """
-    Callback function for the "Play or Watch a game" button.
+    """Handle the "Play or Watch a game" button callback.
+
     Sets the output dictionary with the selected options for playing or watching a game.
 
     Args:
@@ -529,6 +529,7 @@ def play_or_watch_a_game(
 
     Returns:
         True.
+
     """
     args_chosen_by_user.type = ScriptGUIType.PLAY_OR_WATCH_A_GAME
 
@@ -572,9 +573,9 @@ def play_or_watch_a_game(
     return True
 
 
-def visualize_a_tree(args_chosen_by_user: ArgsChosenByUser) -> bool:
-    """
-    Callback function for the "Visualize a tree" button.
+def visualize_a_tree(args_chosen_by_user: ArgsChosenByUser) -> bool:  # noqa: D417
+    """Handle the "Visualize a tree" button callback.
+
     Sets the output dictionary with the selected options for tree visualization.
 
     Args:
@@ -582,6 +583,7 @@ def visualize_a_tree(args_chosen_by_user: ArgsChosenByUser) -> bool:
 
     Returns:
         True.
+
     """
     args_chosen_by_user.type = ScriptGUIType.TREE_VISUALIZATION
     return True

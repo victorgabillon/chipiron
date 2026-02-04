@@ -1,5 +1,4 @@
-"""
-Module for the GameArgsFactory class
+"""Module for the GameArgsFactory class.
 
 This module defines the GameArgsFactory class, which is responsible for creating game arguments and managing game settings.
 """
@@ -19,8 +18,8 @@ if typing.TYPE_CHECKING:
 
 
 class GameArgsFactory:
-    """
-    The GameArgsFactory creates the players and decides the rules.
+    """The GameArgsFactory creates the players and decides the rules.
+
     So far quite simple
     This class is supposed to be dependent on Match-related classes (contrarily to the GameArgsFactory)
     """
@@ -51,8 +50,7 @@ class GameArgsFactory:
     def generate_game_args(
         self, game_number: int
     ) -> tuple[dict[Color, players.PlayerFactoryArgs], GameArgs, Seed | None]:
-        """
-        Generate game arguments for a specific game number.
+        """Generate game arguments for a specific game number.
 
         Args:
             game_number (int): The number of the game.
@@ -88,8 +86,7 @@ class GameArgsFactory:
         return player_color_to_factory_args, self.args_game, merged_seed
 
     def is_match_finished(self) -> bool:
-        """
-        Check if the match is finished.
+        """Check if the match is finished.
 
         Returns:
             bool: True if the match is finished, False otherwise.

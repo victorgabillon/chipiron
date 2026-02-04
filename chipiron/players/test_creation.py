@@ -1,6 +1,4 @@
-"""
-Test the creation of a Chipiron player.
-"""
+"""Test the creation of a Chipiron player."""
 
 import random
 from typing import TYPE_CHECKING
@@ -18,7 +16,6 @@ if TYPE_CHECKING:
 
 def test_create_chipiron_player() -> None:
     """Test the creation of a Chipiron player."""
-
     # Create a Chipiron player with default arguments
     player: Player[FenPlusHistory, ChessState] = create_chipiron_player(
         implementation_args=ImplementationArgs(use_rust_boards=False),
@@ -33,7 +30,6 @@ def test_create_chipiron_player() -> None:
 
 def test_tag_player_creation() -> None:
     """Test the creation of players from all PlayerConfigTag values."""
-
     for tag in PlayerConfigTag:
         print(f"Creating player for tag: {tag}")
         if tag == PlayerConfigTag.GUI_HUMAN:

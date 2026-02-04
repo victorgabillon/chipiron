@@ -1,6 +1,4 @@
-"""
-Init file for scripts module
-"""
+"""Init file for scripts module."""
 
 from .iscript import IScript
 from .script import Script

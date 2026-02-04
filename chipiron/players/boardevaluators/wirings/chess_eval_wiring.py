@@ -1,6 +1,4 @@
-"""
-Chess-specific wiring for board evaluators.
-"""
+"""Chess-specific wiring for board evaluators."""
 
 from dataclasses import dataclass
 from importlib.resources import files

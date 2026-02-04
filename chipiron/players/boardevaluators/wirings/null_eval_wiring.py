@@ -1,6 +1,4 @@
-"""
-Fallback evaluator wiring for games without a specific evaluator.
-"""
+"""Fallback evaluator wiring for games without a specific evaluator."""
 
 from dataclasses import dataclass
 

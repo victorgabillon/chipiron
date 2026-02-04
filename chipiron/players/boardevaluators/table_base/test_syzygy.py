@@ -1,4 +1,4 @@
-"""Tests for the Syzygy table-based board evaluator."""
+"""Test for the Syzygy table-based board evaluator."""
 
 from typing import TYPE_CHECKING
 
@@ -25,7 +25,6 @@ if TYPE_CHECKING:
 
 def test_best_move_syzygy_table() -> None:
     """Test the best move selection from the Syzygy table."""
-
     syzygy_table_chi: SyzygyTable[BoardChi] | None
     syzygy_table_chi = create_syzygy_python()
 

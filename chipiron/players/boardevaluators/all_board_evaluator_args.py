@@ -1,6 +1,4 @@
-"""
-This module defines the arguments for different board evaluators in the Chipiron chess engine framework.
-"""
+"""Document the module defines the arguments for different board evaluators in the Chipiron chess engine framework."""
 
 from dataclasses import dataclass
 from typing import Literal, TypeAlias
@@ -26,6 +24,7 @@ class TableBaseArgs:
 
     Methods:
         ``None``
+
     """
 
     type: Literal["table_base"] = BoardEvalTypes.TABLE_BASE_EVAL.value
@@ -33,10 +32,7 @@ class TableBaseArgs:
 
 @dataclass
 class BasicEvaluationBoardEvaluatorArgs:
-    """
-    Represents the arguments for a board evaluator.
-
-    """
+    """Represents the arguments for a board evaluator."""
 
     type: Literal["basic_evaluation"] = BoardEvalTypes.BASIC_EVALUATION_EVAL.value
 

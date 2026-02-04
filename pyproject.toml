@@ -171,14 +171,15 @@ ignore_missing_imports = true
 line-length = 88
 target-version = "py313"
 
+[tool.ruff.lint]
 # Enable import sorting (alphabetical + group order)
-lint.select = ["I", "F", "E", "B", "TCH"]  # I = imports, F = pyflakes, E = pycodestyle, TCH = type-checking, B = black
+select = ["I", "F", "E", "B", "TCH"]  # I = imports, F = pyflakes, E = pycodestyle, TCH = type-checking, B = black
 
 # Allow auto-fixing for imports and type-checking imports
-lint.fixable = ["I", "TCH", "F401"]
+fixable = ["I", "TCH", "F401"]
 
 # Ignore rules you don't care about
-lint.ignore = [ "E501"]
+ignore = ["E501", "D101", "D103", "D417"]
 
 # Optional: add your first-party package to extend the known group
 [tool.ruff.lint.per-file-ignores]

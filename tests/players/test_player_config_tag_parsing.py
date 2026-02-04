@@ -1,4 +1,4 @@
-"""Tests that Parsley resolves PlayerConfigTag to PlayerArgs."""
+"""Test that Parsley resolves PlayerConfigTag to PlayerArgs."""
 
 from dataclasses import dataclass
 

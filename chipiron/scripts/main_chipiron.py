@@ -1,6 +1,4 @@
-"""
-Launching the main chipiron
-"""
+"""Launching the main chipiron."""
 
 import argparse
 import logging
@@ -32,16 +30,14 @@ except ImportError:
 def get_script_and_args(
     raw_command_line_arguments: list[str],
 ) -> tuple[ScriptType, IsDataclass | None, str | None, LoggingArgs]:
-    """
+    """Args:.
 
-    Args:
         raw_command_line_arguments: the list of arguments of the scripts given by command line
 
     Returns:
         A string for the name of script and a dictionary of parameters
 
     """
-
     # First capture  the script name if present and the debug level if present
     parser_logging_script_name: argparse.ArgumentParser = argparse.ArgumentParser()
     parser_logging_script_name.add_argument(
@@ -102,10 +98,7 @@ def get_script_and_args(
 
 
 def main() -> None:
-    """
-    The main function
-    """
-
+    """Run the main function."""
     # Getting the command line arguments from the system
     raw_command_line_arguments: list[str] = sys.argv
 

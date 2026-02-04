@@ -13,6 +13,7 @@ from chipiron.environments.starting_position import StartingPositionArgs
 
 class StartingPositionArgsType(str, Enum):
     """Startingpositionargstype implementation."""
+
     FEN = "fen"
     FROM_FILE = "from_file"
 
@@ -20,6 +21,7 @@ class StartingPositionArgsType(str, Enum):
 @dataclass(frozen=True)
 class FenStartingPositionArgs(StartingPositionArgs):
     """Fenstartingpositionargs implementation."""
+
     type: Literal[StartingPositionArgsType.FEN] = StartingPositionArgsType.FEN
     fen: str = ""
 
@@ -33,6 +35,7 @@ class FenStartingPositionArgs(StartingPositionArgs):
 @dataclass(frozen=True)
 class FileStartingPositionArgs(StartingPositionArgs):
     """Filestartingpositionargs implementation."""
+
     type: Literal[StartingPositionArgsType.FROM_FILE] = (
         StartingPositionArgsType.FROM_FILE
     )

@@ -1,6 +1,4 @@
-"""
-Module that defines an observable version of GamePlayingStatus
-"""
+"""Module that defines an observable version of GamePlayingStatus."""
 
 from chipiron.displays.gui_protocol import UpdGameStatus
 from chipiron.displays.gui_publisher import GuiPublisher
@@ -9,8 +7,8 @@ from .game_playing_status import GamePlayingStatus, PlayingStatus
 
 
 class ObservableGamePlayingStatus:
-    """
-    An observable version of GamePlayingStatus that notifies subscribers.
+    """An observable version of GamePlayingStatus that notifies subscribers.
+
     Players and GUI can then decide what to do with this information.
     """
 
@@ -23,71 +21,65 @@ class ObservableGamePlayingStatus:
         self._publishers: list[GuiPublisher] = []
 
     def subscribe(self, publishers: list[GuiPublisher]) -> None:
-        """
-        Subscribes the given mailboxes to receive game status updates.
+        """Subscribe the given mailboxes to receive game status updates.
 
         Args:
             publishers (list[GuiPublisher]): The publishers to subscribe.
+
         """
         self._publishers += publishers
 
     @property
     def status(self) -> PlayingStatus:
-        """
-        Gets the current playing status.
+        """Get the current playing status.
 
         Returns:
             PlayingStatus: The current playing status.
+
         """
         return self.game_playing_status.status
 
     @status.setter
     def status(self, new_status: PlayingStatus) -> None:
-        """
-        Sets the playing status and notifies the subscribers.
+        """Set the playing status and notifies the subscribers.
 
         Args:
             new_status (PlayingStatus): The new playing status.
+
         """
         self.game_playing_status.status = new_status
         self.notify()
 
     def play(self) -> None:
-        """
-        Plays the game and notifies the subscribers.
-        """
+        """Plays the game and notifies the subscribers."""
         self.game_playing_status.play()
         self.notify()
 
     def pause(self) -> None:
-        """
-        Pauses the game and notifies the subscribers.
-        """
+        """Pauses the game and notifies the subscribers."""
         self.game_playing_status.pause()
         self.notify()
 
     def is_paused(self) -> bool:
-        """
-        Checks if the game is currently paused.
+        """Check if the game is currently paused.
 
         Returns:
             bool: True if the game is paused, False otherwise.
+
         """
         return self.game_playing_status.is_paused()
 
     def is_play(self) -> bool:
-        """
-        Checks if the game is currently being played.
+        """Check if the game is currently being played.
 
         Returns:
             bool: True if the game is being played, False otherwise.
+
         """
         return self.game_playing_status.is_play()
 
     def notify(self) -> None:
-        """
-        Notifies the subscribers with the current game status.
-        """
+        """Notifies the subscribers with the current game status."""
         print("notify observable game playing")
         payload = UpdGameStatus(status=self.game_playing_status.status)
         for pub in self._publishers:

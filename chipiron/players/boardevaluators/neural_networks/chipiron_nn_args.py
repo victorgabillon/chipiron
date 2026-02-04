@@ -27,6 +27,7 @@ CHIPIRON_NN_ARGS_FILENAME = "chipiron_nn.yaml"
 @dataclass(frozen=True, slots=True)
 class ChipironNNArgs:
     """Chipironnnargs implementation."""
+
     version: int = 1
     game_kind: GameKind = GameKind.CHESS
     input_representation: str = "piece_difference"

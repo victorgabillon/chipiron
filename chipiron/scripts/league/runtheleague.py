@@ -1,6 +1,4 @@
-"""
-RunTheLeagueScript
-"""
+"""RunTheLeagueScript."""
 
 import os
 import pickle
@@ -13,8 +11,8 @@ from chipiron.scripts.script import Script
 
 
 class RunTheLeagueScript(IScript):
-    """
-    Running a league playing games between
+    """Running a league playing games between.
+
     ers in the league and computing ELOs
     """
 
@@ -31,14 +29,14 @@ class RunTheLeagueScript(IScript):
     base_script: Script
 
     def __init__(self, base_script: Script) -> None:
-        """
-        Initialize the RunTheLeague class.
+        """Initialize the RunTheLeague class.
 
         Args:
             base_script (Script): The base script object.
 
         Returns:
             None
+
         """
         self.base_script = base_script
 
@@ -56,14 +54,14 @@ class RunTheLeagueScript(IScript):
         self.league.print_info()
 
     def run(self) -> None:
-        """
-        Runs the league.
+        """Run the league.
 
         This method continuously runs the league until interrupted. It calls the `run` method of the `league` object and
         saves the league data to a pickle file.
 
         Returns:
             None
+
         """
         print("run the league")
         while True:
@@ -72,7 +70,5 @@ class RunTheLeagueScript(IScript):
             pickle.dump(self.league, open(self.folder_league + "/players.pickle", "wb"))
 
     def terminate(self) -> None:
-        """
-        Terminates the league execution.
-        """
+        """Terminates the league execution."""
         self.base_script.terminate()

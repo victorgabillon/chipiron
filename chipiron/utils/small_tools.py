@@ -1,6 +1,4 @@
-"""
-This module contains utility functions and classes for small tools.
-"""
+"""Document the module contains utility functions and classes for small tools."""
 
 import copy
 import importlib
@@ -21,8 +19,7 @@ path = typing.Annotated[str | os.PathLike[str], "path"]
 
 
 def mkdir_if_not_existing(folder_path: path) -> None:
-    """
-    Create a directory at the specified path.
+    """Create a directory at the specified path.
 
     Args:
         folder_path: The path to the directory.
@@ -30,6 +27,7 @@ def mkdir_if_not_existing(folder_path: path) -> None:
     Raises:
         FileNotFoundError: If the parent directory does not exist.
         FileExistsError: If the directory already exists.
+
     """
     try:
         os.mkdir(folder_path)
@@ -48,8 +46,7 @@ def mkdir_if_not_existing(folder_path: path) -> None:
 
 
 def yaml_fetch_args_in_file(path_file: path) -> dict[Any, Any]:
-    """
-    Fetch arguments from a YAML file.
+    """Fetch arguments from a YAML file.
 
     Args:
         path_file: The path to the YAML file.
@@ -64,8 +61,7 @@ def yaml_fetch_args_in_file(path_file: path) -> dict[Any, Any]:
 
 
 def dict_alphabetic_str(dic: dict[Any, Any]) -> str:
-    """
-    Convert a dictionary to a string with keys sorted alphabetically.
+    """Convert a dictionary to a string with keys sorted alphabetically.
 
     Args:
         dic: The dictionary to convert.
@@ -81,8 +77,7 @@ def dict_alphabetic_str(dic: dict[Any, Any]) -> str:
 
 
 def unique_int_from_list(a_list: list[int | None]) -> int | None:
-    """
-    Generate a unique integer from a list of two integers.
+    """Generate a unique integer from a list of two integers.
 
     Args:
         a_list: A list of two integers.
@@ -104,8 +99,7 @@ def unique_int_from_list(a_list: list[int | None]) -> int | None:
 
 
 def rec_merge_dic(a: dict[Any, Any], b: dict[Any, Any]) -> dict[Any, Any]:
-    """
-    Recursively merge two dictionaries.
+    """Recursively merge two dictionaries.
 
     Args:
         a: The first dictionary.
@@ -127,14 +121,14 @@ def rec_merge_dic(a: dict[Any, Any], b: dict[Any, Any]) -> dict[Any, Any]:
 
 
 def resolve_package_path(path_to_file: str | Path) -> str:
-    """
-    Replace 'package://' at the start of the path with the chipiron package root.
+    """Replace 'package://' at the start of the path with the chipiron package root.
 
     Args:
         path_to_file (str or Path): Input path, possibly starting with 'package://'.
 
     Returns:
         str: Resolved absolute path.
+
     """
     if isinstance(path_to_file, Path):
         path_to_file = str(path_to_file)
@@ -153,7 +147,7 @@ def resolve_package_path(path_to_file: str | Path) -> str:
 
 
 def get_package_root_path(package_name: str) -> str:
-    """Get the root path of a package."
+    """Get the root path of a package.".
 
     Args:
         package_name (str): The name of the package.
@@ -163,6 +157,7 @@ def get_package_root_path(package_name: str) -> str:
 
     Returns:
         str: The root path of the package.
+
     """
     spec: Optional[importlib.machinery.ModuleSpec] = importlib.util.find_spec(
         package_name

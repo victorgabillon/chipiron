@@ -1,6 +1,4 @@
-"""
-Module for the SyzygyTable class.
-"""
+"""Module for the SyzygyTable class."""
 
 import atomheart.board as boards
 import chess.syzygy
@@ -10,8 +8,7 @@ from chipiron.utils import path
 
 
 class SyzygyChiTable(SyzygyTable[boards.BoardChi]):
-    """
-    A class representing a Syzygy tablebase for chess endgame analysis.
+    """A class representing a Syzygy tablebase for chess endgame analysis.
 
     Attributes:
         table_base (chess.syzygy.Tablebase): The Syzygy tablebase object.
@@ -43,16 +40,17 @@ class SyzygyChiTable(SyzygyTable[boards.BoardChi]):
 
         best_move(board: boards.BoardChi) -> chess.Move:
             Get the best move according to the tablebase for the given board.
+
     """
 
     table_base: chess.syzygy.Tablebase
 
     def __init__(self, path_to_table: path):
-        """
-        Initialize the SyzygyTable object.
+        """Initialize the SyzygyTable object.
 
         Args:
             path_to_table (path): The path to the Syzygy tablebase.
+
         """
         path_to_table_str: str = str(path_to_table)
         self.table_base = chess.syzygy.open_tablebase(directory=path_to_table_str)
@@ -62,14 +60,14 @@ class SyzygyChiTable(SyzygyTable[boards.BoardChi]):
         return self.table_base.probe_wdl(board=board.chess_board)
 
     def dtz(self, board: boards.BoardChi) -> int:
-        """
-        Get the distance-to-zero (DTZ) value for the given board.
+        """Get the distance-to-zero (DTZ) value for the given board.
 
         Args:
             board (boards.BoardChi): The board to get the DTZ value for.
 
         Returns:
             int: The DTZ value for the board.
+
         """
         dtz: int = self.table_base.probe_dtz(board.chess_board)
         return dtz
