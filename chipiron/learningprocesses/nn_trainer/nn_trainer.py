@@ -19,6 +19,7 @@ def compute_loss(
     input_layer: torch.Tensor,
     target_value: torch.Tensor,
 ) -> torch.Tensor:
+    """Compute loss."""
     prediction: torch.Tensor = net(input_layer)
     loss: torch.Tensor = criterion(prediction, target_value)
     return loss
@@ -27,6 +28,7 @@ def compute_loss(
 def check_model_device(model: ChiNN) -> str | torch.device | int:
     # Check the device of the first parameter
 
+    """Check model device."""
     first_param_device = next(model.parameters()).device
 
     return first_param_device

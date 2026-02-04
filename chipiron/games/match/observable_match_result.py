@@ -44,6 +44,7 @@ class ObservableMatchResults:
         self.publishers.append(pub)
 
     def replace_publishers(self, pubs: list[GuiPublisher]) -> None:
+        """Replace publishers."""
         self.publishers = list(pubs)
 
     def add_result_one_game(

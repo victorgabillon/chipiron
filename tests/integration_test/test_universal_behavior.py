@@ -1,3 +1,4 @@
+"""Module for test universal behavior."""
 import random
 from typing import TYPE_CHECKING
 
@@ -16,6 +17,7 @@ if TYPE_CHECKING:
 
 
 def test_universal_behavior() -> None:
+    """Test universal behavior."""
     board_chi = create_board_chi(
         fen_with_history=FenPlusHistory(current_fen=chess.STARTING_FEN),
         sort_legal_moves=True,

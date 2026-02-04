@@ -1,3 +1,4 @@
+"""Module for chess adapter."""
 from typing import TYPE_CHECKING
 
 from atomheart.board import BoardFactory
@@ -29,18 +30,22 @@ class ChessAdapter:
         main_move_selector: BranchSelector[ChessState],
         oracle: PolicyOracle[ChessState] | None,
     ) -> None:
+        """Initialize the instance."""
         self.board_factory = board_factory
         self.main_move_selector = main_move_selector
         self.oracle = oracle
 
     def build_runtime_state(self, snapshot: FenPlusHistory) -> ChessState:
+        """Build runtime state."""
         return ChessState(self.board_factory(fen_with_history=snapshot))
 
     def legal_action_count(self, runtime_state: ChessState) -> int:
         # Keep the API generic; for chess we count legal moves.
+        """Legal action count."""
         return len(runtime_state.legal_moves.get_all())
 
     def only_action_name(self, runtime_state: ChessState) -> BranchName:
+        """Only action name."""
         keys = runtime_state.legal_moves.get_all()
         if len(keys) != 1:
             raise ValueError("only_action_name called but position has != 1 legal move")
@@ -49,6 +54,7 @@ class ChessAdapter:
         return move_uci
 
     def oracle_action_name(self, runtime_state: ChessState) -> BranchName | None:
+        """Oracle action name."""
         if self.oracle is None:
             return None
 
@@ -65,6 +71,7 @@ class ChessAdapter:
         notify_progress: NotifyProgressCallable | None = None,
     ) -> Recommendation:
         # `valanga.policy.BranchSelector` is `recommend(state, seed)`.
+        """Recommend."""
         return self.main_move_selector.recommend(
             state=runtime_state, seed=seed, notify_progress=notify_progress
         )

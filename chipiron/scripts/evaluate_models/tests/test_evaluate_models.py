@@ -1,3 +1,4 @@
+"""Module for test evaluate models."""
 from coral.neural_networks.factory import (
     NeuralNetModelsAndArchitecture,
 )
@@ -12,6 +13,7 @@ test_models_to_evaluate_: list[NeuralNetModelsAndArchitecture] = [
 
 
 def test_evaluate_model() -> None:
+    """Test evaluate model."""
     open(
         "chipiron/scripts/evaluate_models/tests/test_evaluation_report.yaml", "w"
     ).close()

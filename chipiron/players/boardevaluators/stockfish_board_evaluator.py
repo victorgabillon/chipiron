@@ -68,6 +68,7 @@ class StockfishBoardEvaluator:
 
     @staticmethod
     def _candidate_paths() -> list[str]:
+        """Return candidate filesystem paths for the Stockfish binary."""
         return [
             str(STOCKFISH_BINARY_PATH),
             "/usr/games/stockfish",
@@ -77,6 +78,7 @@ class StockfishBoardEvaluator:
 
     @staticmethod
     def is_available() -> bool:
+        """Return whether available."""
         return any(
             Path(path).exists() for path in StockfishBoardEvaluator._candidate_paths()
         )

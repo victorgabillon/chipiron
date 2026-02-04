@@ -1,3 +1,5 @@
+"""Message payloads exchanged between player processes and the manager."""
+
 from dataclasses import dataclass
 from typing import TypeAlias
 
@@ -37,6 +39,8 @@ class PlayerRequest[StateSnapT = object]:
 
 @dataclass(frozen=True, slots=True)
 class EvMove:
+    """Event reporting a chosen move and its evaluation."""
+
     branch_name: BranchName
     corresponding_state_tag: StateTag
     player_name: str
@@ -48,6 +52,8 @@ class EvMove:
 
 @dataclass(frozen=True, slots=True)
 class EvProgress:
+    """Event reporting progress feedback for a player."""
+
     player_color: Color
     progress_percent: int | None
 
@@ -57,6 +63,8 @@ PlayerEventPayload: TypeAlias = EvMove | EvProgress
 
 @dataclass(frozen=True, slots=True)
 class PlayerEvent:
+    """Envelope for player events sent to the manager."""
+
     schema_version: int
     scope: Scope
     payload: PlayerEventPayload

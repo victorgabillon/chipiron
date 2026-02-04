@@ -1,3 +1,4 @@
+"""Module for chipiron nn args."""
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -25,6 +26,7 @@ CHIPIRON_NN_ARGS_FILENAME = "chipiron_nn.yaml"
 
 @dataclass(frozen=True, slots=True)
 class ChipironNNArgs:
+    """Chipironnnargs implementation."""
     version: int = 1
     game_kind: GameKind = GameKind.CHESS
     input_representation: str = "piece_difference"
@@ -34,10 +36,12 @@ ContentToInputBuilder = Callable[[str], ContentToInputFunction[ChessState]]
 
 
 def get_chipiron_nn_args_file_path_from(folder_path: path) -> str:
+    """Return chipiron nn args file path from."""
     return os.path.join(folder_path, CHIPIRON_NN_ARGS_FILENAME)
 
 
 def _serialize_chipiron_nn_args(args: ChipironNNArgs) -> dict[str, int | str]:
+    """Serialize NN args into primitive values for YAML output."""
     return {
         "version": args.version,
         "game_kind": args.game_kind.value,
@@ -46,12 +50,14 @@ def _serialize_chipiron_nn_args(args: ChipironNNArgs) -> dict[str, int | str]:
 
 
 def save_chipiron_nn_args(args: ChipironNNArgs, folder_path: path) -> None:
+    """Save chipiron nn args."""
     file_path = get_chipiron_nn_args_file_path_from(folder_path)
     with open(file_path, "w", encoding="utf-8") as handle:
         yaml.safe_dump(_serialize_chipiron_nn_args(args), handle)
 
 
 def _is_str_key_mapping(obj: object) -> TypeGuard[Mapping[str, Any]]:
+    """Return whether the object is a mapping with string keys."""
     if not isinstance(obj, Mapping):
         return False
 
@@ -62,6 +68,7 @@ def _is_str_key_mapping(obj: object) -> TypeGuard[Mapping[str, Any]]:
 
 
 def _as_mapping(obj: object, *, file_path: str) -> Mapping[str, Any]:
+    """Validate and return a string-keyed mapping for YAML data."""
     if not _is_str_key_mapping(obj):
         raise ValueError(
             f"Invalid chipiron NN args in {file_path!r}: expected mapping with string keys"
@@ -70,6 +77,7 @@ def _as_mapping(obj: object, *, file_path: str) -> Mapping[str, Any]:
 
 
 def load_chipiron_nn_args(folder_path: path) -> ChipironNNArgs:
+    """Load chipiron nn args."""
     file_path = get_chipiron_nn_args_file_path_from(folder_path)
     with open(file_path, "r", encoding="utf-8") as f:
         raw = yaml.safe_load(f)
@@ -92,6 +100,7 @@ def load_chipiron_nn_args(folder_path: path) -> ChipironNNArgs:
 def _create_chess_content_to_input(
     input_representation: str,
 ) -> ContentToInputFunction[ChessState]:
+    """Build a chess content-to-input converter for the representation."""
     representation = ModelInputRepresentationType(input_representation)
     return create_chess_state_to_input(representation)
 
@@ -104,6 +113,7 @@ _CONTENT_TO_INPUT_BUILDERS: dict[GameKind, ContentToInputBuilder] = {
 def create_content_to_input_convert(
     chipiron_nn_args: ChipironNNArgs,
 ) -> ContentToInputFunction[ChessState]:
+    """Create content to input convert."""
     if chipiron_nn_args.version != 1:
         raise ValueError(
             f"Unsupported chipiron NN args version: {chipiron_nn_args.version}."
@@ -119,6 +129,7 @@ def create_content_to_input_convert(
 def create_content_to_input_from_folder(
     folder_path: path,
 ) -> ContentToInputFunction[ChessState]:
+    """Create content to input from folder."""
     chipiron_nn_args = load_chipiron_nn_args(folder_path)
     return create_content_to_input_convert(chipiron_nn_args)
 
@@ -126,6 +137,7 @@ def create_content_to_input_from_folder(
 def create_content_to_input_from_model_weights(
     model_weights_file_name: path,
 ) -> ContentToInputFunction[ChessState]:
+    """Create content to input from model weights."""
     model_weights_file_name = resolve_package_path(str(model_weights_file_name))
     folder_path = os.path.dirname(model_weights_file_name)
     return create_content_to_input_from_folder(folder_path)

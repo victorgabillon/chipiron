@@ -40,6 +40,7 @@ def _select_eval_wiring(
 def _select_eval_wiring(
     game_kind: GameKind, *, can_oracle: bool
 ) -> EvaluatorWiring[Any]:
+    """Select the evaluator wiring for the requested game kind."""
     match game_kind:
         case GameKind.CHESS:
             return ChessEvalWiring(can_oracle=can_oracle)
@@ -54,6 +55,7 @@ def create_game_board_evaluator(
     wiring: EvaluatorWiring[StateT],
     gui: bool,
 ) -> IGameStateEvaluator[StateT]:
+    """Create game board evaluator."""
     base: IGameStateEvaluator[StateT] = GameStateEvaluator(
         chi=wiring.build_chi(),
         oracle=wiring.build_oracle(),
@@ -89,6 +91,7 @@ def create_game_board_evaluator_for_game_kind(
     gui: bool,
     can_oracle: bool,
 ) -> IGameStateEvaluator[Any]:
+    """Create game board evaluator for game kind."""
     wiring = _select_eval_wiring(game_kind, can_oracle=can_oracle)
     return create_game_board_evaluator(
         wiring=wiring,

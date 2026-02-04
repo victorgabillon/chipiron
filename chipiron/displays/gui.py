@@ -58,6 +58,7 @@ if typing.TYPE_CHECKING:
 
 
 def format_state_eval(ev: StateEvaluation | None) -> str:
+    """Format state eval."""
     if ev is None:
         return "—"
     match ev:
@@ -457,6 +458,7 @@ class MainWindow(QWidget):
         self.main_thread_mailbox.put(cmd)
 
     def reset_for_new_game(self, scope: Scope) -> None:
+        """Reset for new game."""
         self.tablewidget.clearContents()
         self.tablewidget.setRowCount(1)
         self.progress_white.reset()
@@ -758,6 +760,7 @@ class MainWindow(QWidget):
         return self.drawBoardSvg
 
     def update_players_info(self, white: PlayerUiInfo, black: PlayerUiInfo) -> None:
+        """Update players info."""
         self.player_white_button.setText(" White: " + white.label)
         self.player_black_button.setText(" Black: " + black.label)
 
@@ -833,6 +836,7 @@ class MainWindow(QWidget):
                 self.pause_button.move(700, 100)
 
     def update_match_stats(self, upd: UpdMatchResults) -> None:
+        """Update match stats."""
         self.score_button.setText(
             f"⚖ Score: {upd.wins_white}-{upd.wins_black}-{upd.draws}"
         )

@@ -1,3 +1,4 @@
+"""Module for rep 364."""
 from typing import Protocol, cast
 
 import atomheart.board as boards
@@ -12,6 +13,8 @@ from .board_representation import Representation364
 
 
 class _Rep364Like(ContentRepresentation[ChessState, torch.Tensor], Protocol):
+    """Protocol for tensor-backed Representation364-like objects."""
+
     tensor_white: torch.Tensor
     tensor_black: torch.Tensor
     tensor_castling_white: torch.Tensor
@@ -113,11 +116,13 @@ def create_from_board(state: ChessState) -> Representation364:
 
 
 def e(board: boards.IBoard) -> dict[chess.Square, tuple[int, bool]]:
+    """E."""
     piece_map: dict[chess.Square, tuple[int, bool]] = board.piece_map()
     return piece_map
 
 
 def d() -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """D."""
     white: torch.Tensor = torch.zeros(384, dtype=torch.float)
     black: torch.Tensor = torch.zeros(384, dtype=torch.float)
     castling_white: torch.Tensor = torch.zeros(2, dtype=torch.float)
@@ -131,6 +136,7 @@ def c(
     black: torch.Tensor,
     white: torch.Tensor,
 ) -> Representation364:
+    """C."""
     representation: Representation364 = Representation364(
         tensor_white=white,
         tensor_black=black,
@@ -143,6 +149,7 @@ def c(
 def b(
     board: boards.IBoard, castling_black: torch.Tensor, castling_white: torch.Tensor
 ) -> None:
+    """B."""
     castling_white[0] = board.has_queenside_castling_rights(chess.WHITE)
     castling_white[1] = board.has_kingside_castling_rights(chess.WHITE)
     castling_black[0] = board.has_queenside_castling_rights(chess.BLACK)
@@ -154,6 +161,7 @@ def a(
     white: torch.Tensor,
     piece_map: dict[chess.Square, tuple[int, bool]],
 ) -> None:
+    """A."""
     square: chess.Square
     piece: tuple[int, bool]
     for square, piece in piece_map.items():

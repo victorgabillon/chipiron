@@ -1,8 +1,10 @@
+"""Module for test base tree exploration."""
 import chipiron.scripts as scripts
 from chipiron.scripts.factory import create_script
 
 
 def test_base_tree_exploration() -> None:
+    """Test base tree exploration."""
     print("Running the SCRIPT with config ")
     script_object: scripts.IScript = create_script(
         script_type=scripts.ScriptType.BASE_TREE_EXPLORATION,

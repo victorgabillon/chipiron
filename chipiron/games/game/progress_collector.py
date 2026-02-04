@@ -16,11 +16,12 @@ class PlayerProgressCollectorP(Protocol):
     Object defining the protocol for setting the progress values
     """
 
-    def progress_white(self, value: int | None) -> None: ...
-
-    def progress_black(self, value: int | None) -> None: ...
-
-
+    def progress_white(self, value: int | None) -> None:
+        """Progress white."""
+        ...
+    def progress_black(self, value: int | None) -> None:
+        """Progress black."""
+        ...
 @dataclass
 class PlayerProgressCollector:
     """
@@ -68,6 +69,7 @@ class PlayerProgressCollector:
 
 
 def make_publishers() -> list[GuiPublisher]:
+    """Create publishers."""
     return []
 
 
@@ -81,15 +83,18 @@ class PlayerProgressCollectorObservable(PlayerProgressCollectorP):
     )
 
     def progress_white(self, value: int | None) -> None:
+        """Progress white."""
         self.progress_collector.progress_white = value
         self._publish(color=Color.WHITE, value=value)
 
     def progress_black(self, value: int | None) -> None:
+        """Progress black."""
         self.progress_collector.progress_black = value
         self._publish(color=Color.BLACK, value=value)
 
     # If you still receive chess.Color from elsewhere, keep this helper:
     def progress_for_chess_color(self, color: Color, value: int | None) -> None:
+        """Progress for chess color."""
         if color == Color.WHITE:
             self.progress_collector.progress_white = value
         else:
@@ -97,6 +102,7 @@ class PlayerProgressCollectorObservable(PlayerProgressCollectorP):
         self._publish(color=color, value=value)
 
     def _publish(self, color: Color, value: int | None) -> None:
+        """Publish a progress update to all GUI publishers."""
         payload = UpdPlayerProgress(
             player_color=color,
             progress_percent=value,

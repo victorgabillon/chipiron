@@ -30,10 +30,13 @@ from chipiron.utils.logger import chipiron_logger
 
 @dataclass(frozen=True, slots=True)
 class BoardEvalArgsWrapper:
+    """YAML wrapper for loading board evaluator arguments."""
+
     board_evaluator: AllBoardEvaluatorArgs
 
 
 def _load_chipiron_eval_args() -> AllBoardEvaluatorArgs:
+    """Load evaluator arguments from the default YAML configuration."""
     path = str(
         files("chipiron").joinpath(
             "data/players/board_evaluator_config/base_chipiron_board_eval.yaml"
@@ -48,14 +51,19 @@ def _load_chipiron_eval_args() -> AllBoardEvaluatorArgs:
 
 
 class ValangaBoardEvaluator(StateEvaluator[ChessState]):
+    """Adapter exposing a chess evaluator through the StateEvaluator API."""
+
     def __init__(self, evaluator: StateEvaluator[ChessState]) -> None:
+        """Wrap an existing evaluator implementation."""
         self._evaluator = evaluator
 
     def value_white(self, state: ChessState) -> float:
+        """Value white."""
         return self._evaluator.value_white(state)
 
 
 def _build_chi() -> StateEvaluator[ChessState]:
+    """Build the primary chess evaluator based on configuration."""
     args = _load_chipiron_eval_args()
     match args:
         case BasicEvaluationBoardEvaluatorArgs():
@@ -75,6 +83,7 @@ def _build_chi() -> StateEvaluator[ChessState]:
 
 
 def _build_oracle(*, can_oracle: bool) -> StateEvaluator[ChessState] | None:
+    """Build an optional oracle evaluator when enabled and available."""
     if not can_oracle:
         return None
     if not StockfishBoardEvaluator.is_available():
@@ -89,10 +98,14 @@ def _build_oracle(*, can_oracle: bool) -> StateEvaluator[ChessState] | None:
 
 @dataclass(frozen=True, slots=True)
 class ChessEvalWiring:
+    """Wiring that builds chess evaluators and optional oracles."""
+
     can_oracle: bool
 
     def build_chi(self) -> StateEvaluator[ChessState]:
+        """Build chi."""
         return _build_chi()
 
     def build_oracle(self) -> StateEvaluator[ChessState] | None:
+        """Build oracle."""
         return _build_oracle(can_oracle=self.can_oracle)

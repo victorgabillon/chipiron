@@ -31,19 +31,28 @@ from chipiron.utils.queue_protocols import PutGetQueue, PutQueue
 
 
 class MoveFunction(Protocol):
-    def __call__(self, request: PlayerRequest[object]) -> None: ...
+    """Protocol for functions that dispatch player requests."""
+
+    def __call__(self, request: PlayerRequest[object]) -> None:
+        """Dispatch a player request to its handler."""
+        ...
 
 
 class PlayerObserverFactory(Protocol):
+    """Protocol for factories that build player observers."""
+
     def __call__(
         self,
         player_factory_args: PlayerFactoryArgs,
         player_color: Color,
         main_thread_mailbox: PutQueue[MainMailboxMessage],
-    ) -> tuple[PlayerHandle, MoveFunction]: ...
+    ) -> tuple[PlayerHandle, MoveFunction]:
+        """Create a player observer and its request sender."""
+        ...
 
 
 def _select_wiring(game_kind: GameKind) -> ObserverWiring[object, object, object]:
+    """Select the observer wiring for the requested game kind."""
     match game_kind:
         case GameKind.CHESS:
             return cast("ObserverWiring[object, object, object]", CHESS_WIRING)
@@ -60,6 +69,7 @@ def create_player_observer_factory(
     implementation_args: object,
     universal_behavior: bool,
 ) -> PlayerObserverFactory:
+    """Create player observer factory."""
     wiring = _select_wiring(game_kind)
 
     if each_player_has_its_own_thread:
@@ -93,6 +103,7 @@ def _create_player_observer_distributed(
     implementation_args: object,
     universal_behavior: bool,
 ) -> tuple[PlayerHandle, MoveFunction]:
+    """Create a player observer backed by a separate process."""
     mgr = multiprocessing.Manager()
     player_process_mailbox: PutGetQueue[PlayerRequest[object] | None] = mgr.Queue()
 
@@ -133,6 +144,7 @@ def _create_player_observer_mono_process(
     implementation_args: object,
     universal_behavior: bool,
 ) -> tuple[PlayerHandle, MoveFunction]:
+    """Create a player observer running in-process."""
     build_args_type = cast("type", wiring.build_args_type)
     build_args = build_args_type(
         player_factory_args=player_factory_args,

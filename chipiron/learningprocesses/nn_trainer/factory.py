@@ -51,6 +51,7 @@ SerializableType = Union[
 
 @dataclass(frozen=True, slots=True)
 class GameInputArgs:
+    """Gameinputargs implementation."""
     game_kind: GameKind
     representation: ModelInputRepresentationType
 
@@ -107,6 +108,7 @@ class NNTrainerArgs:
     epochs_number: int = 100
 
     def __post_init__(self) -> None:
+        """  post init  ."""
         if self.reuse_existing_model:
             if self.nn_parameters_file_if_reusing_existing_one is None:
                 raise Exception(

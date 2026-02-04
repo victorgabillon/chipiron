@@ -18,6 +18,7 @@ class ObservableGamePlayingStatus:
     _publishers: list[GuiPublisher] = []
 
     def __init__(self, game_playing_status: GamePlayingStatus) -> None:
+        """Initialize the instance."""
         self.game_playing_status = game_playing_status
         self._publishers: list[GuiPublisher] = []
 

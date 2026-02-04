@@ -132,4 +132,5 @@ def create_board_to_input(
 def create_chess_state_to_input(
     model_input_representation_type: ModelInputRepresentationType,
 ) -> ContentToInputFunction[ChessState]:
+    """Create chess state to input."""
     return create_board_to_input(model_input_representation_type)
