@@ -1,3 +1,4 @@
+"""Module for test learn nn from scratch and fixed boards."""
 from typing import Any
 
 from parsley_coco import make_partial_dataclass_with_optional_paths
@@ -45,6 +46,7 @@ configs_dataclasses: list[Any] = [
 
 
 def test_learn_nn_from_scratch_and_fixed_boards() -> None:
+    """Test learn nn from scratch and fixed boards."""
     for config in configs_dataclasses:
         script_object: scripts.IScript = create_script(
             script_type=scripts.ScriptType.LEARN_NN_FROM_SCRATCH,

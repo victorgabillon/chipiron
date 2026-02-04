@@ -1,3 +1,4 @@
+"""Module for master board evaluator."""
 from dataclasses import dataclass
 from typing import Any
 

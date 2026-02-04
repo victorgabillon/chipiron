@@ -1,3 +1,4 @@
+"""Module for chess gui encoder."""
 from dataclasses import dataclass
 
 from valanga.game import Seed
@@ -15,6 +16,7 @@ from chipiron.utils.communication.gui_encoder import GuiEncoder
 
 @dataclass(frozen=True, slots=True)
 class ChessGuiEncoder(GuiEncoder[ChessState]):
+    """Chessguiencoder implementation."""
     game_kind: GameKind = GameKind.CHESS
 
     def make_state_payload(
@@ -23,6 +25,7 @@ class ChessGuiEncoder(GuiEncoder[ChessState]):
         state: ChessState,
         seed: Seed | None,
     ) -> UpdatePayload:
+        """Create state payload."""
         return UpdStateChess(
             fen_plus_history=state.into_fen_plus_history(),
             seed=seed,
@@ -33,4 +36,5 @@ class ChessGuiEncoder(GuiEncoder[ChessState]):
         *,
         status: PlayingStatus,
     ) -> UpdatePayload:
+        """Create status payload."""
         return UpdGameStatus(status=status)

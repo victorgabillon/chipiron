@@ -1,3 +1,4 @@
+"""Module for checkers wiring."""
 from dataclasses import dataclass
 from typing import Any
 
@@ -16,6 +17,7 @@ CheckersRuntime = Any
 
 @dataclass(frozen=True)
 class BuildCheckersGamePlayerArgs:
+    """Buildcheckersgameplayerargs implementation."""
     player_factory_args: PlayerFactoryArgs
     player_color: Color
     implementation_args: object
@@ -26,6 +28,7 @@ def build_checkers_game_player(
     args: BuildCheckersGamePlayerArgs,
     queue_out: PutQueue[MainMailboxMessage],
 ) -> GamePlayer[CheckersSnap, CheckersRuntime]:
+    """Build checkers game player."""
     raise NotImplementedError("checkers player building not wired yet")
 
 

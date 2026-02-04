@@ -29,6 +29,7 @@ class MasterBoardOverEventDetector:
     def check_obvious_over_events(
         self, state: State
     ) -> tuple["OverEvent | None", float | None]:
+        """Check obvious over events."""
         return self.evaluator.check_obvious_over_events(cast("ChessState", state))
 
 
@@ -40,4 +41,5 @@ class MasterBoardEvaluatorAsAnemone(MasterStateEvaluator):
     over: "OverEventDetector"
 
     def value_white(self, state: State) -> float:
+        """Value white."""
         return self.inner.value_white(cast("ChessState", state))

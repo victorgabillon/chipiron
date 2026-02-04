@@ -1,3 +1,4 @@
+"""Module for test stalemate."""
 from typing import TYPE_CHECKING
 
 import pytest
@@ -20,6 +21,7 @@ if TYPE_CHECKING:
 def test_three_fold_repetition(use_rusty_board: bool):
     # todo maybe this sis more a unit test for the is_game_over method atm
 
+    """Test three fold repetition."""
     board_factory: BoardFactory = create_board_factory(use_rust_boards=use_rusty_board)
     board: IBoard = board_factory(
         fen_with_history=FenPlusHistory(

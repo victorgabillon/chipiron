@@ -47,16 +47,20 @@ class IGameStateEvaluator(Protocol[StateT_contra]):
 
 
 class GameStateEvaluator[StateT]:
+    """Evaluate positions using a primary evaluator and optional oracle."""
+
     def __init__(
         self,
         *,
         chi: StateEvaluator[StateT],
         oracle: StateEvaluator[StateT] | None,
     ) -> None:
+        """Store the primary evaluator and optional oracle."""
         self._chi = chi
         self._oracle = oracle
 
     def evaluate(self, state: StateT) -> tuple[StateEvaluation | None, StateEvaluation]:
+        """Evaluate a state and return oracle and primary evaluations."""
         chi_value = self._chi.value_white(state)
         chi = FloatyStateEvaluation(value_white=chi_value)
         oracle = (
@@ -67,14 +71,13 @@ class GameStateEvaluator[StateT]:
         return oracle, chi
 
     def add_evaluation(self, player_color: Color, evaluation: StateEvaluation) -> None:
+        """Accept an external evaluation for a given player color."""
         _ = player_color
         _ = evaluation
 
 
 class ObservableGameStateEvaluator[StateT]:
-    """
-    This class represents an observable board evaluator.
-    """
+    """Observable evaluator that publishes GUI updates."""
 
     publishers: list[GuiPublisher]
 
@@ -85,6 +88,7 @@ class ObservableGameStateEvaluator[StateT]:
     evaluation_player_white: StateEvaluation | None = None
 
     def __init__(self, game_state_evaluator: IGameStateEvaluator[StateT]):
+        """Initialize with a wrapped game-state evaluator."""
         self.game_state_evaluator = game_state_evaluator
         self.publishers = []
         self.evaluation_oracle = None

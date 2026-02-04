@@ -60,6 +60,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class PlayerCreationArgs:
+    """Data container for PlayerCreationArgs."""
     random_generator: random.Random
     implementation_args: ImplementationArgs
     universal_behavior: bool

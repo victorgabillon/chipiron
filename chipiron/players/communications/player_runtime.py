@@ -36,6 +36,7 @@ def handle_player_request(
     game_player: GamePlayer[StateSnapT, RuntimeStateT],
     out_queue: PutQueue[MainMailboxMessage],
 ) -> None:
+    """Handle player request."""
     state: TurnStatePlusHistory[StateSnapT] = request.state
 
     if state.turn != game_player.color:

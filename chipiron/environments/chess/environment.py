@@ -1,3 +1,4 @@
+"""Module for environment."""
 from typing import TYPE_CHECKING
 
 from atomheart import ValangaChessState
@@ -24,6 +25,7 @@ def make_chess_environment(
     *,
     deps: ChessEnvironmentDeps,
 ) -> Environment[ChessState, FenPlusHistory, ChessStartTag]:
+    """Create chess environment."""
     from chipiron.players.factory_higher_level import create_player_observer_factory
 
     def build_player_observer_factory(

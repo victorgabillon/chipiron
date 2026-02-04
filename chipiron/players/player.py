@@ -20,22 +20,26 @@ RuntimeStateT = TypeVar("RuntimeStateT")
 class GameAdapter(Protocol[StateSnapT, RuntimeStateT]):
     """Game-specific behavior injected into the generic `Player`."""
 
-    def build_runtime_state(self, snapshot: StateSnapT) -> RuntimeStateT: ...
-
-    def legal_action_count(self, runtime_state: RuntimeStateT) -> int: ...
-
-    def only_action_name(self, runtime_state: RuntimeStateT) -> BranchName: ...
-
-    def oracle_action_name(self, runtime_state: RuntimeStateT) -> BranchName | None: ...
-
+    def build_runtime_state(self, snapshot: StateSnapT) -> RuntimeStateT:
+        """Build runtime state."""
+        ...
+    def legal_action_count(self, runtime_state: RuntimeStateT) -> int:
+        """Legal action count."""
+        ...
+    def only_action_name(self, runtime_state: RuntimeStateT) -> BranchName:
+        """Only action name."""
+        ...
+    def oracle_action_name(self, runtime_state: RuntimeStateT) -> BranchName | None:
+        """Oracle action name."""
+        ...
     def recommend(
         self,
         runtime_state: RuntimeStateT,
         seed: Seed,
         notify_progress: NotifyProgressCallable | None = None,
-    ) -> Recommendation: ...
-
-
+    ) -> Recommendation:
+        """Recommend."""
+        ...
 class Player(Generic[StateSnapT, RuntimeStateT]):
     """Fully game-agnostic player: recommends an action given a snapshot."""
 
@@ -45,10 +49,12 @@ class Player(Generic[StateSnapT, RuntimeStateT]):
     def __init__(
         self, name: str, adapter: GameAdapter[StateSnapT, RuntimeStateT]
     ) -> None:
+        """Initialize the instance."""
         self.id = name
         self.adapter = adapter
 
     def get_id(self) -> PlayerId:
+        """Return id."""
         return self.id
 
     def select_move(
@@ -57,6 +63,7 @@ class Player(Generic[StateSnapT, RuntimeStateT]):
         seed: Seed,
         notify_percent_function: NotifyProgressCallable | None = None,
     ) -> Recommendation:
+        """Select move."""
         runtime_state = self.adapter.build_runtime_state(state_snapshot)
 
         n = self.adapter.legal_action_count(runtime_state)

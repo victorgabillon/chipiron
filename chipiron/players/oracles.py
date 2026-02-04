@@ -1,3 +1,4 @@
+"""Module for oracles."""
 from typing import Protocol, TypeVar
 
 from valanga import State

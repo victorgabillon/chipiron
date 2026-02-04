@@ -1,3 +1,5 @@
+"""Encoders for player move requests and state snapshots."""
+
 from dataclasses import dataclass
 from typing import Any, Protocol, TypeVar, cast
 
@@ -17,6 +19,8 @@ StateSnapT = TypeVar("StateSnapT", default=Any)
 
 
 class PlayerRequestEncoder(Protocol[StateT_contra, StateSnapT]):
+    """Protocol for encoding player move requests."""
+
     game_kind: GameKind
 
     def make_move_request(
@@ -25,16 +29,21 @@ class PlayerRequestEncoder(Protocol[StateT_contra, StateSnapT]):
         state: StateT_contra,
         seed: Seed,
         scope: Scope,
-    ) -> PlayerRequest[StateSnapT]: ...
+    ) -> PlayerRequest[StateSnapT]:
+        """Build a player request from the current state."""
+        ...
 
 
 @dataclass(frozen=True, slots=True)
 class ChessPlayerRequestEncoder(PlayerRequestEncoder[ChessState, FenPlusHistory]):
+    """Chess-specific move request encoder."""
+
     game_kind: GameKind = GameKind.CHESS
 
     def make_move_request(
         self, *, state: ChessState, seed: Seed, scope: Scope
     ) -> PlayerRequest[FenPlusHistory]:
+        """Encode a chess move request using FEN history."""
         fen_plus_history: FenPlusHistory = state.into_fen_plus_history()
 
         return PlayerRequest(
@@ -55,6 +64,7 @@ def make_player_request_encoder[StateT](
     game_kind: GameKind,
     state_type: type[StateT],
 ) -> PlayerRequestEncoder[StateT, Any]:
+    """Create a player request encoder for the given game kind."""
     _ = state_type  # witness
 
     match game_kind:
@@ -76,4 +86,5 @@ def make_player_encoder[StateT](
     game_kind: GameKind,
     state_type: type[StateT],
 ) -> PlayerRequestEncoder[StateT, Any]:
+    """Backward-compatible alias for make_player_request_encoder."""
     return make_player_request_encoder(game_kind=game_kind, state_type=state_type)

@@ -87,6 +87,7 @@ def test_representation364(
 ) -> None:
     # 'rnb2bnr/ppp2ppp/2k3q1/8/8/1Q3K2/PPP2PPP/RNB2BNR w - - 0 1'
     # '8/ppp2ppp/2k3q1/8/8/1Q3K2/PPP2PPP/8 w - - 0 1'
+    """Test representation364."""
     board_one: IBoard = create_board(
         use_rust_boards=use_rust_boards,
         use_board_modification=use_board_modification,

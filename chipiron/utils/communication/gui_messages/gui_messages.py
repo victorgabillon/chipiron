@@ -14,6 +14,7 @@ from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppAr
 
 
 def format_player_label(player: PlayerFactoryArgs) -> str:
+    """Format player label."""
     name: str = player.player_args.name
 
     tree_branch_limit: str | int = ""
@@ -30,6 +31,7 @@ def format_player_label(player: PlayerFactoryArgs) -> str:
 def make_players_info_payload(
     player_color_to_factory_args: dict[Color, PlayerFactoryArgs],
 ) -> UpdPlayersInfo:
+    """Create players info payload."""
     w = player_color_to_factory_args[Color.WHITE]
     b = player_color_to_factory_args[Color.BLACK]
 

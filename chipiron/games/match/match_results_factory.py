@@ -68,6 +68,7 @@ class MatchResultsFactory:
     def build_publishers(
         self, *, scope: Scope, game_kind: GameKind
     ) -> list[GuiPublisher]:
+        """Build publishers."""
         return [
             GuiPublisher(out=q, schema_version=1, game_kind=game_kind, scope=scope)
             for q in self.subscriber_queues

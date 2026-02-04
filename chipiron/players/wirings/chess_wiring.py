@@ -1,3 +1,4 @@
+"""Module for chess wiring."""
 from dataclasses import dataclass
 
 from atomheart.board.utils import FenPlusHistory
@@ -24,6 +25,7 @@ from chipiron.utils.queue_protocols import PutQueue
 
 @dataclass(frozen=True)
 class BuildChessGamePlayerArgs:
+    """Buildchessgameplayerargs implementation."""
     player_factory_args: ChessPlayerFactoryArgs
     player_color: Color
     implementation_args: ImplementationArgs
@@ -35,6 +37,7 @@ def build_chess_game_player(
     args: BuildChessGamePlayerArgs,
     queue_out: PutQueue[MainMailboxMessage],
 ) -> GamePlayer[FenPlusHistory, ChessState]:
+    """Build chess game player."""
     create_syzygy = create_syzygy_factory(
         use_rust=args.implementation_args.use_rust_boards
     )
