@@ -1,6 +1,4 @@
-"""
-Module representing the board evaluators.
-"""
+"""Module representing the board evaluators."""
 
 from typing import Protocol, TypeVar
 
@@ -15,34 +13,24 @@ StateT = TypeVar("StateT")
 
 
 class StateEvaluator(Protocol[StateT_contra]):
-    """
-    Protocol representing a board evaluator.
-    """
+    """Protocol representing a board evaluator."""
 
     def value_white(self, state: StateT_contra) -> float:
-        """
-        Evaluates a board and returns the value for white.
-        """
+        """Evaluate a board and returns the value for white."""
         ...
 
 
 class IGameStateEvaluator(Protocol[StateT_contra]):
-    """
-    Protocol representing a game board evaluator.
-    """
+    """Protocol representing a game board evaluator."""
 
     def evaluate(
         self, state: StateT_contra
     ) -> tuple[StateEvaluation | None, StateEvaluation]:
-        """
-        Evaluates a board and returns the evaluation values for oracle and chi.
-        """
+        """Evaluate a board and returns the evaluation values for oracle and chi."""
         ...
 
     def add_evaluation(self, player_color: Color, evaluation: StateEvaluation) -> None:
-        """
-        Adds an evaluation value for a player.
-        """
+        """Add an evaluation value for a player."""
         ...
 
 
@@ -96,19 +84,17 @@ class ObservableGameStateEvaluator[StateT]:
         self.evaluation_player_black = None
         self.evaluation_player_white = None
 
-    def subscribe(self, pub: GuiPublisher) -> None:
-        """
-        Subscribe to the ObservableBoardEvaluator to get the EvaluationMessage.
+    def subscribe(self, pub: GuiPublisher) -> None:  # noqa: D417
+        """Subscribe to the ObservableBoardEvaluator to get the EvaluationMessage.
 
         Args:
             mailbox: The mailbox queue.
+
         """
         self.publishers.append(pub)
 
     def evaluate(self, state: StateT) -> tuple[StateEvaluation | None, StateEvaluation]:
-        """
-        Evaluates a board and returns the evaluation values for oracle and chi.
-        """
+        """Evaluate a board and returns the evaluation values for oracle and chi."""
         evaluation_oracle, evaluation_chi = self.game_state_evaluator.evaluate(
             state=state
         )
@@ -119,9 +105,7 @@ class ObservableGameStateEvaluator[StateT]:
         return evaluation_oracle, evaluation_chi
 
     def add_evaluation(self, player_color: Color, evaluation: StateEvaluation) -> None:
-        """
-        Adds an evaluation value for a player.
-        """
+        """Add an evaluation value for a player."""
         if player_color == Color.BLACK:
             self.evaluation_player_black = evaluation
         if player_color == Color.WHITE:
@@ -129,9 +113,7 @@ class ObservableGameStateEvaluator[StateT]:
         self.notify_new_results()
 
     def notify_new_results(self) -> None:
-        """
-        Notifies the subscribers about the new evaluation results.
-        """
+        """Notifies the subscribers about the new evaluation results."""
         payload = UpdEvaluation(
             oracle=self.evaluation_oracle,
             chipiron=self.evaluation_chi,

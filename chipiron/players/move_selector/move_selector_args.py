@@ -1,6 +1,4 @@
-"""
-This module defines the MoveSelectorArgs protocol and helpers for move selector arguments.
-"""
+"""Document the module defines the MoveSelectorArgs protocol and helpers for move selector arguments."""
 
 from typing import Any, Protocol, TypeAlias
 

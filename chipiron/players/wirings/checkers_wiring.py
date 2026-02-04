@@ -18,6 +18,7 @@ CheckersRuntime = Any
 @dataclass(frozen=True)
 class BuildCheckersGamePlayerArgs:
     """Buildcheckersgameplayerargs implementation."""
+
     player_factory_args: PlayerFactoryArgs
     player_color: Color
     implementation_args: object

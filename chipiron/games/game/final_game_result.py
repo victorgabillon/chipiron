@@ -1,6 +1,4 @@
-"""
-Module for the FinalGameResult enum and the GameReport dataclass.
-"""
+"""Module for the FinalGameResult enum and the GameReport dataclass."""
 
 from dataclasses import dataclass
 from enum import Enum

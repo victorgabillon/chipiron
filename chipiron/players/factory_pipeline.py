@@ -61,7 +61,6 @@ def create_player_with_pipeline(
     queue_progress_player: PutQueue[MainMailboxMessage] | None,
 ) -> Player[SnapT, StateT]:
     """Create a player using a generic selection pipeline with game-specific builders."""
-
     if isinstance(main_selector_args, TreeAndValueAppArgs):
         master_state_evaluator = master_evaluator_from_args(
             main_selector_args.evaluator_args.master_board_evaluator,

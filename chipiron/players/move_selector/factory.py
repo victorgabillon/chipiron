@@ -1,6 +1,4 @@
-"""
-This module provides a factory function for creating the main move selector based on the given arguments.
-"""
+"""Document the module provides a factory function for creating the main move selector based on the given arguments."""
 
 import random
 from typing import TypeVar
@@ -30,8 +28,7 @@ def create_main_move_selector(
     *,
     random_generator: random.Random,
 ) -> BranchSelector[ChessState]:
-    """
-    Create the main move selector based on the given arguments.
+    """Create the main move selector based on the given arguments.
 
     Args:
         move_selector_instance_or_args (NonTreeMoveSelectorArgs): The arguments or instance of the move selector.
@@ -69,10 +66,7 @@ def create_tree_and_value_move_selector(
     random_generator: random.Random,
     queue_progress_player: PutQueue[MainMailboxMessage] | None,
 ) -> BranchSelector[TurnStateT]:
-    """
-    Create a tree-and-value move selector with a prebuilt evaluator.
-    """
-
+    """Create a tree-and-value move selector with a prebuilt evaluator."""
     return create_tree_and_value_branch_selector(
         state_type=state_type,
         master_state_evaluator=master_state_evaluator,

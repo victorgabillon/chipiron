@@ -1,6 +1,4 @@
-"""
-This module contains a factory to create board representations.
-"""
+"""Document the module contains a factory to create board representations."""
 
 import torch
 from atomheart.board import BoardModificationP
@@ -22,8 +20,7 @@ from .rep_364_bug import (
 def create_board_representation_factory(
     internal_tensor_representation_type: InternalTensorRepresentationType,
 ) -> RepresentationFactory[ChessState, torch.Tensor, BoardModificationP] | None:
-    """
-    Create a board representation based on the given string.
+    """Create a board representation based on the given string.
 
     Args:
         internal_tensor_representation_type (InternalTensorRepresentationType): The string representing the board representation.

@@ -1,6 +1,4 @@
-"""
-This module contains the `ReplayGameScript` class, which is responsible for replaying a chess game.
-"""
+"""Document the module contains the `ReplayGameScript` class, which is responsible for replaying a chess game."""
 
 import os
 import sys
@@ -23,9 +21,7 @@ from chipiron.scripts.script_args import BaseScriptArgs
 
 @dataclass
 class ReplayScriptArgs:
-    """
-    The input arguments needed by the replay game script to run.
-    """
+    """The input arguments needed by the replay game script to run."""
 
     # path to the yaml file with the Game Report stored
     file_game_report: str = "chipiron/scripts/one_match/outputs/Sunday-10-13-2024--22:40:58:049918/games_0_W:Sequool-vs-B:Random_game_report.yaml"
@@ -37,9 +33,7 @@ class ReplayScriptArgs:
 
 
 class ReplayGameScript:
-    """
-    The `ReplayGameScript` class is responsible for replaying a chess game.
-    """
+    """The `ReplayGameScript` class is responsible for replaying a chess game."""
 
     args_dataclass_name: type[ReplayScriptArgs] = ReplayScriptArgs
 
@@ -54,8 +48,7 @@ class ReplayGameScript:
         self,
         base_script: Script[ReplayScriptArgs],
     ) -> None:
-        """
-        Initializes the `ReplayGameScript` object.
+        """Initialize the `ReplayGameScript` object.
 
         Args:
             base_script (Script): The base script object.
@@ -83,11 +76,9 @@ class ReplayGameScript:
             )
 
     def run(self) -> None:
-        """
-        Runs the replay game script.
+        """Run the replay game script.
 
         If `gui` is set to True, it displays the match in a GUI. Otherwise, it runs a console version (TODO).
-
         """
         if self.args.gui:
             chess_gui = QApplication(sys.argv)
@@ -99,20 +90,18 @@ class ReplayGameScript:
             ...
 
     def terminate(self) -> None:
-        """
-        Finishes the script.
+        """Finishes the script.
 
         Performs any necessary cleanup or finalization steps.
-
         """
         self.base_script.terminate()
 
     @classmethod
     def get_args_dataclass_name(cls) -> type[ReplayScriptArgs]:
-        """
-        Returns the dataclass type that holds the arguments for the script.
+        """Return the dataclass type that holds the arguments for the script.
 
         Returns:
             type: The dataclass type for the script's arguments.
+
         """
         return ReplayScriptArgs

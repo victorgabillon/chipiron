@@ -1,3 +1,1 @@
-"""
-Game-specific wiring for board evaluators.
-"""
+"""Game-specific wiring for board evaluators."""

@@ -1,6 +1,4 @@
-"""
-Module for player arguments.
-"""
+"""Module for player arguments."""
 
 from dataclasses import dataclass
 from typing import Protocol
@@ -29,6 +27,7 @@ class PlayerArgs:
         name (str): The name of the player.
         main_move_selector (AnyMoveSelectorArgs): The main move selector for the player.
         syzygy_play (bool): Whether to play with syzygy when possible.
+
     """
 
     name: str
@@ -40,6 +39,7 @@ class PlayerArgs:
 
         Returns:
              : bool: True if the player is a human player, False otherwise.
+
         """
         return MoveSelectorTypes(self.main_move_selector.type).is_human()
 
@@ -51,6 +51,7 @@ class PlayerFactoryArgs:
     Attributes:
         player_args (PlayerArgs): The arguments for the player.
         seed (int): The seed value for random number generation.
+
     """
 
     player_args: PlayerArgs

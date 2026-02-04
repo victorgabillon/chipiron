@@ -1,5 +1,5 @@
-"""
-This module contains the Script class which is responsible for launching scripts.
+"""Document the module contains the Script class which is responsible for launching scripts.
+
 It handles computing execution time, profiling, and parsing arguments.
 """
 
@@ -22,8 +22,8 @@ from chipiron.utils.small_tools import mkdir_if_not_existing
 
 
 class Script[T_Dataclass: DataClassWithBaseScriptArgs = DataClassWithBaseScriptArgs]:
-    """
-    The core Script class to launch scripts.
+    """The core Script class to launch scripts.
+
     Takes care of computing execution time, profiling, and parsing arguments.
     """
 
@@ -36,19 +36,20 @@ class Script[T_Dataclass: DataClassWithBaseScriptArgs = DataClassWithBaseScriptA
     default_experiment_output_folder: path = "chipiron/scripts/default_output_folder"
     config_file_name: str | None
 
-    def __init__(
+    def __init__(  # noqa: D417
         self,
         parser: Parsley[T_Dataclass],
         extra_args: IsDataclass | None = None,
         config_file_name: str | None = None,
     ) -> None:
-        """
-        Initializes the Script object.
+        """Initialize the Script object.
+
         Starts the clock, the profiling, and parses arguments.
 
         Args:
             parser: An instance of MyParser used for parsing arguments.
             extra_args: Additional arguments to be passed to the parser.
+
         """
         self.start_time = time.time()  # start the clock
         self.parser = parser
@@ -63,16 +64,15 @@ class Script[T_Dataclass: DataClassWithBaseScriptArgs = DataClassWithBaseScriptA
         self,
         experiment_output_folder: str | None = None,
     ) -> T_Dataclass:
-        """
-        Initiates the script by parsing arguments and converting them into a standardized dataclass.
+        """Initiate the script by parsing arguments and converting them into a standardized dataclass.
 
         Args:
             experiment_output_folder: The base folder for experiment output. If None, uses the default value.
 
         Returns:
             The converted arguments as a dataclass.
-        """
 
+        """
         if experiment_output_folder is not None:
             self.experiment_script_type_output_folder = experiment_output_folder
         else:
@@ -130,9 +130,7 @@ class Script[T_Dataclass: DataClassWithBaseScriptArgs = DataClassWithBaseScriptA
         return final_args
 
     def terminate(self) -> None:
-        """
-        Finishes the script by printing execution time and profiling information (if enabled).
-        """
+        """Finishes the script by printing execution time and profiling information (if enabled)."""
         chipiron_logger.info("terminate")
         if self.profile is not None:
             chipiron_logger.info("--- %s seconds ---", time.time() - self.start_time)
@@ -172,10 +170,6 @@ class Script[T_Dataclass: DataClassWithBaseScriptArgs = DataClassWithBaseScriptA
             chipiron_logger.info("Execution time: %s", end_time - self.start_time)
 
     def run(self) -> None:
-        """
-        Runs the script.
-        """
-
-
+        """Run the script."""
 # Type alias to handle Script generic variance issues
 type AnyScript = Script[Any]

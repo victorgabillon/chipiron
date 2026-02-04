@@ -1,4 +1,4 @@
-"""player_thread.py
+"""player_thread.py.
 
 Generic, game-agnostic player worker process.
 
@@ -102,7 +102,7 @@ class PlayerProcess(multiprocessing.Process, Generic[SnapT, RuntimeT, BuildArgsT
                 pass
 
     def run(self) -> None:
-        """Main loop.
+        """Run the main loop.
 
         Receives `PlayerRequest[SnapT]` objects from `queue_in` and dispatches them
         through `handle_player_request`. If a `None` is received, the process exits.

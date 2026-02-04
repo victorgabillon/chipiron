@@ -1,5 +1,4 @@
-"""
-Generate chess over boards dataset from Lichess PGN dumps.
+"""Generate chess over boards dataset from Lichess PGN dumps.
 
 This module creates datasets of game-ending chess positions (checkmate, stalemate, insufficient material)
 by processing monthly Lichess PGN dumps. It follows the same structure as generate_boards.py and reuses
@@ -31,8 +30,8 @@ from chipiron.utils.path_variables import EXTERNAL_DATA_DIR
 
 
 def is_game_over_position(board: chess.Board) -> bool:
-    """
-    Check if a board position represents a game-ending situation.
+    """Check if a board position represents a game-ending situation.
+
     Only considers checkmate, stalemate, and insufficient material.
     Since we only check final positions, this will only be called on game endings.
 
@@ -41,6 +40,7 @@ def is_game_over_position(board: chess.Board) -> bool:
 
     Returns:
         True if the position represents a game-ending situation
+
     """
     # Check for checkmate
     if board.is_checkmate():
@@ -60,8 +60,7 @@ def is_game_over_position(board: chess.Board) -> bool:
 def process_single_game_for_over_positions(
     game: chess.pgn.Game,
 ) -> dict[str, Any] | None:
-    """
-    Process a single game and extract the final game-ending board position if it represents a game-ending situation.
+    """Process a single game and extract the final game-ending board position if it represents a game-ending situation.
 
     This function follows the same pattern as process_single_game_for_boards in generate_boards.py
     but focuses only on game-ending positions.
@@ -71,6 +70,7 @@ def process_single_game_for_over_positions(
 
     Returns:
         Dictionary with board data if it's a game-ending position, None otherwise
+
     """
     try:
         # Access headers from the game object
@@ -127,8 +127,7 @@ def process_month_for_over_boards(
     seed: int | None,
     delete_pgn_after_use: bool = True,
 ) -> tuple[int, int, int]:
-    """
-    Process a single month's PGN file for over boards, following the same pattern as generate_boards.py
+    """Process a single month's PGN file for over boards, following the same pattern as generate_boards.py.
 
     Args:
         month: Month to process (YYYY-MM format)
@@ -146,6 +145,7 @@ def process_month_for_over_boards(
 
     Returns:
         Tuple of (updated_boards, updated_games, updated_moves)
+
     """
     chipiron_logger.info("=== Processing month %s for over boards ===", month)
     pgn_path = ensure_month_pgn(month, dest_dir)
@@ -221,6 +221,7 @@ def generate_over_boards_dataset_multi_months(
         delete_pgn_after_use: Whether to delete PGN files after processing
         intermediate_every_games: Save progress every N games
         dest_dir: Directory for temporary PGN files
+
     """
     if seed is not None:
         random.seed(seed)

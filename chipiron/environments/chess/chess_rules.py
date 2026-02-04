@@ -1,6 +1,4 @@
-"""
-Chess-specific rules adapter.
-"""
+"""Chess-specific rules adapter."""
 
 from dataclasses import dataclass
 
@@ -21,6 +19,7 @@ from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 @dataclass(frozen=True)
 class ChessRules(GameRules[ChessState]):
     """Chessrules implementation."""
+
     syzygy: AnySyzygyTable | None = None
 
     def outcome(self, state: ChessState) -> GameOutcome | None:

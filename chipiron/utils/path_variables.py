@@ -1,5 +1,4 @@
-"""
-Path utilities for the Chipiron project.
+"""Path utilities for the Chipiron project.
 
 This module provides centralized path definitions to ensure consistent
 path handling across the entire project.
@@ -63,9 +62,7 @@ ML_FLOW_URI_PATH_TEST = os.getenv(
 
 
 def main() -> None:
-    """
-    Print all defined paths in absolute form for debugging and verification.
-    """
+    """Print all defined paths in absolute form for debugging and verification."""
     print("Chipiron Project Paths (with .env integration):")
     print("=" * 50)
     print(f"PROJECT_ROOT:        {PROJECT_ROOT.absolute()}")
