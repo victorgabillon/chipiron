@@ -29,13 +29,11 @@ def make_scope(
     *, session_id: SessionId, match_id: MatchId | None, game_id: GameId
 ) -> Scope:
     """Construct a scope from explicit identifiers."""
-
     return Scope(session_id=session_id, match_id=match_id, game_id=game_id)
 
 
 def scope_for_new_game(existing_scope: Scope, new_game_id: GameId) -> Scope:
     """Create a scope for a new game while preserving session and match."""
-
     return Scope(
         session_id=existing_scope.session_id,
         match_id=existing_scope.match_id,
@@ -45,7 +43,6 @@ def scope_for_new_game(existing_scope: Scope, new_game_id: GameId) -> Scope:
 
 def assert_never(x: Never) -> Never:
     """Fail fast for unreachable enum/union branches."""
-
     raise AssertionError(f"Unhandled value: {x!r}")
 
 

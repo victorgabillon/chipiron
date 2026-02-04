@@ -1,6 +1,4 @@
-"""
-init for chipiron
-"""
+"""init for chipiron."""
 
 from . import games as game
 from . import players as player

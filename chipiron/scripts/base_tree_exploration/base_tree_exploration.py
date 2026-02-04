@@ -1,5 +1,4 @@
-"""
-This module contains the implementation of the BaseTreeExplorationScript class.
+"""Document the module contains the implementation of the BaseTreeExplorationScript class.
 
 The BaseTreeExplorationScript class is responsible for running a script that performs base tree exploration in a chess game.
 """
@@ -34,14 +33,13 @@ if TYPE_CHECKING:
 @dataclass
 class BaseTreeExplorationArgs:
     """Data container for BaseTreeExplorationArgs."""
+
     base_script_args: BaseScriptArgs = field(default_factory=BaseScriptArgs)
     implementation_args: ImplementationArgs = field(default_factory=ImplementationArgs)
 
 
 class BaseTreeExplorationScript:
-    """
-    The BaseTreeExplorationScript
-    """
+    """The BaseTreeExplorationScript."""
 
     args_dataclass_name: type[BaseTreeExplorationArgs] = BaseTreeExplorationArgs
     base_experiment_output_folder = os.path.join(
@@ -50,11 +48,11 @@ class BaseTreeExplorationScript:
     base_script: Script[BaseTreeExplorationArgs]
 
     def __init__(self, base_script: Script[BaseTreeExplorationArgs]) -> None:
-        """
-        Initializes a new instance of the BaseTreeExploration class.
+        """Initialize a new instance of the BaseTreeExploration class.
 
         Args:
             base_script (Script): The base script to be used for tree exploration.
+
         """
         self.base_script = base_script
 
@@ -64,9 +62,7 @@ class BaseTreeExplorationScript:
         )
 
     def run(self) -> None:
-        """
-        Runs the base tree exploration script.
-        """
+        """Run the base tree exploration script."""
         syzygy = create_syzygy(use_rust=self.args.implementation_args.use_rust_boards)
 
         player_one_args: ChessPlayerArgs = PlayerConfigTag.UNIFORM.get_players_args()
@@ -98,17 +94,15 @@ class BaseTreeExplorationScript:
         )
 
     def terminate(self) -> None:
-        """
-        Terminates the base tree exploration script.
-        """
+        """Terminates the base tree exploration script."""
         self.base_script.terminate()
 
     @classmethod
     def get_args_dataclass_name(cls) -> type[BaseTreeExplorationArgs]:
-        """
-        Returns the dataclass type that holds the arguments for the script.
+        """Return the dataclass type that holds the arguments for the script.
 
         Returns:
             type: The dataclass type for the script's arguments.
+
         """
         return BaseTreeExplorationArgs

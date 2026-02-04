@@ -14,6 +14,7 @@ BuildArgsT_contra = TypeVar("BuildArgsT_contra", contravariant=True)
 
 class BuildGamePlayer(Protocol[SnapT, RuntimeT, BuildArgsT_contra]):
     """Buildgameplayer implementation."""
+
     def __call__(
         self,
         args: BuildArgsT_contra,

@@ -1,6 +1,4 @@
-"""
-Module where we define the Stockfish Board Evaluator
-"""
+"""Module where we define the Stockfish Board Evaluator."""
 
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -26,6 +24,7 @@ class StockfishBoardEvalArgs:
     Attributes:
         depth (int): The depth of the search algorithm.
         time_limit (float): The time limit for the search algorithm.
+
     """
 
     # for deserialization
@@ -35,33 +34,30 @@ class StockfishBoardEvalArgs:
     time_limit: float
 
     def __post_init__(self) -> None:
-        """
-        Post-initialization method for the dataclass.
+        """Post-initialization method for the dataclass.
+
         Automatically sets the 'type' attribute to BoardEvalTypes.STOCKFISH_BOARD_EVAL
         to avoid manual assignment and to facilitate discrimination during deserialization.
         """
-
         # to avoid having to set the type mannually in the code as it is obvious and only used for discrimanating in deserialization
         object.__setattr__(self, "type", BoardEvalTypes.STOCKFISH_BOARD_EVAL)
 
 
 class StockfishBoardEvaluator:
-    """
-    A board evaluator powered by stockfish
-    """
+    """A board evaluator powered by stockfish."""
 
     engine: chess.engine.SimpleEngine | None
     args: StockfishBoardEvalArgs
 
     def __init__(self, args: StockfishBoardEvalArgs) -> None:
-        """
-        Initializes a StockfishBoardEvaluator object.
+        """Initialize a StockfishBoardEvaluator object.
 
         Args:
             args (StockfishBoardEvalArgs): The arguments for the StockfishBoardEvaluator.
 
         Returns:
             None
+
         """
         self.args = args
         self.engine = None
@@ -84,14 +80,14 @@ class StockfishBoardEvaluator:
         )
 
     def value_white(self, state: ChessState) -> float:
-        """
-        Computes the value of the board for the white player.
+        """Compute the value of the board for the white player.
 
         Args:
             state (ChessState): The state object representing the current state of the game.
 
         Returns:
             float: The value of the board for the white player.
+
         """
         board = state.board
         try:

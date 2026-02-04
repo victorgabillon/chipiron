@@ -1,6 +1,4 @@
-"""
-Module in charge of managing the game. It is the main class that will be used to play a game.
-"""
+"""Module in charge of managing the game. It is the main class that will be used to play a game."""
 
 import os
 import queue
@@ -46,9 +44,7 @@ from .progress_collector import PlayerProgressCollectorP
 
 
 class GameManager[StateT: TurnState = TurnState]:
-    """
-    Object in charge of playing one game
-    """
+    """Object in charge of playing one game."""
 
     # The game object that is managed
     game: ObservableGame[StateT]
@@ -82,7 +78,7 @@ class GameManager[StateT: TurnState = TurnState]:
     # Game-specific rules adapter
     rules: GameRules[StateT]
 
-    def __init__(
+    def __init__(  # noqa: D417
         self,
         game: ObservableGame[StateT],
         display_state_evaluator: IGameStateEvaluator[StateT],
@@ -95,8 +91,8 @@ class GameManager[StateT: TurnState = TurnState]:
         progress_collector: PlayerProgressCollectorP,
         rules: GameRules[StateT],
     ) -> None:
-        """
-        Constructor for the GameManager Class. If the args, and players are not given a value it is set to None,
+        """Initialize the GameManager Class. If the args, and players are not given a value it is set to None,.
+
         waiting for the set methods to be called. This is done like this so that the players can be changed
         (often swapped) easily.
 
@@ -111,6 +107,7 @@ class GameManager[StateT: TurnState = TurnState]:
 
         Returns:
             None
+
         """
         self.game = game
         self.path_to_store_result = (
@@ -128,10 +125,11 @@ class GameManager[StateT: TurnState = TurnState]:
         self.rules = rules
 
     def external_eval(self) -> tuple[StateEvaluation | None, StateEvaluation]:
-        """Evaluates the game board using the display board evaluator.
+        """Evaluate the game board using the display board evaluator.
 
         Returns:
             tuple[StateEvaluation | None, StateEvaluation]: A tuple containing the evaluation scores.
+
         """
         return self.display_state_evaluator.evaluate(self.game.state)
 
@@ -140,28 +138,28 @@ class GameManager[StateT: TurnState = TurnState]:
 
         Args:
             action (ActionKey): The action to be played.
+
         """
         self.game.play_move(action)
 
     def rewind_one_move(self) -> None:
-        """
-        Rewinds the game by one move.
+        """Rewinds the game by one move.
 
         This method rewinds the game by one move, undoing the last move made.
 
         Returns:
             None
+
         """
         self.game.rewind_one_move()
 
     def play_one_game(self) -> GameReport:
-        """
-        Play one game.
+        """Play one game.
 
         Returns:
             GameReport: The report of the game.
-        """
 
+        """
         color_names = {
             Color.WHITE: "White",
             Color.BLACK: "Black",
@@ -217,16 +215,15 @@ class GameManager[StateT: TurnState = TurnState]:
         return game_report
 
     def processing_mail(self, message: MainMailboxMessage) -> None:
-        """
-        Process the incoming mail message.
+        """Process the incoming mail message.
 
         Args:
             message (MainMailboxMessage): The incoming mail message.
 
         Returns:
             None
-        """
 
+        """
         match message:
             case GuiCommand():
                 if self._ignore_if_stale_scope(message.scope):
@@ -325,11 +322,11 @@ class GameManager[StateT: TurnState = TurnState]:
                 return
 
     def game_continue_conditions(self) -> bool:
-        """
-        Checks the conditions for continuing the game.
+        """Check the conditions for continuing the game.
 
         Returns:
             bool: True if the game should continue, False otherwise.
+
         """
         ply: Ply = self.game.ply
         continue_bool: bool = True
@@ -339,8 +336,7 @@ class GameManager[StateT: TurnState = TurnState]:
         return continue_bool
 
     def print_to_file(self, game_report: GameReport, idx: int = 0) -> None:
-        """
-        Print the moves of the game to a yaml file and a more human-readable text file.
+        """Print the moves of the game to a yaml file and a more human-readable text file.
 
         Args:
             game_report(GameReport): a game report to be printed
@@ -348,6 +344,7 @@ class GameManager[StateT: TurnState = TurnState]:
 
         Returns:
             None
+
         """
         # todo probably the txt file should be a valid PGN file : https://en.wikipedia.org/wiki/Portable_Game_Notation
         if self.path_to_store_result is not None:
@@ -382,8 +379,8 @@ class GameManager[StateT: TurnState = TurnState]:
         color_to_play: Color,
         evaluation: StateEvaluation | None,  # your real type
     ) -> None:
-        """
-        Single move-application path used by BOTH GUI and players.
+        """Single move-application path used by BOTH GUI and players.
+
         Keeps the stricter checks/logging from the player path.
         """
         state: TurnState = self.game.state
@@ -461,11 +458,11 @@ class GameManager[StateT: TurnState = TurnState]:
             self.game.query_move_from_players()
 
     def tell_results(self) -> None:
-        """
-        Prints the results of the game based on the current state of the board.
+        """Print the results of the game based on the current state of the board.
 
         Returns:
             None
+
         """
         state = self.game.state
         outcome = self.rules.outcome(state)
@@ -478,11 +475,11 @@ class GameManager[StateT: TurnState = TurnState]:
             chipiron_logger.info(self.rules.pretty_assessment(state, assessment))
 
     def simple_results(self) -> FinalGameResult:
-        """
-        Determines the final result of the game based on the current state of the board.
+        """Determine the final result of the game based on the current state of the board.
 
         Returns:
             FinalGameResult: The final result of the game.
+
         """
         state = self.game.state
         outcome = self.rules.outcome(state)
@@ -495,8 +492,7 @@ class GameManager[StateT: TurnState = TurnState]:
         return outcome_to_final_game_result(outcome)
 
     def terminate_processes(self) -> None:
-        """
-        Terminates all player processes and stops the associated threads.
+        """Terminates all player processes and stops the associated threads.
 
         This method iterates over the list of players and terminates any player processes found.
         If a player process is found, it is terminated and the associated thread is stopped.
@@ -506,6 +502,7 @@ class GameManager[StateT: TurnState = TurnState]:
 
         Returns:
         None
+
         """
         for player in self.players:
             player.close()

@@ -1,6 +1,4 @@
-"""
-Protocol and data structures for game-specific rules and outcomes.
-"""
+"""Protocol and data structures for game-specific rules and outcomes."""
 
 from dataclasses import dataclass
 from enum import Enum
@@ -13,26 +11,26 @@ from .final_game_result import FinalGameResult
 StateT = TypeVar("StateT", contravariant=True, bound=TurnState)
 
 
-class OutcomeKind(str, Enum):
+class OutcomeKind(str, Enum):  # noqa: D101
     WIN = "win"
     DRAW = "draw"
     ABORTED = "aborted"
     UNKNOWN = "unknown"
 
 
-class OutcomeSource(str, Enum):
+class OutcomeSource(str, Enum):  # noqa: D101
     TERMINAL = "terminal"
     ADJUDICATED = "adjudicated"
 
 
-class VerdictKind(str, Enum):
+class VerdictKind(str, Enum):  # noqa: D101
     WIN = "win"
     DRAW = "draw"
     UNKNOWN = "unknown"
 
 
 @dataclass(frozen=True)
-class GameOutcome:
+class GameOutcome:  # noqa: D101
     kind: OutcomeKind
     winner: Color | None = None
     reason: str | None = None
@@ -40,13 +38,13 @@ class GameOutcome:
 
 
 @dataclass(frozen=True)
-class PositionAssessment:
+class PositionAssessment:  # noqa: D101
     kind: VerdictKind
     winner: Color | None = None
     reason: str | None = None
 
 
-class GameRules[StateT](Protocol):
+class GameRules[StateT](Protocol):  # noqa: D101
     def outcome(self, state: StateT) -> GameOutcome | None:
         """Return None if not terminal; otherwise a GameOutcome."""
         ...
@@ -65,8 +63,7 @@ class GameRules[StateT](Protocol):
 
 
 def outcome_to_final_game_result(outcome: GameOutcome) -> FinalGameResult:
-    """
-    Map a generic game outcome to the legacy FinalGameResult enum.
+    """Map a generic game outcome to the legacy FinalGameResult enum.
 
     Unknown/aborted outcomes map to draws to preserve legacy behavior when
     a game stops before a clean adjudication is available.

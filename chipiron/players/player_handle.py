@@ -24,6 +24,7 @@ class PlayerHandle(Protocol):
 @dataclass(frozen=True)
 class InProcessPlayerHandle(Generic[SnapT, RuntimeT]):
     """Inprocessplayerhandle implementation."""
+
     player: GamePlayer[SnapT, RuntimeT]
 
     def close(self) -> None:

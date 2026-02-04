@@ -1,6 +1,4 @@
-"""
-random for chipiron
-"""
+"""random for chipiron."""
 
 import random
 
@@ -9,13 +7,12 @@ import torch
 
 
 def set_seeds(seed: int = 0) -> None:
-    """
-    Set all the base seeds.
+    """Set all the base seeds.
 
     Args:
         seed(int): the seed
-    """
 
+    """
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)

@@ -18,8 +18,7 @@ if not chipiron_logger.handlers:
 
 
 def set_chipiron_logger_level(level: int) -> None:
-    """
-    Set the logging level for the chipiron logger and all its handlers.
+    """Set the logging level for the chipiron logger and all its handlers.
 
     This ensures that both the logger and its handlers are set to the same level,
     so log messages at the specified level will actually be displayed.
@@ -27,6 +26,7 @@ def set_chipiron_logger_level(level: int) -> None:
     Args:
         level (int): The logging level to set (e.g., logging.DEBUG, logging.INFO,
                     logging.WARNING, logging.ERROR, logging.CRITICAL)
+
     """
     chipiron_logger.setLevel(level)
     for handler in chipiron_logger.handlers:
@@ -37,8 +37,7 @@ def set_chipiron_logger_level(level: int) -> None:
 def suppress_logging(
     logger: logging.Logger, level: int = logging.WARNING
 ) -> Generator[None, None, None]:
-    """
-    Context manager to temporarily suppress logging for a specific logger to a given level.
+    """Context manager to temporarily suppress logging for a specific logger to a given level.
 
     Sets the logger's level to the specified value for the duration of the context, then restores
     its original level afterwards. Useful for silencing output from a particular logger during
@@ -50,6 +49,7 @@ def suppress_logging(
 
     Yields:
         None
+
     """
     previous_level = logger.level
     logger.setLevel(level)
@@ -62,8 +62,7 @@ def suppress_logging(
 # Suppress all logging from all loggers (global)
 @contextmanager
 def suppress_all_logging(level: int = logging.ERROR) -> Generator[None, None, None]:
-    """
-    Context manager to temporarily suppress logging from all loggers to a specified level.
+    """Context manager to temporarily suppress logging from all loggers to a specified level.
 
     This sets the level of all loggers (including the root logger) to the given level for the duration
     of the context, then restores their original levels afterwards. Useful for benchmarking or
@@ -74,6 +73,7 @@ def suppress_all_logging(level: int = logging.ERROR) -> Generator[None, None, No
 
     Yields:
         None
+
     """
     logger_dict = logging.getLogger().manager.loggerDict
     original_levels: dict[str, int] = {}

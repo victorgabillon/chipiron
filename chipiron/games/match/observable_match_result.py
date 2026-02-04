@@ -1,6 +1,4 @@
-"""
-This module contains the ObservableMatchResults class, which is a wrapper around the MatchResults class.
-"""
+"""Document the module contains the ObservableMatchResults class, which is a wrapper around the MatchResults class."""
 
 from dataclasses import dataclass, field
 
@@ -12,14 +10,14 @@ from .match_results import MatchResults, SimpleResults
 
 
 def make_publishers() -> list[GuiPublisher]:
-    """Helper function to create an empty list of GuiPublisher."""
+    """Create an empty list of GuiPublisher."""
     return []
 
 
 @dataclass(slots=True)
 class ObservableMatchResults:
-    """
-    The ObservableMatchResults class provides a way to observe and subscribe to changes in the match results.
+    """The ObservableMatchResults class provides a way to observe and subscribe to changes in the match results.
+
     It maintains a list of mailboxes (queue.Queue) to which it sends notifications whenever there are new match results.
 
     Attributes:
@@ -32,14 +30,14 @@ class ObservableMatchResults:
     publishers: list[GuiPublisher] = field(default_factory=make_publishers)
 
     def subscribe(self, pub: GuiPublisher) -> None:
-        """
-        Subscribes a publisher to receive notifications.
+        """Subscribe a publisher to receive notifications.
 
         Args:
             pub (GuiPublisher): The publisher to subscribe.
 
         Returns:
             None
+
         """
         self.publishers.append(pub)
 
@@ -50,7 +48,7 @@ class ObservableMatchResults:
     def add_result_one_game(
         self, white_player_name_id: str, game_result: FinalGameResult
     ) -> None:
-        """Adds the result of a single game to the match results.
+        """Add the result of a single game to the match results.
 
         Args:
             white_player_name_id (str): The ID of the white player.
@@ -58,6 +56,7 @@ class ObservableMatchResults:
 
         Returns:
             None
+
         """
         self.match_results.add_result_one_game(white_player_name_id, game_result)
         self.notify_new_results()
@@ -67,6 +66,7 @@ class ObservableMatchResults:
 
         Returns:
             None
+
         """
         # Map your MatchResults into stable scalar fields
         simple = self.match_results.get_simple_result()
@@ -85,10 +85,11 @@ class ObservableMatchResults:
             pub.publish(payload)
 
     def get_simple_result(self) -> SimpleResults:
-        """Retrieves a simplified version of the match results.
+        """Retrieve a simplified version of the match results.
 
         Returns:
             SimpleResults: A simplified version of the match results.
+
         """
         simple_results = SimpleResults(
             player_one_wins=self.match_results.get_player_one_wins(),
@@ -98,18 +99,20 @@ class ObservableMatchResults:
         return simple_results
 
     def finish(self) -> None:
-        """Marks the match as finished and notifies all subscribed mailboxes.
+        """Mark the match as finished and notifies all subscribed mailboxes.
 
         Returns:
             None
+
         """
         self.match_results.match_finished = True
         self.notify_new_results()
 
     def __str__(self) -> str:
-        """Returns a string representation of the match results.
+        """Return a string representation of the match results.
 
         Returns:
             str: A string representation of the match results.
+
         """
         return str(self.match_results)

@@ -16,8 +16,7 @@ TREE_AND_VALUE_LITERAL_STRING: Literal["TreeAndValue"] = "TreeAndValue"
 
 @dataclass
 class NodeEvaluatorArgs:
-    """
-    Represents the arguments for a node evaluator.
+    """Represents the arguments for a node evaluator.
 
     Attributes:
     - type: The type of the node evaluator.

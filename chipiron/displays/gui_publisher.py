@@ -10,6 +10,7 @@ from .gui_protocol import GuiUpdate, SchemaVersion, Scope, UpdatePayload
 @dataclass(frozen=True, slots=True)
 class GuiPublisher:
     """Guipublisher implementation."""
+
     out: queue.Queue[GuiUpdate]
     schema_version: SchemaVersion
     game_kind: GameKind

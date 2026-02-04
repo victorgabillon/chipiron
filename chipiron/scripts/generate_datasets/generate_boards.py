@@ -1,5 +1,5 @@
-"""
-This script generates datasets of chess board positions by sampling games from the Lichess monthly PGN database.
+"""Describe script generates datasets of chess board positions by sampling games from the Lichess monthly PGN database.
+
 It supports dynamic, on-the-fly downloading and decompression of monthly PGN files, extracting board positions at
 specified move intervals, and saving progress with metadata. The dataset creation process is configurable via
 sampling frequency, offset, random seed, and month range. Intermediate and final saves include detailed statistics
@@ -64,8 +64,7 @@ def save_dataset_progress(
     is_final: bool = False,
     months_used: list[str] | None = None,
 ) -> int:
-    """
-    Save dataset progress (intermediate or final) and display statistics.
+    """Save dataset progress (intermediate or final) and display statistics.
 
     Args:
         the_dic: Current list of board positions
@@ -84,6 +83,7 @@ def save_dataset_progress(
 
     Returns:
         Number of board positions recorded so far
+
     """
     new_data_frame_states: DataFrame = pd.DataFrame(the_dic)
     recorded_board = len(new_data_frame_states.index)

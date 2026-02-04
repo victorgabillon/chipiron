@@ -1,6 +1,4 @@
-"""
-Protocols for wiring game-specific evaluators.
-"""
+"""Protocols for wiring game-specific evaluators."""
 
 from typing import Protocol, TypeVar
 

@@ -1,6 +1,4 @@
-"""
-Module for the SyzygyTable class.
-"""
+"""Module for the SyzygyTable class."""
 
 import atomheart.board as boards
 import shakmaty_python_binding
@@ -12,8 +10,7 @@ from .syzygy_table import SyzygyTable
 
 
 class SyzygyRustTable(SyzygyTable[RustyBoardChi]):
-    """
-    A class representing a Syzygy tablebase for chess endgame analysis.
+    """A class representing a Syzygy tablebase for chess endgame analysis.
 
     Attributes:
         table_base (chess.syzygy.Tablebase): The Syzygy tablebase object.
@@ -45,16 +42,17 @@ class SyzygyRustTable(SyzygyTable[RustyBoardChi]):
 
         best_move(board: boards.BoardChi) -> chess.Move:
             Get the best move according to the tablebase for the given board.
+
     """
 
     table_base: shakmaty_python_binding.MyTableBase
 
     def __init__(self, path_to_table: path):
-        """
-        Initialize the SyzygyTable object.
+        """Initialize the SyzygyTable object.
 
         Args:
             path_to_table (path): The path to the Syzygy tablebase.
+
         """
         path_to_table_str: str = str(path_to_table)
         self.table_base = shakmaty_python_binding.MyTableBase(path_to_table_str)
@@ -65,14 +63,14 @@ class SyzygyRustTable(SyzygyTable[RustyBoardChi]):
         return wdl
 
     def dtz(self, board: boards.RustyBoardChi) -> int:
-        """
-        Get the distance-to-zero (DTZ) value for the given board.
+        """Get the distance-to-zero (DTZ) value for the given board.
 
         Args:
             board (boards.BoardChi): The board to get the DTZ value for.
 
         Returns:
             int: The DTZ value for the board.
+
         """
         dtz: int = self.table_base.probe_dtz(board.chess_)
         return dtz

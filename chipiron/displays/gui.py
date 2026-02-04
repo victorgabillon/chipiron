@@ -1,7 +1,6 @@
 #! /usr/bin/env python
 
-"""
-This module is the execution point of the chess GUI application.
+"""Document the module is the execution point of the chess GUI application.
 
 It provides the `MainWindow` class, which creates a surface for the chessboard and handles user interactions.
 """
@@ -73,8 +72,7 @@ def format_state_eval(ev: StateEvaluation | None) -> str:
 
 
 class MainWindow(QWidget):
-    """
-    Create a surface for the chessboard and handle user interactions.
+    """Create a surface for the chessboard and handle user interactions.
 
     This class provides the main window for the chess GUI application. It handles user interactions such as
     clicking on chess pieces, making moves, and controlling the game status.
@@ -83,20 +81,21 @@ class MainWindow(QWidget):
         playing_status (PlayingStatus): The current playing status of the game.
         gui_mailbox (queue.Queue[IsDataclass]): The mailbox for receiving messages from the GUI thread.
         main_thread_mailbox (queue.Queue[IsDataclass]): The mailbox for sending messages to the main thread.
+
     """
 
-    def __init__(
+    def __init__(  # noqa: D417
         self,
         gui_mailbox: queue.Queue[GuiUpdate],
         main_thread_mailbox: queue.Queue[MainMailboxMessage],
         board_factory: BoardFactory,
     ) -> None:
-        """
-        Initialize the chessboard and the main window.
+        """Initialize the chessboard and the main window.
 
         Args:
             gui_mailbox (queue.Queue[IsDataclass]): The mailbox for receiving messages from the GUI thread.
             main_thread_mailbox (queue.Queue[IsDataclass]): The mailbox for sending messages to the main thread.
+
         """
         super().__init__()
 
@@ -284,12 +283,12 @@ class MainWindow(QWidget):
         return True
 
     def _check_and_set_icon(self, button: QPushButton, icon_path: str) -> None:
-        """
-        Check if icon file exists and set it, otherwise log a warning.
+        """Check if icon file exists and set it, otherwise log a warning.
 
         Args:
             button: The button to set the icon for
             icon_path: The path to the icon file
+
         """
         if os.path.exists(icon_path):
             button.setIcon(QIcon(icon_path))
@@ -299,20 +298,19 @@ class MainWindow(QWidget):
             button.setIcon(QIcon())  # Empty icon
 
     def stopppy(self) -> None:
-        """
-        Stops the execution of the GUI.
+        """Stop the execution of the GUI.
 
         This method closes the GUI window and sends a kill message to the main thread.
 
         Returns:
             None
+
         """
         # should we send a kill message to the main thread?
         self.close()
 
     def play_button_clicked(self) -> None:
-        """
-        Handle the event when the play button is clicked.
+        """Handle the event when the play button is clicked.
 
         This method prints a message indicating that the play button has been clicked,
         and sends a GameStatusMessage with the status set to PlayingStatus.PLAY to the main thread mailbox.
@@ -335,8 +333,7 @@ class MainWindow(QWidget):
             self.play_button_clicked_last_time = time.time()
 
     def back_button_clicked(self) -> None:
-        """
-        Handle the event when the back button is clicked.
+        """Handle the event when the back button is clicked.
 
         This method prints a message and puts a `BackMessage` object into the main thread mailbox.
         """
@@ -351,8 +348,7 @@ class MainWindow(QWidget):
         self.main_thread_mailbox.put(cmd)
 
     def pause_button_clicked(self) -> None:
-        """
-        Handles the click event of the pause button.
+        """Handle the click event of the pause button.
 
         Prints 'pause_button_clicked' and sends a GameStatusMessage with the status set to PlayingStatus.PAUSE
         to the main thread mailbox.
@@ -377,8 +373,8 @@ class MainWindow(QWidget):
     @typing.no_type_check
     @Slot(QWidget)
     def mousePressEvent(self, event):
-        """
-        Handle left mouse clicks and enable moving chess pieces by
+        """Handle left mouse clicks and enable moving chess pieces by.
+
         clicking on a chess piece and then the target square.
 
         Moves must be made according to the rules of chess because
@@ -434,15 +430,15 @@ class MainWindow(QWidget):
                         piece = None
                     self.pieceToMove = [piece, self.coordinates]
 
-    def send_move_to_main_thread(self, move_uci: MoveUci) -> None:
-        """
-        Sends a move to the main thread for processing.
+    def send_move_to_main_thread(self, move_uci: MoveUci) -> None:  # noqa: D417
+        """Send a move to the main thread for processing.
 
         Args:
             move (chess.Move): The move to be sent.
 
         Returns:
             None
+
         """
         if self.scope is None:
             return
@@ -477,16 +473,15 @@ class MainWindow(QWidget):
 
     @typing.no_type_check
     def choice_promote(self):
-        """
-        Displays a dialog box with buttons for promoting a chess piece.
+        """Display a dialog box with buttons for promoting a chess piece.
 
         The dialog box allows the user to choose between promoting the pawn to a queen, rook, bishop, or knight.
         Each button is connected to a corresponding method for handling the promotion.
 
         Returns:
             None
-        """
 
+        """
         self.d = QDialog()
         d = self.d
         d.setWindowTitle("Promote to ?")
@@ -528,14 +523,14 @@ class MainWindow(QWidget):
 
     @typing.no_type_check
     def promote_queen(self):
-        """
-        Promotes the selected piece to a queen.
+        """Promotes the selected piece to a queen.
 
         This method creates a move object to promote the selected piece to a queen by appending 'q' to the UCI notation
         of the piece's destination square. It then closes the dialog window.
 
         Returns:
             None
+
         """
         self.move_promote_asked = chess.Move.from_uci(
             "{}{}q".format(self.pieceToMove[1], self.coordinates)
@@ -544,14 +539,14 @@ class MainWindow(QWidget):
 
     @typing.no_type_check
     def promote_rook(self):
-        """
-        Promotes a pawn to a rook.
+        """Promotes a pawn to a rook.
 
         This method is called when a pawn reaches the opposite end of the board and needs to be promoted to a rook.
         It creates a move object representing the promotion and closes the dialog window.
 
         Returns:
             None
+
         """
         self.move_promote_asked = chess.Move.from_uci(
             f"{self.pieceToMove[1]}{self.coordinates}r"
@@ -560,13 +555,13 @@ class MainWindow(QWidget):
 
     @typing.no_type_check
     def promote_bishop(self):
-        """
-        Promotes the current piece to a bishop.
+        """Promotes the current piece to a bishop.
 
         This method creates a move object to promote the current piece to a bishop and closes the dialog window.
 
         Returns:
             None
+
         """
         self.move_promote_asked = chess.Move.from_uci(
             f"{self.pieceToMove[1]}{self.coordinates}b"
@@ -575,14 +570,14 @@ class MainWindow(QWidget):
 
     @typing.no_type_check
     def promote_knight(self):
-        """
-        Promotes a pawn to a knight.
+        """Promotes a pawn to a knight.
 
         This method is called when a pawn is promoted to a knight in the GUI.
         It creates a move object representing the promotion and closes the GUI.
 
         Returns:
         None
+
         """
         self.move_promote_asked = chess.Move.from_uci(
             f"{self.pieceToMove[1]}{self.coordinates}n"
@@ -590,8 +585,7 @@ class MainWindow(QWidget):
         self.d.close()
 
     def process_message(self) -> None:
-        """
-        Process a message received by the GUI.
+        """Process a message received by the GUI.
 
         Draw a chessboard with the starting position and then redraw
         it for every new move.
@@ -609,6 +603,7 @@ class MainWindow(QWidget):
 
         Returns:
         None
+
         """
         if self.gui_mailbox.empty():
             return
@@ -673,8 +668,7 @@ class MainWindow(QWidget):
                 raise AssertionError(f"Unhandled GuiUpdate payload: {payload!r}")
 
     def display_move_history(self) -> None:
-        """
-        Display the move history in a table widget.
+        """Display the move history in a table widget.
 
         This method calculates the number of rounds based on the number of half moves in the move stack.
         It then sets the number of rows in the table widget to the number of rounds.
@@ -683,8 +677,8 @@ class MainWindow(QWidget):
 
         Returns:
             None
-        """
 
+        """
         num_half_move: int = len(self.board.move_history_stack)
         num_rounds: int = int(math.ceil(num_half_move / 2))
         self.tablewidget.setRowCount(num_rounds)
@@ -699,12 +693,13 @@ class MainWindow(QWidget):
                     self.tablewidget.setItem(round_, player, item)
 
     def draw_board(self) -> None:
-        """
-        Draw a chessboard with the starting position and then redraw
+        """Draw a chessboard with the starting position and then redraw.
+
         it for every new move.
 
         Returns:
             None
+
         """
         board_chi = create_board_chi(
             fen_with_history=FenPlusHistory(
@@ -785,8 +780,7 @@ class MainWindow(QWidget):
         evaluation_white: StateEvaluation | None,
         evaluation_black: StateEvaluation | None,
     ) -> None:
-        """
-        Update the evaluation values displayed on the GUI.
+        """Update the evaluation values displayed on the GUI.
 
         Args:
             evaluation_oracle (StateEvaluation | None): The evaluation value for the oracle.
@@ -796,6 +790,7 @@ class MainWindow(QWidget):
 
         Returns:
             None
+
         """
         self.eval_button.setText("📊 Eval 🐟: " + format_state_eval(evaluation_oracle))
         self.eval_button_chi.setText(
@@ -813,6 +808,7 @@ class MainWindow(QWidget):
 
         Args:
             play_status (PlayingStatus): The new playing status.
+
         """
         chipiron_logger.info("update_game_play_status %s", play_status)
 

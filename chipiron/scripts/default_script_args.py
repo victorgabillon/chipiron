@@ -1,6 +1,4 @@
-"""
-Default arguments for the script.
-"""
+"""Default arguments for the script."""
 
 from dataclasses import dataclass
 from typing import Protocol
@@ -24,3 +22,4 @@ class HasBaseScriptArgs(Protocol):
 
 class DataClassWithBaseScriptArgs(HasBaseScriptArgs, IsDataclass, Protocol):
     """Data class that includes base_script_args."""
+

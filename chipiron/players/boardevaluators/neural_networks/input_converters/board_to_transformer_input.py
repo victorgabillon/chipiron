@@ -14,13 +14,16 @@ from valanga import Color
 def build_transformer_input(
     piece_map: PieceMap, board_turn: Color, transformer_args: TransformerArgs
 ) -> torch.Tensor:
-    """Builds the transformer input tensor from the piece map and board turn.
+    """Build the transformer input tensor from the piece map and board turn.
+
     Args:
         piece_map (PieceMap): The piece map of the board.
         board_turn (Color): The color of the player to move.
         transformer_args (TransformerArgs): The transformer arguments.
+
     Returns:
         torch.Tensor: The transformer input tensor.
+
     """
     board_turn_chess = valanga_color_to_chess(board_turn)
 
