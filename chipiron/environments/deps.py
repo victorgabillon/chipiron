@@ -1,3 +1,4 @@
+"""Module for deps."""
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol
 
@@ -9,17 +10,25 @@ if TYPE_CHECKING:
 
 
 class ChessBoardFactory(Protocol):
-    def __call__(self, *, fen_with_history: "FenPlusHistory") -> "boards.IBoard": ...
+    """Protocol for building a chess board from FEN history."""
+
+    def __call__(self, *, fen_with_history: "FenPlusHistory") -> "boards.IBoard":
+        """Create a board from the provided FEN history."""
+        ...
 
 
 @dataclass(frozen=True)
 class ChessEnvironmentDeps:
+    """Dependencies required to build chess environments."""
+
     board_factory: ChessBoardFactory
     syzygy_table: AnySyzygyTable | None
 
 
 @dataclass(frozen=True)
 class CheckersEnvironmentDeps:
+    """Dependencies required to build checkers environments."""
+
     pass
 
 

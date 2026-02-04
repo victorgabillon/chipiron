@@ -82,6 +82,7 @@ class StockfishPlayer:
         notify_progress: NotifyProgressCallable | None = None,
     ) -> Recommendation:
         # seed can be ignored (stockfish is deterministic unless you randomize)
+        """Recommend."""
         best: BranchName = self.select_move(
             state.board, move_seed=seed
         ).recommended_name

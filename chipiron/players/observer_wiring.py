@@ -1,3 +1,4 @@
+"""Module for observer wiring."""
 from dataclasses import dataclass
 from typing import Generic, Protocol, TypeVar
 
@@ -12,13 +13,14 @@ BuildArgsT_contra = TypeVar("BuildArgsT_contra", contravariant=True)
 
 
 class BuildGamePlayer(Protocol[SnapT, RuntimeT, BuildArgsT_contra]):
+    """Buildgameplayer implementation."""
     def __call__(
         self,
         args: BuildArgsT_contra,
         queue_out: PutQueue[MainMailboxMessage],
-    ) -> GamePlayer[SnapT, RuntimeT]: ...
-
-
+    ) -> GamePlayer[SnapT, RuntimeT]:
+        """Invoke the callable instance."""
+        ...
 @dataclass(frozen=True)
 class ObserverWiring(Generic[SnapT, RuntimeT, BuildArgsT]):
     """Game-specific wiring used by the generic observer factory.

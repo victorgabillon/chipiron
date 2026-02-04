@@ -1,3 +1,4 @@
+"""Module for mailbox."""
 from typing import TYPE_CHECKING, Any, TypeAlias
 
 if TYPE_CHECKING:

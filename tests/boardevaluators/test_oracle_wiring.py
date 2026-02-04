@@ -1,3 +1,4 @@
+"""Module for test oracle wiring."""
 import queue
 
 import chess
@@ -20,6 +21,7 @@ from chipiron.players.boardevaluators.factory import (
 
 @pytest.mark.parametrize(("use_rust_boards"), (True, False))
 def test_chess_evaluator_accepts_chess_state(use_rust_boards: bool) -> None:
+    """Test chess evaluator accepts chess state."""
     board: IBoard = create_board(
         use_rust_boards=use_rust_boards,
         fen_with_history=FenPlusHistory(current_fen=chess.STARTING_FEN),
@@ -39,6 +41,7 @@ def test_chess_evaluator_accepts_chess_state(use_rust_boards: bool) -> None:
 
 
 def test_gui_evaluator_publishes_oracle_field() -> None:
+    """Test gui evaluator publishes oracle field."""
     board: IBoard = create_board(
         use_rust_boards=False,
         fen_with_history=FenPlusHistory(current_fen=chess.STARTING_FEN),

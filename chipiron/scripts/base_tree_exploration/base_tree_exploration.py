@@ -33,6 +33,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class BaseTreeExplorationArgs:
+    """Data container for BaseTreeExplorationArgs."""
     base_script_args: BaseScriptArgs = field(default_factory=BaseScriptArgs)
     implementation_args: ImplementationArgs = field(default_factory=ImplementationArgs)
 

@@ -60,6 +60,7 @@ class SyzygyRustTable(SyzygyTable[RustyBoardChi]):
         self.table_base = shakmaty_python_binding.MyTableBase(path_to_table_str)
 
     def wdl(self, board: boards.RustyBoardChi) -> int:
+        """Wdl."""
         wdl: int = self.table_base.probe_wdl(board.chess_)
         return wdl
 

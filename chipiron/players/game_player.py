@@ -22,11 +22,13 @@ class GamePlayer(Generic[StateSnapT, RuntimeStateT]):
     color: Color
 
     def __init__(self, player: Player[StateSnapT, RuntimeStateT], color: Color) -> None:
+        """Initialize the instance."""
         self.color = color
         self._player = player
 
     @property
     def player(self) -> Player[StateSnapT, RuntimeStateT]:
+        """Player."""
         return self._player
 
     def select_move_from_snapshot(
@@ -35,6 +37,7 @@ class GamePlayer(Generic[StateSnapT, RuntimeStateT]):
         seed: Seed,
         notify_percent_function: NotifyProgressCallable,
     ) -> Recommendation:
+        """Select move from snapshot."""
         return self._player.select_move(
             state_snapshot=snapshot,
             seed=seed,

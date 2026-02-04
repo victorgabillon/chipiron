@@ -40,6 +40,7 @@ class GameArgsFactory:
         seed_: int | None,
         args_game: GameArgs,
     ):
+        """Initialize the instance."""
         self.args_match = args_match
         self.seed_ = seed_
         self.args_player_one = args_player_one

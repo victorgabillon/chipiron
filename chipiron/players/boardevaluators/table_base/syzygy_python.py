@@ -58,6 +58,7 @@ class SyzygyChiTable(SyzygyTable[boards.BoardChi]):
         self.table_base = chess.syzygy.open_tablebase(directory=path_to_table_str)
 
     def wdl(self, board: boards.BoardChi) -> int:
+        """Wdl."""
         return self.table_base.probe_wdl(board=board.chess_board)
 
     def dtz(self, board: boards.BoardChi) -> int:

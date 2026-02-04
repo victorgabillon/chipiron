@@ -22,6 +22,7 @@ class Representation364(ContentRepresentation[ChessState, torch.Tensor]):
     tensor_castling_black: torch.Tensor
 
     def __eq__(self, other: object) -> bool:
+        """  eq  ."""
         if not isinstance(other, Representation364):
             return False
         else:
@@ -70,6 +71,7 @@ class Representation364_2(ContentRepresentation[ChessState, torch.Tensor]):
     tensor: torch.Tensor
 
     def __eq__(self, other: object) -> bool:
+        """  eq  ."""
         if not isinstance(other, Representation364_2):
             return False
         else:

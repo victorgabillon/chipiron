@@ -1,3 +1,4 @@
+"""Module for test main chipiron execution."""
 import os
 import subprocess
 import sys
@@ -9,6 +10,7 @@ SCRIPT_PATH = os.path.join(
 
 def run_with_live_output(cmd, env):
     # Merge stderr into stdout so ordering is preserved
+    """Run with live output."""
     p = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -31,6 +33,7 @@ def run_with_live_output(cmd, env):
 
 
 def test_main_chipiron_one_match_executes():
+    """Test main chipiron one match executes."""
     cmd = [
         sys.executable,
         SCRIPT_PATH,

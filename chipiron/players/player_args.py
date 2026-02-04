@@ -13,8 +13,12 @@ from .move_selector.move_selector_types import MoveSelectorTypes
 
 
 class HasMoveSelectorType(Protocol):
+    """Protocol for objects exposing a move-selector type."""
+
     @property
-    def type(self) -> MoveSelectorTypes: ...
+    def type(self) -> MoveSelectorTypes:
+        """Return the move-selector type."""
+        ...
 
 
 @dataclass

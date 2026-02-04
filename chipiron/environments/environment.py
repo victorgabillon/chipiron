@@ -1,3 +1,5 @@
+"""Environment wiring and factory helpers."""
+
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal, Protocol, TypeVar, overload
 
@@ -28,25 +30,39 @@ StateOutT = TypeVar("StateOutT", covariant=True)
 
 
 class TagNormalizer(Protocol[StartTagOutT]):
-    def __call__(self, tag: StateTag) -> StartTagOutT: ...
+    """Protocol for normalizing raw start tags."""
+
+    def __call__(self, tag: StateTag) -> StartTagOutT:
+        """Normalize a start tag to the environment's expected type."""
+        ...
 
 
 class InitialStateFactory(Protocol[StateOutT, StartTagInT]):
-    def __call__(self, tag: StartTagInT) -> StateOutT: ...
+    """Protocol for creating initial states from start tags."""
+
+    def __call__(self, tag: StartTagInT) -> StateOutT:
+        """Create the initial state from a normalized start tag."""
+        ...
 
 
 class PlayerObserverFactoryBuilder(Protocol):
+    """Protocol for building player observer factories."""
+
     def __call__(
         self,
         *,
         each_player_has_its_own_thread: bool,
         implementation_args: ImplementationArgs,
         universal_behavior: bool,
-    ) -> "PlayerObserverFactory": ...
+    ) -> "PlayerObserverFactory":
+        """Build a player observer factory with the given configuration."""
+        ...
 
 
 @dataclass(frozen=True)
 class Environment[StateT, StateSnapT, StartTagT]:
+    """Bundle environment wiring and factories for a game kind."""
+
     game_kind: GameKind
     rules: GameRules[StateT]
     gui_encoder: GuiEncoder[StateT]
@@ -88,6 +104,7 @@ def make_environment(
     game_kind: GameKind,
     deps: EnvDeps,
 ) -> Environment[Any, Any, Any]:
+    """Create an environment wiring bundle for the given game kind."""
     match game_kind:
         case GameKind.CHESS:
             from chipiron.environments.chess.environment import make_chess_environment

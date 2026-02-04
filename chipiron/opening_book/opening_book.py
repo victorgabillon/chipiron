@@ -1,3 +1,4 @@
+"""Module for opening book."""
 # from players.treevalue.trees. import NoisyValueTree
 #
 #

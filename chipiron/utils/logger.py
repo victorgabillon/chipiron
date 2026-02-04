@@ -1,3 +1,4 @@
+"""Module for logger."""
 # logger_module.py
 
 import logging

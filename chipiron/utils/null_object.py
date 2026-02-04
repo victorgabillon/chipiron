@@ -24,22 +24,29 @@ class NullObject:
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize the instance."""
         pass
 
     def __call__(self, *args: Any, **kwargs: Any) -> Self:
+        """Invoke the callable instance."""
         return self
 
     def __repr__(self) -> str:
+        """Return the string representation of the instance."""
         return "Null(  )"
 
     def __nonzero__(self) -> int:
+        """Return the truthiness of the instance."""
         return 0
 
     def __getattr__(self, name: Any) -> Self:
+        """Handle attribute access for missing attributes."""
         return self
 
     def __setattr__(self, name: Any, value: Any) -> None:
+        """Handle attribute assignment."""
         pass
 
     def __delattr__(self, name: Any) -> None:
+        """Handle attribute deletion."""
         pass
