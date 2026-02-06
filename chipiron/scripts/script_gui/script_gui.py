@@ -6,6 +6,13 @@ from typing import Any
 from chipiron import scripts
 
 
+class ScriptGuiOptionError(ValueError):
+    """Raised when a GUI option does not map to a script type."""
+
+    def __init__(self, option: str) -> None:
+        super().__init__(f"Not a good name: {option}")
+
+
 def destroy(root: tk.Tk) -> bool:
     """Destroy the root window.
 
@@ -187,8 +194,8 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
                 "config_file_name": "chipiron/scripts/tree_visualization/exp_options.yaml",
             }
             script_type = scripts.ScriptType.TREE_VISUALIZATION
-        case _:
-            raise ValueError
+        case other:
+            raise ScriptGuiOptionError(other)
 
     print(f"Gui choices: the script name is {script_type} and the args are {gui_args}")
     return script_type, gui_args

@@ -25,6 +25,13 @@ if TYPE_CHECKING:
     from chipiron.displays.gui_protocol import GuiUpdate
 
 
+class OneMatchConfigError(ValueError):
+    """Raised when the one-match configuration is invalid."""
+
+    def __init__(self) -> None:
+        super().__init__("Profiling does not work well atm with gui on")
+
+
 @dataclass
 class MatchScriptArgs:
     """The input arguments needed by the one match script to run."""
@@ -84,7 +91,7 @@ class OneMatchScript:
 
         # checking for some incompatibility
         if args.gui and args.base_script_args.profiling:
-            raise ValueError
+            raise OneMatchConfigError
 
         # If we need a GUI
         if args.gui:

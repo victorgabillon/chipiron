@@ -16,6 +16,17 @@ type MatchId = str
 type GameId = str
 
 
+class GuiProtocolError(AssertionError):
+    """Base error for unexpected GUI protocol values."""
+
+
+class UnhandledGuiProtocolValueError(GuiProtocolError):
+    """Raised when an unexpected value is received in the GUI protocol."""
+
+    def __init__(self, value: object) -> None:
+        super().__init__(f"Unhandled value: {value!r}")
+
+
 @dataclass(frozen=True, slots=True)
 class Scope:
     """Identify the session/match/game context for a GUI message."""
@@ -43,7 +54,7 @@ def scope_for_new_game(existing_scope: Scope, new_game_id: GameId) -> Scope:
 
 def assert_never(x: Never) -> Never:
     """Fail fast for unreachable enum/union branches."""
-    raise AssertionError
+    raise UnhandledGuiProtocolValueError(x)
 
 
 # ---------- Updates (game -> gui) ----------

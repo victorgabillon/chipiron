@@ -25,6 +25,13 @@ script_type_to_script_class_name: dict[ScriptType, type[IScript]] = {
 }
 
 
+class ScriptTypeNotFoundError(KeyError):
+    """Raised when a script type cannot be resolved to a script class."""
+
+    def __init__(self, script_type: ScriptType) -> None:
+        super().__init__(f"Cannot find the script type {script_type} in file {__name__}")
+
+
 def get_script_type_from_script_class_name(script_type: ScriptType) -> type[IScript]:
     """Retrieve the script class name based on the given script type.
 
@@ -41,4 +48,4 @@ def get_script_type_from_script_class_name(script_type: ScriptType) -> type[IScr
     if script_type in script_type_to_script_class_name:
         script_class_name: type[IScript] = script_type_to_script_class_name[script_type]
         return script_class_name
-    raise KeyError
+    raise ScriptTypeNotFoundError(script_type)

@@ -56,6 +56,13 @@ if typing.TYPE_CHECKING:
     from atomheart.move.imove import MoveKey
 
 
+class GuiUpdateError(AssertionError):
+    """Raised when a GUI update payload is not handled."""
+
+    def __init__(self, payload: object) -> None:
+        super().__init__(f"Unhandled GuiUpdate payload: {payload!r}")
+
+
 def format_state_eval(ev: StateEvaluation | None) -> str:
     """Format state eval."""
     if ev is None:
@@ -662,7 +669,7 @@ class MainWindow(QWidget):
                 self.update_game_play_status(payload.status)
 
             case _:
-                raise AssertionError
+                raise GuiUpdateError(payload)
 
     def display_move_history(self) -> None:
         """Display the move history in a table widget.

@@ -74,6 +74,24 @@ class GameRules[StateT](Protocol):
         ...
 
 
+class GameOutcomeError(ValueError):
+    """Base error for invalid or unsupported game outcomes."""
+
+
+class MissingWinnerError(GameOutcomeError):
+    """Raised when a win outcome lacks a winner."""
+
+    def __init__(self) -> None:
+        super().__init__("Winner must be provided for WIN outcomes.")
+
+
+class UnhandledOutcomeKindError(GameOutcomeError):
+    """Raised when an outcome kind is not handled."""
+
+    def __init__(self, kind: OutcomeKind) -> None:
+        super().__init__(f"Unhandled outcome kind: {kind}")
+
+
 def outcome_to_final_game_result(outcome: GameOutcome) -> FinalGameResult:
     """Map a generic game outcome to the legacy FinalGameResult enum.
 
@@ -85,9 +103,9 @@ def outcome_to_final_game_result(outcome: GameOutcome) -> FinalGameResult:
             return FinalGameResult.WIN_FOR_WHITE
         if outcome.winner is Color.BLACK:
             return FinalGameResult.WIN_FOR_BLACK
-        raise ValueError
+        raise MissingWinnerError
     if outcome.kind is OutcomeKind.DRAW:
         return FinalGameResult.DRAW
     if outcome.kind in (OutcomeKind.ABORTED, OutcomeKind.UNKNOWN):
         return FinalGameResult.DRAW
-    raise ValueError
+    raise UnhandledOutcomeKindError(outcome.kind)

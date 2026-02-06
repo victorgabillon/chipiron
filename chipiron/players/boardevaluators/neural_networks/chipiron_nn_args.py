@@ -25,6 +25,33 @@ from chipiron.utils.small_tools import resolve_package_path
 CHIPIRON_NN_ARGS_FILENAME = "chipiron_nn.yaml"
 
 
+class ChipironNNArgsError(ValueError):
+    """Base error for chipiron neural network arguments."""
+
+
+class InvalidChipironNNArgsError(ChipironNNArgsError):
+    """Raised when NN args are not structured as expected."""
+
+    def __init__(self, file_path: str) -> None:
+        super().__init__(
+            f"Invalid chipiron NN args in {file_path!r}: expected mapping with string keys"
+        )
+
+
+class UnsupportedChipironNNArgsVersionError(ChipironNNArgsError):
+    """Raised when the NN args version is unsupported."""
+
+    def __init__(self, version: int) -> None:
+        super().__init__(f"Unsupported chipiron NN args version: {version}.")
+
+
+class UnsupportedChipironNNGameKindError(ChipironNNArgsError):
+    """Raised when the NN args specify an unsupported game kind."""
+
+    def __init__(self, game_kind: GameKind) -> None:
+        super().__init__(f"Unsupported game_kind for now: {game_kind!r}.")
+
+
 @dataclass(frozen=True, slots=True)
 class ChipironNNArgs:
     """Chipironnnargs implementation."""
@@ -72,7 +99,7 @@ def _is_str_key_mapping(obj: object) -> TypeGuard[Mapping[str, Any]]:
 def _as_mapping(obj: object, *, file_path: str) -> Mapping[str, Any]:
     """Validate and return a string-keyed mapping for YAML data."""
     if not _is_str_key_mapping(obj):
-        raise ValueError
+        raise InvalidChipironNNArgsError(file_path)
     return obj
 
 
@@ -115,9 +142,9 @@ def create_content_to_input_convert(
 ) -> ContentToInputFunction[ChessState]:
     """Create content to input convert."""
     if chipiron_nn_args.version != 1:
-        raise ValueError
+        raise UnsupportedChipironNNArgsVersionError(chipiron_nn_args.version)
     if chipiron_nn_args.game_kind is not GameKind.CHESS:
-        raise ValueError
+        raise UnsupportedChipironNNGameKindError(chipiron_nn_args.game_kind)
     builder = _CONTENT_TO_INPUT_BUILDERS[chipiron_nn_args.game_kind]
     return builder(chipiron_nn_args.input_representation)
 

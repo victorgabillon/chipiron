@@ -26,6 +26,7 @@ Note: The Stockfish engine is initialized lazily when the first move is selected
 """
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
 import atomheart.board as boards
@@ -42,6 +43,38 @@ from .move_selector_types import MoveSelectorTypes
 if TYPE_CHECKING:
     from atomheart import BoardChi
 from valanga.game import BranchName, Seed
+
+
+class StockfishError(RuntimeError):
+    """Base error for Stockfish-related failures."""
+
+
+class StockfishBinaryNotFoundError(StockfishError):
+    """Raised when the Stockfish binary cannot be found."""
+
+    def __init__(self, path: Path) -> None:
+        msg = (
+            f"Stockfish binary not found at {path}.\n"
+            "Please install Stockfish by running:\n"
+            "    make stockfish\n"
+            "This will download and install Stockfish 16 (~40MB) "
+            "to the correct location."
+        )
+        super().__init__(msg)
+
+
+class StockfishStartupError(StockfishError):
+    """Raised when the Stockfish engine fails to start."""
+
+    def __init__(self, path: Path, original_error: OSError) -> None:
+        msg = (
+            f"Failed to start Stockfish engine at {path}.\n"
+            "The binary may be corrupted. Try reinstalling with:\n"
+            f"    rm -rf {path.parent}\n"
+            "    make stockfish\n"
+            f"Original error: {original_error}"
+        )
+        super().__init__(msg)
 
 
 @dataclass
@@ -113,14 +146,14 @@ class StockfishPlayer:
         if self.engine is None:
             # Check if Stockfish binary exists
             if not STOCKFISH_BINARY_PATH.exists():
-                raise FileNotFoundError
+                raise StockfishBinaryNotFoundError(STOCKFISH_BINARY_PATH)
 
             try:
                 self.engine = chess.engine.SimpleEngine.popen_uci(
                     str(STOCKFISH_BINARY_PATH)
                 )
-            except Exception as e:
-                raise RuntimeError from e
+            except OSError as e:
+                raise StockfishStartupError(STOCKFISH_BINARY_PATH, e) from e
 
         # transform the board
         board_chi: BoardChi = create_board_chi(

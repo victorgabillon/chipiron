@@ -36,6 +36,13 @@ if TYPE_CHECKING:
     )
 
 
+class ModelInputRepresentationError(ValueError):
+    """Raised when a model input representation type is unsupported."""
+
+    def __init__(self, representation: ModelInputRepresentationType) -> None:
+        super().__init__(f"no matching case for {representation} in {__name__}")
+
+
 def create_board_to_input_from_representation(
     internal_tensor_representation_type: InternalTensorRepresentationType,
 ) -> ContentToInputFunction[ChessState]:
@@ -120,7 +127,7 @@ def create_board_to_input(
             board_to_input_convert = board_to_input_convert_two_sides
 
         case _:
-            raise ValueError
+            raise ModelInputRepresentationError(model_input_representation_type)
 
     return board_to_input_convert
 
