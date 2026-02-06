@@ -137,9 +137,7 @@ def resolve_package_path(path_to_file: str | Path) -> str:
         resource = files("chipiron").joinpath(relative_path)
 
         if not resource.is_file() and not resource.is_dir():
-            raise FileNotFoundError(
-                f"Resource not found: {relative_path} in package 'chipiron'"
-            )
+            raise FileNotFoundError
 
         return str(resource)  # You can also use `.as_posix()` if you need POSIX format
     return str(path_to_file)
@@ -160,7 +158,7 @@ def get_package_root_path(package_name: str) -> str:
     """
     spec: importlib.machinery.ModuleSpec | None = importlib.util.find_spec(package_name)
     if spec is None or spec.origin is None:
-        raise ImportError(f"Cannot find package '{package_name}'")
+        raise ImportError
 
     # Get the package directory, not just the __init__.py file
     return os.path.dirname(spec.origin)

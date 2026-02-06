@@ -18,4 +18,4 @@ def make_gui_encoder[StateT](
         case GameKind.CHESS:
             return cast("GuiEncoder[StateT]", ChessGuiEncoder())
         case _:
-            raise ValueError(f"No GuiEncoder for game_kind={game_kind!r}")
+            raise ValueError

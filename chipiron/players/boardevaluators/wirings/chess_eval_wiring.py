@@ -77,7 +77,7 @@ def _build_chi() -> StateEvaluator[ChessState]:
                 )
             )
         case _:
-            raise ValueError(f"Unsupported chi args: {args!r}")
+            raise ValueError
 
 
 def _build_oracle(*, can_oracle: bool) -> StateEvaluator[ChessState] | None:

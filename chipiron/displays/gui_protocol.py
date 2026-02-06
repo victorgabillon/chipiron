@@ -43,7 +43,7 @@ def scope_for_new_game(existing_scope: Scope, new_game_id: GameId) -> Scope:
 
 def assert_never(x: Never) -> Never:
     """Fail fast for unreachable enum/union branches."""
-    raise AssertionError(f"Unhandled value: {x!r}")
+    raise AssertionError
 
 
 # ---------- Updates (game -> gui) ----------

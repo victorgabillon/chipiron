@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol, no_type_check
 
 import numpy as np
-import pandas
+import pandas as pd
 import torch
 from atomheart.board import IBoard
 from atomheart.board.factory import create_board_chi
@@ -43,7 +43,7 @@ class DataSetArgs:
     preprocessing_data_set: bool = False
 
 
-type RawSample = pandas.Series
+type RawSample = pd.Series
 
 
 @no_type_check
@@ -62,7 +62,7 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample], ABC):
 
     """
 
-    data: pandas.DataFrame | list[ProcessedSample] | None
+    data: pd.DataFrame | list[ProcessedSample] | None
     len: int | None
     preprocessing: bool
 
@@ -84,11 +84,11 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample], ABC):
         chipiron_logger.info("Loading the dataset...")
         start_time = time.time()
 
-        raw_data_temp = pandas.read_pickle(self.file_name).copy()
+        raw_data_temp = pd.read_pickle(self.file_name).copy()
 
         # Ensure we always work with a DataFrame
         raw_data: DataFrame
-        if isinstance(raw_data_temp, pandas.Series):
+        if isinstance(raw_data_temp, pd.Series):
             raw_data = raw_data_temp.to_frame()
         else:
             raw_data = raw_data_temp
@@ -109,7 +109,7 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample], ABC):
                     chipiron_logger.info(
                         "Processing progress: %.2f%%", idx / len(raw_data) * 100
                     )
-                row: pandas.Series[Any] = raw_data.iloc[idx]
+                row: pd.Series[Any] = raw_data.iloc[idx]
                 processed_data.append(self.process_raw_row(row))
 
             self.data = processed_data
@@ -119,11 +119,11 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample], ABC):
             self.data = raw_data
 
         # Fix pandas pickle compatibility
-        if isinstance(self.data, (pandas.DataFrame, list)):
+        if isinstance(self.data, (pd.DataFrame, list)):
             self.data = self.data.copy()
 
     @abstractmethod
-    def process_raw_row(self, row: pandas.Series) -> ProcessedSample:
+    def process_raw_row(self, row: pd.Series) -> ProcessedSample:
         """Convert a raw row into processed sample.
 
         Subclasses must implement this.
@@ -138,7 +138,7 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample], ABC):
 
         """
         if self.data is None:
-            raise RuntimeError("Dataset not loaded yet. Call `load()` first.")
+            raise RuntimeError
         return len(self.data)
 
     @no_type_check
@@ -155,7 +155,7 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample], ABC):
 
         """
         if self.data is None:
-            raise RuntimeError("Dataset not loaded yet. Call `load()` first.")
+            raise RuntimeError
 
         index = idx % len(self)
         if self.preprocessing:
@@ -163,11 +163,11 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample], ABC):
             assert isinstance(self.data, list)
             return self.data[index]
         # Process on-the-fly
-        assert isinstance(self.data, pandas.DataFrame)
+        assert isinstance(self.data, pd.DataFrame)
         return self.process_raw_row(self.data.iloc[index])
 
     @no_type_check
-    def get_unprocessed(self, idx: int) -> pandas.Series:
+    def get_unprocessed(self, idx: int) -> pd.Series:
         """Return the unprocessed raw row at the given index.
 
         Args:
@@ -177,8 +177,8 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample], ABC):
             pandas.Series: The raw row.
 
         """
-        if not isinstance(self.data, pandas.DataFrame):
-            raise RuntimeError("Unprocessed data is not available.")
+        if not isinstance(self.data, pd.DataFrame):
+            raise TypeError
         return self.data.iloc[idx % len(self)]
 
     def is_preprocessed(self) -> bool:
@@ -192,7 +192,7 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample], ABC):
 
 
 @no_type_check
-def process_stockfish_value(row: pandas.Series) -> float:
+def process_stockfish_value(row: pd.Series) -> float:
     """Process the stockfish value for a given board and row.
 
     Args:
@@ -273,7 +273,7 @@ class FenAndValueDataSet(MyDataSet[FenAndValueData]):
         ChessState
     ]  # transform board to model input
     transform_dataset_value_to_white_value_function: Callable[
-        [pandas.Series], float
+        [pd.Series], float
     ]  # transform value in dataset to standardized value white float
     transform_white_value_to_model_output_function: Callable[
         [float, IBoard], torch.Tensor
@@ -286,7 +286,7 @@ class FenAndValueDataSet(MyDataSet[FenAndValueData]):
             [float, IBoard], torch.Tensor
         ],
         transform_dataset_value_to_white_value_function: Callable[
-            [pandas.Series], float
+            [pd.Series], float
         ],
         transform_board_function: ContentToInputFunction[ChessState],
         preprocessing: bool = False,
@@ -316,7 +316,7 @@ class FenAndValueDataSet(MyDataSet[FenAndValueData]):
         )
 
     @no_type_check
-    def process_raw_row(self, row: pandas.Series) -> FenAndValueData:
+    def process_raw_row(self, row: pd.Series) -> FenAndValueData:
         """Process a raw row into FenAndValueData.
 
         Args:
@@ -345,7 +345,7 @@ class FenAndValueDataSet(MyDataSet[FenAndValueData]):
         )
         return FenAndValueData(fen_tensor=input_layer, value_tensor=target_value)
 
-    def process_raw_rows(self, dataframe: pandas.DataFrame) -> list[FenAndValueData]:
+    def process_raw_rows(self, dataframe: pd.DataFrame) -> list[FenAndValueData]:
         """Process raw rows into input and target tensors.
 
         Args:
@@ -356,7 +356,7 @@ class FenAndValueDataSet(MyDataSet[FenAndValueData]):
 
         """
         processed_data: list[FenAndValueData] = []
-        row: pandas.Series
+        row: pd.Series
         for _, row in dataframe.iterrows():
             processed_data.append(self.process_raw_row(row))
 

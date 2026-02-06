@@ -77,7 +77,7 @@ def make_player_request_encoder[StateT](
                 "PlayerRequestEncoder for CHECKERS is not implemented yet"
             )
         case _:
-            raise ValueError(f"No PlayerRequestEncoder for game_kind={game_kind!r}")
+            raise ValueError
 
 
 # Backwards-compatible alias (older code imports make_player_encoder)

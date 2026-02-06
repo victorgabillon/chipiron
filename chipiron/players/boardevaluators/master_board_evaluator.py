@@ -139,8 +139,8 @@ class MasterBoardEvaluator:
                 case "1/2-1/2":
                     how_over_ = HowOver.DRAW
                     who_is_winner_ = Winner.NO_KNOWN_WINNER
-                case other:
-                    raise ValueError(f"value {other} not expected in {__name__}")
+                case _:
+                    raise ValueError
 
             over_event = OverEvent(
                 how_over=how_over_,
@@ -239,9 +239,7 @@ def create_master_state_evaluator_from_args(
                 )
             )
         case _:
-            raise ValueError(
-                f"unknown type of message received by master board evaluator {args.type} in {__name__}"
-            )
+            raise ValueError
 
     return create_master_state_evaluator(
         board_evaluator=board_evaluator,

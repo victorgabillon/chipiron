@@ -113,25 +113,14 @@ class StockfishPlayer:
         if self.engine is None:
             # Check if Stockfish binary exists
             if not STOCKFISH_BINARY_PATH.exists():
-                raise FileNotFoundError(
-                    f"Stockfish binary not found at {STOCKFISH_BINARY_PATH}.\n"
-                    f"Please install Stockfish by running:\n"
-                    f"    make stockfish\n"
-                    f"This will download and install Stockfish 16 (~40MB) to the correct location."
-                )
+                raise FileNotFoundError
 
             try:
                 self.engine = chess.engine.SimpleEngine.popen_uci(
                     str(STOCKFISH_BINARY_PATH)
                 )
             except Exception as e:
-                raise RuntimeError(
-                    f"Failed to start Stockfish engine at {STOCKFISH_BINARY_PATH}.\n"
-                    f"The binary may be corrupted. Try reinstalling with:\n"
-                    f"    rm -rf {STOCKFISH_BINARY_PATH.parent}\n"
-                    f"    make stockfish\n"
-                    f"Original error: {e}"
-                ) from e
+                raise RuntimeError from e
 
         # transform the board
         board_chi: BoardChi = create_board_chi(

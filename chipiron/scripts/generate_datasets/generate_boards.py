@@ -279,12 +279,13 @@ def decompress_zst(zst_path: Path, output_pgn_path: Path) -> None:
             chipiron_logger.info("Running: %s", " ".join(cmd))
             subprocess.run(cmd, check=True, capture_output=True, text=True)
             chipiron_logger.info("Decompression completed with zstd command")
-            return
         except subprocess.CalledProcessError as e:
             chipiron_logger.info(
                 "zstd command failed (exit code %d): %s", e.returncode, e.stderr
             )
             chipiron_logger.info("Falling back to Python decompression...")
+        else:
+            return
 
     # Fall back to Python zstandard
     try:
@@ -294,7 +295,7 @@ def decompress_zst(zst_path: Path, output_pgn_path: Path) -> None:
             dctx.copy_stream(src, dst)
         chipiron_logger.info("Decompression completed with Python zstandard")
     except Exception as exc:
-        raise RuntimeError(f"Both zstd CLI and Python zstandard failed: {exc}") from exc
+        raise RuntimeError from exc
 
 
 def ensure_month_pgn(month: str, dest_dir: Path) -> Path:

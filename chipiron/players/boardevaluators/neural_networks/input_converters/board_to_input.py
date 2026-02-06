@@ -120,9 +120,7 @@ def create_board_to_input(
             board_to_input_convert = board_to_input_convert_two_sides
 
         case _:
-            raise Exception(
-                f"no matching case for {model_input_representation_type} in {__name__}"
-            )
+            raise ValueError
 
     return board_to_input_convert
 

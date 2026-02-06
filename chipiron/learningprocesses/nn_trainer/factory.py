@@ -123,11 +123,7 @@ class NNTrainerArgs:
             self.reuse_existing_model
             and self.nn_parameters_file_if_reusing_existing_one is None
         ):
-            raise Exception(
-                "Problem because you are asking for a reuse of existing model without specifying a"
-                f" param file as we have: reuse_existing_model {self.reuse_existing_model}"
-                f" nn_param_file_if_not_reusing_existing_one {self.nn_parameters_file_if_reusing_existing_one}"
-            )
+            raise ValueError
 
 
 def get_optimizer_file_path_from(folder_path: path) -> str:

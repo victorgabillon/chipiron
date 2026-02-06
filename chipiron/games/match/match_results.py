@@ -138,9 +138,9 @@ class MatchResults:
             elif game_result == FinalGameResult.DRAW:
                 self.player_two_is_white_draws += 1
             else:
-                raise Exception("!")
+                raise ValueError
         else:
-            raise Exception("?")
+            raise ValueError
 
     def finish(self) -> None:
         """Finishes the match and marks it as finished."""

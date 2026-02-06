@@ -41,4 +41,4 @@ def get_script_type_from_script_class_name(script_type: ScriptType) -> type[IScr
     if script_type in script_type_to_script_class_name:
         script_class_name: type[IScript] = script_type_to_script_class_name[script_type]
         return script_class_name
-    raise KeyError(f"Cannot find the script type {script_type} in file {__name__}")
+    raise KeyError

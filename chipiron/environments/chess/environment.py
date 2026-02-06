@@ -44,7 +44,7 @@ def make_chess_environment(
 
     def normalize_start_tag(tag: StateTag) -> ChessStartTag:
         if not isinstance(tag, ChessStartTag):
-            raise TypeError("Chess environment expects ChessStartTag")
+            raise TypeError
         return tag
 
     def make_initial_state(tag: ChessStartTag) -> ChessState:
