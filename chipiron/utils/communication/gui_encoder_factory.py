@@ -11,6 +11,7 @@ class GuiEncoderError(ValueError):
     """Raised when a GUI encoder is missing for a game kind."""
 
     def __init__(self, game_kind: GameKind) -> None:
+        """Initialize the error with the missing game kind."""
         super().__init__(f"No GuiEncoder for game_kind={game_kind!r}")
 
 

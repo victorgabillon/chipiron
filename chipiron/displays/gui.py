@@ -60,6 +60,7 @@ class GuiUpdateError(AssertionError):
     """Raised when a GUI update payload is not handled."""
 
     def __init__(self, payload: object) -> None:
+        """Initialize the error with the unhandled payload."""
         super().__init__(f"Unhandled GuiUpdate payload: {payload!r}")
 
 

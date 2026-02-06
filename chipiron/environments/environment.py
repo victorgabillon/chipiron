@@ -27,6 +27,7 @@ class EnvironmentNotFoundError(EnvironmentCreationError):
     """Raised when an environment implementation is missing."""
 
     def __init__(self, game_kind: GameKind) -> None:
+        """Initialize the error with the missing game kind."""
         super().__init__(f"No Environment for game_kind={game_kind!r}")
 
 

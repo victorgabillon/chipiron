@@ -10,6 +10,7 @@ class ScriptGuiOptionError(ValueError):
     """Raised when a GUI option does not map to a script type."""
 
     def __init__(self, option: str) -> None:
+        """Initialize the error with the invalid GUI option."""
         super().__init__(f"Not a good name: {option}")
 
 

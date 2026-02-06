@@ -37,6 +37,7 @@ class UnexpectedGameResultError(MasterBoardEvaluatorError):
     """Raised when a game result string is not recognized."""
 
     def __init__(self, result: str) -> None:
+        """Initialize the error with the unexpected game result."""
         super().__init__(f"value {result} not expected in {__name__}")
 
 
@@ -44,6 +45,7 @@ class UnsupportedBoardEvaluatorArgsError(MasterBoardEvaluatorError):
     """Raised when board evaluator args are unsupported."""
 
     def __init__(self, args_type: str) -> None:
+        """Initialize the error with the unsupported args type."""
         super().__init__(
             f"unknown type of message received by master board evaluator {args_type} in {__name__}"
         )

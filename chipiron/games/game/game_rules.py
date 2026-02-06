@@ -82,6 +82,7 @@ class MissingWinnerError(GameOutcomeError):
     """Raised when a win outcome lacks a winner."""
 
     def __init__(self) -> None:
+        """Initialize the error for a missing winner."""
         super().__init__("Winner must be provided for WIN outcomes.")
 
 
@@ -89,6 +90,7 @@ class UnhandledOutcomeKindError(GameOutcomeError):
     """Raised when an outcome kind is not handled."""
 
     def __init__(self, kind: OutcomeKind) -> None:
+        """Initialize the error with the unhandled outcome kind."""
         super().__init__(f"Unhandled outcome kind: {kind}")
 
 
