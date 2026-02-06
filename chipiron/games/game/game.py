@@ -48,7 +48,7 @@ class Game[StateT: TurnState = TurnState]:
 
     def __init__(
         self, state: StateT, playing_status: GamePlayingStatus, seed_: Seed = 0
-    ):
+    ) -> None:
         """Initialize the Game object.
 
         Args:

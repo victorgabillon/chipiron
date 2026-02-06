@@ -89,9 +89,8 @@ class MainWindow(QWidget):
                 self.count
             ]
             self.draw_board()
-        if (
-            key == "2"
-            and self.count < len(self.chess_board_recorded.chess_board.move_stack)
+        if key == "2" and self.count < len(
+            self.chess_board_recorded.chess_board.move_stack
         ):
             self.chess_board.push(self.next_move)
             print(self.chess_board)

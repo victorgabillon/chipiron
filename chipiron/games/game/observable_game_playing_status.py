@@ -1,7 +1,5 @@
 """Module that defines an observable version of GamePlayingStatus."""
 
-from typing import ClassVar
-
 from chipiron.displays.gui_protocol import UpdGameStatus
 from chipiron.displays.gui_publisher import GuiPublisher
 
@@ -15,7 +13,7 @@ class ObservableGamePlayingStatus:
     """
 
     game_playing_status: GamePlayingStatus
-    _publishers: ClassVar[list[GuiPublisher]] = []
+    _publishers: list[GuiPublisher]
 
     def __init__(self, game_playing_status: GamePlayingStatus) -> None:
         """Initialize the instance."""

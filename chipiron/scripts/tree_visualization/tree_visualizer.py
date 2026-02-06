@@ -53,7 +53,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
     photo_clicked = QtCore.Signal(QtCore.QPoint)
 
     @typing.no_type_check
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         """Initialize the PhotoViewer.
 
         Args:
@@ -75,7 +75,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
 
     @typing.no_type_check
-    def has_photo(self):
+    def has_photo(self) -> bool:
         """Check if the viewer has a photo loaded.
 
         Returns:
@@ -86,7 +86,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
     @typing.no_type_check
     @typing.override
-    def fitInView(self, scale=True):
+    def fitInView(self, scale=True) -> None:
         """Fit the photo within the view.
 
         Args:
@@ -95,7 +95,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         """
 
     @typing.no_type_check
-    def set_photo(self, pixmap=None):
+    def set_photo(self, pixmap=None) -> None:
         """Set the photo to be displayed.
 
         Args:
@@ -115,7 +115,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
     @typing.no_type_check
     @typing.override
-    def wheelEvent(self, event):
+    def wheelEvent(self, event) -> None:
         """Handle the wheel event for zooming.
 
         Args:
@@ -137,7 +137,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                 self._zoom = 0
 
     @typing.no_type_check
-    def toggle_drag_mode(self):
+    def toggle_drag_mode(self) -> None:
         """Toggle the drag mode between ScrollHandDrag and NoDrag."""
         if self.dragMode() == QtWidgets.QGraphicsView.ScrollHandDrag:
             self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
@@ -146,7 +146,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
     @typing.no_type_check
     @typing.override
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         """Handle the mouse press event.
 
         Args:
@@ -158,7 +158,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         super().mousePressEvent(event)
 
     @typing.no_type_check
-    def zoomin(self):
+    def zoomin(self) -> None:
         """Zoom in the photo."""
         factor = 1.25
         self._zoom += 1
@@ -170,7 +170,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             self._zoom = 0
 
     @typing.no_type_check
-    def zoomout(self):
+    def zoomout(self) -> None:
         """Zoom out the photo."""
         factor = 1 / 1.25
         self._zoom -= 1
@@ -209,7 +209,7 @@ class Window(QtWidgets.QWidget):
     """
 
     @typing.no_type_check
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the Window class.
 
         This method sets up the GUI elements and initializes the necessary variables.
@@ -257,7 +257,7 @@ class Window(QtWidgets.QWidget):
         self.load_image()
 
     @typing.no_type_check
-    def build_subtree(self):
+    def build_subtree(self) -> None:
         """Build the subtree of the current node.
 
         This method iterates over the moves of the current node and assigns an index to each move.
@@ -272,7 +272,7 @@ class Window(QtWidgets.QWidget):
             self.index[move] = chr(33 + ind)
 
     @typing.no_type_check
-    def display_subtree(self):
+    def display_subtree(self) -> None:
         """Display the subtree rooted at the current node.
 
         This method generates a visualization of the subtree rooted at the current node and saves it as a JPG image file.
@@ -290,7 +290,7 @@ class Window(QtWidgets.QWidget):
         dot.render("chipiron/runs/treedisplays/TreeVisualtemp")
 
     @typing.no_type_check
-    def load_image(self):
+    def load_image(self) -> None:
         """Load an image and sets it as the photo for the viewer.
 
         The image is loaded from the file 'chipiron/runs/treedisplays/TreeVisualtemp.jpg'.
@@ -307,7 +307,7 @@ class Window(QtWidgets.QWidget):
         )
 
     @typing.no_type_check
-    def pix_info(self):
+    def pix_info(self) -> None:
         """Toggles the drag mode of the viewer.
 
         This method is used to toggle the drag mode of the viewer. It switches between the modes of dragging and not dragging
@@ -323,7 +323,7 @@ class Window(QtWidgets.QWidget):
         self.viewer.toggle_drag_mode()
 
     @typing.no_type_check
-    def photo_clicked(self, pos):
+    def photo_clicked(self, pos) -> None:
         """Handle the event when a photo is clicked.
 
         Args:
@@ -338,7 +338,7 @@ class Window(QtWidgets.QWidget):
 
     @typing.no_type_check
     @typing.override
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event) -> None:
         """Handle key press events.
 
         Args:
@@ -362,7 +362,7 @@ class Window(QtWidgets.QWidget):
         # todo there is collision as these numbers are used for children too now...
 
     @typing.no_type_check
-    def father(self):
+    def father(self) -> None:
         """Move to the parent node of the current node and perform necessary operations."""
         qq = list(self.current_node.parent_nodes.keys())
         father_node = qq[0]  # by default!
@@ -373,7 +373,7 @@ class Window(QtWidgets.QWidget):
             self.load_image()
 
     @typing.no_type_check
-    def move_to_son(self, key):
+    def move_to_son(self, key) -> None:
         """Move to the specified son node based on the given key.
 
         Args:
@@ -408,7 +408,7 @@ class VisualizeTreeScript(IScript):
     def __init__(
         self,
         base_script: Script,
-    ):
+    ) -> None:
         """Initialize a TreeVisualizer object.
 
         Args:

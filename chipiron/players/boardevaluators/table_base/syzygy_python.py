@@ -45,7 +45,7 @@ class SyzygyChiTable(SyzygyTable[boards.BoardChi]):
 
     table_base: chess.syzygy.Tablebase
 
-    def __init__(self, path_to_table: path):
+    def __init__(self, path_to_table: path) -> None:
         """Initialize the SyzygyTable object.
 
         Args:

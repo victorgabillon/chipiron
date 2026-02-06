@@ -88,7 +88,6 @@ def create_from_state_and_modifications(
     )
 
 
-
 def create_from_board(state: ChessState) -> Representation364:
     """Create a Representation364 object from a board.
 
@@ -110,7 +109,6 @@ def create_from_board(state: ChessState) -> Representation364:
     a(black, white, p)
     b(board, castling_black, castling_white)
     return c(castling_black, castling_white, black, white)
-
 
 
 def e(board: boards.IBoard) -> dict[chess.Square, tuple[int, bool]]:

@@ -207,21 +207,20 @@ class ChipironIntegrationTester:
                         rc, cmd, result.stdout, result.stderr
                     )
                 return result
-            else:
-                # Regular command execution
-                result = subprocess.run(
-                    cmd,
-                    cwd=cwd,
-                    check=check,
-                    capture_output=capture_output,
-                    text=True,
-                    timeout=timeout,
-                )
-                if self.verbose and result.stdout:
-                    chipiron_logger.debug("STDOUT: %s", result.stdout)
-                if result.stderr and self.verbose:
-                    chipiron_logger.debug("STDERR: %s", result.stderr)
-                return result
+            # Regular command execution
+            result = subprocess.run(
+                cmd,
+                cwd=cwd,
+                check=check,
+                capture_output=capture_output,
+                text=True,
+                timeout=timeout,
+            )
+            if self.verbose and result.stdout:
+                chipiron_logger.debug("STDOUT: %s", result.stdout)
+            if result.stderr and self.verbose:
+                chipiron_logger.debug("STDERR: %s", result.stderr)
+            return result
         except subprocess.TimeoutExpired:
             chipiron_logger.error(
                 "Command timed out after %ds: %s", timeout, " ".join(cmd)

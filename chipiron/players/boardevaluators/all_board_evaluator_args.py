@@ -37,7 +37,7 @@ class BasicEvaluationBoardEvaluatorArgs:
     type: Literal["basic_evaluation"] = BoardEvalTypes.BASIC_EVALUATION_EVAL.value
 
 
-type AllBoardEvaluatorArgs = (
+AllBoardEvaluatorArgs = (
     BasicEvaluationBoardEvaluatorArgs
     | NeuralNetBoardEvalArgs
     | StockfishBoardEvalArgs

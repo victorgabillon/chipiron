@@ -7,30 +7,30 @@ from chipiron.players.game_player import GamePlayer
 from chipiron.utils.communication.mailbox import MainMailboxMessage
 from chipiron.utils.queue_protocols import PutQueue
 
-SnapT = TypeVar("SnapT")
+SnapT_contra = TypeVar("SnapT_contra", contravariant=True)
 RuntimeT = TypeVar("RuntimeT")
 BuildArgsT = TypeVar("BuildArgsT")
 BuildArgsT_contra = TypeVar("BuildArgsT_contra", contravariant=True)
 
 
-class BuildGamePlayer(Protocol[SnapT, RuntimeT, BuildArgsT_contra]):
+class BuildGamePlayer(Protocol[SnapT_contra, RuntimeT, BuildArgsT_contra]):
     """Buildgameplayer implementation."""
 
     def __call__(
         self,
         args: BuildArgsT_contra,
         queue_out: PutQueue[MainMailboxMessage],
-    ) -> GamePlayer[SnapT, RuntimeT]:
+    ) -> GamePlayer[SnapT_contra, RuntimeT]:
         """Invoke the callable instance."""
         ...
 
 
 @dataclass(frozen=True)
-class ObserverWiring[SnapT, RuntimeT, BuildArgsT]:
+class ObserverWiring[SnapT_contra, RuntimeT, BuildArgsT]:
     """Game-specific wiring used by the generic observer factory.
 
     This keeps chess/checkers-specific construction code out of the orchestration.
     """
 
-    build_game_player: BuildGamePlayer[SnapT, RuntimeT, BuildArgsT]
+    build_game_player: BuildGamePlayer[SnapT_contra, RuntimeT, BuildArgsT]
     build_args_type: type[BuildArgsT]
