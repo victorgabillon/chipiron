@@ -111,9 +111,6 @@ class StockfishBoardEvaluator:
             board_chi: BoardChi = create_board_chi(
                 fen_with_history=FenPlusHistory(
                     current_fen=board.fen,
-                    # historical_moves=board.move_history_stack,
-                    # historical_boards=board.board_history_stack,  # type: ignore
-                    # note that we do not give here historical_boards, hope this does not create but related to 3 fold repetition computation
                 )
             )
 

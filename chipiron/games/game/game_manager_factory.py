@@ -209,7 +209,6 @@ class GameManagerFactory:
                     player_color=player_color,
                     player_factory_args=player_factory_args,
                     main_thread_mailbox=self.main_thread_mailbox,
-                    # player_progress_collector=player_progress_collector
                 )
                 players.append(generic_player)
 
