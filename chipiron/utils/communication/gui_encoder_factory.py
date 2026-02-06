@@ -7,6 +7,13 @@ from chipiron.environments.types import GameKind
 from chipiron.utils.communication.gui_encoder import GuiEncoder
 
 
+class GuiEncoderError(ValueError):
+    """Raised when a GUI encoder is missing for a game kind."""
+
+    def __init__(self, game_kind: GameKind) -> None:
+        super().__init__(f"No GuiEncoder for game_kind={game_kind!r}")
+
+
 def make_gui_encoder[StateT](
     *,
     game_kind: GameKind,
@@ -18,4 +25,4 @@ def make_gui_encoder[StateT](
         case GameKind.CHESS:
             return cast("GuiEncoder[StateT]", ChessGuiEncoder())
         case _:
-            raise ValueError(f"No GuiEncoder for game_kind={game_kind!r}")
+            raise GuiEncoderError(game_kind)

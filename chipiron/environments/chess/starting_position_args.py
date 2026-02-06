@@ -12,6 +12,52 @@ from chipiron.environments.chess.tags import ChessStartTag
 from chipiron.environments.starting_position import StartingPositionArgs
 
 
+class StartingPositionError(ValueError):
+    """Base error for starting position failures."""
+
+
+class EmptyFenError(StartingPositionError):
+    """Raised when a FEN string is missing."""
+
+    def __init__(self) -> None:
+        super().__init__("Empty fen in FenStartingPositionArgs")
+
+
+class EmptyFileNameError(StartingPositionError):
+    """Raised when a starting position file name is missing."""
+
+    def __init__(self) -> None:
+        super().__init__("Empty file_name in FileStartingPositionArgs")
+
+
+class StartingPositionFileEmptyError(StartingPositionError):
+    """Raised when a starting position file contains no data."""
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(f"Starting position file is empty: {path}")
+
+
+class StartingPositionFileNotFoundError(StartingPositionError):
+    """Raised when a starting position file cannot be located."""
+
+    def __init__(self, file_name: str) -> None:
+        super().__init__(f"Starting position file not found: {file_name}")
+
+
+class InvalidStartingPositionFileError(StartingPositionError):
+    """Raised when a starting position file has invalid contents."""
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(f"Invalid starting position file: {path}")
+
+
+class InvalidBoardRankError(StartingPositionError):
+    """Raised when a board rank cannot be compressed to FEN."""
+
+    def __init__(self, rank: str) -> None:
+        super().__init__(f"Invalid board rank: {rank!r}")
+
+
 class StartingPositionArgsType(StrEnum):
     """Startingpositionargstype implementation."""
 
@@ -29,7 +75,7 @@ class FenStartingPositionArgs(StartingPositionArgs):
     def get_start_tag(self) -> StateTag:
         """Return start tag."""
         if not self.fen:
-            raise ValueError("Empty fen in FenStartingPositionArgs")
+            raise EmptyFenError
         return ChessStartTag(fen=self.fen)
 
 
@@ -45,7 +91,7 @@ class FileStartingPositionArgs(StartingPositionArgs):
     def get_start_tag(self) -> StateTag:
         """Return start tag."""
         if not self.file_name:
-            raise ValueError("Empty file_name in FileStartingPositionArgs")
+            raise EmptyFileNameError
         fen = _load_fen_from_file(self.file_name)
         return ChessStartTag(fen=fen)
 
@@ -60,7 +106,7 @@ def _load_fen_from_file(file_name: str) -> str:
         path = _resolve_starting_board_path(file_name)
     fen = _load_fen_from_path(path)
     if not fen:
-        raise ValueError(f"Starting position file is empty: {path}")
+        raise StartingPositionFileEmptyError(path)
     return fen
 
 
@@ -69,12 +115,10 @@ def _resolve_starting_board_path(file_name: str) -> Path:
     try:
         starting_boards = resources.files("chipiron.data").joinpath("starting_boards")
     except ModuleNotFoundError as exc:
-        raise FileNotFoundError(
-            f"Starting position file not found: {file_name}"
-        ) from exc
+        raise StartingPositionFileNotFoundError(file_name) from exc
     resource_path = starting_boards.joinpath(file_name)
     if not resource_path.is_file():
-        raise FileNotFoundError(f"Starting position file not found: {file_name}")
+        raise StartingPositionFileNotFoundError(file_name)
     with resources.as_file(resource_path) as resolved:
         return resolved
 
@@ -88,7 +132,7 @@ def _load_fen_from_path(path: Path) -> str:
         return contents
     lines = [line.strip() for line in contents.splitlines() if line.strip()]
     if len(lines) < 9:
-        raise ValueError(f"Invalid starting position file: {path}")
+        raise InvalidStartingPositionFileError(path)
     board_lines = lines[:8]
     suffix = " ".join(lines[8:])
     board_fen = "/".join(_compress_rank(line) for line in board_lines)
@@ -107,7 +151,7 @@ def _looks_like_fen(contents: str) -> bool:
 def _compress_rank(rank: str) -> str:
     """Compress a board rank into FEN digit form."""
     if len(rank) != 8:
-        raise ValueError(f"Invalid board rank: {rank!r}")
+        raise InvalidBoardRankError(rank)
     result: list[str] = []
     empty_count = 0
     for char in rank:

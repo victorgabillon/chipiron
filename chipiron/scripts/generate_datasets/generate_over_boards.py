@@ -102,11 +102,10 @@ def process_single_game_for_over_positions(
                 "is_final_position": True,  # Always true since we only check final positions
                 "move_number": moves_processed,
             }
-
-        return None
-
     except ValueError as e:
         chipiron_logger.warning("Error processing game: %s", e)
+        return None
+    else:
         return None
 
 

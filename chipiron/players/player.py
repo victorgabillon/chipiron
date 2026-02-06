@@ -17,6 +17,13 @@ StateSnapT = TypeVar("StateSnapT", contravariant=True)
 RuntimeStateT = TypeVar("RuntimeStateT")
 
 
+class PlayerMoveSelectionError(ValueError):
+    """Raised when a move cannot be selected for a player."""
+
+    def __init__(self) -> None:
+        super().__init__("No legal moves in this position")
+
+
 class GameAdapter(Protocol[StateSnapT, RuntimeStateT]):
     """Game-specific behavior injected into the generic `Player`."""
 
@@ -74,7 +81,7 @@ class Player[StateSnapT, RuntimeStateT]:
 
         n = self.adapter.legal_action_count(runtime_state)
         if n == 0:
-            raise ValueError("No legal moves in this position")
+            raise PlayerMoveSelectionError
 
         # Fast path: if only one legal action, skip selection/search for humans.
         if n == 1 and self.id == "Human":

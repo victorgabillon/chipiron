@@ -17,6 +17,15 @@ from .rep_364_bug import (
 )
 
 
+class RepresentationFactoryError(ValueError):
+    """Raised when a representation factory cannot be created."""
+
+    def __init__(self, representation: InternalTensorRepresentationType) -> None:
+        super().__init__(
+            f"trying to create {representation} in file {__name__}"
+        )
+
+
 def create_board_representation_factory(
     internal_tensor_representation_type: InternalTensorRepresentationType,
 ) -> RepresentationFactory[ChessState, torch.Tensor, BoardModificationP] | None:
@@ -53,8 +62,6 @@ def create_board_representation_factory(
         case InternalTensorRepresentationType.NO:
             board_representation_factory = None
         case _:
-            raise ValueError(
-                f"trying to create {internal_tensor_representation_type} in file {__name__}"
-            )
+            raise RepresentationFactoryError(internal_tensor_representation_type)
 
     return board_representation_factory

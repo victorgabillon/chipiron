@@ -29,6 +29,26 @@ from chipiron.players.oracles import TerminalOracle, ValueOracle
 from .board_evaluator import StateEvaluator
 
 
+class MasterBoardEvaluatorError(ValueError):
+    """Base error for master board evaluator issues."""
+
+
+class UnexpectedGameResultError(MasterBoardEvaluatorError):
+    """Raised when a game result string is not recognized."""
+
+    def __init__(self, result: str) -> None:
+        super().__init__(f"value {result} not expected in {__name__}")
+
+
+class UnsupportedBoardEvaluatorArgsError(MasterBoardEvaluatorError):
+    """Raised when board evaluator args are unsupported."""
+
+    def __init__(self, args_type: str) -> None:
+        super().__init__(
+            f"unknown type of message received by master board evaluator {args_type} in {__name__}"
+        )
+
+
 @dataclass
 class MasterBoardEvaluatorArgs:
     """Represents the arguments for a master board evaluator."""
@@ -139,8 +159,8 @@ class MasterBoardEvaluator:
                 case "1/2-1/2":
                     how_over_ = HowOver.DRAW
                     who_is_winner_ = Winner.NO_KNOWN_WINNER
-                case other:
-                    raise ValueError(f"value {other} not expected in {__name__}")
+                case _:
+                    raise UnexpectedGameResultError(value_as_string)
 
             over_event = OverEvent(
                 how_over=how_over_,
@@ -239,9 +259,7 @@ def create_master_state_evaluator_from_args(
                 )
             )
         case _:
-            raise ValueError(
-                f"unknown type of message received by master board evaluator {args.type} in {__name__}"
-            )
+            raise UnsupportedBoardEvaluatorArgsError(args.type)
 
     return create_master_state_evaluator(
         board_evaluator=board_evaluator,

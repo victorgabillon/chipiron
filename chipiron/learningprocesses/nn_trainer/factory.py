@@ -45,6 +45,22 @@ from chipiron.utils.small_tools import mkdir_if_not_existing
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
+
+class NNTrainerConfigError(ValueError):
+    """Raised when NN trainer configuration is inconsistent."""
+
+    def __init__(
+        self,
+        reuse_existing_model: bool,
+        nn_parameters_file_if_reusing_existing_one: path | None,
+    ) -> None:
+        msg = (
+            "Problem because you are asking for a reuse of existing model without specifying a"
+            f" param file as we have: reuse_existing_model {reuse_existing_model}"
+            f" nn_param_file_if_not_reusing_existing_one {nn_parameters_file_if_reusing_existing_one}"
+        )
+        super().__init__(msg)
+
 SerializableType = (
     str
     | int
@@ -123,10 +139,8 @@ class NNTrainerArgs:
             self.reuse_existing_model
             and self.nn_parameters_file_if_reusing_existing_one is None
         ):
-            raise Exception(
-                "Problem because you are asking for a reuse of existing model without specifying a"
-                f" param file as we have: reuse_existing_model {self.reuse_existing_model}"
-                f" nn_param_file_if_not_reusing_existing_one {self.nn_parameters_file_if_reusing_existing_one}"
+            raise NNTrainerConfigError(
+                self.reuse_existing_model, self.nn_parameters_file_if_reusing_existing_one
             )
 
 

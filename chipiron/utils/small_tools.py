@@ -18,6 +18,24 @@ from chipiron.utils.logger import chipiron_logger
 path = typing.Annotated[str | os.PathLike[str], "path"]
 
 
+class PackageResourceError(FileNotFoundError):
+    """Base error for package resource resolution failures."""
+
+
+class PackageResourceNotFoundError(PackageResourceError):
+    """Raised when a package resource cannot be located."""
+
+    def __init__(self, relative_path: str) -> None:
+        super().__init__(f"Resource not found: {relative_path} in package 'chipiron'")
+
+
+class PackageNotFoundError(ImportError):
+    """Raised when a package cannot be found."""
+
+    def __init__(self, package_name: str) -> None:
+        super().__init__(f"Cannot find package '{package_name}'")
+
+
 def mkdir_if_not_existing(folder_path: path) -> None:
     """Create a directory at the specified path.
 
@@ -137,9 +155,7 @@ def resolve_package_path(path_to_file: str | Path) -> str:
         resource = files("chipiron").joinpath(relative_path)
 
         if not resource.is_file() and not resource.is_dir():
-            raise FileNotFoundError(
-                f"Resource not found: {relative_path} in package 'chipiron'"
-            )
+            raise PackageResourceNotFoundError(relative_path)
 
         return str(resource)  # You can also use `.as_posix()` if you need POSIX format
     return str(path_to_file)
@@ -160,7 +176,7 @@ def get_package_root_path(package_name: str) -> str:
     """
     spec: importlib.machinery.ModuleSpec | None = importlib.util.find_spec(package_name)
     if spec is None or spec.origin is None:
-        raise ImportError(f"Cannot find package '{package_name}'")
+        raise PackageNotFoundError(package_name)
 
     # Get the package directory, not just the __init__.py file
     return os.path.dirname(spec.origin)
