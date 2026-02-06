@@ -74,7 +74,7 @@ class PlayerProcess[SnapT, RuntimeT, BuildArgsT](multiprocessing.Process):
         we also try to send a poison-pill (`None`) into the input queue.
         """
         self._stop_event.set()
-        with contextlib.suppress(Exception):
+        with contextlib.suppress(OSError, ValueError, RuntimeError):
             # Best-effort: if the queue is already closed or not writable, termination
             # is still handled by external process control.
             self.queue_in.put(None)
@@ -87,16 +87,14 @@ class PlayerProcess[SnapT, RuntimeT, BuildArgsT](multiprocessing.Process):
         """
         self.stop()
 
-        with contextlib.suppress(Exception):
+        with contextlib.suppress(OSError, ValueError, RuntimeError):
             # If join isn't possible for some reason, fall back to terminate.
             self.join(timeout=1.0)
 
         if self.is_alive():
-            try:
+            with contextlib.suppress(OSError, ValueError, RuntimeError):
                 self.terminate()
                 self.join(timeout=1.0)
-            except Exception:
-                pass
 
     def run(self) -> None:
         """Run the main loop.

@@ -10,7 +10,7 @@ from coral.neural_networks.neural_net_board_eval_args import NeuralNetBoardEvalA
 from valanga import Color
 from valanga.over_event import HowOver, OverEvent, Winner
 
-import chipiron.players.boardevaluators.basic_evaluation as basic_evaluation
+from chipiron.players.boardevaluators import basic_evaluation
 from chipiron.environments.chess.types import ChessState
 from chipiron.players.boardevaluators.all_board_evaluator_args import (
     AllBoardEvaluatorArgs,
