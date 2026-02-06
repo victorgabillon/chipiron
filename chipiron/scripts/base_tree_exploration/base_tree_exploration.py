@@ -67,7 +67,6 @@ class BaseTreeExplorationScript:
 
         player_one_args: ChessPlayerArgs = PlayerConfigTag.UNIFORM.get_players_args()
 
-        # player_one_args.main_move_selector.stopping_criterion.tree_branch_limit = 1000000
         random_generator = random.Random()
         random_generator.seed(self.args.implementation_args.use_rust_boards)
         player: Player[FenPlusHistory, ChessState] = create_chess_player(

@@ -58,7 +58,6 @@ def create_from_state_and_modifications(
             tensor_white[index] = 0
 
     for appearance in state_modifications.appearances:
-        # print('app',appearance)
         piece_type = appearance.piece
         piece_color = appearance.color
         square = appearance.square
