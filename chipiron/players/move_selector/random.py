@@ -1,5 +1,4 @@
-"""
-This module provides a random move selector for a chess game.
+"""Document the module provides a random move selector for a chess game.
 
 The Random class in this module implements a move selector that randomly selects a legal move from the given chess board.
 It uses a random number generator to make the selection.
@@ -7,7 +6,6 @@ It uses a random number generator to make the selection.
 Example usage:
     random_selector = create_random(random_generator)
     move = random_selector.select_move(board, move_seed)
-
 """
 
 import random
@@ -28,8 +26,7 @@ from valanga.policy import NotifyProgressCallable
 
 @dataclass
 class Random:
-    """
-    Random move selector class.
+    """Random move selector class.
 
     This class implements a move selector that randomly selects a legal move from the given chess board.
 
@@ -48,8 +45,7 @@ class Random:
         seed: Seed,
         notify_progress: NotifyProgressCallable | None = None,
     ) -> Recommendation:
-        """
-        Selects a random move from the given chess board.
+        """Select a random move from the given chess board.
 
         Args:
             board (boards.IBoard): The chess board.
@@ -69,8 +65,7 @@ class Random:
 
 
 def create_random(random_generator: random.Random) -> Random:
-    """
-    Creates a random move selector.
+    """Create a random move selector.
 
     Args:
         random_generator (random.Random): The random number generator to use.

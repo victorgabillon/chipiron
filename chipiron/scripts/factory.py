@@ -1,6 +1,4 @@
-"""
-factory for scripts module
-"""
+"""factory for scripts module."""
 
 import logging
 from typing import Any
@@ -25,8 +23,7 @@ def create_script(
     should_parse_command_line_arguments: bool = True,
     parsley_logging_level: int = logging.WARNING,
 ) -> IScript:
-    """
-    Creates the corresponding script
+    """Create the corresponding script.
 
     Args:
         should_parse_command_line_arguments: whether the script should parse the command line. Default is True.
@@ -43,7 +40,6 @@ def create_script(
         object:
 
     """
-
     # retrieve the name of the class of args associated to this script
     script: type[IScript] = get_script_type_from_script_class_name(
         script_type=script_type

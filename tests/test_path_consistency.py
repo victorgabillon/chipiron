@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""
-Test that all path configurations are consistent across the project.
+"""Test that all path configurations are consistent across the project.
+
 This test ensures that Python, Makefile, and Dockerfile use the same paths.
 """
 
@@ -29,13 +29,12 @@ def load_env_file():
     env_vars = {}
     env_file = project_root / ".env"
     if env_file.exists():
-        with open(env_file, "r", encoding="utf-8") as f:
+        with open(env_file, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
-                if line and not line.startswith("#"):
-                    if "=" in line:
-                        key, value = line.split("=", 1)
-                        env_vars[key] = value
+                if line and not line.startswith("#") and "=" in line:
+                    key, value = line.split("=", 1)
+                    env_vars[key] = value
     return env_vars
 
 
@@ -114,7 +113,7 @@ class TestPathConsistency:
         makefile_path = PROJECT_ROOT / "Makefile"
         assert makefile_path.exists(), "Makefile should exist"
 
-        with open(makefile_path, "r", encoding="utf-8") as f:
+        with open(makefile_path, encoding="utf-8") as f:
             makefile_content = f.read()
 
         # Check that Makefile includes .env
@@ -138,7 +137,7 @@ class TestPathConsistency:
         dockerfile_path = PROJECT_ROOT / "Dockerfile"
         assert dockerfile_path.exists(), "Dockerfile should exist"
 
-        with open(dockerfile_path, "r", encoding="utf-8") as f:
+        with open(dockerfile_path, encoding="utf-8") as f:
             dockerfile_content = f.read()
 
         _ = load_env_file()

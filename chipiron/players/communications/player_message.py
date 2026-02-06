@@ -1,7 +1,6 @@
 """Message payloads exchanged between player processes and the manager."""
 
 from dataclasses import dataclass
-from typing import TypeAlias
 
 from valanga import Color, StateEvaluation, StateTag
 from valanga.game import BranchName, Seed
@@ -58,7 +57,7 @@ class EvProgress:
     progress_percent: int | None
 
 
-PlayerEventPayload: TypeAlias = EvMove | EvProgress
+type PlayerEventPayload = EvMove | EvProgress
 
 
 @dataclass(frozen=True, slots=True)

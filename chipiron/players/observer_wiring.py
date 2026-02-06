@@ -1,6 +1,7 @@
 """Module for observer wiring."""
+
 from dataclasses import dataclass
-from typing import Generic, Protocol, TypeVar
+from typing import Protocol, TypeVar
 
 from chipiron.players.game_player import GamePlayer
 from chipiron.utils.communication.mailbox import MainMailboxMessage
@@ -14,6 +15,7 @@ BuildArgsT_contra = TypeVar("BuildArgsT_contra", contravariant=True)
 
 class BuildGamePlayer(Protocol[SnapT, RuntimeT, BuildArgsT_contra]):
     """Buildgameplayer implementation."""
+
     def __call__(
         self,
         args: BuildArgsT_contra,
@@ -21,8 +23,10 @@ class BuildGamePlayer(Protocol[SnapT, RuntimeT, BuildArgsT_contra]):
     ) -> GamePlayer[SnapT, RuntimeT]:
         """Invoke the callable instance."""
         ...
+
+
 @dataclass(frozen=True)
-class ObserverWiring(Generic[SnapT, RuntimeT, BuildArgsT]):
+class ObserverWiring[SnapT, RuntimeT, BuildArgsT]:
     """Game-specific wiring used by the generic observer factory.
 
     This keeps chess/checkers-specific construction code out of the orchestration.

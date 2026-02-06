@@ -1,6 +1,4 @@
-"""
-This module defines the `League` class, which represents a league of players in a game.
-"""
+"""Document the module defines the `League` class, which represents a league of players in a game."""
 
 import os
 import random
@@ -30,8 +28,7 @@ if TYPE_CHECKING:
 @no_type_check
 @dataclass(slots=True)
 class League:
-    """
-    Represents a league of players in a game.
+    """Represents a league of players in a game.
 
     Attributes:
         folder_league (str): The folder path where the league is located.
@@ -43,6 +40,7 @@ class League:
         K (int): The K-factor used in the Elo rating system.
         ELO_HISTORY_LENGTH (int): The length of Elo rating history to keep for each player.
         games_already_played (int): The number of games already played in the league.
+
     """
 
     folder_league: str
@@ -61,8 +59,7 @@ class League:
     games_already_played: int = 0
 
     def __post_init__(self) -> None:
-        """
-        Initializes the league object.
+        """Initialize the league object.
 
         This method is called after the object is created and initializes the necessary attributes.
         It also creates the required folders for logging and storing game data.
@@ -75,8 +72,7 @@ class League:
         mkdir_if_not_existing(path_logs_games_folder)
 
     def check_for_players(self) -> None:
-        """
-        Checks for new players joining the league.
+        """Check for new players joining the league.
 
         This method checks if there are any new player files in the 'new_players' folder and adds them to the league.
         """
@@ -89,14 +85,14 @@ class League:
                     self.new_player_joins(path_file)
 
     def new_player_joins(self, file_player: str) -> None:
-        """
-        Adds a new player to the league.
+        """Add a new player to the league.
 
         Args:
             file_player (str | os.PathLike[str]): The path to the player file.
 
         This method adds a new player to the league by reading the player file, assigning a unique ID to the player,
         and updating the necessary attributes.
+
         """
         print("adding player:", file_player)
 
@@ -126,8 +122,7 @@ class League:
 
     @no_type_check
     def run(self) -> None:
-        """
-        Runs a game in the league.
+        """Run a game in the league.
 
         This method selects two players from the league, plays a game between them, updates the Elo ratings,
         and saves the results.
@@ -195,8 +190,7 @@ class League:
 
     @no_type_check
     def update_elo(self, match_results: MatchResults, path_logs_file: path) -> None:
-        """
-        Updates the Elo ratings of the players based on the match results.
+        """Update the Elo ratings of the players based on the match results.
 
         Args:
             match_results (MatchResults): The results of the match.
@@ -204,6 +198,7 @@ class League:
 
         This method calculates the Elo rating changes for the players based on the match results and updates their ratings.
         It also logs the changes in the log file.
+
         """
         # coded for one single game!!
         player_one_name_id = match_results.player_one_name_id
@@ -212,17 +207,17 @@ class League:
         player_two_name_id = match_results.player_two_name_id
         elo_player_two: float = cast("float", self.players_elo[player_two_name_id][0])
         power_player_two = 10 ** (elo_player_two / 400)
-        Eone = power_player_one / (power_player_one + power_player_two)
-        Etwo = power_player_two / (power_player_one + power_player_two)
+        e_one = power_player_one / (power_player_one + power_player_two)
+        e_two = power_player_two / (power_player_one + power_player_two)
 
-        Perf_one = match_results.get_player_one_wins() + match_results.get_draws() / 2.0
-        Perf_two = match_results.get_player_two_wins() + match_results.get_draws() / 2.0
+        perf_one = match_results.get_player_one_wins() + match_results.get_draws() / 2.0
+        perf_two = match_results.get_player_two_wins() + match_results.get_draws() / 2.0
 
         print(elo_player_one, cast("float", self.players_elo[player_one_name_id][0]))
         old_elo_player_one = elo_player_one
         old_elo_player_two = elo_player_two
-        increment_one = self.K * (Perf_one - Eone)
-        increment_two = self.K * (Perf_two - Etwo)
+        increment_one = self.K * (perf_one - e_one)
+        increment_two = self.K * (perf_two - e_two)
         new_elo_one = old_elo_player_one + increment_one
         new_elo_two = old_elo_player_two + increment_two
         self.players_elo[player_one_name_id].appendleft(new_elo_one)
@@ -246,8 +241,7 @@ class League:
 
     @no_type_check
     def update_elo_graph(self) -> None:
-        """
-        Updates the Elo rating graph.
+        """Update the Elo rating graph.
 
         This method updates the Elo rating graph by plotting the Elo ratings of all players in the league.
         """
@@ -284,13 +278,13 @@ class League:
         fig.write_image(self.folder_league + "/elo.plot.svg", format="svg")
 
     def select_two_players(self) -> tuple[AnyPlayerArgs, AnyPlayerArgs]:
-        """
-        Selects two players from the league.
+        """Select two players from the league.
 
         Returns:
             tuple[players.PlayerArgs, players.PlayerArgs]: A tuple containing the arguments of the two selected players.
 
         This method randomly selects two players from the league to participate in a game.
+
         """
         if len(self.players_args) < 2:
             raise ValueError(
@@ -301,16 +295,14 @@ class League:
         return picked[0], picked[1]
 
     def save(self) -> None:
-        """
-        Saves the league.
+        """Save the league.
 
         This method saves the league by serializing its state to a file.
         """
         pass
 
     def print_info(self) -> None:
-        """
-        Prints information about the league.
+        """Print information about the league.
 
         This method prints information about the league, such as the players and their Elo ratings.
         """

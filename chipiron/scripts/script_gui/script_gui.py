@@ -1,6 +1,4 @@
-"""
-This module contains a GUI script for the chipiron application.
-"""
+"""Document the module contains a GUI script for the chipiron application."""
 
 import tkinter as tk
 from typing import Any
@@ -9,14 +7,14 @@ from chipiron import scripts
 
 
 def destroy(root: tk.Tk) -> bool:
-    """
-    Destroy the root window.
+    """Destroy the root window.
 
     Args:
         root: The root window to be destroyed.
 
     Returns:
         bool: True if the root window is destroyed successfully.
+
     """
     root.destroy()
     return True
@@ -26,11 +24,11 @@ def destroy(root: tk.Tk) -> bool:
 
 
 def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
-    """
-    Run the chipiron GUI script.
+    """Run the chipiron GUI script.
 
     Returns:
         tuple[scripts.ScriptType, dict[str, Any]]: A tuple containing the script type and the GUI arguments.
+
     """
     root = tk.Tk()
     # place a label on the root window
@@ -199,8 +197,7 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
 def play_against_chipiron(
     output: tk.Tk, strength: tk.StringVar, color: tk.StringVar, chipi_algo: tk.StringVar
 ) -> bool:
-    """
-    Set the output dictionary to indicate playing against chipiron.
+    """Set the output dictionary to indicate playing against chipiron.
 
     Args:
         output: The output dictionary to be modified.
@@ -210,6 +207,7 @@ def play_against_chipiron(
 
     Returns:
         bool: True if the output dictionary is modified successfully.
+
     """
     output["type"] = "play_against_chipiron"
     output["strength"] = int(strength.get())
@@ -219,28 +217,28 @@ def play_against_chipiron(
 
 
 def watch_a_game(output: dict[str, Any]) -> bool:
-    """
-    Set the output dictionary to indicate watching a game.
+    """Set the output dictionary to indicate watching a game.
 
     Args:
         output: The output dictionary to be modified.
 
     Returns:
         bool: True if the output dictionary is modified successfully.
+
     """
     output["type"] = "watch_a_game"
     return True
 
 
 def visualize_a_tree(output: dict[str, Any]) -> bool:
-    """
-    Set the output dictionary to indicate visualizing a tree.
+    """Set the output dictionary to indicate visualizing a tree.
 
     Args:
         output: The output dictionary to be modified.
 
     Returns:
         bool: True if the output dictionary is modified successfully.
+
     """
     output["type"] = "tree_visualization"
     return True

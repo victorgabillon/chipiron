@@ -1,13 +1,11 @@
-"""
-Module to create and save neural network trainers and their parameters
-"""
+"""Module to create and save neural network trainers and their parameters."""
 
 import os.path
 import pickle
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Iterable, List, Union, cast, no_type_check
+from typing import TYPE_CHECKING, Any, cast, no_type_check
 
 import torch
 import torch.optim as optim
@@ -36,7 +34,7 @@ from coral.neural_networks.output_converters.model_output_type import (
 
 from chipiron.environments.types import GameKind
 from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
-from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
+from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
     ModelInputRepresentationType,
 )
 from chipiron.utils import path
@@ -44,22 +42,33 @@ from chipiron.utils.dataclass import custom_asdict_factory
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.small_tools import mkdir_if_not_existing
 
-SerializableType = Union[
-    str, int, float, bool, None, Dict[str, Any], List[Any], set[Any], frozenset[Any]
-]
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+SerializableType = (
+    str
+    | int
+    | float
+    | bool
+    | None
+    | dict[str, Any]
+    | list[Any]
+    | set[Any]
+    | frozenset[Any]
+)
 
 
 @dataclass(frozen=True, slots=True)
 class GameInputArgs:
     """Gameinputargs implementation."""
+
     game_kind: GameKind
     representation: ModelInputRepresentationType
 
 
 @dataclass
 class NNTrainerArgs:
-    """
-    Arguments for the NNTrainer class.
+    """Arguments for the NNTrainer class.
 
     Attributes:
         reuse_existing_trainer (bool): Whether to reuse an existing trainer.
@@ -68,6 +77,7 @@ class NNTrainerArgs:
         scheduler_step_size (int): The step size for the scheduler.
         scheduler_gamma (float): The gamma value for the scheduler.
         saving_intermediate_copy (bool): Whether to save intermediate copies.
+
     """
 
     neural_network_architecture_args: NeuralNetArchitectureArgs = field(
@@ -108,19 +118,20 @@ class NNTrainerArgs:
     epochs_number: int = 100
 
     def __post_init__(self) -> None:
-        """  post init  ."""
-        if self.reuse_existing_model:
-            if self.nn_parameters_file_if_reusing_existing_one is None:
-                raise Exception(
-                    "Problem because you are asking for a reuse of existing model without specifying a"
-                    f" param file as we have: reuse_existing_model {self.reuse_existing_model}"
-                    f" nn_param_file_if_not_reusing_existing_one {self.nn_parameters_file_if_reusing_existing_one}"
-                )
+        """Run post-init."""
+        if (
+            self.reuse_existing_model
+            and self.nn_parameters_file_if_reusing_existing_one is None
+        ):
+            raise Exception(
+                "Problem because you are asking for a reuse of existing model without specifying a"
+                f" param file as we have: reuse_existing_model {self.reuse_existing_model}"
+                f" nn_param_file_if_not_reusing_existing_one {self.nn_parameters_file_if_reusing_existing_one}"
+            )
 
 
 def get_optimizer_file_path_from(folder_path: path) -> str:
-    """
-    Returns the file path for the optimizer file in the given folder path.
+    """Return the file path for the optimizer file in the given folder path.
 
     Args:
         folder_path (str): The path to the folder containing the optimizer file.
@@ -141,20 +152,21 @@ def get_scheduler_file_path_from(folder_path: path) -> str:
 
     Returns:
         str: The file path of the scheduler file.
+
     """
     file_path: str = os.path.join(folder_path, "scheduler.pi")
     return file_path
 
 
 def get_folder_training_copies_path_from(folder_path: path) -> str:
-    """
-    Returns the path to the 'training_copies' folder within the given folder path.
+    """Return the path to the 'training_copies' folder within the given folder path.
 
-    Parameters:
+    Args:
         folder_path (str): The path to the folder.
 
     Returns:
         str: The path to the 'training_copies' folder.
+
     """
     return os.path.join(folder_path, "training_copies")
 
@@ -162,8 +174,7 @@ def get_folder_training_copies_path_from(folder_path: path) -> str:
 def create_nn_trainer(
     args: NNTrainerArgs, nn: ChiNN, saving_folder: path
 ) -> NNPytorchTrainer:
-    """
-    Creates an instance of NNPytorchTrainer based on the provided arguments and neural network.
+    """Create an instance of NNPytorchTrainer based on the provided arguments and neural network.
 
     Args:
         args (NNTrainerArgs): The arguments for the NNTrainer.
@@ -173,7 +184,6 @@ def create_nn_trainer(
         NNPytorchTrainer: An instance of NNPytorchTrainer.
 
     """
-
     optimizer: torch.optim.Optimizer
     scheduler: torch.optim.lr_scheduler.LRScheduler
     if args.reuse_existing_trainer:
@@ -207,8 +217,8 @@ def create_nn_trainer(
 
 @no_type_check
 def serialize_for_yaml(obj: Any) -> SerializableType:
-    """
-    Recursively converts Enums and other non-serializable objects
+    """Recursively converts Enums and other non-serializable objects.
+
     into basic types for safe YAML dumping.
     """
     # Handle None and primitives
@@ -221,8 +231,8 @@ def serialize_for_yaml(obj: Any) -> SerializableType:
 
     # Handle dictionaries
     if isinstance(obj, dict):
-        dict_obj = cast("Dict[Any, Any]", obj)
-        dict_result: Dict[str, SerializableType] = {}
+        dict_obj = cast("dict[Any, Any]", obj)
+        dict_result: dict[str, SerializableType] = {}
         for key, value in dict_obj.items():
             str_key: str = str(key)
             serialized_value: SerializableType = serialize_for_yaml(value)
@@ -256,11 +266,12 @@ def serialize_for_yaml(obj: Any) -> SerializableType:
 def safe_nn_architecture_save(
     nn_architecture_args: NeuralNetArchitectureArgs, nn_param_folder_name: path
 ) -> None:
-    """
-    Save the architecture of a neural network to a file.
+    """Save the architecture of a neural network to a file.
+
     Args:
         nn_architecture_args (NeuralNetArchitectureArgs): The architecture arguments of the neural network.
         nn_param_folder_name (path): The folder path where the architecture file will be saved.
+
     """
     path_to_param_file = get_nn_architecture_file_path_from(nn_param_folder_name)
     try:
@@ -284,12 +295,12 @@ def safe_nn_param_save(
     file_name: str | None = None,
     training_copy: bool = False,
 ) -> None:
-    """
-    Save the parameters of a neural network to a file.
+    """Save the parameters of a neural network to a file.
 
     Args:
         nn (ChiNN): The neural network to save.
         training_copy (bool, optional): Whether to save a training copy of the parameters. Defaults to False.
+
     """
     folder_path = nn_param_folder_name
     folder_path_training_copies = get_folder_training_copies_path_from(folder_path)
@@ -309,26 +320,26 @@ def safe_nn_param_save(
         path_to_param_file = nn_file_path_pt
     try:
         chipiron_logger.info(f"saving to file: {path_to_param_file}")
-        with open(path_to_param_file, "wb") as fileNNW:
-            torch.save(nn.state_dict(), fileNNW)
+        with open(path_to_param_file, "wb") as file_nnw:
+            torch.save(nn.state_dict(), file_nnw)
             nn.log_readable_model_weights_to_file(file_path=file_name_yaml)
-        with open(path_to_param_file + "_save", "wb") as fileNNW:
-            torch.save(nn.state_dict(), fileNNW)
+        with open(path_to_param_file + "_save", "wb") as file_nnw:
+            torch.save(nn.state_dict(), file_nnw)
     except KeyboardInterrupt:
-        with open(path_to_param_file + "_save", "wb") as fileNNW:
-            torch.save(nn.state_dict(), fileNNW)
+        with open(path_to_param_file + "_save", "wb") as file_nnw:
+            torch.save(nn.state_dict(), file_nnw)
         exit(-1)
 
 
 def safe_nn_trainer_save(nn_trainer: NNPytorchTrainer, nn_folder_path: path) -> None:
-    """
-    Safely saves the optimizer and scheduler of the given NNPytorchTrainer object to files.
+    """Safely saves the optimizer and scheduler of the given NNPytorchTrainer object to files.
 
     Args:
         nn_trainer (NNPytorchTrainer): The NNPytorchTrainer object containing the optimizer and scheduler to be saved.
 
     Returns:
         None
+
     """
     file_optimizer_path = get_optimizer_file_path_from(nn_folder_path)
     file_scheduler_path = get_scheduler_file_path_from(nn_folder_path)

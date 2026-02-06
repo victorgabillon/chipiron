@@ -1,6 +1,4 @@
-"""
-Default arguments for the script.
-"""
+"""Default arguments for the script."""
 
 from dataclasses import dataclass
 from typing import Protocol

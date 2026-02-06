@@ -1,4 +1,5 @@
 """Module for chess adapter."""
+
 from typing import TYPE_CHECKING
 
 from atomheart.board import BoardFactory

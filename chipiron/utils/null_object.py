@@ -1,15 +1,11 @@
-"""
-Module that contains the NullObject class.
-
-
-"""
+"""Module that contains the NullObject class."""
 
 from typing import Any, Self
 
 
 class NullObject:
-    """
-    The NullObject class is a null object implementation in Python. Null objects are objects that always
+    """The NullObject class is a null object implementation in Python. Null objects are objects that always.
+
      and reliably "do nothing." They are often used as placeholders or default values when an actual object
       is not available or needed.
 

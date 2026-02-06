@@ -1,4 +1,5 @@
 """Module for rep 364 bug."""
+
 from typing import Protocol, cast
 
 import atomheart.board as boards
@@ -25,8 +26,7 @@ def create_from_state_and_modifications(
     state_modifications: boards.BoardModificationP,
     previous_state_representation: ContentRepresentation[ChessState, torch.Tensor],
 ) -> Representation364:
-    """
-    Converts the node, board modifications, and parent node into a tensor representation.
+    """Convert the node, board modifications, and parent node into a tensor representation.
 
     Args:
         state (ChessState): The current state in the tree.
@@ -35,8 +35,8 @@ def create_from_state_and_modifications(
 
     Returns:
         Representation364: The tensor representation of the node, board modifications, and parent node.
-    """
 
+    """
     prev364 = cast("_Rep364Like", previous_state_representation)
 
     tensor_white = torch.empty_like(prev364.tensor_white).copy_(prev364.tensor_white)
@@ -80,27 +80,25 @@ def create_from_state_and_modifications(
     tensor_castling_black[0] = bool(board.castling_rights & chess.BB_A8)
     tensor_castling_black[1] = bool(board.castling_rights & chess.BB_H8)
 
-    representation = Representation364(
+    return Representation364(
         tensor_white=tensor_white,
         tensor_black=tensor_black,
         tensor_castling_black=tensor_castling_black,
         tensor_castling_white=tensor_castling_white,
     )
 
-    return representation
 
 
 def create_from_board(state: ChessState) -> Representation364:
-    """
-    Create a Representation364 object from a board.
+    """Create a Representation364 object from a board.
 
     Args:
         state (ChessState): The chess state.
 
     Returns:
         Representation364: The created Representation364 object.
-    """
 
+    """
     white: torch.Tensor
     black: torch.Tensor
     castling_white: torch.Tensor
@@ -111,9 +109,8 @@ def create_from_board(state: ChessState) -> Representation364:
     p: dict[chess.Square, tuple[int, bool]] = e(board)
     a(black, white, p)
     b(board, castling_black, castling_white)
-    representation = c(castling_black, castling_white, black, white)
+    return c(castling_black, castling_white, black, white)
 
-    return representation
 
 
 def e(board: boards.IBoard) -> dict[chess.Square, tuple[int, bool]]:
@@ -162,7 +159,7 @@ def a(
     white: torch.Tensor,
     piece_map: dict[chess.Square, tuple[int, bool]],
 ) -> None:
-    """A."""
+    """Populate piece tensors."""
     square: chess.Square
     piece: tuple[int, bool]
     for square, piece in piece_map.items():

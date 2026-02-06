@@ -1,6 +1,4 @@
-"""
-This module contains functions for creating match managers in the Chipiron game framework.
-"""
+"""Document the module contains functions for creating match managers in the Chipiron game framework."""
 
 import multiprocessing
 import uuid
@@ -53,8 +51,7 @@ def create_match_manager(
     output_folder_path: path | None = None,
     gui: bool = False,
 ) -> MatchManager:
-    """
-    Create a match manager for running matches between two players.
+    """Create a match manager for running matches between two players.
 
     Args:
         implementation_args: (ImplementationArgs) the implementation args
@@ -68,6 +65,7 @@ def create_match_manager(
 
     Returns:
         MatchManager: The created match manager.
+
     """
     main_thread_mailbox: queue.Queue[MainMailboxMessage] = (
         multiprocessing.Manager().Queue()
@@ -140,7 +138,7 @@ def create_match_manager(
         args_game=args_game,
     )
 
-    match_manager = MatchManager(
+    return MatchManager(
         player_one_id=player_one_name,
         player_two_id=player_two_name,
         game_manager_factory=game_manager_factory,
@@ -148,7 +146,6 @@ def create_match_manager(
         match_results_factory=match_results_factory,
         output_folder_path=output_folder_path,
     )
-    return match_manager
 
 
 def create_match_manager_from_args(
@@ -157,8 +154,7 @@ def create_match_manager_from_args(
     implementation_args: ImplementationArgs,
     gui: bool = False,
 ) -> MatchManager:
-    """
-    Create a match manager from the given arguments.
+    """Create a match manager from the given arguments.
 
     Args:
         implementation_args(ImplementationArgs): The implementation args
@@ -168,6 +164,7 @@ def create_match_manager_from_args(
 
     Returns:
         MatchManager: The created match manager.
+
     """
     match_args = resolve_extended_object(extended_obj=match_args, base_cls=MatchArgs)
 
@@ -192,7 +189,7 @@ def create_match_manager_from_args(
     # taking care of random
     ch.set_seeds(seed=base_script_args.seed)
 
-    match_manager = create_match_manager(
+    return create_match_manager(
         args_match=match_args.match_setting,
         args_player_one=player_one_args,
         args_player_two=player_two_args,
@@ -204,4 +201,3 @@ def create_match_manager_from_args(
         implementation_args=implementation_args,
     )
 
-    return match_manager

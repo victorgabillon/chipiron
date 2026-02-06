@@ -1,4 +1,5 @@
 """Module for environment."""
+
 from typing import TYPE_CHECKING
 
 from atomheart import ValangaChessState

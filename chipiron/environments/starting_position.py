@@ -1,4 +1,5 @@
 """Module for starting position."""
+
 from typing import Protocol
 
 from valanga import StateTag

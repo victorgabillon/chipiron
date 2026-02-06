@@ -1,5 +1,4 @@
-"""
-This module provides functionality for creating and using table bases for board evaluation.
+"""Document the module provides functionality for creating and using table bases for board evaluation.
 
 Table bases are precomputed endgame databases that store optimal moves for every possible position in a specific
  endgame scenario. These databases can be used to improve the performance of board evaluation algorithms

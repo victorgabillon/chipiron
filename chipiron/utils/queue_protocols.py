@@ -1,4 +1,5 @@
 """Module for queue protocols."""
+
 from typing import Protocol, TypeVar
 
 T_co = TypeVar("T_co", covariant=True)
@@ -22,9 +23,7 @@ class PutQueue(Protocol[T_contra]):
 class PutGetQueue(Protocol[T]):
     """Protocol for queues that support put and get operations."""
 
-    def put(
-        self, item: T, block: bool = True, timeout: float | None = None
-    ) -> None:
+    def put(self, item: T, block: bool = True, timeout: float | None = None) -> None:
         """Put an item into the queue."""
         ...
 

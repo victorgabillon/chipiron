@@ -1,4 +1,5 @@
 """Module for test replay game."""
+
 import logging
 import time
 

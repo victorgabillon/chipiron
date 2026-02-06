@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=80.9.0"]
+requires = ["setuptools>=80.10.2"]
 build-backend = "setuptools.build_meta"
 
 
@@ -31,10 +31,10 @@ dependencies = [
     "gdown",
     "zstandard",
     "rich",
-    "valanga>=0.1.13",
-    "atomheart>=0.1.6  @ file:/home/pompote/oldata/victor/atomheart/",
-    "algorhino-coral>=0.1.8",
-    "algorhino-anemone>=0.1.10 @ file:/home/pompote/oldata/victor/anemone/",
+    "valanga>=0.1.14",
+    "atomheart>=0.1.7  @ file:/home/pompote/oldata/victor/atomheart/",
+    "algorhino-coral>=0.1.10",
+    "algorhino-anemone>=0.1.11 @ file:/home/pompote/oldata/victor/anemone/",
 ]
 
 
@@ -170,19 +170,27 @@ ignore_missing_imports = true
 [tool.ruff]
 line-length = 88
 target-version = "py313"
+fix =true
 
+[tool.ruff.lint]
 # Enable import sorting (alphabetical + group order)
-lint.select = ["I", "F", "E", "B", "TCH"]  # I = imports, F = pyflakes, E = pycodestyle, TCH = type-checking, B = black
+select = ["I", "F", "E", "B", "TCH", "UP","SIM","RUF","RET","N","A"
+]  # I = imports, F = pyflakes, E = pycodestyle, TCH = type-checking, B = black
 
 # Allow auto-fixing for imports and type-checking imports
-lint.fixable = ["I", "TCH", "F401"]
+fixable = ["I", "TCH", "F401","UP","SIM","RUF","RET","N","A"]
 
 # Ignore rules you don't care about
-lint.ignore = [ "E501"]
+ignore = ["E501", "D101", "D103", "D417"]
 
 # Optional: add your first-party package to extend the known group
 [tool.ruff.lint.per-file-ignores]
 # If needed, can add file-specific ignores
+
+
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.black]
 line-length = 88
@@ -275,10 +283,10 @@ deps = [
   "gdown",
   "zstandard",
   "rich",
-    "valanga>=0.1.13",
-    "atomheart>=0.1.6",
-    "algorhino-coral>=0.1.8",
-    "algorhino-anemone>=0.1.10 @ file:/home/juno/anemone",
+    "valanga>=0.1.14",
+    "atomheart>=0.1.7",
+    "algorhino-coral>=0.1.10",
+    "algorhino-anemone>=0.1.11 @ file:/home/juno/anemone",
 ]
 set_env = { PYTHONPATH = "{toxinidir}" }
 commands = [
@@ -315,10 +323,10 @@ deps = [
   "gdown",
   "zstandard",
   "rich",
-     "valanga>=0.1.13",
-    "atomheart>=0.1.6",
-    "algorhino-coral>=0.1.8",
-    "algorhino-anemone>=0.1.10",
+     "valanga>=0.1.14",
+    "atomheart>=0.1.7",
+    "algorhino-coral>=0.1.10",
+    "algorhino-anemone>=0.1.11",
 ]
 set_env = { MYPYPATH = "{toxinidir}" }
 commands = [

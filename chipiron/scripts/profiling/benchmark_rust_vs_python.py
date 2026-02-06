@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Profiling script to compare performance of important functions with and without Rust implementations.
+"""Profiling script to compare performance of important functions with and without Rust implementations.
 
 This script benchmarks:
 - Move generation
@@ -19,8 +18,9 @@ import sys
 import time
 import traceback
 import warnings
+from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 from anemone.progress_monitor.progress_monitor import (
     TreeBranchLimitArgs,
@@ -82,6 +82,7 @@ class BenchmarkResult:
         Args:
             name (str): The name of the benchmark.
             rust_enabled (bool): Whether the Rust implementation is enabled.
+
         """
         self.name = name
         self.rust_enabled = rust_enabled
@@ -93,6 +94,7 @@ class BenchmarkResult:
 
         Args:
             time_seconds (float): The time taken for the benchmark in seconds.
+
         """
         self.times.append(time_seconds)
 
@@ -101,6 +103,7 @@ class BenchmarkResult:
 
         Args:
             error (str): The error message.
+
         """
         self.errors.append(error)
 
@@ -110,6 +113,7 @@ class BenchmarkResult:
 
         Returns:
             float: The mean time of the benchmark.
+
         """
         return statistics.mean(self.times) if self.times else float("inf")
 
@@ -119,6 +123,7 @@ class BenchmarkResult:
 
         Returns:
             float: The median time of the benchmark.
+
         """
         return statistics.median(self.times) if self.times else float("inf")
 
@@ -128,6 +133,7 @@ class BenchmarkResult:
 
         Returns:
             float: The standard deviation of the times.
+
         """
         return statistics.stdev(self.times) if len(self.times) > 1 else 0.0
 
@@ -137,6 +143,7 @@ class BenchmarkResult:
 
         Returns:
             float: The success rate as a percentage.
+
         """
         total = len(self.times) + len(self.errors)
         return len(self.times) / total if total > 0 else 0.0
@@ -158,6 +165,7 @@ class ChessEngineBenchmark:
 
                 Args:
                     rust_enabled (bool, optional): Whether to use the Rust implementation. Defaults to rust_enabled.
+
                 """
                 for fen in self.test_positions:
                     board: IBoard = self.create_board_for_fen(fen, rust_enabled)
@@ -254,6 +262,7 @@ class ChessEngineBenchmark:
 
                 Args:
                     rust_enabled (bool, optional): Whether to use the Rust implementation. Defaults to rust_enabled.
+
                 """
                 for fen in self.test_positions:
                     board = self.create_board_for_fen(fen, rust_enabled)
@@ -299,6 +308,7 @@ class ChessEngineBenchmark:
                     Args:
                         rust_enabled (bool, optional): Whether to use the Rust implementation. Defaults to rust_enabled.
                         tree_branch_limit (int, optional): The maximum number of moves to explore. Defaults to tree_branch_limit.
+
                     """
                     # Create implementation args
                     implementation_args = self.create_implementation_args(rust_enabled)
@@ -516,7 +526,7 @@ class ChessEngineBenchmark:
 
 
 def main() -> None:
-    """Main entry point."""
+    """Run the main entry point."""
     benchmark = ChessEngineBenchmark()
     benchmark.run_full_benchmark()
 

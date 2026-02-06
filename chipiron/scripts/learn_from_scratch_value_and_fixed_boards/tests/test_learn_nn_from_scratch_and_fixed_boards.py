@@ -1,4 +1,5 @@
 """Module for test learn nn from scratch and fixed boards."""
+
 from typing import Any
 
 from parsley_coco import make_partial_dataclass_with_optional_paths
