@@ -39,12 +39,12 @@ from chipiron.players.chess_player_args import (
 from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
 from chipiron.players.oracles import PolicyOracle, TerminalOracle, ValueOracle
 from chipiron.players.player_ids import PlayerConfigTag
+from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.utils.communication.mailbox import MainMailboxMessage
+from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
+from chipiron.utils.queue_protocols import PutQueue
 
-from ..scripts.chipiron_args import ImplementationArgs
-from ..utils.dataclass import IsDataclass
-from ..utils.queue_protocols import PutQueue
 from . import move_selector
 from .factory_pipeline import create_player_with_pipeline
 from .game_player import GamePlayer

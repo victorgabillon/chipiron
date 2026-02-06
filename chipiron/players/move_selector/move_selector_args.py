@@ -18,11 +18,11 @@ class MoveSelectorArgs(Protocol):
         return self.type.is_human()
 
 
-type NonTreeMoveSelectorArgs = (
+NonTreeMoveSelectorArgs = (
     human.CommandLineHumanPlayerArgs | random.Random | stockfish.StockfishPlayer
 )
 
-type AnyMoveSelectorArgs = (
+AnyMoveSelectorArgs = (
     TreeAndValueAppArgs | NonTreeMoveSelectorArgs | human.GuiHumanPlayerArgs
 )
 

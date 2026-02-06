@@ -21,8 +21,7 @@ from chipiron.players.oracles import PolicyOracle, TerminalOracle, ValueOracle
 from chipiron.players.player import GameAdapter, Player
 from chipiron.players.player_args import HasMoveSelectorType
 from chipiron.utils.communication.mailbox import MainMailboxMessage
-
-from ..utils.queue_protocols import PutQueue
+from chipiron.utils.queue_protocols import PutQueue
 
 if TYPE_CHECKING:
     from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (

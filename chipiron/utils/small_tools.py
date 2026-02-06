@@ -158,9 +158,7 @@ def get_package_root_path(package_name: str) -> str:
         str: The root path of the package.
 
     """
-    spec: importlib.machinery.ModuleSpec | None = importlib.util.find_spec(
-        package_name
-    )
+    spec: importlib.machinery.ModuleSpec | None = importlib.util.find_spec(package_name)
     if spec is None or spec.origin is None:
         raise ImportError(f"Cannot find package '{package_name}'")
 

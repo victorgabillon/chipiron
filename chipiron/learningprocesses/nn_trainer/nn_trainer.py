@@ -29,7 +29,6 @@ def check_model_device(model: ChiNN) -> str | torch.device | int:
     return next(model.parameters()).device
 
 
-
 def compute_test_error_on_dataset(
     net: ChiNN,
     criterion: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],

@@ -47,7 +47,7 @@ class SyzygyRustTable(SyzygyTable[RustyBoardChi]):
 
     table_base: shakmaty_python_binding.MyTableBase
 
-    def __init__(self, path_to_table: path):
+    def __init__(self, path_to_table: path) -> None:
         """Initialize the SyzygyTable object.
 
         Args:

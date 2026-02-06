@@ -76,7 +76,7 @@ except ImportError as e:
 class BenchmarkResult:
     """Container for benchmark results."""
 
-    def __init__(self, name: str, rust_enabled: bool):
+    def __init__(self, name: str, rust_enabled: bool) -> None:
         """Initialize a new benchmark result.
 
         Args:

@@ -174,14 +174,15 @@ fix =true
 
 [tool.ruff.lint]
 # Enable import sorting (alphabetical + group order)
-select = ["I", "F", "E", "B", "TCH", "UP","SIM","RUF","RET","N","A"
+select = ["I", "F", "E", "B", "TCH", "UP","SIM","RUF","RET","N","A",
+"ANN", "PERF", "TRY","LOG","RSE","ICN","TID","Q","W",
 ]  # I = imports, F = pyflakes, E = pycodestyle, TCH = type-checking, B = black
 
 # Allow auto-fixing for imports and type-checking imports
-fixable = ["I", "TCH", "F401","UP","SIM","RUF","RET","N","A"]
+fixable = ["I", "TCH", "F401","UP","SIM","RUF","RET","N","A","TRY","ANN","TID","PERF"]
 
 # Ignore rules you don't care about
-ignore = ["E501", "D101", "D103", "D417"]
+ignore = ["E501","ANN401", "D101", "D103", "D417"]
 
 # Optional: add your first-party package to extend the known group
 [tool.ruff.lint.per-file-ignores]

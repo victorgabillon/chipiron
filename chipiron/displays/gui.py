@@ -273,7 +273,11 @@ class MainWindow(QWidget):
         if incoming.session_id != self.scope.session_id:
             return False
 
-        return not (self.scope.match_id is not None and incoming.match_id is not None and incoming.match_id != self.scope.match_id)
+        return not (
+            self.scope.match_id is not None
+            and incoming.match_id is not None
+            and incoming.match_id != self.scope.match_id
+        )
 
     def _check_and_set_icon(self, button: QPushButton, icon_path: str) -> None:
         """Check if icon file exists and set it, otherwise log a warning.
@@ -366,7 +370,7 @@ class MainWindow(QWidget):
     @typing.no_type_check
     @typing.override
     @Slot(QWidget)
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         """Handle left mouse clicks and enable moving chess pieces by.
 
         clicking on a chess piece and then the target square.
@@ -465,7 +469,7 @@ class MainWindow(QWidget):
         self.draw_board()
 
     @typing.no_type_check
-    def choice_promote(self):
+    def choice_promote(self) -> None:
         """Display a dialog box with buttons for promoting a chess piece.
 
         The dialog box allows the user to choose between promoting the pawn to a queen, rook, bishop, or knight.
@@ -515,7 +519,7 @@ class MainWindow(QWidget):
         d.exec_()
 
     @typing.no_type_check
-    def promote_queen(self):
+    def promote_queen(self) -> None:
         """Promotes the selected piece to a queen.
 
         This method creates a move object to promote the selected piece to a queen by appending 'q' to the UCI notation
@@ -531,7 +535,7 @@ class MainWindow(QWidget):
         self.d.close()
 
     @typing.no_type_check
-    def promote_rook(self):
+    def promote_rook(self) -> None:
         """Promotes a pawn to a rook.
 
         This method is called when a pawn reaches the opposite end of the board and needs to be promoted to a rook.
@@ -547,7 +551,7 @@ class MainWindow(QWidget):
         self.d.close()
 
     @typing.no_type_check
-    def promote_bishop(self):
+    def promote_bishop(self) -> None:
         """Promotes the current piece to a bishop.
 
         This method creates a move object to promote the current piece to a bishop and closes the dialog window.
@@ -562,7 +566,7 @@ class MainWindow(QWidget):
         self.d.close()
 
     @typing.no_type_check
-    def promote_knight(self):
+    def promote_knight(self) -> None:
         """Promotes a pawn to a knight.
 
         This method is called when a pawn is promoted to a knight in the GUI.

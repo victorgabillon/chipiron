@@ -55,7 +55,6 @@ class Representation364(ContentRepresentation[ChessState, torch.Tensor]):
         return torch.cat((tensor, tensor_castling), 0)
 
 
-
 @dataclass(slots=True)
 class Representation364V2(ContentRepresentation[ChessState, torch.Tensor]):
     """Dataclass representing a board representation with 364 features."""

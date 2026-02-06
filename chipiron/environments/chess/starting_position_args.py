@@ -50,7 +50,7 @@ class FileStartingPositionArgs(StartingPositionArgs):
         return ChessStartTag(fen=fen)
 
 
-type AllStartingPositionArgs = FenStartingPositionArgs | FileStartingPositionArgs
+AllStartingPositionArgs = FenStartingPositionArgs | FileStartingPositionArgs
 
 
 def _load_fen_from_file(file_name: str) -> str:

@@ -200,4 +200,3 @@ def create_match_manager_from_args(
         gui=gui,
         implementation_args=implementation_args,
     )
-

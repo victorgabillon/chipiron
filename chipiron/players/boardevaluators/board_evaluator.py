@@ -75,7 +75,7 @@ class ObservableGameStateEvaluator[StateT]:
     evaluation_player_black: StateEvaluation | None = None
     evaluation_player_white: StateEvaluation | None = None
 
-    def __init__(self, game_state_evaluator: IGameStateEvaluator[StateT]):
+    def __init__(self, game_state_evaluator: IGameStateEvaluator[StateT]) -> None:
         """Initialize with a wrapped game-state evaluator."""
         self.game_state_evaluator = game_state_evaluator
         self.publishers = []

@@ -26,14 +26,14 @@ from chipiron.players.boardevaluators.board_evaluator import (
     IGameStateEvaluator,
     ObservableGameStateEvaluator,
 )
+from chipiron.players.player_ids import PlayerConfigTag
+from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.utils import path
 from chipiron.utils.communication.gui_messages.gui_messages import (
     make_players_info_payload,
 )
 from chipiron.utils.communication.mailbox import MainMailboxMessage
 
-from ...players.player_ids import PlayerConfigTag
-from ...scripts.chipiron_args import ImplementationArgs
 from .game import Game, ObservableGame
 from .game_manager import GameManager
 from .progress_collector import PlayerProgressCollectorObservable
@@ -222,7 +222,6 @@ class GameManagerFactory:
             progress_collector=player_progress_collector,
             rules=environment.rules,
         )
-
 
     def subscribe(self, subscriber_queue: queue.Queue[GuiUpdate]) -> None:
         """Subscribe to the GameManagerFactory to get the PlayersColorToPlayerMessage.

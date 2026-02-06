@@ -7,9 +7,7 @@ if TYPE_CHECKING:
     from chipiron.displays.gui_protocol import GuiCommand  # or GuiCommand type you use
     from chipiron.players.communications.player_message import PlayerEvent
 
-    type MainMailboxMessage = (
-        GuiCommand | PlayerEvent
-    )  # adjust to your real union
+    type MainMailboxMessage = GuiCommand | PlayerEvent  # adjust to your real union
 else:
     # Runtime: avoid importing GUI/players to prevent cycles.
     type MainMailboxMessage = Any
