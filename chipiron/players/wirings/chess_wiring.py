@@ -1,4 +1,5 @@
 """Module for chess wiring."""
+
 from dataclasses import dataclass
 
 from atomheart.board.utils import FenPlusHistory

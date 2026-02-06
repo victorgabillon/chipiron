@@ -1,4 +1,5 @@
 """Module for tags."""
+
 from dataclasses import dataclass
 
 

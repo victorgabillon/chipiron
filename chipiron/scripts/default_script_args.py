@@ -22,4 +22,3 @@ class HasBaseScriptArgs(Protocol):
 
 class DataClassWithBaseScriptArgs(HasBaseScriptArgs, IsDataclass, Protocol):
     """Data class that includes base_script_args."""
-

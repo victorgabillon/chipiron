@@ -1,9 +1,21 @@
 """Module for test evaluate models."""
+
 from coral.neural_networks.factory import (
     NeuralNetModelsAndArchitecture,
 )
 
 from chipiron.scripts.evaluate_models.evaluate_models import evaluate_models
+
+from coral.neural_networks.neural_net_architecture_args import (
+    NeuralNetArchitectureArgs,
+)
+
+import dataclasses
+import typing
+print("model_type_args annotation:", NeuralNetArchitectureArgs.__annotations__["model_type_args"])
+T = NeuralNetArchitectureArgs.__annotations__["model_type_args"]
+print("is dataclass?", dataclasses.is_dataclass(T))
+print("origin:", typing.get_origin(T), "args:", typing.get_args(T))
 
 test_models_to_evaluate_: list[NeuralNetModelsAndArchitecture] = [
     NeuralNetModelsAndArchitecture.build_from_folder_path(

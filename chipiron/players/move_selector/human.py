@@ -50,7 +50,7 @@ class CommandLineHumanMoveSelector:
         ).recommended_name
         return Recommendation(recommended_name=best)
 
-    def select_move(  # noqa: D417
+    def select_move(
         self,
         board: boards.IBoard,
         move_seed: Seed,

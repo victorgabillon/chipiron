@@ -10,7 +10,7 @@ Note: This script requires the customtkinter and chipiron modules to be installe
 
 # TODO switch to pygame
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING, Any, cast
 
 import customtkinter as ctk
@@ -137,7 +137,7 @@ def format_gui_args_for_display(gui_args: Any) -> str:
     return "\n    ".join(args_parts) if args_parts else "Default settings"
 
 
-class MatchGUIStartingPosition(str, Enum):
+class MatchGUIStartingPosition(StrEnum):
     """The starting position for the chess match."""
 
     STANDARD = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
@@ -159,7 +159,7 @@ STARTING_POSITION_OPTIONS_DICT: dict[str, MatchGUIStartingPosition] = {
 }
 
 
-class ScriptGUIType(str, Enum):
+class ScriptGUIType(StrEnum):
     """The type of script to run based on GUI selection."""
 
     PLAY_OR_WATCH_A_GAME = "play_or_watch_a_game"
@@ -413,39 +413,39 @@ def generate_inputs(
     """
     script_type: scripts.ScriptType
 
-    PartialOpMatchScriptArgs = make_partial_dataclass_with_optional_paths(
+    partial_op_match_script_args = make_partial_dataclass_with_optional_paths(
         cls=MatchScriptArgs
     )
-    PartialOpMatchArgs = make_partial_dataclass_with_optional_paths(cls=MatchArgs)
+    partial_op_match_args = make_partial_dataclass_with_optional_paths(cls=MatchArgs)
 
-    PartialOpMatchSettingsArgs = make_partial_dataclass_with_optional_paths(
+    partial_op_match_settings_args = make_partial_dataclass_with_optional_paths(
         cls=MatchSettingsArgs
     )
-    PartialOpGameArgs = make_partial_dataclass_with_optional_paths(cls=GameArgs)
+    partial_op_game_args = make_partial_dataclass_with_optional_paths(cls=GameArgs)
 
-    PartialOpPlayerArgs = make_partial_dataclass_with_optional_paths(cls=PlayerArgs)
+    partial_op_player_args = make_partial_dataclass_with_optional_paths(cls=PlayerArgs)
 
-    PartialOpBaseScriptArgs = make_partial_dataclass_with_optional_paths(
+    partial_op_base_script_args = make_partial_dataclass_with_optional_paths(
         cls=BaseScriptArgs
     )
 
-    PartialOpTreeAndValuePlayerArgs = make_partial_dataclass_with_optional_paths(
+    partial_op_tree_and_value_player_args = make_partial_dataclass_with_optional_paths(
         cls=TreeAndValuePlayerArgs
     )
-    PartialOpTreeBranchLimitArgs = make_partial_dataclass_with_optional_paths(
+    partial_op_tree_branch_limit_args = make_partial_dataclass_with_optional_paths(
         cls=TreeBranchLimitArgs
     )
 
     config_file_name: str
     match args_chosen_by_user.type:
         case ScriptGUIType.PLAY_OR_WATCH_A_GAME:
-            gui_args = PartialOpMatchScriptArgs(
+            gui_args = partial_op_match_script_args(
                 gui=True,
-                base_script_args=PartialOpBaseScriptArgs(profiling=False, seed=0),
-                match_args=PartialOpMatchArgs(
+                base_script_args=partial_op_base_script_args(profiling=False, seed=0),
+                match_args=partial_op_match_args(
                     match_setting=MatchConfigTag.DUDA,
-                    match_setting_overwrite=PartialOpMatchSettingsArgs(
-                        game_args=PartialOpGameArgs(
+                    match_setting_overwrite=partial_op_match_settings_args(
+                        game_args=partial_op_game_args(
                             starting_position=FenStartingPositionArgs(
                                 type=StartingPositionArgsType.FEN,
                                 fen=args_chosen_by_user.starting_position,
@@ -467,10 +467,10 @@ def generate_inputs(
                 tree_branch_limit_white: int = (
                     4 * 10**args_chosen_by_user.strength_white
                 )
-                gui_args.match_args.player_one_overwrite = PartialOpPlayerArgs(
-                    main_move_selector=PartialOpTreeAndValuePlayerArgs(
+                gui_args.match_args.player_one_overwrite = partial_op_player_args(
+                    main_move_selector=partial_op_tree_and_value_player_args(
                         type=MoveSelectorTypes.TreeAndValue,
-                        stopping_criterion=PartialOpTreeBranchLimitArgs(
+                        stopping_criterion=partial_op_tree_branch_limit_args(
                             type=StoppingCriterionTypes.TREE_BRANCH_LIMIT,
                             tree_branch_limit=tree_branch_limit_white,
                         ),
@@ -481,10 +481,10 @@ def generate_inputs(
                 tree_branch_limit_black: int = (
                     4 * 10**args_chosen_by_user.strength_black
                 )
-                gui_args.match_args.player_two_overwrite = PartialOpPlayerArgs(
-                    main_move_selector=PartialOpTreeAndValuePlayerArgs(
+                gui_args.match_args.player_two_overwrite = partial_op_player_args(
+                    main_move_selector=partial_op_tree_and_value_player_args(
                         type=MoveSelectorTypes.TreeAndValue,
-                        stopping_criterion=PartialOpTreeBranchLimitArgs(
+                        stopping_criterion=partial_op_tree_branch_limit_args(
                             type=StoppingCriterionTypes.TREE_BRANCH_LIMIT,
                             tree_branch_limit=tree_branch_limit_black,
                         ),
@@ -512,7 +512,7 @@ def generate_inputs(
     return script_type, gui_args, config_file_name
 
 
-def play_or_watch_a_game(  # noqa: D417
+def play_or_watch_a_game(
     args_chosen_by_user: ArgsChosenByUser,
     chipi_algo_choice_white: ctk.StringVar,
     chipi_algo_choice_black: ctk.StringVar,
@@ -573,7 +573,7 @@ def play_or_watch_a_game(  # noqa: D417
     return True
 
 
-def visualize_a_tree(args_chosen_by_user: ArgsChosenByUser) -> bool:  # noqa: D417
+def visualize_a_tree(args_chosen_by_user: ArgsChosenByUser) -> bool:
     """Handle the "Visualize a tree" button callback.
 
     Sets the output dictionary with the selected options for tree visualization.

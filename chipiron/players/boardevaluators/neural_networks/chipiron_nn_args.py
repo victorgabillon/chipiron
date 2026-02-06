@@ -1,8 +1,9 @@
 """Module for chipiron nn args."""
+
 import os
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from typing import Any, Callable, TypeGuard, cast
+from typing import Any, TypeGuard, cast
 
 import yaml
 from coral.neural_networks.input_converters.content_to_input import (
@@ -15,7 +16,7 @@ from chipiron.environments.types import GameKind
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_input import (
     create_chess_state_to_input,
 )
-from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
+from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
     ModelInputRepresentationType,
 )
 from chipiron.utils import path
@@ -65,7 +66,7 @@ def _is_str_key_mapping(obj: object) -> TypeGuard[Mapping[str, Any]]:
     m = cast(
         "Mapping[object, object]", obj
     )  # key/value types become object (not Unknown)
-    return all(isinstance(k, str) for k in m.keys())
+    return all(isinstance(k, str) for k in m)
 
 
 def _as_mapping(obj: object, *, file_path: str) -> Mapping[str, Any]:
@@ -80,7 +81,7 @@ def _as_mapping(obj: object, *, file_path: str) -> Mapping[str, Any]:
 def load_chipiron_nn_args(folder_path: path) -> ChipironNNArgs:
     """Load chipiron nn args."""
     file_path = get_chipiron_nn_args_file_path_from(folder_path)
-    with open(file_path, "r", encoding="utf-8") as f:
+    with open(file_path, encoding="utf-8") as f:
         raw = yaml.safe_load(f)
 
     data = _as_mapping(raw, file_path=file_path)

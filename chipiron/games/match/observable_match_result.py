@@ -91,12 +91,11 @@ class ObservableMatchResults:
             SimpleResults: A simplified version of the match results.
 
         """
-        simple_results = SimpleResults(
+        return SimpleResults(
             player_one_wins=self.match_results.get_player_one_wins(),
             player_two_wins=self.match_results.get_player_two_wins(),
             draws=self.match_results.get_draws(),
         )
-        return simple_results
 
     def finish(self) -> None:
         """Mark the match as finished and notifies all subscribed mailboxes.

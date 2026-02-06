@@ -95,10 +95,7 @@ class OneMatchScript:
             )
 
             app = QApplication.instance()
-            if app is None:
-                app = QApplication(sys.argv)
-            else:
-                app = cast("QApplication", app)
+            app = QApplication(sys.argv) if app is None else cast("QApplication", app)
             self.chess_gui = app
 
             board_factory: BoardFactory = create_board_factory(

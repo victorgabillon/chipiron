@@ -262,6 +262,7 @@ class LearnNNFromScratchScript:
 
     def learn_model_some_steps(self) -> None:
         """Perform a few steps of training on the model."""
+
     def update_dataset_value_with_evaluating_player(self) -> None:
         """Update the dataset with the values from the evaluating player."""
         index_range_evaluating_player: int

@@ -1,6 +1,6 @@
 """Document the module defines the MoveSelectorArgs protocol and helpers for move selector arguments."""
 
-from typing import Any, Protocol, TypeAlias
+from typing import Any, Protocol
 
 from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
 
@@ -18,11 +18,11 @@ class MoveSelectorArgs(Protocol):
         return self.type.is_human()
 
 
-NonTreeMoveSelectorArgs: TypeAlias = (
+type NonTreeMoveSelectorArgs = (
     human.CommandLineHumanPlayerArgs | random.Random | stockfish.StockfishPlayer
 )
 
-AnyMoveSelectorArgs: TypeAlias = (
+type AnyMoveSelectorArgs = (
     TreeAndValueAppArgs | NonTreeMoveSelectorArgs | human.GuiHumanPlayerArgs
 )
 

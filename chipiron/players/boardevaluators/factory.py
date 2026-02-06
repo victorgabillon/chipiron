@@ -42,7 +42,7 @@ def _select_eval_wiring(
             assert_never(game_kind)
 
 
-def create_game_board_evaluator(
+def create_game_board_evaluator[StateT](
     *,
     wiring: EvaluatorWiring[StateT],
     gui: bool,

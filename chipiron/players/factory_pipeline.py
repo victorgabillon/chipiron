@@ -1,7 +1,8 @@
 """Generic player construction pipeline with game-specific builders."""
 
 import random
-from typing import TYPE_CHECKING, Callable, TypeVar
+from collections.abc import Callable
+from typing import TYPE_CHECKING, TypeVar
 
 from valanga import TurnState
 from valanga.policy import BranchSelector

@@ -1,4 +1,5 @@
 """Module for test oracle wiring."""
+
 import queue
 
 import chess

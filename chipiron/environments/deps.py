@@ -1,4 +1,5 @@
 """Module for deps."""
+
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol
 

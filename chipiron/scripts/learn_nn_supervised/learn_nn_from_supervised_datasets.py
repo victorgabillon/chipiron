@@ -390,11 +390,11 @@ class LearnNNScript:
                     # saving the learning process
                     self.saving_things_to_file(
                         count_train_step=count_train_step,
-                        X_train=fens_and_values_sample_batch.get_input_layer(),
+                        x_train=fens_and_values_sample_batch.get_input_layer(),
                     )
 
-    def saving_things_to_file(  # noqa: D417
-        self, count_train_step: int, X_train: torch.Tensor
+    def saving_things_to_file(
+        self, count_train_step: int, x_train: torch.Tensor
     ) -> None:
         """Save the neural network parameters and trainer to file.
 
@@ -428,8 +428,8 @@ class LearnNNScript:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
             signature: ModelSignature = infer_signature(
-                X_train.numpy(),
-                self.nn_board_evaluator.net(X_train.to(device).detach())
+                x_train.numpy(),
+                self.nn_board_evaluator.net(x_train.to(device).detach())
                 .cpu()
                 .detach()
                 .numpy(),

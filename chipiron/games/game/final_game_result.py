@@ -1,7 +1,7 @@
 """Module for the FinalGameResult enum and the GameReport dataclass."""
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -12,7 +12,7 @@ else:
     StateTag = str
 
 
-class FinalGameResult(str, Enum):
+class FinalGameResult(StrEnum):
     """Enum representing the final result of a game."""
 
     WIN_FOR_WHITE = "win_for_white"

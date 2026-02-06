@@ -84,7 +84,7 @@ class ObservableGameStateEvaluator[StateT]:
         self.evaluation_player_black = None
         self.evaluation_player_white = None
 
-    def subscribe(self, pub: GuiPublisher) -> None:  # noqa: D417
+    def subscribe(self, pub: GuiPublisher) -> None:
         """Subscribe to the ObservableBoardEvaluator to get the EvaluationMessage.
 
         Args:

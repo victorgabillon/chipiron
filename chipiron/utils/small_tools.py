@@ -9,7 +9,7 @@ import sys
 import typing
 from importlib.resources import files
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import yaml
 
@@ -55,7 +55,7 @@ def yaml_fetch_args_in_file(path_file: path) -> dict[Any, Any]:
         A dictionary containing the arguments.
 
     """
-    with open(path_file, "r", encoding="utf-8") as file:
+    with open(path_file, encoding="utf-8") as file:
         args: dict[Any, Any] = yaml.load(file, Loader=yaml.FullLoader)
     return args
 
@@ -72,7 +72,7 @@ def dict_alphabetic_str(dic: dict[Any, Any]) -> str:
     """
     string: str = ""
     for key, value in sorted(dic.items()):
-        string += " {:>30} : {}\n".format(key, value)
+        string += f" {key:>30} : {value}\n"
     return string
 
 
@@ -94,8 +94,7 @@ def unique_int_from_list(a_list: list[int | None]) -> int | None:
     y = a_list[1]
     if x is None or y is None:
         return None
-    else:
-        return int(0.5 * (x + y) * (x + y + 1) + y)  # Cantor pairing function
+    return int(0.5 * (x + y) * (x + y + 1) + y)  # Cantor pairing function
 
 
 def rec_merge_dic(a: dict[Any, Any], b: dict[Any, Any]) -> dict[Any, Any]:
@@ -159,12 +158,11 @@ def get_package_root_path(package_name: str) -> str:
         str: The root path of the package.
 
     """
-    spec: Optional[importlib.machinery.ModuleSpec] = importlib.util.find_spec(
+    spec: importlib.machinery.ModuleSpec | None = importlib.util.find_spec(
         package_name
     )
     if spec is None or spec.origin is None:
         raise ImportError(f"Cannot find package '{package_name}'")
 
     # Get the package directory, not just the __init__.py file
-    package_path = os.path.dirname(spec.origin)
-    return package_path
+    return os.path.dirname(spec.origin)

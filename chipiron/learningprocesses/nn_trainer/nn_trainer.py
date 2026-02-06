@@ -1,7 +1,7 @@
 """Document the module contains the definition of the NNPytorchTrainer class, which is responsible for training and testing a neural network model using PyTorch."""
 
 import typing
-from typing import Callable
+from collections.abc import Callable
 
 import torch
 from coral.chi_nn import ChiNN
@@ -26,9 +26,8 @@ def compute_loss(
 def check_model_device(model: ChiNN) -> str | torch.device | int:
     # Check the device of the first parameter
     """Check model device."""
-    first_param_device = next(model.parameters()).device
+    return next(model.parameters()).device
 
-    return first_param_device
 
 
 def compute_test_error_on_dataset(

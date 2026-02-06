@@ -8,12 +8,12 @@ from .player_handle import InProcessPlayerHandle, PlayerHandle
 from .player_thread import PlayerProcess
 
 __all__ = [
-    "PlayerArgs",
-    "Player",
-    "PlayerHandle",
-    "InProcessPlayerHandle",
-    "PlayerProcess",
     "GamePlayer",
-    "StockfishPlayer",
+    "InProcessPlayerHandle",
+    "Player",
+    "PlayerArgs",
     "PlayerFactoryArgs",
+    "PlayerHandle",
+    "PlayerProcess",
+    "StockfishPlayer",
 ]

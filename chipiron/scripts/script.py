@@ -36,7 +36,7 @@ class Script[T_Dataclass: DataClassWithBaseScriptArgs = DataClassWithBaseScriptA
     default_experiment_output_folder: path = "chipiron/scripts/default_output_folder"
     config_file_name: str | None
 
-    def __init__(  # noqa: D417
+    def __init__(
         self,
         parser: Parsley[T_Dataclass],
         extra_args: IsDataclass | None = None,
@@ -171,5 +171,7 @@ class Script[T_Dataclass: DataClassWithBaseScriptArgs = DataClassWithBaseScriptA
 
     def run(self) -> None:
         """Run the script."""
+
+
 # Type alias to handle Script generic variance issues
 type AnyScript = Script[Any]

@@ -2,6 +2,7 @@
 
 """Document the module is the execution point of the chess GUI application."""
 
+import typing
 from typing import Any
 
 import chess
@@ -66,8 +67,9 @@ class MainWindow(QWidget):
         self.count = 0
         self.next_move = self.chess_board_recorded.chess_board.move_stack[self.count]
 
-        self.drawBoard()
+        self.draw_board()
 
+    @typing.override
     @Slot(QWidget)
     def keyPressEvent(self, event: QKeyEvent) -> None:
         """Handle key press events.
@@ -78,29 +80,30 @@ class MainWindow(QWidget):
         """
         print(event.text())
         key = event.text()
-        if key == "1":
-            if self.count > 0:
-                self.chess_board.pop()
-                print(self.chess_board)
-                print(self.chess_board.fen)
-                self.count -= 1
+        if key == "1" and self.count > 0:
+            self.chess_board.pop()
+            print(self.chess_board)
+            print(self.chess_board.fen)
+            self.count -= 1
+            self.next_move = self.chess_board_recorded.chess_board.move_stack[
+                self.count
+            ]
+            self.draw_board()
+        if (
+            key == "2"
+            and self.count < len(self.chess_board_recorded.chess_board.move_stack)
+        ):
+            self.chess_board.push(self.next_move)
+            print(self.chess_board)
+            print(self.chess_board.fen)
+            self.count += 1
+            if self.count < len(self.chess_board_recorded.chess_board.move_stack):
                 self.next_move = self.chess_board_recorded.chess_board.move_stack[
                     self.count
                 ]
-                self.drawBoard()
-        if key == "2":
-            if self.count < len(self.chess_board_recorded.chess_board.move_stack):
-                self.chess_board.push(self.next_move)
-                print(self.chess_board)
-                print(self.chess_board.fen)
-                self.count += 1
-                if self.count < len(self.chess_board_recorded.chess_board.move_stack):
-                    self.next_move = self.chess_board_recorded.chess_board.move_stack[
-                        self.count
-                    ]
-                self.drawBoard()
+            self.draw_board()
 
-    def drawBoard(self) -> Any:
+    def draw_board(self) -> Any:
         """Draw a chessboard with the starting position and then redraw.
 
         it for every new move.
@@ -116,6 +119,6 @@ class MainWindow(QWidget):
 
         self.boardSvg = repr_svg.encode("UTF-8")
 
-        self.drawBoardSvg = self.widgetSvg.load(self.boardSvg)
+        self.draw_board_svg = self.widgetSvg.load(self.boardSvg)
 
-        return self.drawBoardSvg
+        return self.draw_board_svg

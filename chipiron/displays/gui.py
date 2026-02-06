@@ -84,7 +84,7 @@ class MainWindow(QWidget):
 
     """
 
-    def __init__(  # noqa: D417
+    def __init__(
         self,
         gui_mailbox: queue.Queue[GuiUpdate],
         main_thread_mailbox: queue.Queue[MainMailboxMessage],
@@ -273,14 +273,7 @@ class MainWindow(QWidget):
         if incoming.session_id != self.scope.session_id:
             return False
 
-        if (
-            self.scope.match_id is not None
-            and incoming.match_id is not None
-            and incoming.match_id != self.scope.match_id
-        ):
-            return False
-
-        return True
+        return not (self.scope.match_id is not None and incoming.match_id is not None and incoming.match_id != self.scope.match_id)
 
     def _check_and_set_icon(self, button: QPushButton, icon_path: str) -> None:
         """Check if icon file exists and set it, otherwise log a warning.
@@ -371,6 +364,7 @@ class MainWindow(QWidget):
             self.pause_button_clicked_last_time = time.time()
 
     @typing.no_type_check
+    @typing.override
     @Slot(QWidget)
     def mousePressEvent(self, event):
         """Handle left mouse clicks and enable moving chess pieces by.
@@ -380,57 +374,56 @@ class MainWindow(QWidget):
         Moves must be made according to the rules of chess because
         illegal moves are suppressed.
         """
-        if event.x() <= self.board_size and event.y() <= self.board_size:
-            if event.buttons() == Qt.LeftButton:
-                if (
-                    self.margin < event.x() < self.board_size - self.margin
-                    and self.margin < event.y() < self.board_size - self.margin
-                ):
-                    file = int((event.x() - self.margin) / self.squareSize)
-                    rank = 7 - int((event.y() - self.margin) / self.squareSize)
-                    square = chess.square(file, rank)
-                    piece = self.board.piece_at(square)
-                    self.coordinates = f"{chr(file + 97)}{rank + 1}"
-                    if self.pieceToMove[0] is not None:
-                        try:
-                            all_moves_keys: list[MoveKey] = (
-                                self.board.legal_moves.get_all()
-                            )
-                            all_legal_moves_uci: list[MoveUci] = [
-                                self.board.legal_moves.generated_moves[move_key].uci()
-                                for move_key in all_moves_keys
-                            ]
-                            move: chess.Move = chess.Move.from_uci(
-                                "{}{}".format(self.pieceToMove[1], self.coordinates)
-                            )
-                            move_promote: chess.Move = chess.Move.from_uci(
-                                "{}{}q".format(self.pieceToMove[1], self.coordinates)
-                            )
-                            if move.uci() in all_legal_moves_uci:
-                                self.send_move_to_main_thread(move_uci=move.uci())
-                            elif move_promote.uci() in all_legal_moves_uci:
-                                self.choice_promote()
-                                self.send_move_to_main_thread(
-                                    move_uci=self.move_promote_asked.uci()
-                                )
-                            else:
-                                legal_moves_uci: list[MoveUci] = [
-                                    self.board.get_uci_from_move_key(move_key)
-                                    for move_key in all_moves_keys
-                                ]
-                                chipiron_logger.info(
-                                    "Looks like the move %s is a wrong move.. "
-                                    "The legals moves are %s in %s",
-                                    move,
-                                    legal_moves_uci,
-                                    self.board,
-                                )
-                        except ValueError:
-                            chipiron_logger.info("Oops!  Doubleclicked?  Try again...")
-                        piece = None
-                    self.pieceToMove = [piece, self.coordinates]
+        if (
+            event.x() <= self.board_size
+            and event.y() <= self.board_size
+            and event.buttons() == Qt.LeftButton
+            and self.margin < event.x() < self.board_size - self.margin
+            and self.margin < event.y() < self.board_size - self.margin
+        ):
+            file = int((event.x() - self.margin) / self.squareSize)
+            rank = 7 - int((event.y() - self.margin) / self.squareSize)
+            square = chess.square(file, rank)
+            piece = self.board.piece_at(square)
+            self.coordinates = f"{chr(file + 97)}{rank + 1}"
+            if self.pieceToMove[0] is not None:
+                try:
+                    all_moves_keys: list[MoveKey] = self.board.legal_moves.get_all()
+                    all_legal_moves_uci: list[MoveUci] = [
+                        self.board.legal_moves.generated_moves[move_key].uci()
+                        for move_key in all_moves_keys
+                    ]
+                    move: chess.Move = chess.Move.from_uci(
+                        f"{self.pieceToMove[1]}{self.coordinates}"
+                    )
+                    move_promote: chess.Move = chess.Move.from_uci(
+                        f"{self.pieceToMove[1]}{self.coordinates}q"
+                    )
+                    if move.uci() in all_legal_moves_uci:
+                        self.send_move_to_main_thread(move_uci=move.uci())
+                    elif move_promote.uci() in all_legal_moves_uci:
+                        self.choice_promote()
+                        self.send_move_to_main_thread(
+                            move_uci=self.move_promote_asked.uci()
+                        )
+                    else:
+                        legal_moves_uci: list[MoveUci] = [
+                            self.board.get_uci_from_move_key(move_key)
+                            for move_key in all_moves_keys
+                        ]
+                        chipiron_logger.info(
+                            "Looks like the move %s is a wrong move.. "
+                            "The legals moves are %s in %s",
+                            move,
+                            legal_moves_uci,
+                            self.board,
+                        )
+                except ValueError:
+                    chipiron_logger.info("Oops!  Doubleclicked?  Try again...")
+                    piece = None
+                self.pieceToMove = [piece, self.coordinates]
 
-    def send_move_to_main_thread(self, move_uci: MoveUci) -> None:  # noqa: D417
+    def send_move_to_main_thread(self, move_uci: MoveUci) -> None:
         """Send a move to the main thread for processing.
 
         Args:
@@ -533,7 +526,7 @@ class MainWindow(QWidget):
 
         """
         self.move_promote_asked = chess.Move.from_uci(
-            "{}{}q".format(self.pieceToMove[1], self.coordinates)
+            f"{self.pieceToMove[1]}{self.coordinates}q"
         )
         self.d.close()
 
@@ -680,7 +673,7 @@ class MainWindow(QWidget):
 
         """
         num_half_move: int = len(self.board.move_history_stack)
-        num_rounds: int = int(math.ceil(num_half_move / 2))
+        num_rounds: int = math.ceil(num_half_move / 2)
         self.tablewidget.setRowCount(num_rounds)
         self.tablewidget.setHorizontalHeaderLabels(["White", "Black"])
         for player in range(2):

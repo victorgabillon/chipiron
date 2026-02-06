@@ -40,7 +40,7 @@ if TYPE_CHECKING:
     from chipiron.utils.communication.mailbox import MainMailboxMessage
 
 
-def create_match_manager(  # noqa: D417
+def create_match_manager(
     args_match: MatchSettingsArgs,
     args_player_one: players.PlayerArgs,
     args_player_two: players.PlayerArgs,
@@ -138,7 +138,7 @@ def create_match_manager(  # noqa: D417
         args_game=args_game,
     )
 
-    match_manager = MatchManager(
+    return MatchManager(
         player_one_id=player_one_name,
         player_two_id=player_two_name,
         game_manager_factory=game_manager_factory,
@@ -146,10 +146,9 @@ def create_match_manager(  # noqa: D417
         match_results_factory=match_results_factory,
         output_folder_path=output_folder_path,
     )
-    return match_manager
 
 
-def create_match_manager_from_args(  # noqa: D417
+def create_match_manager_from_args(
     match_args: MatchArgs,
     base_script_args: BaseScriptArgs,
     implementation_args: ImplementationArgs,
@@ -190,7 +189,7 @@ def create_match_manager_from_args(  # noqa: D417
     # taking care of random
     ch.set_seeds(seed=base_script_args.seed)
 
-    match_manager = create_match_manager(
+    return create_match_manager(
         args_match=match_args.match_setting,
         args_player_one=player_one_args,
         args_player_two=player_two_args,
@@ -202,4 +201,3 @@ def create_match_manager_from_args(  # noqa: D417
         implementation_args=implementation_args,
     )
 
-    return match_manager

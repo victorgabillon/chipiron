@@ -1,11 +1,14 @@
 """Module for the SyzygyTable class."""
 
-from typing import Protocol, Sequence
+from typing import TYPE_CHECKING, Protocol
 
 from atomheart.board import IBoard
 from atomheart.move.imove import MoveKey
 from valanga import Color
 from valanga.over_event import HowOver, OverTags, Winner
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 class SyzygyTable[T_Board: IBoard](Protocol):
@@ -143,8 +146,7 @@ class SyzygyTable[T_Board: IBoard](Protocol):
         val: int = self.wdl(state)
         if state.turn == Color.WHITE:
             return val * 100000
-        else:
-            return val * -10000
+        return val * -10000
 
     def get_over_tag(self, board: T_Board) -> OverTags:
         """Get the over tag for the given board.
@@ -160,15 +162,12 @@ class SyzygyTable[T_Board: IBoard](Protocol):
         if val > 0:
             if board.turn == Color.WHITE:
                 return OverTags.TAG_WIN_WHITE
-            else:
-                return OverTags.TAG_WIN_BLACK
-        elif val == 0:
+            return OverTags.TAG_WIN_BLACK
+        if val == 0:
             return OverTags.TAG_DRAW
-        else:
-            if board.turn == Color.WHITE:
-                return OverTags.TAG_WIN_BLACK
-            else:
-                return OverTags.TAG_WIN_WHITE
+        if board.turn == Color.WHITE:
+            return OverTags.TAG_WIN_BLACK
+        return OverTags.TAG_WIN_WHITE
 
     def string_result(self, board: T_Board) -> str:
         """Get the string representation of the result for the given board.
@@ -184,10 +183,9 @@ class SyzygyTable[T_Board: IBoard](Protocol):
         player_to_move = "white" if board.turn == Color.WHITE else "black"
         if val > 0:
             return "WIN for player " + player_to_move
-        elif val == 0:
+        if val == 0:
             return "DRAW"
-        else:
-            return "LOSS for player " + player_to_move
+        return "LOSS for player " + player_to_move
 
     def dtz(self, board: T_Board) -> int:
         """Get the distance-to-zero (DTZ) value for the given board.

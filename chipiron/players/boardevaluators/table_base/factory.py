@@ -82,10 +82,7 @@ class SyzygyFactory(Protocol):
 def create_syzygy_factory(use_rust: bool) -> SyzygyFactory:
     """Create a SyzygyTable object."""
     syzygy_factory: SyzygyFactory
-    if use_rust:
-        syzygy_factory = create_syzygy_rust
-    else:
-        syzygy_factory = create_syzygy_python
+    syzygy_factory = create_syzygy_rust if use_rust else create_syzygy_python
 
     return syzygy_factory
 
@@ -93,9 +90,6 @@ def create_syzygy_factory(use_rust: bool) -> SyzygyFactory:
 def create_syzygy(use_rust: bool) -> AnySyzygyTable | None:
     """Create a SyzygyTable object."""
     syzygy_table: AnySyzygyTable | None
-    if use_rust:
-        syzygy_table = create_syzygy_rust()
-    else:
-        syzygy_table = create_syzygy_python()
+    syzygy_table = create_syzygy_rust() if use_rust else create_syzygy_python()
 
     return syzygy_table

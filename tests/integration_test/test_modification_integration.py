@@ -1,4 +1,5 @@
 """Module for test modification integration."""
+
 import random
 from typing import TYPE_CHECKING
 

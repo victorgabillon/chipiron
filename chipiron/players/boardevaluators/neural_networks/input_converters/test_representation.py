@@ -1,7 +1,7 @@
 """Test for the board representation."""
 
 from copy import deepcopy
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING
 
 import chess
 import pytest
@@ -14,7 +14,7 @@ from atomheart.board import (
 from atomheart.board.utils import FenPlusHistory, bitboard_rotate
 
 from chipiron.environments.chess.types import ChessState
-from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
+from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
     InternalTensorRepresentationType,
 )
 from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
@@ -22,6 +22,8 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.represent
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from atomheart.move.imove import MoveKey
     from valanga.represention_for_evaluation import ContentRepresentation
 

@@ -39,7 +39,7 @@ class Random:
     type: Literal[MoveSelectorTypes.Random]  # for serialization
     random_generator: random.Random = field(default_factory=random.Random)
 
-    def recommend(  # noqa: D417
+    def recommend(
         self,
         state: State,
         seed: Seed,

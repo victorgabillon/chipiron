@@ -207,17 +207,17 @@ class League:
         player_two_name_id = match_results.player_two_name_id
         elo_player_two: float = cast("float", self.players_elo[player_two_name_id][0])
         power_player_two = 10 ** (elo_player_two / 400)
-        Eone = power_player_one / (power_player_one + power_player_two)
-        Etwo = power_player_two / (power_player_one + power_player_two)
+        e_one = power_player_one / (power_player_one + power_player_two)
+        e_two = power_player_two / (power_player_one + power_player_two)
 
-        Perf_one = match_results.get_player_one_wins() + match_results.get_draws() / 2.0
-        Perf_two = match_results.get_player_two_wins() + match_results.get_draws() / 2.0
+        perf_one = match_results.get_player_one_wins() + match_results.get_draws() / 2.0
+        perf_two = match_results.get_player_two_wins() + match_results.get_draws() / 2.0
 
         print(elo_player_one, cast("float", self.players_elo[player_one_name_id][0]))
         old_elo_player_one = elo_player_one
         old_elo_player_two = elo_player_two
-        increment_one = self.K * (Perf_one - Eone)
-        increment_two = self.K * (Perf_two - Etwo)
+        increment_one = self.K * (perf_one - e_one)
+        increment_two = self.K * (perf_two - e_two)
         new_elo_one = old_elo_player_one + increment_one
         new_elo_two = old_elo_player_two + increment_two
         self.players_elo[player_one_name_id].appendleft(new_elo_one)

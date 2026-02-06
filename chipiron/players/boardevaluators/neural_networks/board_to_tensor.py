@@ -119,5 +119,4 @@ def get_tensor_from_tensors(
     else:
         tensor_castling = tensor_castling_black - tensor_castling_white
 
-    tensor_2 = torch.cat((tensor, tensor_castling), 0)
-    return tensor_2
+    return torch.cat((tensor, tensor_castling), 0)

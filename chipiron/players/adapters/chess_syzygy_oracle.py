@@ -1,4 +1,5 @@
 """Module for chess syzygy oracle."""
+
 from typing import TYPE_CHECKING
 
 from valanga.game import BranchName

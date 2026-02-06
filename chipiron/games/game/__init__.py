@@ -16,4 +16,4 @@ from .game import Game, ObservableGame
 from .game_args import GameArgs
 from .game_args_factory import GameArgsFactory
 
-__all__ = ["GameArgs", "GameArgsFactory", "Game", "ObservableGame"]
+__all__ = ["Game", "GameArgs", "GameArgsFactory", "ObservableGame"]

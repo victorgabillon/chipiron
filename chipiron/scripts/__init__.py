@@ -9,6 +9,6 @@ from .script_type import ScriptType
 
 __all__ = [
     "IScript",
-    "ScriptType",
     "Script",
+    "ScriptType",
 ]

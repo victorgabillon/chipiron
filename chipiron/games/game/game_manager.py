@@ -78,7 +78,7 @@ class GameManager[StateT: TurnState = TurnState]:
     # Game-specific rules adapter
     rules: GameRules[StateT]
 
-    def __init__(  # noqa: D417
+    def __init__(
         self,
         game: ObservableGame[StateT],
         display_state_evaluator: IGameStateEvaluator[StateT],
@@ -354,14 +354,14 @@ class GameManager[StateT: TurnState = TurnState]:
             )
             path_file_obj = f"{path_file}_game_report.yaml"
             path_file_txt = f"{path_file}.txt"
-            with open(path_file_txt, "a", encoding="utf-8") as the_fileText:
+            with open(path_file_txt, "a", encoding="utf-8") as file_text:
                 move_1 = None
                 for counter, move in enumerate(self.game.action_history):
                     if counter % 2 == 0:
                         move_1 = move
                     else:
                         if move_1 is not None:
-                            the_fileText.write(str(move_1) + " " + str(move) + "\n")
+                            file_text.write(str(move_1) + " " + str(move) + "\n")
             with open(path_file_obj, "w", encoding="utf-8") as file:
                 yaml.dump(
                     asdict(game_report, dict_factory=custom_asdict_factory),

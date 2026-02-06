@@ -1,4 +1,5 @@
 """Module for test game."""
+
 import chess
 import pytest
 from atomheart.board import IBoard, create_board

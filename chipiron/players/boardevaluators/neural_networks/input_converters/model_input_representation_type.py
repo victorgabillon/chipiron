@@ -1,10 +1,10 @@
 """Get the default internal tensor representation for a given model input representation type."""
 
-from enum import Enum
+from enum import StrEnum
 
 
 # this type is more about the technical implementation of internal representation within a node
-class InternalTensorRepresentationType(str, Enum):
+class InternalTensorRepresentationType(StrEnum):
     """Defines the types of internal tensor representations."""
 
     NOBUG364 = "364_no_bug"
@@ -13,7 +13,7 @@ class InternalTensorRepresentationType(str, Enum):
 
 
 # this type is about the type of representation input fed to NN models
-class ModelInputRepresentationType(str, Enum):
+class ModelInputRepresentationType(StrEnum):
     """Defines the types of model input representations."""
 
     NOBUG364 = "364_no_bug"

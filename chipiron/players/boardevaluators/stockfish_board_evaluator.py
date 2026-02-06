@@ -135,13 +135,11 @@ class StockfishBoardEvaluator:
                 if mate_moves is not None:
                     if mate_moves > 0:
                         return 1000.0 - mate_moves  # White wins
-                    else:
-                        return -1000.0 - mate_moves  # Black wins
+                    return -1000.0 - mate_moves  # Black wins
                 return 0.0
-            else:
-                # Convert centipawns to pawns (divide by 100)
-                cp_value = getattr(white_score, "cp", 0)
-                return float(cp_value) / 100.0
+            # Convert centipawns to pawns (divide by 100)
+            cp_value = getattr(white_score, "cp", 0)
+            return float(cp_value) / 100.0
 
         except (chess.engine.EngineError, FileNotFoundError, OSError):
             return 0.0  # Fallback on any error

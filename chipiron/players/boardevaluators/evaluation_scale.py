@@ -1,9 +1,9 @@
 """Defines the EvaluationScale enum for board evaluation scales."""
 
-from enum import Enum
+from enum import Enum, StrEnum
 
 
-class EvaluationScale(str, Enum):
+class EvaluationScale(StrEnum):
     """Enumeration of the evaluation scales used in board evaluations."""
 
     SYMMETRIC_UNIT_INTERVAL = "symmetric_unit_interval"  # [-1.0, 1.0]

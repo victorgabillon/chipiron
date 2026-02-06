@@ -10,8 +10,9 @@ Functions:
 
 import time
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable, Protocol, no_type_check
+from typing import TYPE_CHECKING, Any, Protocol, no_type_check
 
 import numpy as np
 import pandas
@@ -65,7 +66,7 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample], ABC):
     len: int | None
     preprocessing: bool
 
-    def __init__(self, file_name: path, preprocessing: bool) -> None:  # noqa: D417
+    def __init__(self, file_name: path, preprocessing: bool) -> None:
         """Initialize a new instance of the MyDataSet class.
 
         Args:
@@ -123,9 +124,7 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample], ABC):
             self.data = raw_data
 
         # Fix pandas pickle compatibility
-        if isinstance(self.data, pandas.DataFrame):
-            self.data = self.data.copy()
-        elif isinstance(self.data, list):
+        if isinstance(self.data, (pandas.DataFrame, list)):
             self.data = self.data.copy()
 
     @abstractmethod
@@ -148,7 +147,7 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample], ABC):
         return len(self.data)
 
     @no_type_check
-    def __getitem__(self, idx: int) -> ProcessedSample:  # noqa: D417
+    def __getitem__(self, idx: int) -> ProcessedSample:
         """Return the item at the given index.
 
         Always returns a ProcessedSample, either from preprocessed data or by processing on-the-fly.
@@ -168,10 +167,9 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample], ABC):
             # Data is already preprocessed
             assert isinstance(self.data, list)
             return self.data[index]
-        else:
-            # Process on-the-fly
-            assert isinstance(self.data, pandas.DataFrame)
-            return self.process_raw_row(self.data.iloc[index])
+        # Process on-the-fly
+        assert isinstance(self.data, pandas.DataFrame)
+        return self.process_raw_row(self.data.iloc[index])
 
     @no_type_check
     def get_unprocessed(self, idx: int) -> pandas.Series:
@@ -199,7 +197,7 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample], ABC):
 
 
 @no_type_check
-def process_stockfish_value(row: pandas.Series) -> float:  # noqa: D417
+def process_stockfish_value(row: pandas.Series) -> float:
     """Process the stockfish value for a given board and row.
 
     Args:
@@ -245,7 +243,7 @@ class FenAndValueData:
         return self.value_tensor
 
 
-def custom_collate_fn_fen_and_value(batch: list[FenAndValueData]) -> FenAndValueData:  # noqa: D103
+def custom_collate_fn_fen_and_value(batch: list[FenAndValueData]) -> FenAndValueData:
     inputs = [item.get_input_layer() for item in batch]
     targets = [item.get_target_value() for item in batch]
 
@@ -280,7 +278,7 @@ class FenAndValueDataSet(MyDataSet[FenAndValueData]):
         [float, IBoard], torch.Tensor
     ]  # transform white value to model output
 
-    def __init__(  # noqa: D417
+    def __init__(
         self,
         file_name: path,
         transform_white_value_to_model_output_function: Callable[
@@ -317,7 +315,7 @@ class FenAndValueDataSet(MyDataSet[FenAndValueData]):
         )
 
     @no_type_check
-    def process_raw_row(self, row: pandas.Series) -> FenAndValueData:  # noqa: D417
+    def process_raw_row(self, row: pandas.Series) -> FenAndValueData:
         """Process a raw row into FenAndValueData.
 
         Args:
@@ -346,7 +344,7 @@ class FenAndValueDataSet(MyDataSet[FenAndValueData]):
         )
         return FenAndValueData(fen_tensor=input_layer, value_tensor=target_value)
 
-    def process_raw_rows(self, dataframe: pandas.DataFrame) -> list[FenAndValueData]:  # noqa: D417
+    def process_raw_rows(self, dataframe: pandas.DataFrame) -> list[FenAndValueData]:
         """Process raw rows into input and target tensors.
 
         Args:

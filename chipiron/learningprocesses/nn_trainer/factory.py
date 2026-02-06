@@ -5,7 +5,7 @@ import pickle
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Iterable, List, Union, cast, no_type_check
+from typing import TYPE_CHECKING, Any, cast, no_type_check
 
 import torch
 import torch.optim as optim
@@ -34,7 +34,7 @@ from coral.neural_networks.output_converters.model_output_type import (
 
 from chipiron.environments.types import GameKind
 from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
-from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
+from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
     ModelInputRepresentationType,
 )
 from chipiron.utils import path
@@ -42,9 +42,20 @@ from chipiron.utils.dataclass import custom_asdict_factory
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.small_tools import mkdir_if_not_existing
 
-SerializableType = Union[
-    str, int, float, bool, None, Dict[str, Any], List[Any], set[Any], frozenset[Any]
-]
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+SerializableType = (
+    str
+    | int
+    | float
+    | bool
+    | None
+    | dict[str, Any]
+    | list[Any]
+    | set[Any]
+    | frozenset[Any]
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,13 +119,15 @@ class NNTrainerArgs:
 
     def __post_init__(self) -> None:
         """Run post-init."""
-        if self.reuse_existing_model:
-            if self.nn_parameters_file_if_reusing_existing_one is None:
-                raise Exception(
-                    "Problem because you are asking for a reuse of existing model without specifying a"
-                    f" param file as we have: reuse_existing_model {self.reuse_existing_model}"
-                    f" nn_param_file_if_not_reusing_existing_one {self.nn_parameters_file_if_reusing_existing_one}"
-                )
+        if (
+            self.reuse_existing_model
+            and self.nn_parameters_file_if_reusing_existing_one is None
+        ):
+            raise Exception(
+                "Problem because you are asking for a reuse of existing model without specifying a"
+                f" param file as we have: reuse_existing_model {self.reuse_existing_model}"
+                f" nn_param_file_if_not_reusing_existing_one {self.nn_parameters_file_if_reusing_existing_one}"
+            )
 
 
 def get_optimizer_file_path_from(folder_path: path) -> str:
@@ -158,7 +171,7 @@ def get_folder_training_copies_path_from(folder_path: path) -> str:
     return os.path.join(folder_path, "training_copies")
 
 
-def create_nn_trainer(  # noqa: D417
+def create_nn_trainer(
     args: NNTrainerArgs, nn: ChiNN, saving_folder: path
 ) -> NNPytorchTrainer:
     """Create an instance of NNPytorchTrainer based on the provided arguments and neural network.
@@ -218,8 +231,8 @@ def serialize_for_yaml(obj: Any) -> SerializableType:
 
     # Handle dictionaries
     if isinstance(obj, dict):
-        dict_obj = cast("Dict[Any, Any]", obj)
-        dict_result: Dict[str, SerializableType] = {}
+        dict_obj = cast("dict[Any, Any]", obj)
+        dict_result: dict[str, SerializableType] = {}
         for key, value in dict_obj.items():
             str_key: str = str(key)
             serialized_value: SerializableType = serialize_for_yaml(value)
@@ -276,7 +289,7 @@ def safe_nn_architecture_save(
         exit(-1)
 
 
-def safe_nn_param_save(  # noqa: D417
+def safe_nn_param_save(
     nn: ChiNN,
     nn_param_folder_name: path,
     file_name: str | None = None,
@@ -307,18 +320,18 @@ def safe_nn_param_save(  # noqa: D417
         path_to_param_file = nn_file_path_pt
     try:
         chipiron_logger.info(f"saving to file: {path_to_param_file}")
-        with open(path_to_param_file, "wb") as fileNNW:
-            torch.save(nn.state_dict(), fileNNW)
+        with open(path_to_param_file, "wb") as file_nnw:
+            torch.save(nn.state_dict(), file_nnw)
             nn.log_readable_model_weights_to_file(file_path=file_name_yaml)
-        with open(path_to_param_file + "_save", "wb") as fileNNW:
-            torch.save(nn.state_dict(), fileNNW)
+        with open(path_to_param_file + "_save", "wb") as file_nnw:
+            torch.save(nn.state_dict(), file_nnw)
     except KeyboardInterrupt:
-        with open(path_to_param_file + "_save", "wb") as fileNNW:
-            torch.save(nn.state_dict(), fileNNW)
+        with open(path_to_param_file + "_save", "wb") as file_nnw:
+            torch.save(nn.state_dict(), file_nnw)
         exit(-1)
 
 
-def safe_nn_trainer_save(nn_trainer: NNPytorchTrainer, nn_folder_path: path) -> None:  # noqa: D417
+def safe_nn_trainer_save(nn_trainer: NNPytorchTrainer, nn_folder_path: path) -> None:
     """Safely saves the optimizer and scheduler of the given NNPytorchTrainer object to files.
 
     Args:
