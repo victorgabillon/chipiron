@@ -18,6 +18,17 @@ from chipiron.utils.communication.gui_encoder import GuiEncoder
 if TYPE_CHECKING:
     from chipiron.players.factory_higher_level import PlayerObserverFactory
 
+
+class EnvironmentCreationError(ValueError):
+    """Base error for environment creation failures."""
+
+
+class EnvironmentNotFoundError(EnvironmentCreationError):
+    """Raised when an environment implementation is missing."""
+
+    def __init__(self, game_kind: GameKind) -> None:
+        super().__init__(f"No Environment for game_kind={game_kind!r}")
+
 StateT = TypeVar("StateT")
 StateSnapT = TypeVar("StateSnapT")
 
@@ -109,4 +120,4 @@ def make_environment(
             assert isinstance(deps, CheckersEnvironmentDeps)
             raise NotImplementedError("Environment for CHECKERS is not implemented yet")
         case _:
-            raise ValueError(f"No Environment for game_kind={game_kind!r}")
+            raise EnvironmentNotFoundError(game_kind)

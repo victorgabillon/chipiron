@@ -16,6 +16,19 @@ if TYPE_CHECKING:
     from atomheart.move.imove import MoveKey
 
 
+class ChessAdapterError(ValueError):
+    """Base error for chess adapter failures."""
+
+
+class SingleLegalMoveRequiredError(ChessAdapterError):
+    """Raised when only_action_name is called with multiple legal moves."""
+
+    def __init__(self, move_count: int) -> None:
+        super().__init__(
+            f"only_action_name called but position has != 1 legal move (count={move_count})"
+        )
+
+
 class ChessAdapter:
     """Chess-specific adapter used by the game-agnostic `Player`.
 
@@ -49,7 +62,7 @@ class ChessAdapter:
         """Only action name."""
         keys = runtime_state.legal_moves.get_all()
         if len(keys) != 1:
-            raise ValueError("only_action_name called but position has != 1 legal move")
+            raise SingleLegalMoveRequiredError(len(keys))
         move_key: MoveKey = keys[0]
         move_uci: MoveUci = runtime_state.get_uci_from_move_key(move_key)
         return move_uci

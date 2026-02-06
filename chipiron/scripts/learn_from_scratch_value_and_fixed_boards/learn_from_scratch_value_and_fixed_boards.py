@@ -12,7 +12,7 @@ from dataclasses import asdict, dataclass, field
 from typing import cast
 
 import mlflow
-import pandas
+import pandas as pd
 from atomheart.board.utils import FenPlusHistory
 from coral.chi_nn import ChiNN
 from coral.neural_networks.factory import (
@@ -179,7 +179,7 @@ class LearnNNFromScratchScript:
         chipiron.set_seeds(seed=self.args.base_script_args.seed)
 
         def transform_dataset_value_to_white_value_function(
-            row: pandas.Series,
+            row: pd.Series,
         ) -> float:
             # Cast to help type checker understand the expected type
             value = cast("float", row["value"])
@@ -280,7 +280,7 @@ class LearnNNFromScratchScript:
                 )["fen"],
             )
 
-            assert isinstance(self.boards_dataset.data, pandas.DataFrame)
+            assert isinstance(self.boards_dataset.data, pd.DataFrame)
 
             with suppress_logging(
                 chipiron_logger, level=logging.WARNING

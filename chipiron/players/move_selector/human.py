@@ -4,7 +4,7 @@ to select moves through the command line interface.
 """
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal
+from typing import Literal
 
 import atomheart.board as boards
 from valanga.game import BranchName, Seed
@@ -14,10 +14,6 @@ from chipiron.environments.chess.types import ChessState
 from chipiron.utils.logger import chipiron_logger
 
 from .move_selector_types import MoveSelectorTypes
-
-if TYPE_CHECKING:
-    from atomheart.move import MoveUci
-    from atomheart.move.imove import MoveKey
 
 
 @dataclass
@@ -70,10 +66,9 @@ class CommandLineHumanMoveSelector:
 
         """
         chipiron_logger.info("Legal Moves %s", board.legal_moves)
-        legal_moves_uci: list[MoveUci] = []
-        move: MoveKey
-        for move in board.legal_moves:
-            legal_moves_uci.append(board.get_uci_from_move_key(move))
+        legal_moves_uci = [
+            board.get_uci_from_move_key(move) for move in board.legal_moves
+        ]
         chipiron_logger.info("Legal Moves %s", legal_moves_uci)
 
         good_move: bool = False

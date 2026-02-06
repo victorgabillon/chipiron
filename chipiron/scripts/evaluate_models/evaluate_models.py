@@ -40,6 +40,17 @@ if TYPE_CHECKING:
     from chipiron.environments.chess.types import ChessState
 
 
+class EvaluationReportError(yaml.YAMLError):
+    """Base error for evaluation report loading."""
+
+
+class EvaluationReportLoadError(EvaluationReportError):
+    """Raised when the evaluation report cannot be loaded."""
+
+    def __init__(self) -> None:
+        super().__init__("Error loading the evaluation report")
+
+
 @dataclass
 class ModelEvaluation:
     """Represents a model evaluation."""
@@ -115,7 +126,7 @@ def evaluate_models(
             )
         except yaml.YAMLError as exc:
             print(exc)
-            raise yaml.YAMLError("Error loading the evaluation report") from exc
+            raise EvaluationReportLoadError from exc
 
     # Evaluate the models if necessary
     data_loader_stockfish_boards_test = None

@@ -8,6 +8,24 @@ from atomheart.move import MoveUci
 from chipiron.games.game.final_game_result import FinalGameResult
 
 
+class MatchResultsError(ValueError):
+    """Base error for match result handling."""
+
+
+class InvalidMatchResultError(MatchResultsError):
+    """Raised when a match result is not supported."""
+
+    def __init__(self, game_result: FinalGameResult) -> None:
+        super().__init__(f"Unsupported game result: {game_result}")
+
+
+class UnknownWhitePlayerError(MatchResultsError):
+    """Raised when the white player's identity is unknown."""
+
+    def __init__(self, white_player_name_id: str) -> None:
+        super().__init__(f"Unknown white player id: {white_player_name_id}")
+
+
 @dataclass
 class SimpleResults:
     """Represents the simple results of a match."""
@@ -138,9 +156,9 @@ class MatchResults:
             elif game_result == FinalGameResult.DRAW:
                 self.player_two_is_white_draws += 1
             else:
-                raise Exception("!")
+                raise InvalidMatchResultError(game_result)
         else:
-            raise Exception("?")
+            raise UnknownWhitePlayerError(white_player_name_id)
 
     def finish(self) -> None:
         """Finishes the match and marks it as finished."""

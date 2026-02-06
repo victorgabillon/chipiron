@@ -16,6 +16,17 @@ from chipiron.games.game.game_rules import (
 from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 
 
+class ChessRulesError(ValueError):
+    """Base error for chess rules failures."""
+
+
+class UnexpectedChessResultError(ChessRulesError):
+    """Raised when the board result string is not recognized."""
+
+    def __init__(self, result: str, owner: str) -> None:
+        super().__init__(f"unexpected result value {result} in {owner}")
+
+
 @dataclass(frozen=True)
 class ChessRules(GameRules[ChessState]):
     """Chessrules implementation."""
@@ -76,10 +87,8 @@ class ChessRules(GameRules[ChessState]):
                 return GameOutcome(kind=OutcomeKind.DRAW, reason=reason)
             case "*":
                 return GameOutcome(kind=OutcomeKind.UNKNOWN, reason=reason)
-            case other:
-                raise ValueError(
-                    f"unexpected result value {other} in {self.__class__.__name__}"
-                )
+            case _:
+                raise UnexpectedChessResultError(result, self.__class__.__name__)
 
     def _assessment_from_over_event(
         self, winner: Winner, how_over: HowOver, reason: str | None = None

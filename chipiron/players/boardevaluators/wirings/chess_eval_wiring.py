@@ -26,6 +26,13 @@ from chipiron.players.boardevaluators.stockfish_board_evaluator import (
 from chipiron.utils.logger import chipiron_logger
 
 
+class ChessEvalWiringError(ValueError):
+    """Raised when chess evaluator wiring receives unsupported args."""
+
+    def __init__(self, args: object) -> None:
+        super().__init__(f"Unsupported chi args: {args!r}")
+
+
 @dataclass(frozen=True, slots=True)
 class BoardEvalArgsWrapper:
     """YAML wrapper for loading board evaluator arguments."""
@@ -77,7 +84,7 @@ def _build_chi() -> StateEvaluator[ChessState]:
                 )
             )
         case _:
-            raise ValueError(f"Unsupported chi args: {args!r}")
+            raise ChessEvalWiringError(args)
 
 
 def _build_oracle(*, can_oracle: bool) -> StateEvaluator[ChessState] | None:

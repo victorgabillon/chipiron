@@ -56,6 +56,13 @@ if typing.TYPE_CHECKING:
     from atomheart.move.imove import MoveKey
 
 
+class GuiUpdateError(AssertionError):
+    """Raised when a GUI update payload is not handled."""
+
+    def __init__(self, payload: object) -> None:
+        super().__init__(f"Unhandled GuiUpdate payload: {payload!r}")
+
+
 def format_state_eval(ev: StateEvaluation | None) -> str:
     """Format state eval."""
     if ev is None:
@@ -370,7 +377,7 @@ class MainWindow(QWidget):
     @typing.no_type_check
     @typing.override
     @Slot(QWidget)
-    def mousePressEvent(self, event) -> None:
+    def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
         """Handle left mouse clicks and enable moving chess pieces by.
 
         clicking on a chess piece and then the target square.
@@ -662,7 +669,7 @@ class MainWindow(QWidget):
                 self.update_game_play_status(payload.status)
 
             case _:
-                raise AssertionError(f"Unhandled GuiUpdate payload: {payload!r}")
+                raise GuiUpdateError(payload)
 
     def display_move_history(self) -> None:
         """Display the move history in a table widget.
@@ -731,17 +738,16 @@ class MainWindow(QWidget):
 
         self.legal_moves_button.setWordWrap(True)
         self.legal_moves_button.setMinimumHeight(100)
-        lines: list[str] = []
-
-        # Only add sublists if they are non-empty
-        for sublist in [
-            all_moves_uci_chi[:7],
-            all_moves_uci_chi[7:14],
-            all_moves_uci_chi[14:21],
-            all_moves_uci_chi[21:28],
-        ]:
-            if sublist:  # skip empty
-                lines.append("    " + str(sublist))
+        lines = [
+            "    " + str(sublist)
+            for sublist in [
+                all_moves_uci_chi[:7],
+                all_moves_uci_chi[7:14],
+                all_moves_uci_chi[14:21],
+                all_moves_uci_chi[21:28],
+            ]
+            if sublist
+        ]
 
         # Join lines with <br>
         moves_html = "\n".join(lines)
