@@ -27,7 +27,7 @@ def destroy(root: tk.Tk) -> bool:
     return True
 
 
-# TODO switch to pygame
+# TODO: switch to pygame
 
 
 def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:

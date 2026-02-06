@@ -303,9 +303,7 @@ class FenAndValueDataSet(MyDataSet[FenAndValueData]):
         transform_white_value_to_model_output_function: Callable[
             [float, IBoard], torch.Tensor
         ],
-        transform_dataset_value_to_white_value_function: Callable[
-            [pd.Series], float
-        ],
+        transform_dataset_value_to_white_value_function: Callable[[pd.Series], float],
         transform_board_function: ContentToInputFunction[ChessState],
         preprocessing: bool = False,
     ) -> None:
@@ -346,7 +344,7 @@ class FenAndValueDataSet(MyDataSet[FenAndValueData]):
         """
         fen_: Fen = row["fen"]
 
-        # todo should we make it general and allow rust boards just for testing all comptabilities ?
+        # TODO: should we make it general and allow rust boards just for testing all comptabilities ?
         board: BoardChi = create_board_chi(
             fen_with_history=FenPlusHistory(current_fen=fen_),
             use_board_modification=True,

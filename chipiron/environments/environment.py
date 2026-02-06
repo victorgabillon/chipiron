@@ -29,6 +29,7 @@ class EnvironmentNotFoundError(EnvironmentCreationError):
     def __init__(self, game_kind: GameKind) -> None:
         super().__init__(f"No Environment for game_kind={game_kind!r}")
 
+
 StateT = TypeVar("StateT")
 StateSnapT = TypeVar("StateSnapT")
 

@@ -42,7 +42,7 @@ class RunTheLeagueScript(IScript):
 
         try:
             with open(self.folder_league + "/players.pickle", "rb") as openfile:
-                # TODO not use pickle make somehting human readbale and moidifiable
+                # TODO: not use pickle make somehting human readbale and moidifiable
                 self.league = pickle.load(openfile)
             print("Previous league loaded successfully")
         except (FileNotFoundError, pickle.UnpicklingError):

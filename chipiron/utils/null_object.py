@@ -21,7 +21,6 @@ class NullObject:
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize the instance."""
-        pass
 
     def __call__(self, *args: Any, **kwargs: Any) -> Self:
         """Invoke the callable instance."""
@@ -41,8 +40,6 @@ class NullObject:
 
     def __setattr__(self, name: Any, value: Any) -> None:
         """Handle attribute assignment."""
-        pass
 
     def __delattr__(self, name: Any) -> None:
         """Handle attribute deletion."""
-        pass

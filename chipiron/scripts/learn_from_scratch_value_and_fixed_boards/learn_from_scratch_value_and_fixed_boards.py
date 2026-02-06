@@ -300,7 +300,6 @@ class LearnNNFromScratchScript:
 
     def terminate(self) -> None:
         """Finishing the script. Profiling or timing."""
-        pass
 
     @classmethod
     def get_args_dataclass_name(cls) -> type[LearnNNFromScratchScriptArgs]:

@@ -346,7 +346,7 @@ class GameManager[StateT: TurnState = TurnState]:
             None
 
         """
-        # todo probably the txt file should be a valid PGN file : https://en.wikipedia.org/wiki/Portable_Game_Notation
+        # TODO: probably the txt file should be a valid PGN file : https://en.wikipedia.org/wiki/Portable_Game_Notation
         if self.path_to_store_result is not None:
             path_file: path = (
                 f"{self.path_to_store_result}_{idx}_W:{self.player_color_to_id[Color.WHITE]}"

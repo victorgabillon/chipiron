@@ -101,7 +101,7 @@ def create_tag_player(
     args_player: ChessPlayerArgs = tag.get_players_args()
 
     if tree_branch_limit is not None:
-        # todo find a prettier way to do this
+        # TODO: find a prettier way to do this
         assert isinstance(args_player.main_move_selector, TreeAndValueAppArgs)
         assert isinstance(
             args_player.main_move_selector.anemone_args, TreeAndValuePlayerArgs

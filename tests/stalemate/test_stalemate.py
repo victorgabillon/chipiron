@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 @pytest.mark.parametrize(("use_rusty_board"), (True, False))
 def test_three_fold_repetition(use_rusty_board: bool):
-    # todo maybe this sis more a unit test for the is_game_over method atm
+    # TODO: maybe this sis more a unit test for the is_game_over method atm
     """Test three fold repetition."""
     board_factory: BoardFactory = create_board_factory(use_rust_boards=use_rusty_board)
     board: IBoard = board_factory(

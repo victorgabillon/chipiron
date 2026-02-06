@@ -359,7 +359,7 @@ class Window(QtWidgets.QWidget):
         if key == "z":
             self.father()
 
-        # todo there is collision as these numbers are used for children too now...
+        # TODO: there is collision as these numbers are used for children too now...
 
     @typing.no_type_check
     def father(self) -> None:

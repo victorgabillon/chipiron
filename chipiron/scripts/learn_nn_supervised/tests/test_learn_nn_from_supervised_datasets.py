@@ -41,7 +41,7 @@ configs_dataclasses: list[Any] = [
             reuse_existing_model=False,
             specific_saving_folder="chipiron/scripts/learn_nn_supervised/tests/tests_outputs",
             neural_network_architecture_args_path_to_yaml_file="chipiron/scripts/learn_nn_supervised/"
-            + "board_evaluators_common_training_data/nn_pytorch/architectures/"
+            "board_evaluators_common_training_data/nn_pytorch/architectures/"
             + architecture_file,
             game_input=PartialOpGameInputArgs(
                 game_kind=GameKind.CHESS,

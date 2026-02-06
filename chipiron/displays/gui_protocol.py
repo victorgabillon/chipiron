@@ -143,8 +143,6 @@ class GuiUpdate:
 class CmdBackOneMove:
     """Command to rewind a single move in the current game."""
 
-    pass
-
 
 @dataclass(frozen=True, slots=True)
 class CmdSetStatus:

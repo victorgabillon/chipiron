@@ -137,7 +137,7 @@ class OneMatchScript:
 
         chipiron_logger.info("Finish the run of the match")
 
-        # TODO check the good closing of processes
+        # TODO: check the good closing of processes
 
     def terminate(self) -> None:
         """Terminates the script and cleans up any resources."""

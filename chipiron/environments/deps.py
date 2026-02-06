@@ -30,7 +30,5 @@ class ChessEnvironmentDeps:
 class CheckersEnvironmentDeps:
     """Dependencies required to build checkers environments."""
 
-    pass
-
 
 EnvDeps = ChessEnvironmentDeps | CheckersEnvironmentDeps
