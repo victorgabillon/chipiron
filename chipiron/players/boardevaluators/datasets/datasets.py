@@ -42,6 +42,7 @@ class DatasetNotLoadedError(DatasetError):
     """Raised when attempting to access an unloaded dataset."""
 
     def __init__(self) -> None:
+        """Initialize the error for an unloaded dataset."""
         super().__init__("Dataset not loaded yet. Call `load()` first.")
 
 
@@ -49,6 +50,7 @@ class UnprocessedDataUnavailableError(DatasetError):
     """Raised when unprocessed data is requested but unavailable."""
 
     def __init__(self) -> None:
+        """Initialize the error for unavailable unprocessed data."""
         super().__init__("Unprocessed data is not available.")
 
 
@@ -257,7 +259,8 @@ class FenAndValueData:
 
 
 def custom_collate_fn_fen_and_value(batch: list[FenAndValueData]) -> FenAndValueData:
-    """Custom collate function for FenAndValueData.
+    """Collate FenAndValueData items into batched tensors.
+
     Args:
         batch (list[FenAndValueData]): The batch of FenAndValueData items.
     Returns:

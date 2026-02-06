@@ -38,6 +38,7 @@ class EvaluationScaleError(ValueError):
     """Raised when an unsupported evaluation scale is requested."""
 
     def __init__(self, evaluation_scale: EvaluationScale) -> None:
+        """Initialize the error with the unsupported evaluation scale."""
         super().__init__(f"Unsupported evaluation scale: {evaluation_scale}")
 
 

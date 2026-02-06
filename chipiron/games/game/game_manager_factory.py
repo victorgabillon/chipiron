@@ -59,6 +59,7 @@ class MissingSessionIdError(GameManagerFactoryError):
     """Raised when the session id is not provided."""
 
     def __init__(self) -> None:
+        """Initialize the error for a missing session id."""
         super().__init__("GameManagerFactory.session_id must be set")
 
 

@@ -24,6 +24,7 @@ class UnexpectedChessResultError(ChessRulesError):
     """Raised when the board result string is not recognized."""
 
     def __init__(self, result: str, owner: str) -> None:
+        """Initialize the error with the unexpected result string."""
         super().__init__(f"unexpected result value {result} in {owner}")
 
 

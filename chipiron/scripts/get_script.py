@@ -29,6 +29,7 @@ class ScriptTypeNotFoundError(KeyError):
     """Raised when a script type cannot be resolved to a script class."""
 
     def __init__(self, script_type: ScriptType) -> None:
+        """Initialize the error with the missing script type."""
         super().__init__(
             f"Cannot find the script type {script_type} in file {__name__}"
         )

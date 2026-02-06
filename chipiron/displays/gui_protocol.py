@@ -24,6 +24,7 @@ class UnhandledGuiProtocolValueError(GuiProtocolError):
     """Raised when an unexpected value is received in the GUI protocol."""
 
     def __init__(self, value: object) -> None:
+        """Initialize the error with the unexpected value."""
         super().__init__(f"Unhandled value: {value!r}")
 
 

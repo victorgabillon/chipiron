@@ -30,6 +30,7 @@ class ChessEvalWiringError(ValueError):
     """Raised when chess evaluator wiring receives unsupported args."""
 
     def __init__(self, args: object) -> None:
+        """Initialize the error with the unsupported args."""
         super().__init__(f"Unsupported chi args: {args!r}")
 
 

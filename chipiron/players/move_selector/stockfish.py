@@ -53,6 +53,7 @@ class StockfishBinaryNotFoundError(StockfishError):
     """Raised when the Stockfish binary cannot be found."""
 
     def __init__(self, path: Path) -> None:
+        """Initialize the error with the missing binary path."""
         msg = (
             f"Stockfish binary not found at {path}.\n"
             "Please install Stockfish by running:\n"
@@ -67,6 +68,7 @@ class StockfishStartupError(StockfishError):
     """Raised when the Stockfish engine fails to start."""
 
     def __init__(self, path: Path, original_error: OSError) -> None:
+        """Initialize the error with the failed engine path."""
         msg = (
             f"Failed to start Stockfish engine at {path}.\n"
             "The binary may be corrupted. Try reinstalling with:\n"

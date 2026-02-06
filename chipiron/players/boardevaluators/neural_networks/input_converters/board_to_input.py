@@ -40,6 +40,7 @@ class ModelInputRepresentationError(ValueError):
     """Raised when a model input representation type is unsupported."""
 
     def __init__(self, representation: ModelInputRepresentationType) -> None:
+        """Initialize the error with the unsupported representation."""
         super().__init__(f"no matching case for {representation} in {__name__}")
 
 

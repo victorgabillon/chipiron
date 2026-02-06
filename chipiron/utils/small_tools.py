@@ -26,6 +26,7 @@ class PackageResourceNotFoundError(PackageResourceError):
     """Raised when a package resource cannot be located."""
 
     def __init__(self, relative_path: str) -> None:
+        """Initialize the error with the missing resource path."""
         super().__init__(f"Resource not found: {relative_path} in package 'chipiron'")
 
 
@@ -33,6 +34,7 @@ class PackageNotFoundError(ImportError):
     """Raised when a package cannot be found."""
 
     def __init__(self, package_name: str) -> None:
+        """Initialize the error with the missing package name."""
         super().__init__(f"Cannot find package '{package_name}'")
 
 

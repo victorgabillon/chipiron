@@ -20,6 +20,7 @@ class EmptyFenError(StartingPositionError):
     """Raised when a FEN string is missing."""
 
     def __init__(self) -> None:
+        """Initialize the error for a missing FEN string."""
         super().__init__("Empty fen in FenStartingPositionArgs")
 
 
@@ -27,6 +28,7 @@ class EmptyFileNameError(StartingPositionError):
     """Raised when a starting position file name is missing."""
 
     def __init__(self) -> None:
+        """Initialize the error for a missing file name."""
         super().__init__("Empty file_name in FileStartingPositionArgs")
 
 
@@ -34,6 +36,7 @@ class StartingPositionFileEmptyError(StartingPositionError):
     """Raised when a starting position file contains no data."""
 
     def __init__(self, path: Path) -> None:
+        """Initialize the error with the empty file path."""
         super().__init__(f"Starting position file is empty: {path}")
 
 
@@ -41,6 +44,7 @@ class StartingPositionFileNotFoundError(StartingPositionError):
     """Raised when a starting position file cannot be located."""
 
     def __init__(self, file_name: str) -> None:
+        """Initialize the error with the missing file name."""
         super().__init__(f"Starting position file not found: {file_name}")
 
 
@@ -48,6 +52,7 @@ class InvalidStartingPositionFileError(StartingPositionError):
     """Raised when a starting position file has invalid contents."""
 
     def __init__(self, path: Path) -> None:
+        """Initialize the error with the invalid file path."""
         super().__init__(f"Invalid starting position file: {path}")
 
 
@@ -55,6 +60,7 @@ class InvalidBoardRankError(StartingPositionError):
     """Raised when a board rank cannot be compressed to FEN."""
 
     def __init__(self, rank: str) -> None:
+        """Initialize the error with the invalid rank string."""
         super().__init__(f"Invalid board rank: {rank!r}")
 
 
