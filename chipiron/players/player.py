@@ -6,7 +6,7 @@ The core `Player` is generic and delegates all game-specific logic to a `GameAda
 - optional oracle fast-path (e.g. syzygy in chess)
 """
 
-from typing import Generic, Protocol, TypeVar
+from typing import Protocol, TypeVar
 
 from valanga.game import BranchName, Seed
 from valanga.policy import NotifyProgressCallable, Recommendation
@@ -23,15 +23,19 @@ class GameAdapter(Protocol[StateSnapT, RuntimeStateT]):
     def build_runtime_state(self, snapshot: StateSnapT) -> RuntimeStateT:
         """Build runtime state."""
         ...
+
     def legal_action_count(self, runtime_state: RuntimeStateT) -> int:
         """Legal action count."""
         ...
+
     def only_action_name(self, runtime_state: RuntimeStateT) -> BranchName:
         """Only action name."""
         ...
+
     def oracle_action_name(self, runtime_state: RuntimeStateT) -> BranchName | None:
         """Oracle action name."""
         ...
+
     def recommend(
         self,
         runtime_state: RuntimeStateT,
@@ -40,7 +44,9 @@ class GameAdapter(Protocol[StateSnapT, RuntimeStateT]):
     ) -> Recommendation:
         """Recommend."""
         ...
-class Player(Generic[StateSnapT, RuntimeStateT]):
+
+
+class Player[StateSnapT, RuntimeStateT]:
     """Fully game-agnostic player: recommends an action given a snapshot."""
 
     id: PlayerId

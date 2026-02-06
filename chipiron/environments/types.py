@@ -1,9 +1,11 @@
 """Module for types."""
-from enum import Enum
+
+from enum import StrEnum
 
 
 # --------- Enums / IDs ---------
-class GameKind(str, Enum):
+class GameKind(StrEnum):
     """Gamekind implementation."""
+
     CHESS = "chess"
     CHECKERS = "checkers"

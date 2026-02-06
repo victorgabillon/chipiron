@@ -1,4 +1,4 @@
-"""Tests for the Syzygy table-based board evaluator."""
+"""Test for the Syzygy table-based board evaluator."""
 
 from typing import TYPE_CHECKING
 
@@ -25,7 +25,6 @@ if TYPE_CHECKING:
 
 def test_best_move_syzygy_table() -> None:
     """Test the best move selection from the Syzygy table."""
-
     syzygy_table_chi: SyzygyTable[BoardChi] | None
     syzygy_table_chi = create_syzygy_python()
 
@@ -42,7 +41,7 @@ def test_best_move_syzygy_table() -> None:
     )
     best_move_chi: MoveKey = syzygy_table_chi.best_move(board_chi)
 
-    assert "h3g4" == board_chi.get_uci_from_move_key(best_move_chi)
+    assert board_chi.get_uci_from_move_key(best_move_chi) == "h3g4"
 
     syzygy_table: SyzygyTable[RustyBoardChi] | None
     syzygy_table = create_syzygy_rust()
@@ -56,7 +55,7 @@ def test_best_move_syzygy_table() -> None:
     )
     best_move_rust: MoveKey = syzygy_table.best_move(board_rust)
 
-    assert "h3g4" == board_rust.get_uci_from_move_key(best_move_rust)
+    assert board_rust.get_uci_from_move_key(best_move_rust) == "h3g4"
 
 
 if __name__ == "__main__":

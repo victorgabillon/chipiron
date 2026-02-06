@@ -1,6 +1,4 @@
-"""
-Module for creating players.
-"""
+"""Module for creating players."""
 
 import random
 from dataclasses import dataclass
@@ -61,6 +59,7 @@ if TYPE_CHECKING:
 @dataclass
 class PlayerCreationArgs:
     """Data container for PlayerCreationArgs."""
+
     random_generator: random.Random
     implementation_args: ImplementationArgs
     universal_behavior: bool
@@ -78,8 +77,7 @@ def create_tag_player(
     queue_progress_player: PutQueue[IsDataclass] | None = None,
     tree_branch_limit: int | None = None,
 ) -> Player[FenPlusHistory, ChessState]:
-    """
-    Creates the chipiron champion/representative/standard/default player
+    """Create the chipiron champion/representative/standard/default player.
 
     Args:
         depth: int, the depth at which computation should be made.
@@ -146,6 +144,7 @@ def create_chipiron_player(
 
     Returns:
         Player: The created Chipiron player.
+
     """
     return create_tag_player(
         tag=PlayerConfigTag.CHIPIRON,
@@ -180,6 +179,7 @@ def create_chess_player(
 
     Returns:
         Player: The created player object.
+
     """
     chipiron_logger.debug("Create player")
 
@@ -270,7 +270,7 @@ def create_game_player(
     implementation_args: ImplementationArgs,
     universal_behavior: bool,
 ) -> GamePlayer[FenPlusHistory, ChessState]:
-    """Create a game player
+    """Create a game player.
 
     This function creates a game player using the provided player factory arguments and player color.
 
@@ -280,6 +280,7 @@ def create_game_player(
 
     Returns:
         GamePlayer: The created game player.
+
     """
     random_generator = random.Random(player_factory_args.seed)
     player: Player[FenPlusHistory, ChessState] = create_chess_player(

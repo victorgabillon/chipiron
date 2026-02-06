@@ -1,6 +1,4 @@
-"""
-This module contains a factory to create board representations.
-"""
+"""Document the module contains a factory to create board representations."""
 
 import torch
 from atomheart.board import BoardModificationP
@@ -8,7 +6,7 @@ from valanga.representation_factory import RepresentationFactory
 
 from chipiron.environments.chess.types import ChessState
 
-from .ModelInputRepresentationType import InternalTensorRepresentationType
+from .model_input_representation_type import InternalTensorRepresentationType
 from .rep_364 import create_from_board as create_from_board_364_no_bug
 from .rep_364 import (
     create_from_state_and_modifications as create_from_state_and_modifications_364_no_bug,
@@ -22,8 +20,7 @@ from .rep_364_bug import (
 def create_board_representation_factory(
     internal_tensor_representation_type: InternalTensorRepresentationType,
 ) -> RepresentationFactory[ChessState, torch.Tensor, BoardModificationP] | None:
-    """
-    Create a board representation based on the given string.
+    """Create a board representation based on the given string.
 
     Args:
         internal_tensor_representation_type (InternalTensorRepresentationType): The string representing the board representation.

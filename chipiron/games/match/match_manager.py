@@ -1,6 +1,4 @@
-"""
-Module in charge of playing one match
-"""
+"""Module in charge of playing one match."""
 
 import os
 import queue
@@ -26,8 +24,7 @@ if TYPE_CHECKING:
 
 
 class MatchManager:
-    """
-    Object in charge of playing one match
+    """Object in charge of playing one match.
 
     Args:
         player_one_id (str): The ID of player one.
@@ -36,6 +33,7 @@ class MatchManager:
         game_args_factory (GameArgsFactory): The factory for creating game arguments.
         match_results_factory (MatchResultsFactory): The factory for creating match results.
         output_folder_path (path | None, optional): The path to the output folder. Defaults to None.
+
     """
 
     def __init__(
@@ -56,6 +54,7 @@ class MatchManager:
             game_args_factory (GameArgsFactory): The factory object for creating game arguments.
             match_results_factory (MatchResultsFactory): The factory object for creating match results.
             output_folder_path (path | None, optional): The path to the output folder. Defaults to None.
+
         """
         self.player_one_id = player_one_id
         self.player_two_id = player_two_id
@@ -66,15 +65,16 @@ class MatchManager:
         self.print_info()
 
     def print_info(self) -> None:
-        """Prints the information about the players in the match.
+        """Print the information about the players in the match.
 
         This method prints the IDs of player one and player two.
 
-        Parameters:
+        Args:
             None
 
         Returns:
             None
+
         """
         chipiron_logger.info(
             f"player one is {self.player_one_id}",
@@ -91,6 +91,7 @@ class MatchManager:
 
         Returns:
             MatchReport: The report of the match, including the move history and match results.
+
         """
         chipiron_logger.info("Playing the match")
 
@@ -200,6 +201,7 @@ class MatchManager:
 
         Returns:
             GameReport: The report of the game.
+
         """
         game_manager: GameManager[Any] = self.game_manager_factory.create(
             args_game_manager=args_game,
@@ -217,10 +219,11 @@ class MatchManager:
         return game_report
 
     def print_stats_to_file(self, match_results: IMatchResults) -> None:
-        """Prints the match statistics to a file.
+        """Print the match statistics to a file.
 
         Args:
             match_results (IMatchResults): The match results object containing the statistics.
+
         """
         if self.output_folder_path is not None:
             path_file: path = os.path.join(self.output_folder_path, "gameStats.txt")
@@ -232,6 +235,7 @@ class MatchManager:
 
         Args:
             match_report (MatchReport): The match report to be saved.
+
         """
         if self.output_folder_path is not None:
             ...

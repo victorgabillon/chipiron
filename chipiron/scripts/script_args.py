@@ -1,9 +1,8 @@
-"""
-This module defines the BaseScriptArgs dataclass, which encapsulates configuration arguments for script execution.
+"""Document the module defines the BaseScriptArgs dataclass, which encapsulates configuration arguments for script execution.
+
 It includes options for profiling, testing, enforcing universal algorithm behavior, specifying output folders,
 setting random seeds, and configuring logging levels. The output folder names can be automatically generated
 based on the current date and time if not explicitly provided.
-
 """
 
 import logging
@@ -15,9 +14,7 @@ from chipiron.utils import path
 
 @dataclass
 class LoggingArgs:
-    """
-    Dataclass representing logging configuration arguments.
-    """
+    """Dataclass representing logging configuration arguments."""
 
     # the logging level for main chipiron logger
     chipiron: int = logging.INFO
@@ -27,9 +24,7 @@ class LoggingArgs:
 
 @dataclass
 class BaseScriptArgs:
-    """
-    Dataclass representing the arguments for the Script class.
-    """
+    """Dataclass representing the arguments for the Script class."""
 
     # whether the script is profiling computation usage
     profiling: bool = False
@@ -58,7 +53,7 @@ class BaseScriptArgs:
 
     def __post_init__(self) -> None:
         # if relative_script_instance_experiment_output_folde is not set, it gets time and day
-        """  post init  ."""
+        """Run post-init."""
         if self.relative_script_instance_experiment_output_folder is None:
             now = datetime.now()  # current date and time
             self.relative_script_instance_experiment_output_folder = now.strftime(

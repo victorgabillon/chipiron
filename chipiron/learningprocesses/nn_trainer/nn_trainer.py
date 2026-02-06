@@ -1,9 +1,7 @@
-"""
-This module contains the definition of the NNPytorchTrainer class, which is responsible for training and testing a neural network model using PyTorch.
-"""
+"""Document the module contains the definition of the NNPytorchTrainer class, which is responsible for training and testing a neural network model using PyTorch."""
 
 import typing
-from typing import Callable
+from collections.abc import Callable
 
 import torch
 from coral.chi_nn import ChiNN
@@ -27,11 +25,9 @@ def compute_loss(
 
 def check_model_device(model: ChiNN) -> str | torch.device | int:
     # Check the device of the first parameter
-
     """Check model device."""
-    first_param_device = next(model.parameters()).device
+    return next(model.parameters()).device
 
-    return first_param_device
 
 
 def compute_test_error_on_dataset(
@@ -50,6 +46,7 @@ def compute_test_error_on_dataset(
 
     Returns:
         float: The test error on the given dataset.
+
     """
     sum_loss_test = 0.0
     count_test = 0
@@ -76,8 +73,7 @@ def compute_test_error_on_dataset(
 
 
 class NNPytorchTrainer:
-    """
-    A class that trains a neural network model using PyTorch.
+    """A class that trains a neural network model using PyTorch.
 
     Args:
         net (ChiNN): The neural network model to be trained.
@@ -94,6 +90,7 @@ class NNPytorchTrainer:
         train(input_layer, target_value): Trains the neural network model using the provided input and target values.
         test(input_layer, target_value): Tests the neural network model using the provided input and target values.
         train_next_boards(input_layer, next_input_layer): Trains the neural network model using the provided input and next input layers.
+
     """
 
     def __init__(
@@ -102,8 +99,7 @@ class NNPytorchTrainer:
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler.LRScheduler,
     ) -> None:
-        """
-        Initializes a new instance of the NNPytorchTrainer class.
+        """Initialize a new instance of the NNPytorchTrainer class.
 
         Args:
             net (ChiNN): The neural network model to be trained.
@@ -112,6 +108,7 @@ class NNPytorchTrainer:
 
         Returns:
             None
+
         """
         self.net = net
         self.criterion = torch.nn.L1Loss()
@@ -126,8 +123,7 @@ class NNPytorchTrainer:
     def train(
         self, input_layer: torch.Tensor, target_value: torch.Tensor
     ) -> torch.Tensor:
-        """
-        Trains the neural network model using the provided input and target values.
+        """Train the neural network model using the provided input and target values.
 
         Args:
             input_layer (torch.Tensor): The input data.
@@ -135,6 +131,7 @@ class NNPytorchTrainer:
 
         Returns:
             torch.Tensor: The loss value.
+
         """
         self.net.train()
 
@@ -158,8 +155,7 @@ class NNPytorchTrainer:
     def test(
         self, input_layer: torch.Tensor, target_value: torch.Tensor
     ) -> torch.Tensor:
-        """
-        Tests the neural network model using the provided input and target values.
+        """Test the neural network model using the provided input and target values.
 
         Args:
             input_layer (torch.Tensor): The input data.
@@ -167,6 +163,7 @@ class NNPytorchTrainer:
 
         Returns:
             torch.Tensor: The loss value.
+
         """
         self.net.eval()
         input_layer, target_value = (
@@ -185,8 +182,7 @@ class NNPytorchTrainer:
     def train_next_boards(
         self, input_layer: torch.Tensor, next_input_layer: torch.Tensor
     ) -> None:
-        """
-        Trains the neural network model using the provided input and next input layers.
+        """Train the neural network model using the provided input and next input layers.
 
         Args:
             input_layer (torch.Tensor): The input data.
@@ -194,6 +190,7 @@ class NNPytorchTrainer:
 
         Returns:
             None
+
         """
         self.net.eval()
         target_value = -self.net(next_input_layer)
@@ -209,8 +206,7 @@ class NNPytorchTrainer:
     def compute_test_error_on_dataset(
         self, data_test: DataLoader[SupervisedData]
     ) -> float:
-        """
-        Computes the test error of the neural network model.
+        """Compute the test error of the neural network model.
 
         This method iterates over a test dataset and calculates the average loss
         for a given number of iterations. The test error is then computed as the
@@ -218,8 +214,8 @@ class NNPytorchTrainer:
 
         Returns:
             None
-        """
 
+        """
         self.net.eval()
         test_error: float = compute_test_error_on_dataset(
             net=self.net, criterion=self.criterion, data_test=data_test

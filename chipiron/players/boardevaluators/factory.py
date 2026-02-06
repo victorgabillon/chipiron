@@ -1,6 +1,4 @@
-"""
-Module for building game state evaluators (oracle + chipiron) with optional GUI publishing.
-"""
+"""Module for building game state evaluators (oracle + chipiron) with optional GUI publishing."""
 
 from typing import Any, Literal, TypeVar, assert_never, overload
 
@@ -23,20 +21,14 @@ StateT = TypeVar("StateT")
 def _select_eval_wiring(
     game_kind: Literal[GameKind.CHESS], *, can_oracle: bool
 ) -> EvaluatorWiring[ChessState]: ...
-
-
 @overload
 def _select_eval_wiring(
     game_kind: Literal[GameKind.CHECKERS], *, can_oracle: bool
 ) -> EvaluatorWiring[object]: ...
-
-
 @overload
 def _select_eval_wiring(
     game_kind: GameKind, *, can_oracle: bool
 ) -> EvaluatorWiring[Any]: ...
-
-
 def _select_eval_wiring(
     game_kind: GameKind, *, can_oracle: bool
 ) -> EvaluatorWiring[Any]:
@@ -50,7 +42,7 @@ def _select_eval_wiring(
             assert_never(game_kind)
 
 
-def create_game_board_evaluator(
+def create_game_board_evaluator[StateT](
     *,
     wiring: EvaluatorWiring[StateT],
     gui: bool,
@@ -71,20 +63,14 @@ def create_game_board_evaluator(
 def create_game_board_evaluator_for_game_kind(
     *, game_kind: Literal[GameKind.CHESS], gui: bool, can_oracle: bool
 ) -> IGameStateEvaluator[ChessState]: ...
-
-
 @overload
 def create_game_board_evaluator_for_game_kind(
     *, game_kind: Literal[GameKind.CHECKERS], gui: bool, can_oracle: bool
 ) -> IGameStateEvaluator[object]: ...
-
-
 @overload
 def create_game_board_evaluator_for_game_kind(
     *, game_kind: GameKind, gui: bool, can_oracle: bool
 ) -> IGameStateEvaluator[Any]: ...
-
-
 def create_game_board_evaluator_for_game_kind(
     *,
     game_kind: GameKind,

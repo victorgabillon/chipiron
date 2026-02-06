@@ -1,11 +1,14 @@
-"""
-This module contains the implementation of the StockfishPlayer class, which i        if self.engine is None:
+"""Document the module contains the implementation of the StockfishPlayer class, which i        if self.engine is None:.
+
             # Check if Stockfish binary exists
             if not STOCKFISH_BINARY_PATH.exists():
                 raise FileNotFoundError(
-                    f"Stockfish binary not found at {STOCKFISH_BINARY_PATH}.\n"
-                    f"Please install Stockfish by running:\n"
-                    f"    make stockfish\n"
+                    f"Stockfish binary not found at {STOCKFISH_BINARY_PATH}.
+"
+                    f"Please install Stockfish by running:
+"
+                    f"    make stockfish
+"
                     f"This will download and install Stockfish to the appropriate location."
                 )lector that uses the Stockfish chess engine to recommend moves.
 
@@ -43,8 +46,7 @@ from valanga.game import BranchName, Seed
 
 @dataclass
 class StockfishPlayer:
-    """
-    A player that selects moves using the Stockfish chess engine.
+    """A player that selects moves using the Stockfish chess engine.
 
     Attributes:
         type (Literal[MoveSelectorTypes.Stockfish]): The type of move selector (for serialization).
@@ -58,6 +60,7 @@ class StockfishPlayer:
 
         print_info() -> None:
             Prints the type of move selector.
+
     """
 
     type: Literal[MoveSelectorTypes.Stockfish]  # for serialization
@@ -67,11 +70,11 @@ class StockfishPlayer:
 
     @staticmethod
     def is_stockfish_available() -> bool:
-        """
-        Check if Stockfish is properly installed and available.
+        """Check if Stockfish is properly installed and available.
 
         Returns:
             bool: True if Stockfish binary exists and appears to be executable.
+
         """
         return STOCKFISH_BINARY_PATH.exists() and STOCKFISH_BINARY_PATH.is_file()
 
@@ -94,8 +97,7 @@ class StockfishPlayer:
         move_seed: int,
         notify_progress: NotifyProgressCallable | None = None,
     ) -> Recommendation:
-        """
-        Selects a move based on the given board state and move seed.
+        """Select a move based on the given board state and move seed.
 
         Args:
             board (boards.BoardChi): The current board state.
@@ -106,8 +108,8 @@ class StockfishPlayer:
 
         Raises:
             FileNotFoundError: If Stockfish binary is not found, with instructions to install it.
-        """
 
+        """
         if self.engine is None:
             # Check if Stockfish binary exists
             if not STOCKFISH_BINARY_PATH.exists():
@@ -148,7 +150,5 @@ class StockfishPlayer:
         return Recommendation(recommended_name=result.move.uci(), evaluation=None)
 
     def print_info(self) -> None:
-        """
-        Prints the type of move selector.
-        """
+        """Print the type of move selector."""
         print(self.type)

@@ -1,8 +1,7 @@
-"""
-This module provides a class for converting a chess board into a representation input.
-"""
+"""Document the module provides a class for converting a chess board into a representation input."""
 
-from typing import TYPE_CHECKING, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from valanga import State
 from valanga.representation_factory import RepresentationFactory
@@ -12,7 +11,7 @@ if TYPE_CHECKING:
 
 
 class RepresentationBTI[StateT: State, EvalIn, ModsT]:
-    """Converts a content state into a representation input."""
+    """Convert a content state into a representation input."""
 
     def __init__(
         self,

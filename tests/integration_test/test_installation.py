@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Chipiron Integration Test Script
+"""Chipiron Integration Test Script.
 
 This script performs a complete end-to-end test of the Chipiron installation:
 1. Creates a temporary conda environment
@@ -31,7 +30,7 @@ from chipiron.utils.logger import chipiron_logger
 
 
 class IntegrationTestResult:
-    """Container for test results"""
+    """Container for test results."""
 
     def __init__(self):
         """Initialize the instance."""
@@ -47,7 +46,7 @@ class IntegrationTestResult:
         message: str = "",
         details: dict[str, Any] | None = None,
     ):
-        """Add a test result"""
+        """Add a test result."""
         self.results[test_name] = {
             "success": success,
             "message": message,
@@ -55,16 +54,16 @@ class IntegrationTestResult:
             "timestamp": time.time(),
         }
         if not success:
-            self.errors.append("%s: %s" % (test_name, message))
+            self.errors.append(f"{test_name}: {message}")
         chipiron_logger.info("%s %s: %s", "✅" if success else "❌", test_name, message)
 
     def add_warning(self, test_name: str, message: str):
-        """Add a warning"""
-        self.warnings.append("%s: %s" % (test_name, message))
+        """Add a warning."""
+        self.warnings.append(f"{test_name}: {message}")
         chipiron_logger.warning("⚠️  %s: %s", test_name, message)
 
     def get_summary(self) -> dict[str, Any]:
-        """Get test summary"""
+        """Get test summary."""
         total_tests = len(self.results)
         successful_tests = sum(1 for r in self.results.values() if r["success"])
         duration = time.time() - self.start_time
@@ -82,7 +81,7 @@ class IntegrationTestResult:
 
 
 class ChipironIntegrationTester:
-    """Main integration tester class"""
+    """Main integration tester class."""
 
     def __init__(
         self,
@@ -90,7 +89,7 @@ class ChipironIntegrationTester:
         keep_temp: bool = False,
         verbose: bool = False,
         skip_syzygy: bool = False,
-        conda_env: str = None,
+        conda_env: str | None = None,
     ):
         """Initialize the instance."""
         self.repo_url = repo_url
@@ -105,7 +104,7 @@ class ChipironIntegrationTester:
         self.python_version = None
 
     def get_python_version_from_pyproject(self) -> str:
-        """Extract Python version requirement from pyproject.toml"""
+        """Extract Python version requirement from pyproject.toml."""
         pyproject_path = Path(self.project_dir) / "pyproject.toml"
 
         if not pyproject_path.exists():
@@ -115,7 +114,7 @@ class ChipironIntegrationTester:
             return "3.12"
 
         try:
-            with open(pyproject_path, "r") as f:
+            with open(pyproject_path) as f:
                 content = f.read()
 
             # Look for requires-python line
@@ -138,7 +137,7 @@ class ChipironIntegrationTester:
             )
             return "3.12"
 
-        except (OSError, IOError, re.error) as e:
+        except (OSError, re.error) as e:
             chipiron_logger.warning(
                 "Error reading pyproject.toml: %s, defaulting to Python 3.12", e
             )
@@ -147,13 +146,13 @@ class ChipironIntegrationTester:
     def run_command(
         self,
         cmd: list[str],
-        cwd: str = None,
+        cwd: str | None = None,
         check: bool = True,
         capture_output: bool = True,
         timeout: int = 300,
         show_progress: bool = False,
     ) -> subprocess.CompletedProcess:
-        """Run a command with proper error handling and logging"""
+        """Run a command with proper error handling and logging."""
         if self.verbose:
             chipiron_logger.info(
                 "Running: %s in %s", " ".join(cmd), cwd or "current dir"
@@ -238,7 +237,7 @@ class ChipironIntegrationTester:
             raise
 
     def setup_temporary_environment(self):
-        """Create temporary directory and setup for conda environment"""
+        """Create temporary directory and setup for conda environment."""
         chipiron_logger.info("🚀 Setting up temporary environment...")
 
         # Create temporary directory
@@ -252,12 +251,11 @@ class ChipironIntegrationTester:
         self.result.add_result(
             "temporary_setup",
             True,
-            "Created temporary directory and environment name: %s"
-            % self.conda_env_name,
+            f"Created temporary directory and environment name: {self.conda_env_name}",
         )
 
     def create_conda_environment(self):
-        """Create conda environment with the correct Python version"""
+        """Create conda environment with the correct Python version."""
         chipiron_logger.info("🐍 Creating conda environment...")
 
         # Determine Python version from pyproject.toml
@@ -278,19 +276,18 @@ class ChipironIntegrationTester:
             self.result.add_result(
                 "conda_environment_creation",
                 True,
-                "Created conda environment: %s with Python %s"
-                % (self.conda_env_name, self.python_version),
+                f"Created conda environment: {self.conda_env_name} with Python {self.python_version}",
             )
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as e:
             self.result.add_result(
                 "conda_environment_creation",
                 False,
-                "Failed to create conda environment: %s" % str(e),
+                f"Failed to create conda environment: {e!s}",
             )
             raise
 
     def clone_repository(self):
-        """Clone the repository to temporary directory"""
+        """Clone the repository to temporary directory."""
         chipiron_logger.info("📦 Cloning repository...")
 
         self.project_dir = Path(self.temp_dir) / "chipiron"
@@ -298,16 +295,16 @@ class ChipironIntegrationTester:
         try:
             self.run_command(["git", "clone", self.repo_url, str(self.project_dir)])
             self.result.add_result(
-                "repository_clone", True, "Cloned repository to %s" % self.project_dir
+                "repository_clone", True, f"Cloned repository to {self.project_dir}"
             )
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as e:
             self.result.add_result(
-                "repository_clone", False, "Failed to clone repository: %s" % str(e)
+                "repository_clone", False, f"Failed to clone repository: {e!s}"
             )
             raise
 
     def run_makefile_installation(self):
-        """Run the makefile installation process"""
+        """Run the makefile installation process."""
         chipiron_logger.info("🔧 Running makefile installation...")
         chipiron_logger.info(
             "⏳ This includes downloading Stockfish, dependencies, and optionally Syzygy tables..."
@@ -356,12 +353,12 @@ class ChipironIntegrationTester:
             )
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as e:
             self.result.add_result(
-                "makefile_setup", False, "Makefile setup failed: %s" % str(e)
+                "makefile_setup", False, f"Makefile setup failed: {e!s}"
             )
             raise
 
     def test_python_installation(self):
-        """Test if chipiron can be imported"""
+        """Test if chipiron can be imported."""
         chipiron_logger.info("🐍 Testing Python installation...")
 
         conda_activate = f"source $(conda info --base)/etc/profile.d/conda.sh && conda activate {self.conda_env_name}"
@@ -380,11 +377,11 @@ class ChipironIntegrationTester:
             )
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as e:
             self.result.add_result(
-                "python_import", False, "Failed to import chipiron: %s" % str(e)
+                "python_import", False, f"Failed to import chipiron: {e!s}"
             )
 
     def test_stockfish_installation(self):
-        """Test if Stockfish is properly installed and accessible"""
+        """Test if Stockfish is properly installed and accessible."""
         chipiron_logger.info("♟️  Testing Stockfish installation...")
 
         conda_activate = f"source $(conda info --base)/etc/profile.d/conda.sh && conda activate {self.conda_env_name}"
@@ -449,7 +446,7 @@ except Exception as e:
                 self.result.add_result(
                     "stockfish_installation",
                     True,
-                    "Stockfish is working. Version: %s" % version,
+                    f"Stockfish is working. Version: {version}",
                     {"version": version},
                 )
             else:
@@ -461,11 +458,11 @@ except Exception as e:
 
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as e:
             self.result.add_result(
-                "stockfish_installation", False, "Stockfish test failed: %s" % str(e)
+                "stockfish_installation", False, f"Stockfish test failed: {e!s}"
             )
 
     def _download_syzygy_tables(self):
-        """Download Syzygy tables if they're missing"""
+        """Download Syzygy tables if they're missing."""
         chipiron_logger.info("📥 Downloading Syzygy tables for testing...")
 
         conda_activate = f"source $(conda info --base)/etc/profile.d/conda.sh && conda activate {self.conda_env_name}"
@@ -491,7 +488,7 @@ except Exception as e:
             # Don't fail the test completely, just note that tables aren't available
 
     def test_syzygy_tables(self):
-        """Test if Syzygy tables are accessible"""
+        """Test if Syzygy tables are accessible."""
         chipiron_logger.info("📊 Testing Syzygy tables...")
 
         conda_activate = f"source $(conda info --base)/etc/profile.d/conda.sh && conda activate {self.conda_env_name}"
@@ -645,7 +642,7 @@ except Exception as e:
                 self.result.add_result(
                     "syzygy_tables",
                     True,
-                    "Syzygy tables are accessible with %s table files" % file_count,
+                    f"Syzygy tables are accessible with {file_count} table files",
                     {"file_count": file_count},
                 )
             elif "Found" in result.stdout and "files" in result.stdout:
@@ -662,14 +659,12 @@ except Exception as e:
                 if file_count > 0:
                     self.result.add_warning(
                         "syzygy_tables",
-                        "Partial Syzygy tables available (%s files) - some downloads may have failed"
-                        % file_count,
+                        f"Partial Syzygy tables available ({file_count} files) - some downloads may have failed",
                     )
                     self.result.add_result(
                         "syzygy_tables",
                         True,
-                        "Partial Syzygy tables available with %s table files"
-                        % file_count,
+                        f"Partial Syzygy tables available with {file_count} table files",
                         {"file_count": file_count, "partial": True},
                     )
                 else:
@@ -681,8 +676,7 @@ except Exception as e:
                     self.result.add_result(
                         "syzygy_tables",
                         False,
-                        "Syzygy tables directory exists but no table files found. Debug: %s"
-                        % debug_info,
+                        f"Syzygy tables directory exists but no table files found. Debug: {debug_info}",
                     )
             else:
                 # Extract debug output for analysis
@@ -691,17 +685,16 @@ except Exception as e:
                 self.result.add_result(
                     "syzygy_tables",
                     False,
-                    "Syzygy tables directory exists but no table files found. Debug: %s"
-                    % debug_info,
+                    f"Syzygy tables directory exists but no table files found. Debug: {debug_info}",
                 )
 
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as e:
             self.result.add_result(
-                "syzygy_tables", False, "Syzygy tables test failed: %s" % str(e)
+                "syzygy_tables", False, f"Syzygy tables test failed: {e!s}"
             )
 
     def test_gui_functionality(self):
-        """Test GUI functionality (PNG display capability)"""
+        """Test GUI functionality (PNG display capability)."""
         chipiron_logger.info("🖼️  Testing GUI functionality...")
 
         conda_activate = f"source $(conda info --base)/etc/profile.d/conda.sh && conda activate {self.conda_env_name}"
@@ -751,11 +744,11 @@ except Exception as e:
 
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as e:
             self.result.add_result(
-                "gui_functionality", False, "GUI functionality test failed: %s" % str(e)
+                "gui_functionality", False, f"GUI functionality test failed: {e!s}"
             )
 
     def test_basic_game_functionality(self):
-        """Test basic game functionality"""
+        """Test basic game functionality."""
         chipiron_logger.info("🎮 Testing basic game functionality...")
 
         conda_activate = f"source $(conda info --base)/etc/profile.d/conda.sh && conda activate {self.conda_env_name}"
@@ -813,7 +806,7 @@ except Exception as e:
             self.result.add_result(
                 "basic_game_functionality",
                 False,
-                "Basic game functionality test failed: %s" % str(e),
+                f"Basic game functionality test failed: {e!s}",
             )
 
     def test_syzygy_dtz_functionality(self):
@@ -864,11 +857,11 @@ except Exception as e:
                 self.result.add_result(
                     "syzygy_dtz_functionality",
                     False,
-                    "Syzygy DTZ test failed: %s" % result.stdout.strip(),
+                    f"Syzygy DTZ test failed: {result.stdout.strip()}",
                 )
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as e:
             self.result.add_result(
-                "syzygy_dtz_functionality", False, "Syzygy DTZ test failed: %s" % str(e)
+                "syzygy_dtz_functionality", False, f"Syzygy DTZ test failed: {e!s}"
             )
 
     def test_stockfish_player_functionality(self):
@@ -918,17 +911,17 @@ except Exception as e:
                 self.result.add_result(
                     "stockfish_player_functionality",
                     False,
-                    "StockfishPlayer test failed: %s" % result.stdout.strip(),
+                    f"StockfishPlayer test failed: {result.stdout.strip()}",
                 )
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as e:
             self.result.add_result(
                 "stockfish_player_functionality",
                 False,
-                "StockfishPlayer test failed: %s" % str(e),
+                f"StockfishPlayer test failed: {e!s}",
             )
 
     def cleanup(self):
-        """Clean up temporary resources"""
+        """Clean up temporary resources."""
         chipiron_logger.info("🧹 Cleaning up...")
 
         # Remove conda environment
@@ -958,7 +951,7 @@ except Exception as e:
             chipiron_logger.info("Keeping temporary directory: %s", self.temp_dir)
 
     def run_full_test_suite(self):
-        """Run the complete integration test suite"""
+        """Run the complete integration test suite."""
         chipiron_logger.info("🔬 Starting Chipiron Integration Test Suite")
         try:
             # Setup phase
@@ -987,7 +980,7 @@ except Exception as e:
         return self.generate_report()
 
     def generate_report(self) -> dict[Any, Any]:
-        """Generate final test report"""
+        """Generate final test report."""
         summary = self.result.get_summary()
 
         chipiron_logger.info("📋 INTEGRATION TEST REPORT")
@@ -1018,7 +1011,7 @@ except Exception as e:
 
 
 def main():
-    """Main entry point"""
+    """Run the main entry point."""
     parser = argparse.ArgumentParser(description="Chipiron Integration Test Suite")
     parser.add_argument(
         "--repo-url",

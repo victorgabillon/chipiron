@@ -1,6 +1,4 @@
-"""
-init file for displays module
-"""
+"""init file for displays module."""
 
 from .gui import MainWindow
 

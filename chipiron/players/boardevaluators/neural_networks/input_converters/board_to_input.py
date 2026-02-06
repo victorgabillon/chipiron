@@ -1,6 +1,4 @@
-"""
-Module for the BoardToInput protocol and ContentToInputFunction protocol.
-"""
+"""Module for the BoardToInput protocol and ContentToInputFunction protocol."""
 
 from typing import TYPE_CHECKING
 
@@ -20,7 +18,7 @@ from chipiron.players.boardevaluators.neural_networks.board_to_tensor import (
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_transformer_input import (
     build_transformer_input,
 )
-from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
+from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
     InternalTensorRepresentationType,
     ModelInputRepresentationType,
 )
@@ -41,15 +39,15 @@ if TYPE_CHECKING:
 def create_board_to_input_from_representation(
     internal_tensor_representation_type: InternalTensorRepresentationType,
 ) -> ContentToInputFunction[ChessState]:
-    """Creates a ContentToInputFunction from an InternalTensorRepresentationType.
+    """Create a ContentToInputFunction from an InternalTensorRepresentationType.
 
     Args:
         internal_tensor_representation_type (InternalTensorRepresentationType): The internal tensor representation type to use.
 
     Returns:
         ContentToInputFunction: A function that converts a chess board to a tensor input.
-    """
 
+    """
     representation_factory: (
         RepresentationFactory[ChessState, torch.Tensor, BoardModificationP] | None
     ) = create_board_representation_factory(
@@ -72,7 +70,7 @@ def create_board_to_input_from_representation(
 def create_board_to_input(
     model_input_representation_type: ModelInputRepresentationType,
 ) -> ContentToInputFunction[ChessState]:
-    """Creates a ContentToInputFunction from a ModelInputRepresentationType.
+    """Create a ContentToInputFunction from a ModelInputRepresentationType.
 
     Args:
         model_input_representation_type (ModelInputRepresentationType): The model input representation type to use.
@@ -82,8 +80,8 @@ def create_board_to_input(
 
     Returns:
         ContentToInputFunction: A function that converts a chess board to a tensor input.
-    """
 
+    """
     board_to_input_convert: ContentToInputFunction[ChessState]
 
     match model_input_representation_type:

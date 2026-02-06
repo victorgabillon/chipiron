@@ -1,4 +1,5 @@
 """Module for chess wiring."""
+
 from dataclasses import dataclass
 
 from atomheart.board.utils import FenPlusHistory
@@ -26,6 +27,7 @@ from chipiron.utils.queue_protocols import PutQueue
 @dataclass(frozen=True)
 class BuildChessGamePlayerArgs:
     """Buildchessgameplayerargs implementation."""
+
     player_factory_args: ChessPlayerFactoryArgs
     player_color: Color
     implementation_args: ImplementationArgs

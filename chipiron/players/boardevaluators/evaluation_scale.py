@@ -1,12 +1,10 @@
 """Defines the EvaluationScale enum for board evaluation scales."""
 
-from enum import Enum
+from enum import Enum, StrEnum
 
 
-class EvaluationScale(str, Enum):
-    """
-    Enumeration of the evaluation scales used in board evaluations.
-    """
+class EvaluationScale(StrEnum):
+    """Enumeration of the evaluation scales used in board evaluations."""
 
     SYMMETRIC_UNIT_INTERVAL = "symmetric_unit_interval"  # [-1.0, 1.0]
     ENTIRE_REAL_AXIS = "entire_real_axis"  # [-inf, +inf]
@@ -37,9 +35,7 @@ ValueOverEnum = (
 
 
 def get_value_over_enum(evaluation_scale: EvaluationScale) -> ValueOverEnum:
-    """
-    Returns the appropriate ValueWhiteWhenOver enum based on the evaluation scale.
-    """
+    """Return the appropriate ValueWhiteWhenOver enum based on the evaluation scale."""
     match evaluation_scale:
         case EvaluationScale.SYMMETRIC_UNIT_INTERVAL:
             return ValueWhiteWhenOverSymmetricUnitInterval

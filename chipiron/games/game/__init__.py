@@ -1,5 +1,4 @@
-"""
-This module contains the game logic and the game arguments.
+"""Document the module contains the game logic and the game arguments.
 
 The `game` module provides the following classes:
 - `ObservableGame`: A class that represents an observable game.
@@ -17,4 +16,4 @@ from .game import Game, ObservableGame
 from .game_args import GameArgs
 from .game_args_factory import GameArgsFactory
 
-__all__ = ["GameArgs", "GameArgsFactory", "Game", "ObservableGame"]
+__all__ = ["Game", "GameArgs", "GameArgsFactory", "ObservableGame"]

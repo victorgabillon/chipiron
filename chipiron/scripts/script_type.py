@@ -1,14 +1,10 @@
-"""
-This module defines the ScriptType enum and provides a mapping between script types and their corresponding script classes.
-"""
+"""Document the module defines the ScriptType enum and provides a mapping between script types and their corresponding script classes."""
 
-from enum import Enum
+from enum import StrEnum
 
 
-class ScriptType(str, Enum):
-    """
-    Enum class representing different types of scripts.
-    """
+class ScriptType(StrEnum):
+    """Enum class representing different types of scripts."""
 
     ONE_MATCH = "one_match"
     LEAGUE = "league"

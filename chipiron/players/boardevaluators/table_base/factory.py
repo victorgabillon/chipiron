@@ -1,5 +1,5 @@
-"""
-Module to create a SyzygyTable object if the path to the syzygy tables exists,
+"""Module to create a SyzygyTable object if the path to the syzygy tables exists,.
+
 otherwise return None.
 """
 
@@ -18,12 +18,13 @@ AnySyzygyTable = SyzygyTable[Any]
 
 
 def create_syzygy_python() -> SyzygyChiTable | None:
-    """
-    Create a SyzygyTable object if the path to the syzygy tables exists,
+    """Create a SyzygyTable object if the path to the syzygy tables exists,.
+
     otherwise return None.
 
     Returns:
         SyzygyTable | None: The created SyzygyTable object or None if the path does not exist.
+
     """
     syzygy_table: SyzygyChiTable | None
     is_exist: bool = os.path.exists(SYZYGY_TABLES_DIR)
@@ -38,14 +39,14 @@ def create_syzygy_python() -> SyzygyChiTable | None:
 
 
 def create_syzygy_rust() -> SyzygyRustTable | None:
-    """
-    Create a SyzygyTable object if the path to the syzygy tables exists,
+    """Create a SyzygyTable object if the path to the syzygy tables exists,.
+
     otherwise return None.
 
     Returns:
         SyzygyTable | None: The created SyzygyTable object or None if the path does not exist.
-    """
 
+    """
     syzygy_table: SyzygyRustTable | None
     is_exist: bool = os.path.exists(SYZYGY_TABLES_DIR)
 
@@ -64,47 +65,31 @@ class SyzygyProvider(Protocol):
     def provide(
         self,
     ) -> AnySyzygyTable | None:
-        """
-        Provide a Syzygy table.
-        """
+        """Provide a Syzygy table."""
         ...
 
 
 class SyzygyFactory(Protocol):
-    """
-    Protocol for creating a Syzygy table.
-    """
+    """Protocol for creating a Syzygy table."""
 
     def __call__(
         self,
     ) -> AnySyzygyTable | None:
-        """
-        Create a SyzygyTable object.
-        """
+        """Create a SyzygyTable object."""
         ...
 
 
 def create_syzygy_factory(use_rust: bool) -> SyzygyFactory:
-    """
-    Create a SyzygyTable object
-    """
+    """Create a SyzygyTable object."""
     syzygy_factory: SyzygyFactory
-    if use_rust:
-        syzygy_factory = create_syzygy_rust
-    else:
-        syzygy_factory = create_syzygy_python
+    syzygy_factory = create_syzygy_rust if use_rust else create_syzygy_python
 
     return syzygy_factory
 
 
 def create_syzygy(use_rust: bool) -> AnySyzygyTable | None:
-    """
-    Create a SyzygyTable object
-    """
+    """Create a SyzygyTable object."""
     syzygy_table: AnySyzygyTable | None
-    if use_rust:
-        syzygy_table = create_syzygy_rust()
-    else:
-        syzygy_table = create_syzygy_python()
+    syzygy_table = create_syzygy_rust() if use_rust else create_syzygy_python()
 
     return syzygy_table

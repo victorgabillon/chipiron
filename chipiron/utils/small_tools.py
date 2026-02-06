@@ -1,6 +1,4 @@
-"""
-This module contains utility functions and classes for small tools.
-"""
+"""Document the module contains utility functions and classes for small tools."""
 
 import copy
 import importlib
@@ -11,7 +9,7 @@ import sys
 import typing
 from importlib.resources import files
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import yaml
 
@@ -21,8 +19,7 @@ path = typing.Annotated[str | os.PathLike[str], "path"]
 
 
 def mkdir_if_not_existing(folder_path: path) -> None:
-    """
-    Create a directory at the specified path.
+    """Create a directory at the specified path.
 
     Args:
         folder_path: The path to the directory.
@@ -30,6 +27,7 @@ def mkdir_if_not_existing(folder_path: path) -> None:
     Raises:
         FileNotFoundError: If the parent directory does not exist.
         FileExistsError: If the directory already exists.
+
     """
     try:
         os.mkdir(folder_path)
@@ -48,8 +46,7 @@ def mkdir_if_not_existing(folder_path: path) -> None:
 
 
 def yaml_fetch_args_in_file(path_file: path) -> dict[Any, Any]:
-    """
-    Fetch arguments from a YAML file.
+    """Fetch arguments from a YAML file.
 
     Args:
         path_file: The path to the YAML file.
@@ -58,14 +55,13 @@ def yaml_fetch_args_in_file(path_file: path) -> dict[Any, Any]:
         A dictionary containing the arguments.
 
     """
-    with open(path_file, "r", encoding="utf-8") as file:
+    with open(path_file, encoding="utf-8") as file:
         args: dict[Any, Any] = yaml.load(file, Loader=yaml.FullLoader)
     return args
 
 
 def dict_alphabetic_str(dic: dict[Any, Any]) -> str:
-    """
-    Convert a dictionary to a string with keys sorted alphabetically.
+    """Convert a dictionary to a string with keys sorted alphabetically.
 
     Args:
         dic: The dictionary to convert.
@@ -76,13 +72,12 @@ def dict_alphabetic_str(dic: dict[Any, Any]) -> str:
     """
     string: str = ""
     for key, value in sorted(dic.items()):
-        string += " {:>30} : {}\n".format(key, value)
+        string += f" {key:>30} : {value}\n"
     return string
 
 
 def unique_int_from_list(a_list: list[int | None]) -> int | None:
-    """
-    Generate a unique integer from a list of two integers.
+    """Generate a unique integer from a list of two integers.
 
     Args:
         a_list: A list of two integers.
@@ -99,13 +94,11 @@ def unique_int_from_list(a_list: list[int | None]) -> int | None:
     y = a_list[1]
     if x is None or y is None:
         return None
-    else:
-        return int(0.5 * (x + y) * (x + y + 1) + y)  # Cantor pairing function
+    return int(0.5 * (x + y) * (x + y + 1) + y)  # Cantor pairing function
 
 
 def rec_merge_dic(a: dict[Any, Any], b: dict[Any, Any]) -> dict[Any, Any]:
-    """
-    Recursively merge two dictionaries.
+    """Recursively merge two dictionaries.
 
     Args:
         a: The first dictionary.
@@ -127,14 +120,14 @@ def rec_merge_dic(a: dict[Any, Any], b: dict[Any, Any]) -> dict[Any, Any]:
 
 
 def resolve_package_path(path_to_file: str | Path) -> str:
-    """
-    Replace 'package://' at the start of the path with the chipiron package root.
+    """Replace 'package://' at the start of the path with the chipiron package root.
 
     Args:
         path_to_file (str or Path): Input path, possibly starting with 'package://'.
 
     Returns:
         str: Resolved absolute path.
+
     """
     if isinstance(path_to_file, Path):
         path_to_file = str(path_to_file)
@@ -153,7 +146,7 @@ def resolve_package_path(path_to_file: str | Path) -> str:
 
 
 def get_package_root_path(package_name: str) -> str:
-    """Get the root path of a package."
+    """Get the root path of a package.".
 
     Args:
         package_name (str): The name of the package.
@@ -163,13 +156,13 @@ def get_package_root_path(package_name: str) -> str:
 
     Returns:
         str: The root path of the package.
+
     """
-    spec: Optional[importlib.machinery.ModuleSpec] = importlib.util.find_spec(
+    spec: importlib.machinery.ModuleSpec | None = importlib.util.find_spec(
         package_name
     )
     if spec is None or spec.origin is None:
         raise ImportError(f"Cannot find package '{package_name}'")
 
     # Get the package directory, not just the __init__.py file
-    package_path = os.path.dirname(spec.origin)
-    return package_path
+    return os.path.dirname(spec.origin)

@@ -1,18 +1,18 @@
-"""
-Module for the SyzygyTable class.
-"""
+"""Module for the SyzygyTable class."""
 
-from typing import Protocol, Sequence
+from typing import TYPE_CHECKING, Protocol
 
 from atomheart.board import IBoard
 from atomheart.move.imove import MoveKey
 from valanga import Color
 from valanga.over_event import HowOver, OverTags, Winner
 
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
 
 class SyzygyTable[T_Board: IBoard](Protocol):
-    """
-    A class representing a Syzygy tablebase for chess endgame analysis.
+    """A class representing a Syzygy tablebase for chess endgame analysis.
 
     Attributes:
         table_base (chess.syzygy.Tablebase): The Syzygy tablebase object.
@@ -44,29 +44,30 @@ class SyzygyTable[T_Board: IBoard](Protocol):
 
         best_move(board: T_Board) -> MoveKey:
             Get the best move according to the tablebase for the given board.
+
     """
 
     def fast_in_table(self, board: T_Board) -> bool:
-        """
-        Check if the given board is suitable for fast tablebase lookup.
+        """Check if the given board is suitable for fast tablebase lookup.
 
         Args:
             board (boards.BoardChi): The board to check.
 
         Returns:
             bool: True if the board is suitable for fast lookup, False otherwise.
+
         """
         return board.number_of_pieces_on_the_board() < 6
 
     def in_table(self, board: T_Board) -> bool:
-        """
-        Check if the given board is in the tablebase.
+        """Check if the given board is in the tablebase.
 
         Args:
             board (boards.BoardChi): The board to check.
 
         Returns:
             bool: True if the board is in the tablebase, False otherwise.
+
         """
         try:
             self.wdl(board=board)
@@ -75,28 +76,28 @@ class SyzygyTable[T_Board: IBoard](Protocol):
         return True
 
     def wdl(self, board: T_Board) -> int:
-        """
-        Probe the tablebase for the win/draw/loss value of the given board.
+        """Probe the tablebase for the win/draw/loss value of the given board.
 
         Args:
             board (T_Board): The board to probe.
 
         Returns:
             int: 2 if the side to move is winning, 0 if draw, -2 if losing.
+
         """
         # Example implementation, replace with actual tablebase probing logic
         # For now, raise NotImplementedError to indicate it must be implemented
         raise NotImplementedError("wdl method must be implemented in subclass")
 
     def get_over_event(self, board: T_Board) -> tuple[Winner, HowOver]:
-        """
-        Get the winner and how the game is over for the given board.
+        """Get the winner and how the game is over for the given board.
 
         Args:
             board (boards.BoardChi): The board to analyze.
 
         Returns:
             tuple[Winner, HowOver]: The winner and how the game is over.
+
         """
         val: int = self.val(board)
 
@@ -118,102 +119,97 @@ class SyzygyTable[T_Board: IBoard](Protocol):
         return who_is_winner_, how_over_
 
     def val(self, board: T_Board) -> int:
-        """
-        Get the value of the given board from the tablebase.
+        """Get the value of the given board from the tablebase.
 
         Args:
             board (boards.BoardChi): The board to get the value for.
 
         Returns:
             int: The value of the board from the tablebase.
+
         """
         # tablebase.probe_wdl Returns 2 if the side to move is winning, 0 if the position is a draw and -2 if the side to move is losing.
         val: int = self.wdl(board)
         return val
 
     def value_white(self, state: T_Board) -> int:
-        """
-        Get the value of the given board for the white player.
+        """Get the value of the given board for the white player.
 
         Args:
             state (boards.BoardChi): The board to get the value for.
 
         Returns:
             int: The value of the board for the white player.
+
         """
         # tablebase.probe_wdl Returns 2 if the side to move is winning, 0 if the position is a draw and -2 if the side to move is losing.
         val: int = self.wdl(state)
         if state.turn == Color.WHITE:
             return val * 100000
-        else:
-            return val * -10000
+        return val * -10000
 
     def get_over_tag(self, board: T_Board) -> OverTags:
-        """
-        Get the over tag for the given board.
+        """Get the over tag for the given board.
 
         Args:
             board (boards.BoardChi): The board to get the over tag for.
 
         Returns:
             OverTags: The over tag for the board.
+
         """
         val = self.wdl(board)
         if val > 0:
             if board.turn == Color.WHITE:
                 return OverTags.TAG_WIN_WHITE
-            else:
-                return OverTags.TAG_WIN_BLACK
-        elif val == 0:
+            return OverTags.TAG_WIN_BLACK
+        if val == 0:
             return OverTags.TAG_DRAW
-        else:
-            if board.turn == Color.WHITE:
-                return OverTags.TAG_WIN_BLACK
-            else:
-                return OverTags.TAG_WIN_WHITE
+        if board.turn == Color.WHITE:
+            return OverTags.TAG_WIN_BLACK
+        return OverTags.TAG_WIN_WHITE
 
     def string_result(self, board: T_Board) -> str:
-        """
-        Get the string representation of the result for the given board.
+        """Get the string representation of the result for the given board.
 
         Args:
             board (boards.BoardChi): The board to get the result for.
 
         Returns:
             str: The string representation of the result.
+
         """
         val = self.wdl(board)
         player_to_move = "white" if board.turn == Color.WHITE else "black"
         if val > 0:
             return "WIN for player " + player_to_move
-        elif val == 0:
+        if val == 0:
             return "DRAW"
-        else:
-            return "LOSS for player " + player_to_move
+        return "LOSS for player " + player_to_move
 
     def dtz(self, board: T_Board) -> int:
-        """
-        Get the distance-to-zero (DTZ) value for the given board.
+        """Get the distance-to-zero (DTZ) value for the given board.
 
         Args:
             board (boards.BoardChi): The board to get the DTZ value for.
 
         Returns:
             int: The DTZ value for the board.
+
         """
         # Example implementation, replace with actual tablebase probing logic
         # For now, return a default value (e.g., 0)
         raise NotImplementedError("wdl method must be implemented in subclass")
 
     def best_move(self, board: T_Board) -> MoveKey:
-        """
-        Get the best move according to the tablebase for the given board.
+        """Get the best move according to the tablebase for the given board.
 
         Args:
             board (boards.BoardChi): The board to find the best move for.
 
         Returns:
             chess.Move: The best move according to the tablebase.
+
         """
         all_moves: Sequence[MoveKey] = board.legal_moves.get_all()
         # avoid draws by 50 move rules in winning position, # otherwise look

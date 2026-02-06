@@ -1,11 +1,9 @@
-"""
-RunTheLeagueScript
-"""
+"""RunTheLeagueScript."""
 
 import os
 import pickle
 import random
-from typing import Any
+from typing import Any, ClassVar
 
 from chipiron.league.league import League
 from chipiron.scripts.iscript import IScript
@@ -13,12 +11,12 @@ from chipiron.scripts.script import Script
 
 
 class RunTheLeagueScript(IScript):
-    """
-    Running a league playing games between
+    """Running a league playing games between.
+
     ers in the league and computing ELOs
     """
 
-    default_param_dict: dict[str, Any] = {
+    default_param_dict: ClassVar[dict[str, Any]] = {
         "config_file_name": None,
     }
     base_experiment_output_folder: str = os.path.join(
@@ -31,14 +29,14 @@ class RunTheLeagueScript(IScript):
     base_script: Script
 
     def __init__(self, base_script: Script) -> None:
-        """
-        Initialize the RunTheLeague class.
+        """Initialize the RunTheLeague class.
 
         Args:
             base_script (Script): The base script object.
 
         Returns:
             None
+
         """
         self.base_script = base_script
 
@@ -56,23 +54,22 @@ class RunTheLeagueScript(IScript):
         self.league.print_info()
 
     def run(self) -> None:
-        """
-        Runs the league.
+        """Run the league.
 
         This method continuously runs the league until interrupted. It calls the `run` method of the `league` object and
         saves the league data to a pickle file.
 
         Returns:
             None
+
         """
         print("run the league")
         while True:
             self.league.run()
             # save
-            pickle.dump(self.league, open(self.folder_league + "/players.pickle", "wb"))
+            with open(self.folder_league + "/players.pickle", "wb") as players_file:
+                pickle.dump(self.league, players_file)
 
     def terminate(self) -> None:
-        """
-        Terminates the league execution.
-        """
+        """Terminates the league execution."""
         self.base_script.terminate()

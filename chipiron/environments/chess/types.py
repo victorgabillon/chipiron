@@ -1,6 +1,4 @@
-"""
-Shared chess type aliases.
-"""
+"""Shared chess type aliases."""
 
 from atomheart.board.valanga_adapter import ValangaChessState
 

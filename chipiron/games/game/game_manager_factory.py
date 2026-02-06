@@ -1,6 +1,4 @@
-"""
-Module for the GameManagerFactory class.
-"""
+"""Module for the GameManagerFactory class."""
 
 import queue
 import uuid
@@ -55,8 +53,8 @@ def make_subscriber_queues() -> list[queue.Queue[GuiUpdate]]:
 
 @dataclass
 class GameManagerFactory:
-    """
-    The GameManagerFactory creates GameManager once the players and rules have been decided.
+    """The GameManagerFactory creates GameManager once the players and rules have been decided.
+
     Calling create ask for the creation of a GameManager depending on args and players.
     This class is supposed to be independent of Match-related classes (contrarily to the GameArgsFactory)
 
@@ -89,8 +87,7 @@ class GameManagerFactory:
         player_color_to_factory_args: dict[Color, PlayerFactoryArgs],
         game_seed: Seed,
     ) -> GameManager[Any]:
-        """
-        Create a GameManager with the given arguments
+        """Create a GameManager with the given arguments.
 
         Args:
             args_game_manager (GameArgs): the arguments of the game manager
@@ -99,6 +96,7 @@ class GameManagerFactory:
 
         Returns:
             the created GameManager
+
         """
         # useful if the logic of game generation gets complex
         # in the future, we might want the implementation detail to actually be modified during the
@@ -212,7 +210,7 @@ class GameManagerFactory:
             for color, player_factory_args in player_color_to_factory_args.items()
         }
 
-        game_manager = GameManager(
+        return GameManager(
             game=observable_game,
             display_state_evaluator=display_state_evaluator,
             output_folder_path=self.output_folder_path,
@@ -225,14 +223,14 @@ class GameManagerFactory:
             rules=environment.rules,
         )
 
-        return game_manager
 
     def subscribe(self, subscriber_queue: queue.Queue[GuiUpdate]) -> None:
-        """
-        Subscribe to the GameManagerFactory to get the PlayersColorToPlayerMessage
+        """Subscribe to the GameManagerFactory to get the PlayersColorToPlayerMessage.
+
         As well as subscribing to the game_manager_board_evaluator to get the EvaluationMessage
 
         Args:
             subscriber: the subscriber queue
+
         """
         self.subscriber_queues.append(subscriber_queue)

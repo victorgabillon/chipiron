@@ -1,9 +1,7 @@
-"""
-Protocol and data structures for game-specific rules and outcomes.
-"""
+"""Protocol and data structures for game-specific rules and outcomes."""
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import Protocol, TypeVar
 
 from valanga import Color, TurnState
@@ -13,7 +11,7 @@ from .final_game_result import FinalGameResult
 StateT = TypeVar("StateT", contravariant=True, bound=TurnState)
 
 
-class OutcomeKind(str, Enum):
+class OutcomeKind(StrEnum):
     """Kinds of game outcomes."""
     WIN = "win"
     DRAW = "draw"
@@ -21,13 +19,13 @@ class OutcomeKind(str, Enum):
     UNKNOWN = "unknown"
 
 
-class OutcomeSource(str, Enum):
+class OutcomeSource(StrEnum):
     """Sources of game outcomes."""
     TERMINAL = "terminal"
     ADJUDICATED = "adjudicated"
 
 
-class VerdictKind(str, Enum):
+class VerdictKind(StrEnum):
     """Kinds of position assessments."""
     WIN = "win"
     DRAW = "draw"
@@ -71,8 +69,7 @@ class GameRules[StateT](Protocol):
 
 
 def outcome_to_final_game_result(outcome: GameOutcome) -> FinalGameResult:
-    """
-    Map a generic game outcome to the legacy FinalGameResult enum.
+    """Map a generic game outcome to the legacy FinalGameResult enum.
 
     Unknown/aborted outcomes map to draws to preserve legacy behavior when
     a game stops before a clean adjudication is available.

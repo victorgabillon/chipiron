@@ -1,7 +1,7 @@
 """Protocol payloads exchanged between the GUI and game runtime."""
 
 from dataclasses import dataclass
-from typing import Never, TypeAlias
+from typing import Never
 
 from atomheart.board.utils import FenPlusHistory
 from valanga import Color
@@ -10,10 +10,10 @@ from valanga.evaluations import StateEvaluation
 from chipiron.environments.types import GameKind
 from chipiron.games.game.game_playing_status import PlayingStatus
 
-SchemaVersion: TypeAlias = int
-SessionId: TypeAlias = str
-MatchId: TypeAlias = str
-GameId: TypeAlias = str
+type SchemaVersion = int
+type SessionId = str
+type MatchId = str
+type GameId = str
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,13 +29,11 @@ def make_scope(
     *, session_id: SessionId, match_id: MatchId | None, game_id: GameId
 ) -> Scope:
     """Construct a scope from explicit identifiers."""
-
     return Scope(session_id=session_id, match_id=match_id, game_id=game_id)
 
 
 def scope_for_new_game(existing_scope: Scope, new_game_id: GameId) -> Scope:
     """Create a scope for a new game while preserving session and match."""
-
     return Scope(
         session_id=existing_scope.session_id,
         match_id=existing_scope.match_id,
@@ -45,7 +43,6 @@ def scope_for_new_game(existing_scope: Scope, new_game_id: GameId) -> Scope:
 
 def assert_never(x: Never) -> Never:
     """Fail fast for unreachable enum/union branches."""
-
     raise AssertionError(f"Unhandled value: {x!r}")
 
 
@@ -110,7 +107,7 @@ class UpdGameStatus:
     status: PlayingStatus
 
 
-UpdatePayload: TypeAlias = (
+type UpdatePayload = (
     UpdStateChess
     | UpdPlayerProgress
     | UpdEvaluation
@@ -154,7 +151,7 @@ class CmdHumanMoveUci:
     color_to_play: Color | None = None
 
 
-CommandPayload: TypeAlias = CmdBackOneMove | CmdSetStatus | CmdHumanMoveUci
+type CommandPayload = CmdBackOneMove | CmdSetStatus | CmdHumanMoveUci
 
 
 @dataclass(frozen=True, slots=True)

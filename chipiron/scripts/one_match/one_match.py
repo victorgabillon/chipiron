@@ -1,6 +1,4 @@
-"""
-the one match script
-"""
+"""the one match script."""
 
 import multiprocessing
 import os
@@ -29,9 +27,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class MatchScriptArgs:
-    """
-    The input arguments needed by the one match script to run
-    """
+    """The input arguments needed by the one match script to run."""
 
     base_script_args: BaseScriptArgs = field(default_factory=BaseScriptArgs)
     match_args: MatchArgs = field(default_factory=MatchArgs)
@@ -42,10 +38,7 @@ class MatchScriptArgs:
 
 
 class OneMatchScript:
-    """
-    Script that plays a match between two players
-
-    """
+    """Script that plays a match between two players."""
 
     args_dataclass_name: type[MatchScriptArgs] = MatchScriptArgs
 
@@ -62,10 +55,7 @@ class OneMatchScript:
         self,
         base_script: Script[MatchScriptArgs],
     ) -> None:
-        """
-        Builds the OneMatchScript object
-        """
-
+        """Build the OneMatchScript object."""
         self.base_script = base_script
 
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into args
@@ -105,10 +95,7 @@ class OneMatchScript:
             )
 
             app = QApplication.instance()
-            if app is None:
-                app = QApplication(sys.argv)
-            else:
-                app = cast("QApplication", app)
+            app = QApplication(sys.argv) if app is None else cast("QApplication", app)
             self.chess_gui = app
 
             board_factory: BoardFactory = create_board_factory(
@@ -125,10 +112,7 @@ class OneMatchScript:
         self.gui = args.gui
 
     def run(self) -> None:
-        """
-        Runs the match either with a GUI or not
-        """
-
+        """Run the match either with a GUI or not."""
         chipiron_logger.info(" Script One Match go")
         # Qt Application needs to be in the main Thread, so we need to distinguish between GUI and no GUI
         if self.gui:  # case with GUI
@@ -149,9 +133,7 @@ class OneMatchScript:
         # TODO check the good closing of processes
 
     def terminate(self) -> None:
-        """
-        Terminates the script and cleans up any resources.
-        """
+        """Terminates the script and cleans up any resources."""
         chipiron_logger.info("terminating script")
         self.base_script.terminate()
         if self.gui:
@@ -159,10 +141,10 @@ class OneMatchScript:
 
     @classmethod
     def get_args_dataclass_name(cls) -> type[MatchScriptArgs]:
-        """
-        Returns the dataclass type that holds the arguments for the script.
+        """Return the dataclass type that holds the arguments for the script.
 
         Returns:
             type: The dataclass type for the script's arguments.
+
         """
         return MatchScriptArgs

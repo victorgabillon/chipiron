@@ -1,5 +1,4 @@
-"""
-Test suite for board generation functionality in generate_boards.py
+"""Test suite for board generation functionality in generate_boards.py.
 
 This module tests the core capabilities of the board generation system,
 including PGN processing, sampling strategies, dataset creation, and
@@ -28,7 +27,7 @@ class TestProcessGame:
     """Test the process_game function for extracting positions from chess games."""
 
     def create_test_game(self, moves: list[str]) -> chess.pgn.Game:
-        """Helper to create a test game from a list of moves in algebraic notation."""
+        """Create a test game from a list of moves in algebraic notation."""
         game = chess.pgn.Game()
         node = game
         board = chess.Board()
@@ -337,7 +336,7 @@ class TestDatasetGeneration:
             pgn_path.write_text(test_pgn)
 
             # Process the game
-            with open(pgn_path, "r") as pgn_file:
+            with open(pgn_path) as pgn_file:
                 game = chess.pgn.read_game(pgn_file)
 
             the_dic = []

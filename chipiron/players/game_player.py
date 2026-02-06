@@ -4,7 +4,7 @@
 It stays generic and does not depend on any specific game snapshot/runtime types.
 """
 
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 from valanga.game import Color, Seed
 from valanga.policy import NotifyProgressCallable, Recommendation
@@ -15,7 +15,7 @@ StateSnapT = TypeVar("StateSnapT")
 RuntimeStateT = TypeVar("RuntimeStateT")
 
 
-class GamePlayer(Generic[StateSnapT, RuntimeStateT]):
+class GamePlayer[StateSnapT, RuntimeStateT]:
     """Wraps a `Player` for a specific game and color."""
 
     _player: Player[StateSnapT, RuntimeStateT]

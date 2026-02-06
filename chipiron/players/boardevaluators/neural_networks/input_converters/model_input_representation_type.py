@@ -1,10 +1,10 @@
 """Get the default internal tensor representation for a given model input representation type."""
 
-from enum import Enum
+from enum import StrEnum
 
 
 # this type is more about the technical implementation of internal representation within a node
-class InternalTensorRepresentationType(str, Enum):
+class InternalTensorRepresentationType(StrEnum):
     """Defines the types of internal tensor representations."""
 
     NOBUG364 = "364_no_bug"
@@ -13,7 +13,7 @@ class InternalTensorRepresentationType(str, Enum):
 
 
 # this type is about the type of representation input fed to NN models
-class ModelInputRepresentationType(str, Enum):
+class ModelInputRepresentationType(StrEnum):
     """Defines the types of model input representations."""
 
     NOBUG364 = "364_no_bug"
@@ -33,6 +33,7 @@ def get_default_internal_representation(
 
     Returns:
         InternalTensorRepresentationType: The default internal tensor representation type.
+
     """
     match model_input_representation_type:
         case ModelInputRepresentationType.NOBUG364:
@@ -55,8 +56,7 @@ def assert_compatibilities_representation_type(
     model_input_representation_type: ModelInputRepresentationType,
     internal_tensor_representation_type: InternalTensorRepresentationType,
 ) -> None:
-    """
-    Assert that the internal tensor representation type is compatible with the model input representation type.
+    """Assert that the internal tensor representation type is compatible with the model input representation type.
 
     Args:
         model_input_representation_type (ModelInputRepresentationType): The model input representation type.
@@ -64,6 +64,7 @@ def assert_compatibilities_representation_type(
 
     Raises:
         AssertionError: If the internal tensor representation type is not compatible with the model input representation type.
+
     """
     assert (
         internal_tensor_representation_type
