@@ -87,11 +87,6 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample], ABC):
         start_time = time.time()
 
         raw_data_temp = pandas.read_pickle(self.file_name).copy()
-        print("DEBUG columns", raw_data_temp.columns)
-        print(
-            "DEBUG first row types",
-            {c: type(raw_data_temp.iloc[0][c]) for c in raw_data_temp.columns},
-        )
 
         # Ensure we always work with a DataFrame
         raw_data: DataFrame
@@ -255,6 +250,12 @@ class FenAndValueData:
 
 
 def custom_collate_fn_fen_and_value(batch: list[FenAndValueData]) -> FenAndValueData:
+    """Custom collate function for FenAndValueData.
+    Args:
+        batch (list[FenAndValueData]): The batch of FenAndValueData items.
+    Returns:
+        FenAndValueData: The collated FenAndValueData containing batched tensors.
+    """
     inputs = [item.get_input_layer() for item in batch]
     targets = [item.get_target_value() for item in batch]
 

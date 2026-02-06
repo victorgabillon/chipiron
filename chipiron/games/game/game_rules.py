@@ -14,6 +14,7 @@ StateT = TypeVar("StateT", contravariant=True, bound=TurnState)
 
 
 class OutcomeKind(str, Enum):
+    """Kinds of game outcomes."""
     WIN = "win"
     DRAW = "draw"
     ABORTED = "aborted"
@@ -21,11 +22,13 @@ class OutcomeKind(str, Enum):
 
 
 class OutcomeSource(str, Enum):
+    """Sources of game outcomes."""
     TERMINAL = "terminal"
     ADJUDICATED = "adjudicated"
 
 
 class VerdictKind(str, Enum):
+    """Kinds of position assessments."""
     WIN = "win"
     DRAW = "draw"
     UNKNOWN = "unknown"
@@ -33,6 +36,7 @@ class VerdictKind(str, Enum):
 
 @dataclass(frozen=True)
 class GameOutcome:
+    """Represents the outcome of a game."""
     kind: OutcomeKind
     winner: Color | None = None
     reason: str | None = None
@@ -41,12 +45,14 @@ class GameOutcome:
 
 @dataclass(frozen=True)
 class PositionAssessment:
+    """Represents a non-terminal assessment of a position."""
     kind: VerdictKind
     winner: Color | None = None
     reason: str | None = None
 
 
 class GameRules[StateT](Protocol):
+    """Protocol for game rules."""
     def outcome(self, state: StateT) -> GameOutcome | None:
         """Return None if not terminal; otherwise a GameOutcome."""
         ...
