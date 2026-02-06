@@ -53,8 +53,6 @@ def create_board_representation_factory(
         case InternalTensorRepresentationType.NO:
             board_representation_factory = None
         case _:
-            raise ValueError(
-                f"trying to create {internal_tensor_representation_type} in file {__name__}"
-            )
+            raise ValueError
 
     return board_representation_factory

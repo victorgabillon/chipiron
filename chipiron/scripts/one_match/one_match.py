@@ -84,7 +84,7 @@ class OneMatchScript:
 
         # checking for some incompatibility
         if args.gui and args.base_script_args.profiling:
-            raise ValueError("Profiling does not work well atm with gui on")
+            raise ValueError
 
         # If we need a GUI
         if args.gui:

@@ -109,4 +109,4 @@ def make_environment(
             assert isinstance(deps, CheckersEnvironmentDeps)
             raise NotImplementedError("Environment for CHECKERS is not implemented yet")
         case _:
-            raise ValueError(f"No Environment for game_kind={game_kind!r}")
+            raise ValueError

@@ -74,7 +74,7 @@ class Player[StateSnapT, RuntimeStateT]:
 
         n = self.adapter.legal_action_count(runtime_state)
         if n == 0:
-            raise ValueError("No legal moves in this position")
+            raise ValueError
 
         # Fast path: if only one legal action, skip selection/search for humans.
         if n == 1 and self.id == "Human":

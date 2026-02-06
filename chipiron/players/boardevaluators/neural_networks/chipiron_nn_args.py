@@ -72,9 +72,7 @@ def _is_str_key_mapping(obj: object) -> TypeGuard[Mapping[str, Any]]:
 def _as_mapping(obj: object, *, file_path: str) -> Mapping[str, Any]:
     """Validate and return a string-keyed mapping for YAML data."""
     if not _is_str_key_mapping(obj):
-        raise ValueError(
-            f"Invalid chipiron NN args in {file_path!r}: expected mapping with string keys"
-        )
+        raise ValueError
     return obj
 
 
@@ -117,13 +115,9 @@ def create_content_to_input_convert(
 ) -> ContentToInputFunction[ChessState]:
     """Create content to input convert."""
     if chipiron_nn_args.version != 1:
-        raise ValueError(
-            f"Unsupported chipiron NN args version: {chipiron_nn_args.version}."
-        )
+        raise ValueError
     if chipiron_nn_args.game_kind is not GameKind.CHESS:
-        raise ValueError(
-            f"Unsupported game_kind for now: {chipiron_nn_args.game_kind!r}."
-        )
+        raise ValueError
     builder = _CONTENT_TO_INPUT_BUILDERS[chipiron_nn_args.game_kind]
     return builder(chipiron_nn_args.input_representation)
 

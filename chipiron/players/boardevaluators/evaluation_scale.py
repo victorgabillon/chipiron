@@ -44,4 +44,4 @@ def get_value_over_enum(evaluation_scale: EvaluationScale) -> ValueOverEnum:
         case EvaluationScale.STOCKFISH_BASED:
             return ValueWhiteWhenOverEntireRealAxis
         case _:
-            raise ValueError(f"Unsupported evaluation scale: {evaluation_scale}")
+            raise ValueError

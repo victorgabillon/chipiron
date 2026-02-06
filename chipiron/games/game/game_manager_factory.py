@@ -103,7 +103,7 @@ class GameManagerFactory:
         # match in that case they would come arg_game_manager
 
         if not self.session_id:
-            raise ValueError("GameManagerFactory.session_id must be set")
+            raise ValueError
 
         game_id: str = uuid.uuid4().hex
 

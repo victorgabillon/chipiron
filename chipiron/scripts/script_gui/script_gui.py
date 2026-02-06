@@ -187,8 +187,8 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
                 "config_file_name": "chipiron/scripts/tree_visualization/exp_options.yaml",
             }
             script_type = scripts.ScriptType.TREE_VISUALIZATION
-        case other:
-            raise ValueError(f"Not a good name: {other}")
+        case _:
+            raise ValueError
 
     print(f"Gui choices: the script name is {script_type} and the args are {gui_args}")
     return script_type, gui_args

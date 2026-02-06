@@ -29,7 +29,7 @@ class FenStartingPositionArgs(StartingPositionArgs):
     def get_start_tag(self) -> StateTag:
         """Return start tag."""
         if not self.fen:
-            raise ValueError("Empty fen in FenStartingPositionArgs")
+            raise ValueError
         return ChessStartTag(fen=self.fen)
 
 
@@ -45,7 +45,7 @@ class FileStartingPositionArgs(StartingPositionArgs):
     def get_start_tag(self) -> StateTag:
         """Return start tag."""
         if not self.file_name:
-            raise ValueError("Empty file_name in FileStartingPositionArgs")
+            raise ValueError
         fen = _load_fen_from_file(self.file_name)
         return ChessStartTag(fen=fen)
 
@@ -60,7 +60,7 @@ def _load_fen_from_file(file_name: str) -> str:
         path = _resolve_starting_board_path(file_name)
     fen = _load_fen_from_path(path)
     if not fen:
-        raise ValueError(f"Starting position file is empty: {path}")
+        raise ValueError
     return fen
 
 
@@ -69,12 +69,10 @@ def _resolve_starting_board_path(file_name: str) -> Path:
     try:
         starting_boards = resources.files("chipiron.data").joinpath("starting_boards")
     except ModuleNotFoundError as exc:
-        raise FileNotFoundError(
-            f"Starting position file not found: {file_name}"
-        ) from exc
+        raise FileNotFoundError from exc
     resource_path = starting_boards.joinpath(file_name)
     if not resource_path.is_file():
-        raise FileNotFoundError(f"Starting position file not found: {file_name}")
+        raise FileNotFoundError
     with resources.as_file(resource_path) as resolved:
         return resolved
 
@@ -88,7 +86,7 @@ def _load_fen_from_path(path: Path) -> str:
         return contents
     lines = [line.strip() for line in contents.splitlines() if line.strip()]
     if len(lines) < 9:
-        raise ValueError(f"Invalid starting position file: {path}")
+        raise ValueError
     board_lines = lines[:8]
     suffix = " ".join(lines[8:])
     board_fen = "/".join(_compress_rank(line) for line in board_lines)
@@ -107,7 +105,7 @@ def _looks_like_fen(contents: str) -> bool:
 def _compress_rank(rank: str) -> str:
     """Compress a board rank into FEN digit form."""
     if len(rank) != 8:
-        raise ValueError(f"Invalid board rank: {rank!r}")
+        raise ValueError
     result: list[str] = []
     empty_count = 0
     for char in rank:

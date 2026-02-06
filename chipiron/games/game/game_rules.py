@@ -85,9 +85,9 @@ def outcome_to_final_game_result(outcome: GameOutcome) -> FinalGameResult:
             return FinalGameResult.WIN_FOR_WHITE
         if outcome.winner is Color.BLACK:
             return FinalGameResult.WIN_FOR_BLACK
-        raise ValueError("Winner must be provided for WIN outcomes.")
+        raise ValueError
     if outcome.kind is OutcomeKind.DRAW:
         return FinalGameResult.DRAW
     if outcome.kind in (OutcomeKind.ABORTED, OutcomeKind.UNKNOWN):
         return FinalGameResult.DRAW
-    raise ValueError(f"Unhandled outcome kind: {outcome.kind}")
+    raise ValueError

@@ -76,10 +76,8 @@ class ChessRules(GameRules[ChessState]):
                 return GameOutcome(kind=OutcomeKind.DRAW, reason=reason)
             case "*":
                 return GameOutcome(kind=OutcomeKind.UNKNOWN, reason=reason)
-            case other:
-                raise ValueError(
-                    f"unexpected result value {other} in {self.__class__.__name__}"
-                )
+            case _:
+                raise ValueError
 
     def _assessment_from_over_event(
         self, winner: Winner, how_over: HowOver, reason: str | None = None

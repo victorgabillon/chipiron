@@ -53,7 +53,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
     photo_clicked = QtCore.Signal(QtCore.QPoint)
 
     @typing.no_type_check
-    def __init__(self, parent) -> None:
+    def __init__(self, parent: QtWidgets.QWidget | None) -> None:
         """Initialize the PhotoViewer.
 
         Args:
@@ -86,7 +86,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
     @typing.no_type_check
     @typing.override
-    def fitInView(self, scale=True) -> None:
+    def fitInView(self, scale: bool = True) -> None:
         """Fit the photo within the view.
 
         Args:
@@ -95,7 +95,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         """
 
     @typing.no_type_check
-    def set_photo(self, pixmap=None) -> None:
+    def set_photo(self, pixmap: QtGui.QPixmap | None = None) -> None:
         """Set the photo to be displayed.
 
         Args:
@@ -115,7 +115,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
     @typing.no_type_check
     @typing.override
-    def wheelEvent(self, event) -> None:
+    def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
         """Handle the wheel event for zooming.
 
         Args:
@@ -146,7 +146,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
     @typing.no_type_check
     @typing.override
-    def mousePressEvent(self, event) -> None:
+    def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
         """Handle the mouse press event.
 
         Args:
@@ -323,7 +323,7 @@ class Window(QtWidgets.QWidget):
         self.viewer.toggle_drag_mode()
 
     @typing.no_type_check
-    def photo_clicked(self, pos) -> None:
+    def photo_clicked(self, pos: QtCore.QPoint) -> None:
         """Handle the event when a photo is clicked.
 
         Args:
@@ -338,7 +338,7 @@ class Window(QtWidgets.QWidget):
 
     @typing.no_type_check
     @typing.override
-    def keyPressEvent(self, event) -> None:
+    def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         """Handle key press events.
 
         Args:
@@ -373,7 +373,7 @@ class Window(QtWidgets.QWidget):
             self.load_image()
 
     @typing.no_type_check
-    def move_to_son(self, key) -> None:
+    def move_to_son(self, key: str) -> None:
         """Move to the specified son node based on the given key.
 
         Args:

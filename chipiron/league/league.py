@@ -287,9 +287,7 @@ class League:
 
         """
         if len(self.players_args) < 2:
-            raise ValueError(
-                'Not enough players in the league. To add players put the yaml files in the folder "new players"'
-            )
+            raise ValueError
         picked = random.sample(list(self.players_args.values()), k=2)
         print("picked", picked)
         return picked[0], picked[1]
