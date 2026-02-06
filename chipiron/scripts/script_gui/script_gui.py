@@ -55,7 +55,6 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
 
     # set the position of the window to the center of the screen
     root.geometry(f"{window_width}x{window_height}+{center_x}+{center_y}")
-    # root.iconbitmap('download.jpeg')
 
     message = tk.Label(root, text="What to do?")
     message.grid(column=0, row=0)

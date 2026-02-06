@@ -82,8 +82,6 @@ def value_white(board: IBoard) -> float:
     """
     value_white_pieces = value_base(board, chess.WHITE)
     value_black_pieces = value_base(board, chess.BLACK)
-    # value_white_pieces += add_pawns_value_white(board)
-    # value_black_pieces += add_pawns_value_black(board)
     return value_white_pieces - value_black_pieces
 
 
@@ -115,8 +113,6 @@ def value_player_to_move(board: IBoard) -> float:
     """
     value_white_pieces: int = value_base(board, chess.WHITE)
     value_black_pieces: int = value_base(board, chess.BLACK)
-    # value_white_pieces += add_pawns_value_white(board)
-    # value_black_pieces += add_pawns_value_black(board)
     value: float
     if board.turn == Color.WHITE:
         value = sigmoid((value_white_pieces - value_black_pieces) * 0.2)

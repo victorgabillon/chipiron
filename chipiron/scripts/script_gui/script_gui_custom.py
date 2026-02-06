@@ -192,8 +192,6 @@ def script_gui() -> tuple[scripts.ScriptType, IsDataclass | None, str]:
     # place a label on the root window
     root.title("🐙 chess with chipirons 🐙")
 
-    # frm = ctk.CTkFrame(root, padding=10)
-
     window_width: int = 900
     window_height: int = 400
 
@@ -207,7 +205,6 @@ def script_gui() -> tuple[scripts.ScriptType, IsDataclass | None, str]:
 
     # set the position of the window to the center of the screen
     root.geometry(f"{window_width}x{window_height}+{center_x}+{center_y}")
-    # root.iconbitmap('download.jpg')
 
     message = cast("tk.Widget", ctk.CTkLabel(root, text="What to do?"))
     message.grid(column=0, row=0)

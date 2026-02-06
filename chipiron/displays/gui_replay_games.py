@@ -39,7 +39,6 @@ class MainWindow(QWidget):
 
         self.closeButton2 = QPushButton(self)
         self.closeButton2.setText("Player")  # text
-        # self.closeButton2.move(700, 200)
         self.closeButton2.setStyleSheet(
             "QPushButton {background-color: white; color: blue;}"
         )
