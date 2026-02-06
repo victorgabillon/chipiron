@@ -54,6 +54,7 @@ class NNTrainerConfigError(ValueError):
         reuse_existing_model: bool,
         nn_parameters_file_if_reusing_existing_one: path | None,
     ) -> None:
+        """Initialize the error with inconsistent trainer arguments."""
         msg = (
             "Problem because you are asking for a reuse of existing model without specifying a"
             f" param file as we have: reuse_existing_model {reuse_existing_model}"

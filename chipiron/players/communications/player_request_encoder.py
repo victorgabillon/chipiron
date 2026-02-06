@@ -22,6 +22,7 @@ class PlayerRequestEncoderError(ValueError):
     """Raised when a player request encoder is missing for a game kind."""
 
     def __init__(self, game_kind: GameKind) -> None:
+        """Initialize the error with the missing game kind."""
         super().__init__(f"No PlayerRequestEncoder for game_kind={game_kind!r}")
 
 

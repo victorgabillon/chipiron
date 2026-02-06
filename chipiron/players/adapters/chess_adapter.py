@@ -24,6 +24,7 @@ class SingleLegalMoveRequiredError(ChessAdapterError):
     """Raised when only_action_name is called with multiple legal moves."""
 
     def __init__(self, move_count: int) -> None:
+        """Initialize the error with the legal move count."""
         super().__init__(
             f"only_action_name called but position has != 1 legal move (count={move_count})"
         )

@@ -48,6 +48,7 @@ class EvaluationReportLoadError(EvaluationReportError):
     """Raised when the evaluation report cannot be loaded."""
 
     def __init__(self) -> None:
+        """Initialize the error for evaluation report loading failures."""
         super().__init__("Error loading the evaluation report")
 
 

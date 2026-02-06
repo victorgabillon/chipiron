@@ -16,6 +16,7 @@ class InvalidMatchResultError(MatchResultsError):
     """Raised when a match result is not supported."""
 
     def __init__(self, game_result: FinalGameResult) -> None:
+        """Initialize the error with the unsupported result."""
         super().__init__(f"Unsupported game result: {game_result}")
 
 
@@ -23,6 +24,7 @@ class UnknownWhitePlayerError(MatchResultsError):
     """Raised when the white player's identity is unknown."""
 
     def __init__(self, white_player_name_id: str) -> None:
+        """Initialize the error with the unknown player id."""
         super().__init__(f"Unknown white player id: {white_player_name_id}")
 
 

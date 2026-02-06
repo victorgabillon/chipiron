@@ -44,6 +44,7 @@ class DatasetDecompressionError(RuntimeError):
     """Raised when PGN decompression fails."""
 
     def __init__(self, original_error: Exception) -> None:
+        """Initialize the error with the original exception."""
         super().__init__(f"Both zstd CLI and Python zstandard failed: {original_error}")
 
 
