@@ -61,8 +61,8 @@ class ReplayGameScript:
             experiment_output_folder=self.base_experiment_output_folder,
         )
 
-        with open(self.args.file_game_report, "r", encoding="utf-8") as fileGame:
-            game_report_dict: dict[Any, Any] = yaml.safe_load(fileGame)
+        with open(self.args.file_game_report, encoding="utf-8") as file_game:
+            game_report_dict: dict[Any, Any] = yaml.safe_load(file_game)
             game_report: GameReport = dacite.from_dict(
                 data_class=GameReport,
                 data=game_report_dict,

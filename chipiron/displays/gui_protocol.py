@@ -1,7 +1,7 @@
 """Protocol payloads exchanged between the GUI and game runtime."""
 
 from dataclasses import dataclass
-from typing import Never, TypeAlias
+from typing import Never
 
 from atomheart.board.utils import FenPlusHistory
 from valanga import Color
@@ -10,10 +10,10 @@ from valanga.evaluations import StateEvaluation
 from chipiron.environments.types import GameKind
 from chipiron.games.game.game_playing_status import PlayingStatus
 
-SchemaVersion: TypeAlias = int
-SessionId: TypeAlias = str
-MatchId: TypeAlias = str
-GameId: TypeAlias = str
+type SchemaVersion = int
+type SessionId = str
+type MatchId = str
+type GameId = str
 
 
 @dataclass(frozen=True, slots=True)
@@ -107,7 +107,7 @@ class UpdGameStatus:
     status: PlayingStatus
 
 
-UpdatePayload: TypeAlias = (
+type UpdatePayload = (
     UpdStateChess
     | UpdPlayerProgress
     | UpdEvaluation
@@ -151,7 +151,7 @@ class CmdHumanMoveUci:
     color_to_play: Color | None = None
 
 
-CommandPayload: TypeAlias = CmdBackOneMove | CmdSetStatus | CmdHumanMoveUci
+type CommandPayload = CmdBackOneMove | CmdSetStatus | CmdHumanMoveUci
 
 
 @dataclass(frozen=True, slots=True)

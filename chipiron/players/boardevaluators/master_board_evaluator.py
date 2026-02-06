@@ -1,4 +1,5 @@
 """Module for master board evaluator."""
+
 from dataclasses import dataclass
 from typing import Any
 
@@ -170,7 +171,7 @@ class MasterBoardEvaluator:
         return white_value
 
 
-def create_master_state_evaluator(  # noqa: D417
+def create_master_state_evaluator(
     board_evaluator: StateEvaluator[ChessState],
     value_oracle: ValueOracle[ChessState] | None,
     terminal_oracle: TerminalOracle[ChessState] | None,

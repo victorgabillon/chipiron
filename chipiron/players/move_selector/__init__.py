@@ -4,7 +4,7 @@ from .factory import create_main_move_selector, create_tree_and_value_move_selec
 from .stockfish import StockfishPlayer
 
 __all__ = [
+    "StockfishPlayer",
     "create_main_move_selector",
     "create_tree_and_value_move_selector",
-    "StockfishPlayer",
 ]

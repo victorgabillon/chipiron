@@ -3,7 +3,7 @@
 import os
 import pickle
 import random
-from typing import Any
+from typing import Any, ClassVar
 
 from chipiron.league.league import League
 from chipiron.scripts.iscript import IScript
@@ -16,7 +16,7 @@ class RunTheLeagueScript(IScript):
     ers in the league and computing ELOs
     """
 
-    default_param_dict: dict[str, Any] = {
+    default_param_dict: ClassVar[dict[str, Any]] = {
         "config_file_name": None,
     }
     base_experiment_output_folder: str = os.path.join(
@@ -67,7 +67,8 @@ class RunTheLeagueScript(IScript):
         while True:
             self.league.run()
             # save
-            pickle.dump(self.league, open(self.folder_league + "/players.pickle", "wb"))
+            with open(self.folder_league + "/players.pickle", "wb") as players_file:
+                pickle.dump(self.league, players_file)
 
     def terminate(self) -> None:
         """Terminates the league execution."""

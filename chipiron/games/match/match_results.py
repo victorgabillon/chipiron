@@ -30,6 +30,7 @@ class IMatchResults(Protocol):
             game_result (FinalGameResult): The result of the game.
 
         """
+
     def get_simple_result(self) -> SimpleResults:
         """Return the simple results of the match.
 
@@ -50,6 +51,8 @@ class IMatchResults(Protocol):
 
     def finish(self) -> None:
         """Finishes the match and marks it as finished."""
+
+
 @dataclass
 class MatchResults:
     """Represents the results of a match between two players."""

@@ -15,13 +15,12 @@ PROJECT_ROOT = Path(__file__).parents[2]  # Go up from chipiron/utils/ to projec
 # Load .env file if it exists
 env_file = PROJECT_ROOT / ".env"
 if env_file.exists():
-    with open(env_file, "r", encoding="utf-8") as f:
+    with open(env_file, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
-            if line and not line.startswith("#"):
-                if "=" in line:
-                    key, value = line.split("=", 1)
-                    os.environ.setdefault(key, value)
+            if line and not line.startswith("#") and "=" in line:
+                key, value = line.split("=", 1)
+                os.environ.setdefault(key, value)
 
 
 def get_env_path(env_var: str, default: str) -> Path:

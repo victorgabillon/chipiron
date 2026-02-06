@@ -1,4 +1,5 @@
 """Module for test checkmate."""
+
 import pickle
 import random
 from typing import TYPE_CHECKING

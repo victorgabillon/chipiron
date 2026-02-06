@@ -1,6 +1,7 @@
 """Module for player handle."""
+
 from dataclasses import dataclass
-from typing import Generic, Protocol, TypeVar
+from typing import Protocol, TypeVar
 
 from chipiron.players.game_player import GamePlayer
 
@@ -18,11 +19,14 @@ class PlayerHandle(Protocol):
     def close(self) -> None:
         """Close."""
         ...
+
     def is_alive(self) -> bool:
         """Return whether alive."""
         ...
+
+
 @dataclass(frozen=True)
-class InProcessPlayerHandle(Generic[SnapT, RuntimeT]):
+class InProcessPlayerHandle[SnapT, RuntimeT]:
     """Inprocessplayerhandle implementation."""
 
     player: GamePlayer[SnapT, RuntimeT]

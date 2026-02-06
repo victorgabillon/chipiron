@@ -93,7 +93,7 @@ def evaluate_models(
     print("Evaluating models...")
     # Load the evaluation report
     evaluated_models: dict[str, ModelEvaluation] = {}
-    with open(evaluation_report_file, "r", encoding="utf-8") as stream:
+    with open(evaluation_report_file, encoding="utf-8") as stream:
         try:
             evaluated_models_temp: dict[str, dict[Any, Any]] | None
             evaluated_models_temp = yaml.safe_load(stream)

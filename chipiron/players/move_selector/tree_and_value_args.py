@@ -6,7 +6,7 @@ from typing import Literal
 from anemone import TreeAndValuePlayerArgs as AnemoneTreeArgs
 
 from chipiron.players.boardevaluators import master_board_evaluator
-from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
+from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
     InternalTensorRepresentationType,
 )
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes

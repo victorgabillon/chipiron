@@ -54,12 +54,12 @@ class IntegrationTestResult:
             "timestamp": time.time(),
         }
         if not success:
-            self.errors.append("%s: %s" % (test_name, message))
+            self.errors.append(f"{test_name}: {message}")
         chipiron_logger.info("%s %s: %s", "✅" if success else "❌", test_name, message)
 
     def add_warning(self, test_name: str, message: str):
         """Add a warning."""
-        self.warnings.append("%s: %s" % (test_name, message))
+        self.warnings.append(f"{test_name}: {message}")
         chipiron_logger.warning("⚠️  %s: %s", test_name, message)
 
     def get_summary(self) -> dict[str, Any]:
@@ -89,7 +89,7 @@ class ChipironIntegrationTester:
         keep_temp: bool = False,
         verbose: bool = False,
         skip_syzygy: bool = False,
-        conda_env: str = None,
+        conda_env: str | None = None,
     ):
         """Initialize the instance."""
         self.repo_url = repo_url
@@ -114,7 +114,7 @@ class ChipironIntegrationTester:
             return "3.12"
 
         try:
-            with open(pyproject_path, "r") as f:
+            with open(pyproject_path) as f:
                 content = f.read()
 
             # Look for requires-python line
@@ -137,7 +137,7 @@ class ChipironIntegrationTester:
             )
             return "3.12"
 
-        except (OSError, IOError, re.error) as e:
+        except (OSError, re.error) as e:
             chipiron_logger.warning(
                 "Error reading pyproject.toml: %s, defaulting to Python 3.12", e
             )
@@ -146,7 +146,7 @@ class ChipironIntegrationTester:
     def run_command(
         self,
         cmd: list[str],
-        cwd: str = None,
+        cwd: str | None = None,
         check: bool = True,
         capture_output: bool = True,
         timeout: int = 300,
@@ -251,8 +251,7 @@ class ChipironIntegrationTester:
         self.result.add_result(
             "temporary_setup",
             True,
-            "Created temporary directory and environment name: %s"
-            % self.conda_env_name,
+            f"Created temporary directory and environment name: {self.conda_env_name}",
         )
 
     def create_conda_environment(self):
@@ -277,14 +276,13 @@ class ChipironIntegrationTester:
             self.result.add_result(
                 "conda_environment_creation",
                 True,
-                "Created conda environment: %s with Python %s"
-                % (self.conda_env_name, self.python_version),
+                f"Created conda environment: {self.conda_env_name} with Python {self.python_version}",
             )
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as e:
             self.result.add_result(
                 "conda_environment_creation",
                 False,
-                "Failed to create conda environment: %s" % str(e),
+                f"Failed to create conda environment: {e!s}",
             )
             raise
 
@@ -297,11 +295,11 @@ class ChipironIntegrationTester:
         try:
             self.run_command(["git", "clone", self.repo_url, str(self.project_dir)])
             self.result.add_result(
-                "repository_clone", True, "Cloned repository to %s" % self.project_dir
+                "repository_clone", True, f"Cloned repository to {self.project_dir}"
             )
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as e:
             self.result.add_result(
-                "repository_clone", False, "Failed to clone repository: %s" % str(e)
+                "repository_clone", False, f"Failed to clone repository: {e!s}"
             )
             raise
 
@@ -355,7 +353,7 @@ class ChipironIntegrationTester:
             )
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as e:
             self.result.add_result(
-                "makefile_setup", False, "Makefile setup failed: %s" % str(e)
+                "makefile_setup", False, f"Makefile setup failed: {e!s}"
             )
             raise
 
@@ -379,7 +377,7 @@ class ChipironIntegrationTester:
             )
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as e:
             self.result.add_result(
-                "python_import", False, "Failed to import chipiron: %s" % str(e)
+                "python_import", False, f"Failed to import chipiron: {e!s}"
             )
 
     def test_stockfish_installation(self):
@@ -448,7 +446,7 @@ except Exception as e:
                 self.result.add_result(
                     "stockfish_installation",
                     True,
-                    "Stockfish is working. Version: %s" % version,
+                    f"Stockfish is working. Version: {version}",
                     {"version": version},
                 )
             else:
@@ -460,7 +458,7 @@ except Exception as e:
 
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as e:
             self.result.add_result(
-                "stockfish_installation", False, "Stockfish test failed: %s" % str(e)
+                "stockfish_installation", False, f"Stockfish test failed: {e!s}"
             )
 
     def _download_syzygy_tables(self):
@@ -644,7 +642,7 @@ except Exception as e:
                 self.result.add_result(
                     "syzygy_tables",
                     True,
-                    "Syzygy tables are accessible with %s table files" % file_count,
+                    f"Syzygy tables are accessible with {file_count} table files",
                     {"file_count": file_count},
                 )
             elif "Found" in result.stdout and "files" in result.stdout:
@@ -661,14 +659,12 @@ except Exception as e:
                 if file_count > 0:
                     self.result.add_warning(
                         "syzygy_tables",
-                        "Partial Syzygy tables available (%s files) - some downloads may have failed"
-                        % file_count,
+                        f"Partial Syzygy tables available ({file_count} files) - some downloads may have failed",
                     )
                     self.result.add_result(
                         "syzygy_tables",
                         True,
-                        "Partial Syzygy tables available with %s table files"
-                        % file_count,
+                        f"Partial Syzygy tables available with {file_count} table files",
                         {"file_count": file_count, "partial": True},
                     )
                 else:
@@ -680,8 +676,7 @@ except Exception as e:
                     self.result.add_result(
                         "syzygy_tables",
                         False,
-                        "Syzygy tables directory exists but no table files found. Debug: %s"
-                        % debug_info,
+                        f"Syzygy tables directory exists but no table files found. Debug: {debug_info}",
                     )
             else:
                 # Extract debug output for analysis
@@ -690,13 +685,12 @@ except Exception as e:
                 self.result.add_result(
                     "syzygy_tables",
                     False,
-                    "Syzygy tables directory exists but no table files found. Debug: %s"
-                    % debug_info,
+                    f"Syzygy tables directory exists but no table files found. Debug: {debug_info}",
                 )
 
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as e:
             self.result.add_result(
-                "syzygy_tables", False, "Syzygy tables test failed: %s" % str(e)
+                "syzygy_tables", False, f"Syzygy tables test failed: {e!s}"
             )
 
     def test_gui_functionality(self):
@@ -750,7 +744,7 @@ except Exception as e:
 
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as e:
             self.result.add_result(
-                "gui_functionality", False, "GUI functionality test failed: %s" % str(e)
+                "gui_functionality", False, f"GUI functionality test failed: {e!s}"
             )
 
     def test_basic_game_functionality(self):
@@ -812,7 +806,7 @@ except Exception as e:
             self.result.add_result(
                 "basic_game_functionality",
                 False,
-                "Basic game functionality test failed: %s" % str(e),
+                f"Basic game functionality test failed: {e!s}",
             )
 
     def test_syzygy_dtz_functionality(self):
@@ -863,11 +857,11 @@ except Exception as e:
                 self.result.add_result(
                     "syzygy_dtz_functionality",
                     False,
-                    "Syzygy DTZ test failed: %s" % result.stdout.strip(),
+                    f"Syzygy DTZ test failed: {result.stdout.strip()}",
                 )
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as e:
             self.result.add_result(
-                "syzygy_dtz_functionality", False, "Syzygy DTZ test failed: %s" % str(e)
+                "syzygy_dtz_functionality", False, f"Syzygy DTZ test failed: {e!s}"
             )
 
     def test_stockfish_player_functionality(self):
@@ -917,13 +911,13 @@ except Exception as e:
                 self.result.add_result(
                     "stockfish_player_functionality",
                     False,
-                    "StockfishPlayer test failed: %s" % result.stdout.strip(),
+                    f"StockfishPlayer test failed: {result.stdout.strip()}",
                 )
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as e:
             self.result.add_result(
                 "stockfish_player_functionality",
                 False,
-                "StockfishPlayer test failed: %s" % str(e),
+                f"StockfishPlayer test failed: {e!s}",
             )
 
     def cleanup(self):

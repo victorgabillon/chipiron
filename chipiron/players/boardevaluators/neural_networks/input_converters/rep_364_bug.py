@@ -1,4 +1,5 @@
 """Module for rep 364 bug."""
+
 from typing import Protocol, cast
 
 import atomheart.board as boards
@@ -79,14 +80,13 @@ def create_from_state_and_modifications(
     tensor_castling_black[0] = bool(board.castling_rights & chess.BB_A8)
     tensor_castling_black[1] = bool(board.castling_rights & chess.BB_H8)
 
-    representation = Representation364(
+    return Representation364(
         tensor_white=tensor_white,
         tensor_black=tensor_black,
         tensor_castling_black=tensor_castling_black,
         tensor_castling_white=tensor_castling_white,
     )
 
-    return representation
 
 
 def create_from_board(state: ChessState) -> Representation364:
@@ -109,9 +109,8 @@ def create_from_board(state: ChessState) -> Representation364:
     p: dict[chess.Square, tuple[int, bool]] = e(board)
     a(black, white, p)
     b(board, castling_black, castling_white)
-    representation = c(castling_black, castling_white, black, white)
+    return c(castling_black, castling_white, black, white)
 
-    return representation
 
 
 def e(board: boards.IBoard) -> dict[chess.Square, tuple[int, bool]]:

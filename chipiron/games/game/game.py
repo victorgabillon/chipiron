@@ -46,7 +46,7 @@ class Game[StateT: TurnState = TurnState]:
     # this let the board object a bit more lightweight to speed up the Monte Carlo tree search
     _state_history: list[StateT]
 
-    def __init__(  # noqa: D417
+    def __init__(
         self, state: StateT, playing_status: GamePlayingStatus, seed_: Seed = 0
     ):
         """Initialize the Game object.
@@ -223,7 +223,7 @@ class ObservableGame[StateT: TurnState = TurnState]:
     # at least one player to compute a move
     move_functions: list[MoveFunction]
 
-    def __init__(  # noqa: D417
+    def __init__(
         self,
         game: Game[StateT],
         gui_encoder: GuiEncoder[StateT],

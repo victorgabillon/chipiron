@@ -1,4 +1,5 @@
 """Module for gui publisher."""
+
 import queue
 from dataclasses import dataclass
 

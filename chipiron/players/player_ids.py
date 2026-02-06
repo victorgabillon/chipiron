@@ -17,7 +17,7 @@ Dependencies:
 
 """
 
-from enum import Enum
+from enum import StrEnum
 from importlib.resources import as_file, files
 
 import parsley_coco
@@ -27,7 +27,7 @@ from chipiron.players.player_args import PlayerArgs
 from chipiron.utils import path
 
 
-class PlayerConfigTag(str, Enum):
+class PlayerConfigTag(StrEnum):
     """Describe the class is used to identify the player configuration files.
 
     Each player configuration file should be listed here as a class attribute.

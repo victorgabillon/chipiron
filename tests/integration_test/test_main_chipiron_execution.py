@@ -1,4 +1,5 @@
 """Module for test main chipiron execution."""
+
 import os
 import subprocess
 import sys

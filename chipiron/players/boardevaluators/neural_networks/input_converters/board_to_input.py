@@ -18,7 +18,7 @@ from chipiron.players.boardevaluators.neural_networks.board_to_tensor import (
 from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_transformer_input import (
     build_transformer_input,
 )
-from chipiron.players.boardevaluators.neural_networks.input_converters.ModelInputRepresentationType import (
+from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
     InternalTensorRepresentationType,
     ModelInputRepresentationType,
 )

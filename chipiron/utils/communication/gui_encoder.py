@@ -1,4 +1,5 @@
 """Module for gui encoder."""
+
 from typing import Protocol, TypeVar
 
 from valanga.game import Seed
@@ -25,6 +26,7 @@ class GuiEncoder(Protocol[StateT_contra]):
     ) -> UpdatePayload:
         """Create state payload."""
         ...
+
     def make_status_payload(
         self,
         *,

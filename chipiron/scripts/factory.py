@@ -16,7 +16,7 @@ from .script_type import ScriptType
 
 
 # instantiate relevant script
-def create_script(  # noqa: D417
+def create_script(
     script_type: ScriptType,
     extra_args: IsDataclass | None = None,
     config_file_name: str | None = None,

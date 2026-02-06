@@ -69,7 +69,7 @@ class PlayerCreationArgs:
     terminal_oracle: TerminalOracle[ChessState] | None = None
 
 
-def create_tag_player(  # noqa: D417
+def create_tag_player(
     tag: PlayerConfigTag,
     implementation_args: ImplementationArgs,
     universal_behavior: bool,
@@ -125,7 +125,7 @@ def create_tag_player(  # noqa: D417
     )
 
 
-def create_chipiron_player(  # noqa: D417
+def create_chipiron_player(
     implementation_args: ImplementationArgs,
     universal_behavior: bool,
     random_generator: random.Random,
@@ -156,7 +156,7 @@ def create_chipiron_player(  # noqa: D417
     )
 
 
-def create_chess_player(  # noqa: D417
+def create_chess_player(
     args: ChessPlayerArgs,
     policy_oracle: PolicyOracle[ChessState] | None,
     value_oracle: ValueOracle[ChessState] | None,
@@ -260,7 +260,7 @@ def create_player(
     )
 
 
-def create_game_player(  # noqa: D417
+def create_game_player(
     player_factory_args: ChessPlayerFactoryArgs,
     player_color: Color,
     policy_oracle: PolicyOracle[ChessState] | None,

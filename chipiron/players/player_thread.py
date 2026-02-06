@@ -8,9 +8,10 @@ This process:
 - emits dataclass events to an output queue
 """
 
+import contextlib
 import multiprocessing
 import queue
-from typing import Generic, Protocol, TypeVar
+from typing import Protocol, TypeVar
 
 from chipiron.players.communications.player_message import PlayerRequest
 from chipiron.players.communications.player_runtime import handle_player_request
@@ -36,7 +37,7 @@ class StopEvent(Protocol):
         ...
 
 
-class PlayerProcess(multiprocessing.Process, Generic[SnapT, RuntimeT, BuildArgsT]):
+class PlayerProcess[SnapT, RuntimeT, BuildArgsT](multiprocessing.Process):
     """Run a `GamePlayer` in a separate process.
 
     This is intentionally game-agnostic: game construction is injected via `build_game_player`.
@@ -73,12 +74,10 @@ class PlayerProcess(multiprocessing.Process, Generic[SnapT, RuntimeT, BuildArgsT
         we also try to send a poison-pill (`None`) into the input queue.
         """
         self._stop_event.set()
-        try:
-            self.queue_in.put(None)
-        except Exception:
+        with contextlib.suppress(Exception):
             # Best-effort: if the queue is already closed or not writable, termination
             # is still handled by external process control.
-            pass
+            self.queue_in.put(None)
 
     def close(self) -> None:
         """Shutdown hook used by the game manager.
@@ -88,11 +87,9 @@ class PlayerProcess(multiprocessing.Process, Generic[SnapT, RuntimeT, BuildArgsT
         """
         self.stop()
 
-        try:
-            self.join(timeout=1.0)
-        except Exception:
+        with contextlib.suppress(Exception):
             # If join isn't possible for some reason, fall back to terminate.
-            pass
+            self.join(timeout=1.0)
 
         if self.is_alive():
             try:

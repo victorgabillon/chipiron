@@ -23,9 +23,9 @@ import shutil
 import subprocess
 import urllib.error
 import urllib.request
+from collections.abc import Generator
 from datetime import datetime
 from pathlib import Path
-from typing import Generator
 
 import chess
 import chess.pgn
@@ -169,12 +169,8 @@ def process_game(
     else:
         random_offset = game_total_moves  # degenerate case
 
-    # Track moves within this game
-    game_move_count = 0
-
-    for move in moves_list:
+    for game_move_count, move in enumerate(moves_list, start=1):
         total_count_move += 1
-        game_move_count += 1
         chess_board.push(move)
 
         next_node: chess.pgn.GameNode | None = current_node.next()
@@ -201,7 +197,7 @@ def process_game(
 # --- Dynamic monthly download helpers ---
 
 
-def iterate_months(start_month: str) -> Generator[str, None, None]:
+def iterate_months(start_month: str) -> Generator[str]:
     """Yield month strings (YYYY-MM) starting at start_month incrementing by one month indefinitely."""
     dt = datetime.strptime(start_month, "%Y-%m")
     while True:
@@ -234,13 +230,12 @@ def download_month_zst(month: str, dest_dir: Path) -> Path:
                     "Compressed file already exists for %s: %s", month, local_path
                 )
                 return local_path
-            else:
-                chipiron_logger.info(
-                    "Incomplete file detected for %s (local: %d, remote: %d). Re-downloading...",
-                    month,
-                    local_size,
-                    remote_size,
-                )
+            chipiron_logger.info(
+                "Incomplete file detected for %s (local: %d, remote: %d). Re-downloading...",
+                month,
+                local_size,
+                remote_size,
+            )
         except urllib.error.URLError as e:
             chipiron_logger.info(
                 "Could not verify file size for %s: %s. Re-downloading...", month, e
@@ -366,7 +361,7 @@ def generate_board_dataset_multi_months(
         pgn_path = ensure_month_pgn(month, dest_dir)
         months_used.append(month)
         months_processed += 1
-        with open(pgn_path, "r", encoding="utf-8") as pgn_file:
+        with open(pgn_path, encoding="utf-8") as pgn_file:
             while recorded_board < max_boards:
                 game = chess.pgn.read_game(pgn_file)
                 if game is None:

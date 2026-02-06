@@ -1,7 +1,7 @@
 """Protocol and data structures for game-specific rules and outcomes."""
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import Protocol, TypeVar
 
 from valanga import Color, TurnState
@@ -11,26 +11,26 @@ from .final_game_result import FinalGameResult
 StateT = TypeVar("StateT", contravariant=True, bound=TurnState)
 
 
-class OutcomeKind(str, Enum):  # noqa: D101
+class OutcomeKind(StrEnum):
     WIN = "win"
     DRAW = "draw"
     ABORTED = "aborted"
     UNKNOWN = "unknown"
 
 
-class OutcomeSource(str, Enum):  # noqa: D101
+class OutcomeSource(StrEnum):
     TERMINAL = "terminal"
     ADJUDICATED = "adjudicated"
 
 
-class VerdictKind(str, Enum):  # noqa: D101
+class VerdictKind(StrEnum):
     WIN = "win"
     DRAW = "draw"
     UNKNOWN = "unknown"
 
 
 @dataclass(frozen=True)
-class GameOutcome:  # noqa: D101
+class GameOutcome:
     kind: OutcomeKind
     winner: Color | None = None
     reason: str | None = None
@@ -38,13 +38,13 @@ class GameOutcome:  # noqa: D101
 
 
 @dataclass(frozen=True)
-class PositionAssessment:  # noqa: D101
+class PositionAssessment:
     kind: VerdictKind
     winner: Color | None = None
     reason: str | None = None
 
 
-class GameRules[StateT](Protocol):  # noqa: D101
+class GameRules[StateT](Protocol):
     def outcome(self, state: StateT) -> GameOutcome | None:
         """Return None if not terminal; otherwise a GameOutcome."""
         ...

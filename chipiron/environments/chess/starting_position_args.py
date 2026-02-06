@@ -1,9 +1,10 @@
 """Module for starting position args."""
+
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from importlib import resources
 from pathlib import Path
-from typing import Literal, TypeAlias
+from typing import Literal
 
 from valanga import StateTag
 
@@ -11,7 +12,7 @@ from chipiron.environments.chess.tags import ChessStartTag
 from chipiron.environments.starting_position import StartingPositionArgs
 
 
-class StartingPositionArgsType(str, Enum):
+class StartingPositionArgsType(StrEnum):
     """Startingpositionargstype implementation."""
 
     FEN = "fen"
@@ -49,7 +50,7 @@ class FileStartingPositionArgs(StartingPositionArgs):
         return ChessStartTag(fen=fen)
 
 
-AllStartingPositionArgs: TypeAlias = FenStartingPositionArgs | FileStartingPositionArgs
+type AllStartingPositionArgs = FenStartingPositionArgs | FileStartingPositionArgs
 
 
 def _load_fen_from_file(file_name: str) -> str:

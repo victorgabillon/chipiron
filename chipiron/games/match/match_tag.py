@@ -15,7 +15,7 @@ Methods:
 
 """
 
-from enum import Enum
+from enum import StrEnum
 from importlib.resources import as_file, files
 
 import parsley_coco
@@ -24,7 +24,7 @@ from chipiron.games.match.match_settings_args import MatchSettingsArgs
 from chipiron.utils import path
 
 
-class MatchConfigTag(str, Enum):
+class MatchConfigTag(StrEnum):
     """Enum representing available match configuration tags."""
 
     # this list should correspond to files existing in the data/settings/OneMatch folder

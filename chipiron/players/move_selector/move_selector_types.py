@@ -12,12 +12,12 @@ Attributes:
 
 """
 
-from enum import Enum
+from enum import StrEnum
 
 from anemone.factory import TREE_AND_VALUE_LITERAL_STRING
 
 
-class MoveSelectorTypes(str, Enum):
+class MoveSelectorTypes(StrEnum):
     """Enumeration class representing different types of move selectors."""
 
     Random = "Random"

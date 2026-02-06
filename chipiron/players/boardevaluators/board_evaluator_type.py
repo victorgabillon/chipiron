@@ -1,11 +1,11 @@
 """Document the module defines the different types of board evaluators used in the tree value calculation."""
 
-from enum import Enum
+from enum import StrEnum
 
 from coral.neural_networks.neural_net_board_eval_args import NN_NET_EVAL_STRING
 
 
-class BoardEvalTypes(str, Enum):
+class BoardEvalTypes(StrEnum):
     """Enumeration of argument types for different board evaluators.
 
     Attributes:

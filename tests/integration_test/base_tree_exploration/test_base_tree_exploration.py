@@ -1,4 +1,5 @@
 """Module for test base tree exploration."""
+
 import chipiron.scripts as scripts
 from chipiron.scripts.factory import create_script
 

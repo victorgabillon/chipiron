@@ -1,7 +1,7 @@
 """Document the module defines the arguments for different board evaluators in the Chipiron chess engine framework."""
 
 from dataclasses import dataclass
-from typing import Literal, TypeAlias
+from typing import Literal
 
 from coral.neural_networks.neural_net_board_eval_args import NeuralNetBoardEvalArgs
 
@@ -37,7 +37,7 @@ class BasicEvaluationBoardEvaluatorArgs:
     type: Literal["basic_evaluation"] = BoardEvalTypes.BASIC_EVALUATION_EVAL.value
 
 
-AllBoardEvaluatorArgs: TypeAlias = (
+type AllBoardEvaluatorArgs = (
     BasicEvaluationBoardEvaluatorArgs
     | NeuralNetBoardEvalArgs
     | StockfishBoardEvalArgs

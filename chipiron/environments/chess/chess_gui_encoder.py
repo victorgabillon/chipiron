@@ -1,4 +1,5 @@
 """Module for chess gui encoder."""
+
 from dataclasses import dataclass
 
 from valanga.game import Seed

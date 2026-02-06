@@ -50,7 +50,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
     """
 
-    photoClicked = QtCore.Signal(QtCore.QPoint)
+    photo_clicked = QtCore.Signal(QtCore.QPoint)
 
     @typing.no_type_check
     def __init__(self, parent):
@@ -60,7 +60,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             parent (QWidget): The parent widget.
 
         """
-        super(PhotoViewer, self).__init__(parent)
+        super().__init__(parent)
         self._zoom = 0
         self._empty = True
         self._scene = QtWidgets.QGraphicsScene(self)
@@ -75,7 +75,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
 
     @typing.no_type_check
-    def hasPhoto(self):
+    def has_photo(self):
         """Check if the viewer has a photo loaded.
 
         Returns:
@@ -85,6 +85,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         return not self._empty
 
     @typing.no_type_check
+    @typing.override
     def fitInView(self, scale=True):
         """Fit the photo within the view.
 
@@ -92,6 +93,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             scale (bool): Whether to scale the photo to fit the view. Default is True.
 
         """
+
     @typing.no_type_check
     def set_photo(self, pixmap=None):
         """Set the photo to be displayed.
@@ -112,6 +114,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
         self.fitInView()
 
     @typing.no_type_check
+    @typing.override
     def wheelEvent(self, event):
         """Handle the wheel event for zooming.
 
@@ -119,7 +122,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             event (QWheelEvent): The wheel event object.
 
         """
-        if self.hasPhoto():
+        if self.has_photo():
             if event.angleDelta().y() > 0:
                 factor = 1.25
                 self._zoom += 1
@@ -134,7 +137,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
                 self._zoom = 0
 
     @typing.no_type_check
-    def toggleDragMode(self):
+    def toggle_drag_mode(self):
         """Toggle the drag mode between ScrollHandDrag and NoDrag."""
         if self.dragMode() == QtWidgets.QGraphicsView.ScrollHandDrag:
             self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
@@ -142,6 +145,7 @@ class PhotoViewer(QtWidgets.QGraphicsView):
             self.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag)
 
     @typing.no_type_check
+    @typing.override
     def mousePressEvent(self, event):
         """Handle the mouse press event.
 
@@ -150,8 +154,8 @@ class PhotoViewer(QtWidgets.QGraphicsView):
 
         """
         if self._photo.isUnderMouse():
-            self.photoClicked.emit(self.mapToScene(event.pos()).toPoint())
-        super(PhotoViewer, self).mousePressEvent(event)
+            self.photo_clicked.emit(self.mapToScene(event.pos()).toPoint())
+        super().mousePressEvent(event)
 
     @typing.no_type_check
     def zoomin(self):
@@ -218,7 +222,7 @@ class Window(QtWidgets.QWidget):
             None
 
         """
-        super(Window, self).__init__()
+        super().__init__()
         self.viewer = PhotoViewer(self)
         # 'Load image' button
         self.btnLoad = QtWidgets.QToolButton(self)
@@ -227,21 +231,22 @@ class Window(QtWidgets.QWidget):
         # Button to change from drag/pan to getting pixel info
         self.btnPixInfo = QtWidgets.QToolButton(self)
         self.btnPixInfo.setText("Enter pixel info mode")
-        self.btnPixInfo.clicked.connect(self.pixInfo)
+        self.btnPixInfo.clicked.connect(self.pix_info)
         self.editPixInfo = QtWidgets.QLineEdit(self)
         self.editPixInfo.setReadOnly(True)
-        self.viewer.photoClicked.connect(self.photoClicked)
+        self.viewer.photo_clicked.connect(self.photo_clicked)
         # Arrange layout
-        VBlayout = QtWidgets.QVBoxLayout(self)
-        VBlayout.addWidget(self.viewer)
-        HBlayout = QtWidgets.QHBoxLayout()
-        HBlayout.setAlignment(QtCore.Qt.AlignLeft)
-        HBlayout.addWidget(self.btnLoad)
-        HBlayout.addWidget(self.btnPixInfo)
-        HBlayout.addWidget(self.editPixInfo)
-        VBlayout.addLayout(HBlayout)
+        v_layout = QtWidgets.QVBoxLayout(self)
+        v_layout.addWidget(self.viewer)
+        h_layout = QtWidgets.QHBoxLayout()
+        h_layout.setAlignment(QtCore.Qt.AlignLeft)
+        h_layout.addWidget(self.btnLoad)
+        h_layout.addWidget(self.btnPixInfo)
+        h_layout.addWidget(self.editPixInfo)
+        v_layout.addLayout(h_layout)
 
-        pic = pickle.load(open("chipiron/debugTreeData_1white-#.td", "rb"))
+        with open("chipiron/debugTreeData_1white-#.td", "rb") as tree_data_file:
+            pic = pickle.load(tree_data_file)
 
         self.tree: Tree[Any] = Tree(root_node=pic[1], descendants=pic[0])
         self.tree.descendants = pic[0]
@@ -302,7 +307,7 @@ class Window(QtWidgets.QWidget):
         )
 
     @typing.no_type_check
-    def pixInfo(self):
+    def pix_info(self):
         """Toggles the drag mode of the viewer.
 
         This method is used to toggle the drag mode of the viewer. It switches between the modes of dragging and not dragging
@@ -315,10 +320,10 @@ class Window(QtWidgets.QWidget):
             None
 
         """
-        self.viewer.toggleDragMode()
+        self.viewer.toggle_drag_mode()
 
     @typing.no_type_check
-    def photoClicked(self, pos):
+    def photo_clicked(self, pos):
         """Handle the event when a photo is clicked.
 
         Args:
@@ -329,9 +334,10 @@ class Window(QtWidgets.QWidget):
 
         """
         if self.viewer.dragMode() == QtWidgets.QGraphicsView.NoDrag:
-            self.editPixInfo.setText("%d, %d" % (pos.x(), pos.y()))
+            self.editPixInfo.setText(f"{pos.x()}, {pos.y()}")
 
     @typing.no_type_check
+    @typing.override
     def keyPressEvent(self, event):
         """Handle key press events.
 
@@ -412,6 +418,7 @@ class VisualizeTreeScript(IScript):
             None
 
         """
+
     def run(self) -> None:
         """Run the tree visualizer application."""
         app = QtWidgets.QApplication(sys.argv)

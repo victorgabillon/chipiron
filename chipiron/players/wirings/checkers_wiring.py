@@ -1,4 +1,5 @@
 """Module for checkers wiring."""
+
 from dataclasses import dataclass
 from typing import Any
 

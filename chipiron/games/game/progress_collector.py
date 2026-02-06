@@ -15,9 +15,12 @@ class PlayerProgressCollectorP(Protocol):
     def progress_white(self, value: int | None) -> None:
         """Progress white."""
         ...
+
     def progress_black(self, value: int | None) -> None:
         """Progress black."""
         ...
+
+
 @dataclass
 class PlayerProgressCollector:
     """Object in charge of collecting the progress of computing moves by each player."""

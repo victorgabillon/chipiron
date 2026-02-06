@@ -1,6 +1,6 @@
 """Enum representing available game configuration tags."""
 
-from enum import Enum
+from enum import StrEnum
 from importlib.resources import as_file, files
 
 import parsley_coco
@@ -9,7 +9,7 @@ from chipiron.games.game.game_args import GameArgs
 from chipiron.utils import path
 
 
-class GameConfigTag(str, Enum):
+class GameConfigTag(StrEnum):
     """Enum representing available game configuration tags."""
 
     NAVO = "setting_navo"

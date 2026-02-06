@@ -210,7 +210,7 @@ class GameManagerFactory:
             for color, player_factory_args in player_color_to_factory_args.items()
         }
 
-        game_manager = GameManager(
+        return GameManager(
             game=observable_game,
             display_state_evaluator=display_state_evaluator,
             output_folder_path=self.output_folder_path,
@@ -223,9 +223,8 @@ class GameManagerFactory:
             rules=environment.rules,
         )
 
-        return game_manager
 
-    def subscribe(self, subscriber_queue: queue.Queue[GuiUpdate]) -> None:  # noqa: D417
+    def subscribe(self, subscriber_queue: queue.Queue[GuiUpdate]) -> None:
         """Subscribe to the GameManagerFactory to get the PlayersColorToPlayerMessage.
 
         As well as subscribing to the game_manager_board_evaluator to get the EvaluationMessage

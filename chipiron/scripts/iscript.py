@@ -31,6 +31,7 @@ class IScript(Protocol):
             None
 
         """
+
     def run(self) -> None:
         """Run the script.
 
@@ -38,6 +39,7 @@ class IScript(Protocol):
             None
 
         """
+
     def terminate(self) -> None:
         """Finishes the script. Performs profiling or timing.
 

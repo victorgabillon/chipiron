@@ -51,10 +51,7 @@ def is_game_over_position(board: chess.Board) -> bool:
         return True
 
     # Check for insufficient material draws
-    if board.is_insufficient_material():
-        return True
-
-    return False
+    return bool(board.is_insufficient_material())
 
 
 def process_single_game_for_over_positions(
@@ -151,7 +148,7 @@ def process_month_for_over_boards(
     pgn_path = ensure_month_pgn(month, dest_dir)
     months_used.append(month)
 
-    with open(pgn_path, "r", encoding="utf-8") as pgn_file:
+    with open(pgn_path, encoding="utf-8") as pgn_file:
         while current_boards < max_boards:
             game = chess.pgn.read_game(pgn_file)
             if game is None:

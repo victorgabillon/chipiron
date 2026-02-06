@@ -336,7 +336,7 @@ class TestDatasetGeneration:
             pgn_path.write_text(test_pgn)
 
             # Process the game
-            with open(pgn_path, "r") as pgn_file:
+            with open(pgn_path) as pgn_file:
                 game = chess.pgn.read_game(pgn_file)
 
             the_dic = []
