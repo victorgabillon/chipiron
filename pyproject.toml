@@ -55,8 +55,8 @@ test = [
 ]
 
 lint = [
-  "ruff>=0.14.1",
-  "pylint>=3.3.8",
+  "ruff>=0.15.0",
+  "pylint>=4.0.4",
 ]
 
 typecheck = [
@@ -254,8 +254,8 @@ commands = [
 description = "ruff + pylint (fast)"
 package = "skip"
 deps = [
-  "ruff>=0.14.1",
-  "pylint>=3.3.8",
+  "ruff>=0.15.0",
+  "pylint>=4.0.4",
   # optional: if pylint needs to import chipiron deps for module resolution
   # but usually it imports your code, so keep runtime deps available:
   "PyYAML",
