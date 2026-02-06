@@ -22,6 +22,17 @@ if TYPE_CHECKING:
     from chipiron.players.factory_higher_level import PlayerObserverFactory
 
 
+class ChessEnvironmentError(TypeError):
+    """Base error for chess environment configuration issues."""
+
+
+class ChessStartTagTypeError(ChessEnvironmentError):
+    """Raised when an invalid start tag is provided."""
+
+    def __init__(self, tag: StateTag) -> None:
+        super().__init__(f"Chess environment expects ChessStartTag, got {type(tag)!r}")
+
+
 def make_chess_environment(
     *,
     deps: ChessEnvironmentDeps,
@@ -44,7 +55,7 @@ def make_chess_environment(
 
     def normalize_start_tag(tag: StateTag) -> ChessStartTag:
         if not isinstance(tag, ChessStartTag):
-            raise TypeError
+            raise ChessStartTagTypeError(tag)
         return tag
 
     def make_initial_state(tag: ChessStartTag) -> ChessState:

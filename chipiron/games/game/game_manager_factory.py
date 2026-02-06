@@ -51,6 +51,17 @@ def make_subscriber_queues() -> list[queue.Queue[GuiUpdate]]:
     return []
 
 
+class GameManagerFactoryError(ValueError):
+    """Base error for game manager factory issues."""
+
+
+class MissingSessionIdError(GameManagerFactoryError):
+    """Raised when the session id is not provided."""
+
+    def __init__(self) -> None:
+        super().__init__("GameManagerFactory.session_id must be set")
+
+
 @dataclass
 class GameManagerFactory:
     """The GameManagerFactory creates GameManager once the players and rules have been decided.
@@ -103,7 +114,7 @@ class GameManagerFactory:
         # match in that case they would come arg_game_manager
 
         if not self.session_id:
-            raise ValueError
+            raise MissingSessionIdError
 
         game_id: str = uuid.uuid4().hex
 

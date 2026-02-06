@@ -34,6 +34,24 @@ if TYPE_CHECKING:
     from atomheart import BoardChi
 
 
+class DatasetError(RuntimeError):
+    """Base error for dataset loading and access."""
+
+
+class DatasetNotLoadedError(DatasetError):
+    """Raised when attempting to access an unloaded dataset."""
+
+    def __init__(self) -> None:
+        super().__init__("Dataset not loaded yet. Call `load()` first.")
+
+
+class UnprocessedDataUnavailableError(DatasetError):
+    """Raised when unprocessed data is requested but unavailable."""
+
+    def __init__(self) -> None:
+        super().__init__("Unprocessed data is not available.")
+
+
 @dataclass
 class DataSetArgs:
     """Arguments for the dataset."""
@@ -138,7 +156,7 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample], ABC):
 
         """
         if self.data is None:
-            raise RuntimeError
+            raise DatasetNotLoadedError
         return len(self.data)
 
     @no_type_check
@@ -155,7 +173,7 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample], ABC):
 
         """
         if self.data is None:
-            raise RuntimeError
+            raise DatasetNotLoadedError
 
         index = idx % len(self)
         if self.preprocessing:
@@ -178,7 +196,7 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample], ABC):
 
         """
         if not isinstance(self.data, pd.DataFrame):
-            raise TypeError
+            raise UnprocessedDataUnavailableError
         return self.data.iloc[idx % len(self)]
 
     def is_preprocessed(self) -> bool:

@@ -34,6 +34,13 @@ ValueOverEnum = (
 )
 
 
+class EvaluationScaleError(ValueError):
+    """Raised when an unsupported evaluation scale is requested."""
+
+    def __init__(self, evaluation_scale: EvaluationScale) -> None:
+        super().__init__(f"Unsupported evaluation scale: {evaluation_scale}")
+
+
 def get_value_over_enum(evaluation_scale: EvaluationScale) -> ValueOverEnum:
     """Return the appropriate ValueWhiteWhenOver enum based on the evaluation scale."""
     match evaluation_scale:
@@ -44,4 +51,4 @@ def get_value_over_enum(evaluation_scale: EvaluationScale) -> ValueOverEnum:
         case EvaluationScale.STOCKFISH_BASED:
             return ValueWhiteWhenOverEntireRealAxis
         case _:
-            raise ValueError
+            raise EvaluationScaleError(evaluation_scale)

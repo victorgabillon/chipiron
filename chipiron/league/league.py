@@ -25,6 +25,19 @@ if TYPE_CHECKING:
     import chipiron as ch
 
 
+class LeagueError(ValueError):
+    """Base error for league operations."""
+
+
+class LeaguePlayerSelectionError(LeagueError):
+    """Raised when there are not enough players to select a match."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            'Not enough players in the league. To add players put the yaml files in the folder "new players"'
+        )
+
+
 @no_type_check
 @dataclass(slots=True)
 class League:
@@ -287,7 +300,7 @@ class League:
 
         """
         if len(self.players_args) < 2:
-            raise ValueError
+            raise LeaguePlayerSelectionError
         picked = random.sample(list(self.players_args.values()), k=2)
         print("picked", picked)
         return picked[0], picked[1]

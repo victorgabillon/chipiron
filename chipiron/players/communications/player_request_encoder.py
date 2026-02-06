@@ -18,6 +18,13 @@ StateT_contra = TypeVar("StateT_contra", contravariant=True)
 StateSnapT = TypeVar("StateSnapT", default=Any)
 
 
+class PlayerRequestEncoderError(ValueError):
+    """Raised when a player request encoder is missing for a game kind."""
+
+    def __init__(self, game_kind: GameKind) -> None:
+        super().__init__(f"No PlayerRequestEncoder for game_kind={game_kind!r}")
+
+
 class PlayerRequestEncoder(Protocol[StateT_contra, StateSnapT]):
     """Protocol for encoding player move requests."""
 
@@ -77,7 +84,7 @@ def make_player_request_encoder[StateT](
                 "PlayerRequestEncoder for CHECKERS is not implemented yet"
             )
         case _:
-            raise ValueError
+            raise PlayerRequestEncoderError(game_kind)
 
 
 # Backwards-compatible alias (older code imports make_player_encoder)
