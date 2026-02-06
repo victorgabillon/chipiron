@@ -58,7 +58,7 @@ class League:
 
     folder_league: str
     seed: int
-    # todo replace ValueSortedDict ed because it screws type anotation
+    # TODO: replace ValueSortedDict ed because it screws type anotation
     players_elo: ValueSortedDict = field(default_factory=ValueSortedDict)
     players_args: dict[str, AnyPlayerArgs] = field(
         default_factory=lambda: dict[str, AnyPlayerArgs]()
@@ -310,7 +310,6 @@ class League:
 
         This method saves the league by serializing its state to a file.
         """
-        pass
 
     def print_info(self) -> None:
         """Print information about the league.

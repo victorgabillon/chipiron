@@ -37,9 +37,9 @@ if TYPE_CHECKING:
 
 # we need to not use multiprocessing to be able to use pytest therefore use setting_cubo  and not setting_jime
 
-# todo check that the game is the same with or without rust
-# todo check that the game is the same with or without board mofificaiton
-# todo have a game that starts with an endgame to force to check the syzygy
+# TODO: check that the game is the same with or without rust
+# TODO: check that the game is the same with or without board mofificaiton
+# TODO: have a game that starts with an endgame to force to check the syzygy
 
 start_time = time.time()
 
@@ -205,7 +205,7 @@ def _build_base_configs() -> list[Any]:
                     profiling=False, testing=True, seed=11
                 ),
             ),
-            # todo add basic eval (no neural nets)
+            # TODO: add basic eval (no neural nets)
         ]
     )
 

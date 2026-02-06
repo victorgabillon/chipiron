@@ -8,7 +8,7 @@ The play_against_chipiron, watch_a_game, and visualize_a_tree functions are call
 Note: This script requires the customtkinter and chipiron modules to be installed.
 """
 
-# TODO switch to pygame
+# TODO: switch to pygame
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, cast

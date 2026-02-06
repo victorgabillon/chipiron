@@ -21,9 +21,7 @@ class RepresentationFactoryError(ValueError):
     """Raised when a representation factory cannot be created."""
 
     def __init__(self, representation: InternalTensorRepresentationType) -> None:
-        super().__init__(
-            f"trying to create {representation} in file {__name__}"
-        )
+        super().__init__(f"trying to create {representation} in file {__name__}")
 
 
 def create_board_representation_factory(

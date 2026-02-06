@@ -35,7 +35,9 @@ class Game[StateT: TurnState = TurnState]:
 
     """
 
-    _playing_status: GamePlayingStatus  # todo should this be here? looks related to gui
+    _playing_status: (
+        GamePlayingStatus  # TODO: should this be here? looks related to gui
+    )
     _current_state: StateT
     _seed: Seed | None
     _state_tag_history: list[StateTag]

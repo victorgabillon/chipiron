@@ -700,7 +700,7 @@ except Exception as e:
 
         try:
             # Create a temporary Python script for testing
-            # todo text plotly
+            # TODO: text plotly
             python_script = """
 try:
     import numpy as np

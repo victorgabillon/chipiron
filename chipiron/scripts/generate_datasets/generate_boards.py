@@ -46,6 +46,7 @@ class DatasetDecompressionError(RuntimeError):
     def __init__(self, original_error: Exception) -> None:
         super().__init__(f"Both zstd CLI and Python zstandard failed: {original_error}")
 
+
 # Sampling configuration variables
 DEFAULT_SAMPLING_FREQUENCY = 50
 DEFAULT_OFFSET_MIN = 5

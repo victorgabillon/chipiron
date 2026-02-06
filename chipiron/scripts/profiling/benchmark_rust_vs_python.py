@@ -321,7 +321,7 @@ class ChessEngineBenchmark:
                         PlayerConfigTag.UNIFORM.get_players_args()
                     )
 
-                    # todo find a prettier way to do this
+                    # TODO: find a prettier way to do this
                     assert isinstance(
                         player_args.main_move_selector, TreeAndValueAppArgs
                     )

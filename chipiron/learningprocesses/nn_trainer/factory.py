@@ -61,6 +61,7 @@ class NNTrainerConfigError(ValueError):
         )
         super().__init__(msg)
 
+
 SerializableType = (
     str
     | int
@@ -140,7 +141,8 @@ class NNTrainerArgs:
             and self.nn_parameters_file_if_reusing_existing_one is None
         ):
             raise NNTrainerConfigError(
-                self.reuse_existing_model, self.nn_parameters_file_if_reusing_existing_one
+                self.reuse_existing_model,
+                self.nn_parameters_file_if_reusing_existing_one,
             )
 
 

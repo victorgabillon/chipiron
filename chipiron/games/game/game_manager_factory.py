@@ -77,7 +77,7 @@ class GameManagerFactory:
 
     """
 
-    # todo we might want to plit this into various part, like maybe a player factory, not sure, think about it
+    # TODO: we might want to plit this into various part, like maybe a player factory, not sure, think about it
 
     env_deps: EnvDeps
     output_folder_path: path | None
