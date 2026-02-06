@@ -93,7 +93,6 @@ def get_script_and_args(
 
         extra_args = None
 
-    # print("extra_args", extra_args)
     return script_type, extra_args, config_file_name, logging_args
 
 

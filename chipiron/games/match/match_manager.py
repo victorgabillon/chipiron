@@ -239,10 +239,6 @@ class MatchManager:
         """
         if self.output_folder_path is not None:
             ...
-            # path_file: path = os.path.join(self.output_folder_path, 'match_report.obj')
-            # with open(path_file, 'wb') as the_file:
-            # print('tt', type(match_report))
-            # pickle.dump(match_report, the_file)
 
     def subscribe(self, gui_queue: queue.Queue[GuiUpdate]) -> None:
         """Subscribe a GUI queue to receive updates from games and match results."""

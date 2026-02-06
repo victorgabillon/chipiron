@@ -147,7 +147,6 @@ class MatchResults:
                 self.player_one_is_white_draws += 1
             else:
                 pass
-                # raise Exception('#')
         elif white_player_name_id == self.player_two_name_id:
             if game_result == FinalGameResult.WIN_FOR_WHITE:
                 self.player_two_is_white_white_wins += 1
