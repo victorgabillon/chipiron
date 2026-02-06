@@ -1,6 +1,6 @@
 """Module for building game state evaluators (oracle + chipiron) with optional GUI publishing."""
 
-from typing import Any, Literal, TypeVar, assert_never, overload
+from typing import Any, Literal, assert_never, overload
 
 from chipiron.environments.chess.types import ChessState
 from chipiron.environments.types import GameKind
@@ -13,9 +13,6 @@ from .board_evaluator import (
     IGameStateEvaluator,
     ObservableGameStateEvaluator,
 )
-
-StateT = TypeVar("StateT")
-
 
 @overload
 def _select_eval_wiring(
