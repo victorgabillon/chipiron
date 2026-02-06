@@ -21,6 +21,7 @@ class PlayerMoveSelectionError(ValueError):
     """Raised when a move cannot be selected for a player."""
 
     def __init__(self) -> None:
+        """Initialize the error for missing legal moves."""
         super().__init__("No legal moves in this position")
 
 

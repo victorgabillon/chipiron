@@ -29,6 +29,7 @@ class OneMatchConfigError(ValueError):
     """Raised when the one-match configuration is invalid."""
 
     def __init__(self) -> None:
+        """Initialize the error for invalid one-match configuration."""
         super().__init__("Profiling does not work well atm with gui on")
 
 

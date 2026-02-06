@@ -30,6 +30,7 @@ class ChessStartTagTypeError(ChessEnvironmentError):
     """Raised when an invalid start tag is provided."""
 
     def __init__(self, tag: StateTag) -> None:
+        """Initialize the error with the invalid tag."""
         super().__init__(f"Chess environment expects ChessStartTag, got {type(tag)!r}")
 
 

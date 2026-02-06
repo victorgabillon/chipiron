@@ -33,6 +33,7 @@ class InvalidChipironNNArgsError(ChipironNNArgsError):
     """Raised when NN args are not structured as expected."""
 
     def __init__(self, file_path: str) -> None:
+        """Initialize the error with the invalid file path."""
         super().__init__(
             f"Invalid chipiron NN args in {file_path!r}: expected mapping with string keys"
         )
@@ -42,6 +43,7 @@ class UnsupportedChipironNNArgsVersionError(ChipironNNArgsError):
     """Raised when the NN args version is unsupported."""
 
     def __init__(self, version: int) -> None:
+        """Initialize the error with the unsupported version."""
         super().__init__(f"Unsupported chipiron NN args version: {version}.")
 
 
@@ -49,6 +51,7 @@ class UnsupportedChipironNNGameKindError(ChipironNNArgsError):
     """Raised when the NN args specify an unsupported game kind."""
 
     def __init__(self, game_kind: GameKind) -> None:
+        """Initialize the error with the unsupported game kind."""
         super().__init__(f"Unsupported game_kind for now: {game_kind!r}.")
 
 

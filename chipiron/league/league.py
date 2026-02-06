@@ -33,6 +33,7 @@ class LeaguePlayerSelectionError(LeagueError):
     """Raised when there are not enough players to select a match."""
 
     def __init__(self) -> None:
+        """Initialize the error for insufficient league players."""
         super().__init__(
             'Not enough players in the league. To add players put the yaml files in the folder "new players"'
         )
