@@ -13,7 +13,7 @@ from valanga.policy import NotifyProgressCallable, Recommendation
 
 PlayerId = str
 
-StateSnapT = TypeVar("StateSnapT", contravariant=True)
+StateSnapT_contra = TypeVar("StateSnapT_contra", contravariant=True)
 RuntimeStateT = TypeVar("RuntimeStateT")
 
 
@@ -25,10 +25,10 @@ class PlayerMoveSelectionError(ValueError):
         super().__init__("No legal moves in this position")
 
 
-class GameAdapter(Protocol[StateSnapT, RuntimeStateT]):
+class GameAdapter(Protocol[StateSnapT_contra, RuntimeStateT]):
     """Game-specific behavior injected into the generic `Player`."""
 
-    def build_runtime_state(self, snapshot: StateSnapT) -> RuntimeStateT:
+    def build_runtime_state(self, snapshot: StateSnapT_contra) -> RuntimeStateT:
         """Build runtime state."""
         ...
 
@@ -54,14 +54,14 @@ class GameAdapter(Protocol[StateSnapT, RuntimeStateT]):
         ...
 
 
-class Player[StateSnapT, RuntimeStateT]:
+class Player[StateSnapT_contra, RuntimeStateT]:
     """Fully game-agnostic player: recommends an action given a snapshot."""
 
     id: PlayerId
-    adapter: GameAdapter[StateSnapT, RuntimeStateT]
+    adapter: GameAdapter[StateSnapT_contra, RuntimeStateT]
 
     def __init__(
-        self, name: str, adapter: GameAdapter[StateSnapT, RuntimeStateT]
+        self, name: str, adapter: GameAdapter[StateSnapT_contra, RuntimeStateT]
     ) -> None:
         """Initialize the instance."""
         self.id = name
@@ -73,7 +73,7 @@ class Player[StateSnapT, RuntimeStateT]:
 
     def select_move(
         self,
-        state_snapshot: StateSnapT,
+        state_snapshot: StateSnapT_contra,
         seed: Seed,
         notify_percent_function: NotifyProgressCallable | None = None,
     ) -> Recommendation:
