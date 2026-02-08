@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 
-class SyzygyTable[T_Board: IBoard](Protocol):
+class SyzygyTable[BoardT: IBoard](Protocol):
     """A class representing a Syzygy tablebase for chess endgame analysis.
 
     Attributes:
@@ -47,7 +47,7 @@ class SyzygyTable[T_Board: IBoard](Protocol):
 
     """
 
-    def fast_in_table(self, board: T_Board) -> bool:
+    def fast_in_table(self, board: BoardT) -> bool:
         """Check if the given board is suitable for fast tablebase lookup.
 
         Args:
@@ -59,7 +59,7 @@ class SyzygyTable[T_Board: IBoard](Protocol):
         """
         return board.number_of_pieces_on_the_board() < 6
 
-    def in_table(self, board: T_Board) -> bool:
+    def in_table(self, board: BoardT) -> bool:
         """Check if the given board is in the tablebase.
 
         Args:
@@ -75,7 +75,7 @@ class SyzygyTable[T_Board: IBoard](Protocol):
             return False
         return True
 
-    def wdl(self, board: T_Board) -> int:
+    def wdl(self, board: BoardT) -> int:
         """Probe the tablebase for the win/draw/loss value of the given board.
 
         Args:
@@ -89,7 +89,7 @@ class SyzygyTable[T_Board: IBoard](Protocol):
         # For now, raise NotImplementedError to indicate it must be implemented
         raise NotImplementedError("wdl method must be implemented in subclass")
 
-    def get_over_event(self, board: T_Board) -> tuple[Winner, HowOver]:
+    def get_over_event(self, board: BoardT) -> tuple[Winner, HowOver]:
         """Get the winner and how the game is over for the given board.
 
         Args:
@@ -118,7 +118,7 @@ class SyzygyTable[T_Board: IBoard](Protocol):
 
         return who_is_winner_, how_over_
 
-    def val(self, board: T_Board) -> int:
+    def val(self, board: BoardT) -> int:
         """Get the value of the given board from the tablebase.
 
         Args:
@@ -132,7 +132,7 @@ class SyzygyTable[T_Board: IBoard](Protocol):
         val: int = self.wdl(board)
         return val
 
-    def value_white(self, state: T_Board) -> int:
+    def value_white(self, state: BoardT) -> int:
         """Get the value of the given board for the white player.
 
         Args:
@@ -148,7 +148,7 @@ class SyzygyTable[T_Board: IBoard](Protocol):
             return val * 100000
         return val * -10000
 
-    def get_over_tag(self, board: T_Board) -> OverTags:
+    def get_over_tag(self, board: BoardT) -> OverTags:
         """Get the over tag for the given board.
 
         Args:
@@ -169,7 +169,7 @@ class SyzygyTable[T_Board: IBoard](Protocol):
             return OverTags.TAG_WIN_BLACK
         return OverTags.TAG_WIN_WHITE
 
-    def string_result(self, board: T_Board) -> str:
+    def string_result(self, board: BoardT) -> str:
         """Get the string representation of the result for the given board.
 
         Args:
@@ -187,7 +187,7 @@ class SyzygyTable[T_Board: IBoard](Protocol):
             return "DRAW"
         return "LOSS for player " + player_to_move
 
-    def dtz(self, board: T_Board) -> int:
+    def dtz(self, board: BoardT) -> int:
         """Get the distance-to-zero (DTZ) value for the given board.
 
         Args:
@@ -201,7 +201,7 @@ class SyzygyTable[T_Board: IBoard](Protocol):
         # For now, return a default value (e.g., 0)
         raise NotImplementedError("wdl method must be implemented in subclass")
 
-    def best_move(self, board: T_Board) -> MoveKey:
+    def best_move(self, board: BoardT) -> MoveKey:
         """Get the best move according to the tablebase for the given board.
 
         Args:
@@ -221,7 +221,7 @@ class SyzygyTable[T_Board: IBoard](Protocol):
         best_move: MoveKey = all_moves[0]
         move: MoveKey
         for move in all_moves:
-            board_copy: T_Board = board.copy(stack=True)
+            board_copy: BoardT = board.copy(stack=True)
             board_copy.play_move_key(move=move)
             val_player_next_board = self.val(board_copy)
             val_player_node = -val_player_next_board

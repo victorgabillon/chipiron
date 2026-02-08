@@ -57,7 +57,7 @@ from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
-from chipiron.utils import path
+from chipiron.utils import MyPath
 from chipiron.utils.logger import chipiron_logger, suppress_logging
 from chipiron.utils.path_variables import ML_FLOW_URI_PATH
 
@@ -82,7 +82,7 @@ class LearnNNFromScratchScriptArgs:
     evaluating_player_args: PlayerArgs | PlayerConfigTag = field(
         default_factory=lambda: PlayerArgs(
             name="Random",
-            main_move_selector=Random(type=MoveSelectorTypes.Random),
+            main_move_selector=Random(type=MoveSelectorTypes.RANDOM),
             syzygy_play=False,
         )
     )
@@ -119,7 +119,7 @@ class LearnNNFromScratchScript:
     args: LearnNNFromScratchScriptArgs
     nn_board_evaluator: NNBWStateEvaluator[ChessState]
     nn_architecture_args: NeuralNetArchitectureArgs
-    saving_folder: path
+    saving_folder: MyPath
 
     def __init__(
         self,

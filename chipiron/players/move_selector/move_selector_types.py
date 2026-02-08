@@ -20,11 +20,11 @@ from anemone.factory import TREE_AND_VALUE_LITERAL_STRING
 class MoveSelectorTypes(StrEnum):
     """Enumeration class representing different types of move selectors."""
 
-    Random = "Random"
-    TreeAndValue = TREE_AND_VALUE_LITERAL_STRING
-    Stockfish = "Stockfish"
-    CommandLineHuman = "CommandLineHuman"
-    GuiHuman = "GuiHuman"
+    RANDOM = "Random"
+    TREE_AND_VALUE = TREE_AND_VALUE_LITERAL_STRING
+    STOCKFISH = "Stockfish"
+    COMMAND_LINE_HUMAN = "CommandLineHuman"
+    GUI_HUMAN = "GuiHuman"
 
     def is_human(self) -> bool:
         """Determine if the move selector type represents a human player.
@@ -34,6 +34,6 @@ class MoveSelectorTypes(StrEnum):
 
         """
         return (
-            self is MoveSelectorTypes.GuiHuman
-            or self is MoveSelectorTypes.CommandLineHuman
+            self is MoveSelectorTypes.GUI_HUMAN
+            or self is MoveSelectorTypes.COMMAND_LINE_HUMAN
         )

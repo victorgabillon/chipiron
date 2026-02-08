@@ -20,14 +20,14 @@ from .move_selector_types import MoveSelectorTypes
 class CommandLineHumanPlayerArgs:
     """Represents the arguments for a human player that selects moves through the command line interface."""
 
-    type: Literal[MoveSelectorTypes.CommandLineHuman]  # for serialization
+    type: Literal[MoveSelectorTypes.COMMAND_LINE_HUMAN]  # for serialization
 
 
 @dataclass
 class GuiHumanPlayerArgs:
     """Represents the arguments for a human player that selects moves through the GUI."""
 
-    type: Literal[MoveSelectorTypes.GuiHuman]  # for serialization
+    type: Literal[MoveSelectorTypes.GUI_HUMAN]  # for serialization
 
 
 class CommandLineHumanMoveSelector:
@@ -41,22 +41,19 @@ class CommandLineHumanMoveSelector:
     ) -> Recommendation:
         # seed can be ignored (stockfish is deterministic unless you randomize)
         """Recommend."""
-        best: BranchName = self.select_move(
-            state.board, move_seed=seed, notify_progress=notify_progress
-        ).recommended_name
+        _ = notify_progress  # Unused in this implementation
+        _ = seed  # Unused in this implementation
+        best: BranchName = self.select_move(state.board).recommended_name
         return Recommendation(recommended_name=best)
 
     def select_move(
         self,
         board: boards.IBoard,
-        move_seed: Seed,
-        notify_progress: NotifyProgressCallable | None = None,
     ) -> Recommendation:
         """Select a move based on user input through the command line interface.
 
         Args:
             board (boards.BoardChi): The current state of the chess board.
-            move_seed (seed): The seed used for move selection.
 
         Returns:
             Recommendation: The selected move recommendation.

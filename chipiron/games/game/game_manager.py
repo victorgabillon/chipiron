@@ -25,7 +25,7 @@ from chipiron.players.communications.player_message import (
     EvProgress,
     PlayerEvent,
 )
-from chipiron.utils import path
+from chipiron.utils import MyPath
 from chipiron.utils.communication.mailbox import MainMailboxMessage
 from chipiron.utils.dataclass import custom_asdict_factory
 from chipiron.utils.logger import chipiron_logger
@@ -54,8 +54,8 @@ class GameManager[StateT: TurnState = TurnState]:
     display_state_evaluator: IGameStateEvaluator[StateT]
 
     # folder to log results
-    output_folder_path: path | None
-    path_to_store_result: path | None
+    output_folder_path: MyPath | None
+    path_to_store_result: MyPath | None
 
     # args of the Game
     args: GameArgs
@@ -82,7 +82,7 @@ class GameManager[StateT: TurnState = TurnState]:
         self,
         game: ObservableGame[StateT],
         display_state_evaluator: IGameStateEvaluator[StateT],
-        output_folder_path: path | None,
+        output_folder_path: MyPath | None,
         args: GameArgs,
         player_color_to_id: dict[Color, str],
         main_thread_mailbox: queue.Queue[MainMailboxMessage],
@@ -209,7 +209,7 @@ class GameManager[StateT: TurnState = TurnState]:
 
         game_report: GameReport = GameReport(
             final_game_result=game_results,
-            action_history=[move for move in self.game.action_history],
+            action_history=list(self.game.action_history),
             state_tag_history=self.game.state_tag_history,
         )
         return game_report
@@ -348,7 +348,7 @@ class GameManager[StateT: TurnState = TurnState]:
         """
         # TODO: probably the txt file should be a valid PGN file : https://en.wikipedia.org/wiki/Portable_Game_Notation
         if self.path_to_store_result is not None:
-            path_file: path = (
+            path_file: MyPath = (
                 f"{self.path_to_store_result}_{idx}_W:{self.player_color_to_id[Color.WHITE]}"
                 f"-vs-B:{self.player_color_to_id[Color.BLACK]}"
             )
@@ -422,23 +422,23 @@ class GameManager[StateT: TurnState = TurnState]:
         # Ensure legal moves generated
         try:
             state.branch_keys.get_all()
-        except Exception:
+        except (RuntimeError, ValueError) as exc:
             chipiron_logger.info(
                 "[%s] MOVE REJECTED: failed to generate legal moves",
                 source,
-                exc_info=True,
+                exc_info=exc,
             )
             return
 
         # Convert name->ActionKey
         try:
             action_key = state.branch_key_from_name(name=branch_name)
-        except Exception:
+        except (KeyError, ValueError) as exc:
             chipiron_logger.info(
                 "[%s] MOVE REJECTED: invalid branch_name=%s",
                 source,
                 branch_name,
-                exc_info=True,
+                exc_info=exc,
             )
             return
 

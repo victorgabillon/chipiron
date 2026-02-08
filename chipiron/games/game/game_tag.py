@@ -6,7 +6,7 @@ from importlib.resources import as_file, files
 import parsley_coco
 
 from chipiron.games.game.game_args import GameArgs
-from chipiron.utils import path
+from chipiron.utils import MyPath
 
 
 class GameConfigTag(StrEnum):
@@ -15,7 +15,7 @@ class GameConfigTag(StrEnum):
     NAVO = "setting_navo"
     PAIN = "setting_pain"
 
-    def get_yaml_file_path(self) -> path:
+    def get_yaml_file_path(self) -> MyPath:
         """Return the file path to the YAML configuration file associated with the tag.
 
         Returns:

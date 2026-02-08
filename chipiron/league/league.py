@@ -19,7 +19,7 @@ from chipiron.games.match.match_tag import MatchConfigTag
 from chipiron.players.player_args import AnyPlayerArgs
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
-from chipiron.utils.small_tools import mkdir_if_not_existing, path
+from chipiron.utils.small_tools import MyPath, mkdir_if_not_existing
 
 if TYPE_CHECKING:
     import chipiron as ch
@@ -37,6 +37,16 @@ class LeaguePlayerSelectionError(LeagueError):
         super().__init__(
             'Not enough players in the league. To add players put the yaml files in the folder "new players"'
         )
+
+
+def make_player_args() -> dict[str, AnyPlayerArgs]:
+    """Create player arguments."""
+    return {}
+
+
+def make_players_number_of_games_played() -> dict[str, int]:
+    """Create a dictionary to track the number of games played by each player."""
+    return {}
 
 
 @no_type_check
@@ -61,15 +71,13 @@ class League:
     seed: int
     # TODO: replace ValueSortedDict ed because it screws type anotation
     players_elo: ValueSortedDict = field(default_factory=ValueSortedDict)
-    players_args: dict[str, AnyPlayerArgs] = field(
-        default_factory=lambda: dict[str, AnyPlayerArgs]()
-    )
+    players_args: dict[str, AnyPlayerArgs] = field(default_factory=make_player_args)
     players_number_of_games_played: dict[str, int] = field(
-        default_factory=lambda: dict[str, int]()
+        default_factory=make_players_number_of_games_played
     )
     id_for_next_player: int = 0
-    K: int = 10
-    ELO_HISTORY_LENGTH: int = 500
+    k: int = 10
+    elo_history_length: int = 500
     games_already_played: int = 0
 
     def __post_init__(self) -> None:
@@ -80,9 +88,9 @@ class League:
         """
         print(f"init league from folder: {self.folder_league}")
         self.check_for_players()
-        path_logs_folder: path = os.path.join(self.folder_league, "logs")
+        path_logs_folder: MyPath = os.path.join(self.folder_league, "logs")
         mkdir_if_not_existing(path_logs_folder)
-        path_logs_games_folder: path = os.path.join(path_logs_folder, "games")
+        path_logs_games_folder: MyPath = os.path.join(path_logs_folder, "games")
         mkdir_if_not_existing(path_logs_games_folder)
 
     def check_for_players(self) -> None:
@@ -120,12 +128,12 @@ class League:
         self.id_for_next_player += 1
 
         self.players_elo[args_player.name] = deque(
-            [1200], maxlen=self.ELO_HISTORY_LENGTH
+            [1200], maxlen=self.elo_history_length
         )
         self.players_args[args_player.name] = args_player
         self.players_number_of_games_played[args_player.name] = 0
 
-        current_player_folder: path = os.path.join(
+        current_player_folder: MyPath = os.path.join(
             self.folder_league, "current_players"
         )
         mkdir_if_not_existing(current_player_folder)
@@ -159,11 +167,11 @@ class League:
             ).get_match_settings_args(),  # probibly to fix as weell and this is a ditry fix to create a martch args please imrpove!!
         )
 
-        path_logs_game_folder: path = os.path.join(
+        path_logs_game_folder: MyPath = os.path.join(
             self.folder_league, f"logs/games/game{self.games_already_played}"
         )
         mkdir_if_not_existing(path_logs_game_folder)
-        path_logs_game_folder_temp: path = os.path.join(
+        path_logs_game_folder_temp: MyPath = os.path.join(
             self.folder_league, f"logs/games/game{self.games_already_played}/games"
         )
         mkdir_if_not_existing(path_logs_game_folder_temp)
@@ -186,7 +194,9 @@ class League:
         match_report: MatchReport = match_manager.play_one_match()
 
         # Logs the results
-        path_logs_file: path = os.path.join(self.folder_league, "logs/log_results.txt")
+        path_logs_file: MyPath = os.path.join(
+            self.folder_league, "logs/log_results.txt"
+        )
         with open(path_logs_file, "a", encoding="utf-8") as log_file:
             log_file.write(
                 f"Game #{self.games_already_played} || "
@@ -203,7 +213,7 @@ class League:
         self.games_already_played += 1
 
     @no_type_check
-    def update_elo(self, match_results: MatchResults, path_logs_file: path) -> None:
+    def update_elo(self, match_results: MatchResults, path_logs_file: MyPath) -> None:
         """Update the Elo ratings of the players based on the match results.
 
         Args:
@@ -230,8 +240,8 @@ class League:
         print(elo_player_one, cast("float", self.players_elo[player_one_name_id][0]))
         old_elo_player_one = elo_player_one
         old_elo_player_two = elo_player_two
-        increment_one = self.K * (perf_one - e_one)
-        increment_two = self.K * (perf_two - e_two)
+        increment_one = self.k * (perf_one - e_one)
+        increment_two = self.k * (perf_two - e_two)
         new_elo_one = old_elo_player_one + increment_one
         new_elo_two = old_elo_player_two + increment_two
         self.players_elo[player_one_name_id].appendleft(new_elo_one)
@@ -239,7 +249,7 @@ class League:
 
         for player in self.players_elo:
             player = cast("str", player)
-            if player != player_one_name_id and player != player_two_name_id:
+            if player not in (player_one_name_id, player_two_name_id):
                 player_elo_deque = cast("deque[float]", self.players_elo[player])
                 player_elo_deque.appendleft(player_elo_deque[0])
 
@@ -274,8 +284,8 @@ class League:
                     y=elo_list,
                     mode="lines+markers",
                     name=player_name,
-                    line=dict(width=2),
-                    marker=dict(size=4),
+                    line={"width": 2},
+                    marker={"size": 4},
                 )
             )
 
@@ -283,7 +293,7 @@ class League:
             title="ELO Rating Evolution",
             xaxis_title="Game Number",
             yaxis_title="ELO Rating",
-            legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
+            legend={"yanchor": "top", "y": 0.99, "xanchor": "left", "x": 0.01},
             hovermode="x unified",
         )
 

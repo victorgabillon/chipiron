@@ -64,7 +64,7 @@ from chipiron.players.boardevaluators.neural_networks.chipiron_nn_args import (
 )
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
-from chipiron.utils import path
+from chipiron.utils import MyPath
 from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:
@@ -117,7 +117,7 @@ class LearnNNScript:
     nn: ChiNN
     args: LearnNNScriptArgs
     nn_board_evaluator: NNBWStateEvaluator[ChessState]
-    saving_folder: path
+    saving_folder: MyPath
 
     def __init__(
         self,

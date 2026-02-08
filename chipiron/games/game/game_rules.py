@@ -8,7 +8,7 @@ from valanga import Color, TurnState
 
 from .final_game_result import FinalGameResult
 
-StateT = TypeVar("StateT", contravariant=True, bound=TurnState)
+StateT_contra = TypeVar("StateT_contra", contravariant=True, bound=TurnState)
 
 
 class OutcomeKind(StrEnum):

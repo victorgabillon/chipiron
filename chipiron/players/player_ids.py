@@ -24,7 +24,7 @@ import parsley_coco
 
 from chipiron.players.chess_player_args import ChessPlayerArgs
 from chipiron.players.player_args import PlayerArgs
-from chipiron.utils import path
+from chipiron.utils import MyPath
 
 
 class PlayerConfigTag(StrEnum):
@@ -63,7 +63,7 @@ class PlayerConfigTag(StrEnum):
             or self is PlayerConfigTag.COMMAND_LINE_HUMAN
         )
 
-    def get_yaml_file_path(self) -> path:
+    def get_yaml_file_path(self) -> MyPath:
         """Get the YAML file path for the player configuration.
 
         This method constructs the file path for the player configuration YAML file

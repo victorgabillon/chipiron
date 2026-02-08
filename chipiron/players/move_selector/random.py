@@ -13,15 +13,13 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal
 
 from valanga.game import Seed, State
-from valanga.policy import Recommendation
+from valanga.policy import NotifyProgressCallable, Recommendation
 
 from .move_selector_types import MoveSelectorTypes
 
 if TYPE_CHECKING:
     from atomheart.move import MoveUci
     from valanga import BranchKey
-
-from valanga.policy import NotifyProgressCallable
 
 
 @dataclass
@@ -36,7 +34,7 @@ class Random:
 
     """
 
-    type: Literal[MoveSelectorTypes.Random]  # for serialization
+    type: Literal[MoveSelectorTypes.RANDOM]  # for serialization
     random_generator: random.Random = field(default_factory=random.Random)
 
     def recommend(
@@ -48,14 +46,15 @@ class Random:
         """Select a random move from the given chess board.
 
         Args:
-            board (boards.IBoard): The chess board.
-            move_seed (Seed): The seed for the random number generator.
-            _notify_progress (NotifyProgressCallable | None): Optional callback for progress notification.
+            state (State): The current state of the chess game.
+            _seed: The seed for the random number generator.
+            _notify_progress: Optional callback for progress notification.
 
         Returns:
             Recommendation: The selected move recommendation.
 
         """
+        _ = notify_progress  # Unused in this implementation
         self.random_generator.seed(seed)
         random_move_key: BranchKey = self.random_generator.choice(
             state.branch_keys.get_all()
@@ -74,4 +73,4 @@ def create_random(random_generator: random.Random) -> Random:
         Random: The created random move selector.
 
     """
-    return Random(type=MoveSelectorTypes.Random, random_generator=random_generator)
+    return Random(type=MoveSelectorTypes.RANDOM, random_generator=random_generator)

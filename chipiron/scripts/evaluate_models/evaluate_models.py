@@ -32,7 +32,7 @@ from chipiron.players.boardevaluators.neural_networks.chipiron_nn_args import (
     create_content_to_input_from_model_weights,
     load_chipiron_nn_args,
 )
-from chipiron.utils import path
+from chipiron.utils import MyPath
 
 if TYPE_CHECKING:
     from coral.neural_networks import NNBWStateEvaluator
@@ -93,8 +93,8 @@ def count_parameters(model: ChiNN) -> int:
 
 def evaluate_models(
     models_to_evaluate: list[NeuralNetModelsAndArchitecture],
-    evaluation_report_file: path = "chipiron/scripts/evaluate_models/evaluation_report.yaml",
-    dataset_file_name: path = "external_data/data_chipiron/datasets/goodgames_plusvariation_stockfish_eval_test",
+    evaluation_report_file: MyPath = "chipiron/scripts/evaluate_models/evaluation_report.yaml",
+    dataset_file_name: MyPath = "external_data/data_chipiron/datasets/goodgames_plusvariation_stockfish_eval_test",
 ) -> None:
     """Evaluate the models in the list models_to_evaluate.
 
@@ -111,7 +111,7 @@ def evaluate_models(
             evaluated_models_temp = yaml.safe_load(stream)
             if evaluated_models_temp is None:
                 evaluated_models_temp = {}
-            evaluated_model_path: path
+            evaluated_model_path: MyPath
             evaluated_model_evaluation_dict: dict[Any, Any]
             for (
                 evaluated_model_path,
@@ -144,7 +144,7 @@ def evaluate_models(
             print(
                 "This model has already been evaluated. Now checking if the file has been modified since last evaluation..."
             )
-            model_params_path_pt: path
+            model_params_path_pt: MyPath
             model_params_path_pt = model_to_evaluate.model_weights_file_name
 
             modification_time = os.path.getmtime(model_params_path_pt)
@@ -221,9 +221,9 @@ def evaluate_models(
             evaluated_models[model_hash_key] = model_evaluation
             print("Model evaluated!")
 
-    evaluated_model_path_: path
+    evaluated_model_path_: MyPath
     evaluated_model_evaluation: ModelEvaluation
-    evaluated_models_final_dict: dict[path, dict[Any, Any]] = {}
+    evaluated_models_final_dict: dict[MyPath, dict[Any, Any]] = {}
     for evaluated_model_path_, evaluated_model_evaluation in evaluated_models.items():
         evaluated_models_final_dict[evaluated_model_path_] = asdict(
             evaluated_model_evaluation

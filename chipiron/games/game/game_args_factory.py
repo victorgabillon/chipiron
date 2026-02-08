@@ -8,13 +8,13 @@ import typing
 from valanga import Color
 from valanga.game import Seed
 
-import chipiron.players as players
+from chipiron import players
 from chipiron.utils.small_tools import unique_int_from_list
 
 from .game_args import GameArgs
 
 if typing.TYPE_CHECKING:
-    import chipiron.games.match as match
+    from chipiron.games import match
 
 
 class GameArgsFactory:
