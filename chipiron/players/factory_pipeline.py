@@ -20,8 +20,6 @@ from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppAr
 from chipiron.players.oracles import PolicyOracle, TerminalOracle, ValueOracle
 from chipiron.players.player import GameAdapter, Player
 from chipiron.players.player_args import HasMoveSelectorType
-from chipiron.utils.communication.mailbox import MainMailboxMessage
-from chipiron.utils.queue_protocols import PutQueue
 
 if TYPE_CHECKING:
     from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
@@ -58,7 +56,6 @@ def create_player_with_pipeline(
         [NonTreeMoveSelectorArgs], BranchSelector[StateT]
     ],
     random_generator: random.Random,
-    queue_progress_player: PutQueue[MainMailboxMessage] | None,
 ) -> Player[SnapT, StateT]:
     """Create a player using a generic selection pipeline with game-specific builders."""
     if isinstance(main_selector_args, TreeAndValueAppArgs):
@@ -73,7 +70,6 @@ def create_player_with_pipeline(
             master_state_evaluator=master_state_evaluator,
             state_representation_factory=None,
             random_generator=random_generator,
-            queue_progress_player=queue_progress_player,
         )
     elif isinstance(main_selector_args, GuiHumanPlayerArgs):
         # Minimal behavior: fail fast with a clear message (or implement GUI path)

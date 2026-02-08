@@ -13,9 +13,7 @@ from valanga.policy import BranchSelector
 
 from chipiron.environments.chess.types import ChessState
 from chipiron.players.move_selector.move_selector_args import NonTreeMoveSelectorArgs
-from chipiron.utils.communication.mailbox import MainMailboxMessage
 from chipiron.utils.logger import chipiron_logger
-from chipiron.utils.queue_protocols import PutQueue
 
 from . import human, stockfish
 from .random import Random, create_random
@@ -64,7 +62,6 @@ def create_tree_and_value_move_selector(
         RepresentationFactory[TurnStateT, StateModifications, EvaluatorInput] | None
     ),
     random_generator: random.Random,
-    queue_progress_player: PutQueue[MainMailboxMessage] | None,
 ) -> BranchSelector[TurnStateT]:
     """Create a tree-and-value move selector with a prebuilt evaluator."""
     return create_tree_and_value_branch_selector(

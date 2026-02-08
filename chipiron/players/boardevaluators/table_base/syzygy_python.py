@@ -4,7 +4,7 @@ import atomheart.board as boards
 import chess.syzygy
 
 from chipiron.players.boardevaluators.table_base import SyzygyTable
-from chipiron.utils import path
+from chipiron.utils import MyPath
 
 
 class SyzygyChiTable(SyzygyTable[boards.BoardChi]):
@@ -45,7 +45,7 @@ class SyzygyChiTable(SyzygyTable[boards.BoardChi]):
 
     table_base: chess.syzygy.Tablebase
 
-    def __init__(self, path_to_table: path) -> None:
+    def __init__(self, path_to_table: MyPath) -> None:
         """Initialize the SyzygyTable object.
 
         Args:

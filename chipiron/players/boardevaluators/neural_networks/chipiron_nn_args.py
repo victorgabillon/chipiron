@@ -19,7 +19,7 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_
 from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
     ModelInputRepresentationType,
 )
-from chipiron.utils import path
+from chipiron.utils import MyPath
 from chipiron.utils.small_tools import resolve_package_path
 
 CHIPIRON_NN_ARGS_FILENAME = "chipiron_nn.yaml"
@@ -67,7 +67,7 @@ class ChipironNNArgs:
 ContentToInputBuilder = Callable[[str], ContentToInputFunction[ChessState]]
 
 
-def get_chipiron_nn_args_file_path_from(folder_path: path) -> str:
+def get_chipiron_nn_args_file_path_from(folder_path: MyPath) -> str:
     """Return chipiron nn args file path from."""
     return os.path.join(folder_path, CHIPIRON_NN_ARGS_FILENAME)
 
@@ -81,7 +81,7 @@ def _serialize_chipiron_nn_args(args: ChipironNNArgs) -> dict[str, int | str]:
     }
 
 
-def save_chipiron_nn_args(args: ChipironNNArgs, folder_path: path) -> None:
+def save_chipiron_nn_args(args: ChipironNNArgs, folder_path: MyPath) -> None:
     """Save chipiron nn args."""
     file_path = get_chipiron_nn_args_file_path_from(folder_path)
     with open(file_path, "w", encoding="utf-8") as handle:
@@ -106,7 +106,7 @@ def _as_mapping(obj: object, *, file_path: str) -> Mapping[str, Any]:
     return obj
 
 
-def load_chipiron_nn_args(folder_path: path) -> ChipironNNArgs:
+def load_chipiron_nn_args(folder_path: MyPath) -> ChipironNNArgs:
     """Load chipiron nn args."""
     file_path = get_chipiron_nn_args_file_path_from(folder_path)
     with open(file_path, encoding="utf-8") as f:
@@ -153,7 +153,7 @@ def create_content_to_input_convert(
 
 
 def create_content_to_input_from_folder(
-    folder_path: path,
+    folder_path: MyPath,
 ) -> ContentToInputFunction[ChessState]:
     """Create content to input from folder."""
     chipiron_nn_args = load_chipiron_nn_args(folder_path)
@@ -161,7 +161,7 @@ def create_content_to_input_from_folder(
 
 
 def create_content_to_input_from_model_weights(
-    model_weights_file_name: path,
+    model_weights_file_name: MyPath,
 ) -> ContentToInputFunction[ChessState]:
     """Create content to input from model weights."""
     model_weights_file_name = resolve_package_path(str(model_weights_file_name))

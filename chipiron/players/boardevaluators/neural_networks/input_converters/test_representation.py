@@ -166,19 +166,19 @@ def test_representation364(
 
 if __name__ == "__main__":
     use_rusty_board: bool
-    board_representation_factory_type: InternalTensorRepresentationType
-    use_board_modification: bool
+    board_representation_factory_type_: InternalTensorRepresentationType
+    use_board_modification_: bool
     for use_rusty_board in [True, False]:
-        for board_representation_factory_type in [
+        for board_representation_factory_type_ in [
             InternalTensorRepresentationType.NOBUG364
         ]:
             test_representation(
                 use_rust_boards=use_rusty_board,
-                board_representation_factory_type=board_representation_factory_type,
+                board_representation_factory_type=board_representation_factory_type_,
             )
-            for use_board_modification in [True, False]:
+            for use_board_modification_ in [True, False]:
                 test_representation364(
                     use_rust_boards=use_rusty_board,
-                    board_representation_factory_type=board_representation_factory_type,
-                    use_board_modification=use_board_modification,
+                    board_representation_factory_type=board_representation_factory_type_,
+                    use_board_modification=use_board_modification_,
                 )

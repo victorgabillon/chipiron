@@ -1,10 +1,11 @@
+# pylint: disable=no-member
 """Module for the SyzygyTable class."""
 
 import atomheart.board as boards
 import shakmaty_python_binding
 from atomheart.board import RustyBoardChi
 
-from chipiron.utils import path
+from chipiron.utils import MyPath
 
 from .syzygy_table import SyzygyTable
 
@@ -47,7 +48,7 @@ class SyzygyRustTable(SyzygyTable[RustyBoardChi]):
 
     table_base: shakmaty_python_binding.MyTableBase
 
-    def __init__(self, path_to_table: path) -> None:
+    def __init__(self, path_to_table: MyPath) -> None:
         """Initialize the SyzygyTable object.
 
         Args:

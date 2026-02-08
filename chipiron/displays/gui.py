@@ -13,10 +13,10 @@ import typing
 
 import chess
 import chess.svg
-import PySide6.QtGui as QtGui
 from atomheart.board import BoardFactory, IBoard, create_board_chi
 from atomheart.board.utils import FenPlusHistory
 from atomheart.move import MoveUci
+from PySide6 import QtGui
 from PySide6.QtCore import Qt, QTimer, Slot
 from PySide6.QtGui import QIcon
 from PySide6.QtSvgWidgets import QSvgWidget
@@ -118,6 +118,8 @@ class MainWindow(QWidget):
 
         self.scope: Scope | None = None
 
+        self.d: object | None = None
+        self.move_promote_asked: chess.Move | None = None
         # Set window icon with existence check
         window_icon_path = os.path.join(GUI_DIR, "chipicon.png")
         if os.path.exists(window_icon_path):
@@ -128,25 +130,25 @@ class MainWindow(QWidget):
         self.setWindowTitle("🐙 ♛  Chipiron Chess GUI  ♛ 🐙")
         self.setGeometry(300, 300, 1400, 800)
 
-        self.widgetSvg = QSvgWidget(parent=self)
-        self.widgetSvg.setGeometry(10, 10, 600, 600)
+        self.widget_svg = QSvgWidget(parent=self)
+        self.widget_svg.setGeometry(10, 10, 600, 600)
 
-        self.closeButton = QPushButton(self)
-        self.closeButton.setText("Close")  # text
+        self.close_button = QPushButton(self)
+        self.close_button.setText("Close")  # text
         self._check_and_set_icon(
-            self.closeButton, os.path.join(GUI_DIR, "close.png")
+            self.close_button, os.path.join(GUI_DIR, "close.png")
         )  # icon
-        self.closeButton.setShortcut("Ctrl+D")  # shortcut key
-        self.closeButton.clicked.connect(self.stopppy)
-        self.closeButton.setToolTip("Close the widget")  # Tool tip
-        self.closeButton.move(800, 20)
+        self.close_button.setShortcut("Ctrl+D")  # shortcut key
+        self.close_button.clicked.connect(self.stopppy)  # pylint: disable=no-member
+        self.close_button.setToolTip("Close the widget")  # Tool tip
+        self.close_button.move(800, 20)
 
         self.pause_button = QPushButton(self)
         self.pause_button.setText("Pause")  # text
         self._check_and_set_icon(
             self.pause_button, os.path.join(GUI_DIR, "pause.png")
         )  # icon
-        self.pause_button.clicked.connect(self.pause_button_clicked)
+        self.pause_button.clicked.connect(self.pause_button_clicked)  # pylint: disable=no-member
         self.pause_button.setToolTip("pause the game")  # Tool tip
         self.pause_button.move(700, 100)
 
@@ -155,7 +157,7 @@ class MainWindow(QWidget):
         self._check_and_set_icon(
             self.back_button, os.path.join(GUI_DIR, "back.png")
         )  # icon
-        self.back_button.clicked.connect(self.back_button_clicked)
+        self.back_button.clicked.connect(self.back_button_clicked)  # pylint: disable=no-member
         self.back_button.setToolTip("back one move")  # Tool tip
         self.back_button.move(900, 100)
 
@@ -250,16 +252,16 @@ class MainWindow(QWidget):
         )
         self.eval_button_black.setGeometry(620, 750, 470, 30)
 
-        self.board_size = min(self.widgetSvg.width(), self.widgetSvg.height())
+        self.board_size = min(self.widget_svg.width(), self.widget_svg.height())
         self.coordinates = True
         self.margin = 0.05 * self.board_size if self.coordinates else 0
-        self.squareSize = (self.board_size - 2 * self.margin) / 8.0
-        self.pieceToMove = [None, None]
+        self.square_size = (self.board_size - 2 * self.margin) / 8.0
+        self.piece_to_move = [None, None]
 
-        self.checkThreadTimer = QTimer(self)
-        self.checkThreadTimer.setInterval(5)  # .5 seconds
-        self.checkThreadTimer.timeout.connect(self.process_message)
-        self.checkThreadTimer.start()
+        self.check_thread_timer = QTimer(self)
+        self.check_thread_timer.setInterval(5)  # .5 seconds
+        self.check_thread_timer.timeout.connect(self.process_message)  # pylint: disable=no-member
+        self.check_thread_timer.start()
 
         # Start with an empty/initial board so click-handling works before first update.
         self.board: IBoard = self.board_factory(
@@ -393,12 +395,12 @@ class MainWindow(QWidget):
             and self.margin < event.x() < self.board_size - self.margin
             and self.margin < event.y() < self.board_size - self.margin
         ):
-            file = int((event.x() - self.margin) / self.squareSize)
-            rank = 7 - int((event.y() - self.margin) / self.squareSize)
+            file = int((event.x() - self.margin) / self.square_size)
+            rank = 7 - int((event.y() - self.margin) / self.square_size)
             square = chess.square(file, rank)
             piece = self.board.piece_at(square)
             self.coordinates = f"{chr(file + 97)}{rank + 1}"
-            if self.pieceToMove[0] is not None:
+            if self.piece_to_move[0] is not None:
                 try:
                     all_moves_keys: list[MoveKey] = self.board.legal_moves.get_all()
                     all_legal_moves_uci: list[MoveUci] = [
@@ -406,10 +408,10 @@ class MainWindow(QWidget):
                         for move_key in all_moves_keys
                     ]
                     move: chess.Move = chess.Move.from_uci(
-                        f"{self.pieceToMove[1]}{self.coordinates}"
+                        f"{self.piece_to_move[1]}{self.coordinates}"
                     )
                     move_promote: chess.Move = chess.Move.from_uci(
-                        f"{self.pieceToMove[1]}{self.coordinates}q"
+                        f"{self.piece_to_move[1]}{self.coordinates}q"
                     )
                     if move.uci() in all_legal_moves_uci:
                         self.send_move_to_main_thread(move_uci=move.uci())
@@ -433,7 +435,7 @@ class MainWindow(QWidget):
                 except ValueError:
                     chipiron_logger.info("Oops!  Doubleclicked?  Try again...")
                     piece = None
-                self.pieceToMove = [piece, self.coordinates]
+                self.piece_to_move = [piece, self.coordinates]
 
     def send_move_to_main_thread(self, move_uci: MoveUci) -> None:
         """Send a move to the main thread for processing.
@@ -458,7 +460,7 @@ class MainWindow(QWidget):
         )
         self.main_thread_mailbox.put(cmd)
 
-    def reset_for_new_game(self, scope: Scope) -> None:
+    def reset_for_new_game(self) -> None:
         """Reset for new game."""
         self.tablewidget.clearContents()
         self.tablewidget.setRowCount(1)
@@ -470,7 +472,7 @@ class MainWindow(QWidget):
         self.eval_button_chi.setText("🐙 Eval")
         self.eval_button_white.setText("♕ White Eval")
         self.eval_button_black.setText("♛ Black Eval")
-        self.pieceToMove = [None, None]
+        self.piece_to_move = [None, None]
         self.board = self.board_factory(
             fen_with_history=FenPlusHistory(current_fen=chess.STARTING_FEN)
         )
@@ -498,7 +500,7 @@ class MainWindow(QWidget):
             "QPushButton {background-color: white; color: blue;}"
         )
         d.closeButtonQ.setGeometry(150, 100, 150, 20)
-        d.closeButtonQ.clicked.connect(self.promote_queen)
+        d.closeButtonQ.clicked.connect(self.promote_queen)  # pylint: disable=no-member
 
         d.closeButtonR = QPushButton(d)
         d.closeButtonR.setText("Rook")  # text
@@ -506,7 +508,7 @@ class MainWindow(QWidget):
             "QPushButton {background-color: white; color: blue;}"
         )
         d.closeButtonR.setGeometry(150, 200, 150, 20)
-        d.closeButtonR.clicked.connect(self.promote_rook)
+        d.closeButtonR.clicked.connect(self.promote_rook)  # pylint: disable=no-member
 
         d.closeButtonB = QPushButton(d)
         d.closeButtonB.setText("Bishop")  # text
@@ -514,7 +516,7 @@ class MainWindow(QWidget):
             "QPushButton {background-color: white; color: blue;}"
         )
         d.closeButtonB.setGeometry(150, 300, 150, 20)
-        d.closeButtonB.clicked.connect(self.promote_bishop)
+        d.closeButtonB.clicked.connect(self.promote_bishop)  # pylint: disable=no-member
 
         d.closeButtonK = QPushButton(d)
         d.closeButtonK.setText("Knight")  # text
@@ -522,7 +524,7 @@ class MainWindow(QWidget):
             "QPushButton {background-color: white; color: blue;}"
         )
         d.closeButtonK.setGeometry(150, 400, 150, 20)
-        d.closeButtonK.clicked.connect(self.promote_knight)
+        d.closeButtonK.clicked.connect(self.promote_knight)  # pylint: disable=no-member
 
         d.exec_()
 
@@ -538,7 +540,7 @@ class MainWindow(QWidget):
 
         """
         self.move_promote_asked = chess.Move.from_uci(
-            f"{self.pieceToMove[1]}{self.coordinates}q"
+            f"{self.piece_to_move[1]}{self.coordinates}q"
         )
         self.d.close()
 
@@ -554,7 +556,7 @@ class MainWindow(QWidget):
 
         """
         self.move_promote_asked = chess.Move.from_uci(
-            f"{self.pieceToMove[1]}{self.coordinates}r"
+            f"{self.piece_to_move[1]}{self.coordinates}r"
         )
         self.d.close()
 
@@ -569,7 +571,7 @@ class MainWindow(QWidget):
 
         """
         self.move_promote_asked = chess.Move.from_uci(
-            f"{self.pieceToMove[1]}{self.coordinates}b"
+            f"{self.piece_to_move[1]}{self.coordinates}b"
         )
         self.d.close()
 
@@ -585,7 +587,7 @@ class MainWindow(QWidget):
 
         """
         self.move_promote_asked = chess.Move.from_uci(
-            f"{self.pieceToMove[1]}{self.coordinates}n"
+            f"{self.piece_to_move[1]}{self.coordinates}n"
         )
         self.d.close()
 
@@ -627,7 +629,7 @@ class MainWindow(QWidget):
             self.scope = msg.scope
         elif msg.scope != self.scope:
             # sequential-games policy: accept new scope and reset UI
-            self.reset_for_new_game(msg.scope)
+            self.reset_for_new_game()
             self.scope = msg.scope
 
         payload = msg.payload
@@ -724,8 +726,8 @@ class MainWindow(QWidget):
             else None,
         )
 
-        self.boardSvg = repr_svg.encode("UTF-8")
-        self.drawBoardSvg = self.widgetSvg.load(self.boardSvg)
+        self.board_svg = repr_svg.encode("UTF-8")
+        self.draw_board_svg = self.widget_svg.load(self.board_svg)
         self.round_button.setText(
             "🎲 Round: " + str(self.board.fullmove_number)
         )  # text
@@ -756,7 +758,7 @@ class MainWindow(QWidget):
         self.legal_moves_button.setText(
             f"📋 <b>legal moves:</b><pre>{moves_html}</pre>"
         )
-        return self.drawBoardSvg
+        return self.draw_board_svg
 
     def update_players_info(self, white: PlayerUiInfo, black: PlayerUiInfo) -> None:
         """Update players info."""
@@ -823,7 +825,7 @@ class MainWindow(QWidget):
                 self._check_and_set_icon(
                     self.pause_button, os.path.join(GUI_DIR, "play.png")
                 )  # icon
-                self.pause_button.clicked.connect(self.play_button_clicked)
+                self.pause_button.clicked.connect(self.play_button_clicked)  # pylint: disable=no-member
                 self.pause_button.setToolTip("play the game")  # Tool tip
                 self.pause_button.move(700, 100)
             elif play_status == PlayingStatus.PLAY:
@@ -831,7 +833,7 @@ class MainWindow(QWidget):
                 self._check_and_set_icon(
                     self.pause_button, os.path.join(GUI_DIR, "pause.png")
                 )  # icon
-                self.pause_button.clicked.connect(self.pause_button_clicked)
+                self.pause_button.clicked.connect(self.pause_button_clicked)  # pylint: disable=no-member
                 self.pause_button.setToolTip("pause the game")  # Tool tip
                 self.pause_button.move(700, 100)
 

@@ -15,30 +15,30 @@ from parsley_coco import Parsley
 from rich.pretty import pretty_repr
 
 from chipiron.scripts.default_script_args import DataClassWithBaseScriptArgs
-from chipiron.utils import path
+from chipiron.utils import MyPath
 from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger, set_chipiron_logger_level
 from chipiron.utils.small_tools import mkdir_if_not_existing
 
 
-class Script[T_Dataclass: DataClassWithBaseScriptArgs = DataClassWithBaseScriptArgs]:
+class Script[DataclassT: DataClassWithBaseScriptArgs = DataClassWithBaseScriptArgs]:
     """The core Script class to launch scripts.
 
     Takes care of computing execution time, profiling, and parsing arguments.
     """
 
     start_time: float
-    parser: Parsley[T_Dataclass]
+    parser: Parsley[DataclassT]
     gui_args: dict[str, Any] | None
     profile: cProfile.Profile | None
-    experiment_script_type_output_folder: path | None = None
-    base_experiment_output_folder: path = "chipiron/scripts/"
-    default_experiment_output_folder: path = "chipiron/scripts/default_output_folder"
+    experiment_script_type_output_folder: MyPath | None = None
+    base_experiment_output_folder: MyPath = "chipiron/scripts/"
+    default_experiment_output_folder: MyPath = "chipiron/scripts/default_output_folder"
     config_file_name: str | None
 
     def __init__(
         self,
-        parser: Parsley[T_Dataclass],
+        parser: Parsley[DataclassT],
         extra_args: IsDataclass | None = None,
         config_file_name: str | None = None,
     ) -> None:
@@ -63,7 +63,7 @@ class Script[T_Dataclass: DataClassWithBaseScriptArgs = DataClassWithBaseScriptA
     def initiate(
         self,
         experiment_output_folder: str | None = None,
-    ) -> T_Dataclass:
+    ) -> DataclassT:
         """Initiate the script by parsing arguments and converting them into a standardized dataclass.
 
         Args:
@@ -80,7 +80,7 @@ class Script[T_Dataclass: DataClassWithBaseScriptArgs = DataClassWithBaseScriptA
                 self.default_experiment_output_folder
             )
 
-        final_args: T_Dataclass = self.parser.parse_arguments(
+        final_args: DataclassT = self.parser.parse_arguments(
             extra_args=self.extra_args, config_file_path=self.config_file_name
         )
 
@@ -149,11 +149,11 @@ class Script[T_Dataclass: DataClassWithBaseScriptArgs = DataClassWithBaseScriptA
             # Ensure experiment_output_folder is not None
             assert args_with_base.base_script_args.experiment_output_folder is not None
 
-            path_to_profiling_stats: path = os.path.join(
+            path_to_profiling_stats: MyPath = os.path.join(
                 args_with_base.base_script_args.experiment_output_folder,
                 "profiling_output.stats",
             )
-            path_to_profiling_stats_png: path = os.path.join(
+            path_to_profiling_stats_png: MyPath = os.path.join(
                 args_with_base.base_script_args.experiment_output_folder,
                 "profiling_output.png",
             )
