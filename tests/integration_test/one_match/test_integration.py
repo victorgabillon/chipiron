@@ -11,7 +11,7 @@ from anemone.progress_monitor.progress_monitor import (
     StoppingCriterionTypes,
     TreeBranchLimitArgs,
 )
-from parsley_coco import (
+from parsley import (
     make_partial_dataclass_with_optional_paths,
     resolve_extended_object,
 )

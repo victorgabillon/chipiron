@@ -19,7 +19,7 @@ from anemone.progress_monitor.progress_monitor import (
     StoppingCriterionTypes,
     TreeBranchLimitArgs,
 )
-from parsley_coco import make_partial_dataclass_with_optional_paths
+from parsley import make_partial_dataclass_with_optional_paths
 
 from chipiron import scripts
 from chipiron.environments.chess.starting_position_args import (

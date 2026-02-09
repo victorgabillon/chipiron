@@ -3,7 +3,7 @@
 import logging
 from typing import Any
 
-from parsley_coco import Parsley, create_parsley
+from parsley import Parsley, create_parsley
 
 from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
@@ -55,7 +55,7 @@ def create_script(
         package_name=get_package_root_path("chipiron"),
     )
 
-    from parsley_coco.logger import set_verbosity
+    from parsley.logger import set_verbosity
 
     set_verbosity(parsley_logging_level)
 

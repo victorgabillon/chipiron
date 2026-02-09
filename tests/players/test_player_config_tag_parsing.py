@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from parsley_coco import Parsley, create_parsley
+from parsley import Parsley, create_parsley
 
 from chipiron.games.match.match_settings_args import MatchSettingsArgs
 from chipiron.games.match.match_tag import MatchConfigTag

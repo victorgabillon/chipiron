@@ -61,7 +61,7 @@ try:
 
     # Configure parsley_coco logging to reduce noise during benchmarking
     try:
-        from parsley_coco.logger import set_verbosity
+        from parsley.logger import set_verbosity
 
         set_verbosity(logging.WARNING)
     except ImportError:

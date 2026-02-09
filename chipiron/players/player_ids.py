@@ -20,7 +20,7 @@ Dependencies:
 from enum import StrEnum
 from importlib.resources import as_file, files
 
-import parsley_coco
+import parsley
 
 from chipiron.players.chess_player_args import ChessPlayerArgs
 from chipiron.players.player_args import PlayerArgs
@@ -99,7 +99,7 @@ class PlayerConfigTag(StrEnum):
             PlayerArgs: The player arguments as a dataclass.
 
         """
-        player_args: PlayerArgs = parsley_coco.resolve_yaml_file_to_base_dataclass(
+        player_args: PlayerArgs = parsley.resolve_yaml_file_to_base_dataclass(
             yaml_path=str(self.get_yaml_file_path()),
             base_cls=PlayerArgs,
             raise_error_with_nones=False,

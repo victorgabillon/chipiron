@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from parsley_coco import make_partial_dataclass_with_optional_paths
+from parsley import make_partial_dataclass_with_optional_paths
 
 import chipiron.scripts as scripts
 from chipiron.learningprocesses.nn_trainer.factory import NNTrainerArgs

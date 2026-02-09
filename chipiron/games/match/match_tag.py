@@ -18,7 +18,7 @@ Methods:
 from enum import StrEnum
 from importlib.resources import as_file, files
 
-import parsley_coco
+import parsley
 
 from chipiron.games.match.match_settings_args import MatchSettingsArgs
 from chipiron.utils import path
@@ -55,7 +55,7 @@ class MatchConfigTag(StrEnum):
 
         """
         match_args: MatchSettingsArgs = (
-            parsley_coco.resolve_yaml_file_to_base_dataclass(
+            parsley.resolve_yaml_file_to_base_dataclass(
                 yaml_path=str(self.get_yaml_file_path()),
                 base_cls=MatchSettingsArgs,
                 raise_error_with_nones=False,
