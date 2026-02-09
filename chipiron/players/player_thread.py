@@ -102,7 +102,7 @@ class PlayerProcess[SnapT, RuntimeT, BuildArgsT](multiprocessing.Process):
         Receives `PlayerRequest[SnapT]` objects from `queue_in` and dispatches them
         through `handle_player_request`. If a `None` is received, the process exits.
         """
-        game_player = self._build_game_player(self._build_args, self.queue_out)
+        game_player = self._build_game_player(self._build_args)
         chipiron_logger.info("Started player process: %s", game_player)
 
         while not self._stop_event.is_set():

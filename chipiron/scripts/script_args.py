@@ -9,7 +9,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from chipiron.utils import path
+from chipiron.utils import MyPath
 
 
 @dataclass
@@ -40,10 +40,10 @@ class BaseScriptArgs:
     # relative_script_instance_experiment_output_folder
 
     # the folder where to output the results
-    experiment_output_folder: path | None = None
+    experiment_output_folder: MyPath | None = None
 
     # specific folder name  where to output the results (if none it is set to time and day in post init)
-    relative_script_instance_experiment_output_folder: path | None = None
+    relative_script_instance_experiment_output_folder: MyPath | None = None
 
     # the seed
     seed: int = 0

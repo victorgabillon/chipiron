@@ -153,7 +153,7 @@ def _create_player_observer_mono_process(
         universal_behavior=universal_behavior,
     )
 
-    game_player = wiring.build_game_player(build_args, main_thread_mailbox)
+    game_player = wiring.build_game_player(build_args)
 
     handle: PlayerHandle = InProcessPlayerHandle(game_player)
 

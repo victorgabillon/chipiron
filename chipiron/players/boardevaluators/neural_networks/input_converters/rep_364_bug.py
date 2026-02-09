@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 """Module for rep 364 bug."""
 
 from typing import Protocol, cast

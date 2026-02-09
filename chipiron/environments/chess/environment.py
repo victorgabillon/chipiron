@@ -6,16 +6,17 @@ from atomheart import ValangaChessState
 from atomheart.board.utils import FenPlusHistory
 from valanga import StateTag
 
+from chipiron.environments.base import Environment
 from chipiron.environments.chess.chess_gui_encoder import ChessGuiEncoder
 from chipiron.environments.chess.chess_rules import ChessRules
 from chipiron.environments.chess.tags import ChessStartTag
 from chipiron.environments.chess.types import ChessState
 from chipiron.environments.deps import ChessEnvironmentDeps
-from chipiron.environments.environment import Environment
 from chipiron.environments.types import GameKind
 from chipiron.players.communications.player_request_encoder import (
     ChessPlayerRequestEncoder,
 )
+from chipiron.players.factory_higher_level import create_player_observer_factory
 from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
@@ -39,7 +40,6 @@ def make_chess_environment(
     deps: ChessEnvironmentDeps,
 ) -> Environment[ChessState, FenPlusHistory, ChessStartTag]:
     """Create chess environment."""
-    from chipiron.players.factory_higher_level import create_player_observer_factory
 
     def build_player_observer_factory(
         *,

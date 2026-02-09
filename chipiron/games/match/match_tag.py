@@ -21,7 +21,7 @@ from importlib.resources import as_file, files
 import parsley
 
 from chipiron.games.match.match_settings_args import MatchSettingsArgs
-from chipiron.utils import path
+from chipiron.utils import MyPath
 
 
 class MatchConfigTag(StrEnum):
@@ -34,7 +34,7 @@ class MatchConfigTag(StrEnum):
     JIME = "setting_jime"
     TRON = "setting_tron"
 
-    def get_yaml_file_path(self) -> path:
+    def get_yaml_file_path(self) -> MyPath:
         """Return the file path to the YAML configuration file associated with the tag.
 
         Returns:

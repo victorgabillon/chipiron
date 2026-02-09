@@ -17,8 +17,10 @@ import pytest
 
 from chipiron.scripts.generate_datasets.generate_boards import (
     generate_board_dataset_multi_months,
-    iterate_months,
     process_game,
+)
+from chipiron.scripts.generate_datasets.monthly_pgn_pipeline import (
+    iterate_months,
     save_dataset_progress,
 )
 
@@ -274,8 +276,8 @@ class TestDatasetGeneration:
 """
         return pgn_content
 
-    @patch("chipiron.scripts.generate_datasets.generate_boards.ensure_month_pgn")
-    def test_generate_board_dataset_multi_months_basic(self, mock_ensure_month):
+    @patch("chipiron.scripts.generate_datasets.monthly_pgn_pipeline.open_month_pgn")
+    def test_generate_board_dataset_multi_months_basic(self, mock_open_month_pgn):
         """Test basic multi-month dataset generation."""
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = Path(temp_dir) / "test_output.pkl"
@@ -285,8 +287,8 @@ class TestDatasetGeneration:
             mock_pgn_content = self.create_mock_pgn_content(3)
             mock_pgn_path.write_text(mock_pgn_content)
 
-            # Mock the ensure_month_pgn to return our test file
-            mock_ensure_month.return_value = mock_pgn_path
+            # Mock the open_month_pgn to return our test file
+            mock_open_month_pgn.return_value = mock_pgn_path
 
             # Run dataset generation with small limits
             generate_board_dataset_multi_months(
@@ -431,12 +433,12 @@ class TestIntegration:
             pgn_content = self.create_multi_game_pgn(5)
 
             with patch(
-                "chipiron.scripts.generate_datasets.generate_boards.ensure_month_pgn"
-            ) as mock_ensure:
+                "chipiron.scripts.generate_datasets.monthly_pgn_pipeline.open_month_pgn"
+            ) as mock_open:
                 # Create mock PGN file
                 mock_pgn_path = Path(temp_dir) / "mock.pgn"
                 mock_pgn_path.write_text(pgn_content)
-                mock_ensure.return_value = mock_pgn_path
+                mock_open.return_value = mock_pgn_path
 
                 # Run complete generation
                 generate_board_dataset_multi_months(

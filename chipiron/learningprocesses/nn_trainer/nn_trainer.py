@@ -116,7 +116,7 @@ class NNPytorchTrainer:
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.net.to(self.device)
-        chipiron_logger.info(f"Model put to device {self.device}")
+        chipiron_logger.info("Model put to device %s", self.device)
 
     @typing.no_type_check
     def train(

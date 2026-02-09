@@ -12,14 +12,14 @@ from atomheart.move_factory import MoveFactory, create_move_factory
 from parsley import resolve_extended_object
 
 import chipiron as ch
-import chipiron.games.game as game
-import chipiron.players as players
+from chipiron import players
 from chipiron.environments.deps import (
     CheckersEnvironmentDeps,
     ChessEnvironmentDeps,
     EnvDeps,
 )
 from chipiron.environments.types import GameKind
+from chipiron.games import game
 from chipiron.games.game.game_manager_factory import GameManagerFactory
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_manager import MatchManager
@@ -30,7 +30,7 @@ from chipiron.players.boardevaluators.factory import (
 from chipiron.players.boardevaluators.table_base.factory import create_syzygy
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script_args import BaseScriptArgs
-from chipiron.utils import path
+from chipiron.utils import MyPath
 
 from .match_settings_args import MatchSettingsArgs
 
@@ -48,7 +48,7 @@ def create_match_manager(
     implementation_args: ImplementationArgs,
     universal_behavior: bool = False,
     seed: int | None = None,
-    output_folder_path: path | None = None,
+    output_folder_path: MyPath | None = None,
     gui: bool = False,
 ) -> MatchManager:
     """Create a match manager for running matches between two players.

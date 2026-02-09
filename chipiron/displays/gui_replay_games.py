@@ -27,41 +27,41 @@ class MainWindow(QWidget):
         self.setWindowTitle("Chess GUI")
         self.setGeometry(300, 300, 800, 800)
 
-        self.widgetSvg = QSvgWidget(parent=self)
-        self.widgetSvg.setGeometry(10, 10, 600, 600)
+        self.widget_svg = QSvgWidget(parent=self)
+        self.widget_svg.setGeometry(10, 10, 600, 600)
 
-        self.closeButton = QPushButton(self)
-        self.closeButton.setText("Close")  # text
-        self.closeButton.setIcon(QIcon("close.png"))  # icon
-        self.closeButton.setShortcut("Ctrl+D")  # shortcut key
-        self.closeButton.setToolTip("Close the widget")  # Tool tip
-        self.closeButton.move(700, 100)
+        self.close_button = QPushButton(self)
+        self.close_button.setText("Close")  # text
+        self.close_button.setIcon(QIcon("close.png"))  # icon
+        self.close_button.setShortcut("Ctrl+D")  # shortcut key
+        self.close_button.setToolTip("Close the widget")  # Tool tip
+        self.close_button.move(700, 100)
 
-        self.closeButton2 = QPushButton(self)
-        self.closeButton2.setText("Player")  # text
-        self.closeButton2.setStyleSheet(
+        self.close_button2 = QPushButton(self)
+        self.close_button2.setText("Player")  # text
+        self.close_button2.setStyleSheet(
             "QPushButton {background-color: white; color: blue;}"
         )
-        self.closeButton2.setGeometry(650, 200, 150, 20)
+        self.close_button2.setGeometry(650, 200, 150, 20)
 
-        self.closeButton3 = QPushButton(self)
-        self.closeButton3.setText("Player")  # text
-        self.closeButton3.setStyleSheet(
+        self.close_button3 = QPushButton(self)
+        self.close_button3.setText("Player")  # text
+        self.close_button3.setStyleSheet(
             "QPushButton {background-color: black; color: blue;}"
         )
-        self.closeButton3.setGeometry(650, 300, 150, 20)
+        self.close_button3.setGeometry(650, 300, 150, 20)
 
-        self.closeButton4 = QPushButton(self)
-        self.closeButton4.setText("Score 0-0")  # text
-        self.closeButton4.setStyleSheet(
+        self.close_button4 = QPushButton(self)
+        self.close_button4.setText("Score 0-0")  # text
+        self.close_button4.setStyleSheet(
             "QPushButton {background-color: black; color: blue;}"
         )
-        self.closeButton4.setGeometry(650, 400, 150, 20)
+        self.close_button4.setGeometry(650, 400, 150, 20)
 
-        self.boardSize = min(self.widgetSvg.width(), self.widgetSvg.height())
+        self.board_size = min(self.widget_svg.width(), self.widget_svg.height())
         self.coordinates = True
-        self.margin = 0.05 * self.boardSize if self.coordinates else 0
-        self.squareSize = (self.boardSize - 2 * self.margin) / 8.0
+        self.margin = 0.05 * self.board_size if self.coordinates else 0
+        self.square_size = (self.board_size - 2 * self.margin) / 8.0
 
         self.count = 0
         self.next_move = self.chess_board_recorded.chess_board.move_stack[self.count]
@@ -115,8 +115,8 @@ class MainWindow(QWidget):
             else None,
         )
 
-        self.boardSvg = repr_svg.encode("UTF-8")
+        self.board_svg = repr_svg.encode("UTF-8")
 
-        self.draw_board_svg = self.widgetSvg.load(self.boardSvg)
+        self.draw_board_svg = self.widget_svg.load(self.board_svg)
 
         return self.draw_board_svg
