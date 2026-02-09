@@ -9,7 +9,7 @@ from atomheart.board.factory import (
     create_board_factory,
 )
 from atomheart.move_factory import MoveFactory, create_move_factory
-from parsley_coco import resolve_extended_object
+from parsley import resolve_extended_object
 
 import chipiron as ch
 import chipiron.games.game as game

@@ -3,7 +3,7 @@
 from enum import StrEnum
 from importlib.resources import as_file, files
 
-import parsley_coco
+import parsley
 
 from chipiron.games.game.game_args import GameArgs
 from chipiron.utils import path
@@ -35,7 +35,7 @@ class GameConfigTag(StrEnum):
             GameArgs: The parsed match settings.
 
         """
-        game_args: GameArgs = parsley_coco.resolve_yaml_file_to_base_dataclass(
+        game_args: GameArgs = parsley.resolve_yaml_file_to_base_dataclass(
             yaml_path=str(self.get_yaml_file_path()), base_cls=GameArgs
         )
         return game_args

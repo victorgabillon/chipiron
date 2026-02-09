@@ -19,7 +19,7 @@ sys.path.append("../../")
 
 # Configure parsley_coco logging to reduce noise
 try:
-    from parsley_coco.logger import set_verbosity
+    from parsley.logger import set_verbosity
 
     set_verbosity(logging.WARNING)
 except ImportError:
@@ -115,7 +115,7 @@ def main() -> None:
     )
 
     try:
-        from parsley_coco.logger import set_verbosity
+        from parsley.logger import set_verbosity
 
         set_verbosity(logging_args.parsley)
     except ImportError:

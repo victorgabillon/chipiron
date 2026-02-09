@@ -27,7 +27,7 @@ dependencies = [
     "pyarrow",
     "gprof2dot",
     "mlflow",
-    "parsley_coco>=0.1.30",
+    "parsley_coco>=0.1.32",
     "gdown",
     "zstandard",
     "rich",
@@ -175,7 +175,7 @@ fix =true
 [tool.ruff.lint]
 # Enable import sorting (alphabetical + group order)
 select = ["I", "F", "E", "B", "TCH", "UP","SIM","RUF","RET","N","A",
-"ANN", "PERF", "TRY","LOG","RSE","ICN","TID","Q","W",
+"ANN", "PERF", "TRY","LOG","RSE","ICN","TID","Q","W","D",
 "ISC","PIE","ERA","TD"
 ]  # I = imports, F = pyflakes, E = pycodestyle, TCH = type-checking, B = black
 
@@ -184,7 +184,10 @@ fixable = ["I", "TCH", "F401","UP","SIM","RUF","RET","N","A","TRY","ANN","TID","
 "PIE","TD","ISC","ERA"]
 
 # Ignore rules you don't care about
-ignore = ["E501","ANN401", "D101", "D103", "D417","TD003","TD002",]
+ignore = ["E501","ANN401",
+    "D203",  # incompatible with D211
+    "D213",  # incompatible with D212
+    "TD003","TD002",]
 
 # Optional: add your first-party package to extend the known group
 [tool.ruff.lint.per-file-ignores]
@@ -193,7 +196,7 @@ ignore = ["E501","ANN401", "D101", "D103", "D417","TD003","TD002",]
 
 
 [tool.ruff.lint.pydocstyle]
-convention = "google"
+convention = "pep257"
 
 [tool.black]
 line-length = 88
@@ -207,7 +210,11 @@ extension-pkg-whitelist = ["PyQt5", "PySide6"]
 max-line-length = 88
 
 #[tool.pylint.messages_control]
-disable = ["C0301"]
+disable = [
+    "C0301",
+    "unnecessary-ellipsis",
+    "W0511","R0913","R0917","R0903","R0914","R0912","R0915","R0911","R0902"
+    ]
 
 [tool.pylint.typecheck]
 # Optional: same as init-hook in .pylintrc
@@ -282,7 +289,7 @@ deps = [
   "pyarrow",
   "gprof2dot",
   "mlflow",
-  "parsley_coco>=0.1.30",
+  "parsley_coco>=0.1.32",
   "gdown",
   "zstandard",
   "rich",
@@ -322,7 +329,7 @@ deps = [
   "pyarrow",
   "gprof2dot",
   "mlflow",
-  "parsley_coco>=0.1.30",
+  "parsley_coco>=0.1.32",
   "gdown",
   "zstandard",
   "rich",

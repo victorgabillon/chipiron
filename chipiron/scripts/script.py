@@ -11,7 +11,7 @@ import time
 from pstats import SortKey
 from typing import Any, cast
 
-from parsley_coco import Parsley
+from parsley import Parsley
 from rich.pretty import pretty_repr
 
 from chipiron.scripts.default_script_args import DataClassWithBaseScriptArgs

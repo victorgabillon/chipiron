@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from importlib.resources import files
 
-import parsley_coco
+import parsley
 from coral.neural_networks.factory import (
     create_nn_state_eval_from_nn_parameters_file_and_existing_model,
 )
@@ -48,7 +48,7 @@ def _load_chipiron_eval_args() -> AllBoardEvaluatorArgs:
             "data/players/board_evaluator_config/base_chipiron_board_eval.yaml"
         )
     )
-    wrapper: BoardEvalArgsWrapper = parsley_coco.resolve_yaml_file_to_base_dataclass(
+    wrapper: BoardEvalArgsWrapper = parsley.resolve_yaml_file_to_base_dataclass(
         yaml_path=path,
         base_cls=BoardEvalArgsWrapper,
         package_name=str(files("chipiron")),
