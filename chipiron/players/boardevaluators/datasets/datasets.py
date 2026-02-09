@@ -27,7 +27,7 @@ from pandas import DataFrame
 from torch.utils.data import Dataset
 
 from chipiron.environments.chess.types import ChessState
-from chipiron.utils import path
+from chipiron.utils import MyPath
 from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:
@@ -58,8 +58,8 @@ class UnprocessedDataUnavailableError(DatasetError):
 class DataSetArgs:
     """Arguments for the dataset."""
 
-    train_file_name: path
-    test_file_name: path | None = None
+    train_file_name: MyPath
+    test_file_name: MyPath | None = None
     preprocessing_data_set: bool = False
 
 
@@ -86,7 +86,7 @@ class MyDataSet[ProcessedSample](Dataset[ProcessedSample], ABC):
     len: int | None
     preprocessing: bool
 
-    def __init__(self, file_name: path, preprocessing: bool) -> None:
+    def __init__(self, file_name: MyPath, preprocessing: bool) -> None:
         """Initialize a new instance of the MyDataSet class.
 
         Args:
@@ -302,7 +302,7 @@ class FenAndValueDataSet(MyDataSet[FenAndValueData]):
 
     def __init__(
         self,
-        file_name: path,
+        file_name: MyPath,
         transform_white_value_to_model_output_function: Callable[
             [float, IBoard], torch.Tensor
         ],

@@ -3,6 +3,7 @@
 import argparse
 import logging
 import sys
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 from chipiron.scripts.factory import create_script
@@ -17,19 +18,19 @@ if TYPE_CHECKING:
 
 sys.path.append("../../")
 
+_parsley_set_verbosity: Callable[[int], None] | None
 # Configure parsley_coco logging to reduce noise
 try:
-    from parsley.logger import set_verbosity
-
-    set_verbosity(logging.WARNING)
+    from parsley.logger import set_verbosity as _parsley_set_verbosity
 except ImportError:
-    # parsley_coco might not be available in all environments
-    pass
+    _parsley_set_verbosity = None
+
+PARSLEY_SET_VERBOSITY: Callable[[int], None] | None = _parsley_set_verbosity
 
 
-def get_script_and_args(
-    raw_command_line_arguments: list[str],
-) -> tuple[ScriptType, IsDataclass | None, str | None, LoggingArgs]:
+def get_script_and_args() -> tuple[
+    ScriptType, IsDataclass | None, str | None, LoggingArgs
+]:
     """Args:.
 
         raw_command_line_arguments: the list of arguments of the scripts given by command line
@@ -98,8 +99,6 @@ def get_script_and_args(
 
 def main() -> None:
     """Run the main function."""
-    # Getting the command line arguments from the system
-    raw_command_line_arguments: list[str] = sys.argv
 
     # the type of script to be executed
     script_type: ScriptType
@@ -110,17 +109,10 @@ def main() -> None:
     logging_args: LoggingArgs
 
     # extracting the script_name and possibly some input arguments from either the gui or a yaml file or command line
-    script_type, extra_args, config_file_name, logging_args = get_script_and_args(
-        raw_command_line_arguments
-    )
+    script_type, extra_args, config_file_name, logging_args = get_script_and_args()
 
-    try:
-        from parsley.logger import set_verbosity
-
-        set_verbosity(logging_args.parsley)
-    except ImportError:
-        # parsley_coco might not be available in all environments
-        pass
+    if PARSLEY_SET_VERBOSITY is not None:
+        PARSLEY_SET_VERBOSITY(logging.WARNING)
 
     # creating the script object from its name and arguments
     script_object: IScript = create_script(
@@ -149,12 +141,12 @@ def main() -> None:
 
 if __name__ == "__main__":
     # checking if the version of python is high enough
-    message = (
+    MESSAGE = (
         "A version of Python higher than 3.13 is required to run chipiron.\n"
         ' Try using "python3 main_chipiron.py" instead'
     )
 
-    assert sys.version_info >= (3, 13), message
+    assert sys.version_info >= (3, 13), MESSAGE
     # launching the real main python script.
     # this allows the to bypass the automatic full interpreter check of python that would raise a syntax error before
     # the assertion above in case of a wrong python version

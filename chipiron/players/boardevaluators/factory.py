@@ -14,6 +14,7 @@ from .board_evaluator import (
     ObservableGameStateEvaluator,
 )
 
+
 @overload
 def _select_eval_wiring(
     game_kind: Literal[GameKind.CHESS], *, can_oracle: bool

@@ -38,4 +38,4 @@ class TreeAndValueAppArgs:
 
     anemone_args: AnemoneTreeArgs
     evaluator_args: NodeEvaluatorArgs
-    type: Literal[MoveSelectorTypes.TreeAndValue] = MoveSelectorTypes.TreeAndValue
+    type: Literal[MoveSelectorTypes.TREE_AND_VALUE] = MoveSelectorTypes.TREE_AND_VALUE

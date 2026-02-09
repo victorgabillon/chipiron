@@ -225,24 +225,24 @@ class Window(QtWidgets.QWidget):
         super().__init__()
         self.viewer = PhotoViewer(self)
         # 'Load image' button
-        self.btnLoad = QtWidgets.QToolButton(self)
-        self.btnLoad.setText("Load image")
-        self.btnLoad.clicked.connect(self.load_image)
+        self.btn_load = QtWidgets.QToolButton(self)
+        self.btn_load.setText("Load image")
+        self.btn_load.clicked.connect(self.load_image)  # pylint: disable=no-member
         # Button to change from drag/pan to getting pixel info
-        self.btnPixInfo = QtWidgets.QToolButton(self)
-        self.btnPixInfo.setText("Enter pixel info mode")
-        self.btnPixInfo.clicked.connect(self.pix_info)
-        self.editPixInfo = QtWidgets.QLineEdit(self)
-        self.editPixInfo.setReadOnly(True)
+        self.btn_pix_info = QtWidgets.QToolButton(self)
+        self.btn_pix_info.setText("Enter pixel info mode")
+        self.btn_pix_info.clicked.connect(self.pix_info)  # pylint: disable=no-member
+        self.edit_pix_info = QtWidgets.QLineEdit(self)
+        self.edit_pix_info.setReadOnly(True)
         self.viewer.photo_clicked.connect(self.photo_clicked)
         # Arrange layout
         v_layout = QtWidgets.QVBoxLayout(self)
         v_layout.addWidget(self.viewer)
         h_layout = QtWidgets.QHBoxLayout()
         h_layout.setAlignment(QtCore.Qt.AlignLeft)
-        h_layout.addWidget(self.btnLoad)
-        h_layout.addWidget(self.btnPixInfo)
-        h_layout.addWidget(self.editPixInfo)
+        h_layout.addWidget(self.btn_load)
+        h_layout.addWidget(self.btn_pix_info)
+        h_layout.addWidget(self.edit_pix_info)
         v_layout.addLayout(h_layout)
 
         with open("chipiron/debugTreeData_1white-#.td", "rb") as tree_data_file:
@@ -334,7 +334,7 @@ class Window(QtWidgets.QWidget):
 
         """
         if self.viewer.dragMode() == QtWidgets.QGraphicsView.NoDrag:
-            self.editPixInfo.setText(f"{pos.x()}, {pos.y()}")
+            self.edit_pix_info.setText(f"{pos.x()}, {pos.y()}")
 
     @typing.no_type_check
     @typing.override
@@ -386,11 +386,13 @@ class Window(QtWidgets.QWidget):
             None
 
         """
+        move_to_move = None
         for move, ind in self.index.items():
             if key == ind:
                 print("switching to move", move, ind, key)
                 move_to_move = move
 
+        assert move_to_move is not None
         self.current_node = self.current_node.moves_children[move_to_move]
         self.build_subtree()
         self.display_subtree()

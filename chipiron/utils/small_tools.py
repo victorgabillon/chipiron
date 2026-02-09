@@ -15,7 +15,7 @@ import yaml
 
 from chipiron.utils.logger import chipiron_logger
 
-path = typing.Annotated[str | os.PathLike[str], "path"]
+MyPath = typing.Annotated[str | os.PathLike[str], "path"]
 
 
 class PackageResourceError(FileNotFoundError):
@@ -38,7 +38,7 @@ class PackageNotFoundError(ImportError):
         super().__init__(f"Cannot find package '{package_name}'")
 
 
-def mkdir_if_not_existing(folder_path: path) -> None:
+def mkdir_if_not_existing(folder_path: MyPath) -> None:
     """Create a directory at the specified path.
 
     Args:
@@ -65,7 +65,7 @@ def mkdir_if_not_existing(folder_path: path) -> None:
         chipiron_logger.info("Successfully created the directory %s ", folder_path)
 
 
-def yaml_fetch_args_in_file(path_file: path) -> dict[Any, Any]:
+def yaml_fetch_args_in_file(path_file: MyPath) -> dict[Any, Any]:
     """Fetch arguments from a YAML file.
 
     Args:

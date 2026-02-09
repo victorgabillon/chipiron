@@ -2,13 +2,13 @@
 
 import os.path
 import pickle
+import sys
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Any, cast, no_type_check
 
 import torch
-import torch.optim as optim
 import yaml
 from coral.board_evaluation import (
     PointOfView,
@@ -31,13 +31,14 @@ from coral.neural_networks.nn_model_type import (
 from coral.neural_networks.output_converters.model_output_type import (
     ModelOutputType,
 )
+from torch import optim
 
 from chipiron.environments.types import GameKind
 from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
 from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
     ModelInputRepresentationType,
 )
-from chipiron.utils import path
+from chipiron.utils import MyPath
 from chipiron.utils.dataclass import custom_asdict_factory
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.small_tools import mkdir_if_not_existing
@@ -52,7 +53,7 @@ class NNTrainerConfigError(ValueError):
     def __init__(
         self,
         reuse_existing_model: bool,
-        nn_parameters_file_if_reusing_existing_one: path | None,
+        nn_parameters_file_if_reusing_existing_one: MyPath | None,
     ) -> None:
         """Initialize the error with inconsistent trainer arguments."""
         msg = (
@@ -116,8 +117,8 @@ class NNTrainerArgs:
             representation=ModelInputRepresentationType.PIECE_DIFFERENCE,
         )
     )
-    nn_parameters_file_if_reusing_existing_one: path | None = None
-    specific_saving_folder: path | None = None
+    nn_parameters_file_if_reusing_existing_one: MyPath | None = None
+    specific_saving_folder: MyPath | None = None
     reuse_existing_model: bool = False
     reuse_existing_trainer: bool = False
     starting_lr: float = 0.1
@@ -147,7 +148,7 @@ class NNTrainerArgs:
             )
 
 
-def get_optimizer_file_path_from(folder_path: path) -> str:
+def get_optimizer_file_path_from(folder_path: MyPath) -> str:
     """Return the file path for the optimizer file in the given folder path.
 
     Args:
@@ -161,7 +162,7 @@ def get_optimizer_file_path_from(folder_path: path) -> str:
     return file_path
 
 
-def get_scheduler_file_path_from(folder_path: path) -> str:
+def get_scheduler_file_path_from(folder_path: MyPath) -> str:
     """Get the file path for the scheduler file in the given folder path.
 
     Args:
@@ -175,7 +176,7 @@ def get_scheduler_file_path_from(folder_path: path) -> str:
     return file_path
 
 
-def get_folder_training_copies_path_from(folder_path: path) -> str:
+def get_folder_training_copies_path_from(folder_path: MyPath) -> str:
     """Return the path to the 'training_copies' folder within the given folder path.
 
     Args:
@@ -189,7 +190,7 @@ def get_folder_training_copies_path_from(folder_path: path) -> str:
 
 
 def create_nn_trainer(
-    args: NNTrainerArgs, nn: ChiNN, saving_folder: path
+    args: NNTrainerArgs, nn: ChiNN, saving_folder: MyPath
 ) -> NNPytorchTrainer:
     """Create an instance of NNPytorchTrainer based on the provided arguments and neural network.
 
@@ -281,7 +282,7 @@ def serialize_for_yaml(obj: Any) -> SerializableType:
 
 
 def safe_nn_architecture_save(
-    nn_architecture_args: NeuralNetArchitectureArgs, nn_param_folder_name: path
+    nn_architecture_args: NeuralNetArchitectureArgs, nn_param_folder_name: MyPath
 ) -> None:
     """Save the architecture of a neural network to a file.
 
@@ -303,12 +304,12 @@ def safe_nn_architecture_save(
                 default_flow_style=False,
             )
     except KeyboardInterrupt:
-        exit(-1)
+        sys.exit(-1)
 
 
 def safe_nn_param_save(
     nn: ChiNN,
-    nn_param_folder_name: path,
+    nn_param_folder_name: MyPath,
     file_name: str | None = None,
     training_copy: bool = False,
 ) -> None:
@@ -327,7 +328,7 @@ def safe_nn_param_save(
     nn_file_path_pt, file_name_yaml = get_nn_param_file_path_from(
         folder_path=folder_path, file_name=file_name
     )
-    path_to_param_file: path
+    path_to_param_file: MyPath
     if training_copy:
         now = datetime.now()  # current date and time
         path_to_param_file = os.path.join(
@@ -336,7 +337,7 @@ def safe_nn_param_save(
     else:
         path_to_param_file = nn_file_path_pt
     try:
-        chipiron_logger.info(f"saving to file: {path_to_param_file}")
+        chipiron_logger.info("saving to file: %s", path_to_param_file)
         with open(path_to_param_file, "wb") as file_nnw:
             torch.save(nn.state_dict(), file_nnw)
             nn.log_readable_model_weights_to_file(file_path=file_name_yaml)
@@ -345,10 +346,10 @@ def safe_nn_param_save(
     except KeyboardInterrupt:
         with open(path_to_param_file + "_save", "wb") as file_nnw:
             torch.save(nn.state_dict(), file_nnw)
-        exit(-1)
+        sys.exit(-1)
 
 
-def safe_nn_trainer_save(nn_trainer: NNPytorchTrainer, nn_folder_path: path) -> None:
+def safe_nn_trainer_save(nn_trainer: NNPytorchTrainer, nn_folder_path: MyPath) -> None:
     """Safely saves the optimizer and scheduler of the given NNPytorchTrainer object to files.
 
     Args:
@@ -374,4 +375,4 @@ def safe_nn_trainer_save(nn_trainer: NNPytorchTrainer, nn_folder_path: path) -> 
             pickle.dump(nn_trainer.optimizer, file_optimizer)
         with open(file_scheduler_path + "_save", "wb") as file_scheduler:
             pickle.dump(nn_trainer.scheduler, file_scheduler)
-        exit(-1)
+        sys.exit(-1)

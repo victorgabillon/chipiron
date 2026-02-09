@@ -99,7 +99,9 @@ class Game[StateT: TurnState = TurnState]:
 
         """
         if self._playing_status.is_play():
-            assert action in [i for i in self._current_state.branch_keys]
+            assert action in list(self._current_state.branch_keys), (
+                f"Invalid action: {action}"
+            )
 
             self._action_history.append(
                 self._current_state.branch_name_from_key(key=action)

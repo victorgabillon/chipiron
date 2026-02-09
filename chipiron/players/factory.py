@@ -40,7 +40,6 @@ from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppAr
 from chipiron.players.oracles import PolicyOracle, TerminalOracle, ValueOracle
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
-from chipiron.utils.communication.mailbox import MainMailboxMessage
 from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.queue_protocols import PutQueue
@@ -74,7 +73,6 @@ def create_tag_player(
     implementation_args: ImplementationArgs,
     universal_behavior: bool,
     random_generator: random.Random,
-    queue_progress_player: PutQueue[IsDataclass] | None = None,
     tree_branch_limit: int | None = None,
 ) -> Player[FenPlusHistory, ChessState]:
     """Create the chipiron champion/representative/standard/default player.
@@ -121,7 +119,6 @@ def create_tag_player(
         random_generator=random_generator,
         implementation_args=implementation_args,
         universal_behavior=universal_behavior,
-        queue_progress_player=queue_progress_player,
     )
 
 
@@ -129,7 +126,6 @@ def create_chipiron_player(
     implementation_args: ImplementationArgs,
     universal_behavior: bool,
     random_generator: random.Random,
-    queue_progress_player: PutQueue[IsDataclass] | None = None,
     tree_branch_limit: int | None = None,
 ) -> Player[FenPlusHistory, ChessState]:
     """Create the Chipiron champion/representative/default player.
@@ -151,7 +147,6 @@ def create_chipiron_player(
         implementation_args=implementation_args,
         universal_behavior=universal_behavior,
         random_generator=random_generator,
-        queue_progress_player=queue_progress_player,
         tree_branch_limit=tree_branch_limit,
     )
 
@@ -164,7 +159,6 @@ def create_chess_player(
     random_generator: random.Random,
     implementation_args: ImplementationArgs,
     universal_behavior: bool,
-    queue_progress_player: PutQueue[MainMailboxMessage] | None = None,
 ) -> Player[FenPlusHistory, ChessState]:
     """Create a chess player object.
 
@@ -229,7 +223,6 @@ def create_chess_player(
             )
         ),
         random_generator=random_generator,
-        queue_progress_player=queue_progress_player,
     )
 
 
@@ -239,7 +232,6 @@ def create_player(
     random_generator: random.Random,
     implementation_args: ImplementationArgs,
     universal_behavior: bool,
-    queue_progress_player: PutQueue[IsDataclass] | None = None,
 ) -> Player[FenPlusHistory, ChessState]:
     """Compatibility wrapper for chess player creation using a Syzygy table.
 
@@ -256,7 +248,6 @@ def create_player(
         random_generator=random_generator,
         implementation_args=implementation_args,
         universal_behavior=universal_behavior,
-        queue_progress_player=queue_progress_player,
     )
 
 
@@ -266,7 +257,6 @@ def create_game_player(
     policy_oracle: PolicyOracle[ChessState] | None,
     value_oracle: ValueOracle[ChessState] | None,
     terminal_oracle: TerminalOracle[ChessState] | None,
-    queue_progress_player: PutQueue[MainMailboxMessage] | None,
     implementation_args: ImplementationArgs,
     universal_behavior: bool,
 ) -> GamePlayer[FenPlusHistory, ChessState]:
@@ -289,7 +279,6 @@ def create_game_player(
         value_oracle=value_oracle,
         terminal_oracle=terminal_oracle,
         random_generator=random_generator,
-        queue_progress_player=queue_progress_player,
         implementation_args=implementation_args,
         universal_behavior=universal_behavior,
     )

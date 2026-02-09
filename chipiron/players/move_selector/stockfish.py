@@ -33,6 +33,7 @@ import atomheart.board as boards
 import chess.engine
 from atomheart.board import create_board_chi
 from atomheart.board.utils import FenPlusHistory
+from valanga.game import BranchName, Seed
 from valanga.policy import NotifyProgressCallable, Recommendation
 
 from chipiron.environments.chess.types import ChessState
@@ -42,7 +43,6 @@ from .move_selector_types import MoveSelectorTypes
 
 if TYPE_CHECKING:
     from atomheart import BoardChi
-from valanga.game import BranchName, Seed
 
 
 class StockfishError(RuntimeError):
@@ -98,7 +98,7 @@ class StockfishPlayer:
 
     """
 
-    type: Literal[MoveSelectorTypes.Stockfish]  # for serialization
+    type: Literal[MoveSelectorTypes.STOCKFISH]  # for serialization
     depth: int = 20
     time_limit: float = 0.1
     engine: Any = None
@@ -121,22 +121,19 @@ class StockfishPlayer:
     ) -> Recommendation:
         # seed can be ignored (stockfish is deterministic unless you randomize)
         """Recommend."""
-        best: BranchName = self.select_move(
-            state.board, move_seed=seed
-        ).recommended_name
+        _ = seed  # Stockfish does not use a seed, so this is ignored.
+        _ = notify_progress  # Stockfish does not support progress updates, so this is ignored.
+        best: BranchName = self.select_move(state.board).recommended_name
         return Recommendation(recommended_name=best)
 
     def select_move(
         self,
         board: boards.IBoard,
-        move_seed: int,
-        notify_progress: NotifyProgressCallable | None = None,
     ) -> Recommendation:
         """Select a move based on the given board state and move seed.
 
         Args:
             board (boards.BoardChi): The current board state.
-            move_seed (int): The seed for move selection.
 
         Returns:
             Recommendation: A Recommendation object representing the selected move.

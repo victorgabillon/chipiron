@@ -8,8 +8,6 @@ from valanga import Color
 from chipiron.players.game_player import GamePlayer
 from chipiron.players.observer_wiring import ObserverWiring
 from chipiron.players.player_args import PlayerFactoryArgs
-from chipiron.utils.communication.mailbox import MainMailboxMessage
-from chipiron.utils.queue_protocols import PutQueue
 
 # Placeholder types until checkers runtime exists
 CheckersSnap = Any
@@ -28,7 +26,6 @@ class BuildCheckersGamePlayerArgs:
 
 def build_checkers_game_player(
     args: BuildCheckersGamePlayerArgs,
-    queue_out: PutQueue[MainMailboxMessage],
 ) -> GamePlayer[CheckersSnap, CheckersRuntime]:
     """Build checkers game player."""
     raise NotImplementedError("checkers player building not wired yet")

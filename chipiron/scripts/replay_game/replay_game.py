@@ -10,7 +10,7 @@ import dacite
 import yaml
 from atomheart.board.board_chi import BoardChi
 from atomheart.board.factory import create_board_chi
-from atomheart.board.utils import Fen, FenPlusHistory
+from atomheart.board.utils import Fen, FenPlusHistory  # pylint: disable=unused-import
 from PySide6.QtWidgets import QApplication
 
 from chipiron.displays.gui_replay_games import MainWindow

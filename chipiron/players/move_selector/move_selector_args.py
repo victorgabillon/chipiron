@@ -36,9 +36,9 @@ _MOVE_SELECTOR_ARGS_TYPES = (
 )
 
 _MOVE_SELECTOR_ARGS_BY_TYPE: dict[MoveSelectorTypes, type[Any]] = {
-    MoveSelectorTypes.TreeAndValue: TreeAndValueAppArgs,
-    MoveSelectorTypes.CommandLineHuman: human.CommandLineHumanPlayerArgs,
-    MoveSelectorTypes.GuiHuman: human.GuiHumanPlayerArgs,
-    MoveSelectorTypes.Random: random.Random,
-    MoveSelectorTypes.Stockfish: stockfish.StockfishPlayer,
+    MoveSelectorTypes.TREE_AND_VALUE: TreeAndValueAppArgs,
+    MoveSelectorTypes.COMMAND_LINE_HUMAN: human.CommandLineHumanPlayerArgs,
+    MoveSelectorTypes.GUI_HUMAN: human.GuiHumanPlayerArgs,
+    MoveSelectorTypes.RANDOM: random.Random,
+    MoveSelectorTypes.STOCKFISH: stockfish.StockfishPlayer,
 }

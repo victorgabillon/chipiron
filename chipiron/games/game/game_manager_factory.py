@@ -18,7 +18,7 @@ from chipiron.displays.gui_protocol import (
     scope_for_new_game,
 )
 from chipiron.displays.gui_publisher import GuiPublisher
-from chipiron.environments.environment import EnvDeps, Environment, make_environment
+from chipiron.environments.environment import EnvDeps, make_environment
 from chipiron.games.game.game_args import GameArgs
 from chipiron.games.game.game_playing_status import GamePlayingStatus
 from chipiron.players import PlayerFactoryArgs
@@ -28,7 +28,7 @@ from chipiron.players.boardevaluators.board_evaluator import (
 )
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
-from chipiron.utils import path
+from chipiron.utils import MyPath
 from chipiron.utils.communication.gui_messages.gui_messages import (
     make_players_info_payload,
 )
@@ -40,6 +40,7 @@ from .progress_collector import PlayerProgressCollectorObservable
 
 if TYPE_CHECKING:
     import chipiron.players as players_m
+    from chipiron.environments.base import Environment
     from chipiron.players.factory_higher_level import (
         MoveFunction,
         PlayerObserverFactory,
@@ -81,7 +82,7 @@ class GameManagerFactory:
     # TODO: we might want to plit this into various part, like maybe a player factory, not sure, think about it
 
     env_deps: EnvDeps
-    output_folder_path: path | None
+    output_folder_path: MyPath | None
     main_thread_mailbox: queue.Queue[MainMailboxMessage]
     game_manager_state_evaluator: IGameStateEvaluator[Any]
     move_factory: MoveFactory

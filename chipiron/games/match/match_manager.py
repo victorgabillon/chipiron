@@ -2,6 +2,7 @@
 
 import os
 import queue
+import time
 from typing import TYPE_CHECKING, Any
 
 from valanga import Color
@@ -16,10 +17,11 @@ from chipiron.games.match.match_results import IMatchResults, MatchReport, Match
 from chipiron.games.match.match_results_factory import MatchResultsFactory
 from chipiron.games.match.observable_match_result import ObservableMatchResults
 from chipiron.players import PlayerFactoryArgs
-from chipiron.utils import path
+from chipiron.utils import MyPath
 from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:
+    from chipiron.environments.types import GameKind
     from chipiron.games.game.game_manager import GameManager
 
 
@@ -43,7 +45,7 @@ class MatchManager:
         game_manager_factory: GameManagerFactory,
         game_args_factory: GameArgsFactory,
         match_results_factory: MatchResultsFactory,
-        output_folder_path: path | None = None,
+        output_folder_path: MyPath | None = None,
     ) -> None:
         """Initialize a MatchManager object.
 
@@ -62,6 +64,8 @@ class MatchManager:
         self.output_folder_path = output_folder_path
         self.match_results_factory = match_results_factory
         self.game_args_factory = game_args_factory
+        self._last_scope: Scope | None = None
+        self._last_game_kind: GameKind | None = None
         self.print_info()
 
     def print_info(self) -> None:
@@ -76,12 +80,8 @@ class MatchManager:
             None
 
         """
-        chipiron_logger.info(
-            f"player one is {self.player_one_id}",
-        )
-        chipiron_logger.info(
-            f"player two is {self.player_two_id}",
-        )
+        chipiron_logger.info("player one is %s", self.player_one_id)
+        chipiron_logger.info("player two is %s", self.player_two_id)
 
     def play_one_match(self) -> MatchReport:
         """Plays one match and returns the match report.
@@ -149,8 +149,6 @@ class MatchManager:
             # ad hoc waiting time in case we play against a human and the game is finished
             # (so that the human as the time to view the final position before the automatic start of a new game)
             if player_color_to_factory_args[Color.WHITE].player_args.is_human():
-                import time
-
                 time.sleep(30)
 
             game_number += 1
@@ -226,8 +224,8 @@ class MatchManager:
 
         """
         if self.output_folder_path is not None:
-            path_file: path = os.path.join(self.output_folder_path, "gameStats.txt")
-            with open(path_file, "a") as the_file:
+            path_file: MyPath = os.path.join(self.output_folder_path, "gameStats.txt")
+            with open(path_file, "a", encoding="utf-8") as the_file:
                 the_file.write(str(match_results))
 
     def save_match_report_to_file(self, match_report: MatchReport) -> None:
@@ -237,6 +235,7 @@ class MatchManager:
             match_report (MatchReport): The match report to be saved.
 
         """
+        _ = match_report  # in case we want to use it in the future, for now we just save the match report as a string
         if self.output_folder_path is not None:
             ...
 

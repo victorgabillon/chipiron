@@ -32,9 +32,9 @@ dependencies = [
     "zstandard",
     "rich",
     "valanga>=0.1.14",
-    "atomheart>=0.1.7  @ file:/home/pompote/oldata/victor/atomheart/",
-    "algorhino-coral>=0.1.10",
-    "algorhino-anemone>=0.1.11 @ file:/home/pompote/oldata/victor/anemone/",
+    "atomheart>=0.1.7",   
+    "algorhino-coral>=0.1.11",
+    "algorhino-anemone>=0.1.13",
 ]
 
 
@@ -210,11 +210,8 @@ extension-pkg-whitelist = ["PyQt5", "PySide6"]
 max-line-length = 88
 
 #[tool.pylint.messages_control]
-disable = [
-    "C0301",
-    "unnecessary-ellipsis",
-    "W0511","R0913","R0917","R0903","R0914","R0912","R0915","R0911","R0902"
-    ]
+disable = ["C0301","W0511","R0903",    "unnecessary-ellipsis","R0902","R0913","R0912","R0915","R0917","R0911","R0914"]
+
 
 [tool.pylint.typecheck]
 # Optional: same as init-hook in .pylintrc
@@ -293,10 +290,10 @@ deps = [
   "gdown",
   "zstandard",
   "rich",
-    "valanga>=0.1.14",
-    "atomheart>=0.1.7",
-    "algorhino-coral>=0.1.10",
-    "algorhino-anemone>=0.1.11 @ file:/home/juno/anemone",
+      "valanga>=0.1.14",
+    "atomheart>=0.1.7",   
+    "algorhino-coral>=0.1.11",
+    "algorhino-anemone>=0.1.13",
 ]
 set_env = { PYTHONPATH = "{toxinidir}" }
 commands = [
@@ -333,10 +330,10 @@ deps = [
   "gdown",
   "zstandard",
   "rich",
-     "valanga>=0.1.14",
-    "atomheart>=0.1.7",
-    "algorhino-coral>=0.1.10",
-    "algorhino-anemone>=0.1.11",
+      "valanga>=0.1.14",
+    "atomheart>=0.1.7",   
+    "algorhino-coral>=0.1.11",
+    "algorhino-anemone>=0.1.13",
 ]
 set_env = { MYPYPATH = "{toxinidir}" }
 commands = [

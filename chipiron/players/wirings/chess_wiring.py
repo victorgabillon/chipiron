@@ -20,8 +20,6 @@ from chipiron.players.factory import create_game_player
 from chipiron.players.game_player import GamePlayer
 from chipiron.players.observer_wiring import ObserverWiring
 from chipiron.scripts.chipiron_args import ImplementationArgs
-from chipiron.utils.communication.mailbox import MainMailboxMessage
-from chipiron.utils.queue_protocols import PutQueue
 
 
 @dataclass(frozen=True)
@@ -37,7 +35,6 @@ class BuildChessGamePlayerArgs:
 
 def build_chess_game_player(
     args: BuildChessGamePlayerArgs,
-    queue_out: PutQueue[MainMailboxMessage],
 ) -> GamePlayer[FenPlusHistory, ChessState]:
     """Build chess game player."""
     create_syzygy = create_syzygy_factory(
@@ -53,7 +50,6 @@ def build_chess_game_player(
         policy_oracle=policy_oracle,
         value_oracle=value_oracle,
         terminal_oracle=terminal_oracle,
-        queue_progress_player=queue_out,
         implementation_args=args.implementation_args,
         universal_behavior=args.universal_behavior,
     )

@@ -4,8 +4,6 @@ from dataclasses import dataclass
 from typing import Protocol, TypeVar
 
 from chipiron.players.game_player import GamePlayer
-from chipiron.utils.communication.mailbox import MainMailboxMessage
-from chipiron.utils.queue_protocols import PutQueue
 
 SnapT_contra = TypeVar("SnapT_contra", contravariant=True)
 RuntimeT = TypeVar("RuntimeT")
@@ -19,7 +17,6 @@ class BuildGamePlayer(Protocol[SnapT_contra, RuntimeT, BuildArgsT_contra]):
     def __call__(
         self,
         args: BuildArgsT_contra,
-        queue_out: PutQueue[MainMailboxMessage],
     ) -> GamePlayer[SnapT_contra, RuntimeT]:
         """Invoke the callable instance."""
         ...

@@ -466,7 +466,7 @@ def generate_inputs(
                 )
                 gui_args.match_args.player_one_overwrite = partial_op_player_args(
                     main_move_selector=partial_op_tree_and_value_player_args(
-                        type=MoveSelectorTypes.TreeAndValue,
+                        type=MoveSelectorTypes.TREE_AND_VALUE,
                         stopping_criterion=partial_op_tree_branch_limit_args(
                             type=StoppingCriterionTypes.TREE_BRANCH_LIMIT,
                             tree_branch_limit=tree_branch_limit_white,
@@ -480,7 +480,7 @@ def generate_inputs(
                 )
                 gui_args.match_args.player_two_overwrite = partial_op_player_args(
                     main_move_selector=partial_op_tree_and_value_player_args(
-                        type=MoveSelectorTypes.TreeAndValue,
+                        type=MoveSelectorTypes.TREE_AND_VALUE,
                         stopping_criterion=partial_op_tree_branch_limit_args(
                             type=StoppingCriterionTypes.TREE_BRANCH_LIMIT,
                             tree_branch_limit=tree_branch_limit_black,
