@@ -27,7 +27,7 @@ dependencies = [
     "pyarrow",
     "gprof2dot",
     "mlflow",
-    "parsley_coco>=0.1.30",
+    "parsley_coco>=0.1.31 @file:/home/juno/parsley",
     "gdown",
     "zstandard",
     "rich",
