@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chipiron"
-version = "0.1.10"
+version = "0.2.0"
 description = "chipiron plays chess"
 keywords = ["chess", "AI", "torch"]
 classifiers = [
@@ -27,14 +27,14 @@ dependencies = [
     "pyarrow",
     "gprof2dot",
     "mlflow",
-    "parsley_coco>=0.1.32",
+    "parsley_coco>=0.1.34",
     "gdown",
     "zstandard",
     "rich",
     "valanga>=0.1.14",
     "atomheart>=0.1.7",   
     "algorhino-coral>=0.1.11",
-    "algorhino-anemone>=0.1.13",
+    "algorhino-anemone>=0.1.14",
 ]
 
 
@@ -286,14 +286,14 @@ deps = [
   "pyarrow",
   "gprof2dot",
   "mlflow",
-  "parsley_coco>=0.1.32",
+  "parsley_coco>=0.1.34",
   "gdown",
   "zstandard",
   "rich",
       "valanga>=0.1.14",
     "atomheart>=0.1.7",   
     "algorhino-coral>=0.1.11",
-    "algorhino-anemone>=0.1.13",
+    "algorhino-anemone>=0.1.14",
 ]
 set_env = { PYTHONPATH = "{toxinidir}" }
 commands = [
@@ -326,14 +326,14 @@ deps = [
   "pyarrow",
   "gprof2dot",
   "mlflow",
-  "parsley_coco>=0.1.32",
+  "parsley_coco>=0.1.34",
   "gdown",
   "zstandard",
   "rich",
       "valanga>=0.1.14",
     "atomheart>=0.1.7",   
     "algorhino-coral>=0.1.11",
-    "algorhino-anemone>=0.1.13",
+    "algorhino-anemone>=0.1.14",
 ]
 set_env = { MYPYPATH = "{toxinidir}" }
 commands = [

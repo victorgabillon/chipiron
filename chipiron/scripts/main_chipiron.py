@@ -99,7 +99,6 @@ def get_script_and_args() -> tuple[
 
 def main() -> None:
     """Run the main function."""
-
     # the type of script to be executed
     script_type: ScriptType
 

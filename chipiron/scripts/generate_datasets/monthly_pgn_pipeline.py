@@ -377,7 +377,7 @@ def final_save(
     extra_attrs: dict[str, Any] | None = None,
     postprocess: Callable[[DataFrame], None] | None = None,
 ) -> None:
-    """Final save wrapper used by scripts."""
+    """Save final dataset and log summary statistics, with support for extra metadata and postprocessing."""
     if not the_dic:
         return
 
@@ -562,7 +562,7 @@ def finalize_monthly_dataset_simple(
     postprocess: Callable[[DataFrame], None] | None = None,
     extra_attrs: dict[str, Any] | None = None,
 ) -> None:
-    """Simple wrapper to finalize a dataset with common parameters."""
+    """Finalize dataset with explicit month/game/move counts, for cases where totals are computed separately."""
     finalize_monthly_dataset(
         cfg=cfg,
         the_dic=the_dic,

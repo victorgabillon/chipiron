@@ -54,11 +54,9 @@ class MatchConfigTag(StrEnum):
             MatchSettingsArgs: The parsed match settings.
 
         """
-        match_args: MatchSettingsArgs = (
-            parsley.resolve_yaml_file_to_base_dataclass(
-                yaml_path=str(self.get_yaml_file_path()),
-                base_cls=MatchSettingsArgs,
-                raise_error_with_nones=False,
-            )
+        match_args: MatchSettingsArgs = parsley.resolve_yaml_file_to_base_dataclass(
+            yaml_path=str(self.get_yaml_file_path()),
+            base_cls=MatchSettingsArgs,
+            raise_error_with_nones=False,
         )
         return match_args
