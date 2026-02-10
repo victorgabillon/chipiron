@@ -142,6 +142,7 @@ class MatchGUIStartingPosition(StrEnum):
 
     STANDARD = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
     ENDGAME = "6k1/p7/8/8/7N/7K/2N5/8 w - - 0 1"
+    CRUSHING_WHITE = "6k1/5ppp/8/q7/3Q4/5Q2/6PP/6K1 w - - 0 1"
 
     def get_fen(self) -> str:
         """Get the FEN string corresponding to the starting position.
@@ -156,6 +157,7 @@ class MatchGUIStartingPosition(StrEnum):
 STARTING_POSITION_OPTIONS_DICT: dict[str, MatchGUIStartingPosition] = {
     "Standard": MatchGUIStartingPosition.STANDARD,
     "End game": MatchGUIStartingPosition.ENDGAME,
+    "Crushing winning (White)": MatchGUIStartingPosition.CRUSHING_WHITE,
 }
 
 
