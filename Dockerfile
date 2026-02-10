@@ -23,8 +23,8 @@ ENV LICHESS_PGN_FILE=external_data/lichess_pgn/lichess_db_standard_rated_2015-03
 ENV STOCKFISH_BINARY_PATH=external_data/stockfish/stockfish/stockfish-ubuntu-x86-64-avx2
 
 # Set MLflow paths
-ENV ML_FLOW_URI_PATH=sqlite:///chipiron/scripts/default_output_folder/mlflow_data/mlruns.db
-ENV ML_FLOW_URI_PATH_TEST=sqlite:///chipiron/scripts/default_output_folder/mlflow_data/mlruns_test.db
+ENV ML_FLOW_URI_PATH=sqlite:///src/chipiron/scripts/default_output_folder/mlflow_data/mlruns.db
+ENV ML_FLOW_URI_PATH_TEST=sqlite:///src/chipiron/scripts/default_output_folder/mlflow_data/mlruns_test.db
 
 # 1. Installer Python + pip et dépendances
 RUN set -xe \
@@ -80,7 +80,7 @@ COPY .env .env
 
 RUN make init-no-syzygy
 
-RUN chmod -R 777 chipiron
+RUN chmod -R 777 src/chipiron
 RUN chmod -R 777 tests
 
 RUN addgroup --system test
@@ -88,4 +88,4 @@ RUN adduser --system testuser --ingroup test
 
 USER testuser:test
 
-CMD ["/app/.venv/bin/python", "/app/chipiron/scripts/main_chipiron.py"]
+CMD ["/app/.venv/bin/python", "-m", "chipiron.scripts.main_chipiron"]

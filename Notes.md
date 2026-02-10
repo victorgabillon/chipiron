@@ -4,7 +4,7 @@
 ## MLFlow
 ```
 conda activate chipiron3.12
-mlflow ui --backend-store-uri sqlite:///chipiron/scripts/default_output_folder/mlflow_data/mlruns.db
+mlflow ui --backend-store-uri sqlite:///src/chipiron/scripts/default_output_folder/mlflow_data/mlruns.db
 ```
 
 

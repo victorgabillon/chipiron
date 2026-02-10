@@ -63,9 +63,9 @@ DATA_DESTINATION?=${ROOT_DIR}/$(EXTERNAL_DATA_DIR)
 
 .PHONY: init init-no-syzygy lichess-pgn stockfish syzygy-tables
 
-init: chipiron/requirements $(EXTERNAL_DATA_DIR)/ $(SYZYGY_TABLES_DIR)/.syzygy-complete stockfish
+init: src/chipiron/requirements $(EXTERNAL_DATA_DIR)/ $(SYZYGY_TABLES_DIR)/.syzygy-complete stockfish
 
-init-no-syzygy: chipiron/requirements $(EXTERNAL_DATA_DIR)/ stockfish
+init-no-syzygy: src/chipiron/requirements $(EXTERNAL_DATA_DIR)/ stockfish
 
 syzygy-tables: $(SYZYGY_TABLES_DIR)/.syzygy-complete
 
@@ -84,7 +84,7 @@ ${STOCKFISH_DESTINATION}/stockfish/stockfish-ubuntu-x86-64-avx2:
 	chmod +x stockfish/stockfish-ubuntu-x86-64-avx2
 	echo "Stockfish installed at ${STOCKFISH_DESTINATION}stockfish/stockfish-ubuntu-x86-64-avx2"
 
-chipiron/requirements:
+src/chipiron/requirements:
 	pip install -e .
 
 $(SYZYGY_TABLES_DIR)/.syzygy-complete:
