@@ -1,6 +1,7 @@
 name: Uniform
 main_move_selector:
   type: TreeAndValue
+  accelerate_when_winning: True
   anemone_args: 
     type: TreeAndValue
     node_selector:

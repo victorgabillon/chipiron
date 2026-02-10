@@ -1,6 +1,7 @@
 name: SequoolOnlyPromosing
 main_move_selector:
   type: TreeAndValue
+  accelerate_when_winning: True
   node_selector:
     type: Sequool
     recursive_selection_on_all_nodes: False
