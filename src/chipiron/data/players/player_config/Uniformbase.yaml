@@ -1,6 +1,7 @@
 name: Uniformbase
 main_move_selector:
   type: TreeAndValue
+  accelerate_when_winning: True
   node_selector:
     type: Uniform
 
