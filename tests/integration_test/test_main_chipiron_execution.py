@@ -5,7 +5,7 @@ import subprocess
 import sys
 
 SCRIPT_PATH = os.path.join(
-    os.path.dirname(__file__), "../../chipiron/scripts/main_chipiron.py"
+    os.path.dirname(__file__), "../../src/chipiron/scripts/main_chipiron.py"
 )
 
 

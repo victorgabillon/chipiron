@@ -1,0 +1,13 @@
+base_script_args:
+  experiment_output_folder: null
+  logging_levels:
+    chipiron: 20
+    parsley: 40
+  profiling: false
+  relative_script_instance_experiment_output_folder: Tuesday-02-10-2026--17:51:04:299191
+  seed: 0
+  testing: false
+  universal_behavior: false
+implementation_args:
+  use_board_modification: false
+  use_rust_boards: false

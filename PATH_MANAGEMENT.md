@@ -15,7 +15,7 @@ GUI_DIR=external_data/gui
 ```
 
 ### 2. Python Integration
-Python automatically loads `.env` variables in `chipiron/utils/path_variables.py`:
+Python automatically loads `.env` variables in `src/chipiron/utils/path_variables.py`:
 ```python
 from chipiron.utils.path_variables import GUI_DIR, STOCKFISH_DIR
 # These now use .env values with fallbacks
@@ -49,7 +49,7 @@ ENV STOCKFISH_DIR=external_data/stockfish
 ### Viewing Current Paths
 ```bash
 # Python paths with environment integration
-python chipiron/utils/path_variables.py
+python -m chipiron.utils.path_variables
 
 # Validate consistency across all systems
 python validate_paths.py
@@ -70,7 +70,7 @@ make -p | grep "STOCKFISH_DESTINATION\|EXTERNAL_DATA_DIR"
 python -c "from chipiron.utils.path_variables import GUI_DIR; print(GUI_DIR)"
 
 # View all paths with debugging info
-python chipiron/utils/path_variables.py
+python -m chipiron.utils.path_variables
 
 # Test Makefile variable expansion
 make -n stockfish

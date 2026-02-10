@@ -1,9 +1,9 @@
 # The purpose of a MANIFEST.in file is to tell Python packaging tools (like setuptools) which non-code files (such as data, configs, docs, etc.) should be included in your source distribution (sdist).
 # By default, only Python files are included; MANIFEST.in lets you add extra files or folders needed for your package to work correctly.
 
-recursive-include chipiron/data/players *.yaml *.pt
-recursive-include chipiron/data/settings *.yaml
-recursive-include chipiron/data/starting_boards *.text
+recursive-include src/chipiron/data/players *.yaml *.pt
+recursive-include src/chipiron/data/settings *.yaml
+recursive-include src/chipiron/data/starting_boards *.text
 recursive-include tests/data/trees *.yaml
 
 

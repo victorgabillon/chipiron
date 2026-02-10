@@ -1,0 +1,24 @@
+nn_trainer_args:
+  neural_network_folder_path: 'src/chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/test_to_keep'
+  reuse_existing_model:  False
+  reuse_existing_trainer:  False
+  starting_lr: .001
+  momentum_op: .9
+  scheduler_step_size: 1
+  scheduler_gamma: .5
+  saving_intermediate_copy: True
+  batch_size_train: 32
+  batch_size_test: 10
+  saving_interval: 1000
+  saving_intermediate_copy_interval: 100000
+  min_interval_lr_change: 100000
+  min_lr: .00001
+  epochs_number: 1
+dataset_args:
+  train_file_name: 'src/chipiron/scripts/learn_nn_supervised/tests/small_dataset.pi'
+  test_file_name: 'src/chipiron/scripts/learn_nn_supervised/tests/small_dataset.pi'
+  preprocessing_data_set: False
+base_script_args:
+  seed: 11
+  testing: True
+
