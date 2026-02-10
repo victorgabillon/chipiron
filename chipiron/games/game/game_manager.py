@@ -267,7 +267,7 @@ class GameManager[StateT: TurnState = TurnState]:
 
             case CmdHumanMoveUci():
                 # Convert GUI move into the SAME move pipeline as players
-                if message.payload.corresponding_fen is None:
+                if message.payload.corresponding_state_tag is None:
                     chipiron_logger.info(
                         "[gui] MOVE REJECTED: missing corresponding_state_tag for %s",
                         message.payload.move_uci,
@@ -276,7 +276,7 @@ class GameManager[StateT: TurnState = TurnState]:
                 self._handle_move_attempt(
                     source="gui",
                     branch_name=message.payload.move_uci,
-                    corresponding_state_tag=message.payload.corresponding_fen,
+                    corresponding_state_tag=message.payload.corresponding_state_tag,
                     player_name=self.player_color_to_id[
                         state.turn
                     ],  # or message.payload.player_name if you have it
