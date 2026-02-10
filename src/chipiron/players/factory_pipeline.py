@@ -67,6 +67,7 @@ def create_player_with_pipeline(
         main_move_selector = move_selector_factory.create_tree_and_value_move_selector(
             args=main_selector_args.anemone_args,
             state_type=state_type,
+            accelerate_when_winning=main_selector_args.accelerate_when_winning,
             master_state_evaluator=master_state_evaluator,
             state_representation_factory=None,
             random_generator=random_generator,

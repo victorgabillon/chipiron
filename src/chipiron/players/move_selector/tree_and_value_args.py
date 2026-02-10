@@ -38,4 +38,5 @@ class TreeAndValueAppArgs:
 
     anemone_args: AnemoneTreeArgs
     evaluator_args: NodeEvaluatorArgs
+    accelerate_when_winning: bool = False
     type: Literal[MoveSelectorTypes.TREE_AND_VALUE] = MoveSelectorTypes.TREE_AND_VALUE
