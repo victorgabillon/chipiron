@@ -107,6 +107,8 @@ class MainWindow(QWidget):
         """
         super().__init__()
 
+        self.current_state_tag = None
+
         self.play_button_clicked_last_time: float | None = None
         self.pause_button_clicked_last_time: float | None = None
 
@@ -381,61 +383,62 @@ class MainWindow(QWidget):
     @typing.override
     @Slot(QWidget)
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
-        """Handle left mouse clicks and enable moving chess pieces by.
-
-        clicking on a chess piece and then the target square.
-
-        Moves must be made according to the rules of chess because
-        illegal moves are suppressed.
+        """Handle mouse press events on the chessboard.
         """
-        if (
+        if not (
             event.x() <= self.board_size
             and event.y() <= self.board_size
             and event.buttons() == Qt.LeftButton
             and self.margin < event.x() < self.board_size - self.margin
             and self.margin < event.y() < self.board_size - self.margin
         ):
-            file = int((event.x() - self.margin) / self.square_size)
-            rank = 7 - int((event.y() - self.margin) / self.square_size)
-            square = chess.square(file, rank)
-            piece = self.board.piece_at(square)
-            self.coordinates = f"{chr(file + 97)}{rank + 1}"
-            if self.piece_to_move[0] is not None:
-                try:
-                    all_moves_keys: list[MoveKey] = self.board.legal_moves.get_all()
-                    all_legal_moves_uci: list[MoveUci] = [
-                        self.board.legal_moves.generated_moves[move_key].uci()
-                        for move_key in all_moves_keys
-                    ]
-                    move: chess.Move = chess.Move.from_uci(
-                        f"{self.piece_to_move[1]}{self.coordinates}"
-                    )
-                    move_promote: chess.Move = chess.Move.from_uci(
-                        f"{self.piece_to_move[1]}{self.coordinates}q"
-                    )
-                    if move.uci() in all_legal_moves_uci:
-                        self.send_move_to_main_thread(move_uci=move.uci())
-                    elif move_promote.uci() in all_legal_moves_uci:
-                        self.choice_promote()
-                        self.send_move_to_main_thread(
-                            move_uci=self.move_promote_asked.uci()
-                        )
-                    else:
-                        legal_moves_uci: list[MoveUci] = [
-                            self.board.get_uci_from_move_key(move_key)
-                            for move_key in all_moves_keys
-                        ]
-                        chipiron_logger.info(
-                            "Looks like the move %s is a wrong move.. "
-                            "The legals moves are %s in %s",
-                            move,
-                            legal_moves_uci,
-                            self.board,
-                        )
-                except ValueError:
-                    chipiron_logger.info("Oops!  Doubleclicked?  Try again...")
-                    piece = None
-                self.piece_to_move = [piece, self.coordinates]
+            return
+
+        file = int((event.x() - self.margin) / self.square_size)
+        rank = 7 - int((event.y() - self.margin) / self.square_size)
+        square = chess.square(file, rank)
+        piece = self.board.piece_at(square)
+        coord = f"{chr(file + 97)}{rank + 1}"
+        self.coordinates = coord
+
+        # --- FIRST CLICK: just select ---
+        if self.piece_to_move[1] is None:
+            self.piece_to_move = [piece, coord]
+            print("selected", coord, "piece", piece)
+            return
+
+        # --- SECOND CLICK: attempt move from stored square ---
+        from_sq = self.piece_to_move[1]
+        try:
+            all_moves_keys: list[MoveKey] = self.board.legal_moves.get_all()
+            all_legal_moves_uci: list[MoveUci] = [
+                self.board.legal_moves.generated_moves[move_key].uci()
+                for move_key in all_moves_keys
+            ]
+
+            move = chess.Move.from_uci(f"{from_sq}{coord}")
+            move_promote = chess.Move.from_uci(f"{from_sq}{coord}q")
+
+            print("trying", move.uci(), "turn", self.board.turn)
+
+            if move.uci() in all_legal_moves_uci:
+                self.send_move_to_main_thread(move_uci=move.uci())
+                self.piece_to_move = [None, None]
+                return
+
+            if move_promote.uci() in all_legal_moves_uci:
+                self.choice_promote()
+                self.send_move_to_main_thread(move_uci=self.move_promote_asked.uci())
+                self.piece_to_move = [None, None]
+                return
+
+            # illegal: treat this click as a new selection for UX
+            print("illegal move; reselecting", coord)
+            self.piece_to_move = [piece, coord]
+
+        except ValueError:
+            chipiron_logger.info("Oops! Doubleclicked? Try again...")
+            self.piece_to_move = [None, None]
 
     def send_move_to_main_thread(self, move_uci: MoveUci) -> None:
         """Send a move to the main thread for processing.
@@ -454,7 +457,7 @@ class MainWindow(QWidget):
             scope=self.scope,
             payload=CmdHumanMoveUci(
                 move_uci=str(move_uci),
-                corresponding_fen=self.board.fen,
+                corresponding_state_tag=self.current_state_tag,
                 color_to_play=self.board.turn,
             ),
         )
@@ -636,9 +639,13 @@ class MainWindow(QWidget):
 
         match payload:
             case UpdStateChess():
+                self.current_state_tag = payload.state_tag
+
                 self.board = self.board_factory(
                     fen_with_history=payload.fen_plus_history
                 )
+
+
                 self.draw_board()
                 self.display_move_history()
 

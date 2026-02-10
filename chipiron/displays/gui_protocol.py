@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Never
 
 from atomheart.board.utils import FenPlusHistory
-from valanga import Color
+from valanga import Color, StateTag
 from valanga.evaluations import StateEvaluation
 
 from chipiron.environments.types import GameKind
@@ -63,6 +63,7 @@ def assert_never(x: Never) -> Never:
 class UpdStateChess:
     """Snapshot update for a chess position."""
 
+    state_tag: StateTag
     fen_plus_history: FenPlusHistory
     seed: int | None = None
 
@@ -157,7 +158,7 @@ class CmdHumanMoveUci:
     """Command carrying a human UCI move and optional context."""
 
     move_uci: str
-    corresponding_fen: str | None = None
+    corresponding_state_tag: StateTag | None = None
     color_to_play: Color | None = None
 
 
