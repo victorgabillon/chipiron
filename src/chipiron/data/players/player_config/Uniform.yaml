@@ -5,7 +5,11 @@ main_move_selector:
   anemone_args: 
     type: TreeAndValue
     node_selector:
-      type: Uniform
+      type: Composed
+      priority:
+        type: PriorityNoop
+      base:
+        type: Uniform
     opening_type: all_children
     recommender_rule:
       type: softmax
