@@ -34,7 +34,7 @@ dependencies = [
     "valanga>=0.1.14",
     "atomheart>=0.1.7",   
     "algorhino-coral>=0.1.11",
-    "algorhino-anemone>=0.1.14",
+    "algorhino-anemone>=0.1.15",
 ]
 
 
@@ -294,7 +294,7 @@ deps = [
       "valanga>=0.1.14",
     "atomheart>=0.1.7",   
     "algorhino-coral>=0.1.11",
-    "algorhino-anemone>=0.1.14",
+    "algorhino-anemone>=0.1.15",
 ]
 set_env = { PYTHONPATH = "{toxinidir}/src" }
 commands = [
@@ -334,7 +334,7 @@ deps = [
       "valanga>=0.1.14",
     "atomheart>=0.1.7",   
     "algorhino-coral>=0.1.11",
-    "algorhino-anemone>=0.1.14",
+    "algorhino-anemone>=0.1.15",
 ]
 set_env = { MYPYPATH = "{toxinidir}/src" }
 commands = [
