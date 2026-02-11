@@ -57,3 +57,16 @@ chipiron/scripts/learn_from_scratch_value_and_fixed_boards/learn_from_scratch_ou
 .*.lb# Local environment configuration
 .env.local
 chipiron/scripts/profiling/benchmark_reports/*
+
+
+# Script outputs (generated)
+src/chipiron/scripts/**/outputs/**
+src/chipiron/scripts/**/learn_nn_supervised_outputs/**
+src/chipiron/scripts/**/learn_from_scratch_outputs/**
+
+# Generated test artifacts under scripts
+src/chipiron/scripts/**/tests/tests_outputs/**
+src/chipiron/scripts/**/tests/**/tests_outputs/**
+
+# Local zips / ad-hoc bundles
+*.zip
