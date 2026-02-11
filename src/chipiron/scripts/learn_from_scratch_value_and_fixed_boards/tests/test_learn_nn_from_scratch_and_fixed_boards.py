@@ -1,10 +1,11 @@
 """Module for test learn nn from scratch and fixed boards."""
+# pylint: disable=duplicate-code
 
 from typing import Any
 
 from parsley import make_partial_dataclass_with_optional_paths
 
-import chipiron.scripts as scripts
+from chipiron import scripts
 from chipiron.learningprocesses.nn_trainer.factory import NNTrainerArgs
 from chipiron.players.boardevaluators.datasets.datasets import DataSetArgs
 from chipiron.players.player_ids import PlayerConfigTag

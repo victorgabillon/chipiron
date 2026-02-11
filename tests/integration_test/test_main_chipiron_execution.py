@@ -33,7 +33,7 @@ def run_with_live_output(cmd, env):
     return returncode, output
 
 
-def test_main_chipiron_one_match_executes():
+def test_main_chipiron_one_match_executes() -> None:
     """Test main chipiron one match executes."""
     cmd = [
         sys.executable,

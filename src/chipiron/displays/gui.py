@@ -29,7 +29,7 @@ from PySide6.QtWidgets import (
     QTableWidgetItem,
     QWidget,
 )
-from valanga import Color
+from valanga import Color, StateTag
 from valanga.evaluations import FloatyStateEvaluation, ForcedOutcome, StateEvaluation
 
 from chipiron.displays.gui_protocol import (
@@ -107,7 +107,7 @@ class MainWindow(QWidget):
         """
         super().__init__()
 
-        self.current_state_tag = None
+        self.current_state_tag: StateTag | None = None
 
         self.play_button_clicked_last_time: float | None = None
         self.pause_button_clicked_last_time: float | None = None
@@ -383,8 +383,7 @@ class MainWindow(QWidget):
     @typing.override
     @Slot(QWidget)
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
-        """Handle mouse press events on the chessboard.
-        """
+        """Handle mouse press events on the chessboard."""
         if not (
             event.x() <= self.board_size
             and event.y() <= self.board_size
@@ -644,7 +643,6 @@ class MainWindow(QWidget):
                 self.board = self.board_factory(
                     fen_with_history=payload.fen_plus_history
                 )
-
 
                 self.draw_board()
                 self.display_move_history()

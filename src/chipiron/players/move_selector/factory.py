@@ -11,6 +11,7 @@ from valanga import RepresentationFactory, StateModifications, TurnState
 from valanga.evaluator_types import EvaluatorInput
 from valanga.policy import BranchSelector
 
+from chipiron.environments.chess.types import ChessState
 from chipiron.players.move_selector.move_selector_args import NonTreeMoveSelectorArgs
 from chipiron.utils.logger import chipiron_logger
 
@@ -29,7 +30,7 @@ def create_main_move_selector(
     move_selector_instance_or_args: NonTreeMoveSelectorArgs,
     *,
     random_generator: random.Random,
-) -> BranchSelector[TurnState]:
+) -> BranchSelector[ChessState]:
     """Create the main move selector based on the given arguments.
 
     Args:
@@ -43,7 +44,7 @@ def create_main_move_selector(
         ValueErr    or: If the given move selector instance or arguments are invalid.
 
     """
-    main_move_selector: BranchSelector[TurnState]
+    main_move_selector: BranchSelector[ChessState]
     chipiron_logger.debug("Create main move selector")
 
     match move_selector_instance_or_args:
@@ -77,7 +78,7 @@ def create_tree_and_value_move_selector(
         random_generator=random_generator,
     )
 
-    if accelerate_when_winning and hasattr(state_type, "is_zeroing"):
+    if accelerate_when_winning:
         return ComposedBranchSelector(
             base=base_selector,
             modifiers=(

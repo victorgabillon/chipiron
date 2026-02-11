@@ -32,7 +32,7 @@ from chipiron.utils.logger import chipiron_logger
 class IntegrationTestResult:
     """Container for test results."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the instance."""
         self.results = {}
         self.start_time = time.time()
@@ -45,7 +45,7 @@ class IntegrationTestResult:
         success: bool,
         message: str = "",
         details: dict[str, Any] | None = None,
-    ):
+    ) -> None:
         """Add a test result."""
         self.results[test_name] = {
             "success": success,
@@ -57,7 +57,7 @@ class IntegrationTestResult:
             self.errors.append(f"{test_name}: {message}")
         chipiron_logger.info("%s %s: %s", "✅" if success else "❌", test_name, message)
 
-    def add_warning(self, test_name: str, message: str):
+    def add_warning(self, test_name: str, message: str) -> None:
         """Add a warning."""
         self.warnings.append(f"{test_name}: {message}")
         chipiron_logger.warning("⚠️  %s: %s", test_name, message)
@@ -90,7 +90,7 @@ class ChipironIntegrationTester:
         verbose: bool = False,
         skip_syzygy: bool = False,
         conda_env: str | None = None,
-    ):
+    ) -> None:
         """Initialize the instance."""
         self.repo_url = repo_url
         self.keep_temp = keep_temp
@@ -235,7 +235,7 @@ class ChipironIntegrationTester:
                 chipiron_logger.error("STDERR: %s", e.stderr)
             raise
 
-    def setup_temporary_environment(self):
+    def setup_temporary_environment(self) -> None:
         """Create temporary directory and setup for conda environment."""
         chipiron_logger.info("🚀 Setting up temporary environment...")
 
@@ -253,7 +253,7 @@ class ChipironIntegrationTester:
             f"Created temporary directory and environment name: {self.conda_env_name}",
         )
 
-    def create_conda_environment(self):
+    def create_conda_environment(self) -> None:
         """Create conda environment with the correct Python version."""
         chipiron_logger.info("🐍 Creating conda environment...")
 
@@ -285,7 +285,7 @@ class ChipironIntegrationTester:
             )
             raise
 
-    def clone_repository(self):
+    def clone_repository(self) -> None:
         """Clone the repository to temporary directory."""
         chipiron_logger.info("📦 Cloning repository...")
 
@@ -302,7 +302,7 @@ class ChipironIntegrationTester:
             )
             raise
 
-    def run_makefile_installation(self):
+    def run_makefile_installation(self) -> None:
         """Run the makefile installation process."""
         chipiron_logger.info("🔧 Running makefile installation...")
         chipiron_logger.info(
@@ -356,7 +356,7 @@ class ChipironIntegrationTester:
             )
             raise
 
-    def test_python_installation(self):
+    def test_python_installation(self) -> None:
         """Test if chipiron can be imported."""
         chipiron_logger.info("🐍 Testing Python installation...")
 
@@ -379,7 +379,7 @@ class ChipironIntegrationTester:
                 "python_import", False, f"Failed to import chipiron: {e!s}"
             )
 
-    def test_stockfish_installation(self):
+    def test_stockfish_installation(self) -> None:
         """Test if Stockfish is properly installed and accessible."""
         chipiron_logger.info("♟️  Testing Stockfish installation...")
 
@@ -460,7 +460,7 @@ except Exception as e:
                 "stockfish_installation", False, f"Stockfish test failed: {e!s}"
             )
 
-    def _download_syzygy_tables(self):
+    def _download_syzygy_tables(self) -> None:
         """Download Syzygy tables if they're missing."""
         chipiron_logger.info("📥 Downloading Syzygy tables for testing...")
 
@@ -486,7 +486,7 @@ except Exception as e:
             chipiron_logger.warning("⚠️  Failed to download Syzygy tables: %s", str(e))
             # Don't fail the test completely, just note that tables aren't available
 
-    def test_syzygy_tables(self):
+    def test_syzygy_tables(self) -> None:
         """Test if Syzygy tables are accessible."""
         chipiron_logger.info("📊 Testing Syzygy tables...")
 
@@ -692,7 +692,7 @@ except Exception as e:
                 "syzygy_tables", False, f"Syzygy tables test failed: {e!s}"
             )
 
-    def test_gui_functionality(self):
+    def test_gui_functionality(self) -> None:
         """Test GUI functionality (PNG display capability)."""
         chipiron_logger.info("🖼️  Testing GUI functionality...")
 
@@ -746,7 +746,7 @@ except Exception as e:
                 "gui_functionality", False, f"GUI functionality test failed: {e!s}"
             )
 
-    def test_basic_game_functionality(self):
+    def test_basic_game_functionality(self) -> None:
         """Test basic game functionality."""
         chipiron_logger.info("🎮 Testing basic game functionality...")
 
@@ -808,7 +808,7 @@ except Exception as e:
                 f"Basic game functionality test failed: {e!s}",
             )
 
-    def test_syzygy_dtz_functionality(self):
+    def test_syzygy_dtz_functionality(self) -> None:
         """Test that SyzygyChiTable.dtz(board) works and returns an int for a known tablebase position."""
         chipiron_logger.info("🧪 Testing Syzygy DTZ functionality...")
         conda_activate = f"source $(conda info --base)/etc/profile.d/conda.sh && conda activate {self.conda_env_name}"
@@ -863,7 +863,7 @@ except Exception as e:
                 "syzygy_dtz_functionality", False, f"Syzygy DTZ test failed: {e!s}"
             )
 
-    def test_stockfish_player_functionality(self):
+    def test_stockfish_player_functionality(self) -> None:
         """Test that StockfishPlayer can select a move for a simple position."""
         chipiron_logger.info("🧪 Testing StockfishPlayer functionality...")
         conda_activate = f"source $(conda info --base)/etc/profile.d/conda.sh && conda activate {self.conda_env_name}"
@@ -919,7 +919,7 @@ except Exception as e:
                 f"StockfishPlayer test failed: {e!s}",
             )
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Clean up temporary resources."""
         chipiron_logger.info("🧹 Cleaning up...")
 
@@ -1009,7 +1009,7 @@ except Exception as e:
         return summary
 
 
-def main():
+def main() -> None:
     """Run the main entry point."""
     parser = argparse.ArgumentParser(description="Chipiron Integration Test Suite")
     parser.add_argument(

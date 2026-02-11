@@ -7,6 +7,7 @@ The play_against_chipiron, watch_a_game, and visualize_a_tree functions are call
 
 Note: This script requires the customtkinter and chipiron modules to be installed.
 """
+# pylint: disable=duplicate-code
 
 # TODO: switch to pygame
 from dataclasses import dataclass
@@ -142,7 +143,7 @@ class MatchGUIStartingPosition(StrEnum):
 
     STANDARD = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
     ENDGAME = "6k1/p7/8/8/7N/7K/2N5/8 w - - 0 1"
-    CRUSHING_WHITE = "6k1/5ppp/8/q7/3Q4/5Q2/6PP/6K1 w - - 0 1"
+    CRUSHING_WHITE = "5nk1/3ppppp/8/r7/3RR3/5QRR/6PP/5NK1 w - - 0 1"
 
     def get_fen(self) -> str:
         """Get the FEN string corresponding to the starting position.
@@ -212,7 +213,7 @@ def script_gui() -> tuple[scripts.ScriptType, IsDataclass | None, str]:
     message.grid(column=0, row=0)
 
     # exit button
-    exit_button = ctk.CTkButton(root, text="Exit", command=lambda: root.quit())
+    exit_button = ctk.CTkButton(root, text="Exit", command=root.quit)
 
     message = cast("tk.Widget", ctk.CTkLabel(root, text="♙ White Player: "))
     message.grid(column=0, row=2)

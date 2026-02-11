@@ -29,9 +29,12 @@ test_models_to_evaluate_: list[NeuralNetModelsAndArchitecture] = [
 
 def test_evaluate_model() -> None:
     """Test evaluate model."""
-    open(
-        "src/chipiron/scripts/evaluate_models/tests/test_evaluation_report.yaml", "w"
-    ).close()
+    report_path = (
+        "src/chipiron/scripts/evaluate_models/tests/test_evaluation_report.yaml"
+    )
+
+    with open(report_path, "w", encoding="utf-8"):
+        pass
 
     m = NeuralNetModelsAndArchitecture.build_from_folder_path(
         folder_path="src/chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/prelu_no_bug"

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# pylint: disable=ungrouped-imports
 """Profiling script to compare performance of important functions with and without Rust implementations.
 
 This script benchmarks:

@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.parametrize(("use_rusty_board"), (True, False))
-def test_check_in_one(use_rusty_board: bool):
+def test_check_in_one(use_rusty_board: bool) -> None:
     """Test check in one."""
     random_generator: random.Random = random.Random(0)
 
@@ -45,7 +45,7 @@ def test_check_in_one(use_rusty_board: bool):
 
 
 @pytest.mark.parametrize(("use_rusty_board"), (True, False))
-def test_check_in_two(use_rusty_board: bool):
+def test_check_in_two(use_rusty_board: bool) -> None:
     """Test check in two."""
     with open("external_data/puzzles/mate_in_2_db_small.pickle", "rb") as file:
         dict_fen_move = pickle.load(file=file)

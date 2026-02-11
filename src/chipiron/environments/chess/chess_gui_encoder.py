@@ -28,7 +28,6 @@ class ChessGuiEncoder(GuiEncoder[ChessState]):
         seed: Seed | None,
     ) -> UpdatePayload:
         """Create state payload."""
-
         return UpdStateChess(
             state_tag=state.tag,
             fen_plus_history=state.into_fen_plus_history(),
