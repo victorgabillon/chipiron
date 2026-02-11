@@ -41,7 +41,7 @@ class TestProcessGame:
 
         return game
 
-    def test_process_game_basic(self):
+    def test_process_game_basic(self) -> None:
         """Test basic game processing with simple move sequence."""
         # Create a short game: 1.e4 e5 2.Nf3 Nc6 3.Bb5
         moves = ["e4", "e5", "Nf3", "Nc6", "Bb5"]
@@ -74,7 +74,7 @@ class TestProcessGame:
             board = chess.Board(position["fen"])
             assert board.is_valid()
 
-    def test_process_game_sampling_frequency(self):
+    def test_process_game_sampling_frequency(self) -> None:
         """Test that sampling frequency works correctly."""
         # Create a longer game to test sampling
         moves = ["e4", "e5", "Nf3", "Nc6", "Bb5", "a6", "Ba4", "Nf6", "O-O", "Be7"]
@@ -105,7 +105,7 @@ class TestProcessGame:
             board = chess.Board(position["fen"])
             assert board.is_valid()
 
-    def test_process_game_offset_min_boundary(self):
+    def test_process_game_offset_min_boundary(self) -> None:
         """Test offset_min behavior at boundaries."""
         moves = ["e4", "e5"]  # Very short game
         game = self.create_test_game(moves)
@@ -124,7 +124,7 @@ class TestProcessGame:
         # Should still work and potentially capture positions
         assert len(the_dic) >= 0
 
-    def test_process_game_negative_offset(self):
+    def test_process_game_negative_offset(self) -> None:
         """Test that negative offset_min is handled correctly."""
         moves = ["e4", "e5", "Nf3"]
         game = self.create_test_game(moves)
@@ -146,7 +146,7 @@ class TestProcessGame:
 class TestSaveDatasetProgress:
     """Test the save_dataset_progress function for dataset persistence."""
 
-    def test_save_dataset_progress_basic(self):
+    def test_save_dataset_progress_basic(self) -> None:
         """Test basic dataset saving functionality."""
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = Path(temp_dir) / "test_dataset.pkl"
@@ -190,7 +190,7 @@ class TestSaveDatasetProgress:
             assert df.attrs["games_processed"] == 5
             assert df.attrs["moves_processed"] == 10
 
-    def test_save_dataset_progress_final(self):
+    def test_save_dataset_progress_final(self) -> None:
         """Test final dataset saving with additional metadata."""
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = Path(temp_dir) / "test_final_dataset.pkl"
@@ -228,7 +228,7 @@ class TestSaveDatasetProgress:
 class TestIterateMonths:
     """Test the iterate_months generator function."""
 
-    def test_iterate_months_basic(self):
+    def test_iterate_months_basic(self) -> None:
         """Test basic month iteration."""
         month_gen = iterate_months("2015-03")
 
@@ -237,7 +237,7 @@ class TestIterateMonths:
 
         assert months == expected
 
-    def test_iterate_months_year_boundary(self):
+    def test_iterate_months_year_boundary(self) -> None:
         """Test month iteration across year boundaries."""
         month_gen = iterate_months("2015-11")
 
@@ -246,7 +246,7 @@ class TestIterateMonths:
 
         assert months == expected
 
-    def test_iterate_months_december_rollover(self):
+    def test_iterate_months_december_rollover(self) -> None:
         """Test December to January rollover."""
         month_gen = iterate_months("2020-12")
 
@@ -277,7 +277,9 @@ class TestDatasetGeneration:
         return pgn_content
 
     @patch("chipiron.scripts.generate_datasets.monthly_pgn_pipeline.open_month_pgn")
-    def test_generate_board_dataset_multi_months_basic(self, mock_open_month_pgn):
+    def test_generate_board_dataset_multi_months_basic(
+        self, mock_open_month_pgn
+    ) -> None:
         """Test basic multi-month dataset generation."""
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = Path(temp_dir) / "test_output.pkl"
@@ -317,7 +319,7 @@ class TestDatasetGeneration:
             assert df.attrs["random_seed"] == 42
             assert "months_used" in df.attrs
 
-    def test_dataset_quality_checks(self):
+    def test_dataset_quality_checks(self) -> None:
         """Test that generated datasets meet quality requirements."""
         # Create a test game with known positions
         test_pgn = """[Event "Test"]
@@ -370,7 +372,7 @@ class TestDatasetGeneration:
 class TestErrorHandling:
     """Test error handling and edge cases."""
 
-    def test_empty_game_handling(self):
+    def test_empty_game_handling(self) -> None:
         """Test handling of empty or invalid games."""
         # Create an empty game
         game = chess.pgn.Game()
@@ -388,7 +390,7 @@ class TestErrorHandling:
         assert total_count_move == 0
         assert len(the_dic) == 0
 
-    def test_invalid_sampling_parameters(self):
+    def test_invalid_sampling_parameters(self) -> None:
         """Test handling of invalid sampling parameters."""
         game_content = """[Event "Test"]
 [Site "Test"]
@@ -424,7 +426,7 @@ class TestErrorHandling:
 class TestIntegration:
     """Integration tests for the complete workflow."""
 
-    def test_end_to_end_small_dataset(self):
+    def test_end_to_end_small_dataset(self) -> None:
         """Test complete end-to-end dataset generation with small dataset."""
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = Path(temp_dir) / "integration_test.pkl"

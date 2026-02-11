@@ -1,18 +1,14 @@
 """Composable recommendation modifiers for branch selectors."""
 
-from __future__ import annotations
-
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Protocol, TypeVar
+from typing import Protocol, TypeVar, cast
 
-from valanga import BranchKey, BranchName, Color, StateModifications, TurnState
+from valanga import BranchKey, Color, TurnState
 from valanga.evaluations import FloatyStateEvaluation, ForcedOutcome, StateEvaluation
+from valanga.game import BranchName, Seed
 from valanga.over_event import HowOver
 from valanga.policy import BranchSelector, NotifyProgressCallable, Recommendation
-
-if TYPE_CHECKING:
-    from valanga.game import Seed
 
 TurnStateT = TypeVar("TurnStateT", bound=TurnState)
 
@@ -20,7 +16,10 @@ TurnStateT = TypeVar("TurnStateT", bound=TurnState)
 class RecommendationModifier[StateT: TurnState](Protocol):
     """Protocol for recommendation post-processors."""
 
-    name: str
+    @property
+    def name(self) -> str:
+        """Return the name of the recommendation modifier."""
+        ...
 
     def modify(
         self,
@@ -36,6 +35,7 @@ class HasZeroing(Protocol):
 
     def is_zeroing(self, move: BranchKey) -> bool:
         """Return whether a move is a zeroing move."""
+        ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,21 +79,16 @@ def is_winning_eval(
             return value_white < -threshold
         case ForcedOutcome(outcome=outcome):
             return outcome.how_over is HowOver.WIN and outcome.is_winner(player)
-        case _:
-            return False
 
 
-type ProgressGainFn[StateT: TurnState] = Callable[
-    [StateT, BranchName, BranchKey, StateT, StateModifications],
-    float,
-]
+ProgressGainFn = Callable[[TurnState, BranchKey], float]
 
 
 @dataclass(frozen=True, slots=True)
 class AccelerateWhenWinning[StateT: TurnState]:
     """Prefer winning branches that make more game progress."""
 
-    progress_gain_fn: ProgressGainFn[StateT]
+    progress_gain_fn: ProgressGainFn
     name: str = "accelerate_when_winning"
     threshold: float = 0.98
     copy_stack: bool = False
@@ -105,12 +100,13 @@ class AccelerateWhenWinning[StateT: TurnState]:
         rec: Recommendation,
         seed: Seed,
     ) -> Recommendation | None:
-        """Override recommendation when winning and a progress-improving move exists."""
+        """Return an overridden recommendation that prefers winning branches with more progress."""
+        _ = seed  # This modifier does not use randomness.
+
         if state.is_game_over():
             return None
         if rec.evaluation is None or rec.branch_evals is None:
             return None
-
         if not is_winning_eval(rec.evaluation, state.turn, threshold=self.threshold):
             return None
 
@@ -120,7 +116,9 @@ class AccelerateWhenWinning[StateT: TurnState]:
         for branch_name, child_eval in rec.branch_evals.items():
             if not is_winning_eval(child_eval, state.turn, threshold=self.threshold):
                 continue
+
             branch_key = state.branch_key_from_name(name=branch_name)
+
             child_state = state.copy(
                 stack=self.copy_stack,
                 deep_copy_legal_moves=self.deep_copy_legal_moves,
@@ -128,13 +126,8 @@ class AccelerateWhenWinning[StateT: TurnState]:
             mods = child_state.step(branch_key)
             if mods is None:
                 continue
-            gain = self.progress_gain_fn(
-                state,
-                branch_name,
-                branch_key,
-                child_state,
-                mods,
-            )
+
+            gain: float = self.progress_gain_fn(state, branch_key)
             if gain > best_gain:
                 best_gain = gain
                 best_branch = branch_name
@@ -150,12 +143,7 @@ class AccelerateWhenWinning[StateT: TurnState]:
         )
 
 
-def chess_progress_gain_zeroing(
-    state: HasZeroing,
-    branch_name: BranchName,
-    branch_key: BranchKey,
-    child_state: TurnState,
-    mods: StateModifications,
-) -> float:
-    """Chess progress proxy: prefer zeroing moves (captures/pawn moves)."""
-    return 1.0 if state.is_zeroing(branch_key) else 0.0
+def chess_progress_gain_zeroing(state: TurnState, branch_key: BranchKey) -> float:
+    """Progress gain function that returns 1.0 for zeroing moves and 0.0 for non-zeroing moves."""
+    s = cast("HasZeroing", state)
+    return 1.0 if s.is_zeroing(branch_key) else 0.0

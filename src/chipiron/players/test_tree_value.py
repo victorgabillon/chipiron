@@ -58,6 +58,8 @@ def create_player_and_tree(
     assert isinstance(player.adapter, ChessAdapter)
 
     main_move_selector = player.adapter.main_move_selector
+    if hasattr(main_move_selector, "base"):
+        main_move_selector = main_move_selector.base
     assert isinstance(main_move_selector, TreeAndValueBranchSelector)
 
     tree_exploration: TreeExploration = main_move_selector.create_tree_exploration(

@@ -225,7 +225,9 @@ configs_implementation = [
 ]
 
 
-def test_one_matches(configs: list[Any] | None = None, log_level: int = logging.ERROR):
+def test_one_matches(
+    configs: list[Any] | None = None, log_level: int = logging.ERROR
+) -> None:
     """Run integration tests for one match using provided configurations.
 
     If no configs are provided, uses the default configs_base.
@@ -275,7 +277,7 @@ def test_one_matches(configs: list[Any] | None = None, log_level: int = logging.
                 script_object.terminate()
 
 
-def test_randomness(log_level: int = logging.ERROR):
+def test_randomness(log_level: int = logging.ERROR) -> None:
     """Test that running the same match twice with a fixed seed produces identical results.
 
     Args:
@@ -358,7 +360,7 @@ def test_randomness(log_level: int = logging.ERROR):
     chipiron_logger.info("time: %s", end_time - start_time)
 
 
-def test_same_game_with_or_without_rust(log_level=logging.ERROR):
+def test_same_game_with_or_without_rust(log_level=logging.ERROR) -> None:
     """Test that running the same match with and without Rust boards produces identical results.
 
     Args:

@@ -2,6 +2,7 @@
 
 and from a fixed set of non-labelled boards.
 """
+# pylint: disable=duplicate-code
 
 import logging
 import os

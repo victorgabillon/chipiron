@@ -61,7 +61,7 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
     message.grid(column=0, row=0)
 
     # exit button
-    exit_button = tk.Button(root, text="Exit", command=lambda: root.quit())
+    exit_button = tk.Button(root, text="Exit", command=root.quit)
 
     message = tk.Label(root, text="Play ")
     message.grid(column=0, row=2)

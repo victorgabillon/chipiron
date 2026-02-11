@@ -41,12 +41,12 @@ def load_env_file():
 class TestPathConsistency:
     """Test suite for path configuration consistency."""
 
-    def test_env_file_exists(self):
+    def test_env_file_exists(self) -> None:
         """Test that .env file exists."""
         env_file = project_root / ".env"
         assert env_file.exists(), "The .env configuration file should exist"
 
-    def test_required_env_vars_present(self):
+    def test_required_env_vars_present(self) -> None:
         """Test that all required environment variables are defined in .env."""
         env_vars = load_env_file()
         required_vars = [
@@ -69,7 +69,7 @@ class TestPathConsistency:
             )
             assert env_vars[var].strip(), f"Environment variable {var} is empty in .env"
 
-    def test_python_paths_match_env(self):
+    def test_python_paths_match_env(self) -> None:
         """Test that Python path variables match .env definitions."""
         env_vars = load_env_file()
 
@@ -90,7 +90,7 @@ class TestPathConsistency:
                     f"Python={python_path}, .env={expected_path}"
                 )
 
-    def test_project_root_is_correct(self):
+    def test_project_root_is_correct(self) -> None:
         """Test that PROJECT_ROOT points to the actual project root."""
         # Project root should contain these key files
         key_files = ["pyproject.toml", "Makefile", ".env", "README.md"]
@@ -100,7 +100,7 @@ class TestPathConsistency:
                 f"Key file {file_name} not found at PROJECT_ROOT: {PROJECT_ROOT}"
             )
 
-    def test_critical_directories_exist(self):
+    def test_critical_directories_exist(self) -> None:
         """Test that critical directories exist."""
         critical_dirs = [PROJECT_ROOT, EXTERNAL_DATA_DIR]
 
@@ -108,7 +108,7 @@ class TestPathConsistency:
             assert dir_path.exists(), f"Critical directory does not exist: {dir_path}"
             assert dir_path.is_dir(), f"Path exists but is not a directory: {dir_path}"
 
-    def test_makefile_uses_env_vars(self):
+    def test_makefile_uses_env_vars(self) -> None:
         """Test that Makefile includes .env file and uses environment variables."""
         makefile_path = PROJECT_ROOT / "Makefile"
         assert makefile_path.exists(), "Makefile should exist"
@@ -132,7 +132,7 @@ class TestPathConsistency:
         for var_usage in env_var_usage:
             assert var_usage in makefile_content, f"Makefile should use {var_usage}"
 
-    def test_dockerfile_has_env_vars(self):
+    def test_dockerfile_has_env_vars(self) -> None:
         """Test that Dockerfile defines environment variables matching .env."""
         dockerfile_path = PROJECT_ROOT / "Dockerfile"
         assert dockerfile_path.exists(), "Dockerfile should exist"
@@ -154,7 +154,7 @@ class TestPathConsistency:
                 f"Dockerfile should define ENV {env_var}"
             )
 
-    def test_env_values_are_relative_paths(self):
+    def test_env_values_are_relative_paths(self) -> None:
         """Test that .env path values are relative (not absolute)."""
         env_vars = load_env_file()
 
@@ -175,7 +175,7 @@ class TestPathConsistency:
                     f"Environment variable {var} should be a relative path, got: {value}"
                 )
 
-    def test_urls_are_valid_format(self):
+    def test_urls_are_valid_format(self) -> None:
         """Test that URL environment variables have valid format."""
         env_vars = load_env_file()
 

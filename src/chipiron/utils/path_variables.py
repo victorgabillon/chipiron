@@ -10,7 +10,9 @@ from pathlib import Path
 # Define the project root directory
 # This file is at: src/chipiron/utils/path_variables.py
 # So we go up 3 levels to reach project root
-PROJECT_ROOT = Path(__file__).parents[3]  # Go up from src/chipiron/utils/ to project root
+PROJECT_ROOT = Path(__file__).parents[
+    3
+]  # Go up from src/chipiron/utils/ to project root
 
 # Load .env file if it exists
 env_file = PROJECT_ROOT / ".env"

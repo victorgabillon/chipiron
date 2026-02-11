@@ -229,7 +229,9 @@ def evaluate_models(
             evaluated_model_evaluation
         )
     with open(
-        "src/chipiron/scripts/evaluate_models/evaluation_report.yaml", "w", encoding="utf-8"
+        "src/chipiron/scripts/evaluate_models/evaluation_report.yaml",
+        "w",
+        encoding="utf-8",
     ) as outfile:
         yaml.dump(evaluated_models_final_dict, outfile, default_flow_style=False)
 

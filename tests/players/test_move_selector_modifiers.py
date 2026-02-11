@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import copy
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from valanga import BranchKey, BranchName, Color
+from valanga import BranchKey, Color
 from valanga.evaluations import FloatyStateEvaluation
 from valanga.policy import Recommendation
 
@@ -15,6 +15,9 @@ from chipiron.players.move_selector.modifiers import (
     ComposedBranchSelector,
     chess_progress_gain_zeroing,
 )
+
+if TYPE_CHECKING:
+    from valanga.game import BranchName
 
 
 class DummySelector:
@@ -93,7 +96,9 @@ def test_accelerate_when_not_winning_does_not_override() -> None:
     )
     selector = ComposedBranchSelector(
         base=DummySelector(rec),
-        modifiers=(AccelerateWhenWinning(progress_gain_fn=chess_progress_gain_zeroing),),
+        modifiers=(
+            AccelerateWhenWinning(progress_gain_fn=chess_progress_gain_zeroing),
+        ),
     )
 
     out = selector.recommend(state=state, seed=0)
@@ -118,7 +123,9 @@ def test_accelerate_when_winning_prefers_zeroing_move_that_stays_winning() -> No
     )
     selector = ComposedBranchSelector(
         base=DummySelector(rec),
-        modifiers=(AccelerateWhenWinning(progress_gain_fn=chess_progress_gain_zeroing),),
+        modifiers=(
+            AccelerateWhenWinning(progress_gain_fn=chess_progress_gain_zeroing),
+        ),
     )
 
     out = selector.recommend(state=state, seed=0)
@@ -143,7 +150,9 @@ def test_accelerate_when_winning_does_not_choose_non_winning_child() -> None:
     )
     selector = ComposedBranchSelector(
         base=DummySelector(rec),
-        modifiers=(AccelerateWhenWinning(progress_gain_fn=chess_progress_gain_zeroing),),
+        modifiers=(
+            AccelerateWhenWinning(progress_gain_fn=chess_progress_gain_zeroing),
+        ),
     )
 
     out = selector.recommend(state=state, seed=0)
@@ -168,9 +177,19 @@ def test_accelerate_when_winning_no_override_when_best_gain_is_zero() -> None:
     )
     selector = ComposedBranchSelector(
         base=DummySelector(rec),
-        modifiers=(AccelerateWhenWinning(progress_gain_fn=chess_progress_gain_zeroing),),
+        modifiers=(
+            AccelerateWhenWinning(progress_gain_fn=chess_progress_gain_zeroing),
+        ),
     )
 
     out = selector.recommend(state=state, seed=0)
 
     assert out.recommended_name == "a"
+
+
+if __name__ == "__main__":
+    test_accelerate_when_not_winning_does_not_override()
+    test_accelerate_when_winning_prefers_zeroing_move_that_stays_winning()
+    test_accelerate_when_winning_does_not_choose_non_winning_child()
+    test_accelerate_when_winning_no_override_when_best_gain_is_zero()
+    print("All tests passed!")

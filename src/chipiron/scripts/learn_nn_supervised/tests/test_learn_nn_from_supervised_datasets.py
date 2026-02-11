@@ -4,7 +4,7 @@ from typing import Any
 
 from parsley import make_partial_dataclass_with_optional_paths
 
-import chipiron.scripts as scripts
+from chipiron import scripts
 from chipiron.environments.types import GameKind
 from chipiron.learningprocesses.nn_trainer.factory import GameInputArgs, NNTrainerArgs
 from chipiron.players.boardevaluators.datasets.datasets import DataSetArgs
