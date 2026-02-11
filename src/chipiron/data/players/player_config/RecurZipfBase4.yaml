@@ -5,6 +5,10 @@ main_move_selector:
   anemone_args: 
     type: TreeAndValue
     node_selector:
+      type: Composed
+      priority:
+        type: PriorityNoop
+      base:
         type: RecurZipfBase
         branch_explorer_priority: priority_best
     opening_type: all_children

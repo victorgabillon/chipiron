@@ -4,6 +4,7 @@ import random
 from typing import TypeVar
 
 from anemone import TreeAndValuePlayerArgs, create_tree_and_value_branch_selector
+from anemone.hooks.search_hooks import SearchHooks
 from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
     MasterStateEvaluator,
 )
@@ -16,6 +17,7 @@ from chipiron.players.move_selector.move_selector_args import NonTreeMoveSelecto
 from chipiron.utils.logger import chipiron_logger
 
 from . import human, stockfish
+from .anemone_hooks import ChessFeatureExtractor
 from .modifiers import (
     AccelerateWhenWinning,
     ComposedBranchSelector,
@@ -70,12 +72,15 @@ def create_tree_and_value_move_selector(
     random_generator: random.Random,
 ) -> BranchSelector[TurnStateT]:
     """Create a tree-and-value move selector with a prebuilt evaluator."""
+    hooks = SearchHooks(feature_extractor=ChessFeatureExtractor())
+
     base_selector = create_tree_and_value_branch_selector(
         state_type=state_type,
         master_state_evaluator=master_state_evaluator,
         state_representation_factory=state_representation_factory,
         args=args,
         random_generator=random_generator,
+        hooks=hooks,
     )
 
     if accelerate_when_winning:
