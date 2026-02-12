@@ -52,7 +52,7 @@ def test_modifications(
 
     main_move_selector_one = player_one.adapter.main_move_selector
 
-    assert isinstance( main_move_selector_one.base, TreeAndValueBranchSelector)
+    assert isinstance(main_move_selector_one.base, TreeAndValueBranchSelector)
 
     tree_exploration_one: TreeExploration = (
         main_move_selector_one.base.create_tree_exploration(

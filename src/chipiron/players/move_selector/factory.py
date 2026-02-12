@@ -75,6 +75,7 @@ def create_tree_and_value_move_selector(
     random_generator: random.Random,
 ) -> BranchSelector[TurnStateT]:
     """Create a tree-and-value move selector with a prebuilt evaluator."""
+
     def pv_attacked_open_all_factory(
         params: Mapping[str, Any],
         random_generator: random.Random,
