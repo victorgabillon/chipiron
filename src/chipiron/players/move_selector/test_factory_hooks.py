@@ -5,9 +5,21 @@ from typing import Any, cast
 
 from anemone.hooks.search_hooks import SearchHooks
 
+from chipiron.players.move_selector.priority_checks.pv_attacked_open_all import (
+    PvAttackedOpenAllPriorityCheck,
+)
+
 from chipiron.environments.chess.types import ChessState
 from chipiron.players.move_selector import factory
 from chipiron.players.move_selector.anemone_hooks import ChessFeatureExtractor
+
+
+class DummyOpeningInstructor:
+    """Minimal opening instructor stub for factory wiring tests."""
+
+    def all_branches_to_open(self, node: Any) -> list[Any]:
+        _ = node
+        return []
 
 
 def test_create_tree_and_value_move_selector_passes_hooks(monkeypatch: Any) -> None:
@@ -37,3 +49,15 @@ def test_create_tree_and_value_move_selector_passes_hooks(monkeypatch: Any) -> N
     hooks = captured.get("hooks")
     assert isinstance(hooks, SearchHooks)
     assert isinstance(hooks.feature_extractor, ChessFeatureExtractor)
+    assert "pv_attacked_open_all" in hooks.priority_check_registry
+
+    priority_check_factory = hooks.priority_check_registry["pv_attacked_open_all"]
+    priority_check = priority_check_factory(
+        params={"probability": 0.9, "feature_key": "tactical_threat"},
+        random_generator=random.Random(0),
+        hooks=hooks,
+        opening_instructor=cast(Any, DummyOpeningInstructor()),
+    )
+    assert isinstance(priority_check, PvAttackedOpenAllPriorityCheck)
+    assert priority_check.probability == 0.9
+    assert priority_check.feature_key == "tactical_threat"
