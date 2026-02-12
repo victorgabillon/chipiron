@@ -7,7 +7,11 @@ main_move_selector:
     node_selector:
       type: Composed
       priority:
-        type: PriorityNoop
+        type: PriorityRegistered
+        name: pv_attacked_open_all
+        params:
+          probability: 0.5
+          feature_key: tactical_threat
       base:
         type: RecurZipfBase
         branch_explorer_priority: priority_best
