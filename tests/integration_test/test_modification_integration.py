@@ -51,10 +51,11 @@ def test_modifications(
     )
 
     main_move_selector_one = player_one.adapter.main_move_selector
-    assert isinstance(main_move_selector_one, TreeAndValueBranchSelector)
+
+    assert isinstance( main_move_selector_one.base, TreeAndValueBranchSelector)
 
     tree_exploration_one: TreeExploration = (
-        main_move_selector_one.create_tree_exploration(
+        main_move_selector_one.base.create_tree_exploration(
             state=ChessState(board=board_one)
         )
     )
@@ -81,10 +82,10 @@ def test_modifications(
     )
 
     main_move_selector_two = player_two.adapter.main_move_selector
-    assert isinstance(main_move_selector_two, TreeAndValueBranchSelector)
+    assert isinstance(main_move_selector_two.base, TreeAndValueBranchSelector)
 
     tree_exploration_two: TreeExploration = (
-        main_move_selector_two.create_tree_exploration(
+        main_move_selector_two.base.create_tree_exploration(
             state=ChessState(board=board_two)
         )
     )
