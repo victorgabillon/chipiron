@@ -25,6 +25,7 @@ from chipiron.environments.chess.types import ChessState
 from chipiron.players import Player
 from chipiron.players.adapters.chess_adapter import ChessAdapter
 from chipiron.players.factory import create_chipiron_player
+from chipiron.players.move_selector.modifiers import ComposedBranchSelector
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 
@@ -58,6 +59,7 @@ def create_player_and_tree(
     assert isinstance(player.adapter, ChessAdapter)
 
     main_move_selector = player.adapter.main_move_selector
+    assert isinstance(main_move_selector, ComposedBranchSelector)
     if hasattr(main_move_selector, "base"):
         main_move_selector = main_move_selector.base
     assert isinstance(main_move_selector, TreeAndValueBranchSelector)
