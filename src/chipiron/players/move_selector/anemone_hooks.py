@@ -8,9 +8,9 @@ from typing import Any
 
 from anemone.hooks.search_hooks import FeatureExtractor
 from atomheart.board.valanga_adapter import ValangaChessState
-from valanga import TurnState
+from valanga import Color, TurnState
 
-
+from atomheart.utils.color import valanga_color_to_chess
 @dataclass(frozen=True)
 class ChessFeatureExtractor(FeatureExtractor):
     """Compute tactical and diagnostic features for chess states."""
@@ -21,14 +21,13 @@ class ChessFeatureExtractor(FeatureExtractor):
             return {}
 
         tactical_threat = False
-        board = getattr(state, "board", None)
-        player_to_move = getattr(state, "player_to_move", None)
 
-        if board is not None and player_to_move is not None and hasattr(board, "is_attacked"):
-            try:
-                tactical_threat = bool(board.is_attacked(not player_to_move))
-            except Exception:
-                tactical_threat = False
+        assert isinstance(state,ValangaChessState)
+        player_to_move: Color = state.turn
+
+
+        tactical_threat = bool(state.board.is_attacked( not valanga_color_to_chess( player_to_move)))
+
 
         return {
             "tactical_threat": tactical_threat,

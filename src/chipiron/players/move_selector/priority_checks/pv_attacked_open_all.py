@@ -1,6 +1,5 @@
 """Priority check opening all branches when the principal variation is tactically attacked."""
 
-from __future__ import annotations
 
 import random
 from dataclasses import dataclass
@@ -50,24 +49,53 @@ class PvAttackedOpenAllPriorityCheck:
         """Optionally return opening instructions that override the base selector."""
         _ = latest_tree_expansions
 
+
+        print(f"DEBUG PV-attacked opening all branchnches ")
+
         if self.feature_extractor is None:
+            print(f"DEBUG PV-attacked opening all branches: no feature extractor, skipping")
+
             return None
 
         target = _deepest_existing_node_on_pv(tree.root_node)
+
+
+
         if target.is_over():
+            print(f"DEBUG PV-attacked opening all branches: PV node is terminal, skipping") 
             return None
 
         if self.probability < 1.0 and self.random_generator.random() > self.probability:
+            print(f"DEBUG PV-attacked opening all branches: random check failed, skipping")
             return None
+
+
 
         features = self.feature_extractor.features(target.state)
-        if not bool(features.get(self.feature_key, False)):
+        print("PV target depth:", target.tree_depth, "id:", target.id)
+        print("pv len:", len(getattr(tree.root_node.tree_evaluation, "best_branch_sequence", ())))
+        print("feature:", features[self.feature_key])
+        print("non_opened_branches:", len(target.non_opened_branches))
+        print("all_branches_generated:", target.all_branches_generated)
+
+        if self.feature_key not in features:
+            raise RuntimeError(
+                f"Priority check '{self.__class__.__name__}' "
+                f"requires feature '{self.feature_key}', "
+                f"but extractor returned keys {list(features.keys())}"
+            )
+
+        if not features[self.feature_key]:
+            print(f"DEBUGI PV-attacked opening all branches: feature '{self.feature_key}' not present, skipping")
             return None
 
-        if not target.non_opened_branches:
+
+        if target.all_branches_generated:
+            print(f"DEBUG PV-attacked opening all branches: no non-opened branches at PV node, skipping")
             return None
 
         branches_to_open = self.opening_instructor.all_branches_to_open(target)
+        print(f"DEBUGAAA PV-attacked opening all branches: opening {len(branches_to_open)} branches at nodewith state {target.state}")
         return create_instructions_to_open_all_branches(
             branches_to_play=branches_to_open,
             node_to_open=target,
