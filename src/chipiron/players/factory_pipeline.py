@@ -2,7 +2,7 @@
 
 import random
 from collections.abc import Callable
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from anemone.dynamics import SearchDynamics
 from valanga import Dynamics, TurnState
@@ -54,10 +54,11 @@ def create_player_with_pipeline(
         GameAdapter[SnapT, StateT],
     ],
     create_non_tree_selector: Callable[
-        [NonTreeMoveSelectorArgs], BranchSelector[StateT]
+        [NonTreeMoveSelectorArgs, Dynamics[StateT]], BranchSelector[StateT]
     ],
     random_generator: random.Random,
-    dynamics: Dynamics[StateT] | SearchDynamics[StateT],
+    runtime_dynamics: Dynamics[StateT],
+    search_dynamics_override: SearchDynamics[StateT, Any] | None = None,
     copy_stack_until_depth: int = 2,
     deep_copy_legal_moves: bool = True,
 ) -> Player[SnapT, StateT]:
@@ -77,7 +78,8 @@ def create_player_with_pipeline(
             random_generator=random_generator,
             copy_stack_until_depth=copy_stack_until_depth,
             deep_copy_legal_moves=deep_copy_legal_moves,
-            dynamics=dynamics,
+            dynamics=runtime_dynamics,
+            search_dynamics_override=search_dynamics_override,
         )
     elif isinstance(main_selector_args, GuiHumanPlayerArgs):
         # Minimal behavior: fail fast with a clear message (or implement GUI path)
@@ -86,7 +88,7 @@ def create_player_with_pipeline(
             "not by create_main_move_selector."
         )
     else:
-        main_move_selector = create_non_tree_selector(main_selector_args)
+        main_move_selector = create_non_tree_selector(main_selector_args, runtime_dynamics)
 
     adapter = adapter_builder(main_move_selector, policy_oracle)
     return Player(name=name, adapter=adapter)
