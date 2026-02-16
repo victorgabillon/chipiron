@@ -1,8 +1,8 @@
 """Helpers for choosing SearchDynamics adapters from runtime environment dynamics."""
 
-from anemone.dynamics import SearchDynamics, StatelessDynamicsAdapter
 from typing import Any
 
+from anemone.dynamics import SearchDynamics, StatelessDynamicsAdapter
 from valanga import Dynamics
 
 from chipiron.environments.chess.search_dynamics import ChessSearchDynamics

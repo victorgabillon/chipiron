@@ -2,12 +2,11 @@
 
 import chess
 import pytest
+from atomheart import ChessDynamics
 from atomheart.board import IBoard, create_board
 from atomheart.board.utils import FenPlusHistory
 
 from chipiron.environments.chess.types import ChessState
-from atomheart import ChessDynamics
-
 from chipiron.games.game import Game
 from chipiron.games.game.game_playing_status import GamePlayingStatus
 
@@ -25,7 +24,9 @@ def test_game_rewind(use_rust_boards: bool) -> None:
     game_playing_status: GamePlayingStatus = GamePlayingStatus()
 
     dynamics = ChessDynamics()
-    game: Game = Game(state=state, dynamics=dynamics, playing_status=game_playing_status)
+    game: Game = Game(
+        state=state, dynamics=dynamics, playing_status=game_playing_status
+    )
 
     game.playing_status.pause()
     game.rewind_one_move()

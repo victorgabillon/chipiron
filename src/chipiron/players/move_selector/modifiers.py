@@ -10,7 +10,6 @@ from valanga.game import BranchName, Seed
 from valanga.over_event import HowOver
 from valanga.policy import BranchSelector, NotifyProgressCallable, Recommendation
 
-
 TurnStateT = TypeVar("TurnStateT", bound=TurnState)
 
 
