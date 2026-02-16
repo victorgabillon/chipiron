@@ -5,15 +5,17 @@ from collections.abc import Mapping
 from typing import Any, TypeVar
 
 from anemone import TreeAndValuePlayerArgs, create_tree_and_value_branch_selector
+from anemone.dynamics import SearchDynamics
 from anemone.hooks.search_hooks import PriorityCheckFactory, SearchHooks
 from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
     MasterStateEvaluator,
 )
 from anemone.node_selector.opening_instructions import OpeningInstructor
-from valanga import RepresentationFactory, StateModifications, TurnState
+from valanga import Dynamics, RepresentationFactory, StateModifications, TurnState
 from valanga.evaluator_types import EvaluatorInput
 from valanga.policy import BranchSelector
 
+from chipiron.environments.chess.search_dynamics import ChessSearchDynamics
 from chipiron.environments.chess.types import ChessState
 from chipiron.players.move_selector.move_selector_args import NonTreeMoveSelectorArgs
 from chipiron.utils.logger import chipiron_logger
@@ -34,6 +36,7 @@ TurnStateT = TypeVar("TurnStateT", bound=TurnState)
 def create_main_move_selector(
     move_selector_instance_or_args: NonTreeMoveSelectorArgs,
     *,
+    dynamics: Dynamics[ChessState],
     random_generator: random.Random,
 ) -> BranchSelector[ChessState]:
     """Create the main move selector based on the given arguments.
@@ -54,7 +57,10 @@ def create_main_move_selector(
 
     match move_selector_instance_or_args:
         case Random():
-            main_move_selector = create_random(random_generator=random_generator)
+            main_move_selector = create_random(
+                dynamics=dynamics,
+                random_generator=random_generator,
+            )
         case stockfish.StockfishPlayer():
             main_move_selector = move_selector_instance_or_args
         case human.CommandLineHumanPlayerArgs():
@@ -73,6 +79,9 @@ def create_tree_and_value_move_selector(
         RepresentationFactory[TurnStateT, StateModifications, EvaluatorInput] | None
     ),
     random_generator: random.Random,
+    copy_stack_until_depth: int = 2,
+    deep_copy_legal_moves: bool = True,
+    dynamics: Dynamics[TurnStateT] | SearchDynamics[TurnStateT] | None = None,
 ) -> BranchSelector[TurnStateT]:
     """Create a tree-and-value move selector with a prebuilt evaluator."""
 
@@ -100,6 +109,11 @@ def create_tree_and_value_move_selector(
         priority_check_registry=priority_check_registry,
     )
 
+    search_dynamics = dynamics or ChessSearchDynamics(
+        copy_stack_until_depth=copy_stack_until_depth,
+        deep_copy_legal_moves=deep_copy_legal_moves,
+    )
+
     base_selector = create_tree_and_value_branch_selector(
         state_type=state_type,
         master_state_evaluator=master_state_evaluator,
@@ -107,11 +121,13 @@ def create_tree_and_value_move_selector(
         args=args,
         random_generator=random_generator,
         hooks=hooks,
+        dynamics=search_dynamics,
     )
 
     if accelerate_when_winning:
         return ComposedBranchSelector(
             base=base_selector,
+            dynamics=search_dynamics,
             modifiers=(
                 AccelerateWhenWinning(
                     progress_gain_fn=chess_progress_gain_zeroing,

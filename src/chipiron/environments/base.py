@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol, TypeVar
 
-from valanga import StateTag
+from valanga import Dynamics, StateTag
 
 from chipiron.environments.types import GameKind
 from chipiron.games.game.game_rules import GameRules
@@ -60,6 +60,7 @@ class Environment[StateT, StateSnapT, StartTagT]:
 
     game_kind: GameKind
     rules: GameRules[StateT]
+    dynamics: Dynamics[StateT]
     gui_encoder: GuiEncoder[StateT]
     player_encoder: PlayerRequestEncoder[StateT, StateSnapT]
     make_player_observer_factory: PlayerObserverFactoryBuilder

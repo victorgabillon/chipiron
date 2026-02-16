@@ -36,7 +36,7 @@ class ChessRules(GameRules[ChessState]):
 
     def outcome(self, state: ChessState) -> GameOutcome | None:
         """Outcome."""
-        if state.is_game_over():
+        if state.board.is_game_over():
             return self._outcome_from_board(state)
         return None
 
@@ -44,7 +44,7 @@ class ChessRules(GameRules[ChessState]):
         """Pretty result."""
         result_str = self._result_string_outcome(outcome)
         reason = outcome.reason
-        if reason is None and state.is_game_over():
+        if reason is None and state.board.is_game_over():
             reason = self._termination_reason(state)
         message = f"Result: {result_str}"
         if reason:
@@ -53,9 +53,9 @@ class ChessRules(GameRules[ChessState]):
 
     def assessment(self, state: ChessState) -> PositionAssessment | None:
         """Assessment."""
-        if self.syzygy is None or not self.syzygy.fast_in_table(state):
+        if self.syzygy is None or not self.syzygy.fast_in_table(state.board):
             return None
-        winner, how_over = self.syzygy.get_over_event(board=state)
+        winner, how_over = self.syzygy.get_over_event(board=state.board)
         return self._assessment_from_over_event(winner, how_over, reason="syzygy")
 
     def pretty_assessment(
@@ -66,14 +66,14 @@ class ChessRules(GameRules[ChessState]):
         message = f"Assessment: {result_str}"
         if assessment.reason:
             message = f"{message} ({assessment.reason})"
-        if self.syzygy is not None and self.syzygy.fast_in_table(state):
-            syzygy_str = self.syzygy.string_result(state)
+        if self.syzygy is not None and self.syzygy.fast_in_table(state.board):
+            syzygy_str = self.syzygy.string_result(state.board)
             message = f"{message} | Syzygy: {syzygy_str}"
         return message
 
     def _outcome_from_board(self, state: ChessState) -> GameOutcome:
         """Derive a GameOutcome from the current board result."""
-        result = state.result(claim_draw=True)
+        result = state.board.result(claim_draw=True)
         reason = self._termination_reason(state)
         match result:
             case "1-0":
@@ -135,7 +135,7 @@ class ChessRules(GameRules[ChessState]):
     @staticmethod
     def _termination_reason(state: ChessState) -> str | None:
         """Return a termination reason string when the game is over."""
-        termination = state.termination()
+        termination = state.board.termination()
         if termination is None:
             return None
         return str(termination)

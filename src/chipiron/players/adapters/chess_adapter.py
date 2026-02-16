@@ -57,15 +57,15 @@ class ChessAdapter:
     def legal_action_count(self, runtime_state: ChessState) -> int:
         # Keep the API generic; for chess we count legal moves.
         """Legal action count."""
-        return len(runtime_state.legal_moves.get_all())
+        return len(runtime_state.board.legal_moves.get_all())
 
     def only_action_name(self, runtime_state: ChessState) -> BranchName:
         """Only action name."""
-        keys = runtime_state.legal_moves.get_all()
+        keys = runtime_state.board.legal_moves.get_all()
         if len(keys) != 1:
             raise SingleLegalMoveRequiredError(len(keys))
         move_key: MoveKey = keys[0]
-        move_uci: MoveUci = runtime_state.get_uci_from_move_key(move_key)
+        move_uci: MoveUci = runtime_state.board.get_uci_from_move_key(move_key)
         return move_uci
 
     def oracle_action_name(self, runtime_state: ChessState) -> BranchName | None:
