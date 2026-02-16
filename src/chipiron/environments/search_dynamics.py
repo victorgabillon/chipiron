@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from anemone.dynamics import SearchDynamics, StatelessDynamicsAdapter
+from anemone.dynamics import SearchDynamics, normalize_search_dynamics
 from valanga import Dynamics
 
 from chipiron.environments.chess.search_dynamics import ChessSearchDynamics
@@ -15,7 +15,7 @@ def make_search_dynamics(
     dynamics: Dynamics[Any],
     copy_stack_until_depth: int = 2,
     deep_copy_legal_moves: bool = True,
-) -> SearchDynamics[Any]:
+) -> SearchDynamics[Any, Any]:
     """Build search dynamics for Anemone from game runtime dynamics."""
     if game_kind is GameKind.CHESS:
         return ChessSearchDynamics(
@@ -23,4 +23,4 @@ def make_search_dynamics(
             deep_copy_legal_moves=deep_copy_legal_moves,
         )
 
-    return StatelessDynamicsAdapter(dynamics)
+    return normalize_search_dynamics(dynamics)
