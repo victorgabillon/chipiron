@@ -12,6 +12,7 @@ import random
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal
 
+from valanga import Dynamics
 from valanga.game import Seed, State
 from valanga.policy import NotifyProgressCallable, Recommendation
 
@@ -35,6 +36,7 @@ class Random:
     """
 
     type: Literal[MoveSelectorTypes.RANDOM]  # for serialization
+    dynamics: Dynamics[State]
     random_generator: random.Random = field(default_factory=random.Random)
 
     def recommend(
@@ -57,13 +59,17 @@ class Random:
         _ = notify_progress  # Unused in this implementation
         self.random_generator.seed(seed)
         random_move_key: BranchKey = self.random_generator.choice(
-            state.branch_keys.get_all()
+            self.dynamics.legal_actions(state).get_all()
         )
-        random_move_uci: MoveUci = state.branch_name_from_key(key=random_move_key)
+        random_move_uci: MoveUci = self.dynamics.action_name(state, random_move_key)
         return Recommendation(recommended_name=random_move_uci, evaluation=None)
 
 
-def create_random(random_generator: random.Random) -> Random:
+def create_random(
+    *,
+    dynamics: Dynamics[State],
+    random_generator: random.Random,
+) -> Random:
     """Create a random move selector.
 
     Args:
@@ -73,4 +79,8 @@ def create_random(random_generator: random.Random) -> Random:
         Random: The created random move selector.
 
     """
-    return Random(type=MoveSelectorTypes.RANDOM, random_generator=random_generator)
+    return Random(
+        type=MoveSelectorTypes.RANDOM,
+        dynamics=dynamics,
+        random_generator=random_generator,
+    )

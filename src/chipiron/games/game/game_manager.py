@@ -193,8 +193,9 @@ class GameManager[StateT: TurnState = TurnState]:
             self.processing_mail(mail)
 
             state = self.game.state
-            if state.is_game_over() or not self.game_continue_conditions():
-                if state.is_game_over():
+            is_terminal = self.rules.outcome(state) is not None
+            if is_terminal or not self.game_continue_conditions():
+                if is_terminal:
                     chipiron_logger.info("The game is over")
                 if not self.game_continue_conditions():
                     chipiron_logger.info("Game continuation not met")
@@ -421,7 +422,7 @@ class GameManager[StateT: TurnState = TurnState]:
 
         # Ensure legal moves generated
         try:
-            state.branch_keys.get_all()
+            self.game.dynamics.legal_actions(state).get_all()
         except (RuntimeError, ValueError) as exc:
             chipiron_logger.info(
                 "[%s] MOVE REJECTED: failed to generate legal moves",
@@ -432,7 +433,7 @@ class GameManager[StateT: TurnState = TurnState]:
 
         # Convert name->ActionKey
         try:
-            action_key = state.branch_key_from_name(name=branch_name)
+            action_key = self.game.dynamics.action_from_name(state, branch_name)
         except (KeyError, ValueError) as exc:
             chipiron_logger.info(
                 "[%s] MOVE REJECTED: invalid branch_name=%s",
@@ -454,7 +455,7 @@ class GameManager[StateT: TurnState = TurnState]:
             )
 
         # query next move if still playing and game not over
-        if self.game.is_play() and not self.game.state.is_game_over():
+        if self.game.is_play() and self.rules.outcome(self.game.state) is None:
             self.game.query_move_from_players()
 
     def tell_results(self) -> None:

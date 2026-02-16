@@ -157,7 +157,7 @@ class GameManagerFactory:
 
         start_tag = args_game_manager.starting_position.get_start_tag()
         normalized_start_tag = environment.normalize_start_tag(start_tag)
-        board = environment.make_initial_state(normalized_start_tag)
+        state = environment.make_initial_state(normalized_start_tag)
         for publisher in publishers:
             payload = make_players_info_payload(
                 player_color_to_factory_args=player_color_to_factory_args
@@ -172,7 +172,8 @@ class GameManagerFactory:
 
         game = Game(
             playing_status=game_playing_status,
-            state=board,
+            state=state,
+            dynamics=environment.dynamics,
             seed_=game_seed,
         )
 

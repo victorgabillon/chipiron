@@ -2,7 +2,7 @@
 
 from typing import TYPE_CHECKING
 
-from atomheart import ValangaChessState
+from atomheart import ChessDynamics
 from atomheart.board.utils import FenPlusHistory
 from valanga import StateTag
 
@@ -60,13 +60,16 @@ def make_chess_environment(
         return tag
 
     def make_initial_state(tag: ChessStartTag) -> ChessState:
-        return ValangaChessState(
+        return ChessState(
             deps.board_factory(fen_with_history=FenPlusHistory(current_fen=tag.fen))
         )
+
+    dynamics = ChessDynamics()
 
     return Environment(
         game_kind=GameKind.CHESS,
         rules=ChessRules(syzygy=deps.syzygy_table),
+        dynamics=dynamics,
         gui_encoder=ChessGuiEncoder(),
         player_encoder=ChessPlayerRequestEncoder(),
         make_player_observer_factory=build_player_observer_factory,
