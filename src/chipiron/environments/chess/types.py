@@ -1,5 +1,5 @@
 """Shared chess type aliases."""
 
-from atomheart.board.valanga_adapter import ValangaChessState
+from atomheart import ChessState as AtomheartChessState
 
-ChessState = ValangaChessState
+ChessState = AtomheartChessState

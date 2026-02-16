@@ -8,12 +8,15 @@ from anemone import TreeAndValuePlayerArgs
 from anemone.progress_monitor.progress_monitor import (
     TreeBranchLimitArgs,
 )
+from atomheart import ChessDynamics
 from atomheart.board import BoardFactory, create_board_factory
 from atomheart.board.utils import FenPlusHistory
 from valanga import Color
 from valanga.policy import BranchSelector
 
 from chipiron.environments.chess.types import ChessState
+from chipiron.environments.search_dynamics import make_search_dynamics
+from chipiron.environments.types import GameKind
 from chipiron.players.adapters.chess_adapter import ChessAdapter
 from chipiron.players.adapters.chess_syzygy_oracle import (
     ChessSyzygyPolicyOracle,
@@ -207,6 +210,23 @@ def create_chess_player(
             oracle=policy_oracle_in,
         )
 
+    search_args = getattr(args.main_move_selector, "anemone_args", None)
+    search_config = getattr(search_args, "search", None)
+    copy_stack_until_depth = int(
+        getattr(search_config, "copy_stack_until_depth", 2)
+    )
+    deep_copy_legal_moves = bool(
+        getattr(search_config, "deep_copy_legal_moves", True)
+    )
+
+    chess_dynamics = ChessDynamics()
+    chess_search_dynamics = make_search_dynamics(
+        game_kind=GameKind.CHESS,
+        dynamics=chess_dynamics,
+        copy_stack_until_depth=copy_stack_until_depth,
+        deep_copy_legal_moves=deep_copy_legal_moves,
+    )
+
     return create_player_with_pipeline(
         name=args.name,
         main_selector_args=args.main_move_selector,
@@ -219,10 +239,14 @@ def create_chess_player(
         create_non_tree_selector=lambda selector_args: (
             move_selector.create_main_move_selector(
                 selector_args,
+                dynamics=chess_dynamics,
                 random_generator=random_generator,
             )
         ),
         random_generator=random_generator,
+        dynamics=chess_search_dynamics,
+        copy_stack_until_depth=copy_stack_until_depth,
+        deep_copy_legal_moves=deep_copy_legal_moves,
     )
 
 
