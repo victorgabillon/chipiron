@@ -4,7 +4,8 @@ import random
 from collections.abc import Callable
 from typing import TYPE_CHECKING, TypeVar
 
-from valanga import TurnState
+from anemone.dynamics import SearchDynamics
+from valanga import Dynamics, TurnState
 from valanga.policy import BranchSelector
 
 from chipiron.players.boardevaluators.master_board_evaluator import (
@@ -56,6 +57,9 @@ def create_player_with_pipeline(
         [NonTreeMoveSelectorArgs], BranchSelector[StateT]
     ],
     random_generator: random.Random,
+    dynamics: Dynamics[StateT] | SearchDynamics[StateT],
+    copy_stack_until_depth: int = 2,
+    deep_copy_legal_moves: bool = True,
 ) -> Player[SnapT, StateT]:
     """Create a player using a generic selection pipeline with game-specific builders."""
     if isinstance(main_selector_args, TreeAndValueAppArgs):
@@ -71,6 +75,9 @@ def create_player_with_pipeline(
             master_state_evaluator=master_state_evaluator,
             state_representation_factory=None,
             random_generator=random_generator,
+            copy_stack_until_depth=copy_stack_until_depth,
+            deep_copy_legal_moves=deep_copy_legal_moves,
+            dynamics=dynamics,
         )
     elif isinstance(main_selector_args, GuiHumanPlayerArgs):
         # Minimal behavior: fail fast with a clear message (or implement GUI path)

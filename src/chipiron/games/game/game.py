@@ -2,7 +2,7 @@
 
 from typing import TYPE_CHECKING, Annotated
 
-from valanga import StateTag, TurnState
+from valanga import Dynamics, StateTag, TurnState
 from valanga.game import ActionKey, ActionName, Seed
 
 from chipiron.displays.gui_protocol import Scope
@@ -39,6 +39,7 @@ class Game[StateT: TurnState = TurnState]:
         GamePlayingStatus  # TODO: should this be here? looks related to gui
     )
     _current_state: StateT
+    _dynamics: Dynamics[StateT]
     _seed: Seed | None
     _state_tag_history: list[StateTag]
     _action_history: list[ActionName]
@@ -49,7 +50,11 @@ class Game[StateT: TurnState = TurnState]:
     _state_history: list[StateT]
 
     def __init__(
-        self, state: StateT, playing_status: GamePlayingStatus, seed_: Seed = 0
+        self,
+        state: StateT,
+        dynamics: Dynamics[StateT],
+        playing_status: GamePlayingStatus,
+        seed_: Seed = 0,
     ) -> None:
         """Initialize the Game object.
 
@@ -60,12 +65,12 @@ class Game[StateT: TurnState = TurnState]:
 
         """
         self._current_state = state
+        self._dynamics = dynamics
         self._playing_status = playing_status
         self._seed = seed_
         self._state_tag_history = [state.tag]
         self._action_history = []
-        state_copy: StateT = state.copy(stack=True)
-        self._state_history = [state_copy]
+        self._state_history = [state]
         self._ply = 0
 
     @property
@@ -99,21 +104,19 @@ class Game[StateT: TurnState = TurnState]:
 
         """
         if self._playing_status.is_play():
-            assert action in list(self._current_state.branch_keys), (
+            assert action in list(self._dynamics.legal_actions(self._current_state)), (
                 f"Invalid action: {action}"
             )
 
             self._action_history.append(
-                self._current_state.branch_name_from_key(key=action)
+                self._dynamics.action_name(self._current_state, action)
             )
 
-            self._current_state.step(branch_key=action)
+            transition = self._dynamics.step(self._current_state, action)
+            self._current_state = transition.next_state
 
             self._state_tag_history.append(self._current_state.tag)
-            current_state_copy: StateT = self._current_state.copy(
-                stack=True, deep_copy_legal_moves=True
-            )
-            self._state_history.append(current_state_copy)
+            self._state_history.append(self._current_state)
             self._ply += 1
         else:
             print(
@@ -130,9 +133,7 @@ class Game[StateT: TurnState = TurnState]:
         if self._playing_status.is_paused():
             if len(self._state_history) > 1:
                 del self._state_history[-1]
-                self._current_state = self._state_history[-1].copy(
-                    stack=True, deep_copy_legal_moves=True
-                )
+                self._current_state = self._state_history[-1]
                 self._ply -= 1
         else:
             print(f"Cannot rewind move if the game status is {self._playing_status}")
@@ -182,6 +183,11 @@ class Game[StateT: TurnState = TurnState]:
 
         """
         return self._playing_status.is_play()
+
+    @property
+    def dynamics(self) -> Dynamics[StateT]:
+        """Get the game dynamics."""
+        return self._dynamics
 
     @property
     def state(self) -> StateT:
@@ -286,6 +292,11 @@ class ObservableGame[StateT: TurnState = TurnState]:
         self.notify_display()
 
     @property
+    def dynamics(self) -> Dynamics[StateT]:
+        """Get the game dynamics."""
+        return self.game.dynamics
+
+    @property
     def playing_status(self) -> GamePlayingStatus:
         """Get the playing status of the game.
 
@@ -355,9 +366,6 @@ class ObservableGame[StateT: TurnState = TurnState]:
 
     def query_move_from_players(self) -> None:
         """Notifies the players to ask for a move."""
-        if self.game.state.is_game_over():
-            return
-
         merged_seed: int | None = unique_int_from_list([self.game.seed, self.game.ply])
         if merged_seed is None:
             merged_seed = int(self.game.ply)  # deterministic fallback
@@ -367,8 +375,6 @@ class ObservableGame[StateT: TurnState = TurnState]:
 
         move_function: MoveFunction
         for move_function in self.move_functions:
-            if self.game.state.is_game_over():
-                break
             move_function(request)
 
     def notify_status(self) -> None:

@@ -4,11 +4,12 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Protocol, TypeVar, cast
 
-from valanga import BranchKey, Color, TurnState
+from valanga import BranchKey, Color, Dynamics, TurnState
 from valanga.evaluations import FloatyStateEvaluation, ForcedOutcome, StateEvaluation
 from valanga.game import BranchName, Seed
 from valanga.over_event import HowOver
 from valanga.policy import BranchSelector, NotifyProgressCallable, Recommendation
+
 
 TurnStateT = TypeVar("TurnStateT", bound=TurnState)
 
@@ -26,6 +27,7 @@ class RecommendationModifier[StateT: TurnState](Protocol):
         state: StateT,
         rec: Recommendation,
         seed: Seed,
+        dynamics: Dynamics[StateT],
     ) -> Recommendation | None:
         """Return an overridden recommendation or ``None`` to keep the original."""
 
@@ -43,6 +45,7 @@ class ComposedBranchSelector[StateT: TurnState](BranchSelector[StateT]):
     """Branch selector that applies recommendation modifiers in sequence."""
 
     base: BranchSelector[StateT]
+    dynamics: Dynamics[StateT]
     modifiers: tuple[RecommendationModifier[StateT], ...] = ()
 
     def recommend(
@@ -58,7 +61,12 @@ class ComposedBranchSelector[StateT: TurnState](BranchSelector[StateT]):
             notify_progress=notify_progress,
         )
         for modifier in self.modifiers:
-            overridden = modifier.modify(state=state, rec=recommendation, seed=seed)
+            overridden = modifier.modify(
+                state=state,
+                rec=recommendation,
+                seed=seed,
+                dynamics=self.dynamics,
+            )
             if overridden is not None:
                 recommendation = overridden
         return recommendation
@@ -91,20 +99,17 @@ class AccelerateWhenWinning[StateT: TurnState]:
     progress_gain_fn: ProgressGainFn
     name: str = "accelerate_when_winning"
     threshold: float = 0.98
-    copy_stack: bool = False
-    deep_copy_legal_moves: bool = True
 
     def modify(
         self,
         state: StateT,
         rec: Recommendation,
         seed: Seed,
+        dynamics: Dynamics[StateT],
     ) -> Recommendation | None:
         """Return an overridden recommendation that prefers winning branches with more progress."""
         _ = seed  # This modifier does not use randomness.
 
-        if state.is_game_over():
-            return None
         if rec.evaluation is None or rec.branch_evals is None:
             return None
         if not is_winning_eval(rec.evaluation, state.turn, threshold=self.threshold):
@@ -117,15 +122,8 @@ class AccelerateWhenWinning[StateT: TurnState]:
             if not is_winning_eval(child_eval, state.turn, threshold=self.threshold):
                 continue
 
-            branch_key = state.branch_key_from_name(name=branch_name)
-
-            child_state = state.copy(
-                stack=self.copy_stack,
-                deep_copy_legal_moves=self.deep_copy_legal_moves,
-            )
-            mods = child_state.step(branch_key)
-            if mods is None:
-                continue
+            branch_key = dynamics.action_from_name(state, branch_name)
+            _ = dynamics.step(state, branch_key).next_state
 
             gain: float = self.progress_gain_fn(state, branch_key)
             if gain > best_gain:
