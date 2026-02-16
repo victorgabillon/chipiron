@@ -14,6 +14,8 @@ from chipiron.environments.chess.types import ChessState
 class ChessSearchDynamics(SearchDynamics[ChessState]):
     """Search dynamics with depth-aware board-copy policy."""
 
+    __anemone_search_dynamics__ = True
+
     copy_stack_until_depth: int = 2
     deep_copy_legal_moves: bool = True
 
