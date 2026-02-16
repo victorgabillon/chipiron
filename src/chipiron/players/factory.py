@@ -212,12 +212,8 @@ def create_chess_player(
 
     search_args = getattr(args.main_move_selector, "anemone_args", None)
     search_config = getattr(search_args, "search", None)
-    copy_stack_until_depth = int(
-        getattr(search_config, "copy_stack_until_depth", 2)
-    )
-    deep_copy_legal_moves = bool(
-        getattr(search_config, "deep_copy_legal_moves", True)
-    )
+    copy_stack_until_depth = int(getattr(search_config, "copy_stack_until_depth", 2))
+    deep_copy_legal_moves = bool(getattr(search_config, "deep_copy_legal_moves", True))
 
     chess_dynamics = ChessDynamics()
     chess_search_dynamics = make_search_dynamics(
