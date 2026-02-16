@@ -2,15 +2,14 @@
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Protocol, TypeVar, cast
+from typing import Any, Protocol, cast
 
-from valanga import BranchKey, Color, Dynamics, TurnState
+from anemone.dynamics import SearchDynamics
+from valanga import BranchKey, Color, TurnState
 from valanga.evaluations import FloatyStateEvaluation, ForcedOutcome, StateEvaluation
 from valanga.game import BranchName, Seed
 from valanga.over_event import HowOver
 from valanga.policy import BranchSelector, NotifyProgressCallable, Recommendation
-
-TurnStateT = TypeVar("TurnStateT", bound=TurnState)
 
 
 class RecommendationModifier[StateT: TurnState](Protocol):
@@ -26,7 +25,7 @@ class RecommendationModifier[StateT: TurnState](Protocol):
         state: StateT,
         rec: Recommendation,
         seed: Seed,
-        dynamics: Dynamics[StateT],
+        dynamics: SearchDynamics[StateT, Any],
     ) -> Recommendation | None:
         """Return an overridden recommendation or ``None`` to keep the original."""
 
@@ -44,7 +43,7 @@ class ComposedBranchSelector[StateT: TurnState](BranchSelector[StateT]):
     """Branch selector that applies recommendation modifiers in sequence."""
 
     base: BranchSelector[StateT]
-    dynamics: Dynamics[StateT]
+    dynamics: SearchDynamics[StateT, Any]
     modifiers: tuple[RecommendationModifier[StateT], ...] = ()
 
     def recommend(
@@ -104,7 +103,7 @@ class AccelerateWhenWinning[StateT: TurnState]:
         state: StateT,
         rec: Recommendation,
         seed: Seed,
-        dynamics: Dynamics[StateT],
+        dynamics: SearchDynamics[StateT, Any],
     ) -> Recommendation | None:
         """Return an overridden recommendation that prefers winning branches with more progress."""
         _ = seed  # This modifier does not use randomness.
@@ -122,7 +121,7 @@ class AccelerateWhenWinning[StateT: TurnState]:
                 continue
 
             branch_key = dynamics.action_from_name(state, branch_name)
-            _ = dynamics.step(state, branch_key).next_state
+            _ = dynamics.step(state, branch_key, depth=0).next_state
 
             gain: float = self.progress_gain_fn(state, branch_key)
             if gain > best_gain:

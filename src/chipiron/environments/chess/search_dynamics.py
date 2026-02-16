@@ -11,7 +11,7 @@ from chipiron.environments.chess.types import ChessState
 
 
 @dataclass(frozen=True)
-class ChessSearchDynamics(SearchDynamics[ChessState]):
+class ChessSearchDynamics(SearchDynamics[ChessState, MoveKey]):
     """Search dynamics with depth-aware board-copy policy."""
 
     __anemone_search_dynamics__ = True
