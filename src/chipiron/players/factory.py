@@ -14,9 +14,8 @@ from atomheart.board.utils import FenPlusHistory
 from valanga import Color
 from valanga.policy import BranchSelector
 
+from chipiron.environments.chess.search_dynamics import ChessSearchDynamics
 from chipiron.environments.chess.types import ChessState
-from chipiron.environments.search_dynamics import make_search_dynamics
-from chipiron.environments.types import GameKind
 from chipiron.players.adapters.chess_adapter import ChessAdapter
 from chipiron.players.adapters.chess_syzygy_oracle import (
     ChessSyzygyPolicyOracle,
@@ -216,9 +215,7 @@ def create_chess_player(
     deep_copy_legal_moves = bool(getattr(search_config, "deep_copy_legal_moves", True))
 
     chess_dynamics = ChessDynamics()
-    chess_search_dynamics = make_search_dynamics(
-        game_kind=GameKind.CHESS,
-        dynamics=chess_dynamics,
+    chess_search_dynamics = ChessSearchDynamics(
         copy_stack_until_depth=copy_stack_until_depth,
         deep_copy_legal_moves=deep_copy_legal_moves,
     )
@@ -232,15 +229,16 @@ def create_chess_player(
         terminal_oracle=terminal_oracle,
         master_evaluator_from_args=master_evaluator_from_args,
         adapter_builder=adapter_builder,
-        create_non_tree_selector=lambda selector_args: (
+        create_non_tree_selector=lambda selector_args, dynamics: (
             move_selector.create_main_move_selector(
                 selector_args,
-                dynamics=chess_dynamics,
+                dynamics=dynamics,
                 random_generator=random_generator,
             )
         ),
         random_generator=random_generator,
-        dynamics=chess_search_dynamics,
+        runtime_dynamics=chess_dynamics,
+        search_dynamics_override=chess_search_dynamics,
         copy_stack_until_depth=copy_stack_until_depth,
         deep_copy_legal_moves=deep_copy_legal_moves,
     )

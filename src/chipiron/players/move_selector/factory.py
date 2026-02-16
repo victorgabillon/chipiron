@@ -5,7 +5,7 @@ from collections.abc import Mapping
 from typing import Any, TypeVar
 
 from anemone import TreeAndValuePlayerArgs, create_tree_and_value_branch_selector
-from anemone.dynamics import SearchDynamics
+from anemone.dynamics import SearchDynamics, normalize_search_dynamics
 from anemone.hooks.search_hooks import PriorityCheckFactory, SearchHooks
 from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
     MasterStateEvaluator,
@@ -15,7 +15,6 @@ from valanga import Dynamics, RepresentationFactory, StateModifications, TurnSta
 from valanga.evaluator_types import EvaluatorInput
 from valanga.policy import BranchSelector
 
-from chipiron.environments.chess.search_dynamics import ChessSearchDynamics
 from chipiron.environments.chess.types import ChessState
 from chipiron.players.move_selector.move_selector_args import NonTreeMoveSelectorArgs
 from chipiron.utils.logger import chipiron_logger
@@ -31,6 +30,12 @@ from .priority_checks.pv_attacked_open_all import PvAttackedOpenAllPriorityCheck
 from .random import Random, create_random
 
 TurnStateT = TypeVar("TurnStateT", bound=TurnState)
+
+
+class MissingTreeSearchDynamicsError(ValueError):
+    """Raised when tree search dynamics cannot be built from provided inputs."""
+
+    DEFAULT_MESSAGE = "Tree search requires `dynamics` or `search_dynamics_override`."
 
 
 def create_main_move_selector(
@@ -81,7 +86,8 @@ def create_tree_and_value_move_selector(
     random_generator: random.Random,
     copy_stack_until_depth: int = 2,
     deep_copy_legal_moves: bool = True,
-    dynamics: Dynamics[TurnStateT] | SearchDynamics[TurnStateT] | None = None,
+    dynamics: Dynamics[TurnStateT] | None = None,
+    search_dynamics_override: SearchDynamics[TurnStateT, Any] | None = None,
 ) -> BranchSelector[TurnStateT]:
     """Create a tree-and-value move selector with a prebuilt evaluator."""
 
@@ -109,10 +115,14 @@ def create_tree_and_value_move_selector(
         priority_check_registry=priority_check_registry,
     )
 
-    search_dynamics = dynamics or ChessSearchDynamics(
-        copy_stack_until_depth=copy_stack_until_depth,
-        deep_copy_legal_moves=deep_copy_legal_moves,
-    )
+    if search_dynamics_override is not None:
+        search_dynamics = search_dynamics_override
+    else:
+        if dynamics is None:
+            raise MissingTreeSearchDynamicsError(
+                MissingTreeSearchDynamicsError.DEFAULT_MESSAGE
+            )
+        search_dynamics = normalize_search_dynamics(dynamics)
 
     base_selector = create_tree_and_value_branch_selector(
         state_type=state_type,
