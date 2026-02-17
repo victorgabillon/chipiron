@@ -25,6 +25,7 @@ from anemone.trees.tree import Tree
 from anemone.trees.tree_visualization import (
     display_special,
 )
+from atomheart import ChessDynamics
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from chipiron.scripts.iscript import IScript
@@ -249,6 +250,7 @@ class Window(QtWidgets.QWidget):
             pic = pickle.load(tree_data_file)
 
         self.tree: Tree[Any] = Tree(root_node=pic[1], descendants=pic[0])
+        self.dynamics = ChessDynamics()
         self.tree.descendants = pic[0]
 
         self.current_node = self.tree.root_node
@@ -272,7 +274,9 @@ class Window(QtWidgets.QWidget):
             self.index[move] = chr(33 + ind)
 
     @typing.no_type_check
-    def display_subtree(self) -> None:
+    def display_subtree(
+        self,
+    ) -> None:
         """Display the subtree rooted at the current node.
 
         This method generates a visualization of the subtree rooted at the current node and saves it as a JPG image file.
@@ -285,7 +289,10 @@ class Window(QtWidgets.QWidget):
 
         """
         dot = display_special(
-            node=self.current_node, format_str="jpg", index=self.index
+            node=self.current_node,
+            format_str="jpg",
+            index=self.index,
+            dynamics=self.dynamics,
         )
         dot.render("src/chipiron/runs/treedisplays/TreeVisualtemp")
 

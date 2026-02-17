@@ -32,22 +32,22 @@ def test_game_rewind(use_rust_boards: bool) -> None:
     game.rewind_one_move()
 
     game.playing_status.play()
-    game.play_move(action=game.dynamics.action_from_name(game.state, "e2e4"))
+    game.play_move(action=dynamics.action_from_name(game.state, "e2e4"))
 
     game.playing_status.pause()
     game.rewind_one_move()
 
     game.playing_status.play()
-    game.play_move(action=game.dynamics.action_from_name(game.state, "e2e4"))
+    game.play_move(action=dynamics.action_from_name(game.state, "e2e4"))
 
     game.playing_status.play()
-    game.play_move(action=game.dynamics.action_from_name(game.state, "g8f6"))
+    game.play_move(action=dynamics.action_from_name(game.state, "g8f6"))
 
     game.playing_status.pause()
     game.rewind_one_move()
 
     game.playing_status.play()
-    game.play_move(action=game.dynamics.action_from_name(game.state, "g8f6"))
+    game.play_move(action=dynamics.action_from_name(game.state, "g8f6"))
 
 
 if __name__ == "__main__":

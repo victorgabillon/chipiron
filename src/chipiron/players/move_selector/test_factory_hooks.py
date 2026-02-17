@@ -25,6 +25,63 @@ class DummyOpeningInstructor:
         return []
 
 
+"""Tests for anemone hooks wiring in move selector factory."""
+
+import random
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, cast
+
+from anemone.hooks.search_hooks import SearchHooks
+from anemone.dynamics import SearchDynamics
+
+import valanga
+
+from chipiron.environments.chess.types import ChessState
+from chipiron.players.move_selector import factory
+from chipiron.players.move_selector.anemone_hooks import ChessFeatureExtractor
+from chipiron.players.move_selector.priority_checks.pv_attacked_open_all import (
+    PvAttackedOpenAllPriorityCheck,
+)
+
+if TYPE_CHECKING:
+    from anemone.node_selector.priority_check.priority_check import PriorityCheck
+
+
+class DummyOpeningInstructor:
+    """Minimal opening instructor stub for factory wiring tests."""
+
+    def all_branches_to_open(self, node: Any) -> list[Any]:
+        _ = node
+        return []
+
+
+@dataclass(frozen=True)
+class DummySearchDynamics(SearchDynamics[ChessState, valanga.BranchKey]):
+    """Bare-minimum SearchDynamics for hook wiring tests."""
+
+    __anemone_search_dynamics__ = True
+
+    def legal_actions(
+        self, state: ChessState
+    ) -> valanga.BranchKeyGeneratorP[valanga.BranchKey]:
+        _ = state
+        raise AssertionError("Not used in this wiring test")
+
+    def step(
+        self, state: ChessState, action: valanga.BranchKey, *, depth: int
+    ) -> valanga.Transition[ChessState]:
+        _ = (state, action, depth)
+        raise AssertionError("Not used in this wiring test")
+
+    def action_name(self, state: ChessState, action: valanga.BranchKey) -> str:
+        _ = (state, action)
+        raise AssertionError("Not used in this wiring test")
+
+    def action_from_name(self, state: ChessState, name: str) -> valanga.BranchKey:
+        _ = (state, name)
+        raise AssertionError("Not used in this wiring test")
+
+
 def test_create_tree_and_value_move_selector_passes_hooks(monkeypatch: Any) -> None:
     """Ensure SearchHooks are constructed and forwarded to anemone factory."""
     captured: dict[str, Any] = {}
@@ -46,6 +103,7 @@ def test_create_tree_and_value_move_selector_passes_hooks(monkeypatch: Any) -> N
         master_state_evaluator=cast("Any", object()),
         state_representation_factory=None,
         random_generator=random.Random(0),
+        search_dynamics_override=DummySearchDynamics(),
     )
 
     assert selector is sentinel_selector
