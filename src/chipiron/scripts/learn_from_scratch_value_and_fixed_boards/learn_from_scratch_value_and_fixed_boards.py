@@ -82,7 +82,7 @@ class LearnNNFromScratchScriptArgs:
     evaluating_player_args: PlayerArgs | PlayerConfigTag = field(
         default_factory=lambda: PlayerArgs(
             name="Random",
-            main_move_selector=cast("RandomSelectorArgs", RandomSelectorArgs()),
+            main_move_selector=RandomSelectorArgs(),
             syzygy_play=False,
         )
     )

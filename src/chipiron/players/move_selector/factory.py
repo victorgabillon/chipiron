@@ -133,6 +133,7 @@ def create_tree_and_value_move_selector[TurnStateT: TurnState](
         priority_check_registry=priority_check_registry,
     )
 
+    search_dynamics: SearchDynamics[TurnStateT, Any]
     if search_dynamics_override is not None:
         search_dynamics = search_dynamics_override
     else:
@@ -140,9 +141,7 @@ def create_tree_and_value_move_selector[TurnStateT: TurnState](
             raise MissingTreeSearchDynamicsError(
                 MissingTreeSearchDynamicsError.DEFAULT_MESSAGE
             )
-        search_dynamics: SearchDynamics[TurnStateT, Any] = normalize_search_dynamics(
-            dynamics
-        )
+        search_dynamics = normalize_search_dynamics(dynamics)
 
     base_selector = create_tree_and_value_branch_selector(
         state_type=state_type,
