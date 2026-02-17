@@ -23,7 +23,7 @@ from chipiron.games.match.match_factories import create_match_manager_from_args
 from chipiron.games.match.match_tag import MatchConfigTag
 from chipiron.players import PlayerArgs
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
-from chipiron.players.move_selector.stockfish import StockfishPlayer
+from chipiron.players.move_selector.stockfish_selector import StockfishSelector
 from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
@@ -173,7 +173,7 @@ def _build_base_configs() -> list[Any]:
     ]
 
     # Only add Stockfish test if it's properly installed
-    if StockfishPlayer.is_stockfish_available():
+    if StockfishSelector.is_stockfish_available():
         configs.append(
             # checking stockfish
             PartialOpMatchScriptArgs(
@@ -241,7 +241,7 @@ def test_one_matches(
         configs = configs_base
 
     # Log Stockfish availability status
-    if StockfishPlayer.is_stockfish_available():
+    if StockfishSelector.is_stockfish_available():
         chipiron_logger.info("Stockfish is available - including Stockfish tests")
     else:
         chipiron_logger.info(
