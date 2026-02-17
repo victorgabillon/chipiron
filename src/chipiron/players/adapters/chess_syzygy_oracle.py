@@ -28,7 +28,7 @@ class ChessSyzygyPolicyOracle(PolicyOracle[ChessState]):
     def recommend(self, state: ChessState) -> BranchName:
         """Recommend."""
         best_move_key: MoveKey = self._syzygy.best_move(state.board)
-        best_move_uci: MoveUci = state.get_uci_from_move_key(best_move_key)
+        best_move_uci: MoveUci = state.board.get_uci_from_move_key(best_move_key)
         return best_move_uci
 
 

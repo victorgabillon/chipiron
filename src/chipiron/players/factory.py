@@ -16,6 +16,7 @@ from valanga.policy import BranchSelector
 
 from chipiron.environments.chess.search_dynamics import ChessSearchDynamics
 from chipiron.environments.chess.types import ChessState
+from chipiron.environments.types import GameKind
 from chipiron.players.adapters.chess_adapter import ChessAdapter
 from chipiron.players.adapters.chess_syzygy_oracle import (
     ChessSyzygyPolicyOracle,
@@ -232,6 +233,7 @@ def create_chess_player(
         create_non_tree_selector=lambda selector_args, dynamics: (
             move_selector.create_main_move_selector(
                 selector_args,
+                game_kind=GameKind.CHESS,
                 dynamics=dynamics,
                 random_generator=random_generator,
             )

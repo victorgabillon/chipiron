@@ -2,7 +2,7 @@
 
 import random
 from collections.abc import Mapping
-from typing import Any, TypeVar
+from typing import Any, TypeVar, cast
 
 from anemone import TreeAndValuePlayerArgs, create_tree_and_value_branch_selector
 from anemone.dynamics import SearchDynamics, normalize_search_dynamics
@@ -11,15 +11,20 @@ from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import
     MasterStateEvaluator,
 )
 from anemone.node_selector.opening_instructions import OpeningInstructor
-from valanga import Dynamics, RepresentationFactory, StateModifications, TurnState
+from valanga import (
+    Dynamics,
+    RepresentationFactory,
+    StateModifications,
+    TurnState,
+)
 from valanga.evaluator_types import EvaluatorInput
 from valanga.policy import BranchSelector
 
-from chipiron.environments.chess.types import ChessState
+from chipiron.environments.types import GameKind
 from chipiron.players.move_selector.move_selector_args import NonTreeMoveSelectorArgs
 from chipiron.utils.logger import chipiron_logger
 
-from . import human, stockfish
+from . import human
 from .anemone_hooks import ChessFeatureExtractor
 from .modifiers import (
     AccelerateWhenWinning,
@@ -28,6 +33,7 @@ from .modifiers import (
 )
 from .priority_checks.pv_attacked_open_all import PvAttackedOpenAllPriorityCheck
 from .random import Random, create_random
+from .registry import get_game_specific_selector_factory
 
 TurnStateT = TypeVar("TurnStateT", bound=TurnState)
 
@@ -38,38 +44,62 @@ class MissingTreeSearchDynamicsError(ValueError):
     DEFAULT_MESSAGE = "Tree search requires `dynamics` or `search_dynamics_override`."
 
 
-def create_main_move_selector(
+class MissingGameSpecificSelectorFactoryError(ValueError):
+    """Raised when no game-specific selector factory is registered for a game kind."""
+
+    def __init__(self, game_kind: GameKind) -> None:
+        """Initialize the error with the missing game kind."""
+        super().__init__(
+            f"No game-specific selector factory registered for {game_kind}"
+        )
+
+
+def create_main_move_selector[TurnStateT: TurnState](
     move_selector_instance_or_args: NonTreeMoveSelectorArgs,
     *,
-    dynamics: Dynamics[ChessState],
+    game_kind: GameKind,
+    dynamics: Dynamics[TurnStateT],
     random_generator: random.Random,
-) -> BranchSelector[ChessState]:
+) -> BranchSelector[TurnStateT]:
     """Create the main move selector based on the given arguments.
 
     Args:
         move_selector_instance_or_args (NonTreeMoveSelectorArgs): The arguments or instance of the move selector.
+        game_kind (GameKind): The kind of game (CHESS, etc.) to determine game-specific handling.
+        dynamics (Dynamics[TurnStateT]): The game dynamics.
         random_generator (random.Random): The random number generator.
 
     Returns:
         BranchSelector: The main move selector.
 
     Raises:
-        ValueErr    or: If the given move selector instance or arguments are invalid.
+        ValueError: If the given move selector instance or arguments are invalid.
 
     """
-    main_move_selector: BranchSelector[ChessState]
+    main_move_selector: BranchSelector[TurnStateT]
     chipiron_logger.debug("Create main move selector")
 
+    # Handle generic selectors
     match move_selector_instance_or_args:
         case Random():
             main_move_selector = create_random(
                 dynamics=dynamics,
                 random_generator=random_generator,
             )
-        case stockfish.StockfishPlayer():
-            main_move_selector = move_selector_instance_or_args
         case human.CommandLineHumanPlayerArgs():
-            main_move_selector = human.CommandLineHumanMoveSelector()
+            main_move_selector = cast(
+                "BranchSelector[TurnStateT]",
+                human.CommandLineHumanMoveSelector(dynamics=dynamics),
+            )
+        case _:
+            # Delegate to game-specific factory
+            factory = get_game_specific_selector_factory(game_kind)
+            if factory is None:
+                raise MissingGameSpecificSelectorFactoryError(game_kind)
+            main_move_selector = cast(
+                "BranchSelector[TurnStateT]",
+                factory(move_selector_instance_or_args, dynamics, random_generator),
+            )
 
     return main_move_selector
 

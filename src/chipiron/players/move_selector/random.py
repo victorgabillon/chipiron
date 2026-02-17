@@ -12,8 +12,8 @@ import random
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal
 
-from valanga import Dynamics
-from valanga.game import Seed, State
+from valanga import Dynamics, TurnState
+from valanga.game import Seed
 from valanga.policy import NotifyProgressCallable, Recommendation
 
 from .move_selector_types import MoveSelectorTypes
@@ -23,8 +23,21 @@ if TYPE_CHECKING:
     from valanga import BranchKey
 
 
+class MissingRandomDynamicsError(ValueError):
+    """Raised when a random selector is used without runtime dynamics."""
+
+    DEFAULT_MESSAGE = (
+        "Random move selector requires `dynamics`. "
+        "Use create_random(...) to build a runtime selector instance."
+    )
+
+    def __init__(self) -> None:
+        """Initialize the error with a fixed guidance message."""
+        super().__init__(self.DEFAULT_MESSAGE)
+
+
 @dataclass
-class Random:
+class Random[StateT: TurnState]:
     """Random move selector class.
 
     This class implements a move selector that randomly selects a legal move from the given chess board.
@@ -36,12 +49,12 @@ class Random:
     """
 
     type: Literal[MoveSelectorTypes.RANDOM]  # for serialization
-    dynamics: Dynamics[State]
+    dynamics: Dynamics[StateT] | None = None
     random_generator: random.Random = field(default_factory=random.Random)
 
     def recommend(
         self,
-        state: State,
+        state: StateT,
         seed: Seed,
         notify_progress: NotifyProgressCallable | None = None,
     ) -> Recommendation:
@@ -57,6 +70,8 @@ class Random:
 
         """
         _ = notify_progress  # Unused in this implementation
+        if self.dynamics is None:
+            raise MissingRandomDynamicsError
         self.random_generator.seed(seed)
         random_move_key: BranchKey = self.random_generator.choice(
             self.dynamics.legal_actions(state).get_all()
@@ -65,11 +80,11 @@ class Random:
         return Recommendation(recommended_name=random_move_uci, evaluation=None)
 
 
-def create_random(
+def create_random[StateT: TurnState](
     *,
-    dynamics: Dynamics[State],
+    dynamics: Dynamics[StateT],
     random_generator: random.Random,
-) -> Random:
+) -> Random[StateT]:
     """Create a random move selector.
 
     Args:

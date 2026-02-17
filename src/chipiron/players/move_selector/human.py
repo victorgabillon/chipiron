@@ -6,11 +6,10 @@ to select moves through the command line interface.
 from dataclasses import dataclass
 from typing import Literal
 
-import atomheart.board as boards
-from valanga.game import BranchName, Seed
+from valanga import Dynamics, TurnState
+from valanga.game import Seed
 from valanga.policy import NotifyProgressCallable, Recommendation
 
-from chipiron.environments.chess.types import ChessState
 from chipiron.utils.logger import chipiron_logger
 
 from .move_selector_types import MoveSelectorTypes
@@ -30,54 +29,28 @@ class GuiHumanPlayerArgs:
     type: Literal[MoveSelectorTypes.GUI_HUMAN]  # for serialization
 
 
-class CommandLineHumanMoveSelector:
-    """A move selector that allows a human player to select moves through the command line interface."""
+@dataclass
+class CommandLineHumanMoveSelector[StateT: TurnState]:
+    """Select moves interactively from command-line input."""
+
+    dynamics: Dynamics[StateT]
 
     def recommend(
         self,
-        state: ChessState,
+        state: StateT,
         seed: Seed,
         notify_progress: NotifyProgressCallable | None = None,
     ) -> Recommendation:
-        # seed can be ignored (stockfish is deterministic unless you randomize)
-        """Recommend."""
-        _ = notify_progress  # Unused in this implementation
-        _ = seed  # Unused in this implementation
-        best: BranchName = self.select_move(state.board).recommended_name
-        return Recommendation(recommended_name=best)
+        """Recommend one legal move chosen by the user."""
+        _ = seed
+        _ = notify_progress
 
-    def select_move(
-        self,
-        board: boards.IBoard,
-    ) -> Recommendation:
-        """Select a move based on user input through the command line interface.
+        actions = list(self.dynamics.legal_actions(state).get_all())
+        names = [self.dynamics.action_name(state, a) for a in actions]
+        chipiron_logger.info("Legal moves: %s", names)
 
-        Args:
-            board (boards.BoardChi): The current state of the chess board.
-
-        Returns:
-            Recommendation: The selected move recommendation.
-
-        Raises:
-            AssertionError: If the selected move is not a legal move.
-
-        """
-        chipiron_logger.info("Legal Moves %s", board.legal_moves)
-        legal_moves_uci = [
-            board.get_uci_from_move_key(move) for move in board.legal_moves
-        ]
-        chipiron_logger.info("Legal Moves %s", legal_moves_uci)
-
-        good_move: bool = False
-        move_uci: str = ""
-        while not good_move:
-            move_uci = input("Input your move")
-            print(f"choice of move {move_uci}")
-            if move_uci in legal_moves_uci:
-                good_move = True
-            else:
-                print("Bad move, Not legal")
-
-        assert move_uci in legal_moves_uci
-
-        return Recommendation(recommended_name=move_uci, evaluation=None)
+        while True:
+            name = input("Input your move: ").strip()
+            if name in names:
+                return Recommendation(recommended_name=name, evaluation=None)
+            chipiron_logger.info("Bad move, not legal.")

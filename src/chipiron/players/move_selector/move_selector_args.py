@@ -19,7 +19,7 @@ class MoveSelectorArgs(Protocol):
 
 
 NonTreeMoveSelectorArgs = (
-    human.CommandLineHumanPlayerArgs | random.Random | stockfish.StockfishPlayer
+    human.CommandLineHumanPlayerArgs | random.Random[Any] | stockfish.StockfishPlayer
 )
 
 AnyMoveSelectorArgs = (
