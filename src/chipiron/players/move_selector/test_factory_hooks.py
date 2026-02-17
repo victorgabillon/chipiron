@@ -51,6 +51,7 @@ class DummyOpeningInstructor:
     """Minimal opening instructor stub for factory wiring tests."""
 
     def all_branches_to_open(self, node: Any) -> list[Any]:
+        """Return empty list for all nodes."""
         _ = node
         return []
 
@@ -64,20 +65,24 @@ class DummySearchDynamics(SearchDynamics[ChessState, valanga.BranchKey]):
     def legal_actions(
         self, state: ChessState
     ) -> valanga.BranchKeyGeneratorP[valanga.BranchKey]:
+        """Return legal actions for a state (unused in this test stub)."""
         _ = state
         raise AssertionError("Not used in this wiring test")
 
     def step(
         self, state: ChessState, action: valanga.BranchKey, *, depth: int
     ) -> valanga.Transition[ChessState]:
+        """Step dynamics for one action (unused in this test stub)."""
         _ = (state, action, depth)
         raise AssertionError("Not used in this wiring test")
 
     def action_name(self, state: ChessState, action: valanga.BranchKey) -> str:
+        """Return action string name (unused in this test stub)."""
         _ = (state, action)
         raise AssertionError("Not used in this wiring test")
 
     def action_from_name(self, state: ChessState, name: str) -> valanga.BranchKey:
+        """Parse action string into key (unused in this test stub)."""
         _ = (state, name)
         raise AssertionError("Not used in this wiring test")
 

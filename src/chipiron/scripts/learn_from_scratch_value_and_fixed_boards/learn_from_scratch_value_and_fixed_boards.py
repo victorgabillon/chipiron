@@ -52,8 +52,7 @@ from chipiron.players.boardevaluators.table_base.factory import (
     create_syzygy,
 )
 from chipiron.players.factory import create_chess_player
-from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
-from chipiron.players.move_selector.random import Random
+from chipiron.players.move_selector.random_args import RandomSelectorArgs
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script import Script
@@ -83,10 +82,7 @@ class LearnNNFromScratchScriptArgs:
     evaluating_player_args: PlayerArgs | PlayerConfigTag = field(
         default_factory=lambda: PlayerArgs(
             name="Random",
-            main_move_selector=cast(
-                "Random[ChessState]",
-                Random(type=MoveSelectorTypes.RANDOM),
-            ),
+            main_move_selector=cast("RandomSelectorArgs", RandomSelectorArgs()),
             syzygy_play=False,
         )
     )

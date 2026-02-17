@@ -2,7 +2,7 @@
 
 import random
 from collections.abc import Mapping
-from typing import Any, cast
+from typing import Any
 
 from anemone import TreeAndValuePlayerArgs, create_tree_and_value_branch_selector
 from anemone.dynamics import SearchDynamics, normalize_search_dynamics
@@ -24,7 +24,6 @@ from chipiron.environments.types import GameKind
 from chipiron.players.move_selector.move_selector_args import NonTreeMoveSelectorArgs
 from chipiron.utils.logger import chipiron_logger
 
-from . import human
 from .anemone_hooks import ChessFeatureExtractor
 from .modifiers import (
     AccelerateWhenWinning,
@@ -32,7 +31,8 @@ from .modifiers import (
     chess_progress_gain_zeroing,
 )
 from .priority_checks.pv_attacked_open_all import PvAttackedOpenAllPriorityCheck
-from .random import Random, create_random
+from .random_args import RandomSelectorArgs
+from .random_selector import create_random_selector
 from .registry import get_game_specific_selector_factory
 
 
@@ -53,7 +53,7 @@ class MissingGameSpecificSelectorFactoryError(ValueError):
 
 
 def create_main_move_selector[TurnStateT: TurnState](
-    move_selector_instance_or_args: NonTreeMoveSelectorArgs,
+    move_selector_args: NonTreeMoveSelectorArgs,
     *,
     game_kind: GameKind,
     dynamics: Dynamics[TurnStateT],
@@ -62,7 +62,7 @@ def create_main_move_selector[TurnStateT: TurnState](
     """Create the main move selector based on the given arguments.
 
     Args:
-        move_selector_instance_or_args (NonTreeMoveSelectorArgs): The arguments or instance of the move selector.
+        move_selector_args (NonTreeMoveSelectorArgs): Move selector args parsed from config.
         game_kind (GameKind): The kind of game (CHESS, etc.) to determine game-specific handling.
         dynamics (Dynamics[TurnStateT]): The game dynamics.
         random_generator (random.Random): The random number generator.
@@ -78,26 +78,18 @@ def create_main_move_selector[TurnStateT: TurnState](
     chipiron_logger.debug("Create main move selector")
 
     # Handle generic selectors
-    match move_selector_instance_or_args:
-        case Random():
-            main_move_selector = create_random(
+    match move_selector_args:
+        case RandomSelectorArgs():
+            main_move_selector = create_random_selector(
                 dynamics=dynamics,
-                random_generator=random_generator,
-            )
-        case human.CommandLineHumanPlayerArgs():
-            main_move_selector = cast(
-                "BranchSelector[TurnStateT]",
-                human.CommandLineHumanMoveSelector(dynamics=dynamics),
+                rng=random_generator,
             )
         case _:
             # Delegate to game-specific factory
             factory = get_game_specific_selector_factory(game_kind)
             if factory is None:
                 raise MissingGameSpecificSelectorFactoryError(game_kind)
-            main_move_selector = cast(
-                "BranchSelector[TurnStateT]",
-                factory(move_selector_instance_or_args, dynamics, random_generator),
-            )
+            main_move_selector = factory(move_selector_args, dynamics, random_generator)
 
     return main_move_selector
 
@@ -148,7 +140,7 @@ def create_tree_and_value_move_selector[TurnStateT: TurnState](
             raise MissingTreeSearchDynamicsError(
                 MissingTreeSearchDynamicsError.DEFAULT_MESSAGE
             )
-        search_dynamics = normalize_search_dynamics(dynamics)
+        search_dynamics: SearchDynamics[TurnStateT, Any] = normalize_search_dynamics(dynamics)
 
     base_selector = create_tree_and_value_branch_selector(
         state_type=state_type,
