@@ -31,10 +31,9 @@ import random
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, cast
 
-from anemone.hooks.search_hooks import SearchHooks
-from anemone.dynamics import SearchDynamics
-
 import valanga
+from anemone.dynamics import SearchDynamics
+from anemone.hooks.search_hooks import SearchHooks
 
 from chipiron.environments.chess.types import ChessState
 from chipiron.players.move_selector import factory

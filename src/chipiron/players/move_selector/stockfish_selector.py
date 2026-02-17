@@ -101,6 +101,8 @@ class StockfishSelector:
         return Recommendation(recommended_name=result.move.uci(), evaluation=None)
 
 
-def create_stockfish_selector(*, depth: int = 20, time_limit: float = 0.1) -> StockfishSelector:
+def create_stockfish_selector(
+    *, depth: int = 20, time_limit: float = 0.1
+) -> StockfishSelector:
     """Build a runtime Stockfish selector from serializable args."""
     return StockfishSelector(depth=depth, time_limit=time_limit)

@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 import random
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
-
-from chipiron.players.move_selector.move_selector_args import NonTreeMoveSelectorArgs
 
 from valanga import Dynamics, TurnState
 from valanga.policy import BranchSelector
+
+from chipiron.players.move_selector.move_selector_args import NonTreeMoveSelectorArgs
 
 if TYPE_CHECKING:
     from chipiron.environments.types import GameKind
@@ -18,7 +18,11 @@ StateT = TurnState
 
 # Handler for "game-specific" selectors (like Stockfish for chess).
 type GameSpecificSelectorFactory = Callable[
-    [NonTreeMoveSelectorArgs, Dynamics[Any], random.Random],  # (args, dynamics, random_generator)
+    [
+        NonTreeMoveSelectorArgs,
+        Dynamics[Any],
+        random.Random,
+    ],  # (args, dynamics, random_generator)
     BranchSelector[Any],
 ]
 
