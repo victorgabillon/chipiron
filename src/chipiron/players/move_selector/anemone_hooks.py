@@ -6,8 +6,9 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from anemone.hooks.search_hooks import FeatureExtractor
-from atomheart.board.valanga_adapter import ValangaChessState
 from atomheart.utils.color import valanga_color_to_chess
+
+from chipiron.environments.chess.types import ChessState
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -21,12 +22,12 @@ class ChessFeatureExtractor(FeatureExtractor):
 
     def features(self, state: TurnState) -> Mapping[str, Any]:
         """Return a stable set of optional features for priority checks."""
-        if not isinstance(state, ValangaChessState):
+        if not isinstance(state, ChessState):
             return {}
 
         tactical_threat = False
 
-        assert isinstance(state, ValangaChessState)
+        assert isinstance(state, ChessState)
         player_to_move: Color = state.turn
 
         tactical_threat = bool(

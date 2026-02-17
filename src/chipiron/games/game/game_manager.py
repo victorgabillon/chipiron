@@ -248,7 +248,7 @@ class GameManager[StateT: TurnState = TurnState]:
         return False
 
     def _handle_gui_command(self, message: GuiCommand) -> None:
-        state: TurnState = self.game.state
+        state: StateT = self.game.state
 
         match message.payload:
             case CmdSetStatus():
@@ -384,7 +384,7 @@ class GameManager[StateT: TurnState = TurnState]:
 
         Keeps the stricter checks/logging from the player path.
         """
-        state: TurnState = self.game.state
+        state: StateT = self.game.state
 
         chipiron_logger.info(
             "[%s] MOVE ATTEMPT: move=%s player=%s color_to_play=%s is_play=%s current_tag=%s msg_tag=%s",

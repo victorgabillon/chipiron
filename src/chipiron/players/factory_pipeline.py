@@ -88,7 +88,9 @@ def create_player_with_pipeline(
             "not by create_main_move_selector."
         )
     else:
-        main_move_selector = create_non_tree_selector(main_selector_args, runtime_dynamics)
+        main_move_selector = create_non_tree_selector(
+            main_selector_args, runtime_dynamics
+        )
 
     adapter = adapter_builder(main_move_selector, policy_oracle)
     return Player(name=name, adapter=adapter)

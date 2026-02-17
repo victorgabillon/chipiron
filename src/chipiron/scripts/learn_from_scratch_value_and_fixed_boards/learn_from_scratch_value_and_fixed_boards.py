@@ -83,7 +83,10 @@ class LearnNNFromScratchScriptArgs:
     evaluating_player_args: PlayerArgs | PlayerConfigTag = field(
         default_factory=lambda: PlayerArgs(
             name="Random",
-            main_move_selector=Random(type=MoveSelectorTypes.RANDOM),
+            main_move_selector=cast(
+                "Random[ChessState]",
+                Random(type=MoveSelectorTypes.RANDOM),
+            ),
             syzygy_play=False,
         )
     )

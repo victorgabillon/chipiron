@@ -52,7 +52,7 @@ class ChessPlayerRequestEncoder(PlayerRequestEncoder[ChessState, FenPlusHistory]
         self, *, state: ChessState, seed: Seed, scope: Scope
     ) -> PlayerRequest[FenPlusHistory]:
         """Encode a chess move request using FEN history."""
-        fen_plus_history: FenPlusHistory = state.into_fen_plus_history()
+        fen_plus_history: FenPlusHistory = state.board.into_fen_plus_history()
 
         return PlayerRequest(
             schema_version=1,

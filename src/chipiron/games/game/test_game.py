@@ -24,7 +24,7 @@ def test_game_rewind(use_rust_boards: bool) -> None:
     game_playing_status: GamePlayingStatus = GamePlayingStatus()
 
     dynamics = ChessDynamics()
-    game: Game = Game(
+    game: Game[ChessState] = Game(
         state=state, dynamics=dynamics, playing_status=game_playing_status
     )
 
