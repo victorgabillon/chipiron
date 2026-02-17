@@ -140,7 +140,9 @@ def create_tree_and_value_move_selector[TurnStateT: TurnState](
             raise MissingTreeSearchDynamicsError(
                 MissingTreeSearchDynamicsError.DEFAULT_MESSAGE
             )
-        search_dynamics: SearchDynamics[TurnStateT, Any] = normalize_search_dynamics(dynamics)
+        search_dynamics: SearchDynamics[TurnStateT, Any] = normalize_search_dynamics(
+            dynamics
+        )
 
     base_selector = create_tree_and_value_branch_selector(
         state_type=state_type,

@@ -5,12 +5,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from chipiron.environments.types import GameKind
-from chipiron.players.move_selector.registry import (
-    register_game_specific_selector_factory,
-)
 from chipiron.players.move_selector.human import (
     CommandLineHumanMoveSelector,
     CommandLineHumanPlayerArgs,
+)
+from chipiron.players.move_selector.registry import (
+    register_game_specific_selector_factory,
 )
 from chipiron.players.move_selector.stockfish_args import StockfishSelectorArgs
 from chipiron.players.move_selector.stockfish_selector import create_stockfish_selector
