@@ -2,7 +2,7 @@
 
 import random
 from collections.abc import Mapping
-from typing import Any, TypeVar, cast
+from typing import Any, cast
 
 from anemone import TreeAndValuePlayerArgs, create_tree_and_value_branch_selector
 from anemone.dynamics import SearchDynamics, normalize_search_dynamics
@@ -34,8 +34,6 @@ from .modifiers import (
 from .priority_checks.pv_attacked_open_all import PvAttackedOpenAllPriorityCheck
 from .random import Random, create_random
 from .registry import get_game_specific_selector_factory
-
-TurnStateT = TypeVar("TurnStateT", bound=TurnState)
 
 
 class MissingTreeSearchDynamicsError(ValueError):
@@ -104,7 +102,7 @@ def create_main_move_selector[TurnStateT: TurnState](
     return main_move_selector
 
 
-def create_tree_and_value_move_selector(
+def create_tree_and_value_move_selector[TurnStateT: TurnState](
     args: TreeAndValuePlayerArgs,
     *,
     state_type: type[TurnStateT],
@@ -114,8 +112,6 @@ def create_tree_and_value_move_selector(
         RepresentationFactory[TurnStateT, StateModifications, EvaluatorInput] | None
     ),
     random_generator: random.Random,
-    copy_stack_until_depth: int = 2,
-    deep_copy_legal_moves: bool = True,
     dynamics: Dynamics[TurnStateT] | None = None,
     search_dynamics_override: SearchDynamics[TurnStateT, Any] | None = None,
 ) -> BranchSelector[TurnStateT]:

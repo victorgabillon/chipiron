@@ -241,8 +241,6 @@ def create_chess_player(
         random_generator=random_generator,
         runtime_dynamics=chess_dynamics,
         search_dynamics_override=chess_search_dynamics,
-        copy_stack_until_depth=copy_stack_until_depth,
-        deep_copy_legal_moves=deep_copy_legal_moves,
     )
 
 
