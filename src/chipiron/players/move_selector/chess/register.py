@@ -21,6 +21,10 @@ if TYPE_CHECKING:
     from valanga import Dynamics
     from valanga.policy import BranchSelector
 
+    from chipiron.players.move_selector.move_selector_args import (
+        NonTreeMoveSelectorArgs,
+    )
+
 
 ChessSelectorArgs = CommandLineHumanPlayerArgs | StockfishSelectorArgs
 
@@ -34,7 +38,7 @@ class UnsupportedChessSelectorArgsError(ValueError):
 
 
 def _chess_specific_factory(
-    args: ChessSelectorArgs,
+    args: NonTreeMoveSelectorArgs,
     dynamics: Dynamics[Any],
     random_generator: random.Random,
 ) -> BranchSelector[Any]:
