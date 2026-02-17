@@ -26,6 +26,7 @@ class StockfishBinaryNotFoundError(StockfishError):
     """Raised when the Stockfish binary cannot be found."""
 
     def __init__(self, path: Path) -> None:
+        """Build an error indicating the Stockfish binary path is missing."""
         msg = (
             f"Stockfish binary not found at {path}.\n"
             "Please install Stockfish by running:\n"
@@ -40,6 +41,7 @@ class StockfishStartupError(StockfishError):
     """Raised when the Stockfish engine fails to start."""
 
     def __init__(self, path: Path, original_error: OSError) -> None:
+        """Build an error indicating Stockfish failed to start from a path."""
         msg = (
             f"Failed to start Stockfish engine at {path}.\n"
             "The binary may be corrupted. Try reinstalling with:\n"
@@ -60,6 +62,7 @@ class StockfishSelector:
 
     @staticmethod
     def is_stockfish_available() -> bool:
+        """Return whether the Stockfish executable is available on disk."""
         return STOCKFISH_BINARY_PATH.exists() and STOCKFISH_BINARY_PATH.is_file()
 
     def recommend(
@@ -68,6 +71,7 @@ class StockfishSelector:
         seed: Seed,
         notify_progress: NotifyProgressCallable | None = None,
     ) -> Recommendation:
+        """Recommend one move from the current chess state using Stockfish."""
         _ = seed
         _ = notify_progress
         best: BranchName = self._select_move(state.board).recommended_name

@@ -16,6 +16,7 @@ class RandomSelector[StateT: TurnState]:
         dynamics: Dynamics[StateT],
         rng: py_random.Random,
     ) -> None:
+        """Initialize selector with game dynamics and random generator."""
         self._dynamics = dynamics
         self._rng = rng
 
