@@ -1,11 +1,13 @@
-"""Document the module defines the MoveSelectorArgs protocol and helpers for move selector arguments."""
+"""Move selector args protocol and concrete args unions for YAML/config parsing."""
 
 from typing import Any, Protocol
 
 from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
 
-from . import human, random, stockfish
+from . import human
 from .move_selector_types import MoveSelectorTypes
+from .random_args import RandomSelectorArgs
+from .stockfish_args import StockfishSelectorArgs
 
 
 class MoveSelectorArgs(Protocol):
@@ -19,7 +21,7 @@ class MoveSelectorArgs(Protocol):
 
 
 NonTreeMoveSelectorArgs = (
-    human.CommandLineHumanPlayerArgs | random.Random[Any] | stockfish.StockfishPlayer
+    human.CommandLineHumanPlayerArgs | RandomSelectorArgs | StockfishSelectorArgs
 )
 
 AnyMoveSelectorArgs = (
@@ -31,14 +33,14 @@ _MOVE_SELECTOR_ARGS_TYPES = (
     TreeAndValueAppArgs,
     human.CommandLineHumanPlayerArgs,
     human.GuiHumanPlayerArgs,
-    random.Random,
-    stockfish.StockfishPlayer,
+    RandomSelectorArgs,
+    StockfishSelectorArgs,
 )
 
 _MOVE_SELECTOR_ARGS_BY_TYPE: dict[MoveSelectorTypes, type[Any]] = {
     MoveSelectorTypes.TREE_AND_VALUE: TreeAndValueAppArgs,
     MoveSelectorTypes.COMMAND_LINE_HUMAN: human.CommandLineHumanPlayerArgs,
     MoveSelectorTypes.GUI_HUMAN: human.GuiHumanPlayerArgs,
-    MoveSelectorTypes.RANDOM: random.Random,
-    MoveSelectorTypes.STOCKFISH: stockfish.StockfishPlayer,
+    MoveSelectorTypes.RANDOM: RandomSelectorArgs,
+    MoveSelectorTypes.STOCKFISH: StockfishSelectorArgs,
 }
