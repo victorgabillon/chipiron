@@ -1,4 +1,4 @@
-"""Depth-aware chess search dynamics."""
+"""Depth-aware chess search dynamics wrappers."""
 
 from dataclasses import dataclass
 from typing import Any
@@ -11,25 +11,30 @@ from chipiron.environments.chess.types import ChessState
 
 
 @dataclass(frozen=True)
-class ChessSearchDynamics(SearchDynamics[ChessState, MoveKey]):
-    """Search dynamics with depth-aware board-copy policy."""
+class ChessCopyStackSearchDynamics(SearchDynamics[ChessState, MoveKey]):
+    """Wrap search dynamics with depth-aware board-copy policy in ``step`` only."""
 
     __anemone_search_dynamics__ = True
 
+    base: SearchDynamics[ChessState, MoveKey]
     copy_stack_until_depth: int = 2
     deep_copy_legal_moves: bool = True
 
+    def __getattr__(self, name: str) -> Any:
+        """Delegate non-overridden behavior to the wrapped search dynamics."""
+        return getattr(self.base, name)
+
     def legal_actions(self, state: ChessState) -> Any:
         """Return legal action collection for ``state``."""
-        return state.board.legal_moves
+        return self.base.legal_actions(state)
 
     def action_name(self, state: ChessState, action: MoveKey) -> str:
         """Convert an action key to a stable branch name."""
-        return state.board.get_uci_from_move_key(move_key=action)
+        return self.base.action_name(state, action)
 
     def action_from_name(self, state: ChessState, name: str) -> MoveKey:
         """Convert a stable branch name to an action key."""
-        return state.board.get_move_key_from_uci(move_uci=name)
+        return self.base.action_from_name(state, name)
 
     def step(
         self,

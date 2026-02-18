@@ -20,6 +20,7 @@ from chipiron.players.move_selector.move_selector_args import (
 from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
 from chipiron.players.oracles import PolicyOracle, TerminalOracle, ValueOracle
 from chipiron.players.player import GameAdapter, Player
+from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.players.player_args import HasMoveSelectorType
 
 if TYPE_CHECKING:
@@ -59,8 +60,7 @@ def create_player_with_pipeline(
     random_generator: random.Random,
     runtime_dynamics: Dynamics[StateT],
     search_dynamics_override: SearchDynamics[StateT, Any] | None = None,
-    copy_stack_until_depth: int = 2,
-    deep_copy_legal_moves: bool = True,
+    implementation_args: ImplementationArgs | None = None,
 ) -> Player[SnapT, StateT]:
     """Create a player using a generic selection pipeline with game-specific builders."""
     if isinstance(main_selector_args, TreeAndValueAppArgs):
@@ -76,10 +76,9 @@ def create_player_with_pipeline(
             master_state_evaluator=master_state_evaluator,
             state_representation_factory=None,
             random_generator=random_generator,
-            copy_stack_until_depth=copy_stack_until_depth,
-            deep_copy_legal_moves=deep_copy_legal_moves,
             dynamics=runtime_dynamics,
             search_dynamics_override=search_dynamics_override,
+            implementation_args=implementation_args,
         )
     elif isinstance(main_selector_args, GuiHumanPlayerArgs):
         # Minimal behavior: fail fast with a clear message (or implement GUI path)

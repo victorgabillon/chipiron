@@ -863,27 +863,29 @@ except Exception as e:
                 "syzygy_dtz_functionality", False, f"Syzygy DTZ test failed: {e!s}"
             )
 
-    def test_stockfish_player_functionality(self) -> None:
-        """Test that StockfishPlayer can select a move for a simple position."""
-        chipiron_logger.info("🧪 Testing StockfishPlayer functionality...")
+    def test_stockfish_selector_functionality(self) -> None:
+        """Test that StockfishSelector can select a move for a simple position."""
+        chipiron_logger.info("🧪 Testing StockfishSelector functionality...")
         conda_activate = f"source $(conda info --base)/etc/profile.d/conda.sh && conda activate {self.conda_env_name}"
         try:
             python_script = """
 import sys
-from chipiron.players.move_selector.stockfish import StockfishPlayer
-from atomheart.board import create_board_chi
-from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
+from chipiron.players.move_selector.stockfish_selector import StockfishSelector
+from atomheart.board import create_board
+from atomheart.board.utils import FenPlusHistory
+from chipiron.environments.chess.types import ChessState
 
 # Simple position: starting position
 fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-board = create_board_chi(fen)
-player = StockfishPlayer(type=MoveSelectorTypes.Stockfish)
+board = create_board(fen_with_history=FenPlusHistory(current_fen=fen))
+state = ChessState(board=board)
+player = StockfishSelector()
 try:
-    move_rec = player.select_move(board, move_seed=42)
-    print(f"Stockfish selected move: {move_rec.move}")
-    print("StockfishPlayer test passed!")
+    move_rec = player.recommend(state=state, seed=42)
+    print(f"Stockfish selected move: {move_rec.recommended_name}")
+    print("StockfishSelector test passed!")
 except Exception as e:
-    print(f"StockfishPlayer test failed: {e}")
+    print(f"StockfishSelector test failed: {e}")
     sys.exit(1)
 """
             with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
@@ -900,23 +902,23 @@ except Exception as e:
             finally:
                 if os.path.exists(temp_script):
                     os.remove(temp_script)
-            if "StockfishPlayer test passed!" in result.stdout:
+            if "StockfishSelector test passed!" in result.stdout:
                 self.result.add_result(
-                    "stockfish_player_functionality",
+                    "stockfish_selector_functionality",
                     True,
-                    "StockfishPlayer.select_move(board, move_seed) returned a move",
+                    "StockfishSelector.recommend(state, seed) returned a move",
                 )
             else:
                 self.result.add_result(
-                    "stockfish_player_functionality",
+                    "stockfish_selector_functionality",
                     False,
-                    f"StockfishPlayer test failed: {result.stdout.strip()}",
+                    f"StockfishSelector test failed: {result.stdout.strip()}",
                 )
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as e:
             self.result.add_result(
-                "stockfish_player_functionality",
+                "stockfish_selector_functionality",
                 False,
-                f"StockfishPlayer test failed: {e!s}",
+                f"StockfishSelector test failed: {e!s}",
             )
 
     def cleanup(self) -> None:
