@@ -6,3 +6,7 @@ base_script_args:
 implementation_args:
   use_board_modification: True
   use_rust_boards: True
+  search_dynamics_addon:
+    type: CHESS_COPY_STACK
+    copy_stack_until_depth: 2
+    deep_copy_legal_moves: true

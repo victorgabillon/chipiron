@@ -20,8 +20,12 @@ from valanga import (
 from valanga.evaluator_types import EvaluatorInput
 from valanga.policy import BranchSelector
 
+from chipiron.environments.chess.search_dynamics import ChessCopyStackSearchDynamics
+from chipiron.environments.chess.types import ChessState
+from chipiron.environments.search_dynamics_addons import SearchDynamicsAddonType
 from chipiron.environments.types import GameKind
 from chipiron.players.move_selector.move_selector_args import NonTreeMoveSelectorArgs
+from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.utils.logger import chipiron_logger
 
 from .anemone_hooks import ChessFeatureExtractor
@@ -106,6 +110,7 @@ def create_tree_and_value_move_selector[TurnStateT: TurnState](
     random_generator: random.Random,
     dynamics: Dynamics[TurnStateT] | None = None,
     search_dynamics_override: SearchDynamics[TurnStateT, Any] | None = None,
+    implementation_args: ImplementationArgs | None = None,
 ) -> BranchSelector[TurnStateT]:
     """Create a tree-and-value move selector with a prebuilt evaluator."""
 
@@ -142,6 +147,20 @@ def create_tree_and_value_move_selector[TurnStateT: TurnState](
                 MissingTreeSearchDynamicsError.DEFAULT_MESSAGE
             )
         search_dynamics = normalize_search_dynamics(dynamics)
+
+
+    addon = (
+        implementation_args.search_dynamics_addon
+        if implementation_args is not None
+        else None
+    )
+    if addon is not None and addon.type is SearchDynamicsAddonType.CHESS_COPY_STACK:
+        if issubclass(state_type, ChessState):
+            search_dynamics = ChessCopyStackSearchDynamics(
+                base=search_dynamics,
+                copy_stack_until_depth=addon.copy_stack_until_depth,
+                deep_copy_legal_moves=addon.deep_copy_legal_moves,
+            )
 
     base_selector = create_tree_and_value_branch_selector(
         state_type=state_type,
