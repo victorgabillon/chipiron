@@ -5,10 +5,13 @@ from __future__ import annotations
 import copy
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
+from valanga import TurnState, BranchKey
 
 from valanga import BranchKey, Color
 from valanga.evaluations import FloatyStateEvaluation
 from valanga.policy import Recommendation
+from valanga.dynamics import Transition
+from anemone.dynamics import SearchDynamics
 
 from chipiron.players.move_selector.modifiers import (
     AccelerateWhenWinning,
@@ -18,6 +21,13 @@ from chipiron.players.move_selector.modifiers import (
 
 if TYPE_CHECKING:
     from valanga.game import BranchName
+
+
+def fake_progress_gain_zeroing(state: TurnState, branch_key: BranchKey) -> float:
+    # use duck-typing for the test state
+    if hasattr(state, "is_zeroing") and state.is_zeroing(branch_key):
+        return 1.0
+    return 0.0
 
 
 class DummySelector:
@@ -69,6 +79,33 @@ class FakeTurnState:
 
 
 @dataclass
+class FakeSearchDynamics(SearchDynamics[FakeTurnState, Any]):
+    """Minimal SearchDynamics used by modifiers."""
+
+    __anemone_search_dynamics__ = True
+
+    def action_from_name(self, state: FakeTurnState, name: "BranchName") -> BranchKey:
+        return state.name_to_key[name]
+
+    def step(
+        self,
+        state: FakeTurnState,
+        action: BranchKey,
+        *,
+        depth: int = 0,
+    ) -> Transition[FakeTurnState]:
+        _ = depth
+        # the modifier only calls step; it doesn't rely on the returned next_state
+        return Transition(
+            next_state=state,
+            modifications=None,
+            is_over=False,
+            over_event=None,
+            info={},
+        )
+
+
+@dataclass
 class FakeChessState(FakeTurnState):
     """Adds the chess capability needed by chess_progress_gain_zeroing."""
 
@@ -96,9 +133,8 @@ def test_accelerate_when_not_winning_does_not_override() -> None:
     )
     selector = ComposedBranchSelector(
         base=DummySelector(rec),
-        modifiers=(
-            AccelerateWhenWinning(progress_gain_fn=chess_progress_gain_zeroing),
-        ),
+        dynamics=FakeSearchDynamics(),
+        modifiers=(AccelerateWhenWinning(progress_gain_fn=fake_progress_gain_zeroing),),
     )
 
     out = selector.recommend(state=state, seed=0)
@@ -123,9 +159,8 @@ def test_accelerate_when_winning_prefers_zeroing_move_that_stays_winning() -> No
     )
     selector = ComposedBranchSelector(
         base=DummySelector(rec),
-        modifiers=(
-            AccelerateWhenWinning(progress_gain_fn=chess_progress_gain_zeroing),
-        ),
+        dynamics=FakeSearchDynamics(),
+        modifiers=(AccelerateWhenWinning(progress_gain_fn=fake_progress_gain_zeroing),),
     )
 
     out = selector.recommend(state=state, seed=0)
@@ -150,9 +185,8 @@ def test_accelerate_when_winning_does_not_choose_non_winning_child() -> None:
     )
     selector = ComposedBranchSelector(
         base=DummySelector(rec),
-        modifiers=(
-            AccelerateWhenWinning(progress_gain_fn=chess_progress_gain_zeroing),
-        ),
+        dynamics=FakeSearchDynamics(),
+        modifiers=(AccelerateWhenWinning(progress_gain_fn=fake_progress_gain_zeroing),),
     )
 
     out = selector.recommend(state=state, seed=0)
@@ -177,9 +211,8 @@ def test_accelerate_when_winning_no_override_when_best_gain_is_zero() -> None:
     )
     selector = ComposedBranchSelector(
         base=DummySelector(rec),
-        modifiers=(
-            AccelerateWhenWinning(progress_gain_fn=chess_progress_gain_zeroing),
-        ),
+        dynamics=FakeSearchDynamics(),
+        modifiers=(AccelerateWhenWinning(progress_gain_fn=fake_progress_gain_zeroing),),
     )
 
     out = selector.recommend(state=state, seed=0)
