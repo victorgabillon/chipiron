@@ -14,7 +14,6 @@ from atomheart.board.utils import FenPlusHistory
 from valanga import Color
 from valanga.policy import BranchSelector
 
-from chipiron.environments.chess.search_dynamics import ChessSearchDynamics
 from chipiron.environments.chess.types import ChessState
 from chipiron.environments.types import GameKind
 from chipiron.players.adapters.chess_adapter import ChessAdapter
@@ -210,16 +209,7 @@ def create_chess_player(
             oracle=policy_oracle_in,
         )
 
-    search_args = getattr(args.main_move_selector, "anemone_args", None)
-    search_config = getattr(search_args, "search", None)
-    copy_stack_until_depth = int(getattr(search_config, "copy_stack_until_depth", 2))
-    deep_copy_legal_moves = bool(getattr(search_config, "deep_copy_legal_moves", True))
-
     chess_dynamics = ChessDynamics()
-    chess_search_dynamics = ChessSearchDynamics(
-        copy_stack_until_depth=copy_stack_until_depth,
-        deep_copy_legal_moves=deep_copy_legal_moves,
-    )
 
     return create_player_with_pipeline(
         name=args.name,
@@ -240,7 +230,7 @@ def create_chess_player(
         ),
         random_generator=random_generator,
         runtime_dynamics=chess_dynamics,
-        search_dynamics_override=chess_search_dynamics,
+        implementation_args=implementation_args,
     )
 
 

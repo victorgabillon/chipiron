@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 
+from chipiron.environments.search_dynamics_addons import SearchDynamicsAddonArgs
+
 
 @dataclass
 class ImplementationArgs:
@@ -15,3 +17,6 @@ class ImplementationArgs:
     # whether to use the speedup given using the rust version of the chess boards.
     # If True rust is used
     use_rust_boards: bool = False
+
+    # Optional runtime search-dynamics wrapper settings.
+    search_dynamics_addon: SearchDynamicsAddonArgs | None = None
