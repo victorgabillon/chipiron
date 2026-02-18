@@ -2,10 +2,9 @@
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Protocol, cast
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from anemone.dynamics import SearchDynamics
-from atomheart.move.imove import MoveKey
 from valanga import BranchKey, Color, TurnState
 from valanga.evaluations import FloatyStateEvaluation, ForcedOutcome, StateEvaluation
 from valanga.game import BranchName, Seed
@@ -13,6 +12,9 @@ from valanga.over_event import HowOver
 from valanga.policy import BranchSelector, NotifyProgressCallable, Recommendation
 
 from chipiron.environments.chess.types import ChessState
+
+if TYPE_CHECKING:
+    from atomheart.move.imove import MoveKey
 
 
 class RecommendationModifier[StateT: TurnState](Protocol):
@@ -36,7 +38,7 @@ class RecommendationModifier[StateT: TurnState](Protocol):
 class HasZeroing(Protocol):
     """Capability protocol for states exposing chess zeroing detection."""
 
-    def is_zeroing(self, move: MoveKey) -> bool:
+    def is_zeroing(self, move: BranchKey) -> bool:
         """Return whether a move is a zeroing move."""
         ...
 
@@ -142,8 +144,15 @@ class AccelerateWhenWinning[StateT: TurnState]:
         )
 
 
+def chess_is_zeroing(state: ChessState, branch_key: BranchKey) -> bool:
+    """Return whether the move corresponding to ``branch_key`` is a zeroing move in ``state``."""
+    return state.board.is_zeroing(cast("MoveKey", branch_key))
+
+
 def chess_progress_gain_zeroing(state: TurnState, branch_key: BranchKey) -> float:
-    """Progress gain function that returns 1.0 for zeroing moves and 0.0 for non-zeroing moves."""
-    assert isinstance(state, ChessState)
-    move_key = cast("MoveKey", branch_key)
-    return 1.0 if state.board.is_zeroing(move_key) else 0.0
+    """Return 1.0 for zeroing moves and 0.0 for non-zeroing moves, or if state is not ChessState."""
+    # Widened signature => compatible with ProgressGainFn
+    if not isinstance(state, ChessState):
+        # either 0.0, or raise if you want strictness
+        return 0.0
+    return 1.0 if chess_is_zeroing(state, branch_key) else 0.0

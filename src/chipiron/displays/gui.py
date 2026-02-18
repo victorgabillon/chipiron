@@ -70,11 +70,15 @@ def format_state_eval(ev: StateEvaluation | None) -> str:
         return "—"
     match ev:
         case FloatyStateEvaluation(value_white=value_white):
-            return "—" if value_white is None else f"{value_white:+.2f}"
+            if value_white is None:
+                return "—"
+            return f"{float(value_white):+.2f}"
+
         case ForcedOutcome(outcome=outcome, line=line):
             line_str = " ".join(map(str, line[:6]))
             suffix = " …" if len(line) > 6 else ""
             return f"{outcome} | {line_str}{suffix}"
+
         case _:
             return str(ev)  # type: ignore[unreachable]
 
