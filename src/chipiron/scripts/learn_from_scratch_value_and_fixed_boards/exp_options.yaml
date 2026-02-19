@@ -1,8 +1,8 @@
 nn_trainer_args:
-  neural_network_folder_path: 'src/chipiron/scripts/learn_nn_from_scratch_value_and_fixed_boards/board_evaluators_common_training_data/nn_pytorch/nn_pp2d3_prelu'
+  neural_network_folder_path: 'package://scripts/learn_nn_from_scratch_value_and_fixed_boards/board_evaluators_common_training_data/nn_pytorch/nn_pp2d3_prelu'
   reuse_existing_model:  False
   reuse_existing_trainer:  False
-  nn_architecture_file_if_not_reusing_existing_one: 'src/chipiron/scripts/learn_nn_from_scratch_value_and_fixed_boards/board_evaluators_common_training_data/nn_pytorch/nn_pp2d3_prelu/architecture_prelu.yaml'
+  nn_architecture_file_if_not_reusing_existing_one: 'package://scripts/learn_nn_from_scratch_value_and_fixed_boards/board_evaluators_common_training_data/nn_pytorch/nn_pp2d3_prelu/architecture_prelu.yaml'
   starting_lr: .001
   momentum_op: .9
   scheduler_step_size: 1

@@ -454,7 +454,7 @@ def generate_inputs(
                     ),
                 ),
             )
-            config_file_name = "src/chipiron/scripts/one_match/inputs/human_play_against_computer/exp_options.yaml"
+            config_file_name = "package://scripts/one_match/inputs/human_play_against_computer/exp_options.yaml"
 
             gui_args.match_args.player_one = PlayerConfigTag(
                 args_chosen_by_user.player_type_white

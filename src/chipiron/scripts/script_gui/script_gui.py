@@ -157,7 +157,7 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
         case "play_against_chipiron":
             tree_branch_limit = 4 * 10 ** output["strength"]
             gui_args = {
-                "config_file_name": "src/chipiron/scripts/one_match/exp_options.yaml",
+                "config_file_name": "package://scripts/one_match/exp_options.yaml",
                 "seed": 0,
                 "gui": True,
                 "file_name_match_setting": "setting_duda.yaml",
@@ -181,7 +181,7 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
             script_type = scripts.ScriptType.ONE_MATCH
         case "watch_a_game":
             gui_args = {
-                "config_file_name": "src/chipiron/scripts/one_match/exp_options.yaml",
+                "config_file_name": "package://scripts/one_match/exp_options.yaml",
                 "seed": 0,
                 "gui": True,
                 "file_name_player_one": "RecurZipfBase3.yaml",
@@ -191,7 +191,7 @@ def script_gui() -> tuple[scripts.ScriptType, dict[str, Any]]:
             script_type = scripts.ScriptType.ONE_MATCH
         case "tree_visualization":
             gui_args = {
-                "config_file_name": "src/chipiron/scripts/tree_visualization/exp_options.yaml",
+                "config_file_name": "package://scripts/tree_visualization/exp_options.yaml",
             }
             script_type = scripts.ScriptType.TREE_VISUALIZATION
         case other:

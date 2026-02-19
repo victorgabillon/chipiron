@@ -246,7 +246,7 @@ class Window(QtWidgets.QWidget):
         h_layout.addWidget(self.edit_pix_info)
         v_layout.addLayout(h_layout)
 
-        with open("src/chipiron/debugTreeData_1white-#.td", "rb") as tree_data_file:
+        with open("package://scripts/tree_visualization/debugTreeData_1white-#.td", "rb") as tree_data_file:
             pic = pickle.load(tree_data_file)
 
         self.tree: Tree[Any] = Tree(root_node=pic[1], descendants=pic[0])
@@ -294,13 +294,13 @@ class Window(QtWidgets.QWidget):
             index=self.index,
             dynamics=self.dynamics,
         )
-        dot.render("src/chipiron/runs/treedisplays/TreeVisualtemp")
+        dot.render("package://scripts/tree_visualization/TreeVisualtemp")
 
     @typing.no_type_check
     def load_image(self) -> None:
         """Load an image and sets it as the photo for the viewer.
 
-        The image is loaded from the file 'src/chipiron/runs/treedisplays/TreeVisualtemp.jpg'.
+        The image is loaded from the file 'package://scripts/tree_visualization/TreeVisualtemp.jpg'.
 
         Args:
             None
@@ -310,7 +310,7 @@ class Window(QtWidgets.QWidget):
 
         """
         self.viewer.set_photo(
-            QtGui.QPixmap("src/chipiron/runs/treedisplays/TreeVisualtemp.jpg")
+            QtGui.QPixmap("package://scripts/tree_visualization/TreeVisualtemp.jpg")
         )
 
     @typing.no_type_check

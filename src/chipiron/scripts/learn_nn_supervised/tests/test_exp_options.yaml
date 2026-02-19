@@ -1,5 +1,5 @@
 nn_trainer_args:
-  neural_network_folder_path: 'src/chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/test_to_keep'
+  neural_network_folder_path: 'package://scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/test_to_keep'
   reuse_existing_model:  False
   reuse_existing_trainer:  False
   starting_lr: .001
@@ -15,8 +15,8 @@ nn_trainer_args:
   min_lr: .00001
   epochs_number: 1
 dataset_args:
-  train_file_name: 'src/chipiron/scripts/learn_nn_supervised/tests/small_dataset.pi'
-  test_file_name: 'src/chipiron/scripts/learn_nn_supervised/tests/small_dataset.pi'
+  train_file_name: 'package://scripts/learn_nn_supervised/tests/small_dataset.pi'
+  test_file_name: 'package://scripts/learn_nn_supervised/tests/small_dataset.pi'
   preprocessing_data_set: False
 base_script_args:
   seed: 11

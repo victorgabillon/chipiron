@@ -33,6 +33,7 @@ from chipiron.players.boardevaluators.neural_networks.chipiron_nn_args import (
     load_chipiron_nn_args,
 )
 from chipiron.utils import MyPath
+from chipiron.utils.small_tools import resolve_package_path
 
 if TYPE_CHECKING:
     from coral.neural_networks import NNBWStateEvaluator
@@ -93,7 +94,7 @@ def count_parameters(model: ChiNN) -> int:
 
 def evaluate_models(
     models_to_evaluate: list[NeuralNetModelsAndArchitecture],
-    evaluation_report_file: MyPath = "src/chipiron/scripts/evaluate_models/evaluation_report.yaml",
+    evaluation_report_file: MyPath = "package://scripts/evaluate_models/evaluation_report.yaml",
     dataset_file_name: MyPath = "external_data/data_chipiron/datasets/goodgames_plusvariation_stockfish_eval_test",
 ) -> None:
     """Evaluate the models in the list models_to_evaluate.
@@ -229,7 +230,7 @@ def evaluate_models(
             evaluated_model_evaluation
         )
     with open(
-        "src/chipiron/scripts/evaluate_models/evaluation_report.yaml",
+        resolve_package_path("package://scripts/evaluate_models/evaluation_report.yaml"),
         "w",
         encoding="utf-8",
     ) as outfile:
@@ -241,19 +242,19 @@ def evaluate_models(
 if __name__ == "__main__":
     models_to_evaluate_: list[NeuralNetModelsAndArchitecture] = [
         NeuralNetModelsAndArchitecture.build_from_folder_path(
-            folder_path="src/chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/prelu_no_bug"
+            folder_path="package://scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/prelu_no_bug"
         ),
         NeuralNetModelsAndArchitecture.build_from_folder_path(
-            folder_path="src/chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/nn_p1_new"
+            folder_path="package://scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/nn_p1_new"
         ),
         NeuralNetModelsAndArchitecture.build_from_folder_path(
-            folder_path="src/chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/nn_pp2_new"
+            folder_path="package://scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/nn_pp2_new"
         ),
         NeuralNetModelsAndArchitecture.build_from_folder_path(
-            folder_path="src/chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/nn_pp2d3_prelu_new"
+            folder_path="package://scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/nn_pp2d3_prelu_new"
         ),
         # NeuralNetModelsAndArchitecture.build_from_folder_path(
-        #     folder_path="src/chipiron/scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/transformerone"),
+        #     folder_path="package://scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/transformerone"),
     ]
 
     evaluate_models(models_to_evaluate=models_to_evaluate_)
