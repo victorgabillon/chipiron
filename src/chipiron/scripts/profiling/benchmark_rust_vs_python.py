@@ -518,7 +518,7 @@ class ChessEngineBenchmark:
         # Save results in dedicated folder
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         report_dir = (
-            "/home/victor/chipiron/src/chipiron/scripts/profiling/benchmark_reports"
+            "package://scripts/profiling/benchmark_reports"
         )
         filename = os.path.join(report_dir, f"benchmark_results_{timestamp}.txt")
         self.save_results(filename)

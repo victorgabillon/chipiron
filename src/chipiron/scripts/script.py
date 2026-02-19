@@ -32,9 +32,9 @@ class Script[DataclassT: DataClassWithBaseScriptArgs = DataClassWithBaseScriptAr
     gui_args: dict[str, Any] | None
     profile: cProfile.Profile | None
     experiment_script_type_output_folder: MyPath | None = None
-    base_experiment_output_folder: MyPath = "src/chipiron/scripts/"
+    base_experiment_output_folder: MyPath = "package://scripts/"
     default_experiment_output_folder: MyPath = (
-        "src/chipiron/scripts/default_output_folder"
+        "package://scripts/default_output_folder"
     )
     config_file_name: str | None
 

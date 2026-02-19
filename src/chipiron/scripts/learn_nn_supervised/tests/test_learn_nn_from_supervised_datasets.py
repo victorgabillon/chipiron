@@ -39,8 +39,8 @@ configs_dataclasses: list[Any] = [
     PartialOpLearnNNScriptArgs(
         nn_trainer_args=PartialOpNNTrainerArgs(
             reuse_existing_model=False,
-            specific_saving_folder="src/chipiron/scripts/learn_nn_supervised/tests/tests_outputs",
-            neural_network_architecture_args_path_to_yaml_file="src/chipiron/scripts/learn_nn_supervised/"
+            specific_saving_folder="package://scripts/learn_nn_supervised/tests/tests_outputs",
+            neural_network_architecture_args_path_to_yaml_file="package://scripts/learn_nn_supervised/"
             "board_evaluators_common_training_data/nn_pytorch/architectures/"
             + architecture_file,
             game_input=PartialOpGameInputArgs(
@@ -49,8 +49,8 @@ configs_dataclasses: list[Any] = [
             ),
         ),
         dataset_args=PartialOpDataSetArgs(
-            train_file_name="src/chipiron/scripts/learn_nn_supervised/tests/small_dataset.pi",
-            test_file_name="src/chipiron/scripts/learn_nn_supervised/tests/small_dataset.pi",
+            train_file_name="package://scripts/learn_nn_supervised/tests/small_dataset.pi",
+            test_file_name="package://scripts/learn_nn_supervised/tests/small_dataset.pi",
         ),
         base_script_args=PartialOpBaseScriptArgs(testing=True),
     )
