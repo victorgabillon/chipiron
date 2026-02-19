@@ -5,18 +5,16 @@ from __future__ import annotations
 import copy
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
-from valanga import TurnState, BranchKey
 
-from valanga import BranchKey, Color
+from anemone.dynamics import SearchDynamics
+from valanga import BranchKey, Color, TurnState
+from valanga.dynamics import Transition
 from valanga.evaluations import FloatyStateEvaluation
 from valanga.policy import Recommendation
-from valanga.dynamics import Transition
-from anemone.dynamics import SearchDynamics
 
 from chipiron.players.move_selector.modifiers import (
     AccelerateWhenWinning,
     ComposedBranchSelector,
-    chess_progress_gain_zeroing,
 )
 
 if TYPE_CHECKING:
@@ -84,7 +82,7 @@ class FakeSearchDynamics(SearchDynamics[FakeTurnState, Any]):
 
     __anemone_search_dynamics__ = True
 
-    def action_from_name(self, state: FakeTurnState, name: "BranchName") -> BranchKey:
+    def action_from_name(self, state: FakeTurnState, name: BranchName) -> BranchKey:
         return state.name_to_key[name]
 
     def step(

@@ -1,10 +1,10 @@
 """Runtime-configurable addons for search dynamics wrappers."""
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 
-class SearchDynamicsAddonType(str, Enum):
+class SearchDynamicsAddonType(StrEnum):
     """Supported optional search dynamics wrappers."""
 
     CHESS_COPY_STACK = "CHESS_COPY_STACK"
@@ -21,4 +21,3 @@ class ChessCopyStackAddonArgs:
 
 # Union-style alias for addon args (extend with `| OtherAddonArgs` later).
 SearchDynamicsAddonArgs = ChessCopyStackAddonArgs
-
