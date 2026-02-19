@@ -35,6 +35,7 @@ dependencies = [
     "atomheart>=0.1.9",   
     "algorhino-coral>=0.1.11",
     "algorhino-anemone>=0.1.21",
+    "torchinfo",
 ]
 
 
@@ -294,6 +295,7 @@ deps = [
   "gdown",
   "zstandard",
   "rich",
+  "torchinfo",
     "valanga>=0.2.0",
     "atomheart>=0.1.9",   
     "algorhino-coral>=0.1.11",
@@ -332,6 +334,7 @@ deps = [
   "mlflow",
   "parsley_coco>=0.1.34",
   "gdown",
+    "torchinfo",
   "zstandard",
   "rich",
     "valanga>=0.2.0",
