@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=80.10.2"]
+requires = ["setuptools>=82.0.0"]
 build-backend = "setuptools.build_meta"
 
 
@@ -49,13 +49,13 @@ authors = [
 
 [project.optional-dependencies]
 test = [
-  "pytest>=8.4.1",
+  "pytest>=9.0.2",
   "coverage",
   "pytest-cov>=6.0.0",
 ]
 
 lint = [
-  "ruff>=0.15.0",
+  "ruff>=0.15.1",
   "pylint>=4.0.4",
 ]
 
@@ -236,6 +236,8 @@ min_version = "4.30.2"
 env_list = ["py313", "lint", "typecheck"]
 isolated_build = true
 
+
+
 [tool.tox.env_run_base]
 base_python = ["python3.13"]
 
@@ -243,6 +245,7 @@ base_python = ["python3.13"]
 # Tests (realistic)
 # ----------------
 [tool.tox.env.py313]
+deps = ["build"]
 description = "Build + install package, run tests"
 extras = ["test"]
 changedir = "{envtmpdir}"
@@ -270,7 +273,7 @@ commands = [
 description = "ruff + pylint (fast)"
 package = "skip"
 deps = [
-  "ruff>=0.15.0",
+  "ruff>=0.15.1",
   "pylint>=4.0.4",
   # optional: if pylint needs to import chipiron deps for module resolution
   # but usually it imports your code, so keep runtime deps available:
@@ -335,6 +338,8 @@ deps = [
     "atomheart>=0.1.9",   
     "algorhino-coral>=0.1.11",
     "algorhino-anemone>=0.1.21",
+      "pytest>=9.0.2",
+  "pytest-cov>=6.0.0",
 ]
 set_env = { MYPYPATH = "{toxinidir}/src" }
 commands = [

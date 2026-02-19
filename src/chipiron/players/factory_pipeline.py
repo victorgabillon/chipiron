@@ -28,13 +28,11 @@ if TYPE_CHECKING:
         MasterStateEvaluator,
     )
 
-SnapT = TypeVar("SnapT")
-StateT = TypeVar("StateT", bound=TurnState)
 EvalArgsT = TypeVar("EvalArgsT")
 NonTreeArgsT = TypeVar("NonTreeArgsT", bound=HasMoveSelectorType)
 
 
-def create_player_with_pipeline(
+def create_player_with_pipeline[StateT: TurnState, SnapT](
     *,
     name: str,
     main_selector_args: AnyMoveSelectorArgs,

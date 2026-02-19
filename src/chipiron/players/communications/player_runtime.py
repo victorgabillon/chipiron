@@ -5,7 +5,7 @@ incoming `PlayerRequest`, asks the `GamePlayer` to select a move, and emits a
 `PlayerEvent`.
 """
 
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING
 
 from valanga import Color
 from valanga.policy import NotifyProgressCallable
@@ -26,11 +26,8 @@ from chipiron.utils.queue_protocols import PutQueue
 if TYPE_CHECKING:
     from valanga.policy import Recommendation
 
-StateSnapT = TypeVar("StateSnapT")
-RuntimeStateT = TypeVar("RuntimeStateT")
 
-
-def handle_player_request(
+def handle_player_request[StateSnapT, RuntimeStateT](
     *,
     request: PlayerRequest[StateSnapT],
     game_player: GamePlayer[StateSnapT, RuntimeStateT],
