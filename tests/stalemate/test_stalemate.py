@@ -34,11 +34,17 @@ def test_three_fold_repetition(use_rusty_board: bool) -> None:
 
     for move_uci in moves_uci:
         move: IMove = move_factory(move_uci=move_uci, board=board)
-
+        print(f"Playing move {move_uci}, game over: {board.is_game_over()}")
         board.play_move(move=move)
 
     assert board.is_game_over()
 
 
-test_three_fold_repetition(use_rusty_board=True)
-test_three_fold_repetition(use_rusty_board=False)
+if __name__ == "__main__":
+    print("Testing three fold repetition with RustyBoard...")
+
+    print("Testing three fold repetition with RustyBoard...")
+    test_three_fold_repetition(use_rusty_board=True)
+
+    print("Testing three fold repetition with PythonBoard...")
+    test_three_fold_repetition(use_rusty_board=False)
