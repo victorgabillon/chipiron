@@ -2,7 +2,7 @@
 
 import random
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, cast
 
 from anemone import TreeAndValuePlayerArgs, create_tree_and_value_branch_selector
 from anemone.dynamics import SearchDynamics, normalize_search_dynamics
@@ -148,19 +148,23 @@ def create_tree_and_value_move_selector[TurnStateT: TurnState](
             )
         search_dynamics = normalize_search_dynamics(dynamics)
 
-
     addon = (
         implementation_args.search_dynamics_addon
         if implementation_args is not None
         else None
     )
-    if addon is not None and addon.type is SearchDynamicsAddonType.CHESS_COPY_STACK:
-        if issubclass(state_type, ChessState):
-            search_dynamics = ChessCopyStackSearchDynamics(
-                base=search_dynamics,
-                copy_stack_until_depth=addon.copy_stack_until_depth,
-                deep_copy_legal_moves=addon.deep_copy_legal_moves,
-            )
+    if (
+        addon is not None
+        and addon.type is SearchDynamicsAddonType.CHESS_COPY_STACK
+        and issubclass(state_type, ChessState)
+    ):
+        chess_base = cast("SearchDynamics[ChessState, Any]", search_dynamics)
+        wrapped = ChessCopyStackSearchDynamics(
+            base=chess_base,
+            copy_stack_until_depth=addon.copy_stack_until_depth,
+            deep_copy_legal_moves=addon.deep_copy_legal_moves,
+        )
+        search_dynamics = cast("SearchDynamics[TurnStateT, Any]", wrapped)
 
     base_selector = create_tree_and_value_branch_selector(
         state_type=state_type,

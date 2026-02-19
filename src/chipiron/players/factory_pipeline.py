@@ -20,8 +20,8 @@ from chipiron.players.move_selector.move_selector_args import (
 from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
 from chipiron.players.oracles import PolicyOracle, TerminalOracle, ValueOracle
 from chipiron.players.player import GameAdapter, Player
-from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.players.player_args import HasMoveSelectorType
+from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
     from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
