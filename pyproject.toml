@@ -36,6 +36,7 @@ dependencies = [
     "algorhino-coral>=0.1.11",
     "algorhino-anemone>=0.1.21",
     "torchinfo",
+    "platformdirs>=4.9.2",
 ]
 
 
@@ -296,6 +297,7 @@ deps = [
   "zstandard",
   "rich",
   "torchinfo",
+  "platformdirs>=4.9.2",
     "valanga>=0.2.0",
     "atomheart>=0.1.9",   
     "algorhino-coral>=0.1.11",
