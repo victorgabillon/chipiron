@@ -109,6 +109,9 @@ exclude = ["tests*", "docs", "examples", "build", "dist", "venv", "env", ".venv"
 [tool.pytest.ini_options]
 addopts = "--cov=chipiron"
 testpaths = ["tests"]
+markers = [
+    "integration: marks integration tests (deselect with '-m \"not integration\"')",
+]
 
 [tool.mypy]
 mypy_path = "src"
@@ -257,8 +260,7 @@ commands_pre = [
 ]
 commands = [
   ["python", "-c", "import chipiron; print(chipiron.__file__)"],
-  ["pytest", "--basetemp={envtmpdir}/pytest-tmp",
-   "{posargs}"],
+  ["pytest", "--basetemp={envtmpdir}/pytest-tmp", "-m", "not integration", "{posargs}"],
 ]
 
 # ----------------

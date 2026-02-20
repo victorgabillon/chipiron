@@ -28,6 +28,10 @@ from typing import Any
 
 from chipiron.utils.logger import chipiron_logger
 
+import pytest
+
+pytestmark = pytest.mark.integration
+
 
 class IntegrationTestResult:
     """Container for test results."""
