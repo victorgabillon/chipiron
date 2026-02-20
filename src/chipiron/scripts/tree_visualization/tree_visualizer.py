@@ -246,7 +246,9 @@ class Window(QtWidgets.QWidget):
         h_layout.addWidget(self.edit_pix_info)
         v_layout.addLayout(h_layout)
 
-        with open("package://scripts/tree_visualization/debugTreeData_1white-#.td", "rb") as tree_data_file:
+        with open(
+            "package://scripts/tree_visualization/debugTreeData_1white-#.td", "rb"
+        ) as tree_data_file:
             pic = pickle.load(tree_data_file)
 
         self.tree: Tree[Any] = Tree(root_node=pic[1], descendants=pic[0])

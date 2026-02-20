@@ -230,7 +230,9 @@ def evaluate_models(
             evaluated_model_evaluation
         )
     with open(
-        resolve_package_path("package://scripts/evaluate_models/evaluation_report.yaml"),
+        resolve_package_path(
+            "package://scripts/evaluate_models/evaluation_report.yaml"
+        ),
         "w",
         encoding="utf-8",
     ) as outfile:

@@ -14,6 +14,7 @@ from chipiron.scripts.learn_from_scratch_value_and_fixed_boards.learn_from_scrat
     LearnNNFromScratchScriptArgs,
 )
 from chipiron.scripts.script_args import BaseScriptArgs
+from chipiron.utils.small_tools import resolve_package_path
 
 PartialOpLearnNNFromScratchScriptArgs = make_partial_dataclass_with_optional_paths(
     cls=LearnNNFromScratchScriptArgs
@@ -27,14 +28,20 @@ configs_dataclasses: list[Any] = [
     PartialOpLearnNNFromScratchScriptArgs(
         nn_trainer_args=PartialOpNNTrainerArgs(
             reuse_existing_model=False,
-            specific_saving_folder="package://scripts/learn_from_scratch_value_and_fixed_boards/tests/test_outputs",
+            specific_saving_folder=resolve_package_path(
+                "package://scripts/learn_from_scratch_value_and_fixed_boards/tests/test_outputs"
+            ),
             neural_network_architecture_args_path_to_yaml_file="package://scripts/learn_nn_supervised/"
             "board_evaluators_common_training_data/nn_pytorch/architectures/"
             + architecture_file,
         ),
         dataset_args=PartialOpDataSetArgs(
-            train_file_name="package://scripts/learn_nn_supervised/tests/small_dataset.pi",
-            test_file_name="package://scripts/learn_nn_supervised/tests/small_dataset.pi",
+            train_file_name=resolve_package_path(
+                "package://scripts/learn_nn_supervised/tests/small_dataset.pi"
+            ),
+            test_file_name=resolve_package_path(
+                "package://scripts/learn_nn_supervised/tests/small_dataset.pi"
+            ),
         ),
         evaluating_player_args=PlayerConfigTag.RANDOM,
         base_script_args=PartialOpBaseScriptArgs(testing=True),
