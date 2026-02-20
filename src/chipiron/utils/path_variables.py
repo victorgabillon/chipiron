@@ -1,109 +1,92 @@
-"""Path utilities for the Chipiron project.
+"""Centralized path configuration for Chipiron.
 
-This module provides centralized path definitions to ensure consistent
-path handling across the entire project.
+This module defines paths for external inputs (user-provided) and runtime outputs.
+Defaults are environment-overridable and safe for installed packages.
 """
 
 import os
 from pathlib import Path
 
-# Define the project root directory
-# This file is at: src/chipiron/utils/path_variables.py
-# So we go up 3 levels to reach project root
-PROJECT_ROOT = Path(__file__).parents[
-    3
-]  # Go up from src/chipiron/utils/ to project root
+from platformdirs import user_data_dir
 
-# Load .env file if it exists
-env_file = PROJECT_ROOT / ".env"
-if env_file.exists():
-    with open(env_file, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith("#") and "=" in line:
-                key, value = line.split("=", 1)
-                os.environ.setdefault(key, value)
+APP_NAME = "chipiron"
 
 
 def get_env_path(env_var: str, default: str) -> Path:
-    """Get a path from environment variable or use default relative to PROJECT_ROOT."""
+    """
+    Get a path from environment variable, else default.
+
+    - If default is absolute -> use it.
+    - If default is relative -> interpret relative to current working directory.
+      (Keeps dev ergonomics without relying on repo root.)
+    """
     env_value = os.getenv(env_var, default)
-    if os.path.isabs(env_value):
-        return Path(env_value)
-    return PROJECT_ROOT / env_value
+    p = Path(env_value)
+    return p if p.is_absolute() else (Path.cwd() / p)
 
 
-# Common directory paths
+# ---------- External data (user-provided / not packaged) ----------
 EXTERNAL_DATA_DIR = get_env_path("EXTERNAL_DATA_DIR", "external_data")
-LICHESS_PGN_DIR = get_env_path("LICHESS_PGN_DIR", "external_data/lichess_pgn")
-SYZYGY_TABLES_DIR = get_env_path("SYZYGY_TABLES_DIR", "external_data/syzygy-tables")
-STOCKFISH_DIR = get_env_path("STOCKFISH_DIR", "external_data/stockfish")
-GUI_DIR = get_env_path("GUI_DIR", "external_data/gui")
-SCRIPTS_DIR = PROJECT_ROOT / "src" / "chipiron" / "scripts"
+LICHESS_PGN_DIR = get_env_path(
+    "LICHESS_PGN_DIR", str(EXTERNAL_DATA_DIR / "lichess_pgn")
+)
+SYZYGY_TABLES_DIR = get_env_path(
+    "SYZYGY_TABLES_DIR", str(EXTERNAL_DATA_DIR / "syzygy-tables")
+)
+STOCKFISH_DIR = get_env_path("STOCKFISH_DIR", str(EXTERNAL_DATA_DIR / "stockfish"))
+GUI_DIR = get_env_path("GUI_DIR", str(EXTERNAL_DATA_DIR / "gui"))
 
-# Specific file paths
 LICHESS_PGN_FILE = get_env_path(
     "LICHESS_PGN_FILE",
-    "external_data/lichess_pgn/lichess_db_standard_rated_2015-03.pgn",
+    str(LICHESS_PGN_DIR / "lichess_db_standard_rated_2015-03.pgn"),
 )
+
 STOCKFISH_BINARY_PATH = get_env_path(
     "STOCKFISH_BINARY_PATH",
-    "external_data/stockfish/stockfish/stockfish-ubuntu-x86-64-avx2",
-)
-
-# MLflow paths (use environment variables with defaults)
-ML_FLOW_URI_PATH = os.getenv(
-    "ML_FLOW_URI_PATH",
-    f"sqlite:///{PROJECT_ROOT}/src/chipiron/scripts/default_output_folder/mlflow_data/mlruns.db",
-)
-ML_FLOW_URI_PATH_TEST = os.getenv(
-    "ML_FLOW_URI_PATH_TEST",
-    f"sqlite:///{PROJECT_ROOT}/src/chipiron/scripts/default_output_folder/mlflow_data/mlruns_test.db",
+    str(STOCKFISH_DIR / "stockfish" / "stockfish-ubuntu-x86-64-avx2"),
 )
 
 
-def main() -> None:
-    """Print all defined paths in absolute form for debugging and verification."""
-    print("Chipiron Project Paths (with .env integration):")
-    print("=" * 50)
-    print(f"PROJECT_ROOT:        {PROJECT_ROOT.absolute()}")
-    print()
-    print("Directory Paths:")
-    print(f"EXTERNAL_DATA_DIR:   {EXTERNAL_DATA_DIR.absolute()}")
-    print(f"LICHESS_PGN_DIR:     {LICHESS_PGN_DIR.absolute()}")
-    print(f"SYZYGY_TABLES_DIR:   {SYZYGY_TABLES_DIR.absolute()}")
-    print(f"STOCKFISH_DIR:       {STOCKFISH_DIR.absolute()}")
-    print(f"GUI_DIR:             {GUI_DIR.absolute()}")
-    print(f"SCRIPTS_DIR:         {SCRIPTS_DIR.absolute()}")
-    print()
-    print("File Paths:")
-    print(f"LICHESS_PGN_FILE:    {LICHESS_PGN_FILE.absolute()}")
-    print(f"STOCKFISH_BINARY_PATH: {STOCKFISH_BINARY_PATH.absolute()}")
-    print()
-    print("MLflow Paths:")
-    print(f"ML_FLOW_URI_PATH:    {ML_FLOW_URI_PATH}")
-    print(f"ML_FLOW_URI_PATH_TEST: {ML_FLOW_URI_PATH_TEST}")
-    print()
-    print("Environment Variables Used:")
-    env_vars = [
-        "EXTERNAL_DATA_DIR",
-        "LICHESS_PGN_DIR",
-        "SYZYGY_TABLES_DIR",
-        "STOCKFISH_DIR",
-        "GUI_DIR",
-        "LICHESS_PGN_FILE",
-        "STOCKFISH_BINARY_PATH",
-    ]
-    for var in env_vars:
-        env_value = os.getenv(var, "NOT SET")
-        print(f"{var}: {env_value}")
-    print()
-    print("Path Existence Check:")
-    print(f"PROJECT_ROOT exists:     {PROJECT_ROOT.exists()}")
-    print(f"EXTERNAL_DATA_DIR exists: {EXTERNAL_DATA_DIR.exists()}")
-    print(f"GUI_DIR exists:          {GUI_DIR.exists()}")
-    print(f"LICHESS_PGN_FILE exists:  {LICHESS_PGN_FILE.exists()}")
+# ---------- Runtime outputs (must be writable) ----------
+def _runtime_data_dir() -> Path:
+    """Return the persistent per-user writable data directory.
+
+    The directory can be overridden by setting CHIPIRON_OUTPUT_DIR.
+    """
+    override = os.environ.get("CHIPIRON_OUTPUT_DIR")
+    base = Path(override) if override else Path(user_data_dir(APP_NAME))
+    base.mkdir(parents=True, exist_ok=True)
+    return base
 
 
-if __name__ == "__main__":
-    main()
+def get_mlflow_db_path(*, filename: str = "mlruns.db") -> Path:
+    """Return the path to the MLflow SQLite database.
+
+    The location can be overridden by setting ML_FLOW_DB_PATH to an absolute path.
+    """
+    override = os.environ.get("ML_FLOW_DB_PATH")
+    p = Path(override) if override else (_runtime_data_dir() / "mlflow" / filename)
+    p = p.expanduser().resolve()
+    p.parent.mkdir(parents=True, exist_ok=True)
+    return p
+
+
+def get_mlflow_uri(
+    *, filename: str = "mlruns.db", env_var: str = "ML_FLOW_URI_PATH"
+) -> str:
+    """Return the MLflow tracking URI.
+
+    If `env_var` is set, return its value. Otherwise, use a SQLite database stored
+    under the Chipiron runtime data directory.
+    """
+    override_uri = os.environ.get(env_var)
+    if override_uri:
+        return override_uri
+    db_path = get_mlflow_db_path(filename=filename)
+    return f"sqlite:///{db_path.as_posix()}"
+
+
+ML_FLOW_URI_PATH = get_mlflow_uri(filename="mlruns.db", env_var="ML_FLOW_URI_PATH")
+ML_FLOW_URI_PATH_TEST = get_mlflow_uri(
+    filename="mlruns_test.db", env_var="ML_FLOW_URI_PATH_TEST"
+)

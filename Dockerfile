@@ -23,8 +23,8 @@ ENV LICHESS_PGN_FILE=external_data/lichess_pgn/lichess_db_standard_rated_2015-03
 ENV STOCKFISH_BINARY_PATH=external_data/stockfish/stockfish/stockfish-ubuntu-x86-64-avx2
 
 # Set MLflow paths
-ENV ML_FLOW_URI_PATH=sqlite:///src/chipiron/scripts/default_output_folder/mlflow_data/mlruns.db
-ENV ML_FLOW_URI_PATH_TEST=sqlite:///src/chipiron/scripts/default_output_folder/mlflow_data/mlruns_test.db
+ENV ML_FLOW_DB_PATH=/data/mlflow/mlruns.db
+ENV ML_FLOW_URI_PATH=sqlite:////data/mlflow/mlruns.db
 
 # 1. Installer Python + pip et dépendances
 RUN set -xe \

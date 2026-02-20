@@ -5,7 +5,6 @@ import importlib
 import importlib.machinery
 import importlib.util
 import os
-import sys
 import typing
 from importlib.resources import files
 from pathlib import Path
@@ -39,30 +38,33 @@ class PackageNotFoundError(ImportError):
 
 
 def mkdir_if_not_existing(folder_path: MyPath) -> None:
-    """Create a directory at the specified path.
+    """Create a directory if it does not already exist.
 
-    Args:
-        folder_path: The path to the directory.
-
-    Raises:
-        FileNotFoundError: If the parent directory does not exist.
-        FileExistsError: If the directory already exists.
-
+    Creates parent directories as needed.
     """
-    try:
-        os.mkdir(folder_path)
-    except FileNotFoundError as error:
-        sys.exit(
-            f"Creation of the directory {folder_path} failed with error {error} in file {__name__}\n with pwd {os.getcwd()}"
+    p = Path(folder_path)
+
+    if p.exists():
+        chipiron_logger.debug(
+            "Directory already exists, no creation needed: %s",
+            p,
         )
-    except FileExistsError as error:
+        return
+
+    try:
+        p.mkdir(parents=True, exist_ok=False)
+    except Exception as error:
         chipiron_logger.error(
-            "the file already exists so no creation needed for %s, with error %s",
-            folder_path,
+            "Failed to create directory %s with error %s",
+            p,
             error,
         )
-    else:
-        chipiron_logger.info("Successfully created the directory %s ", folder_path)
+        raise
+
+    chipiron_logger.info(
+        "Successfully created directory %s",
+        p,
+    )
 
 
 def yaml_fetch_args_in_file(path_file: MyPath) -> dict[Any, Any]:
