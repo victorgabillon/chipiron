@@ -11,6 +11,7 @@
 prune src/chipiron/scripts/**/outputs
 prune src/chipiron/scripts/**/default_output_folder
 prune src/chipiron/scripts/**/mlflow_data
+prune src/chipiron/scripts/**/tests
 prune src/chipiron/scripts/**/tests/**/tests_outputs
 
 # Usual cleanup

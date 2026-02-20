@@ -108,10 +108,7 @@ exclude = ["tests*", "docs", "examples", "build", "dist", "venv", "env", ".venv"
 
 [tool.pytest.ini_options]
 addopts = "--cov=chipiron"
-testpaths = [
-  "src/chipiron",
-    "tests"
-]
+testpaths = ["tests"]
 
 [tool.mypy]
 mypy_path = "src"
@@ -250,21 +247,17 @@ base_python = ["python3.13"]
 deps = ["build"]
 description = "Build + install package, run tests"
 extras = ["test"]
-changedir = "{envtmpdir}"
+changedir = "{toxinidir}"
 commands_pre = [
   ["python", "-c", "import shutil; shutil.rmtree(r'{toxinidir}/dist', ignore_errors=True)"],
   ["python", "-m", "build", "--sdist", "--wheel", "--outdir", "{toxinidir}/dist", "{toxinidir}"],
-  ["python", "-c", "import shutil, os; src=os.path.join(r'{toxinidir}', 'tests'); dst='tests'; shutil.copytree(src, dst, dirs_exist_ok=True) if os.path.abspath(src) != os.path.abspath(dst) else print('Skipping self-copy')"],
-  ["python", "-c", "import shutil; shutil.copytree(r'{toxinidir}/src/chipiron/scripts', 'chipiron/scripts', dirs_exist_ok=True)"],
   ["python", "-c", "import shutil, os; src=r'{toxinidir}/tests/data/trees'; dst='external_data/trees'; shutil.copytree(src, dst, dirs_exist_ok=True) if os.path.exists(src) else print(f'Skipping copy: {src} does not exist')"],
   ["python", "-c", "import os; print(os.listdir(r'{toxinidir}/dist'))"],
   ["python", "-c", "import glob, subprocess; subprocess.check_call(['pip','install', glob.glob(r'{toxinidir}/dist/*.tar.gz')[0]])"],
 ]
 commands = [
   ["python", "-c", "import chipiron; print(chipiron.__file__)"],
-  ["pytest", "--pyargs", "chipiron", "--basetemp={envtmpdir}/pytest-tmp",
-   "--ignore=chipiron/scripts/script_gui/test/test_script_gui.py",
-   "--ignore=chipiron/players/boardevaluators/table_base/test_syzygy.py",
+  ["pytest", "--basetemp={envtmpdir}/pytest-tmp",
    "{posargs}"],
 ]
 
