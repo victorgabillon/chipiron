@@ -3,9 +3,8 @@
 import pickle
 import random
 from typing import TYPE_CHECKING
-from pathlib import Path
-import pytest
 
+import pytest
 from atomheart.board.utils import FenPlusHistory
 
 from chipiron.players.boardevaluators.table_base.factory import (
@@ -15,6 +14,7 @@ from chipiron.players.boardevaluators.table_base.factory import (
 from chipiron.players.factory import create_chipiron_player, create_player
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
+from chipiron.utils.path_variables import MATE_IN_2_DB_SMALL
 
 if TYPE_CHECKING:
     import chess
@@ -25,8 +25,6 @@ if TYPE_CHECKING:
 
 
 pytestmark = pytest.mark.external_data
-
-PUZZLES = Path("external_data/puzzles/mate_in_2_db_small.pickle")
 
 
 @pytest.mark.parametrize(("use_rusty_board"), (True, False))
@@ -52,12 +50,13 @@ def test_check_in_one(use_rusty_board: bool) -> None:
 
 @pytest.mark.parametrize(("use_rusty_board"), (True, False))
 def test_check_in_two(use_rusty_board: bool) -> None:
-    """Test check in two."""
+    if not MATE_IN_2_DB_SMALL.exists():
+        pytest.skip(
+            f"Missing external puzzle data: {MATE_IN_2_DB_SMALL}. "
+            "Download external_data or set MATE_IN_2_DB_SMALL."
+        )
 
-    if not PUZZLES.exists():
-        pytest.skip(f"Missing puzzle DB: {PUZZLES}")
-
-    with open(PUZZLES, "rb") as file:
+    with MATE_IN_2_DB_SMALL.open("rb") as file:
         dict_fen_move = pickle.load(file=file)
 
     assert dict_fen_move

@@ -46,6 +46,14 @@ STOCKFISH_BINARY_PATH = get_env_path(
     str(STOCKFISH_DIR / "stockfish" / "stockfish-ubuntu-x86-64-avx2"),
 )
 
+# External puzzles (user-provided / not packaged)
+PUZZLES_DIR = get_env_path("PUZZLES_DIR", str(EXTERNAL_DATA_DIR / "puzzles"))
+
+MATE_IN_2_DB_SMALL = get_env_path(
+    "MATE_IN_2_DB_SMALL",
+    str(PUZZLES_DIR / "mate_in_2_db_small.pickle"),
+)
+
 
 # ---------- Runtime outputs (must be writable) ----------
 def _runtime_data_dir() -> Path:

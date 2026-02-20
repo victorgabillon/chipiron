@@ -26,9 +26,9 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from chipiron.utils.logger import chipiron_logger
-
 import pytest
+
+from chipiron.utils.logger import chipiron_logger
 
 pytestmark = pytest.mark.integration
 
