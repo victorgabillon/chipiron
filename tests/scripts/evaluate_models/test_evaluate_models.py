@@ -2,6 +2,7 @@
 
 import dataclasses
 import typing
+from pathlib import Path
 
 from coral.neural_networks.factory import (
     NeuralNetModelsAndArchitecture,
@@ -30,11 +31,12 @@ test_models_to_evaluate_: list[NeuralNetModelsAndArchitecture] = [
 ]
 
 
-def test_evaluate_model() -> None:
+def test_evaluate_model(tmp_path: Path) -> None:
     """Test evaluate model."""
-    report_path = resolve_package_path(
-        "package://scripts/evaluate_models/tests/test_evaluation_report.yaml"
-    )
+    report_path = tmp_path / "test_evaluation_report.yaml"
+    dataset_file = (
+        Path(__file__).parents[1] / "learn_nn_supervised" / "small_dataset.pi"
+    ).resolve()
     print("report path:", report_path)
 
     with open(report_path, "w", encoding="utf-8"):
@@ -51,14 +53,6 @@ def test_evaluate_model() -> None:
 
     evaluate_models(
         models_to_evaluate=test_models_to_evaluate_,
-        evaluation_report_file=resolve_package_path(
-            "package://scripts/evaluate_models/tests/test_evaluation_report.yaml"
-        ),
-        dataset_file_name=resolve_package_path(
-            "package://scripts/learn_nn_supervised/tests/small_dataset.pi"
-        ),
+        evaluation_report_file=str(report_path),
+        dataset_file_name=str(dataset_file),
     )
-
-
-if __name__ == "__main__":
-    test_evaluate_model()
