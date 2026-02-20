@@ -2,11 +2,7 @@
 Tests to ensure that all paths defined in `chipiron.utils.path_variables` are absolute paths, which is important for consistent behavior across different working directories and environments.
 """
 
-import os
 from pathlib import Path
-
-import pytest
-
 from urllib.parse import urlparse
 
 from chipiron.utils.path_variables import (
