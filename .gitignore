@@ -70,3 +70,10 @@ src/chipiron/scripts/**/tests/**/tests_outputs/**
 
 # Local zips / ad-hoc bundles
 *.zip
+
+
+# chipiron generated outputs
+src/chipiron/scripts/**/outputs/
+src/chipiron/scripts/**/default_output_folder/
+src/chipiron/scripts/**/mlflow_data/
+src/chipiron/scripts/**/tests/**/tests_outputs/

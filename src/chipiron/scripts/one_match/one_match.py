@@ -50,9 +50,7 @@ class OneMatchScript:
 
     args_dataclass_name: type[MatchScriptArgs] = MatchScriptArgs
 
-    base_experiment_output_folder = os.path.join(
-        Script.base_experiment_output_folder, "one_match/outputs/"
-    )
+    base_experiment_output_folder: str
     base_script: Script[MatchScriptArgs]
 
     chess_gui: QApplication
@@ -66,6 +64,9 @@ class OneMatchScript:
         """Build the OneMatchScript object."""
         self.base_script = base_script
 
+        self.base_experiment_output_folder = os.path.join(
+            Script.base_experiment_output_folder, "one_match/outputs/"
+        )
         # Calling the init of Script that takes care of a lot of stuff, especially parsing the arguments into args
         args: MatchScriptArgs = self.base_script.initiate(
             experiment_output_folder=self.base_experiment_output_folder,

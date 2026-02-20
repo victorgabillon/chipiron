@@ -18,7 +18,8 @@ from chipiron.scripts.default_script_args import DataClassWithBaseScriptArgs
 from chipiron.utils import MyPath
 from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger, set_chipiron_logger_level
-from chipiron.utils.small_tools import mkdir_if_not_existing, resolve_package_path
+from chipiron.utils.path_runtime import output_root_path_str
+from chipiron.utils.small_tools import mkdir_if_not_existing
 
 
 class Script[DataclassT: DataClassWithBaseScriptArgs = DataClassWithBaseScriptArgs]:
@@ -32,9 +33,9 @@ class Script[DataclassT: DataClassWithBaseScriptArgs = DataClassWithBaseScriptAr
     gui_args: dict[str, Any] | None
     profile: cProfile.Profile | None
     experiment_script_type_output_folder: MyPath | None = None
-    base_experiment_output_folder: MyPath = resolve_package_path("package://scripts/")
-    default_experiment_output_folder: MyPath = resolve_package_path(
-        "package://scripts/default_output_folder"
+    base_experiment_output_folder: MyPath = output_root_path_str()
+    default_experiment_output_folder: MyPath = os.path.join(
+        base_experiment_output_folder, "default_output_folder"
     )
     config_file_name: str | None
 
@@ -81,6 +82,8 @@ class Script[DataclassT: DataClassWithBaseScriptArgs = DataClassWithBaseScriptAr
             self.experiment_script_type_output_folder = (
                 self.default_experiment_output_folder
             )
+        assert self.experiment_script_type_output_folder is not None
+        mkdir_if_not_existing(self.experiment_script_type_output_folder)
 
         final_args: DataclassT = self.parser.parse_arguments(
             extra_args=self.extra_args, config_file_path=self.config_file_name

@@ -343,6 +343,7 @@ deps = [
     "algorhino-anemone>=0.1.21",
       "pytest>=9.0.2",
   "pytest-cov>=6.0.0",
+  "platformdirs>=4.9.2",
 ]
 set_env = { MYPYPATH = "{toxinidir}/src" }
 commands = [
