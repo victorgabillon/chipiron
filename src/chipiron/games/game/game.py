@@ -3,6 +3,7 @@
 from typing import TYPE_CHECKING, Annotated
 
 from valanga import Dynamics, StateTag, TurnState
+from valanga.dynamics import Transition
 from valanga.game import ActionKey, ActionName, Seed
 
 from chipiron.displays.gui_protocol import Scope
@@ -122,6 +123,16 @@ class Game[StateT: TurnState = TurnState]:
             print(
                 f"Cannot play move if the game status is PAUSE {self._playing_status.status}"
             )
+
+    def apply_transition(
+        self, transition: Transition[StateT], action_name: ActionName
+    ) -> None:
+        """Apply a precomputed transition and keep histories consistent."""
+        self._current_state = transition.next_state
+        self._action_history.append(action_name)
+        self._state_tag_history.append(transition.next_state.tag)
+        self._state_history.append(transition.next_state)
+        self._ply += 1
 
     def rewind_one_move(self) -> None:
         """Rewinds the last move on the chess board.
@@ -291,6 +302,15 @@ class ObservableGame[StateT: TurnState = TurnState]:
         self.game.rewind_one_move()
         self.notify_display()
 
+    def apply_transition(
+        self,
+        *,
+        transition: Transition[StateT],
+        action_name: ActionName,
+    ) -> None:
+        """Apply a dynamics transition and update game history/state."""
+        self.game.apply_transition(transition=transition, action_name=action_name)
+
     @property
     def dynamics(self) -> Dynamics[StateT]:
         """Get the game dynamics."""
@@ -377,6 +397,11 @@ class ObservableGame[StateT: TurnState = TurnState]:
         for move_function in self.move_functions:
             move_function(request)
 
+    def publish_update(self, payload: "UpdatePayload") -> None:
+        """Publish an already-built GUI update payload to all displays."""
+        for mailbox in self.mailboxes_display:
+            mailbox.publish(payload)
+
     def notify_status(self) -> None:
         """Notifies the status mailboxes with the updated game status."""
         chipiron_logger.debug("notify game %s", self.game.playing_status.status)
@@ -388,6 +413,11 @@ class ObservableGame[StateT: TurnState = TurnState]:
 
         for mailbox in self.mailboxes_display:
             mailbox.publish(payload)
+
+    @property
+    def seed(self) -> Seed | None:
+        """Get the game seed."""
+        return self.game.seed
 
     @property
     def state(self) -> StateT:

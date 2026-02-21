@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from valanga import Color, StateEvaluation, StateTag
 from valanga.game import BranchName, Seed
 
+from chipiron.core.request_context import RequestContext
 from chipiron.displays.gui_protocol import Scope
 
 
@@ -34,6 +35,7 @@ class PlayerRequest[StateSnapT = object]:
     scope: Scope
     seed: Seed
     state: TurnStatePlusHistory[StateSnapT]
+    ctx: RequestContext | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,6 +44,7 @@ class EvMove:
 
     branch_name: BranchName
     corresponding_state_tag: StateTag
+    ctx: RequestContext | None
     player_name: str
     color_to_play: Color
     evaluation: StateEvaluation | None = (
