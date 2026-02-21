@@ -1,7 +1,6 @@
 """Module in charge of managing the game. It is the main class that will be used to play a game."""
 
 import os
-import queue
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Literal
 
@@ -12,15 +11,7 @@ from valanga.evaluations import StateEvaluation
 from valanga.game import ActionKey
 
 import chipiron.players as players_m
-from chipiron.displays.gui_protocol import (
-    CmdBackOneMove,
-    CmdSetStatus,
-    GuiCommand,
-    HumanActionChosen,
-    Scope,
-    UpdNoHumanActionPending,
-)
-from chipiron.games.game.game_playing_status import PlayingStatus
+from chipiron.displays.gui_protocol import Scope
 from chipiron.match.domain_events import (
     ActionApplied,
     IllegalAction,
@@ -29,13 +20,7 @@ from chipiron.match.domain_events import (
     NeedAction,
 )
 from chipiron.players.boardevaluators.board_evaluator import IGameStateEvaluator
-from chipiron.players.communications.player_message import (
-    EvMove,
-    EvProgress,
-    PlayerEvent,
-)
 from chipiron.utils import MyPath
-from chipiron.utils.communication.mailbox import MainMailboxMessage
 from chipiron.utils.dataclass import custom_asdict_factory
 from chipiron.utils.logger import chipiron_logger
 
@@ -52,7 +37,10 @@ from .game_rules import (
 from .progress_collector import PlayerProgressCollectorP
 
 if TYPE_CHECKING:
+    import queue
+
     from chipiron.match.match_controller import MatchController
+    from chipiron.utils.communication.mailbox import MainMailboxMessage
 
 
 class TransitionComputationError(Exception):
@@ -80,7 +68,7 @@ class GameManager[StateT: TurnState = TurnState]:
     player_color_to_id: dict[Color, str]
 
     # A Queue for receiving messages from other process or functions such as players or Gui
-    main_thread_mailbox: queue.Queue[MainMailboxMessage]
+    main_thread_mailbox: "queue.Queue[MainMailboxMessage]"
 
     # The list of players (lifecycle handles)
     players: list[players_m.PlayerHandle]
@@ -105,7 +93,7 @@ class GameManager[StateT: TurnState = TurnState]:
         output_folder_path: MyPath | None,
         args: GameArgs,
         player_color_to_id: dict[Color, str],
-        main_thread_mailbox: queue.Queue[MainMailboxMessage],
+        main_thread_mailbox: "queue.Queue[MainMailboxMessage]",
         players: list[players_m.PlayerHandle],
         move_factory: MoveFactory,
         progress_collector: PlayerProgressCollectorP,
@@ -279,146 +267,10 @@ class GameManager[StateT: TurnState = TurnState]:
             GameReport: The report of the game.
 
         """
-        color_names = {
-            Color.WHITE: "White",
-            Color.BLACK: "Black",
-        }
+        from chipiron.match.match_orchestrator import MatchOrchestrator
 
-        # sending the current board to the gui
-        self.game.notify_display()
-
-        # match controller is the single async orchestration hub
-        if self.game.is_play():
-            controller.start()
-
-        while True:
-            state = self.game.state
-            ply: Ply = self.game.ply
-            chipiron_logger.info(
-                "Half Move: %s playing status %s",
-                ply,
-                self.game.playing_status.status,
-            )
-            color_to_move: Color = state.turn
-            color_of_player_to_move_str = color_names[color_to_move]
-            chipiron_logger.info(
-                "%s (%s) to play now...",
-                color_of_player_to_move_str,
-                self.player_color_to_id[color_to_move],
-            )
-
-            # waiting for a message
-            mail: MainMailboxMessage = self.main_thread_mailbox.get()
-            if isinstance(mail, GuiCommand):
-                if self._ignore_if_stale_scope(mail.scope):
-                    continue
-                match mail.payload:
-                    case HumanActionChosen():
-                        controller.handle_human_action(mail.payload)
-                    case _:
-                        self._handle_gui_command(mail, controller)
-            else:
-                if self._ignore_if_stale_scope(mail.scope):
-                    continue
-                match mail.payload:
-                    case EvMove():
-                        controller.handle_player_action(mail.payload)
-                    case _:
-                        self._handle_player_event(mail)
-
-            state = self.game.state
-            is_terminal = self.rules.outcome(state) is not None
-            if is_terminal or not self.game_continue_conditions():
-                if is_terminal:
-                    chipiron_logger.info("The game is over")
-                if not self.game_continue_conditions():
-                    chipiron_logger.info("Game continuation not met")
-                break
-            chipiron_logger.info("Not game over at %s", state)
-
-        self.tell_results()
-        self.terminate_processes()
-        chipiron_logger.info("End play_one_game")
-
-        game_results: FinalGameResult = self.simple_results()
-
-        game_report: GameReport = GameReport(
-            final_game_result=game_results,
-            action_history=list(self.game.action_history),
-            state_tag_history=self.game.state_tag_history,
-        )
-        return game_report
-
-    def _ignore_if_stale_scope(self, scope: object) -> bool:
-        if scope != self.game.scope:
-            chipiron_logger.debug(
-                "Ignoring stale message scope=%s (current=%s)",
-                scope,
-                self.game.scope,
-            )
-            return True
-        return False
-
-    def _handle_gui_command(
-        self,
-        message: GuiCommand,
-        controller: "MatchController",
-    ) -> None:
-
-        match message.payload:
-            case CmdSetStatus():
-                if message.payload.status == PlayingStatus.PLAY:
-                    self.game.set_play_status()
-                    controller.request_next_action()
-                elif message.payload.status == PlayingStatus.PAUSE:
-                    self.game.set_pause_status()
-                    self.invalidate_pending_request()
-                    controller.clear_pending()
-                    self.game.publish_update(UpdNoHumanActionPending())
-                else:
-                    chipiron_logger.warning(  # type: ignore[unreachable]
-                        "Unhandled PlayingStatus: %s", message.payload.status
-                    )
-
-            case CmdBackOneMove():
-                self.game.set_pause_status()
-                self.rewind_one_move()
-                self.invalidate_pending_request()
-                controller.clear_pending()
-                self.game.publish_update(UpdNoHumanActionPending())
-
-            case _:
-                chipiron_logger.warning(
-                    "Unhandled GuiCommand payload in file %s: %r",
-                    __name__,
-                    message.payload,
-                )
-                return
-
-    def _handle_player_event(self, message: PlayerEvent) -> None:
-        match message.payload:
-            case EvMove():
-                chipiron_logger.debug(
-                    "EvMove is orchestrated by MatchController; ignoring in GameManager"
-                )
-                return
-            case EvProgress():
-                # forward to your progress collector
-                if message.payload.player_color == Color.WHITE:
-                    self.progress_collector.progress_white(
-                        value=message.payload.progress_percent
-                    )
-                else:
-                    self.progress_collector.progress_black(
-                        value=message.payload.progress_percent
-                    )
-            case _:
-                chipiron_logger.warning(  # type: ignore[unreachable]
-                    "Unhandled PlayerEvent payload in file %s: %r",
-                    __name__,
-                    message.payload,
-                )
-                return
+        orchestrator = MatchOrchestrator(self.main_thread_mailbox)
+        return orchestrator.play_one_game(game_manager=self, controller=controller)
 
     def game_continue_conditions(self) -> bool:
         """Check the conditions for continuing the game.
