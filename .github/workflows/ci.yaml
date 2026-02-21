@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - "anemone"
+      - "guiplayer"
   pull_request:
 
 env:
