@@ -38,6 +38,16 @@ class MatchController:
         outs = self.game_manager.start_match_sync(self.scope)
         self._handle_outputs(outs)
 
+    def request_next_action(self) -> None:
+        """Request an action for the current position without resetting match ids."""
+        outs = self.game_manager.need_action_now()
+        self._handle_outputs(outs)
+
+    def clear_pending(self) -> None:
+        """Clear pending action correlation state."""
+        self.pending_color = None
+        self.pending_request_id = None
+
     def _handle_outputs(self, events: list[object]) -> None:
         for ev in events:
             if isinstance(ev, NeedAction):
@@ -77,8 +87,7 @@ class MatchController:
 
             elif isinstance(ev, MatchOver):
                 chipiron_logger.info("Match over for scope=%s", ev.scope)
-                self.pending_color = None
-                self.pending_request_id = None
+                self.clear_pending()
                 self.game_manager.game.publish_update(UpdNoHumanActionPending())
                 self.game_manager.game.notify_display()
                 continue
