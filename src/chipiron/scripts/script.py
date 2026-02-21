@@ -19,7 +19,7 @@ from chipiron.utils import MyPath
 from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger, set_chipiron_logger_level
 from chipiron.utils.path_runtime import output_root_path_str
-from chipiron.utils.small_tools import mkdir_if_not_existing
+from chipiron.utils.small_tools import mkdir_if_not_existing, resolve_package_path
 
 
 class Script[DataclassT: DataClassWithBaseScriptArgs = DataClassWithBaseScriptArgs]:
@@ -86,7 +86,7 @@ class Script[DataclassT: DataClassWithBaseScriptArgs = DataClassWithBaseScriptAr
         mkdir_if_not_existing(self.experiment_script_type_output_folder)
 
         final_args: DataclassT = self.parser.parse_arguments(
-            extra_args=self.extra_args, config_file_path=self.config_file_name
+            extra_args=self.extra_args, config_file_path=resolve_package_path(self.config_file_name)
         )
 
         final_args_with_base = final_args
