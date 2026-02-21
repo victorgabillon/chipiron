@@ -453,3 +453,8 @@ class ObservableGame[StateT: TurnState = TurnState]:
 
         """
         return self.game.ply
+
+
+    @property
+    def seed(self) -> Seed | None:
+        return self.game.seed
