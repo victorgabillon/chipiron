@@ -7,6 +7,7 @@ import datetime
 import os
 import time
 from dataclasses import asdict, dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import dacite
@@ -33,7 +34,7 @@ from chipiron.players.boardevaluators.neural_networks.chipiron_nn_args import (
     load_chipiron_nn_args,
 )
 from chipiron.utils import MyPath
-from chipiron.utils.small_tools import resolve_package_path
+from chipiron.utils.path_runtime import get_default_output_dir
 
 if TYPE_CHECKING:
     from coral.neural_networks import NNBWStateEvaluator
@@ -94,7 +95,7 @@ def count_parameters(model: ChiNN) -> int:
 
 def evaluate_models(
     models_to_evaluate: list[NeuralNetModelsAndArchitecture],
-    evaluation_report_file: MyPath = "package://scripts/evaluate_models/evaluation_report.yaml",
+    evaluation_report_file: MyPath | None = None,
     dataset_file_name: MyPath = "external_data/data_chipiron/datasets/goodgames_plusvariation_stockfish_eval_test",
 ) -> None:
     """Evaluate the models in the list models_to_evaluate.
@@ -104,31 +105,46 @@ def evaluate_models(
 
     """
     print("Evaluating models...")
+
+    if evaluation_report_file is None:
+        evaluation_report_file = str(
+            get_default_output_dir() / "evaluate_models" / "evaluation_report.yaml"
+        )
+
+    evaluation_report_file = str(evaluation_report_file)
+    evaluation_report_path = Path(evaluation_report_file)
+    evaluation_report_path.parent.mkdir(parents=True, exist_ok=True)
     # Load the evaluation report
     evaluated_models: dict[str, ModelEvaluation] = {}
-    with open(evaluation_report_file, encoding="utf-8") as stream:
-        try:
-            evaluated_models_temp: dict[str, dict[Any, Any]] | None
-            evaluated_models_temp = yaml.safe_load(stream)
-            if evaluated_models_temp is None:
-                evaluated_models_temp = {}
-            evaluated_model_path: MyPath
-            evaluated_model_evaluation_dict: dict[Any, Any]
-            for (
-                evaluated_model_path,
-                evaluated_model_evaluation_dict,
-            ) in evaluated_models_temp.items():
-                model_evaluation_: ModelEvaluation = dacite.from_dict(
-                    data_class=ModelEvaluation, data=evaluated_model_evaluation_dict
+
+    if evaluation_report_path.exists():
+        with evaluation_report_path.open(encoding="utf-8") as stream:
+            try:
+                evaluated_models_temp: dict[str, dict[Any, Any]] | None
+                evaluated_models_temp = yaml.safe_load(stream)
+                if evaluated_models_temp is None:
+                    evaluated_models_temp = {}
+                evaluated_model_path: MyPath
+                evaluated_model_evaluation_dict: dict[Any, Any]
+                for (
+                    evaluated_model_path,
+                    evaluated_model_evaluation_dict,
+                ) in evaluated_models_temp.items():
+                    model_evaluation_: ModelEvaluation = dacite.from_dict(
+                        data_class=ModelEvaluation, data=evaluated_model_evaluation_dict
+                    )
+                    evaluated_models[evaluated_model_path] = model_evaluation_
+                print(
+                    "Here is the content of the previous evaluation report: ",
+                    evaluated_models,
                 )
-                evaluated_models[evaluated_model_path] = model_evaluation_
-            print(
-                "Here is the content of the previous evaluation report: ",
-                evaluated_models,
-            )
-        except yaml.YAMLError as exc:
-            print(exc)
-            raise EvaluationReportLoadError from exc
+            except yaml.YAMLError as exc:
+                print(exc)
+                raise EvaluationReportLoadError from exc
+
+    else:
+        # no prior report -> start empty
+        evaluated_models = {}
 
     # Evaluate the models if necessary
     data_loader_stockfish_boards_test = None
@@ -222,22 +238,15 @@ def evaluate_models(
             evaluated_models[model_hash_key] = model_evaluation
             print("Model evaluated!")
 
-    evaluated_model_path_: MyPath
-    evaluated_model_evaluation: ModelEvaluation
+    k: MyPath
+    v: ModelEvaluation
     evaluated_models_final_dict: dict[MyPath, dict[Any, Any]] = {}
-    for evaluated_model_path_, evaluated_model_evaluation in evaluated_models.items():
-        evaluated_models_final_dict[evaluated_model_path_] = asdict(
-            evaluated_model_evaluation
-        )
-    with open(
-        resolve_package_path(
-            "package://scripts/evaluate_models/evaluation_report.yaml"
-        ),
-        "w",
-        encoding="utf-8",
-    ) as outfile:
-        yaml.dump(evaluated_models_final_dict, outfile, default_flow_style=False)
+    for k, v in evaluated_models.items():
+        evaluated_models_final_dict[k] = asdict(v)
 
+    evaluation_report_path.parent.mkdir(parents=True, exist_ok=True)
+    with evaluation_report_path.open("w", encoding="utf-8") as outfile:
+        yaml.safe_dump(evaluated_models_final_dict, outfile, default_flow_style=False)
     print("All evaluations done!")
 
 
