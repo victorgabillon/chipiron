@@ -19,6 +19,7 @@ from chipiron.match.domain_events import (
     MatchOver,
     NeedAction,
 )
+from chipiron.match.match_orchestrator import MatchOrchestrator
 from chipiron.players.boardevaluators.board_evaluator import IGameStateEvaluator
 from chipiron.utils import MyPath
 from chipiron.utils.dataclass import custom_asdict_factory
@@ -265,10 +266,7 @@ class GameManager[StateT: TurnState = TurnState]:
 
         Returns:
             GameReport: The report of the game.
-
         """
-        from chipiron.match.match_orchestrator import MatchOrchestrator
-
         orchestrator = MatchOrchestrator(self.main_thread_mailbox)
         return orchestrator.play_one_game(game_manager=self, controller=controller)
 

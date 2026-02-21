@@ -8,9 +8,9 @@ Medium-refactor goal:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, assert_never
+from typing import TYPE_CHECKING, TypeVar
 
-from valanga import Color
+from valanga import Color, TurnState
 
 from chipiron.displays.gui_protocol import (
     CmdBackOneMove,
@@ -36,6 +36,9 @@ if TYPE_CHECKING:
     from chipiron.utils.communication.mailbox import MainMailboxMessage
 
 
+StateT = TypeVar("StateT", bound=TurnState)
+
+
 class MatchOrchestrator:
     """Runs one game by consuming mailbox messages and dispatching them."""
 
@@ -49,7 +52,7 @@ class MatchOrchestrator:
     def play_one_game(
         self,
         *,
-        game_manager: GameManager,
+        game_manager: GameManager[StateT],
         controller: MatchController,
     ) -> GameReport:
         """Run the match loop until terminal condition, then return GameReport."""
@@ -76,6 +79,7 @@ class MatchOrchestrator:
             )
 
             mail: MainMailboxMessage = self._mailbox.get()
+
             if isinstance(mail, GuiCommand):
                 if self._ignore_if_stale_scope(game_manager, mail.scope):
                     continue
@@ -84,8 +88,8 @@ class MatchOrchestrator:
                         controller.handle_human_action(mail.payload)
                     case _:
                         self._handle_gui_command(game_manager, controller, mail)
-
-            elif isinstance(mail, PlayerEvent):
+            else:
+                # Pyright considers this already PlayerEvent here.
                 if self._ignore_if_stale_scope(game_manager, mail.scope):
                     continue
                 match mail.payload:
@@ -93,10 +97,6 @@ class MatchOrchestrator:
                         controller.handle_player_action(mail.payload)
                     case _:
                         self._handle_player_event(game_manager, mail)
-
-            else:
-                assert_never(mail)
-
             state = game_manager.game.state
             is_terminal = game_manager.rules.outcome(state) is not None
             if is_terminal or not game_manager.game_continue_conditions():
@@ -118,7 +118,9 @@ class MatchOrchestrator:
             state_tag_history=game_manager.game.state_tag_history,
         )
 
-    def _ignore_if_stale_scope(self, game_manager: GameManager, scope: object) -> bool:
+    def _ignore_if_stale_scope(
+        self, game_manager: GameManager[StateT], scope: object
+    ) -> bool:
         if scope != game_manager.game.scope:
             chipiron_logger.debug(
                 "Ignoring stale message scope=%s (current=%s)",
@@ -130,7 +132,7 @@ class MatchOrchestrator:
 
     def _handle_gui_command(
         self,
-        game_manager: GameManager,
+        game_manager: GameManager[StateT],
         controller: MatchController,
         message: GuiCommand,
     ) -> None:
@@ -167,7 +169,7 @@ class MatchOrchestrator:
 
     def _handle_player_event(
         self,
-        game_manager: GameManager,
+        game_manager: GameManager[StateT],
         message: PlayerEvent,
     ) -> None:
         match message.payload:
