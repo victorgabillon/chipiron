@@ -19,6 +19,7 @@ from chipiron.displays.gui_protocol import (
     GuiCommand,
     HumanActionChosen,
     Scope,
+    UpdNoHumanActionPending,
 )
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.players.boardevaluators.board_evaluator import IGameStateEvaluator
@@ -149,6 +150,24 @@ class GameManager[StateT: TurnState = TurnState]:
             )
         ]
 
+    def need_action_now(self) -> list[object]:
+        """Emit a NeedAction for the current state without resetting request ids."""
+        if self._scope is None:
+            return []
+        state = self.game.state
+        return [
+            NeedAction(
+                scope=self._scope,
+                color=state.turn,
+                request_id=self._request_id,
+                state=state,
+            )
+        ]
+
+    def invalidate_pending_request(self) -> None:
+        """Invalidate in-flight action responses by advancing request id."""
+        self._request_id += 1
+
     def propose_action_sync(
         self,
         scope: Scope,
@@ -275,7 +294,7 @@ class GameManager[StateT: TurnState = TurnState]:
                     case HumanActionChosen():
                         controller.handle_human_action(mail.payload)
                     case _:
-                        self._handle_gui_command(mail)
+                        self._handle_gui_command(mail, controller)
             elif isinstance(mail, PlayerEvent):
                 if self._ignore_if_stale_scope(mail.scope):
                     continue
@@ -320,15 +339,23 @@ class GameManager[StateT: TurnState = TurnState]:
             return True
         return False
 
-    def _handle_gui_command(self, message: GuiCommand) -> None:
+    def _handle_gui_command(
+        self,
+        message: GuiCommand,
+        controller: "MatchController",
+    ) -> None:
         state: StateT = self.game.state
 
         match message.payload:
             case CmdSetStatus():
                 if message.payload.status == PlayingStatus.PLAY:
                     self.game.set_play_status()
+                    controller.request_next_action()
                 elif message.payload.status == PlayingStatus.PAUSE:
                     self.game.set_pause_status()
+                    self.invalidate_pending_request()
+                    controller.clear_pending()
+                    self.game.publish_update(UpdNoHumanActionPending())
                 else:
                     chipiron_logger.warning(  # type: ignore[unreachable]
                         "Unhandled PlayingStatus: %s", message.payload.status
@@ -337,6 +364,9 @@ class GameManager[StateT: TurnState = TurnState]:
             case CmdBackOneMove():
                 self.game.set_pause_status()
                 self.rewind_one_move()
+                self.invalidate_pending_request()
+                controller.clear_pending()
+                self.game.publish_update(UpdNoHumanActionPending())
 
             case _:
                 chipiron_logger.warning(  # type: ignore[unreachable]
