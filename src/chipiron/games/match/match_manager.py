@@ -12,7 +12,7 @@ from chipiron.displays.gui_protocol import GuiUpdate, Scope
 from chipiron.games.game.final_game_result import GameReport
 from chipiron.games.game.game_args import GameArgs
 from chipiron.games.game.game_args_factory import GameArgsFactory
-from chipiron.games.game.game_manager_factory import GameManagerFactory
+from chipiron.games.game.game_manager_factory import GameManagerFactory, GameSession
 from chipiron.games.match.match_results import IMatchResults, MatchReport, MatchResults
 from chipiron.games.match.match_results_factory import MatchResultsFactory
 from chipiron.games.match.observable_match_result import ObservableMatchResults
@@ -201,17 +201,20 @@ class MatchManager:
             GameReport: The report of the game.
 
         """
-        game_manager: GameManager[Any] = self.game_manager_factory.create(
+        game_session: GameSession = self.game_manager_factory.create(
             args_game_manager=args_game,
             player_color_to_factory_args=player_color_to_factory_args,
             game_seed=game_seed,
         )
 
         # stash current ids so play_one_match can tag match-result updates
+        game_manager: GameManager[Any] = game_session.manager
+        controller = game_session.controller
+
         self._last_scope = game_manager.game.scope
         self._last_game_kind = args_game.game_kind
 
-        game_report: GameReport = game_manager.play_one_game()
+        game_report: GameReport = game_manager.play_one_game(controller)
         game_manager.print_to_file(idx=game_number, game_report=game_report)
 
         return game_report
