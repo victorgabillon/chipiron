@@ -5,6 +5,8 @@ from typing import Never
 
 from atomheart.board.utils import FenPlusHistory
 from valanga import Color, StateTag
+
+from chipiron.core.request_context import RequestContext
 from valanga.evaluations import StateEvaluation
 
 from chipiron.environments.types import GameKind
@@ -113,6 +115,23 @@ class UpdMatchResults:
     match_finished: bool
 
 
+
+
+@dataclass(frozen=True, slots=True)
+class UpdNeedHumanAction:
+    """Update payload telling GUI which human request is currently pending."""
+
+    ctx: RequestContext
+    state_tag: StateTag
+
+
+
+
+@dataclass(frozen=True, slots=True)
+class UpdNoHumanActionPending:
+    """Update payload telling GUI there is no pending human action."""
+
+
 @dataclass(frozen=True, slots=True)
 class UpdGameStatus:
     """Current game status update."""
@@ -127,6 +146,8 @@ type UpdatePayload = (
     | UpdPlayersInfo
     | UpdMatchResults
     | UpdGameStatus
+    | UpdNeedHumanAction
+    | UpdNoHumanActionPending
 )
 
 
@@ -154,15 +175,15 @@ class CmdSetStatus:
 
 
 @dataclass(frozen=True, slots=True)
-class CmdHumanMoveUci:
-    """Command carrying a human UCI move and optional context."""
+class HumanActionChosen:
+    """Command carrying a generic human action name."""
 
-    move_uci: str
+    action_name: str
+    ctx: RequestContext | None = None
     corresponding_state_tag: StateTag | None = None
-    color_to_play: Color | None = None
 
 
-type CommandPayload = CmdBackOneMove | CmdSetStatus | CmdHumanMoveUci
+type CommandPayload = CmdBackOneMove | CmdSetStatus | HumanActionChosen
 
 
 @dataclass(frozen=True, slots=True)

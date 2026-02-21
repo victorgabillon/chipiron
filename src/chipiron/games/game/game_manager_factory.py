@@ -19,6 +19,7 @@ from chipiron.displays.gui_protocol import (
 )
 from chipiron.displays.gui_publisher import GuiPublisher
 from chipiron.environments.environment import EnvDeps, make_environment
+from chipiron.match.match_controller import MatchController
 from chipiron.games.game.game_args import GameArgs
 from chipiron.games.game.game_playing_status import GamePlayingStatus
 from chipiron.players import PlayerFactoryArgs
@@ -26,7 +27,6 @@ from chipiron.players.boardevaluators.board_evaluator import (
     IGameStateEvaluator,
     ObservableGameStateEvaluator,
 )
-from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.utils import MyPath
 from chipiron.utils.communication.gui_messages.gui_messages import (
@@ -55,6 +55,15 @@ def make_subscriber_queues() -> list[queue.Queue[GuiUpdate]]:
 class GameManagerFactoryError(ValueError):
     """Base error for game manager factory issues."""
 
+
+
+
+@dataclass(frozen=True, slots=True)
+class GameSession:
+    """Wiring bundle for one game run."""
+
+    manager: GameManager[Any]
+    controller: MatchController
 
 class MissingSessionIdError(GameManagerFactoryError):
     """Raised when the session id is not provided."""
@@ -99,7 +108,7 @@ class GameManagerFactory:
         args_game_manager: GameArgs,
         player_color_to_factory_args: dict[Color, PlayerFactoryArgs],
         game_seed: Seed,
-    ) -> GameManager[Any]:
+    ) -> GameSession:
         """Create a GameManager with the given arguments.
 
         Args:
@@ -108,7 +117,7 @@ class GameManagerFactory:
             game_seed (int): the seed of the game
 
         Returns:
-            the created GameManager
+            the created game session wiring
 
         """
         # useful if the logic of game generation gets complex
@@ -199,31 +208,33 @@ class GameManagerFactory:
         )
 
         players: list[players_m.PlayerHandle] = []
+        engine_request_by_color: dict[Color, MoveFunction] = {}
+        human_colors: set[Color] = set()
+
         # Creating the players
         for player_color in (Color.WHITE, Color.BLACK):
             player_factory_args = player_color_to_factory_args[player_color]
 
-            # Human playing with gui does not need a player, as the playing moves will be generated directly
-            # by the GUI and sent directly to the game_manager
-            if player_factory_args.player_args.name != PlayerConfigTag.GUI_HUMAN:
-                generic_player: players_m.PlayerHandle
-                move_function: MoveFunction
-                generic_player, move_function = player_observer_factory(
-                    player_color=player_color,
-                    player_factory_args=player_factory_args,
-                    main_thread_mailbox=self.main_thread_mailbox,
-                )
-                players.append(generic_player)
+            if player_factory_args.player_args.is_human():
+                human_colors.add(player_color)
+                continue
 
-                # registering to the observable board to get notification when it changes
-                observable_game.register_player(move_function=move_function)
+            generic_player: players_m.PlayerHandle
+            move_function: MoveFunction
+            generic_player, move_function = player_observer_factory(
+                player_color=player_color,
+                player_factory_args=player_factory_args,
+                main_thread_mailbox=self.main_thread_mailbox,
+            )
+            players.append(generic_player)
+            engine_request_by_color[player_color] = move_function
 
         player_color_to_id: dict[Color, str] = {
             color: player_factory_args.player_args.name
             for color, player_factory_args in player_color_to_factory_args.items()
         }
 
-        return GameManager(
+        game_manager = GameManager(
             game=observable_game,
             display_state_evaluator=display_state_evaluator,
             output_folder_path=self.output_folder_path,
@@ -235,6 +246,14 @@ class GameManagerFactory:
             progress_collector=player_progress_collector,
             rules=environment.rules,
         )
+
+        controller = MatchController(
+            scope=scope,
+            game_manager=game_manager,
+            engine_request_by_color=engine_request_by_color,
+            human_colors=human_colors,
+        )
+        return GameSession(manager=game_manager, controller=controller)
 
     def subscribe(self, subscriber_queue: queue.Queue[GuiUpdate]) -> None:
         """Subscribe to the GameManagerFactory to get the PlayersColorToPlayerMessage.
