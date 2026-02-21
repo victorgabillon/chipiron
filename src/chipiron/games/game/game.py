@@ -415,6 +415,11 @@ class ObservableGame[StateT: TurnState = TurnState]:
             mailbox.publish(payload)
 
     @property
+    def seed(self) -> Seed | None:
+        """Get the game seed."""
+        return self.game.seed
+
+    @property
     def state(self) -> StateT:
         """Get the chess board.
 
