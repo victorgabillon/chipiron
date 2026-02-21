@@ -259,7 +259,7 @@ class LearnNNScript:
         )
         mlflow.log_metric(
             "lr",
-            self.nn_trainer.scheduler.get_last_lr()[-1],
+            float(self.nn_trainer.scheduler.get_last_lr()[-1]),
             step=count_train_step,
         )
 
