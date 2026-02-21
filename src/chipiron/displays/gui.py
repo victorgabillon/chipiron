@@ -32,9 +32,10 @@ from PySide6.QtWidgets import (
 from valanga import Color, StateTag
 from valanga.evaluations import FloatyStateEvaluation, ForcedOutcome, StateEvaluation
 
+from chipiron.core.request_context import RequestContext
 from chipiron.displays.gui_protocol import (
     CmdBackOneMove,
-    CmdHumanMoveUci,
+    HumanActionChosen,
     CmdSetStatus,
     GuiCommand,
     GuiUpdate,
@@ -46,6 +47,8 @@ from chipiron.displays.gui_protocol import (
     UpdPlayerProgress,
     UpdPlayersInfo,
     UpdStateChess,
+    UpdNeedHumanAction,
+    UpdNoHumanActionPending,
 )
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.utils.communication.mailbox import MainMailboxMessage
@@ -112,6 +115,8 @@ class MainWindow(QWidget):
         super().__init__()
 
         self.current_state_tag: StateTag | None = None
+        self.pending_human_ctx: RequestContext | None = None
+        self.pending_human_state_tag: StateTag | None = None
 
         self.play_button_clicked_last_time: float | None = None
         self.pause_button_clicked_last_time: float | None = None
@@ -458,10 +463,10 @@ class MainWindow(QWidget):
         cmd = GuiCommand(
             schema_version=1,
             scope=self.scope,
-            payload=CmdHumanMoveUci(
-                move_uci=str(move_uci),
-                corresponding_state_tag=self.current_state_tag,
-                color_to_play=self.board.turn,
+            payload=HumanActionChosen(
+                action_name=str(move_uci),
+                ctx=self.pending_human_ctx,
+                corresponding_state_tag=self.pending_human_state_tag,
             ),
         )
         self.main_thread_mailbox.put(cmd)
@@ -479,6 +484,8 @@ class MainWindow(QWidget):
         self.eval_button_white.setText("♕ White Eval")
         self.eval_button_black.setText("♛ Black Eval")
         self.piece_to_move = [None, None]
+        self.pending_human_ctx = None
+        self.pending_human_state_tag = None
         self.board = self.board_factory(
             fen_with_history=FenPlusHistory(current_fen=chess.STARTING_FEN)
         )
@@ -679,6 +686,14 @@ class MainWindow(QWidget):
 
             case UpdGameStatus():
                 self.update_game_play_status(payload.status)
+
+            case UpdNeedHumanAction():
+                self.pending_human_ctx = payload.ctx
+                self.pending_human_state_tag = payload.state_tag
+
+            case UpdNoHumanActionPending():
+                self.pending_human_ctx = None
+                self.pending_human_state_tag = None
 
             case _:
                 raise GuiUpdateError(payload)

@@ -71,6 +71,7 @@ def handle_player_request[StateSnapT, RuntimeStateT](
     ev = EvMove(
         branch_name=rec.recommended_name,
         corresponding_state_tag=state.current_state_tag,
+        ctx=request.ctx,
         player_name=game_player.player.get_id(),
         color_to_play=game_player.color,
         evaluation=getattr(rec, "evaluation", None),
