@@ -3,7 +3,7 @@ FROM ubuntu:25.04
 
 WORKDIR /app
 
-ENV PYTHONPATH="${PYTHONPATH}:/app"
+ENV PYTHONPATH="/app"
 
 # Set default environment variables for paths
 ENV EXTERNAL_DATA_DIR=external_data
@@ -59,17 +59,18 @@ RUN .venv/bin/pip install torch==2.8.0 --index-url https://download.pytorch.org/
 RUN .venv/bin/pip install --upgrade --force-reinstall numpy==2.2.6
 
 
-# Copy only project metadata to install deps
-COPY pyproject.toml .
+# Copy only what setuptools needs to build/install chipiron
+COPY pyproject.toml ./
+COPY README.md LICENSE ./
+COPY src ./src
+# (optional but often good)
+# COPY MANIFEST.in ./
 
 # Install chipiron with dev dependencies
 RUN .venv/bin/pip install ".[dev]"
 
 # Now copy full codebase
 COPY . .
-
-# Install project in editable mode
-RUN .venv/bin/pip install -e .
 
 # Get Rust
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y

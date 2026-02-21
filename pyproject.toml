@@ -14,29 +14,29 @@ classifiers = [
 ]
 requires-python = ">=3.13"
 dependencies = [
-    "PyYAML",
-    "PySide6==6.9.2",
-    "plotly>=6.3.0",
-    "sortedcollections>=2.1.0",
-    "pandas==2.3.2",
-    "numpy==2.2.6",
-    "numba>=0.61.2",
-    "graphviz>=0.20.1",
-    "dacite>=1.9.2",
-    "customtkinter>=5.2",
-    "pyarrow",
-    "gprof2dot",
-    "mlflow",
-    "parsley_coco>=0.1.34",
-    "gdown",
-    "zstandard",
-    "rich",
-    "valanga>=0.2.0",
-    "atomheart>=0.1.9",   
-    "algorhino-coral>=0.1.11",
-    "algorhino-anemone>=0.1.21",
-    "torchinfo",
-    "platformdirs>=4.9.2",
+  "PyYAML",
+  "PySide6==6.9.2",
+  "plotly>=6.3.0",
+  "sortedcollections>=2.1.0",
+  "pandas==2.3.2",
+  "numpy==2.2.6",
+  "numba>=0.61.2",
+  "graphviz>=0.20.1",
+  "dacite>=1.9.2",
+  "customtkinter>=5.2",
+  "pyarrow",
+  "gprof2dot",
+  "mlflow",
+  "parsley_coco>=0.1.34",
+  "gdown",
+  "zstandard",
+  "rich",
+  "valanga>=0.2.0",
+  "atomheart>=0.1.9",
+  "algorhino-coral>=0.1.11",
+  "algorhino-anemone>=0.1.21",
+  "torchinfo",
+  "platformdirs>=4.9.2",
 ]
 
 
@@ -45,21 +45,12 @@ license-files = ["LICENSE"]
 
 readme = { file = "README.md", content-type = "text/markdown" }
 
-authors = [
-  { name = "Victor Gabillon", email = "victorgabillon@gmail.com" }
-]
+authors = [{ name = "Victor Gabillon", email = "victorgabillon@gmail.com" }]
 
 [project.optional-dependencies]
-test = [
-  "pytest>=9.0.2",
-  "coverage",
-  "pytest-cov>=6.0.0",
-]
+test = ["pytest>=9.0.2", "coverage", "pytest-cov>=6.0.0"]
 
-lint = [
-  "ruff>=0.15.1",
-  "pylint>=4.0.4",
-]
+lint = ["ruff>=0.15.1", "pylint>=4.0.4"]
 
 typecheck = [
   "mypy>=1.19.1",
@@ -85,7 +76,7 @@ Homepage = "https://github.com/victorgabillon/chipiron"
 
 [tool.setuptools]
 include-package-data = true
-package-dir = {"" = "src"}
+package-dir = { "" = "src" }
 
 
 [tool.setuptools.package-data]
@@ -102,8 +93,19 @@ chipiron = [
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["chipiron", "chipiron.*"]
-exclude = ["tests*", "docs", "examples", "build", "dist", "venv", "env", ".venv", ".env", "__pycache__", "*.egg-info"]
-
+exclude = [
+  "tests*",
+  "docs",
+  "examples",
+  "build",
+  "dist",
+  "venv",
+  "env",
+  ".venv",
+  ".env",
+  "__pycache__",
+  "*.egg-info",
+]
 
 
 [tool.pytest.ini_options]
@@ -111,7 +113,7 @@ addopts = "--cov=chipiron"
 testpaths = ["tests"]
 norecursedirs = ["src"]
 markers = [
-    "integration: marks integration tests (deselect with '-m \"not integration\"')",
+  "integration: marks integration tests (deselect with '-m \"not integration\"')",
   "external_data: tests requiring external downloaded data",
 ]
 
@@ -153,11 +155,8 @@ strict_equality = true
 warn_unused_configs = true
 
 
-
 [[tool.mypy.overrides]]
-module = [
-    "PySide6",
-]
+module = ["PySide6"]
 ignore_missing_imports = true
 follow_imports = 'skip'
 
@@ -175,29 +174,72 @@ ignore_missing_imports = true
 [tool.ruff]
 line-length = 88
 target-version = "py313"
-fix =true
+fix = true
 
 [tool.ruff.lint]
 # Enable import sorting (alphabetical + group order)
-select = ["I", "F", "E", "B", "TCH", "UP","SIM","RUF","RET","N","A",
-"ANN", "PERF", "TRY","LOG","RSE","ICN","TID","Q","W","D",
-"ISC","PIE","ERA","TD"
-]  # I = imports, F = pyflakes, E = pycodestyle, TCH = type-checking, B = black
+select = [
+  "I",
+  "F",
+  "E",
+  "B",
+  "TCH",
+  "UP",
+  "SIM",
+  "RUF",
+  "RET",
+  "N",
+  "A",
+  "ANN",
+  "PERF",
+  "TRY",
+  "LOG",
+  "RSE",
+  "ICN",
+  "TID",
+  "Q",
+  "W",
+  "D",
+  "ISC",
+  "PIE",
+  "ERA",
+  "TD",
+] # I = imports, F = pyflakes, E = pycodestyle, TCH = type-checking, B = black
 
 # Allow auto-fixing for imports and type-checking imports
-fixable = ["I", "TCH", "F401","UP","SIM","RUF","RET","N","A","TRY","ANN","TID","PERF",
-"PIE","TD","ISC","ERA"]
+fixable = [
+  "I",
+  "TCH",
+  "F401",
+  "UP",
+  "SIM",
+  "RUF",
+  "RET",
+  "N",
+  "A",
+  "TRY",
+  "ANN",
+  "TID",
+  "PERF",
+  "PIE",
+  "TD",
+  "ISC",
+  "ERA",
+]
 
 # Ignore rules you don't care about
-ignore = ["E501","ANN401",
-    "D203",  # incompatible with D211
-    "D213",  # incompatible with D212
-    "TD003","TD002",]
+ignore = [
+  "E501",
+  "ANN401",
+  "D203",   # incompatible with D211
+  "D213",   # incompatible with D212
+  "TD003",
+  "TD002",
+]
 
 # Optional: add your first-party package to extend the known group
 [tool.ruff.lint.per-file-ignores]
 # If needed, can add file-specific ignores
-
 
 
 [tool.ruff.lint.pydocstyle]
@@ -215,7 +257,19 @@ extension-pkg-whitelist = ["PyQt5", "PySide6"]
 max-line-length = 88
 
 #[tool.pylint.messages_control]
-disable = ["C0301","W0511","R0903",    "unnecessary-ellipsis","R0902","R0913","R0912","R0915","R0917","R0911","R0914"]
+disable = [
+  "C0301",
+  "W0511",
+  "R0903",
+  "unnecessary-ellipsis",
+  "R0902",
+  "R0913",
+  "R0912",
+  "R0915",
+  "R0917",
+  "R0911",
+  "R0914",
+]
 
 
 [tool.pylint.typecheck]
@@ -241,7 +295,6 @@ env_list = ["py313", "lint", "typecheck"]
 isolated_build = true
 
 
-
 [tool.tox.env_run_base]
 base_python = ["python3.13"]
 
@@ -254,18 +307,50 @@ description = "Build + install package, run tests"
 extras = ["test"]
 changedir = "{toxinidir}"
 commands_pre = [
-  ["python", "-c", "import shutil; shutil.rmtree(r'{toxinidir}/dist', ignore_errors=True)"],
-  ["python", "-m", "build", "--sdist", "--wheel", "--outdir", "{toxinidir}/dist", "{toxinidir}"],
-  ["python", "-c", "import shutil, os; src=r'{toxinidir}/tests/data/trees'; dst='external_data/trees'; shutil.copytree(src, dst, dirs_exist_ok=True) if os.path.exists(src) else print(f'Skipping copy: {src} does not exist')"],
-  ["python", "-c", "import os; print(os.listdir(r'{toxinidir}/dist'))"],
-  ["python", "-c", "import glob, subprocess; subprocess.check_call(['pip','install', glob.glob(r'{toxinidir}/dist/*.tar.gz')[0]])"],
+  [
+    "python",
+    "-c",
+    "import shutil; shutil.rmtree(r'{toxinidir}/dist', ignore_errors=True)",
+  ],
+  [
+    "python",
+    "-m",
+    "build",
+    "--sdist",
+    "--wheel",
+    "--outdir",
+    "{toxinidir}/dist",
+    "{toxinidir}",
+  ],
+  [
+    "python",
+    "-c",
+    "import shutil, os; src=r'{toxinidir}/tests/data/trees'; dst='external_data/trees'; shutil.copytree(src, dst, dirs_exist_ok=True) if os.path.exists(src) else print(f'Skipping copy: {src} does not exist')",
+  ],
+  [
+    "python",
+    "-c",
+    "import os; print(os.listdir(r'{toxinidir}/dist'))",
+  ],
+  [
+    "python",
+    "-c",
+    "import glob, subprocess; subprocess.check_call(['pip','install', glob.glob(r'{toxinidir}/dist/*.tar.gz')[0]])",
+  ],
 ]
 commands = [
-  ["python", "-c", "import chipiron; print(chipiron.__file__)"],
-  ["pytest",
-   "--basetemp={envtmpdir}/pytest-tmp",
-   "-m", "not integration and not external_data",
-   "{posargs}"],
+  [
+    "python",
+    "-c",
+    "import chipiron; print(chipiron.__file__)",
+  ],
+  [
+    "pytest",
+    "--basetemp={envtmpdir}/pytest-tmp",
+    "-m",
+    "not integration and not external_data",
+    "{posargs}",
+  ],
 ]
 
 # ----------------
@@ -298,16 +383,34 @@ deps = [
   "rich",
   "torchinfo",
   "platformdirs>=4.9.2",
-    "valanga>=0.2.0",
-    "atomheart>=0.1.9",   
-    "algorhino-coral>=0.1.11",
-    "algorhino-anemone>=0.1.21",
+  "valanga>=0.2.0",
+  "atomheart>=0.1.9",
+  "algorhino-coral>=0.1.11",
+  "algorhino-anemone>=0.1.21",
 ]
 set_env = { PYTHONPATH = "{toxinidir}/src" }
 commands = [
-  ["python", "-m", "ruff", "format", "--check", "src/chipiron"],
-  ["python", "-m", "ruff", "check", "src/chipiron"],
-  ["python", "-m", "pylint", "src/chipiron"],
+  [
+    "python",
+    "-m",
+    "ruff",
+    "format",
+    "--check",
+    "src/chipiron",
+  ],
+  [
+    "python",
+    "-m",
+    "ruff",
+    "check",
+    "src/chipiron",
+  ],
+  [
+    "python",
+    "-m",
+    "pylint",
+    "src/chipiron",
+  ],
 ]
 
 # ----------------
@@ -336,21 +439,32 @@ deps = [
   "mlflow",
   "parsley_coco>=0.1.34",
   "gdown",
-    "torchinfo",
+  "torchinfo",
   "zstandard",
   "rich",
-    "valanga>=0.2.0",
-    "atomheart>=0.1.9",   
-    "algorhino-coral>=0.1.11",
-    "algorhino-anemone>=0.1.21",
-      "pytest>=9.0.2",
+  "valanga>=0.2.0",
+  "atomheart>=0.1.9",
+  "algorhino-coral>=0.1.11",
+  "algorhino-anemone>=0.1.21",
+  "pytest>=9.0.2",
   "pytest-cov>=6.0.0",
   "platformdirs>=4.9.2",
 ]
 set_env = { MYPYPATH = "{toxinidir}/src" }
 commands = [
-  ["python", "-m", "mypy", "--strict", "src/chipiron"],
-  ["python", "-m", "pyright", "src/chipiron"],
+  [
+    "python",
+    "-m",
+    "mypy",
+    "--strict",
+    "src/chipiron",
+  ],
+  [
+    "python",
+    "-m",
+    "pyright",
+    "src/chipiron",
+  ],
 ]
 
 #################### END TOX ####################
