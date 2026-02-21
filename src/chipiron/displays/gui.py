@@ -32,23 +32,22 @@ from PySide6.QtWidgets import (
 from valanga import Color, StateTag
 from valanga.evaluations import FloatyStateEvaluation, ForcedOutcome, StateEvaluation
 
-from chipiron.core.request_context import RequestContext
 from chipiron.displays.gui_protocol import (
     CmdBackOneMove,
-    HumanActionChosen,
     CmdSetStatus,
     GuiCommand,
     GuiUpdate,
+    HumanActionChosen,
     PlayerUiInfo,
     Scope,
     UpdEvaluation,
     UpdGameStatus,
     UpdMatchResults,
+    UpdNeedHumanAction,
+    UpdNoHumanActionPending,
     UpdPlayerProgress,
     UpdPlayersInfo,
     UpdStateChess,
-    UpdNeedHumanAction,
-    UpdNoHumanActionPending,
 )
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.utils.communication.mailbox import MainMailboxMessage
@@ -57,6 +56,8 @@ from chipiron.utils.path_variables import GUI_DIR
 
 if typing.TYPE_CHECKING:
     from atomheart.move.imove import MoveKey
+
+    from chipiron.core.request_context import RequestContext
 
 
 class GuiUpdateError(AssertionError):

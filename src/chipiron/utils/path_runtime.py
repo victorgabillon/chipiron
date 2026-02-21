@@ -31,7 +31,7 @@ def get_output_root(*, ensure_exists: bool = True) -> Path:
 
 
 def get_default_output_dir(*, ensure_exists: bool = True) -> Path:
-    """Default output directory for scripts (persistent, writable)."""
+    """Return the default output directory for scripts (persistent, writable)."""
     p = get_output_root(ensure_exists=ensure_exists) / "default_output_folder"
     if ensure_exists:
         p.mkdir(parents=True, exist_ok=True)

@@ -5,10 +5,9 @@ from typing import Never
 
 from atomheart.board.utils import FenPlusHistory
 from valanga import Color, StateTag
-
-from chipiron.core.request_context import RequestContext
 from valanga.evaluations import StateEvaluation
 
+from chipiron.core.request_context import RequestContext
 from chipiron.environments.types import GameKind
 from chipiron.games.game.game_playing_status import PlayingStatus
 
@@ -115,16 +114,12 @@ class UpdMatchResults:
     match_finished: bool
 
 
-
-
 @dataclass(frozen=True, slots=True)
 class UpdNeedHumanAction:
     """Update payload telling GUI which human request is currently pending."""
 
     ctx: RequestContext
     state_tag: StateTag
-
-
 
 
 @dataclass(frozen=True, slots=True)

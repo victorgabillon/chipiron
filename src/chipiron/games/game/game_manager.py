@@ -3,16 +3,15 @@
 import os
 import queue
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Literal, assert_never
+from typing import TYPE_CHECKING, Literal
 
 import yaml
 from atomheart.move_factory import MoveFactory
-from valanga import BranchKey, Color, StateTag, TurnState
+from valanga import BranchKey, Color, StateTag, Transition, TurnState
 from valanga.evaluations import StateEvaluation
 from valanga.game import ActionKey
 
 import chipiron.players as players_m
-from chipiron.match.domain_events import ActionApplied, IllegalAction, MatchOver, NeedAction
 from chipiron.displays.gui_protocol import (
     CmdBackOneMove,
     CmdSetStatus,
@@ -22,6 +21,13 @@ from chipiron.displays.gui_protocol import (
     UpdNoHumanActionPending,
 )
 from chipiron.games.game.game_playing_status import PlayingStatus
+from chipiron.match.domain_events import (
+    ActionApplied,
+    IllegalAction,
+    MatchEvent,
+    MatchOver,
+    NeedAction,
+)
 from chipiron.players.boardevaluators.board_evaluator import IGameStateEvaluator
 from chipiron.players.communications.player_message import (
     EvMove,
@@ -48,6 +54,9 @@ from .progress_collector import PlayerProgressCollectorP
 if TYPE_CHECKING:
     from chipiron.match.match_controller import MatchController
 
+
+class TransitionComputationError(Exception):
+    """Raised when a proposed action cannot be converted into a valid transition."""
 
 
 class GameManager[StateT: TurnState = TurnState]:
@@ -136,7 +145,8 @@ class GameManager[StateT: TurnState = TurnState]:
         self.rules = rules
         self._request_id = 0
         self._scope = None
-    def start_match_sync(self, scope: Scope) -> list[object]:
+
+    def start_match_sync(self, scope: Scope) -> list[MatchEvent]:
         """Start a match synchronously and request the first action."""
         self._scope = scope
         self._request_id = 0
@@ -150,7 +160,7 @@ class GameManager[StateT: TurnState = TurnState]:
             )
         ]
 
-    def need_action_now(self) -> list[object]:
+    def need_action_now(self) -> list[MatchEvent]:
         """Emit a NeedAction for the current state without resetting request ids."""
         if self._scope is None:
             return []
@@ -174,7 +184,7 @@ class GameManager[StateT: TurnState = TurnState]:
         color: Color,
         request_id: int,
         action: BranchKey,
-    ) -> list[object]:
+    ) -> list[MatchEvent]:
         """Apply a proposed action synchronously and emit domain events."""
         if self._scope != scope:
             return []
@@ -188,8 +198,8 @@ class GameManager[StateT: TurnState = TurnState]:
             return []
 
         try:
-            transition = self.game.dynamics.step(state=state, action=action)
-        except Exception as exc:  # noqa: BLE001 - preserve reducer-level error payload
+            transition = self._compute_transition(state=state, action=action)
+        except TransitionComputationError as exc:
             return [
                 IllegalAction(scope, color, request_id, action, str(exc)),
                 NeedAction(scope, state.turn, self._request_id, state),
@@ -198,9 +208,7 @@ class GameManager[StateT: TurnState = TurnState]:
         action_name = self.game.dynamics.action_name(state, action)
         self.game.apply_transition(transition=transition, action_name=action_name)
 
-        out: list[object] = [
-            ActionApplied(scope, color, request_id, action, transition)
-        ]
+        out: list[MatchEvent] = [ActionApplied(scope, color, request_id, action)]
 
         is_over = getattr(transition, "is_over", False)
         over_event = getattr(transition, "over_event", None)
@@ -220,6 +228,20 @@ class GameManager[StateT: TurnState = TurnState]:
         )
 
         return out
+
+    def _compute_transition(
+        self, state: StateT, action: BranchKey
+    ) -> Transition[StateT]:
+        """Compute the state transition for a proposed action.
+
+        Raises:
+            TransitionComputationError: If action application fails for an expected
+                domain-level validation/runtime reason.
+        """
+        try:
+            return self.game.dynamics.step(state=state, action=action)
+        except (KeyError, RuntimeError, ValueError) as exc:
+            raise TransitionComputationError(str(exc)) from exc
 
     def external_eval(self) -> tuple[StateEvaluation | None, StateEvaluation]:
         """Evaluate the game board using the display board evaluator.
@@ -286,7 +308,7 @@ class GameManager[StateT: TurnState = TurnState]:
             )
 
             # waiting for a message
-            mail = self.main_thread_mailbox.get()
+            mail: MainMailboxMessage = self.main_thread_mailbox.get()
             if isinstance(mail, GuiCommand):
                 if self._ignore_if_stale_scope(mail.scope):
                     continue
@@ -295,7 +317,7 @@ class GameManager[StateT: TurnState = TurnState]:
                         controller.handle_human_action(mail.payload)
                     case _:
                         self._handle_gui_command(mail, controller)
-            elif isinstance(mail, PlayerEvent):
+            else:
                 if self._ignore_if_stale_scope(mail.scope):
                     continue
                 match mail.payload:
@@ -303,8 +325,6 @@ class GameManager[StateT: TurnState = TurnState]:
                         controller.handle_player_action(mail.payload)
                     case _:
                         self._handle_player_event(mail)
-            else:
-                assert_never(mail)
 
             state = self.game.state
             is_terminal = self.rules.outcome(state) is not None
@@ -344,7 +364,6 @@ class GameManager[StateT: TurnState = TurnState]:
         message: GuiCommand,
         controller: "MatchController",
     ) -> None:
-        state: StateT = self.game.state
 
         match message.payload:
             case CmdSetStatus():
@@ -369,7 +388,7 @@ class GameManager[StateT: TurnState = TurnState]:
                 self.game.publish_update(UpdNoHumanActionPending())
 
             case _:
-                chipiron_logger.warning(  # type: ignore[unreachable]
+                chipiron_logger.warning(
                     "Unhandled GuiCommand payload in file %s: %r",
                     __name__,
                     message.payload,
@@ -379,7 +398,9 @@ class GameManager[StateT: TurnState = TurnState]:
     def _handle_player_event(self, message: PlayerEvent) -> None:
         match message.payload:
             case EvMove():
-                chipiron_logger.debug("EvMove is orchestrated by MatchController; ignoring in GameManager")
+                chipiron_logger.debug(
+                    "EvMove is orchestrated by MatchController; ignoring in GameManager"
+                )
                 return
             case EvProgress():
                 # forward to your progress collector
@@ -530,7 +551,6 @@ class GameManager[StateT: TurnState = TurnState]:
                 player_color=color_to_play,
                 evaluation=evaluation,
             )
-
 
     def tell_results(self) -> None:
         """Print the results of the game based on the current state of the board.

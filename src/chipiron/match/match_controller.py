@@ -1,4 +1,7 @@
-from collections.abc import Callable
+"""Controller that routes match domain events between UI and players."""
+
+from collections.abc import Callable, Mapping, Sequence
+from typing import Any
 
 import valanga
 
@@ -10,10 +13,16 @@ from chipiron.displays.gui_protocol import (
     UpdNoHumanActionPending,
 )
 from chipiron.games.game.game_manager import GameManager
-from chipiron.match.domain_events import ActionApplied, IllegalAction, MatchOver, NeedAction
+from chipiron.match.domain_events import (
+    ActionApplied,
+    IllegalAction,
+    MatchEvent,
+    MatchOver,
+    NeedAction,
+)
 from chipiron.players.communications.player_message import EvMove, PlayerRequest
-from chipiron.utils.small_tools import unique_int_from_list
 from chipiron.utils.logger import chipiron_logger
+from chipiron.utils.small_tools import unique_int_from_list
 
 
 class MatchController:
@@ -24,9 +33,12 @@ class MatchController:
         *,
         scope: Scope,
         game_manager: GameManager,
-        engine_request_by_color: dict[valanga.Color, Callable[[PlayerRequest], None]],
+        engine_request_by_color: Mapping[
+            valanga.Color, Callable[[PlayerRequest[Any]], None]
+        ],
         human_colors: set[valanga.Color],
     ) -> None:
+        """Initialize controller dependencies and pending action state."""
         self.scope = scope
         self.game_manager = game_manager
         self.engine_request_by_color = engine_request_by_color
@@ -35,6 +47,7 @@ class MatchController:
         self.pending_request_id: int | None = None
 
     def start(self) -> None:
+        """Start a new match and dispatch resulting domain events."""
         outs = self.game_manager.start_match_sync(self.scope)
         self._handle_outputs(outs)
 
@@ -48,7 +61,7 @@ class MatchController:
         self.pending_color = None
         self.pending_request_id = None
 
-    def _handle_outputs(self, events: list[object]) -> None:
+    def _handle_outputs(self, events: Sequence[MatchEvent]) -> None:
         for ev in events:
             if isinstance(ev, NeedAction):
                 self.pending_color = ev.color
@@ -107,11 +120,17 @@ class MatchController:
                 self.game_manager.game.notify_display()
 
     def handle_player_action(self, ev_move: EvMove) -> None:
+        """Handle an engine/player move response correlated by request context."""
+        if self.pending_request_id is None or self.pending_color is None:
+            return
+        pending_request_id: int = self.pending_request_id
+        pending_color: valanga.Color = self.pending_color
+
         if ev_move.ctx is None:
             return
-        if ev_move.ctx.request_id != self.pending_request_id:
+        if ev_move.ctx.request_id != pending_request_id:
             return
-        if ev_move.ctx.color_to_play != self.pending_color:
+        if ev_move.ctx.color_to_play != pending_color:
             return
 
         try:
@@ -121,7 +140,7 @@ class MatchController:
             )
         except (KeyError, ValueError) as exc:
             chipiron_reason = f"invalid player action '{ev_move.branch_name}': {exc}"
-            outs = [
+            outs: list[MatchEvent] = [
                 IllegalAction(
                     scope=self.scope,
                     color=ev_move.ctx.color_to_play,
@@ -132,7 +151,7 @@ class MatchController:
                 NeedAction(
                     scope=self.scope,
                     color=self.game_manager.game.state.turn,
-                    request_id=self.pending_request_id,
+                    request_id=pending_request_id,
                     state=self.game_manager.game.state,
                 ),
             ]
@@ -148,13 +167,16 @@ class MatchController:
         self._handle_outputs(outs)
 
     def handle_human_action(self, human_action: HumanActionChosen) -> None:
+        """Handle a human-selected action and dispatch resulting events."""
         if self.pending_color is None or self.pending_request_id is None:
             return
+        pending_color: valanga.Color = self.pending_color
+        pending_request_id: int = self.pending_request_id
 
         if human_action.ctx is not None:
-            if human_action.ctx.request_id != self.pending_request_id:
+            if human_action.ctx.request_id != pending_request_id:
                 return
-            if human_action.ctx.color_to_play != self.pending_color:
+            if human_action.ctx.color_to_play != pending_color:
                 return
         if (
             human_action.corresponding_state_tag is not None
@@ -168,18 +190,18 @@ class MatchController:
                 state, human_action.action_name
             )
         except (KeyError, ValueError) as exc:
-            outs = [
+            outs: list[MatchEvent] = [
                 IllegalAction(
                     scope=self.scope,
-                    color=self.pending_color,
-                    request_id=self.pending_request_id,
+                    color=pending_color,
+                    request_id=pending_request_id,
                     action=human_action.action_name,
                     reason=f"invalid human action '{human_action.action_name}': {exc}",
                 ),
                 NeedAction(
                     scope=self.scope,
                     color=state.turn,
-                    request_id=self.pending_request_id,
+                    request_id=pending_request_id,
                     state=state,
                 ),
             ]
@@ -188,8 +210,8 @@ class MatchController:
 
         outs = self.game_manager.propose_action_sync(
             scope=self.scope,
-            color=self.pending_color,
-            request_id=self.pending_request_id,
+            color=pending_color,
+            request_id=pending_request_id,
             action=action,
         )
         self._handle_outputs(outs)

@@ -1,3 +1,5 @@
+"""Request correlation context shared across action flows."""
+
 from dataclasses import dataclass
 
 from valanga import Color
