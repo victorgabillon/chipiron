@@ -85,8 +85,15 @@ class Script[DataclassT: DataClassWithBaseScriptArgs = DataClassWithBaseScriptAr
         assert self.experiment_script_type_output_folder is not None
         mkdir_if_not_existing(self.experiment_script_type_output_folder)
 
+        config_file_path = (
+            resolve_package_path(self.config_file_name)
+            if self.config_file_name is not None
+            else None
+        )
+
         final_args: DataclassT = self.parser.parse_arguments(
-            extra_args=self.extra_args, config_file_path=resolve_package_path(self.config_file_name)
+            extra_args=self.extra_args,
+            config_file_path=config_file_path,
         )
 
         final_args_with_base = final_args

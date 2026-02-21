@@ -19,9 +19,9 @@ from chipiron.displays.gui_protocol import (
 )
 from chipiron.displays.gui_publisher import GuiPublisher
 from chipiron.environments.environment import EnvDeps, make_environment
-from chipiron.match.match_controller import MatchController
 from chipiron.games.game.game_args import GameArgs
 from chipiron.games.game.game_playing_status import GamePlayingStatus
+from chipiron.match.match_controller import MatchController
 from chipiron.players import PlayerFactoryArgs
 from chipiron.players.boardevaluators.board_evaluator import (
     IGameStateEvaluator,
@@ -56,14 +56,13 @@ class GameManagerFactoryError(ValueError):
     """Base error for game manager factory issues."""
 
 
-
-
 @dataclass(frozen=True, slots=True)
 class GameSession:
     """Wiring bundle for one game run."""
 
     manager: GameManager[Any]
     controller: MatchController
+
 
 class MissingSessionIdError(GameManagerFactoryError):
     """Raised when the session id is not provided."""
