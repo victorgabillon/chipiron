@@ -61,11 +61,17 @@ STOCKFISH_DESTINATION?=${ROOT_DIR}/$(STOCKFISH_DIR)
 DATA_SOURCE?=https://drive.google.com/drive/folders/1tvkuiaN-oXC7UAjUw-6cIl1PB0r2as7Y?usp=sharing
 DATA_DESTINATION?=${ROOT_DIR}/$(EXTERNAL_DATA_DIR)
 
-.PHONY: init init-no-syzygy lichess-pgn stockfish syzygy-tables
+.PHONY: requirements init init-no-syzygy
 
-init: src/chipiron/requirements $(EXTERNAL_DATA_DIR)/ $(SYZYGY_TABLES_DIR)/.syzygy-complete stockfish
+requirements:
+	pip install -e .
 
-init-no-syzygy: src/chipiron/requirements $(EXTERNAL_DATA_DIR)/ stockfish
+init: requirements $(EXTERNAL_DATA_DIR)/ $(SYZYGY_TABLES_DIR)/.syzygy-complete stockfish
+init-no-syzygy: requirements $(EXTERNAL_DATA_DIR)/ stockfish
+
+$(EXTERNAL_DATA_DIR)/:
+	echo "downloading Data"
+	gdown --folder ${DATA_SOURCE} -O ${DATA_DESTINATION}
 
 syzygy-tables: $(SYZYGY_TABLES_DIR)/.syzygy-complete
 
@@ -73,6 +79,7 @@ lichess-pgn: ${LICHESS_PGN_DIR}/lichess_db_standard_rated_2015-03.pgn
 
 stockfish: ${STOCKFISH_DESTINATION}/stockfish/stockfish-ubuntu-x86-64-avx2
 	echo "Stockfish setup complete"
+
 
 ${STOCKFISH_DESTINATION}/stockfish/stockfish-ubuntu-x86-64-avx2:
 	echo "Downloading and setting up Stockfish..."
@@ -84,8 +91,6 @@ ${STOCKFISH_DESTINATION}/stockfish/stockfish-ubuntu-x86-64-avx2:
 	chmod +x stockfish/stockfish-ubuntu-x86-64-avx2
 	echo "Stockfish installed at ${STOCKFISH_DESTINATION}stockfish/stockfish-ubuntu-x86-64-avx2"
 
-src/chipiron/requirements:
-	pip install -e .
 
 $(SYZYGY_TABLES_DIR)/.syzygy-complete:
 	echo "downloading SYZYGY tables (this may take 10-20 minutes)"
@@ -104,7 +109,4 @@ $(SYZYGY_TABLES_DIR)/.syzygy-complete:
 		exit 1; \
 	fi
 
-$(EXTERNAL_DATA_DIR)/: chipiron/requirements
-	echo "downloading Data"
-	gdown --folder ${DATA_SOURCE} -O ${DATA_DESTINATION}
 
