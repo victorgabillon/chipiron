@@ -42,15 +42,6 @@ def test_evaluate_model(tmp_path: Path) -> None:
     with open(report_path, "w", encoding="utf-8"):
         pass
 
-    m = NeuralNetModelsAndArchitecture.build_from_folder_path(
-        folder_path=resolve_package_path(
-            "package://scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/prelu_no_bug"
-        )
-    )
-    print("ARCH ARGS TYPE:", type(m.nn_architecture_args))
-    print("ARCH ARGS:", m.nn_architecture_args)
-    print("WEIGHTS:", m.model_weights_file_name)
-
     evaluate_models(
         models_to_evaluate=test_models_to_evaluate_,
         evaluation_report_file=str(report_path),
