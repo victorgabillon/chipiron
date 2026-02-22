@@ -1,7 +1,7 @@
 """Protocol payloads exchanged between the GUI and game runtime."""
 
 from dataclasses import dataclass
-from typing import Never
+from typing import Any, Never, Sequence
 
 from atomheart.board.utils import FenPlusHistory
 from valanga import Color, StateTag
@@ -66,6 +66,16 @@ class UpdStateChess:
 
     state_tag: StateTag
     fen_plus_history: FenPlusHistory
+    seed: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class UpdStateGeneric:
+    """Game-agnostic snapshot update for rendering and history display."""
+
+    state_tag: StateTag
+    action_name_history: Sequence[str]
+    adapter_payload: Any
     seed: int | None = None
 
 
@@ -136,6 +146,7 @@ class UpdGameStatus:
 
 type UpdatePayload = (
     UpdStateChess
+    | UpdStateGeneric
     | UpdPlayerProgress
     | UpdEvaluation
     | UpdPlayersInfo
