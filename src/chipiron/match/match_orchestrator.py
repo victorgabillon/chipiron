@@ -149,7 +149,7 @@ class MatchOrchestrator:
                     game_manager.game.publish_update(UpdNoHumanActionPending())
 
                 else:
-                    chipiron_logger.warning(
+                    chipiron_logger.warning(  # type: ignore[unreachable]
                         "Unhandled PlayingStatus: %s", message.payload.status
                     )
 
@@ -187,7 +187,7 @@ class MatchOrchestrator:
                     )
 
             case _:
-                chipiron_logger.warning(
+                chipiron_logger.warning(  # type: ignore[unreachable]
                     "Unhandled PlayerEvent payload in %s: %r",
                     __name__,
                     message.payload,
