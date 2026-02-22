@@ -84,9 +84,13 @@ def build_script_gui(root: ctk.CTk, args_chosen_by_user: ArgsChosenByUser) -> No
     strength_value_black = ctk.StringVar(value="1")
     starting_position_choice = ctk.StringVar(value="Standard")
 
-    white_menu = ctk.CTkOptionMenu(master=root, values=["Human Player"], variable=chipi_algo_choice_white)
+    white_menu = ctk.CTkOptionMenu(
+        master=root, values=["Human Player"], variable=chipi_algo_choice_white
+    )
     cast("tk.Widget", white_menu).grid(column=3, row=2)
-    black_menu = ctk.CTkOptionMenu(master=root, values=["Human Player"], variable=chipi_algo_choice_black)
+    black_menu = ctk.CTkOptionMenu(
+        master=root, values=["Human Player"], variable=chipi_algo_choice_black
+    )
     cast("tk.Widget", black_menu).grid(column=3, row=3)
 
     strength_options = ["1", "2", "3", "4", "5"]
@@ -165,33 +169,37 @@ def build_script_gui(root: ctk.CTk, args_chosen_by_user: ArgsChosenByUser) -> No
     chipi_algo_choice_black.trace_add("write", update_strength_visibility)
     game_var.trace_add("write", refresh_game_specific_options)
 
+    def on_play_or_watch() -> None:
+        _set_user_args_from_ui(
+            args_chosen_by_user=args_chosen_by_user,
+            game_var=game_var,
+            chipi_algo_choice_white=chipi_algo_choice_white,
+            chipi_algo_choice_black=chipi_algo_choice_black,
+            strength_value_white=strength_value_white,
+            strength_value_black=strength_value_black,
+            starting_position_choice=starting_position_choice,
+        )
+        root.destroy()
+
+    def on_visualize_tree() -> None:
+        _set_tree_visualization(args_chosen_by_user)
+        root.destroy()
+
     play_or_watch_a_game_button = ctk.CTkButton(
         root,
         text="Play or Watch a game",
-        command=lambda: [
-            _set_user_args_from_ui(
-                args_chosen_by_user=args_chosen_by_user,
-                game_var=game_var,
-                chipi_algo_choice_white=chipi_algo_choice_white,
-                chipi_algo_choice_black=chipi_algo_choice_black,
-                strength_value_white=strength_value_white,
-                strength_value_black=strength_value_black,
-                starting_position_choice=starting_position_choice,
-            ),
-            root.destroy(),
-        ],
+        command=on_play_or_watch,
     )
     visualize_a_tree_button = ctk.CTkButton(
         root,
         text="Visualize a tree",
-        command=lambda: [
-            _set_tree_visualization(args_chosen_by_user),
-            root.destroy(),
-        ],
+        command=on_visualize_tree,
     )
     exit_button = ctk.CTkButton(root, text="Exit", command=root.quit)
 
-    cast("tk.Widget", play_or_watch_a_game_button).grid(row=6, column=0, padx=10, pady=10)
+    cast("tk.Widget", play_or_watch_a_game_button).grid(
+        row=6, column=0, padx=10, pady=10
+    )
     cast("tk.Widget", visualize_a_tree_button).grid(row=8, column=0, padx=10, pady=10)
     cast("tk.Widget", exit_button).grid(row=10, column=0, padx=10, pady=10)
 

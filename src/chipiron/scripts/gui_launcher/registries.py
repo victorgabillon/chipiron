@@ -35,7 +35,7 @@ def player_options_for_game(game_kind: GameKind) -> list[PlayerOption]:
         case GameKind.CHECKERS:
             return CHECKERS_PLAYER_OPTIONS
         case _:
-            return [PlayerOption("Human Player", PlayerConfigTag.GUI_HUMAN, False)]
+            return [PlayerOption("Human Player", PlayerConfigTag.GUI_HUMAN, False)]  # type: ignore[unreachable]
 
 
 CHESS_STARTING_POSITIONS: dict[str, str] = {
@@ -53,4 +53,4 @@ def starting_positions_for_game(game_kind: GameKind) -> dict[str, str]:
         case GameKind.CHECKERS:
             return {"Standard": "STANDARD"}
         case _:
-            return {"Standard": "STANDARD"}
+            return {"Standard": "STANDARD"}  # type: ignore[unreachable]

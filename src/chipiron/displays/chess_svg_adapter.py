@@ -10,6 +10,7 @@ from atomheart.board.utils import FenPlusHistory
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDialog, QPushButton
 
+from chipiron.displays.svg_adapter_errors import InvalidSvgAdapterPayloadTypeError
 from chipiron.displays.svg_adapter_protocol import (
     ClickResult,
     RenderResult,
@@ -33,11 +34,15 @@ class ChessSvgAdapter(SvgGameAdapter):
     _move_promote_asked: chess.Move | None = None
     _board: IBoard | None = None
 
-    def position_from_update(self, *, state_tag: object, adapter_payload: Any) -> SvgPosition:
+    def position_from_update(
+        self, *, state_tag: object, adapter_payload: Any
+    ) -> SvgPosition:
         """Build chess position from incoming generic adapter payload."""
         if not isinstance(adapter_payload, FenPlusHistory):
-            raise TypeError(
-                f"ChessSvgAdapter expected FenPlusHistory, got {type(adapter_payload)!r}"
+            raise InvalidSvgAdapterPayloadTypeError(
+                adapter_name=self.__class__.__name__,
+                expected_type=FenPlusHistory,
+                actual_value=adapter_payload,
             )
         self._board = self.board_factory(fen_with_history=adapter_payload)
         self.reset_interaction()
@@ -47,15 +52,19 @@ class ChessSvgAdapter(SvgGameAdapter):
         """Render chess board SVG from fen/history payload."""
         fen_plus_history = pos.payload
         if not isinstance(fen_plus_history, FenPlusHistory):
-            raise TypeError(
-                f"ChessSvgAdapter expected FenPlusHistory, got {type(fen_plus_history)!r}"
+            raise InvalidSvgAdapterPayloadTypeError(
+                adapter_name=self.__class__.__name__,
+                expected_type=FenPlusHistory,
+                actual_value=fen_plus_history,
             )
 
         board_chi = create_board_chi(fen_with_history=fen_plus_history)
         repr_svg = chess.svg.board(
             board=board_chi.chess_board,
             size=size,
-            lastmove=board_chi.chess_board.peek() if board_chi.chess_board.move_stack else None,
+            lastmove=board_chi.chess_board.peek()
+            if board_chi.chess_board.move_stack
+            else None,
             check=board_chi.chess_board.king(board_chi.chess_board.turn)
             if board_chi.chess_board.is_check()
             else None,
@@ -109,7 +118,7 @@ class ChessSvgAdapter(SvgGameAdapter):
         try:
             all_moves_keys = self._board.legal_moves.get_all()
             all_legal_moves_uci: set[str] = {
-                str(self._board.legal_moves.generated_moves[move_key].uci())
+                str(self._board.get_uci_from_move_key(move_key=move_key))
                 for move_key in all_moves_keys
             }
 
@@ -155,7 +164,7 @@ class ChessSvgAdapter(SvgGameAdapter):
         """Display promotion dialog and capture chosen promotion move."""
         d = QDialog()
         d.setWindowTitle("Promote to ?")
-        d.setWindowModality(Qt.ApplicationModal)
+        d.setWindowModality(Qt.WindowModality.ApplicationModal)
 
         close_button_q = QPushButton(d)
         close_button_q.setText("Queen")

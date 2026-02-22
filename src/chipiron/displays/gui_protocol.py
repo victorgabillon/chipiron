@@ -1,7 +1,8 @@
 """Protocol payloads exchanged between the GUI and game runtime."""
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Never, Sequence
+from typing import Any, Never
 
 from atomheart.board.utils import FenPlusHistory
 from valanga import Color, StateTag

@@ -1,6 +1,7 @@
 """Module for chess gui encoder."""
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, cast
 
 from valanga.game import Seed
 
@@ -13,6 +14,9 @@ from chipiron.environments.chess.types import ChessState
 from chipiron.environments.types import GameKind
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.utils.communication.gui_encoder import GuiEncoder
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,7 +33,10 @@ class ChessGuiEncoder(GuiEncoder[ChessState]):
     ) -> UpdatePayload:
         """Create state payload."""
         fen_plus_history = state.board.into_fen_plus_history()
-        historical_moves = getattr(fen_plus_history, "historical_moves", None) or []
+        historical_moves = cast(
+            "Sequence[object]",
+            getattr(fen_plus_history, "historical_moves", None) or [],
+        )
 
         return UpdStateGeneric(
             state_tag=state.tag,

@@ -34,7 +34,9 @@ class SvgGameAdapter(Protocol):
     game_name: str
     board_side: int
 
-    def position_from_update(self, *, state_tag: object, adapter_payload: Any) -> SvgPosition:
+    def position_from_update(
+        self, *, state_tag: object, adapter_payload: Any
+    ) -> SvgPosition:
         """Build adapter position from generic update payload."""
         ...
 

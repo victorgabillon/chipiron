@@ -7,4 +7,4 @@ from chipiron.scripts.gui_launcher import (
     script_gui,
 )
 
-__all__ = ["script_gui", "generate_inputs", "ArgsChosenByUser", "ScriptGUIType"]
+__all__ = ["ArgsChosenByUser", "ScriptGUIType", "generate_inputs", "script_gui"]

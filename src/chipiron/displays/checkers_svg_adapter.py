@@ -20,7 +20,9 @@ class CheckersSvgAdapter(SvgGameAdapter):
 
     _selected: tuple[int, int] | None = None
 
-    def position_from_update(self, *, state_tag: object, adapter_payload: Any) -> SvgPosition:
+    def position_from_update(
+        self, *, state_tag: object, adapter_payload: Any
+    ) -> SvgPosition:
         """Return an opaque checkers position."""
         return SvgPosition(state_tag=state_tag, payload=adapter_payload)
 
