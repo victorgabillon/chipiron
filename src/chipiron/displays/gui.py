@@ -11,17 +11,12 @@ import queue
 import time
 import typing
 
-import chess
-import chess.svg
-from atomheart.board import BoardFactory, IBoard, create_board_chi
-from atomheart.board.utils import FenPlusHistory
-from atomheart.move import MoveUci
+from atomheart.board import BoardFactory
 from PySide6 import QtGui
 from PySide6.QtCore import Qt, QTimer, Slot
 from PySide6.QtGui import QIcon
 from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import (
-    QDialog,
     QLabel,
     QProgressBar,
     QPushButton,
@@ -47,16 +42,17 @@ from chipiron.displays.gui_protocol import (
     UpdNoHumanActionPending,
     UpdPlayerProgress,
     UpdPlayersInfo,
-    UpdStateChess,
+    UpdStateGeneric,
 )
+from chipiron.displays.svg_adapter_factory import make_svg_adapter
+from chipiron.displays.svg_adapter_protocol import SvgGameAdapter, SvgPosition
+from chipiron.environments.types import GameKind
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.utils.communication.mailbox import MainMailboxMessage
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.path_variables import GUI_DIR
 
 if typing.TYPE_CHECKING:
-    from atomheart.move.imove import MoveKey
-
     from chipiron.core.request_context import RequestContext
 
 
@@ -129,9 +125,10 @@ class MainWindow(QWidget):
         self.main_thread_mailbox = main_thread_mailbox
 
         self.scope: Scope | None = None
-
-        self.d: object | None = None
-        self.move_promote_asked: chess.Move | None = None
+        self.adapter: SvgGameAdapter | None = None
+        self.current_pos: SvgPosition | None = None
+        self.adapter_kind: GameKind | None = None
+        self.action_name_history: list[str] = []
         # Set window icon with existence check
         window_icon_path = os.path.join(GUI_DIR, "chipicon.png")
         if os.path.exists(window_icon_path):
@@ -139,7 +136,7 @@ class MainWindow(QWidget):
         else:
             chipiron_logger.warning("Window icon file not found: %s", window_icon_path)
 
-        self.setWindowTitle("🐙 ♛  Chipiron Chess GUI  ♛ 🐙")
+        self.setWindowTitle("🐙 Chipiron GUI 🐙")
         self.setGeometry(300, 300, 1400, 800)
 
         self.widget_svg = QSvgWidget(parent=self)
@@ -268,18 +265,11 @@ class MainWindow(QWidget):
         self.coordinates = True
         self.margin = 0.05 * self.board_size if self.coordinates else 0
         self.square_size = (self.board_size - 2 * self.margin) / 8.0
-        self.piece_to_move = [None, None]
 
         self.check_thread_timer = QTimer(self)
         self.check_thread_timer.setInterval(5)  # .5 seconds
         self.check_thread_timer.timeout.connect(self.process_message)  # pylint: disable=no-member
         self.check_thread_timer.start()
-
-        # Start with an empty/initial board so click-handling works before first update.
-        self.board: IBoard = self.board_factory(
-            fen_with_history=FenPlusHistory(current_fen=chess.STARTING_FEN)
-        )
-        self.draw_board()
 
     def _should_accept_scope(self, incoming: Scope) -> bool:
         """Routing policy.
@@ -393,7 +383,10 @@ class MainWindow(QWidget):
     @typing.override
     @Slot(QWidget)
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
-        """Handle mouse press events on the chessboard."""
+        """Handle mouse press events on the board through game adapter."""
+        if self.adapter is None or self.current_pos is None:
+            return
+
         if not (
             event.x() <= self.board_size
             and event.y() <= self.board_size
@@ -403,69 +396,29 @@ class MainWindow(QWidget):
         ):
             return
 
-        file = int((event.x() - self.margin) / self.square_size)
-        rank = 7 - int((event.y() - self.margin) / self.square_size)
-        square = chess.square(file, rank)
-        piece = self.board.piece_at(square)
-        coord = f"{chr(file + 97)}{rank + 1}"
-        self.coordinates = coord
+        res = self.adapter.handle_click(
+            self.current_pos,
+            x=int(event.x()),
+            y=int(event.y()),
+            board_size=int(self.board_size),
+            margin=int(self.margin),
+        )
 
-        # --- FIRST CLICK: just select ---
-        if self.piece_to_move[1] is None:
-            self.piece_to_move = [piece, coord]
-            print("selected", coord, "piece", piece)
-            return
+        if res.action_name is not None:
+            self.send_action_to_main_thread(action_name=res.action_name)
 
-        # --- SECOND CLICK: attempt move from stored square ---
-        from_sq = self.piece_to_move[1]
-        try:
-            all_moves_keys: list[MoveKey] = self.board.legal_moves.get_all()
-            all_legal_moves_uci: list[MoveUci] = [
-                self.board.legal_moves.generated_moves[move_key].uci()
-                for move_key in all_moves_keys
-            ]
+        if not res.interaction_continues:
+            self.adapter.reset_interaction()
 
-            move = chess.Move.from_uci(f"{from_sq}{coord}")
-            move_promote = chess.Move.from_uci(f"{from_sq}{coord}q")
-
-            print("trying", move.uci(), "turn", self.board.turn)
-
-            if move.uci() in all_legal_moves_uci:
-                self.send_move_to_main_thread(move_uci=move.uci())
-                self.piece_to_move = [None, None]
-                return
-
-            if move_promote.uci() in all_legal_moves_uci:
-                self.choice_promote()
-                self.send_move_to_main_thread(move_uci=self.move_promote_asked.uci())
-                self.piece_to_move = [None, None]
-                return
-
-            # illegal: treat this click as a new selection for UX
-            print("illegal move; reselecting", coord)
-            self.piece_to_move = [piece, coord]
-
-        except ValueError:
-            chipiron_logger.info("Oops! Doubleclicked? Try again...")
-            self.piece_to_move = [None, None]
-
-    def send_move_to_main_thread(self, move_uci: MoveUci) -> None:
-        """Send a move to the main thread for processing.
-
-        Args:
-            move (chess.Move): The move to be sent.
-
-        Returns:
-            None
-
-        """
+    def send_action_to_main_thread(self, *, action_name: str) -> None:
+        """Send a human action name to the main thread for processing."""
         if self.scope is None:
             return
         cmd = GuiCommand(
             schema_version=1,
             scope=self.scope,
             payload=HumanActionChosen(
-                action_name=str(move_uci),
+                action_name=action_name,
                 ctx=self.pending_human_ctx,
                 corresponding_state_tag=self.pending_human_state_tag,
             ),
@@ -484,126 +437,14 @@ class MainWindow(QWidget):
         self.eval_button_chi.setText("🐙 Eval")
         self.eval_button_white.setText("♕ White Eval")
         self.eval_button_black.setText("♛ Black Eval")
-        self.piece_to_move = [None, None]
+        if self.adapter is not None:
+            self.adapter.reset_interaction()
+        self.adapter = None
+        self.current_pos = None
+        self.adapter_kind = None
+        self.action_name_history = []
         self.pending_human_ctx = None
         self.pending_human_state_tag = None
-        self.board = self.board_factory(
-            fen_with_history=FenPlusHistory(current_fen=chess.STARTING_FEN)
-        )
-        self.draw_board()
-
-    @typing.no_type_check
-    def choice_promote(self) -> None:
-        """Display a dialog box with buttons for promoting a chess piece.
-
-        The dialog box allows the user to choose between promoting the pawn to a queen, rook, bishop, or knight.
-        Each button is connected to a corresponding method for handling the promotion.
-
-        Returns:
-            None
-
-        """
-        self.d = QDialog()
-        d = self.d
-        d.setWindowTitle("Promote to ?")
-        d.setWindowModality(Qt.ApplicationModal)
-
-        d.closeButtonQ = QPushButton(d)
-        d.closeButtonQ.setText("Queen")  # text
-        d.closeButtonQ.setStyleSheet(
-            "QPushButton {background-color: white; color: blue;}"
-        )
-        d.closeButtonQ.setGeometry(150, 100, 150, 20)
-        d.closeButtonQ.clicked.connect(self.promote_queen)  # pylint: disable=no-member
-
-        d.closeButtonR = QPushButton(d)
-        d.closeButtonR.setText("Rook")  # text
-        d.closeButtonR.setStyleSheet(
-            "QPushButton {background-color: white; color: blue;}"
-        )
-        d.closeButtonR.setGeometry(150, 200, 150, 20)
-        d.closeButtonR.clicked.connect(self.promote_rook)  # pylint: disable=no-member
-
-        d.closeButtonB = QPushButton(d)
-        d.closeButtonB.setText("Bishop")  # text
-        d.closeButtonB.setStyleSheet(
-            "QPushButton {background-color: white; color: blue;}"
-        )
-        d.closeButtonB.setGeometry(150, 300, 150, 20)
-        d.closeButtonB.clicked.connect(self.promote_bishop)  # pylint: disable=no-member
-
-        d.closeButtonK = QPushButton(d)
-        d.closeButtonK.setText("Knight")  # text
-        d.closeButtonK.setStyleSheet(
-            "QPushButton {background-color: white; color: blue;}"
-        )
-        d.closeButtonK.setGeometry(150, 400, 150, 20)
-        d.closeButtonK.clicked.connect(self.promote_knight)  # pylint: disable=no-member
-
-        d.exec_()
-
-    @typing.no_type_check
-    def promote_queen(self) -> None:
-        """Promotes the selected piece to a queen.
-
-        This method creates a move object to promote the selected piece to a queen by appending 'q' to the UCI notation
-        of the piece's destination square. It then closes the dialog window.
-
-        Returns:
-            None
-
-        """
-        self.move_promote_asked = chess.Move.from_uci(
-            f"{self.piece_to_move[1]}{self.coordinates}q"
-        )
-        self.d.close()
-
-    @typing.no_type_check
-    def promote_rook(self) -> None:
-        """Promotes a pawn to a rook.
-
-        This method is called when a pawn reaches the opposite end of the board and needs to be promoted to a rook.
-        It creates a move object representing the promotion and closes the dialog window.
-
-        Returns:
-            None
-
-        """
-        self.move_promote_asked = chess.Move.from_uci(
-            f"{self.piece_to_move[1]}{self.coordinates}r"
-        )
-        self.d.close()
-
-    @typing.no_type_check
-    def promote_bishop(self) -> None:
-        """Promotes the current piece to a bishop.
-
-        This method creates a move object to promote the current piece to a bishop and closes the dialog window.
-
-        Returns:
-            None
-
-        """
-        self.move_promote_asked = chess.Move.from_uci(
-            f"{self.piece_to_move[1]}{self.coordinates}b"
-        )
-        self.d.close()
-
-    @typing.no_type_check
-    def promote_knight(self) -> None:
-        """Promotes a pawn to a knight.
-
-        This method is called when a pawn is promoted to a knight in the GUI.
-        It creates a move object representing the promotion and closes the GUI.
-
-        Returns:
-        None
-
-        """
-        self.move_promote_asked = chess.Move.from_uci(
-            f"{self.piece_to_move[1]}{self.coordinates}n"
-        )
-        self.d.close()
 
     def process_message(self) -> None:
         """Process a message received by the GUI.
@@ -649,15 +490,31 @@ class MainWindow(QWidget):
         payload = msg.payload
 
         match payload:
-            case UpdStateChess():
+            case UpdStateGeneric():
                 self.current_state_tag = payload.state_tag
+                self.action_name_history = list(payload.action_name_history)
 
-                self.board = self.board_factory(
-                    fen_with_history=payload.fen_plus_history
+                if self.adapter is None or self.adapter_kind != msg.game_kind:
+                    self.adapter = make_svg_adapter(
+                        game_kind=msg.game_kind,
+                        board_factory=self.board_factory,
+                    )
+                    self.adapter.reset_interaction()
+                    self.adapter_kind = msg.game_kind
+
+                self.current_pos = self.adapter.position_from_update(
+                    state_tag=payload.state_tag,
+                    adapter_payload=payload.adapter_payload,
                 )
 
-                self.draw_board()
-                self.display_move_history()
+                render = self.adapter.render_svg(
+                    self.current_pos,
+                    size=int(self.board_size),
+                )
+                self.widget_svg.load(render.svg_bytes)
+                self._apply_render_info(render.info)
+
+                self.display_action_name_history()
 
             case UpdPlayerProgress():
                 if (
@@ -699,91 +556,28 @@ class MainWindow(QWidget):
             case _:
                 raise GuiUpdateError(payload)
 
-    def display_move_history(self) -> None:
-        """Display the move history in a table widget.
-
-        This method calculates the number of rounds based on the number of half moves in the move stack.
-        It then sets the number of rows in the table widget to the number of rounds.
-        The table widget's horizontal header labels are set to 'White' and 'Black'.
-        The move history is then iterated over and each move is added to the table widget.
-
-        Returns:
-            None
-
-        """
-        num_half_move: int = len(self.board.move_history_stack)
-        num_rounds: int = math.ceil(num_half_move / 2)
+    def display_action_name_history(self) -> None:
+        """Display action history in a two-column table widget."""
+        num_half_move = len(self.action_name_history)
+        num_rounds = math.ceil(num_half_move / 2)
         self.tablewidget.setRowCount(num_rounds)
         self.tablewidget.setHorizontalHeaderLabels(["White", "Black"])
         for player in range(2):
             for round_ in range(num_rounds):
                 half_move = round_ * 2 + player
                 if half_move < num_half_move:
-                    item = QTableWidgetItem(
-                        str(self.board.move_history_stack[half_move])
-                    )
+                    item = QTableWidgetItem(str(self.action_name_history[half_move]))
                     self.tablewidget.setItem(round_, player, item)
 
-    def draw_board(self) -> None:
-        """Draw a chessboard with the starting position and then redraw.
-
-        it for every new move.
-
-        Returns:
-            None
-
-        """
-        board_chi = create_board_chi(
-            fen_with_history=FenPlusHistory(
-                current_fen=self.board.fen,
-                historical_moves=self.board.move_history_stack,
-            )
-        )
-
-        repr_svg: str = chess.svg.board(
-            board=board_chi.chess_board,
-            size=390,
-            lastmove=board_chi.chess_board.peek()
-            if board_chi.chess_board.move_stack
-            else None,
-            check=board_chi.chess_board.king(board_chi.chess_board.turn)
-            if board_chi.chess_board.is_check()
-            else None,
-        )
-
-        self.board_svg = repr_svg.encode("UTF-8")
-        self.draw_board_svg = self.widget_svg.load(self.board_svg)
-        self.round_button.setText(
-            "🎲 Round: " + str(self.board.fullmove_number)
-        )  # text
-        self.fen_button.setText("🔧 <b>fen:</b> " + str(self.board.fen))  # text
-
-        all_moves_keys_chi = self.board.legal_moves.get_all()
-        all_moves_uci_chi = [
-            self.board.get_uci_from_move_key(move_key=move_key)
-            for move_key in all_moves_keys_chi
-        ]
-
+    def _apply_render_info(self, info: dict[str, str]) -> None:
+        """Update generic side panel labels using adapter render metadata."""
+        self.round_button.setText("🎲 Round: " + info.get("round", "-"))
+        self.fen_button.setText("🔧 <b>fen:</b> " + info.get("fen", "-"))
         self.legal_moves_button.setWordWrap(True)
         self.legal_moves_button.setMinimumHeight(100)
-        lines = [
-            "    " + str(sublist)
-            for sublist in [
-                all_moves_uci_chi[:7],
-                all_moves_uci_chi[7:14],
-                all_moves_uci_chi[14:21],
-                all_moves_uci_chi[21:28],
-            ]
-            if sublist
-        ]
-
-        # Join lines with <br>
-        moves_html = "\n".join(lines)
-
         self.legal_moves_button.setText(
-            f"📋 <b>legal moves:</b><pre>{moves_html}</pre>"
+            f"📋 <b>legal moves:</b><pre>{info.get('legal_moves', '')}</pre>"
         )
-        return self.draw_board_svg
 
     def update_players_info(self, white: PlayerUiInfo, black: PlayerUiInfo) -> None:
         """Update players info."""

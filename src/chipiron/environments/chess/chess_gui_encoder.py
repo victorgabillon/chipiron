@@ -7,7 +7,7 @@ from valanga.game import Seed
 from chipiron.displays.gui_protocol import (
     UpdatePayload,
     UpdGameStatus,
-    UpdStateChess,
+    UpdStateGeneric,
 )
 from chipiron.environments.chess.types import ChessState
 from chipiron.environments.types import GameKind
@@ -28,9 +28,13 @@ class ChessGuiEncoder(GuiEncoder[ChessState]):
         seed: Seed | None,
     ) -> UpdatePayload:
         """Create state payload."""
-        return UpdStateChess(
+        fen_plus_history = state.board.into_fen_plus_history()
+        historical_moves = getattr(fen_plus_history, "historical_moves", None) or []
+
+        return UpdStateGeneric(
             state_tag=state.tag,
-            fen_plus_history=state.board.into_fen_plus_history(),
+            action_name_history=[str(move) for move in historical_moves],
+            adapter_payload=fen_plus_history,
             seed=seed,
         )
 
