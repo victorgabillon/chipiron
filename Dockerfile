@@ -84,6 +84,9 @@ RUN chmod -R 777 tests
 RUN addgroup --system test
 RUN adduser --system testuser --ingroup test
 
+ENV HOME=/tmp
+ENV CHIPIRON_OUTPUT_DIR=/tmp/chipiron
+
 USER testuser:test
 
 CMD ["/app/.venv/bin/python", "-m", "chipiron.scripts.main_chipiron"]

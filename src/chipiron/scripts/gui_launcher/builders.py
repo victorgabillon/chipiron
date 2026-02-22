@@ -106,7 +106,9 @@ def generate_inputs(
                 )
             else:
                 # Checkers domain is not yet wired end-to-end, but game kind is recorded.
-                game_args = partial_op_game_args(game_kind=args_chosen_by_user.game_kind)
+                game_args = partial_op_game_args(
+                    game_kind=args_chosen_by_user.game_kind
+                )
 
             gui_args = partial_op_match_script_args(
                 gui=True,
@@ -138,7 +140,7 @@ def generate_inputs(
                             stopping_criterion=partial_op_tree_branch_limit_args(
                                 type=StoppingCriterionTypes.TREE_BRANCH_LIMIT,
                                 tree_branch_limit=4
-                                * 10 ** args_chosen_by_user.strength_white,
+                                * 10**args_chosen_by_user.strength_white,
                             ),
                         ),
                     )
@@ -152,7 +154,7 @@ def generate_inputs(
                             stopping_criterion=partial_op_tree_branch_limit_args(
                                 type=StoppingCriterionTypes.TREE_BRANCH_LIMIT,
                                 tree_branch_limit=4
-                                * 10 ** args_chosen_by_user.strength_black,
+                                * 10**args_chosen_by_user.strength_black,
                             ),
                         ),
                     )

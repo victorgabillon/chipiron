@@ -57,12 +57,21 @@ MATE_IN_2_DB_SMALL = get_env_path(
 
 # ---------- Runtime outputs (must be writable) ----------
 def _runtime_data_dir() -> Path:
-    """Return the persistent per-user writable data directory.
+    """Return the directory for runtime data outputs.
 
-    The directory can be overridden by setting CHIPIRON_OUTPUT_DIR.
+    The location can be overridden by setting CHIPIRON_OUTPUT_DIR to an absolute path.
     """
     override = os.environ.get("CHIPIRON_OUTPUT_DIR")
-    base = Path(override) if override else Path(user_data_dir(APP_NAME))
+    if override:
+        base = Path(override)
+    else:
+        # If HOME is missing or invalid, platformdirs may return "/.local/..."
+        home = os.environ.get("HOME")
+        if not home or home == "/" or not Path(home).exists():
+            base = Path("/tmp") / APP_NAME
+        else:
+            base = Path(user_data_dir(APP_NAME))
+
     base.mkdir(parents=True, exist_ok=True)
     return base
 

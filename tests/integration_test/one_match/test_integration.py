@@ -18,8 +18,10 @@ from parsley import (
 
 import chipiron as ch
 import chipiron.scripts as scripts
+from chipiron.games.game.game_args import GameArgs
 from chipiron.games.match.match_args import MatchArgs
 from chipiron.games.match.match_factories import create_match_manager_from_args
+from chipiron.games.match.match_settings_args import MatchSettingsArgs
 from chipiron.games.match.match_tag import MatchConfigTag
 from chipiron.players import PlayerArgs
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
@@ -47,6 +49,10 @@ PartialOpMatchScriptArgs = make_partial_dataclass_with_optional_paths(
     cls=MatchScriptArgs
 )
 PartialOpMatchArgs = make_partial_dataclass_with_optional_paths(cls=MatchArgs)
+PartialOpMatchSettingsArgs = make_partial_dataclass_with_optional_paths(
+    cls=MatchSettingsArgs
+)
+PartialOpGameArgs = make_partial_dataclass_with_optional_paths(cls=GameArgs)
 PartialOpBaseScriptArgs = make_partial_dataclass_with_optional_paths(cls=BaseScriptArgs)
 PartialOpPlayerArgs = make_partial_dataclass_with_optional_paths(cls=PlayerArgs)
 PartialOpTreeAndValuePlayerArgs = make_partial_dataclass_with_optional_paths(
@@ -62,6 +68,7 @@ PartialOpTreeBranchLimitArgs = make_partial_dataclass_with_optional_paths(
 
 # Create a common overwrite for test players with tree branch limit of 100
 TEST_TREE_BRANCH_LIMIT = 100
+TEST_MAX_HALF_MOVES = 10
 test_player_overwrite = PartialOpPlayerArgs(
     main_move_selector=PartialOpTreeAndValueAppArgs(
         type=MoveSelectorTypes.TREE_AND_VALUE,
@@ -74,6 +81,19 @@ test_player_overwrite = PartialOpPlayerArgs(
         ),
     )
 )
+
+
+def _resolve_match_args_with_max_half_moves(
+    match_args: MatchArgs, max_half_moves: int
+) -> MatchArgs:
+    """Resolve and enforce a max-half-moves cap on match game args."""
+    resolved_match_args = resolve_extended_object(
+        extended_obj=match_args, base_cls=MatchArgs
+    )
+    assert isinstance(resolved_match_args.match_setting, MatchSettingsArgs)
+    assert isinstance(resolved_match_args.match_setting.game_args, GameArgs)
+    resolved_match_args.match_setting.game_args.max_half_moves = max_half_moves
+    return resolved_match_args
 
 
 def _build_base_configs() -> list[Any]:
@@ -264,6 +284,14 @@ def test_one_matches(
             with suppress_logging(
                 chipiron_logger, level=log_level
             ):  # logging level depends on how the function is called
+                total_config.match_args.match_setting_overwrite = (
+                    PartialOpMatchSettingsArgs(
+                        game_args_overwrite=PartialOpGameArgs(
+                            max_half_moves=TEST_MAX_HALF_MOVES
+                        )
+                    )
+                )
+
                 script_object: scripts.IScript = create_script(
                     script_type=scripts.ScriptType.ONE_MATCH,
                     extra_args=total_config,
@@ -299,7 +327,10 @@ def test_randomness(log_level: int = logging.ERROR) -> None:
 
     # Override player two with test tree move limit using parsley_coco
     match_args.player_one_overwrite = test_player_overwrite
-    match_args = resolve_extended_object(extended_obj=match_args, base_cls=MatchArgs)
+    match_args = _resolve_match_args_with_max_half_moves(
+        match_args,
+        TEST_MAX_HALF_MOVES,
+    )
 
     assert isinstance(match_args.player_one, PlayerArgs)
     print(
@@ -465,8 +496,31 @@ if __name__ == "__main__":
     test_configs = configs_base
 
     # Pass chosen level when running from main for more verbose output
+    time_start = time.time()
     test_same_game_with_or_without_rust(log_level=level)
+    time_end_same_game = time.time()
+    duration_same_game = time_end_same_game - time_start
+    chipiron_logger.info(
+        "test_same_game_with_or_without_rust time: %s seconds", duration_same_game
+    )
+
+    time_start = time.time()
     test_randomness(log_level=level)
+    time_end_randomness = time.time()
+    duration_randomness = time_end_randomness - time_start
+    chipiron_logger.info("test_randomness time: %s seconds", duration_randomness)
+
+    time_start = time.time()
     test_one_matches(configs=test_configs, log_level=level)
+    time_end_one_matches = time.time()
+    duration_one_matches = time_end_one_matches - time_start
+    chipiron_logger.info("test_one_matches time: %s seconds", duration_one_matches)
 
     chipiron_logger.info("ALL OK for ONE MATCH")
+    chipiron_logger.info(
+        "Total time: %s seconds, durations: same_game=%s, randomness=%s, one_matches=%s",
+        time.time() - start_time,
+        duration_same_game,
+        duration_randomness,
+        duration_one_matches,
+    )

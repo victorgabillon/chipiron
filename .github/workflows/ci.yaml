@@ -80,15 +80,14 @@ jobs:
         run: |
           docker run --rm \
             -u=$(id -u):$(id -g) \
+            -e HOME=/tmp \
+            -e CHIPIRON_OUTPUT_DIR=/tmp/chipiron \
             -e DISPLAY=$DISPLAY \
-            -e ML_FLOW_DB_PATH=/tmp/mlflow/mlruns.db \
-            -e ML_FLOW_URI_PATH=sqlite:////tmp/mlflow/mlruns.db \
-            -e ML_FLOW_URI_PATH_TEST=sqlite:////tmp/mlflow/mlruns_test.db \
             -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
             ${{ env.TEST_TAG }} \
             python tests/integration_test/one_match/test_integration.py --log_level ERROR
 
-            
+
       - name: Build and push (latest tag)
         uses: docker/build-push-action@v5
         with:

@@ -45,8 +45,6 @@ from chipiron.displays.gui_protocol import (
     UpdStateGeneric,
 )
 from chipiron.displays.svg_adapter_factory import make_svg_adapter
-from chipiron.displays.svg_adapter_protocol import SvgGameAdapter, SvgPosition
-from chipiron.environments.types import GameKind
 from chipiron.games.game.game_playing_status import PlayingStatus
 from chipiron.utils.communication.mailbox import MainMailboxMessage
 from chipiron.utils.logger import chipiron_logger
@@ -54,6 +52,8 @@ from chipiron.utils.path_variables import GUI_DIR
 
 if typing.TYPE_CHECKING:
     from chipiron.core.request_context import RequestContext
+    from chipiron.displays.svg_adapter_protocol import SvgGameAdapter, SvgPosition
+    from chipiron.environments.types import GameKind
 
 
 class GuiUpdateError(AssertionError):
