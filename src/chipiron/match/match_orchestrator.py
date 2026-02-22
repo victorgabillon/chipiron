@@ -1,6 +1,6 @@
 """MatchOrchestrator: owns the mailbox loop and transport dispatch.
 
-Medium-refactor goal:
+Medium-refactor goals:
 - GameManager: synchronous deterministic domain transitions only
 - MatchController: move pipeline + request correlation + routing
 - MatchOrchestrator: mailbox.get() loop + dispatch + match lifecycle
