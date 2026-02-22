@@ -36,6 +36,7 @@ class BaseTreeExplorationArgs:
 
     base_script_args: BaseScriptArgs = field(default_factory=BaseScriptArgs)
     implementation_args: ImplementationArgs = field(default_factory=ImplementationArgs)
+    player_config_tag: PlayerConfigTag = PlayerConfigTag.UNIFORM
 
 
 class BaseTreeExplorationScript:
@@ -65,7 +66,9 @@ class BaseTreeExplorationScript:
         """Run the base tree exploration script."""
         syzygy = create_syzygy(use_rust=self.args.implementation_args.use_rust_boards)
 
-        player_one_args: ChessPlayerArgs = PlayerConfigTag.UNIFORM.get_players_args()
+        player_one_args: ChessPlayerArgs = (
+            self.args.player_config_tag.get_players_args()
+        )
 
         random_generator = random.Random()
         random_generator.seed(self.args.implementation_args.use_rust_boards)
