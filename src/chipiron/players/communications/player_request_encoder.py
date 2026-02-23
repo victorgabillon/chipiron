@@ -7,6 +7,7 @@ from atomheart.board.utils import FenPlusHistory
 from valanga.game import Seed
 
 from chipiron.displays.gui_protocol import Scope
+from chipiron.environments.checkers.types import CheckersState
 from chipiron.environments.chess.types import ChessState
 from chipiron.environments.types import GameKind
 from chipiron.players.communications.player_message import (
@@ -67,6 +68,29 @@ class ChessPlayerRequestEncoder(PlayerRequestEncoder[ChessState, FenPlusHistory]
         )
 
 
+@dataclass(frozen=True, slots=True)
+class CheckersPlayerRequestEncoder(PlayerRequestEncoder[CheckersState, str]):
+    """Checkers-specific move request encoder."""
+
+    game_kind: GameKind = GameKind.CHECKERS
+
+    def make_move_request(
+        self, *, state: CheckersState, seed: Seed, scope: Scope
+    ) -> PlayerRequest[str]:
+        """Encode a checkers move request using text state serialization."""
+        return PlayerRequest(
+            schema_version=1,
+            scope=scope,
+            seed=seed,
+            state=TurnStatePlusHistory(
+                current_state_tag=state.tag,
+                turn=state.turn,
+                snapshot=state.to_text(),
+                historical_actions=None,
+            ),
+        )
+
+
 def make_player_request_encoder[StateT](
     *,
     game_kind: GameKind,
@@ -81,8 +105,8 @@ def make_player_request_encoder[StateT](
                 "PlayerRequestEncoder[StateT, Any]", ChessPlayerRequestEncoder()
             )
         case GameKind.CHECKERS:
-            raise NotImplementedError(
-                "PlayerRequestEncoder for CHECKERS is not implemented yet"
+            return cast(
+                "PlayerRequestEncoder[StateT, Any]", CheckersPlayerRequestEncoder()
             )
         case _:
             raise PlayerRequestEncoderError(game_kind)

@@ -30,5 +30,7 @@ class ChessEnvironmentDeps:
 class CheckersEnvironmentDeps:
     """Dependencies required to build checkers environments."""
 
+    forced_capture: bool = True
+
 
 EnvDeps = ChessEnvironmentDeps | CheckersEnvironmentDeps

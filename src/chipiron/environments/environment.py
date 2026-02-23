@@ -5,6 +5,9 @@ from typing import Any, Literal, overload
 from atomheart.board.utils import FenPlusHistory
 
 from chipiron.environments.base import Environment
+from chipiron.environments.checkers.environment import make_checkers_environment
+from chipiron.environments.checkers.tags import CheckersStartTag
+from chipiron.environments.checkers.types import CheckersState
 from chipiron.environments.chess.environment import make_chess_environment
 from chipiron.environments.chess.tags import ChessStartTag
 from chipiron.environments.chess.types import ChessState
@@ -38,7 +41,7 @@ def make_environment(
     *,
     game_kind: Literal[GameKind.CHECKERS],
     deps: CheckersEnvironmentDeps,
-) -> Environment[object, object, object]: ...
+) -> Environment[CheckersState, str, CheckersStartTag]: ...
 @overload
 def make_environment(
     *,
@@ -57,6 +60,6 @@ def make_environment(
             return make_chess_environment(deps=deps)
         case GameKind.CHECKERS:
             assert isinstance(deps, CheckersEnvironmentDeps)
-            raise NotImplementedError("Environment for CHECKERS is not implemented yet")
+            return make_checkers_environment(deps=deps)
         case _:
             raise EnvironmentNotFoundError(game_kind)
