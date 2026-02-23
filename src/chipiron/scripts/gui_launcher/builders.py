@@ -10,6 +10,9 @@ from anemone.progress_monitor.progress_monitor import (
 from parsley import make_partial_dataclass_with_optional_paths
 
 from chipiron import scripts
+from chipiron.environments.checkers.starting_position_args import (
+    CheckersStandardStartingPositionArgs,
+)
 from chipiron.environments.chess.starting_position_args import (
     FenStartingPositionArgs,
     StartingPositionArgsType,
@@ -105,9 +108,9 @@ def generate_inputs(
                     ),
                 )
             else:
-                # Checkers domain is not yet wired end-to-end, but game kind is recorded.
                 game_args = partial_op_game_args(
-                    game_kind=args_chosen_by_user.game_kind
+                    game_kind=args_chosen_by_user.game_kind,
+                    starting_position=CheckersStandardStartingPositionArgs(),
                 )
 
             gui_args = partial_op_match_script_args(
