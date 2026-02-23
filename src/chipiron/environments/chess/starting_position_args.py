@@ -9,6 +9,10 @@ from typing import Literal
 from valanga import StateTag
 
 from chipiron.environments.chess.tags import ChessStartTag
+from chipiron.environments.checkers.starting_position_args import (
+    CheckersStandardStartingPositionArgs,
+    CheckersTextStartingPositionArgs,
+)
 from chipiron.environments.starting_position import StartingPositionArgs
 
 
@@ -102,7 +106,12 @@ class FileStartingPositionArgs(StartingPositionArgs):
         return ChessStartTag(fen=fen)
 
 
-AllStartingPositionArgs = FenStartingPositionArgs | FileStartingPositionArgs
+AllStartingPositionArgs = (
+    FenStartingPositionArgs
+    | FileStartingPositionArgs
+    | CheckersStandardStartingPositionArgs
+    | CheckersTextStartingPositionArgs
+)
 
 
 def _load_fen_from_file(file_name: str) -> str:
