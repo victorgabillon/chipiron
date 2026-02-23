@@ -16,6 +16,14 @@ jobs:
           python-version: "3.13"
           cache: pip
 
+      - name: Install system deps (Qt + OpenGL bits)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --fix-missing \
+            libegl1 libgl1 libglu1-mesa-dev libxrender-dev libxi-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev libxkbcommon-x11-0 \
+            libxcb-cursor0 libxcb-xinerama0 libx11-xcb-dev
+
       - run: python -m pip install -U pip tox
       - run: tox -q
 
