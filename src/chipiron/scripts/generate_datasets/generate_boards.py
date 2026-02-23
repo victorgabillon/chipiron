@@ -24,7 +24,7 @@ from pathlib import Path
 
 import chess
 import chess.pgn
-from atomheart.board.utils import Fen
+from atomheart.games.chess.board.utils import Fen
 
 from chipiron.scripts.generate_datasets.monthly_pgn_pipeline import (
     add_monthly_cli_args,

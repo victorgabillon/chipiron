@@ -9,8 +9,8 @@ from anemone.progress_monitor.progress_monitor import (
     TreeBranchLimitArgs,
 )
 from atomheart import ChessDynamics
-from atomheart.board import BoardFactory, create_board_factory
-from atomheart.board.utils import FenPlusHistory
+from atomheart.games.chess.board import BoardFactory, create_board_factory
+from atomheart.games.chess.board.utils import FenPlusHistory
 from valanga import Color
 from valanga.policy import BranchSelector
 

@@ -1,7 +1,7 @@
 """Document the module contains a factory to create board representations."""
 
 import torch
-from atomheart.board import BoardModificationP
+from atomheart.games.chess.board import BoardModificationP
 from valanga.representation_factory import RepresentationFactory
 
 from chipiron.environments.chess.types import ChessState

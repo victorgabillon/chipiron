@@ -2,10 +2,10 @@
 
 from typing import Protocol, cast
 
-import atomheart.board as boards
+import atomheart.games.chess.board as boards
 import chess
 import torch
-from atomheart.board.utils import square_rotate
+from atomheart.games.chess.board.utils import square_rotate
 from valanga.represention_for_evaluation import ContentRepresentation
 
 from chipiron.environments.chess.types import ChessState

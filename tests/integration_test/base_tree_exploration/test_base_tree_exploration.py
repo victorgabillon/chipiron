@@ -2,13 +2,12 @@
 
 from parsley import make_partial_dataclass_with_optional_paths
 
-from chipiron.players.player_ids import PlayerConfigTag
 import chipiron.scripts as scripts
+from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.base_tree_exploration.base_tree_exploration import (
     BaseTreeExplorationArgs,
 )
 from chipiron.scripts.factory import create_script
-
 
 PartialOpMatchScriptArgs = make_partial_dataclass_with_optional_paths(
     cls=BaseTreeExplorationArgs

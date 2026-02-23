@@ -1,7 +1,7 @@
 """Checkers SVG adapter for the generic GUI."""
 
-from dataclasses import dataclass, field
 import re
+from dataclasses import dataclass, field
 from typing import Any
 
 from chipiron.displays.svg_adapter_errors import InvalidSvgAdapterPayloadTypeError
@@ -33,10 +33,7 @@ def _click_to_sq32(*, x: int, y: int, board_size: int, margin: int) -> int | Non
         return None
 
     base = row_from_top * 4
-    if row_from_top % 2 == 0:
-        offset = (file_ - 1) // 2
-    else:
-        offset = file_ // 2
+    offset = (file_ - 1) // 2 if row_from_top % 2 == 0 else file_ // 2
     if offset < 0 or offset > 3:
         return None
     return base + offset + 1

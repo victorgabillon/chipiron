@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import Any, Protocol, TypeVar, cast
 
-from atomheart.board.utils import FenPlusHistory
+from atomheart.games.chess.board.utils import FenPlusHistory
 from valanga.game import Seed
 
 from chipiron.displays.gui_protocol import Scope

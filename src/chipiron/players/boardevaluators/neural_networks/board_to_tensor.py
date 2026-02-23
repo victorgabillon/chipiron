@@ -2,7 +2,7 @@
 
 import chess
 import torch
-from atomheart.board import IBoard
+from atomheart.games.chess.board import IBoard
 from valanga import Color
 
 

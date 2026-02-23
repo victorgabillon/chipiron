@@ -2,9 +2,9 @@
 
 import chess
 import torch
-from atomheart.board import create_board
-from atomheart.board.iboard import PieceMap
-from atomheart.board.utils import FenPlusHistory, square_rotate
+from atomheart.games.chess.board import create_board
+from atomheart.games.chess.board.iboard import PieceMap
+from atomheart.games.chess.board.utils import FenPlusHistory, square_rotate
 from atomheart.utils.color import valanga_color_to_chess
 from coral.neural_networks.models.transformer_one import (
     TransformerArgs,

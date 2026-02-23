@@ -4,9 +4,9 @@ import random
 from typing import TYPE_CHECKING
 
 import chess
-from atomheart.board import create_board_chi
-from atomheart.board.factory import create_rust_board
-from atomheart.board.utils import FenPlusHistory
+from atomheart.games.chess.board import create_board_chi
+from atomheart.games.chess.board.factory import create_rust_board
+from atomheart.games.chess.board.utils import FenPlusHistory
 
 from chipiron.players.factory import create_chipiron_player
 from chipiron.scripts.chipiron_args import ImplementationArgs

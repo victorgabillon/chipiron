@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING
 from anemone.progress_monitor.progress_monitor import (
     TreeBranchLimitArgs,
 )
-from atomheart.board.iboard import IBoard
+from atomheart.games.chess.board.iboard import IBoard
 
 from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
 from chipiron.utils.logger import (
@@ -35,7 +35,7 @@ from chipiron.utils.logger import (
 )
 
 if TYPE_CHECKING:
-    from atomheart.move.imove import MoveKey
+    from atomheart.games.chess.move.imove import MoveKey
 
     from chipiron.players.chess_player_args import ChessPlayerArgs
 
@@ -51,8 +51,8 @@ try:
     import logging
     import random
 
-    from atomheart.board.factory import create_board
-    from atomheart.board.utils import FenPlusHistory
+    from atomheart.games.chess.board.factory import create_board
+    from atomheart.games.chess.board.utils import FenPlusHistory
 
     from chipiron.players.boardevaluators.table_base.factory import create_syzygy
     from chipiron.players.factory import create_player

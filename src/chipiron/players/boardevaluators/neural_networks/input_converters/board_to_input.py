@@ -30,7 +30,7 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.represent
 )
 
 if TYPE_CHECKING:
-    from atomheart.board import BoardModificationP
+    from atomheart.games.chess.board import BoardModificationP
     from valanga.representation_factory import (
         RepresentationFactory,
     )

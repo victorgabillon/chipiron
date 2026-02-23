@@ -11,7 +11,7 @@ import queue
 import time
 import typing
 
-from atomheart.board import BoardFactory
+from atomheart.games.chess.board import BoardFactory
 from PySide6 import QtGui
 from PySide6.QtCore import Qt, QTimer, Slot
 from PySide6.QtGui import QIcon

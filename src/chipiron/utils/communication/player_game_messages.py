@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
-from atomheart.board.utils import Fen
-from atomheart.move import MoveUci
+from atomheart.games.chess.board.utils import Fen
+from atomheart.games.chess.move import MoveUci
 from valanga import Color, TurnState
 from valanga.evaluations import (
     StateEvaluation,

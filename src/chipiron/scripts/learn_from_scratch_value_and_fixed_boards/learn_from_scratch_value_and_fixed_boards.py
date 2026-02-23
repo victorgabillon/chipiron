@@ -14,7 +14,7 @@ from typing import cast
 
 import mlflow
 import pandas as pd
-from atomheart.board.utils import FenPlusHistory
+from atomheart.games.chess.board.utils import FenPlusHistory
 from coral.chi_nn import ChiNN
 from coral.neural_networks.factory import (
     create_nn_state_eval_from_architecture_args,

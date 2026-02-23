@@ -7,8 +7,8 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   atomheart.board
-   atomheart.move
+   atomheart.games.chess.board
+   atomheart.games.chess.move
 
 Submodules
 ----------
@@ -16,7 +16,7 @@ Submodules
 chipiron.environments.chess\_env.move\_factory module
 -----------------------------------------------------
 
-.. automodule:: atomheart.move_factory
+.. automodule:: atomheart.games.chess.move_factory
    :members:
    :undoc-members:
    :show-inheritance:

@@ -5,7 +5,7 @@ import random
 from typing import TYPE_CHECKING
 
 import pytest
-from atomheart.board.utils import FenPlusHistory
+from atomheart.games.chess.board.utils import FenPlusHistory
 
 from chipiron.players.boardevaluators.table_base.factory import (
     AnySyzygyTable,

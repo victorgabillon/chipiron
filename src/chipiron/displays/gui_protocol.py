@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any, Never
 
-from atomheart.board.utils import FenPlusHistory
+from atomheart.games.chess.board.utils import FenPlusHistory
 from valanga import Color, StateTag
 from valanga.evaluations import StateEvaluation
 

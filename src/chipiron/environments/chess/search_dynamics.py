@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Any, TypeVar, cast
 
 from anemone.dynamics import SearchDynamics
-from atomheart.move.imove import MoveKey
+from atomheart.games.chess.move.imove import MoveKey
 from valanga import Transition
 
 from chipiron.environments.chess.types import ChessState

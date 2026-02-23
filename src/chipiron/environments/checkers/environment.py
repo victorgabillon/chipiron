@@ -7,7 +7,11 @@ from valanga import StateTag
 from chipiron.environments.base import Environment
 from chipiron.environments.checkers.checkers_gui_encoder import CheckersGuiEncoder
 from chipiron.environments.checkers.tags import CheckersStartTag
-from chipiron.environments.checkers.types import CheckersDynamics, CheckersRules, CheckersState
+from chipiron.environments.checkers.types import (
+    CheckersDynamics,
+    CheckersRules,
+    CheckersState,
+)
 from chipiron.environments.deps import CheckersEnvironmentDeps
 from chipiron.environments.types import GameKind
 from chipiron.players.communications.player_request_encoder import (

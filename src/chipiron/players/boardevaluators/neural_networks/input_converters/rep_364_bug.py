@@ -3,7 +3,7 @@
 
 from typing import Protocol, cast
 
-import atomheart.board as boards
+import atomheart.games.chess.board as boards
 import chess
 import torch
 from valanga import ContentRepresentation

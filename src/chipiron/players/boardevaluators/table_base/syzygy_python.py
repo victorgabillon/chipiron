@@ -1,6 +1,6 @@
 """Module for the SyzygyTable class."""
 
-import atomheart.board as boards
+import atomheart.games.chess.board as boards
 import chess.syzygy
 
 from chipiron.players.boardevaluators.table_base import SyzygyTable

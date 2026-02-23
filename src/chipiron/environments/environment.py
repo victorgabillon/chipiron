@@ -2,7 +2,7 @@
 
 from typing import Any, Literal, overload
 
-from atomheart.board.utils import FenPlusHistory
+from atomheart.games.chess.board.utils import FenPlusHistory
 
 from chipiron.environments.base import Environment
 from chipiron.environments.checkers.environment import make_checkers_environment

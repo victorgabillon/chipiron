@@ -3,7 +3,7 @@
 from typing import TYPE_CHECKING
 
 from atomheart import ChessDynamics
-from atomheart.board.utils import FenPlusHistory
+from atomheart.games.chess.board.utils import FenPlusHistory
 from valanga import StateTag
 
 from chipiron.environments.base import Environment

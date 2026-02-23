@@ -8,7 +8,7 @@ from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
-    from atomheart.board.utils import FenPlusHistory
+    from atomheart.games.chess.board.utils import FenPlusHistory
 
     from chipiron.environments.chess.types import ChessState
     from chipiron.players.player import Player

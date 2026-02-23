@@ -10,8 +10,8 @@ from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 from chipiron.players.oracles import PolicyOracle, TerminalOracle, ValueOracle
 
 if TYPE_CHECKING:
-    from atomheart.move import MoveUci
-    from atomheart.move.imove import MoveKey
+    from atomheart.games.chess.move import MoveUci
+    from atomheart.games.chess.move.imove import MoveKey
 
 
 class ChessSyzygyPolicyOracle(PolicyOracle[ChessState]):

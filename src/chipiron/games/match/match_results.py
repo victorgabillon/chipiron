@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import Protocol
 
-from atomheart.move import MoveUci
+from atomheart.games.chess.move import MoveUci
 
 from chipiron.games.game.final_game_result import FinalGameResult
 
