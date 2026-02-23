@@ -7,11 +7,13 @@ from valanga import Dynamics, StateTag
 
 from chipiron.environments.types import GameKind
 from chipiron.games.game.game_rules import GameRules
-from chipiron.players.communications.player_request_encoder import PlayerRequestEncoder
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.utils.communication.gui_encoder import GuiEncoder
 
 if TYPE_CHECKING:
+    from chipiron.players.communications.player_request_encoder import (
+        PlayerRequestEncoder,
+    )
     from chipiron.players.factory_higher_level import PlayerObserverFactory
 
 
@@ -62,7 +64,7 @@ class Environment[StateT, StateSnapT, StartTagT]:
     rules: GameRules[StateT]
     dynamics: Dynamics[StateT]
     gui_encoder: GuiEncoder[StateT]
-    player_encoder: PlayerRequestEncoder[StateT, StateSnapT]
+    player_encoder: "PlayerRequestEncoder[StateT, StateSnapT]"
     make_player_observer_factory: PlayerObserverFactoryBuilder
     normalize_start_tag: TagNormalizer[StartTagT]
     make_initial_state: InitialStateFactory[StateT, StartTagT]

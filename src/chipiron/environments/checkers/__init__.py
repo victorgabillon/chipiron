@@ -1,6 +1,8 @@
-"""Checkers environment package."""
+"""Checkers environment package.
 
-from chipiron.environments.checkers.environment import make_checkers_environment
+Keep this module import-light to avoid circular imports.
+"""
+
 from chipiron.environments.checkers.tags import CheckersStartTag
 
-__all__ = ["CheckersStartTag", "make_checkers_environment"]
+__all__ = ["CheckersStartTag"]
