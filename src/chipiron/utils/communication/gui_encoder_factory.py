@@ -25,5 +25,7 @@ def make_gui_encoder[StateT](
     match game_kind:
         case GameKind.CHESS:
             return cast("GuiEncoder[StateT]", ChessGuiEncoder())
+        case GameKind.CHECKERS:
+            raise GuiEncoderError(game_kind)
         case _:
             raise GuiEncoderError(game_kind)
