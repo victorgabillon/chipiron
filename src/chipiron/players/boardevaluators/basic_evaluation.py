@@ -3,7 +3,7 @@
 import math
 
 import chess
-from atomheart.board import IBoard
+from atomheart.games.chess.board import IBoard
 from chess import Square
 from valanga import Color
 

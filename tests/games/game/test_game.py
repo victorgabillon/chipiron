@@ -3,8 +3,8 @@
 import chess
 import pytest
 from atomheart import ChessDynamics
-from atomheart.board import IBoard, create_board
-from atomheart.board.utils import FenPlusHistory
+from atomheart.games.chess.board import IBoard, create_board
+from atomheart.games.chess.board.utils import FenPlusHistory
 
 from chipiron.environments.chess.types import ChessState
 from chipiron.games.game import Game

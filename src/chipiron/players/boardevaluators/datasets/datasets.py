@@ -17,9 +17,9 @@ from typing import TYPE_CHECKING, Any, Protocol, no_type_check
 import numpy as np
 import pandas as pd
 import torch
-from atomheart.board import IBoard
-from atomheart.board.factory import create_board_chi
-from atomheart.board.utils import Fen, FenPlusHistory
+from atomheart.games.chess.board import IBoard
+from atomheart.games.chess.board.factory import create_board_chi
+from atomheart.games.chess.board.utils import Fen, FenPlusHistory
 from coral.neural_networks.input_converters.content_to_input import (
     ContentToInputFunction,
 )

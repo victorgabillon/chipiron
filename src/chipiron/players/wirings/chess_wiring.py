@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from atomheart.board.utils import FenPlusHistory
+from atomheart.games.chess.board.utils import FenPlusHistory
 from valanga import Color
 
 from chipiron.environments.chess.types import ChessState

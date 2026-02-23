@@ -8,11 +8,11 @@ from typing import Literal
 
 from valanga import StateTag
 
-from chipiron.environments.chess.tags import ChessStartTag
 from chipiron.environments.checkers.starting_position_args import (
     CheckersStandardStartingPositionArgs,
     CheckersTextStartingPositionArgs,
 )
+from chipiron.environments.chess.tags import ChessStartTag
 from chipiron.environments.starting_position import StartingPositionArgs
 
 

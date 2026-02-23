@@ -5,8 +5,8 @@ from typing import Any
 
 import chess
 import chess.svg
-from atomheart.board import BoardFactory, IBoard, create_board_chi
-from atomheart.board.utils import FenPlusHistory
+from atomheart.games.chess.board import BoardFactory, IBoard, create_board_chi
+from atomheart.games.chess.board.utils import FenPlusHistory
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDialog, QPushButton
 

@@ -26,7 +26,7 @@ from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.path_variables import EXTERNAL_DATA_DIR
 
 if TYPE_CHECKING:
-    from atomheart.board.utils import Fen
+    from atomheart.games.chess.board.utils import Fen
 
 # Lichess monthly database parameters
 LICHESS_STANDARD_BASE_URL = "https://database.lichess.org/standard"

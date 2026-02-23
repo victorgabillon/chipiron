@@ -8,7 +8,7 @@ import random
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from atomheart.board.factory import create_board
+from atomheart.games.chess.board.factory import create_board
 
 from chipiron.players.adapters.chess_syzygy_oracle import (
     ChessSyzygyPolicyOracle,
@@ -23,7 +23,7 @@ from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
 
 if TYPE_CHECKING:
-    from atomheart.board.utils import FenPlusHistory
+    from atomheart.games.chess.board.utils import FenPlusHistory
 
     from chipiron.environments.chess.types import ChessState
     from chipiron.players.chess_player_args import ChessPlayerArgs

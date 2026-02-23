@@ -4,10 +4,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-import atomheart.board as boards
+import atomheart.games.chess.board as boards
 import chess.engine
-from atomheart.board import create_board_chi
-from atomheart.board.utils import FenPlusHistory
+from atomheart.games.chess.board import create_board_chi
+from atomheart.games.chess.board.utils import FenPlusHistory
 from valanga.game import BranchName, Seed
 from valanga.policy import NotifyProgressCallable, Recommendation
 

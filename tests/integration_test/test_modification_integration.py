@@ -9,8 +9,8 @@ from anemone.nodes.algorithm_node import AlgorithmNode
 from anemone.tree_and_value_branch_selector import (
     TreeAndValueBranchSelector,
 )
-from atomheart.board import IBoard, create_board
-from atomheart.board.utils import FenPlusHistory
+from atomheart.games.chess.board import IBoard, create_board
+from atomheart.games.chess.board.utils import FenPlusHistory
 
 from chipiron.environments.chess.types import ChessState
 from chipiron.players.factory import create_chipiron_player
@@ -18,7 +18,7 @@ from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
     import anemone.trees as trees
-    import atomheart.board as boards
+    import atomheart.games.chess.board as boards
     from anemone.basics import TreeDepth
     from anemone.nodes import ITreeNode
     from anemone.tree_exploration import (

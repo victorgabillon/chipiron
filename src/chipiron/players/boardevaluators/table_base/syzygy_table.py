@@ -2,8 +2,8 @@
 
 from typing import TYPE_CHECKING, Protocol
 
-from atomheart.board import IBoard
-from atomheart.move.imove import MoveKey
+from atomheart.games.chess.board import IBoard
+from atomheart.games.chess.move.imove import MoveKey
 from valanga import Color
 from valanga.over_event import HowOver, OverTags, Winner
 

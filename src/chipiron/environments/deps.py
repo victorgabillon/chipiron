@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING, Protocol
 from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
 
 if TYPE_CHECKING:
-    import atomheart.board as boards
-    from atomheart.board.utils import FenPlusHistory
+    import atomheart.games.chess.board as boards
+    from atomheart.games.chess.board.utils import FenPlusHistory
 
 
 class ChessBoardFactory(Protocol):

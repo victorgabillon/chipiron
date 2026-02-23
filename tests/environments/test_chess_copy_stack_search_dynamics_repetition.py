@@ -1,14 +1,18 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 from anemone.dynamics import normalize_search_dynamics
 from atomheart import ChessDynamics
-from atomheart.board import BoardFactory, IBoard, create_board_factory
-from atomheart.board.utils import FenPlusHistory
-from valanga import Transition
+from atomheart.games.chess.board import BoardFactory, IBoard, create_board_factory
+from atomheart.games.chess.board.utils import FenPlusHistory
 
 from chipiron.environments.chess.search_dynamics import ChessCopyStackSearchDynamics
 from chipiron.environments.chess.types import ChessState
+
+if TYPE_CHECKING:
+    from valanga import Transition
 
 
 @pytest.mark.parametrize(("use_rusty_board"), (True, False))

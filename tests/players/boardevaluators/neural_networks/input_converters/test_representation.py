@@ -6,12 +6,12 @@ from typing import TYPE_CHECKING
 import chess
 import pytest
 import torch
-from atomheart.board import (
+from atomheart.games.chess.board import (
     BoardModificationP,
     IBoard,
     create_board,
 )
-from atomheart.board.utils import FenPlusHistory, bitboard_rotate
+from atomheart.games.chess.board.utils import FenPlusHistory, bitboard_rotate
 
 from chipiron.environments.chess.types import ChessState
 from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
@@ -24,7 +24,7 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.represent
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from atomheart.move.imove import MoveKey
+    from atomheart.games.chess.move.imove import MoveKey
     from valanga.represention_for_evaluation import ContentRepresentation
 
 

@@ -7,7 +7,7 @@ from dataclasses import asdict, dataclass, field
 from typing import TYPE_CHECKING, cast
 
 import yaml
-from atomheart.board import BoardFactory, create_board_factory
+from atomheart.games.chess.board import BoardFactory, create_board_factory
 from PySide6.QtWidgets import QApplication
 
 import chipiron as ch

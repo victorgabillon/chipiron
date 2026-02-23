@@ -5,7 +5,7 @@ from dataclasses import asdict
 from typing import TYPE_CHECKING, Literal
 
 import yaml
-from atomheart.move_factory import MoveFactory
+from atomheart.games.chess.move.move_factory import MoveFactory
 from valanga import BranchKey, Color, StateTag, Transition, TurnState
 from valanga.evaluations import StateEvaluation
 from valanga.game import ActionKey

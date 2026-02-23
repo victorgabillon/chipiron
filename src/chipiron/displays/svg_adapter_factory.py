@@ -1,6 +1,6 @@
 """Factory for game-specific SVG adapters."""
 
-from atomheart.board import BoardFactory
+from atomheart.games.chess.board import BoardFactory
 
 from chipiron.displays.checkers_svg_adapter import CheckersSvgAdapter
 from chipiron.displays.chess_svg_adapter import ChessSvgAdapter

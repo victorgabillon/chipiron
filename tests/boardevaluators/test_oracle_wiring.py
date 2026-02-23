@@ -4,8 +4,8 @@ import queue
 
 import chess
 import pytest
-from atomheart.board import IBoard, create_board
-from atomheart.board.utils import FenPlusHistory
+from atomheart.games.chess.board import IBoard, create_board
+from atomheart.games.chess.board.utils import FenPlusHistory
 from valanga import StateEvaluation
 
 from chipiron.displays.gui_protocol import GuiUpdate, UpdEvaluation, make_scope

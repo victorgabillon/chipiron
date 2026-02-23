@@ -5,7 +5,7 @@ import uuid
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
-from atomheart.move_factory import MoveFactory
+from atomheart.games.chess.move.move_factory import MoveFactory
 from valanga import Color
 from valanga.game import Seed
 

@@ -4,11 +4,11 @@ import multiprocessing
 import uuid
 from typing import TYPE_CHECKING
 
-from atomheart.board.factory import (
+from atomheart.games.chess.board.factory import (
     BoardFactory,
     create_board_factory,
 )
-from atomheart.move_factory import MoveFactory, create_move_factory
+from atomheart.games.chess.move.move_factory import MoveFactory, create_move_factory
 from parsley import resolve_extended_object
 
 import chipiron as ch

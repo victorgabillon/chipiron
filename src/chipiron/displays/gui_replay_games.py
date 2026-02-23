@@ -7,7 +7,7 @@ from typing import Any
 
 import chess
 import chess.svg
-from atomheart.board.board_chi import BoardChi
+from atomheart.games.chess.board.board_chi import BoardChi
 from PySide6.QtCore import Slot
 from PySide6.QtGui import QIcon, QKeyEvent
 from PySide6.QtSvgWidgets import QSvgWidget

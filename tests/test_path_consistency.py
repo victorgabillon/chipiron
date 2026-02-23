@@ -19,7 +19,7 @@ from chipiron.utils.path_variables import (
 
 
 def _is_sqlite_uri(uri: str) -> bool:
-    return uri.startswith("sqlite:///") or uri.startswith("sqlite:////")
+    return uri.startswith(("sqlite:///", "sqlite:////"))
 
 
 def _sqlite_path_from_uri(uri: str) -> Path:

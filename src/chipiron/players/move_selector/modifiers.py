@@ -14,7 +14,7 @@ from valanga.policy import BranchSelector, NotifyProgressCallable, Recommendatio
 from chipiron.environments.chess.types import ChessState
 
 if TYPE_CHECKING:
-    from atomheart.move.imove import MoveKey
+    from atomheart.games.chess.move.imove import MoveKey
 
 
 class RecommendationModifier[StateT: TurnState](Protocol):

@@ -3,19 +3,19 @@
 from typing import TYPE_CHECKING
 
 import pytest
-from atomheart.board import (
+from atomheart.games.chess.board import (
     BoardFactory,
     IBoard,
     create_board_factory,
 )
-from atomheart.board.utils import FenPlusHistory
-from atomheart.move_factory import (
+from atomheart.games.chess.board.utils import FenPlusHistory
+from atomheart.games.chess.move.move_factory import (
     MoveFactory,
     create_move_factory,
 )
 
 if TYPE_CHECKING:
-    from atomheart.move import IMove
+    from atomheart.games.chess.move import IMove
 
 
 @pytest.mark.parametrize(("use_rusty_board"), (True, False))
