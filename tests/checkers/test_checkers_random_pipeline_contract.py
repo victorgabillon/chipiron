@@ -1,7 +1,7 @@
 import ast
 from pathlib import Path
 
-SOURCE = Path("src/chipiron/players/wirings/checkers_wiring.py").read_text()
+SOURCE = Path("src/chipiron/environments/checkers/players/wiring/checkers_wiring.py").read_text()
 TREE = ast.parse(SOURCE)
 
 
