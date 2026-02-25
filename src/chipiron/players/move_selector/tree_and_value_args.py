@@ -25,11 +25,11 @@ class NodeEvaluatorArgs:
 
     """
 
-    # The internal representation type used by the node evaluator.
-    internal_representation_type: InternalTensorRepresentationType
-
     # The arguments for the master board evaluator.
     master_board_evaluator: master_board_evaluator.MasterBoardEvaluatorArgs
+
+    # The internal representation type used by the node evaluator.
+    internal_representation_type: InternalTensorRepresentationType | None = None
 
 
 @dataclass(frozen=True)

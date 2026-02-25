@@ -19,10 +19,10 @@ main_move_selector:
       type: tree_branch_limit
       tree_branch_limit: 1000
   evaluator_args:
-    internal_representation_type: '364_bug'  # required by NodeEvaluatorArgs; ignored by checkers wiring
+    internal_representation_type: "no"
     master_board_evaluator:
       oracle_evaluation: False
-      evaluation_scale: stockfish_based  # required by MasterBoardEvaluatorArgs; ignored by checkers wiring
+      evaluation_scale: "entire_real_axis"
       board_evaluator:
         type: basic_evaluation
 oracle_play: False
