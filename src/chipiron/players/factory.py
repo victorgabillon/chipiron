@@ -117,9 +117,7 @@ def create_tag_player(
             TreeBranchLimitArgs,
         )
 
-        args_player.main_move_selector.anemone_args.stopping_criterion.tree_branch_limit = (
-            tree_branch_limit
-        )
+        args_player.main_move_selector.anemone_args.stopping_criterion.tree_branch_limit = tree_branch_limit
 
     return create_chess_player(
         args=args_player,

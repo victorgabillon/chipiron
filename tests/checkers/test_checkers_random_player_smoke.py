@@ -11,7 +11,6 @@ pytest.importorskip("atomheart")
 pytest.importorskip("valanga")
 
 from valanga import Color
-from valanga.game import Seed
 
 from chipiron.environments.checkers.types import (
     CheckersDynamics,
@@ -48,7 +47,7 @@ def test_checkers_random_player_produces_parseable_legal_action_name() -> None:
 
     recommendation = game_player.select_move_from_snapshot(
         snapshot=snapshot,
-        seed=Seed(0),
+        seed=0,
         notify_percent_function=lambda _progress: None,
     )
 

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, cast
 
 from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
     MasterStateEvaluator,
+    OverEventDetector,
 )
 from valanga import Color, State
 from valanga.over_event import HowOver, OverEvent, Winner
@@ -84,11 +85,19 @@ class CheckersMasterEvaluator(MasterStateEvaluator):
     """Anemone-compatible master evaluator for checkers."""
 
     evaluator: CheckersPieceCountEvaluator
-    over: CheckersOverEventDetector
+
+    # keep Protocol-typed field to match MasterStateEvaluator expectations
+    over: OverEventDetector
+
+    # concrete detector used internally (pylint understands it)
+    over_detector: CheckersOverEventDetector
 
     def value_white(self, state: State) -> float:
         """Evaluate state from White's perspective."""
-        _over_event, terminal_value_white = self.over.check_obvious_over_events(state)
+        _over_event, terminal_value_white = (
+            self.over_detector.check_obvious_over_events(state)
+        )
         if terminal_value_white is not None:
             return float(terminal_value_white)
+
         return self.evaluator.value_white(cast("CheckersState", state))
