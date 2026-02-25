@@ -19,8 +19,10 @@ from chipiron.environments.deps import (
     EnvDeps,
 )
 from chipiron.environments.types import GameKind
-from chipiron.games import game
+from chipiron.games.domain.game.game_args import GameArgs
+from chipiron.games.domain.game.game_args_factory import GameArgsFactory
 from chipiron.games.domain.game.game_manager_factory import GameManagerFactory
+from chipiron.games.domain.game.game_tag import GameConfigTag
 from chipiron.games.domain.match.match_args import MatchArgs
 from chipiron.games.domain.match.match_manager import MatchManager
 from chipiron.games.domain.match.match_results_factory import MatchResultsFactory
@@ -44,7 +46,7 @@ def create_match_manager(
     args_match: MatchSettingsArgs,
     args_player_one: players.PlayerArgs,
     args_player_two: players.PlayerArgs,
-    args_game: game.GameArgs,
+    args_game: GameArgs,
     implementation_args: ImplementationArgs,
     universal_behavior: bool = False,
     seed: int | None = None,
@@ -58,7 +60,7 @@ def create_match_manager(
         args_match (MatchSettingsArgs): The match settings arguments.
         args_player_one (players.PlayerArgs): The arguments for player one.
         args_player_two (players.PlayerArgs): The arguments for player two.
-        args_game (game.GameArgs): The game arguments.
+        args_game (GameArgs): The game arguments.
         seed (int | None, optional): The seed for random number generation. Defaults to None.
         output_folder_path (path | None, optional): The output folder path. Defaults to None.
         gui (bool, optional): Flag indicating whether to enable GUI. Defaults to False.
@@ -130,7 +132,7 @@ def create_match_manager(
         player_one_name=player_one_name, player_two_name=player_two_name
     )
 
-    game_args_factory = game.GameArgsFactory(
+    game_args_factory = GameArgsFactory(
         args_match=args_match,
         args_player_one=args_player_one,
         args_player_two=args_player_two,
@@ -175,15 +177,19 @@ def create_match_manager_from_args(
     player_two_args: players.PlayerArgs = match_args.player_two
 
     assert isinstance(match_args.match_setting, MatchSettingsArgs)
-    assert isinstance(match_args.match_setting.game_args, game.GameArgs)
+    game_args: GameArgs
+    if isinstance(match_args.match_setting.game_args, GameConfigTag):
+        game_args = match_args.match_setting.game_args.get_match_settings_args()
+    else:
+        game_args = match_args.match_setting.game_args
 
     assert (
         player_one_args.name != "Command_Line_Human.yaml"
-        or not match_args.match_setting.game_args.each_player_has_its_own_thread
+        or not game_args.each_player_has_its_own_thread
     )
     assert (
         player_two_args.name != "Command_Line_Human.yaml"
-        or not match_args.match_setting.game_args.each_player_has_its_own_thread
+        or not game_args.each_player_has_its_own_thread
     )
 
     # taking care of random
@@ -196,7 +202,7 @@ def create_match_manager_from_args(
         output_folder_path=base_script_args.experiment_output_folder,
         universal_behavior=base_script_args.universal_behavior,
         seed=base_script_args.seed,
-        args_game=match_args.match_setting.game_args,
+        args_game=game_args,
         gui=gui,
         implementation_args=implementation_args,
     )

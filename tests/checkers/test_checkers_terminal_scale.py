@@ -7,7 +7,7 @@ import pytest
 pytest.importorskip("valanga")
 from valanga import Color
 
-from chipiron.games.game.game_rules import GameOutcome, OutcomeKind
+from chipiron.games.domain.game.game_rules import GameOutcome, OutcomeKind
 from chipiron.players.boardevaluators.evaluation_scale import (
     EvaluationScale,
     get_value_over_enum,

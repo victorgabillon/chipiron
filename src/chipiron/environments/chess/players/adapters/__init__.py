@@ -1,1 +1,1 @@
-
+"""Adapters for chess players."""

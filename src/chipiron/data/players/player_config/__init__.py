@@ -1,1 +1,1 @@
-
+"""Player configuration data package."""

@@ -12,8 +12,15 @@ from chipiron.displays.gui_protocol import GuiUpdate, Scope
 from chipiron.games.domain.game.final_game_result import GameReport
 from chipiron.games.domain.game.game_args import GameArgs
 from chipiron.games.domain.game.game_args_factory import GameArgsFactory
-from chipiron.games.domain.game.game_manager_factory import GameManagerFactory, GameSession
-from chipiron.games.domain.match.match_results import IMatchResults, MatchReport, MatchResults
+from chipiron.games.domain.game.game_manager_factory import (
+    GameManagerFactory,
+    GameSession,
+)
+from chipiron.games.domain.match.match_results import (
+    IMatchResults,
+    MatchReport,
+    MatchResults,
+)
 from chipiron.games.domain.match.match_results_factory import MatchResultsFactory
 from chipiron.games.domain.match.observable_match_result import ObservableMatchResults
 from chipiron.players import PlayerFactoryArgs

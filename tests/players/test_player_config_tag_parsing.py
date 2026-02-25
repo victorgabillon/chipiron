@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 from parsley import Parsley, create_parsley
 
-from chipiron.games.match.match_settings_args import MatchSettingsArgs
-from chipiron.games.match.match_tag import MatchConfigTag
+from chipiron.games.domain.match.match_settings_args import MatchSettingsArgs
+from chipiron.games.domain.match.match_tag import MatchConfigTag
 from chipiron.players.player_args import PlayerArgs
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.utils.small_tools import get_package_root_path
