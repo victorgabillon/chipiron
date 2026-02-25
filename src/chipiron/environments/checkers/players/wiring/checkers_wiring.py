@@ -14,12 +14,12 @@ from chipiron.environments.checkers.types import (
     CheckersState,
 )
 from chipiron.environments.types import GameKind
-from chipiron.players.adapters.checkers_adapter import CheckersAdapter
+from chipiron.environments.checkers.players.adapters.checkers_adapter import CheckersAdapter
 from chipiron.players.boardevaluators.evaluation_scale import get_value_over_enum
 from chipiron.players.boardevaluators.master_board_evaluator import (
     MasterBoardEvaluatorArgs,
 )
-from chipiron.players.evaluators.checkers_piece_count import (
+from chipiron.environments.checkers.players.evaluators.checkers_piece_count import (
     CheckersMasterEvaluator,
     CheckersOverEventDetector,
     CheckersPieceCountEvaluator,

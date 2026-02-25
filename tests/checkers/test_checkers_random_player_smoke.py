@@ -19,7 +19,7 @@ from chipiron.environments.checkers.types import (
 )
 from chipiron.players.move_selector.random_args import RandomSelectorArgs
 from chipiron.players.player_args import PlayerArgs, PlayerFactoryArgs
-from chipiron.players.wirings.checkers_wiring import (
+from chipiron.environments.checkers.players.wiring.checkers_wiring import (
     BuildCheckersGamePlayerArgs,
     build_checkers_game_player,
 )
