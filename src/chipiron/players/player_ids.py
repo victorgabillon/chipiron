@@ -47,6 +47,7 @@ class PlayerConfigTag(StrEnum):
     UNIFORM = "Uniform"
     RANDOM = "Random"
     STOCKFISH = "Stockfish"
+    CHECKERS_TREE_PIECECOUNT = "CheckersTreePieceCount"
 
     def is_human(self) -> bool:
         """Check if the player is human.

@@ -1,0 +1,28 @@
+name: CheckersTreePieceCount
+main_move_selector:
+  type: TreeAndValue
+  accelerate_when_winning: True
+  anemone_args:
+    type: TreeAndValue
+    node_selector:
+      type: Composed
+      priority:
+        type: PriorityNoop
+      base:
+        type: RecurZipfBase
+        branch_explorer_priority: priority_best
+    opening_type: all_children
+    recommender_rule:
+      type: almost_equal_logistic
+      temperature: 2
+    stopping_criterion:
+      type: tree_branch_limit
+      tree_branch_limit: 1000
+  evaluator_args:
+    internal_representation_type: '364_bug'  # required by NodeEvaluatorArgs; ignored by checkers wiring
+    master_board_evaluator:
+      oracle_evaluation: False
+      evaluation_scale: stockfish_based  # required by MasterBoardEvaluatorArgs; ignored by checkers wiring
+      board_evaluator:
+        type: basic_evaluation
+oracle_play: False

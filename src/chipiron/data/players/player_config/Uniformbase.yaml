@@ -14,8 +14,8 @@ main_move_selector:
       tree_branch_limit: 1000
   node_evaluator:
     master_board_evaluator:
-      syzygy_evaluation: True
+      oracle_evaluation: True
       evaluation_scale: entire_real_axis
       board_evaluator:
         type: basic_evaluation
-syzygy_play: True
+oracle_play: True
