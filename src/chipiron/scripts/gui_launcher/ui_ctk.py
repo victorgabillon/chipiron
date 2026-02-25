@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, cast
 import customtkinter as ctk
 
 from chipiron.environments.types import GameKind
-from chipiron.players.player_ids import PlayerConfigTag
 
 from .logic import apply_game_kind_defaults
 from .models import ArgsChosenByUser, ScriptGUIType
@@ -160,14 +159,18 @@ def build_script_gui(root: ctk.CTk, args_chosen_by_user: ArgsChosenByUser) -> No
 
         label_by_tag = {option.tag: option.label for option in player_options}
         if args_chosen_by_user.player_type_white in label_by_tag:
-            chipi_algo_choice_white.set(label_by_tag[args_chosen_by_user.player_type_white])
+            chipi_algo_choice_white.set(
+                label_by_tag[args_chosen_by_user.player_type_white]
+            )
         elif "Human Player" in player_labels:
             chipi_algo_choice_white.set("Human Player")
         else:
             chipi_algo_choice_white.set(player_labels[0])
 
         if args_chosen_by_user.player_type_black in label_by_tag:
-            chipi_algo_choice_black.set(label_by_tag[args_chosen_by_user.player_type_black])
+            chipi_algo_choice_black.set(
+                label_by_tag[args_chosen_by_user.player_type_black]
+            )
         elif "Human Player" in player_labels:
             chipi_algo_choice_black.set("Human Player")
         else:
