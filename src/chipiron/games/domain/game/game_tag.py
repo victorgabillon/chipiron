@@ -5,7 +5,7 @@ from importlib.resources import as_file, files
 
 import parsley
 
-from chipiron.games.game.game_args import GameArgs
+from chipiron.games.domain.game.game_args import GameArgs
 from chipiron.utils import MyPath
 
 

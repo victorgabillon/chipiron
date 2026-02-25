@@ -5,7 +5,7 @@ from typing import Protocol
 
 from atomheart.games.chess.move import MoveUci
 
-from chipiron.games.game.final_game_result import FinalGameResult
+from chipiron.games.domain.game.final_game_result import FinalGameResult
 
 
 class MatchResultsError(ValueError):

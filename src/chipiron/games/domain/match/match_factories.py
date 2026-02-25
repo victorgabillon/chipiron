@@ -20,10 +20,10 @@ from chipiron.environments.deps import (
 )
 from chipiron.environments.types import GameKind
 from chipiron.games import game
-from chipiron.games.game.game_manager_factory import GameManagerFactory
-from chipiron.games.match.match_args import MatchArgs
-from chipiron.games.match.match_manager import MatchManager
-from chipiron.games.match.match_results_factory import MatchResultsFactory
+from chipiron.games.domain.game.game_manager_factory import GameManagerFactory
+from chipiron.games.domain.match.match_args import MatchArgs
+from chipiron.games.domain.match.match_manager import MatchManager
+from chipiron.games.domain.match.match_results_factory import MatchResultsFactory
 from chipiron.players.boardevaluators.factory import (
     create_game_board_evaluator_for_game_kind,
 )

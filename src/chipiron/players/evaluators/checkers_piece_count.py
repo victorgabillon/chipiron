@@ -12,7 +12,7 @@ from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import
 from valanga import Color, State
 from valanga.over_event import HowOver, OverEvent, Winner
 
-from chipiron.games.game.game_rules import OutcomeKind
+from chipiron.games.domain.game.game_rules import OutcomeKind
 
 if TYPE_CHECKING:
     from chipiron.environments.checkers.checkers_rules import CheckersRules

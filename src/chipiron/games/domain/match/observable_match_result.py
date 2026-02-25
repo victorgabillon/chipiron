@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 
 from chipiron.displays.gui_protocol import UpdMatchResults
 from chipiron.displays.gui_publisher import GuiPublisher
-from chipiron.games.game.final_game_result import FinalGameResult
+from chipiron.games.domain.game.final_game_result import FinalGameResult
 
 from .match_results import MatchResults, SimpleResults
 
