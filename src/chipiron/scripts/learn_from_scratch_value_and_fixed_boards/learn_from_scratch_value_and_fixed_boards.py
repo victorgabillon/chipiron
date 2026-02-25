@@ -83,7 +83,7 @@ class LearnNNFromScratchScriptArgs:
         default_factory=lambda: PlayerArgs(
             name="Random",
             main_move_selector=RandomSelectorArgs(),
-            syzygy_play=False,
+            oracle_play=False,
         )
     )
 

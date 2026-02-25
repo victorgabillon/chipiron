@@ -37,13 +37,20 @@ def build_chess_game_player(
     args: BuildChessGamePlayerArgs,
 ) -> GamePlayer[FenPlusHistory, ChessState]:
     """Build chess game player."""
-    create_syzygy = create_syzygy_factory(
-        use_rust=args.implementation_args.use_rust_boards
-    )
-    syzygy = args.syzygy_table if args.syzygy_table is not None else create_syzygy()
-    policy_oracle = ChessSyzygyPolicyOracle(syzygy) if syzygy is not None else None
-    value_oracle = ChessSyzygyValueOracle(syzygy) if syzygy is not None else None
-    terminal_oracle = ChessSyzygyTerminalOracle(syzygy) if syzygy is not None else None
+    policy_oracle = None
+    value_oracle = None
+    terminal_oracle = None
+
+    if args.player_factory_args.player_args.oracle_play:
+        create_syzygy = create_syzygy_factory(
+            use_rust=args.implementation_args.use_rust_boards
+        )
+        syzygy = args.syzygy_table if args.syzygy_table is not None else create_syzygy()
+        policy_oracle = ChessSyzygyPolicyOracle(syzygy) if syzygy is not None else None
+        value_oracle = ChessSyzygyValueOracle(syzygy) if syzygy is not None else None
+        terminal_oracle = (
+            ChessSyzygyTerminalOracle(syzygy) if syzygy is not None else None
+        )
     return create_game_player(
         player_factory_args=args.player_factory_args,
         player_color=args.player_color,

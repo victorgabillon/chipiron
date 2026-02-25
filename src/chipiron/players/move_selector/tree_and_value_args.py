@@ -20,7 +20,7 @@ class NodeEvaluatorArgs:
 
     Attributes:
     - type: The type of the node evaluator.
-    - syzygy_evaluation: A boolean indicating whether syzygy evaluation is enabled.
+    - oracle_evaluation: A boolean indicating whether oracle evaluation is enabled.
     - representation: The representation of the node evaluator.
 
     """

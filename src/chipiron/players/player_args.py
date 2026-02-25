@@ -26,13 +26,13 @@ class PlayerArgs:
     Attributes:
         name (str): The name of the player.
         main_move_selector (AnyMoveSelectorArgs): The main move selector for the player.
-        syzygy_play (bool): Whether to play with syzygy when possible.
+        oracle_play (bool): Whether to use an oracle when available.
 
     """
 
     name: str
     main_move_selector: AnyMoveSelectorArgs
-    syzygy_play: bool
+    oracle_play: bool
 
     def is_human(self) -> bool:
         """Check if the player is a human player.
