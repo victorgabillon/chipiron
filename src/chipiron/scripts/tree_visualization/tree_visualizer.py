@@ -30,6 +30,9 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 from chipiron.scripts.iscript import IScript
 from chipiron.scripts.script import Script
+from chipiron.utils import qt_runtime_bootstrap
+
+QT_RUNTIME_BOOTSTRAPPED = qt_runtime_bootstrap.QT_RUNTIME_BOOTSTRAPPED
 
 
 @typing.no_type_check

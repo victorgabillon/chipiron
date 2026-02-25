@@ -17,7 +17,10 @@ from chipiron.games.match.match_factories import create_match_manager_from_args
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
+from chipiron.utils import qt_runtime_bootstrap
 from chipiron.utils.logger import chipiron_logger
+
+QT_RUNTIME_BOOTSTRAPPED = qt_runtime_bootstrap.QT_RUNTIME_BOOTSTRAPPED
 
 if TYPE_CHECKING:
     import queue

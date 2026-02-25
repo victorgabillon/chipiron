@@ -7,9 +7,9 @@ from valanga.game import Seed
 
 from chipiron.displays.gui_protocol import UpdatePayload, UpdGameStatus, UpdStateGeneric
 from chipiron.environments.checkers.types import (
+    CheckersDynamics,
     CheckersRules,
     CheckersState,
-    checkers_move_name,
 )
 from chipiron.environments.types import GameKind
 from chipiron.games.game.game_playing_status import PlayingStatus
@@ -31,6 +31,7 @@ class CheckersGuiEncoder(GuiEncoder[CheckersState]):
     ) -> UpdatePayload:
         """Create state payload."""
         legal_moves = generate_legal_moves(state, self.rules)
+        naming_dynamics = CheckersDynamics(self.rules)
 
         return UpdStateGeneric(
             state_tag=state.tag,
@@ -38,7 +39,9 @@ class CheckersGuiEncoder(GuiEncoder[CheckersState]):
             adapter_payload={
                 "position_text": state.to_text(),
                 "pieces": state.pieces_by_square(),
-                "legal_moves": [checkers_move_name(move) for move in legal_moves],
+                "legal_moves": [
+                    naming_dynamics.action_name(state, move) for move in legal_moves
+                ],
             },
             seed=seed,
         )

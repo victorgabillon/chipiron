@@ -40,7 +40,9 @@ class SvgGameAdapter(Protocol):
         """Build adapter position from generic update payload."""
         ...
 
-    def render_svg(self, pos: SvgPosition, size: int) -> RenderResult:
+    def render_svg(
+        self, pos: SvgPosition, size: int, *, margin: int = 0
+    ) -> RenderResult:
         """Render an SVG board for the provided position."""
         ...
 
