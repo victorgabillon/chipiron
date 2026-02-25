@@ -85,20 +85,26 @@ def create_tag_player(
     Returns: the player
 
     """
-    syzygy_table: AnySyzygyTable | None = create_syzygy(
-        use_rust=implementation_args.use_rust_boards
-    )
-    policy_oracle = (
-        ChessSyzygyPolicyOracle(syzygy_table) if syzygy_table is not None else None
-    )
-    value_oracle = (
-        ChessSyzygyValueOracle(syzygy_table) if syzygy_table is not None else None
-    )
-    terminal_oracle = (
-        ChessSyzygyTerminalOracle(syzygy_table) if syzygy_table is not None else None
-    )
-
     args_player: ChessPlayerArgs = tag.get_players_args()
+
+    policy_oracle = None
+    value_oracle = None
+    terminal_oracle = None
+    if args_player.oracle_play:
+        syzygy_table: AnySyzygyTable | None = create_syzygy(
+            use_rust=implementation_args.use_rust_boards
+        )
+        policy_oracle = (
+            ChessSyzygyPolicyOracle(syzygy_table) if syzygy_table is not None else None
+        )
+        value_oracle = (
+            ChessSyzygyValueOracle(syzygy_table) if syzygy_table is not None else None
+        )
+        terminal_oracle = (
+            ChessSyzygyTerminalOracle(syzygy_table)
+            if syzygy_table is not None
+            else None
+        )
 
     if tree_branch_limit is not None:
         # TODO: find a prettier way to do this
@@ -111,7 +117,9 @@ def create_tag_player(
             TreeBranchLimitArgs,
         )
 
-        args_player.main_move_selector.anemone_args.stopping_criterion.tree_branch_limit = tree_branch_limit
+        args_player.main_move_selector.anemone_args.stopping_criterion.tree_branch_limit = (
+            tree_branch_limit
+        )
 
     return create_chess_player(
         args=args_player,

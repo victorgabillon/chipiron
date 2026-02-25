@@ -2,4 +2,4 @@ name: Stockfish
 main_move_selector:
   type: Stockfish
   depth: 10
-syzygy_play: True
+oracle_play: True

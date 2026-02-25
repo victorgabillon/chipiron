@@ -7,31 +7,34 @@ pytestmark = pytest.mark.skipif(
     reason="Checkers runtime imports require Python >= 3.12 in this repository.",
 )
 
-pytest.importorskip("atomheart")
-pytest.importorskip("valanga")
 
-from valanga import Color
-from valanga.game import Seed
-
-from chipiron.environments.checkers.types import (
-    CheckersDynamics,
-    CheckersRules,
-    CheckersState,
+@pytest.mark.skipif(
+    sys.version_info < (3, 12),
+    reason="Checkers runtime imports require Python >= 3.12 in this repository.",
 )
-from chipiron.players.move_selector.random_args import RandomSelectorArgs
-from chipiron.players.player_args import PlayerArgs, PlayerFactoryArgs
-from chipiron.players.wirings.checkers_wiring import (
-    BuildCheckersGamePlayerArgs,
-    build_checkers_game_player,
-)
+def test_checkers_tree_piececount_player_produces_parseable_legal_action_name() -> None:
+    pytest.importorskip("atomheart")
+    pytest.importorskip("valanga")
+    pytest.importorskip("anemone")
 
+    from valanga import Color
+    from valanga.game import Seed
 
-def test_checkers_random_player_produces_parseable_legal_action_name() -> None:
-    player_args = PlayerArgs(
-        name="random-checkers-smoke",
-        main_move_selector=RandomSelectorArgs(),
-        oracle_play=False,
+    from chipiron.environments.checkers.types import (
+        CheckersDynamics,
+        CheckersRules,
+        CheckersState,
     )
+    from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
+    from chipiron.players.player_args import PlayerFactoryArgs
+    from chipiron.players.player_ids import PlayerConfigTag
+    from chipiron.players.wirings.checkers_wiring import (
+        BuildCheckersGamePlayerArgs,
+        build_checkers_game_player,
+    )
+
+    player_args = PlayerConfigTag.CHECKERS_TREE_PIECECOUNT.get_players_args()
+    assert isinstance(player_args.main_move_selector, TreeAndValueAppArgs)
     factory_args = PlayerFactoryArgs(player_args=player_args, seed=0)
 
     game_player = build_checkers_game_player(

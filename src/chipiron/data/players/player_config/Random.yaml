@@ -1,4 +1,4 @@
 name: Random
 main_move_selector:
   type: Random
-syzygy_play: False
+oracle_play: False

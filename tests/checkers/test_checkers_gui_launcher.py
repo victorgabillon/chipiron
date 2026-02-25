@@ -10,6 +10,7 @@ def test_checkers_registry_includes_random_player_option() -> None:
     tags = {opt.tag for opt in options}
     assert PlayerConfigTag.GUI_HUMAN in tags
     assert PlayerConfigTag.RANDOM in tags
+    assert PlayerConfigTag.CHECKERS_TREE_PIECECOUNT in tags
 
 
 def test_args_defaults_remain_chess_friendly() -> None:
