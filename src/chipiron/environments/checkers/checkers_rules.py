@@ -15,7 +15,7 @@ from atomheart.games.checkers.generation import generate_legal_moves
 from atomheart.games.checkers.state import CheckersState
 from valanga import Color
 
-from chipiron.games.game.game_rules import (
+from chipiron.games.domain.game.game_rules import (
     GameOutcome,
     GameRules,
     OutcomeKind,

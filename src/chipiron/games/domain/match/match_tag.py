@@ -20,7 +20,7 @@ from importlib.resources import as_file, files
 
 import parsley
 
-from chipiron.games.match.match_settings_args import MatchSettingsArgs
+from chipiron.games.domain.match.match_settings_args import MatchSettingsArgs
 from chipiron.utils import MyPath
 
 

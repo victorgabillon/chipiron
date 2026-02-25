@@ -18,10 +18,10 @@ from chipiron.environments.chess.starting_position_args import (
     StartingPositionArgsType,
 )
 from chipiron.environments.types import GameKind
-from chipiron.games.game.game_args import GameArgs
-from chipiron.games.match.match_args import MatchArgs
-from chipiron.games.match.match_settings_args import MatchSettingsArgs
-from chipiron.games.match.match_tag import MatchConfigTag
+from chipiron.games.domain.game.game_args import GameArgs
+from chipiron.games.domain.match.match_args import MatchArgs
+from chipiron.games.domain.match.match_settings_args import MatchSettingsArgs
+from chipiron.games.domain.match.match_tag import MatchConfigTag
 from chipiron.players import PlayerArgs
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 from chipiron.players.player_ids import PlayerConfigTag

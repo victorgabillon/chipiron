@@ -6,7 +6,7 @@ from valanga import Color
 from valanga.over_event import HowOver, Winner
 
 from chipiron.environments.chess.types import ChessState
-from chipiron.games.game.game_rules import (
+from chipiron.games.domain.game.game_rules import (
     GameOutcome,
     GameRules,
     OutcomeKind,

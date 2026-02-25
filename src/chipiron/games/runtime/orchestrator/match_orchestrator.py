@@ -19,8 +19,8 @@ from chipiron.displays.gui_protocol import (
     HumanActionChosen,
     UpdNoHumanActionPending,
 )
-from chipiron.games.game.final_game_result import GameReport
-from chipiron.games.game.game_playing_status import PlayingStatus
+from chipiron.games.domain.game.final_game_result import GameReport
+from chipiron.games.domain.game.game_playing_status import PlayingStatus
 from chipiron.players.communications.player_message import (
     EvMove,
     EvProgress,
@@ -31,8 +31,8 @@ from chipiron.utils.logger import chipiron_logger
 if TYPE_CHECKING:
     import queue
 
-    from chipiron.games.game.game_manager import GameManager
-    from chipiron.match.match_controller import MatchController
+    from chipiron.games.domain.game.game_manager import GameManager
+    from chipiron.games.runtime.orchestrator.match_controller import MatchController
     from chipiron.utils.communication.mailbox import MainMailboxMessage
 
 

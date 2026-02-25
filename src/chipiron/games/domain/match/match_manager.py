@@ -9,20 +9,20 @@ from valanga import Color
 from valanga.game import ActionName, Seed
 
 from chipiron.displays.gui_protocol import GuiUpdate, Scope
-from chipiron.games.game.final_game_result import GameReport
-from chipiron.games.game.game_args import GameArgs
-from chipiron.games.game.game_args_factory import GameArgsFactory
-from chipiron.games.game.game_manager_factory import GameManagerFactory, GameSession
-from chipiron.games.match.match_results import IMatchResults, MatchReport, MatchResults
-from chipiron.games.match.match_results_factory import MatchResultsFactory
-from chipiron.games.match.observable_match_result import ObservableMatchResults
+from chipiron.games.domain.game.final_game_result import GameReport
+from chipiron.games.domain.game.game_args import GameArgs
+from chipiron.games.domain.game.game_args_factory import GameArgsFactory
+from chipiron.games.domain.game.game_manager_factory import GameManagerFactory, GameSession
+from chipiron.games.domain.match.match_results import IMatchResults, MatchReport, MatchResults
+from chipiron.games.domain.match.match_results_factory import MatchResultsFactory
+from chipiron.games.domain.match.observable_match_result import ObservableMatchResults
 from chipiron.players import PlayerFactoryArgs
 from chipiron.utils import MyPath
 from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:
     from chipiron.environments.types import GameKind
-    from chipiron.games.game.game_manager import GameManager
+    from chipiron.games.domain.game.game_manager import GameManager
 
 
 class MatchManager:
