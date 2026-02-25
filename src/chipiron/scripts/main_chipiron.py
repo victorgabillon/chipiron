@@ -10,8 +10,11 @@ from chipiron.scripts.factory import create_script
 from chipiron.scripts.script_args import LoggingArgs
 from chipiron.scripts.script_gui.script_gui_custom import script_gui
 from chipiron.scripts.script_type import ScriptType
+from chipiron.utils import qt_runtime_bootstrap
 from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
+
+QT_RUNTIME_BOOTSTRAPPED = qt_runtime_bootstrap.QT_RUNTIME_BOOTSTRAPPED
 
 if TYPE_CHECKING:
     from chipiron.scripts.iscript import IScript

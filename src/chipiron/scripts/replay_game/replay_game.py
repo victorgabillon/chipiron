@@ -20,6 +20,9 @@ from chipiron.displays.gui_replay_games import MainWindow
 from chipiron.games.game.final_game_result import GameReport
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs
+from chipiron.utils import qt_runtime_bootstrap
+
+QT_RUNTIME_BOOTSTRAPPED = qt_runtime_bootstrap.QT_RUNTIME_BOOTSTRAPPED
 
 
 @dataclass

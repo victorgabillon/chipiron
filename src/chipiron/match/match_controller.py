@@ -186,9 +186,21 @@ class MatchController:
 
         state = self.game_manager.game.state
         try:
-            action = self.game_manager.game.dynamics.action_from_name(
-                state, human_action.action_name
+            legal_action_keys = list(
+                self.game_manager.game.dynamics.legal_actions(state).get_all()
             )
+            legal_name_to_action = {
+                self.game_manager.game.dynamics.action_name(state, key): key
+                for key in legal_action_keys
+            }
+
+            if human_action.action_name in legal_name_to_action:
+                action = legal_name_to_action[human_action.action_name]
+            else:
+                parsed = self.game_manager.game.dynamics.action_from_name(
+                    state, human_action.action_name
+                )
+                action = parsed
         except (KeyError, ValueError) as exc:
             outs: list[MatchEvent] = [
                 IllegalAction(

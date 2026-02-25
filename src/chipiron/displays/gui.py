@@ -387,19 +387,22 @@ class MainWindow(QWidget):
         if self.adapter is None or self.current_pos is None:
             return
 
+        local_x = event.x() - self.widget_svg.x()
+        local_y = event.y() - self.widget_svg.y()
+
         if not (
-            event.x() <= self.board_size
-            and event.y() <= self.board_size
+            0 <= local_x <= self.board_size
+            and 0 <= local_y <= self.board_size
             and event.buttons() == Qt.LeftButton
-            and self.margin < event.x() < self.board_size - self.margin
-            and self.margin < event.y() < self.board_size - self.margin
+            and self.margin < local_x < self.board_size - self.margin
+            and self.margin < local_y < self.board_size - self.margin
         ):
             return
 
         res = self.adapter.handle_click(
             self.current_pos,
-            x=int(event.x()),
-            y=int(event.y()),
+            x=int(local_x),
+            y=int(local_y),
             board_size=int(self.board_size),
             margin=int(self.margin),
         )
@@ -510,6 +513,7 @@ class MainWindow(QWidget):
                 render = self.adapter.render_svg(
                     self.current_pos,
                     size=int(self.board_size),
+                    margin=int(self.margin),
                 )
                 self.widget_svg.load(render.svg_bytes)
                 self._apply_render_info(render.info)

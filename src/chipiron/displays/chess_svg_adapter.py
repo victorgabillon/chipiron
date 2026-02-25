@@ -48,7 +48,9 @@ class ChessSvgAdapter(SvgGameAdapter):
         self.reset_interaction()
         return SvgPosition(state_tag=state_tag, payload=adapter_payload)
 
-    def render_svg(self, pos: SvgPosition, size: int) -> RenderResult:
+    def render_svg(
+        self, pos: SvgPosition, size: int, *, margin: int = 0
+    ) -> RenderResult:
         """Render chess board SVG from fen/history payload."""
         fen_plus_history = pos.payload
         if not isinstance(fen_plus_history, FenPlusHistory):

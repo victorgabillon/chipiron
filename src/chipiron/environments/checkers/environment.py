@@ -6,11 +6,14 @@ from valanga import StateTag
 
 from chipiron.environments.base import Environment
 from chipiron.environments.checkers.checkers_gui_encoder import CheckersGuiEncoder
+from chipiron.environments.checkers.checkers_rules import CheckersRules
 from chipiron.environments.checkers.tags import CheckersStartTag
 from chipiron.environments.checkers.types import (
     CheckersDynamics,
-    CheckersRules,
     CheckersState,
+)
+from chipiron.environments.checkers.types import (
+    CheckersRules as AtomCheckersRules,
 )
 from chipiron.environments.deps import CheckersEnvironmentDeps
 from chipiron.environments.types import GameKind
@@ -64,13 +67,14 @@ def make_checkers_environment(
     def make_initial_state(tag: CheckersStartTag) -> CheckersState:
         return CheckersState.from_text(tag.text)
 
-    rules = CheckersRules(forced_capture=deps.forced_capture)
+    atom_rules = AtomCheckersRules(forced_capture=deps.forced_capture)
+    rules = CheckersRules(inner=atom_rules)
 
     return Environment(
         game_kind=GameKind.CHECKERS,
         rules=rules,
-        dynamics=CheckersDynamics(rules),
-        gui_encoder=CheckersGuiEncoder(rules=rules),
+        dynamics=CheckersDynamics(atom_rules),
+        gui_encoder=CheckersGuiEncoder(rules=atom_rules),
         player_encoder=CheckersPlayerRequestEncoder(),
         make_player_observer_factory=build_player_observer_factory,
         normalize_start_tag=normalize_start_tag,
