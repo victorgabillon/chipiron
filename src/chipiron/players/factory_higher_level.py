@@ -62,6 +62,16 @@ def _select_wiring(game_kind: GameKind) -> ObserverWiring[object, object, object
             assert_never(game_kind)
 
 
+def get_observer_wiring_for_game_kind(
+    game_kind: GameKind,
+) -> ObserverWiring[object, object, object]:
+    """Return the observer wiring for a game kind.
+
+    Public helper to make wiring selection explicit and testable.
+    """
+    return _select_wiring(game_kind)
+
+
 def create_player_observer_factory(
     *,
     game_kind: GameKind,
