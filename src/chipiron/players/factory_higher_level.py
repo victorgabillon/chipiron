@@ -16,6 +16,9 @@ from typing import Protocol, assert_never, cast
 
 from valanga import Color
 
+from chipiron.environments.checkers.players.wiring.checkers_wiring import (
+    CHECKERS_WIRING,
+)
 from chipiron.environments.types import GameKind
 from chipiron.players.communications.player_message import PlayerRequest
 from chipiron.players.communications.player_runtime import handle_player_request
@@ -23,7 +26,6 @@ from chipiron.players.observer_wiring import ObserverWiring
 from chipiron.players.player_args import PlayerFactoryArgs
 from chipiron.players.player_handle import InProcessPlayerHandle, PlayerHandle
 from chipiron.players.player_thread import PlayerProcess
-from chipiron.environments.checkers.players.wiring.checkers_wiring import CHECKERS_WIRING
 from chipiron.players.wirings.chess_wiring import CHESS_WIRING
 from chipiron.utils.communication.mailbox import MainMailboxMessage
 from chipiron.utils.dataclass import IsDataclass

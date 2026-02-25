@@ -12,7 +12,9 @@ from chipiron.players.boardevaluators.evaluation_scale import (
     EvaluationScale,
     get_value_over_enum,
 )
-from chipiron.environments.checkers.players.evaluators.checkers_piece_count import CheckersOverEventDetector
+from chipiron.environments.checkers.players.evaluators.checkers_piece_count import (
+    CheckersOverEventDetector,
+)
 
 
 @dataclass(frozen=True)
