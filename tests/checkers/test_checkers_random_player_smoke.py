@@ -10,21 +10,20 @@ pytestmark = pytest.mark.skipif(
 pytest.importorskip("atomheart")
 pytest.importorskip("valanga")
 
-if sys.version_info >= (3, 12):
-    from valanga import Color
-    from valanga.game import Seed
+from valanga import Color
+from valanga.game import Seed
 
-    from chipiron.environments.checkers.types import (
-        CheckersDynamics,
-        CheckersRules,
-        CheckersState,
-    )
-    from chipiron.players.move_selector.random_args import RandomSelectorArgs
-    from chipiron.players.player_args import PlayerArgs, PlayerFactoryArgs
-    from chipiron.players.wirings.checkers_wiring import (
-        BuildCheckersGamePlayerArgs,
-        build_checkers_game_player,
-    )
+from chipiron.environments.checkers.types import (
+    CheckersDynamics,
+    CheckersRules,
+    CheckersState,
+)
+from chipiron.players.move_selector.random_args import RandomSelectorArgs
+from chipiron.players.player_args import PlayerArgs, PlayerFactoryArgs
+from chipiron.players.wirings.checkers_wiring import (
+    BuildCheckersGamePlayerArgs,
+    build_checkers_game_player,
+)
 
 
 def test_checkers_random_player_produces_parseable_legal_action_name() -> None:

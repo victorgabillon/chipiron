@@ -2,6 +2,7 @@
 
 import random
 from dataclasses import dataclass
+from typing import Any, NoReturn
 
 from valanga import Color
 
@@ -29,6 +30,10 @@ class BuildCheckersGamePlayerArgs:
     universal_behavior: bool
 
 
+def _no_checkers_master_evaluator(*_args: Any, **_kwargs: Any) -> NoReturn:
+    raise NotImplementedError("Tree/value evaluator not implemented for checkers")
+
+
 def build_checkers_game_player(
     args: BuildCheckersGamePlayerArgs,
 ) -> GamePlayer[str, CheckersState]:
@@ -48,9 +53,7 @@ def build_checkers_game_player(
         policy_oracle=None,
         value_oracle=None,
         terminal_oracle=None,
-        master_evaluator_from_args=lambda *_: (_ for _ in ()).throw(
-            NotImplementedError("Tree/value evaluator not implemented for checkers")
-        ),
+        master_evaluator_from_args=_no_checkers_master_evaluator,
         adapter_builder=lambda selector, _policy_oracle: CheckersAdapter(
             dynamics=dynamics,
             main_move_selector=selector,
@@ -65,7 +68,7 @@ def build_checkers_game_player(
         ),
         random_generator=random_generator,
         runtime_dynamics=dynamics,
-        implementation_args=args.implementation_args,
+        implementation_args=None,
     )
 
     return GamePlayer(player, args.player_color)

@@ -1,7 +1,6 @@
 import ast
 from pathlib import Path
 
-
 SOURCE = Path("src/chipiron/players/factory_higher_level.py").read_text()
 TREE = ast.parse(SOURCE)
 

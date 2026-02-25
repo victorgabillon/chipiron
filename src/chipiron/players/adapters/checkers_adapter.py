@@ -50,8 +50,6 @@ class CheckersAdapter:
 
     def oracle_action_name(self, runtime_state: CheckersState) -> BranchName | None:
         """Oracle action name."""
-        _ = runtime_state
-        return None
 
     def recommend(
         self,
