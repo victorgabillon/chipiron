@@ -7,6 +7,7 @@ import customtkinter as ctk
 from chipiron.environments.types import GameKind
 from chipiron.players.player_ids import PlayerConfigTag
 
+from .logic import apply_game_kind_defaults
 from .models import ArgsChosenByUser, ScriptGUIType
 from .registries import player_options_for_game, starting_positions_for_game
 
@@ -37,14 +38,19 @@ def _set_user_args_from_ui(
             args_chosen_by_user.player_type_black = option.tag
             break
 
+    supports_strength_by_label = {
+        option.label: option.supports_strength
+        for option in player_options_for_game(args_chosen_by_user.game_kind)
+    }
+
     args_chosen_by_user.strength_white = (
         int(strength_value_white.get())
-        if args_chosen_by_user.player_type_white != PlayerConfigTag.GUI_HUMAN
+        if supports_strength_by_label.get(chipi_algo_choice_white.get(), False)
         else None
     )
     args_chosen_by_user.strength_black = (
         int(strength_value_black.get())
-        if args_chosen_by_user.player_type_black != PlayerConfigTag.GUI_HUMAN
+        if supports_strength_by_label.get(chipi_algo_choice_black.get(), False)
         else None
     )
     args_chosen_by_user.starting_position_key = starting_position_choice.get()
@@ -142,18 +148,41 @@ def build_script_gui(root: ctk.CTk, args_chosen_by_user: ArgsChosenByUser) -> No
 
     def refresh_game_specific_options(*_: Any) -> None:
         game_kind = GameKind(game_var.get())
+        args_chosen_by_user.game_kind = game_kind
+        apply_game_kind_defaults(args_chosen_by_user)
+
         root.title(f"🐙 Chipiron Script Launcher — {game_kind.value.capitalize()} 🐙")
 
-        player_labels = [option.label for option in player_options_for_game(game_kind)]
+        player_options = player_options_for_game(game_kind)
+        player_labels = [option.label for option in player_options]
         white_menu.configure(values=player_labels)
         black_menu.configure(values=player_labels)
 
-        if "Human Player" in player_labels:
+        label_by_tag = {option.tag: option.label for option in player_options}
+        if args_chosen_by_user.player_type_white in label_by_tag:
+            chipi_algo_choice_white.set(label_by_tag[args_chosen_by_user.player_type_white])
+        elif "Human Player" in player_labels:
             chipi_algo_choice_white.set("Human Player")
-            chipi_algo_choice_black.set("Human Player")
         else:
             chipi_algo_choice_white.set(player_labels[0])
+
+        if args_chosen_by_user.player_type_black in label_by_tag:
+            chipi_algo_choice_black.set(label_by_tag[args_chosen_by_user.player_type_black])
+        elif "Human Player" in player_labels:
+            chipi_algo_choice_black.set("Human Player")
+        else:
             chipi_algo_choice_black.set(player_labels[0])
+
+        strength_value_white.set(
+            ""
+            if args_chosen_by_user.strength_white is None
+            else str(args_chosen_by_user.strength_white)
+        )
+        strength_value_black.set(
+            ""
+            if args_chosen_by_user.strength_black is None
+            else str(args_chosen_by_user.strength_black)
+        )
 
         starting_positions = starting_positions_for_game(game_kind)
         starting_labels = list(starting_positions.keys())
