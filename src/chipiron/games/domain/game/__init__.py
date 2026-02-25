@@ -1,1 +1,1 @@
-
+"""Game domain package."""

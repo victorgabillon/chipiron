@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
-from chipiron.games.game.game_args import GameArgs
-from chipiron.games.game.game_tag import GameConfigTag
+from chipiron.games.domain.game.game_args import GameArgs
+from chipiron.games.domain.game.game_tag import GameConfigTag
 
 
 @dataclass

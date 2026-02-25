@@ -45,7 +45,7 @@ from chipiron.displays.gui_protocol import (
     UpdStateGeneric,
 )
 from chipiron.displays.svg_adapter_factory import make_svg_adapter
-from chipiron.games.game.game_playing_status import PlayingStatus
+from chipiron.games.domain.game.game_playing_status import PlayingStatus
 from chipiron.utils.communication.mailbox import MainMailboxMessage
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.path_variables import GUI_DIR
