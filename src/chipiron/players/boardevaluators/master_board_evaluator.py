@@ -55,8 +55,8 @@ class UnsupportedBoardEvaluatorArgsError(MasterBoardEvaluatorError):
 class MasterBoardEvaluatorArgs:
     """Represents the arguments for a master board evaluator."""
 
-    # Whether to use syzygy table for evaluation.
-    syzygy_evaluation: bool
+    # Whether to use oracle evaluation when available.
+    oracle_evaluation: bool
 
     # The evaluation scale used by the node evaluator. (Default values when nodes are found to be over)
     evaluation_scale: EvaluationScale
@@ -67,7 +67,7 @@ class MasterBoardEvaluatorArgs:
 class MasterBoardEvaluator:
     """The MasterBoardEvaluator class is responsible for evaluating the value of chess positions (that are IBoard).
 
-    It uses a board evaluator and a syzygy evaluator to calculate the value of the positions.
+    It uses a board evaluator and optional oracle-based evaluation to calculate values.
     """
 
     # The board evaluator used to evaluate the chess board.
@@ -238,7 +238,7 @@ def create_master_state_evaluator_from_args(
         MasterBoardEvaluator: _description_
 
     """
-    if master_board_evaluator.syzygy_evaluation:
+    if master_board_evaluator.oracle_evaluation:
         value_oracle_ = value_oracle
         terminal_oracle_ = terminal_oracle
     else:

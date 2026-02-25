@@ -25,6 +25,7 @@ CHESS_PLAYER_OPTIONS: list[PlayerOption] = [
 CHECKERS_PLAYER_OPTIONS: list[PlayerOption] = [
     PlayerOption("Human Player", PlayerConfigTag.GUI_HUMAN, False),
     PlayerOption("Random", PlayerConfigTag.RANDOM, False),
+    PlayerOption("Tree (piece count)", PlayerConfigTag.CHECKERS_TREE_PIECECOUNT, False),
 ]
 
 
