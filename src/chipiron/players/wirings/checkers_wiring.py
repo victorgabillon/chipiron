@@ -52,11 +52,16 @@ def build_checkers_master_evaluator(
     del value_oracle
     del terminal_oracle
     value_over_enum = get_value_over_enum(evaluator_args.evaluation_scale)
+
+    detector = CheckersOverEventDetector(
+        rules=rules_adapter,
+        value_over_enum=value_over_enum,
+    )
+
     return CheckersMasterEvaluator(
         evaluator=CheckersPieceCountEvaluator(),
-        over=CheckersOverEventDetector(
-            rules=rules_adapter, value_over_enum=value_over_enum
-        ),
+        over=detector,  # Protocol-typed field
+        over_detector=detector,  # concrete field for pylint
     )
 
 

@@ -51,7 +51,7 @@ def test_checkers_tree_piececount_player_produces_parseable_legal_action_name() 
 
     recommendation = game_player.select_move_from_snapshot(
         snapshot=snapshot,
-        seed=Seed(0),
+        seed=0,
         notify_percent_function=lambda _progress: None,
     )
 
