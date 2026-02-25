@@ -8,21 +8,23 @@ from valanga import Color
 from chipiron.environments.checkers.checkers_rules import (
     CheckersRules as CheckersRulesAdapter,
 )
+from chipiron.environments.checkers.players.adapters.checkers_adapter import (
+    CheckersAdapter,
+)
+from chipiron.environments.checkers.players.evaluators.checkers_piece_count import (
+    CheckersMasterEvaluator,
+    CheckersOverEventDetector,
+    CheckersPieceCountEvaluator,
+)
 from chipiron.environments.checkers.types import (
     CheckersDynamics,
     CheckersRules,
     CheckersState,
 )
 from chipiron.environments.types import GameKind
-from chipiron.environments.checkers.players.adapters.checkers_adapter import CheckersAdapter
 from chipiron.players.boardevaluators.evaluation_scale import get_value_over_enum
 from chipiron.players.boardevaluators.master_board_evaluator import (
     MasterBoardEvaluatorArgs,
-)
-from chipiron.environments.checkers.players.evaluators.checkers_piece_count import (
-    CheckersMasterEvaluator,
-    CheckersOverEventDetector,
-    CheckersPieceCountEvaluator,
 )
 from chipiron.players.factory_pipeline import create_player_with_pipeline
 from chipiron.players.game_player import GamePlayer
