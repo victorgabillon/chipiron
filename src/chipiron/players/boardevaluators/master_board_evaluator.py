@@ -55,13 +55,13 @@ class UnsupportedBoardEvaluatorArgsError(MasterBoardEvaluatorError):
 class MasterBoardEvaluatorArgs:
     """Represents the arguments for a master board evaluator."""
 
+    board_evaluator: AllBoardEvaluatorArgs
+
     # Whether to use oracle evaluation when available.
-    oracle_evaluation: bool
+    oracle_evaluation: bool = False
 
     # The evaluation scale used by the node evaluator. (Default values when nodes are found to be over)
-    evaluation_scale: EvaluationScale
-
-    board_evaluator: AllBoardEvaluatorArgs
+    evaluation_scale: EvaluationScale = EvaluationScale.ENTIRE_REAL_AXIS
 
 
 class MasterBoardEvaluator:
