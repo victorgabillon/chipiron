@@ -1,1 +1,1 @@
-
+"""Evaluators for checkers players."""

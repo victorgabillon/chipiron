@@ -18,11 +18,11 @@ from parsley import (
 
 import chipiron as ch
 import chipiron.scripts as scripts
-from chipiron.games.game.game_args import GameArgs
-from chipiron.games.match.match_args import MatchArgs
-from chipiron.games.match.match_factories import create_match_manager_from_args
-from chipiron.games.match.match_settings_args import MatchSettingsArgs
-from chipiron.games.match.match_tag import MatchConfigTag
+from chipiron.games.domain.game.game_args import GameArgs
+from chipiron.games.domain.match.match_args import MatchArgs
+from chipiron.games.domain.match.match_factories import create_match_manager_from_args
+from chipiron.games.domain.match.match_settings_args import MatchSettingsArgs
+from chipiron.games.domain.match.match_tag import MatchConfigTag
 from chipiron.players import PlayerArgs
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 from chipiron.players.move_selector.stockfish_selector import StockfishSelector
@@ -35,7 +35,7 @@ from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.logger import chipiron_logger, suppress_logging
 
 if TYPE_CHECKING:
-    from chipiron.games.match.match_results import MatchReport
+    from chipiron.games.domain.match.match_results import MatchReport
 
 # we need to not use multiprocessing to be able to use pytest therefore use setting_cubo  and not setting_jime
 

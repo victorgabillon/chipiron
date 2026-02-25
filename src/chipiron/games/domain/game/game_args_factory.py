@@ -14,7 +14,7 @@ from chipiron.utils.small_tools import unique_int_from_list
 from .game_args import GameArgs
 
 if typing.TYPE_CHECKING:
-    from chipiron.games import match
+    from chipiron.games.domain.match.match_settings_args import MatchSettingsArgs
 
 
 class GameArgsFactory:
@@ -24,7 +24,7 @@ class GameArgsFactory:
     This class is supposed to be dependent on Match-related classes (contrarily to the GameArgsFactory)
     """
 
-    args_match: "match.MatchSettingsArgs"
+    args_match: "MatchSettingsArgs"
     seed_: int | None
     args_player_one: players.PlayerArgs
     args_player_two: players.PlayerArgs
@@ -33,7 +33,7 @@ class GameArgsFactory:
 
     def __init__(
         self,
-        args_match: "match.MatchSettingsArgs",
+        args_match: "MatchSettingsArgs",
         args_player_one: players.PlayerArgs,
         args_player_two: players.PlayerArgs,
         seed_: int | None,

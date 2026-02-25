@@ -1,1 +1,1 @@
-
+"""Adapters for checkers players."""

@@ -7,8 +7,8 @@ from atomheart.games.chess.board import IBoard, create_board
 from atomheart.games.chess.board.utils import FenPlusHistory
 
 from chipiron.environments.chess.types import ChessState
-from chipiron.games.game import Game
-from chipiron.games.game.game_playing_status import GamePlayingStatus
+from chipiron.games.domain.game.game import Game
+from chipiron.games.domain.game.game_playing_status import GamePlayingStatus
 
 
 @pytest.mark.parametrize(("use_rust_boards"), (True, False))

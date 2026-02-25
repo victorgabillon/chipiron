@@ -1,1 +1,1 @@
-
+"""Oracles for chess players."""

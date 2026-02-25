@@ -1,1 +1,1 @@
-
+"""Evaluators for chess players."""

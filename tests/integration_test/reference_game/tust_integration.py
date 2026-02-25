@@ -6,10 +6,10 @@ import pickle
 import dacite
 import yaml
 
-from chipiron.games.match.match_args import MatchArgs
-from chipiron.games.match.match_factories import create_match_manager_from_args
-from chipiron.games.match.match_manager import MatchManager
-from chipiron.games.match.match_results import MatchReport
+from chipiron.games.domain.match.match_args import MatchArgs
+from chipiron.games.domain.match.match_factories import create_match_manager_from_args
+from chipiron.games.domain.match.match_manager import MatchManager
+from chipiron.games.domain.match.match_results import MatchReport
 from chipiron.utils import MyPath
 
 os.chdir("../../")
