@@ -1,7 +1,6 @@
 import ast
 from pathlib import Path
 
-
 SOURCE = Path("src/chipiron/players/wirings/checkers_wiring.py").read_text()
 TREE = ast.parse(SOURCE)
 
@@ -37,6 +36,10 @@ def test_build_checkers_game_player_routes_selector_with_checkers_game_kind() ->
                         assert kw.value.attr == "CHECKERS"
                         break
                 else:
-                    raise AssertionError("create_main_move_selector call missing game_kind keyword")
+                    raise AssertionError(
+                        "create_main_move_selector call missing game_kind keyword"
+                    )
 
-    assert found_selector_call, "Expected create_main_move_selector call in checkers wiring"
+    assert found_selector_call, (
+        "Expected create_main_move_selector call in checkers wiring"
+    )
