@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
     MasterStateEvaluator,
@@ -11,9 +11,12 @@ from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import
 from valanga import Color, State
 from valanga.over_event import HowOver, OverEvent, Winner
 
-from chipiron.environments.checkers.checkers_rules import CheckersRules
-from chipiron.environments.checkers.types import CheckersState
 from chipiron.games.game.game_rules import OutcomeKind
+
+if TYPE_CHECKING:
+    from chipiron.environments.checkers.checkers_rules import CheckersRules
+    from chipiron.environments.checkers.types import CheckersState
+    from chipiron.players.boardevaluators.evaluation_scale import ValueOverEnum
 
 KING_WEIGHT = 2
 
@@ -42,6 +45,7 @@ class CheckersOverEventDetector:
     """Detect terminal outcomes using chipiron's checkers rules adapter."""
 
     rules: CheckersRules
+    value_over_enum: ValueOverEnum
 
     def check_obvious_over_events(
         self, state: State
@@ -61,15 +65,18 @@ class CheckersOverEventDetector:
                 who_is_winner=who_is_winner,
                 termination=None,
             )
-            value_white = 1.0 if outcome.winner is Color.WHITE else -1.0
-            return over_event, value_white
+            if outcome.winner is Color.WHITE:
+                value_white = self.value_over_enum.VALUE_WHITE_WHEN_OVER_WHITE_WINS
+            else:
+                value_white = self.value_over_enum.VALUE_WHITE_WHEN_OVER_BLACK_WINS
+            return over_event, float(value_white)
 
         over_event = OverEvent(
             how_over=HowOver.DRAW,
             who_is_winner=Winner.NO_KNOWN_WINNER,
             termination=None,
         )
-        return over_event, 0.0
+        return over_event, float(self.value_over_enum.VALUE_WHITE_WHEN_OVER_DRAW)
 
 
 @dataclass(frozen=True)

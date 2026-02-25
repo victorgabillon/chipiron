@@ -15,6 +15,7 @@ from chipiron.environments.checkers.types import (
 )
 from chipiron.environments.types import GameKind
 from chipiron.players.adapters.checkers_adapter import CheckersAdapter
+from chipiron.players.boardevaluators.evaluation_scale import get_value_over_enum
 from chipiron.players.boardevaluators.master_board_evaluator import (
     MasterBoardEvaluatorArgs,
 )
@@ -48,12 +49,14 @@ def build_checkers_master_evaluator(
     rules_adapter: CheckersRulesAdapter,
 ) -> CheckersMasterEvaluator:
     """Build an anemone-compatible master evaluator for checkers."""
-    del evaluator_args
     del value_oracle
     del terminal_oracle
+    value_over_enum = get_value_over_enum(evaluator_args.evaluation_scale)
     return CheckersMasterEvaluator(
         evaluator=CheckersPieceCountEvaluator(),
-        over=CheckersOverEventDetector(rules=rules_adapter),
+        over=CheckersOverEventDetector(
+            rules=rules_adapter, value_over_enum=value_over_enum
+        ),
     )
 
 
