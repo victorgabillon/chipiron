@@ -12,7 +12,7 @@ from chipiron.displays.gui_protocol import (
 )
 from chipiron.environments.chess.types import ChessState
 from chipiron.environments.types import GameKind
-from chipiron.games.game.game_playing_status import PlayingStatus
+from chipiron.games.domain.game.game_playing_status import PlayingStatus
 from chipiron.utils.communication.gui_encoder import GuiEncoder
 
 if TYPE_CHECKING:

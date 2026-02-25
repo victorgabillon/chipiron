@@ -12,8 +12,8 @@ from chipiron.displays.gui_protocol import (
     UpdNeedHumanAction,
     UpdNoHumanActionPending,
 )
-from chipiron.games.game.game_manager import GameManager
-from chipiron.match.domain_events import (
+from chipiron.games.domain.game.game_manager import GameManager
+from chipiron.games.runtime.orchestrator.domain_events import (
     ActionApplied,
     IllegalAction,
     MatchEvent,

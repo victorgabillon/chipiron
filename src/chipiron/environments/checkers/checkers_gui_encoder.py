@@ -12,7 +12,7 @@ from chipiron.environments.checkers.types import (
     CheckersState,
 )
 from chipiron.environments.types import GameKind
-from chipiron.games.game.game_playing_status import PlayingStatus
+from chipiron.games.domain.game.game_playing_status import PlayingStatus
 from chipiron.utils.communication.gui_encoder import GuiEncoder
 
 

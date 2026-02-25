@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Protocol, TypeVar
 from valanga import Dynamics, StateTag
 
 from chipiron.environments.types import GameKind
-from chipiron.games.game.game_rules import GameRules
+from chipiron.games.domain.game.game_rules import GameRules
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.utils.communication.gui_encoder import GuiEncoder
 

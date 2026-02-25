@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
-from chipiron.games.match.match_settings_args import MatchSettingsArgs
-from chipiron.games.match.match_tag import MatchConfigTag
+from chipiron.games.domain.match.match_settings_args import MatchSettingsArgs
+from chipiron.games.domain.match.match_tag import MatchConfigTag
 from chipiron.players import PlayerArgs
 from chipiron.players.player_ids import PlayerConfigTag
 

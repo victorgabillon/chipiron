@@ -10,12 +10,12 @@ from typing import TYPE_CHECKING, cast, no_type_check
 import plotly.graph_objects as go
 from sortedcollections import ValueSortedDict
 
-from chipiron.games.game.game_args import GameArgs
-from chipiron.games.match.match_args import MatchArgs
-from chipiron.games.match.match_factories import create_match_manager
-from chipiron.games.match.match_results import MatchReport, MatchResults
-from chipiron.games.match.match_settings_args import MatchSettingsArgs
-from chipiron.games.match.match_tag import MatchConfigTag
+from chipiron.games.domain.game.game_args import GameArgs
+from chipiron.games.domain.match.match_args import MatchArgs
+from chipiron.games.domain.match.match_factories import create_match_manager
+from chipiron.games.domain.match.match_results import MatchReport, MatchResults
+from chipiron.games.domain.match.match_settings_args import MatchSettingsArgs
+from chipiron.games.domain.match.match_tag import MatchConfigTag
 from chipiron.players.player_args import AnyPlayerArgs
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs

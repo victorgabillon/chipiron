@@ -12,14 +12,14 @@ from valanga.game import ActionKey
 
 import chipiron.players as players_m
 from chipiron.displays.gui_protocol import Scope
-from chipiron.match.domain_events import (
+from chipiron.games.runtime.orchestrator.domain_events import (
     ActionApplied,
     IllegalAction,
     MatchEvent,
     MatchOver,
     NeedAction,
 )
-from chipiron.match.match_orchestrator import MatchOrchestrator
+from chipiron.games.runtime.orchestrator.match_orchestrator import MatchOrchestrator
 from chipiron.players.boardevaluators.board_evaluator import IGameStateEvaluator
 from chipiron.utils import MyPath
 from chipiron.utils.dataclass import custom_asdict_factory
@@ -40,7 +40,7 @@ from .progress_collector import PlayerProgressCollectorP
 if TYPE_CHECKING:
     import queue
 
-    from chipiron.match.match_controller import MatchController
+    from chipiron.games.runtime.orchestrator.match_controller import MatchController
     from chipiron.utils.communication.mailbox import MainMailboxMessage
 
 
