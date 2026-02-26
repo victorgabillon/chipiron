@@ -50,7 +50,7 @@ class ChessFeatureExtractor(FeatureExtractor):
 
         try:
             tactical_threat = bool(board.is_attacked(not valanga_color_to_chess(turn)))
-        except Exception:
+        except (TypeError, AttributeError, ValueError):
             return {}
 
         return {

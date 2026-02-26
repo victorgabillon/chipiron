@@ -1,5 +1,7 @@
 """Environment-level registry for game-specific observer wiring."""
 
+# pylint: disable=import-outside-toplevel
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
@@ -24,13 +26,13 @@ def get_observer_wiring(game_kind: GameKind) -> ObserverWiring[object, object, o
         case GameKind.CHESS:
             from chipiron.environments.chess.players.wiring.chess_wiring import (
                 CHESS_WIRING,
-            )
+            )  # pylint: disable=import-outside-toplevel
 
             return cast("ObserverWiring[object, object, object]", CHESS_WIRING)
         case GameKind.CHECKERS:
             from chipiron.environments.checkers.players.wiring.checkers_wiring import (
                 CHECKERS_WIRING,
-            )
+            )  # pylint: disable=import-outside-toplevel
 
             return cast("ObserverWiring[object, object, object]", CHECKERS_WIRING)
         case _:
