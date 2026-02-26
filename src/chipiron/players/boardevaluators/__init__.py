@@ -1,9 +1,6 @@
-"""Document the module provides board evaluators for the chipiron game.
+"""Generic board-evaluator interfaces shared across games.
 
-The board evaluators are used to evaluate the current state of the game board and assign a value to it.
+This package intentionally keeps only cross-game protocols/wirings and shared
+argument containers. Chess-specific implementations live under
+`chipiron.environments.chess.players.evaluators.boardevaluators`.
 """
-
-from .board_evaluator import StateEvaluator
-from .master_board_evaluator import MasterBoardEvaluator
-
-__all__ = ["MasterBoardEvaluator", "StateEvaluator"]

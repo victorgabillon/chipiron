@@ -13,7 +13,7 @@ from dacite import Config, from_dict
 
 from chipiron.environments.chess.types import ChessState
 from chipiron.environments.types import GameKind
-from chipiron.players.boardevaluators.neural_networks.input_converters.board_to_input import (
+from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.input_converters.board_to_input import (
     create_chess_state_to_input,
 )
 from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (

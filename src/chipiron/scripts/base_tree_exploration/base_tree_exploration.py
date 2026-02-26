@@ -10,13 +10,13 @@ from typing import TYPE_CHECKING
 
 from atomheart.games.chess.board.factory import create_board
 
-from chipiron.players.adapters.chess_syzygy_oracle import (
+from chipiron.environments.chess.players.oracles.chess_syzygy_oracle import (
     ChessSyzygyPolicyOracle,
     ChessSyzygyTerminalOracle,
     ChessSyzygyValueOracle,
 )
-from chipiron.players.boardevaluators.table_base.factory import create_syzygy
-from chipiron.players.factory import create_chess_player
+from chipiron.environments.chess.players.evaluators.boardevaluators.table_base.factory import create_syzygy
+from chipiron.environments.chess.players.factory.factory import create_chess_player
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script import Script
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from atomheart.games.chess.board.utils import FenPlusHistory
 
     from chipiron.environments.chess.types import ChessState
-    from chipiron.players.chess_player_args import ChessPlayerArgs
+    from chipiron.environments.chess.players.args.chess_player_args import ChessPlayerArgs
     from chipiron.players.player import Player
 
 

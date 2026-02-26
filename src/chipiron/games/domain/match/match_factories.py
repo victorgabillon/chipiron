@@ -26,10 +26,10 @@ from chipiron.games.domain.game.game_tag import GameConfigTag
 from chipiron.games.domain.match.match_args import MatchArgs
 from chipiron.games.domain.match.match_manager import MatchManager
 from chipiron.games.domain.match.match_results_factory import MatchResultsFactory
-from chipiron.players.boardevaluators.factory import (
+from chipiron.environments.chess.players.evaluators.boardevaluators.factory import (
     create_game_board_evaluator_for_game_kind,
 )
-from chipiron.players.boardevaluators.table_base.factory import create_syzygy
+from chipiron.environments.chess.players.evaluators.boardevaluators.table_base.factory import create_syzygy
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import MyPath
