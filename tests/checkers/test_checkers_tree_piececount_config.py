@@ -18,7 +18,7 @@ def test_checkers_tree_piececount_yaml_loads() -> None:
     """Checkers config loads with defaults for optional evaluator fields."""
     pytest.importorskip("parsley")
 
-    from chipiron.players.boardevaluators.evaluation_scale import EvaluationScale
+    from chipiron.core.evaluation_scale import EvaluationScale
     from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
         InternalTensorRepresentationType,
     )

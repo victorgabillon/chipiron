@@ -17,7 +17,7 @@ from chipiron.games.domain.game.game_rules import OutcomeKind
 if TYPE_CHECKING:
     from chipiron.environments.checkers.checkers_rules import CheckersRules
     from chipiron.environments.checkers.types import CheckersState
-    from chipiron.players.boardevaluators.evaluation_scale import ValueOverEnum
+    from chipiron.core.evaluation_scale import ValueOverEnum
 
 KING_WEIGHT = 2
 
