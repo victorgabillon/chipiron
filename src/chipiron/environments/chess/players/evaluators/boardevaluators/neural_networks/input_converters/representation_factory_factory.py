@@ -5,8 +5,10 @@ from atomheart.games.chess.board import BoardModificationP
 from valanga.representation_factory import RepresentationFactory
 
 from chipiron.environments.chess.types import ChessState
+from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
+    InternalTensorRepresentationType,
+)
 
-from .model_input_representation_type import InternalTensorRepresentationType
 from .rep_364 import create_from_board as create_from_board_364_no_bug
 from .rep_364 import (
     create_from_state_and_modifications as create_from_state_and_modifications_364_no_bug,

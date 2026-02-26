@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Protocol, cast
+from typing import TYPE_CHECKING, Any, Protocol, TypeGuard, cast
 
 from anemone.dynamics import SearchDynamics
 from valanga import BranchKey, Color, TurnState
@@ -10,7 +10,6 @@ from valanga.evaluations import FloatyStateEvaluation, ForcedOutcome, StateEvalu
 from valanga.game import BranchName, Seed
 from valanga.over_event import HowOver
 from valanga.policy import BranchSelector, NotifyProgressCallable, Recommendation
-
 
 if TYPE_CHECKING:
     from atomheart.games.chess.move.imove import MoveKey
@@ -37,7 +36,16 @@ class RecommendationModifier[StateT: TurnState](Protocol):
 class HasZeroing(Protocol):
     """Capability protocol for states exposing chess zeroing detection."""
 
-    def is_zeroing(self, move: BranchKey) -> bool:
+    @property
+    def board(self) -> "BoardHasZeroing":
+        """Return board supporting chess zeroing detection."""
+        ...
+
+
+class BoardHasZeroing(Protocol):
+    """Protocol for board objects exposing zeroing detection."""
+
+    def is_zeroing(self, move: "MoveKey") -> bool:
         """Return whether a move is a zeroing move."""
         ...
 
@@ -143,15 +151,21 @@ class AccelerateWhenWinning[StateT: TurnState]:
         )
 
 
-def chess_is_zeroing(state: ChessState, branch_key: BranchKey) -> bool:
+def chess_is_zeroing(state: HasZeroing, branch_key: BranchKey) -> bool:
     """Return whether the move corresponding to ``branch_key`` is a zeroing move in ``state``."""
     return state.board.is_zeroing(cast("MoveKey", branch_key))
 
 
+def is_zeroing_state(state: TurnState) -> TypeGuard[HasZeroing]:
+    """Return whether ``state`` exposes a board with ``is_zeroing``."""
+    state_any = cast("Any", state)
+    if not hasattr(state_any, "board"):
+        return False
+    return hasattr(state_any.board, "is_zeroing")
+
+
 def chess_progress_gain_zeroing(state: TurnState, branch_key: BranchKey) -> float:
-    """Return 1.0 for zeroing moves and 0.0 for non-zeroing moves, or if state is not ChessState."""
-    # Widened signature => compatible with ProgressGainFn
-    if not isinstance(state, ChessState):
-        # either 0.0, or raise if you want strictness
+    """Return 1.0 for zeroing moves and 0.0 for non-zeroing moves or unsupported states."""
+    if not is_zeroing_state(state):
         return 0.0
-    return 1.0 if chess_is_zeroing(state, branch_key) else 0.0
+    return 1.0 if state.board.is_zeroing(cast("MoveKey", branch_key)) else 0.0

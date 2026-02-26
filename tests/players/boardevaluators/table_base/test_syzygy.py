@@ -20,7 +20,9 @@ if TYPE_CHECKING:
     from atomheart.games.chess.board.rusty_board import RustyBoardChi
     from atomheart.games.chess.move.imove import MoveKey
 
-    from chipiron.environments.chess.players.evaluators.boardevaluators.table_base import SyzygyTable
+    from chipiron.environments.chess.players.evaluators.boardevaluators.table_base import (
+        SyzygyTable,
+    )
 
 
 def test_best_move_syzygy_table() -> None:

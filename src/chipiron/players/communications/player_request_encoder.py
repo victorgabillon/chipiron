@@ -29,10 +29,20 @@ class BoardWithFenHistory(Protocol):
 class HasFenHistoryState(Protocol):
     """Protocol for chess-like runtime states used by move request encoding."""
 
-    tag: Any
-    turn: Any
-    board: BoardWithFenHistory
+    @property
+    def tag(self) -> Any:
+        """Return state tag."""
+        ...
 
+    @property
+    def turn(self) -> Any:
+        """Return side to move."""
+        ...
+
+    @property
+    def board(self) -> BoardWithFenHistory:
+        """Return board supporting FEN+history snapshots."""
+        ...
 
 
 class PlayerRequestEncoderError(ValueError):
@@ -60,7 +70,9 @@ class PlayerRequestEncoder(Protocol[StateT_contra, StateSnapT]):
 
 
 @dataclass(frozen=True, slots=True)
-class ChessPlayerRequestEncoder(PlayerRequestEncoder[HasFenHistoryState, FenPlusHistory]):
+class ChessPlayerRequestEncoder(
+    PlayerRequestEncoder[HasFenHistoryState, FenPlusHistory]
+):
     """Chess-specific move request encoder."""
 
     game_kind: GameKind = GameKind.CHESS
@@ -126,13 +138,3 @@ def make_player_request_encoder[StateT](
             )
         case _:
             raise PlayerRequestEncoderError(game_kind)
-
-
-# Backwards-compatible alias (older code imports make_player_encoder)
-def make_player_encoder[StateT](
-    *,
-    game_kind: GameKind,
-    state_type: type[StateT],
-) -> PlayerRequestEncoder[StateT, Any]:
-    """Backward-compatible alias for make_player_request_encoder."""
-    return make_player_request_encoder(game_kind=game_kind, state_type=state_type)

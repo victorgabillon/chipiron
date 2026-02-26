@@ -2,7 +2,7 @@
 
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.factory import create_script
-from chipiron.scripts.script_gui.script_gui_custom import (
+from chipiron.scripts.gui_launcher import (
     ArgsChosenByUser,
     ScriptGUIType,
     generate_inputs,

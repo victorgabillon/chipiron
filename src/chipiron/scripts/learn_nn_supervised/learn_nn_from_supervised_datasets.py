@@ -41,14 +41,6 @@ from torch.utils.data import DataLoader
 from torchinfo import summary  # pyright: ignore[reportUnknownVariableType]
 
 import chipiron.utils.path_variables
-from chipiron.environments.chess.types import ChessState
-from chipiron.learningprocesses.nn_trainer.factory import (
-    NNTrainerArgs,
-    create_nn_trainer,
-    safe_nn_architecture_save,
-    safe_nn_param_save,
-    safe_nn_trainer_save,
-)
 from chipiron.environments.chess.players.evaluators.boardevaluators.datasets.datasets import (
     DataSetArgs,
     FenAndValueData,
@@ -61,6 +53,14 @@ from chipiron.environments.chess.players.evaluators.boardevaluators.neural_netwo
     create_content_to_input_convert,
     create_content_to_input_from_model_weights,
     save_chipiron_nn_args,
+)
+from chipiron.environments.chess.types import ChessState
+from chipiron.learningprocesses.nn_trainer.factory import (
+    NNTrainerArgs,
+    create_nn_trainer,
+    safe_nn_architecture_save,
+    safe_nn_param_save,
+    safe_nn_trainer_save,
 )
 from chipiron.scripts.script import Script
 from chipiron.scripts.script_args import BaseScriptArgs

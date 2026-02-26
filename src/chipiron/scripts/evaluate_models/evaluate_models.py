@@ -20,9 +20,6 @@ from coral.neural_networks.factory import (
 )
 from torch.utils.data import DataLoader
 
-from chipiron.learningprocesses.nn_trainer.nn_trainer import (
-    compute_test_error_on_dataset,
-)
 from chipiron.environments.chess.players.evaluators.boardevaluators.datasets.datasets import (
     FenAndValueData,
     FenAndValueDataSet,
@@ -32,6 +29,9 @@ from chipiron.environments.chess.players.evaluators.boardevaluators.datasets.dat
 from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chipiron_nn_args import (
     create_content_to_input_from_model_weights,
     load_chipiron_nn_args,
+)
+from chipiron.learningprocesses.nn_trainer.nn_trainer import (
+    compute_test_error_on_dataset,
 )
 from chipiron.utils import MyPath
 from chipiron.utils.path_runtime import get_default_output_dir

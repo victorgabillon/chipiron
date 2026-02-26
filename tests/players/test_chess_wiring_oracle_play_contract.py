@@ -1,12 +1,15 @@
+"""Contract test for chess wiring oracle-play usage."""
+
 import ast
 from pathlib import Path
 
-SOURCE_PATH = Path("src/chipiron/players/wirings/chess_wiring.py")
+SOURCE_PATH = Path("src/chipiron/environments/chess/players/wiring/chess_wiring.py")
 SOURCE = SOURCE_PATH.read_text(encoding="utf-8")
 TREE = ast.parse(SOURCE)
 
 
 def test_build_chess_game_player_checks_oracle_play_flag() -> None:
+    """Assert chess wiring build function references oracle_play flag."""
     function_node = next(
         node
         for node in TREE.body

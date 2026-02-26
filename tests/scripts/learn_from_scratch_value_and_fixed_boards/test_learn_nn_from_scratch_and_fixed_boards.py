@@ -8,7 +8,9 @@ from parsley import make_partial_dataclass_with_optional_paths
 
 from chipiron import scripts
 from chipiron.learningprocesses.nn_trainer.factory import NNTrainerArgs
-from chipiron.environments.chess.players.evaluators.boardevaluators.datasets.datasets import DataSetArgs
+from chipiron.environments.chess.players.evaluators.boardevaluators.datasets.datasets import (
+    DataSetArgs,
+)
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.factory import create_script
 from chipiron.scripts.learn_from_scratch_value_and_fixed_boards.learn_from_scratch_value_and_fixed_boards import (

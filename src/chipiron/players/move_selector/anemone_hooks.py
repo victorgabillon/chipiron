@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-import importlib
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from anemone.hooks.search_hooks import FeatureExtractor
 from atomheart.utils.color import valanga_color_to_chess
 
-ChessState = importlib.import_module("chipiron.environments.chess.types").ChessState
-
+from chipiron.environments.chess.types import ChessState
 
 if TYPE_CHECKING:
     from collections.abc import Mapping

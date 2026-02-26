@@ -10,7 +10,6 @@ from coral.neural_networks.models.transformer_one import (
     TransformerArgs,
 )
 
-from chipiron.environments.chess.types import ChessState
 from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.board_to_tensor import (
     transform_board_pieces_one_side,
     transform_board_pieces_two_sides,
@@ -18,15 +17,16 @@ from chipiron.environments.chess.players.evaluators.boardevaluators.neural_netwo
 from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.input_converters.board_to_transformer_input import (
     build_transformer_input,
 )
+from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
+    create_board_representation_factory,
+)
+from chipiron.environments.chess.types import ChessState
 from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
     InternalTensorRepresentationType,
     ModelInputRepresentationType,
 )
 from chipiron.players.boardevaluators.neural_networks.input_converters.representation_364_bti import (
     RepresentationBTI,
-)
-from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
-    create_board_representation_factory,
 )
 
 if TYPE_CHECKING:

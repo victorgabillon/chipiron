@@ -5,7 +5,9 @@ from typing import Literal
 
 from coral.neural_networks.neural_net_board_eval_args import NeuralNetBoardEvalArgs
 
-from chipiron.environments.chess.players.evaluators.boardevaluators.board_evaluator_type import BoardEvalTypes
+from chipiron.environments.chess.players.evaluators.boardevaluators.board_evaluator_type import (
+    BoardEvalTypes,
+)
 from chipiron.environments.chess.players.evaluators.boardevaluators.stockfish_board_evaluator import (
     StockfishBoardEvalArgs,
 )

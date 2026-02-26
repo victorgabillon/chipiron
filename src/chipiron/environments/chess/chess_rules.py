@@ -5,6 +5,9 @@ from dataclasses import dataclass
 from valanga import Color
 from valanga.over_event import HowOver, Winner
 
+from chipiron.environments.chess.players.evaluators.boardevaluators.table_base.factory import (
+    AnySyzygyTable,
+)
 from chipiron.environments.chess.types import ChessState
 from chipiron.games.domain.game.game_rules import (
     GameOutcome,
@@ -13,7 +16,6 @@ from chipiron.games.domain.game.game_rules import (
     PositionAssessment,
     VerdictKind,
 )
-from chipiron.environments.chess.players.evaluators.boardevaluators.table_base.factory import AnySyzygyTable
 
 
 class ChessRulesError(ValueError):
