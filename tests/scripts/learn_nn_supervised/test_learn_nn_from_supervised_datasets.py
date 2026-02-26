@@ -8,7 +8,9 @@ from parsley import make_partial_dataclass_with_optional_paths
 from chipiron import scripts
 from chipiron.environments.types import GameKind
 from chipiron.learningprocesses.nn_trainer.factory import GameInputArgs, NNTrainerArgs
-from chipiron.environments.chess.players.evaluators.boardevaluators.datasets.datasets import DataSetArgs
+from chipiron.environments.chess.players.evaluators.boardevaluators.datasets.datasets import (
+    DataSetArgs,
+)
 from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
     ModelInputRepresentationType,
 )

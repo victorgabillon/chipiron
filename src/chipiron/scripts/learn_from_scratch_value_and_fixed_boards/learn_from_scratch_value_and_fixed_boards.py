@@ -30,14 +30,6 @@ from torch.utils.data import DataLoader
 from torchinfo import summary  # pyright: ignore[reportUnknownVariableType]
 
 import chipiron
-from chipiron.environments.chess.types import ChessState
-from chipiron.learningprocesses.nn_trainer.factory import NNTrainerArgs
-from chipiron.players import PlayerArgs
-from chipiron.environments.chess.players.oracles.chess_syzygy_oracle import (
-    ChessSyzygyPolicyOracle,
-    ChessSyzygyTerminalOracle,
-    ChessSyzygyValueOracle,
-)
 from chipiron.environments.chess.players.evaluators.boardevaluators.datasets.datasets import (
     DataSetArgs,
     FenAndValueDataSet,
@@ -52,6 +44,14 @@ from chipiron.environments.chess.players.evaluators.boardevaluators.table_base.f
     create_syzygy,
 )
 from chipiron.environments.chess.players.factory.factory import create_chess_player
+from chipiron.environments.chess.players.oracles.chess_syzygy_oracle import (
+    ChessSyzygyPolicyOracle,
+    ChessSyzygyTerminalOracle,
+    ChessSyzygyValueOracle,
+)
+from chipiron.environments.chess.types import ChessState
+from chipiron.learningprocesses.nn_trainer.factory import NNTrainerArgs
+from chipiron.players import PlayerArgs
 from chipiron.players.move_selector.random_args import RandomSelectorArgs
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs

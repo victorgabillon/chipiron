@@ -15,19 +15,20 @@ from chipiron.core.evaluation_scale import (
     get_value_over_enum,
 )
 from chipiron.core.oracles import TerminalOracle, ValueOracle
-from chipiron.environments.chess.types import ChessState
-from chipiron.environments.chess.players.evaluators.boardevaluators import basic_evaluation
-from chipiron.players.boardevaluators.all_board_evaluator_args import (
-    BasicEvaluationBoardEvaluatorArgs,
+from chipiron.environments.chess.players.evaluators.boardevaluators import (
+    basic_evaluation,
 )
 from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chipiron_nn_args import (
     create_content_to_input_from_model_weights,
 )
+from chipiron.environments.chess.types import ChessState
+from chipiron.players.boardevaluators.all_board_evaluator_args import (
+    BasicEvaluationBoardEvaluatorArgs,
+)
+from chipiron.players.boardevaluators.board_evaluator import StateEvaluator
 from chipiron.players.boardevaluators.master_board_evaluator_args import (
     MasterBoardEvaluatorArgs,
 )
-
-from .board_evaluator import StateEvaluator
 
 
 class MasterBoardEvaluatorError(ValueError):
@@ -256,32 +257,4 @@ def create_master_state_evaluator_from_args(
         value_oracle=value_oracle_,
         terminal_oracle=terminal_oracle_,
         evaluation_scale=master_board_evaluator.evaluation_scale,
-    )
-
-
-def create_master_board_evaluator(
-    board_evaluator: StateEvaluator[ChessState],
-    value_oracle: ValueOracle[ChessState] | None,
-    terminal_oracle: TerminalOracle[ChessState] | None,
-    evaluation_scale: EvaluationScale,
-) -> MasterBoardEvaluator:
-    """Backward-compatible wrapper for older callers."""
-    return create_master_state_evaluator(
-        board_evaluator=board_evaluator,
-        value_oracle=value_oracle,
-        terminal_oracle=terminal_oracle,
-        evaluation_scale=evaluation_scale,
-    )
-
-
-def create_master_board_evaluator_from_args(
-    master_board_evaluator: MasterBoardEvaluatorArgs,
-    value_oracle: ValueOracle[ChessState] | None,
-    terminal_oracle: TerminalOracle[ChessState] | None,
-) -> MasterBoardEvaluator:
-    """Backward-compatible wrapper for older callers."""
-    return create_master_state_evaluator_from_args(
-        master_board_evaluator=master_board_evaluator,
-        value_oracle=value_oracle,
-        terminal_oracle=terminal_oracle,
     )

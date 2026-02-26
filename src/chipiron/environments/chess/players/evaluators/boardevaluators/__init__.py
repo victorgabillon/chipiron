@@ -1,9 +1,7 @@
-"""Document the module provides board evaluators for the chipiron game.
+"""Chess-specific board evaluators.
 
-The board evaluators are used to evaluate the current state of the game board and assign a value to it.
+Avoid importing concrete implementations at package import time
+to prevent circular imports.
 """
 
-from .board_evaluator import StateEvaluator
-from .master_board_evaluator import MasterBoardEvaluator
-
-__all__ = ["MasterBoardEvaluator", "StateEvaluator"]
+__all__: list[str] = []

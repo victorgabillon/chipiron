@@ -5,7 +5,9 @@ from typing import Literal
 
 from anemone import TreeAndValuePlayerArgs as AnemoneTreeArgs
 
-from chipiron.players.boardevaluators.master_board_evaluator_args import MasterBoardEvaluatorArgs
+from chipiron.players.boardevaluators.master_board_evaluator_args import (
+    MasterBoardEvaluatorArgs,
+)
 from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
     InternalTensorRepresentationType,
 )

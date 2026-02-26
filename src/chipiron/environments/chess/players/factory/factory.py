@@ -15,19 +15,15 @@ from valanga import Color
 from valanga.policy import BranchSelector
 
 from chipiron.core.oracles import PolicyOracle, TerminalOracle, ValueOracle
-from chipiron.environments.chess.types import ChessState
-from chipiron.environments.types import GameKind
 from chipiron.environments.chess.players.adapters.chess_adapter import ChessAdapter
-from chipiron.environments.chess.players.oracles.chess_syzygy_oracle import (
-    ChessSyzygyPolicyOracle,
-    ChessSyzygyTerminalOracle,
-    ChessSyzygyValueOracle,
+from chipiron.environments.chess.players.args.chess_player_args import (
+    ChessPlayerArgs,
+    ChessPlayerFactoryArgs,
 )
 from chipiron.environments.chess.players.evaluators.boardevaluators.anemone_adapter import (
     MasterBoardEvaluatorAsAnemone,
     MasterBoardOverEventDetector,
 )
-from chipiron.players.boardevaluators.master_board_evaluator_args import MasterBoardEvaluatorArgs
 from chipiron.environments.chess.players.evaluators.boardevaluators.master_board_evaluator import (
     create_master_state_evaluator_from_args,
 )
@@ -35,21 +31,26 @@ from chipiron.environments.chess.players.evaluators.boardevaluators.table_base.f
     AnySyzygyTable,
     create_syzygy,
 )
-from chipiron.environments.chess.players.args.chess_player_args import (
-    ChessPlayerArgs,
-    ChessPlayerFactoryArgs,
+from chipiron.environments.chess.players.oracles.chess_syzygy_oracle import (
+    ChessSyzygyPolicyOracle,
+    ChessSyzygyTerminalOracle,
+    ChessSyzygyValueOracle,
 )
+from chipiron.environments.chess.types import ChessState
+from chipiron.environments.types import GameKind
+from chipiron.players import move_selector
+from chipiron.players.boardevaluators.master_board_evaluator_args import (
+    MasterBoardEvaluatorArgs,
+)
+from chipiron.players.factory_pipeline import create_player_with_pipeline
+from chipiron.players.game_player import GamePlayer
 from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
+from chipiron.players.player import Player
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.queue_protocols import PutQueue
-
-from chipiron.players import move_selector
-from chipiron.players.factory_pipeline import create_player_with_pipeline
-from chipiron.players.game_player import GamePlayer
-from chipiron.players.player import Player
 
 if TYPE_CHECKING:
     from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (

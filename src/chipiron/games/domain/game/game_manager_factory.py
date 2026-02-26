@@ -29,10 +29,8 @@ from chipiron.players.boardevaluators.board_evaluator import (
 )
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.utils import MyPath
-from chipiron.utils.communication.gui_messages.gui_messages import (
-    make_players_info_payload,
-)
 from chipiron.utils.communication.mailbox import MainMailboxMessage
+from chipiron.utils.communication.player_ui_info import make_players_info_payload
 
 from .game import Game, ObservableGame
 from .game_manager import GameManager

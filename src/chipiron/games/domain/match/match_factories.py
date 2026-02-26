@@ -13,6 +13,12 @@ from parsley import resolve_extended_object
 
 import chipiron as ch
 from chipiron import players
+from chipiron.environments.chess.players.evaluators.boardevaluators.factory import (
+    create_game_board_evaluator_for_game_kind,
+)
+from chipiron.environments.chess.players.evaluators.boardevaluators.table_base.factory import (
+    create_syzygy,
+)
 from chipiron.environments.deps import (
     CheckersEnvironmentDeps,
     ChessEnvironmentDeps,
@@ -26,10 +32,6 @@ from chipiron.games.domain.game.game_tag import GameConfigTag
 from chipiron.games.domain.match.match_args import MatchArgs
 from chipiron.games.domain.match.match_manager import MatchManager
 from chipiron.games.domain.match.match_results_factory import MatchResultsFactory
-from chipiron.environments.chess.players.evaluators.boardevaluators.factory import (
-    create_game_board_evaluator_for_game_kind,
-)
-from chipiron.environments.chess.players.evaluators.boardevaluators.table_base.factory import create_syzygy
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import MyPath

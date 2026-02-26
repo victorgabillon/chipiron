@@ -60,7 +60,10 @@ def _select_wiring(game_kind: GameKind) -> ObserverWiring[object, object, object
             chess_wiring_module = importlib.import_module(
                 "chipiron.environments.chess.players.wiring.chess_wiring"
             )
-            return cast("ObserverWiring[object, object, object]", chess_wiring_module.CHESS_WIRING)
+            return cast(
+                "ObserverWiring[object, object, object]",
+                chess_wiring_module.CHESS_WIRING,
+            )
         case GameKind.CHECKERS:
             return cast("ObserverWiring[object, object, object]", CHECKERS_WIRING)
         case _:

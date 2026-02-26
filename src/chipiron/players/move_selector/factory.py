@@ -27,11 +27,6 @@ from chipiron.players.move_selector.move_selector_args import NonTreeMoveSelecto
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.utils.logger import chipiron_logger
 
-_chess_types = importlib.import_module("chipiron.environments.chess.types")
-ChessState = _chess_types.ChessState
-_chess_dyn = importlib.import_module("chipiron.environments.chess.search_dynamics")
-ChessCopyStackSearchDynamics = _chess_dyn.ChessCopyStackSearchDynamics
-
 from .anemone_hooks import ChessFeatureExtractor
 from .modifiers import (
     AccelerateWhenWinning,
@@ -157,18 +152,28 @@ def create_tree_and_value_move_selector[TurnStateT: TurnState](
         if implementation_args is not None
         else None
     )
-    if (
-        addon is not None
-        and addon.type is SearchDynamicsAddonType.CHESS_COPY_STACK
-        and issubclass(state_type, ChessState)
-    ):
-        chess_base = cast("SearchDynamics[ChessState, Any]", search_dynamics)
-        wrapped = ChessCopyStackSearchDynamics(
-            base=chess_base,
-            copy_stack_until_depth=addon.copy_stack_until_depth,
-            deep_copy_legal_moves=addon.deep_copy_legal_moves,
-        )
-        search_dynamics = cast("SearchDynamics[TurnStateT, Any]", wrapped)
+    if addon is not None and addon.type is SearchDynamicsAddonType.CHESS_COPY_STACK:
+        chess_types = importlib.import_module("chipiron.environments.chess.types")
+        chess_state_type = cast("type[object]", chess_types.ChessState)
+
+        if issubclass(state_type, chess_state_type):
+            chess_dyn = importlib.import_module(
+                "chipiron.environments.chess.search_dynamics"
+            )
+            chess_copy_stack_search_dynamics_type = cast(
+                "type[object]", chess_dyn.ChessCopyStackSearchDynamics
+            )
+
+            chess_base = cast("SearchDynamics[Any, Any]", search_dynamics)
+            chess_copy_stack_search_dynamics_ctor = cast(
+                "Any", chess_copy_stack_search_dynamics_type
+            )
+            wrapped = chess_copy_stack_search_dynamics_ctor(
+                base=chess_base,
+                copy_stack_until_depth=addon.copy_stack_until_depth,
+                deep_copy_legal_moves=addon.deep_copy_legal_moves,
+            )
+            search_dynamics = cast("SearchDynamics[TurnStateT, Any]", wrapped)
 
     base_selector = create_tree_and_value_branch_selector(
         state_type=state_type,

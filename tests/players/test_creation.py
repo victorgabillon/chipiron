@@ -3,7 +3,10 @@
 import random
 from typing import TYPE_CHECKING
 
-from chipiron.environments.chess.players.factory.factory import create_chipiron_player, create_tag_player
+from chipiron.environments.chess.players.factory.factory import (
+    create_chipiron_player,
+    create_tag_player,
+)
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 

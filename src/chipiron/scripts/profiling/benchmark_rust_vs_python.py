@@ -37,7 +37,9 @@ from chipiron.utils.logger import (
 if TYPE_CHECKING:
     from atomheart.games.chess.move.imove import MoveKey
 
-    from chipiron.environments.chess.players.args.chess_player_args import ChessPlayerArgs
+    from chipiron.environments.chess.players.args.chess_player_args import (
+        ChessPlayerArgs,
+    )
 
 
 # Suppress PyTorch CUDA warnings for benchmarking
@@ -54,7 +56,9 @@ try:
     from atomheart.games.chess.board.factory import create_board
     from atomheart.games.chess.board.utils import FenPlusHistory
 
-    from chipiron.environments.chess.players.evaluators.boardevaluators.table_base.factory import create_syzygy
+    from chipiron.environments.chess.players.evaluators.boardevaluators.table_base.factory import (
+        create_syzygy,
+    )
     from chipiron.environments.chess.players.factory.factory import create_player
     from chipiron.players.player_ids import PlayerConfigTag
     from chipiron.scripts.chipiron_args import ImplementationArgs

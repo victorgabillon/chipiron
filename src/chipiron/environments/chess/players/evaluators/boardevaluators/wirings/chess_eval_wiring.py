@@ -9,13 +9,9 @@ from coral.neural_networks.factory import (
 )
 from coral.neural_networks.neural_net_board_eval_args import NeuralNetBoardEvalArgs
 
-from chipiron.environments.chess.types import ChessState
-from chipiron.players.boardevaluators.all_board_evaluator_args import (
-    AllBoardEvaluatorArgs,
-    BasicEvaluationBoardEvaluatorArgs,
+from chipiron.environments.chess.players.evaluators.boardevaluators.basic_evaluation import (
+    BasicEvaluation,
 )
-from chipiron.environments.chess.players.evaluators.boardevaluators.basic_evaluation import BasicEvaluation
-from chipiron.players.boardevaluators.board_evaluator import StateEvaluator
 from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chipiron_nn_args import (
     create_content_to_input_from_model_weights,
 )
@@ -23,6 +19,12 @@ from chipiron.environments.chess.players.evaluators.boardevaluators.stockfish_bo
     StockfishBoardEvalArgs,
     StockfishBoardEvaluator,
 )
+from chipiron.environments.chess.types import ChessState
+from chipiron.players.boardevaluators.all_board_evaluator_args import (
+    AllBoardEvaluatorArgs,
+    BasicEvaluationBoardEvaluatorArgs,
+)
+from chipiron.players.boardevaluators.board_evaluator import StateEvaluator
 from chipiron.utils.logger import chipiron_logger
 
 
