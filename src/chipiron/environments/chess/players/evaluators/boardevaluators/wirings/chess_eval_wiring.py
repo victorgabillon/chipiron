@@ -14,12 +14,12 @@ from chipiron.players.boardevaluators.all_board_evaluator_args import (
     AllBoardEvaluatorArgs,
     BasicEvaluationBoardEvaluatorArgs,
 )
-from chipiron.players.boardevaluators.basic_evaluation import BasicEvaluation
+from chipiron.environments.chess.players.evaluators.boardevaluators.basic_evaluation import BasicEvaluation
 from chipiron.players.boardevaluators.board_evaluator import StateEvaluator
-from chipiron.players.boardevaluators.neural_networks.chipiron_nn_args import (
+from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chipiron_nn_args import (
     create_content_to_input_from_model_weights,
 )
-from chipiron.players.boardevaluators.stockfish_board_evaluator import (
+from chipiron.environments.chess.players.evaluators.boardevaluators.stockfish_board_evaluator import (
     StockfishBoardEvalArgs,
     StockfishBoardEvaluator,
 )

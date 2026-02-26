@@ -8,7 +8,6 @@ from valanga.game import Seed
 
 from chipiron.displays.gui_protocol import Scope
 from chipiron.environments.checkers.types import CheckersState
-from chipiron.environments.chess.types import ChessState
 from chipiron.environments.types import GameKind
 from chipiron.players.communications.player_message import (
     PlayerRequest,
@@ -17,6 +16,23 @@ from chipiron.players.communications.player_message import (
 
 StateT_contra = TypeVar("StateT_contra", contravariant=True)
 StateSnapT = TypeVar("StateSnapT", default=Any)
+
+
+class BoardWithFenHistory(Protocol):
+    """Protocol for boards that can export FEN+history snapshots."""
+
+    def into_fen_plus_history(self) -> FenPlusHistory:
+        """Return a FEN snapshot enriched with history."""
+        ...
+
+
+class HasFenHistoryState(Protocol):
+    """Protocol for chess-like runtime states used by move request encoding."""
+
+    tag: Any
+    turn: Any
+    board: BoardWithFenHistory
+
 
 
 class PlayerRequestEncoderError(ValueError):
@@ -44,13 +60,13 @@ class PlayerRequestEncoder(Protocol[StateT_contra, StateSnapT]):
 
 
 @dataclass(frozen=True, slots=True)
-class ChessPlayerRequestEncoder(PlayerRequestEncoder[ChessState, FenPlusHistory]):
+class ChessPlayerRequestEncoder(PlayerRequestEncoder[HasFenHistoryState, FenPlusHistory]):
     """Chess-specific move request encoder."""
 
     game_kind: GameKind = GameKind.CHESS
 
     def make_move_request(
-        self, *, state: ChessState, seed: Seed, scope: Scope
+        self, *, state: HasFenHistoryState, seed: Seed, scope: Scope
     ) -> PlayerRequest[FenPlusHistory]:
         """Encode a chess move request using FEN history."""
         fen_plus_history: FenPlusHistory = state.board.into_fen_plus_history()

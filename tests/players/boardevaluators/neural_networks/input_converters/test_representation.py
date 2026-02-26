@@ -17,7 +17,7 @@ from chipiron.environments.chess.types import ChessState
 from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
     InternalTensorRepresentationType,
 )
-from chipiron.players.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
+from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
     create_board_representation_factory,
 )
 

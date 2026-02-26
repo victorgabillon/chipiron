@@ -23,13 +23,13 @@ from torch.utils.data import DataLoader
 from chipiron.learningprocesses.nn_trainer.nn_trainer import (
     compute_test_error_on_dataset,
 )
-from chipiron.players.boardevaluators.datasets.datasets import (
+from chipiron.environments.chess.players.evaluators.boardevaluators.datasets.datasets import (
     FenAndValueData,
     FenAndValueDataSet,
     custom_collate_fn_fen_and_value,
     process_stockfish_value,  # pyright: ignore[reportUnknownVariableType]
 )
-from chipiron.players.boardevaluators.neural_networks.chipiron_nn_args import (
+from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chipiron_nn_args import (
     create_content_to_input_from_model_weights,
     load_chipiron_nn_args,
 )

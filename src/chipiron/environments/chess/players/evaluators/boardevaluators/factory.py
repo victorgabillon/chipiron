@@ -4,7 +4,7 @@ from typing import Any, Literal, assert_never, overload
 
 from chipiron.environments.chess.types import ChessState
 from chipiron.environments.types import GameKind
-from chipiron.players.boardevaluators.wirings.chess_eval_wiring import ChessEvalWiring
+from chipiron.environments.chess.players.evaluators.boardevaluators.wirings.chess_eval_wiring import ChessEvalWiring
 from chipiron.players.boardevaluators.wirings.null_eval_wiring import NullEvalWiring
 from chipiron.players.boardevaluators.wirings.protocols import EvaluatorWiring
 

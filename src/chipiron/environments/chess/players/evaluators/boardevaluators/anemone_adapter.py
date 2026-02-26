@@ -8,7 +8,7 @@ from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import
 )
 from valanga import State
 
-from chipiron.players.boardevaluators.master_board_evaluator import MasterBoardEvaluator
+from chipiron.environments.chess.players.evaluators.boardevaluators.master_board_evaluator import MasterBoardEvaluator
 
 if TYPE_CHECKING:
     from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (

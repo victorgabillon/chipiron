@@ -5,7 +5,7 @@ from typing import Literal
 
 from anemone import TreeAndValuePlayerArgs as AnemoneTreeArgs
 
-from chipiron.players.boardevaluators import master_board_evaluator
+from chipiron.players.boardevaluators.master_board_evaluator_args import MasterBoardEvaluatorArgs
 from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
     InternalTensorRepresentationType,
 )
@@ -26,7 +26,7 @@ class NodeEvaluatorArgs:
     """
 
     # The arguments for the master board evaluator.
-    master_board_evaluator: master_board_evaluator.MasterBoardEvaluatorArgs
+    master_board_evaluator: MasterBoardEvaluatorArgs
 
     # The internal representation type used by the node evaluator.
     internal_representation_type: InternalTensorRepresentationType | None = None
