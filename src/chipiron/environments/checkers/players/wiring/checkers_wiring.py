@@ -22,7 +22,7 @@ from chipiron.environments.checkers.types import (
     CheckersState,
 )
 from chipiron.environments.types import GameKind
-from chipiron.players.boardevaluators.evaluation_scale import get_value_over_enum
+from chipiron.core.evaluation_scale import get_value_over_enum
 from chipiron.players.boardevaluators.master_board_evaluator import (
     MasterBoardEvaluatorArgs,
 )
@@ -30,7 +30,7 @@ from chipiron.players.factory_pipeline import create_player_with_pipeline
 from chipiron.players.game_player import GamePlayer
 from chipiron.players.move_selector import factory as move_selector_factory
 from chipiron.players.observer_wiring import ObserverWiring
-from chipiron.players.oracles import TerminalOracle, ValueOracle
+from chipiron.core.oracles import TerminalOracle, ValueOracle
 from chipiron.players.player_args import PlayerFactoryArgs
 
 
