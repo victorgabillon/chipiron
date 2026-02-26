@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol
 
 import atomheart.games.chess.board as boards
 import chess.engine
@@ -11,11 +11,19 @@ from atomheart.games.chess.board.utils import FenPlusHistory
 from valanga.game import BranchName, Seed
 from valanga.policy import NotifyProgressCallable, Recommendation
 
-from chipiron.environments.chess.types import ChessState
 from chipiron.utils.path_variables import STOCKFISH_BINARY_PATH
 
 if TYPE_CHECKING:
     from atomheart import BoardChi
+
+
+class ChessLikeState(Protocol):
+    """Protocol for states exposing a chess board."""
+
+    @property
+    def board(self) -> boards.IBoard:
+        """Return board."""
+        ...
 
 
 class StockfishError(RuntimeError):
@@ -67,7 +75,7 @@ class StockfishSelector:
 
     def recommend(
         self,
-        state: ChessState,
+        state: ChessLikeState,
         seed: Seed,
         notify_progress: NotifyProgressCallable | None = None,
     ) -> Recommendation:

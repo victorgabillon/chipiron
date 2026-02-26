@@ -3,17 +3,37 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol
 
 from anemone.hooks.search_hooks import FeatureExtractor
 from atomheart.utils.color import valanga_color_to_chess
 
-from chipiron.environments.chess.types import ChessState
-
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from valanga import Color, TurnState
+    from valanga import TurnState
+
+
+class BoardWithAttackCheck(Protocol):
+    """Board protocol with attack-query capability."""
+
+    def is_attacked(self, color: object) -> bool:
+        """Return whether a side is currently attacked."""
+        ...
+
+
+class ChessLikeState(Protocol):
+    """State protocol with chess board and turn accessors."""
+
+    @property
+    def board(self) -> BoardWithAttackCheck:
+        """Return board-like object with attack checks."""
+        ...
+
+    @property
+    def turn(self) -> object:
+        """Return side to move."""
+        ...
 
 
 @dataclass(frozen=True)
@@ -22,17 +42,16 @@ class ChessFeatureExtractor(FeatureExtractor):
 
     def features(self, state: TurnState) -> Mapping[str, Any]:
         """Return a stable set of optional features for priority checks."""
-        if not isinstance(state, ChessState):
+        board = getattr(state, "board", None)
+        turn = getattr(state, "turn", None)
+
+        if board is None or turn is None or not hasattr(board, "is_attacked"):
             return {}
 
-        tactical_threat = False
-
-        assert isinstance(state, ChessState)
-        player_to_move: Color = state.turn
-
-        tactical_threat = bool(
-            state.board.is_attacked(not valanga_color_to_chess(player_to_move))
-        )
+        try:
+            tactical_threat = bool(board.is_attacked(not valanga_color_to_chess(turn)))
+        except Exception:
+            return {}
 
         return {
             "tactical_threat": tactical_threat,
