@@ -1,48 +1,108 @@
-.idea
-.vscode
-.tox
-.mypy_cache
+# =========================
+# IDE / Editor / OS
+# =========================
+.idea/
+.vscode/
+.DS_Store
 
-chipiron/.idea
-chipiron/.ipynb_checkpoints
-__pycache__
+# Notebook / Python caches
+__pycache__/
+.ipynb_checkpoints/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
 
-build/*
+# Tox / virtual env tooling
+.tox/
+*.egg-info/
 
-data/syzygy-tables/
-data/gui/*
-data/datasets/*
-data/players/board_evaluators/nn*
+# Coverage
+.coverage
+coverage.xml
+htmlcov/
 
+# Build / dist
+build/
 dist/
 
-external_data/*
+# Local environment configuration
+.env.local
+
+# Local zips / ad-hoc bundles
+*.zip
+
+# =========================
+# External / heavy data (never commit)
+# =========================
+external_data/
 !external_data/.gitkeep
 
-docs/_build/
+# If you sometimes put these under repo-root data/
+data/syzygy-tables/
+data/datasets/
+data/gui/
 
-stockfish/*
-.coverage
+# Stockfish binaries (if you ever have them under repo root)
+stockfish/
 
+# MLFlow runs
 mlruns/
+*.db
 
-chipiron/scripts/league/league_data/*
-chipiron/scripts/*/outputs/*
-chipiron/scripts/*/test_outputs/*
+# =========================
+# Weights / checkpoints / binary artifacts
+# =========================
+# If you are migrating all weights to Hugging Face, keep this ON.
+# If you still want some tiny reference weights committed, comment these out.
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.safetensors
+*.npz
 
-chipiron/runs/*
-*.egg-info/
-chipiron/scripts/one_match/outputs/*
-chipiron/scripts/learn_nn_supervised/learn_nn_supervised_outputs/*
-chipiron/scripts/learn_from_scratch_value_and_fixed_boards/learn_from_scratch_outputs/*
-
-**/*training_copies/*
+# Training intermediate dumps
+**/*training_copies/**
 **/*optimizer.pi*
 **/*scheduler.pi*
 **/*.pt_save*
 **/*.pi_save*
 
-## Core latex/pdflatex auxiliary files:
+# =========================
+# Chipiron script outputs (generated)
+# =========================
+# Old-layout paths
+chipiron/scripts/**/outputs/**
+chipiron/scripts/**/test_outputs/**
+chipiron/scripts/**/tests/**/tests_outputs/**
+chipiron/scripts/**/one_match/outputs/**
+chipiron/scripts/**/league/league_data/**
+chipiron/scripts/**/learn_nn_supervised/learn_nn_supervised_outputs/**
+chipiron/scripts/**/learn_from_scratch_value_and_fixed_boards/learn_from_scratch_outputs/**
+chipiron/scripts/**/default_output_folder/**
+chipiron/scripts/**/mlflow_data/**
+
+# New-layout paths (src/)
+src/chipiron/scripts/**/outputs/**
+src/chipiron/scripts/**/test_outputs/**
+src/chipiron/scripts/**/tests/**/tests_outputs/**
+src/chipiron/scripts/**/default_output_folder/**
+src/chipiron/scripts/**/mlflow_data/**
+src/chipiron/scripts/**/learn_nn_supervised_outputs/**
+src/chipiron/scripts/**/learn_from_scratch_outputs/**
+
+# Chipiron generated runs
+chipiron/runs/**
+src/chipiron/runs/**
+
+# =========================
+# Docs build
+# =========================
+docs/_build/
+
+# =========================
+# LaTeX auxiliary files
+# =========================
 *.aux
 *.lof
 *.log
@@ -54,26 +114,8 @@ chipiron/scripts/learn_from_scratch_value_and_fixed_boards/learn_from_scratch_ou
 *.fot
 *.cb
 *.cb2
-.*.lb# Local environment configuration
-.env.local
-chipiron/scripts/profiling/benchmark_reports/*
+.*.lb#
 
-
-# Script outputs (generated)
-src/chipiron/scripts/**/outputs/**
-src/chipiron/scripts/**/learn_nn_supervised_outputs/**
-src/chipiron/scripts/**/learn_from_scratch_outputs/**
-
-# Generated test artifacts under scripts
-src/chipiron/scripts/**/tests/tests_outputs/**
-src/chipiron/scripts/**/tests/**/tests_outputs/**
-
-# Local zips / ad-hoc bundles
-*.zip
-
-
-# chipiron generated outputs
-src/chipiron/scripts/**/outputs/
-src/chipiron/scripts/**/default_output_folder/
-src/chipiron/scripts/**/mlflow_data/
-src/chipiron/scripts/**/tests/**/tests_outputs/
+# Profiling reports
+chipiron/scripts/profiling/benchmark_reports/**
+src/chipiron/scripts/profiling/benchmark_reports/**
