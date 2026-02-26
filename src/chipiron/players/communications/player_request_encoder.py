@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol, TypeVar, cast
 
 from atomheart.games.chess.board.utils import FenPlusHistory
+from valanga import Color
 from valanga.game import Seed
 
 from chipiron.displays.gui_protocol import Scope
@@ -41,6 +42,24 @@ class HasFenHistoryState(Protocol):
     @property
     def board(self) -> BoardWithFenHistory:
         """Return board supporting FEN+history snapshots."""
+        ...
+
+
+class CheckersLikeState(Protocol):
+    """Protocol for checkers-like states serializable as text snapshots."""
+
+    @property
+    def tag(self) -> Any:
+        """Return state tag."""
+        ...
+
+    @property
+    def turn(self) -> Color:
+        """Return side to move."""
+        ...
+
+    def to_text(self) -> str:
+        """Return a text snapshot for transport."""
         ...
 
 
@@ -96,27 +115,23 @@ class ChessPlayerRequestEncoder(
 
 
 @dataclass(frozen=True, slots=True)
-class CheckersPlayerRequestEncoder(PlayerRequestEncoder[object, str]):
+class CheckersPlayerRequestEncoder(PlayerRequestEncoder[CheckersLikeState, str]):
     """Checkers-specific move request encoder."""
 
     game_kind: GameKind = GameKind.CHECKERS
 
     def make_move_request(
-        self, *, state: object, seed: Seed, scope: Scope
+        self, *, state: CheckersLikeState, seed: Seed, scope: Scope
     ) -> PlayerRequest[str]:
         """Encode a checkers move request using text state serialization."""
-        snapshot = state.to_text() if hasattr(state, "to_text") else str(state)
-        state_tag = getattr(state, "tag", None)
-        turn = getattr(state, "turn", None)
-
         return PlayerRequest(
             schema_version=1,
             scope=scope,
             seed=seed,
             state=TurnStatePlusHistory(
-                current_state_tag=state_tag,
-                turn=turn,
-                snapshot=snapshot,
+                current_state_tag=state.tag,
+                turn=state.turn,
+                snapshot=state.to_text(),
                 historical_actions=None,
             ),
         )

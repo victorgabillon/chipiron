@@ -35,10 +35,12 @@ def apply_search_dynamics_addon[TurnStateT: TurnState](
 ) -> SearchDynamics[TurnStateT, Any]:
     """Apply an optional game-specific search dynamics wrapper."""
     if addon.type is SearchDynamicsAddonType.CHESS_COPY_STACK:
-        from chipiron.environments.chess.search_dynamics import (
+        from chipiron.environments.chess.search_dynamics import (  # pylint: disable=import-outside-toplevel
             ChessCopyStackSearchDynamics,
         )
-        from chipiron.environments.chess.types import ChessState
+        from chipiron.environments.chess.types import (
+            ChessState,  # pylint: disable=import-outside-toplevel
+        )
 
         try:
             is_chess = issubclass(state_type, ChessState)
