@@ -7,8 +7,8 @@ from atomheart.games.chess.board.utils import FenPlusHistory
 from valanga.game import BranchName, Seed
 from valanga.policy import BranchSelector, NotifyProgressCallable, Recommendation
 
-from chipiron.environments.chess.types import ChessState
 from chipiron.core.oracles import PolicyOracle
+from chipiron.environments.chess.types import ChessState
 from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:

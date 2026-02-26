@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING
 from valanga.game import BranchName
 from valanga.over_event import OverEvent
 
+from chipiron.core.oracles import PolicyOracle, TerminalOracle, ValueOracle
 from chipiron.environments.chess.types import ChessState
 from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
-from chipiron.core.oracles import PolicyOracle, TerminalOracle, ValueOracle
 
 if TYPE_CHECKING:
     from atomheart.games.chess.move import MoveUci

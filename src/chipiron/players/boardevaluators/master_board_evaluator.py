@@ -10,21 +10,21 @@ from coral.neural_networks.neural_net_board_eval_args import NeuralNetBoardEvalA
 from valanga import Color
 from valanga.over_event import HowOver, OverEvent, Winner
 
+from chipiron.core.evaluation_scale import (
+    EvaluationScale,
+    ValueOverEnum,
+    get_value_over_enum,
+)
+from chipiron.core.oracles import TerminalOracle, ValueOracle
 from chipiron.environments.chess.types import ChessState
 from chipiron.players.boardevaluators import basic_evaluation
 from chipiron.players.boardevaluators.all_board_evaluator_args import (
     AllBoardEvaluatorArgs,
     BasicEvaluationBoardEvaluatorArgs,
 )
-from chipiron.core.evaluation_scale import (
-    EvaluationScale,
-    ValueOverEnum,
-    get_value_over_enum,
-)
 from chipiron.players.boardevaluators.neural_networks.chipiron_nn_args import (
     create_content_to_input_from_model_weights,
 )
-from chipiron.core.oracles import TerminalOracle, ValueOracle
 
 from .board_evaluator import StateEvaluator
 

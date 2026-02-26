@@ -14,6 +14,7 @@ from atomheart.games.chess.board.utils import FenPlusHistory
 from valanga import Color
 from valanga.policy import BranchSelector
 
+from chipiron.core.oracles import PolicyOracle, TerminalOracle, ValueOracle
 from chipiron.environments.chess.types import ChessState
 from chipiron.environments.types import GameKind
 from chipiron.players.adapters.chess_adapter import ChessAdapter
@@ -39,7 +40,6 @@ from chipiron.players.chess_player_args import (
     ChessPlayerFactoryArgs,
 )
 from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
-from chipiron.core.oracles import PolicyOracle, TerminalOracle, ValueOracle
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.utils.dataclass import IsDataclass
