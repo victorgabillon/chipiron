@@ -1,6 +1,5 @@
 """Module for master board evaluator."""
 
-from dataclasses import dataclass
 from typing import Any
 
 from coral.neural_networks.factory import (
@@ -17,13 +16,15 @@ from chipiron.core.evaluation_scale import (
 )
 from chipiron.core.oracles import TerminalOracle, ValueOracle
 from chipiron.environments.chess.types import ChessState
-from chipiron.players.boardevaluators import basic_evaluation
+from chipiron.environments.chess.players.evaluators.boardevaluators import basic_evaluation
 from chipiron.players.boardevaluators.all_board_evaluator_args import (
-    AllBoardEvaluatorArgs,
     BasicEvaluationBoardEvaluatorArgs,
 )
-from chipiron.players.boardevaluators.neural_networks.chipiron_nn_args import (
+from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chipiron_nn_args import (
     create_content_to_input_from_model_weights,
+)
+from chipiron.players.boardevaluators.master_board_evaluator_args import (
+    MasterBoardEvaluatorArgs,
 )
 
 from .board_evaluator import StateEvaluator
@@ -49,19 +50,6 @@ class UnsupportedBoardEvaluatorArgsError(MasterBoardEvaluatorError):
         super().__init__(
             f"unknown type of message received by master board evaluator {args_type} in {__name__}"
         )
-
-
-@dataclass
-class MasterBoardEvaluatorArgs:
-    """Represents the arguments for a master board evaluator."""
-
-    board_evaluator: AllBoardEvaluatorArgs
-
-    # Whether to use oracle evaluation when available.
-    oracle_evaluation: bool = False
-
-    # The evaluation scale used by the node evaluator. (Default values when nodes are found to be over)
-    evaluation_scale: EvaluationScale = EvaluationScale.ENTIRE_REAL_AXIS
 
 
 class MasterBoardEvaluator:

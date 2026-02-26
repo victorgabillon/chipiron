@@ -6,8 +6,8 @@ otherwise return None.
 import os
 from typing import Any, Protocol
 
-from chipiron.players.boardevaluators.table_base.syzygy_python import SyzygyChiTable
-from chipiron.players.boardevaluators.table_base.syzygy_table import SyzygyTable
+from chipiron.environments.chess.players.evaluators.boardevaluators.table_base.syzygy_python import SyzygyChiTable
+from chipiron.environments.chess.players.evaluators.boardevaluators.table_base.syzygy_table import SyzygyTable
 from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.path_variables import SYZYGY_TABLES_DIR
 

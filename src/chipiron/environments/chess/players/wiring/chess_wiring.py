@@ -6,17 +6,17 @@ from atomheart.games.chess.board.utils import FenPlusHistory
 from valanga import Color
 
 from chipiron.environments.chess.types import ChessState
-from chipiron.players.adapters.chess_syzygy_oracle import (
+from chipiron.environments.chess.players.oracles.chess_syzygy_oracle import (
     ChessSyzygyPolicyOracle,
     ChessSyzygyTerminalOracle,
     ChessSyzygyValueOracle,
 )
-from chipiron.players.boardevaluators.table_base.factory import (
+from chipiron.environments.chess.players.evaluators.boardevaluators.table_base.factory import (
     AnySyzygyTable,
     create_syzygy_factory,
 )
-from chipiron.players.chess_player_args import ChessPlayerFactoryArgs
-from chipiron.players.factory import create_game_player
+from chipiron.environments.chess.players.args.chess_player_args import ChessPlayerFactoryArgs
+from chipiron.environments.chess.players.factory.factory import create_game_player
 from chipiron.players.game_player import GamePlayer
 from chipiron.players.observer_wiring import ObserverWiring
 from chipiron.scripts.chipiron_args import ImplementationArgs

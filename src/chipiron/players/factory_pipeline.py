@@ -9,7 +9,7 @@ from valanga import Dynamics, TurnState
 from valanga.policy import BranchSelector
 
 from chipiron.core.oracles import PolicyOracle, TerminalOracle, ValueOracle
-from chipiron.players.boardevaluators.master_board_evaluator import (
+from chipiron.players.boardevaluators.master_board_evaluator_args import (
     MasterBoardEvaluatorArgs,
 )
 from chipiron.players.move_selector import factory as move_selector_factory

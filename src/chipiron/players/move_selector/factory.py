@@ -1,5 +1,6 @@
 """Document the module provides a factory function for creating the main move selector based on the given arguments."""
 
+import importlib
 import random
 from collections.abc import Mapping
 from typing import Any, cast
@@ -20,13 +21,16 @@ from valanga import (
 from valanga.evaluator_types import EvaluatorInput
 from valanga.policy import BranchSelector
 
-from chipiron.environments.chess.search_dynamics import ChessCopyStackSearchDynamics
-from chipiron.environments.chess.types import ChessState
 from chipiron.environments.search_dynamics_addons import SearchDynamicsAddonType
 from chipiron.environments.types import GameKind
 from chipiron.players.move_selector.move_selector_args import NonTreeMoveSelectorArgs
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.utils.logger import chipiron_logger
+
+_chess_types = importlib.import_module("chipiron.environments.chess.types")
+ChessState = _chess_types.ChessState
+_chess_dyn = importlib.import_module("chipiron.environments.chess.search_dynamics")
+ChessCopyStackSearchDynamics = _chess_dyn.ChessCopyStackSearchDynamics
 
 from .anemone_hooks import ChessFeatureExtractor
 from .modifiers import (

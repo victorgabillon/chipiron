@@ -3,7 +3,7 @@
 import atomheart.games.chess.board as boards
 import chess.syzygy
 
-from chipiron.players.boardevaluators.table_base import SyzygyTable
+from chipiron.environments.chess.players.evaluators.boardevaluators.table_base import SyzygyTable
 from chipiron.utils import MyPath
 
 

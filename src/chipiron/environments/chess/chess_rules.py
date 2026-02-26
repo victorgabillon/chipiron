@@ -13,7 +13,7 @@ from chipiron.games.domain.game.game_rules import (
     PositionAssessment,
     VerdictKind,
 )
-from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
+from chipiron.environments.chess.players.evaluators.boardevaluators.table_base.factory import AnySyzygyTable
 
 
 class ChessRulesError(ValueError):

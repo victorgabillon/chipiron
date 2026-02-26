@@ -22,7 +22,6 @@ from importlib.resources import as_file, files
 
 import parsley
 
-from chipiron.players.chess_player_args import ChessPlayerArgs
 from chipiron.players.player_args import PlayerArgs
 from chipiron.utils import MyPath
 
@@ -90,7 +89,7 @@ class PlayerConfigTag(StrEnum):
         with as_file(resource) as real_path:
             return str(real_path)  # Or pass it immediately to another function
 
-    def get_players_args(self) -> ChessPlayerArgs:
+    def get_players_args(self) -> PlayerArgs:
         """Get the player arguments from the YAML file.
 
         This method fetches the player arguments from the YAML file
