@@ -39,7 +39,7 @@ from chipiron.players.chess_player_args import (
     ChessPlayerFactoryArgs,
 )
 from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
-from chipiron.players.oracles import PolicyOracle, TerminalOracle, ValueOracle
+from chipiron.core.oracles import PolicyOracle, TerminalOracle, ValueOracle
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.utils.dataclass import IsDataclass
