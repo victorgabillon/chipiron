@@ -8,7 +8,7 @@ from valanga.game import BranchName, Seed
 from valanga.policy import BranchSelector, NotifyProgressCallable, Recommendation
 
 from chipiron.environments.chess.types import ChessState
-from chipiron.players.oracles import PolicyOracle
+from chipiron.core.oracles import PolicyOracle
 from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:

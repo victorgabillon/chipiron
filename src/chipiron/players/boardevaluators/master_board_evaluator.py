@@ -16,7 +16,7 @@ from chipiron.players.boardevaluators.all_board_evaluator_args import (
     AllBoardEvaluatorArgs,
     BasicEvaluationBoardEvaluatorArgs,
 )
-from chipiron.players.boardevaluators.evaluation_scale import (
+from chipiron.core.evaluation_scale import (
     EvaluationScale,
     ValueOverEnum,
     get_value_over_enum,
@@ -24,7 +24,7 @@ from chipiron.players.boardevaluators.evaluation_scale import (
 from chipiron.players.boardevaluators.neural_networks.chipiron_nn_args import (
     create_content_to_input_from_model_weights,
 )
-from chipiron.players.oracles import TerminalOracle, ValueOracle
+from chipiron.core.oracles import TerminalOracle, ValueOracle
 
 from .board_evaluator import StateEvaluator
 
