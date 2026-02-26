@@ -10,6 +10,7 @@ Typing strategy:
 - a single cast occurs when selecting wiring by runtime `game_kind`
 """
 
+import importlib
 import multiprocessing
 from functools import partial
 from typing import Protocol, assert_never, cast
@@ -26,7 +27,6 @@ from chipiron.players.observer_wiring import ObserverWiring
 from chipiron.players.player_args import PlayerFactoryArgs
 from chipiron.players.player_handle import InProcessPlayerHandle, PlayerHandle
 from chipiron.players.player_thread import PlayerProcess
-from chipiron.players.wirings.chess_wiring import CHESS_WIRING
 from chipiron.utils.communication.mailbox import MainMailboxMessage
 from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.queue_protocols import PutGetQueue, PutQueue
@@ -57,7 +57,10 @@ def _select_wiring(game_kind: GameKind) -> ObserverWiring[object, object, object
     """Select the observer wiring for the requested game kind."""
     match game_kind:
         case GameKind.CHESS:
-            return cast("ObserverWiring[object, object, object]", CHESS_WIRING)
+            chess_wiring_module = importlib.import_module(
+                "chipiron.environments.chess.players.wiring.chess_wiring"
+            )
+            return cast("ObserverWiring[object, object, object]", chess_wiring_module.CHESS_WIRING)
         case GameKind.CHECKERS:
             return cast("ObserverWiring[object, object, object]", CHECKERS_WIRING)
         case _:

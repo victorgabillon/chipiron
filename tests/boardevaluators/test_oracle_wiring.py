@@ -15,7 +15,7 @@ from chipiron.environments.types import GameKind
 from chipiron.players.boardevaluators.board_evaluator import (
     ObservableGameStateEvaluator,
 )
-from chipiron.players.boardevaluators.factory import (
+from chipiron.environments.chess.players.evaluators.boardevaluators.factory import (
     create_game_board_evaluator_for_game_kind,
 )
 

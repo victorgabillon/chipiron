@@ -820,7 +820,7 @@ except Exception as e:
             # Create a temporary Python script for testing SyzygyChiTable.dtz
             python_script = """
 import sys
-from chipiron.players.boardevaluators.table_base.syzygy_python import SyzygyChiTable
+from chipiron.environments.chess.players.evaluators.boardevaluators.table_base.syzygy_python import SyzygyChiTable
 from atomheart.games.chess.board import create_board_chi
 from chipiron.utils.path_variables import SYZYGY_TABLES_DIR
 

@@ -24,7 +24,7 @@ from chipiron.environments.checkers.types import (
     CheckersState,
 )
 from chipiron.environments.types import GameKind
-from chipiron.players.boardevaluators.master_board_evaluator import (
+from chipiron.players.boardevaluators.master_board_evaluator_args import (
     MasterBoardEvaluatorArgs,
 )
 from chipiron.players.factory_pipeline import create_player_with_pipeline

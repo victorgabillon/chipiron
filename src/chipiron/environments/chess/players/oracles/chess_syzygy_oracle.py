@@ -7,7 +7,7 @@ from valanga.over_event import OverEvent
 
 from chipiron.core.oracles import PolicyOracle, TerminalOracle, ValueOracle
 from chipiron.environments.chess.types import ChessState
-from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
+from chipiron.environments.chess.players.evaluators.boardevaluators.table_base.factory import AnySyzygyTable
 
 if TYPE_CHECKING:
     from atomheart.games.chess.move import MoveUci

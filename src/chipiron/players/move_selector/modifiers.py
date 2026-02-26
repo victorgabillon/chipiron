@@ -11,7 +11,6 @@ from valanga.game import BranchName, Seed
 from valanga.over_event import HowOver
 from valanga.policy import BranchSelector, NotifyProgressCallable, Recommendation
 
-from chipiron.environments.chess.types import ChessState
 
 if TYPE_CHECKING:
     from atomheart.games.chess.move.imove import MoveKey

@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol
 
-from chipiron.players.boardevaluators.table_base.factory import AnySyzygyTable
+from chipiron.environments.chess.players.evaluators.boardevaluators.table_base.factory import AnySyzygyTable
 
 if TYPE_CHECKING:
     import atomheart.games.chess.board as boards

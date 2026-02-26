@@ -49,14 +49,14 @@ from chipiron.learningprocesses.nn_trainer.factory import (
     safe_nn_param_save,
     safe_nn_trainer_save,
 )
-from chipiron.players.boardevaluators.datasets.datasets import (
+from chipiron.environments.chess.players.evaluators.boardevaluators.datasets.datasets import (
     DataSetArgs,
     FenAndValueData,
     FenAndValueDataSet,
     custom_collate_fn_fen_and_value,
     process_stockfish_value,  # pyright: ignore[reportUnknownVariableType]
 )
-from chipiron.players.boardevaluators.neural_networks.chipiron_nn_args import (
+from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chipiron_nn_args import (
     ChipironNNArgs,
     create_content_to_input_convert,
     create_content_to_input_from_model_weights,

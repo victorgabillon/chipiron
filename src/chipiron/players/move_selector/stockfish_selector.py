@@ -1,5 +1,6 @@
 """Runtime Stockfish move selector implementation."""
 
+import importlib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -11,8 +12,9 @@ from atomheart.games.chess.board.utils import FenPlusHistory
 from valanga.game import BranchName, Seed
 from valanga.policy import NotifyProgressCallable, Recommendation
 
-from chipiron.environments.chess.types import ChessState
 from chipiron.utils.path_variables import STOCKFISH_BINARY_PATH
+
+ChessState = importlib.import_module("chipiron.environments.chess.types").ChessState
 
 if TYPE_CHECKING:
     from atomheart import BoardChi

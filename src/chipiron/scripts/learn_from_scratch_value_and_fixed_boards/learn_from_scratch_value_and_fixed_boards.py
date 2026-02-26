@@ -33,25 +33,25 @@ import chipiron
 from chipiron.environments.chess.types import ChessState
 from chipiron.learningprocesses.nn_trainer.factory import NNTrainerArgs
 from chipiron.players import PlayerArgs
-from chipiron.players.adapters.chess_syzygy_oracle import (
+from chipiron.environments.chess.players.oracles.chess_syzygy_oracle import (
     ChessSyzygyPolicyOracle,
     ChessSyzygyTerminalOracle,
     ChessSyzygyValueOracle,
 )
-from chipiron.players.boardevaluators.datasets.datasets import (
+from chipiron.environments.chess.players.evaluators.boardevaluators.datasets.datasets import (
     DataSetArgs,
     FenAndValueDataSet,
 )
-from chipiron.players.boardevaluators.neural_networks.chipiron_nn_args import (
+from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chipiron_nn_args import (
     ChipironNNArgs,
     create_content_to_input_convert,
     create_content_to_input_from_model_weights,
 )
-from chipiron.players.boardevaluators.table_base.factory import (
+from chipiron.environments.chess.players.evaluators.boardevaluators.table_base.factory import (
     AnySyzygyTable,
     create_syzygy,
 )
-from chipiron.players.factory import create_chess_player
+from chipiron.environments.chess.players.factory.factory import create_chess_player
 from chipiron.players.move_selector.random_args import RandomSelectorArgs
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs

@@ -7,11 +7,11 @@ from typing import TYPE_CHECKING
 import pytest
 from atomheart.games.chess.board.utils import FenPlusHistory
 
-from chipiron.players.boardevaluators.table_base.factory import (
+from chipiron.environments.chess.players.evaluators.boardevaluators.table_base.factory import (
     AnySyzygyTable,
     create_syzygy,
 )
-from chipiron.players.factory import create_chipiron_player, create_player
+from chipiron.environments.chess.players.factory.factory import create_chipiron_player, create_player
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.utils.path_variables import MATE_IN_2_DB_SMALL

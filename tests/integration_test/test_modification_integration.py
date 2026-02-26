@@ -13,7 +13,7 @@ from atomheart.games.chess.board import IBoard, create_board
 from atomheart.games.chess.board.utils import FenPlusHistory
 
 from chipiron.environments.chess.types import ChessState
-from chipiron.players.factory import create_chipiron_player
+from chipiron.environments.chess.players.factory.factory import create_chipiron_player
 from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
