@@ -7,7 +7,6 @@ from atomheart.games.chess.board.utils import FenPlusHistory
 from valanga.game import Seed
 
 from chipiron.displays.gui_protocol import Scope
-from chipiron.environments.checkers.types import CheckersState
 from chipiron.environments.types import GameKind
 from chipiron.players.communications.player_message import (
     PlayerRequest,
@@ -97,23 +96,27 @@ class ChessPlayerRequestEncoder(
 
 
 @dataclass(frozen=True, slots=True)
-class CheckersPlayerRequestEncoder(PlayerRequestEncoder[CheckersState, str]):
+class CheckersPlayerRequestEncoder(PlayerRequestEncoder[object, str]):
     """Checkers-specific move request encoder."""
 
     game_kind: GameKind = GameKind.CHECKERS
 
     def make_move_request(
-        self, *, state: CheckersState, seed: Seed, scope: Scope
+        self, *, state: object, seed: Seed, scope: Scope
     ) -> PlayerRequest[str]:
         """Encode a checkers move request using text state serialization."""
+        snapshot = state.to_text() if hasattr(state, "to_text") else str(state)
+        state_tag = getattr(state, "tag", None)
+        turn = getattr(state, "turn", None)
+
         return PlayerRequest(
             schema_version=1,
             scope=scope,
             seed=seed,
             state=TurnStatePlusHistory(
-                current_state_tag=state.tag,
-                turn=state.turn,
-                snapshot=state.to_text(),
+                current_state_tag=state_tag,
+                turn=turn,
+                snapshot=snapshot,
                 historical_actions=None,
             ),
         )

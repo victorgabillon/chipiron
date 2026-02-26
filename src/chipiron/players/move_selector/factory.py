@@ -1,9 +1,8 @@
 """Document the module provides a factory function for creating the main move selector based on the given arguments."""
 
-import importlib
 import random
 from collections.abc import Mapping
-from typing import Any, cast
+from typing import Any
 
 from anemone import TreeAndValuePlayerArgs, create_tree_and_value_branch_selector
 from anemone.dynamics import SearchDynamics, normalize_search_dynamics
@@ -21,7 +20,7 @@ from valanga import (
 from valanga.evaluator_types import EvaluatorInput
 from valanga.policy import BranchSelector
 
-from chipiron.environments.search_dynamics_addons import SearchDynamicsAddonType
+from chipiron.environments.search_dynamics_addons import apply_search_dynamics_addon
 from chipiron.environments.types import GameKind
 from chipiron.players.move_selector.move_selector_args import NonTreeMoveSelectorArgs
 from chipiron.scripts.chipiron_args import ImplementationArgs
@@ -152,28 +151,12 @@ def create_tree_and_value_move_selector[TurnStateT: TurnState](
         if implementation_args is not None
         else None
     )
-    if addon is not None and addon.type is SearchDynamicsAddonType.CHESS_COPY_STACK:
-        chess_types = importlib.import_module("chipiron.environments.chess.types")
-        chess_state_type = cast("type[object]", chess_types.ChessState)
-
-        if issubclass(state_type, chess_state_type):
-            chess_dyn = importlib.import_module(
-                "chipiron.environments.chess.search_dynamics"
-            )
-            chess_copy_stack_search_dynamics_type = cast(
-                "type[object]", chess_dyn.ChessCopyStackSearchDynamics
-            )
-
-            chess_base = cast("SearchDynamics[Any, Any]", search_dynamics)
-            chess_copy_stack_search_dynamics_ctor = cast(
-                "Any", chess_copy_stack_search_dynamics_type
-            )
-            wrapped = chess_copy_stack_search_dynamics_ctor(
-                base=chess_base,
-                copy_stack_until_depth=addon.copy_stack_until_depth,
-                deep_copy_legal_moves=addon.deep_copy_legal_moves,
-            )
-            search_dynamics = cast("SearchDynamics[TurnStateT, Any]", wrapped)
+    if addon is not None:
+        search_dynamics = apply_search_dynamics_addon(
+            addon=addon,
+            state_type=state_type,
+            search_dynamics=search_dynamics,
+        )
 
     base_selector = create_tree_and_value_branch_selector(
         state_type=state_type,
