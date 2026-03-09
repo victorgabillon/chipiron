@@ -1,7 +1,7 @@
 """Module for master board evaluator."""
 
 from typing import Any
-
+from valanga.evaluations import Value
 from coral.neural_networks.factory import (
     create_nn_state_eval_from_nn_parameters_file_and_existing_model,
 )
@@ -92,28 +92,28 @@ class MasterBoardEvaluator:
         self.terminal_oracle = terminal_oracle
         self.value_over_enum = value_over_enum
 
-    def value_white(self, state: ChessState) -> float:
+    def evaluate(self, state: ChessState) -> Value:
         """Calculate the value for the white player of a given node.
 
         If the value can be obtained from the syzygy evaluator, it is used.
         Otherwise, the board evaluator is used.
         """
-        value_white: float | None = self.oracle_value_white(state)
-        value_white_float: float
-        if value_white is None:
-            value_white_float = self.board_evaluator.value_white(state)
+        oracle_value: Value | None = self.oracle_evaluate(state)
+        value: Value
+        if oracle_value is None:
+            value = self.board_evaluator.evaluate(state)
         else:
-            value_white_float = value_white
-        return value_white_float
+            value = oracle_value
+        return value
 
-    def oracle_value_white(self, state: ChessState) -> float | None:
+    def oracle_evaluate(self, state: ChessState) -> Value | None:
         """Calculate the value for the white player of a given state using the value oracle.
 
         If the value oracle is not available or the state is not supported, None is returned.
         """
         if self.value_oracle is None or not self.value_oracle.supports(state):
             return None
-        return self.value_oracle.value_white(state)
+        return self.value_oracle.evaluate(state)
 
     def check_obvious_over_events(
         self, state: ChessState

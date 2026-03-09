@@ -24,8 +24,8 @@ from chipiron.players.player_args import HasMoveSelectorType
 from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
-    from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
-        MasterStateEvaluator,
+    from anemone.node_evaluation.node_direct_evaluation.protocols import (
+        MasterStateValueEvaluator,
     )
 
 EvalArgsT = TypeVar("EvalArgsT")
@@ -46,7 +46,7 @@ def create_player_with_pipeline[StateT: TurnState, SnapT](
             ValueOracle[StateT] | None,
             TerminalOracle[StateT] | None,
         ],
-        "MasterStateEvaluator",
+        "MasterStateValueEvaluator",
     ],
     adapter_builder: Callable[
         [BranchSelector[StateT], PolicyOracle[StateT] | None],

@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-
+from typing import Union
 from chipiron.utils.logger import chipiron_logger
 
 MyPath = typing.Annotated[str | os.PathLike[str], "path"]
@@ -184,3 +184,62 @@ def get_package_root_path(package_name: str) -> str:
 
     # Get the package directory, not just the __init__.py file
     return os.path.dirname(spec.origin)
+
+
+
+
+
+
+def resolve_hf_path(path_to_file: str) -> str:
+    """
+    Resolve an 'hf://' URI into a local cached file path by downloading from Hugging Face Hub.
+
+    Format:
+        hf://<repo_id>/<path/in/repo>@<revision>
+
+    Examples:
+        hf://pompote/anemone-weights/prelu_no_bug/model.pt@v0.1.0
+        hf://pompote/anemone-weights/prelu_no_bug/model.pt@main
+    """
+    if not path_to_file.startswith("hf://"):
+        return path_to_file
+
+    # Lazy import so HF is not a hard dependency unless used
+    from huggingface_hub import hf_hub_download
+
+    uri = path_to_file[len("hf://") :]
+    if "@"+"" in uri:
+        # just to silence some linters - no-op
+        pass
+
+    if "@" in uri:
+        repo_and_path, revision = uri.rsplit("@", 1)
+    else:
+        repo_and_path, revision = uri, "main"
+
+    # repo_id is first path component
+    parts = repo_and_path.split("/", 2)
+    if len(parts) < 3:
+        raise ValueError(
+            f"Invalid hf URI: {path_to_file}. Expected hf://<repo_id>/<path>@<revision>"
+        )
+    repo_id = parts[0] + "/" + parts[1]
+    filename = parts[2]
+
+    local_path = hf_hub_download(repo_id=repo_id, filename=filename, revision=revision)
+    return str(local_path)
+
+
+def resolve_resource_path(path_to_file: Union[str, Path]) -> str:
+    """
+    Resolve either:
+      - package://...  -> file path within installed package
+      - hf://...       -> downloaded file path from HF hub cache
+      - normal paths   -> unchanged (stringified)
+    """
+    s = str(path_to_file)
+    if s.startswith("package://"):
+        return resolve_package_path(s)
+    if s.startswith("hf://"):
+        return resolve_hf_path(s)
+    return s

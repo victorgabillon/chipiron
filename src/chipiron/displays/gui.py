@@ -25,7 +25,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 from valanga import Color, StateTag
-from valanga.evaluations import FloatyStateEvaluation, ForcedOutcome, StateEvaluation
+from valanga.evaluations import Value
 
 from chipiron.displays.gui_protocol import (
     CmdBackOneMove,
@@ -64,23 +64,36 @@ class GuiUpdateError(AssertionError):
         super().__init__(f"Unhandled GuiUpdate payload: {payload!r}")
 
 
-def format_state_eval(ev: StateEvaluation | None) -> str:
+def format_state_eval(ev: Value | None) -> str:
     """Format state eval."""
     if ev is None:
         return "—"
-    match ev:
-        case FloatyStateEvaluation(value_white=value_white):
-            if value_white is None:
-                return "—"
-            return f"{float(value_white):+.2f}"
 
-        case ForcedOutcome(outcome=outcome, line=line):
-            line_str = " ".join(map(str, line[:6]))
-            suffix = " …" if len(line) > 6 else ""
-            return f"{outcome} | {line_str}{suffix}"
+    score = getattr(ev, "score", None)
+    certainty = getattr(ev, "certainty", None)
+    over_event = getattr(ev, "over_event", None)
 
-        case _:
-            return str(ev)  # type: ignore[unreachable]
+    if isinstance(score, int | float):
+        base = f"{float(score):+.2f}"
+    else:
+        base = str(ev)
+
+    certainty_name = None
+    if certainty is not None:
+        certainty_name = getattr(certainty, "name", str(certainty))
+
+    over_str = None
+    if over_event is not None:
+        how_over = getattr(over_event, "how_over", None)
+        winner = getattr(over_event, "who_is_winner", None)
+        how_over_name = getattr(how_over, "name", str(how_over))
+        winner_name = getattr(winner, "name", str(winner))
+        over_str = f"{how_over_name}:{winner_name}"
+
+    suffix_parts = [part for part in (certainty_name, over_str) if part]
+    if suffix_parts:
+        return f"{base} ({' | '.join(suffix_parts)})"
+    return base
 
 
 class MainWindow(QWidget):
@@ -604,18 +617,18 @@ class MainWindow(QWidget):
 
     def update_evaluation(
         self,
-        evaluation_oracle: StateEvaluation | None,
-        evaluation_chipiron: StateEvaluation | None,
-        evaluation_white: StateEvaluation | None,
-        evaluation_black: StateEvaluation | None,
+        evaluation_oracle: Value | None,
+        evaluation_chipiron: Value | None,
+        evaluation_white: Value | None,
+        evaluation_black: Value | None,
     ) -> None:
         """Update the evaluation values displayed on the GUI.
 
         Args:
-            evaluation_oracle (StateEvaluation | None): The evaluation value for the oracle.
-            evaluation_chipiron (StateEvaluation | None): The evaluation value for chipiron.
-            evaluation_white (StateEvaluation | None): The evaluation value for white.
-            evaluation_black (StateEvaluation | None): The evaluation value for black.
+            evaluation_oracle (Value | None): The evaluation value for the oracle.
+            evaluation_chipiron (Value | None): The evaluation value for chipiron.
+            evaluation_white (Value | None): The evaluation value for white.
+            evaluation_black (Value | None): The evaluation value for black.
 
         Returns:
             None

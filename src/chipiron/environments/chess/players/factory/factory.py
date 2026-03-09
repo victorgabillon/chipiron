@@ -53,8 +53,8 @@ from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.queue_protocols import PutQueue
 
 if TYPE_CHECKING:
-    from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
-        MasterStateEvaluator,
+    from anemone.node_evaluation.node_direct_evaluation.protocols import (
+        MasterStateValueEvaluator,
     )
 
 
@@ -190,7 +190,7 @@ def create_chess_player(
         evaluator_args: MasterBoardEvaluatorArgs,
         value_oracle_in: ValueOracle[ChessState] | None,
         terminal_oracle_in: TerminalOracle[ChessState] | None,
-    ) -> "MasterStateEvaluator":
+    ) -> "MasterStateValueEvaluator":
         master_board_evaluator = create_master_state_evaluator_from_args(
             master_board_evaluator=evaluator_args,
             value_oracle=value_oracle_in,

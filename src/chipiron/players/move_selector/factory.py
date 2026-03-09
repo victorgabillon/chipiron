@@ -7,8 +7,8 @@ from typing import Any
 from anemone import TreeAndValuePlayerArgs, create_tree_and_value_branch_selector
 from anemone.dynamics import SearchDynamics, normalize_search_dynamics
 from anemone.hooks.search_hooks import PriorityCheckFactory, SearchHooks
-from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
-    MasterStateEvaluator,
+from anemone.node_evaluation.node_direct_evaluation.protocols import (
+    MasterStateValueEvaluator,
 )
 from anemone.node_selector.opening_instructions import OpeningInstructor
 from valanga import (
@@ -101,7 +101,7 @@ def create_tree_and_value_move_selector[TurnStateT: TurnState](
     *,
     state_type: type[TurnStateT],
     accelerate_when_winning: bool = False,
-    master_state_evaluator: MasterStateEvaluator,
+    master_state_value_evaluator: MasterStateValueEvaluator,
     state_representation_factory: (
         RepresentationFactory[TurnStateT, StateModifications, EvaluatorInput] | None
     ),
@@ -160,7 +160,7 @@ def create_tree_and_value_move_selector[TurnStateT: TurnState](
 
     base_selector = create_tree_and_value_branch_selector(
         state_type=state_type,
-        master_state_evaluator=master_state_evaluator,
+        master_state_value_evaluator=master_state_value_evaluator,
         state_representation_factory=state_representation_factory,
         args=args,
         random_generator=random_generator,

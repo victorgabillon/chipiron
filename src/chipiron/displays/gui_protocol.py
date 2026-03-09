@@ -6,7 +6,7 @@ from typing import Any, Never
 
 from atomheart.games.chess.board.utils import FenPlusHistory
 from valanga import Color, StateTag
-from valanga.evaluations import StateEvaluation
+from valanga.evaluations import Value
 
 from chipiron.core.request_context import RequestContext
 from chipiron.environments.types import GameKind
@@ -92,10 +92,10 @@ class UpdPlayerProgress:
 class UpdEvaluation:
     """Evaluation update payload."""
 
-    oracle: StateEvaluation | None
-    chipiron: StateEvaluation | None
-    white: StateEvaluation | None = None
-    black: StateEvaluation | None = None
+    oracle: Value | None
+    chipiron: Value | None
+    white: Value | None = None
+    black: Value | None = None
 
 
 @dataclass(frozen=True, slots=True)

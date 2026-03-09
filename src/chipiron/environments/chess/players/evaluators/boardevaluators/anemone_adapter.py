@@ -3,17 +3,16 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
-from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
-    MasterStateEvaluator,
-)
+from anemone.node_evaluation.node_direct_evaluation.protocols import MasterStateValueEvaluator
 from valanga import State
+from valanga.evaluations import Value
 
 from chipiron.environments.chess.players.evaluators.boardevaluators.master_board_evaluator import (
     MasterBoardEvaluator,
 )
 
 if TYPE_CHECKING:
-    from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
+    from anemone.node_evaluation.node_direct_evaluation.protocols import (
         OverEventDetector,
     )
     from valanga.over_event import OverEvent
@@ -35,12 +34,12 @@ class MasterBoardOverEventDetector:
 
 
 @dataclass
-class MasterBoardEvaluatorAsAnemone(MasterStateEvaluator):
-    """Adapter: Chipiron MasterBoardEvaluator -> Anemone MasterStateEvaluator."""
+class MasterBoardEvaluatorAsAnemone(MasterStateValueEvaluator):
+    """Adapter: Chipiron MasterBoardEvaluator -> Anemone MasterStateValueEvaluator."""
 
     inner: MasterBoardEvaluator
     over: "OverEventDetector"
 
-    def value_white(self, state: State) -> float:
+    def evaluate(self, state: State) -> Value:
         """Value white."""
         return self.inner.value_white(cast("ChessState", state))

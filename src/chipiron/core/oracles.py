@@ -5,6 +5,7 @@ from typing import Protocol, TypeVar
 from valanga import State
 from valanga.game import BranchName
 from valanga.over_event import OverEvent
+from valanga.evaluations import Value
 
 StateT_contra = TypeVar("StateT_contra", bound=State, contravariant=True)
 
@@ -28,7 +29,7 @@ class ValueOracle(Protocol[StateT_contra]):
         """Whether the oracle can evaluate this state."""
         ...
 
-    def value_white(self, state: StateT_contra) -> float:
+    def evaluate(self, state: StateT_contra) -> Value:
         """Return the evaluation from White's perspective."""
         ...
 

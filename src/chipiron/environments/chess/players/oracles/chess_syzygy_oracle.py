@@ -45,7 +45,7 @@ class ChessSyzygyValueOracle(ValueOracle[ChessState]):
         """Supports."""
         return self._syzygy.fast_in_table(state.board)
 
-    def value_white(self, state: ChessState) -> float:
+    def evaluate(self, state: ChessState) -> float:
         """Value white."""
         return float(self._syzygy.val(state.board))
 

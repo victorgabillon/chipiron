@@ -65,9 +65,9 @@ class ValangaBoardEvaluator(StateEvaluator[ChessState]):
         """Wrap an existing evaluator implementation."""
         self._evaluator = evaluator
 
-    def value_white(self, state: ChessState) -> float:
+    def evaluate(self, state: ChessState) -> float:
         """Value white."""
-        return self._evaluator.value_white(state)
+        return self._evaluator.evaluate(state)
 
 
 def _build_chi() -> StateEvaluator[ChessState]:

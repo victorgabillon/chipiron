@@ -5,8 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
-from anemone.node_evaluation.node_direct_evaluation.node_direct_evaluator import (
-    MasterStateEvaluator,
+
+from valanga.evaluations import Value, Certainty
+from anemone.node_evaluation.node_direct_evaluation.protocols import (
+    MasterStateValueEvaluator,
     OverEventDetector,
 )
 from valanga import Color, State
@@ -81,23 +83,31 @@ class CheckersOverEventDetector:
 
 
 @dataclass(frozen=True)
-class CheckersMasterEvaluator(MasterStateEvaluator):
+class CheckersMasterEvaluator(MasterStateValueEvaluator):
     """Anemone-compatible master evaluator for checkers."""
 
     evaluator: CheckersPieceCountEvaluator
 
-    # keep Protocol-typed field to match MasterStateEvaluator expectations
+    # keep Protocol-typed field to match MasterStateValueEvaluator expectations
     over: OverEventDetector
 
     # concrete detector used internally (pylint understands it)
     over_detector: CheckersOverEventDetector
 
-    def value_white(self, state: State) -> float:
+    def evaluate(self, state: State) -> Value:
         """Evaluate state from White's perspective."""
-        _over_event, terminal_value_white = (
+        over_event, terminal_value_white = (
             self.over_detector.check_obvious_over_events(state)
         )
         if terminal_value_white is not None:
-            return float(terminal_value_white)
+            return Value(
+                score=terminal_value_white,
+                certainty=Certainty.TERMINAL,
+                over_event=over_event,
+                )
 
-        return self.evaluator.value_white(cast("CheckersState", state))
+        return Value(
+            score=self.evaluator.value_white(cast("CheckersState", state)),
+            certainty=Certainty.ESTIMATE,
+            over_event=None,
+        )
