@@ -3,9 +3,9 @@
 from typing import Protocol, TypeVar
 
 from valanga import State
+from valanga.evaluations import Value
 from valanga.game import BranchName
 from valanga.over_event import OverEvent
-from valanga.evaluations import Value
 
 StateT_contra = TypeVar("StateT_contra", bound=State, contravariant=True)
 

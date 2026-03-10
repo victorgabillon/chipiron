@@ -2,6 +2,7 @@
 
 from typing import TYPE_CHECKING
 
+from valanga.evaluations import Value
 from valanga.game import BranchName
 from valanga.over_event import OverEvent
 
@@ -45,9 +46,9 @@ class ChessSyzygyValueOracle(ValueOracle[ChessState]):
         """Supports."""
         return self._syzygy.fast_in_table(state.board)
 
-    def evaluate(self, state: ChessState) -> float:
+    def evaluate(self, state: ChessState) -> Value:
         """Value white."""
-        return float(self._syzygy.val(state.board))
+        return self._syzygy.evaluate(state.board)
 
 
 class ChessSyzygyTerminalOracle(TerminalOracle[ChessState]):

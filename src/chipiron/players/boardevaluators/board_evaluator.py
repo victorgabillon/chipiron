@@ -23,9 +23,7 @@ class StateEvaluator(Protocol[StateT_contra]):
 class IGameStateEvaluator(Protocol[StateT_contra]):
     """Protocol representing a game board evaluator."""
 
-    def evaluate(
-        self, state: StateT_contra
-    ) -> tuple[Value | None, Value]:
+    def evaluate(self, state: StateT_contra) -> tuple[Value | None, Value]:
         """Evaluate a board and returns the evaluation values for oracle and chi."""
         ...
 
@@ -50,11 +48,7 @@ class GameStateEvaluator[StateT]:
     def evaluate(self, state: StateT) -> tuple[Value | None, Value]:
         """Evaluate a state and return oracle and primary evaluations."""
         chi_value = self._chi.evaluate(state)
-        oracle = (
-            self._oracle.evaluate(state)
-            if self._oracle
-            else None
-        )
+        oracle = self._oracle.evaluate(state) if self._oracle else None
         return oracle, chi_value
 
     def add_evaluation(self, player_color: Color, evaluation: Value) -> None:

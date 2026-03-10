@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 
+from valanga.evaluations import Certainty, Value
+
 from chipiron.players.boardevaluators.board_evaluator import StateEvaluator
 
 
@@ -12,10 +14,10 @@ class ConstantEvaluator:
         """Store the constant value to return."""
         self._value = value
 
-    def value_white(self, state: object) -> float:
+    def evaluate(self, state: object) -> Value:
         """Value white."""
         _ = state
-        return self._value
+        return Value(score=self._value, certainty=Certainty.ESTIMATE)
 
 
 @dataclass(frozen=True, slots=True)

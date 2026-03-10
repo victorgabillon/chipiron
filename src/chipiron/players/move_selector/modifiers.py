@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, Protocol, TypeGuard, cast
 
 from anemone.dynamics import SearchDynamics
 from valanga import BranchKey, Color, TurnState
-from valanga.evaluations import FloatyStateEvaluation, ForcedOutcome, StateEvaluation
+from valanga.evaluations import Value
 from valanga.game import BranchName, Seed
 from valanga.over_event import HowOver
 from valanga.policy import BranchSelector, NotifyProgressCallable, Recommendation
@@ -83,20 +83,21 @@ class ComposedBranchSelector[StateT: TurnState](BranchSelector[StateT]):
 
 
 def is_winning_eval(
-    evaluation: StateEvaluation,
+    evaluation: Value,
     player: Color,
     threshold: float = 0.98,
 ) -> bool:
     """Return whether ``evaluation`` is winning for ``player``."""
-    match evaluation:
-        case FloatyStateEvaluation(value_white=value_white):
-            if value_white is None:
-                return False
-            if player is Color.WHITE:
-                return value_white > threshold
-            return value_white < -threshold
-        case ForcedOutcome(outcome=outcome):
-            return outcome.how_over is HowOver.WIN and outcome.is_winner(player)
+    if evaluation.over_event is not None:
+        return (
+            evaluation.over_event.how_over is HowOver.WIN
+            and evaluation.over_event.is_winner(player)
+        )
+    return (
+        (evaluation.score > threshold)
+        if player is Color.WHITE
+        else (evaluation.score < -threshold)
+    )
 
 
 ProgressGainFn = Callable[[TurnState, BranchKey], float]

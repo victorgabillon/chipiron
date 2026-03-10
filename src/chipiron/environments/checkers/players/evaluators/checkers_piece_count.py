@@ -5,13 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
-
-from valanga.evaluations import Value, Certainty
 from anemone.node_evaluation.node_direct_evaluation.protocols import (
     MasterStateValueEvaluator,
     OverEventDetector,
 )
 from valanga import Color, State
+from valanga.evaluations import Certainty, Value
 from valanga.over_event import HowOver, OverEvent, Winner
 
 from chipiron.games.domain.game.game_rules import OutcomeKind
@@ -96,15 +95,15 @@ class CheckersMasterEvaluator(MasterStateValueEvaluator):
 
     def evaluate(self, state: State) -> Value:
         """Evaluate state from White's perspective."""
-        over_event, terminal_value_white = (
-            self.over_detector.check_obvious_over_events(state)
+        over_event, terminal_value_white = self.over_detector.check_obvious_over_events(
+            state
         )
         if terminal_value_white is not None:
             return Value(
                 score=terminal_value_white,
                 certainty=Certainty.TERMINAL,
                 over_event=over_event,
-                )
+            )
 
         return Value(
             score=self.evaluator.value_white(cast("CheckersState", state)),

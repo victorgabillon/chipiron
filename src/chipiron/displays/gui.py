@@ -73,10 +73,7 @@ def format_state_eval(ev: Value | None) -> str:
     certainty = getattr(ev, "certainty", None)
     over_event = getattr(ev, "over_event", None)
 
-    if isinstance(score, int | float):
-        base = f"{float(score):+.2f}"
-    else:
-        base = str(ev)
+    base = f"{float(score):+.2f}" if isinstance(score, int | float) else str(ev)
 
     certainty_name = None
     if certainty is not None:

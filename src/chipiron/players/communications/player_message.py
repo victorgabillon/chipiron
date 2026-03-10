@@ -2,7 +2,8 @@
 
 from dataclasses import dataclass
 
-from valanga import Color, StateEvaluation, StateTag
+from valanga import Color, StateTag
+from valanga.evaluations import Value
 from valanga.game import BranchName, Seed
 
 from chipiron.core.request_context import RequestContext
@@ -47,9 +48,7 @@ class EvMove:
     ctx: RequestContext | None
     player_name: str
     color_to_play: Color
-    evaluation: StateEvaluation | None = (
-        None  # replace with your StateEvaluation type if needed
-    )
+    evaluation: Value | None = None  # replace with your Value type if needed
 
 
 @dataclass(frozen=True, slots=True)

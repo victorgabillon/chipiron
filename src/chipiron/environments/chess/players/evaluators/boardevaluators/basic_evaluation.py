@@ -6,6 +6,7 @@ import chess
 from atomheart.games.chess.board import IBoard
 from chess import Square
 from valanga import Color
+from valanga.evaluations import Certainty, Value
 
 from chipiron.environments.chess.types import ChessState
 
@@ -135,7 +136,7 @@ class BasicEvaluation:
 
     """
 
-    def value_white(self, state: ChessState) -> float:
+    def evaluate(self, state: ChessState) -> Value:
         """Calculate the value of the board for the white player.
 
         Args:
@@ -150,6 +151,6 @@ class BasicEvaluation:
         value_white_pieces += add_pawns_value_white(state.board)
         value_black_pieces += add_pawns_value_black(state.board)
 
-        return (
-            value_white_pieces - value_black_pieces
+        return Value(
+            score=value_white_pieces - value_black_pieces, certainty=Certainty.ESTIMATE
         )  # + 100 * board.chess_board.is_check() - 200 * queen_atta

@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from typing import Union
+
 from chipiron.utils.logger import chipiron_logger
 
 MyPath = typing.Annotated[str | os.PathLike[str], "path"]
@@ -186,10 +186,6 @@ def get_package_root_path(package_name: str) -> str:
     return os.path.dirname(spec.origin)
 
 
-
-
-
-
 def resolve_hf_path(path_to_file: str) -> str:
     """
     Resolve an 'hf://' URI into a local cached file path by downloading from Hugging Face Hub.
@@ -208,7 +204,7 @@ def resolve_hf_path(path_to_file: str) -> str:
     from huggingface_hub import hf_hub_download
 
     uri = path_to_file[len("hf://") :]
-    if "@"+"" in uri:
+    if "@" + "" in uri:
         # just to silence some linters - no-op
         pass
 
@@ -230,7 +226,7 @@ def resolve_hf_path(path_to_file: str) -> str:
     return str(local_path)
 
 
-def resolve_resource_path(path_to_file: Union[str, Path]) -> str:
+def resolve_resource_path(path_to_file: str | Path) -> str:
     """
     Resolve either:
       - package://...  -> file path within installed package

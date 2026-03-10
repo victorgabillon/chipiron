@@ -4,7 +4,8 @@ from typing import TYPE_CHECKING, Protocol
 
 from atomheart.games.chess.board import IBoard
 from atomheart.games.chess.move.imove import MoveKey
-from valanga import Color
+from valanga import Color, OverEvent
+from valanga.evaluations import Certainty, Value
 from valanga.over_event import HowOver, OverTags, Winner
 
 if TYPE_CHECKING:
@@ -131,6 +132,29 @@ class SyzygyTable[BoardT: IBoard](Protocol):
         # tablebase.probe_wdl Returns 2 if the side to move is winning, 0 if the position is a draw and -2 if the side to move is losing.
         val: int = self.wdl(board)
         return val
+
+    def evaluate(self, board: BoardT) -> Value:
+        """Evaluate the given board using the tablebase.
+
+        Args:
+            board (boards.BoardChi): The board to evaluate.
+
+        Returns:
+            Value: The evaluation of the board, including score and certainty.
+
+        """
+        val: int = self.val(board)
+        return Value(
+            score=val,
+            certainty=Certainty.FORCED,
+            over_event=OverEvent(
+                how_over=HowOver.WIN if val != 0 else HowOver.DRAW,
+                who_is_winner=Winner.WHITE
+                if val > 0
+                else (Winner.BLACK if val < 0 else Winner.NO_KNOWN_WINNER),
+                termination=None,
+            ),
+        )
 
     def value_white(self, state: BoardT) -> int:
         """Get the value of the given board for the white player.

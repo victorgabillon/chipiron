@@ -7,6 +7,9 @@ from typing import TYPE_CHECKING, Literal
 import chess.engine
 from atomheart.games.chess.board.factory import create_board_chi
 from atomheart.games.chess.board.utils import FenPlusHistory
+from valanga import OverEvent
+from valanga.evaluations import Certainty, Value
+from valanga.over_event import HowOver, Winner
 
 from chipiron.environments.chess.players.evaluators.boardevaluators.board_evaluator_type import (
     BoardEvalTypes,
@@ -81,7 +84,7 @@ class StockfishBoardEvaluator:
             Path(path).exists() for path in StockfishBoardEvaluator._candidate_paths()
         )
 
-    def value_white(self, state: ChessState) -> float:
+    def evaluate(self, state: ChessState) -> Value:
         """Compute the value of the board for the white player.
 
         Args:
@@ -106,7 +109,9 @@ class StockfishBoardEvaluator:
                     chipiron_logger.warning(
                         "Stockfish binary not found in any of the expected locations."
                     )
-                    return 0.0  # Fallback if no Stockfish found
+                    return Value(
+                        score=0.0, certainty=Certainty.ESTIMATE
+                    )  # Fallback if no Stockfish found
 
             # Use the board's chess_board directly to avoid state inconsistencies
             # transform the board
@@ -123,7 +128,9 @@ class StockfishBoardEvaluator:
             score = info.get("score")
 
             if score is None:
-                return 0.0
+                return Value(
+                    score=0.0, certainty=Certainty.ESTIMATE
+                )  # Fallback if no score
 
             # Convert score to float
             white_score = score.white()
@@ -133,12 +140,26 @@ class StockfishBoardEvaluator:
                 mate_moves = white_score.mate()
                 if mate_moves is not None:
                     if mate_moves > 0:
-                        return 1000.0 - mate_moves  # White wins
-                    return -1000.0 - mate_moves  # Black wins
-                return 0.0
+                        return Value(
+                            score=1000.0 - mate_moves,
+                            certainty=Certainty.FORCED,
+                            over_event=OverEvent(
+                                how_over=HowOver.WIN, who_is_winner=Winner.WHITE
+                            ),
+                        )  # White wins
+                    return Value(
+                        score=-1000.0 - mate_moves,
+                        certainty=Certainty.FORCED,
+                        over_event=OverEvent(
+                            how_over=HowOver.WIN, who_is_winner=Winner.BLACK
+                        ),
+                    )  # Black wins
+                return Value(score=0.0, certainty=Certainty.ESTIMATE)  # ???
             # Convert centipawns to pawns (divide by 100)
             cp_value = getattr(white_score, "cp", 0)
-            return float(cp_value) / 100.0
+            return Value(score=float(cp_value) / 100.0, certainty=Certainty.ESTIMATE)
 
         except (chess.engine.EngineError, FileNotFoundError, OSError):
-            return 0.0  # Fallback on any error
+            return Value(
+                score=0.0, certainty=Certainty.ESTIMATE
+            )  # Fallback on any error

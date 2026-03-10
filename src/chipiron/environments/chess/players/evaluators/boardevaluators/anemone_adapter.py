@@ -3,7 +3,9 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
-from anemone.node_evaluation.node_direct_evaluation.protocols import MasterStateValueEvaluator
+from anemone.node_evaluation.node_direct_evaluation.protocols import (
+    MasterStateValueEvaluator,
+)
 from valanga import State
 from valanga.evaluations import Value
 
@@ -42,4 +44,4 @@ class MasterBoardEvaluatorAsAnemone(MasterStateValueEvaluator):
 
     def evaluate(self, state: State) -> Value:
         """Value white."""
-        return self.inner.value_white(cast("ChessState", state))
+        return self.inner.evaluate(cast("ChessState", state))

@@ -1,12 +1,13 @@
 """Module for master board evaluator."""
 
 from typing import Any
-from valanga.evaluations import Value
+
 from coral.neural_networks.factory import (
     create_nn_state_eval_from_nn_parameters_file_and_existing_model,
 )
 from coral.neural_networks.neural_net_board_eval_args import NeuralNetBoardEvalArgs
 from valanga import Color
+from valanga.evaluations import Value
 from valanga.over_event import HowOver, OverEvent, Winner
 
 from chipiron.core.evaluation_scale import (

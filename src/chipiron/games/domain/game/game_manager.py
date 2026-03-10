@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Literal
 import yaml
 from atomheart.games.chess.move.move_factory import MoveFactory
 from valanga import BranchKey, Color, StateTag, Transition, TurnState
-from valanga.evaluations import StateEvaluation
+from valanga.evaluations import Value
 from valanga.game import ActionKey
 
 import chipiron.players as players_m
@@ -232,11 +232,11 @@ class GameManager[StateT: TurnState = TurnState]:
         except (KeyError, RuntimeError, ValueError) as exc:
             raise TransitionComputationError(str(exc)) from exc
 
-    def external_eval(self) -> tuple[StateEvaluation | None, StateEvaluation]:
+    def external_eval(self) -> tuple[Value | None, Value]:
         """Evaluate the game board using the display board evaluator.
 
         Returns:
-            tuple[StateEvaluation | None, StateEvaluation]: A tuple containing the evaluation scores.
+            tuple[Value | None, Value]: A tuple containing the evaluation scores.
 
         """
         return self.display_state_evaluator.evaluate(self.game.state)
@@ -326,7 +326,7 @@ class GameManager[StateT: TurnState = TurnState]:
         corresponding_state_tag: StateTag,
         player_name: str,
         color_to_play: Color,
-        evaluation: StateEvaluation | None,  # your real type
+        evaluation: Value | None,  # your real type
     ) -> None:
         """Single move-application path used by BOTH GUI and players.
 
