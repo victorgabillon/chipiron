@@ -30,6 +30,7 @@ from chipiron.players.boardevaluators.board_evaluator import StateEvaluator
 from chipiron.players.boardevaluators.master_board_evaluator_args import (
     MasterBoardEvaluatorArgs,
 )
+from chipiron.utils.small_tools import resolve_resource_path
 
 
 class MasterBoardEvaluatorError(ValueError):
@@ -241,12 +242,14 @@ def create_master_state_evaluator_from_args(
         case BasicEvaluationBoardEvaluatorArgs():
             board_evaluator = basic_evaluation.BasicEvaluation()
         case NeuralNetBoardEvalArgs(neural_nets_model_and_architecture=model):
+
+            resolved_model_weights_file_name = resolve_resource_path(str(model.model_weights_file_name))
             board_evaluator = (
                 create_nn_state_eval_from_nn_parameters_file_and_existing_model(
-                    model_weights_file_name=model.model_weights_file_name,
+                    model_weights_file_name=resolved_model_weights_file_name,
                     nn_architecture_args=model.nn_architecture_args,
                     content_to_input_convert=create_content_to_input_from_model_weights(
-                        model.model_weights_file_name
+                        resolved_model_weights_file_name
                     ),
                 )
             )

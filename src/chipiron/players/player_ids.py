@@ -83,7 +83,7 @@ class PlayerConfigTag(StrEnum):
             )
         else:
             resource = files("chipiron").joinpath(
-                f"data/players/player_config/{self.value}.yaml"
+                f"data/players/player_config/chess/{self.value}.yaml"
             )
 
         with as_file(resource) as real_path:

@@ -191,41 +191,56 @@ def resolve_hf_path(path_to_file: str) -> str:
     Resolve an 'hf://' URI into a local cached file path by downloading from Hugging Face Hub.
 
     Format:
-        hf://<repo_id>/<path/in/repo>@<revision>
+        hf://<namespace>/<repo>/<path/in/repo>@<revision>
 
-    Examples:
-        hf://pompote/anemone-weights/prelu_no_bug/model.pt@v0.1.0
-        hf://pompote/anemone-weights/prelu_no_bug/model.pt@main
+    Example:
+        hf://VictorGabillon/chipiron/prelu_no_bug/model.pt@v0.1.0
     """
     if not path_to_file.startswith("hf://"):
         return path_to_file
 
-    # Lazy import so HF is not a hard dependency unless used
-    from huggingface_hub import hf_hub_download
+    from pathlib import Path
+    from huggingface_hub import hf_hub_download as _hf_hub_download  # pyright: ignore[reportUnknownVariableType]
 
     uri = path_to_file[len("hf://") :]
-    if "@" + "" in uri:
-        # just to silence some linters - no-op
-        pass
 
     if "@" in uri:
         repo_and_path, revision = uri.rsplit("@", 1)
     else:
         repo_and_path, revision = uri, "main"
 
-    # repo_id is first path component
     parts = repo_and_path.split("/", 2)
     if len(parts) < 3:
         raise ValueError(
-            f"Invalid hf URI: {path_to_file}. Expected hf://<repo_id>/<path>@<revision>"
+            f"Invalid hf URI: {path_to_file}. Expected hf://<namespace>/<repo>/<path>@<revision>"
         )
+
     repo_id = parts[0] + "/" + parts[1]
     filename = parts[2]
 
-    local_path = hf_hub_download(repo_id=repo_id, filename=filename, revision=revision)
-    return str(local_path)
+    local_path = _hf_hub_download(
+        repo_id=repo_id,
+        filename=filename,
+        revision=revision,
+    )
 
+    # Prefetch sidecar files expected by Chipiron when loading NN weights.
+    if Path(filename).suffix == ".pt":
+        parent_in_repo = Path(filename).parent
+        for sidecar_name in ("chipiron_nn.yaml", "architecture.yaml"):
+            sidecar_filename = str(parent_in_repo / sidecar_name)
+            try:
+                _hf_hub_download(
+                    repo_id=repo_id,
+                    filename=sidecar_filename,
+                    revision=revision,
+                )
+            except Exception:
+                # Sidecars are best-effort here; downstream code will fail loudly
+                # if a truly required file is missing.
+                pass
 
+    return local_path
 def resolve_resource_path(path_to_file: str | Path) -> str:
     """
     Resolve either:

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from importlib.resources import files
 
 import parsley
+from valanga.evaluations import Value
 from coral.neural_networks.factory import (
     create_nn_state_eval_from_nn_parameters_file_and_existing_model,
 )
@@ -26,6 +27,7 @@ from chipiron.players.boardevaluators.all_board_evaluator_args import (
 )
 from chipiron.players.boardevaluators.board_evaluator import StateEvaluator
 from chipiron.utils.logger import chipiron_logger
+from chipiron.utils.small_tools import resolve_resource_path
 
 
 class ChessEvalWiringError(ValueError):
@@ -65,7 +67,7 @@ class ValangaBoardEvaluator(StateEvaluator[ChessState]):
         """Wrap an existing evaluator implementation."""
         self._evaluator = evaluator
 
-    def evaluate(self, state: ChessState) -> float:
+    def evaluate(self, state: ChessState) -> Value:
         """Value white."""
         return self._evaluator.evaluate(state)
 
@@ -77,13 +79,13 @@ def _build_chi() -> StateEvaluator[ChessState]:
         case BasicEvaluationBoardEvaluatorArgs():
             return ValangaBoardEvaluator(BasicEvaluation())
         case NeuralNetBoardEvalArgs(neural_nets_model_and_architecture=nn):
+            resolved_model_weights_file_name = resolve_resource_path(str(nn.model_weights_file_name))
             return ValangaBoardEvaluator(
                 create_nn_state_eval_from_nn_parameters_file_and_existing_model(
-                    model_weights_file_name=nn.model_weights_file_name,
+                    model_weights_file_name=resolved_model_weights_file_name,
                     nn_architecture_args=nn.nn_architecture_args,
                     content_to_input_convert=create_content_to_input_from_model_weights(
-                        nn.model_weights_file_name
-                    ),
+                        resolved_model_weights_file_name),
                 )
             )
         case _:
