@@ -6,8 +6,8 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "chipiron"
 version = "0.2.2"
-description = "chipiron plays chess"
-keywords = ["chess", "AI", "torch"]
+description = "chipiron plays games"
+keywords = ["games", "AI", "torch"]
 classifiers = [
   "Programming Language :: Python :: 3",
   "Operating System :: OS Independent",
@@ -33,11 +33,12 @@ dependencies = [
   "rich",
   "valanga==0.2.3",
   "atomheart==0.2.6",
-  "algorhino-coral>=0.1.12",
+  "algorhino-coral==0.1.12",
   "algorhino-anemone==0.2.10",
   "torchinfo",
   "platformdirs>=4.9.2",
   "huggingface_hub>=1.6.0",
+  "shakmaty_python_binding",
 ]
 
 
@@ -388,7 +389,7 @@ deps = [
   "platformdirs>=4.9.2",
   "valanga==0.2.3",
   "atomheart==0.2.6",
-  "algorhino-coral>=0.1.12",
+  "algorhino-coral==0.1.12",
   "algorhino-anemone==0.2.10",
 ]
 set_env = { PYTHONPATH = "{toxinidir}/src" }
