@@ -1,6 +1,8 @@
 """Tests for generic bundle-based NN runtime helpers."""
 
 from dataclasses import dataclass
+import sys
+import types
 
 import pytest
 
@@ -21,16 +23,31 @@ class _FakeArchitectureArgs:
 def test_load_nn_architecture_args_from_file() -> None:
     """Architecture loading should parse YAML into the runtime dataclass."""
     calls: dict[str, object] = {}
+    coral_module = types.ModuleType("coral")
+    coral_neural_networks = types.ModuleType("coral.neural_networks")
+    coral_architecture = types.ModuleType(
+        "coral.neural_networks.neural_net_architecture_args"
+    )
+    setattr(coral_architecture, "NeuralNetArchitectureArgs", _FakeArchitectureArgs)
 
     def fake_yaml_fetch_args_in_file(path_file: str) -> dict[str, int]:
         calls["path_file"] = path_file
         return {"width": 7}
 
     original_fetch = model_bundle_runtime.yaml_fetch_args_in_file
-    original_class_getter = model_bundle_runtime._get_neural_net_architecture_args_class
     model_bundle_runtime.yaml_fetch_args_in_file = fake_yaml_fetch_args_in_file
-    model_bundle_runtime._get_neural_net_architecture_args_class = (
-        lambda: _FakeArchitectureArgs
+    original_modules = {
+        name: sys.modules.get(name)
+        for name in (
+            "coral",
+            "coral.neural_networks",
+            "coral.neural_networks.neural_net_architecture_args",
+        )
+    }
+    sys.modules["coral"] = coral_module
+    sys.modules["coral.neural_networks"] = coral_neural_networks
+    sys.modules["coral.neural_networks.neural_net_architecture_args"] = (
+        coral_architecture
     )
     try:
         architecture_args = model_bundle_runtime.load_nn_architecture_args_from_file(
@@ -38,9 +55,11 @@ def test_load_nn_architecture_args_from_file() -> None:
         )
     finally:
         model_bundle_runtime.yaml_fetch_args_in_file = original_fetch
-        model_bundle_runtime._get_neural_net_architecture_args_class = (
-            original_class_getter
-        )
+        for name, module in original_modules.items():
+            if module is None:
+                del sys.modules[name]
+            else:
+                sys.modules[name] = module
 
     assert architecture_args == _FakeArchitectureArgs(width=7)
     assert calls == {"path_file": "/tmp/model-bundle/architecture.yaml"}
@@ -84,9 +103,19 @@ def test_create_nn_state_eval_from_model_bundle_and_converter_uses_local_paths()
     content_to_input = object()
     evaluator = object()
     calls: dict[str, object] = {}
+    coral_module = types.ModuleType("coral")
+    coral_neural_networks = types.ModuleType("coral.neural_networks")
+    coral_factory = types.ModuleType("coral.neural_networks.factory")
 
     original_bundle_loader = model_bundle_runtime.load_nn_architecture_args_from_bundle
-    original_factory = model_bundle_runtime._create_nn_state_eval_from_existing_model
+    original_modules = {
+        name: sys.modules.get(name)
+        for name in (
+            "coral",
+            "coral.neural_networks",
+            "coral.neural_networks.factory",
+        )
+    }
 
     def fake_load_nn_architecture_args_from_bundle(
         bundle_arg: ResolvedModelBundle,
@@ -105,12 +134,18 @@ def test_create_nn_state_eval_from_model_bundle_and_converter_uses_local_paths()
         calls["content_to_input_convert"] = content_to_input_convert
         return evaluator
 
+    setattr(
+        coral_factory,
+        "create_nn_state_eval_from_nn_parameters_file_and_existing_model",
+        fake_create_nn_state_eval_from_existing_model
+    )
+
     model_bundle_runtime.load_nn_architecture_args_from_bundle = (
         fake_load_nn_architecture_args_from_bundle
     )
-    model_bundle_runtime._create_nn_state_eval_from_existing_model = (
-        fake_create_nn_state_eval_from_existing_model
-    )
+    sys.modules["coral"] = coral_module
+    sys.modules["coral.neural_networks"] = coral_neural_networks
+    sys.modules["coral.neural_networks.factory"] = coral_factory
     try:
         built = model_bundle_runtime.create_nn_state_eval_from_model_bundle_and_converter(
             bundle,
@@ -120,7 +155,11 @@ def test_create_nn_state_eval_from_model_bundle_and_converter_uses_local_paths()
         model_bundle_runtime.load_nn_architecture_args_from_bundle = (
             original_bundle_loader
         )
-        model_bundle_runtime._create_nn_state_eval_from_existing_model = original_factory
+        for name, module in original_modules.items():
+            if module is None:
+                del sys.modules[name]
+            else:
+                sys.modules[name] = module
 
     assert built is evaluator
     assert calls == {

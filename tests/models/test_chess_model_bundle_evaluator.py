@@ -41,7 +41,7 @@ def test_create_chess_nn_state_eval_from_model_bundle_uses_generic_runtime(
 
     monkeypatch.setattr(
         chess_model_bundle_evaluator,
-        "create_chess_content_to_input_from_bundle",
+        "create_content_to_input_from_bundle",
         fake_create_chess_content_to_input_from_bundle,
     )
     monkeypatch.setattr(
