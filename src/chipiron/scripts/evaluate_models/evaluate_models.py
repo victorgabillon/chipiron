@@ -26,8 +26,8 @@ from chipiron.environments.chess.players.evaluators.boardevaluators.datasets.dat
 from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chipiron_nn_args import (
     load_chipiron_nn_args,
 )
-from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.model_bundle_evaluator import (
-    create_nn_state_eval_from_model_bundle,
+from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chess_model_bundle_evaluator import (
+    create_chess_nn_state_eval_from_model_bundle,
 )
 from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.model_bundle_normalization import (
     resolve_model_bundle_from_model_weights_path,
@@ -199,7 +199,7 @@ def evaluate_models(
             bundle = resolve_model_bundle_from_model_weights_path(
                 model_to_evaluate.model_weights_file_name
             )
-            nn_board_evaluator = create_nn_state_eval_from_model_bundle(
+            nn_board_evaluator = create_chess_nn_state_eval_from_model_bundle(
                 bundle
             )
 

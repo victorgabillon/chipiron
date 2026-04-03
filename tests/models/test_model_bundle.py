@@ -6,6 +6,8 @@ from pathlib import Path
 
 import pytest
 
+pytest.importorskip("PySide6")
+
 from chipiron.models import model_bundle
 from chipiron.models.model_bundle import (
     ARCHITECTURE_FILE_NAME,

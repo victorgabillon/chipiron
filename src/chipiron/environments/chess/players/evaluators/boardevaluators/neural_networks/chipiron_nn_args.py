@@ -183,6 +183,13 @@ def create_content_to_input_from_chipiron_nn_file(
     return create_content_to_input_convert(chipiron_nn_args)
 
 
+def create_chess_content_to_input_from_chipiron_nn_file(
+    chipiron_nn_file_path: MyPath,
+) -> ContentToInputFunction[ChessState]:
+    """Create the chess content-to-input converter from an explicit chipiron_nn.yaml file."""
+    return create_content_to_input_from_chipiron_nn_file(chipiron_nn_file_path)
+
+
 def create_content_to_input_from_bundle(
     bundle: ResolvedModelBundle,
 ) -> ContentToInputFunction[ChessState]:
@@ -190,15 +197,22 @@ def create_content_to_input_from_bundle(
     return create_content_to_input_from_chipiron_nn_file(bundle.chipiron_nn_file_path)
 
 
+def create_chess_content_to_input_from_bundle(
+    bundle: ResolvedModelBundle,
+) -> ContentToInputFunction[ChessState]:
+    """Create the chess content-to-input converter from a resolved model bundle."""
+    return create_content_to_input_from_bundle(bundle)
+
+
 def create_content_to_input_from_model_weights(
     model_weights_file_name: MyPath,
 ) -> ContentToInputFunction[ChessState]:
-    """Create content-to-input converter from legacy model weights config."""
+    """Create chess content-to-input converter from legacy model weights config."""
     weights_path = str(model_weights_file_name)
     if weights_path.startswith(("package://", "hf://")):
         bundle = resolve_model_bundle_from_model_weights_path(weights_path)
-        return create_content_to_input_from_bundle(bundle)
+        return create_chess_content_to_input_from_bundle(bundle)
 
     resolved_weights_path = resolve_resource_path(weights_path)
     bundle = resolve_model_bundle_from_model_weights_path(resolved_weights_path)
-    return create_content_to_input_from_bundle(bundle)
+    return create_chess_content_to_input_from_bundle(bundle)

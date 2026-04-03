@@ -10,8 +10,8 @@ from valanga.evaluations import Value
 from chipiron.environments.chess.players.evaluators.boardevaluators.basic_evaluation import (
     BasicEvaluation,
 )
-from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.model_bundle_evaluator import (
-    create_nn_state_eval_from_model_bundle,
+from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chess_model_bundle_evaluator import (
+    create_chess_nn_state_eval_from_model_bundle,
 )
 from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.model_bundle_normalization import (
     resolve_model_bundle_from_legacy_nn_config,
@@ -80,7 +80,7 @@ def _build_chi() -> StateEvaluator[ChessState]:
         case NeuralNetBoardEvalArgs(neural_nets_model_and_architecture=nn):
             bundle = resolve_model_bundle_from_legacy_nn_config(nn)
             return ValangaBoardEvaluator(
-                create_nn_state_eval_from_model_bundle(bundle)
+                create_chess_nn_state_eval_from_model_bundle(bundle)
             )
         case _:
             raise ChessEvalWiringError(args)

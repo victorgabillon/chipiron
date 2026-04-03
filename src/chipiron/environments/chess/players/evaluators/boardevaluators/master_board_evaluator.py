@@ -16,8 +16,8 @@ from chipiron.core.oracles import TerminalOracle, ValueOracle
 from chipiron.environments.chess.players.evaluators.boardevaluators import (
     basic_evaluation,
 )
-from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.model_bundle_evaluator import (
-    create_nn_state_eval_from_model_bundle,
+from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chess_model_bundle_evaluator import (
+    create_chess_nn_state_eval_from_model_bundle,
 )
 from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.model_bundle_normalization import (
     resolve_model_bundle_from_legacy_nn_config,
@@ -242,7 +242,7 @@ def create_master_state_evaluator_from_args(
             board_evaluator = basic_evaluation.BasicEvaluation()
         case NeuralNetBoardEvalArgs(neural_nets_model_and_architecture=model):
             bundle = resolve_model_bundle_from_legacy_nn_config(model)
-            board_evaluator = create_nn_state_eval_from_model_bundle(
+            board_evaluator = create_chess_nn_state_eval_from_model_bundle(
                 bundle
             )
         case _:
