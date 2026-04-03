@@ -33,7 +33,7 @@ dependencies = [
   "rich",
   "valanga==0.2.3",
   "atomheart==0.2.6",
-  "algorhino-coral>=0.1.11",
+  "algorhino-coral>=0.1.12",
   "algorhino-anemone==0.2.10",
   "torchinfo",
   "platformdirs>=4.9.2",
@@ -388,7 +388,7 @@ deps = [
   "platformdirs>=4.9.2",
   "valanga==0.2.3",
   "atomheart==0.2.6",
-  "algorhino-coral>=0.1.11",
+  "algorhino-coral>=0.1.12",
   "algorhino-anemone==0.2.10",
 ]
 set_env = { PYTHONPATH = "{toxinidir}/src" }
@@ -449,7 +449,7 @@ deps = [
   "rich",
   "valanga==0.2.3",
   "atomheart==0.2.6",
-  "algorhino-coral>=0.1.11",
+  "algorhino-coral>=0.1.12",
   "algorhino-anemone==0.2.10",
   "pytest>=9.0.2",
   "pytest-cov>=6.0.0",
