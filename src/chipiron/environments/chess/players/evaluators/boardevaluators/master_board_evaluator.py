@@ -2,9 +2,6 @@
 
 from typing import Any
 
-from coral.neural_networks.factory import (
-    create_nn_state_eval_from_nn_parameters_file_and_existing_model,
-)
 from coral.neural_networks.neural_net_board_eval_args import NeuralNetBoardEvalArgs
 from valanga import Color, Outcome
 from valanga.evaluations import Value
@@ -19,8 +16,11 @@ from chipiron.core.oracles import TerminalOracle, ValueOracle
 from chipiron.environments.chess.players.evaluators.boardevaluators import (
     basic_evaluation,
 )
-from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chipiron_nn_args import (
-    create_content_to_input_from_model_weights,
+from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.model_bundle_evaluator import (
+    create_nn_state_eval_from_model_bundle,
+)
+from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.model_bundle_normalization import (
+    resolve_model_bundle_from_legacy_nn_config,
 )
 from chipiron.environments.chess.types import ChessState
 from chipiron.players.boardevaluators.all_board_evaluator_args import (
@@ -30,7 +30,6 @@ from chipiron.players.boardevaluators.board_evaluator import StateEvaluator
 from chipiron.players.boardevaluators.master_board_evaluator_args import (
     MasterBoardEvaluatorArgs,
 )
-from chipiron.utils.small_tools import resolve_resource_path
 
 
 class MasterBoardEvaluatorError(ValueError):
@@ -242,17 +241,9 @@ def create_master_state_evaluator_from_args(
         case BasicEvaluationBoardEvaluatorArgs():
             board_evaluator = basic_evaluation.BasicEvaluation()
         case NeuralNetBoardEvalArgs(neural_nets_model_and_architecture=model):
-            resolved_model_weights_file_name = resolve_resource_path(
-                str(model.model_weights_file_name)
-            )
-            board_evaluator = (
-                create_nn_state_eval_from_nn_parameters_file_and_existing_model(
-                    model_weights_file_name=resolved_model_weights_file_name,
-                    nn_architecture_args=model.nn_architecture_args,
-                    content_to_input_convert=create_content_to_input_from_model_weights(
-                        resolved_model_weights_file_name
-                    ),
-                )
+            bundle = resolve_model_bundle_from_legacy_nn_config(model)
+            board_evaluator = create_nn_state_eval_from_model_bundle(
+                bundle
             )
         case _:
             raise UnsupportedBoardEvaluatorArgsError(args.type)

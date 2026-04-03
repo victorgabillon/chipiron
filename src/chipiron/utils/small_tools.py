@@ -6,7 +6,6 @@ import importlib.machinery
 import importlib.util
 import os
 import typing
-from contextlib import suppress
 from importlib.resources import files
 from pathlib import Path
 from typing import Any
@@ -233,20 +232,6 @@ def resolve_hf_path(path_to_file: str) -> str:
         filename=filename,
         revision=revision,
     )
-
-    # Legacy behavior for the current evaluator path.
-    # TODO(PR2): remove NN sidecar prefetching from this generic file resolver and
-    # route model artifact resolution through chipiron.models.model_bundle instead.
-    if Path(filename).suffix == ".pt":
-        parent_in_repo = Path(filename).parent
-        for sidecar_name in ("chipiron_nn.yaml", "architecture.yaml"):
-            sidecar_filename = str(parent_in_repo / sidecar_name)
-            with suppress(Exception):
-                _hf_hub_download(
-                    repo_id=repo_id,
-                    filename=sidecar_filename,
-                    revision=revision,
-                )
 
     return local_path
 

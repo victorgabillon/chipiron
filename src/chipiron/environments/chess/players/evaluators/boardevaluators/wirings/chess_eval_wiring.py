@@ -4,17 +4,17 @@ from dataclasses import dataclass
 from importlib.resources import files
 
 import parsley
-from coral.neural_networks.factory import (
-    create_nn_state_eval_from_nn_parameters_file_and_existing_model,
-)
 from coral.neural_networks.neural_net_board_eval_args import NeuralNetBoardEvalArgs
 from valanga.evaluations import Value
 
 from chipiron.environments.chess.players.evaluators.boardevaluators.basic_evaluation import (
     BasicEvaluation,
 )
-from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chipiron_nn_args import (
-    create_content_to_input_from_model_weights,
+from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.model_bundle_evaluator import (
+    create_nn_state_eval_from_model_bundle,
+)
+from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.model_bundle_normalization import (
+    resolve_model_bundle_from_legacy_nn_config,
 )
 from chipiron.environments.chess.players.evaluators.boardevaluators.stockfish_board_evaluator import (
     StockfishBoardEvalArgs,
@@ -27,7 +27,6 @@ from chipiron.players.boardevaluators.all_board_evaluator_args import (
 )
 from chipiron.players.boardevaluators.board_evaluator import StateEvaluator
 from chipiron.utils.logger import chipiron_logger
-from chipiron.utils.small_tools import resolve_resource_path
 
 
 class ChessEvalWiringError(ValueError):
@@ -79,17 +78,9 @@ def _build_chi() -> StateEvaluator[ChessState]:
         case BasicEvaluationBoardEvaluatorArgs():
             return ValangaBoardEvaluator(BasicEvaluation())
         case NeuralNetBoardEvalArgs(neural_nets_model_and_architecture=nn):
-            resolved_model_weights_file_name = resolve_resource_path(
-                str(nn.model_weights_file_name)
-            )
+            bundle = resolve_model_bundle_from_legacy_nn_config(nn)
             return ValangaBoardEvaluator(
-                create_nn_state_eval_from_nn_parameters_file_and_existing_model(
-                    model_weights_file_name=resolved_model_weights_file_name,
-                    nn_architecture_args=nn.nn_architecture_args,
-                    content_to_input_convert=create_content_to_input_from_model_weights(
-                        resolved_model_weights_file_name
-                    ),
-                )
+                create_nn_state_eval_from_model_bundle(bundle)
             )
         case _:
             raise ChessEvalWiringError(args)

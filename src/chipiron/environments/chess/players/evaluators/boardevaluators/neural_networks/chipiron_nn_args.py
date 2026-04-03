@@ -16,11 +16,15 @@ from chipiron.environments.chess.players.evaluators.boardevaluators.neural_netwo
 )
 from chipiron.environments.chess.types import ChessState
 from chipiron.environments.types import GameKind
+from chipiron.models.model_bundle import ResolvedModelBundle
 from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
     ModelInputRepresentationType,
 )
 from chipiron.utils import MyPath
 from chipiron.utils.small_tools import resolve_resource_path
+from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.model_bundle_normalization import (
+    resolve_model_bundle_from_model_weights_path,
+)
 
 CHIPIRON_NN_ARGS_FILENAME = "chipiron_nn.yaml"
 
@@ -109,6 +113,12 @@ def _as_mapping(obj: object, *, file_path: str) -> Mapping[str, Any]:
 def load_chipiron_nn_args(folder_path: MyPath) -> ChipironNNArgs:
     """Load chipiron nn args."""
     file_path = get_chipiron_nn_args_file_path_from(folder_path)
+    return load_chipiron_nn_args_from_file(file_path)
+
+
+def load_chipiron_nn_args_from_file(chipiron_nn_file_path: MyPath) -> ChipironNNArgs:
+    """Load chipiron NN args from an explicit YAML file path."""
+    file_path = str(chipiron_nn_file_path)
     with open(file_path, encoding="utf-8") as f:
         raw = yaml.safe_load(f)
 
@@ -125,6 +135,11 @@ def load_chipiron_nn_args(folder_path: MyPath) -> ChipironNNArgs:
             strict=False,
         ),
     )
+
+
+def load_chipiron_nn_args_from_bundle(bundle: ResolvedModelBundle) -> ChipironNNArgs:
+    """Load chipiron NN args from a resolved model bundle."""
+    return load_chipiron_nn_args_from_file(bundle.chipiron_nn_file_path)
 
 
 def _create_chess_content_to_input(
@@ -160,10 +175,30 @@ def create_content_to_input_from_folder(
     return create_content_to_input_convert(chipiron_nn_args)
 
 
+def create_content_to_input_from_chipiron_nn_file(
+    chipiron_nn_file_path: MyPath,
+) -> ContentToInputFunction[ChessState]:
+    """Create content-to-input converter from an explicit chipiron_nn.yaml file."""
+    chipiron_nn_args = load_chipiron_nn_args_from_file(chipiron_nn_file_path)
+    return create_content_to_input_convert(chipiron_nn_args)
+
+
+def create_content_to_input_from_bundle(
+    bundle: ResolvedModelBundle,
+) -> ContentToInputFunction[ChessState]:
+    """Create content-to-input converter from a resolved model bundle."""
+    return create_content_to_input_from_chipiron_nn_file(bundle.chipiron_nn_file_path)
+
+
 def create_content_to_input_from_model_weights(
     model_weights_file_name: MyPath,
 ) -> ContentToInputFunction[ChessState]:
-    """Create content to input from model weights."""
-    model_weights_file_name = resolve_resource_path(str(model_weights_file_name))
-    folder_path = os.path.dirname(model_weights_file_name)
-    return create_content_to_input_from_folder(folder_path)
+    """Create content-to-input converter from legacy model weights config."""
+    weights_path = str(model_weights_file_name)
+    if weights_path.startswith(("package://", "hf://")):
+        bundle = resolve_model_bundle_from_model_weights_path(weights_path)
+        return create_content_to_input_from_bundle(bundle)
+
+    resolved_weights_path = resolve_resource_path(weights_path)
+    bundle = resolve_model_bundle_from_model_weights_path(resolved_weights_path)
+    return create_content_to_input_from_bundle(bundle)

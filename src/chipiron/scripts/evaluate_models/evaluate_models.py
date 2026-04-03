@@ -14,10 +14,7 @@ import dacite
 import torch
 import yaml
 from coral.chi_nn import ChiNN
-from coral.neural_networks.factory import (
-    NeuralNetModelsAndArchitecture,
-    create_nn_state_eval_from_nn_parameters_file_and_existing_model,
-)
+from coral.neural_networks.factory import NeuralNetModelsAndArchitecture
 from torch.utils.data import DataLoader
 
 from chipiron.environments.chess.players.evaluators.boardevaluators.datasets.datasets import (
@@ -27,15 +24,19 @@ from chipiron.environments.chess.players.evaluators.boardevaluators.datasets.dat
     process_stockfish_value,  # pyright: ignore[reportUnknownVariableType]
 )
 from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chipiron_nn_args import (
-    create_content_to_input_from_model_weights,
     load_chipiron_nn_args,
+)
+from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.model_bundle_evaluator import (
+    create_nn_state_eval_from_model_bundle,
+)
+from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.model_bundle_normalization import (
+    resolve_model_bundle_from_model_weights_path,
 )
 from chipiron.learningprocesses.nn_trainer.nn_trainer import (
     compute_test_error_on_dataset,
 )
 from chipiron.utils import MyPath
 from chipiron.utils.path_runtime import get_default_output_dir
-from chipiron.utils.small_tools import resolve_resource_path
 
 if TYPE_CHECKING:
     from coral.neural_networks import NNBWStateEvaluator
@@ -195,17 +196,11 @@ def evaluate_models(
             criterion = torch.nn.L1Loss()
 
             nn_board_evaluator: NNBWStateEvaluator[ChessState]
-            resolved_model_weights_file_name = resolve_resource_path(
-                str(model_to_evaluate.model_weights_file_name)
+            bundle = resolve_model_bundle_from_model_weights_path(
+                model_to_evaluate.model_weights_file_name
             )
-            nn_board_evaluator = (
-                create_nn_state_eval_from_nn_parameters_file_and_existing_model(
-                    model_weights_file_name=resolved_model_weights_file_name,
-                    nn_architecture_args=model_to_evaluate.nn_architecture_args,
-                    content_to_input_convert=create_content_to_input_from_model_weights(
-                        resolved_model_weights_file_name
-                    ),
-                )
+            nn_board_evaluator = create_nn_state_eval_from_model_bundle(
+                bundle
             )
 
             stockfish_boards_test = FenAndValueDataSet(
