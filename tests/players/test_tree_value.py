@@ -8,7 +8,7 @@ to create the trees.
 """
 
 import random
-from importlib.resources import as_file, files
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import chess
@@ -21,10 +21,10 @@ from anemone.trees import Tree
 from atomheart.games.chess.board import IBoard, create_board
 from atomheart.games.chess.board.utils import FenPlusHistory
 
-from chipiron.environments.chess.types import ChessState
-from chipiron.players import Player
 from chipiron.environments.chess.players.adapters.chess_adapter import ChessAdapter
 from chipiron.environments.chess.players.factory.factory import create_chipiron_player
+from chipiron.environments.chess.types import ChessState
+from chipiron.players import Player
 from chipiron.players.move_selector.modifiers import ComposedBranchSelector
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
@@ -100,16 +100,10 @@ def test_random(use_rust_boards: bool) -> None:
 # the list in PlayerConfigTag should correspond to files existing in the data/players/player_config folder
 def test_player_config_files_exist() -> None:
     """Test to ensure all player configuration files listed in PlayerConfigTag exist."""
-    base_resource = files("chipiron").joinpath("data/players/player_config")
-
     for tag in PlayerConfigTag:
-        if tag is PlayerConfigTag.CHIPIRON:
-            resource = base_resource.joinpath("chipiron/chipiron.yaml")
-        else:
-            resource = base_resource.joinpath(tag.value + ".yaml")
-
-        with as_file(resource) as file_path:
-            assert file_path.exists(), f"File does not exist: {file_path}"
+        file_path = Path(tag.get_yaml_file_path())
+        assert file_path.suffix == ".yaml"
+        assert file_path.exists(), f"File does not exist for {tag}: {file_path}"
 
 
 if __name__ == "__main__":

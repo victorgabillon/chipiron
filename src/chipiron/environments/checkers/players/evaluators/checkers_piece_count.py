@@ -5,13 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
-from anemone.node_evaluation.node_direct_evaluation.protocols import (
+from anemone.node_evaluation.direct.protocols import (
     MasterStateValueEvaluator,
     OverEventDetector,
 )
-from valanga import Color, State
-from valanga.evaluations import Certainty, Value
-from valanga.over_event import HowOver, OverEvent, Winner
+from valanga import Color, Outcome, State
+from valanga.evaluations import Certainty, Role, Value
+from valanga.over_event import OverEvent
 
 from chipiron.games.domain.game.game_rules import OutcomeKind
 
@@ -51,7 +51,7 @@ class CheckersOverEventDetector:
 
     def check_obvious_over_events(
         self, state: State
-    ) -> tuple[OverEvent | None, float | None]:
+    ) -> tuple[OverEvent[Role] | None, float | None]:
         """Return terminal over-event + value when available."""
         checkers_state = cast("CheckersState", state)
         outcome = self.rules.outcome(state=checkers_state)
@@ -60,12 +60,15 @@ class CheckersOverEventDetector:
 
         if outcome.kind is OutcomeKind.WIN:
             who_is_winner = (
-                Winner.WHITE if outcome.winner is Color.WHITE else Winner.BLACK
+                Color.WHITE if outcome.winner is Color.WHITE else Color.BLACK
             )
-            over_event = OverEvent(
-                how_over=HowOver.WIN,
-                who_is_winner=who_is_winner,
-                termination=None,
+            over_event = cast(
+                "OverEvent[Role]",
+                OverEvent(
+                    outcome=Outcome.WIN,
+                    winner=who_is_winner,
+                    termination=None,
+                ),
             )
             if outcome.winner is Color.WHITE:
                 value_white = self.value_over_enum.VALUE_WHITE_WHEN_OVER_WHITE_WINS
@@ -73,10 +76,13 @@ class CheckersOverEventDetector:
                 value_white = self.value_over_enum.VALUE_WHITE_WHEN_OVER_BLACK_WINS
             return over_event, float(value_white)
 
-        over_event = OverEvent(
-            how_over=HowOver.DRAW,
-            who_is_winner=Winner.NO_KNOWN_WINNER,
-            termination=None,
+        over_event = cast(
+            "OverEvent[Role]",
+            OverEvent(
+                outcome=Outcome.DRAW,
+                winner=None,
+                termination=None,
+            ),
         )
         return over_event, float(self.value_over_enum.VALUE_WHITE_WHEN_OVER_DRAW)
 

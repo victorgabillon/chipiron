@@ -4,11 +4,11 @@ from dataclasses import dataclass
 from importlib.resources import files
 
 import parsley
-from valanga.evaluations import Value
 from coral.neural_networks.factory import (
     create_nn_state_eval_from_nn_parameters_file_and_existing_model,
 )
 from coral.neural_networks.neural_net_board_eval_args import NeuralNetBoardEvalArgs
+from valanga.evaluations import Value
 
 from chipiron.environments.chess.players.evaluators.boardevaluators.basic_evaluation import (
     BasicEvaluation,
@@ -79,13 +79,16 @@ def _build_chi() -> StateEvaluator[ChessState]:
         case BasicEvaluationBoardEvaluatorArgs():
             return ValangaBoardEvaluator(BasicEvaluation())
         case NeuralNetBoardEvalArgs(neural_nets_model_and_architecture=nn):
-            resolved_model_weights_file_name = resolve_resource_path(str(nn.model_weights_file_name))
+            resolved_model_weights_file_name = resolve_resource_path(
+                str(nn.model_weights_file_name)
+            )
             return ValangaBoardEvaluator(
                 create_nn_state_eval_from_nn_parameters_file_and_existing_model(
                     model_weights_file_name=resolved_model_weights_file_name,
                     nn_architecture_args=nn.nn_architecture_args,
                     content_to_input_convert=create_content_to_input_from_model_weights(
-                        resolved_model_weights_file_name),
+                        resolved_model_weights_file_name
+                    ),
                 )
             )
         case _:

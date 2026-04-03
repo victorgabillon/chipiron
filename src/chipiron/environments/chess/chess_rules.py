@@ -2,8 +2,7 @@
 
 from dataclasses import dataclass
 
-from valanga import Color
-from valanga.over_event import HowOver, Winner
+from valanga import Color, Outcome
 
 from chipiron.environments.chess.players.evaluators.boardevaluators.table_base.factory import (
     AnySyzygyTable,
@@ -57,8 +56,8 @@ class ChessRules(GameRules[ChessState]):
         """Assessment."""
         if self.syzygy is None or not self.syzygy.fast_in_table(state.board):
             return None
-        winner, how_over = self.syzygy.get_over_event(board=state.board)
-        return self._assessment_from_over_event(winner, how_over, reason="syzygy")
+        color, outcome = self.syzygy.get_over_event(board=state.board)
+        return self._assessment_from_over_event(color, outcome, reason="syzygy")
 
     def pretty_assessment(
         self, state: ChessState, assessment: PositionAssessment
@@ -94,16 +93,16 @@ class ChessRules(GameRules[ChessState]):
                 raise UnexpectedChessResultError(result, self.__class__.__name__)
 
     def _assessment_from_over_event(
-        self, winner: Winner, how_over: HowOver, reason: str | None = None
+        self, color: Color | None, outcome: Outcome, reason: str | None = None
     ) -> PositionAssessment:
         """Map a terminal event into a position assessment."""
-        if how_over is HowOver.DRAW:
+        if outcome is Outcome.DRAW:
             return PositionAssessment(kind=VerdictKind.DRAW, reason=reason)
-        if how_over is HowOver.WIN:
+        if outcome is Outcome.WIN:
             mapped_winner: Color | None = None
-            if winner is Winner.WHITE:
+            if color is Color.WHITE:
                 mapped_winner = Color.WHITE
-            elif winner is Winner.BLACK:
+            elif color is Color.BLACK:
                 mapped_winner = Color.BLACK
             if mapped_winner is None:
                 return PositionAssessment(kind=VerdictKind.UNKNOWN, reason=reason)

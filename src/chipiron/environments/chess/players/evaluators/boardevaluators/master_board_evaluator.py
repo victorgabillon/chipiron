@@ -6,9 +6,9 @@ from coral.neural_networks.factory import (
     create_nn_state_eval_from_nn_parameters_file_and_existing_model,
 )
 from coral.neural_networks.neural_net_board_eval_args import NeuralNetBoardEvalArgs
-from valanga import Color
+from valanga import Color, Outcome
 from valanga.evaluations import Value
-from valanga.over_event import HowOver, OverEvent, Winner
+from valanga.over_event import OverEvent
 
 from chipiron.core.evaluation_scale import (
     EvaluationScale,
@@ -68,7 +68,7 @@ class MasterBoardEvaluator:
     value_oracle: ValueOracle[ChessState] | None
 
     # The optional terminal oracle used for endgame metadata.
-    terminal_oracle: TerminalOracle[ChessState] | None
+    terminal_oracle: TerminalOracle[ChessState, Color] | None
 
     # The value over enum used to determine the value of the node when it is over.
     value_over_enum: ValueOverEnum
@@ -77,7 +77,7 @@ class MasterBoardEvaluator:
         self,
         board_evaluator: StateEvaluator[ChessState],
         value_oracle: ValueOracle[ChessState] | None,
-        terminal_oracle: TerminalOracle[ChessState] | None,
+        terminal_oracle: TerminalOracle[ChessState, Color] | None,
         value_over_enum: ValueOverEnum,
     ) -> None:
         """Initialize a MasterBoardEvaluator object.
@@ -119,7 +119,7 @@ class MasterBoardEvaluator:
 
     def check_obvious_over_events(
         self, state: ChessState
-    ) -> tuple[OverEvent | None, float | None]:
+    ) -> tuple[OverEvent[Color] | None, float | None]:
         """Check if the given board is in an obvious game-over state and returns the corresponding OverEvent and evaluation.
 
         Args:
@@ -129,35 +129,35 @@ class MasterBoardEvaluator:
             ValueError: If the board result string is not recognized.
 
         Returns:
-            tuple[OverEvent | None, float]: A tuple containing the OverEvent
+            tuple[OverEvent[Color] | None, float | None]: A tuple containing the OverEvent
             (if the game is over or can be determined from Syzygy tables, otherwise None) and the evaluation score from White's perspective.
             The evaluation is especially useful when training models.
 
         """
         board = state.board
         game_over: bool = board.is_game_over()
-        over_event: OverEvent | None = None
+        over_event: OverEvent[Color] | None = None
         evaluation: float | None = None
         if game_over:
             value_as_string: str = board.result(claim_draw=True)
-            how_over_: HowOver
-            who_is_winner_: Winner
+            how_over_: Outcome
+            who_is_winner_: Color | None
             match value_as_string:
                 case "0-1":
-                    how_over_ = HowOver.WIN
-                    who_is_winner_ = Winner.BLACK
+                    how_over_ = Outcome.WIN
+                    who_is_winner_ = Color.BLACK
                 case "1-0":
-                    how_over_ = HowOver.WIN
-                    who_is_winner_ = Winner.WHITE
+                    how_over_ = Outcome.WIN
+                    who_is_winner_ = Color.WHITE
                 case "1/2-1/2":
-                    how_over_ = HowOver.DRAW
-                    who_is_winner_ = Winner.NO_KNOWN_WINNER
+                    how_over_ = Outcome.DRAW
+                    who_is_winner_ = None
                 case _:
                     raise UnexpectedGameResultError(value_as_string)
 
             over_event = OverEvent(
-                how_over=how_over_,
-                who_is_winner=who_is_winner_,
+                outcome=how_over_,
+                winner=who_is_winner_,
                 termination=board.termination(),
             )
 
@@ -167,13 +167,13 @@ class MasterBoardEvaluator:
             evaluation = self.value_white_from_over_event(over_event=over_event)
         return over_event, evaluation
 
-    def value_white_from_over_event(self, over_event: OverEvent) -> float:
+    def value_white_from_over_event(self, over_event: OverEvent[Color]) -> float:
         """Return the value white given an over event."""
         assert over_event.is_over()
         white_value: Any
         if over_event.is_win():
             assert not over_event.is_draw()
-            if over_event.is_winner(Color.WHITE):
+            if over_event.is_win_for(Color.WHITE):
                 white_value = self.value_over_enum.VALUE_WHITE_WHEN_OVER_WHITE_WINS
             else:
                 white_value = self.value_over_enum.VALUE_WHITE_WHEN_OVER_BLACK_WINS
@@ -187,7 +187,7 @@ class MasterBoardEvaluator:
 def create_master_state_evaluator(
     board_evaluator: StateEvaluator[ChessState],
     value_oracle: ValueOracle[ChessState] | None,
-    terminal_oracle: TerminalOracle[ChessState] | None,
+    terminal_oracle: TerminalOracle[ChessState, Color] | None,
     evaluation_scale: EvaluationScale,
 ) -> MasterBoardEvaluator:
     """Create a MasterBoardEvaluator instance.
@@ -216,7 +216,7 @@ def create_master_state_evaluator(
 def create_master_state_evaluator_from_args(
     master_board_evaluator: MasterBoardEvaluatorArgs,
     value_oracle: ValueOracle[ChessState] | None,
-    terminal_oracle: TerminalOracle[ChessState] | None,
+    terminal_oracle: TerminalOracle[ChessState, Color] | None,
 ) -> MasterBoardEvaluator:
     """Create a MasterBoardEvaluator instance from the given arguments.
 
@@ -242,8 +242,9 @@ def create_master_state_evaluator_from_args(
         case BasicEvaluationBoardEvaluatorArgs():
             board_evaluator = basic_evaluation.BasicEvaluation()
         case NeuralNetBoardEvalArgs(neural_nets_model_and_architecture=model):
-
-            resolved_model_weights_file_name = resolve_resource_path(str(model.model_weights_file_name))
+            resolved_model_weights_file_name = resolve_resource_path(
+                str(model.model_weights_file_name)
+            )
             board_evaluator = (
                 create_nn_state_eval_from_nn_parameters_file_and_existing_model(
                     model_weights_file_name=resolved_model_weights_file_name,

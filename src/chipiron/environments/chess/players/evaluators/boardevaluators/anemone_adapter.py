@@ -3,21 +3,22 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
-from anemone.node_evaluation.node_direct_evaluation.protocols import (
+from anemone.node_evaluation.direct.protocols import (
     MasterStateValueEvaluator,
 )
 from valanga import State
 from valanga.evaluations import Value
+from valanga.game import Role
+from valanga.over_event import OverEvent
 
 from chipiron.environments.chess.players.evaluators.boardevaluators.master_board_evaluator import (
     MasterBoardEvaluator,
 )
 
 if TYPE_CHECKING:
-    from anemone.node_evaluation.node_direct_evaluation.protocols import (
+    from anemone.node_evaluation.direct.protocols import (
         OverEventDetector,
     )
-    from valanga.over_event import OverEvent
 
     from chipiron.environments.chess.types import ChessState
 
@@ -30,9 +31,12 @@ class MasterBoardOverEventDetector:
 
     def check_obvious_over_events(
         self, state: State
-    ) -> tuple["OverEvent | None", float | None]:
+    ) -> tuple[OverEvent[Role] | None, float | None]:
         """Check obvious over events."""
-        return self.evaluator.check_obvious_over_events(cast("ChessState", state))
+        over_event, value = self.evaluator.check_obvious_over_events(
+            cast("ChessState", state)
+        )
+        return cast("OverEvent[Role] | None", over_event), value
 
 
 @dataclass

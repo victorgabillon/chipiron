@@ -85,7 +85,7 @@ def test_create_tree_and_value_move_selector_passes_hooks(monkeypatch: Any) -> N
     selector = factory.create_tree_and_value_move_selector(
         args=cast("Any", object()),
         state_type=ChessState,
-        master_state_evaluator=cast("Any", object()),
+        master_state_value_evaluator=cast("Any", object()),
         state_representation_factory=None,
         random_generator=random.Random(0),
         search_dynamics_override=DummySearchDynamics(),

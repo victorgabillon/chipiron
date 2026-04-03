@@ -63,7 +63,7 @@ class MatchOver:
 
     scope: Scope
     final_state: valanga.TurnState
-    over_event: valanga.OverEvent | None
+    over_event: valanga.OverEvent[valanga.Role] | None
 
 
 type MatchEvent = (

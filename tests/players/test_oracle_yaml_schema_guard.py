@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 PLAYER_CONFIG_ROOT = Path("src/chipiron/data/players/player_config")
 
 

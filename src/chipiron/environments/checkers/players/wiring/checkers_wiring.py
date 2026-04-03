@@ -47,7 +47,7 @@ class BuildCheckersGamePlayerArgs:
 def build_checkers_master_evaluator(
     evaluator_args: MasterBoardEvaluatorArgs,
     value_oracle: ValueOracle[CheckersState] | None,
-    terminal_oracle: TerminalOracle[CheckersState] | None,
+    terminal_oracle: TerminalOracle[CheckersState, Color] | None,
     rules_adapter: CheckersRulesAdapter,
 ) -> CheckersMasterEvaluator:
     """Build an anemone-compatible master evaluator for checkers."""
@@ -83,7 +83,7 @@ def build_checkers_game_player(
     def master_evaluator_from_args(
         evaluator_args: MasterBoardEvaluatorArgs,
         value_oracle: ValueOracle[CheckersState] | None,
-        terminal_oracle: TerminalOracle[CheckersState] | None,
+        terminal_oracle: TerminalOracle[CheckersState, Color] | None,
     ) -> CheckersMasterEvaluator:
         return build_checkers_master_evaluator(
             evaluator_args=evaluator_args,

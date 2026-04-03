@@ -25,7 +25,7 @@ print("origin:", typing.get_origin(T), "args:", typing.get_args(T))
 test_models_to_evaluate_: list[NeuralNetModelsAndArchitecture] = [
     NeuralNetModelsAndArchitecture.build_from_folder_path(
         folder_path=resolve_package_path(
-            "package://scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/prelu_no_bug"
+            "package://data/players/board_evaluators/nn_pytorch/prelu_no_bug"
         )
     )
 ]

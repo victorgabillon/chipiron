@@ -6,17 +6,17 @@ import chess
 import pytest
 from atomheart.games.chess.board import IBoard, create_board
 from atomheart.games.chess.board.utils import FenPlusHistory
-from valanga import StateEvaluation
+from valanga.evaluations import Value
 
 from chipiron.displays.gui_protocol import GuiUpdate, UpdEvaluation, make_scope
 from chipiron.displays.gui_publisher import GuiPublisher
+from chipiron.environments.chess.players.evaluators.boardevaluators.factory import (
+    create_game_board_evaluator_for_game_kind,
+)
 from chipiron.environments.chess.types import ChessState
 from chipiron.environments.types import GameKind
 from chipiron.players.boardevaluators.board_evaluator import (
     ObservableGameStateEvaluator,
-)
-from chipiron.environments.chess.players.evaluators.boardevaluators.factory import (
-    create_game_board_evaluator_for_game_kind,
 )
 
 
@@ -38,7 +38,7 @@ def test_chess_evaluator_accepts_chess_state(use_rust_boards: bool) -> None:
     oracle, chi = evaluator.evaluate(state)
 
     assert oracle is None
-    assert isinstance(chi, StateEvaluation)
+    assert isinstance(chi, Value)
 
 
 def test_gui_evaluator_publishes_oracle_field() -> None:

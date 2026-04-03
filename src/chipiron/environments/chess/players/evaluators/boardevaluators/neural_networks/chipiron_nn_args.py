@@ -164,7 +164,6 @@ def create_content_to_input_from_model_weights(
     model_weights_file_name: MyPath,
 ) -> ContentToInputFunction[ChessState]:
     """Create content to input from model weights."""
-
     model_weights_file_name = resolve_resource_path(str(model_weights_file_name))
     folder_path = os.path.dirname(model_weights_file_name)
     return create_content_to_input_from_folder(folder_path)

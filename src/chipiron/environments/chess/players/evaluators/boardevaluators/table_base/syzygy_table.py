@@ -4,9 +4,8 @@ from typing import TYPE_CHECKING, Protocol
 
 from atomheart.games.chess.board import IBoard
 from atomheart.games.chess.move.imove import MoveKey
-from valanga import Color, OverEvent
+from valanga import Color, Outcome, OverEvent
 from valanga.evaluations import Certainty, Value
-from valanga.over_event import HowOver, OverTags, Winner
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -33,9 +32,6 @@ class SyzygyTable[BoardT: IBoard](Protocol):
 
         value_white(board: T_Board) -> int:
             Get the value of the given board for the white player.
-
-        get_over_tag(board: T_Board) -> OverTags:
-            Get the over tag for the given board.
 
         string_result(board: T_Board) -> str:
             Get the string representation of the result for the given board.
@@ -90,7 +86,7 @@ class SyzygyTable[BoardT: IBoard](Protocol):
         # For now, raise NotImplementedError to indicate it must be implemented
         raise NotImplementedError("wdl method must be implemented in subclass")
 
-    def get_over_event(self, board: BoardT) -> tuple[Winner, HowOver]:
+    def get_over_event(self, board: BoardT) -> tuple[Color | None, Outcome]:
         """Get the winner and how the game is over for the given board.
 
         Args:
@@ -102,20 +98,18 @@ class SyzygyTable[BoardT: IBoard](Protocol):
         """
         val: int = self.val(board)
 
-        who_is_winner_: Winner = Winner.NO_KNOWN_WINNER
-        how_over_: HowOver
+        who_is_winner_: Color | None = None
+        how_over_: Outcome
         if val != 0:
-            how_over_ = HowOver.WIN
+            how_over_ = Outcome.WIN
             if val > 0:
-                who_is_winner_ = (
-                    Winner.WHITE if board.turn == Color.WHITE else Winner.BLACK
-                )
+                who_is_winner_ = board.turn  # The player to move is winning
             if val < 0:
                 who_is_winner_ = (
-                    Winner.WHITE if board.turn == Color.BLACK else Winner.BLACK
+                    Color.WHITE if board.turn == Color.BLACK else Color.BLACK
                 )
         else:
-            how_over_ = HowOver.DRAW
+            how_over_ = Outcome.DRAW
 
         return who_is_winner_, how_over_
 
@@ -148,10 +142,8 @@ class SyzygyTable[BoardT: IBoard](Protocol):
             score=val,
             certainty=Certainty.FORCED,
             over_event=OverEvent(
-                how_over=HowOver.WIN if val != 0 else HowOver.DRAW,
-                who_is_winner=Winner.WHITE
-                if val > 0
-                else (Winner.BLACK if val < 0 else Winner.NO_KNOWN_WINNER),
+                outcome=Outcome.WIN if val != 0 else Outcome.DRAW,
+                winner=Color.WHITE if val > 0 else (Color.BLACK if val < 0 else None),
                 termination=None,
             ),
         )
@@ -171,27 +163,6 @@ class SyzygyTable[BoardT: IBoard](Protocol):
         if state.turn == Color.WHITE:
             return val * 100000
         return val * -10000
-
-    def get_over_tag(self, board: BoardT) -> OverTags:
-        """Get the over tag for the given board.
-
-        Args:
-            board (boards.BoardChi): The board to get the over tag for.
-
-        Returns:
-            OverTags: The over tag for the board.
-
-        """
-        val = self.wdl(board)
-        if val > 0:
-            if board.turn == Color.WHITE:
-                return OverTags.TAG_WIN_WHITE
-            return OverTags.TAG_WIN_BLACK
-        if val == 0:
-            return OverTags.TAG_DRAW
-        if board.turn == Color.WHITE:
-            return OverTags.TAG_WIN_BLACK
-        return OverTags.TAG_WIN_WHITE
 
     def string_result(self, board: BoardT) -> str:
         """Get the string representation of the result for the given board.

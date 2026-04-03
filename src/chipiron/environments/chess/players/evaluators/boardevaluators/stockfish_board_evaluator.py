@@ -1,5 +1,6 @@
 """Module where we define the Stockfish Board Evaluator."""
 
+import importlib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
@@ -7,9 +8,7 @@ from typing import TYPE_CHECKING, Literal
 import chess.engine
 from atomheart.games.chess.board.factory import create_board_chi
 from atomheart.games.chess.board.utils import FenPlusHistory
-from valanga import OverEvent
-from valanga.evaluations import Certainty, Value
-from valanga.over_event import HowOver, Winner
+from valanga import Color, OverEvent
 
 from chipiron.environments.chess.players.evaluators.boardevaluators.board_evaluator_type import (
     BoardEvalTypes,
@@ -20,6 +19,13 @@ from chipiron.utils.path_variables import STOCKFISH_BINARY_PATH
 
 if TYPE_CHECKING:
     from atomheart.games.chess.board.board_chi import BoardChi
+
+valanga_evaluations = importlib.import_module("valanga.evaluations")
+valanga_over_event = importlib.import_module("valanga.over_event")
+
+Certainty = valanga_evaluations.Certainty
+Value = valanga_evaluations.Value
+Outcome = valanga_over_event.Outcome
 
 
 @dataclass
@@ -143,15 +149,16 @@ class StockfishBoardEvaluator:
                         return Value(
                             score=1000.0 - mate_moves,
                             certainty=Certainty.FORCED,
-                            over_event=OverEvent(
-                                how_over=HowOver.WIN, who_is_winner=Winner.WHITE
+                            over_event=OverEvent[Color](
+                                outcome=Outcome.WIN,
+                                winner=Color.WHITE,
                             ),
                         )  # White wins
                     return Value(
                         score=-1000.0 - mate_moves,
                         certainty=Certainty.FORCED,
-                        over_event=OverEvent(
-                            how_over=HowOver.WIN, who_is_winner=Winner.BLACK
+                        over_event=OverEvent[Color](
+                            outcome=Outcome.WIN, winner=Color.BLACK
                         ),
                     )  # Black wins
                 return Value(score=0.0, certainty=Certainty.ESTIMATE)  # ???

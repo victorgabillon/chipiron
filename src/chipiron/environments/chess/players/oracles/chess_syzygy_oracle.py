@@ -2,6 +2,7 @@
 
 from typing import TYPE_CHECKING
 
+from valanga import Color
 from valanga.evaluations import Value
 from valanga.game import BranchName
 from valanga.over_event import OverEvent
@@ -51,7 +52,7 @@ class ChessSyzygyValueOracle(ValueOracle[ChessState]):
         return self._syzygy.evaluate(state.board)
 
 
-class ChessSyzygyTerminalOracle(TerminalOracle[ChessState]):
+class ChessSyzygyTerminalOracle(TerminalOracle[ChessState, Color]):
     """Terminal oracle wrapper around Syzygy for chess-specific endgame metadata."""
 
     def __init__(self, syzygy: AnySyzygyTable) -> None:
@@ -62,11 +63,11 @@ class ChessSyzygyTerminalOracle(TerminalOracle[ChessState]):
         """Supports."""
         return self._syzygy.fast_in_table(state.board)
 
-    def over_event(self, state: ChessState) -> OverEvent:
+    def over_event(self, state: ChessState) -> OverEvent[Color]:
         """Over event."""
         who_is_winner, how_over = self._syzygy.get_over_event(board=state.board)
-        return OverEvent(
-            how_over=how_over,
-            who_is_winner=who_is_winner,
+        return OverEvent[Color](
+            outcome=how_over,
+            winner=who_is_winner,
             termination=None,
         )

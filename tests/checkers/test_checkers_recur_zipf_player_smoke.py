@@ -18,8 +18,11 @@ def test_checkers_tree_piececount_player_produces_parseable_legal_action_name() 
     pytest.importorskip("anemone")
 
     from valanga import Color
-    from valanga.game import Seed
 
+    from chipiron.environments.checkers.players.wiring.checkers_wiring import (
+        BuildCheckersGamePlayerArgs,
+        build_checkers_game_player,
+    )
     from chipiron.environments.checkers.types import (
         CheckersDynamics,
         CheckersRules,
@@ -28,10 +31,6 @@ def test_checkers_tree_piececount_player_produces_parseable_legal_action_name() 
     from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
     from chipiron.players.player_args import PlayerFactoryArgs
     from chipiron.players.player_ids import PlayerConfigTag
-    from chipiron.environments.checkers.players.wiring.checkers_wiring import (
-        BuildCheckersGamePlayerArgs,
-        build_checkers_game_player,
-    )
 
     player_args = PlayerConfigTag.CHECKERS_TREE_PIECECOUNT.get_players_args()
     assert isinstance(player_args.main_move_selector, TreeAndValueAppArgs)

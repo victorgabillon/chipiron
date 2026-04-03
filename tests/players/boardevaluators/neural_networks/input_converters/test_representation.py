@@ -13,12 +13,12 @@ from atomheart.games.chess.board import (
 )
 from atomheart.games.chess.board.utils import FenPlusHistory, bitboard_rotate
 
+from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
+    create_board_representation_factory,
+)
 from chipiron.environments.chess.types import ChessState
 from chipiron.players.boardevaluators.neural_networks.input_converters.model_input_representation_type import (
     InternalTensorRepresentationType,
-)
-from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.input_converters.representation_factory_factory import (
-    create_board_representation_factory,
 )
 
 if TYPE_CHECKING:

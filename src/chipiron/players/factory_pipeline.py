@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 from anemone.dynamics import SearchDynamics
 from valanga import Dynamics, TurnState
+from valanga.game import Role
 from valanga.policy import BranchSelector
 
 from chipiron.core.oracles import PolicyOracle, TerminalOracle, ValueOracle
@@ -24,7 +25,7 @@ from chipiron.players.player_args import HasMoveSelectorType
 from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
-    from anemone.node_evaluation.node_direct_evaluation.protocols import (
+    from anemone.node_evaluation.direct.protocols import (
         MasterStateValueEvaluator,
     )
 
@@ -32,19 +33,19 @@ EvalArgsT = TypeVar("EvalArgsT")
 NonTreeArgsT = TypeVar("NonTreeArgsT", bound=HasMoveSelectorType)
 
 
-def create_player_with_pipeline[StateT: TurnState, SnapT](
+def create_player_with_pipeline[RoleT: Role, StateT: TurnState[Any], SnapT](
     *,
     name: str,
     main_selector_args: AnyMoveSelectorArgs,
     state_type: type[StateT],
     policy_oracle: PolicyOracle[StateT] | None,
     value_oracle: ValueOracle[StateT] | None,
-    terminal_oracle: TerminalOracle[StateT] | None,
+    terminal_oracle: TerminalOracle[StateT, RoleT] | None,
     master_evaluator_from_args: Callable[
         [
             MasterBoardEvaluatorArgs,
             ValueOracle[StateT] | None,
-            TerminalOracle[StateT] | None,
+            TerminalOracle[StateT, RoleT] | None,
         ],
         "MasterStateValueEvaluator",
     ],
@@ -79,7 +80,6 @@ def create_player_with_pipeline[StateT: TurnState, SnapT](
             implementation_args=implementation_args,
         )
     elif isinstance(main_selector_args, GuiHumanPlayerArgs):
-        # Minimal behavior: fail fast with a clear message (or implement GUI path)
         raise NotImplementedError(
             "GuiHumanPlayerArgs is handled by the GUI->GameManager command path, "
             "not by create_main_move_selector."

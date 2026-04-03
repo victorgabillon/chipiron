@@ -7,7 +7,6 @@ import pytest
 pytest.importorskip("valanga")
 from valanga import Color
 
-from chipiron.games.domain.game.game_rules import GameOutcome, OutcomeKind
 from chipiron.core.evaluation_scale import (
     EvaluationScale,
     get_value_over_enum,
@@ -15,6 +14,7 @@ from chipiron.core.evaluation_scale import (
 from chipiron.environments.checkers.players.evaluators.checkers_piece_count import (
     CheckersOverEventDetector,
 )
+from chipiron.games.domain.game.game_rules import GameOutcome, OutcomeKind
 
 
 @dataclass(frozen=True)

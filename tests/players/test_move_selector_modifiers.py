@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 from anemone.dynamics import SearchDynamics
 from valanga import BranchKey, Color, TurnState
 from valanga.dynamics import Transition
-from valanga.evaluations import FloatyStateEvaluation
+from valanga.evaluations import Certainty, Value
 from valanga.policy import Recommendation
 
 from chipiron.players.move_selector.modifiers import (
@@ -93,7 +93,6 @@ class FakeSearchDynamics(SearchDynamics[FakeTurnState, Any]):
         depth: int = 0,
     ) -> Transition[FakeTurnState]:
         _ = depth
-        # the modifier only calls step; it doesn't rely on the returned next_state
         return Transition(
             next_state=state,
             modifications=None,
@@ -114,6 +113,11 @@ class FakeChessState(FakeTurnState):
         return move in self.zeroing_keys
 
 
+def est(score: float) -> Value:
+    """Small helper to build non-terminal estimated values."""
+    return Value(score=score, certainty=Certainty.ESTIMATE)
+
+
 def test_accelerate_when_not_winning_does_not_override() -> None:
     """Modifier should not alter recommendation when root eval is not winning."""
     state = FakeChessState(
@@ -123,10 +127,10 @@ def test_accelerate_when_not_winning_does_not_override() -> None:
     )
     rec = Recommendation(
         recommended_name="a",
-        evaluation=FloatyStateEvaluation(value_white=0.2),
+        evaluation=est(0.2),
         branch_evals={
-            "a": FloatyStateEvaluation(value_white=0.2),
-            "b": FloatyStateEvaluation(value_white=0.99),
+            "a": est(0.2),
+            "b": est(0.99),
         },
     )
     selector = ComposedBranchSelector(
@@ -149,10 +153,10 @@ def test_accelerate_when_winning_prefers_zeroing_move_that_stays_winning() -> No
     )
     rec = Recommendation(
         recommended_name="a",
-        evaluation=FloatyStateEvaluation(value_white=0.99),
+        evaluation=est(0.99),
         branch_evals={
-            "a": FloatyStateEvaluation(value_white=0.99),
-            "b": FloatyStateEvaluation(value_white=0.99),
+            "a": est(0.99),
+            "b": est(0.99),
         },
     )
     selector = ComposedBranchSelector(
@@ -175,10 +179,10 @@ def test_accelerate_when_winning_does_not_choose_non_winning_child() -> None:
     )
     rec = Recommendation(
         recommended_name="a",
-        evaluation=FloatyStateEvaluation(value_white=0.99),
+        evaluation=est(0.99),
         branch_evals={
-            "a": FloatyStateEvaluation(value_white=0.99),
-            "b": FloatyStateEvaluation(value_white=0.0),
+            "a": est(0.99),
+            "b": est(0.0),
         },
     )
     selector = ComposedBranchSelector(
@@ -201,10 +205,10 @@ def test_accelerate_when_winning_no_override_when_best_gain_is_zero() -> None:
     )
     rec = Recommendation(
         recommended_name="a",
-        evaluation=FloatyStateEvaluation(value_white=0.99),
+        evaluation=est(0.99),
         branch_evals={
-            "a": FloatyStateEvaluation(value_white=0.99),
-            "b": FloatyStateEvaluation(value_white=0.99),
+            "a": est(0.99),
+            "b": est(0.99),
         },
     )
     selector = ComposedBranchSelector(

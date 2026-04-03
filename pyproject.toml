@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=82.0.0"]
+requires = ["setuptools>=82.0.1"]
 build-backend = "setuptools.build_meta"
 
 
@@ -31,10 +31,10 @@ dependencies = [
   "gdown",
   "zstandard",
   "rich",
-  "valanga>=0.2.0",
-  "atomheart>=0.2.3",
+  "valanga==0.2.3",
+  "atomheart==0.2.6",
   "algorhino-coral>=0.1.11",
-  "algorhino-anemone>=0.1.21",
+  "algorhino-anemone==0.2.10",
   "torchinfo",
   "platformdirs>=4.9.2",
   "huggingface_hub>=1.6.0",
@@ -51,7 +51,7 @@ authors = [{ name = "Victor Gabillon", email = "victorgabillon@gmail.com" }]
 [project.optional-dependencies]
 test = ["pytest>=9.0.2", "coverage", "pytest-cov>=6.0.0"]
 
-lint = ["ruff>=0.15.1", "pylint>=4.0.4"]
+lint = ["ruff>=0.15.8", "pylint>=4.0.5"]
 
 typecheck = [
   "mypy>=1.19.1",
@@ -361,8 +361,8 @@ commands = [
 description = "ruff + pylint (fast)"
 package = "skip"
 deps = [
-  "ruff>=0.15.1",
-  "pylint>=4.0.4",
+  "ruff>=0.15.8",
+  "pylint>=4.0.5",
   # optional: if pylint needs to import chipiron deps for module resolution
   # but usually it imports your code, so keep runtime deps available:
   "PyYAML",
@@ -386,10 +386,10 @@ deps = [
   "rich",
   "torchinfo",
   "platformdirs>=4.9.2",
-  "valanga>=0.2.0",
-  "atomheart>=0.2.3",
+  "valanga==0.2.3",
+  "atomheart==0.2.6",
   "algorhino-coral>=0.1.11",
-  "algorhino-anemone>=0.1.21",
+  "algorhino-anemone==0.2.10",
 ]
 set_env = { PYTHONPATH = "{toxinidir}/src" }
 commands = [
@@ -447,10 +447,10 @@ deps = [
   "torchinfo",
   "zstandard",
   "rich",
-  "valanga>=0.2.0",
-  "atomheart>=0.2.3",
+  "valanga==0.2.3",
+  "atomheart==0.2.6",
   "algorhino-coral>=0.1.11",
-  "algorhino-anemone>=0.1.21",
+  "algorhino-anemone==0.2.10",
   "pytest>=9.0.2",
   "pytest-cov>=6.0.0",
   "platformdirs>=4.9.2",

@@ -31,9 +31,6 @@ class SyzygyChiTable(SyzygyTable[boards.BoardChi]):
         value_white(board: boards.BoardChi) -> int:
             Get the value of the given board for the white player.
 
-        get_over_tag(board: boards.BoardChi) -> OverTags:
-            Get the over tag for the given board.
-
         string_result(board: boards.BoardChi) -> str:
             Get the string representation of the result for the given board.
 

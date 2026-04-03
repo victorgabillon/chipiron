@@ -7,7 +7,7 @@ from typing import Any
 from anemone import TreeAndValuePlayerArgs, create_tree_and_value_branch_selector
 from anemone.dynamics import SearchDynamics, normalize_search_dynamics
 from anemone.hooks.search_hooks import PriorityCheckFactory, SearchHooks
-from anemone.node_evaluation.node_direct_evaluation.protocols import (
+from anemone.node_evaluation.direct.protocols import (
     MasterStateValueEvaluator,
 )
 from anemone.node_selector.opening_instructions import OpeningInstructor

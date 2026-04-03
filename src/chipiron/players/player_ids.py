@@ -64,30 +64,24 @@ class PlayerConfigTag(StrEnum):
         )
 
     def get_yaml_file_path(self) -> MyPath:
-        """Get the YAML file path for the player configuration.
-
-        This method constructs the file path for the player configuration YAML file
-        based on the player's configuration tag.
-        It returns the file path as a string.
-
-        Returns:
-            path: The file path for the player configuration YAML file.
-
-        Raises:
-            ValueError: If the player configuration tag is not recognized.
-
-        """
+        """Get the YAML file path for the player configuration."""
         if self is PlayerConfigTag.CHIPIRON:
-            resource = files("chipiron").joinpath(
-                "data/players/player_config/chipiron/chipiron.yaml"
-            )
+            subpath = "data/players/player_config/chipiron/chipiron.yaml"
+        elif self is PlayerConfigTag.CHECKERS_TREE_PIECECOUNT:
+            subpath = f"data/players/player_config/checkers/{self.value}.yaml"
+        elif self in {
+            PlayerConfigTag.RANDOM,
+            PlayerConfigTag.GUI_HUMAN,
+            PlayerConfigTag.COMMAND_LINE_HUMAN,
+        }:
+            subpath = f"data/players/player_config/{self.value}.yaml"
         else:
-            resource = files("chipiron").joinpath(
-                f"data/players/player_config/chess/{self.value}.yaml"
-            )
+            subpath = f"data/players/player_config/chess/{self.value}.yaml"
 
+        resource = files("chipiron").joinpath(subpath)
         with as_file(resource) as real_path:
-            return str(real_path)  # Or pass it immediately to another function
+            return str(real_path)
+        
 
     def get_players_args(self) -> PlayerArgs:
         """Get the player arguments from the YAML file.

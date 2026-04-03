@@ -1,24 +1,26 @@
 """Module for oracles."""
 
-from typing import Protocol, TypeVar
+from collections.abc import Hashable
+from typing import Any, Protocol, TypeVar
 
 from valanga import State
-from valanga.evaluations import Value
-from valanga.game import BranchName
-from valanga.over_event import OverEvent
+
+type BranchName = str
+type Value = Any
 
 StateT_contra = TypeVar("StateT_contra", bound=State, contravariant=True)
+RoleT_co = TypeVar("RoleT_co", bound=Hashable, covariant=True)
 
 
 class PolicyOracle(Protocol[StateT_contra]):
     """Generic oracle for game-specific best-action queries."""
 
     def supports(self, state: StateT_contra) -> bool:
-        """Whether the oracle can recommend a move for this state."""
+        """Return whether this oracle can answer for the given state."""
         ...
 
     def recommend(self, state: StateT_contra) -> BranchName:
-        """Return the recommended branch name for the given state."""
+        """Return the recommended branch for the given state."""
         ...
 
 
@@ -26,21 +28,21 @@ class ValueOracle(Protocol[StateT_contra]):
     """Generic oracle for game-specific exact evaluation."""
 
     def supports(self, state: StateT_contra) -> bool:
-        """Whether the oracle can evaluate this state."""
+        """Return whether this oracle can evaluate the given state."""
         ...
 
     def evaluate(self, state: StateT_contra) -> Value:
-        """Return the evaluation from White's perspective."""
+        """Return the exact value for the given state."""
         ...
 
 
-class TerminalOracle(Protocol[StateT_contra]):
+class TerminalOracle(Protocol[StateT_contra, RoleT_co]):
     """Oracle for providing terminal metadata (winner/draw)."""
 
     def supports(self, state: StateT_contra) -> bool:
-        """Whether the oracle can report a terminal outcome for this state."""
+        """Return whether terminal metadata is available for the state."""
         ...
 
-    def over_event(self, state: StateT_contra) -> OverEvent:
-        """Return a terminal OverEvent for the given state."""
+    def over_event(self, state: StateT_contra) -> Any:
+        """Return the terminal event associated with the given state."""
         ...

@@ -195,13 +195,17 @@ def evaluate_models(
             criterion = torch.nn.L1Loss()
 
             nn_board_evaluator: NNBWStateEvaluator[ChessState]
-            resolved_model_weights_file_name = resolve_resource_path(str(model_to_evaluate.model_weights_file_name))
-            nn_board_evaluator = create_nn_state_eval_from_nn_parameters_file_and_existing_model(
-                model_weights_file_name=resolved_model_weights_file_name,
-                nn_architecture_args=model_to_evaluate.nn_architecture_args,
-                content_to_input_convert=create_content_to_input_from_model_weights(
-                    resolved_model_weights_file_name
-                ),
+            resolved_model_weights_file_name = resolve_resource_path(
+                str(model_to_evaluate.model_weights_file_name)
+            )
+            nn_board_evaluator = (
+                create_nn_state_eval_from_nn_parameters_file_and_existing_model(
+                    model_weights_file_name=resolved_model_weights_file_name,
+                    nn_architecture_args=model_to_evaluate.nn_architecture_args,
+                    content_to_input_convert=create_content_to_input_from_model_weights(
+                        resolved_model_weights_file_name
+                    ),
+                )
             )
 
             stockfish_boards_test = FenAndValueDataSet(

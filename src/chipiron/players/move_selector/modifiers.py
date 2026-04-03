@@ -5,10 +5,9 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol, TypeGuard, cast
 
 from anemone.dynamics import SearchDynamics
-from valanga import BranchKey, Color, TurnState
+from valanga import BranchKey, Color, Outcome, TurnState
 from valanga.evaluations import Value
 from valanga.game import BranchName, Seed
-from valanga.over_event import HowOver
 from valanga.policy import BranchSelector, NotifyProgressCallable, Recommendation
 
 if TYPE_CHECKING:
@@ -90,8 +89,8 @@ def is_winning_eval(
     """Return whether ``evaluation`` is winning for ``player``."""
     if evaluation.over_event is not None:
         return (
-            evaluation.over_event.how_over is HowOver.WIN
-            and evaluation.over_event.is_winner(player)
+            evaluation.over_event.outcome is Outcome.WIN
+            and evaluation.over_event.is_win_for(player)
         )
     return (
         (evaluation.score > threshold)

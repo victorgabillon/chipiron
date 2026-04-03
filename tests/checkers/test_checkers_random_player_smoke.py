@@ -12,6 +12,10 @@ pytest.importorskip("valanga")
 
 from valanga import Color
 
+from chipiron.environments.checkers.players.wiring.checkers_wiring import (
+    BuildCheckersGamePlayerArgs,
+    build_checkers_game_player,
+)
 from chipiron.environments.checkers.types import (
     CheckersDynamics,
     CheckersRules,
@@ -19,10 +23,6 @@ from chipiron.environments.checkers.types import (
 )
 from chipiron.players.move_selector.random_args import RandomSelectorArgs
 from chipiron.players.player_args import PlayerArgs, PlayerFactoryArgs
-from chipiron.environments.checkers.players.wiring.checkers_wiring import (
-    BuildCheckersGamePlayerArgs,
-    build_checkers_game_player,
-)
 
 
 def test_checkers_random_player_produces_parseable_legal_action_name() -> None:

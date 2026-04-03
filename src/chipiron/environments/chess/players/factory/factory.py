@@ -53,7 +53,7 @@ from chipiron.utils.logger import chipiron_logger
 from chipiron.utils.queue_protocols import PutQueue
 
 if TYPE_CHECKING:
-    from anemone.node_evaluation.node_direct_evaluation.protocols import (
+    from anemone.node_evaluation.direct.protocols import (
         MasterStateValueEvaluator,
     )
 
@@ -68,7 +68,7 @@ class PlayerCreationArgs:
     queue_progress_player: PutQueue[IsDataclass] | None = None
     policy_oracle: PolicyOracle[ChessState] | None = None
     value_oracle: ValueOracle[ChessState] | None = None
-    terminal_oracle: TerminalOracle[ChessState] | None = None
+    terminal_oracle: TerminalOracle[ChessState, Color] | None = None
 
 
 def create_tag_player(
@@ -164,7 +164,7 @@ def create_chess_player(
     args: ChessPlayerArgs,
     policy_oracle: PolicyOracle[ChessState] | None,
     value_oracle: ValueOracle[ChessState] | None,
-    terminal_oracle: TerminalOracle[ChessState] | None,
+    terminal_oracle: TerminalOracle[ChessState, Color] | None,
     random_generator: random.Random,
     implementation_args: ImplementationArgs,
     universal_behavior: bool,
@@ -189,7 +189,7 @@ def create_chess_player(
     def master_evaluator_from_args(
         evaluator_args: MasterBoardEvaluatorArgs,
         value_oracle_in: ValueOracle[ChessState] | None,
-        terminal_oracle_in: TerminalOracle[ChessState] | None,
+        terminal_oracle_in: TerminalOracle[ChessState, Color] | None,
     ) -> "MasterStateValueEvaluator":
         master_board_evaluator = create_master_state_evaluator_from_args(
             master_board_evaluator=evaluator_args,
@@ -271,7 +271,7 @@ def create_game_player(
     player_color: Color,
     policy_oracle: PolicyOracle[ChessState] | None,
     value_oracle: ValueOracle[ChessState] | None,
-    terminal_oracle: TerminalOracle[ChessState] | None,
+    terminal_oracle: TerminalOracle[ChessState, Color] | None,
     implementation_args: ImplementationArgs,
     universal_behavior: bool,
 ) -> GamePlayer[FenPlusHistory, ChessState]:
