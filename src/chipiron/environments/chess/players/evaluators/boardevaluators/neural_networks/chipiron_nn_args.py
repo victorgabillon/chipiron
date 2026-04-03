@@ -21,10 +21,6 @@ from chipiron.players.boardevaluators.neural_networks.input_converters.model_inp
     ModelInputRepresentationType,
 )
 from chipiron.utils import MyPath
-from chipiron.utils.small_tools import resolve_resource_path
-from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.model_bundle_normalization import (
-    resolve_model_bundle_from_model_weights_path,
-)
 
 CHIPIRON_NN_ARGS_FILENAME = "chipiron_nn.yaml"
 
@@ -188,17 +184,3 @@ def create_content_to_input_from_bundle(
 ) -> ContentToInputFunction[ChessState]:
     """Create content-to-input converter from a resolved model bundle."""
     return create_content_to_input_from_chipiron_nn_file(bundle.chipiron_nn_file_path)
-
-
-def create_content_to_input_from_model_weights(
-    model_weights_file_name: MyPath,
-) -> ContentToInputFunction[ChessState]:
-    """Create chess content-to-input converter from legacy model weights config."""
-    weights_path = str(model_weights_file_name)
-    if weights_path.startswith(("package://", "hf://")):
-        bundle = resolve_model_bundle_from_model_weights_path(weights_path)
-        return create_content_to_input_from_bundle(bundle)
-
-    resolved_weights_path = resolve_resource_path(weights_path)
-    bundle = resolve_model_bundle_from_model_weights_path(resolved_weights_path)
-    return create_content_to_input_from_bundle(bundle)

@@ -2,7 +2,9 @@
 
 from enum import StrEnum
 
-from coral.neural_networks.neural_net_board_eval_args import NN_NET_EVAL_STRING
+from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
+    NN_NET_EVAL_STRING,
+)
 
 
 class BoardEvalTypes(StrEnum):

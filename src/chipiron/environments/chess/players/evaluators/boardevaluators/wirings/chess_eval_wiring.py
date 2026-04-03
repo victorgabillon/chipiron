@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from importlib.resources import files
 
 import parsley
-from coral.neural_networks.neural_net_board_eval_args import NeuralNetBoardEvalArgs
 from valanga.evaluations import Value
 
 from chipiron.environments.chess.players.evaluators.boardevaluators.basic_evaluation import (
@@ -13,19 +12,20 @@ from chipiron.environments.chess.players.evaluators.boardevaluators.basic_evalua
 from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chess_model_bundle_evaluator import (
     create_chess_nn_state_eval_from_model_bundle,
 )
-from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.model_bundle_normalization import (
-    resolve_model_bundle_from_legacy_nn_config,
-)
 from chipiron.environments.chess.players.evaluators.boardevaluators.stockfish_board_evaluator import (
     StockfishBoardEvalArgs,
     StockfishBoardEvaluator,
 )
 from chipiron.environments.chess.types import ChessState
+from chipiron.models.model_bundle import resolve_model_bundle
 from chipiron.players.boardevaluators.all_board_evaluator_args import (
     AllBoardEvaluatorArgs,
     BasicEvaluationBoardEvaluatorArgs,
 )
 from chipiron.players.boardevaluators.board_evaluator import StateEvaluator
+from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
+    NeuralNetBoardEvalArgs,
+)
 from chipiron.utils.logger import chipiron_logger
 
 
@@ -78,7 +78,7 @@ def _build_chi() -> StateEvaluator[ChessState]:
         case BasicEvaluationBoardEvaluatorArgs():
             return ValangaBoardEvaluator(BasicEvaluation())
         case NeuralNetBoardEvalArgs(neural_nets_model_and_architecture=nn):
-            bundle = resolve_model_bundle_from_legacy_nn_config(nn)
+            bundle = resolve_model_bundle(nn.model_bundle)
             return ValangaBoardEvaluator(
                 create_chess_nn_state_eval_from_model_bundle(bundle)
             )

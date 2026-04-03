@@ -5,7 +5,6 @@ This module intentionally holds the mechanics (seed, dest-dir setup, month loop 
 intermediate saving, and cleanup) so dataset scripts can focus on *what to extract* from games.
 """
 
-from __future__ import annotations
 
 import random
 import shutil

@@ -51,7 +51,7 @@ from chipiron.environments.chess.players.evaluators.boardevaluators.datasets.dat
 from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chipiron_nn_args import (
     ChipironNNArgs,
     create_content_to_input_convert,
-    create_content_to_input_from_model_weights,
+    create_content_to_input_from_folder,
     save_chipiron_nn_args,
 )
 from chipiron.environments.chess.types import ChessState
@@ -150,8 +150,10 @@ class LearnNNScript:
                 self.args.nn_trainer_args.nn_parameters_file_if_reusing_existing_one
                 is not None
             )
-            content_to_input_convert = create_content_to_input_from_model_weights(
-                self.args.nn_trainer_args.nn_parameters_file_if_reusing_existing_one
+            content_to_input_convert = create_content_to_input_from_folder(
+                os.path.dirname(
+                    self.args.nn_trainer_args.nn_parameters_file_if_reusing_existing_one
+                )
             )
             self.nn_board_evaluator = create_nn_state_eval_from_nn_parameters_file_and_existing_model(
                 model_weights_file_name=self.args.nn_trainer_args.nn_parameters_file_if_reusing_existing_one,

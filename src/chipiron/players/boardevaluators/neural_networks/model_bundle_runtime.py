@@ -1,6 +1,5 @@
 """Generic runtime helpers for building NN evaluators from model bundles."""
 
-from __future__ import annotations
 
 from enum import Enum
 from typing import TYPE_CHECKING, Any

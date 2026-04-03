@@ -2,7 +2,6 @@
 
 from typing import Any
 
-from coral.neural_networks.neural_net_board_eval_args import NeuralNetBoardEvalArgs
 from valanga import Color, Outcome
 from valanga.evaluations import Value
 from valanga.over_event import OverEvent
@@ -19,16 +18,17 @@ from chipiron.environments.chess.players.evaluators.boardevaluators import (
 from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chess_model_bundle_evaluator import (
     create_chess_nn_state_eval_from_model_bundle,
 )
-from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.model_bundle_normalization import (
-    resolve_model_bundle_from_legacy_nn_config,
-)
 from chipiron.environments.chess.types import ChessState
+from chipiron.models.model_bundle import resolve_model_bundle
 from chipiron.players.boardevaluators.all_board_evaluator_args import (
     BasicEvaluationBoardEvaluatorArgs,
 )
 from chipiron.players.boardevaluators.board_evaluator import StateEvaluator
 from chipiron.players.boardevaluators.master_board_evaluator_args import (
     MasterBoardEvaluatorArgs,
+)
+from chipiron.players.boardevaluators.neural_networks.neural_net_board_eval_args import (
+    NeuralNetBoardEvalArgs,
 )
 
 
@@ -241,10 +241,8 @@ def create_master_state_evaluator_from_args(
         case BasicEvaluationBoardEvaluatorArgs():
             board_evaluator = basic_evaluation.BasicEvaluation()
         case NeuralNetBoardEvalArgs(neural_nets_model_and_architecture=model):
-            bundle = resolve_model_bundle_from_legacy_nn_config(model)
-            board_evaluator = create_chess_nn_state_eval_from_model_bundle(
-                bundle
-            )
+            bundle = resolve_model_bundle(model.model_bundle)
+            board_evaluator = create_chess_nn_state_eval_from_model_bundle(bundle)
         case _:
             raise UnsupportedBoardEvaluatorArgsError(args.type)
 

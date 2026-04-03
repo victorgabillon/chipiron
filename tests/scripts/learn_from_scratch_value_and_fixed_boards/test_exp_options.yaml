@@ -61,8 +61,9 @@ evaluating_player_args:
         board_evaluator:
           type: neural_network
           neural_nets_model_and_architecture:
-            model_weights_file_name: "package://data/players/board_evaluators/nn_pytorch/prelu_no_bug/param_multi_layer_perceptron_772_20_1_parametric_relu_hyperbolic_tangent_player_to_move.pt"
-            nn_architecture_args_path_to_yaml_file: 'package://data/players/board_evaluators/nn_pytorch/prelu_no_bug/architecture.yaml'
+            model_bundle:
+              uri: "package://data/players/board_evaluators/nn_pytorch/prelu_no_bug"
+              weights_file: "param_multi_layer_perceptron_772_20_1_parametric_relu_hyperbolic_tangent_player_to_move.pt"
   oracle_play: True
 
 

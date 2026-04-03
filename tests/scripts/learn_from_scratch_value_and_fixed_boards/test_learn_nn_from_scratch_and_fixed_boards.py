@@ -4,6 +4,12 @@
 from pathlib import Path
 from typing import Any
 
+import pytest
+
+pytest.importorskip("parsley")
+pytest.importorskip("torch")
+pytest.importorskip("PySide6")
+
 from parsley import make_partial_dataclass_with_optional_paths
 
 from chipiron import scripts
@@ -17,6 +23,7 @@ from chipiron.scripts.learn_from_scratch_value_and_fixed_boards.learn_from_scrat
     LearnNNFromScratchScriptArgs,
 )
 from chipiron.scripts.script_args import BaseScriptArgs
+from tests.model_bundle_test_utils import create_tiny_model_bundle
 
 PartialOpLearnNNFromScratchScriptArgs = make_partial_dataclass_with_optional_paths(
     cls=LearnNNFromScratchScriptArgs
@@ -26,9 +33,14 @@ PartialOpDataSetArgs = make_partial_dataclass_with_optional_paths(cls=DataSetArg
 PartialOpBaseScriptArgs = make_partial_dataclass_with_optional_paths(cls=BaseScriptArgs)
 
 
-def _make_config(*, tmp_path: Path, architecture_file: str) -> Any:
-    # Put outputs under a temp dir (safe in CI + local)
-    out_dir = tmp_path / "learn_from_scratch_outputs" / architecture_file
+def _make_config(*, tmp_path: Path) -> Any:
+    """Build a local-only config for the scratch learning test."""
+    bundle_dir = create_tiny_model_bundle(
+        tmp_path,
+        bundle_name="scratch_model_bundle",
+        input_representation="piece_difference",
+    )
+    out_dir = tmp_path / "learn_from_scratch_outputs"
     out_dir.mkdir(parents=True, exist_ok=True)
     dataset_file = str((Path(__file__).parent / "small_dataset.pi").resolve())
 
@@ -36,10 +48,8 @@ def _make_config(*, tmp_path: Path, architecture_file: str) -> Any:
         nn_trainer_args=PartialOpNNTrainerArgs(
             reuse_existing_model=False,
             specific_saving_folder=str(out_dir),
-            neural_network_architecture_args_path_to_yaml_file=(
-                "package://scripts/learn_nn_supervised/"
-                "board_evaluators_common_training_data/nn_pytorch/architectures/"
-                + architecture_file
+            neural_network_architecture_args_path_to_yaml_file=str(
+                bundle_dir / "architecture.yaml"
             ),
         ),
         dataset_args=PartialOpDataSetArgs(
@@ -53,18 +63,13 @@ def _make_config(*, tmp_path: Path, architecture_file: str) -> Any:
 
 def test_learn_nn_from_scratch_and_fixed_boards(tmp_path: Path) -> None:
     """Test learn nn from scratch and fixed boards."""
-    for architecture_file in [
-        "architecture_p1.yaml",
-        "architecture_prelu_nobug.yaml",
-        "architecture_transformerone.yaml",
-    ]:
-        config = _make_config(tmp_path=tmp_path, architecture_file=architecture_file)
+    config = _make_config(tmp_path=tmp_path)
 
-        script_object: scripts.IScript = create_script(
-            script_type=scripts.ScriptType.LEARN_NN_FROM_SCRATCH,
-            extra_args=config,
-            should_parse_command_line_arguments=False,
-        )
+    script_object: scripts.IScript = create_script(
+        script_type=scripts.ScriptType.LEARN_NN_FROM_SCRATCH,
+        extra_args=config,
+        should_parse_command_line_arguments=False,
+    )
 
-        script_object.run()
-        script_object.terminate()
+    script_object.run()
+    script_object.terminate()

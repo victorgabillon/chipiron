@@ -14,7 +14,6 @@ import dacite
 import torch
 import yaml
 from coral.chi_nn import ChiNN
-from coral.neural_networks.factory import NeuralNetModelsAndArchitecture
 from torch.utils.data import DataLoader
 
 from chipiron.environments.chess.players.evaluators.boardevaluators.datasets.datasets import (
@@ -24,13 +23,18 @@ from chipiron.environments.chess.players.evaluators.boardevaluators.datasets.dat
     process_stockfish_value,  # pyright: ignore[reportUnknownVariableType]
 )
 from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chipiron_nn_args import (
-    load_chipiron_nn_args,
+    load_chipiron_nn_args_from_bundle,
 )
 from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chess_model_bundle_evaluator import (
     create_chess_nn_state_eval_from_model_bundle,
 )
-from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.model_bundle_normalization import (
-    resolve_model_bundle_from_model_weights_path,
+from chipiron.models.model_bundle import (
+    ModelBundleRef,
+    ResolvedModelBundle,
+    resolve_model_bundle,
+)
+from chipiron.players.boardevaluators.neural_networks.model_bundle_runtime import (
+    load_nn_architecture_args_from_bundle,
 )
 from chipiron.learningprocesses.nn_trainer.nn_trainer import (
     compute_test_error_on_dataset,
@@ -68,22 +72,26 @@ class ModelEvaluation:
 type EvaluatedModels = dict[str, ModelEvaluation]
 
 
-def compute_model_hash_key(model_and_archi: NeuralNetModelsAndArchitecture) -> str:
+def compute_model_hash_key(
+    model_bundle_ref: ModelBundleRef,
+    bundle: ResolvedModelBundle,
+) -> str:
     """Compute a unique hash key for the model and architecture.
 
     Args:
-        model_and_archi (NeuralNetModelsAndArchitecture): The model and architecture to compute the hash key for.
+        model_bundle_ref (ModelBundleRef): The configured model bundle reference.
+        bundle (ResolvedModelBundle): The resolved local model bundle.
 
     Returns:
         str: The computed hash key.
 
     """
-    chipiron_nn_args = load_chipiron_nn_args(
-        folder_path=os.path.dirname(model_and_archi.model_weights_file_name)
-    )
+    chipiron_nn_args = load_chipiron_nn_args_from_bundle(bundle)
+    nn_architecture_args = load_nn_architecture_args_from_bundle(bundle)
     return (
-        str(model_and_archi.model_weights_file_name)
-        + model_and_archi.nn_architecture_args.filename()
+        model_bundle_ref.uri
+        + (model_bundle_ref.weights_file or "")
+        + nn_architecture_args.filename()
         + str(chipiron_nn_args.version)
         + chipiron_nn_args.game_kind.value
         + chipiron_nn_args.input_representation
@@ -96,7 +104,7 @@ def count_parameters(model: ChiNN) -> int:
 
 
 def evaluate_models(
-    models_to_evaluate: list[NeuralNetModelsAndArchitecture],
+    models_to_evaluate: list[ModelBundleRef],
     evaluation_report_file: MyPath | None = None,
     dataset_file_name: MyPath = "external_data/data_chipiron/datasets/goodgames_plusvariation_stockfish_eval_test",
 ) -> None:
@@ -150,11 +158,12 @@ def evaluate_models(
 
     # Evaluate the models if necessary
     data_loader_stockfish_boards_test = None
-    model_to_evaluate: NeuralNetModelsAndArchitecture
+    model_to_evaluate: ModelBundleRef
     for model_to_evaluate in models_to_evaluate:
         print(f"\nEvaluating model: {model_to_evaluate}")
 
-        model_hash_key: str = compute_model_hash_key(model_to_evaluate)
+        bundle = resolve_model_bundle(model_to_evaluate)
+        model_hash_key = compute_model_hash_key(model_to_evaluate, bundle)
 
         # Check if the model has already been evaluated
         should_evaluate: bool
@@ -163,8 +172,7 @@ def evaluate_models(
             print(
                 "This model has already been evaluated. Now checking if the file has been modified since last evaluation..."
             )
-            model_params_path_pt: MyPath
-            model_params_path_pt = model_to_evaluate.model_weights_file_name
+            model_params_path_pt: MyPath = bundle.weights_file_path
 
             modification_time = os.path.getmtime(model_params_path_pt)
             readable_time = time.ctime(modification_time)
@@ -196,12 +204,7 @@ def evaluate_models(
             criterion = torch.nn.L1Loss()
 
             nn_board_evaluator: NNBWStateEvaluator[ChessState]
-            bundle = resolve_model_bundle_from_model_weights_path(
-                model_to_evaluate.model_weights_file_name
-            )
-            nn_board_evaluator = create_chess_nn_state_eval_from_model_bundle(
-                bundle
-            )
+            nn_board_evaluator = create_chess_nn_state_eval_from_model_bundle(bundle)
 
             stockfish_boards_test = FenAndValueDataSet(
                 file_name=dataset_file_name,
@@ -250,21 +253,14 @@ def evaluate_models(
 
 
 if __name__ == "__main__":
-    models_to_evaluate_: list[NeuralNetModelsAndArchitecture] = [
-        NeuralNetModelsAndArchitecture.build_from_folder_path(
-            folder_path="package://scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/prelu_no_bug"
+    models_to_evaluate_: list[ModelBundleRef] = [
+        ModelBundleRef(
+            uri="hf://VictorGabillon/chipiron/prelu_no_bug@main",
+            weights_file=(
+                "param_multi_layer_perceptron_772_20_1_"
+                "parametric_relu_hyperbolic_tangent_player_to_move.pt"
+            ),
         ),
-        NeuralNetModelsAndArchitecture.build_from_folder_path(
-            folder_path="package://scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/nn_p1_new"
-        ),
-        NeuralNetModelsAndArchitecture.build_from_folder_path(
-            folder_path="package://scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/nn_pp2_new"
-        ),
-        NeuralNetModelsAndArchitecture.build_from_folder_path(
-            folder_path="package://scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/nn_pp2d3_prelu_new"
-        ),
-        # NeuralNetModelsAndArchitecture.build_from_folder_path(
-        #     folder_path="package://scripts/learn_nn_supervised/board_evaluators_common_training_data/nn_pytorch/transformerone"),
     ]
 
     evaluate_models(models_to_evaluate=models_to_evaluate_)
