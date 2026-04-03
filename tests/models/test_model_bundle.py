@@ -1,6 +1,5 @@
 """Tests for model bundle resolution."""
 
-
 from pathlib import Path
 
 import pytest
@@ -30,7 +29,9 @@ def _create_local_bundle(
     bundle_root.mkdir(parents=True, exist_ok=True)
 
     if include_architecture:
-        (bundle_root / ARCHITECTURE_FILE_NAME).write_text("layers: []\n", encoding="utf-8")
+        (bundle_root / ARCHITECTURE_FILE_NAME).write_text(
+            "layers: []\n", encoding="utf-8"
+        )
     if include_chipiron_nn:
         (bundle_root / CHIPIRON_NN_FILE_NAME).write_text(
             "version: 1\n",
@@ -83,7 +84,9 @@ def test_resolve_local_model_bundle_from_relative_path(
     assert bundle.weights_file_path == str((bundle_root / "weights.pt").resolve())
 
 
-def test_resolve_hf_model_bundle(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_resolve_hf_model_bundle(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     """HF bundle resolution should return local cached file paths."""
     downloaded_files: list[tuple[str, str, str]] = []
 
@@ -106,7 +109,11 @@ def test_resolve_hf_model_bundle(monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     assert downloaded_files == [
         ("VictorGabillon/chipiron", "prelu_no_bug/architecture.yaml", "main"),
         ("VictorGabillon/chipiron", "prelu_no_bug/chipiron_nn.yaml", "main"),
-        ("VictorGabillon/chipiron", "prelu_no_bug/param_multi_layer_perceptron.pt", "main"),
+        (
+            "VictorGabillon/chipiron",
+            "prelu_no_bug/param_multi_layer_perceptron.pt",
+            "main",
+        ),
     ]
     assert Path(bundle.bundle_root).is_dir()
     assert Path(bundle.architecture_file_path).is_file()
@@ -138,7 +145,9 @@ def test_resolve_model_bundle_raises_for_ambiguous_weights_selection(
         resolve_model_bundle(ModelBundleRef(uri=str(bundle_root)))
 
 
-@pytest.mark.parametrize("missing_file", [ARCHITECTURE_FILE_NAME, CHIPIRON_NN_FILE_NAME])
+@pytest.mark.parametrize(
+    "missing_file", [ARCHITECTURE_FILE_NAME, CHIPIRON_NN_FILE_NAME]
+)
 def test_resolve_model_bundle_raises_for_missing_sidecar(
     tmp_path: Path,
     missing_file: str,
@@ -162,7 +171,9 @@ def test_resolve_model_bundle_raises_for_missing_sidecar(
 @pytest.mark.parametrize(
     "ref",
     [
-        ModelBundleRef(uri="hf://VictorGabillon/chipiron@main", weights_file="weights.pt"),
+        ModelBundleRef(
+            uri="hf://VictorGabillon/chipiron@main", weights_file="weights.pt"
+        ),
         ModelBundleRef(uri="package://", weights_file="weights.pt"),
     ],
 )

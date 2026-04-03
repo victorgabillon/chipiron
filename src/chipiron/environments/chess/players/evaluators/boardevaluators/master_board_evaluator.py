@@ -1,6 +1,6 @@
 """Module for master board evaluator."""
 
-from typing import Any
+from typing import Any, cast
 
 from valanga import Color, Outcome
 from valanga.evaluations import Value
@@ -114,7 +114,7 @@ class MasterBoardEvaluator:
         """
         if self.value_oracle is None or not self.value_oracle.supports(state):
             return None
-        return self.value_oracle.evaluate(state)
+        return cast("Value", self.value_oracle.evaluate(state))
 
     def check_obvious_over_events(
         self, state: ChessState

@@ -1,8 +1,8 @@
 """Tests for generic bundle-based NN runtime helpers."""
 
-from dataclasses import dataclass
 import sys
 import types
+from dataclasses import dataclass
 
 import pytest
 
@@ -91,7 +91,9 @@ def test_load_nn_architecture_args_from_bundle() -> None:
     assert calls == {"path": "/tmp/model-bundle/architecture.yaml"}
 
 
-def test_create_nn_state_eval_from_model_bundle_and_converter_uses_local_paths() -> None:
+def test_create_nn_state_eval_from_model_bundle_and_converter_uses_local_paths() -> (
+    None
+):
     """Generic runtime should pass resolved local paths and converter to coral."""
     bundle = ResolvedModelBundle(
         bundle_root="/tmp/model-bundle",
@@ -137,7 +139,7 @@ def test_create_nn_state_eval_from_model_bundle_and_converter_uses_local_paths()
     setattr(
         coral_factory,
         "create_nn_state_eval_from_nn_parameters_file_and_existing_model",
-        fake_create_nn_state_eval_from_existing_model
+        fake_create_nn_state_eval_from_existing_model,
     )
 
     model_bundle_runtime.load_nn_architecture_args_from_bundle = (
@@ -147,9 +149,11 @@ def test_create_nn_state_eval_from_model_bundle_and_converter_uses_local_paths()
     sys.modules["coral.neural_networks"] = coral_neural_networks
     sys.modules["coral.neural_networks.factory"] = coral_factory
     try:
-        built = model_bundle_runtime.create_nn_state_eval_from_model_bundle_and_converter(
-            bundle,
-            content_to_input,
+        built = (
+            model_bundle_runtime.create_nn_state_eval_from_model_bundle_and_converter(
+                bundle,
+                content_to_input,
+            )
         )
     finally:
         model_bundle_runtime.load_nn_architecture_args_from_bundle = (

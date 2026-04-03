@@ -22,11 +22,14 @@ from chipiron.environments.chess.players.evaluators.boardevaluators.datasets.dat
     custom_collate_fn_fen_and_value,
     process_stockfish_value,  # pyright: ignore[reportUnknownVariableType]
 )
+from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chess_model_bundle_evaluator import (
+    create_chess_nn_state_eval_from_model_bundle,
+)
 from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chipiron_nn_args import (
     load_chipiron_nn_args_from_bundle,
 )
-from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chess_model_bundle_evaluator import (
-    create_chess_nn_state_eval_from_model_bundle,
+from chipiron.learningprocesses.nn_trainer.nn_trainer import (
+    compute_test_error_on_dataset,
 )
 from chipiron.models.model_bundle import (
     ModelBundleRef,
@@ -35,9 +38,6 @@ from chipiron.models.model_bundle import (
 )
 from chipiron.players.boardevaluators.neural_networks.model_bundle_runtime import (
     load_nn_architecture_args_from_bundle,
-)
-from chipiron.learningprocesses.nn_trainer.nn_trainer import (
-    compute_test_error_on_dataset,
 )
 from chipiron.utils import MyPath
 from chipiron.utils.path_runtime import get_default_output_dir

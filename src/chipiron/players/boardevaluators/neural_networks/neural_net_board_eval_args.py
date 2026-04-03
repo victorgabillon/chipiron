@@ -1,6 +1,5 @@
 """Bundle-first configuration for neural-network board evaluators."""
 
-
 from dataclasses import dataclass
 from typing import Literal
 

@@ -8,11 +8,14 @@ import os
 import typing
 from importlib.resources import files
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import yaml
 
 from chipiron.utils.logger import chipiron_logger
+
+if typing.TYPE_CHECKING:
+    from collections.abc import Callable
 
 MyPath = typing.Annotated[str | os.PathLike[str], "path"]
 
@@ -197,6 +200,22 @@ def get_package_root_path(package_name: str) -> str:
     return os.path.dirname(spec.origin)
 
 
+def _hf_hub_download_str(*, repo_id: str, filename: str, revision: str) -> str:
+    """Download one HF file and return its local cached path."""
+    # Imported lazily so small path helpers remain usable without huggingface_hub installed.
+    # pylint: disable=import-outside-toplevel
+    from huggingface_hub import (
+        hf_hub_download,  # pyright: ignore[reportUnknownVariableType]
+    )
+
+    download_fn = cast("Callable[..., str]", hf_hub_download)
+    return download_fn(
+        repo_id=repo_id,
+        filename=filename,
+        revision=revision,
+    )
+
+
 def resolve_hf_path(path_to_file: str) -> str:
     """
     Resolve an 'hf://' URI into a local cached file path by downloading from Hugging Face Hub.
@@ -209,9 +228,6 @@ def resolve_hf_path(path_to_file: str) -> str:
     """
     if not path_to_file.startswith("hf://"):
         return path_to_file
-
-    huggingface_hub = importlib.import_module("huggingface_hub")
-    _hf_hub_download = huggingface_hub.hf_hub_download
 
     uri = path_to_file[len("hf://") :]
 
@@ -227,13 +243,11 @@ def resolve_hf_path(path_to_file: str) -> str:
     repo_id = parts[0] + "/" + parts[1]
     filename = parts[2]
 
-    local_path = _hf_hub_download(
+    return _hf_hub_download_str(
         repo_id=repo_id,
         filename=filename,
         revision=revision,
     )
-
-    return local_path
 
 
 def resolve_resource_path(path_to_file: str | Path) -> str:

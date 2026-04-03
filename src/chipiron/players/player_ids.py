@@ -81,7 +81,6 @@ class PlayerConfigTag(StrEnum):
         resource = files("chipiron").joinpath(subpath)
         with as_file(resource) as real_path:
             return str(real_path)
-        
 
     def get_players_args(self) -> PlayerArgs:
         """Get the player arguments from the YAML file.

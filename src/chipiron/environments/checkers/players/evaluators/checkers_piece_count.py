@@ -1,5 +1,6 @@
 """Simple checkers evaluator wiring for tree search."""
 
+from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
@@ -9,12 +10,14 @@ from anemone.node_evaluation.direct.protocols import (
     OverEventDetector,
 )
 from valanga import Color, Outcome, State
-from valanga.evaluations import Certainty, Role, Value
+from valanga.evaluations import Certainty, Value
 from valanga.over_event import OverEvent
 
 from chipiron.games.domain.game.game_rules import OutcomeKind
 
 if TYPE_CHECKING:
+    from collections.abc import Hashable
+
     from chipiron.core.evaluation_scale import ValueOverEnum
     from chipiron.environments.checkers.checkers_rules import CheckersRules
     from chipiron.environments.checkers.types import CheckersState
@@ -50,7 +53,7 @@ class CheckersOverEventDetector:
 
     def check_obvious_over_events(
         self, state: State
-    ) -> tuple[OverEvent[Role] | None, float | None]:
+    ) -> tuple[OverEvent[Color] | None, float | None]:
         """Return terminal over-event + value when available."""
         checkers_state = cast("CheckersState", state)
         outcome = self.rules.outcome(state=checkers_state)
@@ -61,13 +64,10 @@ class CheckersOverEventDetector:
             who_is_winner = (
                 Color.WHITE if outcome.winner is Color.WHITE else Color.BLACK
             )
-            over_event = cast(
-                "OverEvent[Role]",
-                OverEvent(
-                    outcome=Outcome.WIN,
-                    winner=who_is_winner,
-                    termination=None,
-                ),
+            over_event: OverEvent[Color] = OverEvent(
+                outcome=Outcome.WIN,
+                winner=who_is_winner,
+                termination=None,
             )
             if outcome.winner is Color.WHITE:
                 value_white = self.value_over_enum.VALUE_WHITE_WHEN_OVER_WHITE_WINS
@@ -75,13 +75,10 @@ class CheckersOverEventDetector:
                 value_white = self.value_over_enum.VALUE_WHITE_WHEN_OVER_BLACK_WINS
             return over_event, float(value_white)
 
-        over_event = cast(
-            "OverEvent[Role]",
-            OverEvent(
-                outcome=Outcome.DRAW,
-                winner=None,
-                termination=None,
-            ),
+        over_event = OverEvent[Color](
+            outcome=Outcome.DRAW,
+            winner=None,
+            termination=None,
         )
         return over_event, float(self.value_over_enum.VALUE_WHITE_WHEN_OVER_DRAW)
 
@@ -107,7 +104,7 @@ class CheckersMasterEvaluator(MasterStateValueEvaluator):
             return Value(
                 score=terminal_value_white,
                 certainty=Certainty.TERMINAL,
-                over_event=over_event,
+                over_event=cast("OverEvent[Hashable] | None", over_event),
             )
 
         return Value(

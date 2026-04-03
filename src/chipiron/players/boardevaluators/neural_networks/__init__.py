@@ -1,5 +1,7 @@
 """Generic neural-network board-evaluator helpers and config types."""
 
+# pylint: disable=duplicate-code
+
 from .neural_net_board_eval_args import (
     NN_NET_EVAL_LITERAL_STRING,
     NN_NET_EVAL_STRING,

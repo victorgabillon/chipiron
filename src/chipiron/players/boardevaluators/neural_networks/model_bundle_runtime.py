@@ -1,6 +1,5 @@
 """Generic runtime helpers for building NN evaluators from model bundles."""
 
-
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
@@ -19,6 +18,8 @@ def load_nn_architecture_args_from_file(
     architecture_file_path: str,
 ) -> "NeuralNetArchitectureArgs":
     """Load neural-network architecture args from an explicit YAML file path."""
+    # Imported lazily to keep the generic runtime module importable without coral.
+    # pylint: disable=import-outside-toplevel
     from coral.neural_networks.neural_net_architecture_args import (
         NeuralNetArchitectureArgs,
     )  # pyright: ignore[reportMissingImports]
@@ -43,6 +44,8 @@ def create_nn_state_eval_from_model_bundle_and_converter(
     content_to_input_convert: Any,
 ) -> Any:
     """Build an NN evaluator from a resolved model bundle and an input converter."""
+    # Imported lazily to avoid pulling coral into modules that only need config/runtime helpers.
+    # pylint: disable=import-outside-toplevel
     from coral.neural_networks.factory import (
         create_nn_state_eval_from_nn_parameters_file_and_existing_model,
     )  # pyright: ignore[reportMissingImports]

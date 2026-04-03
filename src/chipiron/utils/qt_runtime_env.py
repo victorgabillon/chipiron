@@ -1,6 +1,5 @@
 """Runtime environment helpers for Qt-based GUI processes."""
 
-
 import os
 import platform
 

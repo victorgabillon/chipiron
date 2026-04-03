@@ -37,21 +37,143 @@ class ModelBundleError(ValueError):
 class InvalidModelBundleUriError(ModelBundleError):
     """Raised when a bundle URI does not match the expected backend format."""
 
+    @classmethod
+    def invalid_hf_prefix(cls, uri: str) -> InvalidModelBundleUriError:
+        """Build an error for an hf URI missing the expected prefix."""
+        return cls(f"Invalid HF model bundle URI {uri!r}: expected an 'hf://' prefix.")
+
+    @classmethod
+    def invalid_hf_format(cls, uri: str) -> InvalidModelBundleUriError:
+        """Build an error for a malformed hf bundle URI."""
+        return cls(
+            f"Invalid HF model bundle URI {uri!r}: expected "
+            "'hf://<namespace>/<repo>/<bundle>@<revision>'."
+        )
+
+    @classmethod
+    def missing_hf_bundle_path(cls, uri: str) -> InvalidModelBundleUriError:
+        """Build an error for an hf URI missing its bundle folder path."""
+        return cls(f"Invalid HF model bundle URI {uri!r}: missing bundle folder path.")
+
+    @classmethod
+    def invalid_package_prefix(cls, uri: str) -> InvalidModelBundleUriError:
+        """Build an error for a package URI missing the expected prefix."""
+        return cls(
+            f"Invalid package model bundle URI {uri!r}: expected a 'package://' prefix."
+        )
+
+    @classmethod
+    def missing_package_bundle_path(cls, uri: str) -> InvalidModelBundleUriError:
+        """Build an error for a package URI missing its bundle folder path."""
+        return cls(
+            f"Invalid package model bundle URI {uri!r}: missing bundle folder path."
+        )
+
 
 class ModelBundleResolutionError(ModelBundleError):
     """Raised when a model bundle cannot be resolved into local files."""
+
+    @classmethod
+    def missing_huggingface_hub(cls) -> ModelBundleResolutionError:
+        """Build an error for missing Hugging Face support."""
+        return cls(
+            "Resolving hf:// model bundles requires the 'huggingface_hub' package."
+        )
 
 
 class ModelBundleRootNotFoundError(ModelBundleResolutionError, FileNotFoundError):
     """Raised when the bundle root directory cannot be located."""
 
+    @classmethod
+    def missing_root(
+        cls,
+        resolved_bundle_root: Path,
+        bundle_uri: str,
+    ) -> ModelBundleRootNotFoundError:
+        """Build an error for an unresolved bundle directory."""
+        return cls(
+            f"Model bundle root {resolved_bundle_root} could not be resolved for {bundle_uri!r}."
+        )
+
+    @classmethod
+    def expected_directory(
+        cls,
+        bundle_uri: str,
+        resolved_bundle_root: Path,
+    ) -> ModelBundleRootNotFoundError:
+        """Build an error for a bundle URI that points to a file."""
+        return cls(
+            f"Model bundle URI {bundle_uri!r} must point to a directory, not the file "
+            f"{resolved_bundle_root}."
+        )
+
 
 class ModelBundleFileNotFoundError(ModelBundleResolutionError, FileNotFoundError):
     """Raised when a required file inside the bundle cannot be located."""
 
+    @classmethod
+    def unresolved_hf_file(
+        cls,
+        file_name: str,
+        repo_id: str,
+        remote_file_name: str,
+        revision: str,
+    ) -> ModelBundleFileNotFoundError:
+        """Build an error for an HF-hosted bundle file that could not be fetched."""
+        return cls(
+            f"Could not resolve {file_name!r} from model bundle {repo_id!r} "
+            f"at {remote_file_name!r} ({revision})."
+        )
+
+    @classmethod
+    def missing_bundle_file(
+        cls,
+        bundle_uri: str,
+        file_name: str,
+        file_path: Path,
+    ) -> ModelBundleFileNotFoundError:
+        """Build an error for a missing required bundle file."""
+        return cls(
+            f"Model bundle {bundle_uri!r} is missing required file {file_name!r} at {file_path}."
+        )
+
 
 class ModelBundleWeightsSelectionError(ModelBundleResolutionError):
     """Raised when the resolver cannot decide which weights file to use."""
+
+    @classmethod
+    def no_weights_to_autoselect(
+        cls,
+        bundle_uri: str,
+    ) -> ModelBundleWeightsSelectionError:
+        """Build an error for a bundle with no selectable weight files."""
+        return cls(
+            f"Model bundle {bundle_uri!r} does not specify 'weights_file' and contains no "
+            "'.pt' files to auto-select."
+        )
+
+    @classmethod
+    def ambiguous_weights(
+        cls,
+        bundle_uri: str,
+        pt_files: list[Path],
+    ) -> ModelBundleWeightsSelectionError:
+        """Build an error for a bundle with multiple possible weight files."""
+        return cls(
+            f"Model bundle {bundle_uri!r} does not specify 'weights_file' and contains multiple "
+            f"'.pt' files: {[path.name for path in pt_files]}."
+        )
+
+    @classmethod
+    def missing_hf_weights_file(
+        cls,
+        bundle_uri: str,
+    ) -> ModelBundleWeightsSelectionError:
+        """Build an error for an HF bundle without an explicit weights file."""
+        return cls(
+            f"HF model bundle {bundle_uri!r} requires an explicit 'weights_file' because remote "
+            "bundle contents are not enumerated during resolution."
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,9 +188,7 @@ class _ParsedHfBundleUri:
 def _parse_hf_bundle_uri(uri: str) -> _ParsedHfBundleUri:
     """Parse an hf:// bundle URI into repo id, bundle path, and revision."""
     if not uri.startswith("hf://"):
-        raise InvalidModelBundleUriError(
-            f"Invalid HF model bundle URI {uri!r}: expected an 'hf://' prefix."
-        )
+        raise InvalidModelBundleUriError.invalid_hf_prefix(uri)
 
     payload = uri[len("hf://") :]
     repo_and_path, revision = (
@@ -76,16 +196,11 @@ def _parse_hf_bundle_uri(uri: str) -> _ParsedHfBundleUri:
     )
     parts = [part for part in repo_and_path.split("/") if part]
     if len(parts) < 3:
-        raise InvalidModelBundleUriError(
-            f"Invalid HF model bundle URI {uri!r}: expected "
-            "'hf://<namespace>/<repo>/<bundle>@<revision>'."
-        )
+        raise InvalidModelBundleUriError.invalid_hf_format(uri)
 
     bundle_path = PurePosixPath(*parts[2:])
     if str(bundle_path) in {"", "."}:
-        raise InvalidModelBundleUriError(
-            f"Invalid HF model bundle URI {uri!r}: missing bundle folder path."
-        )
+        raise InvalidModelBundleUriError.missing_hf_bundle_path(uri)
 
     return _ParsedHfBundleUri(
         repo_id=f"{parts[0]}/{parts[1]}",
@@ -97,15 +212,11 @@ def _parse_hf_bundle_uri(uri: str) -> _ParsedHfBundleUri:
 def _parse_package_bundle_uri(uri: str) -> str:
     """Extract the package-relative bundle path from a package:// URI."""
     if not uri.startswith("package://"):
-        raise InvalidModelBundleUriError(
-            f"Invalid package model bundle URI {uri!r}: expected a 'package://' prefix."
-        )
+        raise InvalidModelBundleUriError.invalid_package_prefix(uri)
 
     relative_path = uri[len("package://") :].strip("/")
     if not relative_path:
-        raise InvalidModelBundleUriError(
-            f"Invalid package model bundle URI {uri!r}: missing bundle folder path."
-        )
+        raise InvalidModelBundleUriError.missing_package_bundle_path(uri)
     return relative_path
 
 
@@ -125,9 +236,7 @@ def _download_hf_file(*, repo_id: str, filename: str, revision: str) -> str:
     try:
         huggingface_hub = importlib.import_module("huggingface_hub")
     except ImportError as error:
-        raise ModelBundleResolutionError(
-            "Resolving hf:// model bundles requires the 'huggingface_hub' package."
-        ) from error
+        raise ModelBundleResolutionError.missing_huggingface_hub() from error
 
     return str(
         huggingface_hub.hf_hub_download(
@@ -150,9 +259,11 @@ def _download_hf_bundle_file(parsed_uri: _ParsedHfBundleUri, file_name: str) -> 
     except ModelBundleResolutionError:
         raise
     except Exception as error:
-        raise ModelBundleFileNotFoundError(
-            f"Could not resolve {file_name!r} from model bundle {parsed_uri.repo_id!r} "
-            f"at {remote_file_name!r} ({parsed_uri.revision})."
+        raise ModelBundleFileNotFoundError.unresolved_hf_file(
+            file_name,
+            parsed_uri.repo_id,
+            remote_file_name,
+            parsed_uri.revision,
         ) from error
 
     return Path(local_path).resolve(strict=False)
@@ -162,13 +273,14 @@ def _validate_bundle_root(bundle_root: Path, bundle_uri: str) -> Path:
     """Validate that the resolved bundle root exists and is a directory."""
     resolved_bundle_root = bundle_root.resolve(strict=False)
     if not resolved_bundle_root.exists():
-        raise ModelBundleRootNotFoundError(
-            f"Model bundle root {resolved_bundle_root} could not be resolved for {bundle_uri!r}."
+        raise ModelBundleRootNotFoundError.missing_root(
+            resolved_bundle_root,
+            bundle_uri,
         )
     if not resolved_bundle_root.is_dir():
-        raise ModelBundleRootNotFoundError(
-            f"Model bundle URI {bundle_uri!r} must point to a directory, not the file "
-            f"{resolved_bundle_root}."
+        raise ModelBundleRootNotFoundError.expected_directory(
+            bundle_uri,
+            resolved_bundle_root,
         )
     return resolved_bundle_root
 
@@ -177,8 +289,10 @@ def _validate_bundle_file(bundle_root: Path, bundle_uri: str, file_name: str) ->
     """Validate that a required file exists within the bundle root."""
     file_path = (bundle_root / file_name).resolve(strict=False)
     if not file_path.is_file():
-        raise ModelBundleFileNotFoundError(
-            f"Model bundle {bundle_uri!r} is missing required file {file_name!r} at {file_path}."
+        raise ModelBundleFileNotFoundError.missing_bundle_file(
+            bundle_uri,
+            file_name,
+            file_path,
         )
     return file_path
 
@@ -196,14 +310,8 @@ def _resolve_weights_file(
     if len(pt_files) == 1:
         return pt_files[0]
     if not pt_files:
-        raise ModelBundleWeightsSelectionError(
-            f"Model bundle {bundle_uri!r} does not specify 'weights_file' and contains no "
-            "'.pt' files to auto-select."
-        )
-    raise ModelBundleWeightsSelectionError(
-        f"Model bundle {bundle_uri!r} does not specify 'weights_file' and contains multiple "
-        f"'.pt' files: {[path.name for path in pt_files]}."
-    )
+        raise ModelBundleWeightsSelectionError.no_weights_to_autoselect(bundle_uri)
+    raise ModelBundleWeightsSelectionError.ambiguous_weights(bundle_uri, pt_files)
 
 
 def _build_resolved_model_bundle(
@@ -242,10 +350,7 @@ def _resolve_hf_bundle(ref: ModelBundleRef) -> ResolvedModelBundle:
     """Resolve an HF-hosted bundle into concrete local cached files."""
     parsed_uri = _parse_hf_bundle_uri(ref.uri)
     if ref.weights_file is None:
-        raise ModelBundleWeightsSelectionError(
-            f"HF model bundle {ref.uri!r} requires an explicit 'weights_file' because remote "
-            "bundle contents are not enumerated during resolution."
-        )
+        raise ModelBundleWeightsSelectionError.missing_hf_weights_file(ref.uri)
 
     architecture_file_path = _download_hf_bundle_file(
         parsed_uri,

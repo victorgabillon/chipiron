@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, cast
 from chipiron.environments.chess.players.evaluators.boardevaluators.neural_networks.chipiron_nn_args import (
     create_content_to_input_from_bundle,
 )
-from chipiron.models.model_bundle import ResolvedModelBundle
 from chipiron.players.boardevaluators.neural_networks.model_bundle_runtime import (
     create_nn_state_eval_from_model_bundle_and_converter,
 )
@@ -16,6 +15,7 @@ if TYPE_CHECKING:
     from coral.neural_networks import NNBWStateEvaluator
 
     from chipiron.environments.chess.types import ChessState
+    from chipiron.models.model_bundle import ResolvedModelBundle
 
 
 def create_chess_nn_state_eval_from_model_bundle(

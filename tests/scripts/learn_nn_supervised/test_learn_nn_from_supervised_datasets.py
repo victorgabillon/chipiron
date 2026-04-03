@@ -1,3 +1,4 @@
+import textwrap
 from pathlib import Path
 from typing import Any
 
@@ -6,7 +7,7 @@ import pytest
 pytest.importorskip("parsley")
 pytest.importorskip("torch")
 pytest.importorskip("PySide6")
-
+import torch
 from parsley import make_partial_dataclass_with_optional_paths
 
 from chipiron import scripts
@@ -23,7 +24,6 @@ from chipiron.scripts.learn_nn_supervised.learn_nn_from_supervised_datasets impo
     LearnNNScriptArgs,
 )
 from chipiron.scripts.script_args import BaseScriptArgs
-from tests.model_bundle_test_utils import create_tiny_model_bundle
 
 PartialOpLearnNNScriptArgs = make_partial_dataclass_with_optional_paths(
     cls=LearnNNScriptArgs
@@ -32,6 +32,48 @@ PartialOpNNTrainerArgs = make_partial_dataclass_with_optional_paths(cls=NNTraine
 PartialOpDataSetArgs = make_partial_dataclass_with_optional_paths(cls=DataSetArgs)
 PartialOpBaseScriptArgs = make_partial_dataclass_with_optional_paths(cls=BaseScriptArgs)
 PartialOpGameInputArgs = make_partial_dataclass_with_optional_paths(cls=GameInputArgs)
+
+
+def create_tiny_model_bundle(
+    tmp_path: Path,
+    *,
+    bundle_name: str = "model_bundle",
+    input_representation: str = "piece_difference",
+    weights_file: str = "weights.pt",
+) -> Path:
+    """Create a tiny local model bundle for offline tests."""
+    bundle_dir = tmp_path / bundle_name
+    bundle_dir.mkdir(parents=True, exist_ok=True)
+
+    (bundle_dir / "architecture.yaml").write_text(
+        textwrap.dedent(
+            """\
+            model_output_type:
+              point_of_view: player_to_move
+            model_type_args:
+              list_of_activation_functions:
+              - hyperbolic_tangent
+              number_neurons_per_layer:
+              - 5
+              - 1
+              type: multi_layer_perceptron
+            """
+        ),
+        encoding="utf-8",
+    )
+    (bundle_dir / "chipiron_nn.yaml").write_text(
+        textwrap.dedent(
+            f"""\
+            version: 1
+            game_kind: chess
+            input_representation: {input_representation}
+            """
+        ),
+        encoding="utf-8",
+    )
+    torch.save({"dummy": True}, bundle_dir / weights_file)
+    return bundle_dir
+
 
 def _make_config(*, tmp_path: Path, saving_root: Path) -> Any:
     """Build a local-only config for the supervised learning test."""
