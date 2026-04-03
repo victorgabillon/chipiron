@@ -6,6 +6,7 @@ import importlib.machinery
 import importlib.util
 import os
 import typing
+from contextlib import suppress
 from importlib.resources import files
 from pathlib import Path
 from typing import Any
@@ -35,6 +36,17 @@ class PackageNotFoundError(ImportError):
     def __init__(self, package_name: str) -> None:
         """Initialize the error with the missing package name."""
         super().__init__(f"Cannot find package '{package_name}'")
+
+
+class InvalidHfPathError(ValueError):
+    """Raised when an hf:// resource URI does not follow the expected format."""
+
+    def __init__(self, invalid_path: str) -> None:
+        """Initialize the error with the invalid resource path."""
+        super().__init__(
+            "Invalid hf URI: "
+            f"{invalid_path}. Expected hf://<namespace>/<repo>/<path>@<revision>"
+        )
 
 
 def mkdir_if_not_existing(folder_path: MyPath) -> None:
@@ -199,8 +211,8 @@ def resolve_hf_path(path_to_file: str) -> str:
     if not path_to_file.startswith("hf://"):
         return path_to_file
 
-    from pathlib import Path
-    from huggingface_hub import hf_hub_download as _hf_hub_download  # pyright: ignore[reportUnknownVariableType]
+    huggingface_hub = importlib.import_module("huggingface_hub")
+    _hf_hub_download = huggingface_hub.hf_hub_download
 
     uri = path_to_file[len("hf://") :]
 
@@ -211,9 +223,7 @@ def resolve_hf_path(path_to_file: str) -> str:
 
     parts = repo_and_path.split("/", 2)
     if len(parts) < 3:
-        raise ValueError(
-            f"Invalid hf URI: {path_to_file}. Expected hf://<namespace>/<repo>/<path>@<revision>"
-        )
+        raise InvalidHfPathError(path_to_file)
 
     repo_id = parts[0] + "/" + parts[1]
     filename = parts[2]
@@ -224,25 +234,26 @@ def resolve_hf_path(path_to_file: str) -> str:
         revision=revision,
     )
 
-    # Prefetch sidecar files expected by Chipiron when loading NN weights.
+    # Legacy behavior for the current evaluator path.
+    # TODO(PR2): remove NN sidecar prefetching from this generic file resolver and
+    # route model artifact resolution through chipiron.models.model_bundle instead.
     if Path(filename).suffix == ".pt":
         parent_in_repo = Path(filename).parent
         for sidecar_name in ("chipiron_nn.yaml", "architecture.yaml"):
             sidecar_filename = str(parent_in_repo / sidecar_name)
-            try:
+            with suppress(Exception):
                 _hf_hub_download(
                     repo_id=repo_id,
                     filename=sidecar_filename,
                     revision=revision,
                 )
-            except Exception:
-                # Sidecars are best-effort here; downstream code will fail loudly
-                # if a truly required file is missing.
-                pass
 
     return local_path
+
+
 def resolve_resource_path(path_to_file: str | Path) -> str:
-    """
+    """Resolve a package, HF Hub, or plain local resource path.
+
     Resolve either:
       - package://...  -> file path within installed package
       - hf://...       -> downloaded file path from HF hub cache
