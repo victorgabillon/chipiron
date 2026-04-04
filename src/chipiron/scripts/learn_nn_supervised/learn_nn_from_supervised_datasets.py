@@ -22,7 +22,7 @@ import os
 import tempfile
 import time
 from dataclasses import asdict, dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import mlflow
 import mlflow.pytorch
@@ -68,6 +68,10 @@ from chipiron.utils import MyPath
 from chipiron.utils.logger import chipiron_logger
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from torch import Tensor
+
     from chipiron.learningprocesses.nn_trainer.nn_trainer import NNPytorchTrainer
 
 logging.basicConfig(level=logging.WARNING)
@@ -183,13 +187,17 @@ class LearnNNScript:
             nn=self.nn_board_evaluator.net,
             saving_folder=self.saving_folder,
         )
+        transform_white_value_to_model_output_function = cast(
+            "Callable[[float, ChessState], Tensor]",
+            self.nn_board_evaluator.output_and_value_converter.from_value_white_to_model_output,
+        )
 
         self.stockfish_boards_train = FenAndValueDataSet(
             file_name=self.args.dataset_args.train_file_name,
             preprocessing=self.args.dataset_args.preprocessing_data_set,
             transform_board_function=self.nn_board_evaluator.content_to_input_convert,
             transform_dataset_value_to_white_value_function=process_stockfish_value,  # pyright: ignore[reportUnknownArgumentType]
-            transform_white_value_to_model_output_function=self.nn_board_evaluator.output_and_value_converter.from_value_white_to_model_output,
+            transform_white_value_to_model_output_function=transform_white_value_to_model_output_function,
         )
 
         assert self.args.dataset_args.test_file_name is not None
@@ -198,7 +206,7 @@ class LearnNNScript:
             preprocessing=self.args.dataset_args.preprocessing_data_set,
             transform_board_function=self.nn_board_evaluator.content_to_input_convert,
             transform_dataset_value_to_white_value_function=process_stockfish_value,  # pyright: ignore[reportUnknownArgumentType]
-            transform_white_value_to_model_output_function=self.nn_board_evaluator.output_and_value_converter.from_value_white_to_model_output,
+            transform_white_value_to_model_output_function=transform_white_value_to_model_output_function,
         )
 
         start_time = time.time()

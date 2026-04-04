@@ -8,7 +8,7 @@ import os
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import dacite
 import torch
@@ -43,7 +43,10 @@ from chipiron.utils import MyPath
 from chipiron.utils.path_runtime import get_default_output_dir
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from coral.neural_networks import NNBWStateEvaluator
+    from torch import Tensor
 
     from chipiron.environments.chess.types import ChessState
 
@@ -205,13 +208,17 @@ def evaluate_models(
 
             nn_board_evaluator: NNBWStateEvaluator[ChessState]
             nn_board_evaluator = create_chess_nn_state_eval_from_model_bundle(bundle)
+            transform_white_value_to_model_output_function = cast(
+                "Callable[[float, ChessState], Tensor]",
+                nn_board_evaluator.output_and_value_converter.from_value_white_to_model_output,
+            )
 
             stockfish_boards_test = FenAndValueDataSet(
                 file_name=dataset_file_name,
                 preprocessing=False,
                 transform_board_function=nn_board_evaluator.content_to_input_convert,
                 transform_dataset_value_to_white_value_function=process_stockfish_value,  # pyright: ignore[reportUnknownArgumentType]
-                transform_white_value_to_model_output_function=nn_board_evaluator.output_and_value_converter.from_value_white_to_model_output,
+                transform_white_value_to_model_output_function=transform_white_value_to_model_output_function,
             )
 
             stockfish_boards_test.load()

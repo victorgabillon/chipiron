@@ -1,6 +1,6 @@
 """Module for the Game class."""
 
-from typing import TYPE_CHECKING, Any, Annotated
+from typing import TYPE_CHECKING, Annotated, Any
 
 from valanga import Dynamics, StateTag, TurnState
 from valanga.dynamics import Transition

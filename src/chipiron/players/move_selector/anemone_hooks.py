@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 from anemone.hooks.search_hooks import FeatureExtractor
 from atomheart.utils.color import valanga_color_to_chess
-from collections.abc import Mapping
 from valanga import TurnState
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 type AnyTurnState = TurnState[Any]
 

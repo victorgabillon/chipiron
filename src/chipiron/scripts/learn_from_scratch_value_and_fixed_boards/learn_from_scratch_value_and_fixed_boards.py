@@ -10,7 +10,7 @@ import random
 import tempfile
 import time
 from dataclasses import asdict, dataclass, field
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import mlflow
 import pandas as pd
@@ -60,6 +60,11 @@ from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils import MyPath
 from chipiron.utils.logger import chipiron_logger, suppress_logging
 from chipiron.utils.path_variables import ML_FLOW_URI_PATH
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from torch import Tensor
 
 
 @dataclass
@@ -187,12 +192,17 @@ class LearnNNFromScratchScript:
             value = cast("float", row["value"])
             return float(value)
 
+        transform_white_value_to_model_output_function = cast(
+            "Callable[[float, ChessState], Tensor]",
+            self.nn_board_evaluator.output_and_value_converter.from_value_white_to_model_output,
+        )
+
         self.boards_dataset = FenAndValueDataSet(
             file_name=self.args.dataset_args.train_file_name,
             preprocessing=self.args.dataset_args.preprocessing_data_set,
             transform_board_function=self.nn_board_evaluator.content_to_input_convert,
             transform_dataset_value_to_white_value_function=transform_dataset_value_to_white_value_function,
-            transform_white_value_to_model_output_function=self.nn_board_evaluator.output_and_value_converter.from_value_white_to_model_output,
+            transform_white_value_to_model_output_function=transform_white_value_to_model_output_function,
         )
         self.boards_dataset.load()
 
