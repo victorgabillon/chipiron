@@ -8,7 +8,7 @@ from valanga import BranchKey
 
 from chipiron.displays.gui_protocol import Scope
 
-type AnyTurnState = valanga.TurnState
+type AnyTurnState = valanga.TurnState[Any]
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,7 +66,7 @@ class MatchOver:
 
     scope: Scope
     final_state: AnyTurnState
-    over_event: Any | None
+    over_event: valanga.OverEvent[valanga.Role] | None
 
 
 type MatchEvent = (

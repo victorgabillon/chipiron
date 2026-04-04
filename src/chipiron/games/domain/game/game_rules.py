@@ -2,13 +2,13 @@
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Protocol, TypeVar
+from typing import Any, Protocol, TypeVar
 
 from valanga import Color, TurnState
 
 from .final_game_result import FinalGameResult
 
-type AnyTurnState = TurnState
+type AnyTurnState = TurnState[Any]
 
 StateT_contra = TypeVar("StateT_contra", contravariant=True, bound=AnyTurnState)
 

@@ -2,11 +2,12 @@
 
 import os
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Any, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal
 
 import yaml
 from atomheart.games.chess.move.move_factory import MoveFactory
 from valanga import BranchKey, Color, StateTag, Transition, TurnState
+from valanga.evaluations import Value
 from valanga.game import ActionKey
 
 import chipiron.players as players_m
@@ -42,8 +43,7 @@ if TYPE_CHECKING:
     from chipiron.games.runtime.orchestrator.match_controller import MatchController
     from chipiron.utils.communication.mailbox import MainMailboxMessage
 
-type AnyTurnState = TurnState
-type AnyEvaluation = Any
+type AnyTurnState = TurnState[Any]
 
 
 class TransitionComputationError(Exception):
@@ -234,17 +234,14 @@ class GameManager[StateT: AnyTurnState = AnyTurnState]:
         except (KeyError, RuntimeError, ValueError) as exc:
             raise TransitionComputationError(str(exc)) from exc
 
-    def external_eval(self) -> tuple[AnyEvaluation | None, AnyEvaluation]:
+    def external_eval(self) -> tuple[Value | None, Value]:
         """Evaluate the game board using the display board evaluator.
 
         Returns:
-            tuple[AnyEvaluation | None, AnyEvaluation]: A tuple containing the evaluation scores.
+            tuple[Value | None, Value]: A tuple containing the evaluation scores.
 
         """
-        return cast(
-            "tuple[AnyEvaluation | None, AnyEvaluation]",
-            self.display_state_evaluator.evaluate(self.game.state),
-        )
+        return self.display_state_evaluator.evaluate(self.game.state)
 
     def play_one_move(self, action: ActionKey) -> None:
         """Play one move in the game.
@@ -331,7 +328,7 @@ class GameManager[StateT: AnyTurnState = AnyTurnState]:
         corresponding_state_tag: StateTag,
         player_name: str,
         color_to_play: Color,
-        evaluation: AnyEvaluation | None,  # transport-level evaluation payload
+        evaluation: Value | None,  # your real type
     ) -> None:
         """Single move-application path used by BOTH GUI and players.
 

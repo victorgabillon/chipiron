@@ -6,12 +6,12 @@ from typing import Any
 from atomheart.games.chess.board.utils import Fen
 from atomheart.games.chess.move import MoveUci
 from valanga import Color, TurnState
+from valanga.evaluations import Value
 from valanga.game import TurnStatePlusHistory
 
 from chipiron.players.player import PlayerId
 
-type AnyTurnState = TurnState
-type AnyEvaluation = Any
+type AnyTurnState = TurnState[Any]
 
 
 @dataclass
@@ -31,7 +31,7 @@ class MoveMessage:
     corresponding_board: Fen
     player_name: PlayerId
     color_to_play: Color
-    evaluation: AnyEvaluation | None = None
+    evaluation: Value | None = None
 
 
 @dataclass

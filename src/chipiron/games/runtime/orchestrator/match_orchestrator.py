@@ -8,7 +8,7 @@ Medium-refactor goals:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from valanga import Color, TurnState
 
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from chipiron.games.runtime.orchestrator.match_controller import MatchController
     from chipiron.utils.communication.mailbox import MainMailboxMessage
 
-type AnyTurnState = TurnState
+type AnyTurnState = TurnState[Any]
 
 StateT = TypeVar("StateT", bound=AnyTurnState)
 

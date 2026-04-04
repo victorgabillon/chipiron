@@ -37,7 +37,7 @@ from .random_args import RandomSelectorArgs
 from .random_selector import create_random_selector
 from .registry import get_game_specific_selector_factory
 
-type AnyTurnState = TurnState
+type AnyTurnState = TurnState[Any]
 
 
 class MissingTreeSearchDynamicsError(ValueError):

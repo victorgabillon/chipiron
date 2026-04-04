@@ -10,7 +10,7 @@ from atomheart.utils.color import valanga_color_to_chess
 from collections.abc import Mapping
 from valanga import TurnState
 
-type AnyTurnState = TurnState
+type AnyTurnState = TurnState[Any]
 
 
 class BoardWithAttackCheck(Protocol):

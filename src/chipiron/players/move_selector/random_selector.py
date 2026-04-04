@@ -1,12 +1,13 @@
 """Runtime random move selector implementation."""
 
 import random as py_random
+from typing import Any
 
 from valanga import Dynamics, TurnState
 from valanga.game import Seed
 from valanga.policy import NotifyProgressCallable, Recommendation
 
-type AnyTurnState = TurnState
+type AnyTurnState = TurnState[Any]
 
 
 class RandomSelector[StateT: AnyTurnState]:

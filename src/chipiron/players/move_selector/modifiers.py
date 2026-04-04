@@ -5,14 +5,15 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol, TypeGuard, cast
 
 from anemone.dynamics import SearchDynamics
-from valanga import BranchKey, Color, TurnState
+from valanga import BranchKey, Color, Outcome, TurnState
+from valanga.evaluations import Value
 from valanga.game import BranchName, Seed
 from valanga.policy import BranchSelector, NotifyProgressCallable, Recommendation
 
 if TYPE_CHECKING:
     from atomheart.games.chess.move.imove import MoveKey
 
-type AnyTurnState = TurnState
+type AnyTurnState = TurnState[Any]
 
 
 class RecommendationModifier[StateT: AnyTurnState](Protocol):
@@ -83,23 +84,21 @@ class ComposedBranchSelector[StateT: AnyTurnState](BranchSelector[StateT]):
 
 
 def is_winning_eval(
-    evaluation: Any,
+    evaluation: Value,
     player: Color,
     threshold: float = 0.98,
 ) -> bool:
     """Return whether ``evaluation`` is winning for ``player``."""
-    over_event = getattr(evaluation, "over_event", None)
-    if over_event is not None:
-        outcome = getattr(over_event, "outcome", None)
-        if getattr(outcome, "name", None) == "WIN":
-            is_win_for = getattr(over_event, "is_win_for", None)
-            if callable(is_win_for):
-                return bool(is_win_for(player))
-
-    score = getattr(evaluation, "score", None)
-    if not isinstance(score, (int, float)):
-        return False
-    return (score > threshold) if player is Color.WHITE else (score < -threshold)
+    if evaluation.over_event is not None:
+        return (
+            evaluation.over_event.outcome is Outcome.WIN
+            and evaluation.over_event.is_win_for(player)
+        )
+    return (
+        (evaluation.score > threshold)
+        if player is Color.WHITE
+        else (evaluation.score < -threshold)
+    )
 
 
 ProgressGainFn = Callable[[AnyTurnState, BranchKey], float]

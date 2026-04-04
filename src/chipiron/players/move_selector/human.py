@@ -4,7 +4,7 @@ to select moves through the command line interface.
 """
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
 from valanga import Dynamics, TurnState
 from valanga.game import Seed
@@ -14,7 +14,7 @@ from chipiron.utils.logger import chipiron_logger
 
 from .move_selector_types import MoveSelectorTypes
 
-type AnyTurnState = TurnState
+type AnyTurnState = TurnState[Any]
 
 
 @dataclass

@@ -8,7 +8,7 @@ from typing import Any, cast
 from anemone.dynamics import SearchDynamics
 from valanga import TurnState
 
-type AnyTurnState = TurnState
+type AnyTurnState = TurnState[Any]
 
 
 class SearchDynamicsAddonType(StrEnum):
