@@ -8,6 +8,8 @@ from typing import Any, cast
 from anemone.dynamics import SearchDynamics
 from valanga import TurnState
 
+type AnyTurnState = TurnState
+
 
 class SearchDynamicsAddonType(StrEnum):
     """Supported optional search dynamics wrappers."""
@@ -27,7 +29,7 @@ class ChessCopyStackAddonArgs:
 SearchDynamicsAddonArgs = ChessCopyStackAddonArgs
 
 
-def apply_search_dynamics_addon[TurnStateT: TurnState[Any]](
+def apply_search_dynamics_addon[TurnStateT: AnyTurnState](
     *,
     addon: SearchDynamicsAddonArgs,
     state_type: type[TurnStateT],

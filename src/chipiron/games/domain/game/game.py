@@ -1,6 +1,6 @@
 """Module for the Game class."""
 
-from typing import TYPE_CHECKING, Any, Annotated
+from typing import TYPE_CHECKING, Annotated
 
 from valanga import Dynamics, StateTag, TurnState
 from valanga.dynamics import Transition
@@ -20,12 +20,14 @@ if TYPE_CHECKING:
     from chipiron.displays.gui_protocol import UpdatePayload
     from chipiron.players.communications.player_message import PlayerRequest
 
+type AnyTurnState = TurnState
+
 type Ply = Annotated[
     int, "The number of one turn taken by one of the players in the game so far"
 ]
 
 
-class Game[StateT: TurnState[Any] = TurnState[Any]]:
+class Game[StateT: AnyTurnState = AnyTurnState]:
     """Class representing a game of chess.
 
     Note:
@@ -231,7 +233,7 @@ class Game[StateT: TurnState[Any] = TurnState[Any]]:
         return self._state_tag_history
 
 
-class ObservableGame[StateT: TurnState[Any] = TurnState[Any]]:
+class ObservableGame[StateT: AnyTurnState = AnyTurnState]:
     """Represents an observable version of the Game object."""
 
     game: Game[StateT]

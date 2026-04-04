@@ -37,6 +37,8 @@ from .random_args import RandomSelectorArgs
 from .random_selector import create_random_selector
 from .registry import get_game_specific_selector_factory
 
+type AnyTurnState = TurnState
+
 
 class MissingTreeSearchDynamicsError(ValueError):
     """Raised when tree search dynamics cannot be built from provided inputs."""
@@ -54,7 +56,7 @@ class MissingGameSpecificSelectorFactoryError(ValueError):
         )
 
 
-def create_main_move_selector[TurnStateT: TurnState[Any]](
+def create_main_move_selector[TurnStateT: AnyTurnState](
     move_selector_args: NonTreeMoveSelectorArgs,
     *,
     game_kind: GameKind,
@@ -96,7 +98,7 @@ def create_main_move_selector[TurnStateT: TurnState[Any]](
     return main_move_selector
 
 
-def create_tree_and_value_move_selector[TurnStateT: TurnState[Any]](
+def create_tree_and_value_move_selector[TurnStateT: AnyTurnState](
     args: TreeAndValuePlayerArgs,
     *,
     state_type: type[TurnStateT],

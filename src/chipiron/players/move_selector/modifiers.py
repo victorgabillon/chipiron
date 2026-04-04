@@ -5,18 +5,17 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol, TypeGuard, cast
 
 from anemone.dynamics import SearchDynamics
-from valanga import BranchKey, Color, Outcome, TurnState
-from valanga.evaluations import Value
+from valanga import BranchKey, Color, TurnState
 from valanga.game import BranchName, Seed
 from valanga.policy import BranchSelector, NotifyProgressCallable, Recommendation
 
 if TYPE_CHECKING:
     from atomheart.games.chess.move.imove import MoveKey
 
-type AnyTurnState = TurnState[Any]
+type AnyTurnState = TurnState
 
 
-class RecommendationModifier[StateT: TurnState[Any]](Protocol):
+class RecommendationModifier[StateT: AnyTurnState](Protocol):
     """Protocol for recommendation post-processors."""
 
     @property
@@ -52,7 +51,7 @@ class BoardHasZeroing(Protocol):
 
 
 @dataclass(frozen=True, slots=True)
-class ComposedBranchSelector[StateT: TurnState[Any]](BranchSelector[StateT]):
+class ComposedBranchSelector[StateT: AnyTurnState](BranchSelector[StateT]):
     """Branch selector that applies recommendation modifiers in sequence."""
 
     base: BranchSelector[StateT]
@@ -84,28 +83,30 @@ class ComposedBranchSelector[StateT: TurnState[Any]](BranchSelector[StateT]):
 
 
 def is_winning_eval(
-    evaluation: Value,
+    evaluation: Any,
     player: Color,
     threshold: float = 0.98,
 ) -> bool:
     """Return whether ``evaluation`` is winning for ``player``."""
-    if evaluation.over_event is not None:
-        return (
-            evaluation.over_event.outcome is Outcome.WIN
-            and evaluation.over_event.is_win_for(player)
-        )
-    return (
-        (evaluation.score > threshold)
-        if player is Color.WHITE
-        else (evaluation.score < -threshold)
-    )
+    over_event = getattr(evaluation, "over_event", None)
+    if over_event is not None:
+        outcome = getattr(over_event, "outcome", None)
+        if getattr(outcome, "name", None) == "WIN":
+            is_win_for = getattr(over_event, "is_win_for", None)
+            if callable(is_win_for):
+                return bool(is_win_for(player))
+
+    score = getattr(evaluation, "score", None)
+    if not isinstance(score, (int, float)):
+        return False
+    return (score > threshold) if player is Color.WHITE else (score < -threshold)
 
 
 ProgressGainFn = Callable[[AnyTurnState, BranchKey], float]
 
 
 @dataclass(frozen=True, slots=True)
-class AccelerateWhenWinning[StateT: TurnState[Any]]:
+class AccelerateWhenWinning[StateT: AnyTurnState]:
     """Prefer winning branches that make more game progress."""
 
     progress_gain_fn: ProgressGainFn

@@ -2,12 +2,11 @@
 
 import os
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import yaml
 from atomheart.games.chess.move.move_factory import MoveFactory
 from valanga import BranchKey, Color, StateTag, Transition, TurnState
-from valanga.evaluations import Value
 from valanga.game import ActionKey
 
 import chipiron.players as players_m
@@ -43,12 +42,15 @@ if TYPE_CHECKING:
     from chipiron.games.runtime.orchestrator.match_controller import MatchController
     from chipiron.utils.communication.mailbox import MainMailboxMessage
 
+type AnyTurnState = TurnState
+type AnyEvaluation = Any
+
 
 class TransitionComputationError(Exception):
     """Raised when a proposed action cannot be converted into a valid transition."""
 
 
-class GameManager[StateT: TurnState[Any] = TurnState[Any]]:
+class GameManager[StateT: AnyTurnState = AnyTurnState]:
     """Object in charge of playing one game."""
 
     # The game object that is managed
@@ -232,14 +234,17 @@ class GameManager[StateT: TurnState[Any] = TurnState[Any]]:
         except (KeyError, RuntimeError, ValueError) as exc:
             raise TransitionComputationError(str(exc)) from exc
 
-    def external_eval(self) -> tuple[Value | None, Value]:
+    def external_eval(self) -> tuple[AnyEvaluation | None, AnyEvaluation]:
         """Evaluate the game board using the display board evaluator.
 
         Returns:
-            tuple[Value | None, Value]: A tuple containing the evaluation scores.
+            tuple[AnyEvaluation | None, AnyEvaluation]: A tuple containing the evaluation scores.
 
         """
-        return self.display_state_evaluator.evaluate(self.game.state)
+        return cast(
+            "tuple[AnyEvaluation | None, AnyEvaluation]",
+            self.display_state_evaluator.evaluate(self.game.state),
+        )
 
     def play_one_move(self, action: ActionKey) -> None:
         """Play one move in the game.
@@ -326,7 +331,7 @@ class GameManager[StateT: TurnState[Any] = TurnState[Any]]:
         corresponding_state_tag: StateTag,
         player_name: str,
         color_to_play: Color,
-        evaluation: Value | None,  # your real type
+        evaluation: AnyEvaluation | None,  # transport-level evaluation payload
     ) -> None:
         """Single move-application path used by BOTH GUI and players.
 
