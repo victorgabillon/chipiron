@@ -54,7 +54,7 @@ class MissingGameSpecificSelectorFactoryError(ValueError):
         )
 
 
-def create_main_move_selector[TurnStateT: TurnState](
+def create_main_move_selector[TurnStateT: TurnState[Any]](
     move_selector_args: NonTreeMoveSelectorArgs,
     *,
     game_kind: GameKind,
@@ -96,7 +96,7 @@ def create_main_move_selector[TurnStateT: TurnState](
     return main_move_selector
 
 
-def create_tree_and_value_move_selector[TurnStateT: TurnState](
+def create_tree_and_value_move_selector[TurnStateT: TurnState[Any]](
     args: TreeAndValuePlayerArgs,
     *,
     state_type: type[TurnStateT],

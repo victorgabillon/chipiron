@@ -3,15 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import Any, Protocol
 
 from anemone.hooks.search_hooks import FeatureExtractor
 from atomheart.utils.color import valanga_color_to_chess
+from collections.abc import Mapping
+from valanga import TurnState
 
-if TYPE_CHECKING:
-    from collections.abc import Mapping
-
-    from valanga import TurnState
+type AnyTurnState = TurnState[Any]
 
 
 class BoardWithAttackCheck(Protocol):
@@ -40,7 +39,7 @@ class ChessLikeState(Protocol):
 class ChessFeatureExtractor(FeatureExtractor):
     """Compute tactical and diagnostic features for chess states."""
 
-    def features(self, state: TurnState) -> Mapping[str, Any]:
+    def features(self, state: AnyTurnState) -> Mapping[str, Any]:
         """Return a stable set of optional features for priority checks."""
         board = getattr(state, "board", None)
         turn = getattr(state, "turn", None)

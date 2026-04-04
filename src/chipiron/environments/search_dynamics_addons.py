@@ -27,7 +27,7 @@ class ChessCopyStackAddonArgs:
 SearchDynamicsAddonArgs = ChessCopyStackAddonArgs
 
 
-def apply_search_dynamics_addon[TurnStateT: TurnState](
+def apply_search_dynamics_addon[TurnStateT: TurnState[Any]](
     *,
     addon: SearchDynamicsAddonArgs,
     state_type: type[TurnStateT],

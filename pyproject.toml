@@ -379,6 +379,7 @@ deps = [
   "pyarrow",
   "gprof2dot",
     "huggingface_hub>=1.6.0",
+     "shakmaty_python_binding",
 
   "mlflow",
   "parsley_coco>=0.1.34",
@@ -455,6 +456,7 @@ deps = [
   "pytest>=9.0.2",
   "pytest-cov>=6.0.0",
   "platformdirs>=4.9.2",
+   "shakmaty_python_binding",
 ]
 set_env = { MYPYPATH = "{toxinidir}/src" }
 commands = [

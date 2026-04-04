@@ -8,7 +8,7 @@ Medium-refactor goals:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from valanga import Color, TurnState
 
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     from chipiron.utils.communication.mailbox import MainMailboxMessage
 
 
-StateT = TypeVar("StateT", bound=TurnState)
+StateT = TypeVar("StateT", bound=TurnState[Any])
 
 
 class MatchOrchestrator:

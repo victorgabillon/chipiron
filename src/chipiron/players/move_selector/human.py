@@ -4,7 +4,7 @@ to select moves through the command line interface.
 """
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
 from valanga import Dynamics, TurnState
 from valanga.game import Seed
@@ -30,7 +30,7 @@ class GuiHumanPlayerArgs:
 
 
 @dataclass
-class CommandLineHumanMoveSelector[StateT: TurnState]:
+class CommandLineHumanMoveSelector[StateT: TurnState[Any]]:
     """Select moves interactively from command-line input."""
 
     dynamics: Dynamics[StateT]

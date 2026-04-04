@@ -1,6 +1,6 @@
 """Module for the Game class."""
 
-from typing import TYPE_CHECKING, Annotated
+from typing import TYPE_CHECKING, Any, Annotated
 
 from valanga import Dynamics, StateTag, TurnState
 from valanga.dynamics import Transition
@@ -25,7 +25,7 @@ type Ply = Annotated[
 ]
 
 
-class Game[StateT: TurnState = TurnState]:
+class Game[StateT: TurnState[Any] = TurnState[Any]]:
     """Class representing a game of chess.
 
     Note:
@@ -231,7 +231,7 @@ class Game[StateT: TurnState = TurnState]:
         return self._state_tag_history
 
 
-class ObservableGame[StateT: TurnState = TurnState]:
+class ObservableGame[StateT: TurnState[Any] = TurnState[Any]]:
     """Represents an observable version of the Game object."""
 
     game: Game[StateT]

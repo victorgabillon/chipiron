@@ -1,6 +1,7 @@
 """Module to define the messages that are sent between the players and the game."""
 
 from dataclasses import dataclass
+from typing import Any
 
 from atomheart.games.chess.board.utils import Fen
 from atomheart.games.chess.move import MoveUci
@@ -32,7 +33,7 @@ class MoveMessage:
 
 
 @dataclass
-class StatePlusHistoryMessage[StateT: TurnState = TurnState]:
+class StatePlusHistoryMessage[StateT: TurnState[Any] = TurnState[Any]]:
     """Represents a message containing the current state of the chess board.
 
     Attributes:

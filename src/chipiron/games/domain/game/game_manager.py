@@ -2,7 +2,7 @@
 
 import os
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import yaml
 from atomheart.games.chess.move.move_factory import MoveFactory
@@ -48,7 +48,7 @@ class TransitionComputationError(Exception):
     """Raised when a proposed action cannot be converted into a valid transition."""
 
 
-class GameManager[StateT: TurnState = TurnState]:
+class GameManager[StateT: TurnState[Any] = TurnState[Any]]:
     """Object in charge of playing one game."""
 
     # The game object that is managed

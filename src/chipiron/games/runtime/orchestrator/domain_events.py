@@ -1,11 +1,14 @@
 """Domain events emitted during match orchestration."""
 
 from dataclasses import dataclass
+from typing import Any
 
 import valanga
 from valanga import BranchKey
 
 from chipiron.displays.gui_protocol import Scope
+
+type AnyTurnState = valanga.TurnState[Any]
 
 
 @dataclass(frozen=True, slots=True)
@@ -13,7 +16,7 @@ class StartMatch:
     """Signal that a match has started with its initial state."""
 
     scope: Scope
-    initial_state: valanga.TurnState
+    initial_state: AnyTurnState
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,7 +26,7 @@ class NeedAction:
     scope: Scope
     color: valanga.Color
     request_id: int
-    state: valanga.TurnState
+    state: AnyTurnState
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,7 +65,7 @@ class MatchOver:
     """Signal that the match has reached a terminal state."""
 
     scope: Scope
-    final_state: valanga.TurnState
+    final_state: AnyTurnState
     over_event: valanga.OverEvent[valanga.Role] | None
 
 

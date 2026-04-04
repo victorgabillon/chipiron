@@ -13,8 +13,10 @@ from valanga.policy import BranchSelector, NotifyProgressCallable, Recommendatio
 if TYPE_CHECKING:
     from atomheart.games.chess.move.imove import MoveKey
 
+type AnyTurnState = TurnState[Any]
 
-class RecommendationModifier[StateT: TurnState](Protocol):
+
+class RecommendationModifier[StateT: TurnState[Any]](Protocol):
     """Protocol for recommendation post-processors."""
 
     @property
@@ -50,7 +52,7 @@ class BoardHasZeroing(Protocol):
 
 
 @dataclass(frozen=True, slots=True)
-class ComposedBranchSelector[StateT: TurnState](BranchSelector[StateT]):
+class ComposedBranchSelector[StateT: TurnState[Any]](BranchSelector[StateT]):
     """Branch selector that applies recommendation modifiers in sequence."""
 
     base: BranchSelector[StateT]
@@ -99,11 +101,11 @@ def is_winning_eval(
     )
 
 
-ProgressGainFn = Callable[[TurnState, BranchKey], float]
+ProgressGainFn = Callable[[AnyTurnState, BranchKey], float]
 
 
 @dataclass(frozen=True, slots=True)
-class AccelerateWhenWinning[StateT: TurnState]:
+class AccelerateWhenWinning[StateT: TurnState[Any]]:
     """Prefer winning branches that make more game progress."""
 
     progress_gain_fn: ProgressGainFn
@@ -156,7 +158,7 @@ def chess_is_zeroing(state: HasZeroing, branch_key: BranchKey) -> bool:
     return state.board.is_zeroing(cast("MoveKey", branch_key))
 
 
-def is_zeroing_state(state: TurnState) -> TypeGuard[HasZeroing]:
+def is_zeroing_state(state: AnyTurnState) -> TypeGuard[HasZeroing]:
     """Return whether ``state`` exposes a board with ``is_zeroing``."""
     state_any = cast("Any", state)
     if not hasattr(state_any, "board"):
@@ -164,7 +166,7 @@ def is_zeroing_state(state: TurnState) -> TypeGuard[HasZeroing]:
     return hasattr(state_any.board, "is_zeroing")
 
 
-def chess_progress_gain_zeroing(state: TurnState, branch_key: BranchKey) -> float:
+def chess_progress_gain_zeroing(state: AnyTurnState, branch_key: BranchKey) -> float:
     """Return 1.0 for zeroing moves and 0.0 for non-zeroing moves or unsupported states."""
     if not is_zeroing_state(state):
         return 0.0

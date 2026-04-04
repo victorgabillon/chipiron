@@ -1,13 +1,14 @@
 """Runtime random move selector implementation."""
 
 import random as py_random
+from typing import Any
 
 from valanga import Dynamics, TurnState
 from valanga.game import Seed
 from valanga.policy import NotifyProgressCallable, Recommendation
 
 
-class RandomSelector[StateT: TurnState]:
+class RandomSelector[StateT: TurnState[Any]]:
     """Runtime selector that samples uniformly from legal actions."""
 
     def __init__(
@@ -36,7 +37,7 @@ class RandomSelector[StateT: TurnState]:
         )
 
 
-def create_random_selector[StateT: TurnState](
+def create_random_selector[StateT: TurnState[Any]](
     *,
     dynamics: Dynamics[StateT],
     rng: py_random.Random,
