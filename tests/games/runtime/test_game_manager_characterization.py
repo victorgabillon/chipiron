@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from test_support.runtime_fixtures import build_runtime_harness
-
 from valanga import Color
 
 from chipiron.displays.gui_protocol import Scope
@@ -25,7 +24,7 @@ def test_start_match_sync_requests_current_turn_with_request_id_zero() -> None:
     event = events[0]
     assert isinstance(event, NeedAction)
     assert event.scope == harness.scope
-    assert event.color is Color.BLACK
+    assert event.role is Color.BLACK
     assert event.request_id == 0
     assert event.state is harness.game_manager.game.state
 
@@ -44,7 +43,7 @@ def test_propose_action_sync_returns_no_events_for_wrong_scope_stale_id_or_wrong
     assert (
         harness.game_manager.propose_action_sync(
             scope=stale_scope,
-            color=Color.WHITE,
+            role=Color.WHITE,
             request_id=0,
             action="advance",
         )
@@ -53,7 +52,7 @@ def test_propose_action_sync_returns_no_events_for_wrong_scope_stale_id_or_wrong
     assert (
         harness.game_manager.propose_action_sync(
             scope=harness.scope,
-            color=Color.WHITE,
+            role=Color.WHITE,
             request_id=9,
             action="advance",
         )
@@ -62,7 +61,7 @@ def test_propose_action_sync_returns_no_events_for_wrong_scope_stale_id_or_wrong
     assert (
         harness.game_manager.propose_action_sync(
             scope=harness.scope,
-            color=Color.BLACK,
+            role=Color.BLACK,
             request_id=0,
             action="advance",
         )
@@ -80,7 +79,7 @@ def test_propose_action_sync_invalid_action_reissues_same_request() -> None:
 
     events = harness.game_manager.propose_action_sync(
         scope=harness.scope,
-        color=Color.WHITE,
+        role=Color.WHITE,
         request_id=0,
         action="not-a-real-action",
     )
@@ -90,7 +89,7 @@ def test_propose_action_sync_invalid_action_reissues_same_request() -> None:
     assert isinstance(events[1], NeedAction)
     assert events[0].request_id == 0
     assert events[1].request_id == 0
-    assert events[1].color is Color.WHITE
+    assert events[1].role is Color.WHITE
     assert harness.game_manager.game.state.tag == 0
     assert harness.game_manager.game.ply == 0
 
@@ -102,7 +101,7 @@ def test_propose_action_sync_valid_action_applies_transition_and_requests_next_t
 
     events = harness.game_manager.propose_action_sync(
         scope=harness.scope,
-        color=Color.WHITE,
+        role=Color.WHITE,
         request_id=0,
         action="advance",
     )
@@ -112,7 +111,7 @@ def test_propose_action_sync_valid_action_applies_transition_and_requests_next_t
     assert isinstance(events[1], NeedAction)
     assert events[0].request_id == 0
     assert events[1].request_id == 1
-    assert events[1].color is Color.BLACK
+    assert events[1].role is Color.BLACK
     assert harness.game_manager.game.state.turn is Color.BLACK
     assert harness.game_manager.game.state.tag == 1
     assert harness.game_manager.game.ply == 1
@@ -126,7 +125,7 @@ def test_propose_action_sync_terminal_transition_emits_match_over_without_next_r
 
     events = harness.game_manager.propose_action_sync(
         scope=harness.scope,
-        color=Color.WHITE,
+        role=Color.WHITE,
         request_id=0,
         action="advance",
     )

@@ -1,4 +1,4 @@
-"""Shared deterministic runtime fixtures for PR1 characterization tests."""
+"""Shared deterministic current-runtime fixtures for PR1 characterization tests."""
 
 from __future__ import annotations
 
@@ -9,11 +9,7 @@ from dataclasses import dataclass, field
 from types import SimpleNamespace
 from typing import Any, TypeVar
 
-from test_support.import_compat import bootstrap_test_imports
-
-bootstrap_test_imports()
-
-from valanga import Color, Outcome, OverEvent, Transition
+from valanga import Color, Transition
 
 from chipiron.displays.gui_protocol import (
     CmdBackOneMove,
@@ -22,8 +18,6 @@ from chipiron.displays.gui_protocol import (
     HumanActionChosen,
     Scope,
     UpdGameStatus,
-    UpdNeedHumanAction,
-    UpdNoHumanActionPending,
     UpdStateGeneric,
 )
 from chipiron.displays.gui_publisher import GuiPublisher
@@ -31,12 +25,22 @@ from chipiron.environments.types import GameKind
 from chipiron.games.domain.game.final_game_result import GameReport
 from chipiron.games.domain.game.game import Game, ObservableGame
 from chipiron.games.domain.game.game_manager import GameManager
-from chipiron.games.domain.game.game_playing_status import GamePlayingStatus, PlayingStatus
+from chipiron.games.domain.game.game_playing_status import (
+    GamePlayingStatus,
+    PlayingStatus,
+)
 from chipiron.games.domain.game.game_rules import GameOutcome, OutcomeKind
-from chipiron.games.domain.game.progress_collector import PlayerProgressCollectorObservable
+from chipiron.games.domain.game.progress_collector import (
+    PlayerProgressCollectorObservable,
+)
 from chipiron.games.runtime.orchestrator.match_controller import MatchController
 from chipiron.games.runtime.orchestrator.match_orchestrator import MatchOrchestrator
-from chipiron.players.communications.player_message import EvMove, PlayerEvent, PlayerRequest, TurnStatePlusHistory
+from chipiron.players.communications.player_message import (
+    EvMove,
+    PlayerEvent,
+    PlayerRequest,
+    TurnStatePlusHistory,
+)
 
 PayloadT = TypeVar("PayloadT")
 
@@ -92,18 +96,11 @@ class CounterDynamics:
             tag=state.tag + 1,
             last_actor=state.turn,
         )
-        over_event = None
-        if next_state.is_game_over():
-            over_event = OverEvent(
-                outcome=Outcome.WIN,
-                termination="counter_exhausted",
-                winner=state.turn,
-            )
         return Transition(
             next_state,
             modifications=None,
             is_over=next_state.is_game_over(),
-            over_event=over_event,
+            over_event=None,
             info={"action": normalized_action},
         )
 
@@ -132,7 +129,7 @@ class CounterRules:
 
     def assessment(self, state: CounterState) -> None:
         _ = state
-        return None
+        return
 
     def pretty_assessment(self, state: CounterState, assessment: object) -> str:
         _ = state
@@ -203,7 +200,7 @@ class SimplePlayerRequestEncoder:
             seed=seed,
             state=TurnStatePlusHistory(
                 current_state_tag=state.tag,
-                turn=state.turn,
+                role_to_play=state.turn,
                 snapshot=f"remaining={state.remaining_moves}",
                 historical_actions=None,
             ),
@@ -292,7 +289,7 @@ def build_runtime_harness(
         display_state_evaluator=NoOpStateEvaluator(),
         output_folder_path=None,
         args=SimpleNamespace(max_half_moves=max_half_moves),
-        player_color_to_id={
+        participant_id_by_role={
             Color.WHITE: "white-player",
             Color.BLACK: "black-player",
         },
@@ -305,11 +302,11 @@ def build_runtime_harness(
     controller = MatchController(
         scope=scope,
         game_manager=game_manager,
-        engine_request_by_color={
+        engine_request_by_role={
             Color.WHITE: engine_requests[Color.WHITE].append,
             Color.BLACK: engine_requests[Color.BLACK].append,
         },
-        human_colors=set(human_colors),
+        human_roles=set(human_colors),
     )
 
     return RuntimeHarness(
@@ -435,7 +432,7 @@ def make_player_move(
         corresponding_state_tag=request.state.current_state_tag,
         ctx=request.ctx,
         player_name=player_name,
-        color_to_play=request.state.turn,
+        player_role=request.state.role_to_play,
         evaluation=None,
     )
 

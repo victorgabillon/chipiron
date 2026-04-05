@@ -4,24 +4,14 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from test_support.import_compat import bootstrap_test_imports
-
-bootstrap_test_imports()
-
 from valanga import Color
 
 from chipiron.games.domain.game.final_game_result import FinalGameResult
 from chipiron.games.domain.game.game_args_factory import GameArgsFactory
 from chipiron.games.domain.match.match_results import MatchResults
 from chipiron.players import PlayerArgs
+from chipiron.players.move_selector.random_args import RandomSelectorArgs
 from chipiron.utils.small_tools import unique_int_from_list
-
-
-class EngineSelector:
-    """Minimal non-human selector used by the factory characterization tests."""
-
-    def is_human(self) -> bool:
-        return False
 
 
 def test_generate_game_args_assigns_white_and_black_from_player_one_quota() -> None:
@@ -31,8 +21,16 @@ def test_generate_game_args_assigns_white_and_black_from_player_one_quota() -> N
             number_of_games_player_one_white=1,
             number_of_games_player_one_black=2,
         ),
-        args_player_one=PlayerArgs(name="player-one", main_move_selector=EngineSelector()),
-        args_player_two=PlayerArgs(name="player-two", main_move_selector=EngineSelector()),
+        args_player_one=PlayerArgs(
+            name="player-one",
+            main_move_selector=RandomSelectorArgs(),
+            oracle_play=False,
+        ),
+        args_player_two=PlayerArgs(
+            name="player-two",
+            main_move_selector=RandomSelectorArgs(),
+            oracle_play=False,
+        ),
         seed_=11,
         args_game=SimpleNamespace(kind="fixture-game"),
     )
@@ -53,8 +51,16 @@ def test_generate_game_args_merges_seed_and_tracks_match_completion() -> None:
             number_of_games_player_one_white=1,
             number_of_games_player_one_black=2,
         ),
-        args_player_one=PlayerArgs(name="player-one", main_move_selector=EngineSelector()),
-        args_player_two=PlayerArgs(name="player-two", main_move_selector=EngineSelector()),
+        args_player_one=PlayerArgs(
+            name="player-one",
+            main_move_selector=RandomSelectorArgs(),
+            oracle_play=False,
+        ),
+        args_player_two=PlayerArgs(
+            name="player-two",
+            main_move_selector=RandomSelectorArgs(),
+            oracle_play=False,
+        ),
         seed_=17,
         args_game=SimpleNamespace(kind="fixture-game"),
     )

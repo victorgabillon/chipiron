@@ -106,7 +106,11 @@ def test_pause_invalidates_pending_request_and_play_reissues_current_turn() -> N
 
 
 def test_back_one_move_rewinds_state_but_keeps_history_entries() -> None:
-    """Freeze the current rewind behavior, including its awkward retained history."""
+    """Freeze the current rewind behavior, including its awkward retained history.
+
+    This captures current behavior for the safety net and may intentionally
+    change in a later refactor.
+    """
     harness = build_runtime_harness(
         start_turn=Color.WHITE,
         remaining_moves=2,

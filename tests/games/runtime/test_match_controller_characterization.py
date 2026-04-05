@@ -7,7 +7,6 @@ from test_support.runtime_fixtures import (
     drain_gui_payloads,
     make_player_move,
 )
-
 from valanga import Color
 
 from chipiron.displays.gui_protocol import (
@@ -16,7 +15,6 @@ from chipiron.displays.gui_protocol import (
     UpdNoHumanActionPending,
     UpdStateGeneric,
 )
-from chipiron.games.runtime.orchestrator.match_controller import MatchController
 
 
 def test_start_publishes_human_action_request_for_human_turn() -> None:
@@ -34,9 +32,9 @@ def test_start_publishes_human_action_request_for_human_turn() -> None:
     payload = payloads[0]
     assert isinstance(payload, UpdNeedHumanAction)
     assert payload.ctx.request_id == 0
-    assert payload.ctx.color_to_play is Color.WHITE
+    assert payload.ctx.role_to_play is Color.WHITE
     assert payload.state_tag == 0
-    assert harness.controller.pending_color is Color.WHITE
+    assert harness.controller.pending_role is Color.WHITE
     assert harness.controller.pending_request_id == 0
     assert harness.engine_requests[Color.WHITE] == []
     assert harness.engine_requests[Color.BLACK] == []
@@ -57,9 +55,9 @@ def test_start_dispatches_engine_request_for_engine_turn() -> None:
     request = harness.engine_requests[Color.BLACK][0]
     assert request.ctx is not None
     assert request.ctx.request_id == 0
-    assert request.ctx.color_to_play is Color.BLACK
+    assert request.ctx.role_to_play is Color.BLACK
     assert request.state.current_state_tag == 0
-    assert request.state.turn is Color.BLACK
+    assert request.state.role_to_play is Color.BLACK
 
 
 def test_handle_player_action_ignores_stale_request_id() -> None:
@@ -79,10 +77,10 @@ def test_handle_player_action_ignores_stale_request_id() -> None:
         corresponding_state_tag=stale_move.corresponding_state_tag,
         ctx=stale_move.ctx.__class__(
             request_id=999,
-            color_to_play=stale_move.ctx.color_to_play,
+            role_to_play=stale_move.ctx.role_to_play,
         ),
         player_name=stale_move.player_name,
-        color_to_play=stale_move.color_to_play,
+        player_role=stale_move.player_role,
         evaluation=stale_move.evaluation,
     )
 
@@ -174,11 +172,15 @@ def test_handle_human_action_applies_move_and_requests_next_actor() -> None:
     next_request = harness.engine_requests[Color.BLACK][0]
     assert next_request.ctx is not None
     assert next_request.ctx.request_id == 1
-    assert next_request.ctx.color_to_play is Color.BLACK
+    assert next_request.ctx.role_to_play is Color.BLACK
 
 
 def test_handle_human_action_on_terminal_move_publishes_double_final_updates() -> None:
-    """Freeze the current duplicate final GUI notifications on terminal human moves."""
+    """Freeze the current duplicate final GUI notifications on terminal human moves.
+
+    This captures today's behavior for the safety net and may intentionally
+    change during the later generic-role refactor.
+    """
     harness = build_runtime_harness(
         start_turn=Color.WHITE,
         remaining_moves=1,
@@ -203,7 +205,7 @@ def test_handle_human_action_on_terminal_move_publishes_double_final_updates() -
         UpdNoHumanActionPending,
         UpdStateGeneric,
     ]
-    assert harness.controller.pending_color is None
+    assert harness.controller.pending_role is None
     assert harness.controller.pending_request_id is None
     assert harness.engine_requests[Color.BLACK] == []
     assert harness.game_manager.game.state.is_game_over() is True
