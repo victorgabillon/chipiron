@@ -7,9 +7,9 @@ incoming `PlayerRequest`, asks the `GamePlayer` to select a move, and emits a
 
 from typing import TYPE_CHECKING
 
-from valanga import Color
 from valanga.policy import NotifyProgressCallable
 
+from chipiron.core.roles import GameRole
 from chipiron.displays.gui_protocol import Scope
 from chipiron.players.communications.player_message import (
     EvMove,
@@ -36,17 +36,17 @@ def handle_player_request[StateSnapT, RuntimeStateT](
     """Handle player request."""
     state: TurnStatePlusHistory[StateSnapT] = request.state
 
-    if state.role_to_play != game_player.color:
+    if state.role_to_play != game_player.role:
         chipiron_logger.warning(
             "Rejecting PlayerRequest: wrong role. request_role=%s player_color=%s scope=%s",
             state.role_to_play,
-            game_player.color,
+            game_player.role,
             request.scope,
         )
         return
 
     def make_progress_cb(
-        scope: Scope, player_role: Color, queue_out: PutQueue[MainMailboxMessage]
+        scope: Scope, player_role: GameRole, queue_out: PutQueue[MainMailboxMessage]
     ) -> NotifyProgressCallable:
         def cb(progress_percent: int) -> None:
             ev = EvProgress(
@@ -73,7 +73,7 @@ def handle_player_request[StateSnapT, RuntimeStateT](
         corresponding_state_tag=state.current_state_tag,
         ctx=request.ctx,
         player_name=game_player.player.get_id(),
-        player_role=game_player.color,
+        player_role=game_player.role,
         evaluation=getattr(rec, "evaluation", None),
     )
     out_queue.put(PlayerEvent(schema_version=1, scope=request.scope, payload=ev))

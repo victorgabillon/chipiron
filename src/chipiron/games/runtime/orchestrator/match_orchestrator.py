@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 from valanga import Color, TurnState
 
+from chipiron.core.roles import format_game_role
 from chipiron.displays.gui_protocol import (
     CmdBackOneMove,
     CmdSetStatus,
@@ -57,8 +58,6 @@ class MatchOrchestrator:
         controller: MatchController,
     ) -> GameReport:
         """Run the match loop until terminal condition, then return GameReport."""
-        color_names = {Color.WHITE: "White", Color.BLACK: "Black"}
-
         game_manager.game.notify_display()
 
         if game_manager.game.is_play():
@@ -75,7 +74,7 @@ class MatchOrchestrator:
             role_to_move = state.turn
             chipiron_logger.info(
                 "%s (%s) to play now...",
-                color_names[role_to_move],
+                format_game_role(role_to_move),
                 game_manager.participant_id_by_role[role_to_move],
             )
 
@@ -178,13 +177,21 @@ class MatchOrchestrator:
                 return
 
             case EvProgress():
+                # GUI progress payloads are still the legacy white/black pair, so
+                # non-color roles are intentionally ignored until that layer is
+                # generalized in a later PR.
                 if message.payload.player_role == Color.WHITE:
                     game_manager.progress_collector.progress_white(
                         value=message.payload.progress_percent
                     )
-                else:
+                elif message.payload.player_role == Color.BLACK:
                     game_manager.progress_collector.progress_black(
                         value=message.payload.progress_percent
+                    )
+                else:
+                    chipiron_logger.debug(
+                        "Ignoring progress update for non-legacy role %s",
+                        message.payload.player_role,
                     )
 
             case _:

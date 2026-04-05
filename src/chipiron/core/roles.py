@@ -1,15 +1,21 @@
 """Shared role and participant vocabulary for generic Chipiron layers.
 
-Today Chipiron still orchestrates white/black games, so ``GameRole`` is an
-alias of ``valanga.Color``. Using role-based names in generic code keeps the
-current behavior while preparing later environment-driven refactors.
+Current shipped games still use ``valanga.Color`` roles, but generic runtime
+code should be able to iterate over any finite set of hashable roles declared
+by an environment.
 """
 
-from collections.abc import Mapping
+from collections.abc import Hashable, Mapping
 
-from valanga import Color
-
-type GameRole = Color
+type GameRole = Hashable
 type ParticipantId = str
 type RoleAssignment[T] = Mapping[GameRole, T]
 type MutableRoleAssignment[T] = dict[GameRole, T]
+
+
+def format_game_role(role: GameRole) -> str:
+    """Return a readable label for logging generic game roles."""
+    role_name = getattr(role, "name", None)
+    if isinstance(role_name, str):
+        return role_name.replace("_", " ").title()
+    return str(role)

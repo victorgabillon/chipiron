@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from atomheart import ChessDynamics
 from atomheart.games.chess.board.utils import FenPlusHistory
-from valanga import StateTag
+from valanga import Color, StateTag
 
 from chipiron.environments.base import Environment
 from chipiron.environments.chess.chess_gui_encoder import ChessGuiEncoder
@@ -68,6 +68,7 @@ def make_chess_environment(
 
     return Environment(
         game_kind=GameKind.CHESS,
+        roles=(Color.WHITE, Color.BLACK),
         rules=ChessRules(syzygy=deps.syzygy_table),
         dynamics=dynamics,
         gui_encoder=ChessGuiEncoder(),

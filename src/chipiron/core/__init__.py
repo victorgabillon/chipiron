@@ -1,7 +1,13 @@
 """Core transport/domain primitives shared across chipiron."""
 
 from .request_context import RequestContext
-from .roles import GameRole, MutableRoleAssignment, ParticipantId, RoleAssignment
+from .roles import (
+    GameRole,
+    MutableRoleAssignment,
+    ParticipantId,
+    RoleAssignment,
+    format_game_role,
+)
 
 __all__ = [
     "GameRole",
@@ -9,4 +15,5 @@ __all__ = [
     "ParticipantId",
     "RequestContext",
     "RoleAssignment",
+    "format_game_role",
 ]

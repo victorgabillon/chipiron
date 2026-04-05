@@ -2,6 +2,7 @@
 
 import queue
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
@@ -9,6 +10,11 @@ from atomheart.games.chess.move.move_factory import MoveFactory
 from valanga import Color
 from valanga.game import Seed
 
+from chipiron.core.roles import (
+    GameRole,
+    MutableRoleAssignment,
+    RoleAssignment,
+)
 from chipiron.displays.gui_protocol import (
     GuiUpdate,
     MatchId,
@@ -70,6 +76,14 @@ class MissingSessionIdError(GameManagerFactoryError):
         super().__init__("GameManagerFactory.session_id must be set")
 
 
+class MissingParticipantAssignmentForRoleError(GameManagerFactoryError):
+    """Raised when a participant assignment is missing for an environment role."""
+
+    def __init__(self, role: GameRole) -> None:
+        """Initialize the error with the missing role."""
+        super().__init__(f"Missing participant assignment for role {role!r}")
+
+
 @dataclass
 class GameManagerFactory:
     """The GameManagerFactory creates GameManager once the players and rules have been decided.
@@ -103,14 +117,15 @@ class GameManagerFactory:
     def create(
         self,
         args_game_manager: GameArgs,
-        player_color_to_factory_args: dict[Color, PlayerFactoryArgs],
+        participant_factory_args_by_role: RoleAssignment[PlayerFactoryArgs],
         game_seed: Seed,
     ) -> GameSession:
         """Create a GameManager with the given arguments.
 
         Args:
             args_game_manager (GameArgs): the arguments of the game manager
-            player_color_to_factory_args (dict[chess.Color, PlayerFactoryArgs]): the arguments of the players
+            participant_factory_args_by_role (dict[GameRole, PlayerFactoryArgs]):
+                participant config bound to each environment role
             game_seed (int): the seed of the game
 
         Returns:
@@ -160,15 +175,24 @@ class GameManagerFactory:
             game_kind=args_game_manager.game_kind,
             deps=self.env_deps,
         )
+        role_assignments = self._assignment_for_environment_roles(
+            environment.roles,
+            participant_factory_args_by_role,
+        )
 
         start_tag = args_game_manager.starting_position.get_start_tag()
         normalized_start_tag = environment.normalize_start_tag(start_tag)
         state = environment.make_initial_state(normalized_start_tag)
-        for publisher in publishers:
-            payload = make_players_info_payload(
-                participant_factory_args_by_color=player_color_to_factory_args
-            )
-            publisher.publish(payload)
+        if tuple(environment.roles) == (Color.WHITE, Color.BLACK):
+            color_assignments = {
+                Color.WHITE: role_assignments[Color.WHITE],
+                Color.BLACK: role_assignments[Color.BLACK],
+            }
+            for publisher in publishers:
+                payload = make_players_info_payload(
+                    participant_factory_args_by_color=color_assignments
+                )
+                publisher.publish(payload)
 
         # Do not drain the shared mailbox here.
         # GameManager already ignores stale messages via scope filtering.
@@ -205,30 +229,30 @@ class GameManagerFactory:
         )
 
         players: list[players_m.PlayerHandle] = []
-        engine_request_by_role: dict[Color, MoveFunction] = {}
-        human_roles: set[Color] = set()
+        engine_request_by_role: MutableRoleAssignment[MoveFunction] = {}
+        human_roles: set[GameRole] = set()
 
         # Creating the players
-        for player_color in (Color.WHITE, Color.BLACK):
-            player_factory_args = player_color_to_factory_args[player_color]
+        for role in environment.roles:
+            player_factory_args = role_assignments[role]
 
             if player_factory_args.player_args.is_human():
-                human_roles.add(player_color)
+                human_roles.add(role)
                 continue
 
             generic_player: players_m.PlayerHandle
             move_function: MoveFunction
             generic_player, move_function = player_observer_factory(
-                player_color=player_color,
+                player_role=role,
                 player_factory_args=player_factory_args,
                 main_thread_mailbox=self.main_thread_mailbox,
             )
             players.append(generic_player)
-            engine_request_by_role[player_color] = move_function
+            engine_request_by_role[role] = move_function
 
-        participant_id_by_role: dict[Color, str] = {
-            color: player_factory_args.player_args.name
-            for color, player_factory_args in player_color_to_factory_args.items()
+        participant_id_by_role: MutableRoleAssignment[str] = {
+            role: player_factory_args.player_args.name
+            for role, player_factory_args in role_assignments.items()
         }
 
         game_manager = GameManager(
@@ -251,6 +275,19 @@ class GameManagerFactory:
             human_roles=human_roles,
         )
         return GameSession(manager=game_manager, controller=controller)
+
+    def _assignment_for_environment_roles(
+        self,
+        roles: Sequence[GameRole],
+        participant_factory_args_by_role: RoleAssignment[PlayerFactoryArgs],
+    ) -> MutableRoleAssignment[PlayerFactoryArgs]:
+        """Normalize participant assignments to the environment's declared roles."""
+        assignments: MutableRoleAssignment[PlayerFactoryArgs] = {}
+        for role in roles:
+            if role not in participant_factory_args_by_role:
+                raise MissingParticipantAssignmentForRoleError(role)
+            assignments[role] = participant_factory_args_by_role[role]
+        return assignments
 
     def subscribe(self, subscriber_queue: queue.Queue[GuiUpdate]) -> None:
         """Subscribe to the GameManagerFactory to get the PlayersColorToPlayerMessage.

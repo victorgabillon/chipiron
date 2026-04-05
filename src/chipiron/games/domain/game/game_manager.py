@@ -11,7 +11,12 @@ from valanga.evaluations import Value
 from valanga.game import ActionKey
 
 import chipiron.players as players_m
-from chipiron.core.roles import GameRole, MutableRoleAssignment, ParticipantId
+from chipiron.core.roles import (
+    GameRole,
+    MutableRoleAssignment,
+    ParticipantId,
+    format_game_role,
+)
 from chipiron.displays.gui_protocol import Scope
 from chipiron.games.runtime.orchestrator.domain_events import (
     ActionApplied,
@@ -113,7 +118,7 @@ class GameManager[StateT: AnyTurnState = AnyTurnState]:
             display_board_evaluator (IGameBoardEvaluator): The board evaluator to display an independent evaluation.
             output_folder_path (path | None): The output folder path or None.
             args (GameArgs): The game arguments.
-            participant_id_by_role (dict[chess.Color, str]): The dictionary
+            participant_id_by_role (dict[GameRole, str]): The dictionary
                 mapping each current game role to the participant handling it.
             main_thread_mailbox (queue.Queue[MainMailboxMessage]): The main thread mailbox.
             players (list[players_m.PlayerProcess | players_m.GamePlayer]): The list of players.
@@ -301,10 +306,20 @@ class GameManager[StateT: AnyTurnState = AnyTurnState]:
         """
         # TODO: probably the txt file should be a valid PGN file : https://en.wikipedia.org/wiki/Portable_Game_Notation
         if self.path_to_store_result is not None:
-            path_file: MyPath = (
-                f"{self.path_to_store_result}_{idx}_W:{self.participant_id_by_role[Color.WHITE]}"
-                f"-vs-B:{self.participant_id_by_role[Color.BLACK]}"
-            )
+            if all(
+                legacy_role in self.participant_id_by_role
+                for legacy_role in (Color.WHITE, Color.BLACK)
+            ):
+                path_file = (
+                    f"{self.path_to_store_result}_{idx}_W:{self.participant_id_by_role[Color.WHITE]}"
+                    f"-vs-B:{self.participant_id_by_role[Color.BLACK]}"
+                )
+            else:
+                role_summary = "-".join(
+                    f"{format_game_role(role)}:{participant_id}"
+                    for role, participant_id in self.participant_id_by_role.items()
+                )
+                path_file = f"{self.path_to_store_result}_{idx}_{role_summary}"
             path_file_obj = f"{path_file}_game_report.yaml"
             path_file_txt = f"{path_file}.txt"
             with open(path_file_txt, "a", encoding="utf-8") as file_text:
@@ -399,8 +414,10 @@ class GameManager[StateT: AnyTurnState = AnyTurnState]:
 
         self.play_one_move(action_key)
 
-        # optional: store evaluation
-        if evaluation is not None:
+        # Evaluation recording still targets the legacy color-keyed display
+        # evaluators; later PRs can widen this once evaluator semantics become
+        # role-generic.
+        if evaluation is not None and isinstance(role_to_play, Color):
             self.display_state_evaluator.add_evaluation(
                 player_color=role_to_play,
                 evaluation=evaluation,

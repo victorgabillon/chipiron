@@ -1,13 +1,15 @@
 """Module for `GamePlayer`.
 
-`GamePlayer` wraps a `Player` with game/match-specific metadata (e.g. color).
+`GamePlayer` wraps a `Player` with game/match-specific metadata (e.g. role).
 It stays generic and does not depend on any specific game snapshot/runtime types.
 """
 
 from typing import TypeVar
 
-from valanga.game import Color, Seed
+from valanga.game import Seed
 from valanga.policy import NotifyProgressCallable, Recommendation
+
+from chipiron.core.roles import GameRole
 
 from .player import Player
 
@@ -16,15 +18,20 @@ RuntimeStateT = TypeVar("RuntimeStateT")
 
 
 class GamePlayer[StateSnapT, RuntimeStateT]:
-    """Wraps a `Player` for a specific game and color."""
+    """Wraps a `Player` for a specific game role."""
 
     _player: Player[StateSnapT, RuntimeStateT]
-    color: Color
+    role: GameRole
 
-    def __init__(self, player: Player[StateSnapT, RuntimeStateT], color: Color) -> None:
+    def __init__(self, player: Player[StateSnapT, RuntimeStateT], role: GameRole) -> None:
         """Initialize the instance."""
-        self.color = color
+        self.role = role
         self._player = player
+
+    @property
+    def color(self) -> GameRole:
+        """Backward-compatible alias for current color-backed games."""
+        return self.role
 
     @property
     def player(self) -> Player[StateSnapT, RuntimeStateT]:

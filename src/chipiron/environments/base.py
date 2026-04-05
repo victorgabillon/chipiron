@@ -1,10 +1,12 @@
 """Core environment protocols and data structures."""
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol, TypeVar
 
 from valanga import Dynamics, StateTag
 
+from chipiron.core.roles import GameRole
 from chipiron.environments.types import GameKind
 from chipiron.games.domain.game.game_rules import GameRules
 from chipiron.scripts.chipiron_args import ImplementationArgs
@@ -61,6 +63,7 @@ class Environment[StateT, StateSnapT, StartTagT]:
     """Bundle environment wiring and factories for a game kind."""
 
     game_kind: GameKind
+    roles: Sequence[GameRole]
     rules: GameRules[StateT]
     dynamics: Dynamics[StateT]
     gui_encoder: GuiEncoder[StateT]

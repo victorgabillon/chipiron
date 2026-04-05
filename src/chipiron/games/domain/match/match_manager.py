@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 from valanga import Color
 from valanga.game import ActionName, Seed
 
+from chipiron.core.roles import MutableRoleAssignment
 from chipiron.displays.gui_protocol import GuiUpdate, Scope
 from chipiron.games.domain.game.final_game_result import GameReport
 from chipiron.games.domain.game.game_args import GameArgs
@@ -113,16 +114,16 @@ class MatchManager:
         game_number: int = 0
         while not self.game_args_factory.is_match_finished():
             args_game: GameArgs
-            player_color_to_factory_args: dict[Color, PlayerFactoryArgs]
+            participant_factory_args_by_role: dict[Color, PlayerFactoryArgs]
             game_seed: Seed | None
-            player_color_to_factory_args, args_game, game_seed = (
+            participant_factory_args_by_role, args_game, game_seed = (
                 self.game_args_factory.generate_game_args(game_number)
             )
 
             assert game_seed is not None
             # Play one game
             game_report: GameReport = self.play_one_game(
-                player_color_to_factory_args=player_color_to_factory_args,
+                participant_factory_args_by_role=participant_factory_args_by_role,
                 args_game=args_game,
                 game_number=game_number,
                 game_seed=game_seed,
@@ -146,7 +147,7 @@ class MatchManager:
 
             # Update the reporting of the ongoing match with the report of the finished game
             match_results.add_result_one_game(
-                white_player_name_id=player_color_to_factory_args[
+                white_player_name_id=participant_factory_args_by_role[
                     Color.WHITE
                 ].player_args.name,
                 game_result=game_report.final_game_result,
@@ -155,7 +156,7 @@ class MatchManager:
 
             # ad hoc waiting time in case we play against a human and the game is finished
             # (so that the human as the time to view the final position before the automatic start of a new game)
-            if player_color_to_factory_args[Color.WHITE].player_args.is_human():
+            if participant_factory_args_by_role[Color.WHITE].player_args.is_human():
                 time.sleep(30)
 
             game_number += 1
@@ -191,7 +192,7 @@ class MatchManager:
 
     def play_one_game(
         self,
-        player_color_to_factory_args: dict[Color, PlayerFactoryArgs],
+        participant_factory_args_by_role: dict[Color, PlayerFactoryArgs],
         args_game: GameArgs,
         game_number: int,
         game_seed: Seed,
@@ -199,7 +200,8 @@ class MatchManager:
         """Plays one game and returns the game report.
 
         Args:
-            player_color_to_factory_args (dict[Color, PlayerFactoryArgs]): A dictionary mapping player colors to their factory arguments.
+            participant_factory_args_by_role (dict[Color, PlayerFactoryArgs]):
+                A dictionary mapping current game roles to participant args.
             args_game (GameArgs): The arguments for the game.
             game_number (int): The number of the game.
             game_seed (Seed): The seed for the game.
@@ -210,7 +212,9 @@ class MatchManager:
         """
         game_session: GameSession = self.game_manager_factory.create(
             args_game_manager=args_game,
-            player_color_to_factory_args=player_color_to_factory_args,
+            participant_factory_args_by_role=self._as_role_assignment(
+                participant_factory_args_by_role
+            ),
             game_seed=game_seed,
         )
 
@@ -225,6 +229,17 @@ class MatchManager:
         game_manager.print_to_file(idx=game_number, game_report=game_report)
 
         return game_report
+
+    def _as_role_assignment(
+        self,
+        participant_factory_args_by_color: dict[Color, PlayerFactoryArgs],
+    ) -> MutableRoleAssignment[PlayerFactoryArgs]:
+        """Adapt today's color-based match schedule into a generic role assignment.
+
+        Match scheduling is still legacy white/black-oriented here, but those
+        colors are valid game roles for the currently supported environments.
+        """
+        return dict(participant_factory_args_by_color.items())
 
     def print_stats_to_file(self, match_results: IMatchResults) -> None:
         """Print the match statistics to a file.
