@@ -36,7 +36,7 @@ class HasFenHistoryState(Protocol):
 
     @property
     def turn(self) -> Any:
-        """Return side to move."""
+        """Return the game role to play."""
         ...
 
     @property
@@ -55,7 +55,7 @@ class CheckersLikeState(Protocol):
 
     @property
     def turn(self) -> Color:
-        """Return side to move."""
+        """Return the game role to play."""
         ...
 
     def to_text(self) -> str:
@@ -107,7 +107,7 @@ class ChessPlayerRequestEncoder(
             seed=seed,
             state=TurnStatePlusHistory(
                 current_state_tag=state.tag,
-                turn=state.turn,
+                role_to_play=state.turn,
                 snapshot=fen_plus_history,
                 historical_actions=None,
             ),
@@ -130,7 +130,7 @@ class CheckersPlayerRequestEncoder(PlayerRequestEncoder[CheckersLikeState, str])
             seed=seed,
             state=TurnStatePlusHistory(
                 current_state_tag=state.tag,
-                turn=state.turn,
+                role_to_play=state.turn,
                 snapshot=state.to_text(),
                 historical_actions=None,
             ),

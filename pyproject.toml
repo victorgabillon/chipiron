@@ -280,6 +280,13 @@ init-hook = "import sys; sys.path.append('.')"
 
 
 [tool.pyright]
+include = ["src", "tests"]
+extraPaths = [
+  "src",
+  "../atomheart/src",
+  "../anemone/src",
+  "../../../valanga/src",
+]
 pythonVersion = "3.13"
 typeCheckingMode = "strict"
 reportMissingImports = true

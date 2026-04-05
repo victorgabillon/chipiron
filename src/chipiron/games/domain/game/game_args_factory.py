@@ -52,6 +52,10 @@ class GameArgsFactory:
     ) -> tuple[dict[Color, players.PlayerFactoryArgs], GameArgs, Seed | None]:
         """Generate game arguments for a specific game number.
 
+        The returned mapping is still color-keyed because current match
+        scheduling is explicitly white/black. Conceptually, though, it is the
+        participant assignment for this game.
+
         Args:
             game_number (int): The number of the game.
 
@@ -70,20 +74,20 @@ class GameArgsFactory:
             player_args=self.args_player_two, seed=merged_seed
         )
 
-        player_color_to_factory_args: dict[Color, players.PlayerFactoryArgs]
+        participant_assignment_by_color: dict[Color, players.PlayerFactoryArgs]
         if game_number < self.args_match.number_of_games_player_one_white:
-            player_color_to_factory_args = {
+            participant_assignment_by_color = {
                 Color.WHITE: player_one_factory_args,
                 Color.BLACK: player_two_factory_args,
             }
         else:
-            player_color_to_factory_args = {
+            participant_assignment_by_color = {
                 Color.WHITE: player_two_factory_args,
                 Color.BLACK: player_one_factory_args,
             }
         self.game_number += 1
 
-        return player_color_to_factory_args, self.args_game, merged_seed
+        return participant_assignment_by_color, self.args_game, merged_seed
 
     def is_match_finished(self) -> bool:
         """Check if the match is finished.

@@ -166,7 +166,7 @@ class GameManagerFactory:
         state = environment.make_initial_state(normalized_start_tag)
         for publisher in publishers:
             payload = make_players_info_payload(
-                player_color_to_factory_args=player_color_to_factory_args
+                participant_factory_args_by_color=player_color_to_factory_args
             )
             publisher.publish(payload)
 
@@ -205,15 +205,15 @@ class GameManagerFactory:
         )
 
         players: list[players_m.PlayerHandle] = []
-        engine_request_by_color: dict[Color, MoveFunction] = {}
-        human_colors: set[Color] = set()
+        engine_request_by_role: dict[Color, MoveFunction] = {}
+        human_roles: set[Color] = set()
 
         # Creating the players
         for player_color in (Color.WHITE, Color.BLACK):
             player_factory_args = player_color_to_factory_args[player_color]
 
             if player_factory_args.player_args.is_human():
-                human_colors.add(player_color)
+                human_roles.add(player_color)
                 continue
 
             generic_player: players_m.PlayerHandle
@@ -224,9 +224,9 @@ class GameManagerFactory:
                 main_thread_mailbox=self.main_thread_mailbox,
             )
             players.append(generic_player)
-            engine_request_by_color[player_color] = move_function
+            engine_request_by_role[player_color] = move_function
 
-        player_color_to_id: dict[Color, str] = {
+        participant_id_by_role: dict[Color, str] = {
             color: player_factory_args.player_args.name
             for color, player_factory_args in player_color_to_factory_args.items()
         }
@@ -236,7 +236,7 @@ class GameManagerFactory:
             display_state_evaluator=display_state_evaluator,
             output_folder_path=self.output_folder_path,
             args=args_game_manager,
-            player_color_to_id=player_color_to_id,
+            participant_id_by_role=participant_id_by_role,
             main_thread_mailbox=self.main_thread_mailbox,
             players=players,
             move_factory=self.move_factory,
@@ -247,8 +247,8 @@ class GameManagerFactory:
         controller = MatchController(
             scope=scope,
             game_manager=game_manager,
-            engine_request_by_color=engine_request_by_color,
-            human_colors=human_colors,
+            engine_request_by_role=engine_request_by_role,
+            human_roles=human_roles,
         )
         return GameSession(manager=game_manager, controller=controller)
 

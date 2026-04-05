@@ -72,11 +72,11 @@ class MatchOrchestrator:
                 ply,
                 game_manager.game.playing_status.status,
             )
-            color_to_move = state.turn
+            role_to_move = state.turn
             chipiron_logger.info(
                 "%s (%s) to play now...",
-                color_names[color_to_move],
-                game_manager.player_color_to_id[color_to_move],
+                color_names[role_to_move],
+                game_manager.participant_id_by_role[role_to_move],
             )
 
             mail: MainMailboxMessage = self._mailbox.get()
@@ -178,7 +178,7 @@ class MatchOrchestrator:
                 return
 
             case EvProgress():
-                if message.payload.player_color == Color.WHITE:
+                if message.payload.player_role == Color.WHITE:
                     game_manager.progress_collector.progress_white(
                         value=message.payload.progress_percent
                     )

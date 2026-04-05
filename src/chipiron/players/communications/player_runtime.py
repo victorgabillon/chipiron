@@ -36,21 +36,21 @@ def handle_player_request[StateSnapT, RuntimeStateT](
     """Handle player request."""
     state: TurnStatePlusHistory[StateSnapT] = request.state
 
-    if state.turn != game_player.color:
+    if state.role_to_play != game_player.color:
         chipiron_logger.warning(
-            "Rejecting PlayerRequest: wrong turn. request_turn=%s player_color=%s scope=%s",
-            state.turn,
+            "Rejecting PlayerRequest: wrong role. request_role=%s player_color=%s scope=%s",
+            state.role_to_play,
             game_player.color,
             request.scope,
         )
         return
 
     def make_progress_cb(
-        scope: Scope, player_color: Color, queue_out: PutQueue[MainMailboxMessage]
+        scope: Scope, player_role: Color, queue_out: PutQueue[MainMailboxMessage]
     ) -> NotifyProgressCallable:
         def cb(progress_percent: int) -> None:
             ev = EvProgress(
-                progress_percent=progress_percent, player_color=player_color
+                progress_percent=progress_percent, player_role=player_role
             )
             queue_out.put(
                 PlayerEvent(
@@ -62,7 +62,7 @@ def handle_player_request[StateSnapT, RuntimeStateT](
 
         return cb
 
-    progress_cb = make_progress_cb(request.scope, state.turn, out_queue)
+    progress_cb = make_progress_cb(request.scope, state.role_to_play, out_queue)
 
     rec: Recommendation = game_player.select_move_from_snapshot(
         snapshot=state.snapshot, seed=request.seed, notify_percent_function=progress_cb
@@ -73,7 +73,7 @@ def handle_player_request[StateSnapT, RuntimeStateT](
         corresponding_state_tag=state.current_state_tag,
         ctx=request.ctx,
         player_name=game_player.player.get_id(),
-        color_to_play=game_player.color,
+        player_role=game_player.color,
         evaluation=getattr(rec, "evaluation", None),
     )
     out_queue.put(PlayerEvent(schema_version=1, scope=request.scope, payload=ev))

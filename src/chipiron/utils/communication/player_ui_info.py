@@ -24,11 +24,15 @@ def format_player_label(player: PlayerFactoryArgs) -> str:
 
 
 def make_players_info_payload(
-    player_color_to_factory_args: dict[Color, PlayerFactoryArgs],
+    participant_factory_args_by_color: dict[Color, PlayerFactoryArgs],
 ) -> UpdPlayersInfo:
-    """Create players info payload."""
-    w = player_color_to_factory_args[Color.WHITE]
-    b = player_color_to_factory_args[Color.BLACK]
+    """Create the current white/black player info payload.
+
+    The input mapping is still color-keyed because the GUI payload remains
+    explicitly white/black in the current runtime.
+    """
+    w = participant_factory_args_by_color[Color.WHITE]
+    b = participant_factory_args_by_color[Color.BLACK]
 
     return UpdPlayersInfo(
         white=PlayerUiInfo(

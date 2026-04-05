@@ -2,11 +2,12 @@
 
 from dataclasses import dataclass
 
-from valanga import Color, StateTag
+from valanga import StateTag
 from valanga.evaluations import Value
 from valanga.game import BranchName, Seed
 
 from chipiron.core.request_context import RequestContext
+from chipiron.core.roles import GameRole
 from chipiron.displays.gui_protocol import Scope
 
 
@@ -19,9 +20,14 @@ class TurnStatePlusHistory[StateSnapT = object]:
     """
 
     current_state_tag: StateTag
-    turn: Color
+    role_to_play: GameRole
     snapshot: StateSnapT
     historical_actions: list[str] | None = None
+
+    @property
+    def turn(self) -> GameRole:
+        """Backward-compatible alias while callers still expect `turn`."""
+        return self.role_to_play
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,16 +53,26 @@ class EvMove:
     corresponding_state_tag: StateTag
     ctx: RequestContext | None
     player_name: str
-    color_to_play: Color
+    player_role: GameRole
     evaluation: Value | None = None  # replace with your Value type if needed
+
+    @property
+    def color_to_play(self) -> GameRole:
+        """Backward-compatible alias while the runtime still uses colors."""
+        return self.player_role
 
 
 @dataclass(frozen=True, slots=True)
 class EvProgress:
     """Event reporting progress feedback for a player."""
 
-    player_color: Color
+    player_role: GameRole
     progress_percent: int | None
+
+    @property
+    def player_color(self) -> GameRole:
+        """Backward-compatible alias while GUI payloads remain color-shaped."""
+        return self.player_role
 
 
 type PlayerEventPayload = EvMove | EvProgress

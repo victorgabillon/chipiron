@@ -11,6 +11,7 @@ from valanga.evaluations import Value
 from valanga.game import ActionKey
 
 import chipiron.players as players_m
+from chipiron.core.roles import GameRole, MutableRoleAssignment, ParticipantId
 from chipiron.displays.gui_protocol import Scope
 from chipiron.games.runtime.orchestrator.domain_events import (
     ActionApplied,
@@ -67,8 +68,8 @@ class GameManager[StateT: AnyTurnState = AnyTurnState]:
     # args of the Game
     args: GameArgs
 
-    # Dictionary mapping colors to player names?
-    player_color_to_id: dict[Color, str]
+    # Dictionary mapping game roles to participant identifiers.
+    participant_id_by_role: MutableRoleAssignment[ParticipantId]
 
     # A Queue for receiving messages from other process or functions such as players or Gui
     main_thread_mailbox: "queue.Queue[MainMailboxMessage]"
@@ -95,7 +96,7 @@ class GameManager[StateT: AnyTurnState = AnyTurnState]:
         display_state_evaluator: IGameStateEvaluator[StateT],
         output_folder_path: MyPath | None,
         args: GameArgs,
-        player_color_to_id: dict[Color, str],
+        participant_id_by_role: MutableRoleAssignment[ParticipantId],
         main_thread_mailbox: "queue.Queue[MainMailboxMessage]",
         players: list[players_m.PlayerHandle],
         move_factory: MoveFactory,
@@ -112,7 +113,8 @@ class GameManager[StateT: AnyTurnState = AnyTurnState]:
             display_board_evaluator (IGameBoardEvaluator): The board evaluator to display an independent evaluation.
             output_folder_path (path | None): The output folder path or None.
             args (GameArgs): The game arguments.
-            player_color_to_id (dict[chess.Color, str]): The dictionary mapping player color to player ID.
+            participant_id_by_role (dict[chess.Color, str]): The dictionary
+                mapping each current game role to the participant handling it.
             main_thread_mailbox (queue.Queue[MainMailboxMessage]): The main thread mailbox.
             players (list[players_m.PlayerProcess | players_m.GamePlayer]): The list of players.
 
@@ -128,7 +130,7 @@ class GameManager[StateT: AnyTurnState = AnyTurnState]:
         )
         self.display_state_evaluator = display_state_evaluator
         self.args = args
-        self.player_color_to_id = player_color_to_id
+        self.participant_id_by_role = participant_id_by_role
         self.main_thread_mailbox = main_thread_mailbox
         self.players = players
         self.move_factory = move_factory
@@ -145,7 +147,7 @@ class GameManager[StateT: AnyTurnState = AnyTurnState]:
         return [
             NeedAction(
                 scope=scope,
-                color=state.turn,
+                role=state.turn,
                 request_id=self._request_id,
                 state=state,
             )
@@ -159,7 +161,7 @@ class GameManager[StateT: AnyTurnState = AnyTurnState]:
         return [
             NeedAction(
                 scope=self._scope,
-                color=state.turn,
+                role=state.turn,
                 request_id=self._request_id,
                 state=state,
             )
@@ -172,7 +174,7 @@ class GameManager[StateT: AnyTurnState = AnyTurnState]:
     def propose_action_sync(
         self,
         scope: Scope,
-        color: Color,
+        role: GameRole,
         request_id: int,
         action: BranchKey,
     ) -> list[MatchEvent]:
@@ -185,21 +187,21 @@ class GameManager[StateT: AnyTurnState = AnyTurnState]:
 
         state = self.game.state
 
-        if color != state.turn:
+        if role != state.turn:
             return []
 
         try:
             transition = self._compute_transition(state=state, action=action)
         except TransitionComputationError as exc:
             return [
-                IllegalAction(scope, color, request_id, action, str(exc)),
+                IllegalAction(scope, role, request_id, action, str(exc)),
                 NeedAction(scope, state.turn, self._request_id, state),
             ]
 
         action_name = self.game.dynamics.action_name(state, action)
         self.game.apply_transition(transition=transition, action_name=action_name)
 
-        out: list[MatchEvent] = [ActionApplied(scope, color, request_id, action)]
+        out: list[MatchEvent] = [ActionApplied(scope, role, request_id, action)]
 
         is_over = getattr(transition, "is_over", False)
         over_event = getattr(transition, "over_event", None)
@@ -300,8 +302,8 @@ class GameManager[StateT: AnyTurnState = AnyTurnState]:
         # TODO: probably the txt file should be a valid PGN file : https://en.wikipedia.org/wiki/Portable_Game_Notation
         if self.path_to_store_result is not None:
             path_file: MyPath = (
-                f"{self.path_to_store_result}_{idx}_W:{self.player_color_to_id[Color.WHITE]}"
-                f"-vs-B:{self.player_color_to_id[Color.BLACK]}"
+                f"{self.path_to_store_result}_{idx}_W:{self.participant_id_by_role[Color.WHITE]}"
+                f"-vs-B:{self.participant_id_by_role[Color.BLACK]}"
             )
             path_file_obj = f"{path_file}_game_report.yaml"
             path_file_txt = f"{path_file}.txt"
@@ -327,7 +329,7 @@ class GameManager[StateT: AnyTurnState = AnyTurnState]:
         branch_name: str,  # stable transport action name (for chess, this is UCI)
         corresponding_state_tag: StateTag,
         player_name: str,
-        color_to_play: Color,
+        role_to_play: GameRole,
         evaluation: Value | None,  # your real type
     ) -> None:
         """Single move-application path used by BOTH GUI and players.
@@ -337,11 +339,11 @@ class GameManager[StateT: AnyTurnState = AnyTurnState]:
         state: StateT = self.game.state
 
         chipiron_logger.info(
-            "[%s] MOVE ATTEMPT: move=%s player=%s color_to_play=%s is_play=%s current_tag=%s msg_tag=%s",
+            "[%s] MOVE ATTEMPT: move=%s player=%s role_to_play=%s is_play=%s current_tag=%s msg_tag=%s",
             source,
             branch_name,
             player_name,
-            color_to_play,
+            role_to_play,
             self.game.playing_status.is_play(),
             state.tag,
             corresponding_state_tag,
@@ -356,7 +358,7 @@ class GameManager[StateT: AnyTurnState = AnyTurnState]:
         play_ok = self.game.playing_status.is_play()
 
         # --- check 4: the sender must match "who should play" ---
-        expected_player = self.player_color_to_id[state.turn]
+        expected_player = self.participant_id_by_role[state.turn]
         player_ok = player_name == expected_player
 
         if not (fen_ok and play_ok and player_ok):
@@ -400,9 +402,14 @@ class GameManager[StateT: AnyTurnState = AnyTurnState]:
         # optional: store evaluation
         if evaluation is not None:
             self.display_state_evaluator.add_evaluation(
-                player_color=color_to_play,
+                player_color=role_to_play,
                 evaluation=evaluation,
             )
+
+    @property
+    def player_color_to_id(self) -> MutableRoleAssignment[ParticipantId]:
+        """Backward-compatible alias while match setup remains color-oriented."""
+        return self.participant_id_by_role
 
     def tell_results(self) -> None:
         """Print the results of the game based on the current state of the board.
