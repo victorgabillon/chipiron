@@ -2,6 +2,7 @@
 
 import multiprocessing
 import uuid
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from atomheart.games.chess.board.factory import (
@@ -13,6 +14,7 @@ from parsley import resolve_extended_object
 
 import chipiron as ch
 from chipiron import players
+from chipiron.core.roles import GameRole
 from chipiron.environments.chess.players.evaluators.boardevaluators.factory import (
     create_game_board_evaluator_for_game_kind,
 )
@@ -25,6 +27,7 @@ from chipiron.environments.deps import (
     EnvDeps,
     IntegerReductionEnvironmentDeps,
 )
+from chipiron.environments.environment import make_environment
 from chipiron.environments.types import GameKind
 from chipiron.games.domain.game.game_args import GameArgs
 from chipiron.games.domain.game.game_args_factory import GameArgsFactory
@@ -45,12 +48,36 @@ if TYPE_CHECKING:
     from chipiron.utils.communication.mailbox import MainMailboxMessage
 
 
-class MissingSecondParticipantError(ValueError):
-    """Raised when a non-solo match is missing its second participant."""
+class ParticipantRoleTopologyMismatchError(ValueError):
+    """Raised when configured participants do not match environment roles."""
 
-    def __init__(self) -> None:
-        """Initialize the missing second participant error."""
-        super().__init__("A second participant is required for non-solo games.")
+    def __init__(
+        self,
+        *,
+        participant_ids: tuple[str, ...],
+        environment_roles: tuple[GameRole, ...],
+    ) -> None:
+        """Initialize the mismatch error with both topology sides."""
+        super().__init__(
+            "Configured participants do not match the environment role topology: "
+            f"configured_participant_count={len(participant_ids)} "
+            f"participant_ids={participant_ids!r}, "
+            f"environment_role_count={len(environment_roles)} "
+            f"environment_roles={environment_roles!r}. "
+            "Current match scheduling supports exactly one participant for 1-role "
+            "environments and exactly two participants for 2-role environments."
+        )
+
+
+class UnsupportedRoleTopologyError(ValueError):
+    """Raised when the current match scheduler cannot handle an environment shape."""
+
+    def __init__(self, *, environment_roles: tuple[GameRole, ...]) -> None:
+        """Initialize the error with the unsupported environment roles."""
+        super().__init__(
+            "Current match scheduling supports only 1-role and 2-role environments; "
+            f"got environment_roles={environment_roles!r}."
+        )
 
 
 def _participant_ids_from_inputs(
@@ -61,6 +88,27 @@ def _participant_ids_from_inputs(
     if args_player_two is None:
         return (args_player_one.name,)
     return (args_player_one.name, args_player_two.name)
+
+
+def validate_supported_match_topology(
+    *,
+    participant_ids: tuple[str, ...],
+    environment_roles: Sequence[GameRole],
+) -> tuple[GameRole, ...]:
+    """Validate the supported 1-role / 2-role match topologies.
+
+    The environment declares the structural game roles, while the configured
+    participants determine the runtime topology expected for this match.
+    """
+    role_tuple = tuple(environment_roles)
+    if len(role_tuple) not in (1, 2):
+        raise UnsupportedRoleTopologyError(environment_roles=role_tuple)
+    if len(participant_ids) != len(role_tuple):
+        raise ParticipantRoleTopologyMismatchError(
+            participant_ids=participant_ids,
+            environment_roles=role_tuple,
+        )
+    return role_tuple
 
 
 def create_match_manager(
@@ -138,6 +186,12 @@ def create_match_manager(
     else:
         raise ValueError
 
+    environment = make_environment(game_kind=args_game.game_kind, deps=env_deps)
+    scheduled_roles = validate_supported_match_topology(
+        participant_ids=participant_ids,
+        environment_roles=environment.roles,
+    )
+
     game_manager_factory: GameManagerFactory = GameManagerFactory(
         env_deps=env_deps,
         game_manager_state_evaluator=game_board_evaluator,
@@ -160,6 +214,7 @@ def create_match_manager(
         args_player_two=args_player_two,
         seed_=seed,
         args_game=args_game,
+        scheduled_roles=scheduled_roles,
     )
 
     return MatchManager(
@@ -207,9 +262,6 @@ def create_match_manager_from_args(
         game_args = match_args.match_setting.game_args.get_match_settings_args()
     else:
         game_args = match_args.match_setting.game_args
-
-    if player_two_args is None and game_args.game_kind is not GameKind.INTEGER_REDUCTION:
-        raise MissingSecondParticipantError
 
     assert (
         player_one_args.name != "Command_Line_Human.yaml"

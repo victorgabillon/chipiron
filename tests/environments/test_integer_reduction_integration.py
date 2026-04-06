@@ -50,6 +50,9 @@ from chipiron.environments.types import GameKind
 from chipiron.games.domain.game.game_args import GameArgs
 from chipiron.games.domain.game.game_args_factory import GameArgsFactory
 from chipiron.games.domain.game.game_manager_factory import GameManagerFactory
+from chipiron.games.domain.match.match_factories import (
+    validate_supported_match_topology,
+)
 from chipiron.games.domain.match.match_manager import MatchManager
 from chipiron.games.domain.match.match_results import MatchResults
 from chipiron.games.domain.match.match_results_factory import MatchResultsFactory
@@ -178,6 +181,10 @@ def test_integer_reduction_environment_declares_solo_role_and_readable_payloads(
     payload = environment.gui_encoder.make_state_payload(state=state, seed=13)
 
     assert environment.roles == (SOLO,)
+    assert validate_supported_match_topology(
+        participant_ids=("SoloHuman",),
+        environment_roles=environment.roles,
+    ) == (SOLO,)
     assert state.value == 8
     assert state.turn == SOLO
     assert isinstance(payload, UpdStateGeneric)
@@ -309,6 +316,7 @@ def test_integer_reduction_match_manager_plays_one_solo_match() -> None:
             args_player_two=None,
             seed_=29,
             args_game=game_args,
+            scheduled_roles=(SOLO,),
         ),
         match_results_factory=MatchResultsFactory(participant_ids=("SoloRandom",)),
         output_folder_path=None,

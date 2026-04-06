@@ -2,25 +2,41 @@
 
 from __future__ import annotations
 
-from types import SimpleNamespace
-
+import pytest
 from valanga import SOLO, Color
 
+from chipiron.environments.chess.starting_position_args import FenStartingPositionArgs
+from chipiron.environments.integer_reduction.starting_position_args import (
+    IntegerReductionValueStartingPositionArgs,
+)
 from chipiron.environments.types import GameKind
 from chipiron.games.domain.game.final_game_result import GameReport, RoleOutcome
+from chipiron.games.domain.game.game_args import GameArgs
 from chipiron.games.domain.game.game_args_factory import GameArgsFactory
+from chipiron.games.domain.match.match_factories import (
+    ParticipantRoleTopologyMismatchError,
+    UnsupportedRoleTopologyError,
+    validate_supported_match_topology,
+)
 from chipiron.games.domain.match.match_results import MatchResults
+from chipiron.games.domain.match.match_settings_args import MatchSettingsArgs
 from chipiron.players import PlayerArgs
 from chipiron.players.move_selector.random_args import RandomSelectorArgs
 from chipiron.utils.small_tools import unique_int_from_list
+
+STANDARD_CHESS_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 
 def test_generate_game_args_assigns_white_and_black_from_player_one_quota() -> None:
     """Freeze the current white/black assignment logic for match scheduling."""
     factory = GameArgsFactory(
-        args_match=SimpleNamespace(
+        args_match=MatchSettingsArgs(
             number_of_games_player_one_white=1,
             number_of_games_player_one_black=2,
+            game_args=GameArgs(
+                game_kind=GameKind.CHESS,
+                starting_position=FenStartingPositionArgs(fen=STANDARD_CHESS_FEN),
+            ),
         ),
         args_player_one=PlayerArgs(
             name="player-one",
@@ -33,7 +49,11 @@ def test_generate_game_args_assigns_white_and_black_from_player_one_quota() -> N
             oracle_play=False,
         ),
         seed_=11,
-        args_game=SimpleNamespace(game_kind=GameKind.CHESS),
+        args_game=GameArgs(
+            game_kind=GameKind.CHESS,
+            starting_position=FenStartingPositionArgs(fen=STANDARD_CHESS_FEN),
+        ),
+        scheduled_roles=(Color.WHITE, Color.BLACK),
     )
 
     first_mapping, _, _ = factory.generate_game_args(0)
@@ -48,9 +68,13 @@ def test_generate_game_args_assigns_white_and_black_from_player_one_quota() -> N
 def test_generate_game_args_merges_seed_and_tracks_match_completion() -> None:
     """Freeze the current per-game seed merge and completion counting behavior."""
     factory = GameArgsFactory(
-        args_match=SimpleNamespace(
+        args_match=MatchSettingsArgs(
             number_of_games_player_one_white=1,
             number_of_games_player_one_black=2,
+            game_args=GameArgs(
+                game_kind=GameKind.CHESS,
+                starting_position=FenStartingPositionArgs(fen=STANDARD_CHESS_FEN),
+            ),
         ),
         args_player_one=PlayerArgs(
             name="player-one",
@@ -63,7 +87,11 @@ def test_generate_game_args_merges_seed_and_tracks_match_completion() -> None:
             oracle_play=False,
         ),
         seed_=17,
-        args_game=SimpleNamespace(game_kind=GameKind.CHESS),
+        args_game=GameArgs(
+            game_kind=GameKind.CHESS,
+            starting_position=FenStartingPositionArgs(fen=STANDARD_CHESS_FEN),
+        ),
+        scheduled_roles=(Color.WHITE, Color.BLACK),
     )
 
     _, _, first_seed = factory.generate_game_args(0)
@@ -98,9 +126,13 @@ def test_match_results_count_wins_by_participant_identity() -> None:
 def test_generate_game_args_supports_integer_reduction_solo_assignment() -> None:
     """Solo games should bind only the real solo role."""
     factory = GameArgsFactory(
-        args_match=SimpleNamespace(
+        args_match=MatchSettingsArgs(
             number_of_games_player_one_white=1,
             number_of_games_player_one_black=0,
+            game_args=GameArgs(
+                game_kind=GameKind.INTEGER_REDUCTION,
+                starting_position=IntegerReductionValueStartingPositionArgs(value=9),
+            ),
         ),
         args_player_one=PlayerArgs(
             name="solo-player",
@@ -109,7 +141,11 @@ def test_generate_game_args_supports_integer_reduction_solo_assignment() -> None
         ),
         args_player_two=None,
         seed_=5,
-        args_game=SimpleNamespace(game_kind=GameKind.INTEGER_REDUCTION),
+        args_game=GameArgs(
+            game_kind=GameKind.INTEGER_REDUCTION,
+            starting_position=IntegerReductionValueStartingPositionArgs(value=9),
+        ),
+        scheduled_roles=(SOLO,),
     )
 
     assignment, _, merged_seed = factory.generate_game_args(0)
@@ -118,3 +154,27 @@ def test_generate_game_args_supports_integer_reduction_solo_assignment() -> None
     assert assignment[SOLO].player_args.name == "solo-player"
     assert merged_seed == unique_int_from_list([5, 0])
     assert factory.is_match_finished() is True
+
+
+def test_validate_supported_match_topology_rejects_role_participant_mismatch() -> None:
+    """Configured participant count should match the declared environment roles."""
+    with pytest.raises(ParticipantRoleTopologyMismatchError):
+        validate_supported_match_topology(
+            participant_ids=("player-one",),
+            environment_roles=(Color.WHITE, Color.BLACK),
+        )
+
+    with pytest.raises(ParticipantRoleTopologyMismatchError):
+        validate_supported_match_topology(
+            participant_ids=("player-one", "player-two"),
+            environment_roles=(SOLO,),
+        )
+
+
+def test_validate_supported_match_topology_rejects_three_role_environments() -> None:
+    """Current match scheduling should fail clearly for unsupported 3-role games."""
+    with pytest.raises(UnsupportedRoleTopologyError):
+        validate_supported_match_topology(
+            participant_ids=("one", "two", "three"),
+            environment_roles=("alpha", "beta", "gamma"),
+        )
