@@ -1,6 +1,6 @@
-"""Focused launcher coverage for checkers and integer reduction."""
+"""Focused launcher coverage for participant-driven GUI state."""
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, cast
 
 from chipiron.environments.types import GameKind
 from chipiron.games.domain.match.match_role_schedule import (
@@ -10,14 +10,27 @@ from chipiron.games.domain.match.match_role_schedule import (
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.gui_launcher.builders import generate_inputs
 from chipiron.scripts.gui_launcher.logic import apply_game_kind_defaults
-from chipiron.scripts.gui_launcher.models import ArgsChosenByUser, ScriptGUIType
+from chipiron.scripts.gui_launcher.models import (
+    ArgsChosenByUser,
+    ParticipantSelection,
+    ScriptGUIType,
+)
 from chipiron.scripts.gui_launcher.registries import (
+    launcher_spec_for_game,
     player_options_for_game,
     starting_positions_for_game,
 )
+from chipiron.scripts.gui_launcher.ui_ctk import participant_row_models_for_state
 
 if TYPE_CHECKING:
     from chipiron.scripts.one_match.one_match import MatchScriptArgs
+
+
+def test_launcher_specs_encode_participant_topology() -> None:
+    """Launcher specs should expose the per-game participant topology."""
+    assert launcher_spec_for_game(GameKind.CHESS).participant_count == 2
+    assert launcher_spec_for_game(GameKind.CHECKERS).participant_count == 2
+    assert launcher_spec_for_game(GameKind.INTEGER_REDUCTION).participant_count == 1
 
 
 def test_checkers_registry_includes_random_player_option() -> None:
@@ -33,25 +46,27 @@ def test_args_defaults_remain_chess_friendly() -> None:
     """The default launcher args should stay chess-oriented."""
     args = ArgsChosenByUser()
     assert args.game_kind is GameKind.CHESS
-    assert args.player_type_white is PlayerConfigTag.RECUR_ZIPF_BASE_3
-    assert args.player_type_black is PlayerConfigTag.RECUR_ZIPF_BASE_3
-    assert args.strength_white == 1
-    assert args.strength_black == 1
+    assert args.starting_position_key == "Standard"
+    assert len(args.participants) == 2
+    assert args.participants == list(
+        launcher_spec_for_game(GameKind.CHESS).default_participants
+    )
 
 
-def test_apply_game_kind_defaults_sets_checkers_human_defaults() -> None:
+def test_apply_game_kind_defaults_sets_checkers_two_participant_defaults() -> None:
     """Checkers defaults should prefer two local human participants."""
     args = ArgsChosenByUser()
     args.game_kind = GameKind.CHECKERS
     apply_game_kind_defaults(args)
-    assert args.player_type_white is PlayerConfigTag.GUI_HUMAN
-    assert args.player_type_black is PlayerConfigTag.GUI_HUMAN
-    assert args.strength_white is None
-    assert args.strength_black is None
+    assert len(args.participants) == 2
+    assert args.participants == [
+        ParticipantSelection(player_tag=PlayerConfigTag.GUI_HUMAN),
+        ParticipantSelection(player_tag=PlayerConfigTag.GUI_HUMAN),
+    ]
 
 
 def test_integer_reduction_registry_and_defaults_support_solo_play() -> None:
-    """Integer reduction should expose human/random options and human defaults."""
+    """Integer reduction should expose a solo launcher state."""
     options = player_options_for_game(GameKind.INTEGER_REDUCTION)
     tags = {opt.tag for opt in options}
     args = ArgsChosenByUser(game_kind=GameKind.INTEGER_REDUCTION)
@@ -65,10 +80,10 @@ def test_integer_reduction_registry_and_defaults_support_solo_play() -> None:
         "Standard": "15",
         "Large": "31",
     }
-    assert args.player_type_white is PlayerConfigTag.GUI_HUMAN
-    assert args.player_type_black is PlayerConfigTag.GUI_HUMAN
-    assert args.strength_white is None
-    assert args.strength_black is None
+    assert len(args.participants) == 1
+    assert args.participants[0] == ParticipantSelection(
+        player_tag=PlayerConfigTag.GUI_HUMAN,
+    )
 
 
 def test_generate_inputs_configures_integer_reduction_as_single_game_match() -> None:
@@ -77,8 +92,9 @@ def test_generate_inputs_configures_integer_reduction_as_single_game_match() -> 
         ArgsChosenByUser(
             type=ScriptGUIType.PLAY_OR_WATCH_A_GAME,
             game_kind=GameKind.INTEGER_REDUCTION,
-            player_type_white=PlayerConfigTag.RANDOM,
-            player_type_black=PlayerConfigTag.GUI_HUMAN,
+            participants=[
+                ParticipantSelection(player_tag=PlayerConfigTag.RANDOM),
+            ],
             starting_position_key="Standard",
         )
     )
@@ -101,8 +117,10 @@ def test_generate_inputs_configures_checkers_with_two_role_schedule() -> None:
         ArgsChosenByUser(
             type=ScriptGUIType.PLAY_OR_WATCH_A_GAME,
             game_kind=GameKind.CHECKERS,
-            player_type_white=PlayerConfigTag.GUI_HUMAN,
-            player_type_black=PlayerConfigTag.RANDOM,
+            participants=[
+                ParticipantSelection(player_tag=PlayerConfigTag.GUI_HUMAN),
+                ParticipantSelection(player_tag=PlayerConfigTag.RANDOM),
+            ],
             starting_position_key="Standard",
         )
     )
@@ -110,6 +128,8 @@ def test_generate_inputs_configures_checkers_with_two_role_schedule() -> None:
     assert gui_args is not None
     typed_gui_args = cast("MatchScriptArgs", gui_args)
     match_args = cast("Any", typed_gui_args.match_args)
+    assert match_args.player_one is PlayerConfigTag.GUI_HUMAN
+    assert match_args.player_two is PlayerConfigTag.RANDOM
     assert isinstance(
         match_args.match_setting_overwrite.schedule,
         TwoRoleMatchSchedule,
@@ -125,16 +145,33 @@ def test_generate_inputs_configures_checkers_with_two_role_schedule() -> None:
 
 
 def test_apply_game_kind_defaults_resets_chess_defaults() -> None:
-    """Switching back to chess should restore the old chess defaults."""
+    """Switching back to chess should restore chess launcher defaults."""
     args = ArgsChosenByUser(
         game_kind=GameKind.CHESS,
-        player_type_white=PlayerConfigTag.GUI_HUMAN,
-        strength_white=None,
-        player_type_black=PlayerConfigTag.GUI_HUMAN,
-        strength_black=None,
+        participants=[
+            ParticipantSelection(player_tag=PlayerConfigTag.GUI_HUMAN),
+            ParticipantSelection(player_tag=PlayerConfigTag.GUI_HUMAN),
+        ],
     )
     apply_game_kind_defaults(args)
-    assert args.player_type_white is PlayerConfigTag.RECUR_ZIPF_BASE_3
-    assert args.player_type_black is PlayerConfigTag.RECUR_ZIPF_BASE_3
-    assert args.strength_white == 1
-    assert args.strength_black == 1
+    assert args.participants == list(
+        launcher_spec_for_game(GameKind.CHESS).default_participants
+    )
+
+
+def test_participant_row_models_follow_game_topology() -> None:
+    """Pure UI row helpers should expose one row for solo and two for two-role games."""
+    integer_reduction_rows = participant_row_models_for_state(
+        ArgsChosenByUser(game_kind=GameKind.INTEGER_REDUCTION)
+    )
+    chess_rows = participant_row_models_for_state(
+        ArgsChosenByUser(game_kind=GameKind.CHESS)
+    )
+    checkers_rows = participant_row_models_for_state(
+        ArgsChosenByUser(game_kind=GameKind.CHECKERS)
+    )
+
+    assert len(integer_reduction_rows) == 1
+    assert integer_reduction_rows[0].label_text == "Solo"
+    assert len(chess_rows) == 2
+    assert len(checkers_rows) == 2

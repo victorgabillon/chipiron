@@ -1,6 +1,8 @@
 """Entry point for customtkinter script GUI."""
 
-import customtkinter as ctk
+from typing import Any
+
+import customtkinter as _customtkinter  # type: ignore[reportMissingImports]
 
 from chipiron import scripts
 from chipiron.utils.dataclass import IsDataclass
@@ -8,6 +10,8 @@ from chipiron.utils.dataclass import IsDataclass
 from .builders import generate_inputs
 from .models import ArgsChosenByUser
 from .ui_ctk import build_script_gui
+
+ctk: Any = _customtkinter
 
 
 def script_gui() -> tuple[scripts.ScriptType, IsDataclass | None, str]:

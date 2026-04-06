@@ -1,23 +1,11 @@
-"""Game-kind specific defaults for GUI launcher state."""
-
-from chipiron.environments.types import GameKind
-from chipiron.players.player_ids import PlayerConfigTag
+"""Game-kind specific defaults for launcher state."""
 
 from .models import ArgsChosenByUser
+from .registries import launcher_spec_for_game
 
 
 def apply_game_kind_defaults(args: ArgsChosenByUser) -> None:
-    """Apply game-kind defaults when switching game kind in the launcher."""
-    if (
-        args.game_kind is GameKind.CHECKERS
-        or args.game_kind is GameKind.INTEGER_REDUCTION
-    ):
-        args.player_type_white = PlayerConfigTag.GUI_HUMAN
-        args.strength_white = None
-        args.player_type_black = PlayerConfigTag.GUI_HUMAN
-        args.strength_black = None
-    elif args.game_kind is GameKind.CHESS:
-        args.player_type_white = PlayerConfigTag.RECUR_ZIPF_BASE_3
-        args.strength_white = 1
-        args.player_type_black = PlayerConfigTag.RECUR_ZIPF_BASE_3
-        args.strength_black = 1
+    """Reset launcher selections from the selected game's declarative spec."""
+    launcher_spec = launcher_spec_for_game(args.game_kind)
+    args.participants = list(launcher_spec.default_participants)
+    args.starting_position_key = launcher_spec.default_starting_position_key

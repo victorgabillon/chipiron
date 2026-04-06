@@ -1,6 +1,7 @@
 """Integer reduction SVG adapter for the generic GUI."""
 
 from dataclasses import dataclass
+from html import escape
 from typing import Any
 
 from chipiron.displays.svg_adapter_errors import InvalidSvgAdapterPayloadTypeError
@@ -32,6 +33,62 @@ class _ActionButton:
         )
 
 
+@dataclass(frozen=True, slots=True)
+class _TextLayout:
+    """Precomputed centered text block constrained to the content box."""
+
+    text: str
+    x: float
+    y: float
+    font_size: float
+    font_family: str
+    fill: str
+    width_factor: float
+    max_width: float
+
+
+@dataclass(frozen=True, slots=True)
+class _PanelLayout:
+    """Resolved integer-reduction layout for a single render pass."""
+
+    title: _TextLayout
+    value: _TextLayout
+    instruction: _TextLayout
+    buttons: tuple[_ActionButton, ...]
+    button_font_size: float
+
+
+def _clamp(value: float, lower: float, upper: float) -> float:
+    """Clamp a scalar into a closed interval."""
+    return min(max(value, lower), upper)
+
+
+def _estimate_text_width(*, text: str, font_size: float, width_factor: float) -> float:
+    """Estimate SVG text width without requiring font metrics."""
+    return len(text) * font_size * width_factor
+
+
+def _fit_font_size(
+    *,
+    text: str,
+    max_width: float,
+    min_size: float,
+    max_size: float,
+    width_factor: float,
+) -> float:
+    """Return a width-aware font size bounded by readable min/max values."""
+    if not text:
+        return min_size
+
+    width_limited_size = max_width / max(len(text) * width_factor, 1.0)
+    return max(1.0, min(max_size, max(min_size, width_limited_size)))
+
+
+def _fmt(value: float) -> str:
+    """Format SVG coordinates compactly while keeping stable precision."""
+    return f"{value:.2f}"
+
+
 @dataclass
 class IntegerReductionSvgAdapter(SvgGameAdapter):
     """SVG adapter implementation for integer reduction."""
@@ -41,6 +98,10 @@ class IntegerReductionSvgAdapter(SvgGameAdapter):
 
     _payload: IntegerReductionDisplayPayload | None = None
     _buttons: tuple[_ActionButton, ...] = ()
+
+    _TITLE = "Integer Reduction"
+    _ACTION_PROMPT = "Choose a reduction"
+    _TERMINAL_MESSAGE = "Reached 1"
 
     def position_from_update(
         self, *, state_tag: object, adapter_payload: Any
@@ -55,6 +116,192 @@ class IntegerReductionSvgAdapter(SvgGameAdapter):
         self._payload = adapter_payload
         self._buttons = ()
         return SvgPosition(state_tag=state_tag, payload=adapter_payload)
+
+    def _build_layout(
+        self,
+        *,
+        size: int,
+        margin: int,
+        payload: IntegerReductionDisplayPayload,
+    ) -> _PanelLayout:
+        """Build a single consistent layout from the current viewport bounds.
+
+        The adapter treats the square SVG viewport as the source of truth and derives
+        every text/button coordinate from one content box inside that viewport.
+        """
+        width = float(size)
+        height = float(size)
+        outer_margin = min(float(margin), min(width, height) / 2.0)
+        available_width = max(width - 2.0 * outer_margin, 1.0)
+        available_height = max(height - 2.0 * outer_margin, 1.0)
+        padding = min(
+            max(10.0, min(width, height) * 0.035),
+            min(available_width, available_height) / 4.0,
+        )
+
+        left = outer_margin + padding
+        right = width - outer_margin - padding
+        top = outer_margin + padding
+        bottom = height - outer_margin - padding
+        content_width = max(right - left, 1.0)
+        content_height = max(bottom - top, 1.0)
+        center_x = left + content_width / 2.0
+
+        title_font = _fit_font_size(
+            text=self._TITLE,
+            max_width=content_width,
+            min_size=12.0,
+            max_size=min(34.0, content_height * 0.12),
+            width_factor=0.56,
+        )
+        value_text = f"n = {payload.value}"
+        value_font = _fit_font_size(
+            text=value_text,
+            max_width=content_width,
+            min_size=18.0,
+            max_size=min(72.0, content_height * 0.26),
+            width_factor=0.62,
+        )
+        instruction_text = (
+            self._TERMINAL_MESSAGE if payload.is_terminal else self._ACTION_PROMPT
+        )
+        instruction_font = _fit_font_size(
+            text=instruction_text,
+            max_width=content_width,
+            min_size=11.0,
+            max_size=min(22.0, content_height * 0.085),
+            width_factor=0.55,
+        )
+
+        title_line = title_font * 1.2
+        value_line = value_font * 1.1
+        instruction_line = instruction_font * 1.2
+        gap_small = _clamp(content_height * 0.03, 8.0, 18.0)
+        gap_medium = _clamp(content_height * 0.04, 10.0, 24.0)
+
+        header_height = (
+            title_line + gap_small + value_line + gap_small + instruction_line
+        )
+        max_header_ratio = 0.45 if payload.is_terminal else 0.52
+        max_header_height = content_height * max_header_ratio
+        if header_height > max_header_height and header_height > 0.0:
+            scale = max_header_height / header_height
+            title_font *= scale
+            value_font *= scale
+            instruction_font *= scale
+            title_line *= scale
+            value_line *= scale
+            instruction_line *= scale
+            gap_small *= scale
+            gap_medium *= scale
+
+        cursor = top
+        title_y = cursor + title_line / 2.0
+        cursor += title_line + gap_small
+        value_y = cursor + value_line / 2.0
+        cursor += value_line + gap_small
+        instruction_y = cursor + instruction_line / 2.0
+        cursor += instruction_line + gap_medium
+
+        buttons: tuple[_ActionButton, ...] = ()
+        button_font_size = 0.0
+        button_count = len(payload.legal_actions)
+        if button_count > 0:
+            button_width = content_width
+            desired_button_height = _clamp(content_height * 0.13, 40.0, 56.0)
+            desired_gap = _clamp(content_height * 0.035, 8.0, 18.0)
+            available_button_height = max(bottom - cursor, 0.0)
+            desired_total = (
+                button_count * desired_button_height
+                + max(button_count - 1, 0) * desired_gap
+            )
+            scale = (
+                min(1.0, available_button_height / desired_total)
+                if desired_total > 0.0
+                else 1.0
+            )
+            button_height = desired_button_height * scale
+            button_gap = desired_gap * scale
+
+            buttons = tuple(
+                _ActionButton(
+                    action_name=action_name,
+                    x=left,
+                    y=cursor + index * (button_height + button_gap),
+                    width=button_width,
+                    height=button_height,
+                )
+                for index, action_name in enumerate(payload.legal_actions)
+            )
+
+            widest_button_label = max(payload.legal_actions, key=len)
+            button_font_size = _fit_font_size(
+                text=widest_button_label,
+                max_width=button_width * 0.82,
+                min_size=12.0,
+                max_size=min(28.0, button_height * 0.42),
+                width_factor=0.56,
+            )
+
+        return _PanelLayout(
+            title=_TextLayout(
+                text=self._TITLE,
+                x=center_x,
+                y=title_y,
+                font_size=title_font,
+                font_family="sans-serif",
+                fill="#111827",
+                width_factor=0.56,
+                max_width=content_width,
+            ),
+            value=_TextLayout(
+                text=value_text,
+                x=center_x,
+                y=value_y,
+                font_size=value_font,
+                font_family="monospace",
+                fill="#0f172a",
+                width_factor=0.62,
+                max_width=content_width,
+            ),
+            instruction=_TextLayout(
+                text=instruction_text,
+                x=center_x,
+                y=instruction_y,
+                font_size=instruction_font,
+                font_family="sans-serif",
+                fill="#065f46" if payload.is_terminal else "#475569",
+                width_factor=0.55,
+                max_width=content_width,
+            ),
+            buttons=buttons,
+            button_font_size=button_font_size,
+        )
+
+    def _render_text(self, text_layout: _TextLayout) -> str:
+        """Render a centered text node and compress it when width is tight."""
+        attributes = [
+            f'x="{_fmt(text_layout.x)}"',
+            f'y="{_fmt(text_layout.y)}"',
+            'text-anchor="middle"',
+            'dominant-baseline="middle"',
+            f'font-size="{_fmt(text_layout.font_size)}"',
+            f'font-family="{text_layout.font_family}"',
+            f'fill="{text_layout.fill}"',
+        ]
+
+        if (
+            _estimate_text_width(
+                text=text_layout.text,
+                font_size=text_layout.font_size,
+                width_factor=text_layout.width_factor,
+            )
+            > text_layout.max_width
+        ):
+            attributes.append(f'textLength="{_fmt(text_layout.max_width)}"')
+            attributes.append('lengthAdjust="spacingAndGlyphs"')
+
+        return f"<text {' '.join(attributes)}>{escape(text_layout.text)}</text>"
 
     def render_svg(
         self, pos: SvgPosition, size: int, *, margin: int = 0
@@ -71,60 +318,37 @@ class IntegerReductionSvgAdapter(SvgGameAdapter):
         payload = self._payload
         width = size
         height = size
-        body_top = margin + 50
-        button_width = max(220.0, width - 2 * (margin + 40))
-        button_height = 56.0
-        button_gap = 18.0
-        start_x = (width - button_width) / 2
-        start_y = body_top + 120
-
-        buttons = tuple(
-            _ActionButton(
-                action_name=action_name,
-                x=start_x,
-                y=start_y + index * (button_height + button_gap),
-                width=button_width,
-                height=button_height,
-            )
-            for index, action_name in enumerate(payload.legal_actions)
-        )
-        self._buttons = buttons
+        layout = self._build_layout(size=size, margin=margin, payload=payload)
+        self._buttons = layout.buttons
 
         parts = [
             f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}">',
             f'<rect width="{width}" height="{height}" fill="#f8fafc"/>',
-            '<text x="50%" y="80" text-anchor="middle" font-size="34" '
-            'font-family="sans-serif" fill="#111827">Integer Reduction</text>',
-            f'<text x="50%" y="{body_top + 20}" text-anchor="middle" font-size="72" '
-            f'font-family="monospace" fill="#0f172a">n = {payload.value}</text>',
+            self._render_text(layout.title),
+            self._render_text(layout.value),
+            self._render_text(layout.instruction),
         ]
 
-        if not buttons:
+        for button in layout.buttons:
             parts.append(
-                f'<text x="50%" y="{body_top + 120}" text-anchor="middle" '
-                'font-size="28" font-family="sans-serif" fill="#065f46">'
-                "Reached 1"
-                "</text>"
+                f'<rect x="{_fmt(button.x)}" y="{_fmt(button.y)}" '
+                f'width="{_fmt(button.width)}" height="{_fmt(button.height)}" '
+                'rx="14" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>'
             )
-        else:
             parts.append(
-                f'<text x="50%" y="{body_top + 70}" text-anchor="middle" '
-                'font-size="22" font-family="sans-serif" fill="#475569">'
-                "Choose a reduction"
-                "</text>"
+                self._render_text(
+                    _TextLayout(
+                        text=button.action_name,
+                        x=button.x + button.width / 2.0,
+                        y=button.y + button.height / 2.0,
+                        font_size=layout.button_font_size,
+                        font_family="sans-serif",
+                        fill="#1d4ed8",
+                        width_factor=0.56,
+                        max_width=button.width * 0.82,
+                    )
+                )
             )
-            for button in buttons:
-                parts.append(
-                    f'<rect x="{button.x}" y="{button.y}" width="{button.width}" '
-                    f'height="{button.height}" rx="14" fill="#dbeafe" stroke="#2563eb" '
-                    'stroke-width="2"/>'
-                )
-                parts.append(
-                    f'<text x="{button.x + button.width / 2}" '
-                    f'y="{button.y + button.height / 2 + 8}" text-anchor="middle" '
-                    'font-size="28" font-family="sans-serif" fill="#1d4ed8">'
-                    f"{button.action_name}</text>"
-                )
 
         parts.append("</svg>")
 

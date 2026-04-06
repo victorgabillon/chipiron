@@ -203,12 +203,19 @@ def test_integer_reduction_environment_declares_solo_role_and_readable_payloads(
         adapter_payload=payload.adapter_payload,
     )
     render = adapter.render_svg(pos, size=600, margin=0)
-    click = adapter.handle_click(pos, x=100, y=200, board_size=600, margin=0)
+    first_button = adapter._buttons[0]
+    click = adapter.handle_click(
+        pos,
+        x=int(first_button.x + first_button.width / 2),
+        y=int(first_button.y + first_button.height / 2),
+        board_size=600,
+        margin=0,
+    )
 
     assert b"Integer Reduction" in render.svg_bytes
     assert render.info["fen"] == "value=8"
     assert render.info["legal_moves"] == "dec1, half"
-    assert click.action_name == "dec1"
+    assert click.action_name == payload.adapter_payload.legal_actions[0]
 
 
 def test_integer_reduction_solo_schedule_reports_one_game() -> None:
