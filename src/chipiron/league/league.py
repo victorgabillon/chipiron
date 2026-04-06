@@ -228,9 +228,7 @@ class League:
         """
         # coded for one single game!!
         first_participant_id, second_participant_id = match_results.participant_ids
-        elo_player_one: float = cast(
-            "float", self.players_elo[first_participant_id][0]
-        )
+        elo_player_one: float = cast("float", self.players_elo[first_participant_id][0])
         power_player_one = 10 ** (elo_player_one / 400)
         elo_player_two: float = cast(
             "float", self.players_elo[second_participant_id][0]

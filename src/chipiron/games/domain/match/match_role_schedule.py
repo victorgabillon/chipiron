@@ -1,4 +1,4 @@
-"""Neutral schedule models and validated plans for supported match topologies."""
+"""Neutral schedules and validated match plans for supported topologies."""
 
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -122,9 +122,9 @@ class TwoRoleTopologyRequiresTwoRoleScheduleError(ValueError):
 class ValidatedMatchPlan:
     """Validated participant/topology/schedule assembly data for one match.
 
-    The assembly boundary owns all topology and schedule validation. Downstream
-    scheduling code should consume this plan directly instead of re-validating
-    the environment roles or schedule kind.
+    Match-plan assembly owns topology and schedule validation. Downstream match
+    execution code consumes this plan directly without recomputing topology or
+    re-validating the schedule.
     """
 
     participant_ids: tuple[str, ...]
@@ -185,27 +185,21 @@ class ValidatedMatchPlan:
         assert isinstance(self.schedule, TwoRoleMatchSchedule)
         return self.schedule
 
-    def participant_indexes_for_roles(self, game_number: int) -> tuple[int, ...]:
-        """Return participant indexes aligned with ``scheduled_roles`` for one game.
-
-        This is the trusted scheduling contract for current supported topologies:
-        ``(0,)`` for solo plans, or ``(0, 1)`` / ``(1, 0)`` for two-role plans.
-        """
-        if self.is_solo:
-            return (0,)
-
-        two_role_schedule = self.two_role_schedule
-        if game_number < two_role_schedule.number_of_games_player_one_on_first_role:
-            return (0, 1)
-        return (1, 0)
-
     def role_participant_indexes(
         self, game_number: int
     ) -> tuple[tuple[GameRole, int], ...]:
-        """Return role/index pairs for the scheduled participants of one game."""
-        participant_indexes = self.participant_indexes_for_roles(game_number)
+        """Return the validated role/index schedule for one concrete game."""
         if self.is_solo:
-            return ((self.solo_role, participant_indexes[0]),)
+            return ((self.solo_role, 0),)
+
+        participant_indexes: tuple[int, int]
+        if (
+            game_number
+            < self.two_role_schedule.number_of_games_player_one_on_first_role
+        ):
+            participant_indexes = (0, 1)
+        else:
+            participant_indexes = (1, 0)
         return (
             (self.first_role, participant_indexes[0]),
             (self.second_role, participant_indexes[1]),

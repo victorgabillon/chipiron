@@ -167,7 +167,9 @@ def drain_payloads(gui_queue: queue.Queue[GuiUpdate]) -> list[object]:
     return payloads
 
 
-def test_integer_reduction_environment_declares_solo_role_and_readable_payloads() -> None:
+def test_integer_reduction_environment_declares_solo_role_and_readable_payloads() -> (
+    None
+):
     """Environment assembly should expose one real solo role and readable GUI data."""
     environment = make_environment(
         game_kind=GameKind.INTEGER_REDUCTION,
@@ -241,7 +243,9 @@ def test_integer_reduction_human_session_emits_need_action_and_advances_state() 
     assert len(display_payloads) == 1
     assert isinstance(display_payloads[0], UpdStateGeneric)
     assert display_payloads[0].action_name_history == []
-    assert isinstance(display_payloads[0].adapter_payload, IntegerReductionDisplayPayload)
+    assert isinstance(
+        display_payloads[0].adapter_payload, IntegerReductionDisplayPayload
+    )
     assert display_payloads[0].adapter_payload.value == 8
 
     session.controller.start()
@@ -268,7 +272,9 @@ def test_integer_reduction_human_session_emits_need_action_and_advances_state() 
     assert after_action_payloads[2].ctx.role_to_play == SOLO
 
 
-def test_integer_reduction_random_game_terminates_and_serializes_role_aware_report() -> None:
+def test_integer_reduction_random_game_terminates_and_serializes_role_aware_report() -> (
+    None
+):
     """A random solo player should finish the game and produce a role-aware report."""
     factory = make_game_manager_factory()
     session = factory.create(

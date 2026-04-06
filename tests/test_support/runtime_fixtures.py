@@ -379,7 +379,9 @@ def wait_for_thread_result(run: OrchestratorRun, *, timeout: float = 1.0) -> Gam
     if run.errors:
         raise run.errors[0]
     if not run.results:
-        raise AssertionError("The orchestrator thread finished without producing a report.")
+        raise AssertionError(
+            "The orchestrator thread finished without producing a report."
+        )
     return run.results[0]
 
 

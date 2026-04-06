@@ -29,7 +29,9 @@ def test_start_match_sync_requests_current_turn_with_request_id_zero() -> None:
     assert event.state is harness.game_manager.game.state
 
 
-def test_propose_action_sync_returns_no_events_for_wrong_scope_stale_id_or_wrong_turn() -> None:
+def test_propose_action_sync_returns_no_events_for_wrong_scope_stale_id_or_wrong_turn() -> (
+    None
+):
     """Freeze the current silent rejection behavior for mismatched requests."""
     harness = build_runtime_harness(start_turn=Color.WHITE, remaining_moves=2)
     harness.game_manager.start_match_sync(harness.scope)
@@ -94,7 +96,9 @@ def test_propose_action_sync_invalid_action_reissues_same_request() -> None:
     assert harness.game_manager.game.ply == 0
 
 
-def test_propose_action_sync_valid_action_applies_transition_and_requests_next_turn() -> None:
+def test_propose_action_sync_valid_action_applies_transition_and_requests_next_turn() -> (
+    None
+):
     """Freeze the accepted-action event ordering and next-turn request behavior."""
     harness = build_runtime_harness(start_turn=Color.WHITE, remaining_moves=2)
     harness.game_manager.start_match_sync(harness.scope)
@@ -118,7 +122,9 @@ def test_propose_action_sync_valid_action_applies_transition_and_requests_next_t
     assert harness.game_manager.game.action_history == ["advance"]
 
 
-def test_propose_action_sync_terminal_transition_emits_match_over_without_next_request() -> None:
+def test_propose_action_sync_terminal_transition_emits_match_over_without_next_request() -> (
+    None
+):
     """Freeze the current terminal-event shape emitted by GameManager."""
     harness = build_runtime_harness(start_turn=Color.WHITE, remaining_moves=1)
     harness.game_manager.start_match_sync(harness.scope)

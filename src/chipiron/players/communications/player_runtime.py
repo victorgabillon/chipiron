@@ -49,9 +49,7 @@ def handle_player_request[StateSnapT, RuntimeStateT](
         scope: Scope, player_role: GameRole, queue_out: PutQueue[MainMailboxMessage]
     ) -> NotifyProgressCallable:
         def cb(progress_percent: int) -> None:
-            ev = EvProgress(
-                progress_percent=progress_percent, player_role=player_role
-            )
+            ev = EvProgress(progress_percent=progress_percent, player_role=player_role)
             queue_out.put(
                 PlayerEvent(
                     schema_version=1,

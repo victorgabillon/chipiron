@@ -1,4 +1,4 @@
-"""Module in charge of playing one match."""
+"""Run one validated match schedule."""
 
 import os
 import queue
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 
 
 class MatchManager:
-    """Object in charge of playing one validated match schedule.
+    """Run the games described by a validated match schedule.
 
     Args:
         game_manager_factory (GameManagerFactory): The factory for creating game managers.
@@ -50,7 +50,7 @@ class MatchManager:
         match_results_factory: MatchResultsFactory,
         output_folder_path: MyPath | None = None,
     ) -> None:
-        """Initialize a MatchManager object.
+        """Initialize a MatchManager.
 
         Args:
             game_manager_factory (GameManagerFactory): The factory object for creating game managers.
@@ -78,10 +78,11 @@ class MatchManager:
             chipiron_logger.info("participant %s is %s", index, participant_id)
 
     def play_one_match(self) -> MatchReport:
-        """Plays one match and returns the match report.
+        """Play the validated match schedule and return the match report.
 
-        This method plays a single match, which consists of multiple games. It generates game arguments,
-        plays each game, updates the match results, and saves the match report to a file.
+        This method iterates through the game arguments produced by the
+        validated-plan-driven game-args factory, plays each game, updates the
+        match results, and saves the match report to a file.
 
         Returns:
             MatchReport: The report of the match, including the move history and match results.

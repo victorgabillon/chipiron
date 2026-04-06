@@ -2,7 +2,7 @@
 
 import random
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any
 
 from anemone.dynamics import SearchDynamics
 from valanga import Dynamics, TurnState
@@ -10,6 +10,7 @@ from valanga.game import Role
 from valanga.policy import BranchSelector
 
 from chipiron.core.oracles import PolicyOracle, TerminalOracle, ValueOracle
+from chipiron.environments.types import GameKind
 from chipiron.players.boardevaluators.master_board_evaluator_args import (
     MasterBoardEvaluatorArgs,
 )
@@ -21,16 +22,12 @@ from chipiron.players.move_selector.move_selector_args import (
 )
 from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
 from chipiron.players.player import GameAdapter, Player
-from chipiron.players.player_args import HasMoveSelectorType
 from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
     from anemone.node_evaluation.direct.protocols import (
         MasterStateValueEvaluator,
     )
-
-EvalArgsT = TypeVar("EvalArgsT")
-NonTreeArgsT = TypeVar("NonTreeArgsT", bound=HasMoveSelectorType)
 
 
 def create_player_with_pipeline[RoleT: Role, StateT: TurnState[Any], SnapT](
@@ -91,3 +88,55 @@ def create_player_with_pipeline[RoleT: Role, StateT: TurnState[Any], SnapT](
 
     adapter = adapter_builder(main_move_selector, policy_oracle)
     return Player(name=name, adapter=adapter)
+
+
+def create_player_with_standard_adapter_pipeline[
+    RoleT: Role,
+    StateT: TurnState[Any],
+    SnapT,
+](
+    *,
+    name: str,
+    main_selector_args: AnyMoveSelectorArgs,
+    state_type: type[StateT],
+    policy_oracle: PolicyOracle[StateT] | None,
+    value_oracle: ValueOracle[StateT] | None,
+    terminal_oracle: TerminalOracle[StateT, RoleT] | None,
+    master_evaluator_from_args: Callable[
+        [
+            MasterBoardEvaluatorArgs,
+            ValueOracle[StateT] | None,
+            TerminalOracle[StateT, RoleT] | None,
+        ],
+        "MasterStateValueEvaluator",
+    ],
+    game_kind: GameKind,
+    runtime_dynamics: Dynamics[StateT],
+    adapter_factory: Callable[[BranchSelector[StateT]], GameAdapter[SnapT, StateT]],
+    random_generator: random.Random,
+    search_dynamics_override: SearchDynamics[StateT, Any] | None = None,
+    implementation_args: ImplementationArgs | None = None,
+) -> Player[SnapT, StateT]:
+    """Create a player using the common game-adapter and non-tree selector wiring."""
+    return create_player_with_pipeline(
+        name=name,
+        main_selector_args=main_selector_args,
+        state_type=state_type,
+        policy_oracle=policy_oracle,
+        value_oracle=value_oracle,
+        terminal_oracle=terminal_oracle,
+        master_evaluator_from_args=master_evaluator_from_args,
+        adapter_builder=lambda selector, _policy_oracle: adapter_factory(selector),
+        create_non_tree_selector=lambda selector_args, dyn: (
+            move_selector_factory.create_main_move_selector(
+                selector_args,
+                game_kind=game_kind,
+                dynamics=dyn,
+                random_generator=random_generator,
+            )
+        ),
+        random_generator=random_generator,
+        runtime_dynamics=runtime_dynamics,
+        search_dynamics_override=search_dynamics_override,
+        implementation_args=implementation_args,
+    )

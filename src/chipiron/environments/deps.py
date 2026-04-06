@@ -40,4 +40,6 @@ class IntegerReductionEnvironmentDeps:
     """Dependencies required to build integer-reduction environments."""
 
 
-EnvDeps = ChessEnvironmentDeps | CheckersEnvironmentDeps | IntegerReductionEnvironmentDeps
+EnvDeps = (
+    ChessEnvironmentDeps | CheckersEnvironmentDeps | IntegerReductionEnvironmentDeps
+)

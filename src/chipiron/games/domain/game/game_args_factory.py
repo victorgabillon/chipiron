@@ -1,4 +1,4 @@
-"""Create per-game participant assignments from validated role scheduling."""
+"""Create per-game participant assignments from a validated match plan."""
 
 from valanga.game import Seed
 
@@ -11,7 +11,7 @@ from .game_args import GameArgs
 
 
 class GameArgsFactory:
-    """Create role-keyed participant assignments from a validated match plan."""
+    """Execute validated match scheduling one game at a time."""
 
     seed_: int | None
     args_player_one: players.PlayerArgs
@@ -46,8 +46,8 @@ class GameArgsFactory:
     ) -> tuple[dict[GameRole, players.PlayerFactoryArgs], GameArgs, Seed | None]:
         """Generate game arguments for a specific game number.
 
-        The returned mapping is role-keyed. The validated match plan owns the
-        role-order scheduling contract; this factory only turns the scheduled
+        The returned mapping is role-keyed. Topology and scheduling decisions
+        come from ``match_plan``; this factory only turns the scheduled
         participant indexes into per-role player factory args.
 
         Args:

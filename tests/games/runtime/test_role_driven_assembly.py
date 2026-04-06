@@ -163,7 +163,10 @@ class RoleCycleGuiEncoder:
         return UpdStateGeneric(
             state_tag=state.tag,
             action_name_history=(f"turn:{state.turn}",),
-            adapter_payload={"turn": state.turn, "remaining_moves": state.remaining_moves},
+            adapter_payload={
+                "turn": state.turn,
+                "remaining_moves": state.remaining_moves,
+            },
             seed=seed,
         )
 
@@ -363,7 +366,9 @@ def test_factory_assembles_participants_from_environment_roles(
         remaining_moves=3,
         recorder=recorder,
     )
-    monkeypatch.setattr(game_manager_factory_module, "make_environment", lambda **_: environment)
+    monkeypatch.setattr(
+        game_manager_factory_module, "make_environment", lambda **_: environment
+    )
 
     display_queue: queue.Queue[Any] = queue.Queue()
     factory = make_game_manager_factory(display_queue=display_queue)
@@ -409,7 +414,9 @@ def test_factory_rejects_missing_participant_assignment_for_environment_role(
         remaining_moves=2,
         recorder=recorder,
     )
-    monkeypatch.setattr(game_manager_factory_module, "make_environment", lambda **_: environment)
+    monkeypatch.setattr(
+        game_manager_factory_module, "make_environment", lambda **_: environment
+    )
 
     factory = make_game_manager_factory(display_queue=queue.Queue())
 
@@ -434,7 +441,9 @@ def test_controller_start_uses_state_turn_not_environment_role_order(
         remaining_moves=3,
         recorder=recorder,
     )
-    monkeypatch.setattr(game_manager_factory_module, "make_environment", lambda **_: environment)
+    monkeypatch.setattr(
+        game_manager_factory_module, "make_environment", lambda **_: environment
+    )
 
     session = make_game_manager_factory(display_queue=queue.Queue()).create(
         args_game_manager=make_game_args(start_role="gamma"),
@@ -464,7 +473,9 @@ def test_single_role_environment_can_publish_human_request(
         remaining_moves=1,
         recorder=recorder,
     )
-    monkeypatch.setattr(game_manager_factory_module, "make_environment", lambda **_: environment)
+    monkeypatch.setattr(
+        game_manager_factory_module, "make_environment", lambda **_: environment
+    )
 
     display_queue: queue.Queue[Any] = queue.Queue()
     session = make_game_manager_factory(display_queue=display_queue).create(
@@ -500,7 +511,9 @@ def test_controller_rejects_wrong_role_response_and_advances_by_state_turn(
         remaining_moves=3,
         recorder=recorder,
     )
-    monkeypatch.setattr(game_manager_factory_module, "make_environment", lambda **_: environment)
+    monkeypatch.setattr(
+        game_manager_factory_module, "make_environment", lambda **_: environment
+    )
 
     session = make_game_manager_factory(display_queue=queue.Queue()).create(
         args_game_manager=make_game_args(start_role="alpha"),

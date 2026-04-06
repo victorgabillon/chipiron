@@ -81,4 +81,6 @@ def make_two_role_canary_game(*, total_steps: int = 4) -> RoleCycleCanaryGame:
 
 def make_three_role_canary_game(*, total_steps: int = 4) -> RoleCycleCanaryGame:
     """Build the three-role cyclic deterministic canary game."""
-    return RoleCycleCanaryGame(roles=("alpha", "beta", "gamma"), total_steps=total_steps)
+    return RoleCycleCanaryGame(
+        roles=("alpha", "beta", "gamma"), total_steps=total_steps
+    )

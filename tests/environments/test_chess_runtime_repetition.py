@@ -157,7 +157,10 @@ def test_runtime_repetition_sequence_keeps_full_gui_history_and_draws(
         range(1, len(REPETITION_SEQUENCE) + 1)
     )
     assert gui_histories[-1] == REPETITION_SEQUENCE
-    assert tuple(str(move) for move in game_manager.game.action_history) == REPETITION_SEQUENCE
+    assert (
+        tuple(str(move) for move in game_manager.game.action_history)
+        == REPETITION_SEQUENCE
+    )
 
     final_state = game_manager.game.state
     final_outcome = game_manager.rules.outcome(final_state)

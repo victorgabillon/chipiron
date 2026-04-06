@@ -12,7 +12,9 @@ from chipiron.games.domain.match.match_results import MatchResults
 from chipiron.utils.dataclass import custom_asdict_factory
 
 
-def test_match_results_keep_two_player_compatibility_while_aggregating_by_participant() -> None:
+def test_match_results_keep_two_player_compatibility_while_aggregating_by_participant() -> (
+    None
+):
     """Two-player match summaries should be expressed through participant ordering only."""
     results = MatchResults(participant_ids=("player-one", "player-two"))
 

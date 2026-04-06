@@ -51,7 +51,9 @@ def build_solo_plan(schedule: SoloMatchSchedule) -> ValidatedMatchPlan:
     )
 
 
-def test_generate_game_args_assigns_first_and_second_roles_from_neutral_schedule() -> None:
+def test_generate_game_args_assigns_first_and_second_roles_from_neutral_schedule() -> (
+    None
+):
     """Freeze current 2-role scheduling using ordered environment roles."""
     two_role_schedule = TwoRoleMatchSchedule(
         number_of_games_player_one_on_first_role=1,
@@ -178,7 +180,9 @@ def test_solo_match_schedule_reports_total_games() -> None:
     assert SoloMatchSchedule(number_of_games=3).total_games == 3
 
 
-def test_build_validated_match_plan_rejects_two_role_schedule_for_solo_topology() -> None:
+def test_build_validated_match_plan_rejects_two_role_schedule_for_solo_topology() -> (
+    None
+):
     """A solo environment should fail at validated-plan assembly time."""
     with pytest.raises(SoloTopologyRequiresSoloScheduleError):
         build_validated_match_plan(
@@ -191,7 +195,9 @@ def test_build_validated_match_plan_rejects_two_role_schedule_for_solo_topology(
         )
 
 
-def test_build_validated_match_plan_rejects_solo_schedule_for_two_role_topology() -> None:
+def test_build_validated_match_plan_rejects_solo_schedule_for_two_role_topology() -> (
+    None
+):
     """A 2-role environment should fail at validated-plan assembly time."""
     with pytest.raises(TwoRoleTopologyRequiresTwoRoleScheduleError):
         build_validated_match_plan(
@@ -202,7 +208,7 @@ def test_build_validated_match_plan_rejects_solo_schedule_for_two_role_topology(
 
 
 def test_build_validated_match_plan_carries_ready_for_scheduler_data() -> None:
-    """Validated plans should preserve the role order contract for scheduling."""
+    """Validated plans should expose the final scheduler-facing contract."""
     plan = build_validated_match_plan(
         participant_ids=("player-one", "player-two"),
         environment_roles=(Color.WHITE, Color.BLACK),
@@ -220,8 +226,6 @@ def test_build_validated_match_plan_carries_ready_for_scheduler_data() -> None:
     assert plan.requires_second_participant is True
     assert plan.first_role is Color.WHITE
     assert plan.second_role is Color.BLACK
-    assert plan.participant_indexes_for_roles(0) == (0, 1)
-    assert plan.participant_indexes_for_roles(1) == (1, 0)
     assert plan.role_participant_indexes(0) == ((Color.WHITE, 0), (Color.BLACK, 1))
     assert plan.role_participant_indexes(1) == ((Color.WHITE, 1), (Color.BLACK, 0))
     assert plan.total_games == 3
@@ -237,7 +241,6 @@ def test_build_validated_match_plan_exposes_solo_helpers() -> None:
     assert plan.is_solo is True
     assert plan.requires_second_participant is False
     assert plan.solo_role is SOLO
-    assert plan.participant_indexes_for_roles(0) == (0,)
     assert plan.role_participant_indexes(0) == ((SOLO, 0),)
     assert plan.total_games == 2
 

@@ -23,7 +23,9 @@ class GamePlayer[StateSnapT, RuntimeStateT]:
     _player: Player[StateSnapT, RuntimeStateT]
     role: GameRole
 
-    def __init__(self, player: Player[StateSnapT, RuntimeStateT], role: GameRole) -> None:
+    def __init__(
+        self, player: Player[StateSnapT, RuntimeStateT], role: GameRole
+    ) -> None:
         """Initialize the instance."""
         self.role = role
         self._player = player

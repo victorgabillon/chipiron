@@ -8,12 +8,10 @@ from .models import ArgsChosenByUser
 
 def apply_game_kind_defaults(args: ArgsChosenByUser) -> None:
     """Apply game-kind defaults when switching game kind in the launcher."""
-    if args.game_kind is GameKind.CHECKERS:
-        args.player_type_white = PlayerConfigTag.GUI_HUMAN
-        args.strength_white = None
-        args.player_type_black = PlayerConfigTag.GUI_HUMAN
-        args.strength_black = None
-    elif args.game_kind is GameKind.INTEGER_REDUCTION:
+    if (
+        args.game_kind is GameKind.CHECKERS
+        or args.game_kind is GameKind.INTEGER_REDUCTION
+    ):
         args.player_type_white = PlayerConfigTag.GUI_HUMAN
         args.strength_white = None
         args.player_type_black = PlayerConfigTag.GUI_HUMAN

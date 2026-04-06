@@ -1,7 +1,7 @@
 """Integer reduction SVG adapter for the generic GUI."""
 
 from dataclasses import dataclass
-from typing import Any, cast
+from typing import Any
 
 from chipiron.displays.svg_adapter_errors import InvalidSvgAdapterPayloadTypeError
 from chipiron.displays.svg_adapter_protocol import (
@@ -27,7 +27,9 @@ class _ActionButton:
 
     def contains(self, *, x: int, y: int) -> bool:
         """Return whether the given click falls inside the button."""
-        return self.x <= x <= self.x + self.width and self.y <= y <= self.y + self.height
+        return (
+            self.x <= x <= self.x + self.width and self.y <= y <= self.y + self.height
+        )
 
 
 @dataclass
@@ -66,7 +68,7 @@ class IntegerReductionSvgAdapter(SvgGameAdapter):
                 actual_value=None,
             )
 
-        payload = cast("IntegerReductionDisplayPayload", self._payload)
+        payload = self._payload
         width = size
         height = size
         body_top = margin + 50
@@ -101,14 +103,14 @@ class IntegerReductionSvgAdapter(SvgGameAdapter):
             parts.append(
                 f'<text x="50%" y="{body_top + 120}" text-anchor="middle" '
                 'font-size="28" font-family="sans-serif" fill="#065f46">'
-                'Reached 1'
+                "Reached 1"
                 "</text>"
             )
         else:
             parts.append(
                 f'<text x="50%" y="{body_top + 70}" text-anchor="middle" '
                 'font-size="22" font-family="sans-serif" fill="#475569">'
-                'Choose a reduction'
+                "Choose a reduction"
                 "</text>"
             )
             for button in buttons:

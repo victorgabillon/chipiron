@@ -32,9 +32,7 @@ class IntegerReductionRules(GameRules[IntegerReductionState]):
             )
         return None
 
-    def pretty_result(
-        self, state: IntegerReductionState, outcome: GameOutcome
-    ) -> str:
+    def pretty_result(self, state: IntegerReductionState, outcome: GameOutcome) -> str:
         """Return a human-friendly game result string."""
         del state
         result = "success" if outcome.kind is OutcomeKind.WIN else outcome.kind.value

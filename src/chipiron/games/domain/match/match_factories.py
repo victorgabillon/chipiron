@@ -1,4 +1,4 @@
-"""Document the module contains functions for creating match managers in the Chipiron game framework."""
+"""Assemble match managers from configured participants and validated plans."""
 
 import multiprocessing
 import uuid
@@ -54,7 +54,7 @@ def _participant_ids_from_inputs(
     args_player_one: players.PlayerArgs,
     args_player_two: players.PlayerArgs | None,
 ) -> tuple[str, ...]:
-    """Build the ordered participant id tuple from configured participants."""
+    """Build the ordered participant identifiers from configured inputs."""
     if args_player_two is None:
         return (args_player_one.name,)
     return (args_player_one.name, args_player_two.name)
@@ -71,7 +71,7 @@ def create_match_manager(
     output_folder_path: MyPath | None = None,
     gui: bool = False,
 ) -> MatchManager:
-    """Create a match manager for running matches between configured participants.
+    """Create a match manager from configured participants and a validated plan.
 
     Topology and schedule validation are owned by validated match-plan assembly
     at this boundary. Downstream factories consume the resulting plan directly.
@@ -79,8 +79,8 @@ def create_match_manager(
     Args:
         implementation_args: (ImplementationArgs) the implementation args
         args_match (MatchSettingsArgs): The match settings arguments.
-        args_player_one (players.PlayerArgs): The arguments for player one.
-        args_player_two (players.PlayerArgs | None): The arguments for player two when applicable.
+        args_player_one (players.PlayerArgs): The first configured participant.
+        args_player_two (players.PlayerArgs | None): The optional second configured participant.
         args_game (GameArgs): The game arguments.
         seed (int | None, optional): The seed for random number generation. Defaults to None.
         output_folder_path (path | None, optional): The output folder path. Defaults to None.

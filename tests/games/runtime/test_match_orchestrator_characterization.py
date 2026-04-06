@@ -14,7 +14,11 @@ from test_support.runtime_fixtures import (
 
 from valanga import Color
 
-from chipiron.displays.gui_protocol import UpdGameStatus, UpdNeedHumanAction, UpdNoHumanActionPending
+from chipiron.displays.gui_protocol import (
+    UpdGameStatus,
+    UpdNeedHumanAction,
+    UpdNoHumanActionPending,
+)
 from chipiron.games.domain.game.game_playing_status import PlayingStatus
 
 

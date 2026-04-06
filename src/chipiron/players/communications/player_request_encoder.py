@@ -8,7 +8,6 @@ from valanga import Color, SoloRole
 from valanga.game import Seed
 
 from chipiron.displays.gui_protocol import Scope
-from chipiron.environments.integer_reduction.types import IntegerReductionState
 from chipiron.environments.types import GameKind
 from chipiron.players.communications.player_message import (
     PlayerRequest,

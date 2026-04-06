@@ -1,11 +1,4 @@
-"""Module to create a MatchResults object.
-
-This module provides a MatchResultsFactory class that is responsible for creating MatchResults objects.
-It also provides a way to subscribe to the MatchResults object and receive updates.
-
-Classes:
-- MatchResultsFactory: A factory class to create MatchResults objects and manage subscribers.
-"""
+"""Create match-results objects from validated match plans."""
 
 import queue
 
@@ -18,13 +11,7 @@ from chipiron.games.domain.match.observable_match_result import ObservableMatchR
 
 
 class MatchResultsFactory:
-    """A factory class for creating MatchResults objects.
-
-    This class provides methods to create MatchResults objects and subscribe
-    GUI listeners to receive match-result updates for the configured
-    participants.
-
-    """
+    """Create match-results objects for one validated match plan."""
 
     match_plan: ValidatedMatchPlan
     subscriber_queues: list[queue.Queue[GuiUpdate]]
@@ -33,7 +20,8 @@ class MatchResultsFactory:
         """Initialize the MatchResultsFactory.
 
         Args:
-            match_plan (ValidatedMatchPlan): The validated match assembly plan.
+            match_plan (ValidatedMatchPlan): The validated plan whose
+                participants and schedule this factory reports on.
 
         """
         self.match_plan = match_plan
@@ -45,7 +33,7 @@ class MatchResultsFactory:
         return self.match_plan.participant_ids
 
     def create(self) -> IMatchResults:
-        """Create a MatchResults object.
+        """Create a match-results object for the validated plan.
 
         Returns:
             IMatchResults: The created MatchResults object.

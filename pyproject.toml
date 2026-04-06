@@ -111,7 +111,7 @@ exclude = [
 
 
 [tool.pytest.ini_options]
-addopts = "--cov=chipiron"
+addopts = "--cov=chipiron --cov-config=.coveragerc --cov-report=term-missing"
 testpaths = ["tests"]
 norecursedirs = ["src"]
 markers = [

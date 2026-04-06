@@ -6,6 +6,8 @@ from valanga import Color
 
 from atomheart.games.checkers.state import CheckersState
 from atomheart.games.integer_reduction.state import IntegerReductionState
+
+
 def test_local_atomheart_contains_both_turnless_and_turn_based_states() -> None:
     """Make the current single-player versus two-player state mismatch explicit."""
     solo_state = IntegerReductionState(3)

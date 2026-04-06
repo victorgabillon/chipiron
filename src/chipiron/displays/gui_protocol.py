@@ -176,6 +176,7 @@ type UpdatePayload = (
     | UpdNoHumanActionPending
 )
 
+
 @dataclass(frozen=True, slots=True)
 class GuiUpdate:
     """GUI update envelope with schema and scope metadata."""

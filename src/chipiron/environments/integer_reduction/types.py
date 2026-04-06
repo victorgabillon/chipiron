@@ -91,7 +91,9 @@ class IntegerReductionDynamics(valanga.Dynamics[IntegerReductionState]):
             over_event=transition.over_event,
         )
 
-    def action_name(self, state: IntegerReductionState, action: valanga.BranchKey) -> str:
+    def action_name(
+        self, state: IntegerReductionState, action: valanga.BranchKey
+    ) -> str:
         """Return the canonical string name for an action key."""
         return self.inner.action_name(state.to_atomheart_state(), action)
 

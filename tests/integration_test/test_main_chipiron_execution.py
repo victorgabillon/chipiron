@@ -35,6 +35,9 @@ def run_with_live_output(cmd, env):
 
 def test_main_chipiron_one_match_executes() -> None:
     """Test main chipiron one match executes."""
+    # NOTE:
+    # This test runs the full application via subprocess.
+    # Coverage is collected through `.coveragerc` subprocess support.
     cmd = [
         sys.executable,
         SCRIPT_PATH,

@@ -384,8 +384,8 @@ class ObservableGame[StateT: AnyTurnState = AnyTurnState]:
         # current-state projection and leave chronological action history to the
         # shared Game object that owns it for every environment.
         if isinstance(payload, UpdStateGeneric) and (
-            not payload.action_name_history or list(payload.action_name_history)
-            != list(self.game.action_history)
+            not payload.action_name_history
+            or list(payload.action_name_history) != list(self.game.action_history)
         ):
             payload = replace(
                 payload,

@@ -213,6 +213,24 @@ or
 pytest
 ```
 
+### Coverage for integration tests
+
+Some integration tests spawn subprocesses, including full Chipiron runs. To
+ensure coverage is collected from those processes, this repo uses:
+
+- `.coveragerc` with `patch = subprocess`
+
+Run tests with:
+
+```bash
+pytest --cov=chipiron --cov-config=.coveragerc --cov-report=term-missing
+```
+
+If coverage appears empty, ensure:
+
+- tests are not bypassing Python execution
+- subprocesses are standard Python processes
+
 ### Integration Testing
 
 For complete end-to-end validation, use the integration test scripts that test the entire installation process in a clean environment:
@@ -278,4 +296,3 @@ This project is licensed under the GPL-3.0 License - see the [LICENSE](LICENSE) 
 ## Contact
 
 For questions or support, please open an [issue](https://github.com/victorgabillon/chipiron/issues).
-

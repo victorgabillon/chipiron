@@ -18,9 +18,10 @@ from chipiron.environments.types import GameKind
 from chipiron.players.boardevaluators.master_board_evaluator_args import (
     MasterBoardEvaluatorArgs,
 )
-from chipiron.players.factory_pipeline import create_player_with_pipeline
+from chipiron.players.factory_pipeline import (
+    create_player_with_standard_adapter_pipeline,
+)
 from chipiron.players.game_player import GamePlayer
-from chipiron.players.move_selector import factory as move_selector_factory
 from chipiron.players.observer_wiring import ObserverWiring
 from chipiron.players.player_args import PlayerFactoryArgs
 
@@ -66,7 +67,7 @@ def build_integer_reduction_game_player(
         del terminal_oracle
         raise UnsupportedIntegerReductionTreeSelectorError
 
-    player = create_player_with_pipeline(
+    player = create_player_with_standard_adapter_pipeline(
         name=player_args.name,
         main_selector_args=player_args.main_move_selector,
         state_type=IntegerReductionState,
@@ -74,20 +75,13 @@ def build_integer_reduction_game_player(
         value_oracle=None,
         terminal_oracle=None,
         master_evaluator_from_args=_unsupported_tree_selector,
-        adapter_builder=lambda selector, _policy_oracle: IntegerReductionAdapter(
+        game_kind=GameKind.INTEGER_REDUCTION,
+        random_generator=random_generator,
+        runtime_dynamics=dynamics,
+        adapter_factory=lambda selector: IntegerReductionAdapter(
             dynamics=dynamics,
             main_move_selector=selector,
         ),
-        create_non_tree_selector=lambda selector_args, dyn: (
-            move_selector_factory.create_main_move_selector(
-                selector_args,
-                game_kind=GameKind.INTEGER_REDUCTION,
-                dynamics=dyn,
-                random_generator=random_generator,
-            )
-        ),
-        random_generator=random_generator,
-        runtime_dynamics=dynamics,
         implementation_args=None,
     )
 
