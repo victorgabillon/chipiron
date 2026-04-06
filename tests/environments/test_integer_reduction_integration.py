@@ -56,6 +56,9 @@ from chipiron.games.domain.match.match_factories import (
 from chipiron.games.domain.match.match_manager import MatchManager
 from chipiron.games.domain.match.match_results import MatchResults
 from chipiron.games.domain.match.match_results_factory import MatchResultsFactory
+from chipiron.games.domain.match.match_role_schedule import (
+    build_two_role_match_schedule_from_legacy_settings,
+)
 from chipiron.games.domain.match.match_settings_args import MatchSettingsArgs
 from chipiron.players import PlayerArgs, PlayerFactoryArgs
 from chipiron.players.boardevaluators.all_board_evaluator_args import (
@@ -206,6 +209,21 @@ def test_integer_reduction_environment_declares_solo_role_and_readable_payloads(
     assert click.action_name == "dec1"
 
 
+def test_integer_reduction_legacy_match_counts_still_yield_one_scheduled_game() -> None:
+    """Legacy solo match counts should still describe one scheduled game."""
+    legacy_settings = MatchSettingsArgs(
+        number_of_games_player_one_white=1,
+        number_of_games_player_one_black=0,
+        game_args=make_game_args(value=8),
+    )
+
+    translated_schedule = build_two_role_match_schedule_from_legacy_settings(
+        legacy_settings
+    )
+
+    assert translated_schedule.total_games == 1
+
+
 def test_integer_reduction_human_session_emits_need_action_and_advances_state() -> None:
     """The solo human role should get a standard need-action request and advance cleanly."""
     gui_queue: queue.Queue[GuiUpdate] = queue.Queue()
@@ -307,16 +325,12 @@ def test_integer_reduction_match_manager_plays_one_solo_match() -> None:
         participant_ids=("SoloRandom",),
         game_manager_factory=make_game_manager_factory(),
         game_args_factory=GameArgsFactory(
-            args_match=MatchSettingsArgs(
-                number_of_games_player_one_white=1,
-                number_of_games_player_one_black=0,
-                game_args=game_args,
-            ),
             args_player_one=player_args,
             args_player_two=None,
             seed_=29,
             args_game=game_args,
             scheduled_roles=(SOLO,),
+            scheduled_game_count=1,
         ),
         match_results_factory=MatchResultsFactory(participant_ids=("SoloRandom",)),
         output_folder_path=None,

@@ -10,10 +10,10 @@ from chipiron.games.domain.game.game_tag import GameConfigTag
 class MatchSettingsArgs:
     """Dataclass to store match settings arguments.
 
-    Args:
-        number_of_games_player_one_white (int): The number of games player one plays as white.
-        number_of_games_player_one_black (int): The number of games player one plays as black.
-        game_setting_file (path): The file path to the game setting file.
+    The ``number_of_games_player_one_white`` and
+    ``number_of_games_player_one_black`` fields are legacy config-facing names.
+    The scheduler core now translates them once into neutral first-role /
+    second-role quotas based on the ordered environment roles.
 
     """
 

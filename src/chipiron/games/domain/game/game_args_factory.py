@@ -1,20 +1,13 @@
-"""Module for the GameArgsFactory class.
-
-This module defines the GameArgsFactory class, which is responsible for creating game arguments and managing game settings.
-"""
-
-import typing
+"""Create per-game participant assignments from validated role scheduling."""
 
 from valanga.game import Seed
 
 from chipiron import players
 from chipiron.core.roles import GameRole
+from chipiron.games.domain.match.match_role_schedule import TwoRoleMatchSchedule
 from chipiron.utils.small_tools import unique_int_from_list
 
 from .game_args import GameArgs
-
-if typing.TYPE_CHECKING:
-    from chipiron.games.domain.match.match_settings_args import MatchSettingsArgs
 
 
 class UnsupportedSchedulingTopologyError(ValueError):
@@ -28,37 +21,58 @@ class UnsupportedSchedulingTopologyError(ValueError):
         )
 
 
+class MissingTwoRoleScheduleError(ValueError):
+    """Raised when 2-role scheduling is requested without neutral quotas."""
+
+    def __init__(self, *, scheduled_roles: tuple[GameRole, ...]) -> None:
+        """Initialize the error with the affected role ordering."""
+        super().__init__(
+            "GameArgsFactory requires a TwoRoleMatchSchedule for 2-role "
+            f"environments, got scheduled_roles={scheduled_roles!r}."
+        )
+
+
+class UnexpectedTwoRoleScheduleError(ValueError):
+    """Raised when a 2-role schedule is provided for a non-2-role topology."""
+
+    def __init__(self, *, scheduled_roles: tuple[GameRole, ...]) -> None:
+        """Initialize the error with the unexpected role ordering."""
+        super().__init__(
+            "TwoRoleMatchSchedule can only be used with 2-role environments, "
+            f"got scheduled_roles={scheduled_roles!r}."
+        )
+
+
 class GameArgsFactory:
-    """The GameArgsFactory creates the players and decides the rules.
+    """Create role-keyed participant assignments for each scheduled game."""
 
-    So far quite simple
-    This class is supposed to be dependent on Match-related classes (contrarily to the GameArgsFactory)
-    """
-
-    args_match: "MatchSettingsArgs"
     seed_: int | None
     args_player_one: players.PlayerArgs
     args_player_two: players.PlayerArgs | None
     args_game: GameArgs
     scheduled_roles: tuple[GameRole, ...]
+    two_role_schedule: TwoRoleMatchSchedule | None
+    scheduled_game_count: int
     game_number: int
 
     def __init__(
         self,
-        args_match: "MatchSettingsArgs",
         args_player_one: players.PlayerArgs,
         args_player_two: players.PlayerArgs | None,
         seed_: int | None,
         args_game: GameArgs,
         scheduled_roles: tuple[GameRole, ...],
+        scheduled_game_count: int,
+        two_role_schedule: TwoRoleMatchSchedule | None = None,
     ) -> None:
         """Initialize the instance."""
-        self.args_match = args_match
         self.seed_ = seed_
         self.args_player_one = args_player_one
         self.args_player_two = args_player_two
         self.args_game = args_game
         self.scheduled_roles = scheduled_roles
+        self.two_role_schedule = two_role_schedule
+        self.scheduled_game_count = scheduled_game_count
         self.game_number = 0
 
     def generate_game_args(
@@ -67,8 +81,8 @@ class GameArgsFactory:
         """Generate game arguments for a specific game number.
 
         The returned mapping is role-keyed. Scheduling is driven by the validated
-        environment role topology: one real role for solo games, or the current
-        first-role/second-role alternation for 2-role games.
+        environment role topology: one real role for solo games, or a neutral
+        first-role/second-role schedule for 2-role games.
 
         Args:
             game_number (int): The number of the game.
@@ -86,6 +100,10 @@ class GameArgsFactory:
         )
 
         if len(self.scheduled_roles) == 1:
+            if self.two_role_schedule is not None:
+                raise UnexpectedTwoRoleScheduleError(
+                    scheduled_roles=self.scheduled_roles
+                )
             self.game_number += 1
             return (
                 {self.scheduled_roles[0]: player_one_factory_args},
@@ -97,6 +115,8 @@ class GameArgsFactory:
             raise UnsupportedSchedulingTopologyError(
                 scheduled_roles=self.scheduled_roles
             )
+        if self.two_role_schedule is None:
+            raise MissingTwoRoleScheduleError(scheduled_roles=self.scheduled_roles)
 
         assert self.args_player_two is not None
         player_two_factory_args = players.PlayerFactoryArgs(
@@ -105,7 +125,10 @@ class GameArgsFactory:
         first_role, second_role = self.scheduled_roles
 
         participant_assignment_by_role: dict[GameRole, players.PlayerFactoryArgs]
-        if game_number < self.args_match.number_of_games_player_one_white:
+        if (
+            game_number
+            < self.two_role_schedule.number_of_games_player_one_on_first_role
+        ):
             participant_assignment_by_role = {
                 first_role: player_one_factory_args,
                 second_role: player_two_factory_args,
@@ -126,8 +149,4 @@ class GameArgsFactory:
             bool: True if the match is finished, False otherwise.
 
         """
-        return (
-            self.game_number
-            >= self.args_match.number_of_games_player_one_white
-            + self.args_match.number_of_games_player_one_black
-        )
+        return self.game_number >= self.scheduled_game_count
