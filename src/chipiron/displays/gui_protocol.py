@@ -158,20 +158,6 @@ class UpdMatchResults:
     games_played: int
     match_finished: bool
 
-    @property
-    def wins_white(self) -> int:
-        """Backward-compatible score accessor for the first participant."""
-        if not self.participant_stats:
-            return 0
-        return self.participant_stats[0].wins
-
-    @property
-    def wins_black(self) -> int:
-        """Backward-compatible score accessor for the second participant."""
-        if len(self.participant_stats) < 2:
-            return 0
-        return self.participant_stats[1].wins
-
 
 @dataclass(frozen=True, slots=True)
 class UpdNeedHumanAction:

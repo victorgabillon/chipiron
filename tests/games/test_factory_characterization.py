@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 from valanga import Color
 
-from chipiron.games.domain.game.final_game_result import FinalGameResult
+from chipiron.games.domain.game.final_game_result import GameReport, RoleOutcome
 from chipiron.games.domain.game.game_args_factory import GameArgsFactory
 from chipiron.games.domain.match.match_results import MatchResults
 from chipiron.players import PlayerArgs
@@ -75,19 +75,20 @@ def test_generate_game_args_merges_seed_and_tracks_match_completion() -> None:
     assert factory.is_match_finished() is True
 
 
-def test_match_results_counts_wins_by_player_identity_given_the_white_player() -> None:
-    """Freeze the current white-player-based accounting in MatchResults."""
-    results = MatchResults(
-        player_one_name_id="player-one",
-        player_two_name_id="player-two",
-    )
+def test_match_results_count_wins_by_participant_identity() -> None:
+    """MatchResults should aggregate participant wins without color-specific inputs."""
+    results = MatchResults(participant_ids=("player-one", "player-two"))
 
     results.add_result_one_game(
-        white_player_name_id="player-two",
-        game_result=FinalGameResult.WIN_FOR_BLACK,
+        game_report=GameReport(
+            action_history=[],
+            state_tag_history=[],
+            participant_id_by_role={"White": "player-two", "Black": "player-one"},
+            result_by_role={"White": RoleOutcome.WIN, "Black": RoleOutcome.LOSS},
+            winner_roles=["White"],
+        )
     )
 
     simple = results.get_simple_result()
-    assert simple.player_one_wins == 1
-    assert simple.player_two_wins == 0
+    assert simple.wins_by_participant == {"player-one": 0, "player-two": 1}
     assert simple.draws == 0

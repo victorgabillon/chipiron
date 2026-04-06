@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 
 from chipiron.displays.gui_protocol import ParticipantMatchStats, UpdMatchResults
 from chipiron.displays.gui_publisher import GuiPublisher
-from chipiron.games.domain.game.final_game_result import FinalGameResult, GameReport
+from chipiron.games.domain.game.final_game_result import GameReport
 
 from .match_results import MatchResults, SimpleResults
 
@@ -48,16 +48,10 @@ class ObservableMatchResults:
     def add_result_one_game(
         self,
         *,
-        game_report: GameReport | None = None,
-        white_player_name_id: str | None = None,
-        game_result: FinalGameResult | None = None,
+        game_report: GameReport,
     ) -> None:
         """Add the result of a single game to the match results."""
-        self.match_results.add_result_one_game(
-            game_report=game_report,
-            white_player_name_id=white_player_name_id,
-            game_result=game_result,
-        )
+        self.match_results.add_result_one_game(game_report=game_report)
         self.notify_new_results()
 
     def notify_new_results(self) -> None:
@@ -98,7 +92,7 @@ class ObservableMatchResults:
         return SimpleResults(
             participant_order=self.match_results.participant_ids,
             stats_by_participant=self.match_results.stats_by_participant,
-            draws=self.match_results.get_draws(),
+            draws=self.match_results.draw_games,
             games_played=self.match_results.number_of_games,
         )
 

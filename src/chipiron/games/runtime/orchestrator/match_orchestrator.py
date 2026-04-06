@@ -113,7 +113,6 @@ class MatchOrchestrator:
 
         resolved_result = game_manager.resolved_results()
         return GameReport(
-            final_game_result=game_manager.simple_results(),
             action_history=list(game_manager.game.action_history),
             state_tag_history=game_manager.game.state_tag_history,
             participant_id_by_role=game_manager.serializable_participant_id_by_role(),

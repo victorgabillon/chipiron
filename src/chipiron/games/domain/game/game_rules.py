@@ -8,7 +8,7 @@ from valanga import Color, TurnState
 
 from chipiron.core.roles import GameRole
 
-from .final_game_result import FinalGameResult, RoleGameResult, RoleOutcome
+from .final_game_result import RoleGameResult, RoleOutcome
 
 type AnyTurnState = TurnState[Any]
 
@@ -96,25 +96,6 @@ class UnhandledOutcomeKindError(GameOutcomeError):
     def __init__(self, kind: OutcomeKind) -> None:
         """Initialize the error with the unhandled outcome kind."""
         super().__init__(f"Unhandled outcome kind: {kind}")
-
-
-def outcome_to_final_game_result(outcome: GameOutcome) -> FinalGameResult:
-    """Map a generic game outcome to the legacy FinalGameResult enum.
-
-    Unknown/aborted outcomes map to draws to preserve legacy behavior when
-    a game stops before a clean adjudication is available.
-    """
-    if outcome.kind is OutcomeKind.WIN:
-        if outcome.winner is Color.WHITE:
-            return FinalGameResult.WIN_FOR_WHITE
-        if outcome.winner is Color.BLACK:
-            return FinalGameResult.WIN_FOR_BLACK
-        raise MissingWinnerError
-    if outcome.kind is OutcomeKind.DRAW:
-        return FinalGameResult.DRAW
-    if outcome.kind in (OutcomeKind.ABORTED, OutcomeKind.UNKNOWN):
-        return FinalGameResult.DRAW
-    raise UnhandledOutcomeKindError(outcome.kind)
 
 
 def outcome_to_role_game_result(

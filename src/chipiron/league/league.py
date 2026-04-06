@@ -198,10 +198,12 @@ class League:
             self.folder_league, "logs/log_results.txt"
         )
         with open(path_logs_file, "a", encoding="utf-8") as log_file:
+            simple_results = match_report.match_results.get_simple_result()
             log_file.write(
                 f"Game #{self.games_already_played} || "
-                f"{args_player_one.name} vs {args_player_two.name}: {match_report.match_results.get_player_one_wins()}-"
-                f"{match_report.match_results.get_player_two_wins()}-{match_report.match_results.get_draws()}"
+                f"{args_player_one.name} vs {args_player_two.name}: "
+                f"{simple_results.wins_by_participant[args_player_one.name]}-"
+                f"{simple_results.wins_by_participant[args_player_two.name]}-{simple_results.draws}"
                 f" with seed {match_seed}\n"
             )
         self.players_number_of_games_played[args_player_one.name] += 1
@@ -225,40 +227,53 @@ class League:
 
         """
         # coded for one single game!!
-        player_one_name_id = match_results.player_one_name_id
-        elo_player_one: float = cast("float", self.players_elo[player_one_name_id][0])
+        first_participant_id, second_participant_id = match_results.participant_ids
+        elo_player_one: float = cast(
+            "float", self.players_elo[first_participant_id][0]
+        )
         power_player_one = 10 ** (elo_player_one / 400)
-        player_two_name_id = match_results.player_two_name_id
-        elo_player_two: float = cast("float", self.players_elo[player_two_name_id][0])
+        elo_player_two: float = cast(
+            "float", self.players_elo[second_participant_id][0]
+        )
         power_player_two = 10 ** (elo_player_two / 400)
         e_one = power_player_one / (power_player_one + power_player_two)
         e_two = power_player_two / (power_player_one + power_player_two)
 
-        perf_one = match_results.get_player_one_wins() + match_results.get_draws() / 2.0
-        perf_two = match_results.get_player_two_wins() + match_results.get_draws() / 2.0
+        simple_results = match_results.get_simple_result()
+        perf_one = (
+            simple_results.wins_by_participant[first_participant_id]
+            + simple_results.draws / 2.0
+        )
+        perf_two = (
+            simple_results.wins_by_participant[second_participant_id]
+            + simple_results.draws / 2.0
+        )
 
-        print(elo_player_one, cast("float", self.players_elo[player_one_name_id][0]))
+        print(
+            elo_player_one,
+            cast("float", self.players_elo[first_participant_id][0]),
+        )
         old_elo_player_one = elo_player_one
         old_elo_player_two = elo_player_two
         increment_one = self.k * (perf_one - e_one)
         increment_two = self.k * (perf_two - e_two)
         new_elo_one = old_elo_player_one + increment_one
         new_elo_two = old_elo_player_two + increment_two
-        self.players_elo[player_one_name_id].appendleft(new_elo_one)
-        self.players_elo[player_two_name_id].appendleft(new_elo_two)
+        self.players_elo[first_participant_id].appendleft(new_elo_one)
+        self.players_elo[second_participant_id].appendleft(new_elo_two)
 
         for player in self.players_elo:
             player = cast("str", player)
-            if player not in (player_one_name_id, player_two_name_id):
+            if player not in (first_participant_id, second_participant_id):
                 player_elo_deque = cast("deque[float]", self.players_elo[player])
                 player_elo_deque.appendleft(player_elo_deque[0])
 
         with open(path_logs_file, "a", encoding="utf-8") as log_file:
             log_file.write(
-                f"{player_one_name_id} increments its elo by {increment_one}: {old_elo_player_one} -> {new_elo_one}\n"
+                f"{first_participant_id} increments its elo by {increment_one}: {old_elo_player_one} -> {new_elo_one}\n"
             )
             log_file.write(
-                f"{player_two_name_id} increments its elo by {increment_two}: {old_elo_player_two} -> {new_elo_two}\n"
+                f"{second_participant_id} increments its elo by {increment_two}: {old_elo_player_two} -> {new_elo_two}\n"
             )
 
         self.update_elo_graph()

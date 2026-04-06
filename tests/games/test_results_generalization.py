@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import asdict
 
 from chipiron.games.domain.game.final_game_result import (
-    FinalGameResult,
     GameReport,
     RoleOutcome,
 )
@@ -14,15 +13,11 @@ from chipiron.utils.dataclass import custom_asdict_factory
 
 
 def test_match_results_keep_two_player_compatibility_while_aggregating_by_participant() -> None:
-    """Two-player match summaries should stay stable while using generic game reports."""
-    results = MatchResults(
-        player_one_name_id="player-one",
-        player_two_name_id="player-two",
-    )
+    """Two-player match summaries should be expressed through participant ordering only."""
+    results = MatchResults(participant_ids=("player-one", "player-two"))
 
     results.add_result_one_game(
         game_report=GameReport(
-            final_game_result=FinalGameResult.WIN_FOR_BLACK,
             action_history=[],
             state_tag_history=[],
             participant_id_by_role={"White": "player-two", "Black": "player-one"},
@@ -32,10 +27,9 @@ def test_match_results_keep_two_player_compatibility_while_aggregating_by_partic
     )
 
     simple = results.get_simple_result()
-    assert simple.player_one_wins == 0
-    assert simple.player_two_wins == 1
+    assert simple.participant_order == ("player-one", "player-two")
     assert simple.wins_by_participant == {"player-one": 0, "player-two": 1}
-    assert results.get_draws() == 0
+    assert simple.draws == 0
 
 
 def test_match_results_support_single_participant_games() -> None:
@@ -44,7 +38,6 @@ def test_match_results_support_single_participant_games() -> None:
 
     results.add_result_one_game(
         game_report=GameReport(
-            final_game_result=FinalGameResult.DRAW,
             action_history=[],
             state_tag_history=[],
             participant_id_by_role={"Solo": "solo-player"},
@@ -56,7 +49,6 @@ def test_match_results_support_single_participant_games() -> None:
     simple = results.get_simple_result()
     assert simple.participant_order == ("solo-player",)
     assert simple.stats_by_participant["solo-player"].wins == 1
-    assert simple.player_two_wins == 0
 
 
 def test_match_results_support_three_role_games() -> None:
@@ -65,7 +57,6 @@ def test_match_results_support_three_role_games() -> None:
 
     results.add_result_one_game(
         game_report=GameReport(
-            final_game_result=FinalGameResult.DRAW,
             action_history=[],
             state_tag_history=[],
             participant_id_by_role={
@@ -92,7 +83,6 @@ def test_match_results_support_three_role_games() -> None:
 def test_game_report_serialization_is_role_based() -> None:
     """Serialized game reports should expose role and participant mappings explicitly."""
     report = GameReport(
-        final_game_result=FinalGameResult.DRAW,
         action_history=["move-a", "move-b"],
         state_tag_history=["state-0", "state-1"],
         participant_id_by_role={"White": "alice", "Black": "bob"},
@@ -110,14 +100,10 @@ def test_game_report_serialization_is_role_based() -> None:
 
 def test_match_results_aggregate_multiple_games_per_participant() -> None:
     """Participant stats should accumulate across multiple reported games."""
-    results = MatchResults(
-        player_one_name_id="alice",
-        player_two_name_id="bob",
-    )
+    results = MatchResults(participant_ids=("alice", "bob"))
 
     results.add_result_one_game(
         game_report=GameReport(
-            final_game_result=FinalGameResult.WIN_FOR_WHITE,
             action_history=[],
             state_tag_history=[],
             participant_id_by_role={"White": "alice", "Black": "bob"},
@@ -127,7 +113,6 @@ def test_match_results_aggregate_multiple_games_per_participant() -> None:
     )
     results.add_result_one_game(
         game_report=GameReport(
-            final_game_result=FinalGameResult.DRAW,
             action_history=[],
             state_tag_history=[],
             participant_id_by_role={"White": "bob", "Black": "alice"},

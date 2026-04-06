@@ -52,8 +52,7 @@ class MatchResultsFactory:
 
         """
         match_result: MatchResults = MatchResults(
-            player_one_name_id=self.player_one_name,
-            player_two_name_id=self.player_two_name,
+            participant_ids=(self.player_one_name, self.player_two_name),
         )
         if self.subscriber_queues:
             return ObservableMatchResults(match_result)

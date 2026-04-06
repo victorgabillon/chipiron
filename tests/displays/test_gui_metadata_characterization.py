@@ -26,7 +26,6 @@ from chipiron.environments.chess.players.evaluators.boardevaluators.board_evalua
     BoardEvalTypes,
 )
 from chipiron.games.domain.game.final_game_result import (
-    FinalGameResult,
     GameReport,
     RoleOutcome,
 )
@@ -229,20 +228,16 @@ def test_player_progress_collector_observable_publishes_role_keyed_progress() ->
     )
 
 
-def test_observable_match_results_publish_participant_stats_with_legacy_aliases() -> None:
-    """Match-result payloads should be participant-based with two-player aliases intact."""
+def test_observable_match_results_publish_participant_stats_in_order() -> None:
+    """Match-result payloads should expose only ordered participant stats."""
     out, publisher = make_publisher()
     observable = ObservableMatchResults(
-        match_results=MatchResults(
-            player_one_name_id="player-one",
-            player_two_name_id="player-two",
-        ),
+        match_results=MatchResults(participant_ids=("player-one", "player-two")),
         publishers=[publisher],
     )
 
     observable.add_result_one_game(
         game_report=GameReport(
-            final_game_result=FinalGameResult.WIN_FOR_WHITE,
             action_history=[],
             state_tag_history=[],
             participant_id_by_role={"White": "player-two", "Black": "player-one"},
@@ -259,8 +254,6 @@ def test_observable_match_results_publish_participant_stats_with_legacy_aliases(
         ("player-one", 0, 1),
         ("player-two", 1, 0),
     ]
-    assert first_payload.wins_white == 0
-    assert first_payload.wins_black == 1
     assert first_payload.draws == 0
     assert first_payload.games_played == 1
     assert first_payload.match_finished is False
@@ -268,7 +261,9 @@ def test_observable_match_results_publish_participant_stats_with_legacy_aliases(
     observable.finish()
     second_payload = out.get_nowait().payload
     assert isinstance(second_payload, UpdMatchResults)
-    assert second_payload.wins_white == 0
-    assert second_payload.wins_black == 1
+    assert [participant.wins for participant in second_payload.participant_stats] == [
+        0,
+        1,
+    ]
     assert second_payload.games_played == 1
     assert second_payload.match_finished is True

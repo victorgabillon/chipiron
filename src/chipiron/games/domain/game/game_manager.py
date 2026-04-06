@@ -31,7 +31,7 @@ from chipiron.utils import MyPath
 from chipiron.utils.dataclass import custom_asdict_factory
 from chipiron.utils.logger import chipiron_logger
 
-from .final_game_result import FinalGameResult, GameReport, RoleGameResult
+from .final_game_result import GameReport, RoleGameResult
 from .game import ObservableGame, Ply
 from .game_args import GameArgs
 from .game_rules import (
@@ -449,20 +449,6 @@ class GameManager[StateT: AnyTurnState = AnyTurnState]:
         return outcome_to_role_game_result(
             outcome, roles=tuple(self.participant_id_by_role.keys())
         )
-
-    def simple_results(self) -> FinalGameResult:
-        """Determine the final result of the game based on the current state of the board.
-
-        Returns:
-            FinalGameResult: The final result of the game.
-
-        """
-        resolved_result = self.resolved_results()
-        if resolved_result.winner_roles == (Color.WHITE,):
-            return FinalGameResult.WIN_FOR_WHITE
-        if resolved_result.winner_roles == (Color.BLACK,):
-            return FinalGameResult.WIN_FOR_BLACK
-        return FinalGameResult.DRAW
 
     def serializable_participant_id_by_role(self) -> dict[str, ParticipantId]:
         """Return the current role assignment in a YAML-friendly shape."""
