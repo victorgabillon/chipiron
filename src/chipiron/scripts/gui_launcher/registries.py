@@ -8,6 +8,14 @@ from chipiron.players.player_ids import PlayerConfigTag
 from .participant_selection import ParticipantSelection
 
 
+class UnknownPlayerLabelError(ValueError):
+    """Raised when a launcher label cannot be resolved for a game."""
+
+    def __init__(self, *, game_kind: GameKind, label: str) -> None:
+        """Initialize the error with the unresolved launcher label."""
+        super().__init__(f"Unknown player label {label!r} for {game_kind.value}")
+
+
 @dataclass(frozen=True, slots=True)
 class PlayerOption:
     """Displayable player option for a given game."""
@@ -45,6 +53,11 @@ CHECKERS_PLAYER_OPTIONS: tuple[PlayerOption, ...] = (
 INTEGER_REDUCTION_PLAYER_OPTIONS: tuple[PlayerOption, ...] = (
     PlayerOption("Human Player", PlayerConfigTag.GUI_HUMAN, False),
     PlayerOption("Random", PlayerConfigTag.RANDOM, False),
+    PlayerOption(
+        "Tree (basic eval)",
+        PlayerConfigTag.INTEGER_REDUCTION_TREE_BASIC,
+        False,
+    ),
 )
 
 CHESS_STARTING_POSITIONS: dict[str, str] = {
@@ -115,7 +128,7 @@ def player_option_for_label(game_kind: GameKind, label: str) -> PlayerOption:
     for option in launcher_spec_for_game(game_kind).player_options:
         if option.label == label:
             return option
-    raise ValueError(f"Unknown player label {label!r} for {game_kind.value}")
+    raise UnknownPlayerLabelError(game_kind=game_kind, label=label)
 
 
 def player_label_for_tag(game_kind: GameKind, player_tag: PlayerConfigTag) -> str:

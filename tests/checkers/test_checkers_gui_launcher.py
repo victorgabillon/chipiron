@@ -1,6 +1,6 @@
 """Focused launcher coverage for participant-driven GUI state."""
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from chipiron.environments.types import GameKind
 from chipiron.games.domain.match.match_role_schedule import (
@@ -75,6 +75,7 @@ def test_integer_reduction_registry_and_defaults_support_solo_play() -> None:
 
     assert PlayerConfigTag.GUI_HUMAN in tags
     assert PlayerConfigTag.RANDOM in tags
+    assert PlayerConfigTag.INTEGER_REDUCTION_TREE_BASIC in tags
     assert starting_positions_for_game(GameKind.INTEGER_REDUCTION) == {
         "Small": "7",
         "Standard": "15",

@@ -47,6 +47,7 @@ class PlayerConfigTag(StrEnum):
     RANDOM = "Random"
     STOCKFISH = "Stockfish"
     CHECKERS_TREE_PIECECOUNT = "CheckersTreePieceCount"
+    INTEGER_REDUCTION_TREE_BASIC = "IntegerReductionTreeBasic"
 
     def is_human(self) -> bool:
         """Check if the player is human.
@@ -69,6 +70,8 @@ class PlayerConfigTag(StrEnum):
             subpath = "data/players/player_config/chipiron/chipiron.yaml"
         elif self is PlayerConfigTag.CHECKERS_TREE_PIECECOUNT:
             subpath = f"data/players/player_config/checkers/{self.value}.yaml"
+        elif self is PlayerConfigTag.INTEGER_REDUCTION_TREE_BASIC:
+            subpath = f"data/players/player_config/integer_reduction/{self.value}.yaml"
         elif self in {
             PlayerConfigTag.RANDOM,
             PlayerConfigTag.GUI_HUMAN,

@@ -6,7 +6,6 @@ import queue
 from dataclasses import asdict
 from typing import TYPE_CHECKING, cast
 
-import pytest
 import yaml
 from anemone import TreeAndValuePlayerArgs
 from anemone.node_selector.composed.args import ComposedNodeSelectorArgs
@@ -20,6 +19,7 @@ from anemone.progress_monitor.progress_monitor import (
 )
 from anemone.recommender_rule.recommender_rule import AlmostEqualLogistic
 from valanga import SOLO
+from valanga.evaluations import Certainty
 
 from chipiron.displays.gui_protocol import (
     GuiUpdate,
@@ -38,14 +38,17 @@ from chipiron.environments.environment import make_environment
 from chipiron.environments.integer_reduction.integer_reduction_gui_encoder import (
     IntegerReductionDisplayPayload,
 )
+from chipiron.environments.integer_reduction.players.evaluators.integer_reduction_state_evaluator import (
+    IntegerReductionStateEvaluator,
+)
 from chipiron.environments.integer_reduction.players.wiring.integer_reduction_wiring import (
     BuildIntegerReductionGamePlayerArgs,
-    UnsupportedIntegerReductionTreeSelectorError,
     build_integer_reduction_game_player,
 )
 from chipiron.environments.integer_reduction.starting_position_args import (
     IntegerReductionValueStartingPositionArgs,
 )
+from chipiron.environments.integer_reduction.types import IntegerReductionState
 from chipiron.environments.types import GameKind
 from chipiron.games.domain.game.game_args import GameArgs
 from chipiron.games.domain.game.game_args_factory import GameArgsFactory
@@ -352,21 +355,43 @@ def test_integer_reduction_match_manager_plays_one_solo_match() -> None:
     assert simple.games_played == 1
 
 
-def test_integer_reduction_tree_selector_remains_explicitly_unsupported() -> None:
-    """Tree selectors should fail clearly instead of silently taking a wrong path."""
-    with pytest.raises(UnsupportedIntegerReductionTreeSelectorError):
-        build_integer_reduction_game_player(
-            BuildIntegerReductionGamePlayerArgs(
-                player_factory_args=PlayerFactoryArgs(
-                    player_args=PlayerArgs(
-                        name="SoloTree",
-                        main_move_selector=make_tree_and_value_selector(),
-                        oracle_play=False,
-                    ),
-                    seed=5,
+def test_integer_reduction_evaluator_prefers_smaller_values_and_terminal_goal() -> None:
+    """The tree-search heuristic should reward smaller values and the terminal win most."""
+    evaluator = IntegerReductionStateEvaluator()
+
+    value_eight = evaluator.evaluate(IntegerReductionState(value=8))
+    value_two = evaluator.evaluate(IntegerReductionState(value=2))
+    value_one = evaluator.evaluate(IntegerReductionState(value=1))
+
+    assert value_two.score > value_eight.score
+    assert value_one.score > value_two.score
+    assert value_one.certainty is Certainty.TERMINAL
+
+
+def test_integer_reduction_tree_selector_builds_and_prefers_half_when_available() -> (
+    None
+):
+    """Tree selectors should build successfully and pick the better smaller successor."""
+    game_player = build_integer_reduction_game_player(
+        BuildIntegerReductionGamePlayerArgs(
+            player_factory_args=PlayerFactoryArgs(
+                player_args=PlayerArgs(
+                    name="SoloTree",
+                    main_move_selector=make_tree_and_value_selector(),
+                    oracle_play=False,
                 ),
-                player_role=SOLO,
-                implementation_args=ImplementationArgs(),
-                universal_behavior=False,
-            )
+                seed=5,
+            ),
+            player_role=SOLO,
+            implementation_args=ImplementationArgs(),
+            universal_behavior=False,
         )
+    )
+
+    recommendation = game_player.select_move_from_snapshot(
+        snapshot=8,
+        seed=0,
+        notify_percent_function=lambda _progress: None,
+    )
+
+    assert recommendation.recommended_name == "half"

@@ -6,6 +6,9 @@ from chipiron.environments.chess.players.evaluators.boardevaluators.wirings.ches
     ChessEvalWiring,
 )
 from chipiron.environments.chess.types import ChessState
+from chipiron.environments.integer_reduction.players.evaluators.wiring import (
+    IntegerReductionEvalWiring,
+)
 from chipiron.environments.integer_reduction.types import IntegerReductionState
 from chipiron.environments.types import GameKind
 from chipiron.players.boardevaluators.board_evaluator import (
@@ -43,7 +46,7 @@ def _select_eval_wiring(
         case GameKind.CHECKERS:
             return NullEvalWiring()
         case GameKind.INTEGER_REDUCTION:
-            return NullEvalWiring()
+            return IntegerReductionEvalWiring()
         case _:
             assert_never(game_kind)
 

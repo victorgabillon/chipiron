@@ -2,13 +2,16 @@
 
 import random
 from dataclasses import dataclass
-from typing import NoReturn
 
 from valanga import SoloRole
 
 from chipiron.core.oracles import TerminalOracle, ValueOracle
 from chipiron.environments.integer_reduction.players.adapters.integer_reduction_adapter import (
     IntegerReductionAdapter,
+)
+from chipiron.environments.integer_reduction.players.evaluators.integer_reduction_state_evaluator import (
+    IntegerReductionMasterEvaluator,
+    build_integer_reduction_master_evaluator,
 )
 from chipiron.environments.integer_reduction.types import (
     IntegerReductionDynamics,
@@ -24,16 +27,6 @@ from chipiron.players.factory_pipeline import (
 from chipiron.players.game_player import GamePlayer
 from chipiron.players.observer_wiring import ObserverWiring
 from chipiron.players.player_args import PlayerFactoryArgs
-
-
-class UnsupportedIntegerReductionTreeSelectorError(NotImplementedError):
-    """Raised when a tree selector is requested for integer reduction."""
-
-    def __init__(self) -> None:
-        """Initialize the unsupported-selector error."""
-        super().__init__(
-            "Tree/uniform selectors are not yet integrated for integer reduction."
-        )
 
 
 @dataclass(frozen=True)
@@ -57,15 +50,16 @@ def build_integer_reduction_game_player(
     dynamics = IntegerReductionDynamics()
     player_args = args.player_factory_args.player_args
 
-    def _unsupported_tree_selector(
+    def master_evaluator_from_args(
         evaluator_args: MasterBoardEvaluatorArgs,
         value_oracle: ValueOracle[IntegerReductionState] | None,
         terminal_oracle: TerminalOracle[IntegerReductionState, SoloRole] | None,
-    ) -> NoReturn:
-        del evaluator_args
+    ) -> IntegerReductionMasterEvaluator:
         del value_oracle
         del terminal_oracle
-        raise UnsupportedIntegerReductionTreeSelectorError
+        return build_integer_reduction_master_evaluator(
+            evaluation_scale=evaluator_args.evaluation_scale,
+        )
 
     player = create_player_with_standard_adapter_pipeline(
         name=player_args.name,
@@ -74,7 +68,7 @@ def build_integer_reduction_game_player(
         policy_oracle=None,
         value_oracle=None,
         terminal_oracle=None,
-        master_evaluator_from_args=_unsupported_tree_selector,
+        master_evaluator_from_args=master_evaluator_from_args,
         game_kind=GameKind.INTEGER_REDUCTION,
         random_generator=random_generator,
         runtime_dynamics=dynamics,
