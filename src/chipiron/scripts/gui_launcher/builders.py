@@ -101,8 +101,26 @@ def generate_inputs(
         cls=TreeBranchLimitArgs
     )
 
+    def configured_player_two_tag() -> PlayerConfigTag | None:
+        """Return the optional second participant configured by the launcher."""
+        if args_chosen_by_user.game_kind == GameKind.INTEGER_REDUCTION:
+            return None
+        return PlayerConfigTag(args_chosen_by_user.player_type_black)
+
+    def schedule_for_configured_participants(
+        player_two_tag: PlayerConfigTag | None,
+    ) -> SoloMatchSchedule | TwoRoleMatchSchedule:
+        """Choose a neutral schedule from the configured participant topology."""
+        if player_two_tag is None:
+            return SoloMatchSchedule(number_of_games=1)
+        return TwoRoleMatchSchedule(
+            number_of_games_player_one_on_first_role=1,
+            number_of_games_player_one_on_second_role=0,
+        )
+
     match args_chosen_by_user.type:
         case ScriptGUIType.PLAY_OR_WATCH_A_GAME:
+            player_two_tag = configured_player_two_tag()
             if args_chosen_by_user.game_kind == GameKind.CHESS:
                 fen = starting_positions_for_game(args_chosen_by_user.game_kind)[
                     args_chosen_by_user.starting_position_key
@@ -136,15 +154,7 @@ def generate_inputs(
                 match_args=partial_op_match_args(
                     match_setting=MatchConfigTag.DUDA,
                     match_setting_overwrite=partial_op_match_settings_args(
-                        schedule=(
-                            SoloMatchSchedule(number_of_games=1)
-                            if args_chosen_by_user.game_kind
-                            == GameKind.INTEGER_REDUCTION
-                            else TwoRoleMatchSchedule(
-                                number_of_games_player_one_on_first_role=1,
-                                number_of_games_player_one_on_second_role=0,
-                            )
-                        ),
+                        schedule=schedule_for_configured_participants(player_two_tag),
                         game_args=game_args,
                     ),
                 ),
@@ -154,11 +164,7 @@ def generate_inputs(
             gui_args.match_args.player_one = PlayerConfigTag(
                 args_chosen_by_user.player_type_white
             )
-            gui_args.match_args.player_two = (
-                None
-                if args_chosen_by_user.game_kind == GameKind.INTEGER_REDUCTION
-                else PlayerConfigTag(args_chosen_by_user.player_type_black)
-            )
+            gui_args.match_args.player_two = player_two_tag
 
             if args_chosen_by_user.game_kind == GameKind.CHESS:
                 if (

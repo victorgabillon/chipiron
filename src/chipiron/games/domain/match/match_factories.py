@@ -167,7 +167,6 @@ def create_match_manager(
     )
 
     return MatchManager(
-        participant_ids=match_plan.participant_ids,
         game_manager_factory=game_manager_factory,
         game_args_factory=game_args_factory,
         match_results_factory=match_results_factory,

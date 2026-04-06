@@ -214,8 +214,29 @@ def test_build_validated_match_plan_carries_ready_for_scheduler_data() -> None:
 
     assert plan.participant_ids == ("player-one", "player-two")
     assert plan.scheduled_roles == (Color.WHITE, Color.BLACK)
+    assert plan.participant_count == 2
+    assert plan.role_count == 2
     assert plan.is_two_role is True
+    assert plan.requires_second_participant is True
+    assert plan.first_role is Color.WHITE
+    assert plan.second_role is Color.BLACK
+    assert plan.participant_indexes_for_roles(0) == (0, 1)
+    assert plan.participant_indexes_for_roles(1) == (1, 0)
     assert plan.total_games == 3
+
+
+def test_build_validated_match_plan_exposes_solo_helpers() -> None:
+    """Solo validated plans should expose one role and one participant cleanly."""
+    plan = build_solo_plan(SoloMatchSchedule(number_of_games=2))
+
+    assert plan.participant_ids == ("solo-player",)
+    assert plan.participant_count == 1
+    assert plan.role_count == 1
+    assert plan.is_solo is True
+    assert plan.requires_second_participant is False
+    assert plan.solo_role is SOLO
+    assert plan.participant_indexes_for_roles(0) == (0,)
+    assert plan.total_games == 2
 
 
 def test_build_validated_match_plan_rejects_role_participant_mismatch() -> None:

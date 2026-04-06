@@ -132,6 +132,16 @@ class ValidatedMatchPlan:
     schedule: MatchSchedule
 
     @property
+    def participant_count(self) -> int:
+        """Return the validated number of configured participants."""
+        return len(self.participant_ids)
+
+    @property
+    def role_count(self) -> int:
+        """Return the validated number of scheduled roles."""
+        return len(self.scheduled_roles)
+
+    @property
     def total_games(self) -> int:
         """Return the validated total number of games for the match."""
         return self.schedule.total_games
@@ -145,6 +155,49 @@ class ValidatedMatchPlan:
     def is_two_role(self) -> bool:
         """Whether the validated plan describes a supported 2-role match."""
         return isinstance(self.schedule, TwoRoleMatchSchedule)
+
+    @property
+    def requires_second_participant(self) -> bool:
+        """Whether match execution needs a second configured participant."""
+        return self.participant_count == 2
+
+    @property
+    def solo_role(self) -> GameRole:
+        """Return the only role for a supported solo plan."""
+        assert self.is_solo
+        return self.scheduled_roles[0]
+
+    @property
+    def first_role(self) -> GameRole:
+        """Return the first declared role for a supported 2-role plan."""
+        assert self.is_two_role
+        return self.scheduled_roles[0]
+
+    @property
+    def second_role(self) -> GameRole:
+        """Return the second declared role for a supported 2-role plan."""
+        assert self.is_two_role
+        return self.scheduled_roles[1]
+
+    @property
+    def two_role_schedule(self) -> TwoRoleMatchSchedule:
+        """Return the validated 2-role schedule for a supported 2-role plan."""
+        assert isinstance(self.schedule, TwoRoleMatchSchedule)
+        return self.schedule
+
+    def participant_indexes_for_roles(self, game_number: int) -> tuple[int, ...]:
+        """Return participant indexes aligned with ``scheduled_roles`` for one game.
+
+        This is the trusted scheduling contract for current supported topologies:
+        ``(0,)`` for solo plans, or ``(0, 1)`` / ``(1, 0)`` for two-role plans.
+        """
+        if self.is_solo:
+            return (0,)
+
+        two_role_schedule = self.two_role_schedule
+        if game_number < two_role_schedule.number_of_games_player_one_on_first_role:
+            return (0, 1)
+        return (1, 0)
 
 
 def _validate_supported_match_topology(

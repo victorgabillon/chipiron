@@ -19,12 +19,9 @@ from chipiron.games.domain.match.observable_match_result import ObservableMatchR
 class MatchResultsFactory:
     """A factory class for creating MatchResults objects.
 
-    This class provides methods to create MatchResults objects and subscribe subscribers to receive match results.
-
-    Attributes:
-        player_one_name (str): The name of player one.
-        player_two_name (str): The name of player two.
-        subscriber_queues (list[queue.Queue[GuiUpdate]]): A list of GUI queues to receive match results.
+    This class provides methods to create MatchResults objects and subscribe
+    GUI listeners to receive match-result updates for the configured
+    participants.
 
     """
 

@@ -36,8 +36,6 @@ class MatchManager:
     """Object in charge of playing one match.
 
     Args:
-        player_one_id (str): The ID of player one.
-        player_two_id (str): The ID of player two.
         game_manager_factory (GameManagerFactory): The factory for creating game managers.
         game_args_factory (GameArgsFactory): The factory for creating game arguments.
         match_results_factory (MatchResultsFactory): The factory for creating match results.
@@ -47,7 +45,6 @@ class MatchManager:
 
     def __init__(
         self,
-        participant_ids: tuple[str, ...],
         game_manager_factory: GameManagerFactory,
         game_args_factory: GameArgsFactory,
         match_results_factory: MatchResultsFactory,
@@ -56,14 +53,13 @@ class MatchManager:
         """Initialize a MatchManager object.
 
         Args:
-            participant_ids (tuple[str, ...]): The ordered participant identifiers.
             game_manager_factory (GameManagerFactory): The factory object for creating game managers.
             game_args_factory (GameArgsFactory): The factory object for creating game arguments.
             match_results_factory (MatchResultsFactory): The factory object for creating match results.
             output_folder_path (path | None, optional): The path to the output folder. Defaults to None.
 
         """
-        self.participant_ids = participant_ids
+        self.participant_ids = game_args_factory.participant_ids
         self.game_manager_factory = game_manager_factory
         self.output_folder_path = output_folder_path
         self.match_results_factory = match_results_factory
@@ -73,17 +69,7 @@ class MatchManager:
         self.print_info()
 
     def print_info(self) -> None:
-        """Print the information about the players in the match.
-
-        This method prints the IDs of player one and player two.
-
-        Args:
-            None
-
-        Returns:
-            None
-
-        """
+        """Print the ordered participants configured for the validated match."""
         for index, participant_id in enumerate(self.participant_ids, start=1):
             chipiron_logger.info("participant %s is %s", index, participant_id)
 

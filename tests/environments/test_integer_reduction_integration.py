@@ -312,7 +312,6 @@ def test_integer_reduction_match_manager_plays_one_solo_match() -> None:
     player_args = make_player_args(name="SoloRandom", human=False)
     game_args = make_game_args(value=9)
     match_manager = MatchManager(
-        participant_ids=("SoloRandom",),
         game_manager_factory=make_game_manager_factory(),
         game_args_factory=GameArgsFactory(
             args_player_one=player_args,
