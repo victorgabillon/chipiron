@@ -14,6 +14,7 @@ from anemone.progress_monitor.progress_monitor import TreeBranchLimitArgs
 from anemone.recommender_rule.recommender_rule import AlmostEqualLogistic
 from valanga import Color
 
+from chipiron.displays.action_history_table import build_action_history_table
 from chipiron.displays.gui_protocol import (
     Scope,
     UpdMatchResults,
@@ -24,7 +25,11 @@ from chipiron.displays.gui_publisher import GuiPublisher
 from chipiron.environments.chess.players.evaluators.boardevaluators.board_evaluator_type import (
     BoardEvalTypes,
 )
-from chipiron.games.domain.game.final_game_result import FinalGameResult
+from chipiron.games.domain.game.final_game_result import (
+    FinalGameResult,
+    GameReport,
+    RoleOutcome,
+)
 from chipiron.games.domain.game.progress_collector import (
     PlayerProgressCollectorObservable,
 )
@@ -170,6 +175,38 @@ def test_make_participants_info_payload_supports_single_and_three_role_cases() -
     ]
 
 
+def test_build_action_history_table_groups_two_roles_side_by_side() -> None:
+    """Two-role history should be displayed by round with one column per role."""
+    headers, rows = build_action_history_table(
+        action_name_history=("e4", "e5", "Nf3", "Nc6", "Bb5"),
+        participant_labels=("White", "Black"),
+    )
+
+    assert headers == ["White", "Black"]
+    assert rows == [
+        ["e4", "e5"],
+        ["Nf3", "Nc6"],
+        ["Bb5", ""],
+    ]
+
+
+def test_build_action_history_table_supports_solo_and_preserves_order() -> None:
+    """Solo and multi-role layouts should respect the participant display order."""
+    solo_headers, solo_rows = build_action_history_table(
+        action_name_history=("x", "y", "z"),
+        participant_labels=("Solo",),
+    )
+    tri_headers, tri_rows = build_action_history_table(
+        action_name_history=("a1", "b1", "c1", "a2"),
+        participant_labels=("Gamma", "Alpha", "Beta"),
+    )
+
+    assert solo_headers == ["Solo"]
+    assert solo_rows == [["x"], ["y"], ["z"]]
+    assert tri_headers == ["Gamma", "Alpha", "Beta"]
+    assert tri_rows == [["a1", "b1", "c1"], ["a2", "", ""]]
+
+
 def test_player_progress_collector_observable_publishes_role_keyed_progress() -> None:
     """Progress payloads should be keyed by arbitrary roles, not only colors."""
     out, publisher = make_publisher()
@@ -192,8 +229,8 @@ def test_player_progress_collector_observable_publishes_role_keyed_progress() ->
     )
 
 
-def test_observable_match_results_fields_track_players_not_literal_colors() -> None:
-    """Freeze the current `wins_white`/`wins_black` field semantics."""
+def test_observable_match_results_publish_participant_stats_with_legacy_aliases() -> None:
+    """Match-result payloads should be participant-based with two-player aliases intact."""
     out, publisher = make_publisher()
     observable = ObservableMatchResults(
         match_results=MatchResults(
@@ -204,11 +241,24 @@ def test_observable_match_results_fields_track_players_not_literal_colors() -> N
     )
 
     observable.add_result_one_game(
-        white_player_name_id="player-two",
-        game_result=FinalGameResult.WIN_FOR_WHITE,
+        game_report=GameReport(
+            final_game_result=FinalGameResult.WIN_FOR_WHITE,
+            action_history=[],
+            state_tag_history=[],
+            participant_id_by_role={"White": "player-two", "Black": "player-one"},
+            result_by_role={"White": RoleOutcome.WIN, "Black": RoleOutcome.LOSS},
+            winner_roles=["White"],
+        ),
     )
     first_payload = out.get_nowait().payload
     assert isinstance(first_payload, UpdMatchResults)
+    assert [
+        (participant.participant_id, participant.wins, participant.losses)
+        for participant in first_payload.participant_stats
+    ] == [
+        ("player-one", 0, 1),
+        ("player-two", 1, 0),
+    ]
     assert first_payload.wins_white == 0
     assert first_payload.wins_black == 1
     assert first_payload.draws == 0

@@ -146,12 +146,7 @@ class MatchManager:
                 )
 
             # Update the reporting of the ongoing match with the report of the finished game
-            match_results.add_result_one_game(
-                white_player_name_id=participant_factory_args_by_role[
-                    Color.WHITE
-                ].player_args.name,
-                game_result=game_report.final_game_result,
-            )
+            match_results.add_result_one_game(game_report=game_report)
             match_move_history[game_number] = game_report.action_history
 
             # ad hoc waiting time in case we play against a human and the game is finished

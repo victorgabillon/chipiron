@@ -6,7 +6,9 @@ from typing import Any, Protocol, TypeVar
 
 from valanga import Color, TurnState
 
-from .final_game_result import FinalGameResult
+from chipiron.core.roles import GameRole
+
+from .final_game_result import FinalGameResult, RoleGameResult, RoleOutcome
 
 type AnyTurnState = TurnState[Any]
 
@@ -112,4 +114,33 @@ def outcome_to_final_game_result(outcome: GameOutcome) -> FinalGameResult:
         return FinalGameResult.DRAW
     if outcome.kind in (OutcomeKind.ABORTED, OutcomeKind.UNKNOWN):
         return FinalGameResult.DRAW
+    raise UnhandledOutcomeKindError(outcome.kind)
+
+
+def outcome_to_role_game_result(
+    outcome: GameOutcome, roles: tuple[GameRole, ...]
+) -> RoleGameResult:
+    """Map a generic game outcome to a role-aware result structure."""
+    if outcome.kind is OutcomeKind.WIN:
+        if outcome.winner is None:
+            raise MissingWinnerError
+        result_by_role = {
+            role: RoleOutcome.WIN if role == outcome.winner else RoleOutcome.LOSS
+            for role in roles
+        }
+        return RoleGameResult(
+            result_by_role=result_by_role,
+            winner_roles=(outcome.winner,),
+            reason=outcome.reason,
+        )
+    if outcome.kind is OutcomeKind.DRAW:
+        return RoleGameResult(
+            result_by_role={role: RoleOutcome.DRAW for role in roles},
+            reason=outcome.reason,
+        )
+    if outcome.kind in (OutcomeKind.ABORTED, OutcomeKind.UNKNOWN):
+        return RoleGameResult(
+            result_by_role={role: RoleOutcome.UNKNOWN for role in roles},
+            reason=outcome.reason,
+        )
     raise UnhandledOutcomeKindError(outcome.kind)

@@ -31,7 +31,7 @@ from chipiron.utils import MyPath
 from chipiron.utils.dataclass import custom_asdict_factory
 from chipiron.utils.logger import chipiron_logger
 
-from .final_game_result import FinalGameResult, GameReport
+from .final_game_result import FinalGameResult, GameReport, RoleGameResult
 from .game import ObservableGame, Ply
 from .game_args import GameArgs
 from .game_rules import (
@@ -39,7 +39,7 @@ from .game_rules import (
     GameRules,
     OutcomeKind,
     OutcomeSource,
-    outcome_to_final_game_result,
+    outcome_to_role_game_result,
 )
 from .progress_collector import PlayerProgressCollectorP
 
@@ -306,20 +306,11 @@ class GameManager[StateT: AnyTurnState = AnyTurnState]:
         """
         # TODO: probably the txt file should be a valid PGN file : https://en.wikipedia.org/wiki/Portable_Game_Notation
         if self.path_to_store_result is not None:
-            if all(
-                legacy_role in self.participant_id_by_role
-                for legacy_role in (Color.WHITE, Color.BLACK)
-            ):
-                path_file = (
-                    f"{self.path_to_store_result}_{idx}_W:{self.participant_id_by_role[Color.WHITE]}"
-                    f"-vs-B:{self.participant_id_by_role[Color.BLACK]}"
-                )
-            else:
-                role_summary = "-".join(
-                    f"{format_game_role(role)}:{participant_id}"
-                    for role, participant_id in self.participant_id_by_role.items()
-                )
-                path_file = f"{self.path_to_store_result}_{idx}_{role_summary}"
+            role_summary = "-".join(
+                f"{format_game_role(role)}:{participant_id}"
+                for role, participant_id in self.participant_id_by_role.items()
+            )
+            path_file = f"{self.path_to_store_result}_{idx}_{role_summary}"
             path_file_obj = f"{path_file}_game_report.yaml"
             path_file_txt = f"{path_file}.txt"
             with open(path_file_txt, "a", encoding="utf-8") as file_text:
@@ -445,13 +436,8 @@ class GameManager[StateT: AnyTurnState = AnyTurnState]:
         if assessment is not None:
             chipiron_logger.info(self.rules.pretty_assessment(state, assessment))
 
-    def simple_results(self) -> FinalGameResult:
-        """Determine the final result of the game based on the current state of the board.
-
-        Returns:
-            FinalGameResult: The final result of the game.
-
-        """
+    def resolved_results(self) -> RoleGameResult:
+        """Determine the role-aware final result of the current game."""
         state = self.game.state
         outcome = self.rules.outcome(state)
         if outcome is None:
@@ -460,7 +446,30 @@ class GameManager[StateT: AnyTurnState = AnyTurnState]:
                 reason="no_terminal_outcome",
                 source=OutcomeSource.TERMINAL,
             )
-        return outcome_to_final_game_result(outcome)
+        return outcome_to_role_game_result(
+            outcome, roles=tuple(self.participant_id_by_role.keys())
+        )
+
+    def simple_results(self) -> FinalGameResult:
+        """Determine the final result of the game based on the current state of the board.
+
+        Returns:
+            FinalGameResult: The final result of the game.
+
+        """
+        resolved_result = self.resolved_results()
+        if resolved_result.winner_roles == (Color.WHITE,):
+            return FinalGameResult.WIN_FOR_WHITE
+        if resolved_result.winner_roles == (Color.BLACK,):
+            return FinalGameResult.WIN_FOR_BLACK
+        return FinalGameResult.DRAW
+
+    def serializable_participant_id_by_role(self) -> dict[str, ParticipantId]:
+        """Return the current role assignment in a YAML-friendly shape."""
+        return {
+            format_game_role(role): participant_id
+            for role, participant_id in self.participant_id_by_role.items()
+        }
 
     def terminate_processes(self) -> None:
         """Terminates all player processes and stops the associated threads.

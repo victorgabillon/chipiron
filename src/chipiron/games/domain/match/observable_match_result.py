@@ -1,10 +1,10 @@
-"""Document the module contains the ObservableMatchResults class, which is a wrapper around the MatchResults class."""
+"""Observable wrapper around role-aware match results."""
 
 from dataclasses import dataclass, field
 
-from chipiron.displays.gui_protocol import UpdMatchResults
+from chipiron.displays.gui_protocol import ParticipantMatchStats, UpdMatchResults
 from chipiron.displays.gui_publisher import GuiPublisher
-from chipiron.games.domain.game.final_game_result import FinalGameResult
+from chipiron.games.domain.game.final_game_result import FinalGameResult, GameReport
 
 from .match_results import MatchResults, SimpleResults
 
@@ -46,19 +46,18 @@ class ObservableMatchResults:
         self.publishers = list(pubs)
 
     def add_result_one_game(
-        self, white_player_name_id: str, game_result: FinalGameResult
+        self,
+        *,
+        game_report: GameReport | None = None,
+        white_player_name_id: str | None = None,
+        game_result: FinalGameResult | None = None,
     ) -> None:
-        """Add the result of a single game to the match results.
-
-        Args:
-            white_player_name_id (str): The ID of the white player.
-            game_result (FinalGameResult): The result of the game.
-
-        Returns:
-            None
-
-        """
-        self.match_results.add_result_one_game(white_player_name_id, game_result)
+        """Add the result of a single game to the match results."""
+        self.match_results.add_result_one_game(
+            game_report=game_report,
+            white_player_name_id=white_player_name_id,
+            game_result=game_result,
+        )
         self.notify_new_results()
 
     def notify_new_results(self) -> None:
@@ -68,16 +67,21 @@ class ObservableMatchResults:
             None
 
         """
-        # Map your MatchResults into stable scalar fields
         simple = self.match_results.get_simple_result()
-        # If you don't have games_played already, define it consistently:
-        games_played = simple.player_one_wins + simple.player_two_wins + simple.draws
 
         payload = UpdMatchResults(
-            wins_white=simple.player_one_wins,
-            wins_black=simple.player_two_wins,
+            participant_stats=[
+                ParticipantMatchStats(
+                    participant_id=participant_id,
+                    wins=simple.stats_by_participant[participant_id].wins,
+                    losses=simple.stats_by_participant[participant_id].losses,
+                    draws=simple.stats_by_participant[participant_id].draws,
+                    unknown=simple.stats_by_participant[participant_id].unknown,
+                )
+                for participant_id in simple.participant_order
+            ],
             draws=simple.draws,
-            games_played=games_played,
+            games_played=simple.games_played,
             match_finished=self.match_results.match_finished,
         )
 
@@ -92,9 +96,10 @@ class ObservableMatchResults:
 
         """
         return SimpleResults(
-            player_one_wins=self.match_results.get_player_one_wins(),
-            player_two_wins=self.match_results.get_player_two_wins(),
+            participant_order=self.match_results.participant_ids,
+            stats_by_participant=self.match_results.stats_by_participant,
             draws=self.match_results.get_draws(),
+            games_played=self.match_results.number_of_games,
         )
 
     def finish(self) -> None:

@@ -9,7 +9,7 @@ from valanga import Color, StateTag
 from valanga.evaluations import Value
 
 from chipiron.core.request_context import RequestContext
-from chipiron.core.roles import GameRole
+from chipiron.core.roles import GameRole, ParticipantId
 from chipiron.environments.types import GameKind
 from chipiron.games.domain.game.game_playing_status import PlayingStatus
 
@@ -139,14 +139,38 @@ class UpdParticipantsInfo:
 
 
 @dataclass(frozen=True, slots=True)
+class ParticipantMatchStats:
+    """Aggregate result counts for one participant in the current match."""
+
+    participant_id: ParticipantId
+    wins: int
+    losses: int
+    draws: int
+    unknown: int
+
+
+@dataclass(frozen=True, slots=True)
 class UpdMatchResults:
     """Aggregate match results payload."""
 
-    wins_white: int
-    wins_black: int
+    participant_stats: Sequence[ParticipantMatchStats]
     draws: int
     games_played: int
     match_finished: bool
+
+    @property
+    def wins_white(self) -> int:
+        """Backward-compatible score accessor for the first participant."""
+        if not self.participant_stats:
+            return 0
+        return self.participant_stats[0].wins
+
+    @property
+    def wins_black(self) -> int:
+        """Backward-compatible score accessor for the second participant."""
+        if len(self.participant_stats) < 2:
+            return 0
+        return self.participant_stats[1].wins
 
 
 @dataclass(frozen=True, slots=True)

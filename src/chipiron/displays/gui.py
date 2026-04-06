@@ -28,6 +28,7 @@ from valanga import Color, StateTag
 from valanga.evaluations import Value
 
 from chipiron.core.roles import GameRole
+from chipiron.displays.action_history_table import build_action_history_table
 from chipiron.displays.gui_protocol import (
     CmdBackOneMove,
     CmdSetStatus,
@@ -150,6 +151,7 @@ class MainWindow(QWidget):
         self.current_pos: SvgPosition | None = None
         self.adapter_kind: GameKind | None = None
         self.action_name_history: list[str] = []
+        self.participant_history_labels: list[str] = []
         self.participant_rows: list[ParticipantRowWidgets] = []
         self.participant_rows_by_role: dict[GameRole, ParticipantRowWidgets] = {}
         # Set window icon with existence check
@@ -194,7 +196,7 @@ class MainWindow(QWidget):
         self.back_button.move(900, 100)
 
         self.tablewidget = QTableWidget(1, 2, self)
-        self.tablewidget.setGeometry(1100, 200, 260, 330)
+        self.tablewidget.setGeometry(1140, 200, 250, 330)
 
         self.score_button = QPushButton(self)
         self.score_button.setText("⚖ Score 0-0")  # text
@@ -487,6 +489,7 @@ class MainWindow(QWidget):
         self.tablewidget.clearContents()
         self.tablewidget.setRowCount(0)
         self.participant_rows_by_role.clear()
+        self.participant_history_labels = []
         for row in self.participant_rows:
             row.role = None
             row.is_human = False
@@ -613,12 +616,19 @@ class MainWindow(QWidget):
                 raise GuiUpdateError(payload)
 
     def display_action_name_history(self) -> None:
-        """Display action history as a chronological generic table."""
-        self.tablewidget.setRowCount(len(self.action_name_history))
-        self.tablewidget.setHorizontalHeaderLabels(["Ply", "Action"])
-        for half_move, action_name in enumerate(self.action_name_history, start=1):
-            self.tablewidget.setItem(half_move - 1, 0, QTableWidgetItem(str(half_move)))
-            self.tablewidget.setItem(half_move - 1, 1, QTableWidgetItem(str(action_name)))
+        """Display action history grouped by the current participant display order."""
+        headers, rows = build_action_history_table(
+            action_name_history=self.action_name_history,
+            participant_labels=self.participant_history_labels,
+        )
+        self.tablewidget.setColumnCount(len(headers))
+        self.tablewidget.setRowCount(len(rows))
+        self.tablewidget.setHorizontalHeaderLabels(headers)
+        for row_index, row_values in enumerate(rows):
+            for column_index, value in enumerate(row_values):
+                self.tablewidget.setItem(
+                    row_index, column_index, QTableWidgetItem(str(value))
+                )
 
     def _apply_render_info(self, info: dict[str, str]) -> None:
         """Update generic side panel labels using adapter render metadata."""
@@ -636,6 +646,9 @@ class MainWindow(QWidget):
         """Update the participant side panel from a role-driven payload."""
         self._ensure_participant_rows(len(participants))
         self.participant_rows_by_role.clear()
+        self.participant_history_labels = [
+            participant.role_label for participant in participants
+        ]
 
         for index, participant in enumerate(participants):
             row = self.participant_rows[index]
@@ -658,6 +671,7 @@ class MainWindow(QWidget):
             row.progress.setTextVisible(False)
 
         self._refresh_participant_progress_widgets()
+        self.display_action_name_history()
 
     def update_participant_progress(
         self, role: GameRole, progress_percent: int | None
@@ -734,9 +748,14 @@ class MainWindow(QWidget):
 
     def update_match_stats(self, upd: UpdMatchResults) -> None:
         """Update match stats."""
-        self.score_button.setText(
-            f"⚖ Score: {upd.wins_white}-{upd.wins_black}-{upd.draws}"
+        participant_summary = " | ".join(
+            f"{participant.participant_id} {participant.wins}"
+            for participant in upd.participant_stats
         )
+        score_text = participant_summary or "No participants"
+        if upd.draws:
+            score_text = f"{score_text} | draws {upd.draws}"
+        self.score_button.setText(f"⚖ Score: {score_text}")
 
         chipiron_logger.info("update match_finished=%s", upd.match_finished)
         if upd.match_finished:
