@@ -23,6 +23,7 @@ from chipiron.environments.deps import (
     CheckersEnvironmentDeps,
     ChessEnvironmentDeps,
     EnvDeps,
+    IntegerReductionEnvironmentDeps,
 )
 from chipiron.environments.types import GameKind
 from chipiron.games.domain.game.game_args import GameArgs
@@ -44,10 +45,18 @@ if TYPE_CHECKING:
     from chipiron.utils.communication.mailbox import MainMailboxMessage
 
 
+class MissingSecondParticipantError(ValueError):
+    """Raised when a non-solo match is missing its second participant."""
+
+    def __init__(self) -> None:
+        """Initialize the missing second participant error."""
+        super().__init__("A second participant is required for non-solo games.")
+
+
 def create_match_manager(
     args_match: MatchSettingsArgs,
     args_player_one: players.PlayerArgs,
-    args_player_two: players.PlayerArgs,
+    args_player_two: players.PlayerArgs | None,
     args_game: GameArgs,
     implementation_args: ImplementationArgs,
     universal_behavior: bool = False,
@@ -61,7 +70,7 @@ def create_match_manager(
         implementation_args: (ImplementationArgs) the implementation args
         args_match (MatchSettingsArgs): The match settings arguments.
         args_player_one (players.PlayerArgs): The arguments for player one.
-        args_player_two (players.PlayerArgs): The arguments for player two.
+        args_player_two (players.PlayerArgs | None): The arguments for player two when applicable.
         args_game (GameArgs): The game arguments.
         seed (int | None, optional): The seed for random number generation. Defaults to None.
         output_folder_path (path | None, optional): The output folder path. Defaults to None.
@@ -85,12 +94,16 @@ def create_match_manager(
         else None
     )
 
-    player_one_name: str = args_player_one.name
-    player_two_name: str = args_player_two.name
+    participant_ids: tuple[str, ...]
+    if args_game.game_kind is GameKind.INTEGER_REDUCTION:
+        participant_ids = (args_player_one.name,)
+    else:
+        assert args_player_two is not None
+        participant_ids = (args_player_one.name, args_player_two.name)
 
-    can_oracle: bool = args_player_one.name not in [
-        "Stockfish"
-    ] and args_player_two.name not in ["Stockfish"]
+    can_oracle: bool = args_player_one.name not in ["Stockfish"] and (
+        args_player_two is None or args_player_two.name not in ["Stockfish"]
+    )
     game_board_evaluator = create_game_board_evaluator_for_game_kind(
         game_kind=args_game.game_kind,
         gui=gui,
@@ -115,6 +128,8 @@ def create_match_manager(
         )
     elif args_game.game_kind == GameKind.CHECKERS:
         env_deps = CheckersEnvironmentDeps()
+    elif args_game.game_kind == GameKind.INTEGER_REDUCTION:
+        env_deps = IntegerReductionEnvironmentDeps()
     else:
         raise ValueError
 
@@ -131,7 +146,7 @@ def create_match_manager(
     )
 
     match_results_factory: MatchResultsFactory = MatchResultsFactory(
-        player_one_name=player_one_name, player_two_name=player_two_name
+        participant_ids=participant_ids
     )
 
     game_args_factory = GameArgsFactory(
@@ -143,8 +158,7 @@ def create_match_manager(
     )
 
     return MatchManager(
-        player_one_id=player_one_name,
-        player_two_id=player_two_name,
+        participant_ids=participant_ids,
         game_manager_factory=game_manager_factory,
         game_args_factory=game_args_factory,
         match_results_factory=match_results_factory,
@@ -173,10 +187,14 @@ def create_match_manager_from_args(
     match_args = resolve_extended_object(extended_obj=match_args, base_cls=MatchArgs)
 
     assert isinstance(match_args.player_one, players.PlayerArgs)
-    assert isinstance(match_args.player_two, players.PlayerArgs)
 
     player_one_args: players.PlayerArgs = match_args.player_one
-    player_two_args: players.PlayerArgs = match_args.player_two
+    player_two_args: players.PlayerArgs | None
+    if match_args.player_two is None:
+        player_two_args = None
+    else:
+        assert isinstance(match_args.player_two, players.PlayerArgs)
+        player_two_args = match_args.player_two
 
     assert isinstance(match_args.match_setting, MatchSettingsArgs)
     game_args: GameArgs
@@ -185,14 +203,18 @@ def create_match_manager_from_args(
     else:
         game_args = match_args.match_setting.game_args
 
+    if player_two_args is None and game_args.game_kind is not GameKind.INTEGER_REDUCTION:
+        raise MissingSecondParticipantError
+
     assert (
         player_one_args.name != "Command_Line_Human.yaml"
         or not game_args.each_player_has_its_own_thread
     )
-    assert (
-        player_two_args.name != "Command_Line_Human.yaml"
-        or not game_args.each_player_has_its_own_thread
-    )
+    if player_two_args is not None:
+        assert (
+            player_two_args.name != "Command_Line_Human.yaml"
+            or not game_args.each_player_has_its_own_thread
+        )
 
     # taking care of random
     ch.set_seeds(seed=base_script_args.seed)

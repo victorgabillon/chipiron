@@ -13,6 +13,11 @@ def apply_game_kind_defaults(args: ArgsChosenByUser) -> None:
         args.strength_white = None
         args.player_type_black = PlayerConfigTag.GUI_HUMAN
         args.strength_black = None
+    elif args.game_kind is GameKind.INTEGER_REDUCTION:
+        args.player_type_white = PlayerConfigTag.GUI_HUMAN
+        args.strength_white = None
+        args.player_type_black = PlayerConfigTag.GUI_HUMAN
+        args.strength_black = None
     elif args.game_kind is GameKind.CHESS:
         args.player_type_white = PlayerConfigTag.RECUR_ZIPF_BASE_3
         args.strength_white = 1

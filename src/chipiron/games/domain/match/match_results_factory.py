@@ -28,20 +28,17 @@ class MatchResultsFactory:
 
     """
 
-    player_one_name: str
-    player_two_name: str
+    participant_ids: tuple[str, ...]
     subscriber_queues: list[queue.Queue[GuiUpdate]]
 
-    def __init__(self, player_one_name: str, player_two_name: str) -> None:
+    def __init__(self, participant_ids: tuple[str, ...]) -> None:
         """Initialize the MatchResultsFactory.
 
         Args:
-            player_one_name (str): The name of player one.
-            player_two_name (str): The name of player two.
+            participant_ids (tuple[str, ...]): Ordered participant identifiers.
 
         """
-        self.player_one_name = player_one_name
-        self.player_two_name = player_two_name
+        self.participant_ids = participant_ids
         self.subscriber_queues = []
 
     def create(self) -> IMatchResults:
@@ -52,7 +49,7 @@ class MatchResultsFactory:
 
         """
         match_result: MatchResults = MatchResults(
-            participant_ids=(self.player_one_name, self.player_two_name),
+            participant_ids=self.participant_ids,
         )
         if self.subscriber_queues:
             return ObservableMatchResults(match_result)

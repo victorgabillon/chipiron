@@ -17,6 +17,9 @@ from chipiron.environments.chess.starting_position_args import (
     FenStartingPositionArgs,
     StartingPositionArgsType,
 )
+from chipiron.environments.integer_reduction.starting_position_args import (
+    IntegerReductionValueStartingPositionArgs,
+)
 from chipiron.environments.types import GameKind
 from chipiron.games.domain.game.game_args import GameArgs
 from chipiron.games.domain.match.match_args import MatchArgs
@@ -110,7 +113,17 @@ def generate_inputs(
             else:
                 game_args = partial_op_game_args(
                     game_kind=args_chosen_by_user.game_kind,
-                    starting_position=CheckersStandardStartingPositionArgs(),
+                    starting_position=(
+                        CheckersStandardStartingPositionArgs()
+                        if args_chosen_by_user.game_kind == GameKind.CHECKERS
+                        else IntegerReductionValueStartingPositionArgs(
+                            value=int(
+                                starting_positions_for_game(
+                                    args_chosen_by_user.game_kind
+                                )[args_chosen_by_user.starting_position_key]
+                            )
+                        )
+                    ),
                 )
 
             gui_args = partial_op_match_script_args(
@@ -119,7 +132,9 @@ def generate_inputs(
                 match_args=partial_op_match_args(
                     match_setting=MatchConfigTag.DUDA,
                     match_setting_overwrite=partial_op_match_settings_args(
-                        game_args=game_args
+                        number_of_games_player_one_white=1,
+                        number_of_games_player_one_black=0,
+                        game_args=game_args,
                     ),
                 ),
             )
@@ -128,8 +143,10 @@ def generate_inputs(
             gui_args.match_args.player_one = PlayerConfigTag(
                 args_chosen_by_user.player_type_white
             )
-            gui_args.match_args.player_two = PlayerConfigTag(
-                args_chosen_by_user.player_type_black
+            gui_args.match_args.player_two = (
+                None
+                if args_chosen_by_user.game_kind == GameKind.INTEGER_REDUCTION
+                else PlayerConfigTag(args_chosen_by_user.player_type_black)
             )
 
             if args_chosen_by_user.game_kind == GameKind.CHESS:

@@ -35,5 +35,13 @@ def get_observer_wiring(game_kind: GameKind) -> ObserverWiring[object, object, o
             )  # pylint: disable=import-outside-toplevel
 
             return cast("ObserverWiring[object, object, object]", CHECKERS_WIRING)
+        case GameKind.INTEGER_REDUCTION:
+            from chipiron.environments.integer_reduction.players.wiring.integer_reduction_wiring import (
+                INTEGER_REDUCTION_WIRING,
+            )  # pylint: disable=import-outside-toplevel
+
+            return cast(
+                "ObserverWiring[object, object, object]", INTEGER_REDUCTION_WIRING
+            )
         case _:
             raise UnsupportedGameKindError(game_kind)

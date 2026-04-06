@@ -5,10 +5,12 @@ This module defines the GameArgsFactory class, which is responsible for creating
 
 import typing
 
-from valanga import Color
+from valanga import SOLO, Color
 from valanga.game import Seed
 
 from chipiron import players
+from chipiron.core.roles import GameRole
+from chipiron.environments.types import GameKind
 from chipiron.utils.small_tools import unique_int_from_list
 
 from .game_args import GameArgs
@@ -27,7 +29,7 @@ class GameArgsFactory:
     args_match: "MatchSettingsArgs"
     seed_: int | None
     args_player_one: players.PlayerArgs
-    args_player_two: players.PlayerArgs
+    args_player_two: players.PlayerArgs | None
     args_game: GameArgs
     game_number: int
 
@@ -35,7 +37,7 @@ class GameArgsFactory:
         self,
         args_match: "MatchSettingsArgs",
         args_player_one: players.PlayerArgs,
-        args_player_two: players.PlayerArgs,
+        args_player_two: players.PlayerArgs | None,
         seed_: int | None,
         args_game: GameArgs,
     ) -> None:
@@ -49,19 +51,18 @@ class GameArgsFactory:
 
     def generate_game_args(
         self, game_number: int
-    ) -> tuple[dict[Color, players.PlayerFactoryArgs], GameArgs, Seed | None]:
+    ) -> tuple[dict[GameRole, players.PlayerFactoryArgs], GameArgs, Seed | None]:
         """Generate game arguments for a specific game number.
 
-        The returned mapping is still color-keyed because current match
-        scheduling is explicitly white/black. Conceptually, though, it is the
-        participant assignment for this game.
+        The returned mapping is role-keyed. Current chess/checkers scheduling is
+        still white/black-oriented, while solo games use one real role.
 
         Args:
             game_number (int): The number of the game.
 
         Returns:
-            tuple[dict[chess.Color, players.PlayerFactoryArgs], GameArgs, seed | None]: A tuple containing the player
-            color to factory arguments mapping, game arguments, and the merged seed.
+            tuple[dict[GameRole, players.PlayerFactoryArgs], GameArgs, seed | None]:
+                participant assignment for this game, game args, and the merged seed.
 
         """
         merged_seed: Seed | None = unique_int_from_list([self.seed_, game_number])
@@ -70,24 +71,30 @@ class GameArgsFactory:
         player_one_factory_args = players.PlayerFactoryArgs(
             player_args=self.args_player_one, seed=merged_seed
         )
+
+        if self.args_game.game_kind is GameKind.INTEGER_REDUCTION:
+            self.game_number += 1
+            return {SOLO: player_one_factory_args}, self.args_game, merged_seed
+
+        assert self.args_player_two is not None
         player_two_factory_args = players.PlayerFactoryArgs(
             player_args=self.args_player_two, seed=merged_seed
         )
 
-        participant_assignment_by_color: dict[Color, players.PlayerFactoryArgs]
+        participant_assignment_by_role: dict[GameRole, players.PlayerFactoryArgs]
         if game_number < self.args_match.number_of_games_player_one_white:
-            participant_assignment_by_color = {
+            participant_assignment_by_role = {
                 Color.WHITE: player_one_factory_args,
                 Color.BLACK: player_two_factory_args,
             }
         else:
-            participant_assignment_by_color = {
+            participant_assignment_by_role = {
                 Color.WHITE: player_two_factory_args,
                 Color.BLACK: player_one_factory_args,
             }
         self.game_number += 1
 
-        return participant_assignment_by_color, self.args_game, merged_seed
+        return participant_assignment_by_role, self.args_game, merged_seed
 
     def is_match_finished(self) -> bool:
         """Check if the match is finished.

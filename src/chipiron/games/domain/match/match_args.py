@@ -21,5 +21,5 @@ class MatchArgs:
     """
 
     player_one: PlayerConfigTag | PlayerArgs = PlayerConfigTag.RECUR_ZIPF_BASE_3
-    player_two: PlayerConfigTag | PlayerArgs = PlayerConfigTag.RECUR_ZIPF_BASE_3
+    player_two: PlayerConfigTag | PlayerArgs | None = PlayerConfigTag.RECUR_ZIPF_BASE_3
     match_setting: MatchConfigTag | MatchSettingsArgs = MatchConfigTag.CUBO

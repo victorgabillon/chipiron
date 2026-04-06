@@ -11,7 +11,16 @@ from chipiron.environments.checkers.types import CheckersState
 from chipiron.environments.chess.environment import make_chess_environment
 from chipiron.environments.chess.tags import ChessStartTag
 from chipiron.environments.chess.types import ChessState
-from chipiron.environments.deps import CheckersEnvironmentDeps, ChessEnvironmentDeps
+from chipiron.environments.deps import (
+    CheckersEnvironmentDeps,
+    ChessEnvironmentDeps,
+    IntegerReductionEnvironmentDeps,
+)
+from chipiron.environments.integer_reduction.environment import (
+    make_integer_reduction_environment,
+)
+from chipiron.environments.integer_reduction.tags import IntegerReductionStartTag
+from chipiron.environments.integer_reduction.types import IntegerReductionState
 from chipiron.environments.types import GameKind
 
 
@@ -27,7 +36,9 @@ class EnvironmentNotFoundError(EnvironmentCreationError):
         super().__init__(f"No Environment for game_kind={game_kind!r}")
 
 
-EnvDeps = ChessEnvironmentDeps | CheckersEnvironmentDeps
+EnvDeps = (
+    ChessEnvironmentDeps | CheckersEnvironmentDeps | IntegerReductionEnvironmentDeps
+)
 
 
 @overload
@@ -42,6 +53,12 @@ def make_environment(
     game_kind: Literal[GameKind.CHECKERS],
     deps: CheckersEnvironmentDeps,
 ) -> Environment[CheckersState, str, CheckersStartTag]: ...
+@overload
+def make_environment(
+    *,
+    game_kind: Literal[GameKind.INTEGER_REDUCTION],
+    deps: IntegerReductionEnvironmentDeps,
+) -> Environment[IntegerReductionState, int, IntegerReductionStartTag]: ...
 @overload
 def make_environment(
     *,
@@ -61,5 +78,8 @@ def make_environment(
         case GameKind.CHECKERS:
             assert isinstance(deps, CheckersEnvironmentDeps)
             return make_checkers_environment(deps=deps)
+        case GameKind.INTEGER_REDUCTION:
+            assert isinstance(deps, IntegerReductionEnvironmentDeps)
+            return make_integer_reduction_environment(deps=deps)
         case _:
             raise EnvironmentNotFoundError(game_kind)

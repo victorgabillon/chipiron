@@ -9,3 +9,4 @@ class GameKind(StrEnum):
 
     CHESS = "chess"
     CHECKERS = "checkers"
+    INTEGER_REDUCTION = "integer_reduction"

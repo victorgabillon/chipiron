@@ -1,5 +1,6 @@
 """Module for the Game class."""
 
+from dataclasses import replace
 from typing import TYPE_CHECKING, Annotated, Any
 
 from valanga import Dynamics, StateTag, TurnState
@@ -7,6 +8,7 @@ from valanga.dynamics import Transition
 from valanga.game import ActionKey, ActionName, Seed
 
 from chipiron.displays.gui_protocol import Scope
+from chipiron.displays.gui_protocol import UpdStateGeneric
 from chipiron.displays.gui_publisher import GuiPublisher
 from chipiron.players.communications.player_request_encoder import PlayerRequestEncoder
 from chipiron.players.factory_higher_level import MoveFunction
@@ -378,6 +380,14 @@ class ObservableGame[StateT: AnyTurnState = AnyTurnState]:
             state=self.game.state,
             seed=self.game.seed,
         )
+        if isinstance(payload, UpdStateGeneric) and (
+            not payload.action_name_history or list(payload.action_name_history)
+            != list(self.game.action_history)
+        ):
+            payload = replace(
+                payload,
+                action_name_history=list(self.game.action_history),
+            )
         for pub in self.mailboxes_display:
             chipiron_logger.debug(
                 "Sending board to display - FEN: %s, Move history: %s",

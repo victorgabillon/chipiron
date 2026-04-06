@@ -5,10 +5,9 @@ import queue
 import time
 from typing import TYPE_CHECKING, Any
 
-from valanga import Color
 from valanga.game import ActionName, Seed
 
-from chipiron.core.roles import MutableRoleAssignment
+from chipiron.core.roles import GameRole, MutableRoleAssignment
 from chipiron.displays.gui_protocol import GuiUpdate, Scope
 from chipiron.games.domain.game.final_game_result import GameReport
 from chipiron.games.domain.game.game_args import GameArgs
@@ -48,8 +47,7 @@ class MatchManager:
 
     def __init__(
         self,
-        player_one_id: str,
-        player_two_id: str,
+        participant_ids: tuple[str, ...],
         game_manager_factory: GameManagerFactory,
         game_args_factory: GameArgsFactory,
         match_results_factory: MatchResultsFactory,
@@ -58,16 +56,14 @@ class MatchManager:
         """Initialize a MatchManager object.
 
         Args:
-            player_one_id (str): The ID of player one.
-            player_two_id (str): The ID of player two.
+            participant_ids (tuple[str, ...]): The ordered participant identifiers.
             game_manager_factory (GameManagerFactory): The factory object for creating game managers.
             game_args_factory (GameArgsFactory): The factory object for creating game arguments.
             match_results_factory (MatchResultsFactory): The factory object for creating match results.
             output_folder_path (path | None, optional): The path to the output folder. Defaults to None.
 
         """
-        self.player_one_id = player_one_id
-        self.player_two_id = player_two_id
+        self.participant_ids = participant_ids
         self.game_manager_factory = game_manager_factory
         self.output_folder_path = output_folder_path
         self.match_results_factory = match_results_factory
@@ -88,8 +84,8 @@ class MatchManager:
             None
 
         """
-        chipiron_logger.info("player one is %s", self.player_one_id)
-        chipiron_logger.info("player two is %s", self.player_two_id)
+        for index, participant_id in enumerate(self.participant_ids, start=1):
+            chipiron_logger.info("participant %s is %s", index, participant_id)
 
     def play_one_match(self) -> MatchReport:
         """Plays one match and returns the match report.
@@ -114,7 +110,7 @@ class MatchManager:
         game_number: int = 0
         while not self.game_args_factory.is_match_finished():
             args_game: GameArgs
-            participant_factory_args_by_role: dict[Color, PlayerFactoryArgs]
+            participant_factory_args_by_role: dict[GameRole, PlayerFactoryArgs]
             game_seed: Seed | None
             participant_factory_args_by_role, args_game, game_seed = (
                 self.game_args_factory.generate_game_args(game_number)
@@ -151,7 +147,10 @@ class MatchManager:
 
             # ad hoc waiting time in case we play against a human and the game is finished
             # (so that the human as the time to view the final position before the automatic start of a new game)
-            if participant_factory_args_by_role[Color.WHITE].player_args.is_human():
+            if any(
+                player_factory_args.player_args.is_human()
+                for player_factory_args in participant_factory_args_by_role.values()
+            ):
                 time.sleep(30)
 
             game_number += 1
@@ -187,7 +186,7 @@ class MatchManager:
 
     def play_one_game(
         self,
-        participant_factory_args_by_role: dict[Color, PlayerFactoryArgs],
+        participant_factory_args_by_role: dict[GameRole, PlayerFactoryArgs],
         args_game: GameArgs,
         game_number: int,
         game_seed: Seed,
@@ -195,7 +194,7 @@ class MatchManager:
         """Plays one game and returns the game report.
 
         Args:
-            participant_factory_args_by_role (dict[Color, PlayerFactoryArgs]):
+            participant_factory_args_by_role (dict[GameRole, PlayerFactoryArgs]):
                 A dictionary mapping current game roles to participant args.
             args_game (GameArgs): The arguments for the game.
             game_number (int): The number of the game.
@@ -227,14 +226,10 @@ class MatchManager:
 
     def _as_role_assignment(
         self,
-        participant_factory_args_by_color: dict[Color, PlayerFactoryArgs],
+        participant_factory_args_by_role: dict[GameRole, PlayerFactoryArgs],
     ) -> MutableRoleAssignment[PlayerFactoryArgs]:
-        """Adapt today's color-based match schedule into a generic role assignment.
-
-        Match scheduling is still legacy white/black-oriented here, but those
-        colors are valid game roles for the currently supported environments.
-        """
-        return dict(participant_factory_args_by_color.items())
+        """Adapt the scheduled participant mapping into a mutable role assignment."""
+        return dict(participant_factory_args_by_role.items())
 
     def print_stats_to_file(self, match_results: IMatchResults) -> None:
         """Print the match statistics to a file.

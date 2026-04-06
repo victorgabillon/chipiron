@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from valanga import Color
+from valanga import SOLO, Color
 
+from chipiron.environments.types import GameKind
 from chipiron.games.domain.game.final_game_result import GameReport, RoleOutcome
 from chipiron.games.domain.game.game_args_factory import GameArgsFactory
 from chipiron.games.domain.match.match_results import MatchResults
@@ -32,7 +33,7 @@ def test_generate_game_args_assigns_white_and_black_from_player_one_quota() -> N
             oracle_play=False,
         ),
         seed_=11,
-        args_game=SimpleNamespace(kind="fixture-game"),
+        args_game=SimpleNamespace(game_kind=GameKind.CHESS),
     )
 
     first_mapping, _, _ = factory.generate_game_args(0)
@@ -62,7 +63,7 @@ def test_generate_game_args_merges_seed_and_tracks_match_completion() -> None:
             oracle_play=False,
         ),
         seed_=17,
-        args_game=SimpleNamespace(kind="fixture-game"),
+        args_game=SimpleNamespace(game_kind=GameKind.CHESS),
     )
 
     _, _, first_seed = factory.generate_game_args(0)
@@ -92,3 +93,28 @@ def test_match_results_count_wins_by_participant_identity() -> None:
     simple = results.get_simple_result()
     assert simple.wins_by_participant == {"player-one": 0, "player-two": 1}
     assert simple.draws == 0
+
+
+def test_generate_game_args_supports_integer_reduction_solo_assignment() -> None:
+    """Solo games should bind only the real solo role."""
+    factory = GameArgsFactory(
+        args_match=SimpleNamespace(
+            number_of_games_player_one_white=1,
+            number_of_games_player_one_black=0,
+        ),
+        args_player_one=PlayerArgs(
+            name="solo-player",
+            main_move_selector=RandomSelectorArgs(),
+            oracle_play=False,
+        ),
+        args_player_two=None,
+        seed_=5,
+        args_game=SimpleNamespace(game_kind=GameKind.INTEGER_REDUCTION),
+    )
+
+    assignment, _, merged_seed = factory.generate_game_args(0)
+
+    assert set(assignment) == {SOLO}
+    assert assignment[SOLO].player_args.name == "solo-player"
+    assert merged_seed == unique_int_from_list([5, 0])
+    assert factory.is_match_finished() is True

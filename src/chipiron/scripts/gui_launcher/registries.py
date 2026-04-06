@@ -28,6 +28,11 @@ CHECKERS_PLAYER_OPTIONS: list[PlayerOption] = [
     PlayerOption("Tree (piece count)", PlayerConfigTag.CHECKERS_TREE_PIECECOUNT, False),
 ]
 
+INTEGER_REDUCTION_PLAYER_OPTIONS: list[PlayerOption] = [
+    PlayerOption("Human Player", PlayerConfigTag.GUI_HUMAN, False),
+    PlayerOption("Random", PlayerConfigTag.RANDOM, False),
+]
+
 
 def player_options_for_game(game_kind: GameKind) -> list[PlayerOption]:
     """Return allowed players for a game kind."""
@@ -36,6 +41,8 @@ def player_options_for_game(game_kind: GameKind) -> list[PlayerOption]:
             return CHESS_PLAYER_OPTIONS
         case GameKind.CHECKERS:
             return CHECKERS_PLAYER_OPTIONS
+        case GameKind.INTEGER_REDUCTION:
+            return INTEGER_REDUCTION_PLAYER_OPTIONS
         case _:
             return [PlayerOption("Human Player", PlayerConfigTag.GUI_HUMAN, False)]  # type: ignore[unreachable]
 
@@ -54,5 +61,7 @@ def starting_positions_for_game(game_kind: GameKind) -> dict[str, str]:
             return CHESS_STARTING_POSITIONS
         case GameKind.CHECKERS:
             return {"Standard": "STANDARD"}
+        case GameKind.INTEGER_REDUCTION:
+            return {"Small": "7", "Standard": "15", "Large": "31"}
         case _:
             return {"Standard": "STANDARD"}  # type: ignore[unreachable]

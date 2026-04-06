@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Protocol, TypeVar
 
-from valanga import Color, TurnState
+from valanga import TurnState
 
 from chipiron.core.roles import GameRole
 
@@ -44,7 +44,7 @@ class GameOutcome:
     """Represents the outcome of a game."""
 
     kind: OutcomeKind
-    winner: Color | None = None
+    winner: GameRole | None = None
     reason: str | None = None
     source: OutcomeSource = OutcomeSource.TERMINAL
 
@@ -54,7 +54,7 @@ class PositionAssessment:
     """Represents a non-terminal assessment of a position."""
 
     kind: VerdictKind
-    winner: Color | None = None
+    winner: GameRole | None = None
     reason: str | None = None
 
 

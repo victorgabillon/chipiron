@@ -13,6 +13,10 @@ from chipiron.environments.checkers.starting_position_args import (
     CheckersTextStartingPositionArgs,
 )
 from chipiron.environments.chess.tags import ChessStartTag
+from chipiron.environments.integer_reduction.starting_position_args import (
+    IntegerReductionStandardStartingPositionArgs,
+    IntegerReductionValueStartingPositionArgs,
+)
 from chipiron.environments.starting_position import StartingPositionArgs
 
 
@@ -111,6 +115,8 @@ AllStartingPositionArgs = (
     | FileStartingPositionArgs
     | CheckersStandardStartingPositionArgs
     | CheckersTextStartingPositionArgs
+    | IntegerReductionStandardStartingPositionArgs
+    | IntegerReductionValueStartingPositionArgs
 )
 
 

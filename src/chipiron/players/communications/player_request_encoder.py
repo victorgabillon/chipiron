@@ -4,10 +4,11 @@ from dataclasses import dataclass
 from typing import Any, Protocol, TypeVar, cast
 
 from atomheart.games.chess.board.utils import FenPlusHistory
-from valanga import Color
+from valanga import Color, SoloRole
 from valanga.game import Seed
 
 from chipiron.displays.gui_protocol import Scope
+from chipiron.environments.integer_reduction.types import IntegerReductionState
 from chipiron.environments.types import GameKind
 from chipiron.players.communications.player_message import (
     PlayerRequest,
@@ -60,6 +61,25 @@ class CheckersLikeState(Protocol):
 
     def to_text(self) -> str:
         """Return a text snapshot for transport."""
+        ...
+
+
+class IntegerReductionLikeState(Protocol):
+    """Protocol for solo integer-reduction states transported as integers."""
+
+    @property
+    def tag(self) -> Any:
+        """Return state tag."""
+        ...
+
+    @property
+    def turn(self) -> SoloRole:
+        """Return the acting solo role."""
+        ...
+
+    @property
+    def value(self) -> int:
+        """Return the current integer value."""
         ...
 
 
@@ -137,6 +157,31 @@ class CheckersPlayerRequestEncoder(PlayerRequestEncoder[CheckersLikeState, str])
         )
 
 
+@dataclass(frozen=True, slots=True)
+class IntegerReductionPlayerRequestEncoder(
+    PlayerRequestEncoder[IntegerReductionLikeState, int]
+):
+    """Integer-reduction move request encoder."""
+
+    game_kind: GameKind = GameKind.INTEGER_REDUCTION
+
+    def make_move_request(
+        self, *, state: IntegerReductionLikeState, seed: Seed, scope: Scope
+    ) -> PlayerRequest[int]:
+        """Encode an integer-reduction move request using the current integer value."""
+        return PlayerRequest(
+            schema_version=1,
+            scope=scope,
+            seed=seed,
+            state=TurnStatePlusHistory(
+                current_state_tag=state.tag,
+                role_to_play=state.turn,
+                snapshot=state.value,
+                historical_actions=None,
+            ),
+        )
+
+
 def make_player_request_encoder[StateT](
     *,
     game_kind: GameKind,
@@ -153,6 +198,11 @@ def make_player_request_encoder[StateT](
         case GameKind.CHECKERS:
             return cast(
                 "PlayerRequestEncoder[StateT, Any]", CheckersPlayerRequestEncoder()
+            )
+        case GameKind.INTEGER_REDUCTION:
+            return cast(
+                "PlayerRequestEncoder[StateT, Any]",
+                IntegerReductionPlayerRequestEncoder(),
             )
         case _:
             raise PlayerRequestEncoderError(game_kind)

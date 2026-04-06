@@ -35,4 +35,9 @@ class CheckersEnvironmentDeps:
     forced_capture: bool = True
 
 
-EnvDeps = ChessEnvironmentDeps | CheckersEnvironmentDeps
+@dataclass(frozen=True)
+class IntegerReductionEnvironmentDeps:
+    """Dependencies required to build integer-reduction environments."""
+
+
+EnvDeps = ChessEnvironmentDeps | CheckersEnvironmentDeps | IntegerReductionEnvironmentDeps
