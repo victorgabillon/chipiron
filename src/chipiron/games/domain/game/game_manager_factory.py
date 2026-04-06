@@ -7,7 +7,6 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from atomheart.games.chess.move.move_factory import MoveFactory
-from valanga import Color
 from valanga.game import Seed
 
 from chipiron.core.roles import (
@@ -36,7 +35,7 @@ from chipiron.players.boardevaluators.board_evaluator import (
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.utils import MyPath
 from chipiron.utils.communication.mailbox import MainMailboxMessage
-from chipiron.utils.communication.player_ui_info import make_players_info_payload
+from chipiron.utils.communication.player_ui_info import make_participants_info_payload
 
 from .game import Game, ObservableGame
 from .game_manager import GameManager
@@ -183,16 +182,12 @@ class GameManagerFactory:
         start_tag = args_game_manager.starting_position.get_start_tag()
         normalized_start_tag = environment.normalize_start_tag(start_tag)
         state = environment.make_initial_state(normalized_start_tag)
-        if tuple(environment.roles) == (Color.WHITE, Color.BLACK):
-            color_assignments = {
-                Color.WHITE: role_assignments[Color.WHITE],
-                Color.BLACK: role_assignments[Color.BLACK],
-            }
-            for publisher in publishers:
-                payload = make_players_info_payload(
-                    participant_factory_args_by_color=color_assignments
-                )
-                publisher.publish(payload)
+        for publisher in publishers:
+            payload = make_participants_info_payload(
+                participant_factory_args_by_role=role_assignments,
+                role_order=environment.roles,
+            )
+            publisher.publish(payload)
 
         # Do not drain the shared mailbox here.
         # GameManager already ignores stale messages via scope filtering.

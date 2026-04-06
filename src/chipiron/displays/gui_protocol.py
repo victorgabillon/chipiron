@@ -9,6 +9,7 @@ from valanga import Color, StateTag
 from valanga.evaluations import Value
 
 from chipiron.core.request_context import RequestContext
+from chipiron.core.roles import GameRole
 from chipiron.environments.types import GameKind
 from chipiron.games.domain.game.game_playing_status import PlayingStatus
 
@@ -81,11 +82,16 @@ class UpdStateGeneric:
 
 
 @dataclass(frozen=True, slots=True)
-class UpdPlayerProgress:
-    """Progress update for a specific player."""
+class UpdParticipantProgress:
+    """Progress update for a specific game role."""
 
-    player_color: Color
+    role: GameRole
     progress_percent: int | None
+
+    @property
+    def player_color(self) -> GameRole:
+        """Backward-compatible alias while some callers still say `player_color`."""
+        return self.role
 
 
 @dataclass(frozen=True, slots=True)
@@ -99,19 +105,37 @@ class UpdEvaluation:
 
 
 @dataclass(frozen=True, slots=True)
-class PlayerUiInfo:
-    """User-facing label and control hint for a player."""
+class ParticipantUiInfo:
+    """User-facing label and control hint for one role assignment."""
 
+    role: GameRole
+    role_label: str
     label: str
     is_human: bool
 
 
 @dataclass(frozen=True, slots=True)
-class UpdPlayersInfo:
-    """Update payload describing both players."""
+class UpdParticipantsInfo:
+    """Update payload describing every role-participant binding for the game."""
 
-    white: PlayerUiInfo
-    black: PlayerUiInfo
+    participants: Sequence[ParticipantUiInfo]
+
+    def participant_by_role(self, role: GameRole) -> ParticipantUiInfo:
+        """Return the participant entry for a specific role."""
+        for participant in self.participants:
+            if participant.role == role:
+                return participant
+        raise KeyError(role)
+
+    @property
+    def white(self) -> ParticipantUiInfo:
+        """Backward-compatible accessor for legacy white/black games."""
+        return self.participant_by_role(Color.WHITE)
+
+    @property
+    def black(self) -> ParticipantUiInfo:
+        """Backward-compatible accessor for legacy white/black games."""
+        return self.participant_by_role(Color.BLACK)
 
 
 @dataclass(frozen=True, slots=True)
@@ -148,14 +172,18 @@ class UpdGameStatus:
 type UpdatePayload = (
     UpdStateChess
     | UpdStateGeneric
-    | UpdPlayerProgress
+    | UpdParticipantProgress
     | UpdEvaluation
-    | UpdPlayersInfo
+    | UpdParticipantsInfo
     | UpdMatchResults
     | UpdGameStatus
     | UpdNeedHumanAction
     | UpdNoHumanActionPending
 )
+
+PlayerUiInfo = ParticipantUiInfo
+UpdPlayersInfo = UpdParticipantsInfo
+UpdPlayerProgress = UpdParticipantProgress
 
 
 @dataclass(frozen=True, slots=True)

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, TypeVar
 
-from valanga import Color, TurnState
+from valanga import TurnState
 
 from chipiron.core.roles import format_game_role
 from chipiron.displays.gui_protocol import (
@@ -177,22 +177,10 @@ class MatchOrchestrator:
                 return
 
             case EvProgress():
-                # GUI progress payloads are still the legacy white/black pair, so
-                # non-color roles are intentionally ignored until that layer is
-                # generalized in a later PR.
-                if message.payload.player_role == Color.WHITE:
-                    game_manager.progress_collector.progress_white(
-                        value=message.payload.progress_percent
-                    )
-                elif message.payload.player_role == Color.BLACK:
-                    game_manager.progress_collector.progress_black(
-                        value=message.payload.progress_percent
-                    )
-                else:
-                    chipiron_logger.debug(
-                        "Ignoring progress update for non-legacy role %s",
-                        message.payload.player_role,
-                    )
+                game_manager.progress_collector.progress(
+                    message.payload.player_role,
+                    message.payload.progress_percent,
+                )
 
             case _:
                 chipiron_logger.warning(  # type: ignore[unreachable]

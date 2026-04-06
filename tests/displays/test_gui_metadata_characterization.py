@@ -14,13 +14,20 @@ from anemone.progress_monitor.progress_monitor import TreeBranchLimitArgs
 from anemone.recommender_rule.recommender_rule import AlmostEqualLogistic
 from valanga import Color
 
-from chipiron.displays.gui_protocol import Scope, UpdMatchResults, UpdPlayerProgress
+from chipiron.displays.gui_protocol import (
+    Scope,
+    UpdMatchResults,
+    UpdParticipantProgress,
+    UpdParticipantsInfo,
+)
 from chipiron.displays.gui_publisher import GuiPublisher
 from chipiron.environments.chess.players.evaluators.boardevaluators.board_evaluator_type import (
     BoardEvalTypes,
 )
 from chipiron.games.domain.game.final_game_result import FinalGameResult
-from chipiron.games.domain.game.progress_collector import PlayerProgressCollectorObservable
+from chipiron.games.domain.game.progress_collector import (
+    PlayerProgressCollectorObservable,
+)
 from chipiron.games.domain.match.match_results import MatchResults
 from chipiron.games.domain.match.observable_match_result import ObservableMatchResults
 from chipiron.players import PlayerArgs, PlayerFactoryArgs
@@ -33,7 +40,7 @@ from chipiron.players.boardevaluators.master_board_evaluator_args import (
 from chipiron.players.move_selector.human import GuiHumanPlayerArgs
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
-from chipiron.utils.communication.player_ui_info import make_players_info_payload
+from chipiron.utils.communication.player_ui_info import make_participants_info_payload
 
 
 def make_publisher() -> tuple[queue.Queue[object], GuiPublisher]:
@@ -77,8 +84,8 @@ def make_tree_and_value_selector() -> TreeAndValueAppArgs:
     )
 
 
-def test_make_players_info_payload_keeps_white_black_mapping_and_current_labels() -> None:
-    """Freeze the current white/black payload structure and label formatting."""
+def test_make_participants_info_payload_keeps_role_order_and_current_labels() -> None:
+    """Participant metadata should preserve role order and current label formatting."""
     white_player = PlayerFactoryArgs(
         player_args=PlayerArgs(
             name="GuiHuman",
@@ -96,36 +103,90 @@ def test_make_players_info_payload_keeps_white_black_mapping_and_current_labels(
         seed=1,
     )
 
-    payload = make_players_info_payload(
-        {
+    payload = make_participants_info_payload(
+        participant_factory_args_by_role={
             Color.WHITE: white_player,
             Color.BLACK: black_player,
-        }
+        },
+        role_order=(Color.WHITE, Color.BLACK),
     )
 
-    assert payload.white.label == "GuiHuman ()"
-    assert payload.white.is_human is True
-    assert payload.black.label == "TreeBot (64)"
-    assert payload.black.is_human is False
+    assert isinstance(payload, UpdParticipantsInfo)
+    assert [participant.role for participant in payload.participants] == [
+        Color.WHITE,
+        Color.BLACK,
+    ]
+    assert payload.participants[0].role_label == "White"
+    assert payload.participants[0].label == "GuiHuman ()"
+    assert payload.participants[0].is_human is True
+    assert payload.participants[1].role_label == "Black"
+    assert payload.participants[1].label == "TreeBot (64)"
+    assert payload.participants[1].is_human is False
 
 
-def test_player_progress_collector_observable_publishes_white_and_black_progress() -> None:
-    """Freeze the current progress payload shape and per-color mapping."""
+def test_make_participants_info_payload_supports_single_and_three_role_cases() -> None:
+    """The generic payload must represent non-white/black role sets cleanly."""
+    human_player = PlayerFactoryArgs(
+        player_args=PlayerArgs(
+            name="SoloHuman",
+            main_move_selector=GuiHumanPlayerArgs(type=MoveSelectorTypes.GUI_HUMAN),
+            oracle_play=False,
+        ),
+        seed=7,
+    )
+    engine_player = PlayerFactoryArgs(
+        player_args=PlayerArgs(
+            name="TriBot",
+            main_move_selector=make_tree_and_value_selector(),
+            oracle_play=False,
+        ),
+        seed=8,
+    )
+
+    solo_payload = make_participants_info_payload(
+        participant_factory_args_by_role={"solo": human_player},
+        role_order=("solo",),
+    )
+    tri_payload = make_participants_info_payload(
+        participant_factory_args_by_role={
+            "alpha": engine_player,
+            "beta": human_player,
+            "gamma": engine_player,
+        },
+        role_order=("alpha", "beta", "gamma"),
+    )
+
+    assert [participant.role for participant in solo_payload.participants] == ["solo"]
+    assert solo_payload.participants[0].label == "SoloHuman ()"
+    assert [participant.role_label for participant in tri_payload.participants] == [
+        "alpha",
+        "beta",
+        "gamma",
+    ]
+    assert [participant.is_human for participant in tri_payload.participants] == [
+        False,
+        True,
+        False,
+    ]
+
+
+def test_player_progress_collector_observable_publishes_role_keyed_progress() -> None:
+    """Progress payloads should be keyed by arbitrary roles, not only colors."""
     out, publisher = make_publisher()
     progress = PlayerProgressCollectorObservable(publishers=[publisher])
 
-    progress.progress_white(12)
-    progress.progress_black(88)
+    progress.progress("solo", 12)
+    progress.progress(Color.BLACK, 88)
 
     first_payload = out.get_nowait().payload
     second_payload = out.get_nowait().payload
-    assert isinstance(first_payload, UpdPlayerProgress)
-    assert isinstance(second_payload, UpdPlayerProgress)
-    assert (first_payload.player_color, first_payload.progress_percent) == (
-        Color.WHITE,
+    assert isinstance(first_payload, UpdParticipantProgress)
+    assert isinstance(second_payload, UpdParticipantProgress)
+    assert (first_payload.role, first_payload.progress_percent) == (
+        "solo",
         12,
     )
-    assert (second_payload.player_color, second_payload.progress_percent) == (
+    assert (second_payload.role, second_payload.progress_percent) == (
         Color.BLACK,
         88,
     )

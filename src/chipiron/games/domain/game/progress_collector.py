@@ -5,68 +5,47 @@ from typing import Protocol
 
 from valanga import Color
 
-from chipiron.displays.gui_protocol import UpdPlayerProgress
+from chipiron.core.roles import GameRole, MutableRoleAssignment
+from chipiron.displays.gui_protocol import UpdParticipantProgress
 from chipiron.displays.gui_publisher import GuiPublisher
 
 
 class PlayerProgressCollectorP(Protocol):
-    """Object defining the protocol for setting the progress values."""
+    """Object defining the protocol for setting progress values by role."""
 
-    def progress_white(self, value: int | None) -> None:
-        """Progress white."""
-        ...
-
-    def progress_black(self, value: int | None) -> None:
-        """Progress black."""
+    def progress(self, role: GameRole, value: int | None) -> None:
+        """Store or publish progress for one role."""
         ...
 
 
-@dataclass
+def make_progress_by_role() -> MutableRoleAssignment[int | None]:
+    """Create the mutable store used for per-role progress values."""
+    return {}
+
+
+@dataclass(slots=True)
 class PlayerProgressCollector:
-    """Object in charge of collecting the progress of computing moves by each player."""
+    """Collect the progress of move computation by game role."""
 
-    progress_white_: int | None = None
-    progress_black_: int | None = None
+    progress_by_role: MutableRoleAssignment[int | None] = field(
+        default_factory=make_progress_by_role
+    )
 
-    @property
-    def progress_white(self) -> int | None:
-        """Get the progress of the white player.
+    def progress(self, role: GameRole, value: int | None) -> None:
+        """Store progress for the given role."""
+        self.progress_by_role[role] = value
 
-        Returns:
-            int | None: The progress of the white player.
+    def progress_for_role(self, role: GameRole) -> int | None:
+        """Return the latest known progress for the given role."""
+        return self.progress_by_role.get(role)
 
-        """
-        return self.progress_white_
-
-    @progress_white.setter
     def progress_white(self, value: int | None) -> None:
-        """Set the progress of the white player.
+        """Backward-compatible helper for legacy white updates."""
+        self.progress(Color.WHITE, value)
 
-        Args:
-            value (int | None): The progress of the white player.
-
-        """
-        self.progress_white_ = value
-
-    @property
-    def progress_black(self) -> int | None:
-        """Get the progress of the black player.
-
-        Returns:
-            int | None: The progress of the black player.
-
-        """
-        return self.progress_black_
-
-    @progress_black.setter
     def progress_black(self, value: int | None) -> None:
-        """Set the progress of the black player.
-
-        Args:
-            value (int | None): The progress of the black player.
-
-        """
-        self.progress_black_ = value
+        """Backward-compatible helper for legacy black updates."""
+        self.progress(Color.BLACK, value)
 
 
 def make_publishers() -> list[GuiPublisher]:
@@ -83,29 +62,27 @@ class PlayerProgressCollectorObservable(PlayerProgressCollectorP):
         default_factory=PlayerProgressCollector
     )
 
+    def progress(self, role: GameRole, value: int | None) -> None:
+        """Store and publish progress for the given role."""
+        self.progress_collector.progress(role, value)
+        self._publish(role=role, value=value)
+
     def progress_white(self, value: int | None) -> None:
-        """Progress white."""
-        self.progress_collector.progress_white = value
-        self._publish(color=Color.WHITE, value=value)
+        """Backward-compatible helper for legacy white updates."""
+        self.progress(Color.WHITE, value)
 
     def progress_black(self, value: int | None) -> None:
-        """Progress black."""
-        self.progress_collector.progress_black = value
-        self._publish(color=Color.BLACK, value=value)
+        """Backward-compatible helper for legacy black updates."""
+        self.progress(Color.BLACK, value)
 
-    # If you still receive chess.Color from elsewhere, keep this helper:
     def progress_for_chess_color(self, color: Color, value: int | None) -> None:
-        """Progress for chess color."""
-        if color == Color.WHITE:
-            self.progress_collector.progress_white = value
-        else:
-            self.progress_collector.progress_black = value
-        self._publish(color=color, value=value)
+        """Backward-compatible helper for callers still passing `Color`."""
+        self.progress(color, value)
 
-    def _publish(self, color: Color, value: int | None) -> None:
+    def _publish(self, role: GameRole, value: int | None) -> None:
         """Publish a progress update to all GUI publishers."""
-        payload = UpdPlayerProgress(
-            player_color=color,
+        payload = UpdParticipantProgress(
+            role=role,
             progress_percent=value,
         )
         for pub in self.publishers:

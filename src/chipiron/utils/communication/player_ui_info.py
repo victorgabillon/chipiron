@@ -1,9 +1,12 @@
 """Helpers for GUI player labels and player-info payloads."""
 
+from collections.abc import Sequence
+
 from anemone.progress_monitor.progress_monitor import TreeBranchLimitArgs
 from valanga import Color
 
-from chipiron.displays.gui_protocol import PlayerUiInfo, UpdPlayersInfo
+from chipiron.core.roles import GameRole, RoleAssignment, format_game_role
+from chipiron.displays.gui_protocol import ParticipantUiInfo, UpdParticipantsInfo
 from chipiron.players import PlayerFactoryArgs
 from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
 
@@ -23,22 +26,39 @@ def format_player_label(player: PlayerFactoryArgs) -> str:
     return f"{name} ({tree_branch_limit})"
 
 
+def make_participants_info_payload(
+    participant_factory_args_by_role: RoleAssignment[PlayerFactoryArgs],
+    *,
+    role_order: Sequence[GameRole] | None = None,
+) -> UpdParticipantsInfo:
+    """Create a generic participant-info payload ordered by game roles."""
+    ordered_roles = (
+        role_order
+        if role_order is not None
+        else tuple(participant_factory_args_by_role.keys())
+    )
+    return UpdParticipantsInfo(
+        participants=tuple(
+            ParticipantUiInfo(
+                role=role,
+                role_label=format_game_role(role),
+                label=format_player_label(participant_factory_args_by_role[role]),
+                is_human=participant_factory_args_by_role[role].player_args.is_human(),
+            )
+            for role in ordered_roles
+        )
+    )
+
+
 def make_players_info_payload(
     participant_factory_args_by_color: dict[Color, PlayerFactoryArgs],
-) -> UpdPlayersInfo:
-    """Create the current white/black player info payload.
-
-    The input mapping is still color-keyed because the GUI payload remains
-    explicitly white/black in the current runtime.
-    """
-    w = participant_factory_args_by_color[Color.WHITE]
-    b = participant_factory_args_by_color[Color.BLACK]
-
-    return UpdPlayersInfo(
-        white=PlayerUiInfo(
-            label=format_player_label(w), is_human=w.player_args.is_human()
-        ),
-        black=PlayerUiInfo(
-            label=format_player_label(b), is_human=b.player_args.is_human()
-        ),
+) -> UpdParticipantsInfo:
+    """Backward-compatible wrapper for the current white/black scheduling flow."""
+    role_assignments: dict[GameRole, PlayerFactoryArgs] = {
+        Color.WHITE: participant_factory_args_by_color[Color.WHITE],
+        Color.BLACK: participant_factory_args_by_color[Color.BLACK],
+    }
+    return make_participants_info_payload(
+        participant_factory_args_by_role=role_assignments,
+        role_order=(Color.WHITE, Color.BLACK),
     )

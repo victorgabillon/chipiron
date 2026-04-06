@@ -15,6 +15,7 @@ from chipiron.core.request_context import RequestContext
 from chipiron.displays.gui_protocol import (
     UpdGameStatus,
     UpdNeedHumanAction,
+    UpdParticipantsInfo,
     UpdStateGeneric,
 )
 from chipiron.environments.base import Environment
@@ -384,7 +385,18 @@ def test_factory_assembles_participants_from_environment_roles(
         "beta": "beta-human",
         "gamma": "gamma-engine",
     }
-    assert display_queue.empty()
+    participant_payload = display_queue.get_nowait().payload
+    assert isinstance(participant_payload, UpdParticipantsInfo)
+    assert [participant.role for participant in participant_payload.participants] == [
+        "alpha",
+        "beta",
+        "gamma",
+    ]
+    assert [participant.label for participant in participant_payload.participants] == [
+        "alpha-engine ()",
+        "beta-human ()",
+        "gamma-engine ()",
+    ]
 
 
 def test_factory_rejects_missing_participant_assignment_for_environment_role(
@@ -464,6 +476,12 @@ def test_single_role_environment_can_publish_human_request(
     )
 
     session.controller.start()
+
+    participant_payload = display_queue.get_nowait().payload
+    assert isinstance(participant_payload, UpdParticipantsInfo)
+    assert [participant.role for participant in participant_payload.participants] == [
+        "solo"
+    ]
 
     payload = display_queue.get_nowait().payload
     assert isinstance(payload, UpdNeedHumanAction)
