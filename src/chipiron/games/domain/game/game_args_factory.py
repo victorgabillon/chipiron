@@ -4,7 +4,12 @@ from valanga.game import Seed
 
 from chipiron import players
 from chipiron.core.roles import GameRole
-from chipiron.games.domain.match.match_role_schedule import TwoRoleMatchSchedule
+from chipiron.games.domain.match.match_role_schedule import (
+    MatchSchedule,
+    SoloMatchSchedule,
+    TwoRoleMatchSchedule,
+    validate_schedule_for_supported_topology,
+)
 from chipiron.utils.small_tools import unique_int_from_list
 
 from .game_args import GameArgs
@@ -21,28 +26,6 @@ class UnsupportedSchedulingTopologyError(ValueError):
         )
 
 
-class MissingTwoRoleScheduleError(ValueError):
-    """Raised when 2-role scheduling is requested without neutral quotas."""
-
-    def __init__(self, *, scheduled_roles: tuple[GameRole, ...]) -> None:
-        """Initialize the error with the affected role ordering."""
-        super().__init__(
-            "GameArgsFactory requires a TwoRoleMatchSchedule for 2-role "
-            f"environments, got scheduled_roles={scheduled_roles!r}."
-        )
-
-
-class UnexpectedTwoRoleScheduleError(ValueError):
-    """Raised when a 2-role schedule is provided for a non-2-role topology."""
-
-    def __init__(self, *, scheduled_roles: tuple[GameRole, ...]) -> None:
-        """Initialize the error with the unexpected role ordering."""
-        super().__init__(
-            "TwoRoleMatchSchedule can only be used with 2-role environments, "
-            f"got scheduled_roles={scheduled_roles!r}."
-        )
-
-
 class GameArgsFactory:
     """Create role-keyed participant assignments for each scheduled game."""
 
@@ -51,8 +34,7 @@ class GameArgsFactory:
     args_player_two: players.PlayerArgs | None
     args_game: GameArgs
     scheduled_roles: tuple[GameRole, ...]
-    two_role_schedule: TwoRoleMatchSchedule | None
-    scheduled_game_count: int
+    schedule: MatchSchedule
     game_number: int
 
     def __init__(
@@ -62,8 +44,7 @@ class GameArgsFactory:
         seed_: int | None,
         args_game: GameArgs,
         scheduled_roles: tuple[GameRole, ...],
-        scheduled_game_count: int,
-        two_role_schedule: TwoRoleMatchSchedule | None = None,
+        schedule: MatchSchedule,
     ) -> None:
         """Initialize the instance."""
         self.seed_ = seed_
@@ -71,8 +52,7 @@ class GameArgsFactory:
         self.args_player_two = args_player_two
         self.args_game = args_game
         self.scheduled_roles = scheduled_roles
-        self.two_role_schedule = two_role_schedule
-        self.scheduled_game_count = scheduled_game_count
+        self.schedule = schedule
         self.game_number = 0
 
     def generate_game_args(
@@ -100,10 +80,11 @@ class GameArgsFactory:
         )
 
         if len(self.scheduled_roles) == 1:
-            if self.two_role_schedule is not None:
-                raise UnexpectedTwoRoleScheduleError(
-                    scheduled_roles=self.scheduled_roles
-                )
+            validated_schedule = validate_schedule_for_supported_topology(
+                scheduled_roles=self.scheduled_roles,
+                schedule=self.schedule,
+            )
+            assert isinstance(validated_schedule, SoloMatchSchedule)
             self.game_number += 1
             return (
                 {self.scheduled_roles[0]: player_one_factory_args},
@@ -115,8 +96,11 @@ class GameArgsFactory:
             raise UnsupportedSchedulingTopologyError(
                 scheduled_roles=self.scheduled_roles
             )
-        if self.two_role_schedule is None:
-            raise MissingTwoRoleScheduleError(scheduled_roles=self.scheduled_roles)
+        validated_schedule = validate_schedule_for_supported_topology(
+            scheduled_roles=self.scheduled_roles,
+            schedule=self.schedule,
+        )
+        assert isinstance(validated_schedule, TwoRoleMatchSchedule)
 
         assert self.args_player_two is not None
         player_two_factory_args = players.PlayerFactoryArgs(
@@ -127,7 +111,7 @@ class GameArgsFactory:
         participant_assignment_by_role: dict[GameRole, players.PlayerFactoryArgs]
         if (
             game_number
-            < self.two_role_schedule.number_of_games_player_one_on_first_role
+            < validated_schedule.number_of_games_player_one_on_first_role
         ):
             participant_assignment_by_role = {
                 first_role: player_one_factory_args,
@@ -149,4 +133,4 @@ class GameArgsFactory:
             bool: True if the match is finished, False otherwise.
 
         """
-        return self.game_number >= self.scheduled_game_count
+        return self.game_number >= self.schedule.total_games

@@ -23,6 +23,10 @@ from chipiron.environments.integer_reduction.starting_position_args import (
 from chipiron.environments.types import GameKind
 from chipiron.games.domain.game.game_args import GameArgs
 from chipiron.games.domain.match.match_args import MatchArgs
+from chipiron.games.domain.match.match_role_schedule import (
+    SoloMatchSchedule,
+    TwoRoleMatchSchedule,
+)
 from chipiron.games.domain.match.match_settings_args import MatchSettingsArgs
 from chipiron.games.domain.match.match_tag import MatchConfigTag
 from chipiron.players import PlayerArgs
@@ -132,8 +136,15 @@ def generate_inputs(
                 match_args=partial_op_match_args(
                     match_setting=MatchConfigTag.DUDA,
                     match_setting_overwrite=partial_op_match_settings_args(
-                        number_of_games_player_one_white=1,
-                        number_of_games_player_one_black=0,
+                        schedule=(
+                            SoloMatchSchedule(number_of_games=1)
+                            if args_chosen_by_user.game_kind
+                            == GameKind.INTEGER_REDUCTION
+                            else TwoRoleMatchSchedule(
+                                number_of_games_player_one_on_first_role=1,
+                                number_of_games_player_one_on_second_role=0,
+                            )
+                        ),
                         game_args=game_args,
                     ),
                 ),

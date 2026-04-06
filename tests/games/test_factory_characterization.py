@@ -20,10 +20,11 @@ from chipiron.games.domain.match.match_factories import (
 )
 from chipiron.games.domain.match.match_results import MatchResults
 from chipiron.games.domain.match.match_role_schedule import (
+    SoloMatchSchedule,
+    SoloTopologyRequiresSoloScheduleError,
     TwoRoleMatchSchedule,
-    build_two_role_match_schedule_from_legacy_settings,
+    TwoRoleTopologyRequiresTwoRoleScheduleError,
 )
-from chipiron.games.domain.match.match_settings_args import MatchSettingsArgs
 from chipiron.players import PlayerArgs
 from chipiron.players.move_selector.random_args import RandomSelectorArgs
 from chipiron.utils.small_tools import unique_int_from_list
@@ -54,8 +55,7 @@ def test_generate_game_args_assigns_first_and_second_roles_from_neutral_schedule
             starting_position=FenStartingPositionArgs(fen=STANDARD_CHESS_FEN),
         ),
         scheduled_roles=(Color.WHITE, Color.BLACK),
-        scheduled_game_count=two_role_schedule.total_games,
-        two_role_schedule=two_role_schedule,
+        schedule=two_role_schedule,
     )
 
     first_mapping, _, _ = factory.generate_game_args(0)
@@ -90,8 +90,7 @@ def test_generate_game_args_merges_seed_and_tracks_match_completion() -> None:
             starting_position=FenStartingPositionArgs(fen=STANDARD_CHESS_FEN),
         ),
         scheduled_roles=(Color.WHITE, Color.BLACK),
-        scheduled_game_count=two_role_schedule.total_games,
-        two_role_schedule=two_role_schedule,
+        schedule=two_role_schedule,
     )
 
     _, _, first_seed = factory.generate_game_args(0)
@@ -138,7 +137,7 @@ def test_generate_game_args_supports_integer_reduction_solo_assignment() -> None
             starting_position=IntegerReductionValueStartingPositionArgs(value=9),
         ),
         scheduled_roles=(SOLO,),
-        scheduled_game_count=1,
+        schedule=SoloMatchSchedule(number_of_games=1),
     )
 
     assignment, _, merged_seed = factory.generate_game_args(0)
@@ -149,26 +148,69 @@ def test_generate_game_args_supports_integer_reduction_solo_assignment() -> None
     assert factory.is_match_finished() is True
 
 
-def test_build_two_role_schedule_translates_legacy_match_settings_fields() -> None:
-    """Legacy config should translate once into neutral first/second-role quotas."""
-    legacy_settings = MatchSettingsArgs(
-        number_of_games_player_one_white=3,
-        number_of_games_player_one_black=4,
-        game_args=GameArgs(
-            game_kind=GameKind.CHESS,
-            starting_position=FenStartingPositionArgs(fen=STANDARD_CHESS_FEN),
-        ),
-    )
-
-    translated_schedule = build_two_role_match_schedule_from_legacy_settings(
-        legacy_settings
-    )
-
-    assert translated_schedule == TwoRoleMatchSchedule(
+def test_two_role_match_schedule_reports_total_games() -> None:
+    """2-role schedules should expose their neutral total-game count."""
+    schedule = TwoRoleMatchSchedule(
         number_of_games_player_one_on_first_role=3,
         number_of_games_player_one_on_second_role=4,
     )
-    assert translated_schedule.total_games == 7
+    assert schedule.total_games == 7
+
+
+def test_solo_match_schedule_reports_total_games() -> None:
+    """Solo schedules should expose their neutral total-game count."""
+    assert SoloMatchSchedule(number_of_games=3).total_games == 3
+
+
+def test_game_args_factory_rejects_two_role_schedule_for_solo_topology() -> None:
+    """A solo environment should not accept a 2-role schedule."""
+    factory = GameArgsFactory(
+        args_player_one=PlayerArgs(
+            name="solo-player",
+            main_move_selector=RandomSelectorArgs(),
+            oracle_play=False,
+        ),
+        args_player_two=None,
+        seed_=5,
+        args_game=GameArgs(
+            game_kind=GameKind.INTEGER_REDUCTION,
+            starting_position=IntegerReductionValueStartingPositionArgs(value=9),
+        ),
+        scheduled_roles=(SOLO,),
+        schedule=TwoRoleMatchSchedule(
+            number_of_games_player_one_on_first_role=1,
+            number_of_games_player_one_on_second_role=0,
+        ),
+    )
+
+    with pytest.raises(SoloTopologyRequiresSoloScheduleError):
+        factory.generate_game_args(0)
+
+
+def test_game_args_factory_rejects_solo_schedule_for_two_role_topology() -> None:
+    """A 2-role environment should not accept a solo schedule."""
+    factory = GameArgsFactory(
+        args_player_one=PlayerArgs(
+            name="player-one",
+            main_move_selector=RandomSelectorArgs(),
+            oracle_play=False,
+        ),
+        args_player_two=PlayerArgs(
+            name="player-two",
+            main_move_selector=RandomSelectorArgs(),
+            oracle_play=False,
+        ),
+        seed_=11,
+        args_game=GameArgs(
+            game_kind=GameKind.CHESS,
+            starting_position=FenStartingPositionArgs(fen=STANDARD_CHESS_FEN),
+        ),
+        scheduled_roles=(Color.WHITE, Color.BLACK),
+        schedule=SoloMatchSchedule(number_of_games=1),
+    )
+
+    with pytest.raises(TwoRoleTopologyRequiresTwoRoleScheduleError):
+        factory.generate_game_args(0)
 
 
 def test_validate_supported_match_topology_rejects_role_participant_mismatch() -> None:

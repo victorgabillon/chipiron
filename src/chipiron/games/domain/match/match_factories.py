@@ -37,8 +37,8 @@ from chipiron.games.domain.match.match_args import MatchArgs
 from chipiron.games.domain.match.match_manager import MatchManager
 from chipiron.games.domain.match.match_results_factory import MatchResultsFactory
 from chipiron.games.domain.match.match_role_schedule import (
-    TwoRoleMatchSchedule,
-    build_two_role_match_schedule_from_legacy_settings,
+    MatchSchedule,
+    validate_schedule_for_supported_topology,
 )
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script_args import BaseScriptArgs
@@ -117,14 +117,6 @@ def validate_supported_match_topology(
             environment_roles=role_tuple,
         )
     return role_tuple
-
-
-def _scheduled_game_count_from_legacy_settings(args_match: MatchSettingsArgs) -> int:
-    """Return the total number of scheduled games from legacy config fields."""
-    return (
-        args_match.number_of_games_player_one_white
-        + args_match.number_of_games_player_one_black
-    )
 
 
 def create_match_manager(
@@ -207,14 +199,10 @@ def create_match_manager(
         participant_ids=participant_ids,
         environment_roles=environment.roles,
     )
-    two_role_schedule: TwoRoleMatchSchedule | None = None
-    if len(scheduled_roles) == 2:
-        # Legacy white/black config is translated once here into neutral
-        # first-role/second-role scheduling based on environment role order.
-        two_role_schedule = build_two_role_match_schedule_from_legacy_settings(
-            args_match
-        )
-    scheduled_game_count = _scheduled_game_count_from_legacy_settings(args_match)
+    validated_schedule: MatchSchedule = validate_schedule_for_supported_topology(
+        scheduled_roles=scheduled_roles,
+        schedule=args_match.schedule,
+    )
 
     game_manager_factory: GameManagerFactory = GameManagerFactory(
         env_deps=env_deps,
@@ -238,8 +226,7 @@ def create_match_manager(
         seed_=seed,
         args_game=args_game,
         scheduled_roles=scheduled_roles,
-        scheduled_game_count=scheduled_game_count,
-        two_role_schedule=two_role_schedule,
+        schedule=validated_schedule,
     )
 
     return MatchManager(
