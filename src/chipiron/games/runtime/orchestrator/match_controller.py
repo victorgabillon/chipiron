@@ -58,11 +58,6 @@ class MatchController:
         self.pending_role = None
         self.pending_request_id = None
 
-    @property
-    def pending_color(self) -> GameRole | None:
-        """Backward-compatible alias while current runtime stays color-shaped."""
-        return self.pending_role
-
     def _handle_outputs(self, events: Sequence[MatchEvent]) -> None:
         for ev in events:
             if isinstance(ev, NeedAction):

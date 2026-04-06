@@ -66,14 +66,6 @@ class NoOpProgressCollector:
         _ = role
         _ = value
 
-    def progress_white(self, value: int | None) -> None:
-        """Ignore legacy white progress updates."""
-        _ = value
-
-    def progress_black(self, value: int | None) -> None:
-        """Ignore legacy black progress updates."""
-        _ = value
-
 
 def _build_game_manager(
     *, use_rust_boards: bool

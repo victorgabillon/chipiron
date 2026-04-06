@@ -24,11 +24,6 @@ class TurnStatePlusHistory[StateSnapT = object]:
     snapshot: StateSnapT
     historical_actions: list[str] | None = None
 
-    @property
-    def turn(self) -> GameRole:
-        """Backward-compatible alias while callers still expect `turn`."""
-        return self.role_to_play
-
 
 @dataclass(frozen=True, slots=True)
 class PlayerRequest[StateSnapT = object]:
@@ -56,11 +51,6 @@ class EvMove:
     player_role: GameRole
     evaluation: Value | None = None  # replace with your Value type if needed
 
-    @property
-    def color_to_play(self) -> GameRole:
-        """Backward-compatible alias while the runtime still uses colors."""
-        return self.player_role
-
 
 @dataclass(frozen=True, slots=True)
 class EvProgress:
@@ -68,11 +58,6 @@ class EvProgress:
 
     player_role: GameRole
     progress_percent: int | None
-
-    @property
-    def player_color(self) -> GameRole:
-        """Backward-compatible alias while GUI payloads remain color-shaped."""
-        return self.player_role
 
 
 type PlayerEventPayload = EvMove | EvProgress

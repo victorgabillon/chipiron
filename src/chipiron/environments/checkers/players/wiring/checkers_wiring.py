@@ -39,7 +39,7 @@ class BuildCheckersGamePlayerArgs:
     """Buildcheckersgameplayerargs implementation."""
 
     player_factory_args: PlayerFactoryArgs
-    player_color: Color
+    player_role: Color
     implementation_args: object
     universal_behavior: bool
 
@@ -117,7 +117,7 @@ def build_checkers_game_player(
         implementation_args=None,
     )
 
-    return GamePlayer(player, args.player_color)
+    return GamePlayer(player, args.player_role)
 
 
 CHECKERS_WIRING: ObserverWiring[str, CheckersState, BuildCheckersGamePlayerArgs] = (

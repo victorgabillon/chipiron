@@ -414,11 +414,6 @@ class GameManager[StateT: AnyTurnState = AnyTurnState]:
                 evaluation=evaluation,
             )
 
-    @property
-    def player_color_to_id(self) -> MutableRoleAssignment[ParticipantId]:
-        """Backward-compatible alias while match setup remains color-oriented."""
-        return self.participant_id_by_role
-
     def tell_results(self) -> None:
         """Print the results of the game based on the current state of the board.
 

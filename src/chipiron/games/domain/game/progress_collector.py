@@ -3,8 +3,6 @@
 from dataclasses import dataclass, field
 from typing import Protocol
 
-from valanga import Color
-
 from chipiron.core.roles import GameRole, MutableRoleAssignment
 from chipiron.displays.gui_protocol import UpdParticipantProgress
 from chipiron.displays.gui_publisher import GuiPublisher
@@ -39,14 +37,6 @@ class PlayerProgressCollector:
         """Return the latest known progress for the given role."""
         return self.progress_by_role.get(role)
 
-    def progress_white(self, value: int | None) -> None:
-        """Backward-compatible helper for legacy white updates."""
-        self.progress(Color.WHITE, value)
-
-    def progress_black(self, value: int | None) -> None:
-        """Backward-compatible helper for legacy black updates."""
-        self.progress(Color.BLACK, value)
-
 
 def make_publishers() -> list[GuiPublisher]:
     """Create publishers."""
@@ -66,18 +56,6 @@ class PlayerProgressCollectorObservable(PlayerProgressCollectorP):
         """Store and publish progress for the given role."""
         self.progress_collector.progress(role, value)
         self._publish(role=role, value=value)
-
-    def progress_white(self, value: int | None) -> None:
-        """Backward-compatible helper for legacy white updates."""
-        self.progress(Color.WHITE, value)
-
-    def progress_black(self, value: int | None) -> None:
-        """Backward-compatible helper for legacy black updates."""
-        self.progress(Color.BLACK, value)
-
-    def progress_for_chess_color(self, color: Color, value: int | None) -> None:
-        """Backward-compatible helper for callers still passing `Color`."""
-        self.progress(color, value)
 
     def _publish(self, role: GameRole, value: int | None) -> None:
         """Publish a progress update to all GUI publishers."""

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Any, Never
 
 from atomheart.games.chess.board.utils import FenPlusHistory
-from valanga import Color, StateTag
+from valanga import StateTag
 from valanga.evaluations import Value
 
 from chipiron.core.request_context import RequestContext
@@ -88,11 +88,6 @@ class UpdParticipantProgress:
     role: GameRole
     progress_percent: int | None
 
-    @property
-    def player_color(self) -> GameRole:
-        """Backward-compatible alias while some callers still say `player_color`."""
-        return self.role
-
 
 @dataclass(frozen=True, slots=True)
 class UpdEvaluation:
@@ -126,16 +121,6 @@ class UpdParticipantsInfo:
             if participant.role == role:
                 return participant
         raise KeyError(role)
-
-    @property
-    def white(self) -> ParticipantUiInfo:
-        """Backward-compatible accessor for legacy white/black games."""
-        return self.participant_by_role(Color.WHITE)
-
-    @property
-    def black(self) -> ParticipantUiInfo:
-        """Backward-compatible accessor for legacy white/black games."""
-        return self.participant_by_role(Color.BLACK)
 
 
 @dataclass(frozen=True, slots=True)
@@ -190,11 +175,6 @@ type UpdatePayload = (
     | UpdNeedHumanAction
     | UpdNoHumanActionPending
 )
-
-PlayerUiInfo = ParticipantUiInfo
-UpdPlayersInfo = UpdParticipantsInfo
-UpdPlayerProgress = UpdParticipantProgress
-
 
 @dataclass(frozen=True, slots=True)
 class GuiUpdate:

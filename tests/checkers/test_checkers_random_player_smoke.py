@@ -36,7 +36,7 @@ def test_checkers_random_player_produces_parseable_legal_action_name() -> None:
     game_player = build_checkers_game_player(
         BuildCheckersGamePlayerArgs(
             player_factory_args=factory_args,
-            player_color=Color.WHITE,
+            player_role=Color.WHITE,
             implementation_args=object(),
             universal_behavior=True,
         )

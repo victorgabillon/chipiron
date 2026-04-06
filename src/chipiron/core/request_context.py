@@ -11,8 +11,3 @@ class RequestContext:
 
     request_id: int
     role_to_play: GameRole
-
-    @property
-    def color_to_play(self) -> GameRole:
-        """Backward-compatible alias while the runtime still uses colors."""
-        return self.role_to_play

@@ -38,7 +38,7 @@ def handle_player_request[StateSnapT, RuntimeStateT](
 
     if state.role_to_play != game_player.role:
         chipiron_logger.warning(
-            "Rejecting PlayerRequest: wrong role. request_role=%s player_color=%s scope=%s",
+            "Rejecting PlayerRequest: wrong role. request_role=%s player_role=%s scope=%s",
             state.role_to_play,
             game_player.role,
             request.scope,

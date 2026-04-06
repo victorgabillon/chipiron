@@ -10,7 +10,6 @@ Typing strategy:
 - a single cast occurs when selecting wiring by runtime `game_kind`
 """
 
-import inspect
 import multiprocessing
 from functools import partial
 from typing import Protocol, cast
@@ -176,13 +175,12 @@ def _create_player_observer_mono_process(
 
 
 class UnsupportedPlayerRoleBuildArgsError(TypeError):
-    """Raised when a wiring build-args type has no role/color slot."""
+    """Raised when a wiring build-args type has no role slot."""
 
     def __init__(self, build_args_type: type) -> None:
         """Initialize the error with the unsupported args type."""
         super().__init__(
-            "Player build args must accept either `player_role` or `player_color`: "
-            f"{build_args_type!r}"
+            f"Player build args must accept `player_role`: {build_args_type!r}"
         )
 
 
@@ -194,18 +192,13 @@ def _build_player_args(
     implementation_args: object,
     universal_behavior: bool,
 ) -> object:
-    """Instantiate game-specific build args using either role or color naming."""
+    """Instantiate game-specific build args using role-based naming."""
     common_kwargs = {
         "player_factory_args": player_factory_args,
         "implementation_args": implementation_args,
         "universal_behavior": universal_behavior,
     }
-    # Temporary migration bridge: current player wirings are moving from
-    # `player_color` to `player_role`, so we adapt to either constructor shape
-    # here rather than forcing a wider wiring refactor in PR3.
-    parameters = inspect.signature(build_args_type).parameters
-    if "player_role" in parameters:
+    try:
         return build_args_type(player_role=player_role, **common_kwargs)
-    if "player_color" in parameters:
-        return build_args_type(player_color=player_role, **common_kwargs)
-    raise UnsupportedPlayerRoleBuildArgsError(build_args_type)
+    except TypeError as exc:
+        raise UnsupportedPlayerRoleBuildArgsError(build_args_type) from exc

@@ -29,11 +29,6 @@ class GamePlayer[StateSnapT, RuntimeStateT]:
         self._player = player
 
     @property
-    def color(self) -> GameRole:
-        """Backward-compatible alias for current color-backed games."""
-        return self.role
-
-    @property
     def player(self) -> Player[StateSnapT, RuntimeStateT]:
         """Player."""
         return self._player
