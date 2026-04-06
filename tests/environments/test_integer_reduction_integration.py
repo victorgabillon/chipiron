@@ -6,7 +6,19 @@ import queue
 from dataclasses import asdict
 from typing import TYPE_CHECKING, cast
 
+import pytest
 import yaml
+from anemone import TreeAndValuePlayerArgs
+from anemone.node_selector.composed.args import ComposedNodeSelectorArgs
+from anemone.node_selector.node_selector_types import NodeSelectorType
+from anemone.node_selector.opening_instructions import OpeningType
+from anemone.node_selector.priority_check.noop_args import NoPriorityCheckArgs
+from anemone.node_selector.uniform.uniform import UniformArgs
+from anemone.progress_monitor.progress_monitor import (
+    StoppingCriterionTypes,
+    TreeBranchLimitArgs,
+)
+from anemone.recommender_rule.recommender_rule import AlmostEqualLogistic
 from valanga import SOLO
 
 from chipiron.displays.gui_protocol import (
@@ -26,6 +38,11 @@ from chipiron.environments.environment import make_environment
 from chipiron.environments.integer_reduction.integer_reduction_gui_encoder import (
     IntegerReductionDisplayPayload,
 )
+from chipiron.environments.integer_reduction.players.wiring.integer_reduction_wiring import (
+    BuildIntegerReductionGamePlayerArgs,
+    UnsupportedIntegerReductionTreeSelectorError,
+    build_integer_reduction_game_player,
+)
 from chipiron.environments.integer_reduction.starting_position_args import (
     IntegerReductionValueStartingPositionArgs,
 )
@@ -38,9 +55,19 @@ from chipiron.games.domain.match.match_results import MatchResults
 from chipiron.games.domain.match.match_results_factory import MatchResultsFactory
 from chipiron.games.domain.match.match_settings_args import MatchSettingsArgs
 from chipiron.players import PlayerArgs, PlayerFactoryArgs
+from chipiron.players.boardevaluators.all_board_evaluator_args import (
+    BasicEvaluationBoardEvaluatorArgs,
+)
+from chipiron.players.boardevaluators.master_board_evaluator_args import (
+    MasterBoardEvaluatorArgs,
+)
 from chipiron.players.move_selector.human import GuiHumanPlayerArgs
 from chipiron.players.move_selector.move_selector_types import MoveSelectorTypes
 from chipiron.players.move_selector.random_args import RandomSelectorArgs
+from chipiron.players.move_selector.tree_and_value_args import (
+    NodeEvaluatorArgs,
+    TreeAndValueAppArgs,
+)
 from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
@@ -70,6 +97,36 @@ def make_game_args(*, value: int) -> GameArgs:
         starting_position=IntegerReductionValueStartingPositionArgs(value=value),
         max_half_moves=None,
         each_player_has_its_own_thread=False,
+    )
+
+
+def make_tree_and_value_selector() -> TreeAndValueAppArgs:
+    """Build a minimal tree selector to assert unsupported integer-reduction wiring."""
+    return TreeAndValueAppArgs(
+        anemone_args=TreeAndValuePlayerArgs(
+            node_selector=ComposedNodeSelectorArgs(
+                type=NodeSelectorType.COMPOSED,
+                priority=NoPriorityCheckArgs(type=NodeSelectorType.PRIORITY_NOOP),
+                base=UniformArgs(type=NodeSelectorType.UNIFORM),
+            ),
+            opening_type=OpeningType.ALL_CHILDREN,
+            stopping_criterion=TreeBranchLimitArgs(
+                type=StoppingCriterionTypes.TREE_BRANCH_LIMIT,
+                tree_branch_limit=8,
+            ),
+            recommender_rule=AlmostEqualLogistic(
+                type="almost_equal_logistic",
+                temperature=1.0,
+            ),
+        ),
+        evaluator_args=NodeEvaluatorArgs(
+            master_board_evaluator=MasterBoardEvaluatorArgs(
+                board_evaluator=BasicEvaluationBoardEvaluatorArgs(
+                    type="basic_evaluation"
+                ),
+                oracle_evaluation=False,
+            )
+        ),
     )
 
 
@@ -265,3 +322,23 @@ def test_integer_reduction_match_manager_plays_one_solo_match() -> None:
     assert simple.wins_by_participant == {"SoloRandom": 1}
     assert simple.draws == 0
     assert simple.games_played == 1
+
+
+def test_integer_reduction_tree_selector_remains_explicitly_unsupported() -> None:
+    """Tree selectors should fail clearly instead of silently taking a wrong path."""
+    with pytest.raises(UnsupportedIntegerReductionTreeSelectorError):
+        build_integer_reduction_game_player(
+            BuildIntegerReductionGamePlayerArgs(
+                player_factory_args=PlayerFactoryArgs(
+                    player_args=PlayerArgs(
+                        name="SoloTree",
+                        main_move_selector=make_tree_and_value_selector(),
+                        oracle_play=False,
+                    ),
+                    seed=5,
+                ),
+                player_role=SOLO,
+                implementation_args=ImplementationArgs(),
+                universal_behavior=False,
+            )
+        )

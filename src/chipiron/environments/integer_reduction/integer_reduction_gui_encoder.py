@@ -36,7 +36,12 @@ class IntegerReductionGuiEncoder(GuiEncoder[IntegerReductionState]):
         state: IntegerReductionState,
         seed: Seed | None,
     ) -> UpdatePayload:
-        """Create state payload."""
+        """Create state payload.
+
+        Chronological action history is injected by ``ObservableGame`` from the
+        authoritative game object, so this encoder only projects the current
+        integer-reduction state.
+        """
         legal_actions = tuple(
             self.dynamics.action_name(state, action)
             for action in self.dynamics.legal_actions(state).get_all()

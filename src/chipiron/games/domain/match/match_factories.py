@@ -53,6 +53,16 @@ class MissingSecondParticipantError(ValueError):
         super().__init__("A second participant is required for non-solo games.")
 
 
+def _participant_ids_from_inputs(
+    args_player_one: players.PlayerArgs,
+    args_player_two: players.PlayerArgs | None,
+) -> tuple[str, ...]:
+    """Build the ordered participant id tuple from configured participants."""
+    if args_player_two is None:
+        return (args_player_one.name,)
+    return (args_player_one.name, args_player_two.name)
+
+
 def create_match_manager(
     args_match: MatchSettingsArgs,
     args_player_one: players.PlayerArgs,
@@ -64,7 +74,7 @@ def create_match_manager(
     output_folder_path: MyPath | None = None,
     gui: bool = False,
 ) -> MatchManager:
-    """Create a match manager for running matches between two players.
+    """Create a match manager for running matches between configured participants.
 
     Args:
         implementation_args: (ImplementationArgs) the implementation args
@@ -94,12 +104,7 @@ def create_match_manager(
         else None
     )
 
-    participant_ids: tuple[str, ...]
-    if args_game.game_kind is GameKind.INTEGER_REDUCTION:
-        participant_ids = (args_player_one.name,)
-    else:
-        assert args_player_two is not None
-        participant_ids = (args_player_one.name, args_player_two.name)
+    participant_ids = _participant_ids_from_inputs(args_player_one, args_player_two)
 
     can_oracle: bool = args_player_one.name not in ["Stockfish"] and (
         args_player_two is None or args_player_two.name not in ["Stockfish"]

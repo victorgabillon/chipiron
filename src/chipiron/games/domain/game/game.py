@@ -7,8 +7,7 @@ from valanga import Dynamics, StateTag, TurnState
 from valanga.dynamics import Transition
 from valanga.game import ActionKey, ActionName, Seed
 
-from chipiron.displays.gui_protocol import Scope
-from chipiron.displays.gui_protocol import UpdStateGeneric
+from chipiron.displays.gui_protocol import Scope, UpdStateGeneric
 from chipiron.displays.gui_publisher import GuiPublisher
 from chipiron.players.communications.player_request_encoder import PlayerRequestEncoder
 from chipiron.players.factory_higher_level import MoveFunction
@@ -380,6 +379,10 @@ class ObservableGame[StateT: AnyTurnState = AnyTurnState]:
             state=self.game.state,
             seed=self.game.seed,
         )
+        # Generic GUI updates should show the authoritative game history.
+        # Some encoders, like the integer-reduction one, intentionally focus on
+        # current-state projection and leave chronological action history to the
+        # shared Game object that owns it for every environment.
         if isinstance(payload, UpdStateGeneric) and (
             not payload.action_name_history or list(payload.action_name_history)
             != list(self.game.action_history)

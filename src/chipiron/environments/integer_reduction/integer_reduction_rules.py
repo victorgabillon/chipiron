@@ -15,7 +15,12 @@ from chipiron.games.domain.game.game_rules import (
 
 @dataclass(frozen=True)
 class IntegerReductionRules(GameRules[IntegerReductionState]):
-    """Chipiron-facing rules adapter for integer reduction."""
+    """Chipiron-facing rules adapter for integer reduction.
+
+    This is a true solo-game result mapping: reaching ``1`` is a win for the
+    single ``SOLO`` role, with no synthetic opponent or loser role invented by
+    the reporting layer.
+    """
 
     def outcome(self, state: IntegerReductionState) -> GameOutcome | None:
         """Return game outcome for terminal integer-reduction states."""
