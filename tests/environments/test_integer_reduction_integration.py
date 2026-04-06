@@ -311,6 +311,11 @@ def test_integer_reduction_match_manager_plays_one_solo_match() -> None:
     """The match layer should support a one-participant integer-reduction run."""
     player_args = make_player_args(name="SoloRandom", human=False)
     game_args = make_game_args(value=9)
+    match_plan = build_validated_match_plan(
+        participant_ids=("SoloRandom",),
+        environment_roles=(SOLO,),
+        schedule=SoloMatchSchedule(number_of_games=1),
+    )
     match_manager = MatchManager(
         game_manager_factory=make_game_manager_factory(),
         game_args_factory=GameArgsFactory(
@@ -318,13 +323,9 @@ def test_integer_reduction_match_manager_plays_one_solo_match() -> None:
             args_player_two=None,
             seed_=29,
             args_game=game_args,
-            match_plan=build_validated_match_plan(
-                participant_ids=("SoloRandom",),
-                environment_roles=(SOLO,),
-                schedule=SoloMatchSchedule(number_of_games=1),
-            ),
+            match_plan=match_plan,
         ),
-        match_results_factory=MatchResultsFactory(participant_ids=("SoloRandom",)),
+        match_results_factory=MatchResultsFactory(match_plan=match_plan),
         output_folder_path=None,
     )
 

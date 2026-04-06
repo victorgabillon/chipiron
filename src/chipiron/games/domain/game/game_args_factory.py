@@ -46,8 +46,9 @@ class GameArgsFactory:
     ) -> tuple[dict[GameRole, players.PlayerFactoryArgs], GameArgs, Seed | None]:
         """Generate game arguments for a specific game number.
 
-        The returned mapping is role-keyed. Scheduling is fully driven by the
-        validated match plan rather than by ad hoc topology checks.
+        The returned mapping is role-keyed. The validated match plan owns the
+        role-order scheduling contract; this factory only turns the scheduled
+        participant indexes into per-role player factory args.
 
         Args:
             game_number (int): The number of the game.
@@ -79,10 +80,8 @@ class GameArgsFactory:
 
         participant_assignment_by_role = {
             role: participant_factory_args_by_index[participant_index]
-            for role, participant_index in zip(
-                self.match_plan.scheduled_roles,
-                self.match_plan.participant_indexes_for_roles(game_number),
-                strict=True,
+            for role, participant_index in self.match_plan.role_participant_indexes(
+                game_number
             )
         }
         self.game_number += 1

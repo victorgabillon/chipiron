@@ -73,6 +73,9 @@ def create_match_manager(
 ) -> MatchManager:
     """Create a match manager for running matches between configured participants.
 
+    Topology and schedule validation are owned by validated match-plan assembly
+    at this boundary. Downstream factories consume the resulting plan directly.
+
     Args:
         implementation_args: (ImplementationArgs) the implementation args
         args_match (MatchSettingsArgs): The match settings arguments.
@@ -155,7 +158,7 @@ def create_match_manager(
     )
 
     match_results_factory: MatchResultsFactory = MatchResultsFactory(
-        participant_ids=match_plan.participant_ids
+        match_plan=match_plan
     )
 
     game_args_factory = GameArgsFactory(

@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 
 
 class MatchManager:
-    """Object in charge of playing one match.
+    """Object in charge of playing one validated match schedule.
 
     Args:
         game_manager_factory (GameManagerFactory): The factory for creating game managers.
@@ -59,7 +59,6 @@ class MatchManager:
             output_folder_path (path | None, optional): The path to the output folder. Defaults to None.
 
         """
-        self.participant_ids = game_args_factory.participant_ids
         self.game_manager_factory = game_manager_factory
         self.output_folder_path = output_folder_path
         self.match_results_factory = match_results_factory
@@ -67,6 +66,11 @@ class MatchManager:
         self._last_scope: Scope | None = None
         self._last_game_kind: GameKind | None = None
         self.print_info()
+
+    @property
+    def participant_ids(self) -> tuple[str, ...]:
+        """Return the ordered participants for the validated match being played."""
+        return self.game_args_factory.participant_ids
 
     def print_info(self) -> None:
         """Print the ordered participants configured for the validated match."""

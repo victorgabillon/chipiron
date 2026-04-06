@@ -13,6 +13,7 @@ from chipiron.displays.gui_protocol import GuiUpdate, Scope
 from chipiron.displays.gui_publisher import GuiPublisher
 from chipiron.environments.types import GameKind
 from chipiron.games.domain.match.match_results import IMatchResults, MatchResults
+from chipiron.games.domain.match.match_role_schedule import ValidatedMatchPlan
 from chipiron.games.domain.match.observable_match_result import ObservableMatchResults
 
 
@@ -25,18 +26,23 @@ class MatchResultsFactory:
 
     """
 
-    participant_ids: tuple[str, ...]
+    match_plan: ValidatedMatchPlan
     subscriber_queues: list[queue.Queue[GuiUpdate]]
 
-    def __init__(self, participant_ids: tuple[str, ...]) -> None:
+    def __init__(self, match_plan: ValidatedMatchPlan) -> None:
         """Initialize the MatchResultsFactory.
 
         Args:
-            participant_ids (tuple[str, ...]): Ordered participant identifiers.
+            match_plan (ValidatedMatchPlan): The validated match assembly plan.
 
         """
-        self.participant_ids = participant_ids
+        self.match_plan = match_plan
         self.subscriber_queues = []
+
+    @property
+    def participant_ids(self) -> tuple[str, ...]:
+        """Return the ordered participant identifiers for this validated plan."""
+        return self.match_plan.participant_ids
 
     def create(self) -> IMatchResults:
         """Create a MatchResults object.

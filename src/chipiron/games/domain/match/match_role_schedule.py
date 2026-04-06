@@ -199,6 +199,18 @@ class ValidatedMatchPlan:
             return (0, 1)
         return (1, 0)
 
+    def role_participant_indexes(
+        self, game_number: int
+    ) -> tuple[tuple[GameRole, int], ...]:
+        """Return role/index pairs for the scheduled participants of one game."""
+        participant_indexes = self.participant_indexes_for_roles(game_number)
+        if self.is_solo:
+            return ((self.solo_role, participant_indexes[0]),)
+        return (
+            (self.first_role, participant_indexes[0]),
+            (self.second_role, participant_indexes[1]),
+        )
+
 
 def _validate_supported_match_topology(
     *,

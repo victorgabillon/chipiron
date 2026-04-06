@@ -222,6 +222,8 @@ def test_build_validated_match_plan_carries_ready_for_scheduler_data() -> None:
     assert plan.second_role is Color.BLACK
     assert plan.participant_indexes_for_roles(0) == (0, 1)
     assert plan.participant_indexes_for_roles(1) == (1, 0)
+    assert plan.role_participant_indexes(0) == ((Color.WHITE, 0), (Color.BLACK, 1))
+    assert plan.role_participant_indexes(1) == ((Color.WHITE, 1), (Color.BLACK, 0))
     assert plan.total_games == 3
 
 
@@ -236,6 +238,7 @@ def test_build_validated_match_plan_exposes_solo_helpers() -> None:
     assert plan.requires_second_participant is False
     assert plan.solo_role is SOLO
     assert plan.participant_indexes_for_roles(0) == (0,)
+    assert plan.role_participant_indexes(0) == ((SOLO, 0),)
     assert plan.total_games == 2
 
 
