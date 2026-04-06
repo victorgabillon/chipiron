@@ -2,7 +2,6 @@
 
 import multiprocessing
 import uuid
-from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from atomheart.games.chess.board.factory import (
@@ -14,7 +13,6 @@ from parsley import resolve_extended_object
 
 import chipiron as ch
 from chipiron import players
-from chipiron.core.roles import GameRole
 from chipiron.environments.chess.players.evaluators.boardevaluators.factory import (
     create_game_board_evaluator_for_game_kind,
 )
@@ -37,8 +35,8 @@ from chipiron.games.domain.match.match_args import MatchArgs
 from chipiron.games.domain.match.match_manager import MatchManager
 from chipiron.games.domain.match.match_results_factory import MatchResultsFactory
 from chipiron.games.domain.match.match_role_schedule import (
-    MatchSchedule,
-    validate_schedule_for_supported_topology,
+    ValidatedMatchPlan,
+    build_validated_match_plan,
 )
 from chipiron.scripts.chipiron_args import ImplementationArgs
 from chipiron.scripts.script_args import BaseScriptArgs
@@ -52,38 +50,6 @@ if TYPE_CHECKING:
     from chipiron.utils.communication.mailbox import MainMailboxMessage
 
 
-class ParticipantRoleTopologyMismatchError(ValueError):
-    """Raised when configured participants do not match environment roles."""
-
-    def __init__(
-        self,
-        *,
-        participant_ids: tuple[str, ...],
-        environment_roles: tuple[GameRole, ...],
-    ) -> None:
-        """Initialize the mismatch error with both topology sides."""
-        super().__init__(
-            "Configured participants do not match the environment role topology: "
-            f"configured_participant_count={len(participant_ids)} "
-            f"participant_ids={participant_ids!r}, "
-            f"environment_role_count={len(environment_roles)} "
-            f"environment_roles={environment_roles!r}. "
-            "Current match scheduling supports exactly one participant for 1-role "
-            "environments and exactly two participants for 2-role environments."
-        )
-
-
-class UnsupportedRoleTopologyError(ValueError):
-    """Raised when the current match scheduler cannot handle an environment shape."""
-
-    def __init__(self, *, environment_roles: tuple[GameRole, ...]) -> None:
-        """Initialize the error with the unsupported environment roles."""
-        super().__init__(
-            "Current match scheduling supports only 1-role and 2-role environments; "
-            f"got environment_roles={environment_roles!r}."
-        )
-
-
 def _participant_ids_from_inputs(
     args_player_one: players.PlayerArgs,
     args_player_two: players.PlayerArgs | None,
@@ -92,31 +58,6 @@ def _participant_ids_from_inputs(
     if args_player_two is None:
         return (args_player_one.name,)
     return (args_player_one.name, args_player_two.name)
-
-
-def validate_supported_match_topology(
-    *,
-    participant_ids: tuple[str, ...],
-    environment_roles: Sequence[GameRole],
-) -> tuple[GameRole, ...]:
-    """Validate the supported 1-role / 2-role match topologies.
-
-    The environment declares the structural game roles, while the configured
-    participants determine the runtime topology expected for this match.
-    For supported 2-role environments, the returned tuple preserves the
-    environment order contract used by the neutral scheduler:
-    ``scheduled_roles[0]`` is the first role and ``scheduled_roles[1]`` is the
-    second role.
-    """
-    role_tuple = tuple(environment_roles)
-    if len(role_tuple) not in (1, 2):
-        raise UnsupportedRoleTopologyError(environment_roles=role_tuple)
-    if len(participant_ids) != len(role_tuple):
-        raise ParticipantRoleTopologyMismatchError(
-            participant_ids=participant_ids,
-            environment_roles=role_tuple,
-        )
-    return role_tuple
 
 
 def create_match_manager(
@@ -195,12 +136,9 @@ def create_match_manager(
         raise ValueError
 
     environment = make_environment(game_kind=args_game.game_kind, deps=env_deps)
-    scheduled_roles = validate_supported_match_topology(
+    match_plan: ValidatedMatchPlan = build_validated_match_plan(
         participant_ids=participant_ids,
         environment_roles=environment.roles,
-    )
-    validated_schedule: MatchSchedule = validate_schedule_for_supported_topology(
-        scheduled_roles=scheduled_roles,
         schedule=args_match.schedule,
     )
 
@@ -217,7 +155,7 @@ def create_match_manager(
     )
 
     match_results_factory: MatchResultsFactory = MatchResultsFactory(
-        participant_ids=participant_ids
+        participant_ids=match_plan.participant_ids
     )
 
     game_args_factory = GameArgsFactory(
@@ -225,12 +163,11 @@ def create_match_manager(
         args_player_two=args_player_two,
         seed_=seed,
         args_game=args_game,
-        scheduled_roles=scheduled_roles,
-        schedule=validated_schedule,
+        match_plan=match_plan,
     )
 
     return MatchManager(
-        participant_ids=participant_ids,
+        participant_ids=match_plan.participant_ids,
         game_manager_factory=game_manager_factory,
         game_args_factory=game_args_factory,
         match_results_factory=match_results_factory,

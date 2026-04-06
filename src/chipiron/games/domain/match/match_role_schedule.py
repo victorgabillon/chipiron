@@ -1,4 +1,4 @@
-"""Neutral schedule models for supported match topologies."""
+"""Neutral schedule models and validated plans for supported match topologies."""
 
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -54,6 +54,38 @@ class TwoRoleMatchSchedule:
 type MatchSchedule = SoloMatchSchedule | TwoRoleMatchSchedule
 
 
+class ParticipantRoleTopologyMismatchError(ValueError):
+    """Raised when configured participants do not match environment roles."""
+
+    def __init__(
+        self,
+        *,
+        participant_ids: tuple[str, ...],
+        environment_roles: tuple[GameRole, ...],
+    ) -> None:
+        """Initialize the mismatch error with both topology sides."""
+        super().__init__(
+            "Configured participants do not match the environment role topology: "
+            f"configured_participant_count={len(participant_ids)} "
+            f"participant_ids={participant_ids!r}, "
+            f"environment_role_count={len(environment_roles)} "
+            f"environment_roles={environment_roles!r}. "
+            "Current match scheduling supports exactly one participant for 1-role "
+            "environments and exactly two participants for 2-role environments."
+        )
+
+
+class UnsupportedRoleTopologyError(ValueError):
+    """Raised when the current match scheduler cannot handle an environment shape."""
+
+    def __init__(self, *, environment_roles: tuple[GameRole, ...]) -> None:
+        """Initialize the error with the unsupported environment roles."""
+        super().__init__(
+            "Current match scheduling supports only 1-role and 2-role environments; "
+            f"got environment_roles={environment_roles!r}."
+        )
+
+
 class SoloTopologyRequiresSoloScheduleError(ValueError):
     """Raised when a 1-role environment receives a non-solo schedule."""
 
@@ -86,18 +118,53 @@ class TwoRoleTopologyRequiresTwoRoleScheduleError(ValueError):
         )
 
 
-class UnsupportedScheduleValidationTopologyError(ValueError):
-    """Raised when schedule validation is attempted for unsupported role counts."""
+@dataclass(frozen=True, slots=True)
+class ValidatedMatchPlan:
+    """Validated participant/topology/schedule assembly data for one match.
 
-    def __init__(self, *, scheduled_roles: tuple[GameRole, ...]) -> None:
-        """Initialize the unsupported-topology error."""
-        super().__init__(
-            "Schedule validation supports only 1-role and 2-role environments, "
-            f"got scheduled_roles={scheduled_roles!r}."
+    The assembly boundary owns all topology and schedule validation. Downstream
+    scheduling code should consume this plan directly instead of re-validating
+    the environment roles or schedule kind.
+    """
+
+    participant_ids: tuple[str, ...]
+    scheduled_roles: tuple[GameRole, ...]
+    schedule: MatchSchedule
+
+    @property
+    def total_games(self) -> int:
+        """Return the validated total number of games for the match."""
+        return self.schedule.total_games
+
+    @property
+    def is_solo(self) -> bool:
+        """Whether the validated plan describes a supported 1-role match."""
+        return isinstance(self.schedule, SoloMatchSchedule)
+
+    @property
+    def is_two_role(self) -> bool:
+        """Whether the validated plan describes a supported 2-role match."""
+        return isinstance(self.schedule, TwoRoleMatchSchedule)
+
+
+def _validate_supported_match_topology(
+    *,
+    participant_ids: tuple[str, ...],
+    environment_roles: Sequence[GameRole],
+) -> tuple[GameRole, ...]:
+    """Validate the supported 1-role / 2-role match topologies."""
+    role_tuple = tuple(environment_roles)
+    if len(role_tuple) not in (1, 2):
+        raise UnsupportedRoleTopologyError(environment_roles=role_tuple)
+    if len(participant_ids) != len(role_tuple):
+        raise ParticipantRoleTopologyMismatchError(
+            participant_ids=participant_ids,
+            environment_roles=role_tuple,
         )
+    return role_tuple
 
 
-def validate_schedule_for_supported_topology(
+def _validate_schedule_for_supported_topology(
     *,
     scheduled_roles: Sequence[GameRole],
     schedule: MatchSchedule,
@@ -118,4 +185,33 @@ def validate_schedule_for_supported_topology(
                 schedule=schedule,
             )
         return schedule
-    raise UnsupportedScheduleValidationTopologyError(scheduled_roles=role_tuple)
+    raise UnsupportedRoleTopologyError(environment_roles=role_tuple)
+
+
+def build_validated_match_plan(
+    *,
+    participant_ids: Sequence[str],
+    environment_roles: Sequence[GameRole],
+    schedule: MatchSchedule,
+) -> ValidatedMatchPlan:
+    """Build one validated plan from participants, environment roles, and schedule.
+
+    This is the single assembly entry point for supported match topologies. It
+    preserves the environment role order contract used by the scheduler:
+    ``scheduled_roles[0]`` is the first role and ``scheduled_roles[1]`` is the
+    second role for supported 2-role environments.
+    """
+    participant_tuple = tuple(participant_ids)
+    scheduled_roles = _validate_supported_match_topology(
+        participant_ids=participant_tuple,
+        environment_roles=environment_roles,
+    )
+    validated_schedule = _validate_schedule_for_supported_topology(
+        scheduled_roles=scheduled_roles,
+        schedule=schedule,
+    )
+    return ValidatedMatchPlan(
+        participant_ids=participant_tuple,
+        scheduled_roles=scheduled_roles,
+        schedule=validated_schedule,
+    )

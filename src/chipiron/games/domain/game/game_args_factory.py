@@ -8,22 +8,11 @@ from chipiron.games.domain.match.match_role_schedule import (
     MatchSchedule,
     SoloMatchSchedule,
     TwoRoleMatchSchedule,
-    validate_schedule_for_supported_topology,
+    ValidatedMatchPlan,
 )
 from chipiron.utils.small_tools import unique_int_from_list
 
 from .game_args import GameArgs
-
-
-class UnsupportedSchedulingTopologyError(ValueError):
-    """Raised when GameArgsFactory receives an unsupported role topology."""
-
-    def __init__(self, *, scheduled_roles: tuple[GameRole, ...]) -> None:
-        """Initialize the error with the unsupported scheduling roles."""
-        super().__init__(
-            "GameArgsFactory supports only 1-role and 2-role scheduling, "
-            f"got scheduled_roles={scheduled_roles!r}."
-        )
 
 
 class GameArgsFactory:
@@ -33,8 +22,7 @@ class GameArgsFactory:
     args_player_one: players.PlayerArgs
     args_player_two: players.PlayerArgs | None
     args_game: GameArgs
-    scheduled_roles: tuple[GameRole, ...]
-    schedule: MatchSchedule
+    match_plan: ValidatedMatchPlan
     game_number: int
 
     def __init__(
@@ -43,16 +31,14 @@ class GameArgsFactory:
         args_player_two: players.PlayerArgs | None,
         seed_: int | None,
         args_game: GameArgs,
-        scheduled_roles: tuple[GameRole, ...],
-        schedule: MatchSchedule,
+        match_plan: ValidatedMatchPlan,
     ) -> None:
         """Initialize the instance."""
         self.seed_ = seed_
         self.args_player_one = args_player_one
         self.args_player_two = args_player_two
         self.args_game = args_game
-        self.scheduled_roles = scheduled_roles
-        self.schedule = schedule
+        self.match_plan = match_plan
         self.game_number = 0
 
     def generate_game_args(
@@ -78,41 +64,30 @@ class GameArgsFactory:
         player_one_factory_args = players.PlayerFactoryArgs(
             player_args=self.args_player_one, seed=merged_seed
         )
+        schedule: MatchSchedule = self.match_plan.schedule
 
-        if len(self.scheduled_roles) == 1:
-            validated_schedule = validate_schedule_for_supported_topology(
-                scheduled_roles=self.scheduled_roles,
-                schedule=self.schedule,
-            )
-            assert isinstance(validated_schedule, SoloMatchSchedule)
+        if isinstance(schedule, SoloMatchSchedule):
+            assert self.match_plan.is_solo
+            assert len(self.match_plan.scheduled_roles) == 1
             self.game_number += 1
             return (
-                {self.scheduled_roles[0]: player_one_factory_args},
+                {self.match_plan.scheduled_roles[0]: player_one_factory_args},
                 self.args_game,
                 merged_seed,
             )
 
-        if len(self.scheduled_roles) != 2:
-            raise UnsupportedSchedulingTopologyError(
-                scheduled_roles=self.scheduled_roles
-            )
-        validated_schedule = validate_schedule_for_supported_topology(
-            scheduled_roles=self.scheduled_roles,
-            schedule=self.schedule,
-        )
-        assert isinstance(validated_schedule, TwoRoleMatchSchedule)
+        assert isinstance(schedule, TwoRoleMatchSchedule)
+        assert self.match_plan.is_two_role
+        assert len(self.match_plan.scheduled_roles) == 2
 
         assert self.args_player_two is not None
         player_two_factory_args = players.PlayerFactoryArgs(
             player_args=self.args_player_two, seed=merged_seed
         )
-        first_role, second_role = self.scheduled_roles
+        first_role, second_role = self.match_plan.scheduled_roles
 
         participant_assignment_by_role: dict[GameRole, players.PlayerFactoryArgs]
-        if (
-            game_number
-            < validated_schedule.number_of_games_player_one_on_first_role
-        ):
+        if game_number < schedule.number_of_games_player_one_on_first_role:
             participant_assignment_by_role = {
                 first_role: player_one_factory_args,
                 second_role: player_two_factory_args,
@@ -133,4 +108,4 @@ class GameArgsFactory:
             bool: True if the match is finished, False otherwise.
 
         """
-        return self.game_number >= self.schedule.total_games
+        return self.game_number >= self.match_plan.total_games
