@@ -1,6 +1,9 @@
-"""Minimal Morpion SVG adapter for the generic GUI."""
+"""Board-based Morpion SVG adapter for the generic GUI."""
 
-from dataclasses import dataclass
+from __future__ import annotations
+
+import math
+from dataclasses import dataclass, field
 from html import escape
 from typing import Any
 
@@ -11,34 +14,18 @@ from chipiron.displays.svg_adapter_protocol import (
     SvgGameAdapter,
     SvgPosition,
 )
-from chipiron.environments.morpion.morpion_gui_encoder import MorpionDisplayPayload
+from chipiron.environments.morpion.morpion_gui_encoder import (
+    MorpionDisplayPayload,
+    MorpionMoveDisplay,
+)
 
-
-@dataclass(frozen=True, slots=True)
-class _ActionButton:
-    """Clickable rectangle associated with one Morpion action."""
-
-    action_name: str
-    x: float
-    y: float
-    width: float
-    height: float
-
-    def contains(self, *, x: int, y: int) -> bool:
-        """Return whether the given click falls inside the button."""
-        return (
-            self.x <= x <= self.x + self.width and self.y <= y <= self.y + self.height
-        )
+type DisplayPoint = tuple[int, int]
+type DisplaySegment = tuple[DisplayPoint, DisplayPoint]
 
 
 def _clamp(value: float, lower: float, upper: float) -> float:
     """Clamp a scalar into a closed interval."""
     return min(max(value, lower), upper)
-
-
-def _estimate_text_width(text: str, font_size: float, width_factor: float = 0.56) -> float:
-    """Estimate SVG text width without requiring font metrics."""
-    return len(text) * font_size * width_factor
 
 
 def _fit_font_size(
@@ -61,6 +48,16 @@ def _fmt(value: float) -> str:
     return f"{value:.2f}"
 
 
+def _collect_geometry_points(payload: MorpionDisplayPayload) -> list[DisplayPoint]:
+    """Collect all points that should influence the board transform."""
+    geometry_points = list(payload.points)
+    geometry_points.extend(point for segment in payload.segments for point in segment)
+    for move in payload.legal_moves:
+        geometry_points.append(move.new_point)
+        geometry_points.extend(move.segment)
+    return geometry_points or [(0, 0)]
+
+
 @dataclass
 class MorpionSvgAdapter(SvgGameAdapter):
     """SVG adapter implementation for Morpion."""
@@ -69,7 +66,8 @@ class MorpionSvgAdapter(SvgGameAdapter):
     board_side: int = 1
 
     _payload: MorpionDisplayPayload | None = None
-    _buttons: tuple[_ActionButton, ...] = ()
+    _click_targets: list[tuple[str, float, float]] = field(default_factory=list)
+    _click_radius: float = 12.0
 
     _TITLE = "Morpion Solitaire"
     _TERMINAL_MESSAGE = "No legal moves remain"
@@ -85,46 +83,151 @@ class MorpionSvgAdapter(SvgGameAdapter):
                 actual_value=adapter_payload,
             )
         self._payload = adapter_payload
-        self._buttons = ()
+        self._click_targets = []
         return SvgPosition(state_tag=state_tag, payload=adapter_payload)
 
-    def _build_buttons(
+    def _build_transform(
         self,
         *,
         payload: MorpionDisplayPayload,
-        left: float,
-        top: float,
-        width: float,
-        bottom: float,
-    ) -> tuple[tuple[_ActionButton, ...], float]:
-        """Return vertical action buttons sized to the available list area."""
-        action_count = len(payload.legal_actions)
-        if action_count == 0:
-            return (), 0.0
+        size: int,
+        margin: int,
+    ) -> tuple[float, float, float, float, float, float]:
+        """Return transform inputs for mapping Morpion grid points to SVG coordinates."""
+        width = float(size)
+        height = float(size)
+        outer_margin = min(float(margin), min(width, height) / 2.0)
+        padding = _clamp(size * 0.035, 16.0, 28.0)
+        header_height = _clamp(size * 0.14, 52.0, 88.0)
 
-        available_height = max(bottom - top, 1.0)
-        gap = _clamp(available_height * 0.012, 2.0, 6.0)
-        total_gap = gap * max(action_count - 1, 0)
-        button_height = max(16.0, (available_height - total_gap) / action_count)
+        board_left = outer_margin + padding
+        board_top = outer_margin + header_height
+        board_right = width - outer_margin - padding
+        board_bottom = height - outer_margin - padding
+        board_width = max(board_right - board_left, 1.0)
+        board_height = max(board_bottom - board_top, 1.0)
 
-        buttons = tuple(
-            _ActionButton(
-                action_name=action_name,
-                x=left,
-                y=top + index * (button_height + gap),
-                width=width,
-                height=button_height,
+        geometry_points = _collect_geometry_points(payload)
+        xs = [point[0] for point in geometry_points]
+        ys = [point[1] for point in geometry_points]
+        min_x, max_x = min(xs), max(xs)
+        min_y, max_y = min(ys), max(ys)
+
+        span_x = max(max_x - min_x, 1)
+        span_y = max(max_y - min_y, 1)
+        grid_padding = 1.5
+        scale = min(
+            board_width / (float(span_x) + 2.0 * grid_padding),
+            board_height / (float(span_y) + 2.0 * grid_padding),
+        )
+
+        used_width = (float(span_x) + 2.0 * grid_padding) * scale
+        used_height = (float(span_y) + 2.0 * grid_padding) * scale
+        offset_x = board_left + (board_width - used_width) / 2.0
+        offset_y = board_top + (board_height - used_height) / 2.0
+        return float(min_x), float(max_y), float(grid_padding), offset_x, offset_y, scale
+
+    def _to_svg_point(
+        self,
+        point: DisplayPoint,
+        *,
+        min_x: float,
+        max_y: float,
+        grid_padding: float,
+        offset_x: float,
+        offset_y: float,
+        scale: float,
+    ) -> tuple[float, float]:
+        """Map one Morpion grid point to SVG coordinates."""
+        x = offset_x + ((float(point[0]) - min_x) + grid_padding) * scale
+        y = offset_y + ((max_y - float(point[1])) + grid_padding) * scale
+        return x, y
+
+    def _render_segment(
+        self,
+        *,
+        segment: DisplaySegment,
+        stroke: str,
+        stroke_width: float,
+        opacity: float,
+        transform: tuple[float, float, float, float, float, float],
+    ) -> str:
+        """Render one SVG line from Morpion grid coordinates."""
+        start, end = segment
+        min_x, max_y, grid_padding, offset_x, offset_y, scale = transform
+        x1, y1 = self._to_svg_point(
+            start,
+            min_x=min_x,
+            max_y=max_y,
+            grid_padding=grid_padding,
+            offset_x=offset_x,
+            offset_y=offset_y,
+            scale=scale,
+        )
+        x2, y2 = self._to_svg_point(
+            end,
+            min_x=min_x,
+            max_y=max_y,
+            grid_padding=grid_padding,
+            offset_x=offset_x,
+            offset_y=offset_y,
+            scale=scale,
+        )
+        return (
+            f'<line x1="{_fmt(x1)}" y1="{_fmt(y1)}" x2="{_fmt(x2)}" y2="{_fmt(y2)}" '
+            f'stroke="{stroke}" stroke-width="{_fmt(stroke_width)}" opacity="{opacity:.2f}"/>'
+        )
+
+    def _render_point(
+        self,
+        *,
+        point: DisplayPoint,
+        radius: float,
+        fill: str,
+        opacity: float,
+        transform: tuple[float, float, float, float, float, float],
+        stroke: str | None = None,
+        stroke_width: float = 0.0,
+    ) -> str:
+        """Render one SVG circle from Morpion grid coordinates."""
+        min_x, max_y, grid_padding, offset_x, offset_y, scale = transform
+        cx, cy = self._to_svg_point(
+            point,
+            min_x=min_x,
+            max_y=max_y,
+            grid_padding=grid_padding,
+            offset_x=offset_x,
+            offset_y=offset_y,
+            scale=scale,
+        )
+        stroke_attrs = ""
+        if stroke is not None and stroke_width > 0.0:
+            stroke_attrs = (
+                f' stroke="{stroke}" stroke-width="{_fmt(stroke_width)}"'
             )
-            for index, action_name in enumerate(payload.legal_actions)
+        return (
+            f'<circle cx="{_fmt(cx)}" cy="{_fmt(cy)}" r="{_fmt(radius)}" '
+            f'fill="{fill}" opacity="{opacity:.2f}"{stroke_attrs}/>'
         )
-        widest_label = max(payload.legal_actions, key=len)
-        font_size = _fit_font_size(
-            text=widest_label,
-            max_width=width * 0.92,
-            min_size=7.0,
-            max_size=min(13.0, button_height * 0.55),
+
+    def _register_click_target(
+        self,
+        *,
+        move: MorpionMoveDisplay,
+        transform: tuple[float, float, float, float, float, float],
+    ) -> None:
+        """Store one clickable move target near the preview point."""
+        min_x, max_y, grid_padding, offset_x, offset_y, scale = transform
+        cx, cy = self._to_svg_point(
+            move.new_point,
+            min_x=min_x,
+            max_y=max_y,
+            grid_padding=grid_padding,
+            offset_x=offset_x,
+            offset_y=offset_y,
+            scale=scale,
         )
-        return buttons, font_size
+        self._click_targets.append((move.action_name, cx, cy))
 
     def render_svg(
         self,
@@ -133,7 +236,7 @@ class MorpionSvgAdapter(SvgGameAdapter):
         *,
         margin: int = 0,
     ) -> RenderResult:
-        """Render a simple summary panel with one clickable action row per move."""
+        """Render a Morpion board with clickable legal-move previews."""
         payload = pos.payload
         if not isinstance(payload, MorpionDisplayPayload):
             raise InvalidSvgAdapterPayloadTypeError(
@@ -144,59 +247,44 @@ class MorpionSvgAdapter(SvgGameAdapter):
 
         width = float(size)
         height = float(size)
-        outer_margin = min(float(margin), min(width, height) / 2.0)
-        padding = _clamp(size * 0.03, 12.0, 20.0)
-
-        left = outer_margin + padding
-        top = outer_margin + padding
-        right = width - outer_margin - padding
-        bottom = height - outer_margin - padding
-        content_width = max(right - left, 1.0)
-        center_x = left + content_width / 2.0
+        transform = self._build_transform(payload=payload, size=size, margin=margin)
+        self._click_targets = []
 
         title_font = _fit_font_size(
             text=self._TITLE,
-            max_width=content_width,
-            min_size=16.0,
-            max_size=28.0,
+            max_width=width * 0.72,
+            min_size=15.0,
+            max_size=24.0,
         )
         meta_font = _fit_font_size(
             text=f"variant={payload.variant} moves={payload.moves} points={payload.point_count}",
-            max_width=content_width,
-            min_size=10.0,
-            max_size=16.0,
-            width_factor=0.58,
-        )
-        info_font = _fit_font_size(
-            text=f"legal moves: {len(payload.legal_actions)}",
-            max_width=content_width,
+            max_width=width * 0.88,
             min_size=9.0,
             max_size=14.0,
+            width_factor=0.58,
+        )
+        status_font = _fit_font_size(
+            text=f"legal previews: {len(payload.legal_moves)}",
+            max_width=width * 0.88,
+            min_size=9.0,
+            max_size=13.0,
         )
 
-        cursor = top
-        title_y = cursor + title_font * 0.7
-        cursor += title_font * 1.5
-        variant_y = cursor + meta_font * 0.6
-        cursor += meta_font * 1.35
-        moves_y = cursor + meta_font * 0.6
-        cursor += meta_font * 1.35
+        scale = transform[-1]
+        point_radius = _clamp(scale * 0.11, 2.5, 4.0)
+        preview_radius = _clamp(scale * 0.22, 5.0, 8.0)
+        segment_width = _clamp(scale * 0.10, 1.5, 2.6)
+        preview_width = _clamp(scale * 0.11, 1.8, 3.0)
+        self._click_radius = max(12.0, preview_radius * 1.6)
+
         status_text = (
             self._TERMINAL_MESSAGE
             if payload.is_terminal
-            else f"legal moves: {len(payload.legal_actions)}"
+            else f"legal previews: {len(payload.legal_moves)}"
         )
-        status_y = cursor + info_font * 0.6
-        cursor += info_font * 1.6
-
-        buttons, button_font = self._build_buttons(
-            payload=payload,
-            left=left,
-            top=cursor,
-            width=content_width,
-            bottom=bottom,
-        )
-        self._buttons = buttons
+        title_y = _clamp(height * 0.06, 26.0, 38.0)
+        meta_y = title_y + title_font * 0.95
+        status_y = meta_y + meta_font * 1.1
 
         elements = [
             '<?xml version="1.0" encoding="UTF-8"?>',
@@ -206,48 +294,67 @@ class MorpionSvgAdapter(SvgGameAdapter):
             ),
             f'<rect x="0" y="0" width="{size}" height="{size}" fill="#f8fafc"/>',
             (
-                f'<rect x="{_fmt(left - 6)}" y="{_fmt(top - 6)}" '
-                f'width="{_fmt(content_width + 12)}" height="{_fmt(bottom - top + 12)}" '
-                'rx="14" ry="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>'
-            ),
-            (
-                f'<text x="{_fmt(center_x)}" y="{_fmt(title_y)}" text-anchor="middle" '
+                f'<text x="{_fmt(width / 2.0)}" y="{_fmt(title_y)}" text-anchor="middle" '
                 f'font-size="{_fmt(title_font)}" font-family="sans-serif" '
                 'fill="#0f172a">Morpion Solitaire</text>'
             ),
             (
-                f'<text x="{_fmt(center_x)}" y="{_fmt(variant_y)}" text-anchor="middle" '
+                f'<text x="{_fmt(width / 2.0)}" y="{_fmt(meta_y)}" text-anchor="middle" '
                 f'font-size="{_fmt(meta_font)}" font-family="monospace" '
-                f'fill="#334155">{escape(f"variant = {payload.variant}")}</text>'
+                f'fill="#334155">{escape(f"variant = {payload.variant} | moves = {payload.moves} | points = {payload.point_count}")}</text>'
             ),
             (
-                f'<text x="{_fmt(center_x)}" y="{_fmt(moves_y)}" text-anchor="middle" '
-                f'font-size="{_fmt(meta_font)}" font-family="monospace" '
-                f'fill="#334155">{escape(f"moves = {payload.moves} | points = {payload.point_count}")}</text>'
-            ),
-            (
-                f'<text x="{_fmt(center_x)}" y="{_fmt(status_y)}" text-anchor="middle" '
-                f'font-size="{_fmt(info_font)}" font-family="sans-serif" '
+                f'<text x="{_fmt(width / 2.0)}" y="{_fmt(status_y)}" text-anchor="middle" '
+                f'font-size="{_fmt(status_font)}" font-family="sans-serif" '
                 f'fill="{"#065f46" if payload.is_terminal else "#475569"}">{escape(status_text)}</text>'
             ),
         ]
 
-        for button in buttons:
-            elements.extend(
-                [
-                    (
-                        f'<rect x="{_fmt(button.x)}" y="{_fmt(button.y)}" '
-                        f'width="{_fmt(button.width)}" height="{_fmt(button.height)}" '
-                        'rx="8" ry="8" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1.5"/>'
-                    ),
-                    (
-                        f'<text x="{_fmt(button.x + button.width / 2.0)}" '
-                        f'y="{_fmt(button.y + button.height / 2.0)}" text-anchor="middle" '
-                        'dominant-baseline="middle" '
-                        f'font-size="{_fmt(button_font)}" font-family="monospace" '
-                        f'fill="#0f172a">{escape(button.action_name)}</text>'
-                    ),
-                ]
+        for segment in payload.segments:
+            elements.append(
+                self._render_segment(
+                    segment=segment,
+                    stroke="#0f172a",
+                    stroke_width=segment_width,
+                    opacity=1.0,
+                    transform=transform,
+                )
+            )
+
+        for move in payload.legal_moves:
+            elements.append(
+                self._render_segment(
+                    segment=move.segment,
+                    stroke="#22c55e",
+                    stroke_width=preview_width,
+                    opacity=0.60,
+                    transform=transform,
+                )
+            )
+
+        for point in payload.points:
+            elements.append(
+                self._render_point(
+                    point=point,
+                    radius=point_radius,
+                    fill="#0f172a",
+                    opacity=1.0,
+                    transform=transform,
+                )
+            )
+
+        for move in payload.legal_moves:
+            self._register_click_target(move=move, transform=transform)
+            elements.append(
+                self._render_point(
+                    point=move.new_point,
+                    radius=preview_radius,
+                    fill="#22c55e",
+                    opacity=0.30,
+                    transform=transform,
+                    stroke="#16a34a",
+                    stroke_width=max(1.0, preview_width * 0.45),
+                )
             )
 
         elements.append("</svg>")
@@ -255,7 +362,9 @@ class MorpionSvgAdapter(SvgGameAdapter):
             "fen": (
                 f"variant={payload.variant} moves={payload.moves} points={payload.point_count}"
             ),
-            "legal_moves": ", ".join(payload.legal_actions),
+            "legal_moves": (
+                ", ".join(move.action_name for move in payload.legal_moves) or "(terminal)"
+            ),
         }
         return RenderResult(svg_bytes="\n".join(elements).encode("utf-8"), info=info)
 
@@ -268,18 +377,18 @@ class MorpionSvgAdapter(SvgGameAdapter):
         board_size: int,
         margin: int,
     ) -> ClickResult:
-        """Handle clicks by returning the action name for the clicked row."""
+        """Handle clicks by selecting the preview nearest the click point."""
         _ = pos
         _ = board_size
         _ = margin
-        for button in self._buttons:
-            if button.contains(x=x, y=y):
+        for action_name, cx, cy in self._click_targets:
+            if math.hypot(float(x) - cx, float(y) - cy) <= self._click_radius:
                 return ClickResult(
-                    action_name=button.action_name,
+                    action_name=action_name,
                     interaction_continues=False,
                 )
         return ClickResult(action_name=None, interaction_continues=True)
 
     def reset_interaction(self) -> None:
         """Reset transient click/selection interaction state."""
-        self._buttons = ()
+        self._click_targets = []

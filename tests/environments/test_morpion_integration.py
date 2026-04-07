@@ -204,7 +204,10 @@ def test_morpion_environment_declares_solo_role_and_readable_payloads() -> None:
     assert payload.adapter_payload.variant == "5T"
     assert payload.adapter_payload.moves == 0
     assert payload.adapter_payload.point_count == 36
-    assert len(payload.adapter_payload.legal_actions) == 20
+    assert len(payload.adapter_payload.points) == 36
+    assert payload.adapter_payload.segments == ()
+    assert len(payload.adapter_payload.legal_moves) == 20
+    assert payload.adapter_payload.legal_moves[0].new_point not in payload.adapter_payload.points
 
     adapter = MorpionSvgAdapter()
     pos = adapter.position_from_update(
@@ -212,18 +215,20 @@ def test_morpion_environment_declares_solo_role_and_readable_payloads() -> None:
         adapter_payload=payload.adapter_payload,
     )
     render = adapter.render_svg(pos, size=600, margin=0)
-    first_button = adapter._buttons[0]
+    first_target = adapter._click_targets[0]
     click = adapter.handle_click(
         pos,
-        x=int(first_button.x + first_button.width / 2),
-        y=int(first_button.y + first_button.height / 2),
+        x=int(round(first_target[1])),
+        y=int(round(first_target[2])),
         board_size=600,
         margin=0,
     )
 
     assert b"Morpion Solitaire" in render.svg_bytes
+    assert b"<line" in render.svg_bytes
+    assert b"<circle" in render.svg_bytes
     assert render.info["fen"] == "variant=5T moves=0 points=36"
-    assert click.action_name == payload.adapter_payload.legal_actions[0]
+    assert click.action_name == payload.adapter_payload.legal_moves[0].action_name
 
 
 def test_morpion_wrapped_terminal_state_keeps_rules_and_gui_in_sync() -> None:
@@ -248,7 +253,7 @@ def test_morpion_wrapped_terminal_state_keeps_rules_and_gui_in_sync() -> None:
     assert state.is_game_over() is True
     assert isinstance(payload, UpdStateGeneric)
     assert payload.adapter_payload.is_terminal is True
-    assert payload.adapter_payload.legal_actions == ()
+    assert payload.adapter_payload.legal_moves == ()
     assert outcome is not None
     assert outcome.winner == SOLO
     assert outcome.reason == "no_legal_moves"
@@ -293,7 +298,7 @@ def test_morpion_human_session_emits_need_action_and_advances_state() -> None:
     assert len(display_payloads) == 1
     assert isinstance(display_payloads[0], UpdStateGeneric)
     assert isinstance(display_payloads[0].adapter_payload, MorpionDisplayPayload)
-    first_action_name = display_payloads[0].adapter_payload.legal_actions[0]
+    first_action_name = display_payloads[0].adapter_payload.legal_moves[0].action_name
 
     session.controller.start()
     start_payloads = drain_payloads(gui_queue)
@@ -316,6 +321,7 @@ def test_morpion_human_session_emits_need_action_and_advances_state() -> None:
     assert isinstance(after_action_payloads[1], UpdStateGeneric)
     assert after_action_payloads[1].adapter_payload.moves == 1
     assert after_action_payloads[1].adapter_payload.point_count == 37
+    assert len(after_action_payloads[1].adapter_payload.segments) == 4
     assert isinstance(after_action_payloads[2], UpdNeedHumanAction)
     assert after_action_payloads[2].ctx.role_to_play == SOLO
 
