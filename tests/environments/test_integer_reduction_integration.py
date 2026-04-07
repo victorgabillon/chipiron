@@ -112,7 +112,7 @@ def make_game_args(*, value: int) -> GameArgs:
 
 
 def make_tree_and_value_selector() -> TreeAndValueAppArgs:
-    """Build a minimal tree selector to assert unsupported integer-reduction wiring."""
+    """Build a tree selector close to the shipped integer-reduction config."""
     return TreeAndValueAppArgs(
         anemone_args=TreeAndValuePlayerArgs(
             node_selector=ComposedNodeSelectorArgs(
@@ -123,7 +123,7 @@ def make_tree_and_value_selector() -> TreeAndValueAppArgs:
             opening_type=OpeningType.ALL_CHILDREN,
             stopping_criterion=TreeBranchLimitArgs(
                 type=StoppingCriterionTypes.TREE_BRANCH_LIMIT,
-                tree_branch_limit=8,
+                tree_branch_limit=128,
             ),
             recommender_rule=AlmostEqualLogistic(
                 type="almost_equal_logistic",
@@ -439,7 +439,7 @@ def test_integer_reduction_evaluator_prefers_fewer_steps_and_marks_terminal() ->
 def test_integer_reduction_tree_selector_builds_and_prefers_half_when_available() -> (
     None
 ):
-    """Tree selectors should build successfully and pick the better smaller successor."""
+    """Tree selectors should use single-agent max semantics for integer reduction."""
     game_player = build_integer_reduction_game_player(
         BuildIntegerReductionGamePlayerArgs(
             player_factory_args=PlayerFactoryArgs(
@@ -457,7 +457,7 @@ def test_integer_reduction_tree_selector_builds_and_prefers_half_when_available(
     )
 
     recommendation = game_player.select_move_from_snapshot(
-        snapshot=8,
+        snapshot=6,
         seed=0,
         notify_percent_function=lambda _progress: None,
     )

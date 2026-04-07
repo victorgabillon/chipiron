@@ -4,6 +4,9 @@ import random
 from dataclasses import dataclass
 from datetime import datetime
 
+from anemone.node_evaluation.tree.single_agent.factory import (
+    NodeMaxEvaluationFactory,
+)
 from anemone.tree_and_value_branch_selector import TreeAndValueBranchSelector
 from valanga import SoloRole
 
@@ -100,6 +103,7 @@ def build_integer_reduction_game_player(
         state_type=IntegerReductionState,
         accelerate_when_winning=main_selector_args.accelerate_when_winning,
         master_state_value_evaluator=master_state_evaluator,
+        node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
         state_representation_factory=None,
         random_generator=random_generator,
         dynamics=dynamics,

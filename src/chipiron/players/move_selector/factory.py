@@ -4,12 +4,17 @@ import random
 from collections.abc import Mapping
 from typing import Any
 
-from anemone import TreeAndValuePlayerArgs, create_tree_and_value_branch_selector
+from anemone import (
+    TreeAndValuePlayerArgs,
+    create_tree_and_value_branch_selector,
+    create_tree_and_value_branch_selector_with_tree_eval_factory,
+)
 from anemone.dynamics import SearchDynamics, normalize_search_dynamics
 from anemone.hooks.search_hooks import PriorityCheckFactory, SearchHooks
 from anemone.node_evaluation.direct.protocols import (
     MasterStateValueEvaluator,
 )
+from anemone.node_evaluation.tree.factory import NodeTreeEvaluationFactory
 from anemone.node_selector.opening_instructions import OpeningInstructor
 from valanga import (
     Dynamics,
@@ -110,6 +115,7 @@ def create_tree_and_value_move_selector[TurnStateT: AnyTurnState](
     random_generator: random.Random,
     dynamics: Dynamics[TurnStateT] | None = None,
     search_dynamics_override: SearchDynamics[TurnStateT, Any] | None = None,
+    node_tree_evaluation_factory: NodeTreeEvaluationFactory[TurnStateT] | None = None,
     implementation_args: ImplementationArgs | None = None,
 ) -> BranchSelector[TurnStateT]:
     """Create a tree-and-value move selector with a prebuilt evaluator."""
@@ -160,15 +166,27 @@ def create_tree_and_value_move_selector[TurnStateT: AnyTurnState](
             search_dynamics=search_dynamics,
         )
 
-    base_selector = create_tree_and_value_branch_selector(
-        state_type=state_type,
-        master_state_value_evaluator=master_state_value_evaluator,
-        state_representation_factory=state_representation_factory,
-        args=args,
-        random_generator=random_generator,
-        hooks=hooks,
-        dynamics=search_dynamics,
-    )
+    if node_tree_evaluation_factory is None:
+        base_selector = create_tree_and_value_branch_selector(
+            state_type=state_type,
+            master_state_value_evaluator=master_state_value_evaluator,
+            state_representation_factory=state_representation_factory,
+            args=args,
+            random_generator=random_generator,
+            hooks=hooks,
+            dynamics=search_dynamics,
+        )
+    else:
+        base_selector = create_tree_and_value_branch_selector_with_tree_eval_factory(
+            state_type=state_type,
+            master_state_evaluator=master_state_value_evaluator,
+            state_representation_factory=state_representation_factory,
+            args=args,
+            random_generator=random_generator,
+            hooks=hooks,
+            dynamics=search_dynamics,
+            node_tree_evaluation_factory=node_tree_evaluation_factory,
+        )
 
     if accelerate_when_winning:
         return ComposedBranchSelector(
