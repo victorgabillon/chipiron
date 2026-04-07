@@ -62,10 +62,7 @@ def make_morpion_environment(
         return tag
 
     def make_initial_state(tag: MorpionStartTag) -> MorpionState:
-        return MorpionState.from_atomheart_state(
-            morpion_initial_state(variant=tag.variant),
-            is_terminal=False,
-        )
+        return dynamics.wrap_atomheart_state(morpion_initial_state(variant=tag.variant))
 
     dynamics = MorpionDynamics()
 

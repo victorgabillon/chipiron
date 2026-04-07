@@ -32,14 +32,11 @@ class MorpionAdapter:
         """Build runtime state."""
         if isinstance(snapshot, MorpionState):
             return snapshot
-        return MorpionState.from_atomheart_state(
-            cast("AtomMorpionState", snapshot),
-            is_terminal=False,
-        )
+        return self._dynamics.wrap_atomheart_state(cast("AtomMorpionState", snapshot))
 
     def legal_action_count(self, runtime_state: MorpionState) -> int:
         """Legal action count."""
-        return len(self._dynamics.legal_actions(runtime_state).get_all())
+        return self._dynamics.legal_action_count(runtime_state)
 
     def only_action_name(self, runtime_state: MorpionState) -> BranchName:
         """Only action name."""

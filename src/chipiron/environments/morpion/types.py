@@ -95,12 +95,45 @@ class MorpionDynamics(valanga.Dynamics[MorpionState]):
 
     inner: AtomMorpionDynamics = field(default_factory=AtomMorpionDynamics)
 
+    def _as_atomheart_state(
+        self,
+        state: MorpionState | AtomMorpionState,
+    ) -> AtomMorpionState:
+        """Normalize a Chipiron or atomheart Morpion state to atomheart form."""
+        if isinstance(state, MorpionState):
+            return state.to_atomheart_state()
+        return state
+
+    def legal_action_count(
+        self,
+        state: MorpionState | AtomMorpionState,
+    ) -> int:
+        """Return the current number of legal Morpion moves."""
+        return len(self.inner.legal_actions(self._as_atomheart_state(state)).get_all())
+
+    def is_terminal_state(
+        self,
+        state: MorpionState | AtomMorpionState,
+    ) -> bool:
+        """Return whether the provided Morpion state has no legal action."""
+        return self.legal_action_count(state) == 0
+
+    def wrap_atomheart_state(
+        self,
+        state: AtomMorpionState,
+        *,
+        is_terminal: bool | None = None,
+    ) -> MorpionState:
+        """Build a Chipiron Morpion state with terminality kept consistent."""
+        terminal = self.is_terminal_state(state) if is_terminal is None else is_terminal
+        return MorpionState.from_atomheart_state(state, is_terminal=terminal)
+
     def legal_actions(
         self,
         state: MorpionState,
     ) -> valanga.BranchKeyGeneratorP[MorpionAction]:
         """Return legal actions for the provided state."""
-        return self.inner.legal_actions(state.to_atomheart_state())
+        return self.inner.legal_actions(self._as_atomheart_state(state))
 
     def step(
         self,
@@ -108,9 +141,9 @@ class MorpionDynamics(valanga.Dynamics[MorpionState]):
         action: valanga.BranchKey,
     ) -> valanga.Transition[MorpionState]:
         """Apply an action and convert the resulting transition."""
-        transition = self.inner.step(state.to_atomheart_state(), action)
+        transition = self.inner.step(self._as_atomheart_state(state), action)
         return valanga.Transition(
-            next_state=MorpionState.from_atomheart_state(
+            next_state=self.wrap_atomheart_state(
                 cast("AtomMorpionState", transition.next_state),
                 is_terminal=transition.is_over,
             ),
@@ -122,7 +155,7 @@ class MorpionDynamics(valanga.Dynamics[MorpionState]):
 
     def action_name(self, state: MorpionState, action: valanga.BranchKey) -> str:
         """Return the canonical string name for an action key."""
-        return self.inner.action_name(state.to_atomheart_state(), action)
+        return self.inner.action_name(self._as_atomheart_state(state), action)
 
     def action_from_name(
         self,
@@ -132,5 +165,5 @@ class MorpionDynamics(valanga.Dynamics[MorpionState]):
         """Parse a canonical action name and validate it for the given state."""
         return cast(
             "MorpionAction",
-            self.inner.action_from_name(state.to_atomheart_state(), name),
+            self.inner.action_from_name(self._as_atomheart_state(state), name),
         )

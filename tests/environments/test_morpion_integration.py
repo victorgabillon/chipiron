@@ -16,6 +16,7 @@ from anemone.progress_monitor.progress_monitor import (
     TreeBranchLimitArgs,
 )
 from anemone.recommender_rule.recommender_rule import AlmostEqualLogistic
+from atomheart.games.morpion import MorpionState as AtomMorpionState
 from atomheart.games.morpion.state import Variant as MorpionVariant
 from valanga import SOLO
 
@@ -34,6 +35,7 @@ from chipiron.environments.chess.players.evaluators.boardevaluators.factory impo
 from chipiron.environments.deps import MorpionEnvironmentDeps
 from chipiron.environments.environment import make_environment
 from chipiron.environments.morpion.morpion_gui_encoder import MorpionDisplayPayload
+from chipiron.environments.morpion.morpion_rules import MorpionRules
 from chipiron.environments.morpion.players.evaluators.morpion_state_evaluator import (
     MorpionStateEvaluator,
 )
@@ -195,6 +197,7 @@ def test_morpion_environment_declares_solo_role_and_readable_payloads() -> None:
     assert state.moves == 0
     assert state.turn == SOLO
     assert state.variant is MorpionVariant.TOUCHING_5T
+    assert state.is_game_over() is False
     assert len(state.points) == 36
     assert isinstance(payload, UpdStateGeneric)
     assert isinstance(payload.adapter_payload, MorpionDisplayPayload)
@@ -221,6 +224,34 @@ def test_morpion_environment_declares_solo_role_and_readable_payloads() -> None:
     assert b"Morpion Solitaire" in render.svg_bytes
     assert render.info["fen"] == "variant=5T moves=0 points=36"
     assert click.action_name == payload.adapter_payload.legal_actions[0]
+
+
+def test_morpion_wrapped_terminal_state_keeps_rules_and_gui_in_sync() -> None:
+    """Wrapped terminal Morpion states should report terminality consistently."""
+    dynamics = MorpionDynamics()
+    rules = MorpionRules()
+    atom_state = AtomMorpionState(
+        points=frozenset(),
+        used_unit_segments=frozenset(),
+        dir_usage={},
+        moves=7,
+        variant=MorpionVariant.TOUCHING_5T,
+    )
+
+    state = dynamics.wrap_atomheart_state(atom_state)
+    payload = make_environment(
+        game_kind=GameKind.MORPION,
+        deps=MorpionEnvironmentDeps(),
+    ).gui_encoder.make_state_payload(state=state, seed=19)
+    outcome = rules.outcome(state)
+
+    assert state.is_game_over() is True
+    assert isinstance(payload, UpdStateGeneric)
+    assert payload.adapter_payload.is_terminal is True
+    assert payload.adapter_payload.legal_actions == ()
+    assert outcome is not None
+    assert outcome.winner == SOLO
+    assert outcome.reason == "no_legal_moves"
 
 
 def test_morpion_evaluator_rewards_progress() -> None:

@@ -39,12 +39,23 @@ class MorpionStateEvaluator:
 
     def legal_action_count(self, state: MorpionState) -> int:
         """Return the current number of legal Morpion moves."""
-        return len(self.dynamics.legal_actions(state).get_all())
+        return self.dynamics.legal_action_count(state)
+
+    def _score_from_legal_action_count(
+        self,
+        *,
+        moves: int,
+        legal_action_count: int,
+    ) -> float:
+        """Project one Morpion position to the minimal scalar heuristic used in v1."""
+        return float(moves) + 0.01 * float(legal_action_count)
 
     def score(self, state: MorpionState) -> float:
         """Score a state so maximizing search prefers deeper, still-open runs."""
-        legal_action_count = self.legal_action_count(state)
-        return float(state.moves) + 0.01 * float(legal_action_count)
+        return self._score_from_legal_action_count(
+            moves=state.moves,
+            legal_action_count=self.legal_action_count(state),
+        )
 
     def evaluate(self, state: MorpionState) -> Value:
         """Evaluate a state for Chipiron's generic GUI/game-state evaluator."""
@@ -57,7 +68,10 @@ class MorpionStateEvaluator:
             )
 
         return Value(
-            score=float(state.moves) + 0.01 * float(legal_action_count),
+            score=self._score_from_legal_action_count(
+                moves=state.moves,
+                legal_action_count=legal_action_count,
+            ),
             certainty=Certainty.ESTIMATE,
             over_event=None,
         )
@@ -74,7 +88,7 @@ class MorpionOverEventDetector:
     ) -> tuple[OverEvent | None, float | None]:
         """Return a terminal over-event and value when no legal move remains."""
         morpion_state = cast("MorpionState", state)
-        legal_action_count = len(self.dynamics.legal_actions(morpion_state).get_all())
+        legal_action_count = self.dynamics.legal_action_count(morpion_state)
         if legal_action_count != 0:
             return None, None
         return _terminal_over_event(), float(morpion_state.moves)
