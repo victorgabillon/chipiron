@@ -76,6 +76,23 @@ if TYPE_CHECKING:
     from chipiron.utils.communication.mailbox import MainMailboxMessage
 
 
+def expected_classic_standard_points() -> frozenset[tuple[int, int]]:
+    """Return the canonical Greek-cross coordinates for the default start."""
+    row_to_xs = {
+        4: (-2, -1, 0, 1),
+        3: (-2, 1),
+        2: (-2, 1),
+        1: (-5, -4, -3, -2, 1, 2, 3, 4),
+        0: (-5, 4),
+        -1: (-5, 4),
+        -2: (-5, -4, -3, -2, 1, 2, 3, 4),
+        -3: (-2, 1),
+        -4: (-2, 1),
+        -5: (-2, -1, 0, 1),
+    }
+    return frozenset((x, y) for y, xs in row_to_xs.items() for x in xs)
+
+
 def make_player_args(*, name: str, human: bool) -> PlayerArgs:
     """Build simple player args for Morpion tests."""
     selector = (
@@ -181,10 +198,12 @@ def test_morpion_environment_declares_solo_role_and_readable_payloads() -> None:
         game_kind=GameKind.MORPION,
         deps=MorpionEnvironmentDeps(),
     )
+    expected_points = expected_classic_standard_points()
     state = environment.make_initial_state(
         environment.normalize_start_tag(MorpionStandardStartingPositionArgs().get_start_tag())
     )
     payload = environment.gui_encoder.make_state_payload(state=state, seed=13)
+    legal_actions = environment.dynamics.legal_actions(state).get_all()
     match_plan = build_validated_match_plan(
         participant_ids=("SoloHuman",),
         environment_roles=environment.roles,
@@ -198,15 +217,17 @@ def test_morpion_environment_declares_solo_role_and_readable_payloads() -> None:
     assert state.turn == SOLO
     assert state.variant is MorpionVariant.TOUCHING_5T
     assert state.is_game_over() is False
+    assert state.points == expected_points
     assert len(state.points) == 36
     assert isinstance(payload, UpdStateGeneric)
     assert isinstance(payload.adapter_payload, MorpionDisplayPayload)
     assert payload.adapter_payload.variant == "5T"
     assert payload.adapter_payload.moves == 0
     assert payload.adapter_payload.point_count == 36
-    assert len(payload.adapter_payload.points) == 36
+    assert payload.adapter_payload.points == tuple(sorted(expected_points))
     assert payload.adapter_payload.segments == ()
-    assert len(payload.adapter_payload.legal_moves) == 20
+    assert len(payload.adapter_payload.legal_moves) == len(legal_actions)
+    assert len(payload.adapter_payload.legal_moves) > 0
     assert payload.adapter_payload.legal_moves[0].new_point not in payload.adapter_payload.points
 
     adapter = MorpionSvgAdapter()
