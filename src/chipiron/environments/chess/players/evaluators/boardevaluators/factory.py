@@ -10,6 +10,10 @@ from chipiron.environments.integer_reduction.players.evaluators.wiring import (
     IntegerReductionEvalWiring,
 )
 from chipiron.environments.integer_reduction.types import IntegerReductionState
+from chipiron.environments.morpion.players.evaluators.wiring import (
+    MorpionEvalWiring,
+)
+from chipiron.environments.morpion.types import MorpionState
 from chipiron.environments.types import GameKind
 from chipiron.players.boardevaluators.board_evaluator import (
     GameStateEvaluator,
@@ -34,6 +38,10 @@ def _select_eval_wiring(
 ) -> EvaluatorWiring[IntegerReductionState]: ...
 @overload
 def _select_eval_wiring(
+    game_kind: Literal[GameKind.MORPION], *, can_oracle: bool
+) -> EvaluatorWiring[MorpionState]: ...
+@overload
+def _select_eval_wiring(
     game_kind: GameKind, *, can_oracle: bool
 ) -> EvaluatorWiring[Any]: ...
 def _select_eval_wiring(
@@ -47,6 +55,8 @@ def _select_eval_wiring(
             return NullEvalWiring()
         case GameKind.INTEGER_REDUCTION:
             return IntegerReductionEvalWiring()
+        case GameKind.MORPION:
+            return MorpionEvalWiring()
         case _:
             assert_never(game_kind)
 
@@ -80,6 +90,10 @@ def create_game_board_evaluator_for_game_kind(
 def create_game_board_evaluator_for_game_kind(
     *, game_kind: Literal[GameKind.INTEGER_REDUCTION], gui: bool, can_oracle: bool
 ) -> IGameStateEvaluator[IntegerReductionState]: ...
+@overload
+def create_game_board_evaluator_for_game_kind(
+    *, game_kind: Literal[GameKind.MORPION], gui: bool, can_oracle: bool
+) -> IGameStateEvaluator[MorpionState]: ...
 @overload
 def create_game_board_evaluator_for_game_kind(
     *, game_kind: GameKind, gui: bool, can_oracle: bool

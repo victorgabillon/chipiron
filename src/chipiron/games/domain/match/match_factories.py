@@ -24,6 +24,7 @@ from chipiron.environments.deps import (
     ChessEnvironmentDeps,
     EnvDeps,
     IntegerReductionEnvironmentDeps,
+    MorpionEnvironmentDeps,
 )
 from chipiron.environments.environment import make_environment
 from chipiron.environments.types import GameKind
@@ -135,6 +136,8 @@ def create_match_manager(
         env_deps = CheckersEnvironmentDeps()
     elif args_game.game_kind == GameKind.INTEGER_REDUCTION:
         env_deps = IntegerReductionEnvironmentDeps()
+    elif args_game.game_kind == GameKind.MORPION:
+        env_deps = MorpionEnvironmentDeps()
     else:
         raise ValueError
 

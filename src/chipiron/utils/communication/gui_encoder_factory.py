@@ -7,6 +7,8 @@ from chipiron.environments.integer_reduction.integer_reduction_gui_encoder impor
     IntegerReductionGuiEncoder,
 )
 from chipiron.environments.integer_reduction.types import IntegerReductionDynamics
+from chipiron.environments.morpion.morpion_gui_encoder import MorpionGuiEncoder
+from chipiron.environments.morpion.types import MorpionDynamics
 from chipiron.environments.types import GameKind
 from chipiron.utils.communication.gui_encoder import GuiEncoder
 
@@ -35,6 +37,11 @@ def make_gui_encoder[StateT](
             return cast(
                 "GuiEncoder[StateT]",
                 IntegerReductionGuiEncoder(dynamics=IntegerReductionDynamics()),
+            )
+        case GameKind.MORPION:
+            return cast(
+                "GuiEncoder[StateT]",
+                MorpionGuiEncoder(dynamics=MorpionDynamics()),
             )
         case _:
             raise GuiEncoderError(game_kind)

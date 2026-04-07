@@ -15,12 +15,16 @@ from chipiron.environments.deps import (
     CheckersEnvironmentDeps,
     ChessEnvironmentDeps,
     IntegerReductionEnvironmentDeps,
+    MorpionEnvironmentDeps,
 )
 from chipiron.environments.integer_reduction.environment import (
     make_integer_reduction_environment,
 )
 from chipiron.environments.integer_reduction.tags import IntegerReductionStartTag
 from chipiron.environments.integer_reduction.types import IntegerReductionState
+from chipiron.environments.morpion.environment import make_morpion_environment
+from chipiron.environments.morpion.tags import MorpionStartTag
+from chipiron.environments.morpion.types import MorpionState
 from chipiron.environments.types import GameKind
 
 
@@ -37,7 +41,10 @@ class EnvironmentNotFoundError(EnvironmentCreationError):
 
 
 EnvDeps = (
-    ChessEnvironmentDeps | CheckersEnvironmentDeps | IntegerReductionEnvironmentDeps
+    ChessEnvironmentDeps
+    | CheckersEnvironmentDeps
+    | IntegerReductionEnvironmentDeps
+    | MorpionEnvironmentDeps
 )
 
 
@@ -62,6 +69,12 @@ def make_environment(
 @overload
 def make_environment(
     *,
+    game_kind: Literal[GameKind.MORPION],
+    deps: MorpionEnvironmentDeps,
+) -> Environment[MorpionState, MorpionState, MorpionStartTag]: ...
+@overload
+def make_environment(
+    *,
     game_kind: GameKind,
     deps: EnvDeps,
 ) -> Environment[Any, Any, Any]: ...
@@ -81,5 +94,8 @@ def make_environment(
         case GameKind.INTEGER_REDUCTION:
             assert isinstance(deps, IntegerReductionEnvironmentDeps)
             return make_integer_reduction_environment(deps=deps)
+        case GameKind.MORPION:
+            assert isinstance(deps, MorpionEnvironmentDeps)
+            return make_morpion_environment(deps=deps)
         case _:
             raise EnvironmentNotFoundError(game_kind)

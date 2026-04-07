@@ -65,6 +65,12 @@ INTEGER_REDUCTION_PLAYER_OPTIONS: tuple[PlayerOption, ...] = (
     ),
 )
 
+MORPION_PLAYER_OPTIONS: tuple[PlayerOption, ...] = (
+    PlayerOption("Human Player", PlayerConfigTag.GUI_HUMAN, False),
+    PlayerOption("Random", PlayerConfigTag.RANDOM, False),
+    PlayerOption("Tree (basic eval)", PlayerConfigTag.MORPION_TREE_BASIC, False),
+)
+
 CHESS_STARTING_POSITIONS: dict[str, str] = {
     "Standard": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
     "End game": "6k1/p7/8/8/7N/7K/2N5/8 w - - 0 1",
@@ -105,6 +111,16 @@ _LAUNCHER_SPECS: dict[GameKind, LauncherSpec] = {
         participant_labels=("Solo",),
         player_options=INTEGER_REDUCTION_PLAYER_OPTIONS,
         starting_positions={"Small": "7", "Standard": "15", "Large": "31"},
+        default_starting_position_key="Standard",
+        default_participants=(
+            ParticipantSelection(player_tag=PlayerConfigTag.GUI_HUMAN),
+        ),
+    ),
+    GameKind.MORPION: LauncherSpec(
+        participant_count=1,
+        participant_labels=("Solo",),
+        player_options=MORPION_PLAYER_OPTIONS,
+        starting_positions={"Standard": "5T"},
         default_starting_position_key="Standard",
         default_participants=(
             ParticipantSelection(player_tag=PlayerConfigTag.GUI_HUMAN),

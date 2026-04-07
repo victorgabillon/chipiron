@@ -49,6 +49,7 @@ class PlayerConfigTag(StrEnum):
     CHECKERS_TREE_PIECECOUNT = "CheckersTreePieceCount"
     INTEGER_REDUCTION_TREE_BASIC = "IntegerReductionTreeBasic"
     INTEGER_REDUCTION_TREE_BASIC_DEBUG = "IntegerReductionTreeBasicDebug"
+    MORPION_TREE_BASIC = "MorpionTreeBasic"
 
     def is_human(self) -> bool:
         """Check if the player is human.
@@ -76,6 +77,8 @@ class PlayerConfigTag(StrEnum):
             PlayerConfigTag.INTEGER_REDUCTION_TREE_BASIC_DEBUG,
         }:
             subpath = f"data/players/player_config/integer_reduction/{self.value}.yaml"
+        elif self is PlayerConfigTag.MORPION_TREE_BASIC:
+            subpath = f"data/players/player_config/morpion/{self.value}.yaml"
         elif self in {
             PlayerConfigTag.RANDOM,
             PlayerConfigTag.GUI_HUMAN,

@@ -17,6 +17,9 @@ from chipiron.environments.integer_reduction.starting_position_args import (
     IntegerReductionStandardStartingPositionArgs,
     IntegerReductionValueStartingPositionArgs,
 )
+from chipiron.environments.morpion.starting_position_args import (
+    MorpionStandardStartingPositionArgs,
+)
 from chipiron.environments.starting_position import StartingPositionArgs
 
 
@@ -117,6 +120,7 @@ AllStartingPositionArgs = (
     | CheckersTextStartingPositionArgs
     | IntegerReductionStandardStartingPositionArgs
     | IntegerReductionValueStartingPositionArgs
+    | MorpionStandardStartingPositionArgs
 )
 
 

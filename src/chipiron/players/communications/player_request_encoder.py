@@ -82,6 +82,20 @@ class IntegerReductionLikeState(Protocol):
         ...
 
 
+class MorpionLikeState(Protocol):
+    """Protocol for solo Morpion states transported as runtime snapshots."""
+
+    @property
+    def tag(self) -> Any:
+        """Return state tag."""
+        ...
+
+    @property
+    def turn(self) -> SoloRole:
+        """Return the acting solo role."""
+        ...
+
+
 class PlayerRequestEncoderError(ValueError):
     """Raised when a player request encoder is missing for a game kind."""
 
@@ -181,6 +195,35 @@ class IntegerReductionPlayerRequestEncoder(
         )
 
 
+@dataclass(frozen=True, slots=True)
+class MorpionPlayerRequestEncoder(
+    PlayerRequestEncoder[MorpionLikeState, MorpionLikeState]
+):
+    """Morpion move request encoder."""
+
+    game_kind: GameKind = GameKind.MORPION
+
+    def make_move_request(
+        self,
+        *,
+        state: MorpionLikeState,
+        seed: Seed,
+        scope: Scope,
+    ) -> PlayerRequest[MorpionLikeState]:
+        """Encode a Morpion move request using the runtime state snapshot."""
+        return PlayerRequest(
+            schema_version=1,
+            scope=scope,
+            seed=seed,
+            state=TurnStatePlusHistory(
+                current_state_tag=state.tag,
+                role_to_play=state.turn,
+                snapshot=state,
+                historical_actions=None,
+            ),
+        )
+
+
 def make_player_request_encoder[StateT](
     *,
     game_kind: GameKind,
@@ -203,5 +246,7 @@ def make_player_request_encoder[StateT](
                 "PlayerRequestEncoder[StateT, Any]",
                 IntegerReductionPlayerRequestEncoder(),
             )
+        case GameKind.MORPION:
+            return cast("PlayerRequestEncoder[StateT, Any]", MorpionPlayerRequestEncoder())
         case _:
             raise PlayerRequestEncoderError(game_kind)

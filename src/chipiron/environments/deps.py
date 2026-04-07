@@ -40,6 +40,14 @@ class IntegerReductionEnvironmentDeps:
     """Dependencies required to build integer-reduction environments."""
 
 
+@dataclass(frozen=True)
+class MorpionEnvironmentDeps:
+    """Dependencies required to build Morpion environments."""
+
+
 EnvDeps = (
-    ChessEnvironmentDeps | CheckersEnvironmentDeps | IntegerReductionEnvironmentDeps
+    ChessEnvironmentDeps
+    | CheckersEnvironmentDeps
+    | IntegerReductionEnvironmentDeps
+    | MorpionEnvironmentDeps
 )

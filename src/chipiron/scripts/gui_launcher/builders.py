@@ -23,6 +23,9 @@ from chipiron.environments.chess.starting_position_args import (
 from chipiron.environments.integer_reduction.starting_position_args import (
     IntegerReductionValueStartingPositionArgs,
 )
+from chipiron.environments.morpion.starting_position_args import (
+    MorpionStandardStartingPositionArgs,
+)
 from chipiron.environments.types import GameKind
 from chipiron.games.domain.game.game_args import GameArgs
 from chipiron.games.domain.match.match_args import MatchArgs
@@ -129,6 +132,12 @@ def _game_args_from_user_choices(
                 type=StartingPositionArgsType.FEN,
                 fen=starting_position_value,
             ),
+        )
+
+    if args_chosen_by_user.game_kind is GameKind.MORPION:
+        return partial_op_game_args(
+            game_kind=args_chosen_by_user.game_kind,
+            starting_position=MorpionStandardStartingPositionArgs(),
         )
 
     return partial_op_game_args(

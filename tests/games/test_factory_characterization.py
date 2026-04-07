@@ -9,6 +9,9 @@ from chipiron.environments.chess.starting_position_args import FenStartingPositi
 from chipiron.environments.integer_reduction.starting_position_args import (
     IntegerReductionValueStartingPositionArgs,
 )
+from chipiron.environments.morpion.starting_position_args import (
+    MorpionStandardStartingPositionArgs,
+)
 from chipiron.environments.types import GameKind
 from chipiron.games.domain.game.final_game_result import GameReport, RoleOutcome
 from chipiron.games.domain.game.game_args import GameArgs
@@ -163,6 +166,31 @@ def test_generate_game_args_supports_integer_reduction_solo_assignment() -> None
     assert set(assignment) == {SOLO}
     assert assignment[SOLO].player_args.name == "solo-player"
     assert merged_seed == unique_int_from_list([5, 0])
+    assert factory.is_match_finished() is True
+
+
+def test_generate_game_args_supports_morpion_solo_assignment() -> None:
+    """Solo Morpion games should bind only the real solo role."""
+    factory = GameArgsFactory(
+        args_player_one=PlayerArgs(
+            name="solo-player",
+            main_move_selector=RandomSelectorArgs(),
+            oracle_play=False,
+        ),
+        args_player_two=None,
+        seed_=7,
+        args_game=GameArgs(
+            game_kind=GameKind.MORPION,
+            starting_position=MorpionStandardStartingPositionArgs(),
+        ),
+        match_plan=build_solo_plan(SoloMatchSchedule(number_of_games=1)),
+    )
+
+    assignment, _, merged_seed = factory.generate_game_args(0)
+
+    assert set(assignment) == {SOLO}
+    assert assignment[SOLO].player_args.name == "solo-player"
+    assert merged_seed == unique_int_from_list([7, 0])
     assert factory.is_match_finished() is True
 
 

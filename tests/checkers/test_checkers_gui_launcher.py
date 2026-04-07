@@ -34,6 +34,7 @@ def test_launcher_specs_encode_participant_topology() -> None:
     assert launcher_spec_for_game(GameKind.CHESS).participant_count == 2
     assert launcher_spec_for_game(GameKind.CHECKERS).participant_count == 2
     assert launcher_spec_for_game(GameKind.INTEGER_REDUCTION).participant_count == 1
+    assert launcher_spec_for_game(GameKind.MORPION).participant_count == 1
 
 
 def test_checkers_registry_includes_random_player_option() -> None:
@@ -93,6 +94,24 @@ def test_integer_reduction_registry_and_defaults_support_solo_play() -> None:
     )
 
 
+def test_morpion_registry_and_defaults_support_solo_play() -> None:
+    """Morpion should expose a solo launcher state."""
+    options = player_options_for_game(GameKind.MORPION)
+    tags = {opt.tag for opt in options}
+    args = ArgsChosenByUser(game_kind=GameKind.MORPION)
+
+    apply_game_kind_defaults(args)
+
+    assert PlayerConfigTag.GUI_HUMAN in tags
+    assert PlayerConfigTag.RANDOM in tags
+    assert PlayerConfigTag.MORPION_TREE_BASIC in tags
+    assert starting_positions_for_game(GameKind.MORPION) == {"Standard": "5T"}
+    assert len(args.participants) == 1
+    assert args.participants[0] == ParticipantSelection(
+        player_tag=PlayerConfigTag.GUI_HUMAN,
+    )
+
+
 def test_generate_inputs_configures_integer_reduction_as_single_game_match() -> None:
     """Launcher builder should set one solo game and leave player two unused."""
     _, gui_args, config_file_name = generate_inputs(
@@ -117,6 +136,31 @@ def test_generate_inputs_configures_integer_reduction_as_single_game_match() -> 
         config_file_name
         == "package://scripts/one_match/inputs/gui_launcher/exp_options.yaml"
     )
+    assert isinstance(
+        match_args.match_setting_overwrite.schedule,
+        SoloMatchSchedule,
+    )
+    assert match_args.match_setting_overwrite.schedule.number_of_games == 1
+
+
+def test_generate_inputs_configures_morpion_as_single_game_match() -> None:
+    """Launcher builder should set one solo Morpion game and leave player two unused."""
+    _, gui_args, _ = generate_inputs(
+        ArgsChosenByUser(
+            type=ScriptGUIType.PLAY_OR_WATCH_A_GAME,
+            game_kind=GameKind.MORPION,
+            participants=[
+                ParticipantSelection(player_tag=PlayerConfigTag.MORPION_TREE_BASIC),
+            ],
+            starting_position_key="Standard",
+        )
+    )
+
+    assert gui_args is not None
+    typed_gui_args = cast("MatchScriptArgs", gui_args)
+    match_args = cast("Any", typed_gui_args.match_args)
+    assert match_args.player_one is PlayerConfigTag.MORPION_TREE_BASIC
+    assert match_args.player_two is None
     assert isinstance(
         match_args.match_setting_overwrite.schedule,
         SoloMatchSchedule,
@@ -190,6 +234,9 @@ def test_participant_row_models_follow_game_topology() -> None:
     integer_reduction_rows = participant_row_models_for_state(
         ArgsChosenByUser(game_kind=GameKind.INTEGER_REDUCTION)
     )
+    morpion_rows = participant_row_models_for_state(
+        ArgsChosenByUser(game_kind=GameKind.MORPION)
+    )
     chess_rows = participant_row_models_for_state(
         ArgsChosenByUser(game_kind=GameKind.CHESS)
     )
@@ -199,5 +246,7 @@ def test_participant_row_models_follow_game_topology() -> None:
 
     assert len(integer_reduction_rows) == 1
     assert integer_reduction_rows[0].label_text == "Solo"
+    assert len(morpion_rows) == 1
+    assert morpion_rows[0].label_text == "Solo"
     assert len(chess_rows) == 2
     assert len(checkers_rows) == 2
