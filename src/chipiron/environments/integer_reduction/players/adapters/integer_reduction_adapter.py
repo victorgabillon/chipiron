@@ -25,7 +25,7 @@ class IntegerReductionAdapter:
 
     def build_runtime_state(self, snapshot: int) -> IntegerReductionState:
         """Build runtime state."""
-        return IntegerReductionState(value=snapshot)
+        return IntegerReductionState(value=snapshot, steps=0)
 
     def legal_action_count(self, runtime_state: IntegerReductionState) -> int:
         """Legal action count."""

@@ -53,6 +53,7 @@ class _PanelLayout:
 
     title: _TextLayout
     value: _TextLayout
+    steps: _TextLayout
     instruction: _TextLayout
     buttons: tuple[_ActionButton, ...]
     button_font_size: float
@@ -162,6 +163,14 @@ class IntegerReductionSvgAdapter(SvgGameAdapter):
             max_size=min(72.0, content_height * 0.26),
             width_factor=0.62,
         )
+        steps_text = f"steps = {payload.steps}"
+        steps_font = _fit_font_size(
+            text=steps_text,
+            max_width=content_width,
+            min_size=12.0,
+            max_size=min(30.0, content_height * 0.11),
+            width_factor=0.6,
+        )
         instruction_text = (
             self._TERMINAL_MESSAGE if payload.is_terminal else self._ACTION_PROMPT
         )
@@ -175,22 +184,31 @@ class IntegerReductionSvgAdapter(SvgGameAdapter):
 
         title_line = title_font * 1.2
         value_line = value_font * 1.1
+        steps_line = steps_font * 1.15
         instruction_line = instruction_font * 1.2
         gap_small = _clamp(content_height * 0.03, 8.0, 18.0)
         gap_medium = _clamp(content_height * 0.04, 10.0, 24.0)
 
         header_height = (
-            title_line + gap_small + value_line + gap_small + instruction_line
+            title_line
+            + gap_small
+            + value_line
+            + gap_small
+            + steps_line
+            + gap_small
+            + instruction_line
         )
-        max_header_ratio = 0.45 if payload.is_terminal else 0.52
+        max_header_ratio = 0.56 if payload.is_terminal else 0.62
         max_header_height = content_height * max_header_ratio
         if header_height > max_header_height and header_height > 0.0:
             scale = max_header_height / header_height
             title_font *= scale
             value_font *= scale
+            steps_font *= scale
             instruction_font *= scale
             title_line *= scale
             value_line *= scale
+            steps_line *= scale
             instruction_line *= scale
             gap_small *= scale
             gap_medium *= scale
@@ -200,6 +218,8 @@ class IntegerReductionSvgAdapter(SvgGameAdapter):
         cursor += title_line + gap_small
         value_y = cursor + value_line / 2.0
         cursor += value_line + gap_small
+        steps_y = cursor + steps_line / 2.0
+        cursor += steps_line + gap_small
         instruction_y = cursor + instruction_line / 2.0
         cursor += instruction_line + gap_medium
 
@@ -264,6 +284,16 @@ class IntegerReductionSvgAdapter(SvgGameAdapter):
                 width_factor=0.62,
                 max_width=content_width,
             ),
+            steps=_TextLayout(
+                text=steps_text,
+                x=center_x,
+                y=steps_y,
+                font_size=steps_font,
+                font_family="monospace",
+                fill="#334155",
+                width_factor=0.6,
+                max_width=content_width,
+            ),
             instruction=_TextLayout(
                 text=instruction_text,
                 x=center_x,
@@ -326,6 +356,7 @@ class IntegerReductionSvgAdapter(SvgGameAdapter):
             f'<rect width="{width}" height="{height}" fill="#f8fafc"/>',
             self._render_text(layout.title),
             self._render_text(layout.value),
+            self._render_text(layout.steps),
             self._render_text(layout.instruction),
         ]
 
@@ -356,7 +387,7 @@ class IntegerReductionSvgAdapter(SvgGameAdapter):
             svg_bytes="".join(parts).encode("utf-8"),
             info={
                 "round": "-",
-                "fen": f"value={payload.value}",
+                "fen": f"value={payload.value} steps={payload.steps}",
                 "legal_moves": ", ".join(payload.legal_actions) or "(terminal)",
             },
         )

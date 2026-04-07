@@ -57,6 +57,7 @@ def _load_integer_reduction_evaluator_modules() -> (
     @dataclass(frozen=True, slots=True)
     class IntegerReductionState:
         value: int
+        steps: int = 0
 
         def is_game_over(self) -> bool:
             return self.value == 1
@@ -158,18 +159,20 @@ def _load_integer_reduction_evaluator_modules() -> (
 def test_integer_reduction_state_evaluator_orders_states_for_maximizing_search() -> (
     None
 ):
-    """Smaller integers should score higher, with the terminal goal dominating."""
+    """Fewer steps should score higher, with terminal states marked as certain."""
     evaluator_module, _, state_cls = _load_integer_reduction_evaluator_modules()
 
     evaluator = evaluator_module.IntegerReductionStateEvaluator()
 
-    value_eight = evaluator.evaluate(state_cls(8))
-    value_two = evaluator.evaluate(state_cls(2))
-    value_one = evaluator.evaluate(state_cls(1))
+    quick_state = evaluator.evaluate(state_cls(2, steps=2))
+    slow_state = evaluator.evaluate(state_cls(2, steps=5))
+    terminal_state = evaluator.evaluate(state_cls(1, steps=3))
 
-    assert value_two.score > value_eight.score
-    assert value_one.score > value_two.score
-    assert value_one.certainty == evaluator_module.Certainty.TERMINAL
+    assert quick_state.score > slow_state.score
+    assert quick_state.score == -2.0
+    assert slow_state.score == -5.0
+    assert terminal_state.score == -3.0
+    assert terminal_state.certainty == evaluator_module.Certainty.TERMINAL
 
 
 def test_integer_reduction_master_evaluator_and_wiring_expose_terminal_reward() -> (
@@ -181,17 +184,19 @@ def test_integer_reduction_master_evaluator_and_wiring_expose_terminal_reward() 
     )
 
     master = evaluator_module.build_integer_reduction_master_evaluator(
-        evaluation_scale=evaluator_module.EvaluationScale.ENTIRE_REAL_AXIS
+        evaluation_scale=object()
     )
-    terminal_value = master.evaluate(state_cls(1))
-    non_terminal_value = master.evaluate(state_cls(8))
+    terminal_value = master.evaluate(state_cls(1, steps=4))
+    non_terminal_value = master.evaluate(state_cls(8, steps=2))
 
-    assert terminal_value.score == evaluator_module.TERMINAL_SCORE_ENTIRE_REAL_AXIS
+    assert terminal_value.score == -4.0
     assert terminal_value.certainty == evaluator_module.Certainty.TERMINAL
     assert terminal_value.over_event is not None
-    assert non_terminal_value.score == -8.0
+    assert non_terminal_value.score == -2.0
 
     wiring = wiring_module.IntegerReductionEvalWiring()
     chi = wiring.build_chi()
-    assert chi.evaluate(state_cls(2)).score > chi.evaluate(state_cls(8)).score
+    assert chi.evaluate(state_cls(2, steps=1)).score > chi.evaluate(
+        state_cls(2, steps=3)
+    ).score
     assert wiring.build_oracle() is None

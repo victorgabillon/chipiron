@@ -58,6 +58,11 @@ INTEGER_REDUCTION_PLAYER_OPTIONS: tuple[PlayerOption, ...] = (
         PlayerConfigTag.INTEGER_REDUCTION_TREE_BASIC,
         False,
     ),
+    PlayerOption(
+        "Tree (basic eval + debug)",
+        PlayerConfigTag.INTEGER_REDUCTION_TREE_BASIC_DEBUG,
+        False,
+    ),
 )
 
 CHESS_STARTING_POSITIONS: dict[str, str] = {

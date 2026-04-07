@@ -1,14 +1,16 @@
 """Builders for script types and arguments from GUI choices."""
 
-from collections.abc import Sequence
-from typing import Any, Callable, cast
+from collections.abc import Callable, Sequence
+from typing import Any, cast
 
 from anemone import TreeAndValuePlayerArgs
 from anemone.progress_monitor.progress_monitor import (
     StoppingCriterionTypes,
     TreeBranchLimitArgs,
 )
-from parsley import make_partial_dataclass_with_optional_paths  # type: ignore[reportMissingImports]
+from parsley import (
+    make_partial_dataclass_with_optional_paths,  # type: ignore[reportMissingImports]
+)
 
 from chipiron import scripts
 from chipiron.environments.checkers.starting_position_args import (
@@ -39,6 +41,25 @@ from chipiron.utils.logger import chipiron_logger
 
 from .models import ArgsChosenByUser, ParticipantSelection, ScriptGUIType
 from .registries import starting_positions_for_game
+
+
+class UnsupportedLauncherParticipantCountError(ValueError):
+    """Raised when launcher state has an unsupported participant count."""
+
+    def __init__(self, participant_count: int) -> None:
+        """Initialize the error with the unsupported participant count."""
+        super().__init__(
+            "Launcher currently supports only 1 or 2 participants, "
+            f"got {participant_count}."
+        )
+
+
+class MissingLauncherParticipantsError(ValueError):
+    """Raised when launcher state has no selected participants."""
+
+    def __init__(self) -> None:
+        """Initialize the error for an empty participant selection."""
+        super().__init__("Launcher state must contain at least one participant.")
 
 
 def format_gui_args_for_display(gui_args: Any) -> str:
@@ -89,9 +110,7 @@ def _schedule_for_participants(
             number_of_games_player_one_on_first_role=1,
             number_of_games_player_one_on_second_role=0,
         )
-    raise ValueError(
-        f"Launcher currently supports only 1 or 2 participants, got {len(participants)}."
-    )
+    raise UnsupportedLauncherParticipantCountError(len(participants))
 
 
 def _game_args_from_user_choices(
@@ -154,35 +173,35 @@ def generate_inputs(
 ) -> tuple[scripts.ScriptType, IsDataclass | None, str]:
     """Generate script type and arguments from GUI selections."""
     partial_op_match_script_args = cast(
-        Callable[..., MatchScriptArgs],
+        "Callable[..., MatchScriptArgs]",
         make_partial_dataclass_with_optional_paths(cls=MatchScriptArgs),
     )
     partial_op_match_args = cast(
-        Callable[..., MatchArgs],
+        "Callable[..., MatchArgs]",
         make_partial_dataclass_with_optional_paths(cls=MatchArgs),
     )
     partial_op_match_settings_args = cast(
-        Callable[..., MatchSettingsArgs],
+        "Callable[..., MatchSettingsArgs]",
         make_partial_dataclass_with_optional_paths(cls=MatchSettingsArgs),
     )
     partial_op_game_args = cast(
-        Callable[..., GameArgs],
+        "Callable[..., GameArgs]",
         make_partial_dataclass_with_optional_paths(cls=GameArgs),
     )
     partial_op_player_args = cast(
-        Callable[..., PlayerArgs],
+        "Callable[..., PlayerArgs]",
         make_partial_dataclass_with_optional_paths(cls=PlayerArgs),
     )
     partial_op_base_script_args = cast(
-        Callable[..., BaseScriptArgs],
+        "Callable[..., BaseScriptArgs]",
         make_partial_dataclass_with_optional_paths(cls=BaseScriptArgs),
     )
     partial_op_tree_and_value_player_args = cast(
-        Callable[..., TreeAndValuePlayerArgs],
+        "Callable[..., TreeAndValuePlayerArgs]",
         make_partial_dataclass_with_optional_paths(cls=TreeAndValuePlayerArgs),
     )
     partial_op_tree_branch_limit_args = cast(
-        Callable[..., TreeBranchLimitArgs],
+        "Callable[..., TreeBranchLimitArgs]",
         make_partial_dataclass_with_optional_paths(cls=TreeBranchLimitArgs),
     )
 
@@ -190,7 +209,7 @@ def generate_inputs(
         case ScriptGUIType.PLAY_OR_WATCH_A_GAME:
             participants = args_chosen_by_user.participants
             if not participants:
-                raise ValueError("Launcher state must contain at least one participant.")
+                raise MissingLauncherParticipantsError
 
             player_one = participants[0]
             player_two = participants[1] if len(participants) > 1 else None
@@ -209,7 +228,11 @@ def generate_inputs(
                     ),
                 ),
             )
-            config_file_name = "package://scripts/one_match/inputs/human_play_against_computer/exp_options.yaml"
+            # Keep the launcher base config free of participant defaults so the
+            # visible GUI selections stay authoritative after parsing.
+            config_file_name = (
+                "package://scripts/one_match/inputs/gui_launcher/exp_options.yaml"
+            )
 
             gui_args.match_args.player_one = player_one.player_tag
             gui_args.match_args.player_two = (
@@ -226,11 +249,7 @@ def generate_inputs(
                 partial_op_tree_branch_limit_args=partial_op_tree_branch_limit_args,
             )
             if player_one_overwrite is not None:
-                setattr(
-                    gui_args.match_args,
-                    "player_one_overwrite",
-                    player_one_overwrite,
-                )
+                gui_args.match_args.player_one_overwrite = player_one_overwrite
 
             if player_two is not None:
                 player_two_overwrite = _player_overwrite_from_participant(
@@ -243,11 +262,7 @@ def generate_inputs(
                     partial_op_tree_branch_limit_args=partial_op_tree_branch_limit_args,
                 )
                 if player_two_overwrite is not None:
-                    setattr(
-                        gui_args.match_args,
-                        "player_two_overwrite",
-                        player_two_overwrite,
-                    )
+                    gui_args.match_args.player_two_overwrite = player_two_overwrite
 
             script_type = scripts.ScriptType.ONE_MATCH
         case ScriptGUIType.TREE_VISUALIZATION:

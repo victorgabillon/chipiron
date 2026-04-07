@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import queue
 from dataclasses import asdict
 from typing import TYPE_CHECKING, cast
@@ -74,9 +75,13 @@ from chipiron.players.move_selector.tree_and_value_args import (
     NodeEvaluatorArgs,
     TreeAndValueAppArgs,
 )
+from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
+    import pytest
     from atomheart.games.chess.move.move_factory import MoveFactory
 
     from chipiron.utils.communication.mailbox import MainMailboxMessage
@@ -194,10 +199,12 @@ def test_integer_reduction_environment_declares_solo_role_and_readable_payloads(
     assert match_plan.scheduled_roles == (SOLO,)
     assert match_plan.is_solo is True
     assert state.value == 8
+    assert state.steps == 0
     assert state.turn == SOLO
     assert isinstance(payload, UpdStateGeneric)
-    assert payload.state_tag == 8
+    assert payload.state_tag == (8, 0)
     assert isinstance(payload.adapter_payload, IntegerReductionDisplayPayload)
+    assert payload.adapter_payload.steps == 0
     assert payload.adapter_payload.legal_actions == ("dec1", "half")
 
     adapter = IntegerReductionSvgAdapter()
@@ -216,7 +223,7 @@ def test_integer_reduction_environment_declares_solo_role_and_readable_payloads(
     )
 
     assert b"Integer Reduction" in render.svg_bytes
-    assert render.info["fen"] == "value=8"
+    assert render.info["fen"] == "value=8 steps=0"
     assert render.info["legal_moves"] == "dec1, half"
     assert click.action_name == payload.adapter_payload.legal_actions[0]
 
@@ -224,6 +231,62 @@ def test_integer_reduction_environment_declares_solo_role_and_readable_payloads(
 def test_integer_reduction_solo_schedule_reports_one_game() -> None:
     """Solo integer-reduction scheduling should be represented directly."""
     assert SoloMatchSchedule(number_of_games=1).total_games == 1
+
+
+def test_integer_reduction_debug_tree_player_records_move_sessions(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The debug tree player should emit one live-debug session per recommendation."""
+    monkeypatch.setenv("CHIPIRON_OUTPUT_DIR", str(tmp_path))
+
+    player = build_integer_reduction_game_player(
+        BuildIntegerReductionGamePlayerArgs(
+            player_factory_args=PlayerFactoryArgs(
+                player_args=PlayerArgs(
+                    name=PlayerConfigTag.INTEGER_REDUCTION_TREE_BASIC_DEBUG.value,
+                    main_move_selector=make_tree_and_value_selector(),
+                    oracle_play=False,
+                ),
+                seed=11,
+            ),
+            player_role=SOLO,
+            implementation_args=None,
+            universal_behavior=False,
+        )
+    )
+
+    recommendation = player.select_move_from_snapshot(
+        snapshot=15,
+        seed=23,
+        notify_percent_function=lambda _progress: None,
+    )
+
+    debug_root = tmp_path / "runs" / "debug" / "integer_reduction"
+    session_roots = sorted(path for path in debug_root.iterdir() if path.is_dir())
+    assert len(session_roots) == 1
+
+    move_directories = sorted(
+        path for path in session_roots[0].iterdir() if path.is_dir()
+    )
+    assert len(move_directories) == 1
+    move_directory = move_directories[0]
+
+    summary = json.loads(
+        (move_directory / "move_summary.json").read_text(encoding="utf-8")
+    )
+    session_payload = json.loads(
+        (move_directory / "session.json").read_text(encoding="utf-8")
+    )
+
+    assert move_directory.name.startswith("move_000_state_15")
+    assert summary["move_index"] == 0
+    assert summary["state_debug"] == "15"
+    assert summary["recommended_move_name"] == recommendation.recommended_name
+    assert (move_directory / "index.html").exists()
+    assert (move_directory / "snapshots").is_dir()
+    assert session_payload["is_live"] is True
+    assert session_payload["entry_count"] >= 1
 
 
 def test_integer_reduction_human_session_emits_need_action_and_advances_state() -> None:
@@ -257,6 +320,7 @@ def test_integer_reduction_human_session_emits_need_action_and_advances_state() 
         display_payloads[0].adapter_payload, IntegerReductionDisplayPayload
     )
     assert display_payloads[0].adapter_payload.value == 8
+    assert display_payloads[0].adapter_payload.steps == 0
 
     session.controller.start()
     start_payloads = drain_payloads(gui_queue)
@@ -273,11 +337,13 @@ def test_integer_reduction_human_session_emits_need_action_and_advances_state() 
     )
 
     assert session.manager.game.state.value == 4
+    assert session.manager.game.state.steps == 1
     after_action_payloads = drain_payloads(gui_queue)
     assert isinstance(after_action_payloads[0], UpdNoHumanActionPending)
     assert isinstance(after_action_payloads[1], UpdStateGeneric)
     assert after_action_payloads[1].action_name_history == ["half"]
     assert after_action_payloads[1].adapter_payload.value == 4
+    assert after_action_payloads[1].adapter_payload.steps == 1
     assert isinstance(after_action_payloads[2], UpdNeedHumanAction)
     assert after_action_payloads[2].ctx.role_to_play == SOLO
 
@@ -355,17 +421,19 @@ def test_integer_reduction_match_manager_plays_one_solo_match() -> None:
     assert simple.games_played == 1
 
 
-def test_integer_reduction_evaluator_prefers_smaller_values_and_terminal_goal() -> None:
-    """The tree-search heuristic should reward smaller values and the terminal win most."""
+def test_integer_reduction_evaluator_prefers_fewer_steps_and_marks_terminal() -> None:
+    """The tree-search heuristic should reward fewer steps and mark terminal certainty."""
     evaluator = IntegerReductionStateEvaluator()
 
-    value_eight = evaluator.evaluate(IntegerReductionState(value=8))
-    value_two = evaluator.evaluate(IntegerReductionState(value=2))
-    value_one = evaluator.evaluate(IntegerReductionState(value=1))
+    quick_state = evaluator.evaluate(IntegerReductionState(value=2, steps=2))
+    slow_state = evaluator.evaluate(IntegerReductionState(value=2, steps=5))
+    terminal_state = evaluator.evaluate(IntegerReductionState(value=1, steps=3))
 
-    assert value_two.score > value_eight.score
-    assert value_one.score > value_two.score
-    assert value_one.certainty is Certainty.TERMINAL
+    assert quick_state.score > slow_state.score
+    assert quick_state.score == -2.0
+    assert slow_state.score == -5.0
+    assert terminal_state.score == -3.0
+    assert terminal_state.certainty is Certainty.TERMINAL
 
 
 def test_integer_reduction_tree_selector_builds_and_prefers_half_when_available() -> (

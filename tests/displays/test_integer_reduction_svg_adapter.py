@@ -52,6 +52,7 @@ def load_adapter_module() -> types.ModuleType:
     @dataclass(frozen=True, slots=True)
     class IntegerReductionDisplayPayload:
         value: int
+        steps: int
         legal_actions: tuple[str, ...]
         is_terminal: bool
 
@@ -110,12 +111,14 @@ IntegerReductionDisplayPayload = ADAPTER_MODULE.IntegerReductionDisplayPayload
 def make_payload(
     *,
     value: int,
+    steps: int = 0,
     legal_actions: tuple[str, ...],
     is_terminal: bool = False,
 ) -> IntegerReductionDisplayPayload:
     """Build a minimal display payload for adapter-only tests."""
     return IntegerReductionDisplayPayload(
         value=value,
+        steps=steps,
         legal_actions=legal_actions,
         is_terminal=is_terminal,
     )
@@ -131,9 +134,11 @@ def test_integer_reduction_layout_keeps_content_inside_viewport() -> None:
     assert 9.0 <= layout.title.x <= 171.0
     assert 9.0 <= layout.title.y <= 171.0
     assert 9.0 <= layout.value.y <= 171.0
+    assert 9.0 <= layout.steps.y <= 171.0
     assert 9.0 <= layout.instruction.y <= 171.0
     assert layout.value.y > layout.title.y
-    assert layout.instruction.y > layout.value.y
+    assert layout.steps.y > layout.value.y
+    assert layout.instruction.y > layout.steps.y
     assert len(layout.buttons) == 2
 
     for button in layout.buttons:
@@ -162,8 +167,9 @@ def test_integer_reduction_render_svg_emits_in_bounds_text_and_buttons() -> None
     assert [node.text for node in text_nodes[:3]] == [
         "Integer Reduction",
         "n = 12345678901234567890",
-        "Choose a reduction",
+        "steps = 0",
     ]
+    assert text_nodes[3].text == "Choose a reduction"
     assert len(rect_nodes) == 3
 
     for node in text_nodes:
@@ -198,5 +204,5 @@ def test_integer_reduction_terminal_render_has_no_action_buttons() -> None:
     text_values = [node.text for node in root.findall("svg:text", SVG_NS)]
     rect_nodes = root.findall("svg:rect", SVG_NS)
 
-    assert text_values == ["Integer Reduction", "n = 1", "Reached 1"]
+    assert text_values == ["Integer Reduction", "n = 1", "steps = 0", "Reached 1"]
     assert len(rect_nodes) == 1

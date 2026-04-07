@@ -19,6 +19,7 @@ class IntegerReductionDisplayPayload:
     """Structured GUI payload for integer reduction state rendering."""
 
     value: int
+    steps: int
     legal_actions: tuple[str, ...]
     is_terminal: bool
 
@@ -52,6 +53,7 @@ class IntegerReductionGuiEncoder(GuiEncoder[IntegerReductionState]):
             action_name_history=[],
             adapter_payload=IntegerReductionDisplayPayload(
                 value=state.value,
+                steps=state.steps,
                 legal_actions=legal_actions,
                 is_terminal=state.is_game_over(),
             ),

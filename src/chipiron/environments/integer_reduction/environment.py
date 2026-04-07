@@ -69,7 +69,7 @@ def make_integer_reduction_environment(
         return tag
 
     def make_initial_state(tag: IntegerReductionStartTag) -> IntegerReductionState:
-        return IntegerReductionState(value=tag.value)
+        return IntegerReductionState(value=tag.value, steps=0)
 
     dynamics = IntegerReductionDynamics()
 
