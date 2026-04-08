@@ -362,6 +362,7 @@ class MorpionSvgAdapter(SvgGameAdapter):
             "fen": (
                 f"variant={payload.variant} moves={payload.moves} points={payload.point_count}"
             ),
+            "legal_move_count": str(len(payload.legal_moves)),
             "legal_moves": (
                 ", ".join(move.action_name for move in payload.legal_moves) or "(terminal)"
             ),

@@ -199,6 +199,7 @@ class CheckersSvgAdapter(SvgGameAdapter):
             info={
                 "round": "-",
                 "fen": self._position_text,
+                "legal_move_count": str(len(self._legal_moves)),
                 "legal_moves": "\n".join(f"    {chunk}" for chunk in chunks),
             },
         )

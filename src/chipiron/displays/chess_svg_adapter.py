@@ -87,6 +87,7 @@ class ChessSvgAdapter(SvgGameAdapter):
             info={
                 "round": str(board_chi.fullmove_number),
                 "fen": str(board_chi.fen),
+                "legal_move_count": str(len(all_moves_uci_chi)),
                 "legal_moves": "\n".join(f"    {chunk}" for chunk in chunks),
             },
         )

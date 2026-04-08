@@ -388,6 +388,7 @@ class IntegerReductionSvgAdapter(SvgGameAdapter):
             info={
                 "round": "-",
                 "fen": f"value={payload.value} steps={payload.steps}",
+                "legal_move_count": str(len(payload.legal_actions)),
                 "legal_moves": ", ".join(payload.legal_actions) or "(terminal)",
             },
         )

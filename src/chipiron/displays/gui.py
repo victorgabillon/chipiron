@@ -105,6 +105,17 @@ def format_state_eval(ev: Value | None) -> str:
     return base
 
 
+def _parse_legal_move_count(info: dict[str, str]) -> int:
+    """Read the legal-move count from render metadata."""
+    raw_count = info.get("legal_move_count", "").strip()
+    if not raw_count:
+        return 0
+    try:
+        return max(0, int(raw_count))
+    except ValueError:
+        return 0
+
+
 class MainWindow(QWidget):
     """Create a surface for the chessboard and handle user interactions.
 
@@ -634,10 +645,12 @@ class MainWindow(QWidget):
         """Update generic side panel labels using adapter render metadata."""
         self.round_button.setText("🎲 Round: " + info.get("round", "-"))
         self.fen_button.setText("🔧 <b>fen:</b> " + info.get("fen", "-"))
+        legal_moves_text = info.get("legal_moves", "")
+        legal_move_count = _parse_legal_move_count(info)
         self.legal_moves_button.setWordWrap(True)
         self.legal_moves_button.setMinimumHeight(100)
         self.legal_moves_button.setText(
-            f"📋 <b>legal moves:</b><pre>{info.get('legal_moves', '')}</pre>"
+            f"📋 <b>legal moves ({legal_move_count}):</b><pre>{legal_moves_text}</pre>"
         )
 
     def update_participants_info(
