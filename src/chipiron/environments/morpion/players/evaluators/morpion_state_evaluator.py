@@ -1,9 +1,12 @@
 """Simple Morpion evaluators used by GUI scoring and tree search."""
 
+# pylint: disable=duplicate-code
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, cast
+from enum import StrEnum
+from typing import TYPE_CHECKING, Any, cast
 
 from anemone.node_evaluation.direct.protocols import (
     MasterStateValueEvaluator,
@@ -16,17 +19,21 @@ from valanga.over_event import OverEvent
 from chipiron.environments.morpion.types import MorpionDynamics
 
 if TYPE_CHECKING:
-    from collections.abc import Hashable
-
     from chipiron.core.evaluation_scale import EvaluationScale
     from chipiron.environments.morpion.types import MorpionState
 
 
-def _terminal_over_event() -> OverEvent:
+class MorpionTermination(StrEnum):
+    """Termination reasons for Morpion terminal over-events."""
+
+    NO_LEGAL_MOVES = "no_legal_moves"
+
+
+def _terminal_over_event() -> OverEvent[Any]:
     """Build the canonical solo terminal over-event for Morpion completion."""
-    return OverEvent(
+    return OverEvent[Any](
         outcome=Outcome.WIN,
-        termination="no_legal_moves",
+        termination=MorpionTermination.NO_LEGAL_MOVES,
         winner=None,
     )
 
@@ -85,7 +92,7 @@ class MorpionOverEventDetector:
 
     def check_obvious_over_events(
         self, state: State
-    ) -> tuple[OverEvent | None, float | None]:
+    ) -> tuple[OverEvent[Any] | None, float | None]:
         """Return a terminal over-event and value when no legal move remains."""
         morpion_state = cast("MorpionState", state)
         legal_action_count = self.dynamics.legal_action_count(morpion_state)
@@ -109,7 +116,7 @@ class MorpionMasterEvaluator(MasterStateValueEvaluator):
             return Value(
                 score=terminal_value,
                 certainty=Certainty.TERMINAL,
-                over_event=cast("OverEvent[Hashable] | None", over_event),
+                over_event=over_event,
             )
 
         morpion_state = cast("MorpionState", state)

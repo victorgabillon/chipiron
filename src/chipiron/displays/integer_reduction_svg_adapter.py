@@ -11,6 +11,7 @@ from chipiron.displays.svg_adapter_protocol import (
     SvgGameAdapter,
     SvgPosition,
 )
+from chipiron.displays.svg_text_helpers import fit_font_size, fmt_svg_number
 from chipiron.environments.integer_reduction.integer_reduction_gui_encoder import (
     IntegerReductionDisplayPayload,
 )
@@ -67,27 +68,6 @@ def _clamp(value: float, lower: float, upper: float) -> float:
 def _estimate_text_width(*, text: str, font_size: float, width_factor: float) -> float:
     """Estimate SVG text width without requiring font metrics."""
     return len(text) * font_size * width_factor
-
-
-def _fit_font_size(
-    *,
-    text: str,
-    max_width: float,
-    min_size: float,
-    max_size: float,
-    width_factor: float,
-) -> float:
-    """Return a width-aware font size bounded by readable min/max values."""
-    if not text:
-        return min_size
-
-    width_limited_size = max_width / max(len(text) * width_factor, 1.0)
-    return max(1.0, min(max_size, max(min_size, width_limited_size)))
-
-
-def _fmt(value: float) -> str:
-    """Format SVG coordinates compactly while keeping stable precision."""
-    return f"{value:.2f}"
 
 
 @dataclass
@@ -148,7 +128,7 @@ class IntegerReductionSvgAdapter(SvgGameAdapter):
         content_height = max(bottom - top, 1.0)
         center_x = left + content_width / 2.0
 
-        title_font = _fit_font_size(
+        title_font = fit_font_size(
             text=self._TITLE,
             max_width=content_width,
             min_size=12.0,
@@ -156,7 +136,7 @@ class IntegerReductionSvgAdapter(SvgGameAdapter):
             width_factor=0.56,
         )
         value_text = f"n = {payload.value}"
-        value_font = _fit_font_size(
+        value_font = fit_font_size(
             text=value_text,
             max_width=content_width,
             min_size=18.0,
@@ -164,7 +144,7 @@ class IntegerReductionSvgAdapter(SvgGameAdapter):
             width_factor=0.62,
         )
         steps_text = f"steps = {payload.steps}"
-        steps_font = _fit_font_size(
+        steps_font = fit_font_size(
             text=steps_text,
             max_width=content_width,
             min_size=12.0,
@@ -174,7 +154,7 @@ class IntegerReductionSvgAdapter(SvgGameAdapter):
         instruction_text = (
             self._TERMINAL_MESSAGE if payload.is_terminal else self._ACTION_PROMPT
         )
-        instruction_font = _fit_font_size(
+        instruction_font = fit_font_size(
             text=instruction_text,
             max_width=content_width,
             min_size=11.0,
@@ -255,7 +235,7 @@ class IntegerReductionSvgAdapter(SvgGameAdapter):
             )
 
             widest_button_label = max(payload.legal_actions, key=len)
-            button_font_size = _fit_font_size(
+            button_font_size = fit_font_size(
                 text=widest_button_label,
                 max_width=button_width * 0.82,
                 min_size=12.0,
@@ -311,11 +291,11 @@ class IntegerReductionSvgAdapter(SvgGameAdapter):
     def _render_text(self, text_layout: _TextLayout) -> str:
         """Render a centered text node and compress it when width is tight."""
         attributes = [
-            f'x="{_fmt(text_layout.x)}"',
-            f'y="{_fmt(text_layout.y)}"',
+            f'x="{fmt_svg_number(text_layout.x)}"',
+            f'y="{fmt_svg_number(text_layout.y)}"',
             'text-anchor="middle"',
             'dominant-baseline="middle"',
-            f'font-size="{_fmt(text_layout.font_size)}"',
+            f'font-size="{fmt_svg_number(text_layout.font_size)}"',
             f'font-family="{text_layout.font_family}"',
             f'fill="{text_layout.fill}"',
         ]
@@ -328,7 +308,7 @@ class IntegerReductionSvgAdapter(SvgGameAdapter):
             )
             > text_layout.max_width
         ):
-            attributes.append(f'textLength="{_fmt(text_layout.max_width)}"')
+            attributes.append(f'textLength="{fmt_svg_number(text_layout.max_width)}"')
             attributes.append('lengthAdjust="spacingAndGlyphs"')
 
         return f"<text {' '.join(attributes)}>{escape(text_layout.text)}</text>"
@@ -362,8 +342,8 @@ class IntegerReductionSvgAdapter(SvgGameAdapter):
 
         for button in layout.buttons:
             parts.append(
-                f'<rect x="{_fmt(button.x)}" y="{_fmt(button.y)}" '
-                f'width="{_fmt(button.width)}" height="{_fmt(button.height)}" '
+                f'<rect x="{fmt_svg_number(button.x)}" y="{fmt_svg_number(button.y)}" '
+                f'width="{fmt_svg_number(button.width)}" height="{fmt_svg_number(button.height)}" '
                 'rx="14" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>'
             )
             parts.append(

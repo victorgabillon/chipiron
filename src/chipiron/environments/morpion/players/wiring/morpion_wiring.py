@@ -1,12 +1,14 @@
 """Morpion wiring."""
 
+# pylint: disable=duplicate-code
+
 import random
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
 from anemone.node_evaluation.tree.single_agent.factory import (
     NodeMaxEvaluationFactory,
 )
-from valanga import SoloRole
 
 from chipiron.core.oracles import TerminalOracle, ValueOracle
 from chipiron.environments.morpion.players.adapters.morpion_adapter import (
@@ -30,6 +32,11 @@ from chipiron.players.move_selector import factory as move_selector_factory
 from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
 from chipiron.players.observer_wiring import ObserverWiring
 from chipiron.players.player_args import PlayerFactoryArgs
+
+if TYPE_CHECKING:
+    from valanga.policy import BranchSelector
+
+type SoloRole = Any
 
 
 @dataclass(frozen=True)
@@ -90,16 +97,18 @@ def build_morpion_game_player(
         None,
         None,
     )
-    main_move_selector = move_selector_factory.create_tree_and_value_move_selector(
-        args=main_selector_args.anemone_args,
-        state_type=MorpionState,
-        accelerate_when_winning=main_selector_args.accelerate_when_winning,
-        master_state_value_evaluator=master_state_evaluator,
-        node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
-        state_representation_factory=None,
-        random_generator=random_generator,
-        dynamics=dynamics,
-        implementation_args=None,
+    main_move_selector: BranchSelector[MorpionState] = (
+        move_selector_factory.create_tree_and_value_move_selector(
+            args=main_selector_args.anemone_args,
+            state_type=MorpionState,
+            accelerate_when_winning=main_selector_args.accelerate_when_winning,
+            master_state_value_evaluator=master_state_evaluator,
+            node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
+            state_representation_factory=None,
+            random_generator=random_generator,
+            dynamics=dynamics,
+            implementation_args=None,
+        )
     )
 
     player = Player(

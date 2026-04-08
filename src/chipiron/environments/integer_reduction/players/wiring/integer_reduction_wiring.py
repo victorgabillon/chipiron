@@ -1,14 +1,16 @@
 """Integer reduction wiring."""
 
+# pylint: disable=duplicate-code
+
 import random
 from dataclasses import dataclass
 from datetime import datetime
+from typing import TYPE_CHECKING, Any, cast
 
 from anemone.node_evaluation.tree.single_agent.factory import (
     NodeMaxEvaluationFactory,
 )
 from anemone.tree_and_value_branch_selector import TreeAndValueBranchSelector
-from valanga import SoloRole
 
 from chipiron.core.oracles import TerminalOracle, ValueOracle
 from chipiron.debug.tree_search_debug_selector import DebugTreeSearchSelector
@@ -28,16 +30,21 @@ from chipiron.players import Player
 from chipiron.players.boardevaluators.master_board_evaluator_args import (
     MasterBoardEvaluatorArgs,
 )
-from chipiron.players.move_selector import factory as move_selector_factory
-from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
 from chipiron.players.factory_pipeline import (
     create_player_with_standard_adapter_pipeline,
 )
 from chipiron.players.game_player import GamePlayer
+from chipiron.players.move_selector import factory as move_selector_factory
+from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
 from chipiron.players.observer_wiring import ObserverWiring
 from chipiron.players.player_args import PlayerFactoryArgs
 from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.utils.path_runtime import get_output_root
+
+if TYPE_CHECKING:
+    from valanga.policy import BranchSelector
+
+type SoloRole = Any
 
 
 @dataclass(frozen=True)
@@ -48,6 +55,16 @@ class BuildIntegerReductionGamePlayerArgs:
     player_role: SoloRole
     implementation_args: object
     universal_behavior: bool
+
+
+class IntegerReductionDebugWrappingError(TypeError):
+    """Raised when debug wrapping is requested for a non-tree selector."""
+
+    def __init__(self) -> None:
+        """Build the debug-selector type error."""
+        super().__init__(
+            "Integer-reduction debug wrapping requires a TreeAndValueBranchSelector."
+        )
 
 
 def build_integer_reduction_game_player(
@@ -98,29 +115,32 @@ def build_integer_reduction_game_player(
         None,
         None,
     )
-    main_move_selector = move_selector_factory.create_tree_and_value_move_selector(
-        args=main_selector_args.anemone_args,
-        state_type=IntegerReductionState,
-        accelerate_when_winning=main_selector_args.accelerate_when_winning,
-        master_state_value_evaluator=master_state_evaluator,
-        node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
-        state_representation_factory=None,
-        random_generator=random_generator,
-        dynamics=dynamics,
-        implementation_args=None,
+    main_move_selector: BranchSelector[IntegerReductionState] = (
+        move_selector_factory.create_tree_and_value_move_selector(
+            args=main_selector_args.anemone_args,
+            state_type=IntegerReductionState,
+            accelerate_when_winning=main_selector_args.accelerate_when_winning,
+            master_state_value_evaluator=master_state_evaluator,
+            node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
+            state_representation_factory=None,
+            random_generator=random_generator,
+            dynamics=dynamics,
+            implementation_args=None,
+        )
     )
     if _is_debug_tree_search_player(player_args.name):
         if not isinstance(main_move_selector, TreeAndValueBranchSelector):
-            raise TypeError(
-                "Integer-reduction debug wrapping requires a "
-                "TreeAndValueBranchSelector."
-            )
+            raise IntegerReductionDebugWrappingError
         main_move_selector = DebugTreeSearchSelector(
             base=main_move_selector,
             session_root=_make_debug_session_root(
                 seed=args.player_factory_args.seed,
             ),
             state_to_debug_string=lambda state: str(state.value),
+        )
+        main_move_selector = cast(
+            "BranchSelector[IntegerReductionState]",
+            main_move_selector,
         )
 
     player = Player(

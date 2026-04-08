@@ -28,7 +28,9 @@ class ArgsChosenByUser:
     type: ScriptGUIType = ScriptGUIType.PLAY_OR_WATCH_A_GAME
     game_kind: GameKind = GameKind.CHESS
     starting_position_key: str = ""
-    participants: list[ParticipantSelection] = field(default_factory=_empty_participants)
+    participants: list[ParticipantSelection] = field(
+        default_factory=_empty_participants
+    )
 
     def __post_init__(self) -> None:
         """Fill launcher defaults from the selected game's launcher spec."""

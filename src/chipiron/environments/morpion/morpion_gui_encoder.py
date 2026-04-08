@@ -3,20 +3,50 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import cast
-
-from atomheart.games.morpion import MorpionState as AtomMorpionState
-from atomheart.games.morpion.state import Point, Segment
-from valanga.game import Seed
+from typing import TYPE_CHECKING
 
 from chipiron.displays.gui_protocol import UpdatePayload, UpdGameStatus, UpdStateGeneric
-from chipiron.environments.morpion.types import MorpionAction, MorpionDynamics, MorpionState
+from chipiron.environments.morpion.types import (
+    MorpionAction,
+    MorpionDynamics,
+    MorpionState,
+)
 from chipiron.environments.types import GameKind
-from chipiron.games.domain.game.game_playing_status import PlayingStatus
 from chipiron.utils.communication.gui_encoder import GuiEncoder
+
+if TYPE_CHECKING:
+    from atomheart.games.morpion import MorpionState as AtomMorpionState
+    from atomheart.games.morpion.state import Point, Segment
+    from valanga.game import Seed
+
+    from chipiron.games.domain.game.game_playing_status import PlayingStatus
 
 type DisplayPoint = tuple[int, int]
 type DisplaySegment = tuple[DisplayPoint, DisplayPoint]
+
+
+class MorpionPreviewSegmentError(ValueError):
+    """Raised when a Morpion preview segment cannot be reconstructed."""
+
+    @classmethod
+    def empty_delta(cls) -> MorpionPreviewSegmentError:
+        """Build the empty-preview error."""
+        return cls("Morpion preview segment requires at least one new segment.")
+
+    @classmethod
+    def null_edge(cls) -> MorpionPreviewSegmentError:
+        """Build the degenerate-preview error."""
+        return cls("Morpion preview segment cannot be inferred from a null edge.")
+
+
+class MorpionPreviewPointError(ValueError):
+    """Raised when a Morpion preview delta does not expose exactly one new point."""
+
+    def __init__(self) -> None:
+        """Build the invalid preview-point error."""
+        super().__init__(
+            "Morpion move preview expects exactly one new point in the delta."
+        )
 
 
 def _normalize_point(point: Point) -> DisplayPoint:
@@ -35,16 +65,18 @@ def _sign(value: int) -> int:
     return (value > 0) - (value < 0)
 
 
-def _preview_segment_from_new_segments(new_segments: frozenset[Segment]) -> DisplaySegment:
+def _preview_segment_from_new_segments(
+    new_segments: frozenset[Segment],
+) -> DisplaySegment:
     """Collapse four new unit segments into the preview line endpoints."""
     if not new_segments:
-        raise ValueError("Morpion preview segment requires at least one new segment.")
+        raise MorpionPreviewSegmentError.empty_delta()
 
     first_start, first_end = next(iter(new_segments))
     dx = _sign(first_end[0] - first_start[0])
     dy = _sign(first_end[1] - first_start[1])
     if dx == 0 and dy == 0:
-        raise ValueError("Morpion preview segment cannot be inferred from a null edge.")
+        raise MorpionPreviewSegmentError.null_edge()
 
     line_points = {point for segment in new_segments for point in segment}
     start = min(line_points, key=lambda point: point[0] * dx + point[1] * dy)
@@ -70,8 +102,14 @@ class MorpionDisplayPayload:
     point_count: int
     points: tuple[DisplayPoint, ...]
     segments: tuple[DisplaySegment, ...]
-    legal_moves: tuple[MorpionMoveDisplay, ...]
+    unique_legal_moves: tuple[MorpionMoveDisplay, ...]
+    all_legal_moves: tuple[MorpionMoveDisplay, ...]
     is_terminal: bool
+
+    @property
+    def legal_moves(self) -> tuple[MorpionMoveDisplay, ...]:
+        """Return the default unique legal-move previews."""
+        return self.unique_legal_moves
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,13 +128,11 @@ class MorpionGuiEncoder(GuiEncoder[MorpionState]):
     ) -> MorpionMoveDisplay:
         """Build the drawable delta for one legal Morpion move."""
         next_transition = self.dynamics.inner.step(atom_state, action)
-        next_state = cast("AtomMorpionState", next_transition.next_state)
+        next_state = next_transition.next_state
 
         new_points = next_state.points - atom_state.points
         if len(new_points) != 1:
-            raise ValueError(
-                "Morpion move preview expects exactly one new point in the delta."
-            )
+            raise MorpionPreviewPointError
         new_point = _normalize_point(next(iter(new_points)))
 
         new_segments = next_state.used_unit_segments - atom_state.used_unit_segments
@@ -116,13 +152,18 @@ class MorpionGuiEncoder(GuiEncoder[MorpionState]):
     ) -> UpdatePayload:
         """Create state payload."""
         atom_state = state.to_atomheart_state()
-        legal_actions = tuple(
-            cast("MorpionAction", action)
-            for action in self.dynamics.legal_actions(state).get_all()
+        unique_actions = tuple(
+            action for action in self.dynamics.legal_actions(state).get_all()
         )
-        legal_moves = tuple(
+        all_actions = self.dynamics.all_legal_actions(state)
+
+        all_legal_moves = tuple(
             self._build_move_display(state=state, atom_state=atom_state, action=action)
-            for action in legal_actions
+            for action in all_actions
+        )
+        move_display_by_action = dict(zip(all_actions, all_legal_moves, strict=True))
+        unique_legal_moves = tuple(
+            move_display_by_action[action] for action in unique_actions
         )
 
         return UpdStateGeneric(
@@ -134,9 +175,13 @@ class MorpionGuiEncoder(GuiEncoder[MorpionState]):
                 point_count=len(state.points),
                 points=tuple(sorted(_normalize_point(point) for point in state.points)),
                 segments=tuple(
-                    sorted(_normalize_segment(segment) for segment in state.used_unit_segments)
+                    sorted(
+                        _normalize_segment(segment)
+                        for segment in state.used_unit_segments
+                    )
                 ),
-                legal_moves=legal_moves,
+                unique_legal_moves=unique_legal_moves,
+                all_legal_moves=all_legal_moves,
                 is_terminal=state.is_game_over(),
             ),
             seed=seed,

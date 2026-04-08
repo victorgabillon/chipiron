@@ -52,7 +52,9 @@ class _FakeBaseSelector:
         """Compatibility stub."""
 
 
-def _load_debug_selector_module(tmp_path: Path) -> tuple[types.ModuleType, dict[str, object]]:
+def _load_debug_selector_module(
+    tmp_path: Path,
+) -> tuple[types.ModuleType, dict[str, object]]:
     """Load the wrapper module with lightweight dependency stubs."""
     captured: dict[str, object] = {}
 
@@ -115,9 +117,7 @@ def _load_debug_selector_module(tmp_path: Path) -> tuple[types.ModuleType, dict[
         "valanga.game": valanga_game_module,
         "valanga.policy": valanga_policy_module,
     }
-    original_modules = {
-        name: sys.modules.get(name) for name in stub_modules
-    }
+    original_modules = {name: sys.modules.get(name) for name in stub_modules}
     sys.modules.update(stub_modules)
 
     try:

@@ -8,9 +8,7 @@ from anemone.progress_monitor.progress_monitor import (
     StoppingCriterionTypes,
     TreeBranchLimitArgs,
 )
-from parsley import (
-    make_partial_dataclass_with_optional_paths,  # type: ignore[reportMissingImports]
-)
+from parsley import make_partial_dataclass_with_optional_paths
 
 from chipiron import scripts
 from chipiron.environments.checkers.starting_position_args import (
@@ -42,7 +40,8 @@ from chipiron.scripts.script_args import BaseScriptArgs
 from chipiron.utils.dataclass import IsDataclass
 from chipiron.utils.logger import chipiron_logger
 
-from .models import ArgsChosenByUser, ParticipantSelection, ScriptGUIType
+from .models import ArgsChosenByUser, ScriptGUIType
+from .participant_selection import ParticipantSelection
 from .registries import starting_positions_for_game
 
 
@@ -123,7 +122,9 @@ def _game_args_from_user_choices(
 ) -> GameArgs:
     """Build game args from launcher state."""
     starting_positions = starting_positions_for_game(args_chosen_by_user.game_kind)
-    starting_position_value = starting_positions[args_chosen_by_user.starting_position_key]
+    starting_position_value = starting_positions[
+        args_chosen_by_user.starting_position_key
+    ]
 
     if args_chosen_by_user.game_kind is GameKind.CHESS:
         return partial_op_game_args(
@@ -214,6 +215,8 @@ def generate_inputs(
         make_partial_dataclass_with_optional_paths(cls=TreeBranchLimitArgs),
     )
 
+    gui_args: MatchScriptArgs | None
+
     match args_chosen_by_user.type:
         case ScriptGUIType.PLAY_OR_WATCH_A_GAME:
             participants = args_chosen_by_user.participants
@@ -258,7 +261,7 @@ def generate_inputs(
                 partial_op_tree_branch_limit_args=partial_op_tree_branch_limit_args,
             )
             if player_one_overwrite is not None:
-                gui_args.match_args.player_one_overwrite = player_one_overwrite
+                gui_args.match_args.player_one = player_one_overwrite
 
             if player_two is not None:
                 player_two_overwrite = _player_overwrite_from_participant(
@@ -271,7 +274,7 @@ def generate_inputs(
                     partial_op_tree_branch_limit_args=partial_op_tree_branch_limit_args,
                 )
                 if player_two_overwrite is not None:
-                    gui_args.match_args.player_two_overwrite = player_two_overwrite
+                    gui_args.match_args.player_two = player_two_overwrite
 
             script_type = scripts.ScriptType.ONE_MATCH
         case ScriptGUIType.TREE_VISUALIZATION:

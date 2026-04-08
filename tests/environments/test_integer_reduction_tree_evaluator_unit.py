@@ -19,9 +19,9 @@ WIRING_PATH = (
 )
 
 
-def _load_integer_reduction_evaluator_modules() -> (
-    tuple[types.ModuleType, types.ModuleType, type[object]]
-):
+def _load_integer_reduction_evaluator_modules() -> tuple[
+    types.ModuleType, types.ModuleType, type[object]
+]:
     """Load the evaluator modules with lightweight stubs for external dependencies."""
 
     class Outcome:
@@ -111,49 +111,64 @@ def _load_integer_reduction_evaluator_modules() -> (
         ),
     }
 
-    stub_modules["anemone.node_evaluation.direct.protocols"].MasterStateValueEvaluator = (
-        MasterStateValueEvaluator
-    )
-    stub_modules["anemone.node_evaluation.direct.protocols"].OverEventDetector = (
-        OverEventDetector
-    )
+    stub_modules[
+        "anemone.node_evaluation.direct.protocols"
+    ].MasterStateValueEvaluator = MasterStateValueEvaluator
+    stub_modules[
+        "anemone.node_evaluation.direct.protocols"
+    ].OverEventDetector = OverEventDetector
     stub_modules["valanga"].Outcome = Outcome
     stub_modules["valanga"].State = State
     stub_modules["valanga.evaluations"].Certainty = Certainty
     stub_modules["valanga.evaluations"].Value = Value
     stub_modules["valanga.over_event"].OverEvent = OverEvent
     stub_modules["chipiron.core.evaluation_scale"].EvaluationScale = EvaluationScale
-    stub_modules["chipiron.environments.integer_reduction.types"].IntegerReductionState = (
-        IntegerReductionState
-    )
-    stub_modules["chipiron.players.boardevaluators.board_evaluator"].StateEvaluator = (
-        StateEvaluator
-    )
+    stub_modules[
+        "chipiron.environments.integer_reduction.types"
+    ].IntegerReductionState = IntegerReductionState
+    stub_modules[
+        "chipiron.players.boardevaluators.board_evaluator"
+    ].StateEvaluator = StateEvaluator
 
-    for name, module in stub_modules.items():
-        sys.modules[name] = module
+    original_modules = {name: sys.modules.get(name) for name in stub_modules}
+    sys.modules.update(stub_modules)
 
-    evaluator_spec = importlib.util.spec_from_file_location(
-        "chipiron.environments.integer_reduction.players.evaluators.integer_reduction_state_evaluator",
-        EVALUATOR_PATH,
-    )
-    assert evaluator_spec is not None
-    assert evaluator_spec.loader is not None
-    evaluator_module = importlib.util.module_from_spec(evaluator_spec)
-    sys.modules[evaluator_spec.name] = evaluator_module
-    evaluator_spec.loader.exec_module(evaluator_module)
+    try:
+        evaluator_spec = importlib.util.spec_from_file_location(
+            "chipiron.environments.integer_reduction.players.evaluators.integer_reduction_state_evaluator",
+            EVALUATOR_PATH,
+        )
+        assert evaluator_spec is not None
+        assert evaluator_spec.loader is not None
+        evaluator_module = importlib.util.module_from_spec(evaluator_spec)
+        sys.modules[evaluator_spec.name] = evaluator_module
+        evaluator_spec.loader.exec_module(evaluator_module)
 
-    wiring_spec = importlib.util.spec_from_file_location(
-        "chipiron.environments.integer_reduction.players.evaluators.wiring",
-        WIRING_PATH,
-    )
-    assert wiring_spec is not None
-    assert wiring_spec.loader is not None
-    wiring_module = importlib.util.module_from_spec(wiring_spec)
-    sys.modules[wiring_spec.name] = wiring_module
-    wiring_spec.loader.exec_module(wiring_module)
+        wiring_spec = importlib.util.spec_from_file_location(
+            "chipiron.environments.integer_reduction.players.evaluators.wiring",
+            WIRING_PATH,
+        )
+        assert wiring_spec is not None
+        assert wiring_spec.loader is not None
+        wiring_module = importlib.util.module_from_spec(wiring_spec)
+        sys.modules[wiring_spec.name] = wiring_module
+        wiring_spec.loader.exec_module(wiring_module)
 
-    return evaluator_module, wiring_module, IntegerReductionState
+        return evaluator_module, wiring_module, IntegerReductionState
+    finally:
+        sys.modules.pop(
+            "chipiron.environments.integer_reduction.players.evaluators.integer_reduction_state_evaluator",
+            None,
+        )
+        sys.modules.pop(
+            "chipiron.environments.integer_reduction.players.evaluators.wiring",
+            None,
+        )
+        for name, original_module in original_modules.items():
+            if original_module is None:
+                sys.modules.pop(name, None)
+            else:
+                sys.modules[name] = original_module
 
 
 def test_integer_reduction_state_evaluator_orders_states_for_maximizing_search() -> (
@@ -175,9 +190,7 @@ def test_integer_reduction_state_evaluator_orders_states_for_maximizing_search()
     assert terminal_state.certainty == evaluator_module.Certainty.TERMINAL
 
 
-def test_integer_reduction_master_evaluator_and_wiring_expose_terminal_reward() -> (
-    None
-):
+def test_integer_reduction_master_evaluator_and_wiring_expose_terminal_reward() -> None:
     """The tree evaluator builder and GUI wiring should share the same heuristic."""
     evaluator_module, wiring_module, state_cls = (
         _load_integer_reduction_evaluator_modules()
@@ -196,7 +209,8 @@ def test_integer_reduction_master_evaluator_and_wiring_expose_terminal_reward() 
 
     wiring = wiring_module.IntegerReductionEvalWiring()
     chi = wiring.build_chi()
-    assert chi.evaluate(state_cls(2, steps=1)).score > chi.evaluate(
-        state_cls(2, steps=3)
-    ).score
+    assert (
+        chi.evaluate(state_cls(2, steps=1)).score
+        > chi.evaluate(state_cls(2, steps=3)).score
+    )
     assert wiring.build_oracle() is None

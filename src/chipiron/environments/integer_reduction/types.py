@@ -45,9 +45,10 @@ def _atomheart_state_accepts_steps() -> bool:
 
 def _build_atomheart_state(*, value: int, steps: int) -> AtomIntegerReductionState:
     """Build the atomheart state while remaining compatible with older releases."""
+    kwargs: dict[str, int] = {"value": value}
     if _atomheart_state_accepts_steps():
-        return AtomIntegerReductionState(value=value, steps=steps)
-    return AtomIntegerReductionState(value)
+        kwargs["steps"] = steps
+    return AtomIntegerReductionState(**kwargs)
 
 
 @dataclass(frozen=True, slots=True)

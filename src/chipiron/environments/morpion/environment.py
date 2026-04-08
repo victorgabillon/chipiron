@@ -1,6 +1,6 @@
 """Morpion environment wiring."""
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from atomheart.games.morpion import initial_state as morpion_initial_state
 from valanga import SOLO, StateTag
@@ -19,6 +19,9 @@ from chipiron.players.factory_higher_level import create_player_observer_factory
 from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
+    from chipiron.players.communications.player_request_encoder import (
+        PlayerRequestEncoder,
+    )
     from chipiron.players.factory_higher_level import PlayerObserverFactory
 
 
@@ -72,7 +75,10 @@ def make_morpion_environment(
         rules=MorpionRules(),
         dynamics=dynamics,
         gui_encoder=MorpionGuiEncoder(dynamics=dynamics),
-        player_encoder=MorpionPlayerRequestEncoder(),
+        player_encoder=cast(
+            "PlayerRequestEncoder[MorpionState, MorpionState]",
+            MorpionPlayerRequestEncoder(),
+        ),
         make_player_observer_factory=build_player_observer_factory,
         normalize_start_tag=normalize_start_tag,
         make_initial_state=make_initial_state,

@@ -1,15 +1,18 @@
 """Morpion adapter."""
 
+# pylint: disable=duplicate-code
+
 from __future__ import annotations
 
-from typing import cast
-
-from atomheart.games.morpion import MorpionState as AtomMorpionState
-from valanga.game import BranchName, Seed
-from valanga.policy import BranchSelector, NotifyProgressCallable, Recommendation
+from typing import TYPE_CHECKING
 
 from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
 from chipiron.players.player import PlayerMoveSelectionError
+
+if TYPE_CHECKING:
+    from atomheart.games.morpion import MorpionState as AtomMorpionState
+    from valanga.game import BranchName, Seed
+    from valanga.policy import BranchSelector, NotifyProgressCallable, Recommendation
 
 
 class MorpionAdapter:
@@ -32,7 +35,7 @@ class MorpionAdapter:
         """Build runtime state."""
         if isinstance(snapshot, MorpionState):
             return snapshot
-        return self._dynamics.wrap_atomheart_state(cast("AtomMorpionState", snapshot))
+        return self._dynamics.wrap_atomheart_state(snapshot)
 
     def legal_action_count(self, runtime_state: MorpionState) -> int:
         """Legal action count."""

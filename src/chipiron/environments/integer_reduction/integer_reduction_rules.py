@@ -1,5 +1,7 @@
 """Integer reduction rules adapter."""
 
+# pylint: disable=duplicate-code
+
 from dataclasses import dataclass
 
 from valanga import SOLO

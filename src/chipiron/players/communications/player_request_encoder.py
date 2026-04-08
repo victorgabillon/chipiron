@@ -247,6 +247,8 @@ def make_player_request_encoder[StateT](
                 IntegerReductionPlayerRequestEncoder(),
             )
         case GameKind.MORPION:
-            return cast("PlayerRequestEncoder[StateT, Any]", MorpionPlayerRequestEncoder())
+            return cast(
+                "PlayerRequestEncoder[StateT, Any]", MorpionPlayerRequestEncoder()
+            )
         case _:
             raise PlayerRequestEncoderError(game_kind)

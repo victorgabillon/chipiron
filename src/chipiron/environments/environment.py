@@ -14,6 +14,7 @@ from chipiron.environments.chess.types import ChessState
 from chipiron.environments.deps import (
     CheckersEnvironmentDeps,
     ChessEnvironmentDeps,
+    EnvDeps,
     IntegerReductionEnvironmentDeps,
     MorpionEnvironmentDeps,
 )
@@ -40,12 +41,12 @@ class EnvironmentNotFoundError(EnvironmentCreationError):
         super().__init__(f"No Environment for game_kind={game_kind!r}")
 
 
-EnvDeps = (
-    ChessEnvironmentDeps
-    | CheckersEnvironmentDeps
-    | IntegerReductionEnvironmentDeps
-    | MorpionEnvironmentDeps
-)
+__all__ = [
+    "EnvDeps",
+    "EnvironmentCreationError",
+    "EnvironmentNotFoundError",
+    "make_environment",
+]
 
 
 @overload

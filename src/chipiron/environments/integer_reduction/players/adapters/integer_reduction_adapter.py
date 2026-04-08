@@ -1,5 +1,7 @@
 """Integer reduction adapter."""
 
+# pylint: disable=duplicate-code
+
 from valanga.game import BranchName, Seed
 from valanga.policy import BranchSelector, NotifyProgressCallable, Recommendation
 

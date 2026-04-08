@@ -47,6 +47,7 @@ from chipiron.displays.gui_protocol import (
     UpdStateGeneric,
 )
 from chipiron.displays.svg_adapter_factory import make_svg_adapter
+from chipiron.environments.types import GameKind
 from chipiron.games.domain.game.game_playing_status import PlayingStatus
 from chipiron.utils.communication.mailbox import MainMailboxMessage
 from chipiron.utils.logger import chipiron_logger
@@ -55,7 +56,13 @@ from chipiron.utils.path_variables import GUI_DIR
 if typing.TYPE_CHECKING:
     from chipiron.core.request_context import RequestContext
     from chipiron.displays.svg_adapter_protocol import SvgGameAdapter, SvgPosition
-    from chipiron.environments.types import GameKind
+
+
+class _MorpionLegalActionsToggleAdapter(typing.Protocol):
+    """Adapter protocol for Morpion legal-action view toggling."""
+
+    def set_show_all_legal_actions(self, show_all: bool) -> None:
+        """Choose whether to render all or unique Morpion legal actions."""
 
 
 class GuiUpdateError(AssertionError):
@@ -105,15 +112,18 @@ def format_state_eval(ev: Value | None) -> str:
     return base
 
 
-def _parse_legal_move_count(info: dict[str, str]) -> int:
-    """Read the legal-move count from render metadata."""
-    raw_count = info.get("legal_move_count", "").strip()
+def _parse_optional_nonnegative_int(
+    info: dict[str, str],
+    key: str,
+) -> int | None:
+    """Read one optional non-negative integer from render metadata."""
+    raw_count = info.get(key, "").strip()
     if not raw_count:
-        return 0
+        return None
     try:
         return max(0, int(raw_count))
     except ValueError:
-        return 0
+        return None
 
 
 class MainWindow(QWidget):
@@ -161,6 +171,7 @@ class MainWindow(QWidget):
         self.adapter: SvgGameAdapter | None = None
         self.current_pos: SvgPosition | None = None
         self.adapter_kind: GameKind | None = None
+        self.show_all_morpion_legal_actions = False
         self.action_name_history: list[str] = []
         self.participant_history_labels: list[str] = []
         self.participant_rows: list[ParticipantRowWidgets] = []
@@ -242,6 +253,14 @@ class MainWindow(QWidget):
         self.legal_moves_button.setTextInteractionFlags(
             QtGui.Qt.TextInteractionFlag.TextSelectableByMouse
         )
+
+        self.legal_actions_mode_button = QPushButton(self)
+        self.legal_actions_mode_button.setCheckable(True)
+        self.legal_actions_mode_button.clicked.connect(  # pylint: disable=no-member
+            self.toggle_morpion_legal_actions_view
+        )
+        self.legal_actions_mode_button.setGeometry(20, 740, 240, 30)
+        self.legal_actions_mode_button.hide()
 
         self.eval_button = QPushButton(self)
         self.eval_button.setText("🐟 Eval")  # text
@@ -495,6 +514,52 @@ class MainWindow(QWidget):
         )
         self.main_thread_mailbox.put(cmd)
 
+    def _set_morpion_legal_actions_view(self) -> None:
+        """Apply the current Morpion legal-action view mode to the active adapter."""
+        if self.adapter_kind != GameKind.MORPION or self.adapter is None:
+            return
+        if not hasattr(self.adapter, "set_show_all_legal_actions"):
+            return
+        adapter_with_toggle = typing.cast(
+            "_MorpionLegalActionsToggleAdapter",
+            self.adapter,
+        )
+        adapter_with_toggle.set_show_all_legal_actions(
+            self.show_all_morpion_legal_actions
+        )
+
+    def _refresh_morpion_legal_actions_button(self) -> None:
+        """Refresh visibility and label for the Morpion action-view toggle."""
+        is_morpion = self.adapter_kind == GameKind.MORPION
+        self.legal_actions_mode_button.setVisible(is_morpion)
+        self.legal_actions_mode_button.setChecked(self.show_all_morpion_legal_actions)
+        if not is_morpion:
+            return
+        self.legal_actions_mode_button.setText(
+            "Action view: all"
+            if self.show_all_morpion_legal_actions
+            else "Action view: unique"
+        )
+
+    def _refresh_current_render(self) -> None:
+        """Re-render the current adapter position into the board and side panel."""
+        if self.adapter is None or self.current_pos is None:
+            return
+        render = self.adapter.render_svg(
+            self.current_pos,
+            size=int(self.board_size),
+            margin=int(self.margin),
+        )
+        self.widget_svg.load(render.svg_bytes)
+        self._apply_render_info(render.info)
+
+    def toggle_morpion_legal_actions_view(self, checked: bool) -> None:
+        """Switch the Morpion GUI between unique and raw legal-action views."""
+        self.show_all_morpion_legal_actions = checked
+        self._refresh_morpion_legal_actions_button()
+        self._set_morpion_legal_actions_view()
+        self._refresh_current_render()
+
     def reset_for_new_game(self) -> None:
         """Reset for new game."""
         self.tablewidget.clearContents()
@@ -521,6 +586,10 @@ class MainWindow(QWidget):
         self.action_name_history = []
         self.pending_human_ctx = None
         self.pending_human_state_tag = None
+        self.show_all_morpion_legal_actions = False
+        self.legal_actions_mode_button.hide()
+        self.legal_actions_mode_button.setChecked(False)
+        self.legal_actions_mode_button.setText("Action view: unique")
 
     def process_message(self) -> None:
         """Process a message received by the GUI.
@@ -582,14 +651,9 @@ class MainWindow(QWidget):
                     state_tag=payload.state_tag,
                     adapter_payload=payload.adapter_payload,
                 )
-
-                render = self.adapter.render_svg(
-                    self.current_pos,
-                    size=int(self.board_size),
-                    margin=int(self.margin),
-                )
-                self.widget_svg.load(render.svg_bytes)
-                self._apply_render_info(render.info)
+                self._set_morpion_legal_actions_view()
+                self._refresh_morpion_legal_actions_button()
+                self._refresh_current_render()
 
                 self.display_action_name_history()
 
@@ -646,11 +710,28 @@ class MainWindow(QWidget):
         self.round_button.setText("🎲 Round: " + info.get("round", "-"))
         self.fen_button.setText("🔧 <b>fen:</b> " + info.get("fen", "-"))
         legal_moves_text = info.get("legal_moves", "")
-        legal_move_count = _parse_legal_move_count(info)
+        legal_move_count = _parse_optional_nonnegative_int(info, "legal_move_count")
+        unique_legal_move_count = _parse_optional_nonnegative_int(
+            info, "legal_move_count_unique"
+        )
+        total_legal_move_count = _parse_optional_nonnegative_int(
+            info, "legal_move_count_total"
+        )
+        count_label = "0"
+        if (
+            unique_legal_move_count is not None
+            and total_legal_move_count is not None
+            and unique_legal_move_count != total_legal_move_count
+        ):
+            count_label = (
+                f"{unique_legal_move_count} unique / {total_legal_move_count} total"
+            )
+        elif legal_move_count is not None:
+            count_label = str(legal_move_count)
         self.legal_moves_button.setWordWrap(True)
         self.legal_moves_button.setMinimumHeight(100)
         self.legal_moves_button.setText(
-            f"📋 <b>legal moves ({legal_move_count}):</b><pre>{legal_moves_text}</pre>"
+            f"📋 <b>legal moves ({count_label}):</b><pre>{legal_moves_text}</pre>"
         )
 
     def update_participants_info(

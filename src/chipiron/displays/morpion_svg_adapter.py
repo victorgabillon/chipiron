@@ -14,6 +14,7 @@ from chipiron.displays.svg_adapter_protocol import (
     SvgGameAdapter,
     SvgPosition,
 )
+from chipiron.displays.svg_text_helpers import fit_font_size, fmt_svg_number
 from chipiron.environments.morpion.morpion_gui_encoder import (
     MorpionDisplayPayload,
     MorpionMoveDisplay,
@@ -23,36 +24,24 @@ type DisplayPoint = tuple[int, int]
 type DisplaySegment = tuple[DisplayPoint, DisplayPoint]
 
 
+def _empty_click_targets() -> list[tuple[str, float, float]]:
+    """Return an empty typed click-target list."""
+    return []
+
+
 def _clamp(value: float, lower: float, upper: float) -> float:
     """Clamp a scalar into a closed interval."""
     return min(max(value, lower), upper)
-
-
-def _fit_font_size(
-    *,
-    text: str,
-    max_width: float,
-    min_size: float,
-    max_size: float,
-    width_factor: float = 0.56,
-) -> float:
-    """Return a width-aware font size bounded by readable min/max values."""
-    if not text:
-        return min_size
-    width_limited_size = max_width / max(len(text) * width_factor, 1.0)
-    return max(1.0, min(max_size, max(min_size, width_limited_size)))
-
-
-def _fmt(value: float) -> str:
-    """Format SVG coordinates compactly while keeping stable precision."""
-    return f"{value:.2f}"
 
 
 def _collect_geometry_points(payload: MorpionDisplayPayload) -> list[DisplayPoint]:
     """Collect all points that should influence the board transform."""
     geometry_points = list(payload.points)
     geometry_points.extend(point for segment in payload.segments for point in segment)
-    for move in payload.legal_moves:
+    for move in payload.all_legal_moves:
+        geometry_points.append(move.new_point)
+        geometry_points.extend(move.segment)
+    for move in payload.unique_legal_moves:
         geometry_points.append(move.new_point)
         geometry_points.extend(move.segment)
     return geometry_points or [(0, 0)]
@@ -66,8 +55,11 @@ class MorpionSvgAdapter(SvgGameAdapter):
     board_side: int = 1
 
     _payload: MorpionDisplayPayload | None = None
-    _click_targets: list[tuple[str, float, float]] = field(default_factory=list)
+    _click_targets: list[tuple[str, float, float]] = field(
+        default_factory=_empty_click_targets
+    )
     _click_radius: float = 12.0
+    _show_all_legal_actions: bool = False
 
     _TITLE = "Morpion Solitaire"
     _TERMINAL_MESSAGE = "No legal moves remain"
@@ -85,6 +77,19 @@ class MorpionSvgAdapter(SvgGameAdapter):
         self._payload = adapter_payload
         self._click_targets = []
         return SvgPosition(state_tag=state_tag, payload=adapter_payload)
+
+    def set_show_all_legal_actions(self, show_all: bool) -> None:
+        """Choose whether rendering exposes unique or all raw legal actions."""
+        self._show_all_legal_actions = show_all
+
+    def _display_legal_moves(
+        self,
+        payload: MorpionDisplayPayload,
+    ) -> tuple[MorpionMoveDisplay, ...]:
+        """Return the move set currently displayed on the board and side panel."""
+        if self._show_all_legal_actions:
+            return payload.all_legal_moves
+        return payload.unique_legal_moves
 
     def _build_transform(
         self,
@@ -125,7 +130,14 @@ class MorpionSvgAdapter(SvgGameAdapter):
         used_height = (float(span_y) + 2.0 * grid_padding) * scale
         offset_x = board_left + (board_width - used_width) / 2.0
         offset_y = board_top + (board_height - used_height) / 2.0
-        return float(min_x), float(max_y), float(grid_padding), offset_x, offset_y, scale
+        return (
+            float(min_x),
+            float(max_y),
+            float(grid_padding),
+            offset_x,
+            offset_y,
+            scale,
+        )
 
     def _to_svg_point(
         self,
@@ -174,8 +186,8 @@ class MorpionSvgAdapter(SvgGameAdapter):
             scale=scale,
         )
         return (
-            f'<line x1="{_fmt(x1)}" y1="{_fmt(y1)}" x2="{_fmt(x2)}" y2="{_fmt(y2)}" '
-            f'stroke="{stroke}" stroke-width="{_fmt(stroke_width)}" opacity="{opacity:.2f}"/>'
+            f'<line x1="{fmt_svg_number(x1)}" y1="{fmt_svg_number(y1)}" x2="{fmt_svg_number(x2)}" y2="{fmt_svg_number(y2)}" '
+            f'stroke="{stroke}" stroke-width="{fmt_svg_number(stroke_width)}" opacity="{opacity:.2f}"/>'
         )
 
     def _render_point(
@@ -203,10 +215,10 @@ class MorpionSvgAdapter(SvgGameAdapter):
         stroke_attrs = ""
         if stroke is not None and stroke_width > 0.0:
             stroke_attrs = (
-                f' stroke="{stroke}" stroke-width="{_fmt(stroke_width)}"'
+                f' stroke="{stroke}" stroke-width="{fmt_svg_number(stroke_width)}"'
             )
         return (
-            f'<circle cx="{_fmt(cx)}" cy="{_fmt(cy)}" r="{_fmt(radius)}" '
+            f'<circle cx="{fmt_svg_number(cx)}" cy="{fmt_svg_number(cy)}" r="{fmt_svg_number(radius)}" '
             f'fill="{fill}" opacity="{opacity:.2f}"{stroke_attrs}/>'
         )
 
@@ -249,22 +261,26 @@ class MorpionSvgAdapter(SvgGameAdapter):
         height = float(size)
         transform = self._build_transform(payload=payload, size=size, margin=margin)
         self._click_targets = []
+        display_moves = self._display_legal_moves(payload)
+        unique_count = len(payload.unique_legal_moves)
+        total_count = len(payload.all_legal_moves)
+        display_count = len(display_moves)
 
-        title_font = _fit_font_size(
+        title_font = fit_font_size(
             text=self._TITLE,
             max_width=width * 0.72,
             min_size=15.0,
             max_size=24.0,
         )
-        meta_font = _fit_font_size(
+        meta_font = fit_font_size(
             text=f"variant={payload.variant} moves={payload.moves} points={payload.point_count}",
             max_width=width * 0.88,
             min_size=9.0,
             max_size=14.0,
             width_factor=0.58,
         )
-        status_font = _fit_font_size(
-            text=f"legal previews: {len(payload.legal_moves)}",
+        status_font = fit_font_size(
+            text=f"legal previews: {display_count}",
             max_width=width * 0.88,
             min_size=9.0,
             max_size=13.0,
@@ -280,7 +296,11 @@ class MorpionSvgAdapter(SvgGameAdapter):
         status_text = (
             self._TERMINAL_MESSAGE
             if payload.is_terminal
-            else f"legal previews: {len(payload.legal_moves)}"
+            else (
+                f"legal previews: {display_count} total"
+                if self._show_all_legal_actions
+                else f"legal previews: {display_count} unique"
+            )
         )
         title_y = _clamp(height * 0.06, 26.0, 38.0)
         meta_y = title_y + title_font * 0.95
@@ -294,56 +314,56 @@ class MorpionSvgAdapter(SvgGameAdapter):
             ),
             f'<rect x="0" y="0" width="{size}" height="{size}" fill="#f8fafc"/>',
             (
-                f'<text x="{_fmt(width / 2.0)}" y="{_fmt(title_y)}" text-anchor="middle" '
-                f'font-size="{_fmt(title_font)}" font-family="sans-serif" '
+                f'<text x="{fmt_svg_number(width / 2.0)}" y="{fmt_svg_number(title_y)}" text-anchor="middle" '
+                f'font-size="{fmt_svg_number(title_font)}" font-family="sans-serif" '
                 'fill="#0f172a">Morpion Solitaire</text>'
             ),
             (
-                f'<text x="{_fmt(width / 2.0)}" y="{_fmt(meta_y)}" text-anchor="middle" '
-                f'font-size="{_fmt(meta_font)}" font-family="monospace" '
+                f'<text x="{fmt_svg_number(width / 2.0)}" y="{fmt_svg_number(meta_y)}" text-anchor="middle" '
+                f'font-size="{fmt_svg_number(meta_font)}" font-family="monospace" '
                 f'fill="#334155">{escape(f"variant = {payload.variant} | moves = {payload.moves} | points = {payload.point_count}")}</text>'
             ),
             (
-                f'<text x="{_fmt(width / 2.0)}" y="{_fmt(status_y)}" text-anchor="middle" '
-                f'font-size="{_fmt(status_font)}" font-family="sans-serif" '
+                f'<text x="{fmt_svg_number(width / 2.0)}" y="{fmt_svg_number(status_y)}" text-anchor="middle" '
+                f'font-size="{fmt_svg_number(status_font)}" font-family="sans-serif" '
                 f'fill="{"#065f46" if payload.is_terminal else "#475569"}">{escape(status_text)}</text>'
             ),
         ]
 
-        for segment in payload.segments:
-            elements.append(
-                self._render_segment(
-                    segment=segment,
-                    stroke="#0f172a",
-                    stroke_width=segment_width,
-                    opacity=1.0,
-                    transform=transform,
-                )
+        elements.extend(
+            self._render_segment(
+                segment=segment,
+                stroke="#0f172a",
+                stroke_width=segment_width,
+                opacity=1.0,
+                transform=transform,
             )
+            for segment in payload.segments
+        )
 
-        for move in payload.legal_moves:
-            elements.append(
-                self._render_segment(
-                    segment=move.segment,
-                    stroke="#22c55e",
-                    stroke_width=preview_width,
-                    opacity=0.60,
-                    transform=transform,
-                )
+        elements.extend(
+            self._render_segment(
+                segment=move.segment,
+                stroke="#22c55e",
+                stroke_width=preview_width,
+                opacity=0.60,
+                transform=transform,
             )
+            for move in display_moves
+        )
 
-        for point in payload.points:
-            elements.append(
-                self._render_point(
-                    point=point,
-                    radius=point_radius,
-                    fill="#0f172a",
-                    opacity=1.0,
-                    transform=transform,
-                )
+        elements.extend(
+            self._render_point(
+                point=point,
+                radius=point_radius,
+                fill="#0f172a",
+                opacity=1.0,
+                transform=transform,
             )
+            for point in payload.points
+        )
 
-        for move in payload.legal_moves:
+        for move in display_moves:
             self._register_click_target(move=move, transform=transform)
             elements.append(
                 self._render_point(
@@ -362,9 +382,11 @@ class MorpionSvgAdapter(SvgGameAdapter):
             "fen": (
                 f"variant={payload.variant} moves={payload.moves} points={payload.point_count}"
             ),
-            "legal_move_count": str(len(payload.legal_moves)),
+            "legal_move_count": str(display_count),
+            "legal_move_count_unique": str(unique_count),
+            "legal_move_count_total": str(total_count),
             "legal_moves": (
-                ", ".join(move.action_name for move in payload.legal_moves) or "(terminal)"
+                ", ".join(move.action_name for move in display_moves) or "(terminal)"
             ),
         }
         return RenderResult(svg_bytes="\n".join(elements).encode("utf-8"), info=info)

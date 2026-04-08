@@ -2,7 +2,7 @@
 
 from typing import Any
 
-import customtkinter as _customtkinter  # type: ignore[reportMissingImports]
+import customtkinter as _customtkinter
 
 from chipiron import scripts
 from chipiron.utils.dataclass import IsDataclass

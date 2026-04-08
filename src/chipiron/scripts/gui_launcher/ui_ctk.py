@@ -3,12 +3,13 @@
 from dataclasses import dataclass
 from typing import Any, cast
 
-import customtkinter as _customtkinter  # type: ignore[reportMissingImports]
+import customtkinter as _customtkinter
 
 from chipiron.environments.types import GameKind
 
 from .logic import apply_game_kind_defaults
-from .models import ArgsChosenByUser, ParticipantSelection, ScriptGUIType
+from .models import ArgsChosenByUser, ScriptGUIType
+from .participant_selection import ParticipantSelection
 from .registries import (
     launcher_spec_for_game,
     player_label_for_tag,
@@ -91,20 +92,24 @@ def _set_user_args_from_ui(
     starting_position_choice: Any,
 ) -> None:
     """Save current widget values into ArgsChosenByUser."""
-    game_kind = GameKind(cast(str, game_var.get()))
+    game_kind = GameKind(cast("str", game_var.get()))
     args_chosen_by_user.type = ScriptGUIType.PLAY_OR_WATCH_A_GAME
     args_chosen_by_user.game_kind = game_kind
     participants: list[ParticipantSelection] = []
     for row in participant_rows:
-        option = player_option_for_label(game_kind, cast(str, row.player_var.get()))
+        option = player_option_for_label(game_kind, cast("str", row.player_var.get()))
         participants.append(
             ParticipantSelection(
                 player_tag=option.tag,
-                strength=int(row.strength_var.get()) if option.supports_strength else None,
+                strength=int(row.strength_var.get())
+                if option.supports_strength
+                else None,
             )
         )
     args_chosen_by_user.participants = participants
-    args_chosen_by_user.starting_position_key = cast(str, starting_position_choice.get())
+    args_chosen_by_user.starting_position_key = cast(
+        "str", starting_position_choice.get()
+    )
 
 
 def _set_tree_visualization(args_chosen_by_user: ArgsChosenByUser) -> None:
@@ -140,7 +145,9 @@ def build_script_gui(root: Any, args_chosen_by_user: ArgsChosenByUser) -> None:
     ctk.CTkLabel(root, text="Starting Position: ").grid(
         column=0, row=3, padx=5, pady=10
     )
-    starting_position_choice = ctk.StringVar(value=args_chosen_by_user.starting_position_key)
+    starting_position_choice = ctk.StringVar(
+        value=args_chosen_by_user.starting_position_key
+    )
     starting_position_menu = ctk.CTkOptionMenu(
         master=root,
         values=[args_chosen_by_user.starting_position_key],
@@ -152,8 +159,8 @@ def build_script_gui(root: Any, args_chosen_by_user: ArgsChosenByUser) -> None:
 
     def update_strength_visibility(row_widgets: ParticipantRowWidgets) -> None:
         option = player_option_for_label(
-            GameKind(cast(str, game_var.get())),
-            cast(str, row_widgets.player_var.get()),
+            GameKind(cast("str", game_var.get())),
+            cast("str", row_widgets.player_var.get()),
         )
         if option.supports_strength:
             if not row_widgets.strength_var.get():
@@ -222,7 +229,7 @@ def build_script_gui(root: Any, args_chosen_by_user: ArgsChosenByUser) -> None:
                 row_widgets.strength_menu.grid_remove()
 
     def refresh_game_specific_options() -> None:
-        game_kind = GameKind(cast(str, game_var.get()))
+        game_kind = GameKind(cast("str", game_var.get()))
         args_chosen_by_user.game_kind = game_kind
 
         launcher_spec = launcher_spec_for_game(game_kind)
@@ -232,13 +239,16 @@ def build_script_gui(root: Any, args_chosen_by_user: ArgsChosenByUser) -> None:
 
         starting_labels = list(launcher_spec.starting_positions.keys())
         starting_position_menu.configure(values=starting_labels)
-        if args_chosen_by_user.starting_position_key in launcher_spec.starting_positions:
+        if (
+            args_chosen_by_user.starting_position_key
+            in launcher_spec.starting_positions
+        ):
             starting_position_choice.set(args_chosen_by_user.starting_position_key)
         else:
             starting_position_choice.set(launcher_spec.default_starting_position_key)
 
     def on_game_kind_changed(*_args: Any) -> None:
-        args_chosen_by_user.game_kind = GameKind(cast(str, game_var.get()))
+        args_chosen_by_user.game_kind = GameKind(cast("str", game_var.get()))
         apply_game_kind_defaults(args_chosen_by_user)
         refresh_game_specific_options()
 

@@ -8,8 +8,10 @@ from typing import cast
 import valanga
 from atomheart.games.morpion import MorpionDynamics as AtomMorpionDynamics
 from atomheart.games.morpion import MorpionState as AtomMorpionState
+from atomheart.games.morpion import Move
 from atomheart.games.morpion.dynamics import Action as AtomMorpionAction
-from atomheart.games.morpion.state import Point, Segment, Variant as MorpionVariant
+from atomheart.games.morpion.state import Point, Segment
+from atomheart.games.morpion.state import Variant as MorpionVariant
 from valanga import SOLO, SoloRole
 
 type MorpionAction = AtomMorpionAction
@@ -23,6 +25,7 @@ class MorpionState:
     points: frozenset[Point]
     used_unit_segments: frozenset[Segment]
     dir_usage_entries: tuple[DirUsageEntry, ...]
+    played_moves: tuple[Move, ...] = ()
     moves: int = 0
     variant: MorpionVariant = MorpionVariant.TOUCHING_5T
     turn: SoloRole = SOLO
@@ -31,6 +34,8 @@ class MorpionState:
     @property
     def tag(self) -> valanga.StateTag:
         """Return a stable tag suitable for caching."""
+        if len(self.played_moves) == self.moves:
+            return hash((self.variant, self.played_moves))
         return hash(
             (
                 self.variant,
@@ -67,6 +72,7 @@ class MorpionState:
             points=self.points,
             used_unit_segments=self.used_unit_segments,
             dir_usage=self.dir_usage,
+            played_moves=frozenset(self.played_moves),
             moves=self.moves,
             variant=self.variant,
         )
@@ -83,6 +89,7 @@ class MorpionState:
             points=state.points,
             used_unit_segments=state.used_unit_segments,
             dir_usage_entries=tuple(sorted(state.dir_usage.items())),
+            played_moves=tuple(sorted(state.played_moves)),
             moves=state.moves,
             variant=state.variant,
             is_terminal=is_terminal,
@@ -133,7 +140,34 @@ class MorpionDynamics(valanga.Dynamics[MorpionState]):
         state: MorpionState,
     ) -> valanga.BranchKeyGeneratorP[MorpionAction]:
         """Return legal actions for the provided state."""
-        return self.inner.legal_actions(self._as_atomheart_state(state))
+        return cast(
+            "valanga.BranchKeyGeneratorP[MorpionAction]",
+            self.inner.legal_actions(self._as_atomheart_state(state)),
+        )
+
+    def all_legal_actions(
+        self,
+        state: MorpionState | AtomMorpionState,
+    ) -> tuple[MorpionAction, ...]:
+        """Return the full raw legal-action list for the provided state."""
+        return self.inner.all_legal_actions(self._as_atomheart_state(state))
+
+    def legal_action_orbits(
+        self,
+        state: MorpionState | AtomMorpionState,
+    ) -> tuple[tuple[MorpionAction, ...], ...]:
+        """Return the raw legal actions grouped by current symmetry orbit."""
+        return self.inner.legal_action_orbits(self._as_atomheart_state(state))
+
+    def canonical_action_in_state(
+        self,
+        state: MorpionState | AtomMorpionState,
+        action: valanga.BranchKey,
+    ) -> MorpionAction:
+        """Return the symmetry-reduced representative for one legal action."""
+        return self.inner.canonical_action_in_state(
+            self._as_atomheart_state(state), action
+        )
 
     def step(
         self,
@@ -144,7 +178,7 @@ class MorpionDynamics(valanga.Dynamics[MorpionState]):
         transition = self.inner.step(self._as_atomheart_state(state), action)
         return valanga.Transition(
             next_state=self.wrap_atomheart_state(
-                cast("AtomMorpionState", transition.next_state),
+                transition.next_state,
                 is_terminal=transition.is_over,
             ),
             modifications=transition.modifications,

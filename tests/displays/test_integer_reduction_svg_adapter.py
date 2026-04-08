@@ -56,6 +56,24 @@ def load_adapter_module() -> types.ModuleType:
         legal_actions: tuple[str, ...]
         is_terminal: bool
 
+    def fit_font_size(
+        *,
+        text: str,
+        max_width: float,
+        min_size: float,
+        max_size: float,
+        width_factor: float = 0.56,
+    ) -> float:
+        """Mirror the shared SVG helper used by the adapter."""
+        if not text:
+            return min_size
+        width_limited_size = max_width / max(len(text) * width_factor, 1.0)
+        return max(1.0, min(max_size, max(min_size, width_limited_size)))
+
+    def fmt_svg_number(value: float) -> str:
+        """Mirror the shared SVG helper used by the adapter."""
+        return f"{value:.2f}"
+
     stub_modules = {
         "chipiron": types.ModuleType("chipiron"),
         "chipiron.displays": types.ModuleType("chipiron.displays"),
@@ -64,6 +82,9 @@ def load_adapter_module() -> types.ModuleType:
         ),
         "chipiron.displays.svg_adapter_protocol": types.ModuleType(
             "chipiron.displays.svg_adapter_protocol"
+        ),
+        "chipiron.displays.svg_text_helpers": types.ModuleType(
+            "chipiron.displays.svg_text_helpers"
         ),
         "chipiron.environments": types.ModuleType("chipiron.environments"),
         "chipiron.environments.integer_reduction": types.ModuleType(
@@ -76,31 +97,42 @@ def load_adapter_module() -> types.ModuleType:
         ),
     }
 
-    stub_modules["chipiron.displays.svg_adapter_errors"].InvalidSvgAdapterPayloadTypeError = (
-        InvalidSvgAdapterPayloadTypeError
-    )
+    stub_modules[
+        "chipiron.displays.svg_adapter_errors"
+    ].InvalidSvgAdapterPayloadTypeError = InvalidSvgAdapterPayloadTypeError
     stub_modules["chipiron.displays.svg_adapter_protocol"].ClickResult = ClickResult
     stub_modules["chipiron.displays.svg_adapter_protocol"].RenderResult = RenderResult
-    stub_modules["chipiron.displays.svg_adapter_protocol"].SvgGameAdapter = (
-        SvgGameAdapter
-    )
+    stub_modules[
+        "chipiron.displays.svg_adapter_protocol"
+    ].SvgGameAdapter = SvgGameAdapter
     stub_modules["chipiron.displays.svg_adapter_protocol"].SvgPosition = SvgPosition
+    stub_modules["chipiron.displays.svg_text_helpers"].fit_font_size = fit_font_size
+    stub_modules["chipiron.displays.svg_text_helpers"].fmt_svg_number = fmt_svg_number
     stub_modules[
         "chipiron.environments.integer_reduction.integer_reduction_gui_encoder"
     ].IntegerReductionDisplayPayload = IntegerReductionDisplayPayload
 
-    for name, module in stub_modules.items():
-        sys.modules[name] = module
+    original_modules = {name: sys.modules.get(name) for name in stub_modules}
+    sys.modules.update(stub_modules)
 
-    spec = importlib.util.spec_from_file_location(
-        "test_integer_reduction_svg_adapter_module",
-        ADAPTER_PATH,
-    )
-    assert spec is not None
-    assert spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "test_integer_reduction_svg_adapter_module",
+            ADAPTER_PATH,
+        )
+        assert spec is not None
+        assert spec.loader is not None
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+        return module
+    finally:
+        sys.modules.pop("test_integer_reduction_svg_adapter_module", None)
+        for name, original_module in original_modules.items():
+            if original_module is None:
+                sys.modules.pop(name, None)
+            else:
+                sys.modules[name] = original_module
 
 
 ADAPTER_MODULE = load_adapter_module()

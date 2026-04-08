@@ -188,7 +188,9 @@ def make_standard_state() -> MorpionState:
         deps=MorpionEnvironmentDeps(),
     )
     return environment.make_initial_state(
-        environment.normalize_start_tag(MorpionStandardStartingPositionArgs().get_start_tag())
+        environment.normalize_start_tag(
+            MorpionStandardStartingPositionArgs().get_start_tag()
+        )
     )
 
 
@@ -200,10 +202,13 @@ def test_morpion_environment_declares_solo_role_and_readable_payloads() -> None:
     )
     expected_points = expected_classic_standard_points()
     state = environment.make_initial_state(
-        environment.normalize_start_tag(MorpionStandardStartingPositionArgs().get_start_tag())
+        environment.normalize_start_tag(
+            MorpionStandardStartingPositionArgs().get_start_tag()
+        )
     )
     payload = environment.gui_encoder.make_state_payload(state=state, seed=13)
     legal_actions = environment.dynamics.legal_actions(state).get_all()
+    all_legal_actions = environment.dynamics.all_legal_actions(state)
     match_plan = build_validated_match_plan(
         participant_ids=("SoloHuman",),
         environment_roles=environment.roles,
@@ -226,9 +231,17 @@ def test_morpion_environment_declares_solo_role_and_readable_payloads() -> None:
     assert payload.adapter_payload.point_count == 36
     assert payload.adapter_payload.points == tuple(sorted(expected_points))
     assert payload.adapter_payload.segments == ()
-    assert len(payload.adapter_payload.legal_moves) == len(legal_actions)
+    assert len(payload.adapter_payload.unique_legal_moves) == len(legal_actions) == 4
+    assert len(payload.adapter_payload.all_legal_moves) == len(all_legal_actions) == 28
+    assert (
+        payload.adapter_payload.legal_moves
+        == payload.adapter_payload.unique_legal_moves
+    )
     assert len(payload.adapter_payload.legal_moves) > 0
-    assert payload.adapter_payload.legal_moves[0].new_point not in payload.adapter_payload.points
+    assert (
+        payload.adapter_payload.legal_moves[0].new_point
+        not in payload.adapter_payload.points
+    )
 
     adapter = MorpionSvgAdapter()
     pos = adapter.position_from_update(
@@ -249,7 +262,43 @@ def test_morpion_environment_declares_solo_role_and_readable_payloads() -> None:
     assert b"<line" in render.svg_bytes
     assert b"<circle" in render.svg_bytes
     assert render.info["fen"] == "variant=5T moves=0 points=36"
+    assert render.info["legal_move_count"] == "4"
+    assert render.info["legal_move_count_unique"] == "4"
+    assert render.info["legal_move_count_total"] == "28"
     assert click.action_name == payload.adapter_payload.legal_moves[0].action_name
+
+
+def test_morpion_gui_toggle_switches_between_unique_and_all_actions() -> None:
+    """The Morpion SVG adapter should switch previews and counts locally in the GUI."""
+    environment = make_environment(
+        game_kind=GameKind.MORPION,
+        deps=MorpionEnvironmentDeps(),
+    )
+    state = environment.make_initial_state(
+        environment.normalize_start_tag(
+            MorpionStandardStartingPositionArgs().get_start_tag()
+        )
+    )
+    payload = environment.gui_encoder.make_state_payload(state=state, seed=21)
+    assert isinstance(payload, UpdStateGeneric)
+    assert isinstance(payload.adapter_payload, MorpionDisplayPayload)
+
+    adapter = MorpionSvgAdapter()
+    pos = adapter.position_from_update(
+        state_tag=payload.state_tag,
+        adapter_payload=payload.adapter_payload,
+    )
+
+    unique_render = adapter.render_svg(pos, size=600, margin=0)
+    adapter.set_show_all_legal_actions(True)
+    all_render = adapter.render_svg(pos, size=600, margin=0)
+
+    assert unique_render.info["legal_move_count"] == "4"
+    assert all_render.info["legal_move_count"] == "28"
+    assert unique_render.info["legal_move_count_unique"] == "4"
+    assert all_render.info["legal_move_count_total"] == "28"
+    assert unique_render.info["legal_moves"] != all_render.info["legal_moves"]
+    assert len(adapter._click_targets) == 28
 
 
 def test_morpion_wrapped_terminal_state_keeps_rules_and_gui_in_sync() -> None:
@@ -275,6 +324,8 @@ def test_morpion_wrapped_terminal_state_keeps_rules_and_gui_in_sync() -> None:
     assert isinstance(payload, UpdStateGeneric)
     assert payload.adapter_payload.is_terminal is True
     assert payload.adapter_payload.legal_moves == ()
+    assert payload.adapter_payload.unique_legal_moves == ()
+    assert payload.adapter_payload.all_legal_moves == ()
     assert outcome is not None
     assert outcome.winner == SOLO
     assert outcome.reason == "no_legal_moves"
