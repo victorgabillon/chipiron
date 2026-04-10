@@ -4,13 +4,16 @@
 
 import random
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from datetime import datetime
+from typing import TYPE_CHECKING, Any, cast
 
 from anemone.node_evaluation.tree.single_agent.factory import (
     NodeMaxEvaluationFactory,
 )
+from anemone.tree_and_value_branch_selector import TreeAndValueBranchSelector
 
 from chipiron.core.oracles import TerminalOracle, ValueOracle
+from chipiron.debug.tree_search_debug_selector import DebugTreeSearchSelector
 from chipiron.environments.morpion.players.adapters.morpion_adapter import (
     MorpionAdapter,
 )
@@ -32,6 +35,8 @@ from chipiron.players.move_selector import factory as move_selector_factory
 from chipiron.players.move_selector.tree_and_value_args import TreeAndValueAppArgs
 from chipiron.players.observer_wiring import ObserverWiring
 from chipiron.players.player_args import PlayerFactoryArgs
+from chipiron.players.player_ids import PlayerConfigTag
+from chipiron.utils.path_runtime import get_output_root
 
 if TYPE_CHECKING:
     from valanga.policy import BranchSelector
@@ -47,6 +52,14 @@ class BuildMorpionGamePlayerArgs:
     player_role: SoloRole
     implementation_args: object
     universal_behavior: bool
+
+
+class MorpionDebugWrappingError(TypeError):
+    """Raised when debug wrapping is requested for a non-tree selector."""
+
+    def __init__(self) -> None:
+        """Build the debug-selector type error."""
+        super().__init__("Morpion debug wrapping requires a TreeAndValueBranchSelector.")
 
 
 def build_morpion_game_player(
@@ -110,6 +123,22 @@ def build_morpion_game_player(
             implementation_args=None,
         )
     )
+    if _is_debug_tree_search_player(player_args.name):
+        if not isinstance(main_move_selector, TreeAndValueBranchSelector):
+            raise MorpionDebugWrappingError
+        main_move_selector = DebugTreeSearchSelector(
+            base=main_move_selector,
+            session_root=_make_debug_session_root(
+                seed=args.player_factory_args.seed,
+            ),
+            state_to_debug_string=lambda state: (
+                f"moves_{state.moves}_points_{len(state.points)}"
+            ),
+        )
+        main_move_selector = cast(
+            "BranchSelector[MorpionState]",
+            main_move_selector,
+        )
 
     player = Player(
         name=player_args.name,
@@ -120,6 +149,23 @@ def build_morpion_game_player(
     )
 
     return GamePlayer(player, args.player_role)
+
+
+def _is_debug_tree_search_player(player_name: str) -> bool:
+    """Return whether the parsed player args correspond to the debug tree config."""
+    return player_name == PlayerConfigTag.MORPION_UNIFORM_DEPTH_2_DEBUG.value
+
+
+def _make_debug_session_root(*, seed: int) -> str:
+    """Return the match-level root used for per-move Morpion debug sessions."""
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    return str(
+        get_output_root()
+        / "runs"
+        / "debug"
+        / "morpion"
+        / f"{timestamp}_seed_{seed}"
+    )
 
 
 MORPION_WIRING: ObserverWiring[

@@ -69,6 +69,11 @@ MORPION_PLAYER_OPTIONS: tuple[PlayerOption, ...] = (
     PlayerOption("Human Player", PlayerConfigTag.GUI_HUMAN, False),
     PlayerOption("Random", PlayerConfigTag.RANDOM, False),
     PlayerOption("Tree (basic eval)", PlayerConfigTag.MORPION_TREE_BASIC, False),
+    PlayerOption(
+        "Tree (uniform depth 2 + debug)",
+        PlayerConfigTag.MORPION_UNIFORM_DEPTH_2_DEBUG,
+        False,
+    ),
 )
 
 CHESS_STARTING_POSITIONS: dict[str, str] = {

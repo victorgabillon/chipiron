@@ -98,6 +98,7 @@ def test_morpion_registry_and_defaults_support_solo_play() -> None:
     """Morpion should expose a solo launcher state."""
     options = player_options_for_game(GameKind.MORPION)
     tags = {opt.tag for opt in options}
+    labels = {opt.label for opt in options}
     args = ArgsChosenByUser(game_kind=GameKind.MORPION)
 
     apply_game_kind_defaults(args)
@@ -105,6 +106,8 @@ def test_morpion_registry_and_defaults_support_solo_play() -> None:
     assert PlayerConfigTag.GUI_HUMAN in tags
     assert PlayerConfigTag.RANDOM in tags
     assert PlayerConfigTag.MORPION_TREE_BASIC in tags
+    assert PlayerConfigTag.MORPION_UNIFORM_DEPTH_2_DEBUG in tags
+    assert "Tree (uniform depth 2 + debug)" in labels
     assert starting_positions_for_game(GameKind.MORPION) == {"Standard": "5T"}
     assert len(args.participants) == 1
     assert args.participants[0] == ParticipantSelection(

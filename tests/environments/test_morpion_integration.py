@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import queue
 from typing import TYPE_CHECKING, cast
 
@@ -12,6 +13,7 @@ from anemone.node_selector.opening_instructions import OpeningType
 from anemone.node_selector.priority_check.noop_args import NoPriorityCheckArgs
 from anemone.node_selector.uniform.uniform import UniformArgs
 from anemone.progress_monitor.progress_monitor import (
+    DepthLimitArgs,
     StoppingCriterionTypes,
     TreeBranchLimitArgs,
 )
@@ -68,9 +70,13 @@ from chipiron.players.move_selector.tree_and_value_args import (
     NodeEvaluatorArgs,
     TreeAndValueAppArgs,
 )
+from chipiron.players.player_ids import PlayerConfigTag
 from chipiron.scripts.chipiron_args import ImplementationArgs
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
+    import pytest
     from atomheart.games.chess.move.move_factory import MoveFactory
 
     from chipiron.utils.communication.mailbox import MainMailboxMessage
@@ -130,6 +136,36 @@ def make_tree_and_value_selector() -> TreeAndValueAppArgs:
             stopping_criterion=TreeBranchLimitArgs(
                 type=StoppingCriterionTypes.TREE_BRANCH_LIMIT,
                 tree_branch_limit=128,
+            ),
+            recommender_rule=AlmostEqualLogistic(
+                type="almost_equal_logistic",
+                temperature=1.0,
+            ),
+        ),
+        evaluator_args=NodeEvaluatorArgs(
+            master_board_evaluator=MasterBoardEvaluatorArgs(
+                board_evaluator=BasicEvaluationBoardEvaluatorArgs(
+                    type="basic_evaluation"
+                ),
+                oracle_evaluation=False,
+            )
+        ),
+    )
+
+
+def make_debug_tree_and_value_selector() -> TreeAndValueAppArgs:
+    """Build the uniform depth-2 selector used by the debug Morpion config."""
+    return TreeAndValueAppArgs(
+        anemone_args=TreeAndValuePlayerArgs(
+            node_selector=ComposedNodeSelectorArgs(
+                type=NodeSelectorType.COMPOSED,
+                priority=NoPriorityCheckArgs(type=NodeSelectorType.PRIORITY_NOOP),
+                base=UniformArgs(type=NodeSelectorType.UNIFORM),
+            ),
+            opening_type=OpeningType.ALL_CHILDREN,
+            stopping_criterion=DepthLimitArgs(
+                type=StoppingCriterionTypes.DEPTH_LIMIT,
+                depth_limit=2,
             ),
             recommender_rule=AlmostEqualLogistic(
                 type="almost_equal_logistic",
@@ -252,8 +288,8 @@ def test_morpion_environment_declares_solo_role_and_readable_payloads() -> None:
     first_target = adapter._click_targets[0]
     click = adapter.handle_click(
         pos,
-        x=int(round(first_target[1])),
-        y=int(round(first_target[2])),
+        x=round(first_target[1]),
+        y=round(first_target[2]),
         board_size=600,
         margin=0,
     )
@@ -299,6 +335,63 @@ def test_morpion_gui_toggle_switches_between_unique_and_all_actions() -> None:
     assert all_render.info["legal_move_count_total"] == "28"
     assert unique_render.info["legal_moves"] != all_render.info["legal_moves"]
     assert len(adapter._click_targets) == 28
+
+
+def test_morpion_debug_tree_player_records_move_sessions(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The debug tree player should emit one live-debug session per recommendation."""
+    monkeypatch.setenv("CHIPIRON_OUTPUT_DIR", str(tmp_path))
+
+    state = make_standard_state()
+    player = build_morpion_game_player(
+        BuildMorpionGamePlayerArgs(
+            player_factory_args=PlayerFactoryArgs(
+                player_args=PlayerArgs(
+                    name=PlayerConfigTag.MORPION_UNIFORM_DEPTH_2_DEBUG.value,
+                    main_move_selector=make_debug_tree_and_value_selector(),
+                    oracle_play=False,
+                ),
+                seed=11,
+            ),
+            player_role=SOLO,
+            implementation_args=None,
+            universal_behavior=False,
+        )
+    )
+
+    recommendation = player.select_move_from_snapshot(
+        snapshot=state,
+        seed=23,
+        notify_percent_function=lambda _progress: None,
+    )
+
+    debug_root = tmp_path / "runs" / "debug" / "morpion"
+    session_roots = sorted(path for path in debug_root.iterdir() if path.is_dir())
+    assert len(session_roots) == 1
+
+    move_directories = sorted(
+        path for path in session_roots[0].iterdir() if path.is_dir()
+    )
+    assert len(move_directories) == 1
+    move_directory = move_directories[0]
+
+    summary = json.loads(
+        (move_directory / "move_summary.json").read_text(encoding="utf-8")
+    )
+    session_payload = json.loads(
+        (move_directory / "session.json").read_text(encoding="utf-8")
+    )
+
+    assert move_directory.name.startswith("move_000_state_moves_0_points_36")
+    assert summary["move_index"] == 0
+    assert summary["state_debug"] == "moves_0_points_36"
+    assert summary["recommended_move_name"] == recommendation.recommended_name
+    assert (move_directory / "index.html").exists()
+    assert (move_directory / "snapshots").is_dir()
+    assert session_payload["is_live"] is True
+    assert session_payload["entry_count"] >= 1
 
 
 def test_morpion_wrapped_terminal_state_keeps_rules_and_gui_in_sync() -> None:
