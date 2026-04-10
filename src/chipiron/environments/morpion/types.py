@@ -33,18 +33,7 @@ class MorpionState:
 
     @property
     def tag(self) -> valanga.StateTag:
-        """Return a stable tag suitable for caching."""
-        if len(self.played_moves) == self.moves:
-            return hash((self.variant, self.played_moves))
-        return hash(
-            (
-                self.variant,
-                self.moves,
-                tuple(sorted(self.points)),
-                tuple(sorted(self.used_unit_segments)),
-                self.dir_usage_entries,
-            )
-        )
+        return self.to_atomheart_state().tag
 
     @property
     def dir_usage(self) -> dict[tuple[Point, int], int]:
