@@ -33,6 +33,7 @@ class MorpionState:
 
     @property
     def tag(self) -> valanga.StateTag:
+        """Return the atomheart-compatible state tag."""
         return self.to_atomheart_state().tag
 
     @property

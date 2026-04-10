@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from collections import OrderedDict
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import torch
 from torch import Tensor
@@ -13,6 +13,9 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.feature_ex
     morpion_feature_names,
 )
 from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
+
+if TYPE_CHECKING:
+    from collections import OrderedDict
 
 
 @dataclass(frozen=True, slots=True)

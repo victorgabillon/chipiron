@@ -132,7 +132,9 @@ def extract_morpion_features(
     values.update(_legal_action_features(state=state, dynamics=dyn))
     values.update(_dir_usage_features(state))
     values.update(_candidate_segment_features(candidate_segments))
-    values.update(_frontier_features(state=state, candidate_segments=candidate_segments))
+    values.update(
+        _frontier_features(state=state, candidate_segments=candidate_segments)
+    )
     values.update(_connectivity_features(state.points))
 
     return OrderedDict((name, float(values[name])) for name in FEATURE_NAMES)
@@ -278,9 +280,9 @@ def _candidate_segment_features(
                 features["segments_4_present_1_missing_parallel_ok"] += 1.0
             if candidate_segment.legal:
                 features["segments_4_present_1_missing_legal"] += 1.0
-                features[
-                    f"segments_4p1m_dir_{candidate_segment.dir_index}_legal"
-                ] += 1.0
+                features[f"segments_4p1m_dir_{candidate_segment.dir_index}_legal"] += (
+                    1.0
+                )
 
         if candidate_segment.num_present == 3 and candidate_segment.num_missing == 2:
             features["segments_3_present_2_missing_geometric"] += 1.0

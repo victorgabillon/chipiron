@@ -59,7 +59,9 @@ class MorpionDebugWrappingError(TypeError):
 
     def __init__(self) -> None:
         """Build the debug-selector type error."""
-        super().__init__("Morpion debug wrapping requires a TreeAndValueBranchSelector.")
+        super().__init__(
+            "Morpion debug wrapping requires a TreeAndValueBranchSelector."
+        )
 
 
 def build_morpion_game_player(
@@ -160,11 +162,7 @@ def _make_debug_session_root(*, seed: int) -> str:
     """Return the match-level root used for per-move Morpion debug sessions."""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     return str(
-        get_output_root()
-        / "runs"
-        / "debug"
-        / "morpion"
-        / f"{timestamp}_seed_{seed}"
+        get_output_root() / "runs" / "debug" / "morpion" / f"{timestamp}_seed_{seed}"
     )
 
 

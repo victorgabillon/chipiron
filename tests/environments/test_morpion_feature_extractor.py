@@ -36,8 +36,9 @@ def test_initial_state_returns_expected_ordered_float_features() -> None:
     assert features["legal_action_count"] == float(
         len(dynamics.all_legal_actions(state))
     )
-    assert sum(features[f"legal_actions_dir_{dir_index}"] for dir_index in range(4)) == (
-        features["legal_action_count"]
+    assert (
+        sum(features[f"legal_actions_dir_{dir_index}"] for dir_index in range(4))
+        == (features["legal_action_count"])
     )
 
 
