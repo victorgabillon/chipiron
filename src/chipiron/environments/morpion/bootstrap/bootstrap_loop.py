@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Protocol
@@ -37,6 +37,60 @@ from .run_state import (
 )
 
 
+class EmptyMorpionEvaluatorsConfigError(ValueError):
+    """Raised when the bootstrap loop is configured with zero evaluators."""
+
+    def __init__(self) -> None:
+        """Initialize the empty-evaluators-config error."""
+        super().__init__("Morpion bootstrap evaluators_config must contain at least one evaluator.")
+
+
+class InconsistentMorpionEvaluatorSpecNameError(ValueError):
+    """Raised when one evaluator spec name does not match its config key."""
+
+    def __init__(self, key: str, spec_name: str) -> None:
+        """Initialize the mismatched-evaluator-name error."""
+        super().__init__(
+            "Morpion bootstrap evaluator config keys must match spec names, got "
+            f"key={key!r} and spec.name={spec_name!r}."
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class MorpionEvaluatorSpec:
+    """Training spec for one named Morpion evaluator."""
+
+    name: str
+    model_type: str
+    hidden_sizes: tuple[int, ...] | None
+    num_epochs: int
+    batch_size: int
+    learning_rate: float
+
+
+@dataclass(frozen=True, slots=True)
+class MorpionEvaluatorsConfig:
+    """Deterministic collection of evaluator specs for one bootstrap run."""
+
+    evaluators: dict[str, MorpionEvaluatorSpec] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        """Copy and validate the evaluator mapping eagerly."""
+        copied = dict(self.evaluators)
+        if not copied:
+            raise EmptyMorpionEvaluatorsConfigError()
+        for key, spec in copied.items():
+            if key != spec.name:
+                raise InconsistentMorpionEvaluatorSpecNameError(key, spec.name)
+        object.__setattr__(self, "evaluators", copied)
+
+    def primary_evaluator_name(self) -> str:
+        """Return the current primary evaluator for runner bootstrap."""
+        if "default" in self.evaluators:
+            return "default"
+        return next(iter(self.evaluators))
+
+
 @dataclass(frozen=True, slots=True)
 class MorpionBootstrapArgs:
     """Top-level arguments for the restartable Morpion bootstrap loop."""
@@ -55,6 +109,22 @@ class MorpionBootstrapArgs:
     shuffle: bool = True
     model_kind: str = "linear"
     hidden_dim: int | None = None
+    evaluators_config: MorpionEvaluatorsConfig | None = None
+
+    def resolved_evaluators_config(self) -> MorpionEvaluatorsConfig:
+        """Resolve the explicit or legacy single-evaluator config."""
+        if self.evaluators_config is not None:
+            return self.evaluators_config
+        hidden_sizes = None if self.hidden_dim is None else (self.hidden_dim,)
+        default_spec = MorpionEvaluatorSpec(
+            name="default",
+            model_type=self.model_kind,
+            hidden_sizes=hidden_sizes,
+            num_epochs=self.num_epochs,
+            batch_size=self.batch_size,
+            learning_rate=self.learning_rate,
+        )
+        return MorpionEvaluatorsConfig(evaluators={"default": default_spec})
 
 
 @dataclass(frozen=True, slots=True)
@@ -101,9 +171,17 @@ class MorpionBootstrapPaths:
         """Return the raw Morpion rows path for one saved generation."""
         return self.rows_dir / f"generation_{generation:06d}.json"
 
-    def model_bundle_path_for_generation(self, generation: int) -> Path:
-        """Return the model bundle directory for one saved generation."""
+    def model_generation_dir_for_generation(self, generation: int) -> Path:
+        """Return the model root directory for one saved generation."""
         return self.model_dir / f"generation_{generation:06d}"
+
+    def model_bundle_path_for_generation(
+        self,
+        generation: int,
+        evaluator_name: str,
+    ) -> Path:
+        """Return the model bundle directory for one evaluator and generation."""
+        return self.model_generation_dir_for_generation(generation) / evaluator_name
 
     def history_paths(self) -> MorpionBootstrapHistoryPaths:
         """Return the canonical bootstrap history artifact paths."""
@@ -182,9 +260,7 @@ def build_bootstrap_event(
         cycle_index=cycle_index,
         generation=generation,
         timestamp_utc=timestamp_utc,
-        tree=MorpionBootstrapTreeStatus(
-            num_nodes=tree_num_nodes,
-        ),
+        tree=MorpionBootstrapTreeStatus(num_nodes=tree_num_nodes),
         dataset=MorpionBootstrapDatasetStatus(
             num_rows=dataset_num_rows,
             num_samples=dataset_num_samples,
@@ -242,11 +318,16 @@ def run_one_bootstrap_cycle(
     latest saved artifacts.
     """
     paths.ensure_directories()
+    resolved_evaluators_config = args.resolved_evaluators_config()
     history_recorder = MorpionBootstrapHistoryRecorder(paths.history_paths())
 
     runner.load_or_create(
         paths.resolve_work_dir_path(run_state.latest_tree_snapshot_path),
-        paths.resolve_work_dir_path(run_state.latest_model_bundle_path),
+        _resolve_primary_model_bundle_path(
+            paths=paths,
+            latest_model_bundle_paths=run_state.latest_model_bundle_paths,
+            evaluators_config=resolved_evaluators_config,
+        ),
     )
     runner.grow(args.max_growth_steps_per_cycle)
     current_tree_size = runner.current_tree_size()
@@ -267,7 +348,9 @@ def run_one_bootstrap_cycle(
             cycle_index=cycle_index,
             latest_tree_snapshot_path=run_state.latest_tree_snapshot_path,
             latest_rows_path=run_state.latest_rows_path,
-            latest_model_bundle_path=run_state.latest_model_bundle_path,
+            latest_model_bundle_paths=None
+            if run_state.latest_model_bundle_paths is None
+            else dict(run_state.latest_model_bundle_paths),
             tree_size_at_last_save=run_state.tree_size_at_last_save,
             last_save_unix_s=run_state.last_save_unix_s,
             metadata=dict(run_state.metadata),
@@ -290,7 +373,6 @@ def run_one_bootstrap_cycle(
     generation = run_state.generation + 1
     tree_snapshot_path = paths.tree_snapshot_path_for_generation(generation)
     rows_path = paths.rows_path_for_generation(generation)
-    model_bundle_path = paths.model_bundle_path_for_generation(generation)
 
     runner.export_training_tree_snapshot(tree_snapshot_path)
 
@@ -304,39 +386,41 @@ def run_one_bootstrap_cycle(
     )
     save_morpion_supervised_rows(rows, rows_path)
 
-    _model, metrics = train_morpion_regressor(
-        MorpionTrainingArgs(
-            dataset_file=rows_path,
-            output_dir=model_bundle_path,
-            batch_size=args.batch_size,
-            num_epochs=args.num_epochs,
-            learning_rate=args.learning_rate,
-            shuffle=args.shuffle,
-            model_kind=args.model_kind,
-            hidden_dim=args.hidden_dim,
+    evaluator_metrics: dict[str, MorpionEvaluatorMetrics] = {}
+    model_bundle_paths: dict[str, str] = {}
+    for evaluator_name, spec in resolved_evaluators_config.evaluators.items():
+        model_bundle_path = paths.model_bundle_path_for_generation(generation, evaluator_name)
+        _model, metrics = train_morpion_regressor(
+            MorpionTrainingArgs(
+                dataset_file=rows_path,
+                output_dir=model_bundle_path,
+                batch_size=spec.batch_size,
+                num_epochs=spec.num_epochs,
+                learning_rate=spec.learning_rate,
+                shuffle=args.shuffle,
+                model_kind=spec.model_type,
+                hidden_sizes=spec.hidden_sizes,
+            )
         )
-    )
+        evaluator_metrics[evaluator_name] = MorpionEvaluatorMetrics(
+            final_loss=float(metrics["final_loss"]),
+            num_epochs=int(metrics["num_epochs"]),
+            num_samples=int(metrics["num_samples"]),
+        )
+        model_bundle_paths[evaluator_name] = paths.relative_to_work_dir(model_bundle_path)
 
     relative_tree_snapshot_path = paths.relative_to_work_dir(tree_snapshot_path)
     relative_rows_path = paths.relative_to_work_dir(rows_path)
-    relative_model_bundle_path = paths.relative_to_work_dir(model_bundle_path)
     next_run_state = MorpionBootstrapRunState(
         generation=generation,
         cycle_index=cycle_index,
         latest_tree_snapshot_path=relative_tree_snapshot_path,
         latest_rows_path=relative_rows_path,
-        latest_model_bundle_path=relative_model_bundle_path,
+        latest_model_bundle_paths=model_bundle_paths,
         tree_size_at_last_save=current_tree_size,
         last_save_unix_s=current_time,
         metadata=dict(run_state.metadata),
     )
-    evaluator_metrics = {
-        "default": MorpionEvaluatorMetrics(
-            final_loss=float(metrics["final_loss"]),
-            num_epochs=int(metrics["num_epochs"]),
-            num_samples=int(metrics["num_samples"]),
-        )
-    }
     history_recorder.record(
         build_bootstrap_event(
             cycle_index=cycle_index,
@@ -349,7 +433,7 @@ def run_one_bootstrap_cycle(
             dataset_num_samples=len(rows.rows),
             training_triggered=True,
             evaluator_metrics=evaluator_metrics,
-            model_bundle_paths={"default": relative_model_bundle_path},
+            model_bundle_paths=model_bundle_paths,
         )
     )
     return next_run_state
@@ -391,9 +475,31 @@ def _timestamp_utc_from_unix_s(timestamp_unix_s: float) -> str:
     return timestamp.isoformat(timespec=timespec).replace("+00:00", "Z")
 
 
+def _resolve_primary_model_bundle_path(
+    *,
+    paths: MorpionBootstrapPaths,
+    latest_model_bundle_paths: Mapping[str, str] | None,
+    evaluators_config: MorpionEvaluatorsConfig,
+) -> Path | None:
+    """Resolve the current primary evaluator bundle path for runner bootstrap."""
+    if not latest_model_bundle_paths:
+        return None
+    primary_name = evaluators_config.primary_evaluator_name()
+    selected_path = latest_model_bundle_paths.get(primary_name)
+    if selected_path is None and "default" in latest_model_bundle_paths:
+        selected_path = latest_model_bundle_paths["default"]
+    if selected_path is None:
+        selected_path = next(iter(latest_model_bundle_paths.values()))
+    return paths.resolve_work_dir_path(selected_path)
+
+
 __all__ = [
+    "EmptyMorpionEvaluatorsConfigError",
+    "InconsistentMorpionEvaluatorSpecNameError",
     "MorpionBootstrapArgs",
     "MorpionBootstrapPaths",
+    "MorpionEvaluatorSpec",
+    "MorpionEvaluatorsConfig",
     "MorpionSearchRunner",
     "build_bootstrap_event",
     "run_morpion_bootstrap_loop",

@@ -18,11 +18,11 @@ MORPION_INPUT_DIM = morpion_input_dim()
 
 @dataclass(frozen=True, slots=True)
 class MorpionRegressorArgs:
-    """Arguments for the first Morpion handcrafted-feature regressor."""
+    """Arguments for the Morpion handcrafted-feature regressor."""
 
     model_kind: str = "linear"
     input_dim: int = field(default=MORPION_INPUT_DIM)
-    hidden_dim: int | None = None
+    hidden_sizes: tuple[int, ...] | None = None
 
 
 class UnsupportedMorpionModelKindError(ValueError):
@@ -33,12 +33,16 @@ class UnsupportedMorpionModelKindError(ValueError):
         super().__init__(f"Unsupported Morpion model_kind: {model_kind!r}.")
 
 
-class MissingMorpionHiddenDimError(ValueError):
-    """Raised when an MLP regressor is missing its hidden dimension."""
+class MissingMorpionHiddenSizesError(ValueError):
+    """Raised when an MLP regressor is missing its hidden sizes."""
 
     def __init__(self) -> None:
-        """Initialize the error for a missing hidden dimension."""
-        super().__init__("`hidden_dim` is required when model_kind='mlp'.")
+        """Initialize the error for missing hidden sizes."""
+        super().__init__("`hidden_sizes` is required when model_kind='mlp'.")
+
+
+class MissingMorpionHiddenDimError(MissingMorpionHiddenSizesError):
+    """Backward-compatible alias for older callers expecting the old error name."""
 
 
 def _build_model_module(args: MorpionRegressorArgs) -> nn.Module:
@@ -46,13 +50,21 @@ def _build_model_module(args: MorpionRegressorArgs) -> nn.Module:
     if args.model_kind == "linear":
         return nn.Linear(args.input_dim, 1)
     if args.model_kind == "mlp":
-        if args.hidden_dim is None:
-            raise MissingMorpionHiddenDimError
-        return nn.Sequential(
-            nn.Linear(args.input_dim, args.hidden_dim),
-            nn.ReLU(),
-            nn.Linear(args.hidden_dim, 1),
-        )
+        if not args.hidden_sizes:
+            raise MissingMorpionHiddenSizesError()
+
+        layers: list[nn.Module] = []
+        previous_dim = args.input_dim
+        for hidden_size in args.hidden_sizes:
+            layers.extend(
+                [
+                    nn.Linear(previous_dim, hidden_size),
+                    nn.ReLU(),
+                ]
+            )
+            previous_dim = hidden_size
+        layers.append(nn.Linear(previous_dim, 1))
+        return nn.Sequential(*layers)
     raise UnsupportedMorpionModelKindError(args.model_kind)
 
 
@@ -100,6 +112,7 @@ __all__ = [
     "MORPION_FEATURE_SCHEMA",
     "MORPION_INPUT_DIM",
     "MissingMorpionHiddenDimError",
+    "MissingMorpionHiddenSizesError",
     "MorpionRegressor",
     "MorpionRegressorArgs",
     "UnsupportedMorpionModelKindError",

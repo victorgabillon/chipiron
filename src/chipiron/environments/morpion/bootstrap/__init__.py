@@ -1,8 +1,12 @@
 """Restartable Morpion bootstrap orchestration helpers."""
 
 from .bootstrap_loop import (
+    EmptyMorpionEvaluatorsConfigError,
+    InconsistentMorpionEvaluatorSpecNameError,
     MorpionBootstrapArgs,
     MorpionBootstrapPaths,
+    MorpionEvaluatorSpec,
+    MorpionEvaluatorsConfig,
     MorpionSearchRunner,
     build_bootstrap_event,
     run_morpion_bootstrap_loop,
@@ -40,6 +44,8 @@ from .run_state import (
 )
 
 __all__ = [
+    "EmptyMorpionEvaluatorsConfigError",
+    "InconsistentMorpionEvaluatorSpecNameError",
     "MalformedMorpionBootstrapHistoryError",
     "MalformedMorpionBootstrapRunStateError",
     "MorpionBootstrapArgs",
@@ -55,6 +61,8 @@ __all__ = [
     "MorpionBootstrapTrainingStatus",
     "MorpionBootstrapTreeStatus",
     "MorpionEvaluatorMetrics",
+    "MorpionEvaluatorSpec",
+    "MorpionEvaluatorsConfig",
     "MorpionSearchRunner",
     "bootstrap_event_from_dict",
     "bootstrap_event_to_dict",

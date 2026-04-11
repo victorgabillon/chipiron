@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -55,12 +56,17 @@ from atomheart.games.morpion import initial_state as morpion_initial_state
 from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 from torch.utils.data import DataLoader
 
+import chipiron.environments.morpion.bootstrap.bootstrap_loop as bootstrap_loop_module
 from chipiron.environments.morpion.bootstrap import (
+    EmptyMorpionEvaluatorsConfigError,
     MalformedMorpionBootstrapRunStateError,
     MorpionBootstrapArgs,
     MorpionBootstrapPaths,
     MorpionBootstrapRunState,
+    MorpionEvaluatorSpec,
+    MorpionEvaluatorsConfig,
     initialize_bootstrap_run_state,
+    load_bootstrap_history,
     load_bootstrap_run_state,
     run_morpion_bootstrap_loop,
     run_one_bootstrap_cycle,
@@ -166,6 +172,30 @@ class FakeMorpionSearchRunner:
         return self._tree_sizes[index]
 
 
+def _multi_evaluator_config() -> MorpionEvaluatorsConfig:
+    """Return one representative two-evaluator bootstrap config."""
+    return MorpionEvaluatorsConfig(
+        evaluators={
+            "linear": MorpionEvaluatorSpec(
+                name="linear",
+                model_type="linear",
+                hidden_sizes=None,
+                num_epochs=1,
+                batch_size=1,
+                learning_rate=1e-3,
+            ),
+            "mlp": MorpionEvaluatorSpec(
+                name="mlp",
+                model_type="mlp",
+                hidden_sizes=(8, 4),
+                num_epochs=1,
+                batch_size=1,
+                learning_rate=1e-3,
+            ),
+        }
+    )
+
+
 def test_should_save_progress_helper() -> None:
     """The save trigger should fire on first save, growth, or elapsed time."""
     assert should_save_progress(
@@ -209,7 +239,10 @@ def test_run_state_round_trip(tmp_path: Path) -> None:
         cycle_index=17,
         latest_tree_snapshot_path="tree_exports/generation_000003.json",
         latest_rows_path="rows/generation_000003.json",
-        latest_model_bundle_path="models/generation_000003",
+        latest_model_bundle_paths={
+            "linear": "models/generation_000003/linear",
+            "mlp": "models/generation_000003/mlp",
+        },
         tree_size_at_last_save=42,
         last_save_unix_s=1234.5,
         metadata={"note": "checkpoint"},
@@ -222,6 +255,29 @@ def test_run_state_round_trip(tmp_path: Path) -> None:
     assert loaded == state
 
 
+def test_run_state_loads_legacy_single_model_path(tmp_path: Path) -> None:
+    """Older single-model run states should migrate to the keyed mapping."""
+    path = tmp_path / "run_state.json"
+    path.write_text(
+        json.dumps(
+            {
+                "generation": 2,
+                "cycle_index": 8,
+                "latest_tree_snapshot_path": "tree_exports/generation_000002.json",
+                "latest_rows_path": "rows/generation_000002.json",
+                "latest_model_bundle_path": "models/generation_000002",
+                "tree_size_at_last_save": 21,
+                "last_save_unix_s": 123.0,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    loaded = load_bootstrap_run_state(path)
+
+    assert loaded.latest_model_bundle_paths == {"default": "models/generation_000002"}
+
+
 def test_malformed_run_state_load_fails_loudly(tmp_path: Path) -> None:
     """Malformed persisted run-state payloads should raise clearly."""
     path = tmp_path / "run_state.json"
@@ -229,6 +285,12 @@ def test_malformed_run_state_load_fails_loudly(tmp_path: Path) -> None:
 
     with pytest.raises(MalformedMorpionBootstrapRunStateError):
         load_bootstrap_run_state(path)
+
+
+def test_empty_evaluators_config_raises_explicitly() -> None:
+    """An empty evaluator config should fail with an explicit domain error."""
+    with pytest.raises(EmptyMorpionEvaluatorsConfigError):
+        MorpionEvaluatorsConfig(evaluators={})
 
 
 def test_run_one_cycle_without_save_does_not_train(tmp_path: Path) -> None:
@@ -246,7 +308,7 @@ def test_run_one_cycle_without_save_does_not_train(tmp_path: Path) -> None:
         cycle_index=11,
         latest_tree_snapshot_path=None,
         latest_rows_path=None,
-        latest_model_bundle_path=None,
+        latest_model_bundle_paths=None,
         tree_size_at_last_save=10,
         last_save_unix_s=100.0,
     )
@@ -263,7 +325,7 @@ def test_run_one_cycle_without_save_does_not_train(tmp_path: Path) -> None:
     assert next_state.cycle_index == 12
     assert next_state.latest_tree_snapshot_path is None
     assert next_state.latest_rows_path is None
-    assert next_state.latest_model_bundle_path is None
+    assert next_state.latest_model_bundle_paths is None
     assert runner.export_calls == []
     assert not paths.tree_snapshot_dir.exists() or list(paths.tree_snapshot_dir.iterdir()) == []
     assert not paths.rows_dir.exists() or list(paths.rows_dir.iterdir()) == []
@@ -295,15 +357,51 @@ def test_run_one_cycle_with_save_updates_artifacts(tmp_path: Path) -> None:
     assert next_state.cycle_index == 0
     assert next_state.tree_size_at_last_save == 10
     assert next_state.last_save_unix_s == 200.0
-    assert next_state.latest_tree_snapshot_path is not None
-    assert next_state.latest_rows_path is not None
-    assert next_state.latest_model_bundle_path is not None
     assert next_state.latest_tree_snapshot_path == "tree_exports/generation_000001.json"
     assert next_state.latest_rows_path == "rows/generation_000001.json"
-    assert next_state.latest_model_bundle_path == "models/generation_000001"
+    assert next_state.latest_model_bundle_paths == {
+        "default": "models/generation_000001/default"
+    }
     assert paths.resolve_work_dir_path(next_state.latest_tree_snapshot_path).is_file()
     assert paths.resolve_work_dir_path(next_state.latest_rows_path).is_file()
-    assert paths.resolve_work_dir_path(next_state.latest_model_bundle_path).is_dir()
+    assert paths.resolve_work_dir_path(
+        next_state.latest_model_bundle_paths["default"]
+    ).is_dir()
+
+
+def test_run_one_cycle_with_multiple_evaluators_trains_each_model(tmp_path: Path) -> None:
+    """A save cycle should train all configured evaluators into separate directories."""
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        max_growth_steps_per_cycle=5,
+        shuffle=False,
+        evaluators_config=_multi_evaluator_config(),
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    runner = FakeMorpionSearchRunner(tree_sizes=(10,), target_values=(1.25,))
+
+    next_state = run_one_bootstrap_cycle(
+        args=args,
+        paths=paths,
+        runner=runner,
+        run_state=initialize_bootstrap_run_state(),
+        now_unix_s=200.0,
+    )
+    history = load_bootstrap_history(paths.history_jsonl_path)
+
+    assert next_state.latest_model_bundle_paths == {
+        "linear": "models/generation_000001/linear",
+        "mlp": "models/generation_000001/mlp",
+    }
+    assert paths.resolve_work_dir_path("models/generation_000001/linear").is_dir()
+    assert paths.resolve_work_dir_path("models/generation_000001/mlp").is_dir()
+    assert len(history) == 1
+    event = history[0]
+    assert set(event.evaluators) == {"linear", "mlp"}
+    assert event.artifacts.model_bundle_paths == {
+        "linear": "models/generation_000001/linear",
+        "mlp": "models/generation_000001/mlp",
+    }
 
 
 def test_loop_resumes_from_saved_run_state(tmp_path: Path) -> None:
@@ -333,7 +431,31 @@ def test_loop_resumes_from_saved_run_state(tmp_path: Path) -> None:
     assert runner.load_calls[0] == (None, None)
     assert runner.load_calls[1] == (
         str(paths.resolve_work_dir_path(first_state.latest_tree_snapshot_path)),
-        str(paths.resolve_work_dir_path(first_state.latest_model_bundle_path)),
+        str(paths.resolve_work_dir_path(first_state.latest_model_bundle_paths["default"])),
+    )
+
+
+def test_loop_resumes_with_multi_evaluator_primary_model(tmp_path: Path) -> None:
+    """Restart should use the selected primary evaluator bundle for bootstrap."""
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        max_growth_steps_per_cycle=5,
+        save_after_tree_growth_factor=2.0,
+        shuffle=False,
+        evaluators_config=_multi_evaluator_config(),
+    )
+    runner = FakeMorpionSearchRunner(
+        tree_sizes=(10, 20),
+        target_values=(1.25, -0.5),
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+
+    first_state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+    run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+
+    assert runner.load_calls[1] == (
+        str(paths.resolve_work_dir_path(first_state.latest_tree_snapshot_path)),
+        str(paths.resolve_work_dir_path(first_state.latest_model_bundle_paths["linear"])),
     )
 
 
@@ -388,3 +510,42 @@ def test_saved_dataset_batches_after_cycle(tmp_path: Path) -> None:
     assert batch.get_target_value().shape == (1, 1)
     assert batch.get_input_layer().dtype == torch.float32
     assert batch.get_target_value().dtype == torch.float32
+
+
+def test_multi_evaluator_failure_propagates_without_history_event(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """If one evaluator fails, the whole cycle should fail without a partial event."""
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        max_growth_steps_per_cycle=5,
+        shuffle=False,
+        evaluators_config=_multi_evaluator_config(),
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    runner = FakeMorpionSearchRunner(tree_sizes=(10,), target_values=(1.25,))
+
+    call_count = 0
+    real_train = bootstrap_loop_module.train_morpion_regressor
+
+    def _failing_train(args: object) -> object:
+        nonlocal call_count
+        call_count += 1
+        if call_count == 2:
+            raise RuntimeError("second evaluator failed")
+        return real_train(cast("object", args))
+
+    monkeypatch.setattr(bootstrap_loop_module, "train_morpion_regressor", _failing_train)
+
+    with pytest.raises(RuntimeError, match="second evaluator failed"):
+        run_one_bootstrap_cycle(
+            args=args,
+            paths=paths,
+            runner=runner,
+            run_state=initialize_bootstrap_run_state(),
+            now_unix_s=200.0,
+        )
+
+    assert load_bootstrap_history(paths.history_jsonl_path) == ()
+    assert not paths.latest_status_path.exists()

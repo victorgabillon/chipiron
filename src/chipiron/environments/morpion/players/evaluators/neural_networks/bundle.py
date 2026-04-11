@@ -65,6 +65,17 @@ class InvalidMorpionModelBundleError(ValueError):
         )
 
     @classmethod
+    def invalid_hidden_sizes(
+        cls,
+        path: Path,
+    ) -> InvalidMorpionModelBundleError:
+        """Return the invalid-hidden-sizes error."""
+        return cls(
+            f"Invalid Morpion model args in {path!s}: `hidden_sizes` must be a list "
+            "or tuple of integer-like values."
+        )
+
+    @classmethod
     def invalid_manifest_mapping(
         cls,
         path: Path,
@@ -90,9 +101,7 @@ class InvalidMorpionModelBundleError(ValueError):
         value: object,
     ) -> InvalidMorpionModelBundleError:
         """Return the invalid-integer-like-value error."""
-        return cls(
-            f"Expected an integer-like value, got {type(value).__name__}."
-        )
+        return cls(f"Expected an integer-like value, got {type(value).__name__}.")
 
 
 class IncompatibleMorpionModelBundleError(ValueError):
@@ -123,9 +132,7 @@ class IncompatibleMorpionModelBundleError(ValueError):
         input_dim: int,
     ) -> IncompatibleMorpionModelBundleError:
         """Return the incompatible-input-dimension error."""
-        return cls(
-            f"Expected input_dim={MORPION_INPUT_DIM}, got {input_dim}."
-        )
+        return cls(f"Expected input_dim={MORPION_INPUT_DIM}, got {input_dim}.")
 
 
 def save_morpion_model_bundle(
@@ -194,13 +201,12 @@ def _load_model_args(path: Path) -> MorpionRegressorArgs:
     data = cast("Mapping[str, object]", raw)
     model_kind = data.get("model_kind", "linear")
     input_dim = data.get("input_dim", MORPION_INPUT_DIM)
-    hidden_dim = data.get("hidden_dim")
     if not isinstance(model_kind, str):
         raise InvalidMorpionModelBundleError.invalid_model_kind(path)
     return MorpionRegressorArgs(
         model_kind=model_kind,
         input_dim=_coerce_int(input_dim),
-        hidden_dim=None if hidden_dim is None else _coerce_int(hidden_dim),
+        hidden_sizes=_load_hidden_sizes(data, path),
     )
 
 
@@ -263,12 +269,35 @@ def _is_str_key_mapping(obj: object) -> bool:
 def _coerce_int(value: object) -> int:
     """Return one JSON-loaded integer-like payload as ``int``."""
     if isinstance(value, bool):
-        return int(value)
-    if isinstance(value, int | str):
-        return int(value)
+        raise InvalidMorpionModelBundleError.invalid_integer_like_value(value)
+    if isinstance(value, int):
+        return value
     if isinstance(value, float):
+        if value.is_integer():
+            return int(value)
+        raise InvalidMorpionModelBundleError.invalid_integer_like_value(value)
+    if isinstance(value, str):
         return int(value)
     raise InvalidMorpionModelBundleError.invalid_integer_like_value(value)
+
+
+def _load_hidden_sizes(
+    data: Mapping[str, object],
+    path: Path,
+) -> tuple[int, ...] | None:
+    """Load current or legacy hidden-layer settings from one args payload."""
+    hidden_sizes = data.get("hidden_sizes")
+    if hidden_sizes is None and "hidden_dim" in data:
+        hidden_dim = data.get("hidden_dim")
+        return None if hidden_dim is None else (_coerce_int(hidden_dim),)
+    if hidden_sizes is None:
+        return None
+    if not isinstance(hidden_sizes, list | tuple):
+        raise InvalidMorpionModelBundleError.invalid_hidden_sizes(path)
+    try:
+        return tuple(_coerce_int(item) for item in hidden_sizes)
+    except ValueError as exc:
+        raise InvalidMorpionModelBundleError.invalid_hidden_sizes(path) from exc
 
 
 __all__ = [

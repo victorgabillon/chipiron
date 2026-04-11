@@ -19,7 +19,7 @@ from .model import MorpionRegressor, MorpionRegressorArgs, build_morpion_regress
 
 @dataclass(frozen=True, slots=True)
 class MorpionTrainingArgs:
-    """Arguments for the first Morpion supervised-regression training helper."""
+    """Arguments for the Morpion supervised-regression training helper."""
 
     dataset_file: str | os.PathLike[str]
     output_dir: str | os.PathLike[str]
@@ -28,22 +28,24 @@ class MorpionTrainingArgs:
     learning_rate: float = 1e-3
     shuffle: bool = True
     model_kind: str = "linear"
+    hidden_sizes: tuple[int, ...] | None = None
     hidden_dim: int | None = None
 
 
 def train_morpion_regressor(
     args: MorpionTrainingArgs,
 ) -> tuple[MorpionRegressor, dict[str, float]]:
-    """Train a small Morpion regressor on persisted supervised rows."""
+    """Train a Morpion regressor on persisted supervised rows."""
     dataset = MorpionSupervisedDataset(
         MorpionSupervisedDatasetArgs(file_name=os.fspath(args.dataset_file))
     )
     data_loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=args.shuffle)
 
+    resolved_hidden_sizes = _resolve_hidden_sizes(args)
     model_args = MorpionRegressorArgs(
         model_kind=args.model_kind,
         input_dim=dataset.input_dim,
-        hidden_dim=args.hidden_dim,
+        hidden_sizes=resolved_hidden_sizes,
     )
     model = build_morpion_regressor(model_args)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
@@ -74,7 +76,7 @@ def train_morpion_regressor(
         "learning_rate": args.learning_rate,
         "shuffle": args.shuffle,
         "model_kind": args.model_kind,
-        "hidden_dim": args.hidden_dim,
+        "hidden_sizes": resolved_hidden_sizes,
     }
     save_morpion_model_bundle(
         model,
@@ -86,6 +88,15 @@ def train_morpion_regressor(
         },
     )
     return model, metrics
+
+
+def _resolve_hidden_sizes(args: MorpionTrainingArgs) -> tuple[int, ...] | None:
+    """Resolve legacy and current hidden-layer arguments into one tuple."""
+    if args.hidden_sizes is not None:
+        return args.hidden_sizes
+    if args.hidden_dim is not None:
+        return (args.hidden_dim,)
+    return None
 
 
 __all__ = [
