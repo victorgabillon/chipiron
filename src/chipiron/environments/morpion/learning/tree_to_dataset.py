@@ -102,7 +102,9 @@ def is_morpion_state_ref_payload(payload: object) -> bool:
     return True
 
 
-def decode_morpion_state_ref_payload(payload: dict[str, object]) -> AtomMorpionState:
+def decode_morpion_state_ref_payload(
+    payload: Mapping[str, object],
+) -> AtomMorpionState:
     """Decode one validated Morpion checkpoint payload into an atomheart state."""
     normalized_payload = _validate_and_normalize_state_ref_payload(payload)
     return _decode_validated_payload(normalized_payload)
