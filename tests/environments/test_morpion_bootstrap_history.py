@@ -167,12 +167,17 @@ class FakeMorpionSearchRunner:
 def _make_event(generation: int = 3, cycle_index: int = 5) -> MorpionBootstrapEvent:
     """Build one representative bootstrap event for serialization tests."""
     return MorpionBootstrapEvent(
-        event_id="event-0003",
+        event_id=f"cycle_{cycle_index:06d}",
         cycle_index=cycle_index,
         generation=generation,
         timestamp_utc="2026-04-11T08:15:00Z",
-        tree=MorpionBootstrapTreeStatus(size=42, size_at_last_save=24),
-        dataset=MorpionBootstrapDatasetStatus(rows_count=12),
+        tree=MorpionBootstrapTreeStatus(
+            num_nodes=42,
+            num_expanded_nodes=None,
+            num_simulations=None,
+            root_visit_count=None,
+        ),
+        dataset=MorpionBootstrapDatasetStatus(num_rows=12, num_samples=12),
         training=MorpionBootstrapTrainingStatus(triggered=True),
         record=MorpionBootstrapRecordStatus(current=None),
         artifacts=MorpionBootstrapArtifacts(
@@ -300,6 +305,18 @@ def test_non_integral_float_is_rejected_during_event_load() -> None:
         bootstrap_event_from_dict(payload)
 
 
+def test_missing_latest_status_loads_as_empty_status(tmp_path: Path) -> None:
+    """Missing latest-status files should load as an empty default snapshot."""
+    status = load_latest_bootstrap_status(tmp_path / "latest_status.json")
+
+    assert status == MorpionBootstrapLatestStatus(
+        work_dir=str(tmp_path),
+        latest_generation=None,
+        latest_cycle_index=None,
+        latest_event=None,
+    )
+
+
 def test_bootstrap_loop_writes_history_on_no_save_cycle(tmp_path: Path) -> None:
     """Even a no-save cycle should emit one structured history event."""
     args = MorpionBootstrapArgs(
@@ -335,13 +352,16 @@ def test_bootstrap_loop_writes_history_on_no_save_cycle(tmp_path: Path) -> None:
     assert next_state.cycle_index == 9
     assert len(history) == 1
     event = history[0]
-    assert event.event_id
+    assert event.event_id == "cycle_000009"
     assert event.cycle_index == 9
     assert event.generation == 2
     assert event.timestamp_utc == "1970-01-01T00:01:50Z"
-    assert event.tree.size == 15
-    assert event.tree.size_at_last_save == 10
-    assert event.dataset.rows_count is None
+    assert event.tree.num_nodes == 15
+    assert event.tree.num_expanded_nodes is None
+    assert event.tree.num_simulations is None
+    assert event.tree.root_visit_count is None
+    assert event.dataset.num_rows is None
+    assert event.dataset.num_samples is None
     assert not event.training.triggered
     assert event.artifacts.tree_snapshot_path is None
     assert event.artifacts.rows_path is None
@@ -386,13 +406,16 @@ def test_bootstrap_loop_writes_history_on_save_train_cycle(tmp_path: Path) -> No
 
     assert len(history) == 1
     event = history[0]
-    assert event.event_id
+    assert event.event_id == "cycle_000000"
     assert event.cycle_index == 0
     assert event.generation == 1
     assert event.timestamp_utc == "1970-01-01T00:03:20Z"
-    assert event.tree.size == 10
-    assert event.tree.size_at_last_save == 10
-    assert event.dataset.rows_count == 1
+    assert event.tree.num_nodes == 10
+    assert event.tree.num_expanded_nodes is None
+    assert event.tree.num_simulations is None
+    assert event.tree.root_visit_count is None
+    assert event.dataset.num_rows == 1
+    assert event.dataset.num_samples == 1
     assert event.training.triggered
     assert event.artifacts.tree_snapshot_path == "tree_exports/generation_000001.json"
     assert event.artifacts.rows_path == "rows/generation_000001.json"

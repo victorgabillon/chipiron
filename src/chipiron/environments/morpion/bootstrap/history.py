@@ -39,15 +39,18 @@ class MorpionEvaluatorMetrics:
 class MorpionBootstrapTreeStatus:
     """Tree-related monitoring fields for one bootstrap cycle."""
 
-    size: int
-    size_at_last_save: int | None
+    num_nodes: int
+    num_expanded_nodes: int | None = None
+    num_simulations: int | None = None
+    root_visit_count: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class MorpionBootstrapDatasetStatus:
     """Dataset-related monitoring fields for one bootstrap cycle."""
 
-    rows_count: int | None
+    num_rows: int | None
+    num_samples: int | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,10 +85,13 @@ class MorpionBootstrapEvent:
     generation: int = 0
     timestamp_utc: str = ""
     tree: MorpionBootstrapTreeStatus = field(
-        default_factory=lambda: MorpionBootstrapTreeStatus(size=0, size_at_last_save=None)
+        default_factory=lambda: MorpionBootstrapTreeStatus(num_nodes=0)
     )
     dataset: MorpionBootstrapDatasetStatus = field(
-        default_factory=lambda: MorpionBootstrapDatasetStatus(rows_count=None)
+        default_factory=lambda: MorpionBootstrapDatasetStatus(
+            num_rows=None,
+            num_samples=None,
+        )
     )
     training: MorpionBootstrapTrainingStatus = field(
         default_factory=lambda: MorpionBootstrapTrainingStatus(triggered=False)
@@ -257,10 +263,15 @@ def bootstrap_event_to_dict(event: MorpionBootstrapEvent) -> dict[str, object]:
         "generation": event.generation,
         "timestamp_utc": event.timestamp_utc,
         "tree": {
-            "size": event.tree.size,
-            "size_at_last_save": event.tree.size_at_last_save,
+            "num_nodes": event.tree.num_nodes,
+            "num_expanded_nodes": event.tree.num_expanded_nodes,
+            "num_simulations": event.tree.num_simulations,
+            "root_visit_count": event.tree.root_visit_count,
         },
-        "dataset": {"rows_count": event.dataset.rows_count},
+        "dataset": {
+            "num_rows": event.dataset.num_rows,
+            "num_samples": event.dataset.num_samples,
+        },
         "training": {"triggered": event.training.triggered},
         "record": {"current": event.record.current},
         "artifacts": {
@@ -305,17 +316,32 @@ def bootstrap_event_from_dict(data: dict[str, object]) -> MorpionBootstrapEvent:
             field_name="timestamp_utc",
         ),
         tree=MorpionBootstrapTreeStatus(
-            size=_coerce_int(tree_data.get("size"), field_name="tree.size"),
-            size_at_last_save=_optional_int(
-                tree_data.get("size_at_last_save"),
-                field_name="tree.size_at_last_save",
+            num_nodes=_coerce_int(
+                tree_data.get("num_nodes"),
+                field_name="tree.num_nodes",
+            ),
+            num_expanded_nodes=_optional_int(
+                tree_data.get("num_expanded_nodes"),
+                field_name="tree.num_expanded_nodes",
+            ),
+            num_simulations=_optional_int(
+                tree_data.get("num_simulations"),
+                field_name="tree.num_simulations",
+            ),
+            root_visit_count=_optional_int(
+                tree_data.get("root_visit_count"),
+                field_name="tree.root_visit_count",
             ),
         ),
         dataset=MorpionBootstrapDatasetStatus(
-            rows_count=_optional_int(
-                dataset_data.get("rows_count"),
-                field_name="dataset.rows_count",
-            )
+            num_rows=_optional_int(
+                dataset_data.get("num_rows"),
+                field_name="dataset.num_rows",
+            ),
+            num_samples=_optional_int(
+                dataset_data.get("num_samples"),
+                field_name="dataset.num_samples",
+            ),
         ),
         training=MorpionBootstrapTrainingStatus(
             triggered=_required_bool(
@@ -502,7 +528,15 @@ def load_latest_bootstrap_status(
 ) -> MorpionBootstrapLatestStatus:
     """Load the latest bootstrap status snapshot from JSON."""
     try:
-        loaded = json.loads(Path(path).read_text(encoding="utf-8"))
+        latest_status_path = Path(path)
+        if not latest_status_path.exists():
+            return MorpionBootstrapLatestStatus(
+                work_dir=str(latest_status_path.parent),
+                latest_generation=None,
+                latest_cycle_index=None,
+                latest_event=None,
+            )
+        loaded = json.loads(latest_status_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         raise MalformedMorpionBootstrapHistoryError.invalid_latest_status_mapping() from exc
     return latest_status_from_dict(_require_latest_status_mapping(loaded))
@@ -615,13 +649,18 @@ def _string_mapping(value: object, *, field_name: str) -> dict[str, str]:
     if value is None:
         return {}
     if not _is_str_key_mapping(value):
-        raise MalformedMorpionBootstrapHistoryError.invalid_model_bundle_paths_field()
+        raise MalformedMorpionBootstrapHistoryError(
+            f"Morpion bootstrap history field `{field_name}` must be a mapping of "
+            "strings to strings."
+        )
 
     raw_mapping = cast("Mapping[str, object]", value)
     if not all(isinstance(item_value, str) for item_value in raw_mapping.values()):
-        raise MalformedMorpionBootstrapHistoryError.invalid_model_bundle_paths_field()
+        raise MalformedMorpionBootstrapHistoryError(
+            f"Morpion bootstrap history field `{field_name}` must be a mapping of "
+            "strings to strings."
+        )
 
-    _ = field_name
     return {key: cast("str", item_value) for key, item_value in raw_mapping.items()}
 
 

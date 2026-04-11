@@ -8,7 +8,6 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Protocol
-from uuid import uuid4
 
 from chipiron.environments.morpion.learning import (
     load_training_tree_snapshot_as_morpion_supervised_rows,
@@ -115,11 +114,17 @@ class MorpionBootstrapPaths:
         )
 
     def relative_to_work_dir(self, path: str | Path) -> str:
-        """Return one path relative to ``work_dir`` for persisted state."""
+        """Return one persisted path relative to ``work_dir`` or fail clearly."""
         raw_path = Path(path)
         if not raw_path.is_absolute():
             return raw_path.as_posix()
-        return raw_path.relative_to(self.work_dir).as_posix()
+        try:
+            return raw_path.relative_to(self.work_dir).as_posix()
+        except ValueError as exc:
+            raise ValueError(
+                f"Bootstrap artifact path {raw_path} must be inside work_dir "
+                f"{self.work_dir} to be persisted relatively."
+            ) from exc
 
     def resolve_work_dir_path(self, path: str | Path | None) -> Path | None:
         """Resolve one possibly-relative persisted path against ``work_dir``."""
@@ -159,11 +164,11 @@ def build_bootstrap_event(
     cycle_index: int,
     generation: int,
     timestamp_utc: str,
-    tree_size: int,
-    tree_size_at_last_save: int | None,
+    tree_num_nodes: int,
     tree_snapshot_path: str | None,
     rows_path: str | None,
-    rows_count: int | None,
+    dataset_num_rows: int | None,
+    dataset_num_samples: int | None,
     training_triggered: bool,
     evaluator_metrics: Mapping[str, MorpionEvaluatorMetrics] | None = None,
     model_bundle_paths: Mapping[str, str] | None = None,
@@ -173,15 +178,17 @@ def build_bootstrap_event(
 ) -> MorpionBootstrapEvent:
     """Build one structured bootstrap history event from cycle outputs."""
     return MorpionBootstrapEvent(
-        event_id=uuid4().hex if event_id is None else event_id,
+        event_id=f"cycle_{cycle_index:06d}" if event_id is None else event_id,
         cycle_index=cycle_index,
         generation=generation,
         timestamp_utc=timestamp_utc,
         tree=MorpionBootstrapTreeStatus(
-            size=tree_size,
-            size_at_last_save=tree_size_at_last_save,
+            num_nodes=tree_num_nodes,
         ),
-        dataset=MorpionBootstrapDatasetStatus(rows_count=rows_count),
+        dataset=MorpionBootstrapDatasetStatus(
+            num_rows=dataset_num_rows,
+            num_samples=dataset_num_samples,
+        ),
         training=MorpionBootstrapTrainingStatus(triggered=training_triggered),
         record=MorpionBootstrapRecordStatus(current=current_record),
         artifacts=MorpionBootstrapArtifacts(
@@ -270,13 +277,11 @@ def run_one_bootstrap_cycle(
                 cycle_index=cycle_index,
                 generation=next_run_state.generation,
                 timestamp_utc=timestamp_utc,
-                tree_size=current_tree_size,
-                tree_size_at_last_save=None
-                if next_run_state.last_save_unix_s is None
-                else next_run_state.tree_size_at_last_save,
+                tree_num_nodes=current_tree_size,
                 tree_snapshot_path=None,
                 rows_path=None,
-                rows_count=None,
+                dataset_num_rows=None,
+                dataset_num_samples=None,
                 training_triggered=False,
             )
         )
@@ -337,11 +342,11 @@ def run_one_bootstrap_cycle(
             cycle_index=cycle_index,
             generation=next_run_state.generation,
             timestamp_utc=timestamp_utc,
-            tree_size=current_tree_size,
-            tree_size_at_last_save=next_run_state.tree_size_at_last_save,
+            tree_num_nodes=current_tree_size,
             tree_snapshot_path=relative_tree_snapshot_path,
             rows_path=relative_rows_path,
-            rows_count=len(rows.rows),
+            dataset_num_rows=len(rows.rows),
+            dataset_num_samples=len(rows.rows),
             training_triggered=True,
             evaluator_metrics=evaluator_metrics,
             model_bundle_paths={"default": relative_model_bundle_path},
