@@ -8,15 +8,12 @@ from dataclasses import dataclass, field
 from coral.chi_nn import ChiNN
 from torch import Tensor, nn
 
-from chipiron.environments.morpion.players.evaluators.neural_networks.feature_extractor import (
-    morpion_feature_names,
+from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_tensor import (
+    morpion_input_dim,
 )
 
 MORPION_FEATURE_SCHEMA = "morpion_handcrafted_v1"
-_MORPION_FEATURE_NAMES: tuple[str, ...] = tuple(
-    str(name) for name in morpion_feature_names()
-)
-MORPION_INPUT_DIM = len(_MORPION_FEATURE_NAMES)
+MORPION_INPUT_DIM = morpion_input_dim()
 
 
 @dataclass(frozen=True, slots=True)

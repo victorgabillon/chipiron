@@ -11,6 +11,7 @@ from typing import cast
 
 import pytest
 import torch
+from torch.utils.data import DataLoader
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
@@ -67,11 +68,13 @@ from chipiron.environments.morpion.players.evaluators.neural_networks import (
     MORPION_MODEL_WEIGHTS_FILE_NAME,
     IncompatibleMorpionModelBundleError,
     MorpionRegressorArgs,
-    MorpionTrainingArgs,
     build_morpion_regressor,
     load_morpion_model_bundle,
     load_morpion_regressor_for_inference,
     save_morpion_model_bundle,
+)
+from chipiron.environments.morpion.players.evaluators.neural_networks.train import (
+    MorpionTrainingArgs,
     train_morpion_regressor,
 )
 
@@ -215,6 +218,18 @@ def test_minimal_training_helper_runs_end_to_end(tmp_path: Path) -> None:
     sample_input, _ = dataset[0]
     output = model(sample_input)
     assert output.shape == (1, 1)
+
+
+def test_dataloader_batch_collation_shapes_are_stable(tmp_path: Path) -> None:
+    """Default DataLoader collation should batch Morpion samples as expected."""
+    dataset_file = _build_rows_file(tmp_path, target_values=(1.25, -0.5))
+    dataset = MorpionSupervisedDataset(MorpionSupervisedDatasetArgs(file_name=dataset_file))
+    data_loader = DataLoader(dataset, batch_size=2, shuffle=False)
+
+    batch = next(iter(data_loader))
+
+    assert batch.get_input_layer().shape == (2, MORPION_INPUT_DIM)
+    assert batch.get_target_value().shape == (2, 1)
 
 
 def test_loaded_trained_model_works_for_inference(tmp_path: Path) -> None:

@@ -21,7 +21,7 @@ from .model import (
 MORPION_MODEL_ARGS_FILE_NAME = "morpion_regressor_args.json"
 MORPION_MANIFEST_FILE_NAME = "morpion_manifest.json"
 MORPION_MODEL_WEIGHTS_FILE_NAME = "param.pt"
-MORPION_MODEL_READABLE_WEIGHTS_FILE_NAME = "param.yaml"
+MORPION_MODEL_READABLE_WEIGHTS_FILE_NAME = "param.json"
 
 
 def _empty_metadata() -> dict[str, Any]:
