@@ -454,10 +454,23 @@ def _record_status_from_dict(
         )
     )
     if uses_legacy_current:
-        _optional_number(
+        legacy_current = _optional_number(
             data.get("current"),
             field_name="record.current",
         )
+        if legacy_current is not None:
+            legacy_moves_since_start = int(legacy_current)
+            return MorpionBootstrapRecordStatus(
+                variant=MORPION_BOOTSTRAP_VARIANT,
+                initial_pattern=MORPION_BOOTSTRAP_INITIAL_PATTERN,
+                initial_point_count=MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
+                current_best_moves_since_start=legacy_moves_since_start,
+                current_best_total_points=(
+                    MORPION_BOOTSTRAP_INITIAL_POINT_COUNT + legacy_moves_since_start
+                ),
+                current_best_is_exact=None,
+                current_best_source="legacy_record_current_migrated",
+            )
 
     return MorpionBootstrapRecordStatus(
         variant=_optional_str(

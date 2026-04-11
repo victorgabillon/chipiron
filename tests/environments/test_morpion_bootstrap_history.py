@@ -372,6 +372,24 @@ def test_non_integral_float_is_rejected_during_event_load() -> None:
         bootstrap_event_from_dict(payload)
 
 
+def test_legacy_record_current_migrates_to_structured_record_status() -> None:
+    """Legacy scalar record payloads should preserve their score semantically."""
+    payload = bootstrap_event_to_dict(_make_event())
+    payload["record"] = {"current": 17}
+
+    loaded = bootstrap_event_from_dict(payload)
+
+    assert loaded.record == MorpionBootstrapRecordStatus(
+        variant="5T",
+        initial_pattern="greek_cross",
+        initial_point_count=36,
+        current_best_moves_since_start=17,
+        current_best_total_points=53,
+        current_best_is_exact=None,
+        current_best_source="legacy_record_current_migrated",
+    )
+
+
 def test_missing_latest_status_loads_as_empty_status(tmp_path: Path) -> None:
     """Missing latest-status files should load as an empty default snapshot."""
     status = load_latest_bootstrap_status(tmp_path / "latest_status.json")

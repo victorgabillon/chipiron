@@ -55,6 +55,13 @@ def default_morpion_record_status() -> MorpionBootstrapRecordStatus:
     )
 
 
+def current_record_score(
+    status: MorpionBootstrapRecordStatus,
+) -> int | None:
+    """Return the canonical Morpion record score for one status."""
+    return status.current_best_moves_since_start
+
+
 def carried_forward_morpion_record_status(
     previous: MorpionBootstrapRecordStatus | None,
 ) -> MorpionBootstrapRecordStatus:
@@ -162,6 +169,7 @@ __all__ = [
     "MORPION_BOOTSTRAP_VARIANT",
     "MorpionBootstrapRecordStatus",
     "carried_forward_morpion_record_status",
+    "current_record_score",
     "default_morpion_record_status",
     "extract_morpion_record_status_from_training_tree_snapshot",
     "morpion_bootstrap_experiment_metadata",

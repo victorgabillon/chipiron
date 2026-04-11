@@ -43,6 +43,7 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapTreeStatus,
     bootstrap_event_from_dict,
     bootstrap_event_to_dict,
+    current_record_score,
     extract_morpion_record_status_from_training_tree_snapshot,
     load_bootstrap_run_state,
     save_bootstrap_run_state,
@@ -147,6 +148,21 @@ def test_snapshot_record_status_computes_moves_since_start_and_total_points() ->
         current_best_is_exact=True,
         current_best_source="snapshot_exact_node",
     )
+
+
+def test_current_record_score_returns_moves_since_start() -> None:
+    """The canonical record score must ignore total occupied points."""
+    status = MorpionBootstrapRecordStatus(
+        variant="5T",
+        initial_pattern="greek_cross",
+        initial_point_count=36,
+        current_best_moves_since_start=18,
+        current_best_total_points=54,
+        current_best_is_exact=True,
+        current_best_source="snapshot_exact_node",
+    )
+
+    assert current_record_score(status) == 18
 
 
 def test_snapshot_record_status_prefers_larger_achievement() -> None:
