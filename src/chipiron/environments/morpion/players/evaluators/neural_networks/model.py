@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
+from typing import cast
 
 from coral.chi_nn import ChiNN
 from torch import Tensor, nn
@@ -51,7 +52,7 @@ def _build_model_module(args: MorpionRegressorArgs) -> nn.Module:
         return nn.Linear(args.input_dim, 1)
     if args.model_kind == "mlp":
         if not args.hidden_sizes:
-            raise MissingMorpionHiddenSizesError()
+            raise MissingMorpionHiddenSizesError
 
         layers: list[nn.Module] = []
         previous_dim = args.input_dim
@@ -84,7 +85,7 @@ class MorpionRegressor(ChiNN):
         """Run the regressor on one unbatched or batched feature tensor."""
         if x.ndim == 1:
             x = x.unsqueeze(0)
-        return self.net(x)
+        return cast("Tensor", self.net(x))
 
     def init_weights(self) -> None:
         """Keep PyTorch's default initialization for the first Morpion model."""

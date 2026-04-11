@@ -7,7 +7,7 @@ import threading
 import time
 from dataclasses import dataclass, field
 from types import SimpleNamespace
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from valanga import Color, Transition
 
@@ -22,7 +22,6 @@ from chipiron.displays.gui_protocol import (
 )
 from chipiron.displays.gui_publisher import GuiPublisher
 from chipiron.environments.types import GameKind
-from chipiron.games.domain.game.final_game_result import GameReport
 from chipiron.games.domain.game.game import Game, ObservableGame
 from chipiron.games.domain.game.game_manager import GameManager
 from chipiron.games.domain.game.game_playing_status import (
@@ -41,6 +40,9 @@ from chipiron.players.communications.player_message import (
     PlayerRequest,
     TurnStatePlusHistory,
 )
+
+if TYPE_CHECKING:
+    from chipiron.games.domain.game.final_game_result import GameReport
 
 PayloadT = TypeVar("PayloadT")
 
@@ -332,7 +334,7 @@ def drain_gui_payloads(display_queue: queue.Queue[Any]) -> list[Any]:
             return payloads
 
 
-def wait_for_gui_payload(
+def wait_for_gui_payload[PayloadT](
     display_queue: queue.Queue[Any],
     payload_type: type[PayloadT],
     *,

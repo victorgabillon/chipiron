@@ -165,7 +165,9 @@ def test_input_tensor_matches_morpion_converter_directly(tmp_path: Path) -> None
     sample_input, _ = dataset[0]
 
     dynamics = MorpionDynamics()
-    atom_state = MorpionStateCheckpointCodec().load_state_ref(nodes[0].state_ref_payload)
+    atom_state = MorpionStateCheckpointCodec().load_state_ref(
+        nodes[0].state_ref_payload
+    )
     chipiron_state = dynamics.wrap_atomheart_state(atom_state)
     expected_input = morpion_state_to_tensor(chipiron_state, dynamics=dynamics)
 

@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import os
 import sys
-from pathlib import Path
 from dataclasses import dataclass
 from enum import Enum, StrEnum
-from typing import Any
+from pathlib import Path
 
 TESTS_ROOT = Path(__file__).resolve().parent
 REPO_ROOT = TESTS_ROOT.parent
@@ -67,7 +66,7 @@ def _patch_valanga_compat() -> None:
         termination: Enum | None = None
         winner: color_type | None = None
 
-        def __class_getitem__(cls, _item: object) -> type["OverEvent"]:
+        def __class_getitem__(cls, _item: object) -> type[OverEvent]:
             """Support ``OverEvent[T]`` annotations used by newer packages."""
             return cls
 

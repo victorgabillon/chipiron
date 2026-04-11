@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import NamedTuple, cast
+from typing import NamedTuple
 
 import torch
 from torch import Tensor
@@ -43,7 +43,7 @@ class MorpionSupervisedSample(NamedTuple):
     @property
     def is_batch(self) -> bool:
         """Return whether this sample contains batched tensors."""
-        return cast("bool", self.input_tensor.ndim > 1)
+        return self.input_tensor.ndim > 1
 
     def get_input_layer(self) -> Tensor:
         """Return the feature tensor for the sample."""

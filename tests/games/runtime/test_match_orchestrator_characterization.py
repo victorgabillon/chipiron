@@ -11,7 +11,6 @@ from test_support.runtime_fixtures import (
     wait_for_gui_payload,
     wait_for_thread_result,
 )
-
 from valanga import Color
 
 from chipiron.displays.gui_protocol import (

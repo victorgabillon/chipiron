@@ -134,32 +134,47 @@ def test_training_node_filters_work() -> None:
     """Extraction filters should reject nodes that do not meet requirements."""
     payload = _make_morpion_payload()
 
-    assert training_node_to_morpion_supervised_row(
-        _make_training_node(state_ref_payload=None)
-    ) is None
-    assert training_node_to_morpion_supervised_row(
-        _make_training_node(
-            state_ref_payload=payload,
-            direct_value_scalar=0.5,
-            backed_up_value_scalar=None,
+    assert (
+        training_node_to_morpion_supervised_row(
+            _make_training_node(state_ref_payload=None)
         )
-    ) is None
-    assert training_node_to_morpion_supervised_row(
-        _make_training_node(state_ref_payload=payload, depth=1),
-        min_depth=2,
-    ) is None
-    assert training_node_to_morpion_supervised_row(
-        _make_training_node(state_ref_payload=payload, visit_count=1),
-        min_visit_count=2,
-    ) is None
-    assert training_node_to_morpion_supervised_row(
-        _make_training_node(
-            state_ref_payload=payload,
-            is_terminal=False,
-            is_exact=False,
-        ),
-        require_exact_or_terminal=True,
-    ) is None
+        is None
+    )
+    assert (
+        training_node_to_morpion_supervised_row(
+            _make_training_node(
+                state_ref_payload=payload,
+                direct_value_scalar=0.5,
+                backed_up_value_scalar=None,
+            )
+        )
+        is None
+    )
+    assert (
+        training_node_to_morpion_supervised_row(
+            _make_training_node(state_ref_payload=payload, depth=1),
+            min_depth=2,
+        )
+        is None
+    )
+    assert (
+        training_node_to_morpion_supervised_row(
+            _make_training_node(state_ref_payload=payload, visit_count=1),
+            min_visit_count=2,
+        )
+        is None
+    )
+    assert (
+        training_node_to_morpion_supervised_row(
+            _make_training_node(
+                state_ref_payload=payload,
+                is_terminal=False,
+                is_exact=False,
+            ),
+            require_exact_or_terminal=True,
+        )
+        is None
+    )
 
 
 def test_invalid_payload_raises_clearly() -> None:

@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from valanga import Color
-
 from atomheart.games.checkers.state import CheckersState
 from atomheart.games.integer_reduction.state import IntegerReductionState
+from valanga import Color
 
 
 def test_local_atomheart_contains_both_turnless_and_turn_based_states() -> None:

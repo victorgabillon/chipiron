@@ -8,6 +8,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
+from anemone.training_export import load_training_tree_snapshot
+from atomheart.games.morpion.checkpoints import (
+    MorpionCheckpointError,
+    MorpionCheckpointTypeError,
+    MorpionStateCheckpointCodec,
+)
+
 MORPION_SUPERVISED_ROWS_DATASET_KIND = "morpion_supervised_rows"
 MORPION_SUPERVISED_ROWS_DATASET_VERSION = 1
 
@@ -88,9 +95,7 @@ class MalformedMorpionSupervisedRowsError(TypeError):
     @classmethod
     def missing_target_value(cls) -> MalformedMorpionSupervisedRowsError:
         """Return the missing-target error."""
-        return cls(
-            "Each Morpion supervised row must contain a numeric `target_value`."
-        )
+        return cls("Each Morpion supervised row must contain a numeric `target_value`.")
 
 
 def is_morpion_state_ref_payload(payload: object) -> bool:
@@ -206,8 +211,6 @@ def load_training_tree_snapshot_as_morpion_supervised_rows(
     metadata: dict[str, object] | None = None,
 ) -> MorpionSupervisedRows:
     """Load one persisted Anemone training snapshot and extract Morpion rows."""
-    from anemone.training_export import load_training_tree_snapshot
-
     snapshot = load_training_tree_snapshot(path)
     return training_tree_snapshot_to_morpion_supervised_rows(
         snapshot,
@@ -234,9 +237,12 @@ def morpion_supervised_rows_from_dict(
     rows_data = data.get("rows")
     if not isinstance(rows_data, list):
         raise MalformedMorpionSupervisedRowsError.missing_rows_field()
+    typed_rows_data = cast("list[object]", rows_data)
 
     return MorpionSupervisedRows(
-        rows=tuple(_row_from_dict(_require_row_mapping(item)) for item in rows_data),
+        rows=tuple(
+            _row_from_dict(_require_row_mapping(item)) for item in typed_rows_data
+        ),
         metadata=_metadata_dict(data.get("metadata")),
     )
 
@@ -299,23 +305,14 @@ def _choose_target_value(
 ) -> float | None:
     """Return the preferred target scalar with no fallback to the other field."""
     if use_backed_up_value:
-        return cast("float | None", node.backed_up_value_scalar)
-    return cast("float | None", node.direct_value_scalar)
+        return node.backed_up_value_scalar
+    return node.direct_value_scalar
 
 
 def _load_morpion_state_from_payload(payload: dict[str, Any]) -> AtomMorpionState:
     """Load one Morpion state from an already normalized checkpoint payload."""
-    from atomheart.games.morpion.checkpoints import (
-        MorpionCheckpointError,
-        MorpionCheckpointTypeError,
-        MorpionStateCheckpointCodec,
-    )
-
     try:
-        return cast(
-            "AtomMorpionState",
-            MorpionStateCheckpointCodec().load_state_ref(payload),
-        )
+        return MorpionStateCheckpointCodec().load_state_ref(payload)
     except (MorpionCheckpointError, MorpionCheckpointTypeError) as exc:
         raise InvalidMorpionStateRefPayloadError.payload_not_decodable() from exc
 

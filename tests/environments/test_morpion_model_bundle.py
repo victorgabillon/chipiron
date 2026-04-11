@@ -225,7 +225,9 @@ def test_minimal_training_helper_runs_end_to_end(tmp_path: Path) -> None:
     assert metrics["num_samples"] == 2.0
     assert metrics["num_epochs"] == 1.0
 
-    dataset = MorpionSupervisedDataset(MorpionSupervisedDatasetArgs(file_name=dataset_file))
+    dataset = MorpionSupervisedDataset(
+        MorpionSupervisedDatasetArgs(file_name=dataset_file)
+    )
     sample_input, _ = dataset[0]
     output = model(sample_input)
     assert output.shape == (1, 1)
@@ -234,7 +236,9 @@ def test_minimal_training_helper_runs_end_to_end(tmp_path: Path) -> None:
 def test_dataloader_batch_collation_shapes_are_stable(tmp_path: Path) -> None:
     """Default DataLoader collation should batch Morpion samples as expected."""
     dataset_file = _build_rows_file(tmp_path, target_values=(1.25, -0.5))
-    dataset = MorpionSupervisedDataset(MorpionSupervisedDatasetArgs(file_name=dataset_file))
+    dataset = MorpionSupervisedDataset(
+        MorpionSupervisedDatasetArgs(file_name=dataset_file)
+    )
     data_loader = DataLoader(dataset, batch_size=2, shuffle=False)
 
     batch = next(iter(data_loader))
@@ -259,7 +263,9 @@ def test_loaded_trained_model_works_for_inference(tmp_path: Path) -> None:
     )
 
     model = load_morpion_regressor_for_inference(output_dir)
-    dataset = MorpionSupervisedDataset(MorpionSupervisedDatasetArgs(file_name=dataset_file))
+    dataset = MorpionSupervisedDataset(
+        MorpionSupervisedDatasetArgs(file_name=dataset_file)
+    )
     sample_input, _ = dataset[0]
     output = model(sample_input)
 

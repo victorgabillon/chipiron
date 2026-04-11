@@ -294,8 +294,9 @@ def _load_hidden_sizes(
         return None
     if not isinstance(hidden_sizes, list | tuple):
         raise InvalidMorpionModelBundleError.invalid_hidden_sizes(path)
+    typed_hidden_sizes = cast("list[object] | tuple[object, ...]", hidden_sizes)
     try:
-        return tuple(_coerce_int(item) for item in hidden_sizes)
+        return tuple(_coerce_int(item) for item in typed_hidden_sizes)
     except ValueError as exc:
         raise InvalidMorpionModelBundleError.invalid_hidden_sizes(path) from exc
 
