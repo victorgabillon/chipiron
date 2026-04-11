@@ -1,0 +1,334 @@
+"""Tests for Morpion bootstrap history persistence and loop integration."""
+# ruff: noqa: E402
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+from types import ModuleType
+from typing import cast
+
+import pytest
+
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
+_ATOMHEART_PACKAGE_ROOT = _REPO_ROOT.parent / "atomheart" / "src" / "atomheart"
+_ANEMONE_PACKAGE_ROOT = _REPO_ROOT.parent / "anemone" / "src" / "anemone"
+_MORPION_EVALUATORS_PACKAGE_ROOT = (
+    _REPO_ROOT
+    / "src"
+    / "chipiron"
+    / "environments"
+    / "morpion"
+    / "players"
+    / "evaluators"
+)
+
+if "chipiron" not in sys.modules:
+    _chipiron_stub = ModuleType("chipiron")
+    _chipiron_stub.__path__ = [str(_CHIPIRON_PACKAGE_ROOT)]
+    sys.modules["chipiron"] = _chipiron_stub
+
+if "chipiron.environments.morpion.players.evaluators" not in sys.modules:
+    _evaluators_stub = ModuleType("chipiron.environments.morpion.players.evaluators")
+    _evaluators_stub.__path__ = [str(_MORPION_EVALUATORS_PACKAGE_ROOT)]
+    sys.modules["chipiron.environments.morpion.players.evaluators"] = _evaluators_stub
+
+if "atomheart" not in sys.modules:
+    _atomheart_stub = ModuleType("atomheart")
+    _atomheart_stub.__path__ = [str(_ATOMHEART_PACKAGE_ROOT)]
+    sys.modules["atomheart"] = _atomheart_stub
+
+if "anemone" not in sys.modules:
+    _anemone_stub = ModuleType("anemone")
+    _anemone_stub.__path__ = [str(_ANEMONE_PACKAGE_ROOT)]
+    sys.modules["anemone"] = _anemone_stub
+
+from anemone.training_export import (
+    TrainingNodeSnapshot,
+    TrainingTreeSnapshot,
+    save_training_tree_snapshot,
+)
+from atomheart.games.morpion import MorpionDynamics as AtomMorpionDynamics
+from atomheart.games.morpion import initial_state as morpion_initial_state
+from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
+
+from chipiron.environments.morpion.bootstrap import (
+    MorpionBootstrapArgs,
+    MorpionBootstrapEvent,
+    MorpionBootstrapHistoryPaths,
+    MorpionBootstrapHistoryRecorder,
+    MorpionBootstrapLatestStatus,
+    MorpionBootstrapPaths,
+    MorpionBootstrapRunState,
+    MorpionEvaluatorMetrics,
+    bootstrap_event_from_dict,
+    bootstrap_event_to_dict,
+    latest_status_from_dict,
+    latest_status_to_dict,
+    load_bootstrap_history,
+    load_latest_bootstrap_status,
+    run_one_bootstrap_cycle,
+)
+from chipiron.environments.morpion.bootstrap.history import (
+    MalformedMorpionBootstrapHistoryError,
+)
+
+
+def _make_morpion_payload() -> dict[str, object]:
+    """Build one real Morpion checkpoint payload from a one-step state."""
+    dynamics = AtomMorpionDynamics()
+    start_state = morpion_initial_state()
+    first_action = dynamics.all_legal_actions(start_state)[0]
+    next_state = dynamics.step(start_state, first_action).next_state
+    codec = MorpionStateCheckpointCodec()
+    return cast("dict[str, object]", codec.dump_state_ref(next_state))
+
+
+def _make_training_snapshot(
+    *,
+    target_value: float,
+    root_node_id: str,
+) -> TrainingTreeSnapshot:
+    """Build one minimal valid training snapshot for bootstrap history tests."""
+    node = TrainingNodeSnapshot(
+        node_id=root_node_id,
+        parent_ids=(),
+        child_ids=(),
+        depth=2,
+        state_ref_payload=_make_morpion_payload(),
+        direct_value_scalar=target_value / 2.0,
+        backed_up_value_scalar=target_value,
+        is_terminal=False,
+        is_exact=True,
+        over_event_label=None,
+        visit_count=7,
+        metadata={"source": "bootstrap-history-test"},
+    )
+    return TrainingTreeSnapshot(
+        root_node_id=root_node_id,
+        nodes=(node,),
+        metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+    )
+
+
+class FakeMorpionSearchRunner:
+    """Tiny deterministic runner satisfying the Morpion bootstrap protocol."""
+
+    def __init__(
+        self,
+        *,
+        tree_sizes: tuple[int, ...],
+        target_values: tuple[float, ...],
+    ) -> None:
+        """Initialize the fake runner with per-cycle tree sizes and targets."""
+        self._tree_sizes = tree_sizes
+        self._target_values = target_values
+        self._cycle_index = -1
+
+    def load_or_create(
+        self,
+        tree_snapshot_path: str | Path | None,
+        model_bundle_path: str | Path | None,
+    ) -> None:
+        """Ignore inputs for the fake runner."""
+        _ = tree_snapshot_path, model_bundle_path
+
+    def grow(self, max_growth_steps: int) -> None:
+        """Advance the fake runner to the next predefined tree size."""
+        _ = max_growth_steps
+        if self._cycle_index + 1 < len(self._tree_sizes):
+            self._cycle_index += 1
+
+    def export_training_tree_snapshot(
+        self,
+        output_path: str | Path,
+    ) -> None:
+        """Write one real training snapshot to ``output_path``."""
+        index = max(self._cycle_index, 0)
+        snapshot = _make_training_snapshot(
+            target_value=self._target_values[index],
+            root_node_id=f"node-{index}",
+        )
+        save_training_tree_snapshot(snapshot, output_path)
+
+    def current_tree_size(self) -> int:
+        """Return the current predefined tree size."""
+        index = max(self._cycle_index, 0)
+        return self._tree_sizes[index]
+
+
+def _make_event(generation: int = 3) -> MorpionBootstrapEvent:
+    """Build one representative bootstrap event for serialization tests."""
+    return MorpionBootstrapEvent(
+        timestamp_unix_s=1234.5,
+        generation=generation,
+        tree_size=42,
+        tree_size_at_last_save=24,
+        tree_snapshot_path="tree_exports/generation_000003.json",
+        rows_path="rows/generation_000003.json",
+        rows_count=12,
+        current_record=None,
+        evaluators=(
+            MorpionEvaluatorMetrics(
+                name="default",
+                model_bundle_path="models/generation_000003",
+                final_loss=0.25,
+                num_epochs=1,
+                num_samples=12,
+                metadata={"phase": "train"},
+            ),
+        ),
+        metadata={"note": "cycle"},
+    )
+
+
+def test_bootstrap_event_serialization_round_trip() -> None:
+    """Bootstrap events should round-trip through dict serialization."""
+    event = _make_event()
+
+    loaded = bootstrap_event_from_dict(bootstrap_event_to_dict(event))
+
+    assert loaded == event
+
+
+def test_latest_status_serialization_round_trip() -> None:
+    """Latest status should round-trip through dict serialization."""
+    status = MorpionBootstrapLatestStatus(
+        latest_event=_make_event(),
+        metadata={"ui": "ready"},
+    )
+
+    loaded = latest_status_from_dict(latest_status_to_dict(status))
+
+    assert loaded == status
+
+
+def test_history_recorder_appends_events_in_order(tmp_path: Path) -> None:
+    """History recorder should append events in order without clobbering."""
+    paths = MorpionBootstrapHistoryPaths(
+        history_jsonl_path=tmp_path / "history.jsonl",
+        latest_status_path=tmp_path / "latest_status.json",
+    )
+    recorder = MorpionBootstrapHistoryRecorder(paths)
+    first_event = _make_event(generation=1)
+    second_event = _make_event(generation=2)
+
+    recorder.append_event(first_event)
+    recorder.append_event(second_event)
+
+    assert load_bootstrap_history(paths.history_jsonl_path) == (
+        first_event,
+        second_event,
+    )
+
+
+def test_record_writes_latest_status(tmp_path: Path) -> None:
+    """record() should append history and refresh latest status together."""
+    paths = MorpionBootstrapHistoryPaths(
+        history_jsonl_path=tmp_path / "history.jsonl",
+        latest_status_path=tmp_path / "latest_status.json",
+    )
+    recorder = MorpionBootstrapHistoryRecorder(paths)
+    event = _make_event()
+
+    recorder.record(event)
+
+    assert load_bootstrap_history(paths.history_jsonl_path) == (event,)
+    assert load_latest_bootstrap_status(paths.latest_status_path) == (
+        MorpionBootstrapLatestStatus(latest_event=event)
+    )
+
+
+def test_malformed_history_line_fails_loudly(tmp_path: Path) -> None:
+    """Malformed JSONL history should raise the explicit history error."""
+    path = tmp_path / "history.jsonl"
+    path.write_text('{"generation": 1}\nnot-json\n', encoding="utf-8")
+
+    with pytest.raises(MalformedMorpionBootstrapHistoryError):
+        load_bootstrap_history(path)
+
+
+def test_bootstrap_loop_writes_history_on_no_save_cycle(tmp_path: Path) -> None:
+    """Even a no-save cycle should emit one history event."""
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        max_growth_steps_per_cycle=5,
+        num_epochs=1,
+        batch_size=1,
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    runner = FakeMorpionSearchRunner(tree_sizes=(15,), target_values=(1.25,))
+    run_state = MorpionBootstrapRunState(
+        generation=2,
+        latest_tree_snapshot_path=None,
+        latest_rows_path=None,
+        latest_model_bundle_path=None,
+        tree_size_at_last_save=10,
+        last_save_unix_s=100.0,
+    )
+
+    next_state = run_one_bootstrap_cycle(
+        args=args,
+        paths=paths,
+        runner=runner,
+        run_state=run_state,
+        now_unix_s=110.0,
+    )
+
+    history = load_bootstrap_history(paths.history_jsonl_path)
+    latest_status = load_latest_bootstrap_status(paths.latest_status_path)
+
+    assert next_state == run_state
+    assert len(history) == 1
+    assert history[0].tree_size == 15
+    assert history[0].rows_path is None
+    assert history[0].evaluators == ()
+    assert latest_status.latest_event == history[0]
+
+
+def test_bootstrap_loop_writes_history_on_save_train_cycle(tmp_path: Path) -> None:
+    """A save/train cycle should emit one detailed history event."""
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        max_growth_steps_per_cycle=5,
+        num_epochs=1,
+        batch_size=1,
+        shuffle=False,
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    runner = FakeMorpionSearchRunner(tree_sizes=(10,), target_values=(1.25,))
+    run_state = MorpionBootstrapRunState(
+        generation=0,
+        latest_tree_snapshot_path=None,
+        latest_rows_path=None,
+        latest_model_bundle_path=None,
+        tree_size_at_last_save=0,
+        last_save_unix_s=None,
+    )
+
+    next_state = run_one_bootstrap_cycle(
+        args=args,
+        paths=paths,
+        runner=runner,
+        run_state=run_state,
+        now_unix_s=200.0,
+    )
+
+    history = load_bootstrap_history(paths.history_jsonl_path)
+    latest_status = load_latest_bootstrap_status(paths.latest_status_path)
+
+    assert len(history) == 1
+    event = history[0]
+    assert event.generation == 1
+    assert event.tree_size == 10
+    assert event.tree_snapshot_path == next_state.latest_tree_snapshot_path
+    assert event.rows_path == next_state.latest_rows_path
+    assert event.rows_count == 1
+    assert len(event.evaluators) == 1
+    assert event.evaluators[0].name == "default"
+    assert event.evaluators[0].final_loss is not None
+    assert event.evaluators[0].num_epochs == 1
+    assert event.evaluators[0].num_samples == 1
+    assert latest_status.latest_event == event
+
