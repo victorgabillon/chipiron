@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -85,12 +85,22 @@ class ActiveEvaluatorTimeSeriesPoint:
 
 
 @dataclass(frozen=True, slots=True)
+class TrainingTriggeredTimeSeriesPoint:
+    """One time-series point describing whether training ran for a cycle."""
+
+    cycle_index: int
+    generation: int
+    timestamp_utc: str
+    triggered: bool
+
+
+@dataclass(frozen=True, slots=True)
 class EvaluatorSelectionSummary:
     """Summary of how the active evaluator changed over time."""
 
     latest_active_evaluator_name: str | None
     num_switches: int
-    active_counts: dict[str, int]
+    active_counts: Mapping[str, int]
 
 
 @dataclass(frozen=True, slots=True)
@@ -115,7 +125,7 @@ class MorpionBootstrapDashboardData:
     canonical_record_score: tuple[OptionalIntTimeSeriesPoint, ...]
     record_total_points: tuple[OptionalIntTimeSeriesPoint, ...]
     dataset_num_rows: tuple[OptionalIntTimeSeriesPoint, ...]
-    evaluator_loss_by_name: dict[str, tuple[OptionalFloatTimeSeriesPoint, ...]]
+    evaluator_loss_by_name: Mapping[str, tuple[OptionalFloatTimeSeriesPoint, ...]]
     active_evaluator: tuple[ActiveEvaluatorTimeSeriesPoint, ...]
 
 
@@ -160,7 +170,7 @@ def summarize_bootstrap_run(
         latest_cycle_index=_latest_cycle_index(run_view),
         latest_generation=_latest_generation(run_view),
         latest_active_evaluator_name=_latest_active_evaluator_name(run_view),
-        latest_tree_num_nodes=None if latest_event is None else latest_event.tree.num_nodes,
+        latest_tree_num_nodes=_latest_tree_num_nodes(run_view),
         latest_record_score=None
         if latest_record_status is None
         else current_record_score(latest_record_status),
@@ -233,16 +243,22 @@ def dataset_num_rows_series(
 
 def training_triggered_series(
     history: Sequence[MorpionBootstrapEvent],
-) -> tuple[tuple[int, bool], ...]:
+) -> tuple[TrainingTriggeredTimeSeriesPoint, ...]:
     """Return whether each cycle triggered export/training."""
     return tuple(
-        (event.cycle_index, event.training.triggered) for event in history
+        TrainingTriggeredTimeSeriesPoint(
+            cycle_index=event.cycle_index,
+            generation=event.generation,
+            timestamp_utc=event.timestamp_utc,
+            triggered=event.training.triggered,
+        )
+        for event in history
     )
 
 
 def evaluator_loss_series_by_name(
     history: Sequence[MorpionBootstrapEvent],
-) -> dict[str, tuple[OptionalFloatTimeSeriesPoint, ...]]:
+) -> Mapping[str, tuple[OptionalFloatTimeSeriesPoint, ...]]:
     """Return sparse evaluator-loss series keyed by evaluator name."""
     series_by_name: dict[str, list[OptionalFloatTimeSeriesPoint]] = {}
     for event in history:
@@ -386,6 +402,16 @@ def _latest_generation(run_view: MorpionBootstrapRunView) -> int | None:
     return None
 
 
+def _latest_tree_num_nodes(run_view: MorpionBootstrapRunView) -> int | None:
+    """Return the latest known tree size for one run view."""
+    latest_event = _latest_known_event(run_view)
+    if latest_event is not None:
+        return latest_event.tree.num_nodes
+    if run_view.run_state is not None:
+        return run_view.run_state.tree_size_at_last_save
+    return None
+
+
 def _latest_active_evaluator_name(run_view: MorpionBootstrapRunView) -> str | None:
     """Return the latest known active evaluator name for one run view."""
     latest_event = _latest_known_event(run_view)
@@ -429,6 +455,7 @@ __all__ = [
     "MorpionRecordProgressSummary",
     "OptionalFloatTimeSeriesPoint",
     "OptionalIntTimeSeriesPoint",
+    "TrainingTriggeredTimeSeriesPoint",
     "active_evaluator_series",
     "build_morpion_bootstrap_dashboard_data",
     "canonical_record_score_series",

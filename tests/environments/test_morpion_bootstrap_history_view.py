@@ -58,6 +58,7 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapRunView,
     MorpionEvaluatorMetrics,
     MorpionRecordProgressSummary,
+    TrainingTriggeredTimeSeriesPoint,
     active_evaluator_series,
     build_morpion_bootstrap_dashboard_data,
     canonical_record_score_series,
@@ -125,7 +126,10 @@ def _make_event(
     )
 
 
-def _make_run_state() -> MorpionBootstrapRunState:
+def _make_run_state(
+    *,
+    tree_size_at_last_save: int = 25,
+) -> MorpionBootstrapRunState:
     """Build one representative run state for run-view loading tests."""
     return MorpionBootstrapRunState(
         generation=2,
@@ -134,7 +138,7 @@ def _make_run_state() -> MorpionBootstrapRunState:
         latest_rows_path="rows/generation_000002.json",
         latest_model_bundle_paths={"mlp": "models/generation_000002/mlp"},
         active_evaluator_name="mlp",
-        tree_size_at_last_save=25,
+        tree_size_at_last_save=tree_size_at_last_save,
         last_save_unix_s=200.0,
         latest_record_status=MorpionBootstrapRecordStatus(
             variant="5T",
@@ -181,15 +185,35 @@ def test_load_run_view_from_artifacts(tmp_path: Path) -> None:
 
     run_view = load_morpion_bootstrap_run_view(tmp_path)
 
-    assert run_view == MorpionBootstrapRunView(
-        work_dir=paths.work_dir,
-        run_state=run_state,
-        latest_status=run_view.latest_status,
-        history=(first_event, second_event),
-    )
+    assert run_view.work_dir == paths.work_dir
+    assert run_view.run_state == run_state
+    assert run_view.history == (first_event, second_event)
     assert run_view.latest_status.latest_event == second_event
     assert run_view.latest_status.latest_cycle_index == 1
     assert run_view.latest_status.latest_generation == 2
+
+
+def test_run_summary_falls_back_to_run_state_tree_size_without_history() -> None:
+    """Run summary should use saved tree size when no event history exists."""
+    run_state = _make_run_state(tree_size_at_last_save=25)
+    run_view = MorpionBootstrapRunView(
+        work_dir=Path("/tmp/run"),
+        run_state=run_state,
+        latest_status=MorpionBootstrapLatestStatus(
+            work_dir="/tmp/run",
+            latest_generation=None,
+            latest_cycle_index=None,
+            latest_event=None,
+        ),
+        history=(),
+    )
+
+    summary = summarize_bootstrap_run(run_view)
+
+    assert summary.latest_cycle_index == run_state.cycle_index
+    assert summary.latest_generation == run_state.generation
+    assert summary.latest_active_evaluator_name == run_state.active_evaluator_name
+    assert summary.latest_tree_num_nodes == 25
 
 
 def test_empty_run_view_works(tmp_path: Path) -> None:
@@ -546,8 +570,18 @@ def test_dashboard_data_bundles_everything(tmp_path: Path) -> None:
     assert set(dashboard_data.evaluator_loss_by_name) == {"linear"}
     assert len(dashboard_data.active_evaluator) == 2
     assert training_triggered_series((first_event, second_event)) == (
-        (0, True),
-        (1, False),
+        TrainingTriggeredTimeSeriesPoint(
+            cycle_index=0,
+            generation=1,
+            timestamp_utc="2026-04-11T08:00:00Z",
+            triggered=True,
+        ),
+        TrainingTriggeredTimeSeriesPoint(
+            cycle_index=1,
+            generation=2,
+            timestamp_utc="2026-04-11T09:00:00Z",
+            triggered=False,
+        ),
     )
     assert tuple(point.value for point in tree_num_nodes_series((first_event, second_event))) == (
         10,
