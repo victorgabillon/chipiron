@@ -121,10 +121,19 @@ def should_save_progress(
     save_after_tree_growth_factor: float,
     save_after_seconds: float,
 ) -> bool:
-    """Return whether the bootstrap loop should checkpoint and retrain now."""
+    """Return whether the bootstrap loop should checkpoint and retrain now.
+
+    The first cycle saves immediately when ``last_save_unix_s`` is ``None``.
+    After that, saving triggers when the tree has grown enough since the last
+    save or when enough wall-clock time has elapsed.
+    """
     if last_save_unix_s is None:
         return True
-    if current_tree_size >= tree_size_at_last_save * save_after_tree_growth_factor:
+    if (
+        tree_size_at_last_save > 0
+        and current_tree_size
+        >= tree_size_at_last_save * save_after_tree_growth_factor
+    ):
         return True
     return now_unix_s - last_save_unix_s >= save_after_seconds
 
@@ -137,7 +146,12 @@ def run_one_bootstrap_cycle(
     run_state: MorpionBootstrapRunState,
     now_unix_s: float | None = None,
 ) -> MorpionBootstrapRunState:
-    """Run one grow/export/train/save bootstrap cycle."""
+    """Run one grow/export/train/save bootstrap cycle.
+
+    This helper calls ``runner.load_or_create(...)`` on every cycle, so runner
+    implementations should support reload/restart-style semantics from the
+    latest saved artifacts.
+    """
     paths.ensure_directories()
 
     runner.load_or_create(

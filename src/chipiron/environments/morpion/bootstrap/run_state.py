@@ -185,12 +185,18 @@ def _metadata_dict(value: object) -> dict[str, Any]:
 
 def _coerce_int(value: object, *, field_name: str) -> int:
     """Return one integer-like payload value or raise."""
-    if isinstance(value, bool):
-        return int(value)
-    if isinstance(value, int | str):
-        return int(value)
-    if isinstance(value, float):
-        return int(value)
+    try:
+        if isinstance(value, bool):
+            return int(value)
+        if isinstance(value, int | str):
+            return int(value)
+        if isinstance(value, float):
+            return int(value)
+    except ValueError as exc:
+        raise MalformedMorpionBootstrapRunStateError.invalid_integer_like_value(
+            field_name,
+            value,
+        ) from exc
     raise MalformedMorpionBootstrapRunStateError.invalid_integer_like_value(
         field_name,
         value,
@@ -201,10 +207,16 @@ def _optional_float(value: object, *, field_name: str) -> float | None:
     """Return one optional float-like payload value or raise."""
     if value is None:
         return None
-    if isinstance(value, bool):
-        return float(value)
-    if isinstance(value, int | float | str):
-        return float(value)
+    try:
+        if isinstance(value, bool):
+            return float(value)
+        if isinstance(value, int | float | str):
+            return float(value)
+    except ValueError as exc:
+        raise MalformedMorpionBootstrapRunStateError.invalid_float_like_value(
+            field_name,
+            value,
+        ) from exc
     raise MalformedMorpionBootstrapRunStateError.invalid_float_like_value(
         field_name,
         value,

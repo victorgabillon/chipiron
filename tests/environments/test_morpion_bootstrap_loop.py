@@ -8,6 +8,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import cast
 
+import pytest
 import torch
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -55,6 +56,7 @@ from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 from torch.utils.data import DataLoader
 
 from chipiron.environments.morpion.bootstrap import (
+    MalformedMorpionBootstrapRunStateError,
     MorpionBootstrapArgs,
     MorpionBootstrapPaths,
     MorpionBootstrapRunState,
@@ -219,6 +221,15 @@ def test_run_state_round_trip(tmp_path: Path) -> None:
     assert loaded == state
 
 
+def test_malformed_run_state_load_fails_loudly(tmp_path: Path) -> None:
+    """Malformed persisted run-state payloads should raise clearly."""
+    path = tmp_path / "run_state.json"
+    path.write_text('{"generation": "oops", "metadata": []}\n', encoding="utf-8")
+
+    with pytest.raises(MalformedMorpionBootstrapRunStateError):
+        load_bootstrap_run_state(path)
+
+
 def test_run_one_cycle_without_save_does_not_train(tmp_path: Path) -> None:
     """A cycle below both save thresholds should skip export and training."""
     args = MorpionBootstrapArgs(
@@ -303,6 +314,7 @@ def test_loop_resumes_from_saved_run_state(tmp_path: Path) -> None:
     first_state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
     second_state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
 
+    assert (tmp_path / "run_state.json").is_file()
     assert first_state.generation == 1
     assert second_state.generation == 2
     assert runner.load_calls[0] == (None, None)
