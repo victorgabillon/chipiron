@@ -56,14 +56,12 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapTrainingStatus,
     MorpionBootstrapTreeStatus,
     MorpionEvaluatorMetrics,
-)
-from chipiron.environments.morpion.bootstrap.dashboard_cli import run_dashboard_cli
-from chipiron.environments.morpion.bootstrap.dashboard_plot import (
     plot_active_evaluator,
     plot_dataset_size,
     plot_evaluator_losses,
     plot_record_score,
     plot_tree_size,
+    run_dashboard_cli,
 )
 
 
@@ -157,5 +155,48 @@ def test_plot_functions_accept_empty_series() -> None:
     plot_evaluator_losses({})
     plot_active_evaluator(())
 
+    assert len(plt.get_fignums()) == 5
+    plt.close("all")
+
+
+def test_dashboard_cli_runs_with_plots(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The dashboard CLI should exercise all plot helpers and show once."""
+    recorder = MorpionBootstrapHistoryRecorder(
+        MorpionBootstrapPaths.from_work_dir(tmp_path).history_paths()
+    )
+    recorder.record(
+        _make_event(
+            cycle_index=0,
+            generation=1,
+            timestamp_utc="2026-04-11T08:00:00Z",
+            tree_num_nodes=10,
+            record_score=12,
+            total_points=48,
+            active_evaluator_name="linear",
+            dataset_num_rows=10,
+            evaluator_metrics={
+                "linear": MorpionEvaluatorMetrics(
+                    final_loss=0.5,
+                    num_epochs=1,
+                    num_samples=10,
+                )
+            },
+        )
+    )
+
+    show_calls: list[bool] = []
+
+    def _fake_show() -> None:
+        show_calls.append(True)
+
+    plt.close("all")
+    monkeypatch.setattr(plt, "show", _fake_show)
+
+    run_dashboard_cli(tmp_path, plot=True)
+
+    assert show_calls == [True]
     assert len(plt.get_fignums()) == 5
     plt.close("all")

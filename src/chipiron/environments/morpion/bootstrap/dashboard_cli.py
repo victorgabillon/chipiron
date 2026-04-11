@@ -13,7 +13,10 @@ from .dashboard_plot import (
     plot_record_score,
     plot_tree_size,
 )
-from .history_view import MorpionBootstrapDashboardData, build_morpion_bootstrap_dashboard_data
+from .history_view import (
+    MorpionBootstrapDashboardData,
+    build_morpion_bootstrap_dashboard_data,
+)
 
 
 def run_dashboard_cli(work_dir: str | Path, *, plot: bool = True) -> None:
@@ -132,3 +135,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     run_dashboard_cli(args.work_dir, plot=not args.no_plot)
+
+
+__all__ = ["run_dashboard_cli"]

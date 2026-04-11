@@ -84,15 +84,18 @@ def plot_active_evaluator(
         for point in series
         if point.active_evaluator_name is not None
     ]
+    axis.set_title("Active Evaluator")
+    axis.set_xlabel("cycle")
+    axis.set_ylabel("evaluator")
+    if not x_values:
+        return
+
     y_values = [
         name_to_y[point.active_evaluator_name]
         for point in series
         if point.active_evaluator_name is not None
     ]
     axis.plot(x_values, y_values, label="active evaluator")
-    axis.set_title("Active Evaluator")
-    axis.set_xlabel("cycle")
-    axis.set_ylabel("evaluator")
     axis.set_yticks(list(name_to_y.values()), list(name_to_y.keys()))
 
 

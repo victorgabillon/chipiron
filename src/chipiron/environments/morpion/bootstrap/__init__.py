@@ -17,6 +17,14 @@ from .bootstrap_loop import (
     select_active_evaluator_name,
     should_save_progress,
 )
+from .dashboard_cli import run_dashboard_cli
+from .dashboard_plot import (
+    plot_active_evaluator,
+    plot_dataset_size,
+    plot_evaluator_losses,
+    plot_record_score,
+    plot_tree_size,
+)
 from .history import (
     MalformedMorpionBootstrapHistoryError,
     MorpionBootstrapArtifacts,
@@ -143,9 +151,15 @@ __all__ = [
     "load_bootstrap_run_state",
     "load_latest_bootstrap_status",
     "morpion_bootstrap_experiment_metadata",
+    "plot_active_evaluator",
+    "plot_dataset_size",
+    "plot_evaluator_losses",
+    "plot_record_score",
+    "plot_tree_size",
     "record_total_points_series",
     "rebuild_latest_bootstrap_status",
     "resolve_record_status_for_cycle",
+    "run_dashboard_cli",
     "run_morpion_bootstrap_loop",
     "run_one_bootstrap_cycle",
     "save_bootstrap_run_state",
