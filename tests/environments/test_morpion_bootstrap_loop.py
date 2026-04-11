@@ -206,6 +206,7 @@ def test_run_state_round_trip(tmp_path: Path) -> None:
     """Persisted bootstrap run state should round-trip cleanly."""
     state = MorpionBootstrapRunState(
         generation=3,
+        cycle_index=17,
         latest_tree_snapshot_path="tree_exports/generation_000003.json",
         latest_rows_path="rows/generation_000003.json",
         latest_model_bundle_path="models/generation_000003",
@@ -242,6 +243,7 @@ def test_run_one_cycle_without_save_does_not_train(tmp_path: Path) -> None:
     runner = FakeMorpionSearchRunner(tree_sizes=(15,), target_values=(1.25,))
     run_state = MorpionBootstrapRunState(
         generation=2,
+        cycle_index=11,
         latest_tree_snapshot_path=None,
         latest_rows_path=None,
         latest_model_bundle_path=None,
@@ -257,7 +259,11 @@ def test_run_one_cycle_without_save_does_not_train(tmp_path: Path) -> None:
         now_unix_s=110.0,
     )
 
-    assert next_state == run_state
+    assert next_state.generation == 2
+    assert next_state.cycle_index == 12
+    assert next_state.latest_tree_snapshot_path is None
+    assert next_state.latest_rows_path is None
+    assert next_state.latest_model_bundle_path is None
     assert runner.export_calls == []
     assert not paths.tree_snapshot_dir.exists() or list(paths.tree_snapshot_dir.iterdir()) == []
     assert not paths.rows_dir.exists() or list(paths.rows_dir.iterdir()) == []
@@ -286,14 +292,18 @@ def test_run_one_cycle_with_save_updates_artifacts(tmp_path: Path) -> None:
     )
 
     assert next_state.generation == 1
+    assert next_state.cycle_index == 0
     assert next_state.tree_size_at_last_save == 10
     assert next_state.last_save_unix_s == 200.0
     assert next_state.latest_tree_snapshot_path is not None
     assert next_state.latest_rows_path is not None
     assert next_state.latest_model_bundle_path is not None
-    assert Path(next_state.latest_tree_snapshot_path).is_file()
-    assert Path(next_state.latest_rows_path).is_file()
-    assert Path(next_state.latest_model_bundle_path).is_dir()
+    assert next_state.latest_tree_snapshot_path == "tree_exports/generation_000001.json"
+    assert next_state.latest_rows_path == "rows/generation_000001.json"
+    assert next_state.latest_model_bundle_path == "models/generation_000001"
+    assert paths.resolve_work_dir_path(next_state.latest_tree_snapshot_path).is_file()
+    assert paths.resolve_work_dir_path(next_state.latest_rows_path).is_file()
+    assert paths.resolve_work_dir_path(next_state.latest_model_bundle_path).is_dir()
 
 
 def test_loop_resumes_from_saved_run_state(tmp_path: Path) -> None:
@@ -310,6 +320,7 @@ def test_loop_resumes_from_saved_run_state(tmp_path: Path) -> None:
         tree_sizes=(10, 20),
         target_values=(1.25, -0.5),
     )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
 
     first_state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
     second_state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
@@ -317,10 +328,12 @@ def test_loop_resumes_from_saved_run_state(tmp_path: Path) -> None:
     assert (tmp_path / "run_state.json").is_file()
     assert first_state.generation == 1
     assert second_state.generation == 2
+    assert first_state.cycle_index == 0
+    assert second_state.cycle_index == 1
     assert runner.load_calls[0] == (None, None)
     assert runner.load_calls[1] == (
-        first_state.latest_tree_snapshot_path,
-        first_state.latest_model_bundle_path,
+        str(paths.resolve_work_dir_path(first_state.latest_tree_snapshot_path)),
+        str(paths.resolve_work_dir_path(first_state.latest_model_bundle_path)),
     )
 
 
@@ -362,9 +375,12 @@ def test_saved_dataset_batches_after_cycle(tmp_path: Path) -> None:
     runner = FakeMorpionSearchRunner(tree_sizes=(10,), target_values=(1.25,))
     state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
     assert state.latest_rows_path is not None
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
 
     dataset = MorpionSupervisedDataset(
-        MorpionSupervisedDatasetArgs(file_name=state.latest_rows_path)
+        MorpionSupervisedDatasetArgs(
+            file_name=str(paths.resolve_work_dir_path(state.latest_rows_path))
+        )
     )
     batch = next(iter(DataLoader(dataset, batch_size=1, shuffle=False)))
 

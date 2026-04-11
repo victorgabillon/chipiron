@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Protocol
+from uuid import uuid4
 
 from chipiron.environments.morpion.learning import (
     load_training_tree_snapshot_as_morpion_supervised_rows,
@@ -17,9 +20,14 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.train impo
 )
 
 from .history import (
+    MorpionBootstrapArtifacts,
+    MorpionBootstrapDatasetStatus,
     MorpionBootstrapEvent,
     MorpionBootstrapHistoryPaths,
     MorpionBootstrapHistoryRecorder,
+    MorpionBootstrapRecordStatus,
+    MorpionBootstrapTrainingStatus,
+    MorpionBootstrapTreeStatus,
     MorpionEvaluatorMetrics,
 )
 from .run_state import (
@@ -68,7 +76,7 @@ class MorpionBootstrapPaths:
         work_dir: str | Path,
     ) -> MorpionBootstrapPaths:
         """Build canonical bootstrap paths for one work directory."""
-        root = Path(work_dir)
+        root = Path(work_dir).resolve()
         return cls(
             work_dir=root,
             run_state_path=root / "run_state.json",
@@ -101,9 +109,26 @@ class MorpionBootstrapPaths:
     def history_paths(self) -> MorpionBootstrapHistoryPaths:
         """Return the canonical bootstrap history artifact paths."""
         return MorpionBootstrapHistoryPaths(
+            work_dir=self.work_dir,
             history_jsonl_path=self.history_jsonl_path,
             latest_status_path=self.latest_status_path,
         )
+
+    def relative_to_work_dir(self, path: str | Path) -> str:
+        """Return one path relative to ``work_dir`` for persisted state."""
+        raw_path = Path(path)
+        if not raw_path.is_absolute():
+            return raw_path.as_posix()
+        return raw_path.relative_to(self.work_dir).as_posix()
+
+    def resolve_work_dir_path(self, path: str | Path | None) -> Path | None:
+        """Resolve one possibly-relative persisted path against ``work_dir``."""
+        if path is None:
+            return None
+        raw_path = Path(path)
+        if raw_path.is_absolute():
+            return raw_path
+        return self.work_dir / raw_path
 
 
 class MorpionSearchRunner(Protocol):
@@ -131,30 +156,41 @@ class MorpionSearchRunner(Protocol):
 
 def build_bootstrap_event(
     *,
-    run_state: MorpionBootstrapRunState,
+    cycle_index: int,
+    generation: int,
+    timestamp_utc: str,
     tree_size: int,
-    rows_count: int | None,
+    tree_size_at_last_save: int | None,
     tree_snapshot_path: str | None,
     rows_path: str | None,
-    timestamp_unix_s: float,
-    evaluator_metrics: tuple[MorpionEvaluatorMetrics, ...] = (),
+    rows_count: int | None,
+    training_triggered: bool,
+    evaluator_metrics: Mapping[str, MorpionEvaluatorMetrics] | None = None,
+    model_bundle_paths: Mapping[str, str] | None = None,
     current_record: float | int | None = None,
-    metadata: dict[str, object] | None = None,
+    event_id: str | None = None,
+    metadata: Mapping[str, object] | None = None,
 ) -> MorpionBootstrapEvent:
     """Build one structured bootstrap history event from cycle outputs."""
     return MorpionBootstrapEvent(
-        timestamp_unix_s=timestamp_unix_s,
-        generation=run_state.generation,
-        tree_size=tree_size,
-        tree_size_at_last_save=None
-        if run_state.last_save_unix_s is None
-        else run_state.tree_size_at_last_save,
-        tree_snapshot_path=tree_snapshot_path,
-        rows_path=rows_path,
-        rows_count=rows_count,
-        current_record=current_record,
-        evaluators=evaluator_metrics,
-        metadata=dict(metadata) if metadata is not None else {},
+        event_id=uuid4().hex if event_id is None else event_id,
+        cycle_index=cycle_index,
+        generation=generation,
+        timestamp_utc=timestamp_utc,
+        tree=MorpionBootstrapTreeStatus(
+            size=tree_size,
+            size_at_last_save=tree_size_at_last_save,
+        ),
+        dataset=MorpionBootstrapDatasetStatus(rows_count=rows_count),
+        training=MorpionBootstrapTrainingStatus(triggered=training_triggered),
+        record=MorpionBootstrapRecordStatus(current=current_record),
+        artifacts=MorpionBootstrapArtifacts(
+            tree_snapshot_path=tree_snapshot_path,
+            rows_path=rows_path,
+            model_bundle_paths=dict(model_bundle_paths or {}),
+        ),
+        evaluators=dict(evaluator_metrics or {}),
+        metadata=dict(metadata or {}),
     )
 
 
@@ -202,12 +238,14 @@ def run_one_bootstrap_cycle(
     history_recorder = MorpionBootstrapHistoryRecorder(paths.history_paths())
 
     runner.load_or_create(
-        run_state.latest_tree_snapshot_path,
-        run_state.latest_model_bundle_path,
+        paths.resolve_work_dir_path(run_state.latest_tree_snapshot_path),
+        paths.resolve_work_dir_path(run_state.latest_model_bundle_path),
     )
     runner.grow(args.max_growth_steps_per_cycle)
     current_tree_size = runner.current_tree_size()
     current_time = time.time() if now_unix_s is None else now_unix_s
+    cycle_index = run_state.cycle_index + 1
+    timestamp_utc = _timestamp_utc_from_unix_s(current_time)
 
     if not should_save_progress(
         current_tree_size=current_tree_size,
@@ -217,17 +255,32 @@ def run_one_bootstrap_cycle(
         save_after_tree_growth_factor=args.save_after_tree_growth_factor,
         save_after_seconds=args.save_after_seconds,
     ):
+        next_run_state = MorpionBootstrapRunState(
+            generation=run_state.generation,
+            cycle_index=cycle_index,
+            latest_tree_snapshot_path=run_state.latest_tree_snapshot_path,
+            latest_rows_path=run_state.latest_rows_path,
+            latest_model_bundle_path=run_state.latest_model_bundle_path,
+            tree_size_at_last_save=run_state.tree_size_at_last_save,
+            last_save_unix_s=run_state.last_save_unix_s,
+            metadata=dict(run_state.metadata),
+        )
         history_recorder.record(
             build_bootstrap_event(
-                run_state=run_state,
+                cycle_index=cycle_index,
+                generation=next_run_state.generation,
+                timestamp_utc=timestamp_utc,
                 tree_size=current_tree_size,
-                rows_count=None,
+                tree_size_at_last_save=None
+                if next_run_state.last_save_unix_s is None
+                else next_run_state.tree_size_at_last_save,
                 tree_snapshot_path=None,
                 rows_path=None,
-                timestamp_unix_s=current_time,
+                rows_count=None,
+                training_triggered=False,
             )
         )
-        return run_state
+        return next_run_state
 
     generation = run_state.generation + 1
     tree_snapshot_path = paths.tree_snapshot_path_for_generation(generation)
@@ -259,33 +312,39 @@ def run_one_bootstrap_cycle(
         )
     )
 
+    relative_tree_snapshot_path = paths.relative_to_work_dir(tree_snapshot_path)
+    relative_rows_path = paths.relative_to_work_dir(rows_path)
+    relative_model_bundle_path = paths.relative_to_work_dir(model_bundle_path)
     next_run_state = MorpionBootstrapRunState(
         generation=generation,
-        latest_tree_snapshot_path=str(tree_snapshot_path),
-        latest_rows_path=str(rows_path),
-        latest_model_bundle_path=str(model_bundle_path),
+        cycle_index=cycle_index,
+        latest_tree_snapshot_path=relative_tree_snapshot_path,
+        latest_rows_path=relative_rows_path,
+        latest_model_bundle_path=relative_model_bundle_path,
         tree_size_at_last_save=current_tree_size,
         last_save_unix_s=current_time,
         metadata=dict(run_state.metadata),
     )
-    evaluator_metrics = (
-        MorpionEvaluatorMetrics(
-            name="default",
-            model_bundle_path=str(model_bundle_path),
+    evaluator_metrics = {
+        "default": MorpionEvaluatorMetrics(
             final_loss=float(metrics["final_loss"]),
             num_epochs=int(metrics["num_epochs"]),
             num_samples=int(metrics["num_samples"]),
-        ),
-    )
+        )
+    }
     history_recorder.record(
         build_bootstrap_event(
-            run_state=next_run_state,
+            cycle_index=cycle_index,
+            generation=next_run_state.generation,
+            timestamp_utc=timestamp_utc,
             tree_size=current_tree_size,
+            tree_size_at_last_save=next_run_state.tree_size_at_last_save,
+            tree_snapshot_path=relative_tree_snapshot_path,
+            rows_path=relative_rows_path,
             rows_count=len(rows.rows),
-            tree_snapshot_path=str(tree_snapshot_path),
-            rows_path=str(rows_path),
-            timestamp_unix_s=current_time,
+            training_triggered=True,
             evaluator_metrics=evaluator_metrics,
+            model_bundle_paths={"default": relative_model_bundle_path},
         )
     )
     return next_run_state
@@ -318,6 +377,13 @@ def run_morpion_bootstrap_loop(
         cycles_run += 1
 
     return run_state
+
+
+def _timestamp_utc_from_unix_s(timestamp_unix_s: float) -> str:
+    """Format one Unix timestamp as an ISO 8601 UTC string."""
+    timestamp = datetime.fromtimestamp(timestamp_unix_s, tz=UTC)
+    timespec = "seconds" if timestamp.microsecond == 0 else "microseconds"
+    return timestamp.isoformat(timespec=timespec).replace("+00:00", "Z")
 
 
 __all__ = [

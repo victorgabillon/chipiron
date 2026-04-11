@@ -55,12 +55,17 @@ from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
 from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapArgs,
+    MorpionBootstrapArtifacts,
+    MorpionBootstrapDatasetStatus,
     MorpionBootstrapEvent,
     MorpionBootstrapHistoryPaths,
     MorpionBootstrapHistoryRecorder,
     MorpionBootstrapLatestStatus,
     MorpionBootstrapPaths,
+    MorpionBootstrapRecordStatus,
     MorpionBootstrapRunState,
+    MorpionBootstrapTrainingStatus,
+    MorpionBootstrapTreeStatus,
     MorpionEvaluatorMetrics,
     bootstrap_event_from_dict,
     bootstrap_event_to_dict,
@@ -68,6 +73,7 @@ from chipiron.environments.morpion.bootstrap import (
     latest_status_to_dict,
     load_bootstrap_history,
     load_latest_bootstrap_status,
+    rebuild_latest_bootstrap_status,
     run_one_bootstrap_cycle,
 )
 from chipiron.environments.morpion.bootstrap.history import (
@@ -158,27 +164,30 @@ class FakeMorpionSearchRunner:
         return self._tree_sizes[index]
 
 
-def _make_event(generation: int = 3) -> MorpionBootstrapEvent:
+def _make_event(generation: int = 3, cycle_index: int = 5) -> MorpionBootstrapEvent:
     """Build one representative bootstrap event for serialization tests."""
     return MorpionBootstrapEvent(
-        timestamp_unix_s=1234.5,
+        event_id="event-0003",
+        cycle_index=cycle_index,
         generation=generation,
-        tree_size=42,
-        tree_size_at_last_save=24,
-        tree_snapshot_path="tree_exports/generation_000003.json",
-        rows_path="rows/generation_000003.json",
-        rows_count=12,
-        current_record=None,
-        evaluators=(
-            MorpionEvaluatorMetrics(
-                name="default",
-                model_bundle_path="models/generation_000003",
+        timestamp_utc="2026-04-11T08:15:00Z",
+        tree=MorpionBootstrapTreeStatus(size=42, size_at_last_save=24),
+        dataset=MorpionBootstrapDatasetStatus(rows_count=12),
+        training=MorpionBootstrapTrainingStatus(triggered=True),
+        record=MorpionBootstrapRecordStatus(current=None),
+        artifacts=MorpionBootstrapArtifacts(
+            tree_snapshot_path="tree_exports/generation_000003.json",
+            rows_path="rows/generation_000003.json",
+            model_bundle_paths={"default": "models/generation_000003"},
+        ),
+        evaluators={
+            "default": MorpionEvaluatorMetrics(
                 final_loss=0.25,
                 num_epochs=1,
                 num_samples=12,
                 metadata={"phase": "train"},
-            ),
-        ),
+            )
+        },
         metadata={"note": "cycle"},
     )
 
@@ -192,9 +201,12 @@ def test_bootstrap_event_serialization_round_trip() -> None:
     assert loaded == event
 
 
-def test_latest_status_serialization_round_trip() -> None:
+def test_latest_status_serialization_round_trip(tmp_path: Path) -> None:
     """Latest status should round-trip through dict serialization."""
     status = MorpionBootstrapLatestStatus(
+        work_dir=str(tmp_path),
+        latest_generation=3,
+        latest_cycle_index=5,
         latest_event=_make_event(),
         metadata={"ui": "ready"},
     )
@@ -207,12 +219,13 @@ def test_latest_status_serialization_round_trip() -> None:
 def test_history_recorder_appends_events_in_order(tmp_path: Path) -> None:
     """History recorder should append events in order without clobbering."""
     paths = MorpionBootstrapHistoryPaths(
+        work_dir=tmp_path,
         history_jsonl_path=tmp_path / "history.jsonl",
         latest_status_path=tmp_path / "latest_status.json",
     )
     recorder = MorpionBootstrapHistoryRecorder(paths)
-    first_event = _make_event(generation=1)
-    second_event = _make_event(generation=2)
+    first_event = _make_event(generation=1, cycle_index=0)
+    second_event = _make_event(generation=2, cycle_index=1)
 
     recorder.append_event(first_event)
     recorder.append_event(second_event)
@@ -223,9 +236,10 @@ def test_history_recorder_appends_events_in_order(tmp_path: Path) -> None:
     )
 
 
-def test_record_writes_latest_status(tmp_path: Path) -> None:
-    """record() should append history and refresh latest status together."""
+def test_record_writes_richer_latest_status(tmp_path: Path) -> None:
+    """record() should append history and refresh the richer latest status."""
     paths = MorpionBootstrapHistoryPaths(
+        work_dir=tmp_path,
         history_jsonl_path=tmp_path / "history.jsonl",
         latest_status_path=tmp_path / "latest_status.json",
     )
@@ -236,8 +250,36 @@ def test_record_writes_latest_status(tmp_path: Path) -> None:
 
     assert load_bootstrap_history(paths.history_jsonl_path) == (event,)
     assert load_latest_bootstrap_status(paths.latest_status_path) == (
-        MorpionBootstrapLatestStatus(latest_event=event)
+        MorpionBootstrapLatestStatus(
+            work_dir=str(tmp_path),
+            latest_generation=event.generation,
+            latest_cycle_index=event.cycle_index,
+            latest_event=event,
+        )
     )
+
+
+def test_rebuild_latest_status_uses_history_as_source_of_truth(tmp_path: Path) -> None:
+    """The latest-status snapshot should be rebuildable from append-only history."""
+    paths = MorpionBootstrapHistoryPaths(
+        work_dir=tmp_path,
+        history_jsonl_path=tmp_path / "history.jsonl",
+        latest_status_path=tmp_path / "latest_status.json",
+    )
+    recorder = MorpionBootstrapHistoryRecorder(paths)
+    recorder.append_event(_make_event(generation=1, cycle_index=0))
+    latest_event = _make_event(generation=2, cycle_index=1)
+    recorder.append_event(latest_event)
+
+    rebuilt = rebuild_latest_bootstrap_status(paths)
+
+    assert rebuilt == MorpionBootstrapLatestStatus(
+        work_dir=str(tmp_path),
+        latest_generation=2,
+        latest_cycle_index=1,
+        latest_event=latest_event,
+    )
+    assert load_latest_bootstrap_status(paths.latest_status_path) == rebuilt
 
 
 def test_malformed_history_line_fails_loudly(tmp_path: Path) -> None:
@@ -249,8 +291,17 @@ def test_malformed_history_line_fails_loudly(tmp_path: Path) -> None:
         load_bootstrap_history(path)
 
 
+def test_non_integral_float_is_rejected_during_event_load() -> None:
+    """Integer-like fields should reject non-integral floats instead of truncating."""
+    payload = bootstrap_event_to_dict(_make_event())
+    payload["cycle_index"] = 1.5
+
+    with pytest.raises(MalformedMorpionBootstrapHistoryError):
+        bootstrap_event_from_dict(payload)
+
+
 def test_bootstrap_loop_writes_history_on_no_save_cycle(tmp_path: Path) -> None:
-    """Even a no-save cycle should emit one history event."""
+    """Even a no-save cycle should emit one structured history event."""
     args = MorpionBootstrapArgs(
         work_dir=tmp_path,
         max_growth_steps_per_cycle=5,
@@ -261,6 +312,7 @@ def test_bootstrap_loop_writes_history_on_no_save_cycle(tmp_path: Path) -> None:
     runner = FakeMorpionSearchRunner(tree_sizes=(15,), target_values=(1.25,))
     run_state = MorpionBootstrapRunState(
         generation=2,
+        cycle_index=8,
         latest_tree_snapshot_path=None,
         latest_rows_path=None,
         latest_model_bundle_path=None,
@@ -279,16 +331,29 @@ def test_bootstrap_loop_writes_history_on_no_save_cycle(tmp_path: Path) -> None:
     history = load_bootstrap_history(paths.history_jsonl_path)
     latest_status = load_latest_bootstrap_status(paths.latest_status_path)
 
-    assert next_state == run_state
+    assert next_state.generation == run_state.generation
+    assert next_state.cycle_index == 9
     assert len(history) == 1
-    assert history[0].tree_size == 15
-    assert history[0].rows_path is None
-    assert history[0].evaluators == ()
-    assert latest_status.latest_event == history[0]
+    event = history[0]
+    assert event.event_id
+    assert event.cycle_index == 9
+    assert event.generation == 2
+    assert event.timestamp_utc == "1970-01-01T00:01:50Z"
+    assert event.tree.size == 15
+    assert event.tree.size_at_last_save == 10
+    assert event.dataset.rows_count is None
+    assert not event.training.triggered
+    assert event.artifacts.tree_snapshot_path is None
+    assert event.artifacts.rows_path is None
+    assert event.artifacts.model_bundle_paths == {}
+    assert event.evaluators == {}
+    assert latest_status.latest_generation == 2
+    assert latest_status.latest_cycle_index == 9
+    assert latest_status.latest_event == event
 
 
 def test_bootstrap_loop_writes_history_on_save_train_cycle(tmp_path: Path) -> None:
-    """A save/train cycle should emit one detailed history event."""
+    """A save/train cycle should emit one detailed structured history event."""
     args = MorpionBootstrapArgs(
         work_dir=tmp_path,
         max_growth_steps_per_cycle=5,
@@ -300,6 +365,7 @@ def test_bootstrap_loop_writes_history_on_save_train_cycle(tmp_path: Path) -> No
     runner = FakeMorpionSearchRunner(tree_sizes=(10,), target_values=(1.25,))
     run_state = MorpionBootstrapRunState(
         generation=0,
+        cycle_index=-1,
         latest_tree_snapshot_path=None,
         latest_rows_path=None,
         latest_model_bundle_path=None,
@@ -320,15 +386,28 @@ def test_bootstrap_loop_writes_history_on_save_train_cycle(tmp_path: Path) -> No
 
     assert len(history) == 1
     event = history[0]
+    assert event.event_id
+    assert event.cycle_index == 0
     assert event.generation == 1
-    assert event.tree_size == 10
-    assert event.tree_snapshot_path == next_state.latest_tree_snapshot_path
-    assert event.rows_path == next_state.latest_rows_path
-    assert event.rows_count == 1
-    assert len(event.evaluators) == 1
-    assert event.evaluators[0].name == "default"
-    assert event.evaluators[0].final_loss is not None
-    assert event.evaluators[0].num_epochs == 1
-    assert event.evaluators[0].num_samples == 1
+    assert event.timestamp_utc == "1970-01-01T00:03:20Z"
+    assert event.tree.size == 10
+    assert event.tree.size_at_last_save == 10
+    assert event.dataset.rows_count == 1
+    assert event.training.triggered
+    assert event.artifacts.tree_snapshot_path == "tree_exports/generation_000001.json"
+    assert event.artifacts.rows_path == "rows/generation_000001.json"
+    assert event.artifacts.model_bundle_paths == {
+        "default": "models/generation_000001"
+    }
+    assert set(event.evaluators) == {"default"}
+    assert event.evaluators["default"].final_loss is not None
+    assert event.evaluators["default"].num_epochs == 1
+    assert event.evaluators["default"].num_samples == 1
+    assert next_state.generation == 1
+    assert next_state.cycle_index == 0
+    assert next_state.latest_tree_snapshot_path == event.artifacts.tree_snapshot_path
+    assert next_state.latest_rows_path == event.artifacts.rows_path
+    assert next_state.latest_model_bundle_path == "models/generation_000001"
+    assert latest_status.latest_generation == 1
+    assert latest_status.latest_cycle_index == 0
     assert latest_status.latest_event == event
-

@@ -19,6 +19,7 @@ class MorpionBootstrapRunState:
     """Persisted state for a restartable Morpion bootstrap run."""
 
     generation: int
+    cycle_index: int
     latest_tree_snapshot_path: str | None
     latest_rows_path: str | None
     latest_model_bundle_path: str | None
@@ -83,6 +84,7 @@ def initialize_bootstrap_run_state() -> MorpionBootstrapRunState:
     """Return the initial empty run state for a fresh bootstrap run."""
     return MorpionBootstrapRunState(
         generation=0,
+        cycle_index=-1,
         latest_tree_snapshot_path=None,
         latest_rows_path=None,
         latest_model_bundle_path=None,
@@ -116,6 +118,7 @@ def _run_state_to_dict(state: MorpionBootstrapRunState) -> dict[str, object]:
     """Serialize one run state to JSON-friendly data."""
     return {
         "generation": state.generation,
+        "cycle_index": state.cycle_index,
         "latest_tree_snapshot_path": state.latest_tree_snapshot_path,
         "latest_rows_path": state.latest_rows_path,
         "latest_model_bundle_path": state.latest_model_bundle_path,
@@ -133,6 +136,7 @@ def _run_state_from_dict(data: object) -> MorpionBootstrapRunState:
     payload = cast("Mapping[str, object]", data)
     return MorpionBootstrapRunState(
         generation=_coerce_int(payload.get("generation", 0), field_name="generation"),
+        cycle_index=_coerce_int(payload.get("cycle_index", -1), field_name="cycle_index"),
         latest_tree_snapshot_path=_optional_str(
             payload.get("latest_tree_snapshot_path"),
             field_name="latest_tree_snapshot_path",
@@ -185,18 +189,28 @@ def _metadata_dict(value: object) -> dict[str, Any]:
 
 def _coerce_int(value: object, *, field_name: str) -> int:
     """Return one integer-like payload value or raise."""
-    try:
-        if isinstance(value, bool):
-            return int(value)
-        if isinstance(value, int | str):
-            return int(value)
-        if isinstance(value, float):
-            return int(value)
-    except ValueError as exc:
+    if isinstance(value, bool):
         raise MalformedMorpionBootstrapRunStateError.invalid_integer_like_value(
             field_name,
             value,
-        ) from exc
+        )
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        if value.is_integer():
+            return int(value)
+        raise MalformedMorpionBootstrapRunStateError.invalid_integer_like_value(
+            field_name,
+            value,
+        )
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError as exc:
+            raise MalformedMorpionBootstrapRunStateError.invalid_integer_like_value(
+                field_name,
+                value,
+            ) from exc
     raise MalformedMorpionBootstrapRunStateError.invalid_integer_like_value(
         field_name,
         value,
@@ -207,9 +221,12 @@ def _optional_float(value: object, *, field_name: str) -> float | None:
     """Return one optional float-like payload value or raise."""
     if value is None:
         return None
+    if isinstance(value, bool):
+        raise MalformedMorpionBootstrapRunStateError.invalid_float_like_value(
+            field_name,
+            value,
+        )
     try:
-        if isinstance(value, bool):
-            return float(value)
         if isinstance(value, int | float | str):
             return float(value)
     except ValueError as exc:
