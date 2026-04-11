@@ -172,6 +172,18 @@ def test_invalid_payload_raises_clearly() -> None:
         training_node_to_morpion_supervised_row(node)
 
 
+def test_filtered_out_node_skips_payload_validation() -> None:
+    """Filter rejection should return ``None`` before malformed payload validation."""
+    node = _make_training_node(
+        state_ref_payload={"variant": "5T", "played_moves": "not-a-sequence"},
+        depth=1,
+    )
+
+    row = training_node_to_morpion_supervised_row(node, min_depth=2)
+
+    assert row is None
+
+
 def test_full_snapshot_extracts_ordered_rows() -> None:
     """Tree extraction should preserve surviving node order and settings metadata."""
     payload = _make_morpion_payload()

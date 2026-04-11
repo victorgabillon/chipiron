@@ -105,19 +105,7 @@ def is_morpion_state_ref_payload(payload: object) -> bool:
 def decode_morpion_state_ref_payload(payload: dict[str, object]) -> AtomMorpionState:
     """Decode one validated Morpion checkpoint payload into an atomheart state."""
     normalized_payload = _validate_and_normalize_state_ref_payload(payload)
-    from atomheart.games.morpion.checkpoints import (
-        MorpionCheckpointError,
-        MorpionCheckpointTypeError,
-        MorpionStateCheckpointCodec,
-    )
-
-    try:
-        return cast(
-            "AtomMorpionState",
-            MorpionStateCheckpointCodec().load_state_ref(normalized_payload),
-        )
-    except (MorpionCheckpointError, MorpionCheckpointTypeError) as exc:
-        raise InvalidMorpionStateRefPayloadError.payload_not_decodable() from exc
+    return _decode_validated_payload(normalized_payload)
 
 
 def training_node_to_morpion_supervised_row(
@@ -138,7 +126,6 @@ def training_node_to_morpion_supervised_row(
     if node.state_ref_payload is None:
         return None
 
-    normalized_payload = _validate_and_normalize_state_ref_payload(node.state_ref_payload)
     target_value = _choose_target_value(node, use_backed_up_value=use_backed_up_value)
     if target_value is None:
         return None
@@ -150,6 +137,10 @@ def training_node_to_morpion_supervised_row(
         min_visit_count=min_visit_count,
     ):
         return None
+
+    normalized_payload = _validate_and_normalize_state_ref_payload(
+        node.state_ref_payload
+    )
 
     return MorpionSupervisedRow(
         node_id=node.node_id,
@@ -282,19 +273,7 @@ def _validate_and_normalize_state_ref_payload(payload: object) -> dict[str, Any]
 
 def _decode_validated_payload(payload: dict[str, Any]) -> AtomMorpionState:
     """Decode one normalized checkpoint payload or raise a Morpion payload error."""
-    from atomheart.games.morpion.checkpoints import (
-        MorpionCheckpointError,
-        MorpionCheckpointTypeError,
-        MorpionStateCheckpointCodec,
-    )
-
-    try:
-        return cast(
-            "AtomMorpionState",
-            MorpionStateCheckpointCodec().load_state_ref(payload),
-        )
-    except (MorpionCheckpointError, MorpionCheckpointTypeError) as exc:
-        raise InvalidMorpionStateRefPayloadError.payload_not_decodable() from exc
+    return _load_morpion_state_from_payload(payload)
 
 
 def _payload_mapping(payload: object) -> dict[str, Any]:
@@ -316,10 +295,27 @@ def _choose_target_value(
     *,
     use_backed_up_value: bool,
 ) -> float | None:
-    """Return the configured target scalar for one training node."""
+    """Return the preferred target scalar with no fallback to the other field."""
     if use_backed_up_value:
         return cast("float | None", node.backed_up_value_scalar)
     return cast("float | None", node.direct_value_scalar)
+
+
+def _load_morpion_state_from_payload(payload: dict[str, Any]) -> AtomMorpionState:
+    """Load one Morpion state from an already normalized checkpoint payload."""
+    from atomheart.games.morpion.checkpoints import (
+        MorpionCheckpointError,
+        MorpionCheckpointTypeError,
+        MorpionStateCheckpointCodec,
+    )
+
+    try:
+        return cast(
+            "AtomMorpionState",
+            MorpionStateCheckpointCodec().load_state_ref(payload),
+        )
+    except (MorpionCheckpointError, MorpionCheckpointTypeError) as exc:
+        raise InvalidMorpionStateRefPayloadError.payload_not_decodable() from exc
 
 
 def _passes_filters(
