@@ -23,6 +23,7 @@ class MorpionBootstrapRunState:
     latest_tree_snapshot_path: str | None
     latest_rows_path: str | None
     latest_model_bundle_paths: dict[str, str] | None
+    active_evaluator_name: str | None
     tree_size_at_last_save: int
     last_save_unix_s: float | None
     metadata: dict[str, Any] = field(default_factory=_empty_metadata)
@@ -99,6 +100,7 @@ def initialize_bootstrap_run_state() -> MorpionBootstrapRunState:
         latest_tree_snapshot_path=None,
         latest_rows_path=None,
         latest_model_bundle_paths=None,
+        active_evaluator_name=None,
         tree_size_at_last_save=0,
         last_save_unix_s=None,
     )
@@ -135,6 +137,7 @@ def _run_state_to_dict(state: MorpionBootstrapRunState) -> dict[str, object]:
         "latest_model_bundle_paths": None
         if state.latest_model_bundle_paths is None
         else dict(state.latest_model_bundle_paths),
+        "active_evaluator_name": state.active_evaluator_name,
         "tree_size_at_last_save": state.tree_size_at_last_save,
         "last_save_unix_s": state.last_save_unix_s,
         "metadata": dict(state.metadata),
@@ -157,6 +160,13 @@ def _run_state_from_dict(data: object) -> MorpionBootstrapRunState:
     )
     if latest_model_bundle_paths is None and legacy_latest_model_bundle_path is not None:
         latest_model_bundle_paths = {"default": legacy_latest_model_bundle_path}
+    active_evaluator_name = _optional_str(
+        payload.get("active_evaluator_name"),
+        field_name="active_evaluator_name",
+    )
+    if active_evaluator_name is None and latest_model_bundle_paths is not None:
+        if len(latest_model_bundle_paths) == 1:
+            active_evaluator_name = next(iter(latest_model_bundle_paths))
 
     return MorpionBootstrapRunState(
         generation=_coerce_int(payload.get("generation", 0), field_name="generation"),
@@ -170,6 +180,7 @@ def _run_state_from_dict(data: object) -> MorpionBootstrapRunState:
             field_name="latest_rows_path",
         ),
         latest_model_bundle_paths=latest_model_bundle_paths,
+        active_evaluator_name=active_evaluator_name,
         tree_size_at_last_save=_coerce_int(
             payload.get("tree_size_at_last_save", 0),
             field_name="tree_size_at_last_save",

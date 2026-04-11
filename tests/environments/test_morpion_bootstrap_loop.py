@@ -65,12 +65,14 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapRunState,
     MorpionEvaluatorSpec,
     MorpionEvaluatorsConfig,
+    NoSelectableMorpionEvaluatorError,
     initialize_bootstrap_run_state,
     load_bootstrap_history,
     load_bootstrap_run_state,
     run_morpion_bootstrap_loop,
     run_one_bootstrap_cycle,
     save_bootstrap_run_state,
+    select_active_evaluator_name,
     should_save_progress,
 )
 from chipiron.environments.morpion.learning import load_morpion_supervised_rows
@@ -196,6 +198,23 @@ def _multi_evaluator_config() -> MorpionEvaluatorsConfig:
     )
 
 
+def _patch_reported_losses(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    loss_by_evaluator_name: dict[str, float],
+) -> None:
+    """Patch training so evaluator selection is deterministic while bundles still exist."""
+    real_train = bootstrap_loop_module.train_morpion_regressor
+
+    def _patched_train(train_args: object) -> object:
+        _model, metrics = real_train(train_args)
+        evaluator_name = Path(str(getattr(train_args, "output_dir"))).name
+        metrics["final_loss"] = loss_by_evaluator_name[evaluator_name]
+        return _model, metrics
+
+    monkeypatch.setattr(bootstrap_loop_module, "train_morpion_regressor", _patched_train)
+
+
 def test_should_save_progress_helper() -> None:
     """The save trigger should fire on first save, growth, or elapsed time."""
     assert should_save_progress(
@@ -243,6 +262,7 @@ def test_run_state_round_trip(tmp_path: Path) -> None:
             "linear": "models/generation_000003/linear",
             "mlp": "models/generation_000003/mlp",
         },
+        active_evaluator_name="mlp",
         tree_size_at_last_save=42,
         last_save_unix_s=1234.5,
         metadata={"note": "checkpoint"},
@@ -276,6 +296,7 @@ def test_run_state_loads_legacy_single_model_path(tmp_path: Path) -> None:
     loaded = load_bootstrap_run_state(path)
 
     assert loaded.latest_model_bundle_paths == {"default": "models/generation_000002"}
+    assert loaded.active_evaluator_name == "default"
 
 
 def test_malformed_run_state_load_fails_loudly(tmp_path: Path) -> None:
@@ -293,6 +314,40 @@ def test_empty_evaluators_config_raises_explicitly() -> None:
         MorpionEvaluatorsConfig(evaluators={})
 
 
+def test_select_active_evaluator_name_uses_lowest_loss() -> None:
+    """The active evaluator should be selected by the smallest reported final loss."""
+    selected = select_active_evaluator_name(
+        {
+            "linear": bootstrap_loop_module.MorpionEvaluatorMetrics(
+                final_loss=0.5,
+                num_epochs=1,
+                num_samples=1,
+            ),
+            "mlp": bootstrap_loop_module.MorpionEvaluatorMetrics(
+                final_loss=0.1,
+                num_epochs=1,
+                num_samples=1,
+            ),
+        }
+    )
+
+    assert selected == "mlp"
+
+
+def test_select_active_evaluator_name_rejects_missing_losses() -> None:
+    """Selection should fail loudly if no evaluator reports a usable loss."""
+    with pytest.raises(NoSelectableMorpionEvaluatorError):
+        select_active_evaluator_name(
+            {
+                "linear": bootstrap_loop_module.MorpionEvaluatorMetrics(
+                    final_loss=None,
+                    num_epochs=1,
+                    num_samples=1,
+                )
+            }
+        )
+
+
 def test_run_one_cycle_without_save_does_not_train(tmp_path: Path) -> None:
     """A cycle below both save thresholds should skip export and training."""
     args = MorpionBootstrapArgs(
@@ -306,9 +361,10 @@ def test_run_one_cycle_without_save_does_not_train(tmp_path: Path) -> None:
     run_state = MorpionBootstrapRunState(
         generation=2,
         cycle_index=11,
-        latest_tree_snapshot_path=None,
-        latest_rows_path=None,
-        latest_model_bundle_paths=None,
+        latest_tree_snapshot_path="tree_exports/generation_000002.json",
+        latest_rows_path="rows/generation_000002.json",
+        latest_model_bundle_paths={"linear": "models/generation_000002/linear"},
+        active_evaluator_name="linear",
         tree_size_at_last_save=10,
         last_save_unix_s=100.0,
     )
@@ -323,9 +379,12 @@ def test_run_one_cycle_without_save_does_not_train(tmp_path: Path) -> None:
 
     assert next_state.generation == 2
     assert next_state.cycle_index == 12
-    assert next_state.latest_tree_snapshot_path is None
-    assert next_state.latest_rows_path is None
-    assert next_state.latest_model_bundle_paths is None
+    assert next_state.latest_tree_snapshot_path == "tree_exports/generation_000002.json"
+    assert next_state.latest_rows_path == "rows/generation_000002.json"
+    assert next_state.latest_model_bundle_paths == {
+        "linear": "models/generation_000002/linear"
+    }
+    assert next_state.active_evaluator_name == "linear"
     assert runner.export_calls == []
     assert not paths.tree_snapshot_dir.exists() or list(paths.tree_snapshot_dir.iterdir()) == []
     assert not paths.rows_dir.exists() or list(paths.rows_dir.iterdir()) == []
@@ -362,15 +421,27 @@ def test_run_one_cycle_with_save_updates_artifacts(tmp_path: Path) -> None:
     assert next_state.latest_model_bundle_paths == {
         "default": "models/generation_000001/default"
     }
+    assert next_state.active_evaluator_name == "default"
     assert paths.resolve_work_dir_path(next_state.latest_tree_snapshot_path).is_file()
     assert paths.resolve_work_dir_path(next_state.latest_rows_path).is_file()
     assert paths.resolve_work_dir_path(
         next_state.latest_model_bundle_paths["default"]
     ).is_dir()
+    event = load_bootstrap_history(paths.history_jsonl_path)[0]
+    assert event.metadata["active_evaluator_name"] == "default"
+    assert event.metadata["selected_evaluator_name"] == "default"
+    assert event.metadata["selection_policy"] == "lowest_final_loss"
 
 
-def test_run_one_cycle_with_multiple_evaluators_trains_each_model(tmp_path: Path) -> None:
+def test_run_one_cycle_with_multiple_evaluators_selects_lowest_loss(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """A save cycle should train all configured evaluators into separate directories."""
+    _patch_reported_losses(
+        monkeypatch,
+        loss_by_evaluator_name={"linear": 0.4, "mlp": 0.1},
+    )
     args = MorpionBootstrapArgs(
         work_dir=tmp_path,
         max_growth_steps_per_cycle=5,
@@ -393,6 +464,7 @@ def test_run_one_cycle_with_multiple_evaluators_trains_each_model(tmp_path: Path
         "linear": "models/generation_000001/linear",
         "mlp": "models/generation_000001/mlp",
     }
+    assert next_state.active_evaluator_name == "mlp"
     assert paths.resolve_work_dir_path("models/generation_000001/linear").is_dir()
     assert paths.resolve_work_dir_path("models/generation_000001/mlp").is_dir()
     assert len(history) == 1
@@ -402,6 +474,9 @@ def test_run_one_cycle_with_multiple_evaluators_trains_each_model(tmp_path: Path
         "linear": "models/generation_000001/linear",
         "mlp": "models/generation_000001/mlp",
     }
+    assert event.metadata["active_evaluator_name"] == "mlp"
+    assert event.metadata["selected_evaluator_name"] == "mlp"
+    assert event.metadata["selection_policy"] == "lowest_final_loss"
 
 
 def test_loop_resumes_from_saved_run_state(tmp_path: Path) -> None:
@@ -435,8 +510,15 @@ def test_loop_resumes_from_saved_run_state(tmp_path: Path) -> None:
     )
 
 
-def test_loop_resumes_with_multi_evaluator_primary_model(tmp_path: Path) -> None:
-    """Restart should use the selected primary evaluator bundle for bootstrap."""
+def test_loop_resumes_with_selected_winning_evaluator(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Restart should use the persisted winning evaluator bundle for bootstrap."""
+    _patch_reported_losses(
+        monkeypatch,
+        loss_by_evaluator_name={"linear": 0.7, "mlp": 0.2},
+    )
     args = MorpionBootstrapArgs(
         work_dir=tmp_path,
         max_growth_steps_per_cycle=5,
@@ -455,7 +537,7 @@ def test_loop_resumes_with_multi_evaluator_primary_model(tmp_path: Path) -> None
 
     assert runner.load_calls[1] == (
         str(paths.resolve_work_dir_path(first_state.latest_tree_snapshot_path)),
-        str(paths.resolve_work_dir_path(first_state.latest_model_bundle_paths["linear"])),
+        str(paths.resolve_work_dir_path(first_state.latest_model_bundle_paths["mlp"])),
     )
 
 

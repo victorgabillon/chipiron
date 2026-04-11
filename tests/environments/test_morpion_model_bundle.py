@@ -150,6 +150,17 @@ def test_linear_model_builds_with_correct_output_shape() -> None:
     assert single_output.shape == (1, 1)
 
 
+def test_mlp_model_builds_with_multiple_hidden_layers() -> None:
+    """An MLP regressor should support multiple configured hidden layers."""
+    model = build_morpion_regressor(
+        MorpionRegressorArgs(model_kind="mlp", hidden_sizes=(8, 4))
+    )
+
+    output = model(torch.randn(2, MORPION_INPUT_DIM))
+
+    assert output.shape == (2, 1)
+
+
 def test_save_load_bundle_round_trip(tmp_path: Path) -> None:
     """Saving and loading a Morpion bundle should preserve args, manifest, and weights."""
     args = MorpionRegressorArgs(model_kind="linear")
@@ -254,3 +265,44 @@ def test_loaded_trained_model_works_for_inference(tmp_path: Path) -> None:
 
     assert model.training is False
     assert output.shape == (1, 1)
+
+
+def test_load_bundle_accepts_legacy_hidden_dim_payload(tmp_path: Path) -> None:
+    """Loading should migrate older saved model args that used `hidden_dim`."""
+    bundle_dir = tmp_path / "bundle"
+    bundle_dir.mkdir(parents=True, exist_ok=True)
+
+    args_path = bundle_dir / MORPION_MODEL_ARGS_FILE_NAME
+    args_path.write_text(
+        json.dumps(
+            {
+                "model_kind": "mlp",
+                "input_dim": MORPION_INPUT_DIM,
+                "hidden_dim": 8,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    model = build_morpion_regressor(
+        MorpionRegressorArgs(model_kind="mlp", hidden_sizes=(8,))
+    )
+    save_morpion_model_bundle(
+        model,
+        bundle_dir,
+        model_args=MorpionRegressorArgs(model_kind="mlp", hidden_sizes=(8,)),
+    )
+    args_path.write_text(
+        json.dumps(
+            {
+                "model_kind": "mlp",
+                "input_dim": MORPION_INPUT_DIM,
+                "hidden_dim": 8,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    _loaded_model, loaded_args, _loaded_manifest = load_morpion_model_bundle(bundle_dir)
+
+    assert loaded_args.hidden_sizes == (8,)

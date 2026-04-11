@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import math
 import time
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Protocol
+from typing import Protocol, cast
 
 from chipiron.environments.morpion.learning import (
     load_training_tree_snapshot_as_morpion_supervised_rows,
@@ -56,6 +57,28 @@ class InconsistentMorpionEvaluatorSpecNameError(ValueError):
         )
 
 
+class NoSelectableMorpionEvaluatorError(ValueError):
+    """Raised when no evaluator can be selected as the active search model."""
+
+    def __init__(self) -> None:
+        """Initialize the missing-selectable-evaluator error."""
+        super().__init__(
+            "Morpion bootstrap could not select an active evaluator because no "
+            "trained evaluator reported a finite final_loss."
+        )
+
+
+class UnknownActiveMorpionEvaluatorError(ValueError):
+    """Raised when persisted active evaluator state does not match saved bundles."""
+
+    def __init__(self, evaluator_name: str) -> None:
+        """Initialize the missing-active-evaluator error."""
+        super().__init__(
+            "Morpion bootstrap run state refers to active evaluator "
+            f"{evaluator_name!r}, but no saved model bundle path exists for it."
+        )
+
+
 @dataclass(frozen=True, slots=True)
 class MorpionEvaluatorSpec:
     """Training spec for one named Morpion evaluator."""
@@ -84,8 +107,8 @@ class MorpionEvaluatorsConfig:
                 raise InconsistentMorpionEvaluatorSpecNameError(key, spec.name)
         object.__setattr__(self, "evaluators", copied)
 
-    def primary_evaluator_name(self) -> str:
-        """Return the current primary evaluator for runner bootstrap."""
+    def default_starting_evaluator_name(self) -> str:
+        """Return the cold-start evaluator used before any winner is selected."""
         if "default" in self.evaluators:
             return "default"
         return next(iter(self.evaluators))
@@ -323,9 +346,10 @@ def run_one_bootstrap_cycle(
 
     runner.load_or_create(
         paths.resolve_work_dir_path(run_state.latest_tree_snapshot_path),
-        _resolve_primary_model_bundle_path(
+        _resolve_active_model_bundle_path(
             paths=paths,
             latest_model_bundle_paths=run_state.latest_model_bundle_paths,
+            active_evaluator_name=run_state.active_evaluator_name,
             evaluators_config=resolved_evaluators_config,
         ),
     )
@@ -351,6 +375,7 @@ def run_one_bootstrap_cycle(
             latest_model_bundle_paths=None
             if run_state.latest_model_bundle_paths is None
             else dict(run_state.latest_model_bundle_paths),
+            active_evaluator_name=run_state.active_evaluator_name,
             tree_size_at_last_save=run_state.tree_size_at_last_save,
             last_save_unix_s=run_state.last_save_unix_s,
             metadata=dict(run_state.metadata),
@@ -366,6 +391,9 @@ def run_one_bootstrap_cycle(
                 dataset_num_rows=None,
                 dataset_num_samples=None,
                 training_triggered=False,
+                metadata=_build_event_metadata(
+                    active_evaluator_name=next_run_state.active_evaluator_name
+                ),
             )
         )
         return next_run_state
@@ -408,6 +436,7 @@ def run_one_bootstrap_cycle(
             num_samples=int(metrics["num_samples"]),
         )
         model_bundle_paths[evaluator_name] = paths.relative_to_work_dir(model_bundle_path)
+    selected_evaluator_name = select_active_evaluator_name(evaluator_metrics)
 
     relative_tree_snapshot_path = paths.relative_to_work_dir(tree_snapshot_path)
     relative_rows_path = paths.relative_to_work_dir(rows_path)
@@ -417,6 +446,7 @@ def run_one_bootstrap_cycle(
         latest_tree_snapshot_path=relative_tree_snapshot_path,
         latest_rows_path=relative_rows_path,
         latest_model_bundle_paths=model_bundle_paths,
+        active_evaluator_name=selected_evaluator_name,
         tree_size_at_last_save=current_tree_size,
         last_save_unix_s=current_time,
         metadata=dict(run_state.metadata),
@@ -434,6 +464,10 @@ def run_one_bootstrap_cycle(
             training_triggered=True,
             evaluator_metrics=evaluator_metrics,
             model_bundle_paths=model_bundle_paths,
+            metadata=_build_event_metadata(
+                active_evaluator_name=selected_evaluator_name,
+                selected_evaluator_name=selected_evaluator_name,
+            ),
         )
     )
     return next_run_state
@@ -475,34 +509,77 @@ def _timestamp_utc_from_unix_s(timestamp_unix_s: float) -> str:
     return timestamp.isoformat(timespec=timespec).replace("+00:00", "Z")
 
 
-def _resolve_primary_model_bundle_path(
+def _resolve_active_model_bundle_path(
     *,
     paths: MorpionBootstrapPaths,
     latest_model_bundle_paths: Mapping[str, str] | None,
+    active_evaluator_name: str | None,
     evaluators_config: MorpionEvaluatorsConfig,
 ) -> Path | None:
-    """Resolve the current primary evaluator bundle path for runner bootstrap."""
+    """Resolve the current active evaluator bundle path for runner bootstrap."""
     if not latest_model_bundle_paths:
         return None
-    primary_name = evaluators_config.primary_evaluator_name()
-    selected_path = latest_model_bundle_paths.get(primary_name)
+    if active_evaluator_name is not None:
+        selected_path = latest_model_bundle_paths.get(active_evaluator_name)
+        if selected_path is None:
+            raise UnknownActiveMorpionEvaluatorError(active_evaluator_name)
+        return paths.resolve_work_dir_path(selected_path)
+    fallback_name = evaluators_config.default_starting_evaluator_name()
+    selected_path = latest_model_bundle_paths.get(fallback_name)
     if selected_path is None and "default" in latest_model_bundle_paths:
         selected_path = latest_model_bundle_paths["default"]
+    if selected_path is None and len(latest_model_bundle_paths) == 1:
+        selected_path = next(iter(latest_model_bundle_paths.values()))
     if selected_path is None:
         selected_path = next(iter(latest_model_bundle_paths.values()))
     return paths.resolve_work_dir_path(selected_path)
 
 
+def select_active_evaluator_name(
+    evaluator_metrics: Mapping[str, MorpionEvaluatorMetrics],
+) -> str:
+    """Select the active evaluator using the lowest available final loss."""
+    selectable_losses = {
+        evaluator_name: metrics.final_loss
+        for evaluator_name, metrics in evaluator_metrics.items()
+        if metrics.final_loss is not None and math.isfinite(metrics.final_loss)
+    }
+    if not selectable_losses:
+        raise NoSelectableMorpionEvaluatorError()
+    return min(
+        selectable_losses,
+        key=lambda evaluator_name: cast("float", selectable_losses[evaluator_name]),
+    )
+
+
+def _build_event_metadata(
+    *,
+    active_evaluator_name: str | None,
+    selected_evaluator_name: str | None = None,
+) -> dict[str, object]:
+    """Build history metadata describing the active and selected evaluators."""
+    metadata: dict[str, object] = {}
+    if active_evaluator_name is not None:
+        metadata["active_evaluator_name"] = active_evaluator_name
+    if selected_evaluator_name is not None:
+        metadata["selected_evaluator_name"] = selected_evaluator_name
+        metadata["selection_policy"] = "lowest_final_loss"
+    return metadata
+
+
 __all__ = [
     "EmptyMorpionEvaluatorsConfigError",
     "InconsistentMorpionEvaluatorSpecNameError",
+    "NoSelectableMorpionEvaluatorError",
     "MorpionBootstrapArgs",
     "MorpionBootstrapPaths",
     "MorpionEvaluatorSpec",
     "MorpionEvaluatorsConfig",
     "MorpionSearchRunner",
+    "UnknownActiveMorpionEvaluatorError",
     "build_bootstrap_event",
     "run_morpion_bootstrap_loop",
     "run_one_bootstrap_cycle",
+    "select_active_evaluator_name",
     "should_save_progress",
 ]

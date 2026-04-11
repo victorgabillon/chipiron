@@ -3,14 +3,17 @@
 from .bootstrap_loop import (
     EmptyMorpionEvaluatorsConfigError,
     InconsistentMorpionEvaluatorSpecNameError,
+    NoSelectableMorpionEvaluatorError,
     MorpionBootstrapArgs,
     MorpionBootstrapPaths,
     MorpionEvaluatorSpec,
     MorpionEvaluatorsConfig,
     MorpionSearchRunner,
+    UnknownActiveMorpionEvaluatorError,
     build_bootstrap_event,
     run_morpion_bootstrap_loop,
     run_one_bootstrap_cycle,
+    select_active_evaluator_name,
     should_save_progress,
 )
 from .history import (
@@ -48,6 +51,7 @@ __all__ = [
     "InconsistentMorpionEvaluatorSpecNameError",
     "MalformedMorpionBootstrapHistoryError",
     "MalformedMorpionBootstrapRunStateError",
+    "NoSelectableMorpionEvaluatorError",
     "MorpionBootstrapArgs",
     "MorpionBootstrapArtifacts",
     "MorpionBootstrapDatasetStatus",
@@ -64,6 +68,7 @@ __all__ = [
     "MorpionEvaluatorSpec",
     "MorpionEvaluatorsConfig",
     "MorpionSearchRunner",
+    "UnknownActiveMorpionEvaluatorError",
     "bootstrap_event_from_dict",
     "bootstrap_event_to_dict",
     "build_bootstrap_event",
@@ -79,5 +84,6 @@ __all__ = [
     "run_morpion_bootstrap_loop",
     "run_one_bootstrap_cycle",
     "save_bootstrap_run_state",
+    "select_active_evaluator_name",
     "should_save_progress",
 ]
