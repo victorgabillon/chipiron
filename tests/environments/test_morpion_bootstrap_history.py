@@ -239,6 +239,10 @@ def _make_event(generation: int = 3, cycle_index: int = 5) -> MorpionBootstrapEv
         },
         metadata={
             "note": "cycle",
+            "game": "morpion",
+            "variant": "5T",
+            "initial_pattern": "greek_cross",
+            "initial_point_count": 36,
             "active_evaluator_name": "default",
             "selected_evaluator_name": "default",
             "selection_policy": "lowest_final_loss",
@@ -417,7 +421,13 @@ def test_bootstrap_loop_writes_history_on_no_save_cycle(tmp_path: Path) -> None:
     assert event.artifacts.rows_path is None
     assert event.artifacts.model_bundle_paths == {}
     assert event.evaluators == {}
-    assert event.metadata == {"active_evaluator_name": "linear"}
+    assert event.metadata == {
+        "game": "morpion",
+        "variant": "5T",
+        "initial_pattern": "greek_cross",
+        "initial_point_count": 36,
+        "active_evaluator_name": "linear",
+    }
     assert latest_status.latest_generation == 2
     assert latest_status.latest_cycle_index == 9
     assert latest_status.latest_event == event
@@ -475,6 +485,10 @@ def test_bootstrap_loop_writes_history_on_save_train_cycle(tmp_path: Path) -> No
         "default": "models/generation_000001/default"
     }
     assert event.metadata == {
+        "game": "morpion",
+        "variant": "5T",
+        "initial_pattern": "greek_cross",
+        "initial_point_count": 36,
         "active_evaluator_name": "default",
         "selected_evaluator_name": "default",
         "selection_policy": "lowest_final_loss",
@@ -539,6 +553,10 @@ def test_bootstrap_loop_records_selected_winner_on_multi_evaluator_save_cycle(
         "mlp": "models/generation_000001/mlp",
     }
     assert event.metadata == {
+        "game": "morpion",
+        "variant": "5T",
+        "initial_pattern": "greek_cross",
+        "initial_point_count": 36,
         "active_evaluator_name": "mlp",
         "selected_evaluator_name": "mlp",
         "selection_policy": "lowest_final_loss",

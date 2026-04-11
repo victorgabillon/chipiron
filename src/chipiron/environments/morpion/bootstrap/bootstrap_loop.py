@@ -79,6 +79,17 @@ class UnknownActiveMorpionEvaluatorError(ValueError):
         )
 
 
+class MissingActiveMorpionEvaluatorError(ValueError):
+    """Raised when persisted multi-evaluator state has no selected active evaluator."""
+
+    def __init__(self) -> None:
+        """Initialize the missing-active-evaluator error."""
+        super().__init__(
+            "Morpion bootstrap run state contains multiple saved evaluator bundles "
+            "but no active_evaluator_name, so resume is ambiguous."
+        )
+
+
 @dataclass(frozen=True, slots=True)
 class MorpionEvaluatorSpec:
     """Training spec for one named Morpion evaluator."""
@@ -106,12 +117,6 @@ class MorpionEvaluatorsConfig:
             if key != spec.name:
                 raise InconsistentMorpionEvaluatorSpecNameError(key, spec.name)
         object.__setattr__(self, "evaluators", copied)
-
-    def default_starting_evaluator_name(self) -> str:
-        """Return the cold-start evaluator used before any winner is selected."""
-        if "default" in self.evaluators:
-            return "default"
-        return next(iter(self.evaluators))
 
 
 @dataclass(frozen=True, slots=True)
@@ -350,7 +355,6 @@ def run_one_bootstrap_cycle(
             paths=paths,
             latest_model_bundle_paths=run_state.latest_model_bundle_paths,
             active_evaluator_name=run_state.active_evaluator_name,
-            evaluators_config=resolved_evaluators_config,
         ),
     )
     runner.grow(args.max_growth_steps_per_cycle)
@@ -514,7 +518,6 @@ def _resolve_active_model_bundle_path(
     paths: MorpionBootstrapPaths,
     latest_model_bundle_paths: Mapping[str, str] | None,
     active_evaluator_name: str | None,
-    evaluators_config: MorpionEvaluatorsConfig,
 ) -> Path | None:
     """Resolve the current active evaluator bundle path for runner bootstrap."""
     if not latest_model_bundle_paths:
@@ -524,15 +527,9 @@ def _resolve_active_model_bundle_path(
         if selected_path is None:
             raise UnknownActiveMorpionEvaluatorError(active_evaluator_name)
         return paths.resolve_work_dir_path(selected_path)
-    fallback_name = evaluators_config.default_starting_evaluator_name()
-    selected_path = latest_model_bundle_paths.get(fallback_name)
-    if selected_path is None and "default" in latest_model_bundle_paths:
-        selected_path = latest_model_bundle_paths["default"]
-    if selected_path is None and len(latest_model_bundle_paths) == 1:
-        selected_path = next(iter(latest_model_bundle_paths.values()))
-    if selected_path is None:
-        selected_path = next(iter(latest_model_bundle_paths.values()))
-    return paths.resolve_work_dir_path(selected_path)
+    if len(latest_model_bundle_paths) == 1:
+        return paths.resolve_work_dir_path(next(iter(latest_model_bundle_paths.values())))
+    raise MissingActiveMorpionEvaluatorError()
 
 
 def select_active_evaluator_name(
@@ -558,7 +555,12 @@ def _build_event_metadata(
     selected_evaluator_name: str | None = None,
 ) -> dict[str, object]:
     """Build history metadata describing the active and selected evaluators."""
-    metadata: dict[str, object] = {}
+    metadata: dict[str, object] = {
+        "game": "morpion",
+        "variant": "5T",
+        "initial_pattern": "greek_cross",
+        "initial_point_count": 36,
+    }
     if active_evaluator_name is not None:
         metadata["active_evaluator_name"] = active_evaluator_name
     if selected_evaluator_name is not None:
@@ -570,6 +572,7 @@ def _build_event_metadata(
 __all__ = [
     "EmptyMorpionEvaluatorsConfigError",
     "InconsistentMorpionEvaluatorSpecNameError",
+    "MissingActiveMorpionEvaluatorError",
     "NoSelectableMorpionEvaluatorError",
     "MorpionBootstrapArgs",
     "MorpionBootstrapPaths",

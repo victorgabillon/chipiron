@@ -3,6 +3,7 @@
 from .bootstrap_loop import (
     EmptyMorpionEvaluatorsConfigError,
     InconsistentMorpionEvaluatorSpecNameError,
+    MissingActiveMorpionEvaluatorError,
     NoSelectableMorpionEvaluatorError,
     MorpionBootstrapArgs,
     MorpionBootstrapPaths,
@@ -51,6 +52,7 @@ __all__ = [
     "InconsistentMorpionEvaluatorSpecNameError",
     "MalformedMorpionBootstrapHistoryError",
     "MalformedMorpionBootstrapRunStateError",
+    "MissingActiveMorpionEvaluatorError",
     "NoSelectableMorpionEvaluatorError",
     "MorpionBootstrapArgs",
     "MorpionBootstrapArtifacts",

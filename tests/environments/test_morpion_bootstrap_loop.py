@@ -60,12 +60,14 @@ import chipiron.environments.morpion.bootstrap.bootstrap_loop as bootstrap_loop_
 from chipiron.environments.morpion.bootstrap import (
     EmptyMorpionEvaluatorsConfigError,
     MalformedMorpionBootstrapRunStateError,
+    MissingActiveMorpionEvaluatorError,
     MorpionBootstrapArgs,
     MorpionBootstrapPaths,
     MorpionBootstrapRunState,
     MorpionEvaluatorSpec,
     MorpionEvaluatorsConfig,
     NoSelectableMorpionEvaluatorError,
+    UnknownActiveMorpionEvaluatorError,
     initialize_bootstrap_run_state,
     load_bootstrap_history,
     load_bootstrap_run_state,
@@ -348,6 +350,30 @@ def test_select_active_evaluator_name_rejects_missing_losses() -> None:
         )
 
 
+def test_select_active_evaluator_name_rejects_all_nonfinite_losses() -> None:
+    """Selection should fail if every reported loss is missing or non-finite."""
+    with pytest.raises(NoSelectableMorpionEvaluatorError):
+        select_active_evaluator_name(
+            {
+                "linear": bootstrap_loop_module.MorpionEvaluatorMetrics(
+                    final_loss=float("nan"),
+                    num_epochs=1,
+                    num_samples=1,
+                ),
+                "mlp": bootstrap_loop_module.MorpionEvaluatorMetrics(
+                    final_loss=float("inf"),
+                    num_epochs=1,
+                    num_samples=1,
+                ),
+                "default": bootstrap_loop_module.MorpionEvaluatorMetrics(
+                    final_loss=None,
+                    num_epochs=1,
+                    num_samples=1,
+                ),
+            }
+        )
+
+
 def test_run_one_cycle_without_save_does_not_train(tmp_path: Path) -> None:
     """A cycle below both save thresholds should skip export and training."""
     args = MorpionBootstrapArgs(
@@ -428,6 +454,10 @@ def test_run_one_cycle_with_save_updates_artifacts(tmp_path: Path) -> None:
         next_state.latest_model_bundle_paths["default"]
     ).is_dir()
     event = load_bootstrap_history(paths.history_jsonl_path)[0]
+    assert event.metadata["game"] == "morpion"
+    assert event.metadata["variant"] == "5T"
+    assert event.metadata["initial_pattern"] == "greek_cross"
+    assert event.metadata["initial_point_count"] == 36
     assert event.metadata["active_evaluator_name"] == "default"
     assert event.metadata["selected_evaluator_name"] == "default"
     assert event.metadata["selection_policy"] == "lowest_final_loss"
@@ -474,6 +504,10 @@ def test_run_one_cycle_with_multiple_evaluators_selects_lowest_loss(
         "linear": "models/generation_000001/linear",
         "mlp": "models/generation_000001/mlp",
     }
+    assert event.metadata["game"] == "morpion"
+    assert event.metadata["variant"] == "5T"
+    assert event.metadata["initial_pattern"] == "greek_cross"
+    assert event.metadata["initial_point_count"] == 36
     assert event.metadata["active_evaluator_name"] == "mlp"
     assert event.metadata["selected_evaluator_name"] == "mlp"
     assert event.metadata["selection_policy"] == "lowest_final_loss"
@@ -539,6 +573,95 @@ def test_loop_resumes_with_selected_winning_evaluator(
         str(paths.resolve_work_dir_path(first_state.latest_tree_snapshot_path)),
         str(paths.resolve_work_dir_path(first_state.latest_model_bundle_paths["mlp"])),
     )
+
+
+def test_resume_fails_for_unknown_active_evaluator(tmp_path: Path) -> None:
+    """Bootstrap should fail loudly when the persisted active evaluator is unknown."""
+    args = MorpionBootstrapArgs(work_dir=tmp_path, max_growth_steps_per_cycle=5)
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    runner = FakeMorpionSearchRunner(tree_sizes=(15,), target_values=(1.25,))
+
+    with pytest.raises(UnknownActiveMorpionEvaluatorError):
+        run_one_bootstrap_cycle(
+            args=args,
+            paths=paths,
+            runner=runner,
+            run_state=MorpionBootstrapRunState(
+                generation=2,
+                cycle_index=11,
+                latest_tree_snapshot_path="tree_exports/generation_000002.json",
+                latest_rows_path="rows/generation_000002.json",
+                latest_model_bundle_paths={"linear": "models/generation_000002/linear"},
+                active_evaluator_name="mlp",
+                tree_size_at_last_save=10,
+                last_save_unix_s=100.0,
+            ),
+            now_unix_s=110.0,
+        )
+
+
+def test_resume_fails_for_missing_active_evaluator_with_multiple_bundles(
+    tmp_path: Path,
+) -> None:
+    """Bootstrap should fail loudly when multi-bundle state has no active evaluator."""
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        max_growth_steps_per_cycle=5,
+        evaluators_config=_multi_evaluator_config(),
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    runner = FakeMorpionSearchRunner(tree_sizes=(15,), target_values=(1.25,))
+
+    with pytest.raises(MissingActiveMorpionEvaluatorError):
+        run_one_bootstrap_cycle(
+            args=args,
+            paths=paths,
+            runner=runner,
+            run_state=MorpionBootstrapRunState(
+                generation=2,
+                cycle_index=11,
+                latest_tree_snapshot_path="tree_exports/generation_000002.json",
+                latest_rows_path="rows/generation_000002.json",
+                latest_model_bundle_paths={
+                    "linear": "models/generation_000002/linear",
+                    "mlp": "models/generation_000002/mlp",
+                },
+                active_evaluator_name=None,
+                tree_size_at_last_save=10,
+                last_save_unix_s=100.0,
+            ),
+            now_unix_s=110.0,
+        )
+
+
+def test_resume_uses_single_saved_bundle_without_active_evaluator(tmp_path: Path) -> None:
+    """Single-bundle persisted state should still resume without an active name."""
+    args = MorpionBootstrapArgs(work_dir=tmp_path, max_growth_steps_per_cycle=5)
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    runner = FakeMorpionSearchRunner(tree_sizes=(15,), target_values=(1.25,))
+
+    next_state = run_one_bootstrap_cycle(
+        args=args,
+        paths=paths,
+        runner=runner,
+        run_state=MorpionBootstrapRunState(
+            generation=2,
+            cycle_index=11,
+            latest_tree_snapshot_path="tree_exports/generation_000002.json",
+            latest_rows_path="rows/generation_000002.json",
+            latest_model_bundle_paths={"linear": "models/generation_000002/linear"},
+            active_evaluator_name=None,
+            tree_size_at_last_save=10,
+            last_save_unix_s=100.0,
+        ),
+        now_unix_s=110.0,
+    )
+
+    assert runner.load_calls[0] == (
+        str(paths.resolve_work_dir_path("tree_exports/generation_000002.json")),
+        str(paths.resolve_work_dir_path("models/generation_000002/linear")),
+    )
+    assert next_state.active_evaluator_name is None
 
 
 def test_saved_rows_come_from_saved_tree_export_path(tmp_path: Path) -> None:
