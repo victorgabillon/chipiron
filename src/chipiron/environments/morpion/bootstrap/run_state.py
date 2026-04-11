@@ -8,6 +8,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast
 
+from .record_status import MorpionBootstrapRecordStatus
+
 
 def _empty_metadata() -> dict[str, Any]:
     """Return a typed empty metadata mapping."""
@@ -26,6 +28,7 @@ class MorpionBootstrapRunState:
     active_evaluator_name: str | None
     tree_size_at_last_save: int
     last_save_unix_s: float | None
+    latest_record_status: MorpionBootstrapRecordStatus | None = None
     metadata: dict[str, Any] = field(default_factory=_empty_metadata)
 
 
@@ -91,6 +94,24 @@ class MalformedMorpionBootstrapRunStateError(TypeError):
             f"null, got {type(value).__name__}."
         )
 
+    @classmethod
+    def invalid_bool_field(
+        cls,
+        field_name: str,
+    ) -> MalformedMorpionBootstrapRunStateError:
+        """Return the invalid bool field error."""
+        return cls(f"Morpion bootstrap run state field `{field_name}` must be a bool.")
+
+    @classmethod
+    def invalid_record_status_field(
+        cls,
+    ) -> MalformedMorpionBootstrapRunStateError:
+        """Return the invalid record-status field error."""
+        return cls(
+            "Morpion bootstrap run state field `latest_record_status` must be a "
+            "mapping with string keys or null."
+        )
+
 
 def initialize_bootstrap_run_state() -> MorpionBootstrapRunState:
     """Return the initial empty run state for a fresh bootstrap run."""
@@ -103,6 +124,7 @@ def initialize_bootstrap_run_state() -> MorpionBootstrapRunState:
         active_evaluator_name=None,
         tree_size_at_last_save=0,
         last_save_unix_s=None,
+        latest_record_status=None,
     )
 
 
@@ -140,6 +162,9 @@ def _run_state_to_dict(state: MorpionBootstrapRunState) -> dict[str, object]:
         "active_evaluator_name": state.active_evaluator_name,
         "tree_size_at_last_save": state.tree_size_at_last_save,
         "last_save_unix_s": state.last_save_unix_s,
+        "latest_record_status": None
+        if state.latest_record_status is None
+        else _record_status_to_dict(state.latest_record_status),
         "metadata": dict(state.metadata),
     }
 
@@ -158,19 +183,36 @@ def _run_state_from_dict(data: object) -> MorpionBootstrapRunState:
         payload.get("latest_model_bundle_path"),
         field_name="latest_model_bundle_path",
     )
-    if latest_model_bundle_paths is None and legacy_latest_model_bundle_path is not None:
+    if (
+        latest_model_bundle_paths is None
+        and legacy_latest_model_bundle_path is not None
+    ):
         latest_model_bundle_paths = {"default": legacy_latest_model_bundle_path}
     active_evaluator_name = _optional_str(
         payload.get("active_evaluator_name"),
         field_name="active_evaluator_name",
     )
-    if active_evaluator_name is None and latest_model_bundle_paths is not None:
-        if len(latest_model_bundle_paths) == 1:
-            active_evaluator_name = next(iter(latest_model_bundle_paths))
+    if (
+        active_evaluator_name is None
+        and latest_model_bundle_paths is not None
+        and len(latest_model_bundle_paths) == 1
+    ):
+        active_evaluator_name = next(iter(latest_model_bundle_paths))
+    latest_record_status_data = payload.get("latest_record_status")
+    if latest_record_status_data is None:
+        latest_record_status = None
+    else:
+        if not _is_str_key_mapping(latest_record_status_data):
+            raise MalformedMorpionBootstrapRunStateError.invalid_record_status_field()
+        latest_record_status = _record_status_from_dict(
+            cast("Mapping[str, object]", latest_record_status_data)
+        )
 
     return MorpionBootstrapRunState(
         generation=_coerce_int(payload.get("generation", 0), field_name="generation"),
-        cycle_index=_coerce_int(payload.get("cycle_index", -1), field_name="cycle_index"),
+        cycle_index=_coerce_int(
+            payload.get("cycle_index", -1), field_name="cycle_index"
+        ),
         latest_tree_snapshot_path=_optional_str(
             payload.get("latest_tree_snapshot_path"),
             field_name="latest_tree_snapshot_path",
@@ -189,6 +231,7 @@ def _run_state_from_dict(data: object) -> MorpionBootstrapRunState:
             payload.get("last_save_unix_s"),
             field_name="last_save_unix_s",
         ),
+        latest_record_status=latest_record_status,
         metadata=_metadata_dict(payload.get("metadata")),
     )
 
@@ -239,6 +282,57 @@ def _metadata_dict(value: object) -> dict[str, Any]:
     return dict(cast("Mapping[str, Any]", value))
 
 
+def _record_status_to_dict(
+    status: MorpionBootstrapRecordStatus,
+) -> dict[str, object]:
+    """Serialize one Morpion record status into JSON-friendly data."""
+    return {
+        "variant": status.variant,
+        "initial_pattern": status.initial_pattern,
+        "initial_point_count": status.initial_point_count,
+        "current_best_moves_since_start": status.current_best_moves_since_start,
+        "current_best_total_points": status.current_best_total_points,
+        "current_best_is_exact": status.current_best_is_exact,
+        "current_best_source": status.current_best_source,
+    }
+
+
+def _record_status_from_dict(
+    data: Mapping[str, object],
+) -> MorpionBootstrapRecordStatus:
+    """Deserialize one Morpion record status from JSON-friendly data."""
+    return MorpionBootstrapRecordStatus(
+        variant=_optional_str(
+            data.get("variant"),
+            field_name="latest_record_status.variant",
+        ),
+        initial_pattern=_optional_str(
+            data.get("initial_pattern"),
+            field_name="latest_record_status.initial_pattern",
+        ),
+        initial_point_count=_optional_int(
+            data.get("initial_point_count"),
+            field_name="latest_record_status.initial_point_count",
+        ),
+        current_best_moves_since_start=_optional_int(
+            data.get("current_best_moves_since_start"),
+            field_name="latest_record_status.current_best_moves_since_start",
+        ),
+        current_best_total_points=_optional_int(
+            data.get("current_best_total_points"),
+            field_name="latest_record_status.current_best_total_points",
+        ),
+        current_best_is_exact=_optional_bool(
+            data.get("current_best_is_exact"),
+            field_name="latest_record_status.current_best_is_exact",
+        ),
+        current_best_source=_optional_str(
+            data.get("current_best_source"),
+            field_name="latest_record_status.current_best_source",
+        ),
+    )
+
+
 def _coerce_int(value: object, *, field_name: str) -> int:
     """Return one integer-like payload value or raise."""
     if isinstance(value, bool):
@@ -267,6 +361,22 @@ def _coerce_int(value: object, *, field_name: str) -> int:
         field_name,
         value,
     )
+
+
+def _optional_int(value: object, *, field_name: str) -> int | None:
+    """Return one optional integer-like payload value or raise."""
+    if value is None:
+        return None
+    return _coerce_int(value, field_name=field_name)
+
+
+def _optional_bool(value: object, *, field_name: str) -> bool | None:
+    """Return one optional bool payload value or raise."""
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    raise MalformedMorpionBootstrapRunStateError.invalid_bool_field(field_name)
 
 
 def _optional_float(value: object, *, field_name: str) -> float | None:

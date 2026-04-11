@@ -55,6 +55,9 @@ from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
 import chipiron.environments.morpion.bootstrap.bootstrap_loop as bootstrap_loop_module
 from chipiron.environments.morpion.bootstrap import (
+    MORPION_BOOTSTRAP_INITIAL_PATTERN,
+    MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
+    MORPION_BOOTSTRAP_VARIANT,
     MorpionBootstrapArgs,
     MorpionBootstrapArtifacts,
     MorpionBootstrapDatasetStatus,
@@ -68,10 +71,11 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapTrainingStatus,
     MorpionBootstrapTreeStatus,
     MorpionEvaluatorMetrics,
-    MorpionEvaluatorSpec,
     MorpionEvaluatorsConfig,
+    MorpionEvaluatorSpec,
     bootstrap_event_from_dict,
     bootstrap_event_to_dict,
+    default_morpion_record_status,
     latest_status_from_dict,
     latest_status_to_dict,
     load_bootstrap_history,
@@ -205,7 +209,9 @@ def _patch_reported_losses(
         metrics["final_loss"] = loss_by_evaluator_name[evaluator_name]
         return _model, metrics
 
-    monkeypatch.setattr(bootstrap_loop_module, "train_morpion_regressor", _patched_train)
+    monkeypatch.setattr(
+        bootstrap_loop_module, "train_morpion_regressor", _patched_train
+    )
 
 
 def _make_event(generation: int = 3, cycle_index: int = 5) -> MorpionBootstrapEvent:
@@ -223,7 +229,15 @@ def _make_event(generation: int = 3, cycle_index: int = 5) -> MorpionBootstrapEv
         ),
         dataset=MorpionBootstrapDatasetStatus(num_rows=12, num_samples=12),
         training=MorpionBootstrapTrainingStatus(triggered=True),
-        record=MorpionBootstrapRecordStatus(current=None),
+        record=MorpionBootstrapRecordStatus(
+            variant=MORPION_BOOTSTRAP_VARIANT,
+            initial_pattern=MORPION_BOOTSTRAP_INITIAL_PATTERN,
+            initial_point_count=MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
+            current_best_moves_since_start=17,
+            current_best_total_points=53,
+            current_best_is_exact=True,
+            current_best_source="snapshot_exact_node",
+        ),
         artifacts=MorpionBootstrapArtifacts(
             tree_snapshot_path="tree_exports/generation_000003.json",
             rows_path="rows/generation_000003.json",
@@ -370,6 +384,21 @@ def test_missing_latest_status_loads_as_empty_status(tmp_path: Path) -> None:
     )
 
 
+def test_default_record_status_uses_current_experiment_identity() -> None:
+    """The default record status should expose the current Morpion experiment."""
+    status = default_morpion_record_status()
+
+    assert status == MorpionBootstrapRecordStatus(
+        variant="5T",
+        initial_pattern="greek_cross",
+        initial_point_count=36,
+        current_best_moves_since_start=None,
+        current_best_total_points=None,
+        current_best_is_exact=None,
+        current_best_source=None,
+    )
+
+
 def test_bootstrap_loop_writes_history_on_no_save_cycle(tmp_path: Path) -> None:
     """Even a no-save cycle should emit one structured history event."""
     args = MorpionBootstrapArgs(
@@ -389,6 +418,15 @@ def test_bootstrap_loop_writes_history_on_no_save_cycle(tmp_path: Path) -> None:
         active_evaluator_name="linear",
         tree_size_at_last_save=10,
         last_save_unix_s=100.0,
+        latest_record_status=MorpionBootstrapRecordStatus(
+            variant="5T",
+            initial_pattern="greek_cross",
+            initial_point_count=36,
+            current_best_moves_since_start=12,
+            current_best_total_points=48,
+            current_best_is_exact=True,
+            current_best_source="snapshot_exact_node",
+        ),
     )
 
     next_state = run_one_bootstrap_cycle(
@@ -404,6 +442,7 @@ def test_bootstrap_loop_writes_history_on_no_save_cycle(tmp_path: Path) -> None:
 
     assert next_state.generation == run_state.generation
     assert next_state.cycle_index == 9
+    assert next_state.latest_record_status == run_state.latest_record_status
     assert len(history) == 1
     event = history[0]
     assert event.event_id == "cycle_000009"
@@ -417,6 +456,15 @@ def test_bootstrap_loop_writes_history_on_no_save_cycle(tmp_path: Path) -> None:
     assert event.dataset.num_rows is None
     assert event.dataset.num_samples is None
     assert not event.training.triggered
+    assert event.record == MorpionBootstrapRecordStatus(
+        variant="5T",
+        initial_pattern="greek_cross",
+        initial_point_count=36,
+        current_best_moves_since_start=12,
+        current_best_total_points=48,
+        current_best_is_exact=True,
+        current_best_source="carried_from_run_state",
+    )
     assert event.artifacts.tree_snapshot_path is None
     assert event.artifacts.rows_path is None
     assert event.artifacts.model_bundle_paths == {}
@@ -505,6 +553,16 @@ def test_bootstrap_loop_writes_history_on_save_train_cycle(tmp_path: Path) -> No
         "default": "models/generation_000001/default"
     }
     assert next_state.active_evaluator_name == "default"
+    assert next_state.latest_record_status == event.record
+    assert event.record == MorpionBootstrapRecordStatus(
+        variant="5T",
+        initial_pattern="greek_cross",
+        initial_point_count=36,
+        current_best_moves_since_start=1,
+        current_best_total_points=37,
+        current_best_is_exact=True,
+        current_best_source="snapshot_exact_node",
+    )
     assert latest_status.latest_generation == 1
     assert latest_status.latest_cycle_index == 0
     assert latest_status.latest_event == event
@@ -561,4 +619,7 @@ def test_bootstrap_loop_records_selected_winner_on_multi_evaluator_save_cycle(
         "selected_evaluator_name": "mlp",
         "selection_policy": "lowest_final_loss",
     }
+    assert event.record.variant == event.metadata["variant"]
+    assert event.record.initial_pattern == event.metadata["initial_pattern"]
+    assert event.record.initial_point_count == event.metadata["initial_point_count"]
     assert next_state.active_evaluator_name == "mlp"

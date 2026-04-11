@@ -8,11 +8,12 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Protocol, cast
+from typing import Protocol
 
+from anemone.training_export import load_training_tree_snapshot
 from chipiron.environments.morpion.learning import (
-    load_training_tree_snapshot_as_morpion_supervised_rows,
     save_morpion_supervised_rows,
+    training_tree_snapshot_to_morpion_supervised_rows,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.train import (
     MorpionTrainingArgs,
@@ -25,10 +26,15 @@ from .history import (
     MorpionBootstrapEvent,
     MorpionBootstrapHistoryPaths,
     MorpionBootstrapHistoryRecorder,
-    MorpionBootstrapRecordStatus,
     MorpionBootstrapTrainingStatus,
     MorpionBootstrapTreeStatus,
     MorpionEvaluatorMetrics,
+)
+from .record_status import (
+    MorpionBootstrapRecordStatus,
+    default_morpion_record_status,
+    morpion_bootstrap_experiment_metadata,
+    resolve_record_status_for_cycle,
 )
 from .run_state import (
     MorpionBootstrapRunState,
@@ -38,12 +44,30 @@ from .run_state import (
 )
 
 
+def _empty_evaluator_specs() -> dict[str, MorpionEvaluatorSpec]:
+    """Return a typed empty evaluator-spec mapping."""
+    return {}
+
+
 class EmptyMorpionEvaluatorsConfigError(ValueError):
     """Raised when the bootstrap loop is configured with zero evaluators."""
 
     def __init__(self) -> None:
         """Initialize the empty-evaluators-config error."""
-        super().__init__("Morpion bootstrap evaluators_config must contain at least one evaluator.")
+        super().__init__(
+            "Morpion bootstrap evaluators_config must contain at least one evaluator."
+        )
+
+
+class InvalidBootstrapArtifactPathError(ValueError):
+    """Raised when a persisted bootstrap artifact path escapes the work directory."""
+
+    def __init__(self, artifact_path: Path, work_dir: Path) -> None:
+        """Initialize the invalid-artifact-path error."""
+        super().__init__(
+            f"Bootstrap artifact path {artifact_path} must be inside work_dir "
+            f"{work_dir} to be persisted relatively."
+        )
 
 
 class InconsistentMorpionEvaluatorSpecNameError(ValueError):
@@ -106,13 +130,15 @@ class MorpionEvaluatorSpec:
 class MorpionEvaluatorsConfig:
     """Deterministic collection of evaluator specs for one bootstrap run."""
 
-    evaluators: dict[str, MorpionEvaluatorSpec] = field(default_factory=dict)
+    evaluators: dict[str, MorpionEvaluatorSpec] = field(
+        default_factory=_empty_evaluator_specs
+    )
 
     def __post_init__(self) -> None:
         """Copy and validate the evaluator mapping eagerly."""
-        copied = dict(self.evaluators)
+        copied: dict[str, MorpionEvaluatorSpec] = dict(self.evaluators)
         if not copied:
-            raise EmptyMorpionEvaluatorsConfigError()
+            raise EmptyMorpionEvaluatorsConfigError
         for key, spec in copied.items():
             if key != spec.name:
                 raise InconsistentMorpionEvaluatorSpecNameError(key, spec.name)
@@ -227,10 +253,7 @@ class MorpionBootstrapPaths:
         try:
             return raw_path.relative_to(self.work_dir).as_posix()
         except ValueError as exc:
-            raise ValueError(
-                f"Bootstrap artifact path {raw_path} must be inside work_dir "
-                f"{self.work_dir} to be persisted relatively."
-            ) from exc
+            raise InvalidBootstrapArtifactPathError(raw_path, self.work_dir) from exc
 
     def resolve_work_dir_path(self, path: str | Path | None) -> Path | None:
         """Resolve one possibly-relative persisted path against ``work_dir``."""
@@ -251,18 +274,22 @@ class MorpionSearchRunner(Protocol):
         model_bundle_path: str | Path | None,
     ) -> None:
         """Load existing search state or initialize a fresh one."""
+        ...
 
     def grow(self, max_growth_steps: int) -> None:
         """Grow the underlying search state by a bounded number of steps."""
+        ...
 
     def export_training_tree_snapshot(
         self,
         output_path: str | Path,
     ) -> None:
         """Persist a training-grade tree snapshot to ``output_path``."""
+        ...
 
     def current_tree_size(self) -> int:
         """Return the current size of the search tree."""
+        ...
 
 
 def build_bootstrap_event(
@@ -270,7 +297,7 @@ def build_bootstrap_event(
     cycle_index: int,
     generation: int,
     timestamp_utc: str,
-    tree_num_nodes: int,
+    tree_status: MorpionBootstrapTreeStatus,
     tree_snapshot_path: str | None,
     rows_path: str | None,
     dataset_num_rows: int | None,
@@ -278,7 +305,7 @@ def build_bootstrap_event(
     training_triggered: bool,
     evaluator_metrics: Mapping[str, MorpionEvaluatorMetrics] | None = None,
     model_bundle_paths: Mapping[str, str] | None = None,
-    current_record: float | int | None = None,
+    record_status: MorpionBootstrapRecordStatus | None = None,
     event_id: str | None = None,
     metadata: Mapping[str, object] | None = None,
 ) -> MorpionBootstrapEvent:
@@ -288,13 +315,15 @@ def build_bootstrap_event(
         cycle_index=cycle_index,
         generation=generation,
         timestamp_utc=timestamp_utc,
-        tree=MorpionBootstrapTreeStatus(num_nodes=tree_num_nodes),
+        tree=tree_status,
         dataset=MorpionBootstrapDatasetStatus(
             num_rows=dataset_num_rows,
             num_samples=dataset_num_samples,
         ),
         training=MorpionBootstrapTrainingStatus(triggered=training_triggered),
-        record=MorpionBootstrapRecordStatus(current=current_record),
+        record=default_morpion_record_status()
+        if record_status is None
+        else record_status,
         artifacts=MorpionBootstrapArtifacts(
             tree_snapshot_path=tree_snapshot_path,
             rows_path=rows_path,
@@ -324,8 +353,7 @@ def should_save_progress(
         return True
     if (
         tree_size_at_last_save > 0
-        and current_tree_size
-        >= tree_size_at_last_save * save_after_tree_growth_factor
+        and current_tree_size >= tree_size_at_last_save * save_after_tree_growth_factor
     ):
         return True
     return now_unix_s - last_save_unix_s >= save_after_seconds
@@ -348,17 +376,22 @@ def run_one_bootstrap_cycle(
     paths.ensure_directories()
     resolved_evaluators_config = args.resolved_evaluators_config()
     history_recorder = MorpionBootstrapHistoryRecorder(paths.history_paths())
+    resolved_active_model = _resolve_active_model_bundle(
+        paths=paths,
+        latest_model_bundle_paths=run_state.latest_model_bundle_paths,
+        active_evaluator_name=run_state.active_evaluator_name,
+    )
 
     runner.load_or_create(
         paths.resolve_work_dir_path(run_state.latest_tree_snapshot_path),
-        _resolve_active_model_bundle_path(
-            paths=paths,
-            latest_model_bundle_paths=run_state.latest_model_bundle_paths,
-            active_evaluator_name=run_state.active_evaluator_name,
-        ),
+        resolved_active_model.model_bundle_path,
     )
     runner.grow(args.max_growth_steps_per_cycle)
     current_tree_size = runner.current_tree_size()
+    tree_status = _resolve_tree_status(
+        runner,
+        current_tree_size=current_tree_size,
+    )
     current_time = time.time() if now_unix_s is None else now_unix_s
     cycle_index = run_state.cycle_index + 1
     timestamp_utc = _timestamp_utc_from_unix_s(current_time)
@@ -379,9 +412,10 @@ def run_one_bootstrap_cycle(
             latest_model_bundle_paths=None
             if run_state.latest_model_bundle_paths is None
             else dict(run_state.latest_model_bundle_paths),
-            active_evaluator_name=run_state.active_evaluator_name,
+            active_evaluator_name=resolved_active_model.active_evaluator_name,
             tree_size_at_last_save=run_state.tree_size_at_last_save,
             last_save_unix_s=run_state.last_save_unix_s,
+            latest_record_status=run_state.latest_record_status,
             metadata=dict(run_state.metadata),
         )
         history_recorder.record(
@@ -389,12 +423,16 @@ def run_one_bootstrap_cycle(
                 cycle_index=cycle_index,
                 generation=next_run_state.generation,
                 timestamp_utc=timestamp_utc,
-                tree_num_nodes=current_tree_size,
+                tree_status=tree_status,
                 tree_snapshot_path=None,
                 rows_path=None,
                 dataset_num_rows=None,
                 dataset_num_samples=None,
                 training_triggered=False,
+                record_status=resolve_record_status_for_cycle(
+                    snapshot=None,
+                    previous_record_status=run_state.latest_record_status,
+                ),
                 metadata=_build_event_metadata(
                     active_evaluator_name=next_run_state.active_evaluator_name
                 ),
@@ -407,9 +445,9 @@ def run_one_bootstrap_cycle(
     rows_path = paths.rows_path_for_generation(generation)
 
     runner.export_training_tree_snapshot(tree_snapshot_path)
-
-    rows = load_training_tree_snapshot_as_morpion_supervised_rows(
-        tree_snapshot_path,
+    snapshot = load_training_tree_snapshot(tree_snapshot_path)
+    rows = training_tree_snapshot_to_morpion_supervised_rows(
+        snapshot,
         require_exact_or_terminal=args.require_exact_or_terminal,
         min_depth=args.min_depth,
         min_visit_count=args.min_visit_count,
@@ -417,11 +455,17 @@ def run_one_bootstrap_cycle(
         metadata={"bootstrap_generation": generation},
     )
     save_morpion_supervised_rows(rows, rows_path)
+    record_status = resolve_record_status_for_cycle(
+        snapshot=snapshot,
+        previous_record_status=run_state.latest_record_status,
+    )
 
     evaluator_metrics: dict[str, MorpionEvaluatorMetrics] = {}
     model_bundle_paths: dict[str, str] = {}
     for evaluator_name, spec in resolved_evaluators_config.evaluators.items():
-        model_bundle_path = paths.model_bundle_path_for_generation(generation, evaluator_name)
+        model_bundle_path = paths.model_bundle_path_for_generation(
+            generation, evaluator_name
+        )
         _model, metrics = train_morpion_regressor(
             MorpionTrainingArgs(
                 dataset_file=rows_path,
@@ -439,7 +483,9 @@ def run_one_bootstrap_cycle(
             num_epochs=int(metrics["num_epochs"]),
             num_samples=int(metrics["num_samples"]),
         )
-        model_bundle_paths[evaluator_name] = paths.relative_to_work_dir(model_bundle_path)
+        model_bundle_paths[evaluator_name] = paths.relative_to_work_dir(
+            model_bundle_path
+        )
     selected_evaluator_name = select_active_evaluator_name(evaluator_metrics)
 
     relative_tree_snapshot_path = paths.relative_to_work_dir(tree_snapshot_path)
@@ -453,6 +499,7 @@ def run_one_bootstrap_cycle(
         active_evaluator_name=selected_evaluator_name,
         tree_size_at_last_save=current_tree_size,
         last_save_unix_s=current_time,
+        latest_record_status=record_status,
         metadata=dict(run_state.metadata),
     )
     history_recorder.record(
@@ -460,7 +507,7 @@ def run_one_bootstrap_cycle(
             cycle_index=cycle_index,
             generation=next_run_state.generation,
             timestamp_utc=timestamp_utc,
-            tree_num_nodes=current_tree_size,
+            tree_status=tree_status,
             tree_snapshot_path=relative_tree_snapshot_path,
             rows_path=relative_rows_path,
             dataset_num_rows=len(rows.rows),
@@ -468,6 +515,7 @@ def run_one_bootstrap_cycle(
             training_triggered=True,
             evaluator_metrics=evaluator_metrics,
             model_bundle_paths=model_bundle_paths,
+            record_status=record_status,
             metadata=_build_event_metadata(
                 active_evaluator_name=selected_evaluator_name,
                 selected_evaluator_name=selected_evaluator_name,
@@ -513,23 +561,43 @@ def _timestamp_utc_from_unix_s(timestamp_unix_s: float) -> str:
     return timestamp.isoformat(timespec=timespec).replace("+00:00", "Z")
 
 
-def _resolve_active_model_bundle_path(
+@dataclass(frozen=True, slots=True)
+class ResolvedActiveMorpionModelBundle:
+    """Resolved active evaluator identity and bundle path for one cycle."""
+
+    active_evaluator_name: str | None
+    model_bundle_path: Path | None
+
+
+def _resolve_active_model_bundle(
     *,
     paths: MorpionBootstrapPaths,
     latest_model_bundle_paths: Mapping[str, str] | None,
     active_evaluator_name: str | None,
-) -> Path | None:
-    """Resolve the current active evaluator bundle path for runner bootstrap."""
+) -> ResolvedActiveMorpionModelBundle:
+    """Resolve the active evaluator identity and bundle path for runner bootstrap."""
     if not latest_model_bundle_paths:
-        return None
+        return ResolvedActiveMorpionModelBundle(
+            active_evaluator_name=None,
+            model_bundle_path=None,
+        )
     if active_evaluator_name is not None:
         selected_path = latest_model_bundle_paths.get(active_evaluator_name)
         if selected_path is None:
             raise UnknownActiveMorpionEvaluatorError(active_evaluator_name)
-        return paths.resolve_work_dir_path(selected_path)
+        return ResolvedActiveMorpionModelBundle(
+            active_evaluator_name=active_evaluator_name,
+            model_bundle_path=paths.resolve_work_dir_path(selected_path),
+        )
     if len(latest_model_bundle_paths) == 1:
-        return paths.resolve_work_dir_path(next(iter(latest_model_bundle_paths.values())))
-    raise MissingActiveMorpionEvaluatorError()
+        inferred_active_evaluator_name, selected_path = next(
+            iter(latest_model_bundle_paths.items())
+        )
+        return ResolvedActiveMorpionModelBundle(
+            active_evaluator_name=inferred_active_evaluator_name,
+            model_bundle_path=paths.resolve_work_dir_path(selected_path),
+        )
+    raise MissingActiveMorpionEvaluatorError
 
 
 def select_active_evaluator_name(
@@ -542,10 +610,10 @@ def select_active_evaluator_name(
         if metrics.final_loss is not None and math.isfinite(metrics.final_loss)
     }
     if not selectable_losses:
-        raise NoSelectableMorpionEvaluatorError()
+        raise NoSelectableMorpionEvaluatorError
     return min(
         selectable_losses,
-        key=lambda evaluator_name: cast("float", selectable_losses[evaluator_name]),
+        key=lambda evaluator_name: selectable_losses[evaluator_name],
     )
 
 
@@ -555,12 +623,7 @@ def _build_event_metadata(
     selected_evaluator_name: str | None = None,
 ) -> dict[str, object]:
     """Build history metadata describing the active and selected evaluators."""
-    metadata: dict[str, object] = {
-        "game": "morpion",
-        "variant": "5T",
-        "initial_pattern": "greek_cross",
-        "initial_point_count": 36,
-    }
+    metadata = morpion_bootstrap_experiment_metadata()
     if active_evaluator_name is not None:
         metadata["active_evaluator_name"] = active_evaluator_name
     if selected_evaluator_name is not None:
@@ -569,16 +632,70 @@ def _build_event_metadata(
     return metadata
 
 
+def _resolve_tree_status(
+    runner: MorpionSearchRunner,
+    *,
+    current_tree_size: int,
+) -> MorpionBootstrapTreeStatus:
+    """Return the best available tree monitoring status for the current runner."""
+    current_tree_status = getattr(runner, "current_tree_status", None)
+    if callable(current_tree_status):
+        raw_status = current_tree_status()
+        if isinstance(raw_status, MorpionBootstrapTreeStatus):
+            return MorpionBootstrapTreeStatus(
+                num_nodes=current_tree_size,
+                num_expanded_nodes=raw_status.num_expanded_nodes,
+                num_simulations=raw_status.num_simulations,
+                root_visit_count=raw_status.root_visit_count,
+            )
+        if isinstance(raw_status, Mapping):
+            return MorpionBootstrapTreeStatus(
+                num_nodes=current_tree_size,
+                num_expanded_nodes=_optional_tree_int(
+                    raw_status.get("num_expanded_nodes"),
+                    field_name="num_expanded_nodes",
+                ),
+                num_simulations=_optional_tree_int(
+                    raw_status.get("num_simulations"),
+                    field_name="num_simulations",
+                ),
+                root_visit_count=_optional_tree_int(
+                    raw_status.get("root_visit_count"),
+                    field_name="root_visit_count",
+                ),
+            )
+        raise TypeError(
+            "Morpion bootstrap runner current_tree_status() must return "
+            "MorpionBootstrapTreeStatus or a mapping."
+        )
+    return MorpionBootstrapTreeStatus(num_nodes=current_tree_size)
+
+
+def _optional_tree_int(value: object, *, field_name: str) -> int | None:
+    """Return one optional integer tree-status field or raise clearly."""
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        raise TypeError(
+            f"Morpion bootstrap tree-status field `{field_name}` must be an int or null."
+        )
+    if isinstance(value, int):
+        return value
+    raise TypeError(
+        f"Morpion bootstrap tree-status field `{field_name}` must be an int or null."
+    )
+
+
 __all__ = [
     "EmptyMorpionEvaluatorsConfigError",
     "InconsistentMorpionEvaluatorSpecNameError",
     "MissingActiveMorpionEvaluatorError",
-    "NoSelectableMorpionEvaluatorError",
     "MorpionBootstrapArgs",
     "MorpionBootstrapPaths",
     "MorpionEvaluatorSpec",
     "MorpionEvaluatorsConfig",
     "MorpionSearchRunner",
+    "NoSelectableMorpionEvaluatorError",
     "UnknownActiveMorpionEvaluatorError",
     "build_bootstrap_event",
     "run_morpion_bootstrap_loop",

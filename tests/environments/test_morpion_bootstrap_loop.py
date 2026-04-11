@@ -58,14 +58,17 @@ from torch.utils.data import DataLoader
 
 import chipiron.environments.morpion.bootstrap.bootstrap_loop as bootstrap_loop_module
 from chipiron.environments.morpion.bootstrap import (
+    MORPION_BOOTSTRAP_INITIAL_PATTERN,
+    MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
+    MORPION_BOOTSTRAP_VARIANT,
     EmptyMorpionEvaluatorsConfigError,
     MalformedMorpionBootstrapRunStateError,
     MissingActiveMorpionEvaluatorError,
     MorpionBootstrapArgs,
     MorpionBootstrapPaths,
     MorpionBootstrapRunState,
-    MorpionEvaluatorSpec,
     MorpionEvaluatorsConfig,
+    MorpionEvaluatorSpec,
     NoSelectableMorpionEvaluatorError,
     UnknownActiveMorpionEvaluatorError,
     initialize_bootstrap_run_state,
@@ -214,7 +217,9 @@ def _patch_reported_losses(
         metrics["final_loss"] = loss_by_evaluator_name[evaluator_name]
         return _model, metrics
 
-    monkeypatch.setattr(bootstrap_loop_module, "train_morpion_regressor", _patched_train)
+    monkeypatch.setattr(
+        bootstrap_loop_module, "train_morpion_regressor", _patched_train
+    )
 
 
 def test_should_save_progress_helper() -> None:
@@ -267,6 +272,15 @@ def test_run_state_round_trip(tmp_path: Path) -> None:
         active_evaluator_name="mlp",
         tree_size_at_last_save=42,
         last_save_unix_s=1234.5,
+        latest_record_status=bootstrap_loop_module.MorpionBootstrapRecordStatus(
+            variant="5T",
+            initial_pattern="greek_cross",
+            initial_point_count=36,
+            current_best_moves_since_start=19,
+            current_best_total_points=55,
+            current_best_is_exact=False,
+            current_best_source="snapshot_nonterminal_node",
+        ),
         metadata={"note": "checkpoint"},
     )
     path = tmp_path / "run_state.json"
@@ -393,6 +407,15 @@ def test_run_one_cycle_without_save_does_not_train(tmp_path: Path) -> None:
         active_evaluator_name="linear",
         tree_size_at_last_save=10,
         last_save_unix_s=100.0,
+        latest_record_status=bootstrap_loop_module.MorpionBootstrapRecordStatus(
+            variant="5T",
+            initial_pattern="greek_cross",
+            initial_point_count=36,
+            current_best_moves_since_start=12,
+            current_best_total_points=48,
+            current_best_is_exact=True,
+            current_best_source="snapshot_exact_node",
+        ),
     )
 
     next_state = run_one_bootstrap_cycle(
@@ -411,8 +434,20 @@ def test_run_one_cycle_without_save_does_not_train(tmp_path: Path) -> None:
         "linear": "models/generation_000002/linear"
     }
     assert next_state.active_evaluator_name == "linear"
+    assert next_state.latest_record_status == bootstrap_loop_module.MorpionBootstrapRecordStatus(
+        variant="5T",
+        initial_pattern="greek_cross",
+        initial_point_count=36,
+        current_best_moves_since_start=12,
+        current_best_total_points=48,
+        current_best_is_exact=True,
+        current_best_source="snapshot_exact_node",
+    )
     assert runner.export_calls == []
-    assert not paths.tree_snapshot_dir.exists() or list(paths.tree_snapshot_dir.iterdir()) == []
+    assert (
+        not paths.tree_snapshot_dir.exists()
+        or list(paths.tree_snapshot_dir.iterdir()) == []
+    )
     assert not paths.rows_dir.exists() or list(paths.rows_dir.iterdir()) == []
     assert not paths.model_dir.exists() or list(paths.model_dir.iterdir()) == []
 
@@ -448,6 +483,15 @@ def test_run_one_cycle_with_save_updates_artifacts(tmp_path: Path) -> None:
         "default": "models/generation_000001/default"
     }
     assert next_state.active_evaluator_name == "default"
+    assert next_state.latest_record_status == bootstrap_loop_module.MorpionBootstrapRecordStatus(
+        variant="5T",
+        initial_pattern="greek_cross",
+        initial_point_count=36,
+        current_best_moves_since_start=1,
+        current_best_total_points=37,
+        current_best_is_exact=True,
+        current_best_source="snapshot_exact_node",
+    )
     assert paths.resolve_work_dir_path(next_state.latest_tree_snapshot_path).is_file()
     assert paths.resolve_work_dir_path(next_state.latest_rows_path).is_file()
     assert paths.resolve_work_dir_path(
@@ -461,6 +505,7 @@ def test_run_one_cycle_with_save_updates_artifacts(tmp_path: Path) -> None:
     assert event.metadata["active_evaluator_name"] == "default"
     assert event.metadata["selected_evaluator_name"] == "default"
     assert event.metadata["selection_policy"] == "lowest_final_loss"
+    assert event.record == next_state.latest_record_status
 
 
 def test_run_one_cycle_with_multiple_evaluators_selects_lowest_loss(
@@ -495,6 +540,15 @@ def test_run_one_cycle_with_multiple_evaluators_selects_lowest_loss(
         "mlp": "models/generation_000001/mlp",
     }
     assert next_state.active_evaluator_name == "mlp"
+    assert next_state.latest_record_status == bootstrap_loop_module.MorpionBootstrapRecordStatus(
+        variant="5T",
+        initial_pattern="greek_cross",
+        initial_point_count=36,
+        current_best_moves_since_start=1,
+        current_best_total_points=37,
+        current_best_is_exact=True,
+        current_best_source="snapshot_exact_node",
+    )
     assert paths.resolve_work_dir_path("models/generation_000001/linear").is_dir()
     assert paths.resolve_work_dir_path("models/generation_000001/mlp").is_dir()
     assert len(history) == 1
@@ -511,6 +565,9 @@ def test_run_one_cycle_with_multiple_evaluators_selects_lowest_loss(
     assert event.metadata["active_evaluator_name"] == "mlp"
     assert event.metadata["selected_evaluator_name"] == "mlp"
     assert event.metadata["selection_policy"] == "lowest_final_loss"
+    assert event.record.variant == MORPION_BOOTSTRAP_VARIANT
+    assert event.record.initial_pattern == MORPION_BOOTSTRAP_INITIAL_PATTERN
+    assert event.record.initial_point_count == MORPION_BOOTSTRAP_INITIAL_POINT_COUNT
 
 
 def test_loop_resumes_from_saved_run_state(tmp_path: Path) -> None:
@@ -540,7 +597,11 @@ def test_loop_resumes_from_saved_run_state(tmp_path: Path) -> None:
     assert runner.load_calls[0] == (None, None)
     assert runner.load_calls[1] == (
         str(paths.resolve_work_dir_path(first_state.latest_tree_snapshot_path)),
-        str(paths.resolve_work_dir_path(first_state.latest_model_bundle_paths["default"])),
+        str(
+            paths.resolve_work_dir_path(
+                first_state.latest_model_bundle_paths["default"]
+            )
+        ),
     )
 
 
@@ -634,7 +695,9 @@ def test_resume_fails_for_missing_active_evaluator_with_multiple_bundles(
         )
 
 
-def test_resume_uses_single_saved_bundle_without_active_evaluator(tmp_path: Path) -> None:
+def test_resume_uses_single_saved_bundle_without_active_evaluator(
+    tmp_path: Path,
+) -> None:
     """Single-bundle persisted state should still resume without an active name."""
     args = MorpionBootstrapArgs(work_dir=tmp_path, max_growth_steps_per_cycle=5)
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
@@ -661,7 +724,24 @@ def test_resume_uses_single_saved_bundle_without_active_evaluator(tmp_path: Path
         str(paths.resolve_work_dir_path("tree_exports/generation_000002.json")),
         str(paths.resolve_work_dir_path("models/generation_000002/linear")),
     )
-    assert next_state.active_evaluator_name is None
+    assert next_state.active_evaluator_name == "linear"
+    event = load_bootstrap_history(paths.history_jsonl_path)[0]
+    assert event.metadata == {
+        "game": "morpion",
+        "variant": "5T",
+        "initial_pattern": "greek_cross",
+        "initial_point_count": 36,
+        "active_evaluator_name": "linear",
+    }
+    assert event.record == bootstrap_loop_module.MorpionBootstrapRecordStatus(
+        variant="5T",
+        initial_pattern="greek_cross",
+        initial_point_count=36,
+        current_best_moves_since_start=None,
+        current_best_total_points=None,
+        current_best_is_exact=None,
+        current_best_source=None,
+    )
 
 
 def test_saved_rows_come_from_saved_tree_export_path(tmp_path: Path) -> None:
@@ -741,7 +821,9 @@ def test_multi_evaluator_failure_propagates_without_history_event(
             raise RuntimeError("second evaluator failed")
         return real_train(cast("object", args))
 
-    monkeypatch.setattr(bootstrap_loop_module, "train_morpion_regressor", _failing_train)
+    monkeypatch.setattr(
+        bootstrap_loop_module, "train_morpion_regressor", _failing_train
+    )
 
     with pytest.raises(RuntimeError, match="second evaluator failed"):
         run_one_bootstrap_cycle(

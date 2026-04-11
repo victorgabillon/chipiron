@@ -9,6 +9,14 @@ from pathlib import Path
 from typing import Any, cast
 from uuid import uuid4
 
+from .record_status import (
+    MORPION_BOOTSTRAP_INITIAL_PATTERN,
+    MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
+    MORPION_BOOTSTRAP_VARIANT,
+    MorpionBootstrapRecordStatus,
+    default_morpion_record_status,
+)
+
 
 def _empty_metadata() -> dict[str, Any]:
     """Return a typed empty metadata mapping."""
@@ -61,19 +69,14 @@ class MorpionBootstrapTrainingStatus:
 
 
 @dataclass(frozen=True, slots=True)
-class MorpionBootstrapRecordStatus:
-    """Record-related monitoring fields for one bootstrap cycle."""
-
-    current: float | int | None
-
-
-@dataclass(frozen=True, slots=True)
 class MorpionBootstrapArtifacts:
     """Artifact paths produced by one bootstrap cycle."""
 
     tree_snapshot_path: str | None
     rows_path: str | None
-    model_bundle_paths: dict[str, str] = field(default_factory=_empty_model_bundle_paths)
+    model_bundle_paths: dict[str, str] = field(
+        default_factory=_empty_model_bundle_paths
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -97,7 +100,7 @@ class MorpionBootstrapEvent:
         default_factory=lambda: MorpionBootstrapTrainingStatus(triggered=False)
     )
     record: MorpionBootstrapRecordStatus = field(
-        default_factory=lambda: MorpionBootstrapRecordStatus(current=None)
+        default_factory=default_morpion_record_status
     )
     artifacts: MorpionBootstrapArtifacts = field(
         default_factory=lambda: MorpionBootstrapArtifacts(
@@ -105,7 +108,9 @@ class MorpionBootstrapEvent:
             rows_path=None,
         )
     )
-    evaluators: dict[str, MorpionEvaluatorMetrics] = field(default_factory=_empty_evaluators)
+    evaluators: dict[str, MorpionEvaluatorMetrics] = field(
+        default_factory=_empty_evaluators
+    )
     metadata: dict[str, Any] = field(default_factory=_empty_metadata)
 
 
@@ -135,7 +140,9 @@ class MalformedMorpionBootstrapHistoryError(TypeError):
     @classmethod
     def invalid_event_mapping(cls) -> MalformedMorpionBootstrapHistoryError:
         """Return the invalid-event-mapping error."""
-        return cls("Morpion bootstrap event payload must be a mapping with string keys.")
+        return cls(
+            "Morpion bootstrap event payload must be a mapping with string keys."
+        )
 
     @classmethod
     def invalid_section_mapping(
@@ -178,9 +185,7 @@ class MalformedMorpionBootstrapHistoryError(TypeError):
         field_name: str,
     ) -> MalformedMorpionBootstrapHistoryError:
         """Return the invalid required-string field error."""
-        return cls(
-            f"Morpion bootstrap history field `{field_name}` must be a string."
-        )
+        return cls(f"Morpion bootstrap history field `{field_name}` must be a string.")
 
     @classmethod
     def invalid_bool_field(
@@ -208,6 +213,17 @@ class MalformedMorpionBootstrapHistoryError(TypeError):
         return cls(
             "Morpion bootstrap history field `artifacts.model_bundle_paths` must be a "
             "mapping of strings to strings."
+        )
+
+    @classmethod
+    def invalid_string_mapping_field(
+        cls,
+        field_name: str,
+    ) -> MalformedMorpionBootstrapHistoryError:
+        """Return the invalid string-mapping field error."""
+        return cls(
+            f"Morpion bootstrap history field `{field_name}` must be a mapping of "
+            "strings to strings."
         )
 
     @classmethod
@@ -273,7 +289,7 @@ def bootstrap_event_to_dict(event: MorpionBootstrapEvent) -> dict[str, object]:
             "num_samples": event.dataset.num_samples,
         },
         "training": {"triggered": event.training.triggered},
-        "record": {"current": event.record.current},
+        "record": _record_status_to_dict(event.record),
         "artifacts": {
             "tree_snapshot_path": event.artifacts.tree_snapshot_path,
             "rows_path": event.artifacts.rows_path,
@@ -349,12 +365,7 @@ def bootstrap_event_from_dict(data: dict[str, object]) -> MorpionBootstrapEvent:
                 field_name="training.triggered",
             )
         ),
-        record=MorpionBootstrapRecordStatus(
-            current=_optional_number(
-                record_data.get("current"),
-                field_name="record.current",
-            )
-        ),
+        record=_record_status_from_dict(record_data),
         artifacts=MorpionBootstrapArtifacts(
             tree_snapshot_path=_optional_str(
                 artifacts_data.get("tree_snapshot_path"),
@@ -411,6 +422,81 @@ def evaluator_metrics_from_dict(
     )
 
 
+def _record_status_to_dict(
+    status: MorpionBootstrapRecordStatus,
+) -> dict[str, object]:
+    """Serialize one structured Morpion record status to JSON-friendly data."""
+    return {
+        "variant": status.variant,
+        "initial_pattern": status.initial_pattern,
+        "initial_point_count": status.initial_point_count,
+        "current_best_moves_since_start": status.current_best_moves_since_start,
+        "current_best_total_points": status.current_best_total_points,
+        "current_best_is_exact": status.current_best_is_exact,
+        "current_best_source": status.current_best_source,
+    }
+
+
+def _record_status_from_dict(
+    data: dict[str, object],
+) -> MorpionBootstrapRecordStatus:
+    """Deserialize one structured Morpion record status from JSON-friendly data."""
+    uses_legacy_current = "current" in data and not any(
+        field_name in data
+        for field_name in (
+            "variant",
+            "initial_pattern",
+            "initial_point_count",
+            "current_best_moves_since_start",
+            "current_best_total_points",
+            "current_best_is_exact",
+            "current_best_source",
+        )
+    )
+    if uses_legacy_current:
+        _optional_number(
+            data.get("current"),
+            field_name="record.current",
+        )
+
+    return MorpionBootstrapRecordStatus(
+        variant=_optional_str(
+            data.get("variant", MORPION_BOOTSTRAP_VARIANT),
+            field_name="record.variant",
+        ),
+        initial_pattern=_optional_str(
+            data.get("initial_pattern", MORPION_BOOTSTRAP_INITIAL_PATTERN),
+            field_name="record.initial_pattern",
+        ),
+        initial_point_count=_optional_int(
+            data.get(
+                "initial_point_count",
+                MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
+            ),
+            field_name="record.initial_point_count",
+        ),
+        current_best_moves_since_start=_optional_int(
+            data.get("current_best_moves_since_start"),
+            field_name="record.current_best_moves_since_start",
+        ),
+        current_best_total_points=_optional_int(
+            data.get("current_best_total_points"),
+            field_name="record.current_best_total_points",
+        ),
+        current_best_is_exact=_optional_bool(
+            data.get("current_best_is_exact"),
+            field_name="record.current_best_is_exact",
+        ),
+        current_best_source=_optional_str(
+            data.get(
+                "current_best_source",
+                "legacy_record_current_unmapped" if uses_legacy_current else None,
+            ),
+            field_name="record.current_best_source",
+        ),
+    )
+
+
 def latest_status_to_dict(
     status: MorpionBootstrapLatestStatus,
 ) -> dict[str, object]:
@@ -437,7 +523,9 @@ def latest_status_from_dict(
     if latest_event_data is None:
         latest_event = None
     else:
-        latest_event = bootstrap_event_from_dict(_require_event_mapping(latest_event_data))
+        latest_event = bootstrap_event_from_dict(
+            _require_event_mapping(latest_event_data)
+        )
 
     latest_generation = _optional_int(
         data.get("latest_generation"),
@@ -600,7 +688,9 @@ def _require_section_mapping(
 ) -> dict[str, object]:
     """Return one nested-section mapping or raise."""
     if not _is_str_key_mapping(value):
-        raise MalformedMorpionBootstrapHistoryError.invalid_section_mapping(section_name)
+        raise MalformedMorpionBootstrapHistoryError.invalid_section_mapping(
+            section_name
+        )
     return dict(cast("Mapping[str, object]", value))
 
 
@@ -635,6 +725,13 @@ def _required_bool(value: object, *, field_name: str) -> bool:
     raise MalformedMorpionBootstrapHistoryError.invalid_bool_field(field_name)
 
 
+def _optional_bool(value: object, *, field_name: str) -> bool | None:
+    """Return one optional bool field or raise."""
+    if value is None:
+        return None
+    return _required_bool(value, field_name=field_name)
+
+
 def _metadata_dict(value: object) -> dict[str, Any]:
     """Return one metadata dictionary or raise."""
     if value is None:
@@ -649,16 +746,14 @@ def _string_mapping(value: object, *, field_name: str) -> dict[str, str]:
     if value is None:
         return {}
     if not _is_str_key_mapping(value):
-        raise MalformedMorpionBootstrapHistoryError(
-            f"Morpion bootstrap history field `{field_name}` must be a mapping of "
-            "strings to strings."
+        raise MalformedMorpionBootstrapHistoryError.invalid_string_mapping_field(
+            field_name
         )
 
     raw_mapping = cast("Mapping[str, object]", value)
     if not all(isinstance(item_value, str) for item_value in raw_mapping.values()):
-        raise MalformedMorpionBootstrapHistoryError(
-            f"Morpion bootstrap history field `{field_name}` must be a mapping of "
-            "strings to strings."
+        raise MalformedMorpionBootstrapHistoryError.invalid_string_mapping_field(
+            field_name
         )
 
     return {key: cast("str", item_value) for key, item_value in raw_mapping.items()}
