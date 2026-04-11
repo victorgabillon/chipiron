@@ -16,9 +16,11 @@ from chipiron.environments.morpion.learning import (
     decode_morpion_state_ref_payload,
     load_morpion_supervised_rows,
 )
-from chipiron.environments.morpion.players.evaluators.neural_networks import (
-    MorpionFeatureTensorConverter,
+from chipiron.environments.morpion.players.evaluators.neural_networks.feature_extractor import (
     morpion_feature_names,
+)
+from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_tensor import (
+    MorpionFeatureTensorConverter,
 )
 from chipiron.environments.morpion.types import MorpionDynamics
 
