@@ -26,7 +26,11 @@ class MorpionBootstrapControl:
 
 
 def load_bootstrap_control(path: Path) -> MorpionBootstrapControl:
-    """Load one tolerant bootstrap control file or return the empty control."""
+    """Load one tolerant bootstrap control file or return the empty control.
+
+    Missing, malformed, or wrong-shaped payloads are treated as an empty control so
+    a broken live control file never stops the bootstrap loop.
+    """
     if not path.is_file():
         return MorpionBootstrapControl()
     try:

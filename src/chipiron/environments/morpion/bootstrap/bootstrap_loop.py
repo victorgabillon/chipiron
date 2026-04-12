@@ -142,6 +142,17 @@ class UnknownForcedMorpionEvaluatorError(ValueError):
         )
 
 
+class MissingForcedMorpionEvaluatorBundleError(ValueError):
+    """Raised when a forced evaluator has no saved bundle at restore time."""
+
+    def __init__(self, evaluator_name: str) -> None:
+        """Initialize the missing-forced-bundle error."""
+        super().__init__(
+            "Morpion bootstrap control forces evaluator "
+            f"{evaluator_name!r}, but no saved model bundle path exists for it."
+        )
+
+
 @dataclass(frozen=True, slots=True)
 class MorpionEvaluatorSpec:
     """Training spec for one named Morpion evaluator."""
@@ -669,11 +680,12 @@ def _resolve_active_model_bundle(
         )
     if force_evaluator is not None:
         selected_path = latest_model_bundle_paths.get(force_evaluator)
-        if selected_path is not None:
-            return ResolvedActiveMorpionModelBundle(
-                active_evaluator_name=force_evaluator,
-                model_bundle_path=paths.resolve_work_dir_path(selected_path),
-            )
+        if selected_path is None:
+            raise MissingForcedMorpionEvaluatorBundleError(force_evaluator)
+        return ResolvedActiveMorpionModelBundle(
+            active_evaluator_name=force_evaluator,
+            model_bundle_path=paths.resolve_work_dir_path(selected_path),
+        )
     if active_evaluator_name is not None:
         selected_path = latest_model_bundle_paths.get(active_evaluator_name)
         if selected_path is None:
@@ -875,6 +887,7 @@ def _next_metadata(
 __all__ = [
     "EmptyMorpionEvaluatorsConfigError",
     "InconsistentMorpionEvaluatorSpecNameError",
+    "MissingForcedMorpionEvaluatorBundleError",
     "MissingActiveMorpionEvaluatorError",
     "MorpionBootstrapArgs",
     "MorpionBootstrapPaths",

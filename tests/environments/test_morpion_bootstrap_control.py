@@ -56,9 +56,11 @@ from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 import chipiron.environments.morpion.bootstrap.bootstrap_loop as bootstrap_loop_module
 from chipiron.environments.morpion.bootstrap import (
     BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY,
+    MissingForcedMorpionEvaluatorBundleError,
     MorpionBootstrapArgs,
     MorpionBootstrapControl,
     MorpionBootstrapPaths,
+    MorpionBootstrapRunState,
     MorpionEvaluatorsConfig,
     MorpionEvaluatorSpec,
     UnknownForcedMorpionEvaluatorError,
@@ -66,6 +68,7 @@ from chipiron.environments.morpion.bootstrap import (
     load_bootstrap_control,
     load_bootstrap_history,
     run_morpion_bootstrap_loop,
+    run_one_bootstrap_cycle,
     save_bootstrap_control,
 )
 
@@ -341,3 +344,32 @@ def test_invalid_forced_evaluator_fails_loudly(tmp_path: Path) -> None:
 
     with pytest.raises(UnknownForcedMorpionEvaluatorError):
         run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+
+
+def test_missing_forced_evaluator_bundle_fails_loudly(tmp_path: Path) -> None:
+    """Forced restore should fail when the requested saved bundle is unavailable."""
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        max_growth_steps_per_cycle=5,
+        evaluators_config=_multi_evaluator_config(),
+    )
+    runner = FakeMorpionSearchRunner(tree_sizes=(10,), target_values=(1.25,))
+    run_state = MorpionBootstrapRunState(
+        generation=1,
+        cycle_index=0,
+        latest_tree_snapshot_path=None,
+        latest_rows_path=None,
+        latest_model_bundle_paths={"linear": "models/generation_000001/linear"},
+        active_evaluator_name="linear",
+        tree_size_at_last_save=10,
+        last_save_unix_s=0.0,
+    )
+
+    with pytest.raises(MissingForcedMorpionEvaluatorBundleError):
+        run_one_bootstrap_cycle(
+            args=args,
+            paths=MorpionBootstrapPaths.from_work_dir(tmp_path),
+            runner=runner,
+            run_state=run_state,
+            control=MorpionBootstrapControl(force_evaluator="mlp"),
+        )
