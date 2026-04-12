@@ -193,7 +193,7 @@ def _make_args(work_dir: Path) -> MorpionBootstrapArgs:
         min_depth=2,
         min_visit_count=3,
         max_rows=17,
-        reevaluation_scope="leaves",
+        use_backed_up_value=False,
         batch_size=1,
         num_epochs=1,
         shuffle=False,
@@ -214,13 +214,13 @@ def _make_config() -> MorpionBootstrapConfig:
             save_after_tree_growth_factor=2.0,
             save_after_seconds=60.0,
             max_growth_steps_per_cycle=8,
-            reevaluation_scope="leaves",
         ),
         dataset=MorpionBootstrapDatasetConfig(
             require_exact_or_terminal=False,
             min_depth=2,
             min_visit_count=5,
             max_rows=99,
+            use_backed_up_value=True,
         ),
         evaluators=_multi_evaluator_config(),
         metadata={"owner": "test"},
@@ -245,8 +245,8 @@ def test_bootstrap_config_from_args_contains_expected_fields(tmp_path: Path) -> 
     assert config.experiment.variant == MORPION_BOOTSTRAP_VARIANT
     assert config.experiment.initial_pattern == MORPION_BOOTSTRAP_INITIAL_PATTERN
     assert config.experiment.initial_point_count == MORPION_BOOTSTRAP_INITIAL_POINT_COUNT
-    assert config.runtime.reevaluation_scope == "leaves"
     assert config.dataset.max_rows == 17
+    assert config.dataset.use_backed_up_value is False
     assert set(config.evaluators.evaluators) == {"linear", "mlp"}
 
 
@@ -271,13 +271,13 @@ def test_safe_bootstrap_config_change_is_allowed() -> None:
             save_after_tree_growth_factor=3.0,
             save_after_seconds=5.0,
             max_growth_steps_per_cycle=12,
-            reevaluation_scope="frontier",
         ),
         dataset=MorpionBootstrapDatasetConfig(
             require_exact_or_terminal=True,
             min_depth=4,
             min_visit_count=1,
             max_rows=20,
+            use_backed_up_value=False,
         ),
         evaluators=MorpionEvaluatorsConfig(
             evaluators={
@@ -364,9 +364,14 @@ def test_bootstrap_config_hash_is_stable_and_changes_with_content() -> None:
             save_after_tree_growth_factor=9.0,
             save_after_seconds=config.runtime.save_after_seconds,
             max_growth_steps_per_cycle=config.runtime.max_growth_steps_per_cycle,
-            reevaluation_scope=config.runtime.reevaluation_scope,
         ),
-        dataset=config.dataset,
+        dataset=MorpionBootstrapDatasetConfig(
+            require_exact_or_terminal=config.dataset.require_exact_or_terminal,
+            min_depth=config.dataset.min_depth,
+            min_visit_count=config.dataset.min_visit_count,
+            max_rows=config.dataset.max_rows,
+            use_backed_up_value=not config.dataset.use_backed_up_value,
+        ),
         evaluators=config.evaluators,
         metadata=config.metadata,
     )

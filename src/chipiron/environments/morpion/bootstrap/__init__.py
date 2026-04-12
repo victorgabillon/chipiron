@@ -8,7 +8,6 @@ from .anemone_runner import (
     load_morpion_evaluator_from_model_bundle,
 )
 from .bootstrap_loop import (
-    BOOTSTRAP_CONFIG_HASH_METADATA_KEY,
     EmptyMorpionEvaluatorsConfigError,
     InconsistentMorpionEvaluatorSpecNameError,
     MissingActiveMorpionEvaluatorError,
@@ -26,6 +25,7 @@ from .bootstrap_loop import (
     should_save_progress,
 )
 from .config import (
+    BOOTSTRAP_CONFIG_HASH_METADATA_KEY,
     MalformedMorpionBootstrapConfigError,
     MorpionBootstrapConfig,
     MorpionBootstrapDatasetConfig,

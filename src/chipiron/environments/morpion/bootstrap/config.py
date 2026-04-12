@@ -39,7 +39,6 @@ class MorpionBootstrapRuntimeConfig:
     save_after_tree_growth_factor: float
     save_after_seconds: float
     max_growth_steps_per_cycle: int
-    reevaluation_scope: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,6 +49,7 @@ class MorpionBootstrapDatasetConfig:
     min_depth: int | None
     min_visit_count: int | None
     max_rows: int | None
+    use_backed_up_value: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -148,13 +148,13 @@ def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapCo
             save_after_tree_growth_factor=args.save_after_tree_growth_factor,
             save_after_seconds=args.save_after_seconds,
             max_growth_steps_per_cycle=args.max_growth_steps_per_cycle,
-            reevaluation_scope=args.reevaluation_scope,
         ),
         dataset=MorpionBootstrapDatasetConfig(
             require_exact_or_terminal=args.require_exact_or_terminal,
             min_depth=args.min_depth,
             min_visit_count=args.min_visit_count,
             max_rows=args.max_rows,
+            use_backed_up_value=args.use_backed_up_value,
         ),
         evaluators=args.resolved_evaluators_config(),
     )
@@ -173,13 +173,13 @@ def bootstrap_config_to_dict(config: MorpionBootstrapConfig) -> dict[str, object
             "save_after_tree_growth_factor": config.runtime.save_after_tree_growth_factor,
             "save_after_seconds": config.runtime.save_after_seconds,
             "max_growth_steps_per_cycle": config.runtime.max_growth_steps_per_cycle,
-            "reevaluation_scope": config.runtime.reevaluation_scope,
         },
         "dataset": {
             "require_exact_or_terminal": config.dataset.require_exact_or_terminal,
             "min_depth": config.dataset.min_depth,
             "min_visit_count": config.dataset.min_visit_count,
             "max_rows": config.dataset.max_rows,
+            "use_backed_up_value": config.dataset.use_backed_up_value,
         },
         "evaluators": _evaluators_config_to_dict(config.evaluators),
         "metadata": dict(config.metadata),
@@ -270,10 +270,6 @@ def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
                 runtime.get("max_growth_steps_per_cycle"),
                 field_name="runtime.max_growth_steps_per_cycle",
             ),
-            reevaluation_scope=_required_str(
-                runtime.get("reevaluation_scope"),
-                field_name="runtime.reevaluation_scope",
-            ),
         ),
         dataset=MorpionBootstrapDatasetConfig(
             require_exact_or_terminal=_required_bool(
@@ -291,6 +287,10 @@ def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
             max_rows=_optional_int(
                 dataset.get("max_rows"),
                 field_name="dataset.max_rows",
+            ),
+            use_backed_up_value=_required_bool(
+                dataset.get("use_backed_up_value"),
+                field_name="dataset.use_backed_up_value",
             ),
         ),
         evaluators=evaluators,

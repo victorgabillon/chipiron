@@ -169,7 +169,6 @@ class MorpionBootstrapArgs:
     min_visit_count: int | None = None
     max_rows: int | None = None
     use_backed_up_value: bool = True
-    reevaluation_scope: str = "leaves"
     batch_size: int = 64
     num_epochs: int = 5
     learning_rate: float = 1e-3
@@ -782,7 +781,6 @@ def _with_config_hash_metadata(
 
 
 __all__ = [
-    "BOOTSTRAP_CONFIG_HASH_METADATA_KEY",
     "EmptyMorpionEvaluatorsConfigError",
     "InconsistentMorpionEvaluatorSpecNameError",
     "MissingActiveMorpionEvaluatorError",
