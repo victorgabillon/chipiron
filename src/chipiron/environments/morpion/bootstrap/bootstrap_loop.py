@@ -38,6 +38,13 @@ from .config import (
     save_bootstrap_config,
     validate_bootstrap_config_change,
 )
+from .control import (
+    BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY,
+    MorpionBootstrapControl,
+    apply_control_to_args,
+    bootstrap_control_to_dict,
+    load_bootstrap_control,
+)
 from .record_status import (
     MorpionBootstrapRecordStatus,
     default_morpion_record_status,
@@ -125,6 +132,16 @@ class MissingActiveMorpionEvaluatorError(ValueError):
         )
 
 
+class UnknownForcedMorpionEvaluatorError(ValueError):
+    """Raised when one control file forces an evaluator name that is unavailable."""
+
+    def __init__(self, evaluator_name: str) -> None:
+        """Initialize the forced-evaluator validation error."""
+        super().__init__(
+            f"Morpion bootstrap control refers to unknown evaluator {evaluator_name!r}."
+        )
+
+
 @dataclass(frozen=True, slots=True)
 class MorpionEvaluatorSpec:
     """Training spec for one named Morpion evaluator."""
@@ -199,6 +216,7 @@ class MorpionBootstrapPaths:
 
     work_dir: Path
     bootstrap_config_path: Path
+    control_path: Path
     run_state_path: Path
     history_jsonl_path: Path
     latest_status_path: Path
@@ -217,6 +235,7 @@ class MorpionBootstrapPaths:
         return cls(
             work_dir=root,
             bootstrap_config_path=root / "bootstrap_config.json",
+            control_path=root / "control.json",
             run_state_path=root / "run_state.json",
             history_jsonl_path=root / "history.jsonl",
             latest_status_path=root / "latest_status.json",
@@ -386,6 +405,7 @@ def run_one_bootstrap_cycle(
     paths: MorpionBootstrapPaths,
     runner: MorpionSearchRunner,
     run_state: MorpionBootstrapRunState,
+    control: MorpionBootstrapControl | None = None,
     now_unix_s: float | None = None,
 ) -> MorpionBootstrapRunState:
     """Run one grow/export/train/save bootstrap cycle.
@@ -395,12 +415,18 @@ def run_one_bootstrap_cycle(
     latest saved artifacts.
     """
     paths.ensure_directories()
+    resolved_control = MorpionBootstrapControl() if control is None else control
     resolved_evaluators_config = args.resolved_evaluators_config()
+    _validate_forced_evaluator(
+        force_evaluator=resolved_control.force_evaluator,
+        evaluator_names=resolved_evaluators_config.evaluators,
+    )
     history_recorder = MorpionBootstrapHistoryRecorder(paths.history_paths())
     resolved_active_model = _resolve_active_model_bundle(
         paths=paths,
         latest_model_bundle_paths=run_state.latest_model_bundle_paths,
         active_evaluator_name=run_state.active_evaluator_name,
+        force_evaluator=resolved_control.force_evaluator,
     )
     restore_tree_path = _resolve_runtime_restore_path(paths=paths, run_state=run_state)
 
@@ -438,7 +464,11 @@ def run_one_bootstrap_cycle(
             tree_size_at_last_save=run_state.tree_size_at_last_save,
             last_save_unix_s=run_state.last_save_unix_s,
             latest_record_status=run_state.latest_record_status,
-            metadata=dict(run_state.metadata),
+            metadata=_next_metadata(
+                run_state.metadata,
+                relative_runtime_checkpoint_path=None,
+                control=resolved_control,
+            ),
         )
         history_recorder.record(
             build_bootstrap_event(
@@ -458,6 +488,7 @@ def run_one_bootstrap_cycle(
                 metadata=_build_event_metadata(
                     active_evaluator_name=next_run_state.active_evaluator_name,
                     config_hash=_bootstrap_config_hash_from_metadata(run_state.metadata),
+                    forced_evaluator=resolved_control.force_evaluator,
                 ),
             )
         )
@@ -519,15 +550,18 @@ def run_one_bootstrap_cycle(
         model_bundle_paths[evaluator_name] = paths.relative_to_work_dir(
             model_bundle_path
         )
-    selected_evaluator_name = select_active_evaluator_name(evaluator_metrics)
+    selected_evaluator_name = _select_active_evaluator_name(
+        evaluator_metrics=evaluator_metrics,
+        force_evaluator=resolved_control.force_evaluator,
+    )
 
     relative_tree_snapshot_path = paths.relative_to_work_dir(tree_snapshot_path)
     relative_rows_path = paths.relative_to_work_dir(rows_path)
-    next_metadata = dict(run_state.metadata)
-    if relative_runtime_checkpoint_path is None:
-        next_metadata.pop(RUNTIME_CHECKPOINT_METADATA_KEY, None)
-    else:
-        next_metadata[RUNTIME_CHECKPOINT_METADATA_KEY] = relative_runtime_checkpoint_path
+    next_metadata = _next_metadata(
+        run_state.metadata,
+        relative_runtime_checkpoint_path=relative_runtime_checkpoint_path,
+        control=resolved_control,
+    )
     next_run_state = MorpionBootstrapRunState(
         generation=generation,
         cycle_index=cycle_index,
@@ -558,6 +592,7 @@ def run_one_bootstrap_cycle(
                 active_evaluator_name=selected_evaluator_name,
                 selected_evaluator_name=selected_evaluator_name,
                 config_hash=_bootstrap_config_hash_from_metadata(run_state.metadata),
+                forced_evaluator=resolved_control.force_evaluator,
             ),
         )
     )
@@ -589,11 +624,14 @@ def run_morpion_bootstrap_loop(
 
     cycles_run = 0
     while max_cycles is None or cycles_run < max_cycles:
+        control = load_bootstrap_control(paths.control_path)
+        effective_args = apply_control_to_args(args, control)
         run_state = run_one_bootstrap_cycle(
-            args=args,
+            args=effective_args,
             paths=paths,
             runner=runner,
             run_state=run_state,
+            control=control,
         )
         save_bootstrap_run_state(run_state, paths.run_state_path)
         cycles_run += 1
@@ -621,6 +659,7 @@ def _resolve_active_model_bundle(
     paths: MorpionBootstrapPaths,
     latest_model_bundle_paths: Mapping[str, str] | None,
     active_evaluator_name: str | None,
+    force_evaluator: str | None = None,
 ) -> ResolvedActiveMorpionModelBundle:
     """Resolve the active evaluator identity and bundle path for runner bootstrap."""
     if not latest_model_bundle_paths:
@@ -628,6 +667,13 @@ def _resolve_active_model_bundle(
             active_evaluator_name=None,
             model_bundle_path=None,
         )
+    if force_evaluator is not None:
+        selected_path = latest_model_bundle_paths.get(force_evaluator)
+        if selected_path is not None:
+            return ResolvedActiveMorpionModelBundle(
+                active_evaluator_name=force_evaluator,
+                model_bundle_path=paths.resolve_work_dir_path(selected_path),
+            )
     if active_evaluator_name is not None:
         selected_path = latest_model_bundle_paths.get(active_evaluator_name)
         if selected_path is None:
@@ -669,6 +715,7 @@ def _build_event_metadata(
     active_evaluator_name: str | None,
     selected_evaluator_name: str | None = None,
     config_hash: str | None = None,
+    forced_evaluator: str | None = None,
 ) -> dict[str, object]:
     """Build history metadata describing the active and selected evaluators."""
     metadata = morpion_bootstrap_experiment_metadata()
@@ -679,6 +726,8 @@ def _build_event_metadata(
         metadata["selection_policy"] = "lowest_final_loss"
     if config_hash is not None:
         metadata[BOOTSTRAP_CONFIG_HASH_METADATA_KEY] = config_hash
+    if forced_evaluator is not None:
+        metadata["forced_evaluator"] = forced_evaluator
     return metadata
 
 
@@ -780,6 +829,49 @@ def _with_config_hash_metadata(
     )
 
 
+def _validate_forced_evaluator(
+    *,
+    force_evaluator: str | None,
+    evaluator_names: Mapping[str, MorpionEvaluatorSpec],
+) -> None:
+    """Validate one optional forced evaluator against the configured evaluator set."""
+    if force_evaluator is None:
+        return
+    if force_evaluator not in evaluator_names:
+        raise UnknownForcedMorpionEvaluatorError(force_evaluator)
+
+
+def _select_active_evaluator_name(
+    *,
+    evaluator_metrics: Mapping[str, MorpionEvaluatorMetrics],
+    force_evaluator: str | None,
+) -> str:
+    """Return the forced evaluator when present, else the default auto-selection."""
+    if force_evaluator is not None:
+        if force_evaluator not in evaluator_metrics:
+            raise UnknownForcedMorpionEvaluatorError(force_evaluator)
+        return force_evaluator
+    return select_active_evaluator_name(evaluator_metrics)
+
+
+def _next_metadata(
+    current_metadata: Mapping[str, object],
+    *,
+    relative_runtime_checkpoint_path: str | None,
+    control: MorpionBootstrapControl,
+) -> dict[str, object]:
+    """Return updated run metadata after one cycle boundary."""
+    next_metadata = dict(current_metadata)
+    if relative_runtime_checkpoint_path is None:
+        next_metadata.pop(RUNTIME_CHECKPOINT_METADATA_KEY, None)
+    else:
+        next_metadata[RUNTIME_CHECKPOINT_METADATA_KEY] = relative_runtime_checkpoint_path
+    next_metadata[BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY] = bootstrap_control_to_dict(
+        control
+    )
+    return next_metadata
+
+
 __all__ = [
     "EmptyMorpionEvaluatorsConfigError",
     "InconsistentMorpionEvaluatorSpecNameError",
@@ -790,6 +882,7 @@ __all__ = [
     "MorpionEvaluatorsConfig",
     "MorpionSearchRunner",
     "NoSelectableMorpionEvaluatorError",
+    "UnknownForcedMorpionEvaluatorError",
     "UnknownActiveMorpionEvaluatorError",
     "build_bootstrap_event",
     "run_morpion_bootstrap_loop",

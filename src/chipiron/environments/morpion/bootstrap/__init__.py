@@ -18,6 +18,7 @@ from .bootstrap_loop import (
     MorpionSearchRunner,
     NoSelectableMorpionEvaluatorError,
     UnknownActiveMorpionEvaluatorError,
+    UnknownForcedMorpionEvaluatorError,
     build_bootstrap_event,
     run_morpion_bootstrap_loop,
     run_one_bootstrap_cycle,
@@ -38,6 +39,14 @@ from .config import (
     save_bootstrap_config,
     validate_bootstrap_config_change,
 )
+from .control import (
+    BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY,
+    MorpionBootstrapControl,
+    apply_control_to_args,
+    load_bootstrap_control,
+    save_bootstrap_control,
+)
+from .dashboard_app import run_dashboard_app
 from .dashboard_cli import run_dashboard_cli
 from .dashboard_plot import (
     plot_active_evaluator,
@@ -116,6 +125,8 @@ __all__ = [
     "AnemoneMorpionSearchRunner",
     "AnemoneMorpionSearchRunnerArgs",
     "ActiveEvaluatorTimeSeriesPoint",
+    "apply_control_to_args",
+    "BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY",
     "BOOTSTRAP_CONFIG_HASH_METADATA_KEY",
     "EmptyMorpionEvaluatorsConfigError",
     "EvaluatorSelectionSummary",
@@ -132,6 +143,7 @@ __all__ = [
     "MORPION_BOOTSTRAP_VARIANT",
     "MorpionBootstrapArgs",
     "MorpionBootstrapConfig",
+    "MorpionBootstrapControl",
     "MorpionBootstrapArtifacts",
     "MorpionBootstrapDashboardData",
     "MorpionBootstrapDatasetConfig",
@@ -160,6 +172,7 @@ __all__ = [
     "TrainingTriggeredTimeSeriesPoint",
     "UnsafeMorpionBootstrapConfigChangeError",
     "UnknownActiveMorpionEvaluatorError",
+    "UnknownForcedMorpionEvaluatorError",
     "active_evaluator_series",
     "bootstrap_event_from_dict",
     "bootstrap_event_to_dict",
@@ -181,6 +194,7 @@ __all__ = [
     "latest_status_to_dict",
     "load_bootstrap_history",
     "load_bootstrap_config",
+    "load_bootstrap_control",
     "load_morpion_bootstrap_run_view",
     "load_bootstrap_run_state",
     "load_latest_bootstrap_status",
@@ -195,9 +209,11 @@ __all__ = [
     "rebuild_latest_bootstrap_status",
     "resolve_record_status_for_cycle",
     "run_dashboard_cli",
+    "run_dashboard_app",
     "run_morpion_bootstrap_loop",
     "run_one_bootstrap_cycle",
     "save_bootstrap_config",
+    "save_bootstrap_control",
     "save_bootstrap_run_state",
     "select_active_evaluator_name",
     "should_save_progress",
