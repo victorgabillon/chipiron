@@ -49,6 +49,9 @@ def _empty_evaluator_specs() -> dict[str, MorpionEvaluatorSpec]:
     return {}
 
 
+RUNTIME_CHECKPOINT_METADATA_KEY = "runtime_checkpoint_path"
+
+
 class EmptyMorpionEvaluatorsConfigError(ValueError):
     """Raised when the bootstrap loop is configured with zero evaluators."""
 
@@ -190,6 +193,7 @@ class MorpionBootstrapPaths:
     history_jsonl_path: Path
     latest_status_path: Path
     tree_snapshot_dir: Path
+    runtime_checkpoint_dir: Path
     rows_dir: Path
     model_dir: Path
 
@@ -206,6 +210,7 @@ class MorpionBootstrapPaths:
             history_jsonl_path=root / "history.jsonl",
             latest_status_path=root / "latest_status.json",
             tree_snapshot_dir=root / "tree_exports",
+            runtime_checkpoint_dir=root / "search_checkpoints",
             rows_dir=root / "rows",
             model_dir=root / "models",
         )
@@ -214,6 +219,7 @@ class MorpionBootstrapPaths:
         """Create the canonical bootstrap directories if they do not exist."""
         self.work_dir.mkdir(parents=True, exist_ok=True)
         self.tree_snapshot_dir.mkdir(parents=True, exist_ok=True)
+        self.runtime_checkpoint_dir.mkdir(parents=True, exist_ok=True)
         self.rows_dir.mkdir(parents=True, exist_ok=True)
         self.model_dir.mkdir(parents=True, exist_ok=True)
 
@@ -224,6 +230,10 @@ class MorpionBootstrapPaths:
     def rows_path_for_generation(self, generation: int) -> Path:
         """Return the raw Morpion rows path for one saved generation."""
         return self.rows_dir / f"generation_{generation:06d}.json"
+
+    def runtime_checkpoint_path_for_generation(self, generation: int) -> Path:
+        """Return the runtime checkpoint path for one saved generation."""
+        return self.runtime_checkpoint_dir / f"generation_{generation:06d}.json"
 
     def model_generation_dir_for_generation(self, generation: int) -> Path:
         """Return the model root directory for one saved generation."""
@@ -381,9 +391,10 @@ def run_one_bootstrap_cycle(
         latest_model_bundle_paths=run_state.latest_model_bundle_paths,
         active_evaluator_name=run_state.active_evaluator_name,
     )
+    restore_tree_path = _resolve_runtime_restore_path(paths=paths, run_state=run_state)
 
     runner.load_or_create(
-        paths.resolve_work_dir_path(run_state.latest_tree_snapshot_path),
+        restore_tree_path,
         resolved_active_model.model_bundle_path,
     )
     runner.grow(args.max_growth_steps_per_cycle)
@@ -442,7 +453,16 @@ def run_one_bootstrap_cycle(
 
     generation = run_state.generation + 1
     tree_snapshot_path = paths.tree_snapshot_path_for_generation(generation)
+    runtime_checkpoint_path = paths.runtime_checkpoint_path_for_generation(generation)
     rows_path = paths.rows_path_for_generation(generation)
+
+    relative_runtime_checkpoint_path: str | None = None
+    save_checkpoint = getattr(runner, "save_checkpoint", None)
+    if callable(save_checkpoint):
+        save_checkpoint(runtime_checkpoint_path)
+        relative_runtime_checkpoint_path = paths.relative_to_work_dir(
+            runtime_checkpoint_path
+        )
 
     runner.export_training_tree_snapshot(tree_snapshot_path)
     snapshot = load_training_tree_snapshot(tree_snapshot_path)
@@ -490,6 +510,11 @@ def run_one_bootstrap_cycle(
 
     relative_tree_snapshot_path = paths.relative_to_work_dir(tree_snapshot_path)
     relative_rows_path = paths.relative_to_work_dir(rows_path)
+    next_metadata = dict(run_state.metadata)
+    if relative_runtime_checkpoint_path is None:
+        next_metadata.pop(RUNTIME_CHECKPOINT_METADATA_KEY, None)
+    else:
+        next_metadata[RUNTIME_CHECKPOINT_METADATA_KEY] = relative_runtime_checkpoint_path
     next_run_state = MorpionBootstrapRunState(
         generation=generation,
         cycle_index=cycle_index,
@@ -500,7 +525,7 @@ def run_one_bootstrap_cycle(
         tree_size_at_last_save=current_tree_size,
         last_save_unix_s=current_time,
         latest_record_status=record_status,
-        metadata=dict(run_state.metadata),
+        metadata=next_metadata,
     )
     history_recorder.record(
         build_bootstrap_event(
@@ -684,6 +709,20 @@ def _optional_tree_int(value: object, *, field_name: str) -> int | None:
     raise TypeError(
         f"Morpion bootstrap tree-status field `{field_name}` must be an int or null."
     )
+
+
+def _resolve_runtime_restore_path(
+    *,
+    paths: MorpionBootstrapPaths,
+    run_state: MorpionBootstrapRunState,
+) -> Path | None:
+    """Resolve the best available persisted runtime restore path for one cycle."""
+    metadata_runtime_checkpoint = run_state.metadata.get(
+        RUNTIME_CHECKPOINT_METADATA_KEY
+    )
+    if isinstance(metadata_runtime_checkpoint, str):
+        return paths.resolve_work_dir_path(metadata_runtime_checkpoint)
+    return paths.resolve_work_dir_path(run_state.latest_tree_snapshot_path)
 
 
 __all__ = [

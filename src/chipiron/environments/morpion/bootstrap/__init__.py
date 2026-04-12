@@ -1,5 +1,12 @@
 """Restartable Morpion bootstrap orchestration helpers."""
 
+from .anemone_runner import (
+    AnemoneMorpionSearchRunner,
+    AnemoneMorpionSearchRunnerArgs,
+    InvalidMorpionSearchCheckpointError,
+    UninitializedMorpionSearchRunnerError,
+    load_morpion_evaluator_from_model_bundle,
+)
 from .bootstrap_loop import (
     EmptyMorpionEvaluatorsConfigError,
     InconsistentMorpionEvaluatorSpecNameError,
@@ -92,10 +99,13 @@ from .run_state import (
 )
 
 __all__ = [
+    "AnemoneMorpionSearchRunner",
+    "AnemoneMorpionSearchRunnerArgs",
     "ActiveEvaluatorTimeSeriesPoint",
     "EmptyMorpionEvaluatorsConfigError",
     "EvaluatorSelectionSummary",
     "InconsistentMorpionEvaluatorSpecNameError",
+    "InvalidMorpionSearchCheckpointError",
     "IntTimeSeriesPoint",
     "MalformedMorpionBootstrapHistoryError",
     "MalformedMorpionBootstrapRunStateError",
@@ -150,6 +160,7 @@ __all__ = [
     "load_morpion_bootstrap_run_view",
     "load_bootstrap_run_state",
     "load_latest_bootstrap_status",
+    "load_morpion_evaluator_from_model_bundle",
     "morpion_bootstrap_experiment_metadata",
     "plot_active_evaluator",
     "plot_dataset_size",
@@ -170,4 +181,5 @@ __all__ = [
     "summarize_record_progress",
     "training_triggered_series",
     "tree_num_nodes_series",
+    "UninitializedMorpionSearchRunnerError",
 ]

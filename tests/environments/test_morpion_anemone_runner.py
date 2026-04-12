@@ -1,0 +1,262 @@
+"""Tests for the real Anemone-backed Morpion bootstrap runner."""
+# ruff: noqa: E402
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+from types import ModuleType
+
+import pytest
+
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
+_ATOMHEART_PACKAGE_ROOT = _REPO_ROOT.parent / "atomheart" / "src" / "atomheart"
+_ANEMONE_PACKAGE_ROOT = _REPO_ROOT.parent / "anemone" / "src" / "anemone"
+_MORPION_EVALUATORS_PACKAGE_ROOT = (
+    _REPO_ROOT
+    / "src"
+    / "chipiron"
+    / "environments"
+    / "morpion"
+    / "players"
+    / "evaluators"
+)
+
+if "chipiron" not in sys.modules:
+    _chipiron_stub = ModuleType("chipiron")
+    _chipiron_stub.__path__ = [str(_CHIPIRON_PACKAGE_ROOT)]
+    sys.modules["chipiron"] = _chipiron_stub
+
+if "chipiron.environments.morpion.players.evaluators" not in sys.modules:
+    _evaluators_stub = ModuleType("chipiron.environments.morpion.players.evaluators")
+    _evaluators_stub.__path__ = [str(_MORPION_EVALUATORS_PACKAGE_ROOT)]
+    sys.modules["chipiron.environments.morpion.players.evaluators"] = _evaluators_stub
+
+if "atomheart" not in sys.modules:
+    _atomheart_stub = ModuleType("atomheart")
+    _atomheart_stub.__path__ = [str(_ATOMHEART_PACKAGE_ROOT)]
+    sys.modules["atomheart"] = _atomheart_stub
+
+if "anemone" not in sys.modules:
+    _anemone_stub = ModuleType("anemone")
+    _anemone_stub.__path__ = [str(_ANEMONE_PACKAGE_ROOT)]
+    sys.modules["anemone"] = _anemone_stub
+
+from anemone.training_export import load_training_tree_snapshot
+
+import chipiron.environments.morpion.bootstrap.anemone_runner as anemone_runner_module
+from chipiron.environments.morpion.bootstrap import (
+    AnemoneMorpionSearchRunner,
+    InvalidMorpionSearchCheckpointError,
+    MorpionBootstrapArgs,
+    MorpionBootstrapPaths,
+    MorpionEvaluatorsConfig,
+    MorpionEvaluatorSpec,
+    run_morpion_bootstrap_loop,
+)
+from chipiron.environments.morpion.players.evaluators.neural_networks import (
+    MorpionRegressorArgs,
+    build_morpion_regressor,
+    save_morpion_model_bundle,
+)
+
+
+def _make_model_bundle(output_dir: Path) -> Path:
+    """Create one minimal valid Morpion bundle for evaluator-loading tests."""
+    model_args = MorpionRegressorArgs(model_kind="linear")
+    model = build_morpion_regressor(model_args)
+    save_morpion_model_bundle(model, output_dir, model_args=model_args)
+    return output_dir
+
+
+def _multi_evaluator_config() -> MorpionEvaluatorsConfig:
+    """Return one representative two-evaluator bootstrap config."""
+    return MorpionEvaluatorsConfig(
+        evaluators={
+            "linear": MorpionEvaluatorSpec(
+                name="linear",
+                model_type="linear",
+                hidden_sizes=None,
+                num_epochs=1,
+                batch_size=1,
+                learning_rate=1e-3,
+            ),
+            "mlp": MorpionEvaluatorSpec(
+                name="mlp",
+                model_type="mlp",
+                hidden_sizes=(8, 4),
+                num_epochs=1,
+                batch_size=1,
+                learning_rate=1e-3,
+            ),
+        }
+    )
+
+
+def _patch_reported_losses(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    loss_by_evaluator_name: dict[str, float],
+) -> None:
+    """Patch training so evaluator selection is deterministic while bundles still exist."""
+    import chipiron.environments.morpion.bootstrap.bootstrap_loop as bootstrap_loop_module
+
+    real_train = bootstrap_loop_module.train_morpion_regressor
+
+    def _patched_train(train_args: object) -> object:
+        _model, metrics = real_train(train_args)
+        evaluator_name = Path(str(getattr(train_args, "output_dir"))).name
+        metrics["final_loss"] = loss_by_evaluator_name[evaluator_name]
+        return _model, metrics
+
+    monkeypatch.setattr(
+        bootstrap_loop_module, "train_morpion_regressor", _patched_train
+    )
+
+
+def test_create_fresh_runtime_without_checkpoint() -> None:
+    """The real runner should create and grow a fresh Morpion runtime."""
+    runner = AnemoneMorpionSearchRunner()
+
+    runner.load_or_create(None, None)
+
+    initial_size = runner.current_tree_size()
+    runner.grow(3)
+
+    assert initial_size >= 1
+    assert runner.current_tree_size() >= initial_size
+    assert runner.current_tree_status().num_nodes == runner.current_tree_size()
+
+
+def test_fresh_runtime_with_evaluator_bundle(tmp_path: Path) -> None:
+    """The runner should create a fresh runtime with a saved Morpion evaluator."""
+    bundle_path = _make_model_bundle(tmp_path / "bundle")
+    runner = AnemoneMorpionSearchRunner()
+
+    runner.load_or_create(None, bundle_path)
+    runner.grow(2)
+
+    assert runner.current_tree_size() >= 1
+
+
+def test_checkpoint_roundtrip_restores_and_continues_growth(tmp_path: Path) -> None:
+    """The runner should restore a saved tree and continue the same runtime growth."""
+    checkpoint_path = tmp_path / "tree_checkpoint.json"
+    first_runner = AnemoneMorpionSearchRunner()
+    first_runner.load_or_create(None, None)
+    first_runner.grow(4)
+    size_before_save = first_runner.current_tree_size()
+    first_runner.save_checkpoint(checkpoint_path)
+
+    second_runner = AnemoneMorpionSearchRunner()
+    second_runner.load_or_create(checkpoint_path, None)
+    restored_size = second_runner.current_tree_size()
+    second_runner.grow(4)
+
+    assert restored_size == size_before_save
+    assert second_runner.current_tree_size() >= restored_size
+
+
+def test_restore_with_evaluator_bundle_triggers_reevaluation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Restore with a selected evaluator bundle should call the reevaluation path."""
+    checkpoint_path = tmp_path / "tree_checkpoint.json"
+    bundle_path = _make_model_bundle(tmp_path / "bundle")
+    first_runner = AnemoneMorpionSearchRunner()
+    first_runner.load_or_create(None, None)
+    first_runner.grow(3)
+    first_runner.save_checkpoint(checkpoint_path)
+
+    reevaluation_calls: list[tuple[str, object | None]] = []
+    real_refresh = anemone_runner_module.AnemoneMorpionSearchRunner._set_runtime_evaluator_from_bundle
+
+    def _patched_set_runtime_evaluator_from_bundle(
+        self: object,
+        model_bundle_path: Path,
+    ) -> None:
+        reevaluation_calls.append(("bundle", model_bundle_path))
+        real_refresh(self, model_bundle_path)
+
+    monkeypatch.setattr(
+        anemone_runner_module.AnemoneMorpionSearchRunner,
+        "_set_runtime_evaluator_from_bundle",
+        _patched_set_runtime_evaluator_from_bundle,
+    )
+
+    second_runner = AnemoneMorpionSearchRunner()
+    second_runner.load_or_create(checkpoint_path, bundle_path)
+    second_runner.grow(2)
+
+    assert reevaluation_calls == [("bundle", bundle_path)]
+    assert second_runner.current_tree_size() >= 1
+
+
+def test_export_training_snapshot_from_real_runner(tmp_path: Path) -> None:
+    """The real runner should export a training snapshot loadable by existing code."""
+    runner = AnemoneMorpionSearchRunner()
+    snapshot_path = tmp_path / "training_snapshot.json"
+    runner.load_or_create(None, None)
+    runner.grow(3)
+
+    runner.export_training_tree_snapshot(snapshot_path)
+
+    snapshot = load_training_tree_snapshot(snapshot_path)
+    assert snapshot_path.is_file()
+    assert snapshot.root_node_id is not None
+    assert len(snapshot.nodes) >= 1
+
+
+def test_invalid_model_bundle_path_fails_loudly(tmp_path: Path) -> None:
+    """Missing evaluator bundles should fail loudly instead of falling back."""
+    runner = AnemoneMorpionSearchRunner()
+
+    with pytest.raises(FileNotFoundError):
+        runner.load_or_create(None, tmp_path / "missing_bundle")
+
+
+def test_invalid_checkpoint_path_fails_loudly(tmp_path: Path) -> None:
+    """Missing checkpoints should fail loudly instead of silently resetting the tree."""
+    runner = AnemoneMorpionSearchRunner()
+
+    with pytest.raises(InvalidMorpionSearchCheckpointError):
+        runner.load_or_create(tmp_path / "missing_checkpoint.json", None)
+
+
+def test_bootstrap_loop_works_with_real_runner(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The bootstrap loop should create, save, restore, and continue one real tree."""
+    _patch_reported_losses(
+        monkeypatch,
+        loss_by_evaluator_name={"linear": 0.1, "mlp": 0.2},
+    )
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        max_growth_steps_per_cycle=5,
+        save_after_tree_growth_factor=1.0,
+        save_after_seconds=0.0,
+        batch_size=1,
+        num_epochs=1,
+        shuffle=False,
+        evaluators_config=_multi_evaluator_config(),
+    )
+    runner = AnemoneMorpionSearchRunner()
+
+    first_state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+    first_tree_path = MorpionBootstrapPaths.from_work_dir(tmp_path).resolve_work_dir_path(
+        first_state.latest_tree_snapshot_path
+    )
+    assert first_tree_path is not None and first_tree_path.is_file()
+    first_saved_tree_size = first_state.tree_size_at_last_save
+
+    second_state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+
+    assert second_state.generation == 2
+    assert second_state.cycle_index == 1
+    assert second_state.tree_size_at_last_save >= first_saved_tree_size
+    assert second_state.active_evaluator_name == "linear"
+    assert MorpionBootstrapPaths.from_work_dir(tmp_path).run_state_path.is_file()
