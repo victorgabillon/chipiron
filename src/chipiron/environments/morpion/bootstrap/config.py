@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 
 
 BOOTSTRAP_CONFIG_HASH_METADATA_KEY = "bootstrap_config_hash"
+DEFAULT_MORPION_TREE_BRANCH_LIMIT = 128
 
 
 def _empty_metadata() -> dict[str, object]:
@@ -39,6 +40,7 @@ class MorpionBootstrapRuntimeConfig:
     save_after_tree_growth_factor: float
     save_after_seconds: float
     max_growth_steps_per_cycle: int
+    tree_branch_limit: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -148,6 +150,7 @@ def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapCo
             save_after_tree_growth_factor=args.save_after_tree_growth_factor,
             save_after_seconds=args.save_after_seconds,
             max_growth_steps_per_cycle=args.max_growth_steps_per_cycle,
+            tree_branch_limit=args.tree_branch_limit,
         ),
         dataset=MorpionBootstrapDatasetConfig(
             require_exact_or_terminal=args.require_exact_or_terminal,
@@ -173,6 +176,7 @@ def bootstrap_config_to_dict(config: MorpionBootstrapConfig) -> dict[str, object
             "save_after_tree_growth_factor": config.runtime.save_after_tree_growth_factor,
             "save_after_seconds": config.runtime.save_after_seconds,
             "max_growth_steps_per_cycle": config.runtime.max_growth_steps_per_cycle,
+            "tree_branch_limit": config.runtime.tree_branch_limit,
         },
         "dataset": {
             "require_exact_or_terminal": config.dataset.require_exact_or_terminal,
@@ -269,6 +273,13 @@ def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
             max_growth_steps_per_cycle=_coerce_int(
                 runtime.get("max_growth_steps_per_cycle"),
                 field_name="runtime.max_growth_steps_per_cycle",
+            ),
+            tree_branch_limit=_coerce_int(
+                runtime.get(
+                    "tree_branch_limit",
+                    DEFAULT_MORPION_TREE_BRANCH_LIMIT,
+                ),
+                field_name="runtime.tree_branch_limit",
             ),
         ),
         dataset=MorpionBootstrapDatasetConfig(
@@ -504,6 +515,7 @@ def _metadata_dict(value: object) -> dict[str, object]:
 
 __all__ = [
     "BOOTSTRAP_CONFIG_HASH_METADATA_KEY",
+    "DEFAULT_MORPION_TREE_BRANCH_LIMIT",
     "MalformedMorpionBootstrapConfigError",
     "MorpionBootstrapConfig",
     "MorpionBootstrapDatasetConfig",

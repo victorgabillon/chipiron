@@ -145,8 +145,10 @@ class FakeMorpionSearchRunner:
         self,
         tree_snapshot_path: str | Path | None,
         model_bundle_path: str | Path | None,
+        effective_runtime_config: object | None = None,
     ) -> None:
         """Record the latest tree/model inputs used to initialize the runner."""
+        _ = effective_runtime_config
         self.load_calls.append(
             (
                 None if tree_snapshot_path is None else str(tree_snapshot_path),
@@ -255,6 +257,22 @@ def test_should_save_progress_helper() -> None:
         last_save_unix_s=50.0,
         save_after_tree_growth_factor=2.0,
         save_after_seconds=3600.0,
+    )
+
+
+def test_previous_effective_runtime_config_falls_back_to_persisted_baseline() -> None:
+    """Legacy run metadata with only a runtime checkpoint should fall back cleanly."""
+    config = bootstrap_loop_module.bootstrap_config_from_args(
+        MorpionBootstrapArgs(work_dir=Path("/tmp/legacy-runtime"), tree_branch_limit=96)
+    )
+
+    previous_config = bootstrap_loop_module._previous_effective_runtime_config(
+        {bootstrap_loop_module.RUNTIME_CHECKPOINT_METADATA_KEY: "search_checkpoints/generation_000001.json"},
+        resolved_bootstrap_config=config,
+    )
+
+    assert previous_config == bootstrap_loop_module.MorpionBootstrapEffectiveRuntimeConfig(
+        tree_branch_limit=96,
     )
 
 
@@ -726,13 +744,18 @@ def test_resume_uses_single_saved_bundle_without_active_evaluator(
     )
     assert next_state.active_evaluator_name == "linear"
     event = load_bootstrap_history(paths.history_jsonl_path)[0]
-    assert event.metadata == {
-        "game": "morpion",
-        "variant": "5T",
-        "initial_pattern": "greek_cross",
-        "initial_point_count": 36,
-        "active_evaluator_name": "linear",
+    assert event.metadata["game"] == "morpion"
+    assert event.metadata["variant"] == "5T"
+    assert event.metadata["initial_pattern"] == "greek_cross"
+    assert event.metadata["initial_point_count"] == 36
+    assert event.metadata["active_evaluator_name"] == "linear"
+    assert event.metadata["bootstrap_applied_runtime_control"] == {
+        "tree_branch_limit": None
     }
+    assert event.metadata["bootstrap_effective_runtime"] == {
+        "tree_branch_limit": 128
+    }
+    assert isinstance(event.metadata["bootstrap_effective_runtime_hash"], str)
     assert event.record == bootstrap_loop_module.MorpionBootstrapRecordStatus(
         variant="5T",
         initial_pattern="greek_cross",

@@ -2,15 +2,34 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
-from dataclasses import asdict, dataclass, replace
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from .config import MorpionBootstrapConfig
     from .bootstrap_loop import MorpionBootstrapArgs
 
 BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY = "bootstrap_applied_control"
+BOOTSTRAP_APPLIED_RUNTIME_CONTROL_METADATA_KEY = "bootstrap_applied_runtime_control"
+BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY = "bootstrap_effective_runtime"
+BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY = "bootstrap_effective_runtime_hash"
+
+
+@dataclass(frozen=True, slots=True)
+class MorpionBootstrapRuntimeControl:
+    """Optional cycle-boundary overrides for supported Anemone runtime settings."""
+
+    tree_branch_limit: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class MorpionBootstrapEffectiveRuntimeConfig:
+    """Normalized runtime/search configuration applied for one bootstrap cycle."""
+
+    tree_branch_limit: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,6 +42,9 @@ class MorpionBootstrapControl:
     save_after_seconds: float | None = None
     save_after_tree_growth_factor: float | None = None
     force_evaluator: str | None = None
+    runtime: MorpionBootstrapRuntimeControl = field(
+        default_factory=MorpionBootstrapRuntimeControl
+    )
 
 
 def load_bootstrap_control(path: Path) -> MorpionBootstrapControl:
@@ -51,6 +73,7 @@ def load_bootstrap_control(path: Path) -> MorpionBootstrapControl:
             loaded.get("save_after_tree_growth_factor")
         ),
         force_evaluator=_optional_force_evaluator(loaded.get("force_evaluator")),
+        runtime=_optional_runtime_control(loaded.get("runtime")),
     )
 
 
@@ -91,6 +114,13 @@ def bootstrap_control_to_dict(control: MorpionBootstrapControl) -> dict[str, obj
     return dict(asdict(control))
 
 
+def bootstrap_runtime_control_to_dict(
+    control: MorpionBootstrapRuntimeControl,
+) -> dict[str, object]:
+    """Serialize one runtime-control subsection into JSON-friendly data."""
+    return dict(asdict(control))
+
+
 def bootstrap_control_from_metadata(value: object) -> MorpionBootstrapControl:
     """Deserialize one applied-control metadata payload tolerantly."""
     if not isinstance(value, dict):
@@ -104,7 +134,62 @@ def bootstrap_control_from_metadata(value: object) -> MorpionBootstrapControl:
             value.get("save_after_tree_growth_factor")
         ),
         force_evaluator=_optional_force_evaluator(value.get("force_evaluator")),
+        runtime=_optional_runtime_control(value.get("runtime")),
     )
+
+
+def effective_runtime_config_from_config_and_control(
+    config: MorpionBootstrapConfig,
+    control: MorpionBootstrapControl,
+) -> MorpionBootstrapEffectiveRuntimeConfig:
+    """Derive the explicit runtime config to apply on the next cycle boundary."""
+    tree_branch_limit = control.runtime.tree_branch_limit
+    if tree_branch_limit is None:
+        tree_branch_limit = config.runtime.tree_branch_limit
+    return MorpionBootstrapEffectiveRuntimeConfig(
+        tree_branch_limit=tree_branch_limit,
+    )
+
+
+def effective_runtime_config_to_dict(
+    config: MorpionBootstrapEffectiveRuntimeConfig,
+) -> dict[str, object]:
+    """Serialize one effective runtime config into JSON-friendly data."""
+    return dict(asdict(config))
+
+
+def effective_runtime_config_sha256(
+    config: MorpionBootstrapEffectiveRuntimeConfig,
+) -> str:
+    """Return a stable hash for one effective runtime config payload."""
+    return hashlib.sha256(
+        json.dumps(
+            effective_runtime_config_to_dict(config),
+            indent=2,
+            sort_keys=True,
+        ).encode("utf-8")
+    ).hexdigest()
+
+
+def effective_runtime_config_from_metadata(
+    value: object,
+) -> MorpionBootstrapEffectiveRuntimeConfig | None:
+    """Deserialize one effective-runtime metadata payload tolerantly."""
+    if not isinstance(value, dict):
+        return None
+    tree_branch_limit = _optional_int(value.get("tree_branch_limit"))
+    if tree_branch_limit is None:
+        return None
+    return MorpionBootstrapEffectiveRuntimeConfig(
+        tree_branch_limit=tree_branch_limit,
+    )
+
+
+def bootstrap_runtime_control_from_metadata(
+    value: object,
+) -> MorpionBootstrapRuntimeControl:
+    """Deserialize one applied runtime-control metadata payload tolerantly."""
+    return _optional_runtime_control(value)
 
 
 def _optional_int(value: object) -> int | None:
@@ -152,12 +237,32 @@ def _optional_force_evaluator(value: object) -> str | None:
     return stripped
 
 
+def _optional_runtime_control(value: object) -> MorpionBootstrapRuntimeControl:
+    """Return one optional runtime-control subsection from JSON-friendly data."""
+    if not isinstance(value, dict):
+        return MorpionBootstrapRuntimeControl()
+    return MorpionBootstrapRuntimeControl(
+        tree_branch_limit=_optional_int(value.get("tree_branch_limit")),
+    )
+
+
 __all__ = [
     "BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY",
+    "BOOTSTRAP_APPLIED_RUNTIME_CONTROL_METADATA_KEY",
+    "BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY",
+    "BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY",
+    "MorpionBootstrapEffectiveRuntimeConfig",
     "MorpionBootstrapControl",
+    "MorpionBootstrapRuntimeControl",
     "apply_control_to_args",
     "bootstrap_control_from_metadata",
     "bootstrap_control_to_dict",
+    "bootstrap_runtime_control_from_metadata",
+    "bootstrap_runtime_control_to_dict",
+    "effective_runtime_config_from_config_and_control",
+    "effective_runtime_config_from_metadata",
+    "effective_runtime_config_sha256",
+    "effective_runtime_config_to_dict",
     "load_bootstrap_control",
     "save_bootstrap_control",
 ]

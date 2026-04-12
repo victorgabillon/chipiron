@@ -55,6 +55,7 @@ from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
 from chipiron.environments.morpion.bootstrap import (
     BOOTSTRAP_CONFIG_HASH_METADATA_KEY,
+    DEFAULT_MORPION_TREE_BRANCH_LIMIT,
     MORPION_BOOTSTRAP_GAME,
     MORPION_BOOTSTRAP_INITIAL_PATTERN,
     MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
@@ -128,8 +129,10 @@ class FakeMorpionSearchRunner:
         self,
         tree_snapshot_path: str | Path | None,
         model_bundle_path: str | Path | None,
+        effective_runtime_config: object | None = None,
     ) -> None:
         """Record the latest tree/model inputs used to initialize the runner."""
+        _ = effective_runtime_config
         self.load_calls.append(
             (
                 None if tree_snapshot_path is None else str(tree_snapshot_path),
@@ -194,6 +197,7 @@ def _make_args(work_dir: Path) -> MorpionBootstrapArgs:
         min_visit_count=3,
         max_rows=17,
         use_backed_up_value=False,
+        tree_branch_limit=96,
         batch_size=1,
         num_epochs=1,
         shuffle=False,
@@ -214,6 +218,7 @@ def _make_config() -> MorpionBootstrapConfig:
             save_after_tree_growth_factor=2.0,
             save_after_seconds=60.0,
             max_growth_steps_per_cycle=8,
+            tree_branch_limit=192,
         ),
         dataset=MorpionBootstrapDatasetConfig(
             require_exact_or_terminal=False,
@@ -247,6 +252,7 @@ def test_bootstrap_config_from_args_contains_expected_fields(tmp_path: Path) -> 
     assert config.experiment.initial_point_count == MORPION_BOOTSTRAP_INITIAL_POINT_COUNT
     assert config.dataset.max_rows == 17
     assert config.dataset.use_backed_up_value is False
+    assert config.runtime.tree_branch_limit == 96
     assert set(config.evaluators.evaluators) == {"linear", "mlp"}
 
 
@@ -271,6 +277,7 @@ def test_safe_bootstrap_config_change_is_allowed() -> None:
             save_after_tree_growth_factor=3.0,
             save_after_seconds=5.0,
             max_growth_steps_per_cycle=12,
+            tree_branch_limit=256,
         ),
         dataset=MorpionBootstrapDatasetConfig(
             require_exact_or_terminal=True,
@@ -364,6 +371,7 @@ def test_bootstrap_config_hash_is_stable_and_changes_with_content() -> None:
             save_after_tree_growth_factor=9.0,
             save_after_seconds=config.runtime.save_after_seconds,
             max_growth_steps_per_cycle=config.runtime.max_growth_steps_per_cycle,
+            tree_branch_limit=config.runtime.tree_branch_limit,
         ),
         dataset=MorpionBootstrapDatasetConfig(
             require_exact_or_terminal=config.dataset.require_exact_or_terminal,
@@ -422,3 +430,51 @@ def test_legacy_run_without_config_file_migrates_cleanly(tmp_path: Path) -> None
     assert final_state.metadata[BOOTSTRAP_CONFIG_HASH_METADATA_KEY] == bootstrap_config_sha256(
         bootstrap_config_from_args(args)
     )
+
+
+def test_legacy_config_without_tree_branch_limit_uses_default(tmp_path: Path) -> None:
+        """Older persisted configs should pick up the default branch limit cleanly."""
+        config_path = tmp_path / "bootstrap_config.json"
+        config_path.write_text(
+                """
+{
+    "dataset": {
+        "max_rows": null,
+        "min_depth": null,
+        "min_visit_count": null,
+        "require_exact_or_terminal": false,
+        "use_backed_up_value": true
+    },
+    "evaluators": {
+        "evaluators": {
+            "default": {
+                "batch_size": 1,
+                "hidden_sizes": null,
+                "learning_rate": 0.001,
+                "model_type": "linear",
+                "name": "default",
+                "num_epochs": 1
+            }
+        }
+    },
+    "experiment": {
+        "game": "morpion",
+        "initial_pattern": "greek_cross",
+        "initial_point_count": 36,
+        "variant": "5T"
+    },
+    "metadata": {},
+    "runtime": {
+        "max_growth_steps_per_cycle": 8,
+        "save_after_seconds": 60.0,
+        "save_after_tree_growth_factor": 2.0
+    }
+}
+""".strip()
+                + "\n",
+                encoding="utf-8",
+        )
+
+        assert load_bootstrap_config(config_path).runtime.tree_branch_limit == (
+                DEFAULT_MORPION_TREE_BRANCH_LIMIT
+        )

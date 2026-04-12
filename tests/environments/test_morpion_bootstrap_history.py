@@ -143,9 +143,10 @@ class FakeMorpionSearchRunner:
         self,
         tree_snapshot_path: str | Path | None,
         model_bundle_path: str | Path | None,
+        effective_runtime_config: object | None = None,
     ) -> None:
         """Ignore inputs for the fake runner."""
-        _ = tree_snapshot_path, model_bundle_path
+        _ = tree_snapshot_path, model_bundle_path, effective_runtime_config
 
     def grow(self, max_growth_steps: int) -> None:
         """Advance the fake runner to the next predefined tree size."""
@@ -487,13 +488,18 @@ def test_bootstrap_loop_writes_history_on_no_save_cycle(tmp_path: Path) -> None:
     assert event.artifacts.rows_path is None
     assert event.artifacts.model_bundle_paths == {}
     assert event.evaluators == {}
-    assert event.metadata == {
-        "game": "morpion",
-        "variant": "5T",
-        "initial_pattern": "greek_cross",
-        "initial_point_count": 36,
-        "active_evaluator_name": "linear",
+    assert event.metadata["game"] == "morpion"
+    assert event.metadata["variant"] == "5T"
+    assert event.metadata["initial_pattern"] == "greek_cross"
+    assert event.metadata["initial_point_count"] == 36
+    assert event.metadata["active_evaluator_name"] == "linear"
+    assert event.metadata["bootstrap_applied_runtime_control"] == {
+        "tree_branch_limit": None
     }
+    assert event.metadata["bootstrap_effective_runtime"] == {
+        "tree_branch_limit": 128
+    }
+    assert isinstance(event.metadata["bootstrap_effective_runtime_hash"], str)
     assert latest_status.latest_generation == 2
     assert latest_status.latest_cycle_index == 9
     assert latest_status.latest_event == event
@@ -550,15 +556,20 @@ def test_bootstrap_loop_writes_history_on_save_train_cycle(tmp_path: Path) -> No
     assert event.artifacts.model_bundle_paths == {
         "default": "models/generation_000001/default"
     }
-    assert event.metadata == {
-        "game": "morpion",
-        "variant": "5T",
-        "initial_pattern": "greek_cross",
-        "initial_point_count": 36,
-        "active_evaluator_name": "default",
-        "selected_evaluator_name": "default",
-        "selection_policy": "lowest_final_loss",
+    assert event.metadata["game"] == "morpion"
+    assert event.metadata["variant"] == "5T"
+    assert event.metadata["initial_pattern"] == "greek_cross"
+    assert event.metadata["initial_point_count"] == 36
+    assert event.metadata["active_evaluator_name"] == "default"
+    assert event.metadata["selected_evaluator_name"] == "default"
+    assert event.metadata["selection_policy"] == "lowest_final_loss"
+    assert event.metadata["bootstrap_applied_runtime_control"] == {
+        "tree_branch_limit": None
     }
+    assert event.metadata["bootstrap_effective_runtime"] == {
+        "tree_branch_limit": 128
+    }
+    assert isinstance(event.metadata["bootstrap_effective_runtime_hash"], str)
     assert set(event.evaluators) == {"default"}
     assert event.evaluators["default"].final_loss is not None
     assert event.evaluators["default"].num_epochs == 1
@@ -628,15 +639,20 @@ def test_bootstrap_loop_records_selected_winner_on_multi_evaluator_save_cycle(
         "linear": "models/generation_000001/linear",
         "mlp": "models/generation_000001/mlp",
     }
-    assert event.metadata == {
-        "game": "morpion",
-        "variant": "5T",
-        "initial_pattern": "greek_cross",
-        "initial_point_count": 36,
-        "active_evaluator_name": "mlp",
-        "selected_evaluator_name": "mlp",
-        "selection_policy": "lowest_final_loss",
+    assert event.metadata["game"] == "morpion"
+    assert event.metadata["variant"] == "5T"
+    assert event.metadata["initial_pattern"] == "greek_cross"
+    assert event.metadata["initial_point_count"] == 36
+    assert event.metadata["active_evaluator_name"] == "mlp"
+    assert event.metadata["selected_evaluator_name"] == "mlp"
+    assert event.metadata["selection_policy"] == "lowest_final_loss"
+    assert event.metadata["bootstrap_applied_runtime_control"] == {
+        "tree_branch_limit": None
     }
+    assert event.metadata["bootstrap_effective_runtime"] == {
+        "tree_branch_limit": 128
+    }
+    assert isinstance(event.metadata["bootstrap_effective_runtime_hash"], str)
     assert event.record.variant == event.metadata["variant"]
     assert event.record.initial_pattern == event.metadata["initial_pattern"]
     assert event.record.initial_point_count == event.metadata["initial_point_count"]

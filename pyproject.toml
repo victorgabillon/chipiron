@@ -35,7 +35,7 @@ dependencies = [
   "valanga==0.2.4",
   "atomheart==0.2.7",
   "algorhino-coral==0.1.12",
-  "algorhino-anemone==0.2.13",
+  "algorhino-anemone==0.2.14",
   "torchinfo",
   "platformdirs>=4.9.2",
   "huggingface_hub>=1.6.0",
@@ -399,7 +399,7 @@ deps = [
   "valanga==0.2.4",
   "atomheart==0.2.7",
   "algorhino-coral==0.1.12",
-  "algorhino-anemone==0.2.13",
+  "algorhino-anemone==0.2.14",
 ]
 set_env = { PYTHONPATH = "{toxinidir}/src" }
 commands = [
@@ -460,7 +460,7 @@ deps = [
   "valanga==0.2.4",
   "atomheart==0.2.7",
   "algorhino-coral==0.1.12",
-  "algorhino-anemone==0.2.13",
+  "algorhino-anemone==0.2.14",
   "pytest>=9.0.2",
   "pytest-cov>=6.0.0",
   "platformdirs>=4.9.2",

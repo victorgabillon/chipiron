@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from random import Random
 from typing import Any, cast
@@ -25,6 +25,7 @@ from anemone.node_evaluation.tree.single_agent.factory import (
     NodeMaxEvaluationFactory,
 )
 from anemone.progress_monitor.progress_monitor import TreeBranchLimitArgs
+from anemone.progress_monitor.progress_monitor import TreeBranchLimit
 from anemone.recommender_rule.recommender_rule import AlmostEqualLogistic
 from anemone.training_export import (
     build_training_tree_snapshot,
@@ -48,6 +49,8 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_t
 from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
 
 from .bootstrap_loop import MorpionSearchRunner
+from .config import DEFAULT_MORPION_TREE_BRANCH_LIMIT
+from .control import MorpionBootstrapEffectiveRuntimeConfig
 from .history import MorpionBootstrapTreeStatus
 
 
@@ -66,7 +69,7 @@ def _default_search_args() -> SearchArgs:
         ),
         stopping_criterion=TreeBranchLimitArgs(
             type="tree_branch_limit",
-            tree_branch_limit=128,
+            tree_branch_limit=DEFAULT_MORPION_TREE_BRANCH_LIMIT,
         ),
     )
 
@@ -181,23 +184,48 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             dynamics=self._dynamics,
         )
         self._current_evaluator_bundle_path: Path | None = None
+        self._last_applied_runtime_config = _runtime_config_from_search_args(
+            self._args.search_args
+        )
 
     def load_or_create(
         self,
         tree_snapshot_path: str | Path | None,
         model_bundle_path: str | Path | None,
+        effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig | None = None,
     ) -> None:
-        """Load a persisted runtime or create a fresh one for Morpion bootstrap."""
+        """Load a persisted runtime or create a fresh one for Morpion bootstrap.
+
+        Runtime reconfiguration currently applies by patching the live stopping
+        criterion after create/restore. Rebinding checkpoint loads with different
+        SearchArgs caused structural duplication on the restored tree, so the
+        persisted-tree path keeps the base restore args stable and updates only
+        the supported live runtime knobs afterward.
+        """
+        resolved_runtime_config = (
+            self._last_applied_runtime_config
+            if effective_runtime_config is None
+            else effective_runtime_config
+        )
+        self._last_applied_runtime_config = resolved_runtime_config
         resolved_bundle_path = (
             None if model_bundle_path is None else Path(model_bundle_path)
         )
         if tree_snapshot_path is None:
-            self._runtime = self._create_fresh_runtime(resolved_bundle_path)
+            self._runtime = self._create_fresh_runtime(
+                resolved_bundle_path,
+                search_args=self._args.search_args,
+            )
+            _apply_runtime_config_to_runtime(self._runtime, resolved_runtime_config)
             self._current_evaluator_bundle_path = resolved_bundle_path
             return
 
-        runtime = self._load_runtime_from_checkpoint(Path(tree_snapshot_path))
+        runtime = self._load_runtime_from_checkpoint(
+            Path(tree_snapshot_path),
+            search_args=self._args.search_args,
+        )
         self._runtime = runtime
+        _apply_runtime_config_to_runtime(runtime, resolved_runtime_config)
         self._current_evaluator_bundle_path = None
         if resolved_bundle_path is not None:
             self._set_runtime_evaluator_from_bundle(resolved_bundle_path)
@@ -239,9 +267,15 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             root_visit_count=_safe_int_attr(root_node, "visit_count"),
         )
 
+    def current_runtime_config(self) -> MorpionBootstrapEffectiveRuntimeConfig:
+        """Return the effective runtime config used to build the live runtime."""
+        return self._last_applied_runtime_config
+
     def _create_fresh_runtime(
         self,
         model_bundle_path: Path | None,
+        *,
+        search_args: SearchArgs,
     ) -> object:
         """Create a fresh single-tree Morpion runtime with the selected evaluator."""
         evaluator = self._build_master_evaluator(model_bundle_path)
@@ -249,21 +283,26 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             state_type=MorpionState,
             dynamics=self._dynamics,
             starting_state=self._dynamics.wrap_atomheart_state(initial_state()),
-            args=self._args.search_args,
+            args=search_args,
             random_generator=self._random_generator,
             master_state_evaluator=evaluator,
             state_representation_factory=None,
             node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
         )
 
-    def _load_runtime_from_checkpoint(self, tree_snapshot_path: Path) -> object:
+    def _load_runtime_from_checkpoint(
+        self,
+        tree_snapshot_path: Path,
+        *,
+        search_args: SearchArgs,
+    ) -> object:
         """Restore one live runtime from a persisted checkpoint JSON file."""
         payload = _load_search_checkpoint_payload(tree_snapshot_path)
         return load_search_from_checkpoint_payload(
             payload,
             state_codec=self._state_codec,
             dynamics=self._dynamics,
-            args=self._args.search_args,
+            args=search_args,
             state_type=MorpionState,
             master_state_value_evaluator=self._build_master_evaluator(None),
             random_generator=self._random_generator,
@@ -337,6 +376,74 @@ def _load_search_checkpoint_payload(path: Path) -> SearchRuntimeCheckpointPayloa
         ) from exc
 
 
+def apply_runtime_control_to_runner_args(
+    runner_args: AnemoneMorpionSearchRunnerArgs,
+    runtime_config: MorpionBootstrapEffectiveRuntimeConfig,
+) -> AnemoneMorpionSearchRunnerArgs:
+    """Return runner args rebound to one effective runtime config.
+
+    This helper is kept as the pure arg-transformation counterpart of the live
+    runtime patching path used during checkpoint restore.
+    """
+    return replace(
+        runner_args,
+        search_args=_search_args_with_tree_branch_limit(
+            runner_args.search_args,
+            tree_branch_limit=runtime_config.tree_branch_limit,
+        ),
+    )
+
+
+def _runtime_config_from_search_args(
+    search_args: SearchArgs,
+) -> MorpionBootstrapEffectiveRuntimeConfig:
+    """Extract the supported effective runtime config from one SearchArgs object."""
+    stopping_criterion = search_args.stopping_criterion
+    if not isinstance(stopping_criterion, TreeBranchLimitArgs):
+        raise TypeError(
+            "Morpion bootstrap runtime reconfiguration currently supports only "
+            "TreeBranchLimitArgs stopping criteria."
+        )
+    return MorpionBootstrapEffectiveRuntimeConfig(
+        tree_branch_limit=stopping_criterion.tree_branch_limit,
+    )
+
+
+def _search_args_with_tree_branch_limit(
+    search_args: SearchArgs,
+    *,
+    tree_branch_limit: int,
+) -> SearchArgs:
+    """Return SearchArgs rebound to one explicit tree-branch limit."""
+    stopping_criterion = search_args.stopping_criterion
+    if not isinstance(stopping_criterion, TreeBranchLimitArgs):
+        raise TypeError(
+            "Morpion bootstrap runtime reconfiguration currently supports only "
+            "TreeBranchLimitArgs stopping criteria."
+        )
+    return replace(
+        search_args,
+        stopping_criterion=replace(
+            stopping_criterion,
+            tree_branch_limit=tree_branch_limit,
+        ),
+    )
+
+
+def _apply_runtime_config_to_runtime(
+    runtime: object,
+    runtime_config: MorpionBootstrapEffectiveRuntimeConfig,
+) -> None:
+    """Apply the supported runtime config to one live runtime after create/restore."""
+    stopping_criterion = getattr(runtime, "stopping_criterion", None)
+    if not isinstance(stopping_criterion, TreeBranchLimit):
+        raise TypeError(
+            "Morpion bootstrap runtime reconfiguration currently supports only "
+            "tree-branch-limit stopping criteria on the live runtime."
+        )
+    stopping_criterion.tree_branch_limit = runtime_config.tree_branch_limit
+
+
 def _count_expanded_nodes(runtime: Any) -> int:
     """Count nodes that have already generated all branches in the live tree."""
     return sum(
@@ -364,6 +471,7 @@ def _safe_int_attr(node: Any, attribute_name: str) -> int | None:
 
 
 __all__ = [
+    "apply_runtime_control_to_runner_args",
     "AnemoneMorpionSearchRunner",
     "AnemoneMorpionSearchRunnerArgs",
     "InvalidMorpionSearchCheckpointError",

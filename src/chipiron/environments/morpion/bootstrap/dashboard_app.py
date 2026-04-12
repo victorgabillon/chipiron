@@ -13,7 +13,10 @@ from .bootstrap_loop import MorpionBootstrapPaths
 from .config import load_bootstrap_config
 from .control import (
     BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY,
+    BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY,
+    BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY,
     MorpionBootstrapControl,
+    MorpionBootstrapRuntimeControl,
     bootstrap_control_from_metadata,
     bootstrap_control_to_dict,
     load_bootstrap_control,
@@ -119,6 +122,20 @@ def run_dashboard_app(work_dir: Path) -> None:
             step=0.1,
             disabled=not override_save_after_tree_growth_factor,
         )
+        st.caption(
+            "Runtime control currently supports tree branch limit only; on an "
+            "existing tree, changes must be non-increasing."
+        )
+        override_tree_branch_limit = st.checkbox(
+            "Override tree branch limit",
+            value=control.runtime.tree_branch_limit is not None,
+        )
+        tree_branch_limit = st.number_input(
+            "Tree branch limit",
+            min_value=0,
+            value=_control_number_value(control.runtime.tree_branch_limit, default=128),
+            disabled=not override_tree_branch_limit,
+        )
         force_evaluator_mode = st.radio(
             "Evaluator selection mode",
             options=("auto", "forced"),
@@ -153,8 +170,11 @@ def run_dashboard_app(work_dir: Path) -> None:
                 save_after_seconds=save_after_seconds,
                 override_save_after_tree_growth_factor=override_save_after_tree_growth_factor,
                 save_after_tree_growth_factor=save_after_tree_growth_factor,
+                override_tree_branch_limit=override_tree_branch_limit,
+                tree_branch_limit=tree_branch_limit,
                 force_evaluator_mode=force_evaluator_mode,
                 force_evaluator=force_evaluator,
+                current_runtime_control=control.runtime,
             )
             save_bootstrap_control(next_control, paths.control_path)
             st.success("Saved control changes. They will apply at the next cycle boundary.")
@@ -180,6 +200,14 @@ def run_dashboard_app(work_dir: Path) -> None:
     st.write(
         "Last checkpoint path:",
         _format_value(run_state.metadata.get("runtime_checkpoint_path")),
+    )
+    st.write(
+        "Effective runtime:",
+        run_state.metadata.get(BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY, {}),
+    )
+    st.write(
+        "Effective runtime hash:",
+        _format_value(run_state.metadata.get(BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY)),
     )
     st.write("Applied control:")
     st.json(bootstrap_control_to_dict(applied_control))
@@ -265,8 +293,11 @@ def _build_next_control(
     save_after_seconds: float,
     override_save_after_tree_growth_factor: bool,
     save_after_tree_growth_factor: float,
+    override_tree_branch_limit: bool,
+    tree_branch_limit: int,
     force_evaluator_mode: str,
     force_evaluator: str,
+    current_runtime_control: MorpionBootstrapRuntimeControl,
 ) -> MorpionBootstrapControl:
     """Build one persisted control payload from tri-state dashboard inputs."""
     return MorpionBootstrapControl(
@@ -284,6 +315,9 @@ def _build_next_control(
         force_evaluator=_resolved_force_evaluator(
             force_evaluator_mode=force_evaluator_mode,
             force_evaluator=force_evaluator,
+        ),
+        runtime=MorpionBootstrapRuntimeControl(
+            tree_branch_limit=tree_branch_limit if override_tree_branch_limit else None
         ),
     )
 
@@ -320,9 +354,9 @@ def _format_force_evaluator_option(value: str) -> str:
     return "No configured evaluators" if not value else value
 
 
-def _control_number_value(value: int | None) -> int:
+def _control_number_value(value: int | None, *, default: int = 0) -> int:
     """Return one Streamlit-safe integer input default."""
-    return 0 if value is None else value
+    return default if value is None else value
 
 
 def _control_float_value(value: float | None, *, default: float = 0.0) -> float:

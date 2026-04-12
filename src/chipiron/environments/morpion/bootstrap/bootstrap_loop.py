@@ -32,6 +32,8 @@ from .history import (
 )
 from .config import (
     BOOTSTRAP_CONFIG_HASH_METADATA_KEY,
+    DEFAULT_MORPION_TREE_BRANCH_LIMIT,
+    MorpionBootstrapConfig,
     bootstrap_config_from_args,
     bootstrap_config_sha256,
     load_bootstrap_config,
@@ -40,9 +42,18 @@ from .config import (
 )
 from .control import (
     BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY,
+    BOOTSTRAP_APPLIED_RUNTIME_CONTROL_METADATA_KEY,
+    BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY,
+    BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY,
     MorpionBootstrapControl,
+    MorpionBootstrapEffectiveRuntimeConfig,
     apply_control_to_args,
     bootstrap_control_to_dict,
+    bootstrap_runtime_control_to_dict,
+    effective_runtime_config_from_config_and_control,
+    effective_runtime_config_from_metadata,
+    effective_runtime_config_sha256,
+    effective_runtime_config_to_dict,
     load_bootstrap_control,
 )
 from .record_status import (
@@ -142,6 +153,23 @@ class UnknownForcedMorpionEvaluatorError(ValueError):
         )
 
 
+class UnsupportedMorpionRuntimeReconfigurationError(ValueError):
+    """Raised when a requested runtime change is outside the supported safe subset."""
+
+    def __init__(
+        self,
+        *,
+        previous_tree_branch_limit: int,
+        requested_tree_branch_limit: int,
+    ) -> None:
+        """Initialize the unsupported runtime reconfiguration error."""
+        super().__init__(
+            "Morpion bootstrap supports only non-increasing tree_branch_limit "
+            "changes on an existing persisted tree. Requested "
+            f"{requested_tree_branch_limit} after {previous_tree_branch_limit}."
+        )
+
+
 class MissingForcedMorpionEvaluatorBundleError(ValueError):
     """Raised when a forced evaluator has no saved bundle at restore time."""
 
@@ -197,6 +225,7 @@ class MorpionBootstrapArgs:
     min_visit_count: int | None = None
     max_rows: int | None = None
     use_backed_up_value: bool = True
+    tree_branch_limit: int = DEFAULT_MORPION_TREE_BRANCH_LIMIT
     batch_size: int = 64
     num_epochs: int = 5
     learning_rate: float = 1e-3
@@ -323,6 +352,7 @@ class MorpionSearchRunner(Protocol):
         self,
         tree_snapshot_path: str | Path | None,
         model_bundle_path: str | Path | None,
+        effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig | None = None,
     ) -> None:
         """Load existing search state or initialize a fresh one."""
         ...
@@ -417,6 +447,7 @@ def run_one_bootstrap_cycle(
     runner: MorpionSearchRunner,
     run_state: MorpionBootstrapRunState,
     control: MorpionBootstrapControl | None = None,
+    bootstrap_config: MorpionBootstrapConfig | None = None,
     now_unix_s: float | None = None,
 ) -> MorpionBootstrapRunState:
     """Run one grow/export/train/save bootstrap cycle.
@@ -427,6 +458,24 @@ def run_one_bootstrap_cycle(
     """
     paths.ensure_directories()
     resolved_control = MorpionBootstrapControl() if control is None else control
+    resolved_bootstrap_config = (
+        bootstrap_config_from_args(args)
+        if bootstrap_config is None
+        else bootstrap_config
+    )
+    effective_runtime_config = effective_runtime_config_from_config_and_control(
+        resolved_bootstrap_config,
+        resolved_control,
+    )
+    previous_effective_runtime_config = _previous_effective_runtime_config(
+        run_state.metadata,
+        resolved_bootstrap_config=resolved_bootstrap_config,
+    )
+    _validate_runtime_reconfiguration(
+        previous_effective_runtime_config=previous_effective_runtime_config,
+        effective_runtime_config=effective_runtime_config,
+        cycle_index=run_state.cycle_index,
+    )
     resolved_evaluators_config = args.resolved_evaluators_config()
     _validate_forced_evaluator(
         force_evaluator=resolved_control.force_evaluator,
@@ -444,6 +493,7 @@ def run_one_bootstrap_cycle(
     runner.load_or_create(
         restore_tree_path,
         resolved_active_model.model_bundle_path,
+        effective_runtime_config,
     )
     runner.grow(args.max_growth_steps_per_cycle)
     current_tree_size = runner.current_tree_size()
@@ -479,6 +529,7 @@ def run_one_bootstrap_cycle(
                 run_state.metadata,
                 relative_runtime_checkpoint_path=None,
                 control=resolved_control,
+                effective_runtime_config=effective_runtime_config,
             ),
         )
         history_recorder.record(
@@ -500,6 +551,8 @@ def run_one_bootstrap_cycle(
                     active_evaluator_name=next_run_state.active_evaluator_name,
                     config_hash=_bootstrap_config_hash_from_metadata(run_state.metadata),
                     forced_evaluator=resolved_control.force_evaluator,
+                    runtime_control=resolved_control.runtime,
+                    effective_runtime_config=effective_runtime_config,
                 ),
             )
         )
@@ -572,6 +625,7 @@ def run_one_bootstrap_cycle(
         run_state.metadata,
         relative_runtime_checkpoint_path=relative_runtime_checkpoint_path,
         control=resolved_control,
+        effective_runtime_config=effective_runtime_config,
     )
     next_run_state = MorpionBootstrapRunState(
         generation=generation,
@@ -604,6 +658,8 @@ def run_one_bootstrap_cycle(
                 selected_evaluator_name=selected_evaluator_name,
                 config_hash=_bootstrap_config_hash_from_metadata(run_state.metadata),
                 forced_evaluator=resolved_control.force_evaluator,
+                runtime_control=resolved_control.runtime,
+                effective_runtime_config=effective_runtime_config,
             ),
         )
     )
@@ -643,6 +699,7 @@ def run_morpion_bootstrap_loop(
             runner=runner,
             run_state=run_state,
             control=control,
+            bootstrap_config=current_config,
         )
         save_bootstrap_run_state(run_state, paths.run_state_path)
         cycles_run += 1
@@ -728,6 +785,8 @@ def _build_event_metadata(
     selected_evaluator_name: str | None = None,
     config_hash: str | None = None,
     forced_evaluator: str | None = None,
+    runtime_control: object | None = None,
+    effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig | None = None,
 ) -> dict[str, object]:
     """Build history metadata describing the active and selected evaluators."""
     metadata = morpion_bootstrap_experiment_metadata()
@@ -740,6 +799,17 @@ def _build_event_metadata(
         metadata[BOOTSTRAP_CONFIG_HASH_METADATA_KEY] = config_hash
     if forced_evaluator is not None:
         metadata["forced_evaluator"] = forced_evaluator
+    if runtime_control is not None:
+        metadata[BOOTSTRAP_APPLIED_RUNTIME_CONTROL_METADATA_KEY] = (
+            bootstrap_runtime_control_to_dict(runtime_control)
+        )
+    if effective_runtime_config is not None:
+        metadata[BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY] = (
+            effective_runtime_config_to_dict(effective_runtime_config)
+        )
+        metadata[BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY] = (
+            effective_runtime_config_sha256(effective_runtime_config)
+        )
     return metadata
 
 
@@ -871,6 +941,7 @@ def _next_metadata(
     *,
     relative_runtime_checkpoint_path: str | None,
     control: MorpionBootstrapControl,
+    effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig,
 ) -> dict[str, object]:
     """Return updated run metadata after one cycle boundary."""
     next_metadata = dict(current_metadata)
@@ -881,7 +952,61 @@ def _next_metadata(
     next_metadata[BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY] = bootstrap_control_to_dict(
         control
     )
+    next_metadata[BOOTSTRAP_APPLIED_RUNTIME_CONTROL_METADATA_KEY] = (
+        bootstrap_runtime_control_to_dict(control.runtime)
+    )
+    next_metadata[BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY] = (
+        effective_runtime_config_to_dict(effective_runtime_config)
+    )
+    next_metadata[BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY] = (
+        effective_runtime_config_sha256(effective_runtime_config)
+    )
     return next_metadata
+
+
+def _previous_effective_runtime_config(
+    metadata: Mapping[str, object],
+    *,
+    resolved_bootstrap_config: MorpionBootstrapConfig,
+) -> MorpionBootstrapEffectiveRuntimeConfig | None:
+    """Return the last applied runtime config, falling back for legacy run metadata."""
+    persisted_runtime = effective_runtime_config_from_metadata(
+        metadata.get(BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY)
+    )
+    if persisted_runtime is not None:
+        return persisted_runtime
+    runtime_checkpoint_path = metadata.get(RUNTIME_CHECKPOINT_METADATA_KEY)
+    if runtime_checkpoint_path is None:
+        return None
+    return MorpionBootstrapEffectiveRuntimeConfig(
+        tree_branch_limit=resolved_bootstrap_config.runtime.tree_branch_limit,
+    )
+
+
+def _validate_runtime_reconfiguration(
+    *,
+    previous_effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig | None,
+    effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig,
+    cycle_index: int,
+) -> None:
+    """Validate that the requested runtime change stays within the supported subset.
+
+    The current Anemone restore path safely supports only non-increasing
+    ``tree_branch_limit`` changes on an existing persisted tree. Tightening the
+    limit only constrains future growth, while widening would retroactively allow
+    expansions that the earlier runtime configuration may have pruned away.
+    """
+    if previous_effective_runtime_config is None or cycle_index < 0:
+        return
+    if (
+        effective_runtime_config.tree_branch_limit
+        > previous_effective_runtime_config.tree_branch_limit
+    ):
+        raise UnsupportedMorpionRuntimeReconfigurationError(
+            previous_tree_branch_limit=
+            previous_effective_runtime_config.tree_branch_limit,
+            requested_tree_branch_limit=effective_runtime_config.tree_branch_limit,
+        )
 
 
 __all__ = [
@@ -895,6 +1020,7 @@ __all__ = [
     "MorpionEvaluatorsConfig",
     "MorpionSearchRunner",
     "NoSelectableMorpionEvaluatorError",
+    "UnsupportedMorpionRuntimeReconfigurationError",
     "UnknownForcedMorpionEvaluatorError",
     "UnknownActiveMorpionEvaluatorError",
     "build_bootstrap_event",

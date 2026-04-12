@@ -47,13 +47,21 @@ from anemone.training_export import load_training_tree_snapshot
 
 import chipiron.environments.morpion.bootstrap.anemone_runner as anemone_runner_module
 from chipiron.environments.morpion.bootstrap import (
+    BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY,
     AnemoneMorpionSearchRunner,
+    AnemoneMorpionSearchRunnerArgs,
+    MorpionBootstrapControl,
+    MorpionBootstrapEffectiveRuntimeConfig,
     InvalidMorpionSearchCheckpointError,
     MorpionBootstrapArgs,
     MorpionBootstrapPaths,
+    MorpionBootstrapRuntimeControl,
     MorpionEvaluatorsConfig,
     MorpionEvaluatorSpec,
+    UnsupportedMorpionRuntimeReconfigurationError,
+    load_bootstrap_history,
     run_morpion_bootstrap_loop,
+    save_bootstrap_control,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks import (
     MorpionRegressorArgs,
@@ -225,6 +233,19 @@ def test_invalid_checkpoint_path_fails_loudly(tmp_path: Path) -> None:
         runner.load_or_create(tmp_path / "missing_checkpoint.json", None)
 
 
+def test_apply_runtime_control_to_runner_args_updates_tree_branch_limit() -> None:
+    """Runner args rebinding helper should update TreeBranchLimitArgs cleanly."""
+    runner_args = AnemoneMorpionSearchRunnerArgs()
+
+    rebound_args = anemone_runner_module.apply_runtime_control_to_runner_args(
+        runner_args,
+        MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=64),
+    )
+
+    assert rebound_args.search_args.stopping_criterion.tree_branch_limit == 64
+    assert runner_args.search_args.stopping_criterion.tree_branch_limit == 128
+
+
 def test_bootstrap_loop_works_with_real_runner(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -260,3 +281,84 @@ def test_bootstrap_loop_works_with_real_runner(
     assert second_state.tree_size_at_last_save >= first_saved_tree_size
     assert second_state.active_evaluator_name == "linear"
     assert MorpionBootstrapPaths.from_work_dir(tmp_path).run_state_path.is_file()
+
+
+def test_bootstrap_loop_reapplies_runtime_branch_limit_between_cycles(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The real runner should restore the same tree under a changed branch limit."""
+    _patch_reported_losses(
+        monkeypatch,
+        loss_by_evaluator_name={"linear": 0.1, "mlp": 0.2},
+    )
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        max_growth_steps_per_cycle=5,
+        save_after_tree_growth_factor=1.0,
+        save_after_seconds=0.0,
+        batch_size=1,
+        num_epochs=1,
+        shuffle=False,
+        tree_branch_limit=128,
+        evaluators_config=_multi_evaluator_config(),
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    runner = AnemoneMorpionSearchRunner()
+
+    first_state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+    first_saved_tree_size = first_state.tree_size_at_last_save
+    save_bootstrap_control(
+        MorpionBootstrapControl(
+            runtime=MorpionBootstrapRuntimeControl(tree_branch_limit=64)
+        ),
+        paths.control_path,
+    )
+
+    second_state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+    history = load_bootstrap_history(paths.history_jsonl_path)
+
+    assert second_state.generation == 2
+    assert second_state.tree_size_at_last_save >= first_saved_tree_size
+    assert runner.current_runtime_config().tree_branch_limit == 64
+    assert second_state.metadata[BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY] == {
+        "tree_branch_limit": 64
+    }
+    assert history[-1].metadata[BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY] == {
+        "tree_branch_limit": 64
+    }
+
+
+def test_bootstrap_loop_rejects_runtime_branch_limit_widening(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Widening tree_branch_limit should fail loudly instead of silently resetting."""
+    _patch_reported_losses(
+        monkeypatch,
+        loss_by_evaluator_name={"linear": 0.1, "mlp": 0.2},
+    )
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        max_growth_steps_per_cycle=5,
+        save_after_tree_growth_factor=1.0,
+        save_after_seconds=0.0,
+        batch_size=1,
+        num_epochs=1,
+        shuffle=False,
+        tree_branch_limit=128,
+        evaluators_config=_multi_evaluator_config(),
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    runner = AnemoneMorpionSearchRunner()
+
+    run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+    save_bootstrap_control(
+        MorpionBootstrapControl(
+            runtime=MorpionBootstrapRuntimeControl(tree_branch_limit=256)
+        ),
+        paths.control_path,
+    )
+
+    with pytest.raises(UnsupportedMorpionRuntimeReconfigurationError):
+        run_morpion_bootstrap_loop(args, runner, max_cycles=1)

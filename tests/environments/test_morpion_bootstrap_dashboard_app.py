@@ -45,6 +45,7 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapArgs,
     MorpionBootstrapControl,
     MorpionBootstrapPaths,
+    MorpionBootstrapRuntimeControl,
     MorpionBootstrapRunState,
     MorpionEvaluatorsConfig,
     MorpionEvaluatorSpec,
@@ -167,8 +168,11 @@ def test_build_next_control_preserves_unset_overrides() -> None:
         save_after_seconds=30.0,
         override_save_after_tree_growth_factor=True,
         save_after_tree_growth_factor=1.5,
+        override_tree_branch_limit=False,
+        tree_branch_limit=512,
         force_evaluator_mode="auto",
         force_evaluator="linear",
+        current_runtime_control=MorpionBootstrapRuntimeControl(tree_branch_limit=256),
     ) == MorpionBootstrapControl(
         max_growth_steps_per_cycle=None,
         max_rows=17,
@@ -176,7 +180,29 @@ def test_build_next_control_preserves_unset_overrides() -> None:
         save_after_seconds=None,
         save_after_tree_growth_factor=1.5,
         force_evaluator=None,
+        runtime=MorpionBootstrapRuntimeControl(tree_branch_limit=None),
     )
+
+
+def test_build_next_control_applies_runtime_override() -> None:
+    """Checked runtime overrides should persist the selected tree branch limit."""
+    assert _build_next_control(
+        override_max_growth_steps_per_cycle=False,
+        max_growth_steps_per_cycle=9,
+        override_max_rows=False,
+        max_rows=17,
+        override_use_backed_up_value=False,
+        use_backed_up_value=False,
+        override_save_after_seconds=False,
+        save_after_seconds=30.0,
+        override_save_after_tree_growth_factor=False,
+        save_after_tree_growth_factor=1.5,
+        override_tree_branch_limit=True,
+        tree_branch_limit=64,
+        force_evaluator_mode="auto",
+        force_evaluator="linear",
+        current_runtime_control=MorpionBootstrapRuntimeControl(),
+    ).runtime == MorpionBootstrapRuntimeControl(tree_branch_limit=64)
 
 
 def test_format_helpers() -> None:
