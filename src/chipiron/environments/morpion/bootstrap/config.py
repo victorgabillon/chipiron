@@ -1,0 +1,522 @@
+"""Persisted bootstrap configuration helpers for Morpion runs."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+from collections.abc import Mapping
+from dataclasses import dataclass, field, fields
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, cast
+
+from .record_status import (
+    MORPION_BOOTSTRAP_GAME,
+    MORPION_BOOTSTRAP_INITIAL_PATTERN,
+    MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
+    MORPION_BOOTSTRAP_VARIANT,
+)
+
+if TYPE_CHECKING:
+    from .bootstrap_loop import (
+        MorpionBootstrapArgs,
+        MorpionEvaluatorsConfig,
+        MorpionEvaluatorSpec,
+    )
+
+
+BOOTSTRAP_CONFIG_HASH_METADATA_KEY = "bootstrap_config_hash"
+
+
+def _empty_metadata() -> dict[str, object]:
+    """Return a typed empty metadata mapping."""
+    return {}
+
+
+@dataclass(frozen=True, slots=True)
+class MorpionBootstrapRuntimeConfig:
+    """Runtime controls for one persistent Morpion bootstrap run."""
+
+    save_after_tree_growth_factor: float
+    save_after_seconds: float
+    max_growth_steps_per_cycle: int
+    reevaluation_scope: str
+
+
+@dataclass(frozen=True, slots=True)
+class MorpionBootstrapDatasetConfig:
+    """Dataset extraction controls for one persistent Morpion bootstrap run."""
+
+    require_exact_or_terminal: bool
+    min_depth: int | None
+    min_visit_count: int | None
+    max_rows: int | None
+
+
+@dataclass(frozen=True, slots=True)
+class MorpionBootstrapExperimentIdentityConfig:
+    """Semantic identity fields that define one Morpion bootstrap run."""
+
+    game: str
+    variant: str
+    initial_pattern: str
+    initial_point_count: int
+
+
+@dataclass(frozen=True, slots=True)
+class MorpionBootstrapConfig:
+    """Canonical persisted configuration for one Morpion bootstrap run."""
+
+    experiment: MorpionBootstrapExperimentIdentityConfig
+    runtime: MorpionBootstrapRuntimeConfig
+    dataset: MorpionBootstrapDatasetConfig
+    evaluators: MorpionEvaluatorsConfig
+    metadata: dict[str, object] = field(default_factory=_empty_metadata)
+
+
+class MalformedMorpionBootstrapConfigError(TypeError):
+    """Raised when one persisted bootstrap config payload is malformed."""
+
+    @classmethod
+    def invalid_top_level_mapping(cls) -> MalformedMorpionBootstrapConfigError:
+        """Return the malformed top-level payload error."""
+        return cls("Morpion bootstrap config must be a mapping with string keys.")
+
+    @classmethod
+    def invalid_section(cls, section_name: str) -> MalformedMorpionBootstrapConfigError:
+        """Return one malformed section error."""
+        return cls(
+            f"Morpion bootstrap config field `{section_name}` must be a mapping."
+        )
+
+    @classmethod
+    def invalid_required_str(
+        cls,
+        field_name: str,
+    ) -> MalformedMorpionBootstrapConfigError:
+        """Return one malformed required-string field error."""
+        return cls(f"Morpion bootstrap config field `{field_name}` must be a string.")
+
+    @classmethod
+    def invalid_bool(cls, field_name: str) -> MalformedMorpionBootstrapConfigError:
+        """Return one malformed bool field error."""
+        return cls(f"Morpion bootstrap config field `{field_name}` must be a bool.")
+
+    @classmethod
+    def invalid_int(cls, field_name: str) -> MalformedMorpionBootstrapConfigError:
+        """Return one malformed integer-like field error."""
+        return cls(
+            f"Morpion bootstrap config field `{field_name}` must be integer-like."
+        )
+
+    @classmethod
+    def invalid_float(cls, field_name: str) -> MalformedMorpionBootstrapConfigError:
+        """Return one malformed float-like field error."""
+        return cls(
+            f"Morpion bootstrap config field `{field_name}` must be float-like."
+        )
+
+    @classmethod
+    def invalid_metadata(cls) -> MalformedMorpionBootstrapConfigError:
+        """Return one malformed metadata field error."""
+        return cls("Morpion bootstrap config field `metadata` must be a mapping.")
+
+    @classmethod
+    def invalid_evaluators(
+        cls,
+    ) -> MalformedMorpionBootstrapConfigError:
+        """Return one malformed evaluators field error."""
+        return cls(
+            "Morpion bootstrap config field `evaluators` must contain a valid "
+            "Morpion evaluator mapping."
+        )
+
+
+class UnsafeMorpionBootstrapConfigChangeError(ValueError):
+    """Raised when one relaunch changes unsafe bootstrap config fields."""
+
+
+def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapConfig:
+    """Build the canonical persisted bootstrap config from current args."""
+    return MorpionBootstrapConfig(
+        experiment=MorpionBootstrapExperimentIdentityConfig(
+            game=MORPION_BOOTSTRAP_GAME,
+            variant=MORPION_BOOTSTRAP_VARIANT,
+            initial_pattern=MORPION_BOOTSTRAP_INITIAL_PATTERN,
+            initial_point_count=MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
+        ),
+        runtime=MorpionBootstrapRuntimeConfig(
+            save_after_tree_growth_factor=args.save_after_tree_growth_factor,
+            save_after_seconds=args.save_after_seconds,
+            max_growth_steps_per_cycle=args.max_growth_steps_per_cycle,
+            reevaluation_scope=args.reevaluation_scope,
+        ),
+        dataset=MorpionBootstrapDatasetConfig(
+            require_exact_or_terminal=args.require_exact_or_terminal,
+            min_depth=args.min_depth,
+            min_visit_count=args.min_visit_count,
+            max_rows=args.max_rows,
+        ),
+        evaluators=args.resolved_evaluators_config(),
+    )
+
+
+def bootstrap_config_to_dict(config: MorpionBootstrapConfig) -> dict[str, object]:
+    """Serialize one bootstrap config into JSON-friendly data."""
+    return {
+        "experiment": {
+            "game": config.experiment.game,
+            "variant": config.experiment.variant,
+            "initial_pattern": config.experiment.initial_pattern,
+            "initial_point_count": config.experiment.initial_point_count,
+        },
+        "runtime": {
+            "save_after_tree_growth_factor": config.runtime.save_after_tree_growth_factor,
+            "save_after_seconds": config.runtime.save_after_seconds,
+            "max_growth_steps_per_cycle": config.runtime.max_growth_steps_per_cycle,
+            "reevaluation_scope": config.runtime.reevaluation_scope,
+        },
+        "dataset": {
+            "require_exact_or_terminal": config.dataset.require_exact_or_terminal,
+            "min_depth": config.dataset.min_depth,
+            "min_visit_count": config.dataset.min_visit_count,
+            "max_rows": config.dataset.max_rows,
+        },
+        "evaluators": _evaluators_config_to_dict(config.evaluators),
+        "metadata": dict(config.metadata),
+    }
+
+
+def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
+    """Deserialize one bootstrap config from JSON-friendly data."""
+    from .bootstrap_loop import MorpionEvaluatorsConfig, MorpionEvaluatorSpec
+
+    if not _is_str_key_mapping(data):
+        raise MalformedMorpionBootstrapConfigError.invalid_top_level_mapping()
+
+    payload = cast("Mapping[str, object]", data)
+    experiment = _require_section_mapping(payload.get("experiment"), section_name="experiment")
+    runtime = _require_section_mapping(payload.get("runtime"), section_name="runtime")
+    dataset = _require_section_mapping(payload.get("dataset"), section_name="dataset")
+    evaluators_data = _require_section_mapping(
+        payload.get("evaluators"),
+        section_name="evaluators",
+    )
+    evaluator_entries = _require_section_mapping(
+        evaluators_data.get("evaluators"),
+        section_name="evaluators.evaluators",
+    )
+
+    try:
+        evaluators = MorpionEvaluatorsConfig(
+            evaluators={
+                evaluator_name: MorpionEvaluatorSpec(
+                    name=_required_str(
+                        _require_section_mapping(spec_payload, section_name=f"evaluators.evaluators.{evaluator_name}").get("name"),
+                        field_name=f"evaluators.evaluators.{evaluator_name}.name",
+                    ),
+                    model_type=_required_str(
+                        _require_section_mapping(spec_payload, section_name=f"evaluators.evaluators.{evaluator_name}").get("model_type"),
+                        field_name=f"evaluators.evaluators.{evaluator_name}.model_type",
+                    ),
+                    hidden_sizes=_optional_int_tuple(
+                        _require_section_mapping(spec_payload, section_name=f"evaluators.evaluators.{evaluator_name}").get("hidden_sizes"),
+                        field_name=f"evaluators.evaluators.{evaluator_name}.hidden_sizes",
+                    ),
+                    num_epochs=_coerce_int(
+                        _require_section_mapping(spec_payload, section_name=f"evaluators.evaluators.{evaluator_name}").get("num_epochs"),
+                        field_name=f"evaluators.evaluators.{evaluator_name}.num_epochs",
+                    ),
+                    batch_size=_coerce_int(
+                        _require_section_mapping(spec_payload, section_name=f"evaluators.evaluators.{evaluator_name}").get("batch_size"),
+                        field_name=f"evaluators.evaluators.{evaluator_name}.batch_size",
+                    ),
+                    learning_rate=_coerce_float(
+                        _require_section_mapping(spec_payload, section_name=f"evaluators.evaluators.{evaluator_name}").get("learning_rate"),
+                        field_name=f"evaluators.evaluators.{evaluator_name}.learning_rate",
+                    ),
+                )
+                for evaluator_name, spec_payload in evaluator_entries.items()
+            }
+        )
+    except (TypeError, ValueError) as exc:
+        raise MalformedMorpionBootstrapConfigError.invalid_evaluators() from exc
+
+    return MorpionBootstrapConfig(
+        experiment=MorpionBootstrapExperimentIdentityConfig(
+            game=_required_str(experiment.get("game"), field_name="experiment.game"),
+            variant=_required_str(
+                experiment.get("variant"),
+                field_name="experiment.variant",
+            ),
+            initial_pattern=_required_str(
+                experiment.get("initial_pattern"),
+                field_name="experiment.initial_pattern",
+            ),
+            initial_point_count=_coerce_int(
+                experiment.get("initial_point_count"),
+                field_name="experiment.initial_point_count",
+            ),
+        ),
+        runtime=MorpionBootstrapRuntimeConfig(
+            save_after_tree_growth_factor=_coerce_float(
+                runtime.get("save_after_tree_growth_factor"),
+                field_name="runtime.save_after_tree_growth_factor",
+            ),
+            save_after_seconds=_coerce_float(
+                runtime.get("save_after_seconds"),
+                field_name="runtime.save_after_seconds",
+            ),
+            max_growth_steps_per_cycle=_coerce_int(
+                runtime.get("max_growth_steps_per_cycle"),
+                field_name="runtime.max_growth_steps_per_cycle",
+            ),
+            reevaluation_scope=_required_str(
+                runtime.get("reevaluation_scope"),
+                field_name="runtime.reevaluation_scope",
+            ),
+        ),
+        dataset=MorpionBootstrapDatasetConfig(
+            require_exact_or_terminal=_required_bool(
+                dataset.get("require_exact_or_terminal"),
+                field_name="dataset.require_exact_or_terminal",
+            ),
+            min_depth=_optional_int(
+                dataset.get("min_depth"),
+                field_name="dataset.min_depth",
+            ),
+            min_visit_count=_optional_int(
+                dataset.get("min_visit_count"),
+                field_name="dataset.min_visit_count",
+            ),
+            max_rows=_optional_int(
+                dataset.get("max_rows"),
+                field_name="dataset.max_rows",
+            ),
+        ),
+        evaluators=evaluators,
+        metadata=_metadata_dict(payload.get("metadata")),
+    )
+
+
+def load_bootstrap_config(path: str | Path) -> MorpionBootstrapConfig:
+    """Load one persisted bootstrap config from JSON."""
+    try:
+        loaded = json.loads(Path(path).read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise MalformedMorpionBootstrapConfigError(
+            f"Morpion bootstrap config at {path!s} is not valid JSON."
+        ) from exc
+    return bootstrap_config_from_dict(loaded)
+
+
+def save_bootstrap_config(config: MorpionBootstrapConfig, path: str | Path) -> None:
+    """Persist one bootstrap config as canonical UTF-8 JSON."""
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(
+        bootstrap_config_to_canonical_json(config) + "\n",
+        encoding="utf-8",
+    )
+
+
+def bootstrap_config_to_canonical_json(config: MorpionBootstrapConfig) -> str:
+    """Return one stable canonical JSON string for hashing or persistence."""
+    return json.dumps(
+        bootstrap_config_to_dict(config),
+        indent=2,
+        sort_keys=True,
+    )
+
+
+def bootstrap_config_sha256(config: MorpionBootstrapConfig) -> str:
+    """Return a stable hash for one canonical bootstrap config."""
+    return hashlib.sha256(
+        bootstrap_config_to_canonical_json(config).encode("utf-8")
+    ).hexdigest()
+
+
+def diff_bootstrap_configs(
+    previous: MorpionBootstrapConfig,
+    current: MorpionBootstrapConfig,
+) -> tuple[str, ...]:
+    """Return a stable list of changed config field paths."""
+    differences: list[str] = []
+    differences.extend(
+        _diff_dataclass_section(previous.experiment, current.experiment, prefix="experiment")
+    )
+    differences.extend(
+        _diff_dataclass_section(previous.runtime, current.runtime, prefix="runtime")
+    )
+    differences.extend(
+        _diff_dataclass_section(previous.dataset, current.dataset, prefix="dataset")
+    )
+    if previous.evaluators != current.evaluators:
+        differences.append("evaluators")
+    if previous.metadata != current.metadata:
+        differences.append("metadata")
+    return tuple(differences)
+
+
+def validate_bootstrap_config_change(
+    previous: MorpionBootstrapConfig,
+    current: MorpionBootstrapConfig,
+) -> None:
+    """Validate whether a relaunch config change can continue one run safely."""
+    unsafe_changes = [
+        field_name
+        for field_name in _diff_dataclass_section(
+            previous.experiment,
+            current.experiment,
+            prefix="experiment",
+        )
+    ]
+    if not unsafe_changes:
+        return
+
+    rendered_changes = "; ".join(
+        f"{field_name}: { _resolve_diff_value(previous, field_name)!r } -> { _resolve_diff_value(current, field_name)!r }"
+        for field_name in unsafe_changes
+    )
+    raise UnsafeMorpionBootstrapConfigChangeError(
+        "Unsafe Morpion bootstrap config change(s): " + rendered_changes
+    )
+
+
+def _diff_dataclass_section(previous: object, current: object, *, prefix: str) -> list[str]:
+    """Return changed field paths for one flat dataclass section."""
+    return [
+        f"{prefix}.{field_info.name}"
+        for field_info in fields(previous)
+        if getattr(previous, field_info.name) != getattr(current, field_info.name)
+    ]
+
+
+def _resolve_diff_value(config: MorpionBootstrapConfig, dotted_field_name: str) -> object:
+    """Resolve one dotted config field path against one config object."""
+    section_name, field_name = dotted_field_name.split(".", maxsplit=1)
+    return getattr(getattr(config, section_name), field_name)
+
+
+def _evaluators_config_to_dict(config: MorpionEvaluatorsConfig) -> dict[str, object]:
+    """Serialize one evaluator config into JSON-friendly data."""
+    return {
+        "evaluators": {
+            name: _evaluator_spec_to_dict(config.evaluators[name])
+            for name in sorted(config.evaluators)
+        }
+    }
+
+
+def _evaluator_spec_to_dict(spec: MorpionEvaluatorSpec) -> dict[str, object]:
+    """Serialize one evaluator spec into JSON-friendly data."""
+    return {
+        "name": spec.name,
+        "model_type": spec.model_type,
+        "hidden_sizes": None if spec.hidden_sizes is None else list(spec.hidden_sizes),
+        "num_epochs": spec.num_epochs,
+        "batch_size": spec.batch_size,
+        "learning_rate": spec.learning_rate,
+    }
+
+
+def _is_str_key_mapping(value: object) -> bool:
+    """Return whether ``value`` is a mapping with string keys."""
+    if not isinstance(value, Mapping):
+        return False
+    mapping = cast("Mapping[object, object]", value)
+    return all(isinstance(key, str) for key in mapping)
+
+
+def _require_section_mapping(value: object, *, section_name: str) -> dict[str, object]:
+    """Return one config section mapping or raise clearly."""
+    if not _is_str_key_mapping(value):
+        raise MalformedMorpionBootstrapConfigError.invalid_section(section_name)
+    return dict(cast("Mapping[str, object]", value))
+
+
+def _required_str(value: object, *, field_name: str) -> str:
+    """Return one required string field or raise."""
+    if isinstance(value, str):
+        return value
+    raise MalformedMorpionBootstrapConfigError.invalid_required_str(field_name)
+
+
+def _required_bool(value: object, *, field_name: str) -> bool:
+    """Return one required bool field or raise."""
+    if isinstance(value, bool):
+        return value
+    raise MalformedMorpionBootstrapConfigError.invalid_bool(field_name)
+
+
+def _coerce_int(value: object, *, field_name: str) -> int:
+    """Return one integer-like field or raise."""
+    if isinstance(value, bool):
+        raise MalformedMorpionBootstrapConfigError.invalid_int(field_name)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError as exc:
+            raise MalformedMorpionBootstrapConfigError.invalid_int(field_name) from exc
+    raise MalformedMorpionBootstrapConfigError.invalid_int(field_name)
+
+
+def _optional_int(value: object, *, field_name: str) -> int | None:
+    """Return one optional integer-like field or raise."""
+    if value is None:
+        return None
+    return _coerce_int(value, field_name=field_name)
+
+
+def _coerce_float(value: object, *, field_name: str) -> float:
+    """Return one float-like field or raise."""
+    if isinstance(value, bool):
+        raise MalformedMorpionBootstrapConfigError.invalid_float(field_name)
+    try:
+        if isinstance(value, int | float | str):
+            return float(value)
+    except ValueError as exc:
+        raise MalformedMorpionBootstrapConfigError.invalid_float(field_name) from exc
+    raise MalformedMorpionBootstrapConfigError.invalid_float(field_name)
+
+
+def _optional_int_tuple(value: object, *, field_name: str) -> tuple[int, ...] | None:
+    """Return one optional integer tuple field or raise."""
+    if value is None:
+        return None
+    if not isinstance(value, list | tuple):
+        raise MalformedMorpionBootstrapConfigError.invalid_int(field_name)
+    items = tuple(_coerce_int(item, field_name=field_name) for item in value)
+    return items
+
+
+def _metadata_dict(value: object) -> dict[str, object]:
+    """Return one metadata mapping or raise."""
+    if value is None:
+        return {}
+    if not _is_str_key_mapping(value):
+        raise MalformedMorpionBootstrapConfigError.invalid_metadata()
+    return dict(cast("Mapping[str, object]", value))
+
+
+__all__ = [
+    "BOOTSTRAP_CONFIG_HASH_METADATA_KEY",
+    "MalformedMorpionBootstrapConfigError",
+    "MorpionBootstrapConfig",
+    "MorpionBootstrapDatasetConfig",
+    "MorpionBootstrapExperimentIdentityConfig",
+    "MorpionBootstrapRuntimeConfig",
+    "UnsafeMorpionBootstrapConfigChangeError",
+    "bootstrap_config_from_args",
+    "bootstrap_config_from_dict",
+    "bootstrap_config_sha256",
+    "bootstrap_config_to_canonical_json",
+    "bootstrap_config_to_dict",
+    "diff_bootstrap_configs",
+    "load_bootstrap_config",
+    "save_bootstrap_config",
+    "validate_bootstrap_config_change",
+]

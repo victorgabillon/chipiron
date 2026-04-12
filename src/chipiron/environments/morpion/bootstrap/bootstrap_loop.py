@@ -30,6 +30,14 @@ from .history import (
     MorpionBootstrapTreeStatus,
     MorpionEvaluatorMetrics,
 )
+from .config import (
+    BOOTSTRAP_CONFIG_HASH_METADATA_KEY,
+    bootstrap_config_from_args,
+    bootstrap_config_sha256,
+    load_bootstrap_config,
+    save_bootstrap_config,
+    validate_bootstrap_config_change,
+)
 from .record_status import (
     MorpionBootstrapRecordStatus,
     default_morpion_record_status,
@@ -159,7 +167,9 @@ class MorpionBootstrapArgs:
     require_exact_or_terminal: bool = False
     min_depth: int | None = None
     min_visit_count: int | None = None
+    max_rows: int | None = None
     use_backed_up_value: bool = True
+    reevaluation_scope: str = "leaves"
     batch_size: int = 64
     num_epochs: int = 5
     learning_rate: float = 1e-3
@@ -189,6 +199,7 @@ class MorpionBootstrapPaths:
     """Canonical artifact locations for one Morpion bootstrap work directory."""
 
     work_dir: Path
+    bootstrap_config_path: Path
     run_state_path: Path
     history_jsonl_path: Path
     latest_status_path: Path
@@ -206,6 +217,7 @@ class MorpionBootstrapPaths:
         root = Path(work_dir).resolve()
         return cls(
             work_dir=root,
+            bootstrap_config_path=root / "bootstrap_config.json",
             run_state_path=root / "run_state.json",
             history_jsonl_path=root / "history.jsonl",
             latest_status_path=root / "latest_status.json",
@@ -445,7 +457,8 @@ def run_one_bootstrap_cycle(
                     previous_record_status=run_state.latest_record_status,
                 ),
                 metadata=_build_event_metadata(
-                    active_evaluator_name=next_run_state.active_evaluator_name
+                    active_evaluator_name=next_run_state.active_evaluator_name,
+                    config_hash=_bootstrap_config_hash_from_metadata(run_state.metadata),
                 ),
             )
         )
@@ -471,6 +484,7 @@ def run_one_bootstrap_cycle(
         require_exact_or_terminal=args.require_exact_or_terminal,
         min_depth=args.min_depth,
         min_visit_count=args.min_visit_count,
+        max_rows=args.max_rows,
         use_backed_up_value=args.use_backed_up_value,
         metadata={"bootstrap_generation": generation},
     )
@@ -544,6 +558,7 @@ def run_one_bootstrap_cycle(
             metadata=_build_event_metadata(
                 active_evaluator_name=selected_evaluator_name,
                 selected_evaluator_name=selected_evaluator_name,
+                config_hash=_bootstrap_config_hash_from_metadata(run_state.metadata),
             ),
         )
     )
@@ -560,10 +575,18 @@ def run_morpion_bootstrap_loop(
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
 
+    current_config = bootstrap_config_from_args(args)
+    if paths.bootstrap_config_path.is_file():
+        persisted_config = load_bootstrap_config(paths.bootstrap_config_path)
+        validate_bootstrap_config_change(persisted_config, current_config)
+    save_bootstrap_config(current_config, paths.bootstrap_config_path)
+    config_hash = bootstrap_config_sha256(current_config)
+
     if paths.run_state_path.is_file():
         run_state = load_bootstrap_run_state(paths.run_state_path)
     else:
         run_state = initialize_bootstrap_run_state()
+    run_state = _with_config_hash_metadata(run_state, config_hash=config_hash)
 
     cycles_run = 0
     while max_cycles is None or cycles_run < max_cycles:
@@ -646,6 +669,7 @@ def _build_event_metadata(
     *,
     active_evaluator_name: str | None,
     selected_evaluator_name: str | None = None,
+    config_hash: str | None = None,
 ) -> dict[str, object]:
     """Build history metadata describing the active and selected evaluators."""
     metadata = morpion_bootstrap_experiment_metadata()
@@ -654,6 +678,8 @@ def _build_event_metadata(
     if selected_evaluator_name is not None:
         metadata["selected_evaluator_name"] = selected_evaluator_name
         metadata["selection_policy"] = "lowest_final_loss"
+    if config_hash is not None:
+        metadata[BOOTSTRAP_CONFIG_HASH_METADATA_KEY] = config_hash
     return metadata
 
 
@@ -725,7 +751,38 @@ def _resolve_runtime_restore_path(
     return paths.resolve_work_dir_path(run_state.latest_tree_snapshot_path)
 
 
+def _bootstrap_config_hash_from_metadata(metadata: Mapping[str, object]) -> str | None:
+    """Return the persisted bootstrap config hash from one metadata mapping."""
+    value = metadata.get(BOOTSTRAP_CONFIG_HASH_METADATA_KEY)
+    return value if isinstance(value, str) else None
+
+
+def _with_config_hash_metadata(
+    run_state: MorpionBootstrapRunState,
+    *,
+    config_hash: str,
+) -> MorpionBootstrapRunState:
+    """Return one run state with the accepted bootstrap config hash recorded."""
+    next_metadata = dict(run_state.metadata)
+    next_metadata[BOOTSTRAP_CONFIG_HASH_METADATA_KEY] = config_hash
+    return MorpionBootstrapRunState(
+        generation=run_state.generation,
+        cycle_index=run_state.cycle_index,
+        latest_tree_snapshot_path=run_state.latest_tree_snapshot_path,
+        latest_rows_path=run_state.latest_rows_path,
+        latest_model_bundle_paths=None
+        if run_state.latest_model_bundle_paths is None
+        else dict(run_state.latest_model_bundle_paths),
+        active_evaluator_name=run_state.active_evaluator_name,
+        tree_size_at_last_save=run_state.tree_size_at_last_save,
+        last_save_unix_s=run_state.last_save_unix_s,
+        latest_record_status=run_state.latest_record_status,
+        metadata=next_metadata,
+    )
+
+
 __all__ = [
+    "BOOTSTRAP_CONFIG_HASH_METADATA_KEY",
     "EmptyMorpionEvaluatorsConfigError",
     "InconsistentMorpionEvaluatorSpecNameError",
     "MissingActiveMorpionEvaluatorError",

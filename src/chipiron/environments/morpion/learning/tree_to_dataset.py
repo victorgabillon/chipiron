@@ -169,6 +169,7 @@ def training_tree_snapshot_to_morpion_supervised_rows(
     require_exact_or_terminal: bool = False,
     min_depth: int | None = None,
     min_visit_count: int | None = None,
+    max_rows: int | None = None,
     use_backed_up_value: bool = True,
     metadata: dict[str, object] | None = None,
 ) -> MorpionSupervisedRows:
@@ -187,6 +188,8 @@ def training_tree_snapshot_to_morpion_supervised_rows(
         )
         if row is not None
     )
+    if max_rows is not None:
+        rows = rows[:max_rows]
     return MorpionSupervisedRows(
         rows=rows,
         metadata=_build_rows_metadata(
@@ -195,6 +198,7 @@ def training_tree_snapshot_to_morpion_supervised_rows(
             require_exact_or_terminal=require_exact_or_terminal,
             min_depth=min_depth,
             min_visit_count=min_visit_count,
+            max_rows=max_rows,
             use_backed_up_value=use_backed_up_value,
             num_rows=len(rows),
         ),
@@ -207,6 +211,7 @@ def load_training_tree_snapshot_as_morpion_supervised_rows(
     require_exact_or_terminal: bool = False,
     min_depth: int | None = None,
     min_visit_count: int | None = None,
+    max_rows: int | None = None,
     use_backed_up_value: bool = True,
     metadata: dict[str, object] | None = None,
 ) -> MorpionSupervisedRows:
@@ -217,6 +222,7 @@ def load_training_tree_snapshot_as_morpion_supervised_rows(
         require_exact_or_terminal=require_exact_or_terminal,
         min_depth=min_depth,
         min_visit_count=min_visit_count,
+        max_rows=max_rows,
         use_backed_up_value=use_backed_up_value,
         metadata=metadata,
     )
@@ -344,6 +350,7 @@ def _build_rows_metadata(
     require_exact_or_terminal: bool,
     min_depth: int | None,
     min_visit_count: int | None,
+    max_rows: int | None,
     use_backed_up_value: bool,
     num_rows: int,
 ) -> dict[str, Any]:
@@ -357,6 +364,7 @@ def _build_rows_metadata(
         "require_exact_or_terminal": require_exact_or_terminal,
         "min_depth": min_depth,
         "min_visit_count": min_visit_count,
+        "max_rows": max_rows,
         "use_backed_up_value": use_backed_up_value,
         "num_rows": num_rows,
     }

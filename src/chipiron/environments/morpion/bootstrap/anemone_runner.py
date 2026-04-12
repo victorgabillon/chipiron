@@ -3,16 +3,11 @@
 from __future__ import annotations
 
 import json
-from contextlib import ExitStack, contextmanager
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from random import Random
 from typing import Any, cast
-from unittest.mock import patch
 
-import anemone.checkpoints.build as checkpoint_build_module
-import anemone.checkpoints.load as checkpoint_load_module
-import anemone.checkpoints.value_serialization as checkpoint_value_serialization_module
 from anemone.checkpoints import (
     SearchRuntimeCheckpointPayload,
     build_search_checkpoint_payload,
@@ -54,9 +49,6 @@ from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
 
 from .bootstrap_loop import MorpionSearchRunner
 from .history import MorpionBootstrapTreeStatus
-
-
-_MORPION_MOVE_CHECKPOINT_PREFIX = "chipiron:morpion-move:"
 
 
 def _default_search_args() -> SearchArgs:
@@ -267,18 +259,17 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
     def _load_runtime_from_checkpoint(self, tree_snapshot_path: Path) -> object:
         """Restore one live runtime from a persisted checkpoint JSON file."""
         payload = _load_search_checkpoint_payload(tree_snapshot_path)
-        with _patched_morpion_move_checkpoint_atoms():
-            return load_search_from_checkpoint_payload(
-                payload,
-                state_codec=self._state_codec,
-                dynamics=self._dynamics,
-                args=self._args.search_args,
-                state_type=MorpionState,
-                master_state_value_evaluator=self._build_master_evaluator(None),
-                random_generator=self._random_generator,
-                state_representation_factory=None,
-                node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
-            )
+        return load_search_from_checkpoint_payload(
+            payload,
+            state_codec=self._state_codec,
+            dynamics=self._dynamics,
+            args=self._args.search_args,
+            state_type=MorpionState,
+            master_state_value_evaluator=self._build_master_evaluator(None),
+            random_generator=self._random_generator,
+            state_representation_factory=None,
+            node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
+        )
 
     def _build_master_evaluator(
         self,
@@ -313,11 +304,10 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
     def save_checkpoint(self, output_path: str | Path) -> None:
         """Persist the live Anemone runtime as a checkpoint JSON file."""
         runtime = self._require_runtime()
-        with _patched_morpion_move_checkpoint_atoms():
-            payload = build_search_checkpoint_payload(
-                runtime,
-                state_codec=self._state_codec,
-            )
+        payload = build_search_checkpoint_payload(
+            runtime,
+            state_codec=self._state_codec,
+        )
         output = Path(output_path)
         output.parent.mkdir(parents=True, exist_ok=True)
         with open(output, "w", encoding="utf-8") as handle:
@@ -365,75 +355,6 @@ def _runtime_can_step(runtime: Any) -> bool:
         return True
     tree_depth = runtime.tree.tree_root_tree_depth + current_depth_to_expand
     return tree_depth in runtime.tree.descendants
-
-
-def _is_morpion_move(value: object) -> bool:
-    """Return whether one runtime branch key is a Morpion move tuple."""
-    return (
-        isinstance(value, tuple)
-        and len(value) == 4
-        and all(isinstance(item, int) for item in value)
-    )
-
-
-@contextmanager
-def _patched_morpion_move_checkpoint_atoms() -> Any:
-    """Temporarily teach Anemone checkpoint helpers how to encode Morpion moves."""
-    original_value_serialize = checkpoint_value_serialization_module.serialize_checkpoint_atom
-    original_value_deserialize = checkpoint_value_serialization_module.deserialize_checkpoint_atom
-
-    def _serialize(value: object) -> object:
-        if _is_morpion_move(value):
-            move = cast("tuple[int, int, int, int]", value)
-            return _MORPION_MOVE_CHECKPOINT_PREFIX + ",".join(
-                str(coordinate) for coordinate in move
-            )
-        return original_value_serialize(value)
-
-    def _deserialize(payload: object) -> object:
-        value = original_value_deserialize(payload)
-        if not isinstance(value, str):
-            return value
-        if not value.startswith(_MORPION_MOVE_CHECKPOINT_PREFIX):
-            return value
-        coordinates = tuple(
-            int(part)
-            for part in value.removeprefix(_MORPION_MOVE_CHECKPOINT_PREFIX).split(",")
-        )
-        if len(coordinates) != 4:
-            return value
-        return coordinates
-
-    with ExitStack() as stack:
-        stack.enter_context(
-            patch.object(
-                checkpoint_build_module,
-                "serialize_checkpoint_atom",
-                _serialize,
-            )
-        )
-        stack.enter_context(
-            patch.object(
-                checkpoint_load_module,
-                "deserialize_checkpoint_atom",
-                _deserialize,
-            )
-        )
-        stack.enter_context(
-            patch.object(
-                checkpoint_value_serialization_module,
-                "serialize_checkpoint_atom",
-                _serialize,
-            )
-        )
-        stack.enter_context(
-            patch.object(
-                checkpoint_value_serialization_module,
-                "deserialize_checkpoint_atom",
-                _deserialize,
-            )
-        )
-        yield
 
 
 def _safe_int_attr(node: Any, attribute_name: str) -> int | None:
