@@ -55,6 +55,7 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionEvaluatorsConfig,
     MorpionEvaluatorSpec,
     bootstrap_config_from_args,
+    load_bootstrap_config,
     save_bootstrap_config,
     save_bootstrap_run_state,
 )
@@ -63,14 +64,23 @@ from chipiron.environments.morpion.bootstrap.dashboard_app import (
     _baseline_tree_branch_limit,
     _build_next_control,
     _configured_evaluator_names,
+    _dataset_status_summary,
     _effective_runtime_config,
+    _effective_state_summary,
     _effective_runtime_hash,
+    _evaluator_control_status_summary,
     _force_evaluator_options,
     _format_force_evaluator_option,
+    _format_force_evaluator_state,
     _format_optional_runtime_override,
     _format_value,
     _has_pending_control_changes,
+    _is_stale_forced_evaluator,
     _load_applied_control,
+    _pending_control_fields,
+    _pending_control_sections,
+    _runtime_status_summary,
+    _scheduling_status_summary,
     _tree_branch_limit_input_value,
 )
 
@@ -192,7 +202,9 @@ def test_configured_force_evaluator_options_come_from_config(tmp_path: Path) -> 
         paths.bootstrap_config_path,
     )
 
-    configured_evaluator_names = _configured_evaluator_names(paths)
+    configured_evaluator_names = _configured_evaluator_names(
+        load_bootstrap_config(paths.bootstrap_config_path)
+    )
 
     assert configured_evaluator_names == ("linear", "mlp")
     assert _force_evaluator_options(
@@ -224,6 +236,51 @@ def test_pending_changes_helper_covers_runtime_control() -> None:
             runtime=MorpionBootstrapRuntimeControl(tree_branch_limit=96)
         ),
         applied_control,
+    )
+
+
+def test_pending_control_helpers_cover_expected_categories() -> None:
+    """Pending helper outputs should be stable across representative change mixes."""
+    applied = MorpionBootstrapControl()
+
+    assert _pending_control_fields(applied, applied) == ()
+    assert _pending_control_sections(applied, applied) == ()
+
+    dataset_only = MorpionBootstrapControl(max_rows=10)
+    assert _pending_control_fields(dataset_only, applied) == ("max_rows",)
+    assert _pending_control_sections(dataset_only, applied) == ("dataset",)
+
+    runtime_only = MorpionBootstrapControl(
+        runtime=MorpionBootstrapRuntimeControl(tree_branch_limit=64)
+    )
+    assert _pending_control_fields(runtime_only, applied) == (
+        "runtime.tree_branch_limit",
+    )
+    assert _pending_control_sections(runtime_only, applied) == ("runtime",)
+
+    forced_only = MorpionBootstrapControl(force_evaluator="mlp")
+    assert _pending_control_fields(forced_only, applied) == ("force_evaluator",)
+    assert _pending_control_sections(forced_only, applied) == (
+        "evaluator selection",
+    )
+
+    mixed = MorpionBootstrapControl(
+        max_rows=10,
+        save_after_seconds=5.0,
+        force_evaluator="mlp",
+        runtime=MorpionBootstrapRuntimeControl(tree_branch_limit=64),
+    )
+    assert _pending_control_fields(mixed, applied) == (
+        "max_rows",
+        "save_after_seconds",
+        "force_evaluator",
+        "runtime.tree_branch_limit",
+    )
+    assert _pending_control_sections(mixed, applied) == (
+        "dataset",
+        "scheduling",
+        "evaluator selection",
+        "runtime",
     )
 
 
@@ -295,12 +352,219 @@ def test_baseline_tree_branch_limit_uses_config_or_default(tmp_path: Path) -> No
     """Dashboard baseline runtime value should come from config when present."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
 
-    assert _baseline_tree_branch_limit(paths) == DEFAULT_MORPION_TREE_BRANCH_LIMIT
+    assert _baseline_tree_branch_limit(None) == DEFAULT_MORPION_TREE_BRANCH_LIMIT
 
     args = MorpionBootstrapArgs(work_dir=tmp_path, tree_branch_limit=96)
     save_bootstrap_config(bootstrap_config_from_args(args), paths.bootstrap_config_path)
 
-    assert _baseline_tree_branch_limit(paths) == 96
+    assert _baseline_tree_branch_limit(load_bootstrap_config(paths.bootstrap_config_path)) == 96
+
+
+def test_stale_force_evaluator_helpers() -> None:
+    """Force-evaluator formatting should distinguish configured, stale, and empty options."""
+    configured = ("linear", "mlp")
+
+    assert not _is_stale_forced_evaluator("linear", configured)
+    assert _is_stale_forced_evaluator("old-model", configured)
+    assert not _is_stale_forced_evaluator(None, configured)
+
+    assert _format_force_evaluator_option("") == "No configured evaluators"
+    assert _format_force_evaluator_option(
+        "linear",
+        configured_evaluator_names=configured,
+    ) == "linear"
+    assert _format_force_evaluator_option(
+        "old-model",
+        configured_evaluator_names=configured,
+    ) == "old-model (stale / not configured)"
+    assert _format_force_evaluator_state(
+        None,
+        configured_evaluator_names=configured,
+    ) == "auto"
+    assert _format_force_evaluator_state(
+        "old-model",
+        configured_evaluator_names=configured,
+    ) == "old-model (stale / not configured)"
+
+
+def test_section_status_summaries_are_stable(tmp_path: Path) -> None:
+    """Dataset, scheduling, evaluator, and runtime summaries should be deterministic."""
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        max_rows=50,
+        use_backed_up_value=True,
+        max_growth_steps_per_cycle=30,
+        save_after_seconds=12.0,
+        save_after_tree_growth_factor=1.5,
+        tree_branch_limit=96,
+        evaluators_config=_multi_evaluator_config(),
+    )
+    config = bootstrap_config_from_args(args)
+    current = MorpionBootstrapControl(
+        max_rows=40,
+        use_backed_up_value=False,
+        max_growth_steps_per_cycle=25,
+        save_after_seconds=9.0,
+        save_after_tree_growth_factor=1.2,
+        force_evaluator="stale-model",
+        runtime=MorpionBootstrapRuntimeControl(tree_branch_limit=64),
+    )
+    applied = MorpionBootstrapControl(
+        max_rows=45,
+        use_backed_up_value=True,
+        max_growth_steps_per_cycle=20,
+        save_after_seconds=10.0,
+        save_after_tree_growth_factor=1.4,
+        force_evaluator="mlp",
+        runtime=MorpionBootstrapRuntimeControl(tree_branch_limit=80),
+    )
+
+    assert _dataset_status_summary(config, current, applied) == {
+        "max_rows": {
+            "baseline": 50,
+            "current_override": 40,
+            "applied_override": 45,
+            "effective": 45,
+        },
+        "use_backed_up_value": {
+            "baseline": True,
+            "current_override": False,
+            "applied_override": True,
+            "effective": True,
+        },
+    }
+    assert _scheduling_status_summary(config, current, applied) == {
+        "max_growth_steps_per_cycle": {
+            "baseline": 30,
+            "current_override": 25,
+            "applied_override": 20,
+            "effective": 20,
+        },
+        "save_after_seconds": {
+            "baseline": 12.0,
+            "current_override": 9.0,
+            "applied_override": 10.0,
+            "effective": 10.0,
+        },
+        "save_after_tree_growth_factor": {
+            "baseline": 1.5,
+            "current_override": 1.2,
+            "applied_override": 1.4,
+            "effective": 1.4,
+        },
+    }
+    assert _evaluator_control_status_summary(
+        control=current,
+        applied_control=applied,
+        configured_evaluator_names=("linear", "mlp"),
+    ) == {
+        "selection_mode": {
+            "baseline": "auto",
+            "current_override": "forced",
+            "applied_override": "forced",
+            "effective": "forced",
+        },
+        "forced_evaluator": {
+            "baseline": None,
+            "current_override": "stale-model",
+            "applied_override": "mlp",
+            "effective": "mlp",
+        },
+        "current_force_evaluator_is_stale": True,
+        "applied_force_evaluator_is_stale": False,
+    }
+    assert _runtime_status_summary(
+        baseline_tree_branch_limit=96,
+        current_runtime_control=current.runtime,
+        applied_runtime_control=applied.runtime,
+        effective_runtime_config=MorpionBootstrapEffectiveRuntimeConfig(
+            tree_branch_limit=80
+        ),
+        effective_runtime_hash="hash-80",
+    ) == {
+        "tree_branch_limit": {
+            "baseline": 96,
+            "current_override": 64,
+            "applied_override": 80,
+            "effective": 80,
+        },
+        "effective_runtime_hash": "hash-80",
+    }
+
+
+def test_effective_state_summary_handles_empty_and_populated_state() -> None:
+    """Effective-state summary should stay stable for empty and populated run state."""
+    empty_run_state = MorpionBootstrapRunState(
+        generation=0,
+        cycle_index=-1,
+        latest_tree_snapshot_path=None,
+        latest_rows_path=None,
+        latest_model_bundle_paths=None,
+        active_evaluator_name=None,
+        tree_size_at_last_save=0,
+        last_save_unix_s=None,
+        metadata={},
+    )
+
+    empty_summary = _effective_state_summary(
+        run_summary=type("Summary", (), {"latest_active_evaluator_name": None})(),
+        run_state=empty_run_state,
+        current_control=MorpionBootstrapControl(),
+        baseline_tree_branch_limit=DEFAULT_MORPION_TREE_BRANCH_LIMIT,
+        effective_runtime_config=None,
+        latest_dataset_rows=None,
+        pending_changes=False,
+        configured_evaluator_names=("linear",),
+    )
+    assert empty_summary == {
+        "active_evaluator": None,
+        "forced_evaluator_request": None,
+        "forced_evaluator_request_label": "auto",
+        "baseline_tree_branch_limit": DEFAULT_MORPION_TREE_BRANCH_LIMIT,
+        "effective_tree_branch_limit": None,
+        "runtime_override_status": "unset",
+        "latest_dataset_rows": None,
+        "control_pending_application": False,
+    }
+
+    populated_run_state = MorpionBootstrapRunState(
+        generation=2,
+        cycle_index=4,
+        latest_tree_snapshot_path=None,
+        latest_rows_path=None,
+        latest_model_bundle_paths=None,
+        active_evaluator_name="linear",
+        tree_size_at_last_save=12,
+        last_save_unix_s=None,
+        metadata={
+            BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY: {"tree_branch_limit": 64},
+        },
+    )
+    populated_summary = _effective_state_summary(
+        run_summary=type("Summary", (), {"latest_active_evaluator_name": "mlp"})(),
+        run_state=populated_run_state,
+        current_control=MorpionBootstrapControl(
+            force_evaluator="old-model",
+            runtime=MorpionBootstrapRuntimeControl(tree_branch_limit=64),
+        ),
+        baseline_tree_branch_limit=96,
+        effective_runtime_config=MorpionBootstrapEffectiveRuntimeConfig(
+            tree_branch_limit=64
+        ),
+        latest_dataset_rows=123,
+        pending_changes=True,
+        configured_evaluator_names=("linear", "mlp"),
+    )
+    assert populated_summary == {
+        "active_evaluator": "mlp",
+        "forced_evaluator_request": "old-model",
+        "forced_evaluator_request_label": "old-model (stale / not configured)",
+        "baseline_tree_branch_limit": 96,
+        "effective_tree_branch_limit": 64,
+        "runtime_override_status": "set",
+        "latest_dataset_rows": 123,
+        "control_pending_application": True,
+    }
 
 
 def test_format_helpers() -> None:

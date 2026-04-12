@@ -10,7 +10,11 @@ from typing import Any
 from matplotlib import pyplot as plt
 
 from .bootstrap_loop import MorpionBootstrapPaths
-from .config import DEFAULT_MORPION_TREE_BRANCH_LIMIT, load_bootstrap_config
+from .config import (
+    DEFAULT_MORPION_TREE_BRANCH_LIMIT,
+    MorpionBootstrapConfig,
+    load_bootstrap_config,
+)
 from .control import (
     BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY,
     BOOTSTRAP_APPLIED_RUNTIME_CONTROL_METADATA_KEY,
@@ -41,23 +45,40 @@ def run_dashboard_app(work_dir: Path) -> None:
     """Render the local Streamlit dashboard for one bootstrap work directory."""
     st = _get_streamlit()
     paths = MorpionBootstrapPaths.from_work_dir(work_dir)
+    config = _load_bootstrap_config_or_none(paths)
     control = load_bootstrap_control(paths.control_path)
     applied_control = _load_applied_control(paths)
     dashboard_data = build_morpion_bootstrap_dashboard_data(paths.work_dir)
     run_state = _load_run_state(paths)
     pending_changes = _has_pending_control_changes(control, applied_control)
-    configured_evaluator_names = _configured_evaluator_names(paths)
+    configured_evaluator_names = _configured_evaluator_names(config)
     force_evaluator_options = _force_evaluator_options(
         configured_evaluator_names=configured_evaluator_names,
         current_force_evaluator=control.force_evaluator,
     )
-    baseline_tree_branch_limit = _baseline_tree_branch_limit(paths)
+    baseline_tree_branch_limit = _baseline_tree_branch_limit(config)
     applied_runtime_control = _applied_runtime_control(run_state)
     effective_runtime_config = _effective_runtime_config(run_state)
     effective_runtime_hash = _effective_runtime_hash(run_state)
     tree_branch_limit_input_value = _tree_branch_limit_input_value(
         runtime_control=control.runtime,
         baseline_tree_branch_limit=baseline_tree_branch_limit,
+    )
+    pending_fields = _pending_control_fields(control, applied_control)
+    pending_sections = _pending_control_sections(control, applied_control)
+    dataset_summary = _dataset_status_summary(config, control, applied_control)
+    scheduling_summary = _scheduling_status_summary(config, control, applied_control)
+    evaluator_summary = _evaluator_control_status_summary(
+        control=control,
+        applied_control=applied_control,
+        configured_evaluator_names=configured_evaluator_names,
+    )
+    runtime_summary = _runtime_status_summary(
+        baseline_tree_branch_limit=baseline_tree_branch_limit,
+        current_runtime_control=control.runtime,
+        applied_runtime_control=applied_runtime_control,
+        effective_runtime_config=effective_runtime_config,
+        effective_runtime_hash=effective_runtime_hash,
     )
 
     st.set_page_config(page_title="Morpion Bootstrap Dashboard", layout="wide")
@@ -76,34 +97,34 @@ def run_dashboard_app(work_dir: Path) -> None:
     status_columns[3].metric("Dataset Rows", _format_value(latest_dataset_rows))
 
     st.subheader("Controls")
-    if pending_changes:
-        st.warning("Pending changes will apply at the next cycle boundary.")
-    else:
-        st.success("Control file matches the last applied cycle boundary state.")
-    st.caption("Unchecked overrides leave the persisted bootstrap config unchanged.")
-
-    _render_runtime_control_section(
+    _render_pending_changes_section(
         st=st,
-        baseline_tree_branch_limit=baseline_tree_branch_limit,
-        current_runtime_control=control.runtime,
-        applied_runtime_control=applied_runtime_control,
-        effective_runtime_config=effective_runtime_config,
-        effective_runtime_hash=effective_runtime_hash,
+        pending_changes=pending_changes,
+        pending_sections=pending_sections,
+        pending_fields=pending_fields,
+    )
+    _render_effective_state_section(
+        st=st,
+        summary=_effective_state_summary(
+            run_summary=summary,
+            run_state=run_state,
+            current_control=control,
+            baseline_tree_branch_limit=baseline_tree_branch_limit,
+            effective_runtime_config=effective_runtime_config,
+            latest_dataset_rows=latest_dataset_rows,
+            pending_changes=pending_changes,
+            configured_evaluator_names=configured_evaluator_names,
+        ),
+    )
+    st.caption(
+        "Unchecked controls inherit the persisted bootstrap config baseline. "
+        "Checked controls persist explicit overrides to the control file."
     )
 
     with st.form("bootstrap-controls"):
-        override_max_growth_steps_per_cycle = st.checkbox(
-            "Override max growth steps per cycle",
-            value=control.max_growth_steps_per_cycle is not None,
-        )
-        max_growth_steps_per_cycle = st.number_input(
-            "Max growth steps per cycle",
-            min_value=0,
-            value=_control_number_value(control.max_growth_steps_per_cycle),
-            disabled=not override_max_growth_steps_per_cycle,
-        )
+        _render_dataset_control_section(st=st, summary=dataset_summary)
         override_max_rows = st.checkbox(
-            "Override max rows",
+            "Persist explicit override for max rows",
             value=control.max_rows is not None,
         )
         max_rows = st.number_input(
@@ -113,7 +134,7 @@ def run_dashboard_app(work_dir: Path) -> None:
             disabled=not override_max_rows,
         )
         override_use_backed_up_value = st.checkbox(
-            "Override use backed-up value",
+            "Persist explicit override for use backed-up value",
             value=control.use_backed_up_value is not None,
         )
         use_backed_up_value = st.checkbox(
@@ -121,8 +142,20 @@ def run_dashboard_app(work_dir: Path) -> None:
             value=False if control.use_backed_up_value is None else control.use_backed_up_value,
             disabled=not override_use_backed_up_value,
         )
+
+        _render_scheduling_control_section(st=st, summary=scheduling_summary)
+        override_max_growth_steps_per_cycle = st.checkbox(
+            "Persist explicit override for max growth steps per cycle",
+            value=control.max_growth_steps_per_cycle is not None,
+        )
+        max_growth_steps_per_cycle = st.number_input(
+            "Max growth steps per cycle",
+            min_value=0,
+            value=_control_number_value(control.max_growth_steps_per_cycle),
+            disabled=not override_max_growth_steps_per_cycle,
+        )
         override_save_after_seconds = st.checkbox(
-            "Override save after seconds",
+            "Persist explicit override for save after seconds",
             value=control.save_after_seconds is not None,
         )
         save_after_seconds = st.number_input(
@@ -133,7 +166,7 @@ def run_dashboard_app(work_dir: Path) -> None:
             disabled=not override_save_after_seconds,
         )
         override_save_after_tree_growth_factor = st.checkbox(
-            "Override save after tree growth factor",
+            "Persist explicit override for save after tree growth factor",
             value=control.save_after_tree_growth_factor is not None,
         )
         save_after_tree_growth_factor = st.number_input(
@@ -143,25 +176,14 @@ def run_dashboard_app(work_dir: Path) -> None:
             step=0.1,
             disabled=not override_save_after_tree_growth_factor,
         )
-        st.caption(
-            "Runtime control currently supports tree branch limit only; on an "
-            "existing tree, changes must be non-increasing."
-        )
-        override_tree_branch_limit = st.checkbox(
-            "Override tree branch limit",
-            value=control.runtime.tree_branch_limit is not None,
-        )
-        tree_branch_limit = st.number_input(
-            "Tree branch limit",
-            min_value=1,
-            value=tree_branch_limit_input_value,
-            disabled=not override_tree_branch_limit,
-        )
+
+        _render_evaluator_control_section(st=st, summary=evaluator_summary)
         force_evaluator_mode = st.radio(
             "Evaluator selection mode",
             options=("auto", "forced"),
             index=0 if control.force_evaluator is None else 1,
             horizontal=True,
+            help="Auto inherits normal evaluator selection. Forced persists an explicit evaluator override.",
         )
         selectable_force_evaluator_options = (
             force_evaluator_options if force_evaluator_options else ("",)
@@ -177,8 +199,24 @@ def run_dashboard_app(work_dir: Path) -> None:
                 force_evaluator_mode != "forced"
                 or not force_evaluator_options
             ),
-            format_func=_format_force_evaluator_option,
+            format_func=lambda value: _format_force_evaluator_option(
+                value,
+                configured_evaluator_names=configured_evaluator_names,
+            ),
         )
+
+        _render_runtime_control_section(st=st, summary=runtime_summary)
+        override_tree_branch_limit = st.checkbox(
+            "Persist explicit override for tree branch limit",
+            value=control.runtime.tree_branch_limit is not None,
+        )
+        tree_branch_limit = st.number_input(
+            "Tree branch limit",
+            min_value=1,
+            value=tree_branch_limit_input_value,
+            disabled=not override_tree_branch_limit,
+        )
+
         if st.form_submit_button("Apply changes"):
             next_control = _build_next_control(
                 override_max_growth_steps_per_cycle=override_max_growth_steps_per_cycle,
@@ -198,25 +236,6 @@ def run_dashboard_app(work_dir: Path) -> None:
             )
             save_bootstrap_control(next_control, paths.control_path)
             st.success("Saved control changes. They will apply at the next cycle boundary.")
-
-    st.subheader("Plots")
-    plot_columns = st.columns(2)
-    with plot_columns[0]:
-        _render_plot(st, lambda: plot_tree_size(dashboard_data.tree_num_nodes))
-        _render_plot(
-            st,
-            lambda: plot_record_score(dashboard_data.canonical_record_score),
-        )
-        _render_plot(st, lambda: plot_dataset_size(dashboard_data.dataset_num_rows))
-    with plot_columns[1]:
-        _render_plot(st, lambda: plot_active_evaluator(dashboard_data.active_evaluator))
-        _render_plot(
-            st,
-            lambda: plot_evaluator_losses(dashboard_data.evaluator_loss_by_name),
-        )
-
-    st.subheader("Debug Info")
-    st.write("Config hash:", _format_value(run_state.metadata.get("bootstrap_config_hash")))
     st.write(
         "Last checkpoint path:",
         _format_value(run_state.metadata.get("runtime_checkpoint_path")),
@@ -270,11 +289,19 @@ def _load_applied_control(paths: MorpionBootstrapPaths) -> MorpionBootstrapContr
     )
 
 
-def _baseline_tree_branch_limit(paths: MorpionBootstrapPaths) -> int:
-    """Return the configured baseline tree branch limit or the stable default."""
+def _load_bootstrap_config_or_none(
+    paths: MorpionBootstrapPaths,
+) -> MorpionBootstrapConfig | None:
+    """Return the persisted bootstrap config when present."""
     if not paths.bootstrap_config_path.is_file():
+        return None
+    return load_bootstrap_config(paths.bootstrap_config_path)
+
+
+def _baseline_tree_branch_limit(config: MorpionBootstrapConfig | None) -> int:
+    """Return the configured baseline tree branch limit or the stable default."""
+    if config is None:
         return DEFAULT_MORPION_TREE_BRANCH_LIMIT
-    config = load_bootstrap_config(paths.bootstrap_config_path)
     return config.runtime.tree_branch_limit
 
 
@@ -313,67 +340,396 @@ def _tree_branch_limit_input_value(
     return DEFAULT_MORPION_TREE_BRANCH_LIMIT
 
 
-def _render_runtime_control_section(
+def _field_status_summary(
     *,
-    st: Any,
+    baseline: object | None,
+    current_override: object | None,
+    applied_override: object | None,
+    effective: object | None,
+) -> dict[str, object | None]:
+    """Return one stable four-layer control-state summary."""
+    return {
+        "baseline": baseline,
+        "current_override": current_override,
+        "applied_override": applied_override,
+        "effective": effective,
+    }
+
+
+def _effective_control_value(
+    *,
+    baseline: object | None,
+    override: object | None,
+) -> object | None:
+    """Return the control value currently in force for one baseline/override pair."""
+    return baseline if override is None else override
+
+
+def _dataset_status_summary(
+    config: MorpionBootstrapConfig | None,
+    current_control: MorpionBootstrapControl,
+    applied_control: MorpionBootstrapControl,
+) -> dict[str, dict[str, object | None]]:
+    """Return one stable dataset-control status summary."""
+    baseline_max_rows = None if config is None else config.dataset.max_rows
+    baseline_use_backed_up_value = (
+        None if config is None else config.dataset.use_backed_up_value
+    )
+    return {
+        "max_rows": _field_status_summary(
+            baseline=baseline_max_rows,
+            current_override=current_control.max_rows,
+            applied_override=applied_control.max_rows,
+            effective=_effective_control_value(
+                baseline=baseline_max_rows,
+                override=applied_control.max_rows,
+            ),
+        ),
+        "use_backed_up_value": _field_status_summary(
+            baseline=baseline_use_backed_up_value,
+            current_override=current_control.use_backed_up_value,
+            applied_override=applied_control.use_backed_up_value,
+            effective=_effective_control_value(
+                baseline=baseline_use_backed_up_value,
+                override=applied_control.use_backed_up_value,
+            ),
+        ),
+    }
+
+
+def _scheduling_status_summary(
+    config: MorpionBootstrapConfig | None,
+    current_control: MorpionBootstrapControl,
+    applied_control: MorpionBootstrapControl,
+) -> dict[str, dict[str, object | None]]:
+    """Return one stable scheduling-control status summary."""
+    baseline_growth_steps = None if config is None else config.runtime.max_growth_steps_per_cycle
+    baseline_save_after_seconds = None if config is None else config.runtime.save_after_seconds
+    baseline_growth_factor = (
+        None if config is None else config.runtime.save_after_tree_growth_factor
+    )
+    return {
+        "max_growth_steps_per_cycle": _field_status_summary(
+            baseline=baseline_growth_steps,
+            current_override=current_control.max_growth_steps_per_cycle,
+            applied_override=applied_control.max_growth_steps_per_cycle,
+            effective=_effective_control_value(
+                baseline=baseline_growth_steps,
+                override=applied_control.max_growth_steps_per_cycle,
+            ),
+        ),
+        "save_after_seconds": _field_status_summary(
+            baseline=baseline_save_after_seconds,
+            current_override=current_control.save_after_seconds,
+            applied_override=applied_control.save_after_seconds,
+            effective=_effective_control_value(
+                baseline=baseline_save_after_seconds,
+                override=applied_control.save_after_seconds,
+            ),
+        ),
+        "save_after_tree_growth_factor": _field_status_summary(
+            baseline=baseline_growth_factor,
+            current_override=current_control.save_after_tree_growth_factor,
+            applied_override=applied_control.save_after_tree_growth_factor,
+            effective=_effective_control_value(
+                baseline=baseline_growth_factor,
+                override=applied_control.save_after_tree_growth_factor,
+            ),
+        ),
+    }
+
+
+def _is_stale_forced_evaluator(
+    forced_evaluator: str | None,
+    configured_evaluator_names: tuple[str, ...],
+) -> bool:
+    """Return whether one forced evaluator is absent from current config."""
+    return (
+        forced_evaluator is not None
+        and forced_evaluator not in configured_evaluator_names
+    )
+
+
+def _evaluator_control_status_summary(
+    *,
+    control: MorpionBootstrapControl,
+    applied_control: MorpionBootstrapControl,
+    configured_evaluator_names: tuple[str, ...],
+) -> dict[str, object | dict[str, object | None]]:
+    """Return one stable evaluator-control status summary."""
+    current_mode = "auto" if control.force_evaluator is None else "forced"
+    applied_mode = "auto" if applied_control.force_evaluator is None else "forced"
+    return {
+        "selection_mode": _field_status_summary(
+            baseline="auto",
+            current_override=current_mode,
+            applied_override=applied_mode,
+            effective=applied_mode,
+        ),
+        "forced_evaluator": _field_status_summary(
+            baseline=None,
+            current_override=control.force_evaluator,
+            applied_override=applied_control.force_evaluator,
+            effective=applied_control.force_evaluator,
+        ),
+        "current_force_evaluator_is_stale": _is_stale_forced_evaluator(
+            control.force_evaluator,
+            configured_evaluator_names,
+        ),
+        "applied_force_evaluator_is_stale": _is_stale_forced_evaluator(
+            applied_control.force_evaluator,
+            configured_evaluator_names,
+        ),
+    }
+
+
+def _runtime_status_summary(
+    *,
     baseline_tree_branch_limit: int,
     current_runtime_control: MorpionBootstrapRuntimeControl,
     applied_runtime_control: MorpionBootstrapRuntimeControl,
     effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig | None,
     effective_runtime_hash: str | None,
-) -> None:
-    """Render the runtime baseline, override, applied, and effective state."""
-    st.subheader("Runtime Control")
-    runtime_columns = st.columns(5)
-    runtime_columns[0].metric(
-        "Baseline tree branch limit",
-        _format_value(baseline_tree_branch_limit),
-    )
-    runtime_columns[1].metric(
-        "Current override",
-        _format_optional_runtime_override(current_runtime_control.tree_branch_limit),
-    )
-    runtime_columns[2].metric(
-        "Last applied override",
-        _format_optional_runtime_override(applied_runtime_control.tree_branch_limit),
-    )
-    runtime_columns[3].metric(
-        "Effective tree branch limit",
-        _format_value(
-            None
+) -> dict[str, object | dict[str, object | None]]:
+    """Return one stable runtime-control status summary."""
+    return {
+        "tree_branch_limit": _field_status_summary(
+            baseline=baseline_tree_branch_limit,
+            current_override=current_runtime_control.tree_branch_limit,
+            applied_override=applied_runtime_control.tree_branch_limit,
+            effective=None
             if effective_runtime_config is None
-            else effective_runtime_config.tree_branch_limit
+            else effective_runtime_config.tree_branch_limit,
         ),
-    )
-    runtime_columns[4].metric(
-        "Effective runtime hash",
-        _format_value(effective_runtime_hash),
-    )
-    st.write(
-        "Configured baseline:",
-        {"tree_branch_limit": baseline_tree_branch_limit},
-    )
-    st.write(
-        "Current control-file runtime override:",
-        {"tree_branch_limit": current_runtime_control.tree_branch_limit},
-    )
-    st.write(
-        "Last applied runtime control:",
-        {"tree_branch_limit": applied_runtime_control.tree_branch_limit},
-    )
-    st.write(
-        "Effective runtime config:",
-        None
+        "effective_runtime_hash": effective_runtime_hash,
+    }
+
+
+def _pending_control_fields(
+    control: MorpionBootstrapControl,
+    applied_control: MorpionBootstrapControl,
+) -> tuple[str, ...]:
+    """Return stable field names that still differ from the last applied control."""
+    pending_fields: list[str] = []
+    if control.max_rows != applied_control.max_rows:
+        pending_fields.append("max_rows")
+    if control.use_backed_up_value != applied_control.use_backed_up_value:
+        pending_fields.append("use_backed_up_value")
+    if (
+        control.max_growth_steps_per_cycle
+        != applied_control.max_growth_steps_per_cycle
+    ):
+        pending_fields.append("max_growth_steps_per_cycle")
+    if control.save_after_seconds != applied_control.save_after_seconds:
+        pending_fields.append("save_after_seconds")
+    if (
+        control.save_after_tree_growth_factor
+        != applied_control.save_after_tree_growth_factor
+    ):
+        pending_fields.append("save_after_tree_growth_factor")
+    if control.force_evaluator != applied_control.force_evaluator:
+        pending_fields.append("force_evaluator")
+    if (
+        control.runtime.tree_branch_limit
+        != applied_control.runtime.tree_branch_limit
+    ):
+        pending_fields.append("runtime.tree_branch_limit")
+    return tuple(pending_fields)
+
+
+def _pending_control_sections(
+    control: MorpionBootstrapControl,
+    applied_control: MorpionBootstrapControl,
+) -> tuple[str, ...]:
+    """Return stable control-section names containing unapplied changes."""
+    fields = set(_pending_control_fields(control, applied_control))
+    sections: list[str] = []
+    if {"max_rows", "use_backed_up_value"} & fields:
+        sections.append("dataset")
+    if {
+        "max_growth_steps_per_cycle",
+        "save_after_seconds",
+        "save_after_tree_growth_factor",
+    } & fields:
+        sections.append("scheduling")
+    if "force_evaluator" in fields:
+        sections.append("evaluator selection")
+    if "runtime.tree_branch_limit" in fields:
+        sections.append("runtime")
+    return tuple(sections)
+
+
+def _effective_state_summary(
+    *,
+    run_summary: Any,
+    run_state: Any,
+    current_control: MorpionBootstrapControl,
+    baseline_tree_branch_limit: int,
+    effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig | None,
+    latest_dataset_rows: object | None,
+    pending_changes: bool,
+    configured_evaluator_names: tuple[str, ...],
+) -> dict[str, object | None]:
+    """Return one compact operator-facing effective-state summary."""
+    active_evaluator = getattr(run_summary, "latest_active_evaluator_name", None)
+    if active_evaluator is None:
+        active_evaluator = getattr(run_state, "active_evaluator_name", None)
+    return {
+        "active_evaluator": active_evaluator,
+        "forced_evaluator_request": current_control.force_evaluator,
+        "forced_evaluator_request_label": _format_force_evaluator_state(
+            current_control.force_evaluator,
+            configured_evaluator_names=configured_evaluator_names,
+        ),
+        "baseline_tree_branch_limit": baseline_tree_branch_limit,
+        "effective_tree_branch_limit": None
         if effective_runtime_config is None
-        else {"tree_branch_limit": effective_runtime_config.tree_branch_limit},
+        else effective_runtime_config.tree_branch_limit,
+        "runtime_override_status": "set"
+        if current_control.runtime.tree_branch_limit is not None
+        else "unset",
+        "latest_dataset_rows": latest_dataset_rows,
+        "control_pending_application": pending_changes,
+    }
+
+
+def _summary_layer(
+    summary: dict[str, dict[str, object | None]],
+    layer: str,
+) -> dict[str, object | None]:
+    """Return one stable status layer extracted from a field summary."""
+    return {field_name: field_summary[layer] for field_name, field_summary in summary.items()}
+
+
+def _render_pending_changes_section(
+    *,
+    st: Any,
+    pending_changes: bool,
+    pending_sections: tuple[str, ...],
+    pending_fields: tuple[str, ...],
+) -> None:
+    """Render one compact summary of unapplied control changes."""
+    st.subheader("Pending Changes")
+    if pending_changes:
+        st.warning("Pending changes will apply at the next cycle boundary.")
+        st.write("Pending sections:", pending_sections)
+        st.write("Pending fields:", pending_fields)
+    else:
+        st.success("Control file matches the last applied cycle boundary state.")
+        st.write("Pending sections:", ())
+        st.write("Pending fields:", ())
+
+
+def _render_effective_state_section(
+    *,
+    st: Any,
+    summary: dict[str, object | None],
+) -> None:
+    """Render one compact operator-facing effective-state panel."""
+    st.subheader("Effective State")
+    columns = st.columns(4)
+    columns[0].metric("Active evaluator", _format_value(summary["active_evaluator"]))
+    columns[1].metric(
+        "Forced evaluator request",
+        _format_value(summary["forced_evaluator_request_label"]),
+    )
+    columns[2].metric(
+        "Effective tree branch limit",
+        _format_value(summary["effective_tree_branch_limit"]),
+    )
+    columns[3].metric(
+        "Pending control file",
+        "yes" if bool(summary["control_pending_application"]) else "no",
+    )
+    st.write("Summary:", summary)
+
+
+def _render_status_layers(
+    *,
+    st: Any,
+    summary: dict[str, dict[str, object | None]],
+) -> None:
+    """Render baseline/current/applied/effective layers for one control section."""
+    columns = st.columns(4)
+    columns[0].write("Baseline")
+    columns[0].write(_summary_layer(summary, "baseline"))
+    columns[1].write("Current override")
+    columns[1].write(_summary_layer(summary, "current_override"))
+    columns[2].write("Last applied")
+    columns[2].write(_summary_layer(summary, "applied_override"))
+    columns[3].write("Effective")
+    columns[3].write(_summary_layer(summary, "effective"))
+
+
+def _render_dataset_control_section(
+    *,
+    st: Any,
+    summary: dict[str, dict[str, object | None]],
+) -> None:
+    """Render the dataset-control summary block."""
+    st.subheader("Dataset / Training Data Extraction")
+    st.caption("Unchecked inputs inherit the dataset baseline from persisted config.")
+    _render_status_layers(st=st, summary=summary)
+
+
+def _render_scheduling_control_section(
+    *,
+    st: Any,
+    summary: dict[str, dict[str, object | None]],
+) -> None:
+    """Render the cycle-scheduling control summary block."""
+    st.subheader("Cycle Scheduling")
+    st.caption("Scheduling overrides are persisted in the control file and apply at cycle boundaries.")
+    _render_status_layers(st=st, summary=summary)
+
+
+def _render_evaluator_control_section(
+    *,
+    st: Any,
+    summary: dict[str, object | dict[str, object | None]],
+) -> None:
+    """Render the evaluator-selection control summary block."""
+    st.subheader("Evaluator Selection")
+    st.caption("Auto keeps normal evaluator selection. Forced persists one explicit evaluator name.")
+    _render_status_layers(
+        st=st,
+        summary={
+            "selection_mode": summary["selection_mode"],
+            "forced_evaluator": summary["forced_evaluator"],
+        },
+    )
+    st.write(
+        "Stale forced evaluator flags:",
+        {
+            "current": summary["current_force_evaluator_is_stale"],
+            "applied": summary["applied_force_evaluator_is_stale"],
+        },
     )
 
 
-def _configured_evaluator_names(paths: MorpionBootstrapPaths) -> tuple[str, ...]:
+def _render_runtime_control_section(
+    *,
+    st: Any,
+    summary: dict[str, object | dict[str, object | None]],
+) -> None:
+    """Render the runtime-control summary block."""
+    st.subheader("Runtime Control")
+    st.caption(
+        "Baseline comes from persisted config, override comes from the control file, "
+        "and effective runtime reflects what the loop has actually applied. On an "
+        "existing persisted tree, only non-increasing tree branch limit changes are supported."
+    )
+    _render_status_layers(
+        st=st,
+        summary={"tree_branch_limit": summary["tree_branch_limit"]},
+    )
+    st.write("Effective runtime hash:", _format_value(summary["effective_runtime_hash"]))
+
+
+def _configured_evaluator_names(config: MorpionBootstrapConfig | None) -> tuple[str, ...]:
     """Return configured evaluator names from persisted bootstrap config."""
-    if not paths.bootstrap_config_path.is_file():
+    if config is None:
         return ()
-    config = load_bootstrap_config(paths.bootstrap_config_path)
     return tuple(config.evaluators.evaluators)
 
 
@@ -472,9 +828,33 @@ def _force_evaluator_option_index(
         return 0
 
 
-def _format_force_evaluator_option(value: str) -> str:
+def _format_force_evaluator_state(
+    value: str | None,
+    *,
+    configured_evaluator_names: tuple[str, ...],
+) -> str:
+    """Render one requested forced evaluator state for operator display."""
+    if value is None:
+        return "auto"
+    if _is_stale_forced_evaluator(value, configured_evaluator_names):
+        return f"{value} (stale / not configured)"
+    return value
+
+
+def _format_force_evaluator_option(
+    value: str,
+    *,
+    configured_evaluator_names: tuple[str, ...] = (),
+) -> str:
     """Render one forced-evaluator option for the Streamlit select widget."""
-    return "No configured evaluators" if not value else value
+    if not value:
+        return "No configured evaluators"
+    if configured_evaluator_names and _is_stale_forced_evaluator(
+        value,
+        configured_evaluator_names,
+    ):
+        return f"{value} (stale / not configured)"
+    return value
 
 
 def _control_number_value(value: int | None, *, default: int = 0) -> int:
