@@ -10,15 +10,19 @@ from typing import Any
 from matplotlib import pyplot as plt
 
 from .bootstrap_loop import MorpionBootstrapPaths
-from .config import load_bootstrap_config
+from .config import DEFAULT_MORPION_TREE_BRANCH_LIMIT, load_bootstrap_config
 from .control import (
     BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY,
+    BOOTSTRAP_APPLIED_RUNTIME_CONTROL_METADATA_KEY,
     BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY,
     BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY,
     MorpionBootstrapControl,
+    MorpionBootstrapEffectiveRuntimeConfig,
     MorpionBootstrapRuntimeControl,
     bootstrap_control_from_metadata,
     bootstrap_control_to_dict,
+    bootstrap_runtime_control_from_metadata,
+    effective_runtime_config_from_metadata,
     load_bootstrap_control,
     save_bootstrap_control,
 )
@@ -47,6 +51,14 @@ def run_dashboard_app(work_dir: Path) -> None:
         configured_evaluator_names=configured_evaluator_names,
         current_force_evaluator=control.force_evaluator,
     )
+    baseline_tree_branch_limit = _baseline_tree_branch_limit(paths)
+    applied_runtime_control = _applied_runtime_control(run_state)
+    effective_runtime_config = _effective_runtime_config(run_state)
+    effective_runtime_hash = _effective_runtime_hash(run_state)
+    tree_branch_limit_input_value = _tree_branch_limit_input_value(
+        runtime_control=control.runtime,
+        baseline_tree_branch_limit=baseline_tree_branch_limit,
+    )
 
     st.set_page_config(page_title="Morpion Bootstrap Dashboard", layout="wide")
     st.title("Morpion Bootstrap Dashboard")
@@ -69,6 +81,15 @@ def run_dashboard_app(work_dir: Path) -> None:
     else:
         st.success("Control file matches the last applied cycle boundary state.")
     st.caption("Unchecked overrides leave the persisted bootstrap config unchanged.")
+
+    _render_runtime_control_section(
+        st=st,
+        baseline_tree_branch_limit=baseline_tree_branch_limit,
+        current_runtime_control=control.runtime,
+        applied_runtime_control=applied_runtime_control,
+        effective_runtime_config=effective_runtime_config,
+        effective_runtime_hash=effective_runtime_hash,
+    )
 
     with st.form("bootstrap-controls"):
         override_max_growth_steps_per_cycle = st.checkbox(
@@ -132,8 +153,8 @@ def run_dashboard_app(work_dir: Path) -> None:
         )
         tree_branch_limit = st.number_input(
             "Tree branch limit",
-            min_value=0,
-            value=_control_number_value(control.runtime.tree_branch_limit, default=128),
+            min_value=1,
+            value=tree_branch_limit_input_value,
             disabled=not override_tree_branch_limit,
         )
         force_evaluator_mode = st.radio(
@@ -174,7 +195,6 @@ def run_dashboard_app(work_dir: Path) -> None:
                 tree_branch_limit=tree_branch_limit,
                 force_evaluator_mode=force_evaluator_mode,
                 force_evaluator=force_evaluator,
-                current_runtime_control=control.runtime,
             )
             save_bootstrap_control(next_control, paths.control_path)
             st.success("Saved control changes. They will apply at the next cycle boundary.")
@@ -250,6 +270,105 @@ def _load_applied_control(paths: MorpionBootstrapPaths) -> MorpionBootstrapContr
     )
 
 
+def _baseline_tree_branch_limit(paths: MorpionBootstrapPaths) -> int:
+    """Return the configured baseline tree branch limit or the stable default."""
+    if not paths.bootstrap_config_path.is_file():
+        return DEFAULT_MORPION_TREE_BRANCH_LIMIT
+    config = load_bootstrap_config(paths.bootstrap_config_path)
+    return config.runtime.tree_branch_limit
+
+
+def _applied_runtime_control(run_state: Any) -> MorpionBootstrapRuntimeControl:
+    """Return the last applied runtime-control subsection from run-state metadata."""
+    return bootstrap_runtime_control_from_metadata(
+        getattr(run_state, "metadata", {}).get(BOOTSTRAP_APPLIED_RUNTIME_CONTROL_METADATA_KEY)
+    )
+
+
+def _effective_runtime_config(
+    run_state: Any,
+) -> MorpionBootstrapEffectiveRuntimeConfig | None:
+    """Return the effective runtime config from run-state metadata when present."""
+    return effective_runtime_config_from_metadata(
+        getattr(run_state, "metadata", {}).get(BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY)
+    )
+
+
+def _effective_runtime_hash(run_state: Any) -> str | None:
+    """Return the effective-runtime hash from run-state metadata when present."""
+    value = getattr(run_state, "metadata", {}).get(BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY)
+    return value if isinstance(value, str) else None
+
+
+def _tree_branch_limit_input_value(
+    *,
+    runtime_control: MorpionBootstrapRuntimeControl,
+    baseline_tree_branch_limit: int | None,
+) -> int:
+    """Return the displayed tree-branch-limit value for the dashboard input."""
+    if runtime_control.tree_branch_limit is not None:
+        return runtime_control.tree_branch_limit
+    if baseline_tree_branch_limit is not None:
+        return baseline_tree_branch_limit
+    return DEFAULT_MORPION_TREE_BRANCH_LIMIT
+
+
+def _render_runtime_control_section(
+    *,
+    st: Any,
+    baseline_tree_branch_limit: int,
+    current_runtime_control: MorpionBootstrapRuntimeControl,
+    applied_runtime_control: MorpionBootstrapRuntimeControl,
+    effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig | None,
+    effective_runtime_hash: str | None,
+) -> None:
+    """Render the runtime baseline, override, applied, and effective state."""
+    st.subheader("Runtime Control")
+    runtime_columns = st.columns(5)
+    runtime_columns[0].metric(
+        "Baseline tree branch limit",
+        _format_value(baseline_tree_branch_limit),
+    )
+    runtime_columns[1].metric(
+        "Current override",
+        _format_optional_runtime_override(current_runtime_control.tree_branch_limit),
+    )
+    runtime_columns[2].metric(
+        "Last applied override",
+        _format_optional_runtime_override(applied_runtime_control.tree_branch_limit),
+    )
+    runtime_columns[3].metric(
+        "Effective tree branch limit",
+        _format_value(
+            None
+            if effective_runtime_config is None
+            else effective_runtime_config.tree_branch_limit
+        ),
+    )
+    runtime_columns[4].metric(
+        "Effective runtime hash",
+        _format_value(effective_runtime_hash),
+    )
+    st.write(
+        "Configured baseline:",
+        {"tree_branch_limit": baseline_tree_branch_limit},
+    )
+    st.write(
+        "Current control-file runtime override:",
+        {"tree_branch_limit": current_runtime_control.tree_branch_limit},
+    )
+    st.write(
+        "Last applied runtime control:",
+        {"tree_branch_limit": applied_runtime_control.tree_branch_limit},
+    )
+    st.write(
+        "Effective runtime config:",
+        None
+        if effective_runtime_config is None
+        else {"tree_branch_limit": effective_runtime_config.tree_branch_limit},
+    )
+
+
 def _configured_evaluator_names(paths: MorpionBootstrapPaths) -> tuple[str, ...]:
     """Return configured evaluator names from persisted bootstrap config."""
     if not paths.bootstrap_config_path.is_file():
@@ -297,7 +416,6 @@ def _build_next_control(
     tree_branch_limit: int,
     force_evaluator_mode: str,
     force_evaluator: str,
-    current_runtime_control: MorpionBootstrapRuntimeControl,
 ) -> MorpionBootstrapControl:
     """Build one persisted control payload from tri-state dashboard inputs."""
     return MorpionBootstrapControl(
@@ -332,6 +450,11 @@ def _latest_optional_value(series: tuple[Any, ...]) -> object | None:
 def _format_value(value: object | None) -> str:
     """Render optional values consistently in the dashboard."""
     return "n/a" if value is None else str(value)
+
+
+def _format_optional_runtime_override(value: int | None) -> str:
+    """Render one optional runtime override for human dashboard display."""
+    return "unset" if value is None else str(value)
 
 
 def _force_evaluator_option_index(

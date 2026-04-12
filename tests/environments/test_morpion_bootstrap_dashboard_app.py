@@ -42,8 +42,13 @@ if "anemone" not in sys.modules:
 
 from chipiron.environments.morpion.bootstrap import (
     BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY,
+    BOOTSTRAP_APPLIED_RUNTIME_CONTROL_METADATA_KEY,
+    BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY,
+    BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY,
+    DEFAULT_MORPION_TREE_BRANCH_LIMIT,
     MorpionBootstrapArgs,
     MorpionBootstrapControl,
+    MorpionBootstrapEffectiveRuntimeConfig,
     MorpionBootstrapPaths,
     MorpionBootstrapRuntimeControl,
     MorpionBootstrapRunState,
@@ -54,13 +59,19 @@ from chipiron.environments.morpion.bootstrap import (
     save_bootstrap_run_state,
 )
 from chipiron.environments.morpion.bootstrap.dashboard_app import (
+    _applied_runtime_control,
+    _baseline_tree_branch_limit,
     _build_next_control,
     _configured_evaluator_names,
+    _effective_runtime_config,
+    _effective_runtime_hash,
     _force_evaluator_options,
     _format_force_evaluator_option,
+    _format_optional_runtime_override,
     _format_value,
     _has_pending_control_changes,
     _load_applied_control,
+    _tree_branch_limit_input_value,
 )
 
 
@@ -123,6 +134,52 @@ def test_load_applied_control_reads_run_state_metadata(tmp_path: Path) -> None:
     assert _load_applied_control(paths) == applied_control
 
 
+def test_runtime_metadata_helpers_are_tolerant() -> None:
+    """Dashboard runtime metadata helpers should tolerate absent metadata."""
+    run_state = MorpionBootstrapRunState(
+        generation=0,
+        cycle_index=-1,
+        latest_tree_snapshot_path=None,
+        latest_rows_path=None,
+        latest_model_bundle_paths=None,
+        active_evaluator_name=None,
+        tree_size_at_last_save=0,
+        last_save_unix_s=None,
+        metadata={},
+    )
+
+    assert _applied_runtime_control(run_state) == MorpionBootstrapRuntimeControl()
+    assert _effective_runtime_config(run_state) is None
+    assert _effective_runtime_hash(run_state) is None
+
+
+def test_runtime_metadata_helpers_read_present_values() -> None:
+    """Dashboard runtime metadata helpers should read applied and effective runtime state."""
+    run_state = MorpionBootstrapRunState(
+        generation=1,
+        cycle_index=0,
+        latest_tree_snapshot_path=None,
+        latest_rows_path=None,
+        latest_model_bundle_paths=None,
+        active_evaluator_name=None,
+        tree_size_at_last_save=0,
+        last_save_unix_s=None,
+        metadata={
+            BOOTSTRAP_APPLIED_RUNTIME_CONTROL_METADATA_KEY: {"tree_branch_limit": 64},
+            BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY: {"tree_branch_limit": 64},
+            BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY: "hash-64",
+        },
+    )
+
+    assert _applied_runtime_control(run_state) == MorpionBootstrapRuntimeControl(
+        tree_branch_limit=64
+    )
+    assert _effective_runtime_config(run_state) == MorpionBootstrapEffectiveRuntimeConfig(
+        tree_branch_limit=64
+    )
+    assert _effective_runtime_hash(run_state) == "hash-64"
+
+
 def test_configured_force_evaluator_options_come_from_config(tmp_path: Path) -> None:
     """Dashboard force-evaluator choices should come from persisted config names."""
     args = MorpionBootstrapArgs(
@@ -155,6 +212,21 @@ def test_pending_changes_helper() -> None:
     )
 
 
+def test_pending_changes_helper_covers_runtime_control() -> None:
+    """Runtime-only control changes should still be treated as pending."""
+    applied_control = MorpionBootstrapControl(
+        runtime=MorpionBootstrapRuntimeControl(tree_branch_limit=64)
+    )
+
+    assert not _has_pending_control_changes(applied_control, applied_control)
+    assert _has_pending_control_changes(
+        MorpionBootstrapControl(
+            runtime=MorpionBootstrapRuntimeControl(tree_branch_limit=96)
+        ),
+        applied_control,
+    )
+
+
 def test_build_next_control_preserves_unset_overrides() -> None:
     """Unchecked dashboard overrides should round-trip back to None."""
     assert _build_next_control(
@@ -172,7 +244,6 @@ def test_build_next_control_preserves_unset_overrides() -> None:
         tree_branch_limit=512,
         force_evaluator_mode="auto",
         force_evaluator="linear",
-        current_runtime_control=MorpionBootstrapRuntimeControl(tree_branch_limit=256),
     ) == MorpionBootstrapControl(
         max_growth_steps_per_cycle=None,
         max_rows=17,
@@ -201,13 +272,42 @@ def test_build_next_control_applies_runtime_override() -> None:
         tree_branch_limit=64,
         force_evaluator_mode="auto",
         force_evaluator="linear",
-        current_runtime_control=MorpionBootstrapRuntimeControl(),
     ).runtime == MorpionBootstrapRuntimeControl(tree_branch_limit=64)
+
+
+def test_tree_branch_limit_input_value_prefers_override_then_baseline_then_default() -> None:
+    """Dashboard runtime input default should prefer override, then baseline, then constant."""
+    assert _tree_branch_limit_input_value(
+        runtime_control=MorpionBootstrapRuntimeControl(tree_branch_limit=96),
+        baseline_tree_branch_limit=64,
+    ) == 96
+    assert _tree_branch_limit_input_value(
+        runtime_control=MorpionBootstrapRuntimeControl(),
+        baseline_tree_branch_limit=64,
+    ) == 64
+    assert _tree_branch_limit_input_value(
+        runtime_control=MorpionBootstrapRuntimeControl(),
+        baseline_tree_branch_limit=None,
+    ) == DEFAULT_MORPION_TREE_BRANCH_LIMIT
+
+
+def test_baseline_tree_branch_limit_uses_config_or_default(tmp_path: Path) -> None:
+    """Dashboard baseline runtime value should come from config when present."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+
+    assert _baseline_tree_branch_limit(paths) == DEFAULT_MORPION_TREE_BRANCH_LIMIT
+
+    args = MorpionBootstrapArgs(work_dir=tmp_path, tree_branch_limit=96)
+    save_bootstrap_config(bootstrap_config_from_args(args), paths.bootstrap_config_path)
+
+    assert _baseline_tree_branch_limit(paths) == 96
 
 
 def test_format_helpers() -> None:
     """Formatting helpers should keep absent values explicit in the UI."""
     assert _format_value(None) == "n/a"
     assert _format_value(7) == "7"
+    assert _format_optional_runtime_override(None) == "unset"
+    assert _format_optional_runtime_override(64) == "64"
     assert _format_force_evaluator_option("") == "No configured evaluators"
     assert _format_force_evaluator_option("mlp") == "mlp"
