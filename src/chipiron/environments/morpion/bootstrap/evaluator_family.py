@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
 from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
     MorpionFeatureSubset,
     morpion_feature_subset_from_name,
 )
+
+if TYPE_CHECKING:
+    from .bootstrap_loop import MorpionEvaluatorSpec, MorpionEvaluatorsConfig
 
 CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET: Final[str] = (
     "canonical_8_linear_mlp_subsets"
@@ -49,9 +52,7 @@ class _CanonicalFamilySpec:
     def feature_subset(self) -> MorpionFeatureSubset:
         """Return the built-in subset for this family member."""
         return morpion_feature_subset_from_name(self.feature_subset_name)
-
-
-def canonical_morpion_evaluator_specs() -> dict[str, object]:
+def canonical_morpion_evaluator_specs() -> dict[str, MorpionEvaluatorSpec]:
     """Return the canonical eight-evaluator Morpion family specs by name."""
     from .bootstrap_loop import MorpionEvaluatorSpec
 
@@ -70,14 +71,19 @@ def canonical_morpion_evaluator_specs() -> dict[str, object]:
     }
 
 
-def canonical_morpion_evaluator_family_config() -> object:
+def canonical_morpion_evaluator_names() -> tuple[str, ...]:
+    """Return canonical evaluator names in stable family order."""
+    return tuple(spec.name for spec in _canonical_family_specs())
+
+
+def canonical_morpion_evaluator_family_config() -> MorpionEvaluatorsConfig:
     """Return the canonical eight-evaluator Morpion bootstrap family config."""
     from .bootstrap_loop import MorpionEvaluatorsConfig
 
     return MorpionEvaluatorsConfig(evaluators=dict(canonical_morpion_evaluator_specs()))
 
 
-def morpion_evaluators_config_from_preset(preset_name: str) -> object:
+def morpion_evaluators_config_from_preset(preset_name: str) -> MorpionEvaluatorsConfig:
     """Resolve a named Morpion evaluator-family preset into explicit specs."""
     if preset_name == CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET:
         return canonical_morpion_evaluator_family_config()
@@ -99,6 +105,7 @@ def _canonical_family_specs() -> tuple[_CanonicalFamilySpec, ...]:
 
 __all__ = [
     "CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET",
+    "canonical_morpion_evaluator_names",
     "UnknownMorpionEvaluatorFamilyPresetError",
     "canonical_morpion_evaluator_family_config",
     "canonical_morpion_evaluator_specs",

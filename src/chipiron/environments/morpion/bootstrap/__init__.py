@@ -34,6 +34,7 @@ from .evaluator_family import (
     CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
     UnknownMorpionEvaluatorFamilyPresetError,
     canonical_morpion_evaluator_family_config,
+    canonical_morpion_evaluator_names,
     canonical_morpion_evaluator_specs,
     morpion_evaluators_config_from_preset,
 )
@@ -169,6 +170,7 @@ __all__ = [
     "bootstrap_runtime_control_to_dict",
     "CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET",
     "canonical_morpion_evaluator_family_config",
+    "canonical_morpion_evaluator_names",
     "canonical_morpion_evaluator_specs",
     "ConflictingMorpionEvaluatorConfigurationError",
     "DEFAULT_MORPION_TREE_BRANCH_LIMIT",

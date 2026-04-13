@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import argparse
 import shlex
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Sequence
+from typing import Literal, Sequence
 
 from .anemone_runner import (
     AnemoneMorpionSearchRunner,
@@ -18,6 +18,7 @@ from .bootstrap_loop import (
     MorpionBootstrapPaths,
     run_morpion_bootstrap_loop,
 )
+from .evaluator_family import CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET
 from .config import (
     DEFAULT_MORPION_TREE_BRANCH_LIMIT,
     MorpionBootstrapConfig,
@@ -55,10 +56,19 @@ class _LauncherStartupStatus:
 
     paths: MorpionBootstrapPaths
     run_mode: str
+    resolved_bootstrap_args: MorpionBootstrapArgs
     bootstrap_config: MorpionBootstrapConfig
     control: MorpionBootstrapControl
     run_state: MorpionBootstrapRunState | None
     latest_status: MorpionBootstrapLatestStatus | None
+    resolved_evaluator_family_preset: str | None
+    evaluator_family_source: Literal[
+        "explicit",
+        "launcher_default",
+        "explicit_config",
+        "legacy_default",
+    ]
+    resolved_evaluator_names: tuple[str, ...]
     config_exists: bool
     control_exists: bool
     run_state_exists: bool
@@ -80,7 +90,6 @@ def run_morpion_bootstrap_experiment(
             _render_launcher_startup_summary(
                 startup_status,
                 dashboard_requested=launcher_args.open_dashboard,
-                evaluator_family_preset=launcher_args.bootstrap_args.evaluator_family_preset,
             )
         )
     if launcher_args.print_dashboard_hint:
@@ -95,24 +104,63 @@ def run_morpion_bootstrap_experiment(
 
     runner = _build_launcher_runner(startup_status)
     return run_morpion_bootstrap_loop(
-        launcher_args.bootstrap_args,
+        startup_status.resolved_bootstrap_args,
         runner,
         max_cycles=launcher_args.max_cycles,
     )
+
+
+def _resolve_launcher_bootstrap_args(
+    launcher_args: MorpionBootstrapLauncherArgs,
+) -> MorpionBootstrapArgs:
+    """Apply launcher-only default evaluator selection to bootstrap args."""
+    bootstrap_args = launcher_args.bootstrap_args
+    if bootstrap_args.evaluators_config is not None:
+        return bootstrap_args
+    if bootstrap_args.evaluator_family_preset is not None:
+        return bootstrap_args
+    return replace(
+        bootstrap_args,
+        evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+    )
+
+
+def _launcher_evaluator_family_source(
+    bootstrap_args: MorpionBootstrapArgs,
+    resolved_bootstrap_args: MorpionBootstrapArgs,
+) -> Literal[
+    "explicit",
+    "launcher_default",
+    "explicit_config",
+    "legacy_default",
+]:
+    """Classify how the launcher resolved the effective evaluator selection path."""
+    if bootstrap_args.evaluators_config is not None:
+        return "explicit_config"
+    if bootstrap_args.evaluator_family_preset is not None:
+        return "explicit"
+    if resolved_bootstrap_args.evaluator_family_preset is not None:
+        return "launcher_default"
+    return "legacy_default"
 
 
 def _collect_launcher_startup_status(
     launcher_args: MorpionBootstrapLauncherArgs,
 ) -> _LauncherStartupStatus:
     """Resolve the operator-facing bootstrap status before entering the loop."""
-    paths = MorpionBootstrapPaths.from_work_dir(launcher_args.bootstrap_args.work_dir)
+    resolved_bootstrap_args = _resolve_launcher_bootstrap_args(launcher_args)
+    resolved_evaluator_family_source = _launcher_evaluator_family_source(
+        launcher_args.bootstrap_args,
+        resolved_bootstrap_args,
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(resolved_bootstrap_args.work_dir)
     config_exists = paths.bootstrap_config_path.is_file()
     control_exists = paths.control_path.is_file()
     run_state_exists = paths.run_state_path.is_file()
     history_exists = paths.history_jsonl_path.is_file()
     latest_status_exists = paths.latest_status_path.is_file()
 
-    bootstrap_config = bootstrap_config_from_args(launcher_args.bootstrap_args)
+    bootstrap_config = bootstrap_config_from_args(resolved_bootstrap_args)
     if config_exists:
         bootstrap_config = load_bootstrap_config(paths.bootstrap_config_path)
 
@@ -137,10 +185,16 @@ def _collect_launcher_startup_status(
             history_exists=history_exists,
             latest_status_exists=latest_status_exists,
         ),
+        resolved_bootstrap_args=resolved_bootstrap_args,
         bootstrap_config=bootstrap_config,
         control=control,
         run_state=run_state,
         latest_status=latest_status,
+        resolved_evaluator_family_preset=resolved_bootstrap_args.evaluator_family_preset,
+        evaluator_family_source=resolved_evaluator_family_source,
+        resolved_evaluator_names=tuple(
+            sorted(bootstrap_config.evaluators.evaluators)
+        ),
         config_exists=config_exists,
         control_exists=control_exists,
         run_state_exists=run_state_exists,
@@ -168,7 +222,6 @@ def _render_launcher_startup_summary(
     startup_status: _LauncherStartupStatus,
     *,
     dashboard_requested: bool,
-    evaluator_family_preset: str | None = None,
 ) -> str:
     """Render the operator-facing launcher summary without printing."""
     effective_runtime_config = effective_runtime_config_from_config_and_control(
@@ -177,9 +230,7 @@ def _render_launcher_startup_summary(
     )
     baseline_tree_branch_limit = startup_status.bootstrap_config.runtime.tree_branch_limit
     control_tree_branch_limit = startup_status.control.runtime.tree_branch_limit
-    evaluators = ", ".join(
-        sorted(startup_status.bootstrap_config.evaluators.evaluators)
-    )
+    evaluators = ", ".join(startup_status.resolved_evaluator_names)
     control_fragment = (
         "none"
         if control_tree_branch_limit is None
@@ -197,7 +248,8 @@ def _render_launcher_startup_summary(
             f"latest status: {_render_presence(startup_status.latest_status_exists)}",
             f"latest generation: {_render_optional_int(_latest_generation(startup_status))}",
             f"latest cycle: {_render_optional_int(_latest_cycle_index(startup_status))}",
-            f"evaluator family preset: {_render_optional_text(evaluator_family_preset)}",
+            "evaluator family preset: "
+            f"{_render_evaluator_family_line(startup_status)}",
             f"configured evaluators: {evaluators}",
             f"forced evaluator control: {_render_optional_text(startup_status.control.force_evaluator)}",
             "tree_branch_limit: "
@@ -238,11 +290,21 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
             "Canonical human/operator launcher for one persistent Morpion "
-            "bootstrap experiment."
+            "bootstrap experiment. By default, launcher-driven runs use the "
+            "canonical 8-model Morpion evaluator family."
         )
     )
     parser.add_argument("--work-dir", required=True, type=Path)
-    parser.add_argument("--evaluator-family", type=str, default=None)
+    parser.add_argument(
+        "--evaluator-family",
+        type=str,
+        default=None,
+        help=(
+            "Evaluator-family preset to use. If omitted, the launcher defaults "
+            "to the canonical 8-model Morpion family unless explicit "
+            "evaluators_config is supplied programmatically."
+        ),
+    )
     parser.add_argument("--max-cycles", type=int, default=None)
     parser.add_argument(
         "--open-dashboard",
@@ -362,6 +424,21 @@ def _render_presence(is_present: bool) -> str:
 def _render_optional_text(value: str | None) -> str:
     """Render optional text consistently in launcher output."""
     return "none" if value is None else value
+
+
+def _render_evaluator_family_line(startup_status: _LauncherStartupStatus) -> str:
+    """Render one explicit evaluator-family provenance line for operators."""
+    source = startup_status.evaluator_family_source
+    preset = startup_status.resolved_evaluator_family_preset
+    if source == "explicit_config":
+        return "none (explicit evaluators_config)"
+    if source == "explicit" and preset is not None:
+        return f"{preset} (explicit)"
+    if source == "launcher_default" and preset is not None:
+        return f"{preset} (launcher default)"
+    if source == "legacy_default":
+        return "none (legacy default)"
+    return _render_optional_text(preset)
 
 
 def _render_optional_int(value: int | None) -> str:

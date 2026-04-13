@@ -71,6 +71,9 @@ from chipiron.environments.morpion.bootstrap import (
     save_bootstrap_run_state,
 )
 from chipiron.environments.morpion.bootstrap.config import bootstrap_config_from_args
+from chipiron.environments.morpion.bootstrap.evaluator_family import (
+    canonical_morpion_evaluator_family_config,
+)
 import chipiron.environments.morpion.bootstrap.launcher as launcher_module
 
 
@@ -199,6 +202,7 @@ def _make_launcher_args(
     work_dir: Path,
     *,
     evaluators_config: MorpionEvaluatorsConfig | None = None,
+    evaluator_family_preset: str | None = None,
     tree_branch_limit: int = 96,
     max_cycles: int | None = 1,
     open_dashboard: bool = False,
@@ -219,6 +223,7 @@ def _make_launcher_args(
         learning_rate=1e-3,
         shuffle=False,
         evaluators_config=evaluators_config,
+        evaluator_family_preset=evaluator_family_preset,
     )
     return MorpionBootstrapLauncherArgs(
         bootstrap_args=bootstrap_args,
@@ -433,7 +438,7 @@ def test_launcher_constructs_real_runner_in_normal_path(
         *,
         max_cycles: int | None = None,
     ) -> MorpionBootstrapRunState:
-        assert args == launcher_args.bootstrap_args
+        assert args == launcher_module._resolve_launcher_bootstrap_args(launcher_args)
         assert runner is sentinel_runner
         assert max_cycles == 3
         return initialize_bootstrap_run_state()
@@ -470,10 +475,146 @@ def test_startup_summary_renders_requested_evaluator_family_preset(
     summary = launcher_module._render_launcher_startup_summary(
         startup_status,
         dashboard_requested=False,
-        evaluator_family_preset=launcher_args.bootstrap_args.evaluator_family_preset,
     )
 
     assert (
-        f"evaluator family preset: {CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET}"
+        "evaluator family preset: "
+        f"{CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET} (explicit)"
         in summary
     )
+
+
+def test_launcher_defaults_canonical_family_when_unset(tmp_path: Path) -> None:
+    """Launcher-only defaulting should inject the canonical evaluator family preset."""
+    launcher_args = _make_launcher_args(tmp_path, evaluators_config=None)
+
+    resolved_args = launcher_module._resolve_launcher_bootstrap_args(launcher_args)
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+
+    assert launcher_args.bootstrap_args.evaluator_family_preset is None
+    assert (
+        resolved_args.evaluator_family_preset
+        == CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET
+    )
+    assert startup_status.evaluator_family_source == "launcher_default"
+    assert (
+        startup_status.resolved_evaluator_family_preset
+        == CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET
+    )
+    assert startup_status.bootstrap_config.evaluators == canonical_morpion_evaluator_family_config()
+
+
+def test_launcher_preserves_explicit_evaluator_family_preset(tmp_path: Path) -> None:
+    """Explicit launcher preset should not be relabeled as a launcher default."""
+    launcher_args = _make_launcher_args(
+        tmp_path,
+        evaluators_config=None,
+        evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+    )
+
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+
+    assert startup_status.evaluator_family_source == "explicit"
+    assert (
+        startup_status.resolved_evaluator_family_preset
+        == CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET
+    )
+
+
+def test_launcher_explicit_evaluator_config_suppresses_default_family(
+    tmp_path: Path,
+) -> None:
+    """Explicit evaluator config should prevent launcher-family injection."""
+    explicit_config = _single_evaluator_config()
+    launcher_args = _make_launcher_args(
+        tmp_path,
+        evaluators_config=explicit_config,
+    )
+
+    resolved_args = launcher_module._resolve_launcher_bootstrap_args(launcher_args)
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+    summary = launcher_module._render_launcher_startup_summary(
+        startup_status,
+        dashboard_requested=False,
+    )
+
+    assert resolved_args.evaluator_family_preset is None
+    assert startup_status.evaluator_family_source == "explicit_config"
+    assert startup_status.resolved_evaluator_family_preset is None
+    assert startup_status.bootstrap_config.evaluators == explicit_config
+    assert "evaluator family preset: none (explicit evaluators_config)" in summary
+
+
+def test_launcher_loop_receives_resolved_canonical_family_by_default(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Canonical launcher path should pass resolved default family args into the loop."""
+    launcher_args = _make_launcher_args(
+        tmp_path,
+        evaluators_config=None,
+        max_cycles=2,
+    )
+    captured_args: list[MorpionBootstrapArgs] = []
+
+    def _fake_runner_constructor(
+        runner_args: AnemoneMorpionSearchRunnerArgs,
+    ) -> object:
+        del runner_args
+        return object()
+
+    def _fake_loop(
+        args: MorpionBootstrapArgs,
+        runner: object,
+        *,
+        max_cycles: int | None = None,
+    ) -> MorpionBootstrapRunState:
+        del runner
+        captured_args.append(args)
+        assert max_cycles == 2
+        return initialize_bootstrap_run_state()
+
+    monkeypatch.setattr(
+        launcher_module,
+        "AnemoneMorpionSearchRunner",
+        _fake_runner_constructor,
+    )
+    monkeypatch.setattr(launcher_module, "run_morpion_bootstrap_loop", _fake_loop)
+
+    run_morpion_bootstrap_experiment(launcher_args)
+
+    assert len(captured_args) == 1
+    assert (
+        captured_args[0].resolved_evaluators_config()
+        == canonical_morpion_evaluator_family_config()
+    )
+
+
+def test_startup_summary_marks_launcher_default_family(tmp_path: Path) -> None:
+    """Startup summary should make launcher-default family provenance obvious."""
+    launcher_args = _make_launcher_args(tmp_path, evaluators_config=None)
+
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+    summary = launcher_module._render_launcher_startup_summary(
+        startup_status,
+        dashboard_requested=False,
+    )
+
+    assert (
+        "evaluator family preset: "
+        f"{CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET} (launcher default)"
+        in summary
+    )
+    assert (
+        "configured evaluators: linear_10, linear_20, linear_41, linear_5, "
+        "mlp_10, mlp_20, mlp_41, mlp_5"
+        in summary
+    )
+
+
+def test_direct_bootstrap_args_keep_legacy_default_behavior(tmp_path: Path) -> None:
+    """Direct low-level bootstrap args should retain the old single-evaluator fallback."""
+    bootstrap_args = MorpionBootstrapArgs(work_dir=tmp_path)
+
+    assert bootstrap_args.evaluator_family_preset is None
+    assert tuple(bootstrap_args.resolved_evaluators_config().evaluators) == ("default",)

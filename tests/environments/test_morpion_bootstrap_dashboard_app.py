@@ -69,6 +69,7 @@ from chipiron.environments.morpion.bootstrap.dashboard_app import (
     _effective_runtime_config,
     _effective_state_summary,
     _effective_runtime_hash,
+    _evaluator_set_summary,
     _evaluator_control_status_summary,
     _force_evaluator_options,
     _format_force_evaluator_option,
@@ -534,6 +535,10 @@ def test_effective_state_summary_handles_empty_and_populated_state() -> None:
         "baseline_tree_branch_limit": DEFAULT_MORPION_TREE_BRANCH_LIMIT,
         "effective_tree_branch_limit": None,
         "runtime_override_status": "unset",
+        "evaluator_set_label": "custom (1 evaluators)",
+        "configured_evaluator_count": 1,
+        "configured_evaluator_names": ("linear",),
+        "is_canonical_evaluator_family": False,
         "latest_dataset_rows": None,
         "control_pending_application": False,
     }
@@ -573,8 +578,52 @@ def test_effective_state_summary_handles_empty_and_populated_state() -> None:
         "baseline_tree_branch_limit": 96,
         "effective_tree_branch_limit": 64,
         "runtime_override_status": "set",
+        "evaluator_set_label": "custom (2 evaluators)",
+        "configured_evaluator_count": 2,
+        "configured_evaluator_names": ("linear", "mlp"),
+        "is_canonical_evaluator_family": False,
         "latest_dataset_rows": 123,
         "control_pending_application": True,
+    }
+
+
+def test_evaluator_set_summary_detects_canonical_family() -> None:
+    """Dashboard evaluator-set summary should detect the canonical family exactly."""
+    assert _evaluator_set_summary(
+        (
+            "mlp_41",
+            "linear_10",
+            "linear_5",
+            "mlp_5",
+            "linear_20",
+            "mlp_10",
+            "linear_41",
+            "mlp_20",
+        )
+    ) == {
+        "label": "canonical 8-model family",
+        "count": 8,
+        "configured_evaluator_names": (
+            "linear_10",
+            "linear_20",
+            "linear_41",
+            "linear_5",
+            "mlp_10",
+            "mlp_20",
+            "mlp_41",
+            "mlp_5",
+        ),
+        "is_canonical_family": True,
+    }
+
+
+def test_evaluator_set_summary_labels_custom_family() -> None:
+    """Dashboard evaluator-set summary should label non-canonical sets as custom."""
+    assert _evaluator_set_summary(("linear", "mlp")) == {
+        "label": "custom (2 evaluators)",
+        "count": 2,
+        "configured_evaluator_names": ("linear", "mlp"),
+        "is_canonical_family": False,
     }
 
 

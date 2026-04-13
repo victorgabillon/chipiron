@@ -37,6 +37,7 @@ from .dashboard_plot import (
     plot_record_score,
     plot_tree_size,
 )
+from .evaluator_family import canonical_morpion_evaluator_names
 from .history_view import build_morpion_bootstrap_dashboard_data
 from .run_state import initialize_bootstrap_run_state, load_bootstrap_run_state
 from .tree_inspector import build_morpion_bootstrap_tree_inspector_snapshot
@@ -772,6 +773,7 @@ def _effective_state_summary(
     active_evaluator = getattr(run_summary, "latest_active_evaluator_name", None)
     if active_evaluator is None:
         active_evaluator = getattr(run_state, "active_evaluator_name", None)
+    evaluator_set_summary = _evaluator_set_summary(configured_evaluator_names)
     return {
         "active_evaluator": active_evaluator,
         "forced_evaluator_request": current_control.force_evaluator,
@@ -786,6 +788,14 @@ def _effective_state_summary(
         "runtime_override_status": "set"
         if current_control.runtime.tree_branch_limit is not None
         else "unset",
+        "evaluator_set_label": evaluator_set_summary["label"],
+        "configured_evaluator_count": evaluator_set_summary["count"],
+        "configured_evaluator_names": evaluator_set_summary[
+            "configured_evaluator_names"
+        ],
+        "is_canonical_evaluator_family": evaluator_set_summary[
+            "is_canonical_family"
+        ],
         "latest_dataset_rows": latest_dataset_rows,
         "control_pending_application": pending_changes,
     }
@@ -839,7 +849,33 @@ def _render_effective_state_section(
         "Pending control file",
         "yes" if bool(summary["control_pending_application"]) else "no",
     )
+    st.write("Evaluator set:", _format_value(summary["evaluator_set_label"]))
+    st.write(
+        "Configured evaluators:",
+        _format_value(summary["configured_evaluator_names"]),
+    )
     st.write("Summary:", summary)
+
+
+def _evaluator_set_summary(
+    configured_evaluator_names: tuple[str, ...],
+) -> dict[str, object]:
+    """Return one compact evaluator-set summary for dashboard/operator views."""
+    sorted_names = tuple(sorted(configured_evaluator_names))
+    canonical_names = tuple(sorted(canonical_morpion_evaluator_names()))
+    is_canonical_family = sorted_names == canonical_names
+    if not sorted_names:
+        label = "no configured evaluators"
+    elif is_canonical_family:
+        label = "canonical 8-model family"
+    else:
+        label = f"custom ({len(sorted_names)} evaluators)"
+    return {
+        "label": label,
+        "count": len(sorted_names),
+        "configured_evaluator_names": sorted_names,
+        "is_canonical_family": is_canonical_family,
+    }
 
 
 def _render_status_layers(

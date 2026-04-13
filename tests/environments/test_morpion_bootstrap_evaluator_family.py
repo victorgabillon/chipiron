@@ -12,6 +12,7 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionEvaluatorSpec,
     UnknownMorpionEvaluatorFamilyPresetError,
     canonical_morpion_evaluator_family_config,
+    canonical_morpion_evaluator_names,
     canonical_morpion_evaluator_specs,
     morpion_evaluators_config_from_preset,
 )
@@ -50,6 +51,20 @@ def test_canonical_evaluator_family_specs_helper_matches_config() -> None:
 
     assert isinstance(specs, dict)
     assert specs == config.evaluators
+
+
+def test_canonical_evaluator_name_helper_is_stable() -> None:
+    """The canonical evaluator-name helper should return the stable family order."""
+    assert canonical_morpion_evaluator_names() == (
+        "linear_5",
+        "mlp_5",
+        "linear_10",
+        "mlp_10",
+        "linear_20",
+        "mlp_20",
+        "linear_41",
+        "mlp_41",
+    )
 
 
 def test_family_preset_resolution_returns_canonical_family() -> None:
