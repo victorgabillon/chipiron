@@ -297,7 +297,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         search_args: SearchArgs,
     ) -> object:
         """Restore one live runtime from a persisted checkpoint JSON file."""
-        payload = _load_search_checkpoint_payload(tree_snapshot_path)
+        payload = load_morpion_search_checkpoint_payload(tree_snapshot_path)
         return load_search_from_checkpoint_payload(
             payload,
             state_codec=self._state_codec,
@@ -353,15 +353,24 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             json.dump(asdict(payload), handle, indent=2, sort_keys=True)
 
 
-def _load_search_checkpoint_payload(path: Path) -> SearchRuntimeCheckpointPayload:
+def load_morpion_search_checkpoint_payload(
+    path: str | Path,
+) -> SearchRuntimeCheckpointPayload:
     """Load a persisted search checkpoint payload from JSON and validate shape."""
+    resolved_path = Path(path)
     try:
-        with open(path, encoding="utf-8") as handle:
+        with open(resolved_path, encoding="utf-8") as handle:
             raw_payload = json.load(handle)
     except FileNotFoundError as exc:
-        raise InvalidMorpionSearchCheckpointError(path, "file does not exist") from exc
+        raise InvalidMorpionSearchCheckpointError(
+            resolved_path,
+            "file does not exist",
+        ) from exc
     except json.JSONDecodeError as exc:
-        raise InvalidMorpionSearchCheckpointError(path, "invalid JSON") from exc
+        raise InvalidMorpionSearchCheckpointError(
+            resolved_path,
+            "invalid JSON",
+        ) from exc
 
     try:
         return from_dict(
@@ -371,7 +380,7 @@ def _load_search_checkpoint_payload(path: Path) -> SearchRuntimeCheckpointPayloa
         )
     except Exception as exc:
         raise InvalidMorpionSearchCheckpointError(
-            path,
+            resolved_path,
             f"payload shape is invalid: {exc}",
         ) from exc
 
@@ -475,6 +484,7 @@ __all__ = [
     "AnemoneMorpionSearchRunner",
     "AnemoneMorpionSearchRunnerArgs",
     "InvalidMorpionSearchCheckpointError",
+    "load_morpion_search_checkpoint_payload",
     "MorpionRegressorMasterEvaluator",
     "UninitializedMorpionSearchRunnerError",
     "load_morpion_evaluator_from_model_bundle",

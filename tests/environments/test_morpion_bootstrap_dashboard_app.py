@@ -60,6 +60,7 @@ from chipiron.environments.morpion.bootstrap import (
     save_bootstrap_run_state,
 )
 from chipiron.environments.morpion.bootstrap.dashboard_app import (
+    _selected_child_node_id_for_branch,
     _applied_runtime_control,
     _baseline_tree_branch_limit,
     _build_next_control,
@@ -81,7 +82,12 @@ from chipiron.environments.morpion.bootstrap.dashboard_app import (
     _pending_control_sections,
     _runtime_status_summary,
     _scheduling_status_summary,
+    _tree_inspector_child_rows,
     _tree_branch_limit_input_value,
+)
+from chipiron.environments.morpion.bootstrap.tree_inspector import (
+    MorpionBootstrapChildSummary,
+    MorpionBootstrapTreeInspectorSnapshot,
 )
 
 
@@ -580,3 +586,74 @@ def test_format_helpers() -> None:
     assert _format_optional_runtime_override(64) == "64"
     assert _format_force_evaluator_option("") == "No configured evaluators"
     assert _format_force_evaluator_option("mlp") == "mlp (stale / not configured)"
+
+
+def test_tree_inspector_child_rows_are_stable() -> None:
+    """Dashboard child-row formatting should preserve display-value priority fields."""
+    snapshot = MorpionBootstrapTreeInspectorSnapshot(
+        checkpoint_path=None,
+        checkpoint_source=None,
+        root_node_id="0",
+        selected_node_id="0",
+        status_message=None,
+        error_message=None,
+        selection_warning=None,
+        node_summary=None,
+        child_summaries=(
+            MorpionBootstrapChildSummary(
+                branch_label="(0,-1,2,3)",
+                child_node_id="1",
+                visit_count=None,
+                is_terminal=False,
+                is_exact=False,
+                direct_value_scalar=0.2,
+                backed_up_value_scalar=0.5,
+                display_value_scalar=0.5,
+            ),
+        ),
+        state_view=None,
+        local_tree_view=None,
+    )
+
+    assert _tree_inspector_child_rows(snapshot) == [
+        {
+            "branch": "(0,-1,2,3)",
+            "child_node_id": "1",
+            "display_value": 0.5,
+            "backed_up_value": 0.5,
+            "direct_value": 0.2,
+            "visit_count": None,
+            "is_exact": False,
+            "is_terminal": False,
+        }
+    ]
+
+
+def test_selected_child_node_id_for_branch_returns_matching_child() -> None:
+    """Dashboard child navigation helper should resolve the expanded child node id."""
+    child_summaries = (
+        MorpionBootstrapChildSummary(
+            branch_label="a",
+            child_node_id="1",
+            visit_count=None,
+            is_terminal=False,
+            is_exact=False,
+            direct_value_scalar=0.1,
+            backed_up_value_scalar=None,
+            display_value_scalar=0.1,
+        ),
+        MorpionBootstrapChildSummary(
+            branch_label="b",
+            child_node_id=None,
+            visit_count=None,
+            is_terminal=None,
+            is_exact=None,
+            direct_value_scalar=None,
+            backed_up_value_scalar=None,
+            display_value_scalar=None,
+        ),
+    )
+
+    assert _selected_child_node_id_for_branch(child_summaries, "a") == "1"
+    assert _selected_child_node_id_for_branch(child_summaries, "b") is None
+    assert _selected_child_node_id_for_branch(child_summaries, "missing") is None

@@ -6,6 +6,7 @@ from .anemone_runner import (
     InvalidMorpionSearchCheckpointError,
     UninitializedMorpionSearchRunnerError,
     apply_runtime_control_to_runner_args,
+    load_morpion_search_checkpoint_payload,
     load_morpion_evaluator_from_model_bundle,
 )
 from .bootstrap_loop import (
@@ -135,6 +136,15 @@ from .run_state import (
     load_bootstrap_run_state,
     save_bootstrap_run_state,
 )
+from .tree_inspector import (
+    MorpionBootstrapChildSummary,
+    MorpionBootstrapLocalTreeView,
+    MorpionBootstrapNodeSummary,
+    MorpionBootstrapStateView,
+    MorpionBootstrapTreeInspectorSnapshot,
+    build_morpion_bootstrap_tree_inspector_snapshot,
+    resolve_latest_runtime_checkpoint,
+)
 
 __all__ = [
     "AnemoneMorpionSearchRunner",
@@ -188,6 +198,11 @@ __all__ = [
     "MorpionBootstrapRunSummary",
     "MorpionBootstrapRunState",
     "MorpionBootstrapRunView",
+    "MorpionBootstrapChildSummary",
+    "MorpionBootstrapLocalTreeView",
+    "MorpionBootstrapNodeSummary",
+    "MorpionBootstrapStateView",
+    "MorpionBootstrapTreeInspectorSnapshot",
     "MorpionBootstrapTrainingStatus",
     "MorpionBootstrapTreeStatus",
     "MorpionEvaluatorMetrics",
@@ -229,6 +244,7 @@ __all__ = [
     "load_bootstrap_run_state",
     "load_latest_bootstrap_status",
     "load_morpion_evaluator_from_model_bundle",
+    "load_morpion_search_checkpoint_payload",
     "morpion_bootstrap_experiment_metadata",
     "plot_active_evaluator",
     "plot_dataset_size",
@@ -238,6 +254,7 @@ __all__ = [
     "record_total_points_series",
     "rebuild_latest_bootstrap_status",
     "resolve_record_status_for_cycle",
+    "resolve_latest_runtime_checkpoint",
     "run_dashboard_cli",
     "run_dashboard_app",
     "run_morpion_bootstrap_experiment",
@@ -252,6 +269,7 @@ __all__ = [
     "summarize_evaluator_selection",
     "summarize_record_progress",
     "training_triggered_series",
+    "build_morpion_bootstrap_tree_inspector_snapshot",
     "tree_num_nodes_series",
     "UninitializedMorpionSearchRunnerError",
     "validate_bootstrap_config_change",

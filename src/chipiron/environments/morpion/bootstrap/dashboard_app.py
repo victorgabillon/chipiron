@@ -39,6 +39,7 @@ from .dashboard_plot import (
 )
 from .history_view import build_morpion_bootstrap_dashboard_data
 from .run_state import initialize_bootstrap_run_state, load_bootstrap_run_state
+from .tree_inspector import build_morpion_bootstrap_tree_inspector_snapshot
 
 
 def run_dashboard_app(work_dir: Path) -> None:
@@ -253,6 +254,9 @@ def run_dashboard_app(work_dir: Path) -> None:
             lambda: plot_evaluator_losses(dashboard_data.evaluator_loss_by_name),
         )
 
+    st.subheader("Tree / State Inspector")
+    _render_tree_inspector_section(st=st, paths=paths)
+
     st.subheader("Debug Info")
     st.write(
         "Last checkpoint path:",
@@ -288,6 +292,182 @@ def _render_plot(st: Any, build_plot: Any) -> None:
     figure = plt.gcf()
     st.pyplot(figure, clear_figure=True)
     plt.close(figure)
+
+
+def _render_tree_inspector_section(*, st: Any, paths: MorpionBootstrapPaths) -> None:
+    """Render the bounded runtime-tree inspector for the latest checkpoint."""
+    state_key = f"morpion_bootstrap_selected_node::{paths.work_dir}"
+    selected_node_id = st.session_state.get(state_key)
+    snapshot = build_morpion_bootstrap_tree_inspector_snapshot(
+        paths.work_dir,
+        selected_node_id=selected_node_id,
+    )
+
+    if snapshot.status_message is not None:
+        st.info(snapshot.status_message)
+    if snapshot.error_message is not None:
+        st.warning(snapshot.error_message)
+        return
+    if snapshot.selected_node_id is None or snapshot.node_summary is None:
+        st.caption("No persisted runtime checkpoint available yet.")
+        return
+    if snapshot.selection_warning is not None:
+        st.warning(snapshot.selection_warning)
+
+    st.session_state[state_key] = snapshot.selected_node_id
+    _render_tree_inspector_navigation(
+        st=st,
+        snapshot=snapshot,
+        state_key=state_key,
+    )
+
+    node_summary = snapshot.node_summary
+    summary_columns = st.columns(4)
+    summary_columns[0].metric("Selected Node", node_summary.node_id)
+    summary_columns[1].metric("Depth", _format_value(node_summary.depth))
+    summary_columns[2].metric("Children", str(node_summary.num_children))
+    summary_columns[3].metric(
+        "Best Branch",
+        _format_value(node_summary.best_branch_label),
+    )
+
+    details_columns = st.columns(2)
+    with details_columns[0]:
+        st.caption("Node Summary")
+        st.json(_tree_inspector_node_summary_dict(snapshot))
+        st.caption("Local Tree")
+        st.json(_tree_inspector_local_tree_dict(snapshot))
+    with details_columns[1]:
+        if snapshot.state_view is not None:
+            st.caption("Selected Morpion State")
+            st.components.v1.html(snapshot.state_view.board_svg, height=760)
+            st.code(snapshot.state_view.board_text)
+
+    st.caption("Outgoing actions")
+    st.dataframe(
+        _tree_inspector_child_rows(snapshot),
+        use_container_width=True,
+        hide_index=True,
+    )
+
+
+def _render_tree_inspector_navigation(
+    *,
+    st: Any,
+    snapshot: Any,
+    state_key: str,
+) -> None:
+    """Render root/parent/child/direct node navigation controls."""
+    local_tree_view = snapshot.local_tree_view
+    node_summary = snapshot.node_summary
+    if local_tree_view is None or node_summary is None:
+        return
+
+    nav_columns = st.columns((1, 1, 2, 3))
+    if nav_columns[0].button("Go to root", key=f"{state_key}::root"):
+        st.session_state[state_key] = local_tree_view.root_node_id
+        st.rerun()
+    parent_disabled = not node_summary.parent_ids
+    if nav_columns[1].button(
+        "Go to parent",
+        key=f"{state_key}::parent",
+        disabled=parent_disabled,
+    ):
+        st.session_state[state_key] = node_summary.parent_ids[0]
+        st.rerun()
+
+    child_options = [summary.branch_label for summary in snapshot.child_summaries]
+    selected_branch = nav_columns[2].selectbox(
+        "Child branch",
+        options=child_options if child_options else [""],
+        key=f"{state_key}::child_branch",
+        disabled=not child_options,
+        label_visibility="collapsed",
+    )
+    if nav_columns[3].button(
+        "Go to child",
+        key=f"{state_key}::child",
+        disabled=not child_options,
+    ):
+        selected_child_node_id = _selected_child_node_id_for_branch(
+            snapshot.child_summaries,
+            selected_branch,
+        )
+        if selected_child_node_id is not None:
+            st.session_state[state_key] = selected_child_node_id
+            st.rerun()
+
+    selected_node_input = st.text_input(
+        "Node id",
+        value=snapshot.selected_node_id,
+        key=f"{state_key}::node_input",
+        help="Jump directly to a checkpoint node id.",
+    )
+    if st.button("Go to node id", key=f"{state_key}::node_jump"):
+        st.session_state[state_key] = selected_node_input.strip()
+        st.rerun()
+
+
+def _selected_child_node_id_for_branch(
+    child_summaries: tuple[Any, ...],
+    branch_label: str,
+) -> str | None:
+    """Return the expanded child node id for the selected branch row."""
+    for child_summary in child_summaries:
+        if child_summary.branch_label == branch_label:
+            return child_summary.child_node_id
+    return None
+
+
+def _tree_inspector_node_summary_dict(snapshot: Any) -> dict[str, object]:
+    """Return one JSON-friendly selected-node summary for the dashboard."""
+    node_summary = snapshot.node_summary
+    if node_summary is None:
+        return {}
+    return {
+        "node_id": node_summary.node_id,
+        "depth": node_summary.depth,
+        "parent_ids": list(node_summary.parent_ids),
+        "child_ids": list(node_summary.child_ids),
+        "visit_count": node_summary.visit_count,
+        "is_terminal": node_summary.is_terminal,
+        "is_exact": node_summary.is_exact,
+        "direct_value_scalar": node_summary.direct_value_scalar,
+        "backed_up_value_scalar": node_summary.backed_up_value_scalar,
+        "best_child_id": node_summary.best_child_id,
+        "best_branch_label": node_summary.best_branch_label,
+    }
+
+
+def _tree_inspector_local_tree_dict(snapshot: Any) -> dict[str, object]:
+    """Return one JSON-friendly bounded tree neighborhood summary."""
+    local_tree_view = snapshot.local_tree_view
+    if local_tree_view is None:
+        return {}
+    return {
+        "root_node_id": local_tree_view.root_node_id,
+        "selected_node_id": local_tree_view.selected_node_id,
+        "parent_node_ids": list(local_tree_view.parent_node_ids),
+        "sibling_node_ids": list(local_tree_view.sibling_node_ids),
+        "child_node_ids": list(local_tree_view.child_node_ids),
+    }
+
+
+def _tree_inspector_child_rows(snapshot: Any) -> list[dict[str, object]]:
+    """Return the child/action rows shown in the inspector table."""
+    return [
+        {
+            "branch": child_summary.branch_label,
+            "child_node_id": child_summary.child_node_id,
+            "display_value": child_summary.display_value_scalar,
+            "backed_up_value": child_summary.backed_up_value_scalar,
+            "direct_value": child_summary.direct_value_scalar,
+            "visit_count": child_summary.visit_count,
+            "is_exact": child_summary.is_exact,
+            "is_terminal": child_summary.is_terminal,
+        }
+        for child_summary in snapshot.child_summaries
+    ]
 
 
 def _load_run_state(paths: MorpionBootstrapPaths) -> Any:

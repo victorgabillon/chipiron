@@ -15,7 +15,7 @@ from chipiron.displays.svg_adapter_protocol import (
     SvgPosition,
 )
 from chipiron.displays.svg_text_helpers import fit_font_size, fmt_svg_number
-from chipiron.environments.morpion.morpion_gui_encoder import (
+from chipiron.environments.morpion.morpion_display import (
     MorpionDisplayPayload,
     MorpionMoveDisplay,
 )
