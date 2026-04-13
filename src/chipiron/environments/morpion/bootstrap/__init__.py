@@ -115,6 +115,7 @@ from .history_view import (
     training_triggered_series,
     tree_num_nodes_series,
 )
+from .launcher import MorpionBootstrapLauncherArgs, run_morpion_bootstrap_experiment
 from .record_status import (
     MORPION_BOOTSTRAP_GAME,
     MORPION_BOOTSTRAP_INITIAL_PATTERN,
@@ -179,6 +180,7 @@ __all__ = [
     "MorpionBootstrapHistoryPaths",
     "MorpionBootstrapHistoryRecorder",
     "MorpionBootstrapLatestStatus",
+    "MorpionBootstrapLauncherArgs",
     "MorpionBootstrapPaths",
     "MorpionBootstrapRecordStatus",
     "MorpionBootstrapRuntimeConfig",
@@ -238,6 +240,7 @@ __all__ = [
     "resolve_record_status_for_cycle",
     "run_dashboard_cli",
     "run_dashboard_app",
+    "run_morpion_bootstrap_experiment",
     "run_morpion_bootstrap_loop",
     "run_one_bootstrap_cycle",
     "save_bootstrap_config",

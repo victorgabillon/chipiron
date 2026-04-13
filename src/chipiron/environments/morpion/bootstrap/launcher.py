@@ -1,0 +1,377 @@
+"""Canonical human/operator launcher for one persistent Morpion bootstrap run."""
+
+from __future__ import annotations
+
+import argparse
+import shlex
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Sequence
+
+from .anemone_runner import (
+    AnemoneMorpionSearchRunner,
+    AnemoneMorpionSearchRunnerArgs,
+    apply_runtime_control_to_runner_args,
+)
+from .bootstrap_loop import (
+    MorpionBootstrapArgs,
+    MorpionBootstrapPaths,
+    run_morpion_bootstrap_loop,
+)
+from .config import (
+    DEFAULT_MORPION_TREE_BRANCH_LIMIT,
+    MorpionBootstrapConfig,
+    bootstrap_config_from_args,
+    load_bootstrap_config,
+)
+from .control import (
+    MorpionBootstrapControl,
+    effective_runtime_config_from_config_and_control,
+    load_bootstrap_control,
+)
+from .history import MorpionBootstrapLatestStatus, load_latest_bootstrap_status
+from .run_state import MorpionBootstrapRunState, load_bootstrap_run_state
+
+
+@dataclass(frozen=True, slots=True)
+class MorpionBootstrapLauncherArgs:
+    """Launcher-only options for the canonical Morpion operator entrypoint."""
+
+    bootstrap_args: MorpionBootstrapArgs
+    max_cycles: int | None = None
+    open_dashboard: bool = False
+    print_startup_summary: bool = True
+    print_dashboard_hint: bool = True
+
+    @property
+    def work_dir(self) -> Path:
+        """Return the resolved launcher work directory."""
+        return MorpionBootstrapPaths.from_work_dir(self.bootstrap_args.work_dir).work_dir
+
+
+@dataclass(frozen=True, slots=True)
+class _LauncherStartupStatus:
+    """Resolved startup information used by the canonical launcher."""
+
+    paths: MorpionBootstrapPaths
+    run_mode: str
+    bootstrap_config: MorpionBootstrapConfig
+    control: MorpionBootstrapControl
+    run_state: MorpionBootstrapRunState | None
+    latest_status: MorpionBootstrapLatestStatus | None
+    config_exists: bool
+    control_exists: bool
+    run_state_exists: bool
+    history_exists: bool
+    latest_status_exists: bool
+
+
+def run_morpion_bootstrap_experiment(
+    launcher_args: MorpionBootstrapLauncherArgs,
+) -> MorpionBootstrapRunState:
+    """Run one persistent Morpion bootstrap experiment end to end.
+
+    This launcher is the canonical human/operator entrypoint for one real
+    Morpion bootstrap experiment backed by the Anemone search runner.
+    """
+    startup_status = _collect_launcher_startup_status(launcher_args)
+    if launcher_args.print_startup_summary:
+        print(
+            _render_launcher_startup_summary(
+                startup_status,
+                dashboard_requested=launcher_args.open_dashboard,
+            )
+        )
+    if launcher_args.print_dashboard_hint:
+        if launcher_args.print_startup_summary:
+            print()
+        print(
+            _render_dashboard_hint(
+                startup_status.paths.work_dir,
+                requested_open=launcher_args.open_dashboard,
+            )
+        )
+
+    runner = _build_launcher_runner(startup_status)
+    return run_morpion_bootstrap_loop(
+        launcher_args.bootstrap_args,
+        runner,
+        max_cycles=launcher_args.max_cycles,
+    )
+
+
+def _collect_launcher_startup_status(
+    launcher_args: MorpionBootstrapLauncherArgs,
+) -> _LauncherStartupStatus:
+    """Resolve the operator-facing bootstrap status before entering the loop."""
+    paths = MorpionBootstrapPaths.from_work_dir(launcher_args.bootstrap_args.work_dir)
+    config_exists = paths.bootstrap_config_path.is_file()
+    control_exists = paths.control_path.is_file()
+    run_state_exists = paths.run_state_path.is_file()
+    history_exists = paths.history_jsonl_path.is_file()
+    latest_status_exists = paths.latest_status_path.is_file()
+
+    bootstrap_config = bootstrap_config_from_args(launcher_args.bootstrap_args)
+    if config_exists:
+        bootstrap_config = load_bootstrap_config(paths.bootstrap_config_path)
+
+    control = load_bootstrap_control(paths.control_path)
+    run_state = (
+        load_bootstrap_run_state(paths.run_state_path)
+        if run_state_exists
+        else None
+    )
+    latest_status = (
+        load_latest_bootstrap_status(paths.latest_status_path)
+        if latest_status_exists
+        else None
+    )
+
+    return _LauncherStartupStatus(
+        paths=paths,
+        run_mode=_resolve_run_mode(
+            config_exists=config_exists,
+            control_exists=control_exists,
+            run_state_exists=run_state_exists,
+            history_exists=history_exists,
+            latest_status_exists=latest_status_exists,
+        ),
+        bootstrap_config=bootstrap_config,
+        control=control,
+        run_state=run_state,
+        latest_status=latest_status,
+        config_exists=config_exists,
+        control_exists=control_exists,
+        run_state_exists=run_state_exists,
+        history_exists=history_exists,
+        latest_status_exists=latest_status_exists,
+    )
+
+
+def _build_launcher_runner(
+    startup_status: _LauncherStartupStatus,
+) -> AnemoneMorpionSearchRunner:
+    """Construct the canonical real Anemone runner for the experiment."""
+    effective_runtime_config = effective_runtime_config_from_config_and_control(
+        startup_status.bootstrap_config,
+        startup_status.control,
+    )
+    runner_args = apply_runtime_control_to_runner_args(
+        AnemoneMorpionSearchRunnerArgs(),
+        effective_runtime_config,
+    )
+    return AnemoneMorpionSearchRunner(runner_args)
+
+
+def _render_launcher_startup_summary(
+    startup_status: _LauncherStartupStatus,
+    *,
+    dashboard_requested: bool,
+) -> str:
+    """Render the operator-facing launcher summary without printing."""
+    effective_runtime_config = effective_runtime_config_from_config_and_control(
+        startup_status.bootstrap_config,
+        startup_status.control,
+    )
+    baseline_tree_branch_limit = startup_status.bootstrap_config.runtime.tree_branch_limit
+    control_tree_branch_limit = startup_status.control.runtime.tree_branch_limit
+    evaluators = ", ".join(
+        sorted(startup_status.bootstrap_config.evaluators.evaluators)
+    )
+    control_fragment = (
+        "none"
+        if control_tree_branch_limit is None
+        else str(control_tree_branch_limit)
+    )
+    return "\n".join(
+        (
+            "=== Morpion Bootstrap Launcher ===",
+            f"work dir: {startup_status.paths.work_dir}",
+            f"mode: {startup_status.run_mode}",
+            f"bootstrap config: {_render_config_state(startup_status.config_exists)}",
+            f"control file: {_render_presence(startup_status.control_exists)}",
+            f"run state: {_render_presence(startup_status.run_state_exists)}",
+            f"history: {_render_presence(startup_status.history_exists)}",
+            f"latest status: {_render_presence(startup_status.latest_status_exists)}",
+            f"latest generation: {_render_optional_int(_latest_generation(startup_status))}",
+            f"latest cycle: {_render_optional_int(_latest_cycle_index(startup_status))}",
+            f"configured evaluators: {evaluators}",
+            f"forced evaluator control: {_render_optional_text(startup_status.control.force_evaluator)}",
+            "tree_branch_limit: "
+            f"{effective_runtime_config.tree_branch_limit} "
+            f"(baseline {baseline_tree_branch_limit}, control override {control_fragment})",
+            "dashboard: "
+            f"{'requested via separate process hint' if dashboard_requested else 'available via separate process'}",
+            "paths:",
+            f"  config: {startup_status.paths.bootstrap_config_path}",
+            f"  control: {startup_status.paths.control_path}",
+            f"  run state: {startup_status.paths.run_state_path}",
+            f"  history: {startup_status.paths.history_jsonl_path}",
+            f"  latest status: {startup_status.paths.latest_status_path}",
+            f"  runtime checkpoints: {startup_status.paths.runtime_checkpoint_dir}",
+            f"  tree snapshots: {startup_status.paths.tree_snapshot_dir}",
+            f"  rows: {startup_status.paths.rows_dir}",
+            f"  models: {startup_status.paths.model_dir}",
+        )
+    )
+
+
+def _render_dashboard_hint(work_dir: Path, *, requested_open: bool) -> str:
+    """Render the exact dashboard command for the current work directory."""
+    command = (
+        "python -m chipiron.environments.morpion.bootstrap.dashboard_app "
+        f"--work-dir {shlex.quote(str(work_dir))}"
+    )
+    heading = (
+        "Dashboard requested: start it in a separate terminal for this work dir."
+        if requested_open
+        else "Dashboard available for this work dir."
+    )
+    return "\n".join((heading, f"command: {command}"))
+
+
+def build_launcher_argument_parser() -> argparse.ArgumentParser:
+    """Build the CLI parser for the canonical bootstrap launcher."""
+    parser = argparse.ArgumentParser(
+        description=(
+            "Canonical human/operator launcher for one persistent Morpion "
+            "bootstrap experiment."
+        )
+    )
+    parser.add_argument("--work-dir", required=True, type=Path)
+    parser.add_argument("--max-cycles", type=int, default=None)
+    parser.add_argument(
+        "--open-dashboard",
+        "--dashboard",
+        dest="open_dashboard",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--no-print-startup-summary",
+        dest="print_startup_summary",
+        action="store_false",
+    )
+    parser.add_argument(
+        "--no-print-dashboard-hint",
+        dest="print_dashboard_hint",
+        action="store_false",
+    )
+    parser.set_defaults(
+        print_startup_summary=True,
+        print_dashboard_hint=True,
+    )
+    parser.add_argument("--max-growth-steps-per-cycle", type=int, default=1000)
+    parser.add_argument("--save-after-seconds", type=float, default=3600.0)
+    parser.add_argument(
+        "--save-after-tree-growth-factor",
+        type=float,
+        default=2.0,
+    )
+    parser.add_argument("--max-rows", type=int, default=None)
+    parser.add_argument(
+        "--use-backed-up-value",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument(
+        "--tree-branch-limit",
+        type=int,
+        default=DEFAULT_MORPION_TREE_BRANCH_LIMIT,
+    )
+    return parser
+
+
+def launcher_args_from_cli(argv: Sequence[str] | None = None) -> MorpionBootstrapLauncherArgs:
+    """Parse CLI arguments into the canonical launcher dataclass."""
+    parsed = build_launcher_argument_parser().parse_args(argv)
+    bootstrap_args = MorpionBootstrapArgs(
+        work_dir=parsed.work_dir,
+        max_growth_steps_per_cycle=parsed.max_growth_steps_per_cycle,
+        save_after_seconds=parsed.save_after_seconds,
+        save_after_tree_growth_factor=parsed.save_after_tree_growth_factor,
+        max_rows=parsed.max_rows,
+        use_backed_up_value=parsed.use_backed_up_value,
+        tree_branch_limit=parsed.tree_branch_limit,
+    )
+    return MorpionBootstrapLauncherArgs(
+        bootstrap_args=bootstrap_args,
+        max_cycles=parsed.max_cycles,
+        open_dashboard=parsed.open_dashboard,
+        print_startup_summary=parsed.print_startup_summary,
+        print_dashboard_hint=parsed.print_dashboard_hint,
+    )
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """Run the canonical Morpion bootstrap launcher CLI."""
+    run_morpion_bootstrap_experiment(launcher_args_from_cli(argv))
+    return 0
+
+
+def _resolve_run_mode(
+    *,
+    config_exists: bool,
+    control_exists: bool,
+    run_state_exists: bool,
+    history_exists: bool,
+    latest_status_exists: bool,
+) -> str:
+    """Classify the work directory as fresh, resume, or partial."""
+    if run_state_exists:
+        return "resume"
+    if any((config_exists, control_exists, history_exists, latest_status_exists)):
+        return "partial artifacts"
+    return "fresh run"
+
+
+def _latest_generation(startup_status: _LauncherStartupStatus) -> int | None:
+    """Return the latest known generation for summary rendering."""
+    if startup_status.run_state is not None:
+        return startup_status.run_state.generation
+    if startup_status.latest_status is not None:
+        return startup_status.latest_status.latest_generation
+    return None
+
+
+def _latest_cycle_index(startup_status: _LauncherStartupStatus) -> int | None:
+    """Return the latest known cycle index for summary rendering."""
+    if startup_status.run_state is not None:
+        return startup_status.run_state.cycle_index
+    if startup_status.latest_status is not None:
+        return startup_status.latest_status.latest_cycle_index
+    return None
+
+
+def _render_config_state(config_exists: bool) -> str:
+    """Render whether the persisted config already exists."""
+    if config_exists:
+        return "present"
+    return "absent; will be written from launcher args"
+
+
+def _render_presence(is_present: bool) -> str:
+    """Render a stable presence/absence marker."""
+    return "present" if is_present else "absent"
+
+
+def _render_optional_text(value: str | None) -> str:
+    """Render optional text consistently in launcher output."""
+    return "none" if value is None else value
+
+
+def _render_optional_int(value: int | None) -> str:
+    """Render optional integers consistently in launcher output."""
+    return "n/a" if value is None else str(value)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+
+
+__all__ = [
+    "MorpionBootstrapLauncherArgs",
+    "build_launcher_argument_parser",
+    "launcher_args_from_cli",
+    "main",
+    "run_morpion_bootstrap_experiment",
+]
