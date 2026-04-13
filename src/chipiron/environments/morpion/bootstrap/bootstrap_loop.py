@@ -15,6 +15,11 @@ from chipiron.environments.morpion.learning import (
     save_morpion_supervised_rows,
     training_tree_snapshot_to_morpion_supervised_rows,
 )
+from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
+    DEFAULT_MORPION_FEATURE_SUBSET_NAME,
+    MorpionFeatureSubset,
+    resolve_morpion_feature_subset,
+)
 from chipiron.environments.morpion.players.evaluators.neural_networks.train import (
     MorpionTrainingArgs,
     train_morpion_regressor,
@@ -191,6 +196,25 @@ class MorpionEvaluatorSpec:
     num_epochs: int
     batch_size: int
     learning_rate: float
+    feature_subset_name: str = DEFAULT_MORPION_FEATURE_SUBSET_NAME
+    feature_names: tuple[str, ...] = field(default_factory=tuple)
+
+    def __post_init__(self) -> None:
+        """Normalize feature subset metadata into a canonical explicit form."""
+        subset = resolve_morpion_feature_subset(
+            feature_subset_name=self.feature_subset_name,
+            feature_names=None if not self.feature_names else self.feature_names,
+        )
+        object.__setattr__(self, "feature_subset_name", subset.name)
+        object.__setattr__(self, "feature_names", subset.feature_names)
+
+    @property
+    def feature_subset(self) -> MorpionFeatureSubset:
+        """Return the resolved Morpion feature subset for this evaluator."""
+        return MorpionFeatureSubset(
+            name=self.feature_subset_name,
+            feature_names=self.feature_names,
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -603,6 +627,8 @@ def run_one_bootstrap_cycle(
                 learning_rate=spec.learning_rate,
                 shuffle=args.shuffle,
                 model_kind=spec.model_type,
+                feature_subset_name=spec.feature_subset_name,
+                feature_names=spec.feature_names,
                 hidden_sizes=spec.hidden_sizes,
             )
         )

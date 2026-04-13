@@ -132,6 +132,16 @@ class MalformedMorpionBootstrapConfigError(TypeError):
             "Morpion evaluator mapping."
         )
 
+    @classmethod
+    def invalid_feature_names(
+        cls,
+        field_name: str,
+    ) -> MalformedMorpionBootstrapConfigError:
+        """Return one malformed feature-names field error."""
+        return cls(
+            f"Morpion bootstrap config field `{field_name}` must be a list or tuple of strings."
+        )
+
 
 class UnsafeMorpionBootstrapConfigChangeError(ValueError):
     """Raised when one relaunch changes unsafe bootstrap config fields."""
@@ -237,6 +247,17 @@ def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
                     learning_rate=_coerce_float(
                         _require_section_mapping(spec_payload, section_name=f"evaluators.evaluators.{evaluator_name}").get("learning_rate"),
                         field_name=f"evaluators.evaluators.{evaluator_name}.learning_rate",
+                    ),
+                    feature_subset_name=_required_str(
+                        _require_section_mapping(spec_payload, section_name=f"evaluators.evaluators.{evaluator_name}").get(
+                            "feature_subset_name",
+                            "handcrafted_41",
+                        ),
+                        field_name=f"evaluators.evaluators.{evaluator_name}.feature_subset_name",
+                    ),
+                    feature_names=_optional_str_tuple(
+                        _require_section_mapping(spec_payload, section_name=f"evaluators.evaluators.{evaluator_name}").get("feature_names"),
+                        field_name=f"evaluators.evaluators.{evaluator_name}.feature_names",
                     ),
                 )
                 for evaluator_name, spec_payload in evaluator_entries.items()
@@ -427,6 +448,8 @@ def _evaluator_spec_to_dict(spec: MorpionEvaluatorSpec) -> dict[str, object]:
         "num_epochs": spec.num_epochs,
         "batch_size": spec.batch_size,
         "learning_rate": spec.learning_rate,
+        "feature_subset_name": spec.feature_subset_name,
+        "feature_names": list(spec.feature_names),
     }
 
 
@@ -502,6 +525,18 @@ def _optional_int_tuple(value: object, *, field_name: str) -> tuple[int, ...] | 
         raise MalformedMorpionBootstrapConfigError.invalid_int(field_name)
     items = tuple(_coerce_int(item, field_name=field_name) for item in value)
     return items
+
+
+def _optional_str_tuple(value: object, *, field_name: str) -> tuple[str, ...]:
+    """Return one optional string tuple field or raise."""
+    if value is None:
+        return ()
+    if not isinstance(value, list | tuple):
+        raise MalformedMorpionBootstrapConfigError.invalid_feature_names(field_name)
+    items = cast("list[object] | tuple[object, ...]", value)
+    if not all(isinstance(item, str) for item in items):
+        raise MalformedMorpionBootstrapConfigError.invalid_feature_names(field_name)
+    return tuple(cast("str", item) for item in items)
 
 
 def _metadata_dict(value: object) -> dict[str, object]:

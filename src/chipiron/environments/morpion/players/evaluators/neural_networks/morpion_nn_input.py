@@ -5,11 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from chipiron.environments.morpion.players.evaluators.neural_networks.feature_extractor import (
-    morpion_feature_names,
+from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
+    MorpionFeatureSubset,
+    full_morpion_feature_subset,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_tensor import (
-    morpion_state_to_tensor,
+    MorpionFeatureTensorConverter,
 )
 from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
 
@@ -28,11 +29,18 @@ class MorpionNNInput:
 def build_morpion_nn_input(
     state: MorpionState,
     dynamics: MorpionDynamics | None = None,
+    feature_subset: MorpionFeatureSubset | None = None,
 ) -> MorpionNNInput:
     """Build the handcrafted Morpion neural-network input bundle."""
     dyn = dynamics if dynamics is not None else MorpionDynamics()
-    feature_names = morpion_feature_names()
-    tensor = morpion_state_to_tensor(state=state, dynamics=dyn)
+    converter = MorpionFeatureTensorConverter(
+        dynamics=dyn,
+        feature_subset=(
+            full_morpion_feature_subset() if feature_subset is None else feature_subset
+        ),
+    )
+    feature_names = converter.feature_names()
+    tensor = converter.state_to_tensor(state)
     return MorpionNNInput(feature_names=feature_names, tensor=tensor)
 
 

@@ -12,13 +12,28 @@ from .bundle import (
     load_morpion_regressor_for_inference,
     save_morpion_model_bundle,
 )
+from .feature_schema import (
+    DEFAULT_MORPION_FEATURE_SUBSET_NAME,
+    InvalidMorpionFeatureSubsetError,
+    MORPION_CANONICAL_FEATURE_NAMES,
+    MORPION_FEATURE_SCHEMA,
+    MorpionFeatureSchema,
+    MorpionFeatureSubset,
+    UnknownMorpionFeatureSubsetError,
+    full_morpion_feature_schema,
+    full_morpion_feature_subset,
+    morpion_feature_subset_from_feature_names,
+    morpion_feature_subset_from_name,
+    resolve_morpion_feature_subset,
+    subset_indices,
+    validate_morpion_feature_subset,
+)
 from .feature_extractor import (
     CandidateSegment,
     extract_morpion_features,
     morpion_feature_names,
 )
 from .model import (
-    MORPION_FEATURE_SCHEMA,
     MORPION_INPUT_DIM,
     MissingMorpionHiddenDimError,
     MissingMorpionHiddenSizesError,
@@ -35,6 +50,9 @@ from .state_to_tensor import (
 )
 
 __all__ = [
+    "DEFAULT_MORPION_FEATURE_SUBSET_NAME",
+    "InvalidMorpionFeatureSubsetError",
+    "MORPION_CANONICAL_FEATURE_NAMES",
     "MORPION_FEATURE_SCHEMA",
     "MORPION_INPUT_DIM",
     "MORPION_MANIFEST_FILE_NAME",
@@ -47,18 +65,28 @@ __all__ = [
     "MissingMorpionHiddenDimError",
     "MissingMorpionHiddenSizesError",
     "MorpionFeatureTensorConverter",
+    "MorpionFeatureSchema",
+    "MorpionFeatureSubset",
     "MorpionModelManifest",
     "MorpionNNInput",
     "MorpionRegressor",
     "MorpionRegressorArgs",
+    "UnknownMorpionFeatureSubsetError",
     "UnsupportedMorpionModelKindError",
     "build_morpion_nn_input",
     "build_morpion_regressor",
     "extract_morpion_features",
+    "full_morpion_feature_schema",
+    "full_morpion_feature_subset",
     "load_morpion_model_bundle",
     "load_morpion_regressor_for_inference",
     "morpion_feature_names",
+    "morpion_feature_subset_from_feature_names",
+    "morpion_feature_subset_from_name",
     "morpion_input_dim",
     "morpion_state_to_tensor",
+    "resolve_morpion_feature_subset",
     "save_morpion_model_bundle",
+    "subset_indices",
+    "validate_morpion_feature_subset",
 ]

@@ -10,6 +10,10 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.feature_ex
     extract_morpion_features,
     morpion_feature_names,
 )
+from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
+    MORPION_CANONICAL_FEATURE_NAMES,
+    morpion_feature_subset_from_feature_names,
+)
 from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_tensor import (
     MorpionFeatureTensorConverter,
     morpion_input_dim,
@@ -102,3 +106,40 @@ def test_converter_feature_names_api_is_stable() -> None:
 
     assert converter.feature_names() == morpion_feature_names()
     assert len(converter.feature_names()) == morpion_input_dim()
+
+
+def test_reduced_subset_projects_exact_entries_from_full_tensor() -> None:
+    """A reduced subset tensor should match the corresponding full-tensor entries."""
+    dynamics = MorpionDynamics()
+    state = make_standard_state()
+    subset = morpion_feature_subset_from_feature_names(
+        "handcrafted_5_custom",
+        MORPION_CANONICAL_FEATURE_NAMES[:5],
+    )
+
+    full_tensor = morpion_state_to_tensor(state=state, dynamics=dynamics)
+    subset_tensor = morpion_state_to_tensor(
+        state=state,
+        dynamics=dynamics,
+        feature_subset=subset,
+    )
+
+    assert subset_tensor.shape == (subset.dimension,)
+    assert morpion_input_dim(subset) == subset.dimension
+    torch.testing.assert_close(subset_tensor, full_tensor[: subset.dimension])
+
+
+def test_converter_reports_subset_feature_names_and_dimension() -> None:
+    """The converter metadata should reflect the selected subset exactly."""
+    dynamics = MorpionDynamics()
+    subset = morpion_feature_subset_from_feature_names(
+        "handcrafted_10_custom",
+        MORPION_CANONICAL_FEATURE_NAMES[:10],
+    )
+    converter = MorpionFeatureTensorConverter(
+        dynamics=dynamics,
+        feature_subset=subset,
+    )
+
+    assert converter.feature_names() == subset.feature_names
+    assert converter.input_dim == subset.dimension

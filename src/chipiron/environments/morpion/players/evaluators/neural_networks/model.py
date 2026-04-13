@@ -9,12 +9,15 @@ from typing import cast
 from coral.chi_nn import ChiNN
 from torch import Tensor, nn
 
-from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_tensor import (
-    morpion_input_dim,
+from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
+    DEFAULT_MORPION_FEATURE_SUBSET_NAME,
+    MORPION_FEATURE_SCHEMA,
+    MorpionFeatureSubset,
+    full_morpion_feature_subset,
+    resolve_morpion_feature_subset,
 )
 
-MORPION_FEATURE_SCHEMA = "morpion_handcrafted_v1"
-MORPION_INPUT_DIM = morpion_input_dim()
+MORPION_INPUT_DIM = full_morpion_feature_subset().dimension
 
 
 @dataclass(frozen=True, slots=True)
@@ -22,8 +25,31 @@ class MorpionRegressorArgs:
     """Arguments for the Morpion handcrafted-feature regressor."""
 
     model_kind: str = "linear"
-    input_dim: int = field(default=MORPION_INPUT_DIM)
+    feature_subset_name: str = DEFAULT_MORPION_FEATURE_SUBSET_NAME
+    feature_names: tuple[str, ...] = field(default_factory=tuple)
     hidden_sizes: tuple[int, ...] | None = None
+
+    def __post_init__(self) -> None:
+        """Normalize feature subset metadata into a canonical explicit form."""
+        subset = resolve_morpion_feature_subset(
+            feature_subset_name=self.feature_subset_name,
+            feature_names=None if not self.feature_names else self.feature_names,
+        )
+        object.__setattr__(self, "feature_subset_name", subset.name)
+        object.__setattr__(self, "feature_names", subset.feature_names)
+
+    @property
+    def feature_subset(self) -> MorpionFeatureSubset:
+        """Return the resolved Morpion feature subset for this regressor."""
+        return MorpionFeatureSubset(
+            name=self.feature_subset_name,
+            feature_names=self.feature_names,
+        )
+
+    @property
+    def input_dim(self) -> int:
+        """Return the model input width derived from the feature subset."""
+        return self.feature_subset.dimension
 
 
 class UnsupportedMorpionModelKindError(ValueError):

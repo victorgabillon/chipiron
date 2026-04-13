@@ -155,14 +155,17 @@ def load_morpion_evaluator_from_model_bundle(
     model_bundle_path: str | Path,
 ) -> MorpionMasterEvaluator:
     """Load one saved Morpion bundle into the Anemone evaluator protocol."""
-    model, _, _ = load_morpion_model_bundle(model_bundle_path)
+    model, model_args, _ = load_morpion_model_bundle(model_bundle_path)
     model.eval()
     over_detector = MorpionOverEventDetector()
     return MorpionRegressorMasterEvaluator(
         evaluator=MorpionStateEvaluator(),
         over=over_detector,
         over_detector=over_detector,
-        feature_converter=MorpionFeatureTensorConverter(dynamics=MorpionDynamics()),
+        feature_converter=MorpionFeatureTensorConverter(
+            dynamics=MorpionDynamics(),
+            feature_subset=model_args.feature_subset,
+        ),
         regressor=model,
     )
 

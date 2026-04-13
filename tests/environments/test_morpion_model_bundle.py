@@ -61,6 +61,7 @@ from chipiron.environments.morpion.players.evaluators.datasets import (
     MorpionSupervisedDatasetArgs,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks import (
+    MORPION_CANONICAL_FEATURE_NAMES,
     MORPION_FEATURE_SCHEMA,
     MORPION_INPUT_DIM,
     MORPION_MANIFEST_FILE_NAME,
@@ -71,12 +72,21 @@ from chipiron.environments.morpion.players.evaluators.neural_networks import (
     build_morpion_regressor,
     load_morpion_model_bundle,
     load_morpion_regressor_for_inference,
+    morpion_feature_subset_from_feature_names,
     save_morpion_model_bundle,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.train import (
     MorpionTrainingArgs,
     train_morpion_regressor,
 )
+
+
+def _feature_subset(width: int):
+    """Return one deterministic explicit Morpion feature subset for tests."""
+    return morpion_feature_subset_from_feature_names(
+        f"handcrafted_{width}_custom",
+        MORPION_CANONICAL_FEATURE_NAMES[:width],
+    )
 
 
 def _make_morpion_payload() -> dict[str, object]:
@@ -161,6 +171,30 @@ def test_mlp_model_builds_with_multiple_hidden_layers() -> None:
     assert output.shape == (2, 1)
 
 
+def test_model_input_dimension_tracks_selected_feature_subset() -> None:
+    """Linear and MLP regressors should both derive width from the subset."""
+    for width in (5, 10, 20, 41):
+        subset = _feature_subset(width)
+        linear_model = build_morpion_regressor(
+            MorpionRegressorArgs(
+                model_kind="linear",
+                feature_subset_name=subset.name,
+                feature_names=subset.feature_names,
+            )
+        )
+        mlp_model = build_morpion_regressor(
+            MorpionRegressorArgs(
+                model_kind="mlp",
+                feature_subset_name=subset.name,
+                feature_names=subset.feature_names,
+                hidden_sizes=(8,),
+            )
+        )
+
+        assert linear_model(torch.randn(width)).shape == (1, 1)
+        assert mlp_model(torch.randn(2, width)).shape == (2, 1)
+
+
 def test_save_load_bundle_round_trip(tmp_path: Path) -> None:
     """Saving and loading a Morpion bundle should preserve args, manifest, and weights."""
     args = MorpionRegressorArgs(model_kind="linear")
@@ -177,12 +211,39 @@ def test_save_load_bundle_round_trip(tmp_path: Path) -> None:
     assert loaded_manifest.game_kind == "morpion"
     assert loaded_manifest.input_dim == MORPION_INPUT_DIM
     assert loaded_manifest.feature_schema == MORPION_FEATURE_SCHEMA
+    assert loaded_manifest.feature_subset_name == args.feature_subset_name
+    assert loaded_manifest.feature_names == args.feature_names
     assert loaded_manifest.metadata["epoch"] == 1
 
     for original_parameter, loaded_parameter in zip(
         model.parameters(), loaded_model.parameters(), strict=True
     ):
         torch.testing.assert_close(original_parameter, loaded_parameter)
+
+
+def test_reduced_subset_bundle_round_trip_persists_feature_metadata(
+    tmp_path: Path,
+) -> None:
+    """Reduced-width bundles should persist and reload the exact feature subset."""
+    subset = _feature_subset(10)
+    args = MorpionRegressorArgs(
+        model_kind="linear",
+        feature_subset_name=subset.name,
+        feature_names=subset.feature_names,
+    )
+    model = build_morpion_regressor(args)
+    bundle_dir = tmp_path / "bundle"
+
+    save_morpion_model_bundle(model, bundle_dir, model_args=args)
+    loaded_model, loaded_args, loaded_manifest = load_morpion_model_bundle(bundle_dir)
+
+    assert loaded_args.feature_subset_name == subset.name
+    assert loaded_args.feature_names == subset.feature_names
+    assert loaded_args.input_dim == subset.dimension
+    assert loaded_manifest.feature_subset_name == subset.name
+    assert loaded_manifest.feature_names == subset.feature_names
+    assert loaded_manifest.input_dim == subset.dimension
+    assert loaded_model(torch.randn(subset.dimension)).shape == (1, 1)
 
 
 def test_manifest_incompatibility_fails_clearly(tmp_path: Path) -> None:
@@ -270,6 +331,52 @@ def test_loaded_trained_model_works_for_inference(tmp_path: Path) -> None:
     output = model(sample_input)
 
     assert model.training is False
+    assert output.shape == (1, 1)
+
+
+@pytest.mark.parametrize(
+    ("model_kind", "hidden_sizes"),
+    (("linear", None), ("mlp", (8,))),
+)
+def test_reduced_subset_training_round_trip_supports_linear_and_mlp(
+    tmp_path: Path,
+    model_kind: str,
+    hidden_sizes: tuple[int, ...] | None,
+) -> None:
+    """Training, saving, loading, and inference should work for reduced subsets."""
+    subset = _feature_subset(10)
+    dataset_file = _build_rows_file(tmp_path, target_values=(1.25, -0.5))
+    output_dir = tmp_path / f"trained_bundle_{model_kind}"
+
+    train_morpion_regressor(
+        MorpionTrainingArgs(
+            dataset_file=dataset_file,
+            output_dir=output_dir,
+            batch_size=2,
+            num_epochs=1,
+            learning_rate=1e-3,
+            shuffle=False,
+            model_kind=model_kind,
+            hidden_sizes=hidden_sizes,
+            feature_subset_name=subset.name,
+            feature_names=subset.feature_names,
+        )
+    )
+
+    loaded_model, loaded_args, loaded_manifest = load_morpion_model_bundle(output_dir)
+    dataset = MorpionSupervisedDataset(
+        MorpionSupervisedDatasetArgs(
+            file_name=dataset_file,
+            feature_subset_name=subset.name,
+            feature_names=subset.feature_names,
+        )
+    )
+    sample_input, _ = dataset[0]
+    output = loaded_model(sample_input)
+
+    assert loaded_args.feature_names == subset.feature_names
+    assert loaded_manifest.feature_names == subset.feature_names
+    assert sample_input.shape == (subset.dimension,)
     assert output.shape == (1, 1)
 
 

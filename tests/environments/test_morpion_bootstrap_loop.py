@@ -85,6 +85,18 @@ from chipiron.environments.morpion.players.evaluators.datasets import (
     MorpionSupervisedDataset,
     MorpionSupervisedDatasetArgs,
 )
+from chipiron.environments.morpion.players.evaluators.neural_networks import (
+    MORPION_CANONICAL_FEATURE_NAMES,
+    load_morpion_model_bundle,
+)
+
+
+def _feature_subset(width: int) -> tuple[str, tuple[str, ...]]:
+    """Return one deterministic explicit subset selection for loop tests."""
+    return (
+        f"handcrafted_{width}_custom",
+        MORPION_CANONICAL_FEATURE_NAMES[:width],
+    )
 
 
 def _make_morpion_payload() -> dict[str, object]:
@@ -859,3 +871,63 @@ def test_multi_evaluator_failure_propagates_without_history_event(
 
     assert load_bootstrap_history(paths.history_jsonl_path) == ()
     assert not paths.latest_status_path.exists()
+
+
+def test_multi_evaluator_training_supports_distinct_feature_subsets(
+    tmp_path: Path,
+) -> None:
+    """Evaluators that differ only by subset should train without shape mismatches."""
+    subset_name_10, feature_names_10 = _feature_subset(10)
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        max_growth_steps_per_cycle=5,
+        num_epochs=1,
+        batch_size=1,
+        shuffle=False,
+        evaluators_config=MorpionEvaluatorsConfig(
+            evaluators={
+                "linear_full": MorpionEvaluatorSpec(
+                    name="linear_full",
+                    model_type="linear",
+                    hidden_sizes=None,
+                    num_epochs=1,
+                    batch_size=1,
+                    learning_rate=1e-3,
+                ),
+                "linear_10": MorpionEvaluatorSpec(
+                    name="linear_10",
+                    model_type="linear",
+                    hidden_sizes=None,
+                    num_epochs=1,
+                    batch_size=1,
+                    learning_rate=1e-3,
+                    feature_subset_name=subset_name_10,
+                    feature_names=feature_names_10,
+                ),
+            }
+        ),
+    )
+    runner = FakeMorpionSearchRunner(tree_sizes=(10,), target_values=(1.25,))
+
+    state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    full_bundle_path = paths.resolve_work_dir_path(
+        state.latest_model_bundle_paths["linear_full"]
+    )
+    subset_bundle_path = paths.resolve_work_dir_path(
+        state.latest_model_bundle_paths["linear_10"]
+    )
+    assert full_bundle_path is not None
+    assert subset_bundle_path is not None
+
+    _full_model, full_args, full_manifest = load_morpion_model_bundle(full_bundle_path)
+    _subset_model, subset_args, subset_manifest = load_morpion_model_bundle(
+        subset_bundle_path
+    )
+
+    assert full_args.input_dim == len(MORPION_CANONICAL_FEATURE_NAMES)
+    assert subset_args.input_dim == len(feature_names_10)
+    assert full_manifest.input_dim == len(MORPION_CANONICAL_FEATURE_NAMES)
+    assert subset_manifest.input_dim == len(feature_names_10)
+    assert subset_args.feature_names == feature_names_10
+    assert subset_manifest.feature_names == feature_names_10

@@ -19,6 +19,9 @@ from chipiron.environments.morpion.types import (
     MorpionDynamics,
     MorpionState,
 )
+from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
+    MORPION_CANONICAL_FEATURE_NAMES,
+)
 
 DIRECTIONS: Final[tuple[Point, ...]] = (
     (1, 0),
@@ -27,49 +30,7 @@ DIRECTIONS: Final[tuple[Point, ...]] = (
     (1, -1),
 )
 
-FEATURE_NAMES: Final[tuple[str, ...]] = (
-    "moves",
-    "num_points",
-    "num_used_unit_segments",
-    "bbox_width",
-    "bbox_height",
-    "bbox_area",
-    "point_density_in_bbox",
-    "legal_action_count",
-    "legal_actions_dir_0",
-    "legal_actions_dir_1",
-    "legal_actions_dir_2",
-    "legal_actions_dir_3",
-    "num_distinct_playable_cells",
-    "mean_legal_actions_per_playable_cell",
-    "max_legal_actions_per_playable_cell",
-    "playable_cells_with_1_action",
-    "playable_cells_with_2_actions",
-    "playable_cells_with_ge_3_actions",
-    "dir_usage_value_0_count",
-    "dir_usage_value_1_count",
-    "dir_usage_value_2_count",
-    "dir_usage_value_3_count",
-    "points_with_any_dir_usage_3",
-    "points_with_ge_2_nonzero_dir_usages",
-    "segments_4_present_1_missing_geometric",
-    "segments_4_present_1_missing_overlap_ok",
-    "segments_4_present_1_missing_parallel_ok",
-    "segments_4_present_1_missing_legal",
-    "segments_3_present_2_missing_geometric",
-    "segments_3_present_2_missing_overlap_ok",
-    "segments_3_present_2_missing_parallel_ok",
-    "segments_3_present_2_missing_alive",
-    "segments_4p1m_dir_0_legal",
-    "segments_4p1m_dir_1_legal",
-    "segments_4p1m_dir_2_legal",
-    "segments_4p1m_dir_3_legal",
-    "frontier_cell_count",
-    "frontier_cells_in_any_ge3_candidate_segment",
-    "frontier_cells_in_any_legal_4p1m_segment",
-    "occupied_connected_components",
-    "largest_occupied_component_size",
-)
+FEATURE_NAMES: Final[tuple[str, ...]] = MORPION_CANONICAL_FEATURE_NAMES
 
 
 @dataclass(frozen=True, slots=True)

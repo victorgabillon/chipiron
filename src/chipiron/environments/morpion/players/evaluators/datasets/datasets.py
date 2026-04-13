@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import NamedTuple
 
 import torch
@@ -16,15 +16,15 @@ from chipiron.environments.morpion.learning import (
     decode_morpion_state_ref_payload,
     load_morpion_supervised_rows,
 )
-from chipiron.environments.morpion.players.evaluators.neural_networks.feature_extractor import (
-    morpion_feature_names,
+from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
+    DEFAULT_MORPION_FEATURE_SUBSET_NAME,
+    MorpionFeatureSubset,
+    resolve_morpion_feature_subset,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_tensor import (
     MorpionFeatureTensorConverter,
 )
 from chipiron.environments.morpion.types import MorpionDynamics
-
-_FEATURE_NAMES: tuple[str, ...] = tuple(str(name) for name in morpion_feature_names())
 
 
 @dataclass(frozen=True, slots=True)
@@ -32,6 +32,25 @@ class MorpionSupervisedDatasetArgs:
     """Arguments for loading one persisted Morpion supervised-row artifact."""
 
     file_name: str | os.PathLike[str]
+    feature_subset_name: str = DEFAULT_MORPION_FEATURE_SUBSET_NAME
+    feature_names: tuple[str, ...] = field(default_factory=tuple)
+
+    def __post_init__(self) -> None:
+        """Normalize feature subset metadata into a canonical explicit form."""
+        subset = resolve_morpion_feature_subset(
+            feature_subset_name=self.feature_subset_name,
+            feature_names=None if not self.feature_names else self.feature_names,
+        )
+        object.__setattr__(self, "feature_subset_name", subset.name)
+        object.__setattr__(self, "feature_names", subset.feature_names)
+
+    @property
+    def feature_subset(self) -> MorpionFeatureSubset:
+        """Return the resolved Morpion feature subset for this dataset."""
+        return MorpionFeatureSubset(
+            name=self.feature_subset_name,
+            feature_names=self.feature_names,
+        )
 
 
 class MorpionSupervisedSample(NamedTuple):
@@ -90,7 +109,10 @@ class MorpionSupervisedDataset(Dataset[MorpionSupervisedSample]):
         """Load and eagerly preprocess one persisted Morpion row file."""
         self.args = args
         self._dynamics = MorpionDynamics()
-        self._converter = MorpionFeatureTensorConverter(dynamics=self._dynamics)
+        self._converter = MorpionFeatureTensorConverter(
+            dynamics=self._dynamics,
+            feature_subset=args.feature_subset,
+        )
         self._rows_bundle = load_morpion_supervised_rows(os.fspath(args.file_name))
         self._samples = tuple(
             process_morpion_supervised_row_to_tensors(
@@ -112,11 +134,11 @@ class MorpionSupervisedDataset(Dataset[MorpionSupervisedSample]):
     @property
     def input_dim(self) -> int:
         """Return the handcrafted Morpion feature dimension."""
-        return len(_FEATURE_NAMES)
+        return self._converter.input_dim
 
     def feature_names(self) -> tuple[str, ...]:
         """Return the canonical handcrafted Morpion feature ordering."""
-        return _FEATURE_NAMES
+        return self._converter.feature_names()
 
 
 def load_morpion_supervised_dataset(

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import torch
 from torch.utils.data import DataLoader
@@ -11,6 +11,11 @@ from torch.utils.data import DataLoader
 from chipiron.environments.morpion.players.evaluators.datasets import (
     MorpionSupervisedDataset,
     MorpionSupervisedDatasetArgs,
+)
+from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
+    DEFAULT_MORPION_FEATURE_SUBSET_NAME,
+    MorpionFeatureSubset,
+    resolve_morpion_feature_subset,
 )
 
 from .bundle import save_morpion_model_bundle
@@ -28,8 +33,27 @@ class MorpionTrainingArgs:
     learning_rate: float = 1e-3
     shuffle: bool = True
     model_kind: str = "linear"
+    feature_subset_name: str = DEFAULT_MORPION_FEATURE_SUBSET_NAME
+    feature_names: tuple[str, ...] = field(default_factory=tuple)
     hidden_sizes: tuple[int, ...] | None = None
     hidden_dim: int | None = None
+
+    def __post_init__(self) -> None:
+        """Normalize feature subset metadata into a canonical explicit form."""
+        subset = resolve_morpion_feature_subset(
+            feature_subset_name=self.feature_subset_name,
+            feature_names=None if not self.feature_names else self.feature_names,
+        )
+        object.__setattr__(self, "feature_subset_name", subset.name)
+        object.__setattr__(self, "feature_names", subset.feature_names)
+
+    @property
+    def feature_subset(self) -> MorpionFeatureSubset:
+        """Return the resolved Morpion feature subset for this training job."""
+        return MorpionFeatureSubset(
+            name=self.feature_subset_name,
+            feature_names=self.feature_names,
+        )
 
 
 def train_morpion_regressor(
@@ -37,14 +61,19 @@ def train_morpion_regressor(
 ) -> tuple[MorpionRegressor, dict[str, float]]:
     """Train a Morpion regressor on persisted supervised rows."""
     dataset = MorpionSupervisedDataset(
-        MorpionSupervisedDatasetArgs(file_name=os.fspath(args.dataset_file))
+        MorpionSupervisedDatasetArgs(
+            file_name=os.fspath(args.dataset_file),
+            feature_subset_name=args.feature_subset_name,
+            feature_names=args.feature_names,
+        )
     )
     data_loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=args.shuffle)
 
     resolved_hidden_sizes = _resolve_hidden_sizes(args)
     model_args = MorpionRegressorArgs(
         model_kind=args.model_kind,
-        input_dim=dataset.input_dim,
+        feature_subset_name=args.feature_subset_name,
+        feature_names=args.feature_names,
         hidden_sizes=resolved_hidden_sizes,
     )
     model = build_morpion_regressor(model_args)
@@ -76,6 +105,9 @@ def train_morpion_regressor(
         "learning_rate": args.learning_rate,
         "shuffle": args.shuffle,
         "model_kind": args.model_kind,
+        "feature_subset_name": args.feature_subset_name,
+        "feature_names": args.feature_names,
+        "input_dim": model_args.input_dim,
         "hidden_sizes": resolved_hidden_sizes,
     }
     save_morpion_model_bundle(

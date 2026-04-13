@@ -80,6 +80,17 @@ from chipiron.environments.morpion.bootstrap import (
     validate_bootstrap_config_change,
 )
 from chipiron.environments.morpion.bootstrap.run_state import MorpionBootstrapRunState
+from chipiron.environments.morpion.players.evaluators.neural_networks import (
+    MORPION_CANONICAL_FEATURE_NAMES,
+)
+
+
+def _feature_subset(width: int) -> tuple[str, tuple[str, ...]]:
+    """Return one deterministic explicit subset selection for config tests."""
+    return (
+        f"handcrafted_{width}_custom",
+        MORPION_CANONICAL_FEATURE_NAMES[:width],
+    )
 
 
 def _make_morpion_payload() -> dict[str, object]:
@@ -386,6 +397,88 @@ def test_bootstrap_config_hash_is_stable_and_changes_with_content() -> None:
 
     assert bootstrap_config_sha256(config) == bootstrap_config_sha256(same_config)
     assert bootstrap_config_sha256(config) != bootstrap_config_sha256(changed_config)
+
+
+def test_bootstrap_config_roundtrip_preserves_evaluator_feature_subset(
+    tmp_path: Path,
+) -> None:
+    """Persisted evaluator subset selection should survive config roundtrips."""
+    subset_name, feature_names = _feature_subset(10)
+    config = MorpionBootstrapConfig(
+        experiment=_make_config().experiment,
+        runtime=_make_config().runtime,
+        dataset=_make_config().dataset,
+        evaluators=MorpionEvaluatorsConfig(
+            evaluators={
+                "linear": MorpionEvaluatorSpec(
+                    name="linear",
+                    model_type="linear",
+                    hidden_sizes=None,
+                    num_epochs=1,
+                    batch_size=1,
+                    learning_rate=1e-3,
+                    feature_subset_name=subset_name,
+                    feature_names=feature_names,
+                )
+            }
+        ),
+    )
+    config_path = tmp_path / "bootstrap_config.json"
+
+    save_bootstrap_config(config, config_path)
+    loaded = load_bootstrap_config(config_path)
+
+    assert loaded == config
+    assert loaded.evaluators.evaluators["linear"].feature_subset_name == subset_name
+    assert loaded.evaluators.evaluators["linear"].feature_names == feature_names
+
+
+def test_bootstrap_config_hash_changes_when_evaluator_subset_changes() -> None:
+    """Subset-only evaluator differences should affect the bootstrap config hash."""
+    subset_name_10, feature_names_10 = _feature_subset(10)
+    subset_name_20, feature_names_20 = _feature_subset(20)
+    base = _make_config()
+    config_10 = MorpionBootstrapConfig(
+        experiment=base.experiment,
+        runtime=base.runtime,
+        dataset=base.dataset,
+        evaluators=MorpionEvaluatorsConfig(
+            evaluators={
+                "linear": MorpionEvaluatorSpec(
+                    name="linear",
+                    model_type="linear",
+                    hidden_sizes=None,
+                    num_epochs=1,
+                    batch_size=1,
+                    learning_rate=1e-3,
+                    feature_subset_name=subset_name_10,
+                    feature_names=feature_names_10,
+                )
+            }
+        ),
+    )
+    config_20 = MorpionBootstrapConfig(
+        experiment=base.experiment,
+        runtime=base.runtime,
+        dataset=base.dataset,
+        evaluators=MorpionEvaluatorsConfig(
+            evaluators={
+                "linear": MorpionEvaluatorSpec(
+                    name="linear",
+                    model_type="linear",
+                    hidden_sizes=None,
+                    num_epochs=1,
+                    batch_size=1,
+                    learning_rate=1e-3,
+                    feature_subset_name=subset_name_20,
+                    feature_names=feature_names_20,
+                )
+            }
+        ),
+    )
+
+    assert config_10.evaluators != config_20.evaluators
+    assert bootstrap_config_sha256(config_10) != bootstrap_config_sha256(config_20)
 
 
 def test_loop_stores_bootstrap_config_hash_in_metadata(tmp_path: Path) -> None:
