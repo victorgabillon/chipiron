@@ -11,6 +11,7 @@ from .anemone_runner import (
 )
 from .bootstrap_loop import (
     ConflictingMorpionEvaluatorConfigurationError,
+    EMPTY_DATASET_TRAINING_SKIPPED_REASON,
     EmptyMorpionEvaluatorsConfigError,
     InconsistentMorpionEvaluatorSpecNameError,
     MissingActiveMorpionEvaluatorError,
@@ -21,6 +22,7 @@ from .bootstrap_loop import (
     MorpionEvaluatorSpec,
     MorpionSearchRunner,
     NoSelectableMorpionEvaluatorError,
+    TRAINING_SKIPPED_REASON_METADATA_KEY,
     UnsupportedMorpionRuntimeReconfigurationError,
     UnknownActiveMorpionEvaluatorError,
     UnknownForcedMorpionEvaluatorError,
@@ -174,6 +176,7 @@ __all__ = [
     "canonical_morpion_evaluator_specs",
     "ConflictingMorpionEvaluatorConfigurationError",
     "DEFAULT_MORPION_TREE_BRANCH_LIMIT",
+    "EMPTY_DATASET_TRAINING_SKIPPED_REASON",
     "effective_runtime_config_from_config_and_control",
     "effective_runtime_config_sha256",
     "effective_runtime_config_to_dict",
@@ -229,6 +232,7 @@ __all__ = [
     "OptionalFloatTimeSeriesPoint",
     "OptionalIntTimeSeriesPoint",
     "TrainingTriggeredTimeSeriesPoint",
+    "TRAINING_SKIPPED_REASON_METADATA_KEY",
     "UnsafeMorpionBootstrapConfigChangeError",
     "UnknownActiveMorpionEvaluatorError",
     "UnknownForcedMorpionEvaluatorError",

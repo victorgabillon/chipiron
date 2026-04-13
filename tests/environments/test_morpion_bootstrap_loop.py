@@ -75,6 +75,7 @@ from chipiron.environments.morpion.bootstrap import (
     initialize_bootstrap_run_state,
     load_bootstrap_history,
     load_morpion_evaluator_from_model_bundle,
+    load_latest_bootstrap_status,
     load_bootstrap_run_state,
     run_morpion_bootstrap_loop,
     run_one_bootstrap_cycle,
@@ -84,6 +85,7 @@ from chipiron.environments.morpion.bootstrap import (
     canonical_morpion_evaluator_family_config,
 )
 from chipiron.environments.morpion.learning import load_morpion_supervised_rows
+from chipiron.environments.morpion.learning import MorpionSupervisedRows
 from chipiron.environments.morpion.players.evaluators.datasets import (
     MorpionSupervisedDataset,
     MorpionSupervisedDatasetArgs,
@@ -236,6 +238,17 @@ def _patch_reported_losses(
 
     monkeypatch.setattr(
         bootstrap_loop_module, "train_morpion_regressor", _patched_train
+    )
+
+
+def _empty_rows_bundle(*, generation: int = 1) -> MorpionSupervisedRows:
+    """Return one explicit empty rows bundle for empty-dataset loop tests."""
+    return MorpionSupervisedRows(
+        rows=(),
+        metadata={
+            "bootstrap_generation": generation,
+            "num_rows": 0,
+        },
     )
 
 
@@ -806,6 +819,168 @@ def test_saved_rows_come_from_saved_tree_export_path(tmp_path: Path) -> None:
 
     assert first_rows.rows[0].target_value == 1.25
     assert second_rows.rows[0].target_value == -0.5
+
+
+def test_empty_dataset_first_cycle_skips_training_and_selection(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An empty first-cycle dataset should skip training cleanly without selection."""
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        max_growth_steps_per_cycle=5,
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    runner = FakeMorpionSearchRunner(tree_sizes=(10,), target_values=(1.25,))
+
+    monkeypatch.setattr(
+        bootstrap_loop_module,
+        "training_tree_snapshot_to_morpion_supervised_rows",
+        lambda *args, **kwargs: _empty_rows_bundle(generation=1),
+    )
+
+    def _unexpected_train(train_args: object) -> object:
+        del train_args
+        raise AssertionError("training should not run for an empty extracted dataset")
+
+    def _unexpected_select(**kwargs: object) -> str:
+        del kwargs
+        raise AssertionError("evaluator selection should not run for an empty extracted dataset")
+
+    monkeypatch.setattr(
+        bootstrap_loop_module, "train_morpion_regressor", _unexpected_train
+    )
+    monkeypatch.setattr(
+        bootstrap_loop_module, "_select_active_evaluator_name", _unexpected_select
+    )
+
+    state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+    history = load_bootstrap_history(paths.history_jsonl_path)
+    latest_status = load_latest_bootstrap_status(paths.latest_status_path)
+    saved_rows = load_morpion_supervised_rows(paths.rows_path_for_generation(1))
+
+    assert state.generation == 1
+    assert state.cycle_index == 0
+    assert state.active_evaluator_name is None
+    assert state.latest_model_bundle_paths is None
+    assert state.latest_rows_path == "rows/generation_000001.json"
+    assert state.latest_tree_snapshot_path == "tree_exports/generation_000001.json"
+    assert state.metadata[bootstrap_loop_module.TRAINING_SKIPPED_REASON_METADATA_KEY] == (
+        bootstrap_loop_module.EMPTY_DATASET_TRAINING_SKIPPED_REASON
+    )
+    assert len(history) == 1
+    event = history[0]
+    assert event.dataset.num_rows == 0
+    assert event.dataset.num_samples == 0
+    assert not event.training.triggered
+    assert event.evaluators == {}
+    assert event.artifacts.model_bundle_paths == {}
+    assert event.metadata[bootstrap_loop_module.TRAINING_SKIPPED_REASON_METADATA_KEY] == (
+        bootstrap_loop_module.EMPTY_DATASET_TRAINING_SKIPPED_REASON
+    )
+    assert "selected_evaluator_name" not in event.metadata
+    assert latest_status.latest_event == event
+    assert saved_rows.rows == ()
+    assert saved_rows.metadata["num_rows"] == 0
+    assert not paths.model_dir.exists() or list(paths.model_dir.rglob("*")) == []
+
+
+def test_empty_dataset_resume_preserves_previous_evaluator_state(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An empty resumed cycle should preserve the previously active evaluator and bundles."""
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        max_growth_steps_per_cycle=5,
+        shuffle=False,
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    previous_bundle_paths = {"linear": "models/generation_000001/linear"}
+    previous_state = MorpionBootstrapRunState(
+        generation=1,
+        cycle_index=0,
+        latest_tree_snapshot_path="tree_exports/generation_000001.json",
+        latest_rows_path="rows/generation_000001.json",
+        latest_model_bundle_paths=previous_bundle_paths,
+        active_evaluator_name="linear",
+        tree_size_at_last_save=10,
+        last_save_unix_s=100.0,
+    )
+    runner = FakeMorpionSearchRunner(tree_sizes=(20,), target_values=(0.5,))
+
+    monkeypatch.setattr(
+        bootstrap_loop_module,
+        "training_tree_snapshot_to_morpion_supervised_rows",
+        lambda *args, **kwargs: _empty_rows_bundle(generation=2),
+    )
+
+    next_state = run_one_bootstrap_cycle(
+        args=args,
+        paths=paths,
+        runner=runner,
+        run_state=previous_state,
+        now_unix_s=200.0,
+    )
+    history = load_bootstrap_history(paths.history_jsonl_path)
+
+    assert next_state.generation == 2
+    assert next_state.cycle_index == 1
+    assert next_state.active_evaluator_name == "linear"
+    assert next_state.latest_model_bundle_paths == previous_bundle_paths
+    assert next_state.latest_model_bundle_paths is not previous_bundle_paths
+    assert next_state.metadata[bootstrap_loop_module.TRAINING_SKIPPED_REASON_METADATA_KEY] == (
+        bootstrap_loop_module.EMPTY_DATASET_TRAINING_SKIPPED_REASON
+    )
+    assert len(history) == 1
+    event = history[0]
+    assert event.metadata["active_evaluator_name"] == "linear"
+    assert event.metadata[bootstrap_loop_module.TRAINING_SKIPPED_REASON_METADATA_KEY] == (
+        bootstrap_loop_module.EMPTY_DATASET_TRAINING_SKIPPED_REASON
+    )
+    assert "selected_evaluator_name" not in event.metadata
+    assert event.evaluators == {}
+    assert event.artifacts.model_bundle_paths == {}
+    assert not event.training.triggered
+
+
+def test_empty_dataset_cycle_does_not_call_evaluator_selection(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Empty-dataset cycles should bypass evaluator winner selection entirely."""
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        max_growth_steps_per_cycle=5,
+        evaluators_config=_multi_evaluator_config(),
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    runner = FakeMorpionSearchRunner(tree_sizes=(10,), target_values=(1.25,))
+
+    monkeypatch.setattr(
+        bootstrap_loop_module,
+        "training_tree_snapshot_to_morpion_supervised_rows",
+        lambda *args, **kwargs: _empty_rows_bundle(generation=1),
+    )
+
+    def _unexpected_select(**kwargs: object) -> str:
+        del kwargs
+        raise AssertionError("selection should not be called on an empty dataset cycle")
+
+    monkeypatch.setattr(
+        bootstrap_loop_module, "_select_active_evaluator_name", _unexpected_select
+    )
+
+    next_state = run_one_bootstrap_cycle(
+        args=args,
+        paths=paths,
+        runner=runner,
+        run_state=initialize_bootstrap_run_state(),
+        now_unix_s=200.0,
+    )
+
+    assert next_state.active_evaluator_name is None
+    assert next_state.latest_model_bundle_paths is None
 
 
 def test_saved_dataset_batches_after_cycle(tmp_path: Path) -> None:

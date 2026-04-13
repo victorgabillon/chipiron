@@ -82,6 +82,8 @@ def _empty_evaluator_specs() -> dict[str, MorpionEvaluatorSpec]:
 
 
 RUNTIME_CHECKPOINT_METADATA_KEY = "runtime_checkpoint_path"
+TRAINING_SKIPPED_REASON_METADATA_KEY = "training_skipped_reason"
+EMPTY_DATASET_TRAINING_SKIPPED_REASON = "empty_dataset"
 
 
 class EmptyMorpionEvaluatorsConfigError(ValueError):
@@ -629,10 +631,63 @@ def run_one_bootstrap_cycle(
         metadata={"bootstrap_generation": generation},
     )
     save_morpion_supervised_rows(rows, rows_path)
+    num_rows = len(rows.rows)
     record_status = resolve_record_status_for_cycle(
         snapshot=snapshot,
         previous_record_status=run_state.latest_record_status,
     )
+
+    relative_tree_snapshot_path = paths.relative_to_work_dir(tree_snapshot_path)
+    relative_rows_path = paths.relative_to_work_dir(rows_path)
+
+    if num_rows == 0:
+        preserved_model_bundle_paths = (
+            None
+            if run_state.latest_model_bundle_paths is None
+            else dict(run_state.latest_model_bundle_paths)
+        )
+        next_metadata = _next_metadata(
+            run_state.metadata,
+            relative_runtime_checkpoint_path=relative_runtime_checkpoint_path,
+            control=resolved_control,
+            effective_runtime_config=effective_runtime_config,
+            training_skipped_reason=EMPTY_DATASET_TRAINING_SKIPPED_REASON,
+        )
+        next_run_state = MorpionBootstrapRunState(
+            generation=generation,
+            cycle_index=cycle_index,
+            latest_tree_snapshot_path=relative_tree_snapshot_path,
+            latest_rows_path=relative_rows_path,
+            latest_model_bundle_paths=preserved_model_bundle_paths,
+            active_evaluator_name=run_state.active_evaluator_name,
+            tree_size_at_last_save=current_tree_size,
+            last_save_unix_s=current_time,
+            latest_record_status=record_status,
+            metadata=next_metadata,
+        )
+        history_recorder.record(
+            build_bootstrap_event(
+                cycle_index=cycle_index,
+                generation=next_run_state.generation,
+                timestamp_utc=timestamp_utc,
+                tree_status=tree_status,
+                tree_snapshot_path=relative_tree_snapshot_path,
+                rows_path=relative_rows_path,
+                dataset_num_rows=num_rows,
+                dataset_num_samples=num_rows,
+                training_triggered=False,
+                record_status=record_status,
+                metadata=_build_event_metadata(
+                    active_evaluator_name=next_run_state.active_evaluator_name,
+                    config_hash=_bootstrap_config_hash_from_metadata(run_state.metadata),
+                    forced_evaluator=resolved_control.force_evaluator,
+                    runtime_control=resolved_control.runtime,
+                    effective_runtime_config=effective_runtime_config,
+                    training_skipped_reason=EMPTY_DATASET_TRAINING_SKIPPED_REASON,
+                ),
+            )
+        )
+        return next_run_state
 
     evaluator_metrics: dict[str, MorpionEvaluatorMetrics] = {}
     model_bundle_paths: dict[str, str] = {}
@@ -667,8 +722,6 @@ def run_one_bootstrap_cycle(
         force_evaluator=resolved_control.force_evaluator,
     )
 
-    relative_tree_snapshot_path = paths.relative_to_work_dir(tree_snapshot_path)
-    relative_rows_path = paths.relative_to_work_dir(rows_path)
     next_metadata = _next_metadata(
         run_state.metadata,
         relative_runtime_checkpoint_path=relative_runtime_checkpoint_path,
@@ -835,6 +888,7 @@ def _build_event_metadata(
     forced_evaluator: str | None = None,
     runtime_control: object | None = None,
     effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig | None = None,
+    training_skipped_reason: str | None = None,
 ) -> dict[str, object]:
     """Build history metadata describing the active and selected evaluators."""
     metadata = morpion_bootstrap_experiment_metadata()
@@ -858,6 +912,8 @@ def _build_event_metadata(
         metadata[BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY] = (
             effective_runtime_config_sha256(effective_runtime_config)
         )
+    if training_skipped_reason is not None:
+        metadata[TRAINING_SKIPPED_REASON_METADATA_KEY] = training_skipped_reason
     return metadata
 
 
@@ -990,6 +1046,7 @@ def _next_metadata(
     relative_runtime_checkpoint_path: str | None,
     control: MorpionBootstrapControl,
     effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig,
+    training_skipped_reason: str | None = None,
 ) -> dict[str, object]:
     """Return updated run metadata after one cycle boundary."""
     next_metadata = dict(current_metadata)
@@ -1009,6 +1066,10 @@ def _next_metadata(
     next_metadata[BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY] = (
         effective_runtime_config_sha256(effective_runtime_config)
     )
+    if training_skipped_reason is None:
+        next_metadata.pop(TRAINING_SKIPPED_REASON_METADATA_KEY, None)
+    else:
+        next_metadata[TRAINING_SKIPPED_REASON_METADATA_KEY] = training_skipped_reason
     return next_metadata
 
 
@@ -1058,6 +1119,7 @@ def _validate_runtime_reconfiguration(
 
 
 __all__ = [
+    "EMPTY_DATASET_TRAINING_SKIPPED_REASON",
     "EmptyMorpionEvaluatorsConfigError",
     "InconsistentMorpionEvaluatorSpecNameError",
     "MissingForcedMorpionEvaluatorBundleError",
@@ -1071,6 +1133,7 @@ __all__ = [
     "UnsupportedMorpionRuntimeReconfigurationError",
     "UnknownForcedMorpionEvaluatorError",
     "UnknownActiveMorpionEvaluatorError",
+    "TRAINING_SKIPPED_REASON_METADATA_KEY",
     "build_bootstrap_event",
     "run_morpion_bootstrap_loop",
     "run_one_bootstrap_cycle",
