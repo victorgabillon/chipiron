@@ -236,6 +236,24 @@ def run_dashboard_app(work_dir: Path) -> None:
             )
             save_bootstrap_control(next_control, paths.control_path)
             st.success("Saved control changes. They will apply at the next cycle boundary.")
+
+    st.subheader("Plots")
+    plot_columns = st.columns(2)
+    with plot_columns[0]:
+        _render_plot(st, lambda: plot_tree_size(dashboard_data.tree_num_nodes))
+        _render_plot(
+            st,
+            lambda: plot_record_score(dashboard_data.canonical_record_score),
+        )
+        _render_plot(st, lambda: plot_dataset_size(dashboard_data.dataset_num_rows))
+    with plot_columns[1]:
+        _render_plot(st, lambda: plot_active_evaluator(dashboard_data.active_evaluator))
+        _render_plot(
+            st,
+            lambda: plot_evaluator_losses(dashboard_data.evaluator_loss_by_name),
+        )
+
+    st.subheader("Debug Info")
     st.write(
         "Last checkpoint path:",
         _format_value(run_state.metadata.get("runtime_checkpoint_path")),
@@ -849,7 +867,7 @@ def _format_force_evaluator_option(
     """Render one forced-evaluator option for the Streamlit select widget."""
     if not value:
         return "No configured evaluators"
-    if configured_evaluator_names and _is_stale_forced_evaluator(
+    if _is_stale_forced_evaluator(
         value,
         configured_evaluator_names,
     ):

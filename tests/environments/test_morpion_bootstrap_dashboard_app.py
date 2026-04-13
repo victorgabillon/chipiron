@@ -366,6 +366,7 @@ def test_stale_force_evaluator_helpers() -> None:
 
     assert not _is_stale_forced_evaluator("linear", configured)
     assert _is_stale_forced_evaluator("old-model", configured)
+    assert _is_stale_forced_evaluator("old-model", ())
     assert not _is_stale_forced_evaluator(None, configured)
 
     assert _format_force_evaluator_option("") == "No configured evaluators"
@@ -376,6 +377,10 @@ def test_stale_force_evaluator_helpers() -> None:
     assert _format_force_evaluator_option(
         "old-model",
         configured_evaluator_names=configured,
+    ) == "old-model (stale / not configured)"
+    assert _format_force_evaluator_option(
+        "old-model",
+        configured_evaluator_names=(),
     ) == "old-model (stale / not configured)"
     assert _format_force_evaluator_state(
         None,
@@ -574,4 +579,4 @@ def test_format_helpers() -> None:
     assert _format_optional_runtime_override(None) == "unset"
     assert _format_optional_runtime_override(64) == "64"
     assert _format_force_evaluator_option("") == "No configured evaluators"
-    assert _format_force_evaluator_option("mlp") == "mlp"
+    assert _format_force_evaluator_option("mlp") == "mlp (stale / not configured)"
