@@ -102,20 +102,45 @@ def test_start_process_writes_pid_and_state(
 ) -> None:
     """Starting the launcher should write pid/state files and mark the process running."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    popen_kwargs: dict[str, object] = {}
 
     def _fake_popen(*args: object, **kwargs: object) -> SimpleNamespace:
-        del args, kwargs
-        return SimpleNamespace(pid=4321)
+        del args
+        popen_kwargs.update(kwargs)
+        return SimpleNamespace(pid=4321, poll=lambda: None)
 
     monkeypatch.setattr(process_control_module.subprocess, "Popen", _fake_popen)
+    monkeypatch.setattr(process_control_module.time, "sleep", lambda _: None)
 
     result = process_control_module.start_morpion_bootstrap_process(paths)
 
     assert not result.already_running
     assert result.state.is_running
     assert result.state.pid == 4321
+    assert "cwd" not in popen_kwargs
     assert paths.launcher_pid_path.read_text(encoding="utf-8").strip() == "4321"
     assert paths.launcher_process_state_path.is_file()
+
+
+def test_start_process_raises_when_launcher_exits_immediately(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Start should fail fast when the launcher subprocess dies before becoming live."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+
+    def _fake_popen(*args: object, **kwargs: object) -> SimpleNamespace:
+        del args, kwargs
+        return SimpleNamespace(pid=4321, poll=lambda: 1)
+
+    monkeypatch.setattr(process_control_module.subprocess, "Popen", _fake_popen)
+    monkeypatch.setattr(process_control_module.time, "sleep", lambda _: None)
+
+    with pytest.raises(process_control_module.MorpionBootstrapProcessControlError):
+        process_control_module.start_morpion_bootstrap_process(paths)
+
+    assert not paths.launcher_pid_path.exists()
+    assert not paths.launcher_process_state_path.exists()
 
 
 def test_start_when_already_running_is_idempotent(

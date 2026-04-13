@@ -133,10 +133,17 @@ def start_morpion_bootstrap_process(
     ) as stderr_file:
         process = subprocess.Popen(
             command,
-            cwd=str(paths.work_dir),
             stdout=stdout_file,
             stderr=stderr_file,
             start_new_session=True,
+        )
+
+    time.sleep(0.2)
+    if process.poll() is not None:
+        raise MorpionBootstrapProcessControlError(
+            "Launcher process exited immediately after start. "
+            f"Check logs:\nstdout={paths.launcher_stdout_log_path}\n"
+            f"stderr={paths.launcher_stderr_log_path}"
         )
 
     _write_pid_file(paths.launcher_pid_path, process.pid)
