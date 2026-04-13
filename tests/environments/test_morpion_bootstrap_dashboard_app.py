@@ -74,6 +74,7 @@ from chipiron.environments.morpion.bootstrap.dashboard_app import (
     _force_evaluator_options,
     _format_force_evaluator_option,
     _format_force_evaluator_state,
+    _render_launcher_command_text,
     _format_optional_runtime_override,
     _format_value,
     _has_pending_control_changes,
@@ -625,6 +626,13 @@ def test_evaluator_set_summary_labels_custom_family() -> None:
         "configured_evaluator_names": ("linear", "mlp"),
         "is_canonical_family": False,
     }
+
+
+def test_render_launcher_command_text_joins_parts() -> None:
+    """Launcher command rendering should stay stable for the run-control panel."""
+    assert _render_launcher_command_text(("python", "-m", "pkg", "--work-dir", "/tmp/run")) == (
+        "python -m pkg --work-dir /tmp/run"
+    )
 
 
 def test_format_helpers() -> None:

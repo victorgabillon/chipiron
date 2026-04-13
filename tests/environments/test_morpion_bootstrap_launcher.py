@@ -618,3 +618,40 @@ def test_direct_bootstrap_args_keep_legacy_default_behavior(tmp_path: Path) -> N
 
     assert bootstrap_args.evaluator_family_preset is None
     assert tuple(bootstrap_args.resolved_evaluators_config().evaluators) == ("default",)
+
+
+def test_launcher_main_registers_and_marks_process_state(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Launcher main should register process ownership on entry and mark stopped on exit."""
+    calls: list[str] = []
+
+    def _fake_register(paths: MorpionBootstrapPaths) -> object:
+        calls.append(f"register:{paths.work_dir}")
+        return object()
+
+    def _fake_mark(
+        paths: MorpionBootstrapPaths,
+        *,
+        exit_code: int | None = None,
+        reason: str = "launcher_exit",
+    ) -> object:
+        calls.append(f"mark:{paths.work_dir}:{exit_code}:{reason}")
+        return object()
+
+    monkeypatch.setattr(launcher_module, "register_current_launcher_process", _fake_register)
+    monkeypatch.setattr(launcher_module, "mark_current_launcher_process_stopped", _fake_mark)
+    monkeypatch.setattr(
+        launcher_module,
+        "run_morpion_bootstrap_experiment",
+        lambda launcher_args: initialize_bootstrap_run_state(),
+    )
+
+    exit_code = launcher_module.main(["--work-dir", str(tmp_path), "--max-cycles", "0"])
+
+    assert exit_code == 0
+    assert calls == [
+        f"register:{tmp_path.resolve()}",
+        f"mark:{tmp_path.resolve()}:0:launcher_exit",
+    ]

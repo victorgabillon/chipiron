@@ -308,6 +308,10 @@ class MorpionBootstrapPaths:
     run_state_path: Path
     history_jsonl_path: Path
     latest_status_path: Path
+    launcher_pid_path: Path
+    launcher_process_state_path: Path
+    launcher_stdout_log_path: Path
+    launcher_stderr_log_path: Path
     tree_snapshot_dir: Path
     runtime_checkpoint_dir: Path
     rows_dir: Path
@@ -327,6 +331,10 @@ class MorpionBootstrapPaths:
             run_state_path=root / "run_state.json",
             history_jsonl_path=root / "history.jsonl",
             latest_status_path=root / "latest_status.json",
+            launcher_pid_path=root / "launcher.pid",
+            launcher_process_state_path=root / "launcher_process_state.json",
+            launcher_stdout_log_path=root / "launcher.out.log",
+            launcher_stderr_log_path=root / "launcher.err.log",
             tree_snapshot_dir=root / "tree_exports",
             runtime_checkpoint_dir=root / "search_checkpoints",
             rows_dir=root / "rows",

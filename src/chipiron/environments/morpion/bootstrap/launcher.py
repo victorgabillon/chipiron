@@ -31,6 +31,10 @@ from .control import (
     load_bootstrap_control,
 )
 from .history import MorpionBootstrapLatestStatus, load_latest_bootstrap_status
+from .process_control import (
+    mark_current_launcher_process_stopped,
+    register_current_launcher_process,
+)
 from .run_state import MorpionBootstrapRunState, load_bootstrap_run_state
 
 
@@ -371,8 +375,18 @@ def launcher_args_from_cli(argv: Sequence[str] | None = None) -> MorpionBootstra
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the canonical Morpion bootstrap launcher CLI."""
-    run_morpion_bootstrap_experiment(launcher_args_from_cli(argv))
-    return 0
+    launcher_args = launcher_args_from_cli(argv)
+    paths = MorpionBootstrapPaths.from_work_dir(launcher_args.bootstrap_args.work_dir)
+    register_current_launcher_process(paths)
+    exit_code = 0
+    try:
+        run_morpion_bootstrap_experiment(launcher_args)
+        return exit_code
+    except BaseException:
+        exit_code = 1
+        raise
+    finally:
+        mark_current_launcher_process_stopped(paths, exit_code=exit_code)
 
 
 def _resolve_run_mode(
