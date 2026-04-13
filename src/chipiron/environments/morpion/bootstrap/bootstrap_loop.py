@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import math
 import time
 from collections.abc import Mapping
@@ -74,6 +75,8 @@ from .run_state import (
     load_bootstrap_run_state,
     save_bootstrap_run_state,
 )
+
+LOGGER = logging.getLogger(__name__)
 
 
 def _empty_evaluator_specs() -> dict[str, MorpionEvaluatorSpec]:
@@ -532,6 +535,7 @@ def run_one_bootstrap_cycle(
     implementations should support reload/restart-style semantics from the
     latest saved artifacts.
     """
+    cycle_started_at = time.perf_counter()
     paths.ensure_directories()
     resolved_control = MorpionBootstrapControl() if control is None else control
     resolved_bootstrap_config = (
@@ -571,8 +575,19 @@ def run_one_bootstrap_cycle(
         resolved_active_model.model_bundle_path,
         effective_runtime_config,
     )
+    growth_started_at = time.perf_counter()
+    LOGGER.info("[growth] Starting tree growth phase")
+    tree_size_before_growth = runner.current_tree_size()
     runner.grow(args.max_growth_steps_per_cycle)
+    growth_duration_s = time.perf_counter() - growth_started_at
     current_tree_size = runner.current_tree_size()
+    LOGGER.info(
+        "[growth] cycle=%s nodes_before=%s nodes_after=%s delta=%s",
+        run_state.cycle_index + 1,
+        tree_size_before_growth,
+        current_tree_size,
+        current_tree_size - tree_size_before_growth,
+    )
     tree_status = _resolve_tree_status(
         runner,
         current_tree_size=current_tree_size,
@@ -581,14 +596,32 @@ def run_one_bootstrap_cycle(
     cycle_index = run_state.cycle_index + 1
     timestamp_utc = _timestamp_utc_from_unix_s(current_time)
 
-    if not should_save_progress(
+    save_triggered = should_save_progress(
         current_tree_size=current_tree_size,
         tree_size_at_last_save=run_state.tree_size_at_last_save,
         now_unix_s=current_time,
         last_save_unix_s=run_state.last_save_unix_s,
         save_after_tree_growth_factor=args.save_after_tree_growth_factor,
         save_after_seconds=args.save_after_seconds,
-    ):
+    )
+    save_reason = _save_trigger_reason(
+        current_tree_size=current_tree_size,
+        tree_size_at_last_save=run_state.tree_size_at_last_save,
+        now_unix_s=current_time,
+        last_save_unix_s=run_state.last_save_unix_s,
+        save_after_tree_growth_factor=args.save_after_tree_growth_factor,
+        save_after_seconds=args.save_after_seconds,
+    )
+
+    if not save_triggered:
+        cycle_duration_s = time.perf_counter() - cycle_started_at
+        LOGGER.info("[save] No save this cycle")
+        LOGGER.info(
+            "[timing] growth=%.3fs training=%.3fs total_cycle=%.3fs",
+            growth_duration_s,
+            0.0,
+            cycle_duration_s,
+        )
         next_run_state = MorpionBootstrapRunState(
             generation=run_state.generation,
             cycle_index=cycle_index,
@@ -636,6 +669,7 @@ def run_one_bootstrap_cycle(
         return next_run_state
 
     generation = run_state.generation + 1
+    LOGGER.info("[save] SAVE TRIGGERED reason=%s", save_reason or "unknown")
     tree_snapshot_path = paths.tree_snapshot_path_for_generation(generation)
     runtime_checkpoint_path = paths.runtime_checkpoint_path_for_generation(generation)
     rows_path = paths.rows_path_for_generation(generation)
@@ -661,6 +695,12 @@ def run_one_bootstrap_cycle(
     )
     save_morpion_supervised_rows(rows, rows_path)
     num_rows = len(rows.rows)
+    LOGGER.info(
+        "[save] rows=%s tree_size=%s checkpoint=%s",
+        num_rows,
+        current_tree_size,
+        relative_runtime_checkpoint_path,
+    )
     record_status = resolve_record_status_for_cycle(
         snapshot=snapshot,
         previous_record_status=run_state.latest_record_status,
@@ -670,6 +710,18 @@ def run_one_bootstrap_cycle(
     relative_rows_path = paths.relative_to_work_dir(rows_path)
 
     if num_rows == 0:
+        cycle_duration_s = time.perf_counter() - cycle_started_at
+        LOGGER.info(
+            "[train] Skipped reason=%s evaluator=%s",
+            EMPTY_DATASET_TRAINING_SKIPPED_REASON,
+            run_state.active_evaluator_name,
+        )
+        LOGGER.info(
+            "[timing] growth=%.3fs training=%.3fs total_cycle=%.3fs",
+            growth_duration_s,
+            0.0,
+            cycle_duration_s,
+        )
         preserved_model_bundle_paths = (
             None
             if run_state.latest_model_bundle_paths is None
@@ -721,6 +773,7 @@ def run_one_bootstrap_cycle(
 
     evaluator_metrics: dict[str, MorpionEvaluatorMetrics] = {}
     model_bundle_paths: dict[str, str] = {}
+    training_started_at = time.perf_counter()
     for evaluator_name, spec in resolved_evaluators_config.evaluators.items():
         model_bundle_path = paths.model_bundle_path_for_generation(
             generation, evaluator_name
@@ -750,6 +803,20 @@ def run_one_bootstrap_cycle(
     selected_evaluator_name = _select_active_evaluator_name(
         evaluator_metrics=evaluator_metrics,
         force_evaluator=resolved_control.force_evaluator,
+    )
+    training_duration_s = time.perf_counter() - training_started_at
+    cycle_duration_s = time.perf_counter() - cycle_started_at
+    LOGGER.info(
+        "[train] evaluator_selected=%s rows=%s tree_size=%s",
+        selected_evaluator_name,
+        num_rows,
+        current_tree_size,
+    )
+    LOGGER.info(
+        "[timing] growth=%.3fs training=%.3fs total_cycle=%.3fs",
+        growth_duration_s,
+        training_duration_s,
+        cycle_duration_s,
     )
 
     next_metadata = _next_metadata(
@@ -823,6 +890,18 @@ def run_morpion_bootstrap_loop(
 
     cycles_run = 0
     while max_cycles is None or cycles_run < max_cycles:
+        next_cycle_index = run_state.cycle_index + 1
+        runner_tree_size, runner_expanded_nodes = _cycle_start_tree_metrics(
+            runner=runner,
+            run_state=run_state,
+        )
+        LOGGER.info("=== Cycle %s START ===", next_cycle_index)
+        LOGGER.info(
+            "[cycle] generation=%s tree_size=%s expanded_nodes=%s",
+            run_state.generation,
+            runner_tree_size,
+            runner_expanded_nodes,
+        )
         control = load_bootstrap_control(paths.control_path)
         effective_args = apply_control_to_args(args, control)
         run_state = run_one_bootstrap_cycle(
@@ -844,6 +923,66 @@ def _timestamp_utc_from_unix_s(timestamp_unix_s: float) -> str:
     timestamp = datetime.fromtimestamp(timestamp_unix_s, tz=UTC)
     timespec = "seconds" if timestamp.microsecond == 0 else "microseconds"
     return timestamp.isoformat(timespec=timespec).replace("+00:00", "Z")
+
+
+def _cycle_start_tree_metrics(
+    *,
+    runner: MorpionSearchRunner,
+    run_state: MorpionBootstrapRunState,
+) -> tuple[int | None, int | None]:
+    """Return best-effort live metrics for cycle-start logging."""
+    tree_size: int | None = None
+    expanded_nodes: int | None = None
+    current_tree_size = getattr(runner, "current_tree_size", None)
+    if callable(current_tree_size):
+        try:
+            raw_tree_size = current_tree_size()
+        except Exception:
+            raw_tree_size = None
+        if isinstance(raw_tree_size, int):
+            tree_size = raw_tree_size
+    current_tree_status = getattr(runner, "current_tree_status", None)
+    if callable(current_tree_status):
+        try:
+            raw_tree_status = current_tree_status()
+        except Exception:
+            raw_tree_status = None
+        if isinstance(raw_tree_status, MorpionBootstrapTreeStatus):
+            expanded_nodes = raw_tree_status.num_expanded_nodes
+            if tree_size is None:
+                tree_size = raw_tree_status.num_nodes
+        elif isinstance(raw_tree_status, Mapping):
+            raw_expanded_nodes = raw_tree_status.get("num_expanded_nodes")
+            if isinstance(raw_expanded_nodes, int):
+                expanded_nodes = raw_expanded_nodes
+            raw_num_nodes = raw_tree_status.get("num_nodes")
+            if tree_size is None and isinstance(raw_num_nodes, int):
+                tree_size = raw_num_nodes
+    if tree_size is None:
+        tree_size = run_state.tree_size_at_last_save
+    return tree_size, expanded_nodes
+
+
+def _save_trigger_reason(
+    *,
+    current_tree_size: int,
+    tree_size_at_last_save: int,
+    now_unix_s: float,
+    last_save_unix_s: float | None,
+    save_after_tree_growth_factor: float,
+    save_after_seconds: float,
+) -> str | None:
+    """Return the reason a save trigger fired, if any."""
+    if last_save_unix_s is None:
+        return "first_cycle"
+    if (
+        tree_size_at_last_save > 0
+        and current_tree_size >= tree_size_at_last_save * save_after_tree_growth_factor
+    ):
+        return "growth_factor_reached"
+    if now_unix_s - last_save_unix_s >= save_after_seconds:
+        return "time_elapsed"
+    return None
 
 
 @dataclass(frozen=True, slots=True)

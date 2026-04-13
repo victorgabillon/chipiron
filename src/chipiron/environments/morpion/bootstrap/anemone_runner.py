@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import logging
+import time
 from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from random import Random
@@ -52,6 +54,9 @@ from .bootstrap_loop import MorpionSearchRunner
 from .config import DEFAULT_MORPION_TREE_BRANCH_LIMIT
 from .control import MorpionBootstrapEffectiveRuntimeConfig
 from .history import MorpionBootstrapTreeStatus
+
+LOGGER = logging.getLogger(__name__)
+GROWTH_LOG_INTERVAL_STEPS = 50
 
 
 def _default_search_args() -> SearchArgs:
@@ -215,6 +220,10 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             None if model_bundle_path is None else Path(model_bundle_path)
         )
         if tree_snapshot_path is None:
+            LOGGER.info(
+                "[runtime] create_fresh bundle=%s",
+                None if resolved_bundle_path is None else str(resolved_bundle_path),
+            )
             self._runtime = self._create_fresh_runtime(
                 resolved_bundle_path,
                 search_args=self._args.search_args,
@@ -223,6 +232,11 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             self._current_evaluator_bundle_path = resolved_bundle_path
             return
 
+        LOGGER.info(
+            "[runtime] restore_from_checkpoint checkpoint=%s bundle=%s",
+            str(tree_snapshot_path),
+            None if resolved_bundle_path is None else str(resolved_bundle_path),
+        )
         runtime = self._load_runtime_from_checkpoint(
             Path(tree_snapshot_path),
             search_args=self._args.search_args,
@@ -236,17 +250,44 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
     def grow(self, max_growth_steps: int) -> None:
         """Advance the live runtime by up to ``max_growth_steps`` iterations."""
         runtime = self._require_runtime()
-        for _ in range(max_growth_steps):
+        initial_tree_size = _live_tree_node_count(runtime)
+        steps_executed = 0
+        stop_reason = "max_steps_reached"
+        for step_index in range(max_growth_steps):
             if runtime.tree.root_node.tree_evaluation.has_exact_value():
+                stop_reason = "exact_solution_found"
                 break
             if not _runtime_can_step(runtime):
+                stop_reason = _runtime_stop_reason(runtime)
                 break
             runtime.step()
+            steps_executed += 1
+            if steps_executed % GROWTH_LOG_INTERVAL_STEPS == 0:
+                current_tree_size = _live_tree_node_count(runtime)
+                LOGGER.debug(
+                    "[growth] step=%s tree_size=%s (+%s)",
+                    step_index + 1,
+                    current_tree_size,
+                    current_tree_size - initial_tree_size,
+                )
+        final_tree_size = _live_tree_node_count(runtime)
+        LOGGER.info(
+            "[growth] DONE steps=%s nodes_added=%s final_size=%s stop_reason=%s",
+            steps_executed,
+            final_tree_size - initial_tree_size,
+            final_tree_size,
+            stop_reason,
+        )
 
     def export_training_tree_snapshot(self, output_path: str | Path) -> None:
         """Persist a training-grade snapshot from the live tree."""
         runtime = self._require_runtime()
         ordered_nodes = runtime._all_nodes_in_tree_order()
+        LOGGER.info(
+            "[export] ordered_nodes=%s output=%s",
+            len(ordered_nodes),
+            str(output_path),
+        )
         def _value_to_scalar(value):
             if value is None:
                 return None
@@ -338,10 +379,18 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
     def _set_runtime_evaluator_from_bundle(self, model_bundle_path: Path) -> None:
         """Load one bundle, install it into the live runtime, and refresh leaves."""
         runtime = self._require_runtime()
+        LOGGER.info("[reeval] start bundle=%s", str(model_bundle_path))
+        started_at = time.perf_counter()
         evaluator = load_morpion_evaluator_from_model_bundle(model_bundle_path)
         runtime.refresh_with_evaluator(
             evaluator,
             scope=self._args.reevaluation_scope,
+        )
+        elapsed_s = time.perf_counter() - started_at
+        LOGGER.info(
+            "[reeval] done bundle=%s elapsed=%.3fs",
+            str(model_bundle_path),
+            elapsed_s,
         )
         self._current_evaluator_bundle_path = model_bundle_path
 
@@ -359,6 +408,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             state_codec=self._state_codec,
         )
         output = Path(output_path)
+        LOGGER.info("[checkpoint] save output=%s", str(output))
         output.parent.mkdir(parents=True, exist_ok=True)
         with open(output, "w", encoding="utf-8") as handle:
             json.dump(asdict(payload), handle, indent=2, sort_keys=True)
@@ -493,6 +543,30 @@ def _runtime_can_step(runtime: Any) -> bool:
     if callable(has_tree_depth):
         return bool(has_tree_depth(tree_depth))
     return tree_depth in descendants
+
+
+def _runtime_stop_reason(runtime: Any) -> str:
+    """Return a concise reason why the runtime cannot execute another step."""
+    stopping_criterion = getattr(runtime, "stopping_criterion", None)
+    should_we_continue = getattr(stopping_criterion, "should_we_continue", None)
+    tree = getattr(runtime, "tree", None)
+    if callable(should_we_continue) and tree is not None:
+        if not bool(should_we_continue(tree=tree)):
+            return "stopping_criterion_reached"
+
+    node_selector = getattr(runtime, "node_selector", None)
+    uniform_selector = getattr(node_selector, "base", node_selector)
+    current_depth_to_expand = getattr(uniform_selector, "current_depth_to_expand", None)
+    if not isinstance(current_depth_to_expand, int) or tree is None:
+        return "runtime_cannot_step"
+    tree_depth = tree.tree_root_tree_depth + current_depth_to_expand
+    descendants = getattr(tree, "descendants", None)
+    has_tree_depth = getattr(descendants, "has_tree_depth", None)
+    if callable(has_tree_depth) and not bool(has_tree_depth(tree_depth)):
+        return "runtime_cannot_step"
+    if descendants is not None and not callable(has_tree_depth) and tree_depth not in descendants:
+        return "runtime_cannot_step"
+    return "runtime_cannot_step"
 
 
 def _live_tree_node_count(runtime: Any) -> int:
