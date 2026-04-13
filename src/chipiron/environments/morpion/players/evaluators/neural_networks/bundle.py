@@ -114,8 +114,8 @@ class InvalidMorpionModelBundleError(ValueError):
         """Return the missing-feature-subset-metadata error."""
         return cls(
             "Invalid Morpion model bundle metadata in "
-            f"{path!s}: reduced-width bundles must persist `feature_subset_name` "
-            "and-or explicit `feature_names`."
+            f"{path!s}: bundles whose input_dim differs from the canonical full "
+            "feature width must persist explicit feature subset metadata."
         )
 
     @classmethod

@@ -9,6 +9,10 @@ from dataclasses import dataclass, field, fields
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
+from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
+    DEFAULT_MORPION_FEATURE_SUBSET_NAME,
+)
+
 from .record_status import (
     MORPION_BOOTSTRAP_GAME,
     MORPION_BOOTSTRAP_INITIAL_PATTERN,
@@ -251,7 +255,7 @@ def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
                     feature_subset_name=_required_str(
                         _require_section_mapping(spec_payload, section_name=f"evaluators.evaluators.{evaluator_name}").get(
                             "feature_subset_name",
-                            "handcrafted_41",
+                            DEFAULT_MORPION_FEATURE_SUBSET_NAME,
                         ),
                         field_name=f"evaluators.evaluators.{evaluator_name}.feature_subset_name",
                     ),

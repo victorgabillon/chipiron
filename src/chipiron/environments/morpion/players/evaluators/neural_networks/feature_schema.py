@@ -64,6 +64,25 @@ class InvalidMorpionFeatureSubsetError(ValueError):
     """Raised when one Morpion feature subset is invalid."""
 
 
+class InconsistentMorpionFeatureSubsetDefinitionError(
+    InvalidMorpionFeatureSubsetError
+):
+    """Raised when a known subset name is paired with conflicting feature names."""
+
+    def __init__(
+        self,
+        subset_name: str,
+        expected_feature_names: tuple[str, ...],
+        provided_feature_names: tuple[str, ...],
+    ) -> None:
+        """Initialize the error for one conflicting known subset definition."""
+        super().__init__(
+            "Known Morpion feature subset names must match their registered "
+            f"feature list exactly; subset {subset_name!r} expects "
+            f"{expected_feature_names!r} but got {provided_feature_names!r}."
+        )
+
+
 class UnknownMorpionFeatureSubsetError(ValueError):
     """Raised when one named Morpion feature subset is unknown."""
 
@@ -156,12 +175,26 @@ def resolve_morpion_feature_subset(
 ) -> MorpionFeatureSubset:
     """Resolve one Morpion feature subset from name and-or explicit names."""
     if feature_names is not None:
+        provided_feature_names = tuple(str(item) for item in feature_names)
         subset_name = (
             DEFAULT_MORPION_FEATURE_SUBSET_NAME
             if feature_subset_name is None
             else feature_subset_name
         )
-        return morpion_feature_subset_from_feature_names(subset_name, feature_names)
+        registered_feature_names = _FEATURE_SUBSET_REGISTRY.get(subset_name)
+        if (
+            registered_feature_names is not None
+            and tuple(registered_feature_names) != provided_feature_names
+        ):
+            raise InconsistentMorpionFeatureSubsetDefinitionError(
+                subset_name,
+                tuple(registered_feature_names),
+                provided_feature_names,
+            )
+        return morpion_feature_subset_from_feature_names(
+            subset_name,
+            provided_feature_names,
+        )
     if feature_subset_name is None:
         return full_morpion_feature_subset()
     return morpion_feature_subset_from_name(feature_subset_name)
@@ -239,6 +272,7 @@ def _validate_ordered_feature_names(
 
 __all__ = [
     "DEFAULT_MORPION_FEATURE_SUBSET_NAME",
+    "InconsistentMorpionFeatureSubsetDefinitionError",
     "InvalidMorpionFeatureSubsetError",
     "MORPION_CANONICAL_FEATURE_NAMES",
     "MORPION_FEATURE_SCHEMA",

@@ -6,12 +6,14 @@ import pytest
 
 from chipiron.environments.morpion.players.evaluators.neural_networks import (
     DEFAULT_MORPION_FEATURE_SUBSET_NAME,
+    InconsistentMorpionFeatureSubsetDefinitionError,
     InvalidMorpionFeatureSubsetError,
     MORPION_CANONICAL_FEATURE_NAMES,
     UnknownMorpionFeatureSubsetError,
     full_morpion_feature_subset,
     morpion_feature_subset_from_feature_names,
     morpion_feature_subset_from_name,
+    resolve_morpion_feature_subset,
     subset_indices,
 )
 
@@ -83,4 +85,19 @@ def test_unknown_or_out_of_order_feature_names_are_rejected() -> None:
                 MORPION_CANONICAL_FEATURE_NAMES[3],
                 MORPION_CANONICAL_FEATURE_NAMES[1],
             ),
+        )
+
+
+def test_known_subset_name_with_conflicting_explicit_feature_names_fails() -> None:
+    """Known subset names should not be allowed to mean different feature lists."""
+    with pytest.raises(InconsistentMorpionFeatureSubsetDefinitionError):
+        resolve_morpion_feature_subset(
+            feature_subset_name="full",
+            feature_names=MORPION_CANONICAL_FEATURE_NAMES[:10],
+        )
+
+    with pytest.raises(InconsistentMorpionFeatureSubsetDefinitionError):
+        resolve_morpion_feature_subset(
+            feature_subset_name=DEFAULT_MORPION_FEATURE_SUBSET_NAME,
+            feature_names=MORPION_CANONICAL_FEATURE_NAMES[:10],
         )

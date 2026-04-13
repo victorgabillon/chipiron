@@ -14,6 +14,7 @@ from .bundle import (
 )
 from .feature_schema import (
     DEFAULT_MORPION_FEATURE_SUBSET_NAME,
+    InconsistentMorpionFeatureSubsetDefinitionError,
     InvalidMorpionFeatureSubsetError,
     MORPION_CANONICAL_FEATURE_NAMES,
     MORPION_FEATURE_SCHEMA,
@@ -51,6 +52,7 @@ from .state_to_tensor import (
 
 __all__ = [
     "DEFAULT_MORPION_FEATURE_SUBSET_NAME",
+    "InconsistentMorpionFeatureSubsetDefinitionError",
     "InvalidMorpionFeatureSubsetError",
     "MORPION_CANONICAL_FEATURE_NAMES",
     "MORPION_FEATURE_SCHEMA",

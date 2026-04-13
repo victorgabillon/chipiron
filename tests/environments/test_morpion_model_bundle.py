@@ -262,6 +262,26 @@ def test_manifest_incompatibility_fails_clearly(tmp_path: Path) -> None:
         load_morpion_model_bundle(bundle_dir)
 
 
+def test_bundle_load_rejects_conflicting_known_subset_name_and_feature_names(
+    tmp_path: Path,
+) -> None:
+    """Bundle loading should reject known subset names paired with mismatched names."""
+    args = MorpionRegressorArgs(model_kind="linear")
+    model = build_morpion_regressor(args)
+    bundle_dir = tmp_path / "bundle"
+    save_morpion_model_bundle(model, bundle_dir, model_args=args)
+
+    args_path = bundle_dir / MORPION_MODEL_ARGS_FILE_NAME
+    args_data = json.loads(args_path.read_text(encoding="utf-8"))
+    args_data["feature_subset_name"] = "full"
+    args_data["feature_names"] = list(MORPION_CANONICAL_FEATURE_NAMES[:10])
+    args_data["input_dim"] = 10
+    args_path.write_text(json.dumps(args_data), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Known Morpion feature subset names"):
+        load_morpion_model_bundle(bundle_dir)
+
+
 def test_minimal_training_helper_runs_end_to_end(tmp_path: Path) -> None:
     """The first Morpion training helper should train, save, and report metrics."""
     dataset_file = _build_rows_file(tmp_path, target_values=(1.25, -0.5))
