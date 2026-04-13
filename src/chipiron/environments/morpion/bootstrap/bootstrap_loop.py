@@ -24,6 +24,10 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.train impo
     MorpionTrainingArgs,
     train_morpion_regressor,
 )
+from .anemone_runner import (
+    InvalidMorpionSearchCheckpointError,
+    load_morpion_search_checkpoint_payload,
+)
 from .evaluator_family import morpion_evaluators_config_from_preset
 
 from .history import (
@@ -137,6 +141,26 @@ class UnknownActiveMorpionEvaluatorError(ValueError):
         super().__init__(
             "Morpion bootstrap run state refers to active evaluator "
             f"{evaluator_name!r}, but no saved model bundle path exists for it."
+        )
+
+
+class IncompatibleMorpionResumeArtifactError(ValueError):
+    """Raised when bootstrap resume selects an artifact that is not a checkpoint."""
+
+    def __init__(
+        self,
+        *,
+        source: str,
+        artifact_path: Path,
+        reason: str,
+    ) -> None:
+        """Initialize the incompatible-resume-artifact error."""
+        super().__init__(
+            "Morpion bootstrap resume selected an incompatible artifact from "
+            f"{source}: {artifact_path}. Runtime resume requires a search checkpoint "
+            "from `search_checkpoints/...`, while tree exports in "
+            "`tree_exports/...` are only for dataset extraction and analysis. "
+            f"Details: {reason}"
         )
 
 
@@ -580,6 +604,7 @@ def run_one_bootstrap_cycle(
             active_evaluator_name=resolved_active_model.active_evaluator_name,
             tree_size_at_last_save=run_state.tree_size_at_last_save,
             last_save_unix_s=run_state.last_save_unix_s,
+            latest_runtime_checkpoint_path=run_state.latest_runtime_checkpoint_path,
             latest_record_status=run_state.latest_record_status,
             metadata=_next_metadata(
                 run_state.metadata,
@@ -670,6 +695,7 @@ def run_one_bootstrap_cycle(
             active_evaluator_name=run_state.active_evaluator_name,
             tree_size_at_last_save=current_tree_size,
             last_save_unix_s=current_time,
+            latest_runtime_checkpoint_path=relative_runtime_checkpoint_path,
             latest_record_status=record_status,
             metadata=next_metadata,
         )
@@ -745,6 +771,7 @@ def run_one_bootstrap_cycle(
         active_evaluator_name=selected_evaluator_name,
         tree_size_at_last_save=current_tree_size,
         last_save_unix_s=current_time,
+        latest_runtime_checkpoint_path=relative_runtime_checkpoint_path,
         latest_record_status=record_status,
         metadata=next_metadata,
     )
@@ -985,12 +1012,59 @@ def _resolve_runtime_restore_path(
     run_state: MorpionBootstrapRunState,
 ) -> Path | None:
     """Resolve the best available persisted runtime restore path for one cycle."""
+    candidates: list[tuple[str, Path | None]] = [
+        (
+            "run_state.latest_runtime_checkpoint_path",
+            paths.resolve_work_dir_path(run_state.latest_runtime_checkpoint_path),
+        ),
+    ]
     metadata_runtime_checkpoint = run_state.metadata.get(
         RUNTIME_CHECKPOINT_METADATA_KEY
     )
     if isinstance(metadata_runtime_checkpoint, str):
-        return paths.resolve_work_dir_path(metadata_runtime_checkpoint)
-    return paths.resolve_work_dir_path(run_state.latest_tree_snapshot_path)
+        candidates.append(
+            (
+                "run_state.metadata.runtime_checkpoint_path",
+                paths.resolve_work_dir_path(metadata_runtime_checkpoint),
+            )
+        )
+    if run_state.generation > 0:
+        candidates.append(
+            (
+                "canonical search_checkpoints path for latest generation",
+                paths.runtime_checkpoint_path_for_generation(run_state.generation),
+            )
+        )
+    candidates.append(
+        (
+            "run_state.latest_tree_snapshot_path",
+            paths.resolve_work_dir_path(run_state.latest_tree_snapshot_path),
+        )
+    )
+
+    seen_paths: set[Path] = set()
+    first_incompatible_error: IncompatibleMorpionResumeArtifactError | None = None
+    for source, candidate_path in candidates:
+        if candidate_path is None or candidate_path in seen_paths:
+            continue
+        seen_paths.add(candidate_path)
+        if not candidate_path.is_file():
+            continue
+        try:
+            load_morpion_search_checkpoint_payload(candidate_path)
+        except InvalidMorpionSearchCheckpointError as exc:
+            if first_incompatible_error is None:
+                first_incompatible_error = IncompatibleMorpionResumeArtifactError(
+                    source=source,
+                    artifact_path=candidate_path,
+                    reason=str(exc),
+                )
+            continue
+        return candidate_path
+
+    if first_incompatible_error is not None:
+        raise first_incompatible_error
+    return None
 
 
 def _bootstrap_config_hash_from_metadata(metadata: Mapping[str, object]) -> str | None:
@@ -1018,6 +1092,7 @@ def _with_config_hash_metadata(
         active_evaluator_name=run_state.active_evaluator_name,
         tree_size_at_last_save=run_state.tree_size_at_last_save,
         last_save_unix_s=run_state.last_save_unix_s,
+        latest_runtime_checkpoint_path=run_state.latest_runtime_checkpoint_path,
         latest_record_status=run_state.latest_record_status,
         metadata=next_metadata,
     )
@@ -1129,6 +1204,7 @@ def _validate_runtime_reconfiguration(
 __all__ = [
     "EMPTY_DATASET_TRAINING_SKIPPED_REASON",
     "EmptyMorpionEvaluatorsConfigError",
+    "IncompatibleMorpionResumeArtifactError",
     "InconsistentMorpionEvaluatorSpecNameError",
     "MissingForcedMorpionEvaluatorBundleError",
     "MissingActiveMorpionEvaluatorError",

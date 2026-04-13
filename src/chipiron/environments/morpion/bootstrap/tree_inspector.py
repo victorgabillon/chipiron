@@ -217,6 +217,17 @@ def resolve_latest_runtime_checkpoint(
     metadata_warning: str | None = None
     if paths.run_state_path.is_file():
         run_state = load_bootstrap_run_state(paths.run_state_path)
+        dedicated_checkpoint_path = paths.resolve_work_dir_path(
+            run_state.latest_runtime_checkpoint_path
+        )
+        if (
+            dedicated_checkpoint_path is not None
+            and dedicated_checkpoint_path.is_file()
+        ):
+            return _ResolvedCheckpointReference(
+                checkpoint_path=dedicated_checkpoint_path,
+                checkpoint_source="run_state_latest_runtime_checkpoint_path",
+            )
         metadata_path = run_state.metadata.get(RUNTIME_CHECKPOINT_METADATA_KEY)
         if isinstance(metadata_path, str):
             resolved_path = paths.resolve_work_dir_path(metadata_path)

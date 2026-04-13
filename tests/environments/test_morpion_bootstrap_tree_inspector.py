@@ -89,8 +89,10 @@ def test_missing_runtime_checkpoint_returns_empty_state(tmp_path: Path) -> None:
     assert snapshot.status_message == "No persisted runtime checkpoint available yet."
 
 
-def test_resolve_latest_runtime_checkpoint_prefers_run_state_metadata(tmp_path: Path) -> None:
-    """Inspector checkpoint resolution should prefer the explicit run-state metadata path."""
+def test_resolve_latest_runtime_checkpoint_prefers_dedicated_run_state_path(
+    tmp_path: Path,
+) -> None:
+    """Inspector checkpoint resolution should prefer the dedicated run-state field."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     checkpoint_path = _create_runtime_checkpoint(tmp_path)
     save_bootstrap_run_state(
@@ -103,6 +105,7 @@ def test_resolve_latest_runtime_checkpoint_prefers_run_state_metadata(tmp_path: 
             active_evaluator_name=None,
             tree_size_at_last_save=0,
             last_save_unix_s=None,
+            latest_runtime_checkpoint_path=paths.relative_to_work_dir(checkpoint_path),
             metadata={
                 RUNTIME_CHECKPOINT_METADATA_KEY: paths.relative_to_work_dir(checkpoint_path)
             },
@@ -113,7 +116,7 @@ def test_resolve_latest_runtime_checkpoint_prefers_run_state_metadata(tmp_path: 
     resolved = resolve_latest_runtime_checkpoint(paths)
 
     assert resolved.checkpoint_path == checkpoint_path
-    assert resolved.checkpoint_source == "run_state_metadata"
+    assert resolved.checkpoint_source == "run_state_latest_runtime_checkpoint_path"
 
 
 def test_display_value_priority_prefers_backed_up_then_direct_then_none() -> None:

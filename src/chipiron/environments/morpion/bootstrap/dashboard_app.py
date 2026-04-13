@@ -272,7 +272,10 @@ def run_dashboard_app(work_dir: Path) -> None:
     st.subheader("Debug Info")
     st.write(
         "Last checkpoint path:",
-        _format_value(run_state.metadata.get("runtime_checkpoint_path")),
+        _format_value(
+            run_state.latest_runtime_checkpoint_path
+            or run_state.metadata.get("runtime_checkpoint_path")
+        ),
     )
     st.write(
         "Effective runtime:",

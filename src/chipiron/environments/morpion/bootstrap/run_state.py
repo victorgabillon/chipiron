@@ -28,6 +28,7 @@ class MorpionBootstrapRunState:
     active_evaluator_name: str | None
     tree_size_at_last_save: int
     last_save_unix_s: float | None
+    latest_runtime_checkpoint_path: str | None = None
     latest_record_status: MorpionBootstrapRecordStatus | None = None
     metadata: dict[str, Any] = field(default_factory=_empty_metadata)
 
@@ -124,6 +125,7 @@ def initialize_bootstrap_run_state() -> MorpionBootstrapRunState:
         active_evaluator_name=None,
         tree_size_at_last_save=0,
         last_save_unix_s=None,
+        latest_runtime_checkpoint_path=None,
         latest_record_status=None,
     )
 
@@ -162,6 +164,7 @@ def _run_state_to_dict(state: MorpionBootstrapRunState) -> dict[str, object]:
         "active_evaluator_name": state.active_evaluator_name,
         "tree_size_at_last_save": state.tree_size_at_last_save,
         "last_save_unix_s": state.last_save_unix_s,
+        "latest_runtime_checkpoint_path": state.latest_runtime_checkpoint_path,
         "latest_record_status": None
         if state.latest_record_status is None
         else _record_status_to_dict(state.latest_record_status),
@@ -230,6 +233,10 @@ def _run_state_from_dict(data: object) -> MorpionBootstrapRunState:
         last_save_unix_s=_optional_float(
             payload.get("last_save_unix_s"),
             field_name="last_save_unix_s",
+        ),
+        latest_runtime_checkpoint_path=_optional_str(
+            payload.get("latest_runtime_checkpoint_path"),
+            field_name="latest_runtime_checkpoint_path",
         ),
         latest_record_status=latest_record_status,
         metadata=_metadata_dict(payload.get("metadata")),

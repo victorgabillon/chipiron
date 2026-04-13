@@ -58,11 +58,13 @@ from torch.utils.data import DataLoader
 
 import chipiron.environments.morpion.bootstrap.bootstrap_loop as bootstrap_loop_module
 from chipiron.environments.morpion.bootstrap import (
+    AnemoneMorpionSearchRunner,
     CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
     MORPION_BOOTSTRAP_INITIAL_PATTERN,
     MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
     MORPION_BOOTSTRAP_VARIANT,
     EmptyMorpionEvaluatorsConfigError,
+    IncompatibleMorpionResumeArtifactError,
     MalformedMorpionBootstrapRunStateError,
     MissingActiveMorpionEvaluatorError,
     MorpionBootstrapArgs,
@@ -157,6 +159,7 @@ class FakeMorpionSearchRunner:
         self.load_calls: list[tuple[str | None, str | None]] = []
         self.grow_calls: list[int] = []
         self.export_calls: list[str] = []
+        self.checkpoint_calls: list[str] = []
 
     def load_or_create(
         self,
@@ -191,6 +194,14 @@ class FakeMorpionSearchRunner:
             root_node_id=f"node-{index}",
         )
         save_training_tree_snapshot(snapshot, output_path)
+
+    def save_checkpoint(self, output_path: str | Path) -> None:
+        """Write one real runtime checkpoint so resume-path validation can run."""
+        self.checkpoint_calls.append(str(output_path))
+        checkpoint_runner = AnemoneMorpionSearchRunner()
+        checkpoint_runner.load_or_create(None, None)
+        checkpoint_runner.grow(1)
+        checkpoint_runner.save_checkpoint(output_path)
 
     def current_tree_size(self) -> int:
         """Return the current predefined tree size."""
@@ -318,6 +329,7 @@ def test_run_state_round_trip(tmp_path: Path) -> None:
         active_evaluator_name="mlp",
         tree_size_at_last_save=42,
         last_save_unix_s=1234.5,
+        latest_runtime_checkpoint_path="search_checkpoints/generation_000003.json",
         latest_record_status=bootstrap_loop_module.MorpionBootstrapRecordStatus(
             variant="5T",
             initial_pattern="greek_cross",
@@ -525,6 +537,10 @@ def test_run_one_cycle_with_save_updates_artifacts(tmp_path: Path) -> None:
     assert next_state.last_save_unix_s == 200.0
     assert next_state.latest_tree_snapshot_path == "tree_exports/generation_000001.json"
     assert next_state.latest_rows_path == "rows/generation_000001.json"
+    assert (
+        next_state.latest_runtime_checkpoint_path
+        == "search_checkpoints/generation_000001.json"
+    )
     assert next_state.latest_model_bundle_paths == {
         "default": "models/generation_000001/default"
     }
@@ -540,6 +556,9 @@ def test_run_one_cycle_with_save_updates_artifacts(tmp_path: Path) -> None:
     )
     assert paths.resolve_work_dir_path(next_state.latest_tree_snapshot_path).is_file()
     assert paths.resolve_work_dir_path(next_state.latest_rows_path).is_file()
+    assert paths.resolve_work_dir_path(
+        next_state.latest_runtime_checkpoint_path
+    ).is_file()
     assert paths.resolve_work_dir_path(
         next_state.latest_model_bundle_paths["default"]
     ).is_dir()
@@ -642,7 +661,7 @@ def test_loop_resumes_from_saved_run_state(tmp_path: Path) -> None:
     assert second_state.cycle_index == 1
     assert runner.load_calls[0] == (None, None)
     assert runner.load_calls[1] == (
-        str(paths.resolve_work_dir_path(first_state.latest_tree_snapshot_path)),
+        str(paths.resolve_work_dir_path(first_state.latest_runtime_checkpoint_path)),
         str(
             paths.resolve_work_dir_path(
                 first_state.latest_model_bundle_paths["default"]
@@ -677,9 +696,73 @@ def test_loop_resumes_with_selected_winning_evaluator(
     run_morpion_bootstrap_loop(args, runner, max_cycles=1)
 
     assert runner.load_calls[1] == (
-        str(paths.resolve_work_dir_path(first_state.latest_tree_snapshot_path)),
+        str(paths.resolve_work_dir_path(first_state.latest_runtime_checkpoint_path)),
         str(paths.resolve_work_dir_path(first_state.latest_model_bundle_paths["mlp"])),
     )
+
+
+def test_resume_uses_runtime_checkpoint_for_legacy_run_state_without_dedicated_field(
+    tmp_path: Path,
+) -> None:
+    """Legacy run state should infer the canonical checkpoint instead of tree export."""
+    args = MorpionBootstrapArgs(work_dir=tmp_path, max_growth_steps_per_cycle=5)
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    runner = FakeMorpionSearchRunner(tree_sizes=(10, 20), target_values=(1.25, -0.5))
+
+    first_state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+    legacy_payload = json.loads(paths.run_state_path.read_text(encoding="utf-8"))
+    legacy_payload.pop("latest_runtime_checkpoint_path", None)
+    paths.run_state_path.write_text(
+        json.dumps(legacy_payload, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+    run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+
+    assert first_state.latest_tree_snapshot_path == "tree_exports/generation_000001.json"
+    assert runner.load_calls[1] == (
+        str(paths.runtime_checkpoint_path_for_generation(1)),
+        str(
+            paths.resolve_work_dir_path(
+                first_state.latest_model_bundle_paths["default"]
+            )
+        ),
+    )
+
+
+def test_resume_rejects_tree_export_when_no_runtime_checkpoint_is_available(
+    tmp_path: Path,
+) -> None:
+    """Resume should fail clearly instead of treating a tree export as a checkpoint."""
+    args = MorpionBootstrapArgs(work_dir=tmp_path, max_growth_steps_per_cycle=5)
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    runner = FakeMorpionSearchRunner(tree_sizes=(15,), target_values=(1.25,))
+    paths.ensure_directories()
+    save_training_tree_snapshot(
+        _make_training_snapshot(target_value=1.25, root_node_id="legacy-tree"),
+        paths.tree_snapshot_path_for_generation(1),
+    )
+
+    with pytest.raises(IncompatibleMorpionResumeArtifactError) as exc_info:
+        run_one_bootstrap_cycle(
+            args=args,
+            paths=paths,
+            runner=runner,
+            run_state=MorpionBootstrapRunState(
+                generation=1,
+                cycle_index=0,
+                latest_tree_snapshot_path="tree_exports/generation_000001.json",
+                latest_rows_path="rows/generation_000001.json",
+                latest_model_bundle_paths=None,
+                active_evaluator_name=None,
+                tree_size_at_last_save=10,
+                last_save_unix_s=100.0,
+            ),
+            now_unix_s=200.0,
+        )
+
+    assert "search_checkpoints" in str(exc_info.value)
+    assert "tree_exports" in str(exc_info.value)
 
 
 def test_resume_fails_for_unknown_active_evaluator(tmp_path: Path) -> None:
