@@ -44,6 +44,13 @@ if "anemone" not in sys.modules:
     sys.modules["anemone"] = _anemone_stub
 
 from anemone.training_export import load_training_tree_snapshot
+from anemone.factory import SearchArgs
+from anemone.node_selector.composed.args import ComposedNodeSelectorArgs
+from anemone.node_selector.opening_instructions import OpeningType
+from anemone.node_selector.priority_check.noop_args import NoPriorityCheckArgs
+from anemone.node_selector.uniform.uniform import UniformArgs
+from anemone.progress_monitor.progress_monitor import TreeBranchLimitArgs
+from anemone.recommender_rule.recommender_rule import AlmostEqualLogistic
 
 import chipiron.environments.morpion.bootstrap.anemone_runner as anemone_runner_module
 from chipiron.environments.morpion.bootstrap import (
@@ -76,6 +83,30 @@ def _make_model_bundle(output_dir: Path) -> Path:
     model = build_morpion_regressor(model_args)
     save_morpion_model_bundle(model, output_dir, model_args=model_args)
     return output_dir
+
+
+def _runner_args_with_tree_branch_limit(
+    tree_branch_limit: int,
+) -> AnemoneMorpionSearchRunnerArgs:
+    """Build runner args with an explicit branch budget for growth tests."""
+    return AnemoneMorpionSearchRunnerArgs(
+        search_args=SearchArgs(
+            node_selector=ComposedNodeSelectorArgs(
+                type="Composed",
+                priority=NoPriorityCheckArgs(type="PriorityNoop"),
+                base=UniformArgs(type="Uniform"),
+            ),
+            opening_type=OpeningType.ALL_CHILDREN,
+            recommender_rule=AlmostEqualLogistic(
+                type="almost_equal_logistic",
+                temperature=1.0,
+            ),
+            stopping_criterion=TreeBranchLimitArgs(
+                type="tree_branch_limit",
+                tree_branch_limit=tree_branch_limit,
+            ),
+        )
+    )
 
 
 def _multi_evaluator_config() -> MorpionEvaluatorsConfig:
@@ -164,6 +195,59 @@ def test_checkpoint_roundtrip_restores_and_continues_growth(tmp_path: Path) -> N
 
     assert restored_size == size_before_save
     assert second_runner.current_tree_size() >= restored_size
+
+
+def test_checkpoint_roundtrip_continues_growth_when_branch_budget_remains(
+    tmp_path: Path,
+) -> None:
+    """Restored runtimes should keep growing when the branch budget is not exhausted."""
+    checkpoint_path = tmp_path / "tree_checkpoint.json"
+    runner_args = _runner_args_with_tree_branch_limit(4096)
+    first_runner = AnemoneMorpionSearchRunner(runner_args)
+    first_runner.load_or_create(
+        None,
+        None,
+        MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=4096),
+    )
+    first_runner.grow(1)
+    size_before_save = first_runner.current_tree_size()
+    first_runner.save_checkpoint(checkpoint_path)
+
+    second_runner = AnemoneMorpionSearchRunner(runner_args)
+    second_runner.load_or_create(
+        checkpoint_path,
+        None,
+        MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=4096),
+    )
+    restored_size = second_runner.current_tree_size()
+    second_runner.grow(1)
+
+    assert restored_size == size_before_save
+    assert second_runner.current_tree_size() > restored_size
+
+
+def test_current_tree_status_reports_live_node_and_expanded_counts() -> None:
+    """Status helpers should reflect the real runtime tree bookkeeping."""
+    runner = AnemoneMorpionSearchRunner(_runner_args_with_tree_branch_limit(4096))
+    runner.load_or_create(
+        None,
+        None,
+        MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=4096),
+    )
+    runner.grow(1)
+    runtime = runner._require_runtime()
+
+    expected_num_nodes = runtime.tree.nodes_count
+    expected_num_expanded_nodes = sum(
+        1
+        for node in runtime._all_nodes_in_tree_order()
+        if getattr(node, "all_branches_generated", False)
+    )
+    status = runner.current_tree_status()
+
+    assert runner.current_tree_size() == expected_num_nodes
+    assert status.num_nodes == expected_num_nodes
+    assert status.num_expanded_nodes == expected_num_expanded_nodes
 
 
 def test_restore_with_evaluator_bundle_triggers_reevaluation(

@@ -247,24 +247,32 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         """Persist a training-grade snapshot from the live tree."""
         runtime = self._require_runtime()
         ordered_nodes = runtime._all_nodes_in_tree_order()
+        def _value_to_scalar(value):
+            if value is None:
+                return None
+            # anemone Value object: has .score
+            return getattr(value, "score", None)
+
         snapshot = build_training_tree_snapshot(
             ordered_nodes,
             root_node_id=str(runtime.tree.root_node.id),
             state_ref_dumper=self._state_codec.dump_state_ref,
+            direct_value_extractor=_value_to_scalar,
+            backed_up_value_extractor=_value_to_scalar,
         )
         save_training_tree_snapshot(snapshot, output_path)
 
     def current_tree_size(self) -> int:
         """Return the number of nodes currently tracked by the live runtime."""
         runtime = self._require_runtime()
-        return len(runtime.tree.descendants)
+        return _live_tree_node_count(runtime)
 
     def current_tree_status(self) -> MorpionBootstrapTreeStatus:
         """Return the best available live tree-monitoring status."""
         runtime = self._require_runtime()
         root_node = runtime.tree.root_node
         return MorpionBootstrapTreeStatus(
-            num_nodes=len(runtime.tree.descendants),
+            num_nodes=_live_tree_node_count(runtime),
             num_expanded_nodes=_count_expanded_nodes(runtime),
             num_simulations=_safe_int_attr(root_node, "visit_count"),
             root_visit_count=_safe_int_attr(root_node, "visit_count"),
@@ -461,19 +469,45 @@ def _count_expanded_nodes(runtime: Any) -> int:
     return sum(
         1
         for node in runtime._all_nodes_in_tree_order()
-        if bool(getattr(node, "generated_all_branches", False))
+        if bool(getattr(node, "all_branches_generated", False))
     )
 
 
 def _runtime_can_step(runtime: Any) -> bool:
-    """Return whether the runtime's selector depth exists in the current tree."""
+    """Return whether the live runtime can still perform a structural search step."""
+    stopping_criterion = getattr(runtime, "stopping_criterion", None)
+    should_we_continue = getattr(stopping_criterion, "should_we_continue", None)
+    tree = getattr(runtime, "tree", None)
+    if callable(should_we_continue) and tree is not None:
+        if not bool(should_we_continue(tree=tree)):
+            return False
+
     node_selector = getattr(runtime, "node_selector", None)
     uniform_selector = getattr(node_selector, "base", node_selector)
     current_depth_to_expand = getattr(uniform_selector, "current_depth_to_expand", None)
     if not isinstance(current_depth_to_expand, int):
         return True
-    tree_depth = runtime.tree.tree_root_tree_depth + current_depth_to_expand
-    return tree_depth in runtime.tree.descendants
+    tree_depth = tree.tree_root_tree_depth + current_depth_to_expand
+    descendants = getattr(tree, "descendants", None)
+    has_tree_depth = getattr(descendants, "has_tree_depth", None)
+    if callable(has_tree_depth):
+        return bool(has_tree_depth(tree_depth))
+    return tree_depth in descendants
+
+
+def _live_tree_node_count(runtime: Any) -> int:
+    """Return the true live node count from the runtime tree bookkeeping."""
+    tree = getattr(runtime, "tree", None)
+    if tree is None:
+        raise TypeError("Anemone runtime must expose a live tree.")
+    nodes_count = getattr(tree, "nodes_count", None)
+    if isinstance(nodes_count, int):
+        return nodes_count
+    descendants = getattr(tree, "descendants", None)
+    get_count = getattr(descendants, "get_count", None)
+    if callable(get_count):
+        return int(get_count())
+    return len(runtime._all_nodes_in_tree_order())
 
 
 def _safe_int_attr(node: Any, attribute_name: str) -> int | None:

@@ -251,6 +251,7 @@ def run_dashboard_app(work_dir: Path) -> None:
             st.success("Saved control changes. They will apply at the next cycle boundary.")
 
     st.subheader("Plots")
+    st.caption("Time-series plots use absolute UTC timestamps from bootstrap history.")
     plot_columns = st.columns(2)
     with plot_columns[0]:
         _render_plot(st, lambda: plot_tree_size(dashboard_data.tree_num_nodes))
