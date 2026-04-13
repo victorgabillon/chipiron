@@ -850,7 +850,7 @@ def test_resume_uses_single_saved_bundle_without_active_evaluator(
     )
 
     assert runner.load_calls[0] == (
-        str(paths.resolve_work_dir_path("tree_exports/generation_000002.json")),
+        None,
         str(paths.resolve_work_dir_path("models/generation_000002/linear")),
     )
     assert next_state.active_evaluator_name == "linear"

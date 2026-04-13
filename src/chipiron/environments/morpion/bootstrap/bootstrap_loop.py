@@ -24,10 +24,6 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.train impo
     MorpionTrainingArgs,
     train_morpion_regressor,
 )
-from .anemone_runner import (
-    InvalidMorpionSearchCheckpointError,
-    load_morpion_search_checkpoint_payload,
-)
 from .evaluator_family import morpion_evaluators_config_from_preset
 
 from .history import (
@@ -1012,6 +1008,11 @@ def _resolve_runtime_restore_path(
     run_state: MorpionBootstrapRunState,
 ) -> Path | None:
     """Resolve the best available persisted runtime restore path for one cycle."""
+    from .anemone_runner import (
+        InvalidMorpionSearchCheckpointError,
+        load_morpion_search_checkpoint_payload,
+    )
+
     candidates: list[tuple[str, Path | None]] = [
         (
             "run_state.latest_runtime_checkpoint_path",
