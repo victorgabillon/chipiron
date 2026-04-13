@@ -6,6 +6,9 @@ import pytest
 
 from chipiron.environments.morpion.players.evaluators.neural_networks import (
     DEFAULT_MORPION_FEATURE_SUBSET_NAME,
+    HANDCRAFTED_10_CORE_FEATURE_NAMES,
+    HANDCRAFTED_20_CORE_FEATURE_NAMES,
+    HANDCRAFTED_5_CORE_FEATURE_NAMES,
     InconsistentMorpionFeatureSubsetDefinitionError,
     InvalidMorpionFeatureSubsetError,
     MORPION_CANONICAL_FEATURE_NAMES,
@@ -101,3 +104,24 @@ def test_known_subset_name_with_conflicting_explicit_feature_names_fails() -> No
             feature_subset_name=DEFAULT_MORPION_FEATURE_SUBSET_NAME,
             feature_names=MORPION_CANONICAL_FEATURE_NAMES[:10],
         )
+
+
+@pytest.mark.parametrize(
+    ("subset_name", "expected_feature_names", "expected_dimension"),
+    (
+        ("handcrafted_5_core", HANDCRAFTED_5_CORE_FEATURE_NAMES, 5),
+        ("handcrafted_10_core", HANDCRAFTED_10_CORE_FEATURE_NAMES, 10),
+        ("handcrafted_20_core", HANDCRAFTED_20_CORE_FEATURE_NAMES, 20),
+        (DEFAULT_MORPION_FEATURE_SUBSET_NAME, MORPION_CANONICAL_FEATURE_NAMES, 41),
+    ),
+)
+def test_builtin_curated_subsets_resolve_to_expected_contents(
+    subset_name: str,
+    expected_feature_names: tuple[str, ...],
+    expected_dimension: int,
+) -> None:
+    """Built-in named curated subsets should resolve to the exact intended features."""
+    subset = morpion_feature_subset_from_name(subset_name)
+
+    assert subset.feature_names == expected_feature_names
+    assert subset.dimension == expected_dimension

@@ -55,6 +55,7 @@ from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
 from chipiron.environments.morpion.bootstrap import (
     AnemoneMorpionSearchRunnerArgs,
+    CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
     MorpionBootstrapArgs,
     MorpionBootstrapControl,
     MorpionBootstrapLauncherArgs,
@@ -370,6 +371,8 @@ def test_launcher_cli_main_parses_and_dispatches(
         [
             "--work-dir",
             str(tmp_path),
+            "--evaluator-family",
+            CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
             "--max-cycles",
             "2",
             "--dashboard",
@@ -392,6 +395,10 @@ def test_launcher_cli_main_parses_and_dispatches(
     launcher_args = captured_args[0]
     assert launcher_args.max_cycles == 2
     assert launcher_args.open_dashboard is True
+    assert (
+        launcher_args.bootstrap_args.evaluator_family_preset
+        == CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET
+    )
     assert launcher_args.bootstrap_args.max_growth_steps_per_cycle == 12
     assert launcher_args.bootstrap_args.save_after_seconds == 22.5
     assert launcher_args.bootstrap_args.save_after_tree_growth_factor == 1.5
@@ -444,3 +451,29 @@ def test_launcher_constructs_real_runner_in_normal_path(
     assert len(created_runner_args) == 1
     stopping_criterion = created_runner_args[0].search_args.stopping_criterion
     assert stopping_criterion.tree_branch_limit == 40
+
+
+def test_startup_summary_renders_requested_evaluator_family_preset(
+    tmp_path: Path,
+) -> None:
+    """Startup summary should show the selected evaluator family preset when used."""
+    launcher_args = MorpionBootstrapLauncherArgs(
+        bootstrap_args=MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+        ),
+        print_startup_summary=False,
+        print_dashboard_hint=False,
+    )
+
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+    summary = launcher_module._render_launcher_startup_summary(
+        startup_status,
+        dashboard_requested=False,
+        evaluator_family_preset=launcher_args.bootstrap_args.evaluator_family_preset,
+    )
+
+    assert (
+        f"evaluator family preset: {CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET}"
+        in summary
+    )

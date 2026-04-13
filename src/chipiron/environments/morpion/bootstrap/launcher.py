@@ -80,6 +80,7 @@ def run_morpion_bootstrap_experiment(
             _render_launcher_startup_summary(
                 startup_status,
                 dashboard_requested=launcher_args.open_dashboard,
+                evaluator_family_preset=launcher_args.bootstrap_args.evaluator_family_preset,
             )
         )
     if launcher_args.print_dashboard_hint:
@@ -167,6 +168,7 @@ def _render_launcher_startup_summary(
     startup_status: _LauncherStartupStatus,
     *,
     dashboard_requested: bool,
+    evaluator_family_preset: str | None = None,
 ) -> str:
     """Render the operator-facing launcher summary without printing."""
     effective_runtime_config = effective_runtime_config_from_config_and_control(
@@ -195,6 +197,7 @@ def _render_launcher_startup_summary(
             f"latest status: {_render_presence(startup_status.latest_status_exists)}",
             f"latest generation: {_render_optional_int(_latest_generation(startup_status))}",
             f"latest cycle: {_render_optional_int(_latest_cycle_index(startup_status))}",
+            f"evaluator family preset: {_render_optional_text(evaluator_family_preset)}",
             f"configured evaluators: {evaluators}",
             f"forced evaluator control: {_render_optional_text(startup_status.control.force_evaluator)}",
             "tree_branch_limit: "
@@ -239,6 +242,7 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         )
     )
     parser.add_argument("--work-dir", required=True, type=Path)
+    parser.add_argument("--evaluator-family", type=str, default=None)
     parser.add_argument("--max-cycles", type=int, default=None)
     parser.add_argument(
         "--open-dashboard",
@@ -286,6 +290,7 @@ def launcher_args_from_cli(argv: Sequence[str] | None = None) -> MorpionBootstra
     parsed = build_launcher_argument_parser().parse_args(argv)
     bootstrap_args = MorpionBootstrapArgs(
         work_dir=parsed.work_dir,
+        evaluator_family_preset=parsed.evaluator_family,
         max_growth_steps_per_cycle=parsed.max_growth_steps_per_cycle,
         save_after_seconds=parsed.save_after_seconds,
         save_after_tree_growth_factor=parsed.save_after_tree_growth_factor,

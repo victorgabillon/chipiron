@@ -58,6 +58,7 @@ from torch.utils.data import DataLoader
 
 import chipiron.environments.morpion.bootstrap.bootstrap_loop as bootstrap_loop_module
 from chipiron.environments.morpion.bootstrap import (
+    CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
     MORPION_BOOTSTRAP_INITIAL_PATTERN,
     MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
     MORPION_BOOTSTRAP_VARIANT,
@@ -73,12 +74,14 @@ from chipiron.environments.morpion.bootstrap import (
     UnknownActiveMorpionEvaluatorError,
     initialize_bootstrap_run_state,
     load_bootstrap_history,
+    load_morpion_evaluator_from_model_bundle,
     load_bootstrap_run_state,
     run_morpion_bootstrap_loop,
     run_one_bootstrap_cycle,
     save_bootstrap_run_state,
     select_active_evaluator_name,
     should_save_progress,
+    canonical_morpion_evaluator_family_config,
 )
 from chipiron.environments.morpion.learning import load_morpion_supervised_rows
 from chipiron.environments.morpion.players.evaluators.datasets import (
@@ -931,3 +934,54 @@ def test_multi_evaluator_training_supports_distinct_feature_subsets(
     assert subset_manifest.input_dim == len(feature_names_10)
     assert subset_args.feature_names == feature_names_10
     assert subset_manifest.feature_names == feature_names_10
+
+
+def test_canonical_family_trains_all_eight_evaluators_and_persists_subset_metadata(
+    tmp_path: Path,
+) -> None:
+    """One bootstrap cycle should train and persist the canonical 8-model family."""
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        max_growth_steps_per_cycle=5,
+        num_epochs=1,
+        batch_size=1,
+        shuffle=False,
+        evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+    )
+    runner = FakeMorpionSearchRunner(tree_sizes=(10,), target_values=(1.25,))
+
+    state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    history = load_bootstrap_history(paths.history_jsonl_path)
+    family = canonical_morpion_evaluator_family_config()
+
+    assert state.latest_model_bundle_paths is not None
+    assert set(state.latest_model_bundle_paths) == set(family.evaluators)
+    assert state.active_evaluator_name in family.evaluators
+    assert len(history) == 1
+    assert set(history[0].evaluators) == set(family.evaluators)
+
+    selected_bundle_path = paths.resolve_work_dir_path(
+        state.latest_model_bundle_paths[state.active_evaluator_name]
+    )
+    assert selected_bundle_path is not None
+    selected_evaluator = load_morpion_evaluator_from_model_bundle(selected_bundle_path)
+    selected_model, selected_args, selected_manifest = load_morpion_model_bundle(
+        selected_bundle_path
+    )
+    assert selected_model is not None
+    assert selected_evaluator.feature_converter.input_dim == selected_args.input_dim
+    assert selected_manifest.input_dim == selected_args.input_dim
+
+    for evaluator_name, spec in family.evaluators.items():
+        bundle_path = paths.resolve_work_dir_path(
+            state.latest_model_bundle_paths[evaluator_name]
+        )
+        assert bundle_path is not None and bundle_path.is_dir()
+        _model, loaded_args, loaded_manifest = load_morpion_model_bundle(bundle_path)
+        assert loaded_args.feature_subset_name == spec.feature_subset_name
+        assert loaded_args.feature_names == spec.feature_names
+        assert loaded_args.input_dim == len(spec.feature_names)
+        assert loaded_manifest.feature_subset_name == spec.feature_subset_name
+        assert loaded_manifest.feature_names == spec.feature_names
+        assert loaded_manifest.input_dim == len(spec.feature_names)

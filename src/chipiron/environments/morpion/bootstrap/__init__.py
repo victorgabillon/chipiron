@@ -10,6 +10,7 @@ from .anemone_runner import (
     load_morpion_evaluator_from_model_bundle,
 )
 from .bootstrap_loop import (
+    ConflictingMorpionEvaluatorConfigurationError,
     EmptyMorpionEvaluatorsConfigError,
     InconsistentMorpionEvaluatorSpecNameError,
     MissingActiveMorpionEvaluatorError,
@@ -28,6 +29,13 @@ from .bootstrap_loop import (
     run_one_bootstrap_cycle,
     select_active_evaluator_name,
     should_save_progress,
+)
+from .evaluator_family import (
+    CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+    UnknownMorpionEvaluatorFamilyPresetError,
+    canonical_morpion_evaluator_family_config,
+    canonical_morpion_evaluator_specs,
+    morpion_evaluators_config_from_preset,
 )
 from .config import (
     BOOTSTRAP_CONFIG_HASH_METADATA_KEY,
@@ -159,6 +167,10 @@ __all__ = [
     "BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY",
     "bootstrap_runtime_control_from_metadata",
     "bootstrap_runtime_control_to_dict",
+    "CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET",
+    "canonical_morpion_evaluator_family_config",
+    "canonical_morpion_evaluator_specs",
+    "ConflictingMorpionEvaluatorConfigurationError",
     "DEFAULT_MORPION_TREE_BRANCH_LIMIT",
     "effective_runtime_config_from_config_and_control",
     "effective_runtime_config_sha256",
@@ -246,6 +258,7 @@ __all__ = [
     "load_morpion_evaluator_from_model_bundle",
     "load_morpion_search_checkpoint_payload",
     "morpion_bootstrap_experiment_metadata",
+    "morpion_evaluators_config_from_preset",
     "plot_active_evaluator",
     "plot_dataset_size",
     "plot_evaluator_losses",
@@ -269,6 +282,7 @@ __all__ = [
     "summarize_evaluator_selection",
     "summarize_record_progress",
     "training_triggered_series",
+    "UnknownMorpionEvaluatorFamilyPresetError",
     "build_morpion_bootstrap_tree_inspector_snapshot",
     "tree_num_nodes_series",
     "UninitializedMorpionSearchRunnerError",

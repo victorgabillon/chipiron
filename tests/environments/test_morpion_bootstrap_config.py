@@ -55,6 +55,7 @@ from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
 from chipiron.environments.morpion.bootstrap import (
     BOOTSTRAP_CONFIG_HASH_METADATA_KEY,
+    CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
     DEFAULT_MORPION_TREE_BRANCH_LIMIT,
     MORPION_BOOTSTRAP_GAME,
     MORPION_BOOTSTRAP_INITIAL_PATTERN,
@@ -71,6 +72,7 @@ from chipiron.environments.morpion.bootstrap import (
     UnsafeMorpionBootstrapConfigChangeError,
     bootstrap_config_from_args,
     bootstrap_config_sha256,
+    canonical_morpion_evaluator_family_config,
     load_bootstrap_config,
     load_bootstrap_history,
     load_bootstrap_run_state,
@@ -479,6 +481,31 @@ def test_bootstrap_config_hash_changes_when_evaluator_subset_changes() -> None:
 
     assert config_10.evaluators != config_20.evaluators
     assert bootstrap_config_sha256(config_10) != bootstrap_config_sha256(config_20)
+
+
+def test_bootstrap_config_from_args_resolves_canonical_family_preset() -> None:
+    """Bootstrap config persistence should capture the resolved canonical family specs."""
+    args = MorpionBootstrapArgs(
+        work_dir=Path("/tmp/morpion-family"),
+        evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+    )
+
+    config = bootstrap_config_from_args(args)
+
+    assert config.evaluators == canonical_morpion_evaluator_family_config()
+
+
+def test_bootstrap_config_hash_differs_between_single_evaluator_and_family() -> None:
+    """The canonical family should produce a different config hash than legacy defaults."""
+    single = bootstrap_config_from_args(MorpionBootstrapArgs(work_dir=Path("/tmp/single")))
+    family = bootstrap_config_from_args(
+        MorpionBootstrapArgs(
+            work_dir=Path("/tmp/family"),
+            evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+        )
+    )
+
+    assert bootstrap_config_sha256(single) != bootstrap_config_sha256(family)
 
 
 def test_loop_stores_bootstrap_config_hash_in_metadata(tmp_path: Path) -> None:

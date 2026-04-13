@@ -24,6 +24,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.train impo
     MorpionTrainingArgs,
     train_morpion_regressor,
 )
+from .evaluator_family import morpion_evaluators_config_from_preset
 
 from .history import (
     MorpionBootstrapArtifacts,
@@ -186,6 +187,17 @@ class MissingForcedMorpionEvaluatorBundleError(ValueError):
         )
 
 
+class ConflictingMorpionEvaluatorConfigurationError(ValueError):
+    """Raised when bootstrap args specify both explicit config and a family preset."""
+
+    def __init__(self) -> None:
+        """Initialize the ambiguous-evaluator-configuration error."""
+        super().__init__(
+            "Morpion bootstrap args cannot specify both `evaluators_config` and "
+            "`evaluator_family_preset`; choose one configuration path."
+        )
+
+
 @dataclass(frozen=True, slots=True)
 class MorpionEvaluatorSpec:
     """Training spec for one named Morpion evaluator."""
@@ -257,11 +269,21 @@ class MorpionBootstrapArgs:
     model_kind: str = "linear"
     hidden_dim: int | None = None
     evaluators_config: MorpionEvaluatorsConfig | None = None
+    evaluator_family_preset: str | None = None
 
     def resolved_evaluators_config(self) -> MorpionEvaluatorsConfig:
         """Resolve the explicit or legacy single-evaluator config."""
+        if (
+            self.evaluators_config is not None
+            and self.evaluator_family_preset is not None
+        ):
+            raise ConflictingMorpionEvaluatorConfigurationError
         if self.evaluators_config is not None:
             return self.evaluators_config
+        if self.evaluator_family_preset is not None:
+            return morpion_evaluators_config_from_preset(
+                self.evaluator_family_preset
+            )
         hidden_sizes = None if self.hidden_dim is None else (self.hidden_dim,)
         default_spec = MorpionEvaluatorSpec(
             name="default",

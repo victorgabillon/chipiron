@@ -53,11 +53,64 @@ MORPION_CANONICAL_FEATURE_NAMES: Final[tuple[str, ...]] = (
     "largest_occupied_component_size",
 )
 
+# Smaller curated subsets emphasize progress, mobility, and the strongest legal
+# near-completion signals before adding richer geometry and playable-cell detail.
+HANDCRAFTED_5_CORE_FEATURE_NAMES: Final[tuple[str, ...]] = (
+    "moves",
+    "legal_action_count",
+    "num_distinct_playable_cells",
+    "segments_4_present_1_missing_legal",
+    "frontier_cells_in_any_legal_4p1m_segment",
+)
+
+HANDCRAFTED_10_CORE_FEATURE_NAMES: Final[tuple[str, ...]] = (
+    "moves",
+    "num_points",
+    "point_density_in_bbox",
+    "legal_action_count",
+    "legal_actions_dir_0",
+    "legal_actions_dir_1",
+    "legal_actions_dir_2",
+    "legal_actions_dir_3",
+    "segments_4_present_1_missing_legal",
+    "frontier_cells_in_any_legal_4p1m_segment",
+)
+
+HANDCRAFTED_20_CORE_FEATURE_NAMES: Final[tuple[str, ...]] = (
+    "moves",
+    "num_points",
+    "num_used_unit_segments",
+    "bbox_width",
+    "bbox_height",
+    "bbox_area",
+    "point_density_in_bbox",
+    "legal_action_count",
+    "legal_actions_dir_0",
+    "legal_actions_dir_1",
+    "legal_actions_dir_2",
+    "legal_actions_dir_3",
+    "num_distinct_playable_cells",
+    "mean_legal_actions_per_playable_cell",
+    "max_legal_actions_per_playable_cell",
+    "playable_cells_with_1_action",
+    "playable_cells_with_2_actions",
+    "playable_cells_with_ge_3_actions",
+    "segments_4_present_1_missing_legal",
+    "frontier_cells_in_any_legal_4p1m_segment",
+)
+
 _FEATURE_SUBSET_REGISTRY: Final[dict[str, tuple[str, ...]]] = {
     DEFAULT_MORPION_FEATURE_SUBSET_NAME: MORPION_CANONICAL_FEATURE_NAMES,
+    "handcrafted_5_core": HANDCRAFTED_5_CORE_FEATURE_NAMES,
+    "handcrafted_10_core": HANDCRAFTED_10_CORE_FEATURE_NAMES,
+    "handcrafted_20_core": HANDCRAFTED_20_CORE_FEATURE_NAMES,
     "full": MORPION_CANONICAL_FEATURE_NAMES,
     "full_41": MORPION_CANONICAL_FEATURE_NAMES,
 }
+
+MORPION_BUILTIN_FEATURE_SUBSET_NAMES: Final[tuple[str, ...]] = tuple(
+    _FEATURE_SUBSET_REGISTRY
+)
 
 
 class InvalidMorpionFeatureSubsetError(ValueError):
@@ -243,6 +296,14 @@ def subset_indices(
     return tuple(index_by_name[feature_name] for feature_name in subset.feature_names)
 
 
+def morpion_builtin_feature_subsets_by_name() -> dict[str, MorpionFeatureSubset]:
+    """Return all built-in named Morpion feature subsets."""
+    return {
+        name: morpion_feature_subset_from_name(name)
+        for name in MORPION_BUILTIN_FEATURE_SUBSET_NAMES
+    }
+
+
 def _validate_ordered_feature_names(
     feature_names: Sequence[str],
     *,
@@ -272,8 +333,12 @@ def _validate_ordered_feature_names(
 
 __all__ = [
     "DEFAULT_MORPION_FEATURE_SUBSET_NAME",
+    "HANDCRAFTED_10_CORE_FEATURE_NAMES",
+    "HANDCRAFTED_20_CORE_FEATURE_NAMES",
+    "HANDCRAFTED_5_CORE_FEATURE_NAMES",
     "InconsistentMorpionFeatureSubsetDefinitionError",
     "InvalidMorpionFeatureSubsetError",
+    "MORPION_BUILTIN_FEATURE_SUBSET_NAMES",
     "MORPION_CANONICAL_FEATURE_NAMES",
     "MORPION_FEATURE_SCHEMA",
     "MorpionFeatureSchema",
@@ -281,6 +346,7 @@ __all__ = [
     "UnknownMorpionFeatureSubsetError",
     "full_morpion_feature_schema",
     "full_morpion_feature_subset",
+    "morpion_builtin_feature_subsets_by_name",
     "morpion_feature_subset_from_feature_names",
     "morpion_feature_subset_from_name",
     "resolve_morpion_feature_subset",

@@ -14,8 +14,12 @@ from .bundle import (
 )
 from .feature_schema import (
     DEFAULT_MORPION_FEATURE_SUBSET_NAME,
+    HANDCRAFTED_10_CORE_FEATURE_NAMES,
+    HANDCRAFTED_20_CORE_FEATURE_NAMES,
+    HANDCRAFTED_5_CORE_FEATURE_NAMES,
     InconsistentMorpionFeatureSubsetDefinitionError,
     InvalidMorpionFeatureSubsetError,
+    MORPION_BUILTIN_FEATURE_SUBSET_NAMES,
     MORPION_CANONICAL_FEATURE_NAMES,
     MORPION_FEATURE_SCHEMA,
     MorpionFeatureSchema,
@@ -52,8 +56,12 @@ from .state_to_tensor import (
 
 __all__ = [
     "DEFAULT_MORPION_FEATURE_SUBSET_NAME",
+    "HANDCRAFTED_10_CORE_FEATURE_NAMES",
+    "HANDCRAFTED_20_CORE_FEATURE_NAMES",
+    "HANDCRAFTED_5_CORE_FEATURE_NAMES",
     "InconsistentMorpionFeatureSubsetDefinitionError",
     "InvalidMorpionFeatureSubsetError",
+    "MORPION_BUILTIN_FEATURE_SUBSET_NAMES",
     "MORPION_CANONICAL_FEATURE_NAMES",
     "MORPION_FEATURE_SCHEMA",
     "MORPION_INPUT_DIM",
