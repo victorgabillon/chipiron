@@ -561,6 +561,12 @@ def run_one_bootstrap_cycle(
         force_evaluator=resolved_control.force_evaluator,
         evaluator_names=resolved_evaluators_config.evaluators,
     )
+    cycle_index = run_state.cycle_index + 1
+    LOGGER.info(
+        "[cycle] starting cycle=%s generation=%s",
+        cycle_index,
+        run_state.generation,
+    )
     history_recorder = MorpionBootstrapHistoryRecorder(paths.history_paths())
     resolved_active_model = _resolve_active_model_bundle(
         paths=paths,
@@ -576,14 +582,18 @@ def run_one_bootstrap_cycle(
         effective_runtime_config,
     )
     growth_started_at = time.perf_counter()
-    LOGGER.info("[growth] Starting tree growth phase")
+    LOGGER.info("[growth] entering growth phase")
     tree_size_before_growth = runner.current_tree_size()
     runner.grow(args.max_growth_steps_per_cycle)
     growth_duration_s = time.perf_counter() - growth_started_at
     current_tree_size = runner.current_tree_size()
     LOGGER.info(
+        "[growth] leaving growth phase duration=%.3fs",
+        growth_duration_s,
+    )
+    LOGGER.info(
         "[growth] cycle=%s nodes_before=%s nodes_after=%s delta=%s",
-        run_state.cycle_index + 1,
+        cycle_index,
         tree_size_before_growth,
         current_tree_size,
         current_tree_size - tree_size_before_growth,
@@ -593,9 +603,9 @@ def run_one_bootstrap_cycle(
         current_tree_size=current_tree_size,
     )
     current_time = time.time() if now_unix_s is None else now_unix_s
-    cycle_index = run_state.cycle_index + 1
     timestamp_utc = _timestamp_utc_from_unix_s(current_time)
 
+    LOGGER.info("[save] evaluating save trigger")
     save_triggered = should_save_progress(
         current_tree_size=current_tree_size,
         tree_size_at_last_save=run_state.tree_size_at_last_save,
@@ -615,7 +625,7 @@ def run_one_bootstrap_cycle(
 
     if not save_triggered:
         cycle_duration_s = time.perf_counter() - cycle_started_at
-        LOGGER.info("[save] No save this cycle")
+        LOGGER.info("[save] skipped")
         LOGGER.info(
             "[timing] growth=%.3fs training=%.3fs total_cycle=%.3fs",
             growth_duration_s,
@@ -669,7 +679,7 @@ def run_one_bootstrap_cycle(
         return next_run_state
 
     generation = run_state.generation + 1
-    LOGGER.info("[save] SAVE TRIGGERED reason=%s", save_reason or "unknown")
+    LOGGER.info("[save] triggered reason=%s", save_reason or "unknown")
     tree_snapshot_path = paths.tree_snapshot_path_for_generation(generation)
     runtime_checkpoint_path = paths.runtime_checkpoint_path_for_generation(generation)
     rows_path = paths.rows_path_for_generation(generation)
@@ -684,6 +694,7 @@ def run_one_bootstrap_cycle(
 
     runner.export_training_tree_snapshot(tree_snapshot_path)
     snapshot = load_training_tree_snapshot(tree_snapshot_path)
+    LOGGER.info("[dataset] building rows from snapshot=%s", str(tree_snapshot_path))
     rows = training_tree_snapshot_to_morpion_supervised_rows(
         snapshot,
         require_exact_or_terminal=args.require_exact_or_terminal,
@@ -695,6 +706,10 @@ def run_one_bootstrap_cycle(
     )
     save_morpion_supervised_rows(rows, rows_path)
     num_rows = len(rows.rows)
+    LOGGER.info(
+        "[dataset] rows_built count=%s",
+        num_rows,
+    )
     LOGGER.info(
         "[save] rows=%s tree_size=%s checkpoint=%s",
         num_rows,
@@ -711,11 +726,7 @@ def run_one_bootstrap_cycle(
 
     if num_rows == 0:
         cycle_duration_s = time.perf_counter() - cycle_started_at
-        LOGGER.info(
-            "[train] Skipped reason=%s evaluator=%s",
-            EMPTY_DATASET_TRAINING_SKIPPED_REASON,
-            run_state.active_evaluator_name,
-        )
+        LOGGER.info("[train] skipped reason=%s", EMPTY_DATASET_TRAINING_SKIPPED_REASON)
         LOGGER.info(
             "[timing] growth=%.3fs training=%.3fs total_cycle=%.3fs",
             growth_duration_s,
@@ -778,6 +789,8 @@ def run_one_bootstrap_cycle(
         model_bundle_path = paths.model_bundle_path_for_generation(
             generation, evaluator_name
         )
+        LOGGER.info("[train] evaluator_start name=%s", evaluator_name)
+        evaluator_started_at = time.perf_counter()
         _model, metrics = train_morpion_regressor(
             MorpionTrainingArgs(
                 dataset_file=rows_path,
@@ -797,6 +810,13 @@ def run_one_bootstrap_cycle(
             num_epochs=int(metrics["num_epochs"]),
             num_samples=int(metrics["num_samples"]),
         )
+        evaluator_elapsed_s = time.perf_counter() - evaluator_started_at
+        LOGGER.info(
+            "[train] evaluator_done name=%s final_loss=%s elapsed=%.3fs",
+            evaluator_name,
+            evaluator_metrics[evaluator_name].final_loss,
+            evaluator_elapsed_s,
+        )
         model_bundle_paths[evaluator_name] = paths.relative_to_work_dir(
             model_bundle_path
         )
@@ -806,12 +826,7 @@ def run_one_bootstrap_cycle(
     )
     training_duration_s = time.perf_counter() - training_started_at
     cycle_duration_s = time.perf_counter() - cycle_started_at
-    LOGGER.info(
-        "[train] evaluator_selected=%s rows=%s tree_size=%s",
-        selected_evaluator_name,
-        num_rows,
-        current_tree_size,
-    )
+    LOGGER.info("[train] evaluator_selected name=%s", selected_evaluator_name)
     LOGGER.info(
         "[timing] growth=%.3fs training=%.3fs total_cycle=%.3fs",
         growth_duration_s,

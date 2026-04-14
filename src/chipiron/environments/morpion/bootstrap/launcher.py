@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import shlex
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -36,6 +37,8 @@ from .process_control import (
     register_current_launcher_process,
 )
 from .run_state import MorpionBootstrapRunState, load_bootstrap_run_state
+
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -107,6 +110,7 @@ def run_morpion_bootstrap_experiment(
         )
 
     runner = _build_launcher_runner(startup_status)
+    LOGGER.info("[launcher] entering bootstrap loop")
     return run_morpion_bootstrap_loop(
         startup_status.resolved_bootstrap_args,
         runner,
@@ -375,6 +379,10 @@ def launcher_args_from_cli(argv: Sequence[str] | None = None) -> MorpionBootstra
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the canonical Morpion bootstrap launcher CLI."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s %(message)s",
+    )
     launcher_args = launcher_args_from_cli(argv)
     paths = MorpionBootstrapPaths.from_work_dir(launcher_args.bootstrap_args.work_dir)
     register_current_launcher_process(paths)

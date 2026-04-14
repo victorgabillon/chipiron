@@ -219,10 +219,13 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         resolved_bundle_path = (
             None if model_bundle_path is None else Path(model_bundle_path)
         )
+        LOGGER.info(
+            "[runtime] applying evaluator bundle=%s",
+            "none" if resolved_bundle_path is None else str(resolved_bundle_path),
+        )
         if tree_snapshot_path is None:
             LOGGER.info(
-                "[runtime] create_fresh bundle=%s",
-                None if resolved_bundle_path is None else str(resolved_bundle_path),
+                "[runtime] creating fresh runtime"
             )
             self._runtime = self._create_fresh_runtime(
                 resolved_bundle_path,
@@ -233,9 +236,8 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             return
 
         LOGGER.info(
-            "[runtime] restore_from_checkpoint checkpoint=%s bundle=%s",
+            "[runtime] restoring runtime from checkpoint=%s",
             str(tree_snapshot_path),
-            None if resolved_bundle_path is None else str(resolved_bundle_path),
         )
         runtime = self._load_runtime_from_checkpoint(
             Path(tree_snapshot_path),
@@ -251,6 +253,11 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         """Advance the live runtime by up to ``max_growth_steps`` iterations."""
         runtime = self._require_runtime()
         initial_tree_size = _live_tree_node_count(runtime)
+        LOGGER.info(
+            "[growth] start max_steps=%s initial_tree_size=%s",
+            max_growth_steps,
+            initial_tree_size,
+        )
         steps_executed = 0
         stop_reason = "max_steps_reached"
         for step_index in range(max_growth_steps):
@@ -264,15 +271,15 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             steps_executed += 1
             if steps_executed % GROWTH_LOG_INTERVAL_STEPS == 0:
                 current_tree_size = _live_tree_node_count(runtime)
-                LOGGER.debug(
-                    "[growth] step=%s tree_size=%s (+%s)",
-                    step_index + 1,
+                LOGGER.info(
+                    "[growth] step=%s tree_size=%s delta=%s",
+                    steps_executed,
                     current_tree_size,
                     current_tree_size - initial_tree_size,
                 )
         final_tree_size = _live_tree_node_count(runtime)
         LOGGER.info(
-            "[growth] DONE steps=%s nodes_added=%s final_size=%s stop_reason=%s",
+            "[growth] done steps=%s nodes_added=%s final_size=%s stop_reason=%s",
             steps_executed,
             final_tree_size - initial_tree_size,
             final_tree_size,
@@ -284,9 +291,9 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         runtime = self._require_runtime()
         ordered_nodes = runtime._all_nodes_in_tree_order()
         LOGGER.info(
-            "[export] ordered_nodes=%s output=%s",
-            len(ordered_nodes),
+            "[export] start output=%s nodes=%s",
             str(output_path),
+            len(ordered_nodes),
         )
         def _value_to_scalar(value):
             if value is None:
@@ -302,6 +309,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             backed_up_value_extractor=_value_to_scalar,
         )
         save_training_tree_snapshot(snapshot, output_path)
+        LOGGER.info("[export] done output=%s", str(output_path))
 
     def current_tree_size(self) -> int:
         """Return the number of nodes currently tracked by the live runtime."""
@@ -349,8 +357,14 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         search_args: SearchArgs,
     ) -> object:
         """Restore one live runtime from a persisted checkpoint JSON file."""
+        LOGGER.info(
+            "[checkpoint] loading checkpoint payload from %s",
+            str(tree_snapshot_path),
+        )
         payload = load_morpion_search_checkpoint_payload(tree_snapshot_path)
-        return load_search_from_checkpoint_payload(
+        LOGGER.info("[checkpoint] checkpoint payload loaded")
+        LOGGER.info("[checkpoint] rebuilding runtime from checkpoint")
+        runtime = load_search_from_checkpoint_payload(
             payload,
             state_codec=self._state_codec,
             dynamics=self._dynamics,
@@ -361,6 +375,8 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             state_representation_factory=None,
             node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
         )
+        LOGGER.info("[checkpoint] runtime restored from checkpoint")
+        return runtime
 
     def _build_master_evaluator(
         self,
@@ -388,8 +404,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         )
         elapsed_s = time.perf_counter() - started_at
         LOGGER.info(
-            "[reeval] done bundle=%s elapsed=%.3fs",
-            str(model_bundle_path),
+            "[reeval] done elapsed=%.3fs",
             elapsed_s,
         )
         self._current_evaluator_bundle_path = model_bundle_path
@@ -408,10 +423,11 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             state_codec=self._state_codec,
         )
         output = Path(output_path)
-        LOGGER.info("[checkpoint] save output=%s", str(output))
+        LOGGER.info("[checkpoint] saving runtime checkpoint to %s", str(output))
         output.parent.mkdir(parents=True, exist_ok=True)
         with open(output, "w", encoding="utf-8") as handle:
             json.dump(asdict(payload), handle, indent=2, sort_keys=True)
+        LOGGER.info("[checkpoint] saved runtime checkpoint to %s", str(output))
 
 
 def load_morpion_search_checkpoint_payload(
