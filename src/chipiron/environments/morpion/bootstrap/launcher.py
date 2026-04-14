@@ -91,7 +91,14 @@ def run_morpion_bootstrap_experiment(
     This launcher is the canonical human/operator entrypoint for one real
     Morpion bootstrap experiment backed by the Anemone search runner.
     """
+    LOGGER.info("[launcher] startup_start work_dir=%s", str(launcher_args.work_dir))
     startup_status = _collect_launcher_startup_status(launcher_args)
+    LOGGER.info(
+        "[launcher] startup_done mode=%s evaluators=%s max_cycles=%s",
+        startup_status.run_mode,
+        len(startup_status.resolved_evaluator_names),
+        "none" if launcher_args.max_cycles is None else str(launcher_args.max_cycles),
+    )
     if launcher_args.print_startup_summary:
         print(
             _render_launcher_startup_summary(
@@ -110,7 +117,7 @@ def run_morpion_bootstrap_experiment(
         )
 
     runner = _build_launcher_runner(startup_status)
-    LOGGER.info("[launcher] entering bootstrap loop")
+    LOGGER.info("[launcher] runner_ready")
     return run_morpion_bootstrap_loop(
         startup_status.resolved_bootstrap_args,
         runner,

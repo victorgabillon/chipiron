@@ -219,35 +219,52 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         resolved_bundle_path = (
             None if model_bundle_path is None else Path(model_bundle_path)
         )
-        LOGGER.info(
-            "[runtime] applying evaluator bundle=%s",
-            "none" if resolved_bundle_path is None else str(resolved_bundle_path),
-        )
         if tree_snapshot_path is None:
             LOGGER.info(
-                "[runtime] creating fresh runtime"
+                "[runtime] create_start evaluator_bundle=%s",
+                "none" if resolved_bundle_path is None else str(resolved_bundle_path),
             )
+            started_at = time.perf_counter()
             self._runtime = self._create_fresh_runtime(
                 resolved_bundle_path,
                 search_args=self._args.search_args,
             )
             _apply_runtime_config_to_runtime(self._runtime, resolved_runtime_config)
-            self._current_evaluator_bundle_path = resolved_bundle_path
+            elapsed_s = time.perf_counter() - started_at
+            LOGGER.info("[runtime] create_done elapsed=%.3fs", elapsed_s)
+            if resolved_bundle_path is not None:
+                LOGGER.info("[reeval] skipped reason=fresh_runtime_attach")
+                self._set_runtime_evaluator_from_bundle(
+                    resolved_bundle_path,
+                    reevaluate_tree=False,
+                )
+            else:
+                self._current_evaluator_bundle_path = resolved_bundle_path
             return
 
         LOGGER.info(
-            "[runtime] restoring runtime from checkpoint=%s",
+            "[runtime] restore_start checkpoint=%s evaluator_bundle=%s",
             str(tree_snapshot_path),
+            "none" if resolved_bundle_path is None else str(resolved_bundle_path),
         )
+        started_at = time.perf_counter()
         runtime = self._load_runtime_from_checkpoint(
             Path(tree_snapshot_path),
             search_args=self._args.search_args,
         )
+        elapsed_s = time.perf_counter() - started_at
         self._runtime = runtime
         _apply_runtime_config_to_runtime(runtime, resolved_runtime_config)
+        LOGGER.info("[runtime] restore_done elapsed=%.3fs", elapsed_s)
         self._current_evaluator_bundle_path = None
         if resolved_bundle_path is not None:
-            self._set_runtime_evaluator_from_bundle(resolved_bundle_path)
+            LOGGER.info("[reeval] skipped reason=resume_restore")
+            self._set_runtime_evaluator_from_bundle(
+                resolved_bundle_path,
+                reevaluate_tree=False,
+            )
+        else:
+            LOGGER.info("[runtime] evaluator_attach_skipped reason=no_bundle")
 
     def grow(self, max_growth_steps: int) -> None:
         """Advance the live runtime by up to ``max_growth_steps`` iterations."""
@@ -291,10 +308,11 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         runtime = self._require_runtime()
         ordered_nodes = runtime._all_nodes_in_tree_order()
         LOGGER.info(
-            "[export] start output=%s nodes=%s",
+            "[save] tree_export_start output=%s nodes=%s",
             str(output_path),
             len(ordered_nodes),
         )
+        started_at = time.perf_counter()
         def _value_to_scalar(value):
             if value is None:
                 return None
@@ -309,7 +327,12 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             backed_up_value_extractor=_value_to_scalar,
         )
         save_training_tree_snapshot(snapshot, output_path)
-        LOGGER.info("[export] done output=%s", str(output_path))
+        elapsed_s = time.perf_counter() - started_at
+        LOGGER.info(
+            "[save] tree_export_done output=%s elapsed=%.3fs",
+            str(output_path),
+            elapsed_s,
+        )
 
     def current_tree_size(self) -> int:
         """Return the number of nodes currently tracked by the live runtime."""
@@ -357,13 +380,9 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         search_args: SearchArgs,
     ) -> object:
         """Restore one live runtime from a persisted checkpoint JSON file."""
-        LOGGER.info(
-            "[checkpoint] loading checkpoint payload from %s",
-            str(tree_snapshot_path),
-        )
+        LOGGER.info("[checkpoint] load_start path=%s", str(tree_snapshot_path))
+        started_at = time.perf_counter()
         payload = load_morpion_search_checkpoint_payload(tree_snapshot_path)
-        LOGGER.info("[checkpoint] checkpoint payload loaded")
-        LOGGER.info("[checkpoint] rebuilding runtime from checkpoint")
         runtime = load_search_from_checkpoint_payload(
             payload,
             state_codec=self._state_codec,
@@ -375,7 +394,8 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             state_representation_factory=None,
             node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
         )
-        LOGGER.info("[checkpoint] runtime restored from checkpoint")
+        elapsed_s = time.perf_counter() - started_at
+        LOGGER.info("[checkpoint] load_done path=%s elapsed=%.3fs", str(tree_snapshot_path), elapsed_s)
         return runtime
 
     def _build_master_evaluator(
@@ -392,20 +412,38 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             )
         return load_morpion_evaluator_from_model_bundle(model_bundle_path)
 
-    def _set_runtime_evaluator_from_bundle(self, model_bundle_path: Path) -> None:
-        """Load one bundle, install it into the live runtime, and refresh leaves."""
+    def _set_runtime_evaluator_from_bundle(
+        self,
+        model_bundle_path: Path,
+        *,
+        reevaluate_tree: bool = True,
+    ) -> None:
+        """Load one bundle, install it into the live runtime, and optionally refresh."""
         runtime = self._require_runtime()
-        LOGGER.info("[reeval] start bundle=%s", str(model_bundle_path))
+        LOGGER.info("[runtime] evaluator_attach_start bundle=%s", str(model_bundle_path))
         started_at = time.perf_counter()
         evaluator = load_morpion_evaluator_from_model_bundle(model_bundle_path)
-        runtime.refresh_with_evaluator(
-            evaluator,
-            scope=self._args.reevaluation_scope,
-        )
-        elapsed_s = time.perf_counter() - started_at
+        if reevaluate_tree:
+            LOGGER.info("[reeval] start bundle=%s", str(model_bundle_path))
+            reeval_started_at = time.perf_counter()
+            runtime.refresh_with_evaluator(
+                evaluator,
+                scope=self._args.reevaluation_scope,
+            )
+            elapsed_s = time.perf_counter() - reeval_started_at
+            LOGGER.info(
+                "[reeval] done elapsed=%.3fs",
+                elapsed_s,
+            )
+        else:
+            runtime.set_evaluator(evaluator)
+            LOGGER.info("[runtime] evaluator bundle attached without reevaluation")
+        attach_elapsed_s = time.perf_counter() - started_at
         LOGGER.info(
-            "[reeval] done elapsed=%.3fs",
-            elapsed_s,
+            "[runtime] evaluator_attach_done bundle=%s elapsed=%.3fs reevaluate_tree=%s",
+            str(model_bundle_path),
+            attach_elapsed_s,
+            reevaluate_tree,
         )
         self._current_evaluator_bundle_path = model_bundle_path
 
@@ -423,11 +461,13 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             state_codec=self._state_codec,
         )
         output = Path(output_path)
-        LOGGER.info("[checkpoint] saving runtime checkpoint to %s", str(output))
+        LOGGER.info("[checkpoint] save_start path=%s", str(output))
+        started_at = time.perf_counter()
         output.parent.mkdir(parents=True, exist_ok=True)
         with open(output, "w", encoding="utf-8") as handle:
             json.dump(asdict(payload), handle, indent=2, sort_keys=True)
-        LOGGER.info("[checkpoint] saved runtime checkpoint to %s", str(output))
+        elapsed_s = time.perf_counter() - started_at
+        LOGGER.info("[checkpoint] save_done path=%s elapsed=%.3fs", str(output), elapsed_s)
 
 
 def load_morpion_search_checkpoint_payload(

@@ -3,9 +3,11 @@
 
 from __future__ import annotations
 
+import logging
 import sys
 from pathlib import Path
 from types import ModuleType
+from unittest.mock import Mock
 
 import pytest
 
@@ -179,6 +181,40 @@ def test_fresh_runtime_with_evaluator_bundle(tmp_path: Path) -> None:
     assert runner.current_tree_size() >= 1
 
 
+def test_fresh_runtime_attach_with_bundle_skips_reevaluation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Fresh runtime setup should attach the bundle without refreshing the tree."""
+    bundle_path = _make_model_bundle(tmp_path / "bundle")
+    refresh_calls: list[tuple[Path, bool]] = []
+    real_set = anemone_runner_module.AnemoneMorpionSearchRunner._set_runtime_evaluator_from_bundle
+
+    def _patched_set_runtime_evaluator_from_bundle(
+        self: object,
+        model_bundle_path: Path,
+        *,
+        reevaluate_tree: bool = True,
+    ) -> None:
+        refresh_calls.append((model_bundle_path, reevaluate_tree))
+        real_set(self, model_bundle_path, reevaluate_tree=reevaluate_tree)
+
+    monkeypatch.setattr(
+        anemone_runner_module.AnemoneMorpionSearchRunner,
+        "_set_runtime_evaluator_from_bundle",
+        _patched_set_runtime_evaluator_from_bundle,
+    )
+    caplog.set_level(logging.INFO)
+
+    runner = AnemoneMorpionSearchRunner()
+    runner.load_or_create(None, bundle_path)
+
+    assert refresh_calls == [(bundle_path, False)]
+    assert "[reeval] skipped reason=fresh_runtime_attach" in caplog.text
+    assert "[runtime] evaluator bundle attached without reevaluation" in caplog.text
+
+
 def test_checkpoint_roundtrip_restores_and_continues_growth(tmp_path: Path) -> None:
     """The runner should restore a saved tree and continue the same runtime growth."""
     checkpoint_path = tmp_path / "tree_checkpoint.json"
@@ -250,11 +286,12 @@ def test_current_tree_status_reports_live_node_and_expanded_counts() -> None:
     assert status.num_expanded_nodes == expected_num_expanded_nodes
 
 
-def test_restore_with_evaluator_bundle_triggers_reevaluation(
+def test_restore_with_evaluator_bundle_skips_reevaluation(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Restore with a selected evaluator bundle should call the reevaluation path."""
+    """Restore with a selected evaluator bundle should attach without refreshing."""
     checkpoint_path = tmp_path / "tree_checkpoint.json"
     bundle_path = _make_model_bundle(tmp_path / "bundle")
     first_runner = AnemoneMorpionSearchRunner()
@@ -262,28 +299,89 @@ def test_restore_with_evaluator_bundle_triggers_reevaluation(
     first_runner.grow(3)
     first_runner.save_checkpoint(checkpoint_path)
 
-    reevaluation_calls: list[tuple[str, object | None]] = []
-    real_refresh = anemone_runner_module.AnemoneMorpionSearchRunner._set_runtime_evaluator_from_bundle
+    reevaluation_calls: list[tuple[Path, bool]] = []
+    real_refresh = (
+        anemone_runner_module.AnemoneMorpionSearchRunner._set_runtime_evaluator_from_bundle
+    )
 
     def _patched_set_runtime_evaluator_from_bundle(
         self: object,
         model_bundle_path: Path,
+        *,
+        reevaluate_tree: bool = True,
     ) -> None:
-        reevaluation_calls.append(("bundle", model_bundle_path))
-        real_refresh(self, model_bundle_path)
+        reevaluation_calls.append((model_bundle_path, reevaluate_tree))
+        real_refresh(self, model_bundle_path, reevaluate_tree=reevaluate_tree)
 
     monkeypatch.setattr(
         anemone_runner_module.AnemoneMorpionSearchRunner,
         "_set_runtime_evaluator_from_bundle",
         _patched_set_runtime_evaluator_from_bundle,
     )
+    caplog.set_level(logging.INFO)
 
     second_runner = AnemoneMorpionSearchRunner()
     second_runner.load_or_create(checkpoint_path, bundle_path)
     second_runner.grow(2)
 
-    assert reevaluation_calls == [("bundle", bundle_path)]
+    assert reevaluation_calls == [(bundle_path, False)]
+    assert "[reeval] skipped reason=resume_restore" in caplog.text
+    assert "[runtime] evaluator bundle attached without reevaluation" in caplog.text
     assert second_runner.current_tree_size() >= 1
+
+
+def test_explicit_evaluator_change_still_reevaluates_tree(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Explicit evaluator changes should still refresh the configured tree scope."""
+    bundle_path = _make_model_bundle(tmp_path / "bundle")
+    runner = AnemoneMorpionSearchRunner()
+    runtime = Mock()
+    runner._runtime = runtime
+    loaded_evaluator = object()
+    monkeypatch.setattr(
+        anemone_runner_module,
+        "load_morpion_evaluator_from_model_bundle",
+        lambda path: loaded_evaluator,
+    )
+    caplog.set_level(logging.INFO)
+
+    runner._set_runtime_evaluator_from_bundle(bundle_path, reevaluate_tree=True)
+
+    runtime.refresh_with_evaluator.assert_called_once_with(
+        loaded_evaluator,
+        scope=runner._args.reevaluation_scope,
+    )
+    runtime.set_evaluator.assert_not_called()
+    assert "[reeval] start bundle=" in caplog.text
+    assert "[reeval] done elapsed=" in caplog.text
+
+
+def test_attach_evaluator_without_reevaluation_updates_runtime_only(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Attach-only evaluator updates should avoid full tree reevaluation."""
+    bundle_path = _make_model_bundle(tmp_path / "bundle")
+    runner = AnemoneMorpionSearchRunner()
+    runtime = Mock()
+    runner._runtime = runtime
+    loaded_evaluator = object()
+    monkeypatch.setattr(
+        anemone_runner_module,
+        "load_morpion_evaluator_from_model_bundle",
+        lambda path: loaded_evaluator,
+    )
+    caplog.set_level(logging.INFO)
+
+    runner._set_runtime_evaluator_from_bundle(bundle_path, reevaluate_tree=False)
+
+    runtime.set_evaluator.assert_called_once_with(loaded_evaluator)
+    runtime.refresh_with_evaluator.assert_not_called()
+    assert "[runtime] evaluator bundle attached without reevaluation" in caplog.text
 
 
 def test_export_training_snapshot_from_real_runner(tmp_path: Path) -> None:

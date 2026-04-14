@@ -563,7 +563,7 @@ def run_one_bootstrap_cycle(
     )
     cycle_index = run_state.cycle_index + 1
     LOGGER.info(
-        "[cycle] starting cycle=%s generation=%s",
+        "[cycle] start cycle=%s generation=%s",
         cycle_index,
         run_state.generation,
     )
@@ -582,18 +582,13 @@ def run_one_bootstrap_cycle(
         effective_runtime_config,
     )
     growth_started_at = time.perf_counter()
-    LOGGER.info("[growth] entering growth phase")
     tree_size_before_growth = runner.current_tree_size()
     runner.grow(args.max_growth_steps_per_cycle)
     growth_duration_s = time.perf_counter() - growth_started_at
     current_tree_size = runner.current_tree_size()
     LOGGER.info(
-        "[growth] leaving growth phase duration=%.3fs",
+        "[growth] cycle_done elapsed=%.3fs nodes_before=%s nodes_after=%s delta=%s",
         growth_duration_s,
-    )
-    LOGGER.info(
-        "[growth] cycle=%s nodes_before=%s nodes_after=%s delta=%s",
-        cycle_index,
         tree_size_before_growth,
         current_tree_size,
         current_tree_size - tree_size_before_growth,
@@ -605,7 +600,7 @@ def run_one_bootstrap_cycle(
     current_time = time.time() if now_unix_s is None else now_unix_s
     timestamp_utc = _timestamp_utc_from_unix_s(current_time)
 
-    LOGGER.info("[save] evaluating save trigger")
+    LOGGER.info("[save] decision_start")
     save_triggered = should_save_progress(
         current_tree_size=current_tree_size,
         tree_size_at_last_save=run_state.tree_size_at_last_save,
@@ -625,9 +620,10 @@ def run_one_bootstrap_cycle(
 
     if not save_triggered:
         cycle_duration_s = time.perf_counter() - cycle_started_at
-        LOGGER.info("[save] skipped")
+        LOGGER.info("[save] decision_done triggered=false reason=threshold_not_reached")
+        LOGGER.info("[save] skipped reason=threshold_not_reached")
         LOGGER.info(
-            "[timing] growth=%.3fs training=%.3fs total_cycle=%.3fs",
+            "[timing] cycle_done growth=%.3fs training=%.3fs total_cycle=%.3fs",
             growth_duration_s,
             0.0,
             cycle_duration_s,
@@ -676,10 +672,18 @@ def run_one_bootstrap_cycle(
                 ),
             )
         )
+        LOGGER.info(
+            "[cycle] done cycle=%s generation=%s saved=false training=false",
+            cycle_index,
+            next_run_state.generation,
+        )
         return next_run_state
 
     generation = run_state.generation + 1
-    LOGGER.info("[save] triggered reason=%s", save_reason or "unknown")
+    LOGGER.info(
+        "[save] decision_done triggered=true reason=%s",
+        save_reason or "unknown",
+    )
     tree_snapshot_path = paths.tree_snapshot_path_for_generation(generation)
     runtime_checkpoint_path = paths.runtime_checkpoint_path_for_generation(generation)
     rows_path = paths.rows_path_for_generation(generation)
@@ -691,10 +695,13 @@ def run_one_bootstrap_cycle(
         relative_runtime_checkpoint_path = paths.relative_to_work_dir(
             runtime_checkpoint_path
         )
+    else:
+        LOGGER.info("[checkpoint] skipped reason=runner_has_no_save_checkpoint")
 
+    dataset_started_at = time.perf_counter()
+    LOGGER.info("[dataset] build_start snapshot=%s", str(tree_snapshot_path))
     runner.export_training_tree_snapshot(tree_snapshot_path)
     snapshot = load_training_tree_snapshot(tree_snapshot_path)
-    LOGGER.info("[dataset] building rows from snapshot=%s", str(tree_snapshot_path))
     rows = training_tree_snapshot_to_morpion_supervised_rows(
         snapshot,
         require_exact_or_terminal=args.require_exact_or_terminal,
@@ -706,15 +713,12 @@ def run_one_bootstrap_cycle(
     )
     save_morpion_supervised_rows(rows, rows_path)
     num_rows = len(rows.rows)
+    dataset_elapsed_s = time.perf_counter() - dataset_started_at
     LOGGER.info(
-        "[dataset] rows_built count=%s",
+        "[dataset] build_done rows=%s output=%s elapsed=%.3fs",
         num_rows,
-    )
-    LOGGER.info(
-        "[save] rows=%s tree_size=%s checkpoint=%s",
-        num_rows,
-        current_tree_size,
-        relative_runtime_checkpoint_path,
+        str(rows_path),
+        dataset_elapsed_s,
     )
     record_status = resolve_record_status_for_cycle(
         snapshot=snapshot,
@@ -728,8 +732,9 @@ def run_one_bootstrap_cycle(
         cycle_duration_s = time.perf_counter() - cycle_started_at
         LOGGER.info("[train] skipped reason=%s", EMPTY_DATASET_TRAINING_SKIPPED_REASON)
         LOGGER.info(
-            "[timing] growth=%.3fs training=%.3fs total_cycle=%.3fs",
+            "[timing] cycle_done growth=%.3fs dataset=%.3fs training=%.3fs total_cycle=%.3fs",
             growth_duration_s,
+            dataset_elapsed_s,
             0.0,
             cycle_duration_s,
         )
@@ -780,11 +785,21 @@ def run_one_bootstrap_cycle(
                 ),
             )
         )
+        LOGGER.info(
+            "[cycle] done cycle=%s generation=%s saved=true training=false",
+            cycle_index,
+            next_run_state.generation,
+        )
         return next_run_state
 
     evaluator_metrics: dict[str, MorpionEvaluatorMetrics] = {}
     model_bundle_paths: dict[str, str] = {}
     training_started_at = time.perf_counter()
+    LOGGER.info(
+        "[train] start evaluators=%s rows=%s",
+        len(resolved_evaluators_config.evaluators),
+        num_rows,
+    )
     for evaluator_name, spec in resolved_evaluators_config.evaluators.items():
         model_bundle_path = paths.model_bundle_path_for_generation(
             generation, evaluator_name
@@ -826,10 +841,15 @@ def run_one_bootstrap_cycle(
     )
     training_duration_s = time.perf_counter() - training_started_at
     cycle_duration_s = time.perf_counter() - cycle_started_at
-    LOGGER.info("[train] evaluator_selected name=%s", selected_evaluator_name)
     LOGGER.info(
-        "[timing] growth=%.3fs training=%.3fs total_cycle=%.3fs",
+        "[train] selection_done selected=%s policy=lowest_final_loss",
+        selected_evaluator_name,
+    )
+    LOGGER.info("[train] done elapsed=%.3fs", training_duration_s)
+    LOGGER.info(
+        "[timing] cycle_done growth=%.3fs dataset=%.3fs training=%.3fs total_cycle=%.3fs",
         growth_duration_s,
+        dataset_elapsed_s,
         training_duration_s,
         cycle_duration_s,
     )
@@ -877,6 +897,12 @@ def run_one_bootstrap_cycle(
             ),
         )
     )
+    LOGGER.info(
+        "[cycle] done cycle=%s generation=%s saved=true training=true selected_evaluator=%s",
+        cycle_index,
+        next_run_state.generation,
+        selected_evaluator_name,
+    )
     return next_run_state
 
 
@@ -904,15 +930,20 @@ def run_morpion_bootstrap_loop(
     run_state = _with_config_hash_metadata(run_state, config_hash=config_hash)
 
     cycles_run = 0
+    LOGGER.info(
+        "[launcher] loop_start work_dir=%s max_cycles=%s",
+        str(paths.work_dir),
+        "none" if max_cycles is None else str(max_cycles),
+    )
     while max_cycles is None or cycles_run < max_cycles:
         next_cycle_index = run_state.cycle_index + 1
         runner_tree_size, runner_expanded_nodes = _cycle_start_tree_metrics(
             runner=runner,
             run_state=run_state,
         )
-        LOGGER.info("=== Cycle %s START ===", next_cycle_index)
         LOGGER.info(
-            "[cycle] generation=%s tree_size=%s expanded_nodes=%s",
+            "[cycle] prepare cycle=%s generation=%s tree_size=%s expanded_nodes=%s",
+            next_cycle_index,
             run_state.generation,
             runner_tree_size,
             runner_expanded_nodes,
@@ -930,6 +961,7 @@ def run_morpion_bootstrap_loop(
         save_bootstrap_run_state(run_state, paths.run_state_path)
         cycles_run += 1
 
+    LOGGER.info("[launcher] loop_done cycles_run=%s", cycles_run)
     return run_state
 
 
