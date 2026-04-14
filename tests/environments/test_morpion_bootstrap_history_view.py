@@ -102,7 +102,12 @@ def _make_event(
         cycle_index=cycle_index,
         generation=generation,
         timestamp_utc=timestamp_utc,
-        tree=MorpionBootstrapTreeStatus(num_nodes=tree_num_nodes),
+        tree=MorpionBootstrapTreeStatus(
+            num_nodes=tree_num_nodes,
+            min_depth_present=0,
+            max_depth_present=2,
+            depth_node_counts={0: 1, 1: max(tree_num_nodes - 5, 0), 2: 4},
+        ),
         dataset=MorpionBootstrapDatasetStatus(
             num_rows=dataset_num_rows,
             num_samples=dataset_num_rows,
@@ -560,6 +565,8 @@ def test_dashboard_data_bundles_everything(tmp_path: Path) -> None:
 
     assert isinstance(dashboard_data, MorpionBootstrapDashboardData)
     assert dashboard_data.run_summary.num_cycles == 2
+    assert dashboard_data.latest_tree_status is not None
+    assert dashboard_data.latest_tree_status.max_depth_present == 2
     assert dashboard_data.run_summary.latest_record_score == 14
     assert dashboard_data.evaluator_selection_summary.latest_active_evaluator_name == "mlp"
     assert dashboard_data.record_progress_summary.best_score == 14

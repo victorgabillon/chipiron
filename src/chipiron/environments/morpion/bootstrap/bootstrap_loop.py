@@ -1149,6 +1149,9 @@ def _resolve_tree_status(
                 num_expanded_nodes=raw_status.num_expanded_nodes,
                 num_simulations=raw_status.num_simulations,
                 root_visit_count=raw_status.root_visit_count,
+                min_depth_present=raw_status.min_depth_present,
+                max_depth_present=raw_status.max_depth_present,
+                depth_node_counts=dict(raw_status.depth_node_counts),
             )
         if isinstance(raw_status, Mapping):
             return MorpionBootstrapTreeStatus(
@@ -1164,6 +1167,18 @@ def _resolve_tree_status(
                 root_visit_count=_optional_tree_int(
                     raw_status.get("root_visit_count"),
                     field_name="root_visit_count",
+                ),
+                min_depth_present=_optional_tree_int(
+                    raw_status.get("min_depth_present"),
+                    field_name="min_depth_present",
+                ),
+                max_depth_present=_optional_tree_int(
+                    raw_status.get("max_depth_present"),
+                    field_name="max_depth_present",
+                ),
+                depth_node_counts=_optional_tree_int_mapping(
+                    raw_status.get("depth_node_counts"),
+                    field_name="depth_node_counts",
                 ),
             )
         raise TypeError(
@@ -1186,6 +1201,38 @@ def _optional_tree_int(value: object, *, field_name: str) -> int | None:
     raise TypeError(
         f"Morpion bootstrap tree-status field `{field_name}` must be an int or null."
     )
+
+
+def _optional_tree_int_mapping(
+    value: object,
+    *,
+    field_name: str,
+) -> dict[int, int]:
+    """Return one optional int-to-int tree-status mapping or raise clearly."""
+    if value is None:
+        return {}
+    if not isinstance(value, Mapping):
+        raise TypeError(
+            f"Morpion bootstrap tree-status field `{field_name}` must be a mapping."
+        )
+    mapping: dict[int, int] = {}
+    for raw_key, raw_item_value in value.items():
+        if isinstance(raw_key, bool) or not isinstance(raw_key, int | str):
+            raise TypeError(
+                f"Morpion bootstrap tree-status field `{field_name}` must use integer-like keys."
+            )
+        if isinstance(raw_item_value, bool) or not isinstance(raw_item_value, int):
+            raise TypeError(
+                f"Morpion bootstrap tree-status field `{field_name}` must use int values."
+            )
+        try:
+            coerced_key = int(raw_key)
+        except ValueError as exc:
+            raise TypeError(
+                f"Morpion bootstrap tree-status field `{field_name}` must use integer-like keys."
+            ) from exc
+        mapping[coerced_key] = raw_item_value
+    return mapping
 
 
 def _resolve_runtime_restore_path(

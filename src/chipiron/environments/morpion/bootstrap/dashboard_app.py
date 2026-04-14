@@ -38,6 +38,7 @@ from .dashboard_plot import (
     plot_tree_size,
 )
 from .evaluator_family import canonical_morpion_evaluator_names
+from .history import MorpionBootstrapTreeStatus
 from .history_view import build_morpion_bootstrap_dashboard_data
 from .process_control import (
     MorpionBootstrapProcessControlError,
@@ -267,6 +268,12 @@ def run_dashboard_app(work_dir: Path) -> None:
             lambda: plot_evaluator_losses(dashboard_data.evaluator_loss_by_name),
         )
 
+    st.subheader("Tree Structure")
+    _render_tree_structure_section(
+        st=st,
+        tree_status=dashboard_data.latest_tree_status,
+    )
+
     st.subheader("Tree / State Inspector")
     _render_tree_inspector_section(st=st, paths=paths)
 
@@ -418,6 +425,42 @@ def _render_tree_inspector_section(*, st: Any, paths: MorpionBootstrapPaths) -> 
         use_container_width=True,
         hide_index=True,
     )
+
+
+def _render_tree_structure_section(
+    *,
+    st: Any,
+    tree_status: MorpionBootstrapTreeStatus | None,
+) -> None:
+    """Render one compact tree-structure summary with per-depth counts."""
+    if tree_status is None:
+        st.caption("No tree structure has been recorded yet.")
+        return
+
+    summary_columns = st.columns(4)
+    summary_columns[0].metric("Total Nodes", str(tree_status.num_nodes))
+    summary_columns[1].metric(
+        "Expanded Nodes",
+        _format_value(tree_status.num_expanded_nodes),
+    )
+    summary_columns[2].metric("Min Depth", _format_value(tree_status.min_depth_present))
+    summary_columns[3].metric("Max Depth", _format_value(tree_status.max_depth_present))
+
+    rows = _tree_structure_rows(tree_status)
+    if not rows:
+        st.caption("Per-depth node counts are not available yet.")
+        return
+    st.dataframe(rows, use_container_width=True, hide_index=True)
+
+
+def _tree_structure_rows(
+    tree_status: MorpionBootstrapTreeStatus,
+) -> list[dict[str, int]]:
+    """Return one dashboard-friendly per-depth node-count table."""
+    return [
+        {"depth": depth, "node_count": tree_status.depth_node_counts[depth]}
+        for depth in sorted(tree_status.depth_node_counts)
+    ]
 
 
 def _render_tree_inspector_navigation(

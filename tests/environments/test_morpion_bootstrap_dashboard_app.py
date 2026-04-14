@@ -52,6 +52,7 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapPaths,
     MorpionBootstrapRuntimeControl,
     MorpionBootstrapRunState,
+    MorpionBootstrapTreeStatus,
     MorpionEvaluatorsConfig,
     MorpionEvaluatorSpec,
     bootstrap_config_from_args,
@@ -85,6 +86,7 @@ from chipiron.environments.morpion.bootstrap.dashboard_app import (
     _runtime_status_summary,
     _scheduling_status_summary,
     _tree_inspector_child_rows,
+    _tree_structure_rows,
     _tree_branch_limit_input_value,
 )
 from chipiron.environments.morpion.bootstrap.tree_inspector import (
@@ -245,6 +247,25 @@ def test_pending_changes_helper_covers_runtime_control() -> None:
         ),
         applied_control,
     )
+
+
+def test_tree_structure_rows_render_depth_counts_in_order() -> None:
+    """Dashboard tree-structure helper should expose sorted per-depth rows."""
+    rows = _tree_structure_rows(
+        MorpionBootstrapTreeStatus(
+            num_nodes=9,
+            num_expanded_nodes=4,
+            min_depth_present=0,
+            max_depth_present=2,
+            depth_node_counts={2: 3, 0: 1, 1: 5},
+        )
+    )
+
+    assert rows == [
+        {"depth": 0, "node_count": 1},
+        {"depth": 1, "node_count": 5},
+        {"depth": 2, "node_count": 3},
+    ]
 
 
 def test_pending_control_helpers_cover_expected_categories() -> None:

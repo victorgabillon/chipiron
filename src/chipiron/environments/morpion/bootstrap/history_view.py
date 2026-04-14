@@ -10,6 +10,7 @@ from .bootstrap_loop import MorpionBootstrapPaths
 from .history import (
     MorpionBootstrapEvent,
     MorpionBootstrapLatestStatus,
+    MorpionBootstrapTreeStatus,
     MorpionEvaluatorMetrics,
     load_bootstrap_history,
     load_latest_bootstrap_status,
@@ -119,6 +120,7 @@ class MorpionBootstrapDashboardData:
     """Bundled summaries and time series for future dashboard consumption."""
 
     run_summary: MorpionBootstrapRunSummary
+    latest_tree_status: MorpionBootstrapTreeStatus | None
     evaluator_selection_summary: EvaluatorSelectionSummary
     record_progress_summary: MorpionRecordProgressSummary
     tree_num_nodes: tuple[IntTimeSeriesPoint, ...]
@@ -358,6 +360,7 @@ def build_morpion_bootstrap_dashboard_data(
     history = run_view.history
     return MorpionBootstrapDashboardData(
         run_summary=summarize_bootstrap_run(run_view),
+        latest_tree_status=_latest_tree_status(run_view),
         evaluator_selection_summary=summarize_evaluator_selection(history),
         record_progress_summary=summarize_record_progress(history),
         tree_num_nodes=tree_num_nodes_series(history),
@@ -409,6 +412,20 @@ def _latest_tree_num_nodes(run_view: MorpionBootstrapRunView) -> int | None:
         return latest_event.tree.num_nodes
     if run_view.run_state is not None:
         return run_view.run_state.tree_size_at_last_save
+    return None
+
+
+def _latest_tree_status(
+    run_view: MorpionBootstrapRunView,
+) -> MorpionBootstrapTreeStatus | None:
+    """Return the latest known tree-structure status for one run view."""
+    latest_event = _latest_known_event(run_view)
+    if latest_event is not None:
+        return latest_event.tree
+    if run_view.run_state is not None:
+        return MorpionBootstrapTreeStatus(
+            num_nodes=run_view.run_state.tree_size_at_last_save
+        )
     return None
 
 

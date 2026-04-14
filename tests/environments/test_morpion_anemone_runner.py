@@ -48,9 +48,10 @@ if "anemone" not in sys.modules:
 from anemone.training_export import load_training_tree_snapshot
 from anemone.factory import SearchArgs
 from anemone.node_selector.composed.args import ComposedNodeSelectorArgs
+from anemone.node_selector.linoo import LinooArgs
+from anemone.node_selector.node_selector_types import NodeSelectorType
 from anemone.node_selector.opening_instructions import OpeningType
 from anemone.node_selector.priority_check.noop_args import NoPriorityCheckArgs
-from anemone.node_selector.uniform.uniform import UniformArgs
 from anemone.progress_monitor.progress_monitor import TreeBranchLimitArgs
 from anemone.recommender_rule.recommender_rule import AlmostEqualLogistic
 
@@ -96,7 +97,7 @@ def _runner_args_with_tree_branch_limit(
             node_selector=ComposedNodeSelectorArgs(
                 type="Composed",
                 priority=NoPriorityCheckArgs(type="PriorityNoop"),
-                base=UniformArgs(type="Uniform"),
+                base=LinooArgs(type=NodeSelectorType.LINOO),
             ),
             opening_type=OpeningType.ALL_CHILDREN,
             recommender_rule=AlmostEqualLogistic(
@@ -170,6 +171,17 @@ def test_create_fresh_runtime_without_checkpoint() -> None:
     assert runner.current_tree_status().num_nodes == runner.current_tree_size()
 
 
+def test_default_search_args_use_linoo_selector() -> None:
+    """The default Morpion bootstrap runner should use the Linoo selector."""
+    runner = AnemoneMorpionSearchRunner()
+
+    node_selector = runner._args.search_args.node_selector
+
+    assert isinstance(node_selector, ComposedNodeSelectorArgs)
+    assert isinstance(node_selector.base, LinooArgs)
+    assert node_selector.base.type == NodeSelectorType.LINOO
+
+
 def test_fresh_runtime_with_evaluator_bundle(tmp_path: Path) -> None:
     """The runner should create a fresh runtime with a saved Morpion evaluator."""
     bundle_path = _make_model_bundle(tmp_path / "bundle")
@@ -179,6 +191,16 @@ def test_fresh_runtime_with_evaluator_bundle(tmp_path: Path) -> None:
     runner.grow(2)
 
     assert runner.current_tree_size() >= 1
+
+
+def test_load_or_create_logs_selector_family(caplog: pytest.LogCaptureFixture) -> None:
+    """Runner startup logs should make the effective selector family explicit."""
+    caplog.set_level(logging.INFO)
+    runner = AnemoneMorpionSearchRunner()
+
+    runner.load_or_create(None, None)
+
+    assert "[search] selector=linoo opening_type=all_children" in caplog.text.lower()
 
 
 def test_fresh_runtime_attach_with_bundle_skips_reevaluation(
@@ -284,6 +306,23 @@ def test_current_tree_status_reports_live_node_and_expanded_counts() -> None:
     assert runner.current_tree_size() == expected_num_nodes
     assert status.num_nodes == expected_num_nodes
     assert status.num_expanded_nodes == expected_num_expanded_nodes
+
+
+def test_current_tree_status_reports_depth_counts() -> None:
+    """Tree status should include compact per-depth counts from descendants."""
+    runner = AnemoneMorpionSearchRunner(_runner_args_with_tree_branch_limit(4096))
+    runner.load_or_create(
+        None,
+        None,
+        MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=4096),
+    )
+    runner.grow(2)
+    status = runner.current_tree_status()
+
+    assert status.min_depth_present == 0
+    assert status.max_depth_present is not None
+    assert status.depth_node_counts[0] == 1
+    assert sum(status.depth_node_counts.values()) == status.num_nodes
 
 
 def test_restore_with_evaluator_bundle_skips_reevaluation(

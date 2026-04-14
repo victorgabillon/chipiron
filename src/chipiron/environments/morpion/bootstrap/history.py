@@ -51,6 +51,9 @@ class MorpionBootstrapTreeStatus:
     num_expanded_nodes: int | None = None
     num_simulations: int | None = None
     root_visit_count: int | None = None
+    min_depth_present: int | None = None
+    max_depth_present: int | None = None
+    depth_node_counts: dict[int, int] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
@@ -227,6 +230,17 @@ class MalformedMorpionBootstrapHistoryError(TypeError):
         )
 
     @classmethod
+    def invalid_integer_mapping_field(
+        cls,
+        field_name: str,
+    ) -> MalformedMorpionBootstrapHistoryError:
+        """Return the invalid integer-mapping field error."""
+        return cls(
+            f"Morpion bootstrap history field `{field_name}` must be a mapping of "
+            "integer-like keys to integer-like values."
+        )
+
+    @classmethod
     def malformed_history_line(
         cls,
         line_number: int,
@@ -283,6 +297,12 @@ def bootstrap_event_to_dict(event: MorpionBootstrapEvent) -> dict[str, object]:
             "num_expanded_nodes": event.tree.num_expanded_nodes,
             "num_simulations": event.tree.num_simulations,
             "root_visit_count": event.tree.root_visit_count,
+            "min_depth_present": event.tree.min_depth_present,
+            "max_depth_present": event.tree.max_depth_present,
+            "depth_node_counts": {
+                str(depth): count
+                for depth, count in event.tree.depth_node_counts.items()
+            },
         },
         "dataset": {
             "num_rows": event.dataset.num_rows,
@@ -347,6 +367,18 @@ def bootstrap_event_from_dict(data: dict[str, object]) -> MorpionBootstrapEvent:
             root_visit_count=_optional_int(
                 tree_data.get("root_visit_count"),
                 field_name="tree.root_visit_count",
+            ),
+            min_depth_present=_optional_int(
+                tree_data.get("min_depth_present"),
+                field_name="tree.min_depth_present",
+            ),
+            max_depth_present=_optional_int(
+                tree_data.get("max_depth_present"),
+                field_name="tree.max_depth_present",
+            ),
+            depth_node_counts=_int_mapping(
+                tree_data.get("depth_node_counts"),
+                field_name="tree.depth_node_counts",
             ),
         ),
         dataset=MorpionBootstrapDatasetStatus(
@@ -770,6 +802,29 @@ def _string_mapping(value: object, *, field_name: str) -> dict[str, str]:
         )
 
     return {key: cast("str", item_value) for key, item_value in raw_mapping.items()}
+
+
+def _int_mapping(value: object, *, field_name: str) -> dict[int, int]:
+    """Return one integer-like mapping or raise."""
+    if value is None:
+        return {}
+    if not _is_str_key_mapping(value):
+        raise MalformedMorpionBootstrapHistoryError.invalid_integer_mapping_field(
+            field_name
+        )
+    raw_mapping = cast("Mapping[str, object]", value)
+    try:
+        return {
+            _coerce_int(key, field_name=f"{field_name}.key"): _coerce_int(
+                item_value,
+                field_name=f"{field_name}[{key}]",
+            )
+            for key, item_value in raw_mapping.items()
+        }
+    except MalformedMorpionBootstrapHistoryError as exc:
+        raise MalformedMorpionBootstrapHistoryError.invalid_integer_mapping_field(
+            field_name
+        ) from exc
 
 
 def _coerce_int(value: object, *, field_name: str) -> int:

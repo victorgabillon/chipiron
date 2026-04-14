@@ -20,9 +20,10 @@ from anemone.factory import (
     create_tree_and_value_exploration_with_tree_eval_factory,
 )
 from anemone.node_selector.composed.args import ComposedNodeSelectorArgs
+from anemone.node_selector.linoo import LinooArgs
+from anemone.node_selector.node_selector_types import NodeSelectorType
 from anemone.node_selector.opening_instructions import OpeningType
 from anemone.node_selector.priority_check.noop_args import NoPriorityCheckArgs
-from anemone.node_selector.uniform.uniform import UniformArgs
 from anemone.node_evaluation.tree.single_agent.factory import (
     NodeMaxEvaluationFactory,
 )
@@ -56,7 +57,6 @@ from .control import MorpionBootstrapEffectiveRuntimeConfig
 from .history import MorpionBootstrapTreeStatus
 
 LOGGER = logging.getLogger(__name__)
-GROWTH_LOG_INTERVAL_STEPS = 50
 
 
 def _default_search_args() -> SearchArgs:
@@ -65,7 +65,7 @@ def _default_search_args() -> SearchArgs:
         node_selector=ComposedNodeSelectorArgs(
             type="Composed",
             priority=NoPriorityCheckArgs(type="PriorityNoop"),
-            base=UniformArgs(type="Uniform"),
+            base=LinooArgs(type=NodeSelectorType.LINOO),
         ),
         opening_type=OpeningType.ALL_CHILDREN,
         recommender_rule=AlmostEqualLogistic(
@@ -219,6 +219,11 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         resolved_bundle_path = (
             None if model_bundle_path is None else Path(model_bundle_path)
         )
+        LOGGER.info(
+            "[search] selector=%s opening_type=%s",
+            _selector_family_name(self._args.search_args),
+            self._args.search_args.opening_type,
+        )
         if tree_snapshot_path is None:
             LOGGER.info(
                 "[runtime] create_start evaluator_bundle=%s",
@@ -286,14 +291,20 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 break
             runtime.step()
             steps_executed += 1
-            if steps_executed % GROWTH_LOG_INTERVAL_STEPS == 0:
-                current_tree_size = _live_tree_node_count(runtime)
-                LOGGER.info(
-                    "[growth] step=%s tree_size=%s delta=%s",
-                    steps_executed,
-                    current_tree_size,
-                    current_tree_size - initial_tree_size,
-                )
+            current_tree_size = _live_tree_node_count(runtime)
+            tree = getattr(runtime, "tree", None)
+            branch_count = getattr(tree, "branch_count", None)
+            node_selector = getattr(runtime, "node_selector", None)
+            uniform_selector = getattr(node_selector, "base", node_selector)
+            selected_depth = getattr(uniform_selector, "current_depth_to_expand", None)
+            LOGGER.info(
+                "[growth] step=%s node_count=%s nodes_added=%s branch_count=%s selected_depth=%s",
+                steps_executed,
+                current_tree_size,
+                current_tree_size - initial_tree_size,
+                branch_count if isinstance(branch_count, int) else "unknown",
+                selected_depth if isinstance(selected_depth, int) else "unknown",
+            )
         final_tree_size = _live_tree_node_count(runtime)
         LOGGER.info(
             "[growth] done steps=%s nodes_added=%s final_size=%s stop_reason=%s",
@@ -343,11 +354,16 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         """Return the best available live tree-monitoring status."""
         runtime = self._require_runtime()
         root_node = runtime.tree.root_node
+        depth_node_counts = _runtime_depth_counts(runtime)
+        depths_present = tuple(sorted(depth_node_counts))
         return MorpionBootstrapTreeStatus(
             num_nodes=_live_tree_node_count(runtime),
             num_expanded_nodes=_count_expanded_nodes(runtime),
             num_simulations=_safe_int_attr(root_node, "visit_count"),
             root_visit_count=_safe_int_attr(root_node, "visit_count"),
+            min_depth_present=None if not depths_present else depths_present[0],
+            max_depth_present=None if not depths_present else depths_present[-1],
+            depth_node_counts=depth_node_counts,
         )
 
     def current_runtime_config(self) -> MorpionBootstrapEffectiveRuntimeConfig:
@@ -579,6 +595,37 @@ def _count_expanded_nodes(runtime: Any) -> int:
     )
 
 
+def _runtime_depth_counts(runtime: Any) -> dict[int, int]:
+    """Return live node counts grouped by relative tree depth."""
+    tree = getattr(runtime, "tree", None)
+    if tree is None:
+        raise TypeError("Anemone runtime must expose a live tree.")
+    descendants = getattr(tree, "descendants", None)
+    if descendants is None:
+        return {0: _live_tree_node_count(runtime)}
+
+    root_depth = getattr(tree, "tree_root_tree_depth", 0)
+    counts_by_depth: dict[int, int] = {0: 1}
+    for absolute_depth in descendants:
+        count_at_depth = getattr(
+            descendants,
+            "number_of_descendants_at_tree_depth",
+            {},
+        ).get(absolute_depth)
+        if not isinstance(count_at_depth, int):
+            count_at_depth = len(descendants[absolute_depth])
+        counts_by_depth[int(absolute_depth) - int(root_depth)] = count_at_depth
+    return counts_by_depth
+
+
+def _selector_family_name(search_args: SearchArgs) -> str:
+    """Return the effective selector family name for concise logging."""
+    node_selector = search_args.node_selector
+    base_selector = getattr(node_selector, "base", node_selector)
+    selector_type = getattr(base_selector, "type", "unknown")
+    return str(selector_type).lower()
+
+
 def _runtime_can_step(runtime: Any) -> bool:
     """Return whether the live runtime can still perform a structural search step."""
     stopping_criterion = getattr(runtime, "stopping_criterion", None)
@@ -608,6 +655,14 @@ def _runtime_stop_reason(runtime: Any) -> str:
     tree = getattr(runtime, "tree", None)
     if callable(should_we_continue) and tree is not None:
         if not bool(should_we_continue(tree=tree)):
+            branch_count = getattr(tree, "branch_count", None)
+            tree_branch_limit = getattr(stopping_criterion, "tree_branch_limit", None)
+            if isinstance(branch_count, int) and isinstance(tree_branch_limit, int):
+                LOGGER.info(
+                    "[growth] stopping_criterion metric=%s limit=%s",
+                    branch_count,
+                    tree_branch_limit,
+                )
             return "stopping_criterion_reached"
 
     node_selector = getattr(runtime, "node_selector", None)
