@@ -47,6 +47,10 @@ def _render_run_summary(data: MorpionBootstrapDashboardData) -> str:
         summary.latest_record_score,
         summary.latest_record_total_points,
     )
+    latest_frontier = _format_latest_record(
+        summary.latest_frontier_score,
+        summary.latest_frontier_total_points,
+    )
     return "\n".join(
         (
             "=== Morpion Bootstrap Run Summary ===",
@@ -55,7 +59,10 @@ def _render_run_summary(data: MorpionBootstrapDashboardData) -> str:
             f"(train: {summary.num_train_cycles}, no-train: {summary.num_no_train_cycles})",
             f"latest generation: {_format_optional_value(summary.latest_generation)}",
             f"latest tree size: {_format_optional_value(summary.latest_tree_num_nodes)}",
-            f"latest record: {latest_record}",
+            f"latest certified record: {latest_record}",
+            f"latest frontier best: {latest_frontier}",
+            "latest frontier source: "
+            f"{_format_optional_value(summary.latest_frontier_source)}",
             f"latest evaluator: {_format_optional_value(summary.latest_active_evaluator_name)}",
         )
     )
@@ -95,7 +102,7 @@ def _render_record_progress_summary(data: MorpionBootstrapDashboardData) -> str:
     best_line = _format_best_record(summary.best_score, summary.first_cycle_reaching_best)
     return "\n".join(
         (
-            "=== Record Progress ===",
+            "=== Certified Record Progress ===",
             f"latest: {_format_optional_value(summary.latest_score)}",
             f"best: {best_line}",
         )

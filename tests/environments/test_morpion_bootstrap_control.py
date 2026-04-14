@@ -106,7 +106,7 @@ def _make_training_snapshot(
         state_ref_payload=_make_morpion_payload(),
         direct_value_scalar=target_value / 2.0,
         backed_up_value_scalar=target_value,
-        is_terminal=False,
+        is_terminal=True,
         is_exact=True,
         over_event_label=None,
         visit_count=7,

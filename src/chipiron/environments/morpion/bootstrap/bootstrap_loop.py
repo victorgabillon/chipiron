@@ -64,9 +64,13 @@ from .control import (
     load_bootstrap_control,
 )
 from .record_status import (
+    MorpionBootstrapFrontierStatus,
     MorpionBootstrapRecordStatus,
+    carried_forward_morpion_frontier_status,
     default_morpion_record_status,
     morpion_bootstrap_experiment_metadata,
+    persist_certified_leaderboard_candidates,
+    resolve_frontier_status_for_cycle,
     resolve_record_status_for_cycle,
 )
 from .run_state import (
@@ -463,6 +467,7 @@ def build_bootstrap_event(
     dataset_num_rows: int | None,
     dataset_num_samples: int | None,
     training_triggered: bool,
+    frontier_status: MorpionBootstrapFrontierStatus | None = None,
     evaluator_metrics: Mapping[str, MorpionEvaluatorMetrics] | None = None,
     model_bundle_paths: Mapping[str, str] | None = None,
     record_status: MorpionBootstrapRecordStatus | None = None,
@@ -484,6 +489,7 @@ def build_bootstrap_event(
         record=default_morpion_record_status()
         if record_status is None
         else record_status,
+        frontier=carried_forward_morpion_frontier_status(frontier_status),
         artifacts=MorpionBootstrapArtifacts(
             tree_snapshot_path=tree_snapshot_path,
             rows_path=rows_path,
@@ -597,6 +603,10 @@ def run_one_bootstrap_cycle(
         runner,
         current_tree_size=current_tree_size,
     )
+    frontier_status = resolve_frontier_status_for_cycle(
+        snapshot=None,
+        previous_frontier_status=run_state.latest_frontier_status,
+    )
     current_time = time.time() if now_unix_s is None else now_unix_s
     timestamp_utc = _timestamp_utc_from_unix_s(current_time)
 
@@ -641,6 +651,7 @@ def run_one_bootstrap_cycle(
             last_save_unix_s=run_state.last_save_unix_s,
             latest_runtime_checkpoint_path=run_state.latest_runtime_checkpoint_path,
             latest_record_status=run_state.latest_record_status,
+            latest_frontier_status=run_state.latest_frontier_status,
             metadata=_next_metadata(
                 run_state.metadata,
                 relative_runtime_checkpoint_path=None,
@@ -659,6 +670,7 @@ def run_one_bootstrap_cycle(
                 dataset_num_rows=None,
                 dataset_num_samples=None,
                 training_triggered=False,
+                frontier_status=frontier_status,
                 record_status=resolve_record_status_for_cycle(
                     snapshot=None,
                     previous_record_status=run_state.latest_record_status,
@@ -724,6 +736,10 @@ def run_one_bootstrap_cycle(
         snapshot=snapshot,
         previous_record_status=run_state.latest_record_status,
     )
+    frontier_status = resolve_frontier_status_for_cycle(
+        snapshot=snapshot,
+        previous_frontier_status=run_state.latest_frontier_status,
+    )
 
     relative_tree_snapshot_path = paths.relative_to_work_dir(tree_snapshot_path)
     relative_rows_path = paths.relative_to_work_dir(rows_path)
@@ -761,6 +777,7 @@ def run_one_bootstrap_cycle(
             last_save_unix_s=current_time,
             latest_runtime_checkpoint_path=relative_runtime_checkpoint_path,
             latest_record_status=record_status,
+            latest_frontier_status=frontier_status,
             metadata=next_metadata,
         )
         history_recorder.record(
@@ -774,6 +791,7 @@ def run_one_bootstrap_cycle(
                 dataset_num_rows=num_rows,
                 dataset_num_samples=num_rows,
                 training_triggered=False,
+                frontier_status=frontier_status,
                 record_status=record_status,
                 metadata=_build_event_metadata(
                     active_evaluator_name=next_run_state.active_evaluator_name,
@@ -846,6 +864,13 @@ def run_one_bootstrap_cycle(
         selected_evaluator_name,
     )
     LOGGER.info("[train] done elapsed=%.3fs", training_duration_s)
+    persist_certified_leaderboard_candidates(
+        snapshot=snapshot,
+        run_work_dir=paths.work_dir,
+        generation=generation,
+        cycle_index=cycle_index,
+        timestamp_utc=timestamp_utc,
+    )
     LOGGER.info(
         "[timing] cycle_done growth=%.3fs dataset=%.3fs training=%.3fs total_cycle=%.3fs",
         growth_duration_s,
@@ -871,6 +896,7 @@ def run_one_bootstrap_cycle(
         last_save_unix_s=current_time,
         latest_runtime_checkpoint_path=relative_runtime_checkpoint_path,
         latest_record_status=record_status,
+        latest_frontier_status=frontier_status,
         metadata=next_metadata,
     )
     history_recorder.record(
@@ -884,6 +910,7 @@ def run_one_bootstrap_cycle(
             dataset_num_rows=len(rows.rows),
             dataset_num_samples=len(rows.rows),
             training_triggered=True,
+            frontier_status=frontier_status,
             evaluator_metrics=evaluator_metrics,
             model_bundle_paths=model_bundle_paths,
             record_status=record_status,
@@ -1328,6 +1355,7 @@ def _with_config_hash_metadata(
         last_save_unix_s=run_state.last_save_unix_s,
         latest_runtime_checkpoint_path=run_state.latest_runtime_checkpoint_path,
         latest_record_status=run_state.latest_record_status,
+        latest_frontier_status=run_state.latest_frontier_status,
         metadata=next_metadata,
     )
 

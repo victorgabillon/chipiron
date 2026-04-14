@@ -13,7 +13,9 @@ from .record_status import (
     MORPION_BOOTSTRAP_INITIAL_PATTERN,
     MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
     MORPION_BOOTSTRAP_VARIANT,
+    MorpionBootstrapFrontierStatus,
     MorpionBootstrapRecordStatus,
+    default_morpion_frontier_status,
     default_morpion_record_status,
 )
 
@@ -104,6 +106,9 @@ class MorpionBootstrapEvent:
     )
     record: MorpionBootstrapRecordStatus = field(
         default_factory=default_morpion_record_status
+    )
+    frontier: MorpionBootstrapFrontierStatus = field(
+        default_factory=default_morpion_frontier_status
     )
     artifacts: MorpionBootstrapArtifacts = field(
         default_factory=lambda: MorpionBootstrapArtifacts(
@@ -310,6 +315,7 @@ def bootstrap_event_to_dict(event: MorpionBootstrapEvent) -> dict[str, object]:
         },
         "training": {"triggered": event.training.triggered},
         "record": _record_status_to_dict(event.record),
+        "frontier": _frontier_status_to_dict(event.frontier),
         "artifacts": {
             "tree_snapshot_path": event.artifacts.tree_snapshot_path,
             "rows_path": event.artifacts.rows_path,
@@ -335,6 +341,7 @@ def bootstrap_event_from_dict(data: dict[str, object]) -> MorpionBootstrapEvent:
         section_name="training",
     )
     record_data = _require_section_mapping(data.get("record"), section_name="record")
+    frontier_data = data.get("frontier")
     artifacts_data = _require_section_mapping(
         data.get("artifacts"),
         section_name="artifacts",
@@ -398,6 +405,11 @@ def bootstrap_event_from_dict(data: dict[str, object]) -> MorpionBootstrapEvent:
             )
         ),
         record=_record_status_from_dict(record_data),
+        frontier=default_morpion_frontier_status()
+        if frontier_data is None
+        else _frontier_status_from_dict(
+            _require_section_mapping(frontier_data, section_name="frontier")
+        ),
         artifacts=MorpionBootstrapArtifacts(
             tree_snapshot_path=_optional_str(
                 artifacts_data.get("tree_snapshot_path"),
@@ -465,6 +477,7 @@ def _record_status_to_dict(
         "current_best_moves_since_start": status.current_best_moves_since_start,
         "current_best_total_points": status.current_best_total_points,
         "current_best_is_exact": status.current_best_is_exact,
+        "current_best_is_terminal": status.current_best_is_terminal,
         "current_best_source": status.current_best_source,
     }
 
@@ -501,6 +514,7 @@ def _record_status_from_dict(
                     MORPION_BOOTSTRAP_INITIAL_POINT_COUNT + legacy_moves_since_start
                 ),
                 current_best_is_exact=None,
+                current_best_is_terminal=None,
                 current_best_source="legacy_record_current_migrated",
             )
 
@@ -532,12 +546,75 @@ def _record_status_from_dict(
             data.get("current_best_is_exact"),
             field_name="record.current_best_is_exact",
         ),
+        current_best_is_terminal=_optional_bool(
+            data.get("current_best_is_terminal"),
+            field_name="record.current_best_is_terminal",
+        ),
         current_best_source=_optional_str(
             data.get(
                 "current_best_source",
                 "legacy_record_current_unmapped" if uses_legacy_current else None,
             ),
             field_name="record.current_best_source",
+        ),
+    )
+
+
+def _frontier_status_to_dict(
+    status: MorpionBootstrapFrontierStatus,
+) -> dict[str, object]:
+    """Serialize one structured Morpion frontier status to JSON-friendly data."""
+    return {
+        "variant": status.variant,
+        "initial_pattern": status.initial_pattern,
+        "initial_point_count": status.initial_point_count,
+        "current_best_moves_since_start": status.current_best_moves_since_start,
+        "current_best_total_points": status.current_best_total_points,
+        "current_best_is_exact": status.current_best_is_exact,
+        "current_best_is_terminal": status.current_best_is_terminal,
+        "current_best_source": status.current_best_source,
+    }
+
+
+def _frontier_status_from_dict(
+    data: dict[str, object],
+) -> MorpionBootstrapFrontierStatus:
+    """Deserialize one structured Morpion frontier status from JSON-friendly data."""
+    return MorpionBootstrapFrontierStatus(
+        variant=_optional_str(
+            data.get("variant", MORPION_BOOTSTRAP_VARIANT),
+            field_name="frontier.variant",
+        ),
+        initial_pattern=_optional_str(
+            data.get("initial_pattern", MORPION_BOOTSTRAP_INITIAL_PATTERN),
+            field_name="frontier.initial_pattern",
+        ),
+        initial_point_count=_optional_int(
+            data.get(
+                "initial_point_count",
+                MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
+            ),
+            field_name="frontier.initial_point_count",
+        ),
+        current_best_moves_since_start=_optional_int(
+            data.get("current_best_moves_since_start"),
+            field_name="frontier.current_best_moves_since_start",
+        ),
+        current_best_total_points=_optional_int(
+            data.get("current_best_total_points"),
+            field_name="frontier.current_best_total_points",
+        ),
+        current_best_is_exact=_optional_bool(
+            data.get("current_best_is_exact"),
+            field_name="frontier.current_best_is_exact",
+        ),
+        current_best_is_terminal=_optional_bool(
+            data.get("current_best_is_terminal"),
+            field_name="frontier.current_best_is_terminal",
+        ),
+        current_best_source=_optional_str(
+            data.get("current_best_source"),
+            field_name="frontier.current_best_source",
         ),
     )
 

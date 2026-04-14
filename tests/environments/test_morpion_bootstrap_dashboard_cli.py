@@ -104,7 +104,8 @@ def _make_event(
             current_best_moves_since_start=record_score,
             current_best_total_points=total_points,
             current_best_is_exact=True if record_score is not None else None,
-            current_best_source="snapshot_exact_node" if record_score is not None else None,
+            current_best_is_terminal=True if record_score is not None else None,
+            current_best_source="certified_terminal_leaf" if record_score is not None else None,
         ),
         artifacts=MorpionBootstrapArtifacts(
             tree_snapshot_path=None,

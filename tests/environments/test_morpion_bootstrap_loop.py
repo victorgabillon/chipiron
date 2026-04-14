@@ -130,7 +130,7 @@ def _make_training_snapshot(
         state_ref_payload=_make_morpion_payload(),
         direct_value_scalar=target_value / 2.0,
         backed_up_value_scalar=target_value,
-        is_terminal=False,
+        is_terminal=True,
         is_exact=True,
         over_event_label=None,
         visit_count=7,
@@ -337,6 +337,7 @@ def test_run_state_round_trip(tmp_path: Path) -> None:
             current_best_moves_since_start=19,
             current_best_total_points=55,
             current_best_is_exact=False,
+            current_best_is_terminal=False,
             current_best_source="snapshot_nonterminal_node",
         ),
         metadata={"note": "checkpoint"},
@@ -472,7 +473,8 @@ def test_run_one_cycle_without_save_does_not_train(tmp_path: Path) -> None:
             current_best_moves_since_start=12,
             current_best_total_points=48,
             current_best_is_exact=True,
-            current_best_source="snapshot_exact_node",
+            current_best_is_terminal=True,
+            current_best_source="certified_terminal_leaf",
         ),
     )
 
@@ -499,7 +501,8 @@ def test_run_one_cycle_without_save_does_not_train(tmp_path: Path) -> None:
         current_best_moves_since_start=12,
         current_best_total_points=48,
         current_best_is_exact=True,
-        current_best_source="snapshot_exact_node",
+        current_best_is_terminal=True,
+        current_best_source="certified_terminal_leaf",
     )
     assert runner.export_calls == []
     assert (
@@ -552,7 +555,8 @@ def test_run_one_cycle_with_save_updates_artifacts(tmp_path: Path) -> None:
         current_best_moves_since_start=1,
         current_best_total_points=37,
         current_best_is_exact=True,
-        current_best_source="snapshot_exact_node",
+        current_best_is_terminal=True,
+        current_best_source="certified_terminal_leaf",
     )
     assert paths.resolve_work_dir_path(next_state.latest_tree_snapshot_path).is_file()
     assert paths.resolve_work_dir_path(next_state.latest_rows_path).is_file()
@@ -612,7 +616,8 @@ def test_run_one_cycle_with_multiple_evaluators_selects_lowest_loss(
         current_best_moves_since_start=1,
         current_best_total_points=37,
         current_best_is_exact=True,
-        current_best_source="snapshot_exact_node",
+        current_best_is_terminal=True,
+        current_best_source="certified_terminal_leaf",
     )
     assert paths.resolve_work_dir_path("models/generation_000001/linear").is_dir()
     assert paths.resolve_work_dir_path("models/generation_000001/mlp").is_dir()

@@ -9,13 +9,18 @@ from pathlib import Path
 from .bootstrap_loop import MorpionBootstrapPaths
 from .history import (
     MorpionBootstrapEvent,
+    MorpionBootstrapFrontierStatus,
     MorpionBootstrapLatestStatus,
     MorpionBootstrapTreeStatus,
     MorpionEvaluatorMetrics,
     load_bootstrap_history,
     load_latest_bootstrap_status,
 )
-from .record_status import current_record_score
+from .record_status import (
+    MorpionBootstrapRecordStatus,
+    current_frontier_score,
+    current_record_score,
+)
 from .run_state import MorpionBootstrapRunState, load_bootstrap_run_state
 
 
@@ -42,6 +47,9 @@ class MorpionBootstrapRunSummary:
     latest_tree_num_nodes: int | None
     latest_record_score: int | None
     latest_record_total_points: int | None
+    latest_frontier_score: int | None
+    latest_frontier_total_points: int | None
+    latest_frontier_source: str | None
     latest_timestamp_utc: str | None
 
 
@@ -121,6 +129,8 @@ class MorpionBootstrapDashboardData:
 
     run_summary: MorpionBootstrapRunSummary
     latest_tree_status: MorpionBootstrapTreeStatus | None
+    latest_certified_record_status: MorpionBootstrapRecordStatus | None
+    latest_frontier_status: MorpionBootstrapFrontierStatus | None
     evaluator_selection_summary: EvaluatorSelectionSummary
     record_progress_summary: MorpionRecordProgressSummary
     tree_num_nodes: tuple[IntTimeSeriesPoint, ...]
@@ -159,11 +169,12 @@ def summarize_bootstrap_run(
 
     num_cycles = len(history)
     num_train_cycles = sum(1 for event in history if event.training.triggered)
-    latest_record_status = (
-        None if latest_event is None else latest_event.record
-    )
+    latest_record_status = None if latest_event is None else latest_event.record
     if latest_record_status is None and latest_run_state is not None:
         latest_record_status = latest_run_state.latest_record_status
+    latest_frontier_status = None if latest_event is None else latest_event.frontier
+    if latest_frontier_status is None and latest_run_state is not None:
+        latest_frontier_status = latest_run_state.latest_frontier_status
 
     return MorpionBootstrapRunSummary(
         num_cycles=num_cycles,
@@ -179,6 +190,15 @@ def summarize_bootstrap_run(
         latest_record_total_points=None
         if latest_record_status is None
         else latest_record_status.current_best_total_points,
+        latest_frontier_score=None
+        if latest_frontier_status is None
+        else current_frontier_score(latest_frontier_status),
+        latest_frontier_total_points=None
+        if latest_frontier_status is None
+        else latest_frontier_status.current_best_total_points,
+        latest_frontier_source=None
+        if latest_frontier_status is None
+        else latest_frontier_status.current_best_source,
         latest_timestamp_utc=None if latest_event is None else latest_event.timestamp_utc,
     )
 
@@ -361,6 +381,8 @@ def build_morpion_bootstrap_dashboard_data(
     return MorpionBootstrapDashboardData(
         run_summary=summarize_bootstrap_run(run_view),
         latest_tree_status=_latest_tree_status(run_view),
+        latest_certified_record_status=_latest_certified_record_status(run_view),
+        latest_frontier_status=_latest_frontier_status(run_view),
         evaluator_selection_summary=summarize_evaluator_selection(history),
         record_progress_summary=summarize_record_progress(history),
         tree_num_nodes=tree_num_nodes_series(history),
@@ -426,6 +448,30 @@ def _latest_tree_status(
         return MorpionBootstrapTreeStatus(
             num_nodes=run_view.run_state.tree_size_at_last_save
         )
+    return None
+
+
+def _latest_certified_record_status(
+    run_view: MorpionBootstrapRunView,
+) -> MorpionBootstrapRecordStatus | None:
+    """Return the latest known certified record status for one run view."""
+    latest_event = _latest_known_event(run_view)
+    if latest_event is not None:
+        return latest_event.record
+    if run_view.run_state is not None:
+        return run_view.run_state.latest_record_status
+    return None
+
+
+def _latest_frontier_status(
+    run_view: MorpionBootstrapRunView,
+) -> MorpionBootstrapFrontierStatus | None:
+    """Return the latest known frontier/debug status for one run view."""
+    latest_event = _latest_known_event(run_view)
+    if latest_event is not None:
+        return latest_event.frontier
+    if run_view.run_state is not None:
+        return run_view.run_state.latest_frontier_status
     return None
 
 

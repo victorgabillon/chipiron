@@ -8,7 +8,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast
 
-from .record_status import MorpionBootstrapRecordStatus
+from .record_status import (
+    MorpionBootstrapFrontierStatus,
+    MorpionBootstrapRecordStatus,
+)
 
 
 def _empty_metadata() -> dict[str, Any]:
@@ -30,6 +33,7 @@ class MorpionBootstrapRunState:
     last_save_unix_s: float | None
     latest_runtime_checkpoint_path: str | None = None
     latest_record_status: MorpionBootstrapRecordStatus | None = None
+    latest_frontier_status: MorpionBootstrapFrontierStatus | None = None
     metadata: dict[str, Any] = field(default_factory=_empty_metadata)
 
 
@@ -113,6 +117,16 @@ class MalformedMorpionBootstrapRunStateError(TypeError):
             "mapping with string keys or null."
         )
 
+    @classmethod
+    def invalid_frontier_status_field(
+        cls,
+    ) -> MalformedMorpionBootstrapRunStateError:
+        """Return the invalid frontier-status field error."""
+        return cls(
+            "Morpion bootstrap run state field `latest_frontier_status` must be a "
+            "mapping with string keys or null."
+        )
+
 
 def initialize_bootstrap_run_state() -> MorpionBootstrapRunState:
     """Return the initial empty run state for a fresh bootstrap run."""
@@ -127,6 +141,7 @@ def initialize_bootstrap_run_state() -> MorpionBootstrapRunState:
         last_save_unix_s=None,
         latest_runtime_checkpoint_path=None,
         latest_record_status=None,
+        latest_frontier_status=None,
     )
 
 
@@ -168,6 +183,9 @@ def _run_state_to_dict(state: MorpionBootstrapRunState) -> dict[str, object]:
         "latest_record_status": None
         if state.latest_record_status is None
         else _record_status_to_dict(state.latest_record_status),
+        "latest_frontier_status": None
+        if state.latest_frontier_status is None
+        else _frontier_status_to_dict(state.latest_frontier_status),
         "metadata": dict(state.metadata),
     }
 
@@ -210,6 +228,15 @@ def _run_state_from_dict(data: object) -> MorpionBootstrapRunState:
         latest_record_status = _record_status_from_dict(
             cast("Mapping[str, object]", latest_record_status_data)
         )
+    latest_frontier_status_data = payload.get("latest_frontier_status")
+    if latest_frontier_status_data is None:
+        latest_frontier_status = None
+    else:
+        if not _is_str_key_mapping(latest_frontier_status_data):
+            raise MalformedMorpionBootstrapRunStateError.invalid_frontier_status_field()
+        latest_frontier_status = _frontier_status_from_dict(
+            cast("Mapping[str, object]", latest_frontier_status_data)
+        )
 
     return MorpionBootstrapRunState(
         generation=_coerce_int(payload.get("generation", 0), field_name="generation"),
@@ -239,6 +266,7 @@ def _run_state_from_dict(data: object) -> MorpionBootstrapRunState:
             field_name="latest_runtime_checkpoint_path",
         ),
         latest_record_status=latest_record_status,
+        latest_frontier_status=latest_frontier_status,
         metadata=_metadata_dict(payload.get("metadata")),
     )
 
@@ -300,6 +328,7 @@ def _record_status_to_dict(
         "current_best_moves_since_start": status.current_best_moves_since_start,
         "current_best_total_points": status.current_best_total_points,
         "current_best_is_exact": status.current_best_is_exact,
+        "current_best_is_terminal": status.current_best_is_terminal,
         "current_best_source": status.current_best_source,
     }
 
@@ -333,9 +362,69 @@ def _record_status_from_dict(
             data.get("current_best_is_exact"),
             field_name="latest_record_status.current_best_is_exact",
         ),
+        current_best_is_terminal=_optional_bool(
+            data.get("current_best_is_terminal"),
+            field_name="latest_record_status.current_best_is_terminal",
+        ),
         current_best_source=_optional_str(
             data.get("current_best_source"),
             field_name="latest_record_status.current_best_source",
+        ),
+    )
+
+
+def _frontier_status_to_dict(
+    status: MorpionBootstrapFrontierStatus,
+) -> dict[str, object]:
+    """Serialize one Morpion frontier status into JSON-friendly data."""
+    return {
+        "variant": status.variant,
+        "initial_pattern": status.initial_pattern,
+        "initial_point_count": status.initial_point_count,
+        "current_best_moves_since_start": status.current_best_moves_since_start,
+        "current_best_total_points": status.current_best_total_points,
+        "current_best_is_exact": status.current_best_is_exact,
+        "current_best_is_terminal": status.current_best_is_terminal,
+        "current_best_source": status.current_best_source,
+    }
+
+
+def _frontier_status_from_dict(
+    data: Mapping[str, object],
+) -> MorpionBootstrapFrontierStatus:
+    """Deserialize one Morpion frontier status from JSON-friendly data."""
+    return MorpionBootstrapFrontierStatus(
+        variant=_optional_str(
+            data.get("variant"),
+            field_name="latest_frontier_status.variant",
+        ),
+        initial_pattern=_optional_str(
+            data.get("initial_pattern"),
+            field_name="latest_frontier_status.initial_pattern",
+        ),
+        initial_point_count=_optional_int(
+            data.get("initial_point_count"),
+            field_name="latest_frontier_status.initial_point_count",
+        ),
+        current_best_moves_since_start=_optional_int(
+            data.get("current_best_moves_since_start"),
+            field_name="latest_frontier_status.current_best_moves_since_start",
+        ),
+        current_best_total_points=_optional_int(
+            data.get("current_best_total_points"),
+            field_name="latest_frontier_status.current_best_total_points",
+        ),
+        current_best_is_exact=_optional_bool(
+            data.get("current_best_is_exact"),
+            field_name="latest_frontier_status.current_best_is_exact",
+        ),
+        current_best_is_terminal=_optional_bool(
+            data.get("current_best_is_terminal"),
+            field_name="latest_frontier_status.current_best_is_terminal",
+        ),
+        current_best_source=_optional_str(
+            data.get("current_best_source"),
+            field_name="latest_frontier_status.current_best_source",
         ),
     )
 

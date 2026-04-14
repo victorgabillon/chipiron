@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -34,18 +35,27 @@ from atomheart.games.morpion import initial_state as morpion_initial_state
 from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
 from chipiron.environments.morpion.bootstrap import (
+    MorpionBootstrapFrontierStatus,
     MorpionBootstrapArtifacts,
     MorpionBootstrapDatasetStatus,
     MorpionBootstrapEvent,
+    MorpionCertifiedRecordCandidate,
+    MorpionLeaderboardEntry,
     MorpionBootstrapRecordStatus,
     MorpionBootstrapRunState,
     MorpionBootstrapTrainingStatus,
     MorpionBootstrapTreeStatus,
     bootstrap_event_from_dict,
     bootstrap_event_to_dict,
+    extract_certified_record_candidates_from_training_tree_snapshot,
+    extract_morpion_frontier_status_from_training_tree_snapshot,
+    fingerprint_morpion_state_payload,
     current_record_score,
     extract_morpion_record_status_from_training_tree_snapshot,
     load_bootstrap_run_state,
+    persist_certified_leaderboard_candidates,
+    resolve_frontier_status_for_cycle,
+    resolve_record_status_for_cycle,
     save_bootstrap_run_state,
 )
 
@@ -94,7 +104,8 @@ def test_record_status_round_trips_through_event_and_run_state(tmp_path: Path) -
         current_best_moves_since_start=18,
         current_best_total_points=54,
         current_best_is_exact=True,
-        current_best_source="snapshot_exact_node",
+        current_best_is_terminal=True,
+        current_best_source="certified_terminal_leaf",
     )
     event = MorpionBootstrapEvent(
         event_id="cycle_000005",
@@ -105,6 +116,16 @@ def test_record_status_round_trips_through_event_and_run_state(tmp_path: Path) -
         dataset=MorpionBootstrapDatasetStatus(num_rows=12, num_samples=12),
         training=MorpionBootstrapTrainingStatus(triggered=True),
         record=record_status,
+        frontier=MorpionBootstrapFrontierStatus(
+            variant="5T",
+            initial_pattern="greek_cross",
+            initial_point_count=36,
+            current_best_moves_since_start=19,
+            current_best_total_points=55,
+            current_best_is_exact=False,
+            current_best_is_terminal=False,
+            current_best_source="snapshot_nonterminal_node",
+        ),
         artifacts=MorpionBootstrapArtifacts(
             tree_snapshot_path="tree_exports/generation_000003.json",
             rows_path="rows/generation_000003.json",
@@ -120,6 +141,7 @@ def test_record_status_round_trips_through_event_and_run_state(tmp_path: Path) -
         tree_size_at_last_save=42,
         last_save_unix_s=1234.5,
         latest_record_status=record_status,
+        latest_frontier_status=event.frontier,
     )
 
     assert bootstrap_event_from_dict(bootstrap_event_to_dict(event)) == event
@@ -129,11 +151,18 @@ def test_record_status_round_trips_through_event_and_run_state(tmp_path: Path) -
     assert load_bootstrap_run_state(path) == run_state
 
 
-def test_snapshot_record_status_computes_moves_since_start_and_total_points() -> None:
-    """Snapshot extraction should distinguish moves since start from total points."""
+def test_exact_terminal_node_updates_certified_record() -> None:
+    """Certified records should come only from exact terminal nodes."""
     snapshot = TrainingTreeSnapshot(
         root_node_id="node-2",
-        nodes=(_make_training_node(node_id="node-2", move_count=2),),
+        nodes=(
+            _make_training_node(
+                node_id="node-2",
+                move_count=2,
+                is_exact=True,
+                is_terminal=True,
+            ),
+        ),
         metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
     )
 
@@ -146,7 +175,8 @@ def test_snapshot_record_status_computes_moves_since_start_and_total_points() ->
         current_best_moves_since_start=2,
         current_best_total_points=38,
         current_best_is_exact=True,
-        current_best_source="snapshot_exact_node",
+        current_best_is_terminal=True,
+        current_best_source="certified_terminal_leaf",
     )
 
 
@@ -159,52 +189,171 @@ def test_current_record_score_returns_moves_since_start() -> None:
         current_best_moves_since_start=18,
         current_best_total_points=54,
         current_best_is_exact=True,
-        current_best_source="snapshot_exact_node",
+        current_best_is_terminal=True,
+        current_best_source="certified_terminal_leaf",
     )
 
     assert current_record_score(status) == 18
 
 
-def test_snapshot_record_status_prefers_larger_achievement() -> None:
-    """The best record should come from the node with the largest move count."""
+def test_nonterminal_non_exact_snapshot_node_does_not_update_certified_record() -> None:
+    """Nonterminal estimated nodes must never update the certified record."""
     snapshot = TrainingTreeSnapshot(
         root_node_id="node-3",
         nodes=(
-            _make_training_node(node_id="node-1", move_count=1),
-            _make_training_node(node_id="node-3", move_count=3),
-            _make_training_node(node_id="node-2", move_count=2),
+            _make_training_node(
+                node_id="node-3",
+                move_count=3,
+                is_exact=False,
+                is_terminal=False,
+            ),
         ),
         metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
     )
 
-    status = extract_morpion_record_status_from_training_tree_snapshot(snapshot)
+    previous = MorpionBootstrapRecordStatus(
+        variant="5T",
+        initial_pattern="greek_cross",
+        initial_point_count=36,
+        current_best_moves_since_start=1,
+        current_best_total_points=37,
+        current_best_is_exact=True,
+        current_best_is_terminal=True,
+        current_best_source="certified_terminal_leaf",
+    )
+    status = resolve_record_status_for_cycle(
+        snapshot=snapshot,
+        previous_record_status=previous,
+    )
 
-    assert status.current_best_moves_since_start == 3
-    assert status.current_best_total_points == 39
+    assert status == previous
 
 
-def test_snapshot_record_status_prefers_exact_node_on_tie() -> None:
-    """Exact nodes should win ties when the move count is the same."""
+def test_frontier_best_can_update_without_affecting_certified_record() -> None:
+    """Frontier progress should remain visible without contaminating certification."""
     snapshot = TrainingTreeSnapshot(
-        root_node_id="node-exact",
+        root_node_id="node-frontier",
         nodes=(
             _make_training_node(
-                node_id="node-nonexact",
+                node_id="node-frontier",
                 move_count=4,
                 is_exact=False,
-            ),
-            _make_training_node(
-                node_id="node-exact",
-                move_count=4,
-                is_exact=True,
+                is_terminal=False,
             ),
         ),
         metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
     )
 
-    status = extract_morpion_record_status_from_training_tree_snapshot(snapshot)
+    certified_status = resolve_record_status_for_cycle(
+        snapshot=snapshot,
+        previous_record_status=None,
+    )
+    frontier_status = resolve_frontier_status_for_cycle(
+        snapshot=snapshot,
+        previous_frontier_status=None,
+    )
 
-    assert status.current_best_moves_since_start == 4
-    assert status.current_best_total_points == 40
-    assert status.current_best_is_exact is True
-    assert status.current_best_source == "snapshot_exact_node"
+    assert certified_status.current_best_total_points is None
+    assert frontier_status.current_best_total_points == 40
+    assert frontier_status.current_best_source == "snapshot_nonterminal_node"
+
+
+def test_leaderboard_deduplicates_identical_states_by_fingerprint(tmp_path: Path) -> None:
+    """Certified leaderboard entries should be deduplicated by state fingerprint."""
+    snapshot = TrainingTreeSnapshot(
+        root_node_id="node-2",
+        nodes=(
+            _make_training_node(
+                node_id="node-2",
+                move_count=2,
+                is_exact=True,
+                is_terminal=True,
+            ),
+        ),
+        metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+    )
+    leaderboard_path = tmp_path / "leaderboard.jsonl"
+
+    persist_certified_leaderboard_candidates(
+        snapshot=snapshot,
+        run_work_dir=tmp_path,
+        generation=1,
+        cycle_index=0,
+        timestamp_utc="2026-04-14T18:26:38Z",
+        leaderboard_path=leaderboard_path,
+    )
+    persist_certified_leaderboard_candidates(
+        snapshot=snapshot,
+        run_work_dir=tmp_path,
+        generation=2,
+        cycle_index=1,
+        timestamp_utc="2026-04-14T18:26:39Z",
+        leaderboard_path=leaderboard_path,
+    )
+
+    lines = leaderboard_path.read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 1
+
+
+def test_leaderboard_keeps_only_top_100_per_variant(tmp_path: Path) -> None:
+    """Certified leaderboard should keep only the best 100 entries per variant."""
+    leaderboard_path = tmp_path / "leaderboard.jsonl"
+    for move_count in range(101):
+        snapshot = TrainingTreeSnapshot(
+            root_node_id=f"node-{move_count}",
+            nodes=(
+                _make_training_node(
+                    node_id=f"node-{move_count}",
+                    move_count=move_count,
+                    is_exact=True,
+                    is_terminal=True,
+                ),
+            ),
+            metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+        )
+        persist_certified_leaderboard_candidates(
+            snapshot=snapshot,
+            run_work_dir=tmp_path,
+            generation=move_count,
+            cycle_index=move_count,
+            timestamp_utc=f"2026-04-14T18:26:{move_count:02d}Z",
+            leaderboard_path=leaderboard_path,
+        )
+
+    lines = leaderboard_path.read_text(encoding="utf-8").splitlines()
+    loaded = [json.loads(line) for line in lines]
+
+    assert len(loaded) == 100
+    assert loaded[0]["total_points"] == 136
+    assert loaded[-1]["total_points"] == 37
+
+
+def test_old_run_state_without_frontier_field_still_loads_safely(tmp_path: Path) -> None:
+    """Legacy run-state payloads should still load cleanly without frontier status."""
+    path = tmp_path / "run_state.json"
+    path.write_text(
+        json.dumps(
+            {
+                "generation": 3,
+                "cycle_index": 17,
+                "tree_size_at_last_save": 42,
+                "last_save_unix_s": 1234.5,
+                "latest_record_status": {
+                    "variant": "5T",
+                    "initial_pattern": "greek_cross",
+                    "initial_point_count": 36,
+                    "current_best_moves_since_start": 18,
+                    "current_best_total_points": 54,
+                    "current_best_is_exact": True,
+                    "current_best_source": "snapshot_exact_node",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    loaded = load_bootstrap_run_state(path)
+
+    assert loaded.latest_frontier_status is None
+    assert loaded.latest_record_status is not None
+    assert loaded.latest_record_status.current_best_is_terminal is None

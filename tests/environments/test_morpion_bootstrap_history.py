@@ -112,7 +112,7 @@ def _make_training_snapshot(
         state_ref_payload=_make_morpion_payload(),
         direct_value_scalar=target_value / 2.0,
         backed_up_value_scalar=target_value,
-        is_terminal=False,
+        is_terminal=True,
         is_exact=True,
         over_event_label=None,
         visit_count=7,
@@ -240,7 +240,8 @@ def _make_event(generation: int = 3, cycle_index: int = 5) -> MorpionBootstrapEv
             current_best_moves_since_start=17,
             current_best_total_points=53,
             current_best_is_exact=True,
-            current_best_source="snapshot_exact_node",
+            current_best_is_terminal=True,
+            current_best_source="certified_terminal_leaf",
         ),
         artifacts=MorpionBootstrapArtifacts(
             tree_snapshot_path="tree_exports/generation_000003.json",
@@ -447,7 +448,8 @@ def test_bootstrap_loop_writes_history_on_no_save_cycle(tmp_path: Path) -> None:
             current_best_moves_since_start=12,
             current_best_total_points=48,
             current_best_is_exact=True,
-            current_best_source="snapshot_exact_node",
+            current_best_is_terminal=True,
+            current_best_source="certified_terminal_leaf",
         ),
     )
 
@@ -485,7 +487,8 @@ def test_bootstrap_loop_writes_history_on_no_save_cycle(tmp_path: Path) -> None:
         current_best_moves_since_start=12,
         current_best_total_points=48,
         current_best_is_exact=True,
-        current_best_source="carried_from_run_state",
+        current_best_is_terminal=True,
+        current_best_source="certified_terminal_leaf",
     )
     assert event.artifacts.tree_snapshot_path is None
     assert event.artifacts.rows_path is None
@@ -593,7 +596,8 @@ def test_bootstrap_loop_writes_history_on_save_train_cycle(tmp_path: Path) -> No
         current_best_moves_since_start=1,
         current_best_total_points=37,
         current_best_is_exact=True,
-        current_best_source="snapshot_exact_node",
+        current_best_is_terminal=True,
+        current_best_source="certified_terminal_leaf",
     )
     assert latest_status.latest_generation == 1
     assert latest_status.latest_cycle_index == 0
