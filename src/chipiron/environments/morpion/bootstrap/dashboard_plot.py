@@ -13,6 +13,7 @@ from .history_view import (
     IntTimeSeriesPoint,
     OptionalFloatTimeSeriesPoint,
     OptionalIntTimeSeriesPoint,
+    TreeDepthDistributionRow,
 )
 
 
@@ -43,6 +44,22 @@ def plot_record_score(series: tuple[OptionalIntTimeSeriesPoint, ...]) -> None:
     ):
         return
     _format_datetime_axis(axis, x_values)
+
+
+def plot_certified_record_score(
+    series: tuple[OptionalIntTimeSeriesPoint, ...],
+) -> None:
+    """Plot best-so-far certified Morpion record score against UTC time."""
+    axis = _new_axis()
+    axis.set_title("Certified Record Over Time")
+    axis.set_xlabel("UTC timestamp")
+    axis.set_ylabel("certified record (moves since start)")
+    x_values, y_values = _non_none_optional_int_points(series)
+    if not x_values or not y_values:
+        _render_empty_message(axis, "No certified record yet.")
+        return
+    axis.plot(x_values, y_values, marker="o", label="certified record")
+    _format_datetime_axis(axis, x_values, format_string="%Y-%m-%d %H:%M")
 
 
 def plot_dataset_size(series: tuple[OptionalIntTimeSeriesPoint, ...]) -> None:
@@ -115,6 +132,23 @@ def plot_active_evaluator(
     axis.plot(x_values, y_values, label="active evaluator")
     axis.set_yticks(list(name_to_y.values()), list(name_to_y.keys()))
     _format_datetime_axis(axis, x_values)
+
+
+def plot_tree_depth_distribution(
+    rows: Sequence[TreeDepthDistributionRow],
+) -> None:
+    """Plot the latest saved tree node counts grouped by depth."""
+    axis = _new_axis()
+    axis.set_title("Current Tree Depth Distribution")
+    axis.set_xlabel("depth")
+    axis.set_ylabel("num nodes")
+    if not rows:
+        _render_empty_message(axis, "No tree depth distribution available yet.")
+        return
+    axis.bar(
+        [row.depth for row in rows],
+        [row.num_nodes for row in rows],
+    )
 
 
 def _new_axis() -> plt.Axes:
@@ -200,10 +234,15 @@ def _plot_if_enough_points(
 
 def _render_waiting_for_history(axis: plt.Axes) -> None:
     """Render a consistent empty-state message inside one plot axis."""
+    _render_empty_message(axis, "Waiting for more history to draw this plot.")
+
+
+def _render_empty_message(axis: plt.Axes, message: str) -> None:
+    """Render one consistent empty-state message inside one plot axis."""
     axis.text(
         0.5,
         0.5,
-        "Waiting for more history to draw this plot.",
+        message,
         ha="center",
         va="center",
         transform=axis.transAxes,
@@ -215,13 +254,19 @@ def _render_waiting_for_history(axis: plt.Axes) -> None:
 def _format_datetime_axis(
     axis: plt.Axes,
     x_values: Sequence[datetime],
+    *,
+    format_string: str | None = None,
 ) -> None:
     """Format one x-axis for readable UTC datetimes."""
     if not x_values:
         return
     span_seconds = (max(x_values) - min(x_values)).total_seconds()
     formatter = mdates.DateFormatter(
-        "%H:%M:%S" if span_seconds < 3600 else "%m-%d %H:%M",
+        (
+            format_string
+            if format_string is not None
+            else "%H:%M:%S" if span_seconds < 3600 else "%m-%d %H:%M"
+        ),
         tz=x_values[0].tzinfo,
     )
     axis.xaxis.set_major_formatter(formatter)
@@ -243,8 +288,10 @@ def _ordered_non_none_names(names: Iterable[str | None]) -> list[str]:
 
 __all__ = [
     "plot_active_evaluator",
+    "plot_certified_record_score",
     "plot_dataset_size",
     "plot_evaluator_losses",
     "plot_record_score",
+    "plot_tree_depth_distribution",
     "plot_tree_size",
 ]

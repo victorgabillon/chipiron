@@ -6,6 +6,8 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from anemone.training_export import load_training_tree_snapshot
+
 from .bootstrap_loop import MorpionBootstrapPaths
 from .history import (
     MorpionBootstrapEvent,
@@ -124,6 +126,15 @@ class MorpionRecordProgressSummary:
 
 
 @dataclass(frozen=True, slots=True)
+class TreeDepthDistributionRow:
+    """One compact row describing the saved tree shape at one depth."""
+
+    depth: int
+    num_nodes: int
+    cumulative_nodes: int
+
+
+@dataclass(frozen=True, slots=True)
 class MorpionBootstrapDashboardData:
     """Bundled summaries and time series for future dashboard consumption."""
 
@@ -135,10 +146,12 @@ class MorpionBootstrapDashboardData:
     record_progress_summary: MorpionRecordProgressSummary
     tree_num_nodes: tuple[IntTimeSeriesPoint, ...]
     canonical_record_score: tuple[OptionalIntTimeSeriesPoint, ...]
+    certified_record_score: tuple[OptionalIntTimeSeriesPoint, ...]
     record_total_points: tuple[OptionalIntTimeSeriesPoint, ...]
     dataset_num_rows: tuple[OptionalIntTimeSeriesPoint, ...]
     evaluator_loss_by_name: Mapping[str, tuple[OptionalFloatTimeSeriesPoint, ...]]
     active_evaluator: tuple[ActiveEvaluatorTimeSeriesPoint, ...]
+    latest_tree_depth_distribution: tuple[TreeDepthDistributionRow, ...]
 
 
 def load_morpion_bootstrap_run_view(
@@ -231,6 +244,36 @@ def canonical_record_score_series(
         )
         for event in history
     )
+
+
+def certified_record_score_series(
+    history: Sequence[MorpionBootstrapEvent],
+) -> tuple[OptionalIntTimeSeriesPoint, ...]:
+    """Return the strict certified-record series keyed by cycle."""
+    return canonical_record_score_series(history)
+
+
+def certified_record_best_so_far_series(
+    history: Sequence[MorpionBootstrapEvent],
+) -> tuple[OptionalIntTimeSeriesPoint, ...]:
+    """Return best-so-far certified record points keyed by event timestamp."""
+    best_score: int | None = None
+    points: list[OptionalIntTimeSeriesPoint] = []
+    for event in history:
+        current_score = current_record_score(event.record)
+        if current_score is not None and (
+            best_score is None or current_score > best_score
+        ):
+            best_score = current_score
+        points.append(
+            OptionalIntTimeSeriesPoint(
+                cycle_index=event.cycle_index,
+                generation=event.generation,
+                timestamp_utc=event.timestamp_utc,
+                value=best_score,
+            )
+        )
+    return tuple(points)
 
 
 def record_total_points_series(
@@ -387,10 +430,12 @@ def build_morpion_bootstrap_dashboard_data(
         record_progress_summary=summarize_record_progress(history),
         tree_num_nodes=tree_num_nodes_series(history),
         canonical_record_score=canonical_record_score_series(history),
+        certified_record_score=certified_record_best_so_far_series(history),
         record_total_points=record_total_points_series(history),
         dataset_num_rows=dataset_num_rows_series(history),
         evaluator_loss_by_name=evaluator_loss_series_by_name(history),
         active_evaluator=active_evaluator_series(history),
+        latest_tree_depth_distribution=latest_tree_depth_distribution(run_view),
     )
 
 
@@ -451,6 +496,26 @@ def _latest_tree_status(
     return None
 
 
+def latest_tree_depth_distribution(
+    run_view: MorpionBootstrapRunView,
+) -> tuple[TreeDepthDistributionRow, ...]:
+    """Return the latest persisted tree depth distribution for the dashboard."""
+    latest_tree_status = _latest_tree_status(run_view)
+    if latest_tree_status is not None and latest_tree_status.depth_node_counts:
+        return _tree_depth_distribution_rows_from_counts(
+            latest_tree_status.depth_node_counts
+        )
+
+    snapshot_path = _latest_tree_snapshot_path(run_view)
+    if snapshot_path is None or not snapshot_path.is_file():
+        return ()
+    snapshot = load_training_tree_snapshot(snapshot_path)
+    depth_counts: dict[int, int] = {}
+    for node in snapshot.nodes:
+        depth_counts[node.depth] = depth_counts.get(node.depth, 0) + 1
+    return _tree_depth_distribution_rows_from_counts(depth_counts)
+
+
 def _latest_certified_record_status(
     run_view: MorpionBootstrapRunView,
 ) -> MorpionBootstrapRecordStatus | None:
@@ -473,6 +538,40 @@ def _latest_frontier_status(
     if run_view.run_state is not None:
         return run_view.run_state.latest_frontier_status
     return None
+
+
+def _latest_tree_snapshot_path(
+    run_view: MorpionBootstrapRunView,
+) -> Path | None:
+    """Return the latest persisted tree snapshot path for one run view."""
+    latest_event = _latest_known_event(run_view)
+    persisted_path = None
+    if latest_event is not None:
+        persisted_path = latest_event.artifacts.tree_snapshot_path
+    if persisted_path is None and run_view.run_state is not None:
+        persisted_path = run_view.run_state.latest_tree_snapshot_path
+    if persisted_path is None:
+        return None
+    paths = MorpionBootstrapPaths.from_work_dir(run_view.work_dir)
+    return paths.resolve_work_dir_path(persisted_path)
+
+
+def _tree_depth_distribution_rows_from_counts(
+    depth_counts: Mapping[int, int],
+) -> tuple[TreeDepthDistributionRow, ...]:
+    """Return one cumulative depth-distribution table from node counts."""
+    cumulative_nodes = 0
+    rows: list[TreeDepthDistributionRow] = []
+    for depth in sorted(depth_counts):
+        cumulative_nodes += depth_counts[depth]
+        rows.append(
+            TreeDepthDistributionRow(
+                depth=depth,
+                num_nodes=depth_counts[depth],
+                cumulative_nodes=cumulative_nodes,
+            )
+        )
+    return tuple(rows)
 
 
 def _latest_active_evaluator_name(run_view: MorpionBootstrapRunView) -> str | None:
@@ -510,6 +609,8 @@ def _evaluator_loss_point(
 
 __all__ = [
     "ActiveEvaluatorTimeSeriesPoint",
+    "certified_record_best_so_far_series",
+    "certified_record_score_series",
     "EvaluatorSelectionSummary",
     "IntTimeSeriesPoint",
     "MorpionBootstrapDashboardData",
@@ -518,12 +619,14 @@ __all__ = [
     "MorpionRecordProgressSummary",
     "OptionalFloatTimeSeriesPoint",
     "OptionalIntTimeSeriesPoint",
+    "TreeDepthDistributionRow",
     "TrainingTriggeredTimeSeriesPoint",
     "active_evaluator_series",
     "build_morpion_bootstrap_dashboard_data",
     "canonical_record_score_series",
     "dataset_num_rows_series",
     "evaluator_loss_series_by_name",
+    "latest_tree_depth_distribution",
     "load_morpion_bootstrap_run_view",
     "record_total_points_series",
     "summarize_bootstrap_run",

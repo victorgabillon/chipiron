@@ -32,14 +32,19 @@ from .control import (
 )
 from .dashboard_plot import (
     plot_active_evaluator,
+    plot_certified_record_score,
     plot_dataset_size,
     plot_evaluator_losses,
     plot_record_score,
+    plot_tree_depth_distribution,
     plot_tree_size,
 )
 from .evaluator_family import canonical_morpion_evaluator_names
 from .history import MorpionBootstrapTreeStatus
-from .history_view import build_morpion_bootstrap_dashboard_data
+from .history_view import (
+    TreeDepthDistributionRow,
+    build_morpion_bootstrap_dashboard_data,
+)
 from .process_control import (
     MorpionBootstrapProcessControlError,
     MorpionBootstrapProcessState,
@@ -275,10 +280,20 @@ def run_dashboard_app(work_dir: Path) -> None:
             lambda: plot_evaluator_losses(dashboard_data.evaluator_loss_by_name),
         )
 
+    st.subheader("Certified Record Progress")
+    if _has_known_optional_series_values(dashboard_data.certified_record_score):
+        _render_plot(
+            st,
+            lambda: plot_certified_record_score(dashboard_data.certified_record_score),
+        )
+    else:
+        st.caption("No certified record yet.")
+
     st.subheader("Tree Structure")
     _render_tree_structure_section(
         st=st,
         tree_status=dashboard_data.latest_tree_status,
+        depth_distribution=dashboard_data.latest_tree_depth_distribution,
     )
 
     st.subheader("Tree / State Inspector")
@@ -438,6 +453,7 @@ def _render_tree_structure_section(
     *,
     st: Any,
     tree_status: MorpionBootstrapTreeStatus | None,
+    depth_distribution: tuple[TreeDepthDistributionRow, ...],
 ) -> None:
     """Render one compact tree-structure summary with per-depth counts."""
     if tree_status is None:
@@ -453,10 +469,11 @@ def _render_tree_structure_section(
     summary_columns[2].metric("Min Depth", _format_value(tree_status.min_depth_present))
     summary_columns[3].metric("Max Depth", _format_value(tree_status.max_depth_present))
 
-    rows = _tree_structure_rows(tree_status)
-    if not rows:
-        st.caption("Per-depth node counts are not available yet.")
+    if not depth_distribution:
+        st.caption("No tree depth distribution available yet.")
         return
+    _render_plot(st, lambda: plot_tree_depth_distribution(depth_distribution))
+    rows = _tree_structure_rows(depth_distribution)
     st.dataframe(rows, use_container_width=True, hide_index=True)
 
 
@@ -531,13 +548,22 @@ def _render_record_status_section(
 
 
 def _tree_structure_rows(
-    tree_status: MorpionBootstrapTreeStatus,
+    depth_distribution: tuple[TreeDepthDistributionRow, ...],
 ) -> list[dict[str, int]]:
     """Return one dashboard-friendly per-depth node-count table."""
     return [
-        {"depth": depth, "node_count": tree_status.depth_node_counts[depth]}
-        for depth in sorted(tree_status.depth_node_counts)
+        {
+            "depth": row.depth,
+            "num_nodes": row.num_nodes,
+            "cumulative_nodes": row.cumulative_nodes,
+        }
+        for row in depth_distribution
     ]
+
+
+def _has_known_optional_series_values(series: tuple[Any, ...]) -> bool:
+    """Return whether one optional-value time series contains any known value."""
+    return any(getattr(point, "value", None) is not None for point in series)
 
 
 def _render_tree_inspector_navigation(
