@@ -46,6 +46,9 @@ from anemone.training_export import (
     TrainingTreeSnapshot,
     save_training_tree_snapshot,
 )
+from atomheart.games.morpion import MorpionDynamics
+from atomheart.games.morpion import initial_state as morpion_initial_state
+from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
 from chipiron.environments.morpion.bootstrap import (
     ActiveEvaluatorTimeSeriesPoint,
@@ -85,6 +88,7 @@ from chipiron.environments.morpion.bootstrap import (
 from chipiron.environments.morpion.bootstrap.history_view import (
     DiskUsageRow,
     DiskUsageSummary,
+    build_current_certified_record_board_view,
     build_disk_usage_summary,
     format_num_bytes,
     recursive_path_num_bytes,
@@ -175,6 +179,17 @@ def _make_run_state(
     )
 
 
+def _make_morpion_payload(move_count: int) -> dict[str, object]:
+    """Build one real Morpion checkpoint payload after ``move_count`` moves."""
+    dynamics = MorpionDynamics()
+    state = morpion_initial_state()
+    for _ in range(move_count):
+        action = dynamics.all_legal_actions(state)[0]
+        state = dynamics.step(state, action).next_state
+    codec = MorpionStateCheckpointCodec()
+    return codec.dump_state_ref(state)
+
+
 def test_load_run_view_from_artifacts(tmp_path: Path) -> None:
     """The run-view loader should aggregate run-state, history, and latest status."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
@@ -249,6 +264,47 @@ def test_empty_run_view_works(tmp_path: Path) -> None:
     assert run_view.latest_status.latest_event is None
     assert run_view.latest_status.latest_cycle_index is None
     assert run_view.latest_status.latest_generation is None
+
+
+def test_build_current_certified_record_board_view_renders_numbered_points(
+    tmp_path: Path,
+) -> None:
+    """Certified-record board view should render numbered post-start points."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    snapshot = TrainingTreeSnapshot(
+        nodes=(
+            TrainingNodeSnapshot(
+                node_id="certified-2",
+                parent_ids=(),
+                child_ids=(),
+                depth=2,
+                state_ref_payload=_make_morpion_payload(2),
+                direct_value_scalar=2.0,
+                backed_up_value_scalar=2.0,
+                is_terminal=True,
+                is_exact=True,
+                over_event_label=None,
+                visit_count=3,
+                metadata={"source": "history-view-test"},
+            ),
+        ),
+        root_node_id="certified-2",
+    )
+    save_training_tree_snapshot(snapshot, paths.tree_snapshot_dir / "generation_000001.json")
+
+    board_view = build_current_certified_record_board_view(tmp_path)
+
+    assert board_view is not None
+    assert board_view.variant == "5T"
+    assert board_view.moves_since_start == 2
+    assert board_view.total_points == 38
+    assert board_view.is_exact is True
+    assert board_view.is_terminal is True
+    assert board_view.source == "certified_terminal_leaf"
+    assert ">1</text>" in board_view.board_svg
+    assert ">2</text>" in board_view.board_svg
+    assert "#0f766e" in board_view.board_svg
+    assert board_view.board_text is not None
 
 
 def test_format_num_bytes_is_human_readable() -> None:
@@ -886,4 +942,74 @@ def test_latest_tree_depth_distribution_falls_back_to_snapshot(tmp_path: Path) -
         TreeDepthDistributionRow(depth=0, num_nodes=1, cumulative_nodes=1),
         TreeDepthDistributionRow(depth=1, num_nodes=2, cumulative_nodes=3),
         TreeDepthDistributionRow(depth=2, num_nodes=1, cumulative_nodes=4),
+    )
+
+
+def test_dashboard_data_falls_back_to_newest_tree_export_when_metadata_is_stale(
+    tmp_path: Path,
+) -> None:
+    """Dashboard tree data should fall back to the newest on-disk tree export."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.tree_snapshot_dir.mkdir(parents=True, exist_ok=True)
+    save_training_tree_snapshot(
+        TrainingTreeSnapshot(
+            root_node_id="root-2",
+            nodes=(
+                TrainingNodeSnapshot(
+                    node_id="root-2",
+                    parent_ids=(),
+                    child_ids=("leaf-2",),
+                    depth=0,
+                    state_ref_payload={"kind": "root-2"},
+                    direct_value_scalar=None,
+                    backed_up_value_scalar=None,
+                    is_terminal=False,
+                    is_exact=False,
+                    over_event_label=None,
+                    visit_count=1,
+                    metadata={},
+                ),
+                TrainingNodeSnapshot(
+                    node_id="leaf-2",
+                    parent_ids=("root-2",),
+                    child_ids=(),
+                    depth=1,
+                    state_ref_payload={"kind": "leaf-2"},
+                    direct_value_scalar=None,
+                    backed_up_value_scalar=None,
+                    is_terminal=True,
+                    is_exact=True,
+                    over_event_label=None,
+                    visit_count=1,
+                    metadata={},
+                ),
+            ),
+            metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+        ),
+        paths.tree_snapshot_path_for_generation(2),
+    )
+    save_bootstrap_run_state(
+        MorpionBootstrapRunState(
+            generation=1,
+            cycle_index=0,
+            latest_tree_snapshot_path="tree_exports/generation_000001.json",
+            latest_rows_path=None,
+            latest_model_bundle_paths=None,
+            active_evaluator_name=None,
+            tree_size_at_last_save=1,
+            last_save_unix_s=None,
+        ),
+        paths.run_state_path,
+    )
+
+    dashboard_data = build_morpion_bootstrap_dashboard_data(tmp_path)
+
+    assert dashboard_data.run_summary.latest_tree_num_nodes == 2
+    assert (
+        dashboard_data.latest_tree_snapshot_status_message
+        == "Tree snapshot metadata points to a missing file; using the newest tree export discovered on disk instead."
+    )
+    assert dashboard_data.latest_tree_depth_distribution == (
+        TreeDepthDistributionRow(depth=0, num_nodes=1, cumulative_nodes=1),
+        TreeDepthDistributionRow(depth=1, num_nodes=1, cumulative_nodes=2),
     )

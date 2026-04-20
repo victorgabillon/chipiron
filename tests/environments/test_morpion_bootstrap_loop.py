@@ -746,26 +746,81 @@ def test_loop_prunes_old_checkpoints_and_tree_exports_after_new_save(
         shuffle=False,
     )
     runner = FakeMorpionSearchRunner(
-        tree_sizes=(10, 11),
-        target_values=(1.25, -0.5),
+        tree_sizes=(10, 11, 12),
+        target_values=(1.25, -0.5, 0.75),
     )
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
 
     first_state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
     second_state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+    third_state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
 
     assert first_state.generation == 1
     assert second_state.generation == 2
-    assert second_state.latest_runtime_checkpoint_path == "search_checkpoints/generation_000002.json"
-    assert second_state.latest_tree_snapshot_path == "tree_exports/generation_000002.json"
+    assert third_state.generation == 3
+    assert third_state.latest_runtime_checkpoint_path == "search_checkpoints/generation_000003.json"
+    assert third_state.latest_tree_snapshot_path == "tree_exports/generation_000003.json"
     assert sorted(
         path.name for path in paths.runtime_checkpoint_dir.glob("generation_*.json")
-    ) == ["generation_000002.json"]
+    ) == ["generation_000002.json", "generation_000003.json"]
     assert sorted(
         path.name for path in paths.tree_snapshot_dir.glob("generation_*.json")
-    ) == ["generation_000002.json"]
+    ) == ["generation_000002.json", "generation_000003.json"]
     assert paths.rows_path_for_generation(1).is_file()
     assert paths.rows_path_for_generation(2).is_file()
+    assert paths.rows_path_for_generation(3).is_file()
+
+
+def test_loop_does_not_prune_previous_artifacts_when_run_state_save_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Retention should not run if the cycle fails before run-state persistence completes."""
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        max_growth_steps_per_cycle=5,
+        save_after_tree_growth_factor=1.0,
+        num_epochs=1,
+        batch_size=1,
+        shuffle=False,
+    )
+    runner = FakeMorpionSearchRunner(
+        tree_sizes=(10, 11, 12),
+        target_values=(1.25, -0.5, 0.75),
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+
+    run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+    run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+    real_save_run_state = bootstrap_loop_module.save_bootstrap_run_state
+
+    def _failing_save_run_state(state: object, path: object) -> None:
+        generation = cast("MorpionBootstrapRunState", state).generation
+        if generation == 3:
+            raise RuntimeError("run_state persistence failed")  # noqa: TRY003
+        real_save_run_state(state, path)
+
+    monkeypatch.setattr(
+        bootstrap_loop_module, "save_bootstrap_run_state", _failing_save_run_state
+    )
+
+    with pytest.raises(RuntimeError, match="run_state persistence failed"):
+        run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+
+    assert sorted(
+        path.name for path in paths.runtime_checkpoint_dir.glob("generation_*.json")
+    ) == [
+        "generation_000001.json",
+        "generation_000002.json",
+        "generation_000003.json",
+    ]
+    assert sorted(
+        path.name for path in paths.tree_snapshot_dir.glob("generation_*.json")
+    ) == [
+        "generation_000001.json",
+        "generation_000002.json",
+        "generation_000003.json",
+    ]
 
 
 def test_loop_resumes_with_selected_winning_evaluator(

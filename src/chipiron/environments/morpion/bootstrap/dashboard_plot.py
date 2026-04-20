@@ -76,6 +76,8 @@ def plot_dataset_size(series: tuple[OptionalIntTimeSeriesPoint, ...]) -> None:
 
 def plot_evaluator_losses(
     loss_by_name: Mapping[str, tuple[OptionalFloatTimeSeriesPoint, ...]],
+    *,
+    log_scale: bool = False,
 ) -> None:
     """Plot sparse evaluator-loss series, grouped by evaluator name."""
     axis = _new_axis()
@@ -83,6 +85,8 @@ def plot_evaluator_losses(
     plotted_x_values: list[datetime] = []
     for evaluator_name, series in sorted(loss_by_name.items()):
         x_values, y_values = _non_none_optional_float_points(series)
+        if log_scale:
+            x_values, y_values = _positive_points(x_values, y_values)
         if len(x_values) < 2:
             continue
         axis.plot(x_values, y_values, label=evaluator_name)
@@ -93,8 +97,13 @@ def plot_evaluator_losses(
     axis.set_xlabel("UTC timestamp")
     axis.set_ylabel("loss")
     if not plotted_any_line:
+        if log_scale:
+            _render_empty_message(axis, "No positive loss values available for log scale.")
+            return
         _render_waiting_for_history(axis)
         return
+    if log_scale:
+        axis.set_yscale("log")
     axis.legend()
     _format_datetime_axis(axis, plotted_x_values)
 
@@ -230,6 +239,21 @@ def _plot_if_enough_points(
         return False
     axis.plot(x_values, y_values, label=label)
     return True
+
+
+def _positive_points(
+    x_values: Sequence[datetime],
+    y_values: Sequence[float],
+) -> tuple[list[datetime], list[float]]:
+    """Return only strictly positive points for safe logarithmic plotting."""
+    filtered_x_values: list[datetime] = []
+    filtered_y_values: list[float] = []
+    for timestamp, value in zip(x_values, y_values, strict=False):
+        if value <= 0:
+            continue
+        filtered_x_values.append(timestamp)
+        filtered_y_values.append(value)
+    return filtered_x_values, filtered_y_values
 
 
 def _render_waiting_for_history(axis: plt.Axes) -> None:

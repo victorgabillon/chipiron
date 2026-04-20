@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import shutil
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -10,7 +11,20 @@ if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
     from pathlib import Path
 
+    from atomheart.games.morpion.state import MorpionState as AtomMorpionState
+
 from anemone.training_export import load_training_tree_snapshot
+
+from chipiron.displays.morpion_svg_adapter import MorpionSvgAdapter
+from chipiron.environments.morpion.learning import (
+    InvalidMorpionStateRefPayloadError,
+    decode_morpion_state_ref_payload,
+)
+from chipiron.environments.morpion.morpion_display import (
+    MorpionNumberedPointReplayError,
+    build_morpion_display_payload,
+)
+from chipiron.environments.morpion.types import MorpionDynamics
 
 from .bootstrap_loop import MorpionBootstrapPaths
 from .history import (
@@ -26,8 +40,11 @@ from .record_status import (
     MorpionBootstrapRecordStatus,
     current_frontier_score,
     current_record_score,
+    select_best_certified_record_candidate_from_training_tree_snapshot,
 )
 from .run_state import MorpionBootstrapRunState, load_bootstrap_run_state
+
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,6 +55,15 @@ class MorpionBootstrapRunView:
     run_state: MorpionBootstrapRunState | None
     latest_status: MorpionBootstrapLatestStatus
     history: tuple[MorpionBootstrapEvent, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class _ResolvedTreeSnapshotReference:
+    """Resolved latest tree snapshot path and optional fallback status message."""
+
+    snapshot_path: Path | None
+    snapshot_source: str | None
+    status_message: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -164,6 +190,7 @@ class MorpionBootstrapDashboardData:
 
     run_summary: MorpionBootstrapRunSummary
     disk_usage_summary: DiskUsageSummary
+    latest_tree_snapshot_status_message: str | None
     latest_tree_status: MorpionBootstrapTreeStatus | None
     latest_certified_record_status: MorpionBootstrapRecordStatus | None
     latest_frontier_status: MorpionBootstrapFrontierStatus | None
@@ -177,6 +204,20 @@ class MorpionBootstrapDashboardData:
     evaluator_loss_by_name: Mapping[str, tuple[OptionalFloatTimeSeriesPoint, ...]]
     active_evaluator: tuple[ActiveEvaluatorTimeSeriesPoint, ...]
     latest_tree_depth_distribution: tuple[TreeDepthDistributionRow, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class MorpionBootstrapCertifiedRecordBoardView:
+    """Dashboard-ready rendering of the current strict certified Morpion record."""
+
+    variant: str
+    moves_since_start: int
+    total_points: int
+    is_exact: bool
+    is_terminal: bool
+    source: str
+    board_svg: str
+    board_text: str | None
 
 
 def load_morpion_bootstrap_run_view(
@@ -446,9 +487,11 @@ def build_morpion_bootstrap_dashboard_data(
     """Load one bootstrap run and build the dashboard-ready data payload."""
     run_view = load_morpion_bootstrap_run_view(work_dir)
     history = run_view.history
+    resolved_tree_snapshot = _resolve_latest_tree_snapshot_reference(run_view)
     return MorpionBootstrapDashboardData(
         run_summary=summarize_bootstrap_run(run_view),
         disk_usage_summary=build_disk_usage_summary(run_view.work_dir),
+        latest_tree_snapshot_status_message=resolved_tree_snapshot.status_message,
         latest_tree_status=_latest_tree_status(run_view),
         latest_certified_record_status=_latest_certified_record_status(run_view),
         latest_frontier_status=_latest_frontier_status(run_view),
@@ -465,6 +508,54 @@ def build_morpion_bootstrap_dashboard_data(
     )
 
 
+def build_current_certified_record_board_view(
+    work_dir: str | Path,
+) -> MorpionBootstrapCertifiedRecordBoardView | None:
+    """Build the current strict certified-record board view for the dashboard."""
+    run_view = load_morpion_bootstrap_run_view(work_dir)
+    resolved_snapshot = _resolve_latest_tree_snapshot_reference(run_view)
+    snapshot_path = resolved_snapshot.snapshot_path
+    if snapshot_path is None:
+        return None
+
+    try:
+        snapshot = load_training_tree_snapshot(snapshot_path)
+    except OSError:
+        LOGGER.exception(
+            "[dashboard] certified_record_board_snapshot_load_failed path=%s",
+            str(snapshot_path),
+        )
+        return None
+
+    candidate = select_best_certified_record_candidate_from_training_tree_snapshot(
+        snapshot
+    )
+    if candidate is None:
+        return None
+
+    try:
+        atom_state = decode_morpion_state_ref_payload(candidate.state_ref_payload)
+        return _certified_record_board_view_from_atom_state(
+            atom_state=atom_state,
+            state_ref_payload=candidate.state_ref_payload,
+            is_exact=True,
+            is_terminal=True,
+            source="certified_terminal_leaf",
+        )
+    except (
+        InvalidMorpionStateRefPayloadError,
+        MorpionNumberedPointReplayError,
+        ValueError,
+        TypeError,
+    ):
+        LOGGER.exception(
+            "[dashboard] certified_record_board_reconstruction_failed path=%s node_id=%s",
+            str(snapshot_path),
+            candidate.node_id,
+        )
+        return None
+
+
 def format_num_bytes(num_bytes: int | None) -> str:
     """Format a byte count into one compact human-readable size string."""
     if num_bytes is None:
@@ -478,6 +569,39 @@ def format_num_bytes(num_bytes: int | None) -> str:
         if value < 1024.0 or unit == units[-1]:
             return f"{value:.1f} {unit}"
     return f"{value:.1f} PB"
+
+
+def _certified_record_board_view_from_atom_state(
+    *,
+    atom_state: AtomMorpionState,
+    state_ref_payload: Mapping[str, object],
+    is_exact: bool,
+    is_terminal: bool,
+    source: str,
+) -> MorpionBootstrapCertifiedRecordBoardView:
+    """Render one decoded certified Morpion state through the shared SVG pipeline."""
+    dynamics = MorpionDynamics()
+    state = dynamics.wrap_atomheart_state(atom_state)
+    svg_adapter = MorpionSvgAdapter()
+    position = svg_adapter.position_from_update(
+        state_tag=state.tag,
+        adapter_payload=build_morpion_display_payload(
+            state=state,
+            dynamics=dynamics,
+            state_ref_payload=state_ref_payload,
+        ),
+    )
+    render_result = svg_adapter.render_svg(position, 720, margin=8)
+    return MorpionBootstrapCertifiedRecordBoardView(
+        variant=state.variant.value,
+        moves_since_start=state.moves,
+        total_points=len(state.points),
+        is_exact=is_exact,
+        is_terminal=is_terminal,
+        source=source,
+        board_svg=render_result.svg_bytes.decode("utf-8"),
+        board_text=state.pprint(),
+    )
 
 
 def recursive_path_num_bytes(path: Path) -> int | None:
@@ -622,6 +746,10 @@ def _latest_tree_num_nodes(run_view: MorpionBootstrapRunView) -> int | None:
     latest_event = _latest_known_event(run_view)
     if latest_event is not None:
         return latest_event.tree.num_nodes
+    resolved_snapshot = _resolve_latest_tree_snapshot_reference(run_view)
+    if resolved_snapshot.snapshot_path is not None:
+        snapshot = load_training_tree_snapshot(resolved_snapshot.snapshot_path)
+        return len(snapshot.nodes)
     if run_view.run_state is not None:
         return run_view.run_state.tree_size_at_last_save
     return None
@@ -634,6 +762,18 @@ def _latest_tree_status(
     latest_event = _latest_known_event(run_view)
     if latest_event is not None:
         return latest_event.tree
+    resolved_snapshot = _resolve_latest_tree_snapshot_reference(run_view)
+    if resolved_snapshot.snapshot_path is not None:
+        snapshot = load_training_tree_snapshot(resolved_snapshot.snapshot_path)
+        depth_counts: dict[int, int] = {}
+        for node in snapshot.nodes:
+            depth_counts[node.depth] = depth_counts.get(node.depth, 0) + 1
+        return MorpionBootstrapTreeStatus(
+            num_nodes=len(snapshot.nodes),
+            min_depth_present=None if not depth_counts else min(depth_counts),
+            max_depth_present=None if not depth_counts else max(depth_counts),
+            depth_node_counts=depth_counts,
+        )
     if run_view.run_state is not None:
         return MorpionBootstrapTreeStatus(
             num_nodes=run_view.run_state.tree_size_at_last_save
@@ -651,8 +791,9 @@ def latest_tree_depth_distribution(
             latest_tree_status.depth_node_counts
         )
 
-    snapshot_path = _latest_tree_snapshot_path(run_view)
-    if snapshot_path is None or not snapshot_path.is_file():
+    resolved_snapshot = _resolve_latest_tree_snapshot_reference(run_view)
+    snapshot_path = resolved_snapshot.snapshot_path
+    if snapshot_path is None:
         return ()
     snapshot = load_training_tree_snapshot(snapshot_path)
     depth_counts: dict[int, int] = {}
@@ -689,16 +830,68 @@ def _latest_tree_snapshot_path(
     run_view: MorpionBootstrapRunView,
 ) -> Path | None:
     """Return the latest persisted tree snapshot path for one run view."""
+    return _resolve_latest_tree_snapshot_reference(run_view).snapshot_path
+
+
+def _resolve_latest_tree_snapshot_reference(
+    run_view: MorpionBootstrapRunView,
+) -> _ResolvedTreeSnapshotReference:
+    """Resolve the latest usable tree snapshot path for one run view."""
     latest_event = _latest_known_event(run_view)
     persisted_path = None
     if latest_event is not None:
         persisted_path = latest_event.artifacts.tree_snapshot_path
     if persisted_path is None and run_view.run_state is not None:
         persisted_path = run_view.run_state.latest_tree_snapshot_path
-    if persisted_path is None:
-        return None
     paths = MorpionBootstrapPaths.from_work_dir(run_view.work_dir)
-    return paths.resolve_work_dir_path(persisted_path)
+    if persisted_path is not None:
+        resolved_path = paths.resolve_work_dir_path(persisted_path)
+        if resolved_path is not None and resolved_path.is_file():
+            return _ResolvedTreeSnapshotReference(
+                snapshot_path=resolved_path,
+                snapshot_source="metadata",
+            )
+        latest_on_disk = _latest_generation_json_path(paths.tree_snapshot_dir)
+        if latest_on_disk is not None:
+            status_message = (
+                "Tree snapshot metadata points to a missing file; using the newest "
+                "tree export discovered on disk instead."
+            )
+            LOGGER.warning(
+                "[dashboard] latest_tree_snapshot_missing metadata_path=%s fallback_path=%s",
+                persisted_path,
+                str(latest_on_disk),
+            )
+            return _ResolvedTreeSnapshotReference(
+                snapshot_path=latest_on_disk,
+                snapshot_source="tree_snapshot_dir",
+                status_message=status_message,
+            )
+        return _ResolvedTreeSnapshotReference(
+            snapshot_path=None,
+            snapshot_source=None,
+            status_message=(
+                "Tree snapshot metadata points to a missing file, and no fallback "
+                "tree export exists on disk."
+            ),
+        )
+    latest_on_disk = _latest_generation_json_path(paths.tree_snapshot_dir)
+    if latest_on_disk is None:
+        return _ResolvedTreeSnapshotReference(
+            snapshot_path=None,
+            snapshot_source=None,
+        )
+    return _ResolvedTreeSnapshotReference(
+        snapshot_path=latest_on_disk,
+        snapshot_source="tree_snapshot_dir",
+        status_message="Using the latest tree export discovered on disk.",
+    )
+
+
+def _latest_generation_json_path(directory: Path) -> Path | None:
+    """Return the newest ``generation_*.json`` file from one directory."""
+    candidates = sorted(directory.glob("generation_*.json"))
+    return None if not candidates else candidates[-1]
 
 
 def _tree_depth_distribution_rows_from_counts(

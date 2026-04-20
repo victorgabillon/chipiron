@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from functools import lru_cache
-from pathlib import Path
-from typing import cast
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 from anemone.checkpoints import (
     AlgorithmNodeCheckpointPayload,
@@ -14,15 +17,18 @@ from anemone.checkpoints import (
     SerializedValuePayload,
     deserialize_checkpoint_atom,
 )
-from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
 from atomheart.games.morpion import MorpionStateCheckpointCodec
+
+from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
 
 from .anemone_runner import (
     InvalidMorpionSearchCheckpointError,
     load_morpion_search_checkpoint_payload,
 )
-from .bootstrap_loop import MorpionBootstrapPaths, RUNTIME_CHECKPOINT_METADATA_KEY
+from .bootstrap_loop import RUNTIME_CHECKPOINT_METADATA_KEY, MorpionBootstrapPaths
 from .run_state import load_bootstrap_run_state
+
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -247,6 +253,11 @@ def resolve_latest_runtime_checkpoint(
         if fallback_message is None:
             fallback_message = (
                 "Using the latest runtime checkpoint file discovered on disk."
+            )
+        if metadata_warning is not None:
+            LOGGER.warning(
+                "[dashboard] latest_runtime_checkpoint_missing fallback_path=%s",
+                str(checkpoint_candidates[-1]),
             )
         return _ResolvedCheckpointReference(
             checkpoint_path=checkpoint_candidates[-1],

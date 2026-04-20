@@ -5,9 +5,9 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from chipiron.environments.morpion.learning import (
     InvalidMorpionStateRefPayloadError,
@@ -210,6 +210,23 @@ def extract_morpion_record_status_from_training_tree_snapshot(
     if best_candidate is None:
         return default_morpion_record_status()
     return _record_status_from_candidate(best_candidate)
+
+
+def select_best_certified_record_candidate_from_training_tree_snapshot(
+    snapshot: TrainingTreeSnapshot,
+    *,
+    variant: str = MORPION_BOOTSTRAP_VARIANT,
+    initial_pattern: str = MORPION_BOOTSTRAP_INITIAL_PATTERN,
+    initial_point_count: int = MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
+) -> MorpionCertifiedRecordCandidate | None:
+    """Return the strongest strict certified Morpion candidate from one snapshot."""
+    candidates = extract_certified_record_candidates_from_training_tree_snapshot(
+        snapshot,
+        variant=variant,
+        initial_pattern=initial_pattern,
+        initial_point_count=initial_point_count,
+    )
+    return _best_certified_candidate(candidates)
 
 
 def extract_morpion_frontier_status_from_training_tree_snapshot(
@@ -626,4 +643,5 @@ __all__ = [
     "persist_certified_leaderboard_candidates",
     "resolve_frontier_status_for_cycle",
     "resolve_record_status_for_cycle",
+    "select_best_certified_record_candidate_from_training_tree_snapshot",
 ]

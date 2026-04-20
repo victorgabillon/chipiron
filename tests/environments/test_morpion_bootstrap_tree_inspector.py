@@ -119,6 +119,40 @@ def test_resolve_latest_runtime_checkpoint_prefers_dedicated_run_state_path(
     assert resolved.checkpoint_source == "run_state_latest_runtime_checkpoint_path"
 
 
+def test_resolve_latest_runtime_checkpoint_falls_back_to_newest_existing_checkpoint(
+    tmp_path: Path,
+) -> None:
+    """Inspector should recover when metadata points to a deleted checkpoint."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    checkpoint_path = _create_runtime_checkpoint(tmp_path)
+    second_checkpoint_path = paths.runtime_checkpoint_path_for_generation(2)
+    checkpoint_path.replace(second_checkpoint_path)
+    save_bootstrap_run_state(
+        MorpionBootstrapRunState(
+            generation=1,
+            cycle_index=0,
+            latest_tree_snapshot_path=None,
+            latest_rows_path=None,
+            latest_model_bundle_paths=None,
+            active_evaluator_name=None,
+            tree_size_at_last_save=0,
+            last_save_unix_s=None,
+            latest_runtime_checkpoint_path="search_checkpoints/generation_000001.json",
+            metadata={
+                RUNTIME_CHECKPOINT_METADATA_KEY: "search_checkpoints/generation_000001.json"
+            },
+        ),
+        paths.run_state_path,
+    )
+
+    resolved = resolve_latest_runtime_checkpoint(paths)
+
+    assert resolved.checkpoint_path == second_checkpoint_path
+    assert resolved.checkpoint_source == "runtime_checkpoint_dir"
+    assert resolved.status_message is not None
+    assert "falling back to the latest checkpoint file on disk" in resolved.status_message
+
+
 def test_display_value_priority_prefers_backed_up_then_direct_then_none() -> None:
     """Inspector display values should prefer backed-up values over direct values."""
     assert _display_value_scalar(backed_up_value=1.5, direct_value=0.3) == 1.5

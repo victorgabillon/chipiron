@@ -2,18 +2,35 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from chipiron.environments.morpion.types import (
-    MorpionAction,
-    MorpionDynamics,
-    MorpionState,
+from atomheart.games.morpion import (
+    MorpionDynamics as AtomMorpionDynamics,
+)
+from atomheart.games.morpion import (
+    Move as AtomMorpionMove,
+)
+from atomheart.games.morpion import (
+    Variant as AtomMorpionVariant,
+)
+from atomheart.games.morpion import (
+    action_to_played_move,
+)
+from atomheart.games.morpion import (
+    initial_state as initial_atom_morpion_state,
 )
 
 if TYPE_CHECKING:
     from atomheart.games.morpion import MorpionState as AtomMorpionState
     from atomheart.games.morpion.state import Point, Segment
+
+    from chipiron.environments.morpion.types import (
+        MorpionAction,
+        MorpionDynamics,
+        MorpionState,
+    )
 
 type DisplayPoint = tuple[int, int]
 type DisplaySegment = tuple[DisplayPoint, DisplayPoint]
@@ -40,6 +57,64 @@ class MorpionPreviewPointError(ValueError):
         """Build the invalid preview-point error."""
         super().__init__(
             "Morpion move preview expects exactly one new point in the delta."
+        )
+
+
+class MorpionNumberedPointReplayError(ValueError):
+    """Raised when numbered added points cannot be replayed from a payload."""
+
+    @classmethod
+    def payload_must_be_mapping(cls) -> MorpionNumberedPointReplayError:
+        """Build the payload-shape error."""
+        return cls("Morpion state_ref payload must be a mapping.")
+
+    @classmethod
+    def missing_variant(cls) -> MorpionNumberedPointReplayError:
+        """Build the missing-variant error."""
+        return cls("Morpion state_ref payload is missing `variant`.")
+
+    @classmethod
+    def invalid_variant(cls, raw_variant: object) -> MorpionNumberedPointReplayError:
+        """Build the invalid-variant error."""
+        return cls(f"Invalid Morpion variant in state_ref payload: {raw_variant!r}")
+
+    @classmethod
+    def missing_played_moves(cls) -> MorpionNumberedPointReplayError:
+        """Build the missing-move-sequence error."""
+        return cls("Morpion state_ref payload is missing `played_moves`.")
+
+    @classmethod
+    def played_moves_must_be_sequence(cls) -> MorpionNumberedPointReplayError:
+        """Build the move-sequence-type error."""
+        return cls("Morpion state_ref payload field `played_moves` must be a sequence.")
+
+    @classmethod
+    def invalid_move_payload(
+        cls, index: int, payload: object
+    ) -> MorpionNumberedPointReplayError:
+        """Build the malformed-move error."""
+        return cls(
+            "Morpion state_ref payload move at index "
+            f"{index} must be a four-integer sequence: {payload!r}"
+        )
+
+    @classmethod
+    def illegal_move(
+        cls, index: int, move: AtomMorpionMove
+    ) -> MorpionNumberedPointReplayError:
+        """Build the illegal-move error."""
+        return cls(
+            f"Morpion state_ref payload move at index {index} is not legal: {move!r}"
+        )
+
+    @classmethod
+    def invalid_new_point_delta(
+        cls, index: int
+    ) -> MorpionNumberedPointReplayError:
+        """Build the invalid-point-delta error."""
+        return cls(
+            "Morpion numbered-point replay expected exactly one new point for "
+            f"move index {index}."
         )
 
 
@@ -88,6 +163,14 @@ class MorpionMoveDisplay:
 
 
 @dataclass(frozen=True, slots=True)
+class MorpionNumberedPointDisplay:
+    """Drawable numbered point overlay for one replayed Morpion move."""
+
+    move_index: int
+    point: DisplayPoint
+
+
+@dataclass(frozen=True, slots=True)
 class MorpionDisplayPayload:
     """Structured Morpion board payload usable by multiple renderers."""
 
@@ -99,6 +182,7 @@ class MorpionDisplayPayload:
     unique_legal_moves: tuple[MorpionMoveDisplay, ...]
     all_legal_moves: tuple[MorpionMoveDisplay, ...]
     is_terminal: bool
+    numbered_added_points: tuple[MorpionNumberedPointDisplay, ...] = ()
 
     @property
     def legal_moves(self) -> tuple[MorpionMoveDisplay, ...]:
@@ -110,6 +194,7 @@ def build_morpion_display_payload(
     *,
     state: MorpionState,
     dynamics: MorpionDynamics,
+    state_ref_payload: Mapping[str, object] | None = None,
 ) -> MorpionDisplayPayload:
     """Build the canonical Morpion board payload for one state."""
     atom_state = state.to_atomheart_state()
@@ -134,10 +219,56 @@ def build_morpion_display_payload(
         segments=tuple(
             sorted(_normalize_segment(segment) for segment in state.used_unit_segments)
         ),
+        numbered_added_points=(
+            ()
+            if state_ref_payload is None
+            else build_numbered_added_points_from_state_ref_payload(state_ref_payload)
+        ),
         unique_legal_moves=unique_legal_moves,
         all_legal_moves=all_legal_moves,
         is_terminal=state.is_game_over(),
     )
+
+
+def build_numbered_added_points_from_state_ref_payload(
+    state_ref_payload: Mapping[str, object],
+) -> tuple[MorpionNumberedPointDisplay, ...]:
+    """Replay ordered checkpoint moves and recover the newly added point for each move."""
+    payload = _normalized_state_ref_payload_mapping(state_ref_payload)
+    variant = _state_ref_payload_variant(payload)
+    serialized_moves = _state_ref_payload_played_moves(payload)
+
+    dynamics = AtomMorpionDynamics()
+    replay_state = initial_atom_morpion_state(variant)
+    numbered_points: list[MorpionNumberedPointDisplay] = []
+
+    for move_index, serialized_move in enumerate(serialized_moves, start=1):
+        target_move = _state_ref_payload_move(serialized_move, move_index - 1)
+        matching_action = next(
+            (
+                action
+                for action in dynamics.all_legal_actions(replay_state)
+                if action_to_played_move(action) == target_move
+            ),
+            None,
+        )
+        if matching_action is None:
+            raise MorpionNumberedPointReplayError.illegal_move(
+                move_index - 1, target_move
+            )
+        next_state = dynamics.step(replay_state, matching_action).next_state
+        new_points = next_state.points - replay_state.points
+        if len(new_points) != 1:
+            raise MorpionNumberedPointReplayError.invalid_new_point_delta(move_index)
+        numbered_points.append(
+            MorpionNumberedPointDisplay(
+                move_index=move_index,
+                point=_normalize_point(next(iter(new_points))),
+            )
+        )
+        replay_state = next_state
+
+    return tuple(numbered_points)
 
 
 def _build_move_display(
@@ -166,10 +297,66 @@ def _build_move_display(
     )
 
 
+def _normalized_state_ref_payload_mapping(
+    payload: Mapping[str, object] | object,
+) -> dict[str, object]:
+    """Return a normalized string-keyed payload mapping."""
+    if not isinstance(payload, Mapping):
+        raise MorpionNumberedPointReplayError.payload_must_be_mapping()
+    normalized_payload: dict[str, object] = {}
+    for key_obj, value_obj in payload.items():
+        if not isinstance(key_obj, str):
+            raise MorpionNumberedPointReplayError.payload_must_be_mapping()
+        normalized_payload[key_obj] = value_obj
+    return normalized_payload
+
+
+def _state_ref_payload_variant(payload: Mapping[str, object]) -> AtomMorpionVariant:
+    """Return the validated Morpion variant from one checkpoint payload."""
+    raw_variant = payload.get("variant")
+    if raw_variant is None:
+        raise MorpionNumberedPointReplayError.missing_variant()
+    if not isinstance(raw_variant, str):
+        raise MorpionNumberedPointReplayError.invalid_variant(raw_variant)
+    try:
+        return AtomMorpionVariant(raw_variant)
+    except ValueError as exc:
+        raise MorpionNumberedPointReplayError.invalid_variant(raw_variant) from exc
+
+
+def _state_ref_payload_played_moves(
+    payload: Mapping[str, object],
+) -> Sequence[object]:
+    """Return the raw ordered move sequence from one checkpoint payload."""
+    raw_played_moves = payload.get("played_moves")
+    if raw_played_moves is None:
+        raise MorpionNumberedPointReplayError.missing_played_moves()
+    if not isinstance(raw_played_moves, Sequence) or isinstance(
+        raw_played_moves, str | bytes | bytearray
+    ):
+        raise MorpionNumberedPointReplayError.played_moves_must_be_sequence()
+    return raw_played_moves
+
+
+def _state_ref_payload_move(payload: object, index: int) -> AtomMorpionMove:
+    """Return one validated move tuple from serialized checkpoint data."""
+    if not isinstance(payload, Sequence) or isinstance(payload, str | bytes | bytearray):
+        raise MorpionNumberedPointReplayError.invalid_move_payload(index, payload)
+    values = list(payload)
+    if len(values) != 4 or not all(isinstance(value, int) and not isinstance(value, bool) for value in values):
+        raise MorpionNumberedPointReplayError.invalid_move_payload(index, payload)
+    x1, y1, x2, y2 = (int(value) for value in values)
+    move = (x1, y1, x2, y2)
+    return move if (x1, y1) <= (x2, y2) else (x2, y2, x1, y1)
+
+
 __all__ = [
     "MorpionDisplayPayload",
     "MorpionMoveDisplay",
+    "MorpionNumberedPointDisplay",
+    "MorpionNumberedPointReplayError",
     "MorpionPreviewPointError",
     "MorpionPreviewSegmentError",
     "build_morpion_display_payload",
+    "build_numbered_added_points_from_state_ref_payload",
 ]

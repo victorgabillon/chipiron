@@ -18,6 +18,7 @@ from chipiron.displays.svg_text_helpers import fit_font_size, fmt_svg_number
 from chipiron.environments.morpion.morpion_display import (
     MorpionDisplayPayload,
     MorpionMoveDisplay,
+    MorpionNumberedPointDisplay,
 )
 
 type DisplayPoint = tuple[int, int]
@@ -38,6 +39,9 @@ def _collect_geometry_points(payload: MorpionDisplayPayload) -> list[DisplayPoin
     """Collect all points that should influence the board transform."""
     geometry_points = list(payload.points)
     geometry_points.extend(point for segment in payload.segments for point in segment)
+    geometry_points.extend(
+        numbered_point.point for numbered_point in payload.numbered_added_points
+    )
     for move in payload.all_legal_moves:
         geometry_points.append(move.new_point)
         geometry_points.extend(move.segment)
@@ -241,6 +245,64 @@ class MorpionSvgAdapter(SvgGameAdapter):
         )
         self._click_targets.append((move.action_name, cx, cy))
 
+    def _render_point_label(
+        self,
+        *,
+        point: DisplayPoint,
+        label: str,
+        font_size: float,
+        fill: str,
+        transform: tuple[float, float, float, float, float, float],
+        font_family: str = "sans-serif",
+        font_weight: int = 700,
+    ) -> str:
+        """Render centered text on top of one Morpion point."""
+        min_x, max_y, grid_padding, offset_x, offset_y, scale = transform
+        cx, cy = self._to_svg_point(
+            point,
+            min_x=min_x,
+            max_y=max_y,
+            grid_padding=grid_padding,
+            offset_x=offset_x,
+            offset_y=offset_y,
+            scale=scale,
+        )
+        adjusted_y = cy + font_size * 0.03
+        return (
+            f'<text x="{fmt_svg_number(cx)}" y="{fmt_svg_number(adjusted_y)}" '
+            'text-anchor="middle" dominant-baseline="middle" '
+            f'font-size="{fmt_svg_number(font_size)}" '
+            f'font-family="{font_family}" font-weight="{font_weight}" '
+            f'fill="{fill}">{escape(label)}</text>'
+        )
+
+    def _render_numbered_point(
+        self,
+        *,
+        numbered_point: MorpionNumberedPointDisplay,
+        radius: float,
+        label_font_size: float,
+        transform: tuple[float, float, float, float, float, float],
+    ) -> tuple[str, str]:
+        """Render one numbered replay point as a circle plus centered label."""
+        circle = self._render_point(
+            point=numbered_point.point,
+            radius=radius,
+            fill="#0f766e",
+            opacity=0.96,
+            transform=transform,
+            stroke="#ccfbf1",
+            stroke_width=max(1.0, radius * 0.18),
+        )
+        label = self._render_point_label(
+            point=numbered_point.point,
+            label=str(numbered_point.move_index),
+            font_size=label_font_size,
+            fill="#f8fafc",
+            transform=transform,
+        )
+        return circle, label
+
     def render_svg(
         self,
         pos: SvgPosition,
@@ -288,10 +350,24 @@ class MorpionSvgAdapter(SvgGameAdapter):
 
         scale = transform[-1]
         point_radius = _clamp(scale * 0.11, 2.5, 4.0)
+        numbered_point_radius = _clamp(scale * 0.26, 6.0, 11.0)
         preview_radius = _clamp(scale * 0.22, 5.0, 8.0)
         segment_width = _clamp(scale * 0.10, 1.5, 2.6)
         preview_width = _clamp(scale * 0.11, 1.8, 3.0)
         self._click_radius = max(12.0, preview_radius * 1.6)
+        max_numbered_label = (
+            max(
+                (len(str(point.move_index)) for point in payload.numbered_added_points),
+                default=1,
+            )
+        )
+        numbered_label_font = fit_font_size(
+            text="8" * max_numbered_label,
+            max_width=numbered_point_radius * 1.55,
+            min_size=7.0,
+            max_size=max(8.0, numbered_point_radius * 1.05),
+            width_factor=0.62,
+        )
 
         status_text = (
             self._TERMINAL_MESSAGE
@@ -362,6 +438,16 @@ class MorpionSvgAdapter(SvgGameAdapter):
             )
             for point in payload.points
         )
+
+        for numbered_point in payload.numbered_added_points:
+            circle, label = self._render_numbered_point(
+                numbered_point=numbered_point,
+                radius=numbered_point_radius,
+                label_font_size=numbered_label_font,
+                transform=transform,
+            )
+            elements.append(circle)
+            elements.append(label)
 
         for move in display_moves:
             self._register_click_target(move=move, transform=transform)
