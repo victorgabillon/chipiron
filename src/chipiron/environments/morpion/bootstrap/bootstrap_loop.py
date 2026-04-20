@@ -92,8 +92,8 @@ def _empty_evaluator_specs() -> dict[str, MorpionEvaluatorSpec]:
 RUNTIME_CHECKPOINT_METADATA_KEY = "runtime_checkpoint_path"
 TRAINING_SKIPPED_REASON_METADATA_KEY = "training_skipped_reason"
 EMPTY_DATASET_TRAINING_SKIPPED_REASON = "empty_dataset"
-DEFAULT_KEEP_LATEST_RUNTIME_CHECKPOINTS = 1
-DEFAULT_KEEP_LATEST_TREE_EXPORTS = 1
+DEFAULT_KEEP_LATEST_RUNTIME_CHECKPOINTS = 2
+DEFAULT_KEEP_LATEST_TREE_EXPORTS = 2
 
 
 class EmptyMorpionEvaluatorsConfigError(ValueError):
@@ -767,14 +767,6 @@ def run_one_bootstrap_cycle(
                 action="runner.save_checkpoint()",
                 artifact_path=runtime_checkpoint_path,
             )
-        LOGGER.info(
-            "[retention] prune_start kind=checkpoint keep_latest=%s",
-            DEFAULT_KEEP_LATEST_RUNTIME_CHECKPOINTS,
-        )
-        prune_generation_files(
-            paths.runtime_checkpoint_dir,
-            keep_latest=DEFAULT_KEEP_LATEST_RUNTIME_CHECKPOINTS,
-        )
         relative_runtime_checkpoint_path = paths.relative_to_work_dir(
             runtime_checkpoint_path
         )
@@ -789,14 +781,6 @@ def run_one_bootstrap_cycle(
             action="runner.export_training_tree_snapshot()",
             artifact_path=tree_snapshot_path,
         )
-    LOGGER.info(
-        "[retention] prune_start kind=tree_export keep_latest=%s",
-        DEFAULT_KEEP_LATEST_TREE_EXPORTS,
-    )
-    prune_generation_files(
-        paths.tree_snapshot_dir,
-        keep_latest=DEFAULT_KEEP_LATEST_TREE_EXPORTS,
-    )
     snapshot = load_training_tree_snapshot(tree_snapshot_path)
     rows = training_tree_snapshot_to_morpion_supervised_rows(
         snapshot,
@@ -1048,6 +1032,7 @@ def run_morpion_bootstrap_loop(
     )
     while max_cycles is None or cycles_run < max_cycles:
         next_cycle_index = run_state.cycle_index + 1
+        previous_generation = run_state.generation
         runner_tree_size, runner_expanded_nodes = _cycle_start_tree_metrics(
             runner=runner,
             run_state=run_state,
@@ -1070,6 +1055,8 @@ def run_morpion_bootstrap_loop(
             bootstrap_config=current_config,
         )
         save_bootstrap_run_state(run_state, paths.run_state_path)
+        if run_state.generation > previous_generation:
+            _prune_saved_generation_artifacts(paths)
         cycles_run += 1
 
     LOGGER.info("[launcher] loop_done cycles_run=%s", cycles_run)
@@ -1081,6 +1068,26 @@ def _timestamp_utc_from_unix_s(timestamp_unix_s: float) -> str:
     timestamp = datetime.fromtimestamp(timestamp_unix_s, tz=UTC)
     timespec = "seconds" if timestamp.microsecond == 0 else "microseconds"
     return timestamp.isoformat(timespec=timespec).replace("+00:00", "Z")
+
+
+def _prune_saved_generation_artifacts(paths: MorpionBootstrapPaths) -> None:
+    """Prune retained tree exports and checkpoints only after run-state persistence."""
+    LOGGER.info(
+        "[retention] prune_start kind=checkpoint keep_latest=%s",
+        DEFAULT_KEEP_LATEST_RUNTIME_CHECKPOINTS,
+    )
+    prune_generation_files(
+        paths.runtime_checkpoint_dir,
+        keep_latest=DEFAULT_KEEP_LATEST_RUNTIME_CHECKPOINTS,
+    )
+    LOGGER.info(
+        "[retention] prune_start kind=tree_export keep_latest=%s",
+        DEFAULT_KEEP_LATEST_TREE_EXPORTS,
+    )
+    prune_generation_files(
+        paths.tree_snapshot_dir,
+        keep_latest=DEFAULT_KEEP_LATEST_TREE_EXPORTS,
+    )
 
 
 def _cycle_start_tree_metrics(
