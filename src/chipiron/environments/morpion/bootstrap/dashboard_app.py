@@ -5,9 +5,14 @@ from __future__ import annotations
 import argparse
 from importlib import import_module
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from matplotlib import pyplot as plt
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
+
+    from .history import MorpionBootstrapTreeStatus
 
 from .bootstrap_loop import MorpionBootstrapPaths
 from .config import (
@@ -40,10 +45,11 @@ from .dashboard_plot import (
     plot_tree_size,
 )
 from .evaluator_family import canonical_morpion_evaluator_names
-from .history import MorpionBootstrapTreeStatus
 from .history_view import (
+    DiskUsageSummary,
     TreeDepthDistributionRow,
     build_morpion_bootstrap_dashboard_data,
+    format_num_bytes,
 )
 from .process_control import (
     MorpionBootstrapProcessControlError,
@@ -56,6 +62,8 @@ from .process_control import (
 )
 from .run_state import initialize_bootstrap_run_state, load_bootstrap_run_state
 from .tree_inspector import build_morpion_bootstrap_tree_inspector_snapshot
+
+MAX_PLOT_POINTS = 2000
 
 
 def run_dashboard_app(work_dir: Path) -> None:
@@ -112,6 +120,9 @@ def run_dashboard_app(work_dir: Path) -> None:
         _format_value(summary.latest_active_evaluator_name),
     )
     status_columns[3].metric("Dataset Rows", _format_value(latest_dataset_rows))
+
+    st.subheader("Disk Usage")
+    _render_disk_usage_section(st=st, summary=dashboard_data.disk_usage_summary)
 
     st.subheader("Record Status")
     _render_record_status_section(
@@ -265,26 +276,38 @@ def run_dashboard_app(work_dir: Path) -> None:
 
     st.subheader("Plots")
     st.caption("Time-series plots use absolute UTC timestamps from bootstrap history.")
+    downsampled_tree_num_nodes = _downsample_series(dashboard_data.tree_num_nodes)
+    downsampled_canonical_record_score = _downsample_series(
+        dashboard_data.canonical_record_score
+    )
+    downsampled_dataset_num_rows = _downsample_series(dashboard_data.dataset_num_rows)
+    downsampled_active_evaluator = _downsample_series(dashboard_data.active_evaluator)
+    downsampled_evaluator_losses = _downsample_loss_series_by_name(
+        dashboard_data.evaluator_loss_by_name
+    )
+    downsampled_certified_record_score = _downsample_series(
+        dashboard_data.certified_record_score
+    )
     plot_columns = st.columns(2)
     with plot_columns[0]:
-        _render_plot(st, lambda: plot_tree_size(dashboard_data.tree_num_nodes))
+        _render_plot(st, lambda: plot_tree_size(downsampled_tree_num_nodes))
         _render_plot(
             st,
-            lambda: plot_record_score(dashboard_data.canonical_record_score),
+            lambda: plot_record_score(downsampled_canonical_record_score),
         )
-        _render_plot(st, lambda: plot_dataset_size(dashboard_data.dataset_num_rows))
+        _render_plot(st, lambda: plot_dataset_size(downsampled_dataset_num_rows))
     with plot_columns[1]:
-        _render_plot(st, lambda: plot_active_evaluator(dashboard_data.active_evaluator))
+        _render_plot(st, lambda: plot_active_evaluator(downsampled_active_evaluator))
         _render_plot(
             st,
-            lambda: plot_evaluator_losses(dashboard_data.evaluator_loss_by_name),
+            lambda: plot_evaluator_losses(downsampled_evaluator_losses),
         )
 
     st.subheader("Certified Record Progress")
-    if _has_known_optional_series_values(dashboard_data.certified_record_score):
+    if _has_known_optional_series_values(downsampled_certified_record_score):
         _render_plot(
             st,
-            lambda: plot_certified_record_score(dashboard_data.certified_record_score),
+            lambda: plot_certified_record_score(downsampled_certified_record_score),
         )
     else:
         st.caption("No certified record yet.")
@@ -326,9 +349,27 @@ def _get_streamlit() -> Any:
     try:
         return import_module("streamlit")
     except ModuleNotFoundError as exc:
-        raise RuntimeError(
+        raise MissingStreamlitDashboardDependencyError from exc
+
+
+class MissingStreamlitDashboardDependencyError(RuntimeError):
+    """Raised when the local dashboard is requested without Streamlit installed."""
+
+    def __init__(self) -> None:
+        """Initialize the missing-Streamlit dependency error."""
+        super().__init__(
             "Streamlit is not installed. Install `streamlit` to use the local dashboard."
-        ) from exc
+        )
+
+
+class InvalidDashboardPlotPointLimitError(ValueError):
+    """Raised when dashboard plot downsampling is configured with an invalid cap."""
+
+    def __init__(self, max_points: int) -> None:
+        """Initialize the invalid plot-point-limit error."""
+        super().__init__(
+            f"Dashboard plot max_points must be at least 1, got {max_points}."
+        )
 
 
 def _render_plot(st: Any, build_plot: Any) -> None:
@@ -337,6 +378,74 @@ def _render_plot(st: Any, build_plot: Any) -> None:
     figure = plt.gcf()
     st.pyplot(figure, clear_figure=True)
     plt.close(figure)
+
+
+def _render_disk_usage_section(*, st: Any, summary: DiskUsageSummary) -> None:
+    """Render operator-facing run and device disk usage information."""
+    metric_columns = st.columns(4)
+    metric_columns[0].metric(
+        "Run Dir Size",
+        format_num_bytes(summary.run_dir_num_bytes),
+        delta=_format_disk_usage_pct(summary.run_dir_pct_of_device_total),
+    )
+    metric_columns[1].metric(
+        "Device Free Space",
+        format_num_bytes(summary.device_free_num_bytes),
+    )
+    metric_columns[2].metric(
+        "Device Used Space",
+        format_num_bytes(summary.device_used_num_bytes),
+    )
+    metric_columns[3].metric(
+        "Device Total Space",
+        format_num_bytes(summary.device_total_num_bytes),
+    )
+    breakdown_rows = [
+        {"artifact_group": row.label, "size": format_num_bytes(row.num_bytes)}
+        for row in summary.breakdown_rows
+    ]
+    st.dataframe(breakdown_rows, use_container_width=True, hide_index=True)
+    st.caption(
+        "Run breakdown is sorted largest-first. Retention keeps only the latest "
+        "checkpoint and tree export by default."
+    )
+
+
+def _format_disk_usage_pct(value: float | None) -> str:
+    """Format one optional disk-usage percentage for dashboard metrics."""
+    if value is None:
+        return "unknown"
+    return f"{value:.2f}% of device"
+
+
+def _downsample_series[SeriesPointT](
+    series: Sequence[SeriesPointT],
+    max_points: int = MAX_PLOT_POINTS,
+) -> tuple[SeriesPointT, ...]:
+    """Return one bounded series while preserving the first and last points."""
+    if max_points < 1:
+        raise InvalidDashboardPlotPointLimitError(max_points)
+    if len(series) <= max_points:
+        return tuple(series)
+    if max_points == 1:
+        return (series[-1],)
+    last_index = len(series) - 1
+    sampled_indices = tuple(
+        int(sample_index * last_index / (max_points - 1))
+        for sample_index in range(max_points)
+    )
+    return tuple(series[index] for index in sampled_indices)
+
+
+def _downsample_loss_series_by_name[SeriesPointT](
+    loss_by_name: Mapping[str, Sequence[SeriesPointT]],
+    max_points: int = MAX_PLOT_POINTS,
+) -> dict[str, tuple[SeriesPointT, ...]]:
+    """Return one bounded evaluator-loss mapping keyed by evaluator name."""
+    return {
+        evaluator_name: _downsample_series(series, max_points=max_points)
+        for evaluator_name, series in loss_by_name.items()
+    }
 
 
 def _render_run_control_section(*, st: Any, paths: MorpionBootstrapPaths) -> None:

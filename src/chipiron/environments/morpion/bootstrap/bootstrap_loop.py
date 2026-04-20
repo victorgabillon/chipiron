@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Protocol
 
 from anemone.training_export import load_training_tree_snapshot
+
 from chipiron.environments.morpion.learning import (
     save_morpion_supervised_rows,
     training_tree_snapshot_to_morpion_supervised_rows,
@@ -25,18 +26,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.train impo
     MorpionTrainingArgs,
     train_morpion_regressor,
 )
-from .evaluator_family import morpion_evaluators_config_from_preset
 
-from .history import (
-    MorpionBootstrapArtifacts,
-    MorpionBootstrapDatasetStatus,
-    MorpionBootstrapEvent,
-    MorpionBootstrapHistoryPaths,
-    MorpionBootstrapHistoryRecorder,
-    MorpionBootstrapTrainingStatus,
-    MorpionBootstrapTreeStatus,
-    MorpionEvaluatorMetrics,
-)
 from .config import (
     BOOTSTRAP_CONFIG_HASH_METADATA_KEY,
     DEFAULT_MORPION_TREE_BRANCH_LIMIT,
@@ -62,6 +52,17 @@ from .control import (
     effective_runtime_config_sha256,
     effective_runtime_config_to_dict,
     load_bootstrap_control,
+)
+from .evaluator_family import morpion_evaluators_config_from_preset
+from .history import (
+    MorpionBootstrapArtifacts,
+    MorpionBootstrapDatasetStatus,
+    MorpionBootstrapEvent,
+    MorpionBootstrapHistoryPaths,
+    MorpionBootstrapHistoryRecorder,
+    MorpionBootstrapTrainingStatus,
+    MorpionBootstrapTreeStatus,
+    MorpionEvaluatorMetrics,
 )
 from .record_status import (
     MorpionBootstrapFrontierStatus,
@@ -91,6 +92,8 @@ def _empty_evaluator_specs() -> dict[str, MorpionEvaluatorSpec]:
 RUNTIME_CHECKPOINT_METADATA_KEY = "runtime_checkpoint_path"
 TRAINING_SKIPPED_REASON_METADATA_KEY = "training_skipped_reason"
 EMPTY_DATASET_TRAINING_SKIPPED_REASON = "empty_dataset"
+DEFAULT_KEEP_LATEST_RUNTIME_CHECKPOINTS = 1
+DEFAULT_KEEP_LATEST_TREE_EXPORTS = 1
 
 
 class EmptyMorpionEvaluatorsConfigError(ValueError):
@@ -112,6 +115,14 @@ class InvalidBootstrapArtifactPathError(ValueError):
             f"Bootstrap artifact path {artifact_path} must be inside work_dir "
             f"{work_dir} to be persisted relatively."
         )
+
+
+class InvalidGenerationRetentionCountError(ValueError):
+    """Raised when retention configuration requests fewer than one artifact."""
+
+    def __init__(self, keep_latest: int) -> None:
+        """Initialize the invalid-retention-count error."""
+        super().__init__(f"Retention keep_latest must be at least 1, got {keep_latest}.")
 
 
 class InconsistentMorpionEvaluatorSpecNameError(ValueError):
@@ -224,6 +235,16 @@ class ConflictingMorpionEvaluatorConfigurationError(ValueError):
         super().__init__(
             "Morpion bootstrap args cannot specify both `evaluators_config` and "
             "`evaluator_family_preset`; choose one configuration path."
+        )
+
+
+class MissingSavedBootstrapArtifactError(FileNotFoundError):
+    """Raised when a save hook returns without producing its expected artifact."""
+
+    def __init__(self, *, action: str, artifact_path: Path) -> None:
+        """Initialize the missing-saved-artifact error."""
+        super().__init__(
+            f"Morpion bootstrap {action} did not create expected artifact: {artifact_path}"
         )
 
 
@@ -426,6 +447,43 @@ class MorpionBootstrapPaths:
         if raw_path.is_absolute():
             return raw_path
         return self.work_dir / raw_path
+
+
+def _generation_file_sort_key(path: Path) -> int | None:
+    """Return the parsed generation index for ``generation_XXXXXX.json`` files."""
+    stem = path.stem
+    prefix = "generation_"
+    if path.suffix != ".json" or not stem.startswith(prefix):
+        return None
+    generation_text = stem.removeprefix(prefix)
+    if not generation_text.isdigit():
+        return None
+    return int(generation_text)
+
+
+def prune_generation_files(directory: Path, keep_latest: int = 1) -> None:
+    """Delete old ``generation_*.json`` files while keeping the newest ones."""
+    if keep_latest < 1:
+        raise InvalidGenerationRetentionCountError(keep_latest)
+
+    generation_files = [
+        (generation, path)
+        for path in directory.iterdir()
+        if path.is_file()
+        for generation in [_generation_file_sort_key(path)]
+        if generation is not None
+    ]
+    generation_files.sort(key=lambda item: item[0], reverse=True)
+    deleted_count = 0
+    for _generation, path in generation_files[keep_latest:]:
+        path.unlink()
+        deleted_count += 1
+        LOGGER.info("[retention] deleted path=%s", str(path))
+    LOGGER.info(
+        "[retention] prune_done kept=%s deleted=%s",
+        min(keep_latest, len(generation_files)),
+        deleted_count,
+    )
 
 
 class MorpionSearchRunner(Protocol):
@@ -704,6 +762,19 @@ def run_one_bootstrap_cycle(
     save_checkpoint = getattr(runner, "save_checkpoint", None)
     if callable(save_checkpoint):
         save_checkpoint(runtime_checkpoint_path)
+        if not runtime_checkpoint_path.is_file():
+            raise MissingSavedBootstrapArtifactError(
+                action="runner.save_checkpoint()",
+                artifact_path=runtime_checkpoint_path,
+            )
+        LOGGER.info(
+            "[retention] prune_start kind=checkpoint keep_latest=%s",
+            DEFAULT_KEEP_LATEST_RUNTIME_CHECKPOINTS,
+        )
+        prune_generation_files(
+            paths.runtime_checkpoint_dir,
+            keep_latest=DEFAULT_KEEP_LATEST_RUNTIME_CHECKPOINTS,
+        )
         relative_runtime_checkpoint_path = paths.relative_to_work_dir(
             runtime_checkpoint_path
         )
@@ -713,6 +784,19 @@ def run_one_bootstrap_cycle(
     dataset_started_at = time.perf_counter()
     LOGGER.info("[dataset] build_start snapshot=%s", str(tree_snapshot_path))
     runner.export_training_tree_snapshot(tree_snapshot_path)
+    if not tree_snapshot_path.is_file():
+        raise MissingSavedBootstrapArtifactError(
+            action="runner.export_training_tree_snapshot()",
+            artifact_path=tree_snapshot_path,
+        )
+    LOGGER.info(
+        "[retention] prune_start kind=tree_export keep_latest=%s",
+        DEFAULT_KEEP_LATEST_TREE_EXPORTS,
+    )
+    prune_generation_files(
+        paths.tree_snapshot_dir,
+        keep_latest=DEFAULT_KEEP_LATEST_TREE_EXPORTS,
+    )
     snapshot = load_training_tree_snapshot(tree_snapshot_path)
     rows = training_tree_snapshot_to_morpion_supervised_rows(
         snapshot,
@@ -1465,21 +1549,21 @@ def _validate_runtime_reconfiguration(
 
 __all__ = [
     "EMPTY_DATASET_TRAINING_SKIPPED_REASON",
+    "TRAINING_SKIPPED_REASON_METADATA_KEY",
     "EmptyMorpionEvaluatorsConfigError",
     "IncompatibleMorpionResumeArtifactError",
     "InconsistentMorpionEvaluatorSpecNameError",
-    "MissingForcedMorpionEvaluatorBundleError",
     "MissingActiveMorpionEvaluatorError",
+    "MissingForcedMorpionEvaluatorBundleError",
     "MorpionBootstrapArgs",
     "MorpionBootstrapPaths",
     "MorpionEvaluatorSpec",
     "MorpionEvaluatorsConfig",
     "MorpionSearchRunner",
     "NoSelectableMorpionEvaluatorError",
-    "UnsupportedMorpionRuntimeReconfigurationError",
-    "UnknownForcedMorpionEvaluatorError",
     "UnknownActiveMorpionEvaluatorError",
-    "TRAINING_SKIPPED_REASON_METADATA_KEY",
+    "UnknownForcedMorpionEvaluatorError",
+    "UnsupportedMorpionRuntimeReconfigurationError",
     "build_bootstrap_event",
     "run_morpion_bootstrap_loop",
     "run_one_bootstrap_cycle",

@@ -59,17 +59,17 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapPaths,
     MorpionBootstrapRecordStatus,
     MorpionBootstrapRunState,
+    MorpionBootstrapRunView,
     MorpionBootstrapTrainingStatus,
     MorpionBootstrapTreeStatus,
-    MorpionBootstrapRunView,
     MorpionEvaluatorMetrics,
     MorpionRecordProgressSummary,
-    TreeDepthDistributionRow,
     TrainingTriggeredTimeSeriesPoint,
+    TreeDepthDistributionRow,
     active_evaluator_series,
     build_morpion_bootstrap_dashboard_data,
-    certified_record_best_so_far_series,
     canonical_record_score_series,
+    certified_record_best_so_far_series,
     dataset_num_rows_series,
     evaluator_loss_series_by_name,
     latest_tree_depth_distribution,
@@ -81,6 +81,13 @@ from chipiron.environments.morpion.bootstrap import (
     summarize_record_progress,
     training_triggered_series,
     tree_num_nodes_series,
+)
+from chipiron.environments.morpion.bootstrap.history_view import (
+    DiskUsageRow,
+    DiskUsageSummary,
+    build_disk_usage_summary,
+    format_num_bytes,
+    recursive_path_num_bytes,
 )
 
 
@@ -242,6 +249,79 @@ def test_empty_run_view_works(tmp_path: Path) -> None:
     assert run_view.latest_status.latest_event is None
     assert run_view.latest_status.latest_cycle_index is None
     assert run_view.latest_status.latest_generation is None
+
+
+def test_format_num_bytes_is_human_readable() -> None:
+    """Byte formatting should stay compact and operator-friendly."""
+    assert format_num_bytes(None) == "unknown"
+    assert format_num_bytes(12) == "12 B"
+    assert format_num_bytes(1536) == "1.5 KB"
+    assert format_num_bytes(1048576) == "1.0 MB"
+
+
+def test_recursive_path_num_bytes_sums_directory_contents(tmp_path: Path) -> None:
+    """Recursive size helper should sum nested files and treat missing paths as zero."""
+    (tmp_path / "root.bin").write_bytes(b"abc")
+    nested_dir = tmp_path / "nested"
+    nested_dir.mkdir()
+    (nested_dir / "child.bin").write_bytes(b"defgh")
+
+    assert recursive_path_num_bytes(tmp_path) == 8
+    assert recursive_path_num_bytes(tmp_path / "missing") == 0
+
+
+def test_build_disk_usage_summary_collects_expected_breakdown(tmp_path: Path) -> None:
+    """Disk summary should report run totals and sort breakdown rows by size."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    (paths.model_dir / "weights.bin").write_bytes(b"abcdef")
+    (paths.rows_dir / "rows.json").write_bytes(b"1234")
+    (paths.runtime_checkpoint_dir / "generation_000001.json").write_bytes(b"12")
+    (paths.tree_snapshot_dir / "generation_000001.json").write_bytes(b"123")
+    paths.history_jsonl_path.write_bytes(b"12345")
+    paths.latest_status_path.write_bytes(b"12")
+
+    summary = build_disk_usage_summary(tmp_path)
+
+    assert isinstance(summary, DiskUsageSummary)
+    assert summary.run_dir_num_bytes == 22
+    assert summary.device_total_num_bytes is None or summary.device_total_num_bytes > 0
+    assert summary.run_dir_pct_of_device_total is None or summary.run_dir_pct_of_device_total >= 0.0
+    assert summary.breakdown_rows[:5] == (
+        DiskUsageRow("history_logs_status", 7),
+        DiskUsageRow("models", 6),
+        DiskUsageRow("rows", 4),
+        DiskUsageRow("tree_exports", 3),
+        DiskUsageRow("search_checkpoints", 2),
+    )
+
+
+def test_build_disk_usage_summary_handles_missing_directories(tmp_path: Path) -> None:
+    """Disk summary should treat absent artifact folders as zero-sized."""
+    summary = build_disk_usage_summary(tmp_path)
+
+    assert summary.run_dir_num_bytes == 0
+    assert summary.breakdown_rows == (
+        DiskUsageRow("history_logs_status", 0),
+        DiskUsageRow("models", 0),
+        DiskUsageRow("rows", 0),
+        DiskUsageRow("search_checkpoints", 0),
+        DiskUsageRow("tree_exports", 0),
+    )
+
+
+def test_dashboard_data_includes_disk_usage_summary(tmp_path: Path) -> None:
+    """Dashboard data payload should include the derived disk-usage summary."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    (paths.rows_dir / "generation_000001.json").write_bytes(b"123")
+
+    data = build_morpion_bootstrap_dashboard_data(tmp_path)
+
+    assert data.disk_usage_summary.run_dir_num_bytes == 3
+    assert any(
+        row == DiskUsageRow("rows", 3) for row in data.disk_usage_summary.breakdown_rows
+    )
 
 
 def test_run_summary_counts_train_vs_no_train_cycles() -> None:

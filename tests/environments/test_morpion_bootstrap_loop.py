@@ -58,11 +58,11 @@ from torch.utils.data import DataLoader
 
 import chipiron.environments.morpion.bootstrap.bootstrap_loop as bootstrap_loop_module
 from chipiron.environments.morpion.bootstrap import (
-    AnemoneMorpionSearchRunner,
     CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
     MORPION_BOOTSTRAP_INITIAL_PATTERN,
     MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
     MORPION_BOOTSTRAP_VARIANT,
+    AnemoneMorpionSearchRunner,
     EmptyMorpionEvaluatorsConfigError,
     IncompatibleMorpionResumeArtifactError,
     MalformedMorpionBootstrapRunStateError,
@@ -74,20 +74,22 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionEvaluatorSpec,
     NoSelectableMorpionEvaluatorError,
     UnknownActiveMorpionEvaluatorError,
+    canonical_morpion_evaluator_family_config,
     initialize_bootstrap_run_state,
     load_bootstrap_history,
-    load_morpion_evaluator_from_model_bundle,
-    load_latest_bootstrap_status,
     load_bootstrap_run_state,
+    load_latest_bootstrap_status,
+    load_morpion_evaluator_from_model_bundle,
     run_morpion_bootstrap_loop,
     run_one_bootstrap_cycle,
     save_bootstrap_run_state,
     select_active_evaluator_name,
     should_save_progress,
-    canonical_morpion_evaluator_family_config,
 )
-from chipiron.environments.morpion.learning import load_morpion_supervised_rows
-from chipiron.environments.morpion.learning import MorpionSupervisedRows
+from chipiron.environments.morpion.learning import (
+    MorpionSupervisedRows,
+    load_morpion_supervised_rows,
+)
 from chipiron.environments.morpion.players.evaluators.datasets import (
     MorpionSupervisedDataset,
     MorpionSupervisedDatasetArgs,
@@ -297,6 +299,62 @@ def test_should_save_progress_helper() -> None:
         save_after_tree_growth_factor=2.0,
         save_after_seconds=3600.0,
     )
+
+
+def test_prune_generation_files_keeps_only_newest_file(tmp_path: Path) -> None:
+    """Retention should keep only the newest generation file by default."""
+    for generation in (1, 2, 3):
+        (tmp_path / f"generation_{generation:06d}.json").write_text(
+            f"gen={generation}\n",
+            encoding="utf-8",
+        )
+
+    bootstrap_loop_module.prune_generation_files(tmp_path)
+
+    remaining = sorted(path.name for path in tmp_path.iterdir())
+    assert remaining == ["generation_000003.json"]
+
+
+def test_prune_generation_files_keeps_newest_two_files(tmp_path: Path) -> None:
+    """Retention should keep the newest two generation files when requested."""
+    for generation in (1, 2, 3, 4):
+        (tmp_path / f"generation_{generation:06d}.json").write_text(
+            f"gen={generation}\n",
+            encoding="utf-8",
+        )
+
+    bootstrap_loop_module.prune_generation_files(tmp_path, keep_latest=2)
+
+    remaining = sorted(path.name for path in tmp_path.iterdir())
+    assert remaining == ["generation_000003.json", "generation_000004.json"]
+
+
+def test_prune_generation_files_keeps_single_existing_file(tmp_path: Path) -> None:
+    """Retention should leave a lone generation file untouched."""
+    only_file = tmp_path / "generation_000001.json"
+    only_file.write_text("gen=1\n", encoding="utf-8")
+
+    bootstrap_loop_module.prune_generation_files(tmp_path)
+
+    assert only_file.is_file()
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["generation_000001.json"]
+
+
+def test_prune_generation_files_ignores_unrelated_files(tmp_path: Path) -> None:
+    """Retention should ignore files that are not generation JSON artifacts."""
+    (tmp_path / "generation_000001.json").write_text("gen=1\n", encoding="utf-8")
+    (tmp_path / "generation_000002.json").write_text("gen=2\n", encoding="utf-8")
+    (tmp_path / "notes.txt").write_text("keep me\n", encoding="utf-8")
+    (tmp_path / "generation_latest.json").write_text("keep me too\n", encoding="utf-8")
+
+    bootstrap_loop_module.prune_generation_files(tmp_path)
+
+    remaining = sorted(path.name for path in tmp_path.iterdir())
+    assert remaining == [
+        "generation_000002.json",
+        "generation_latest.json",
+        "notes.txt",
+    ]
 
 
 def test_previous_effective_runtime_config_falls_back_to_persisted_baseline() -> None:
@@ -673,6 +731,41 @@ def test_loop_resumes_from_saved_run_state(tmp_path: Path) -> None:
             )
         ),
     )
+
+
+def test_loop_prunes_old_checkpoints_and_tree_exports_after_new_save(
+    tmp_path: Path,
+) -> None:
+    """A later save should prune older generation checkpoints and tree exports."""
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        max_growth_steps_per_cycle=5,
+        save_after_tree_growth_factor=1.0,
+        num_epochs=1,
+        batch_size=1,
+        shuffle=False,
+    )
+    runner = FakeMorpionSearchRunner(
+        tree_sizes=(10, 11),
+        target_values=(1.25, -0.5),
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+
+    first_state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+    second_state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+
+    assert first_state.generation == 1
+    assert second_state.generation == 2
+    assert second_state.latest_runtime_checkpoint_path == "search_checkpoints/generation_000002.json"
+    assert second_state.latest_tree_snapshot_path == "tree_exports/generation_000002.json"
+    assert sorted(
+        path.name for path in paths.runtime_checkpoint_dir.glob("generation_*.json")
+    ) == ["generation_000002.json"]
+    assert sorted(
+        path.name for path in paths.tree_snapshot_dir.glob("generation_*.json")
+    ) == ["generation_000002.json"]
+    assert paths.rows_path_for_generation(1).is_file()
+    assert paths.rows_path_for_generation(2).is_file()
 
 
 def test_loop_resumes_with_selected_winning_evaluator(

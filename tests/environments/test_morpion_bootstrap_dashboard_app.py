@@ -1,4 +1,5 @@
 """Tests for pure Morpion bootstrap dashboard-app helpers."""
+# ruff: noqa: E402
 
 from __future__ import annotations
 
@@ -46,15 +47,16 @@ from chipiron.environments.morpion.bootstrap import (
     BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY,
     BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY,
     DEFAULT_MORPION_TREE_BRANCH_LIMIT,
+    ActiveEvaluatorTimeSeriesPoint,
     MorpionBootstrapArgs,
     MorpionBootstrapControl,
     MorpionBootstrapEffectiveRuntimeConfig,
     MorpionBootstrapPaths,
-    MorpionBootstrapRuntimeControl,
     MorpionBootstrapRunState,
-    MorpionBootstrapTreeStatus,
+    MorpionBootstrapRuntimeControl,
     MorpionEvaluatorsConfig,
     MorpionEvaluatorSpec,
+    OptionalFloatTimeSeriesPoint,
     TreeDepthDistributionRow,
     bootstrap_config_from_args,
     load_bootstrap_config,
@@ -62,21 +64,21 @@ from chipiron.environments.morpion.bootstrap import (
     save_bootstrap_run_state,
 )
 from chipiron.environments.morpion.bootstrap.dashboard_app import (
-    _selected_child_node_id_for_branch,
     _applied_runtime_control,
     _baseline_tree_branch_limit,
     _build_next_control,
     _configured_evaluator_names,
     _dataset_status_summary,
+    _downsample_loss_series_by_name,
+    _downsample_series,
     _effective_runtime_config,
-    _effective_state_summary,
     _effective_runtime_hash,
-    _evaluator_set_summary,
+    _effective_state_summary,
     _evaluator_control_status_summary,
+    _evaluator_set_summary,
     _force_evaluator_options,
     _format_force_evaluator_option,
     _format_force_evaluator_state,
-    _render_launcher_command_text,
     _format_optional_runtime_override,
     _format_value,
     _has_pending_control_changes,
@@ -84,11 +86,13 @@ from chipiron.environments.morpion.bootstrap.dashboard_app import (
     _load_applied_control,
     _pending_control_fields,
     _pending_control_sections,
+    _render_launcher_command_text,
     _runtime_status_summary,
     _scheduling_status_summary,
+    _selected_child_node_id_for_branch,
+    _tree_branch_limit_input_value,
     _tree_inspector_child_rows,
     _tree_structure_rows,
-    _tree_branch_limit_input_value,
 )
 from chipiron.environments.morpion.bootstrap.tree_inspector import (
     MorpionBootstrapChildSummary,
@@ -265,6 +269,69 @@ def test_tree_structure_rows_render_depth_counts_in_order() -> None:
         {"depth": 1, "num_nodes": 5, "cumulative_nodes": 6},
         {"depth": 2, "num_nodes": 3, "cumulative_nodes": 9},
     ]
+
+
+def test_downsample_series_keeps_small_history_unchanged() -> None:
+    """Series shorter than the cap should pass through unchanged."""
+    series = (
+        ActiveEvaluatorTimeSeriesPoint(
+            cycle_index=0,
+            generation=1,
+            timestamp_utc="2026-04-16T08:00:00Z",
+            active_evaluator_name="linear",
+        ),
+        ActiveEvaluatorTimeSeriesPoint(
+            cycle_index=1,
+            generation=2,
+            timestamp_utc="2026-04-16T09:00:00Z",
+            active_evaluator_name="mlp",
+        ),
+    )
+
+    assert _downsample_series(series, max_points=5) == series
+
+
+def test_downsample_series_respects_point_cap_and_preserves_endpoints() -> None:
+    """Downsampling should preserve the first and last points exactly."""
+    series = tuple(range(10))
+
+    downsampled = _downsample_series(series, max_points=4)
+
+    assert len(downsampled) == 4
+    assert downsampled[0] == 0
+    assert downsampled[-1] == 9
+
+
+def test_downsample_loss_series_by_name_bounds_each_evaluator_series() -> None:
+    """Loss-series downsampling should bound each evaluator independently."""
+    linear_series = tuple(
+        OptionalFloatTimeSeriesPoint(
+            cycle_index=index,
+            generation=index + 1,
+            timestamp_utc=f"2026-04-16T08:{index:02d}:00Z",
+            value=float(index),
+        )
+        for index in range(8)
+    )
+    mlp_series = tuple(
+        OptionalFloatTimeSeriesPoint(
+            cycle_index=index,
+            generation=index + 1,
+            timestamp_utc=f"2026-04-16T09:{index:02d}:00Z",
+            value=float(index) / 10.0,
+        )
+        for index in range(3)
+    )
+
+    downsampled = _downsample_loss_series_by_name(
+        {"linear": linear_series, "mlp": mlp_series},
+        max_points=4,
+    )
+
+    assert len(downsampled["linear"]) == 4
+    assert downsampled["linear"][0] == linear_series[0]
+    assert downsampled["linear"][-1] == linear_series[-1]
+    assert downsampled["mlp"] == mlp_series
 
 
 def test_pending_control_helpers_cover_expected_categories() -> None:

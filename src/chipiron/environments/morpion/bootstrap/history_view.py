@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+import shutil
 from dataclasses import dataclass
-from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
+    from pathlib import Path
 
 from anemone.training_export import load_training_tree_snapshot
 
@@ -135,10 +139,31 @@ class TreeDepthDistributionRow:
 
 
 @dataclass(frozen=True, slots=True)
+class DiskUsageRow:
+    """One dashboard-friendly disk-usage breakdown row."""
+
+    label: str
+    num_bytes: int | None
+
+
+@dataclass(frozen=True, slots=True)
+class DiskUsageSummary:
+    """Disk-usage summary for one Morpion bootstrap work directory."""
+
+    run_dir_num_bytes: int | None
+    device_free_num_bytes: int | None
+    device_used_num_bytes: int | None
+    device_total_num_bytes: int | None
+    run_dir_pct_of_device_total: float | None
+    breakdown_rows: tuple[DiskUsageRow, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class MorpionBootstrapDashboardData:
     """Bundled summaries and time series for future dashboard consumption."""
 
     run_summary: MorpionBootstrapRunSummary
+    disk_usage_summary: DiskUsageSummary
     latest_tree_status: MorpionBootstrapTreeStatus | None
     latest_certified_record_status: MorpionBootstrapRecordStatus | None
     latest_frontier_status: MorpionBootstrapFrontierStatus | None
@@ -423,6 +448,7 @@ def build_morpion_bootstrap_dashboard_data(
     history = run_view.history
     return MorpionBootstrapDashboardData(
         run_summary=summarize_bootstrap_run(run_view),
+        disk_usage_summary=build_disk_usage_summary(run_view.work_dir),
         latest_tree_status=_latest_tree_status(run_view),
         latest_certified_record_status=_latest_certified_record_status(run_view),
         latest_frontier_status=_latest_frontier_status(run_view),
@@ -437,6 +463,125 @@ def build_morpion_bootstrap_dashboard_data(
         active_evaluator=active_evaluator_series(history),
         latest_tree_depth_distribution=latest_tree_depth_distribution(run_view),
     )
+
+
+def format_num_bytes(num_bytes: int | None) -> str:
+    """Format a byte count into one compact human-readable size string."""
+    if num_bytes is None:
+        return "unknown"
+    if num_bytes < 1024:
+        return f"{num_bytes} B"
+    units = ("KB", "MB", "GB", "TB", "PB")
+    value = float(num_bytes)
+    for unit in units:
+        value /= 1024.0
+        if value < 1024.0 or unit == units[-1]:
+            return f"{value:.1f} {unit}"
+    return f"{value:.1f} PB"
+
+
+def recursive_path_num_bytes(path: Path) -> int | None:
+    """Return the recursive size of one path, treating missing paths as zero."""
+    if not path.exists():
+        return 0
+    try:
+        if path.is_file():
+            return path.stat().st_size
+        if not path.is_dir():
+            return 0
+        total = 0
+        for child in path.rglob("*"):
+            if child.is_file():
+                total += child.stat().st_size
+    except OSError:
+        return None
+    return total
+
+
+def filesystem_usage_for_path(path: Path) -> tuple[int, int, int] | None:
+    """Return ``(free, used, total)`` for the device containing ``path``."""
+    target = path
+    while not target.exists() and target != target.parent:
+        target = target.parent
+    try:
+        usage = shutil.disk_usage(target)
+    except OSError:
+        return None
+    return (usage.free, usage.used, usage.total)
+
+
+def build_disk_usage_summary(work_dir: str | Path) -> DiskUsageSummary:
+    """Build one operator-friendly disk-usage summary for the bootstrap dashboard."""
+    paths = MorpionBootstrapPaths.from_work_dir(work_dir)
+    run_dir_num_bytes = recursive_path_num_bytes(paths.work_dir)
+    device_usage = filesystem_usage_for_path(paths.work_dir)
+    if device_usage is None:
+        device_free_num_bytes = None
+        device_used_num_bytes = None
+        device_total_num_bytes = None
+        run_dir_pct_of_device_total = None
+    else:
+        device_free_num_bytes, device_used_num_bytes, device_total_num_bytes = device_usage
+        run_dir_pct_of_device_total = (
+            None
+            if run_dir_num_bytes is None or device_total_num_bytes <= 0
+            else (run_dir_num_bytes / device_total_num_bytes) * 100.0
+        )
+
+    breakdown_candidates = (
+        DiskUsageRow("models", recursive_path_num_bytes(paths.model_dir)),
+        DiskUsageRow("rows", recursive_path_num_bytes(paths.rows_dir)),
+        DiskUsageRow(
+            "search_checkpoints",
+            recursive_path_num_bytes(paths.runtime_checkpoint_dir),
+        ),
+        DiskUsageRow("tree_exports", recursive_path_num_bytes(paths.tree_snapshot_dir)),
+        DiskUsageRow(
+            "history_logs_status",
+            _combined_file_group_num_bytes(
+                (
+                    paths.history_jsonl_path,
+                    paths.latest_status_path,
+                    paths.run_state_path,
+                    paths.bootstrap_config_path,
+                    paths.control_path,
+                    paths.launcher_pid_path,
+                    paths.launcher_process_state_path,
+                    paths.launcher_stdout_log_path,
+                    paths.launcher_stderr_log_path,
+                )
+            ),
+        ),
+    )
+    breakdown_rows = tuple(
+        sorted(
+            breakdown_candidates,
+            key=lambda row: (
+                row.num_bytes is None,
+                0 if row.num_bytes is None else -row.num_bytes,
+                row.label,
+            ),
+        )
+    )
+    return DiskUsageSummary(
+        run_dir_num_bytes=run_dir_num_bytes,
+        device_free_num_bytes=device_free_num_bytes,
+        device_used_num_bytes=device_used_num_bytes,
+        device_total_num_bytes=device_total_num_bytes,
+        run_dir_pct_of_device_total=run_dir_pct_of_device_total,
+        breakdown_rows=breakdown_rows,
+    )
+
+
+def _combined_file_group_num_bytes(paths: Sequence[Path]) -> int | None:
+    """Return the summed size for one group of file paths, missing files as zero."""
+    total = 0
+    for path in paths:
+        num_bytes = recursive_path_num_bytes(path)
+        if num_bytes is None:
+            return None
+        total += num_bytes
+    return total
 
 
 def _latest_known_event(
@@ -609,8 +754,8 @@ def _evaluator_loss_point(
 
 __all__ = [
     "ActiveEvaluatorTimeSeriesPoint",
-    "certified_record_best_so_far_series",
-    "certified_record_score_series",
+    "DiskUsageRow",
+    "DiskUsageSummary",
     "EvaluatorSelectionSummary",
     "IntTimeSeriesPoint",
     "MorpionBootstrapDashboardData",
@@ -619,16 +764,22 @@ __all__ = [
     "MorpionRecordProgressSummary",
     "OptionalFloatTimeSeriesPoint",
     "OptionalIntTimeSeriesPoint",
-    "TreeDepthDistributionRow",
     "TrainingTriggeredTimeSeriesPoint",
+    "TreeDepthDistributionRow",
     "active_evaluator_series",
+    "build_disk_usage_summary",
     "build_morpion_bootstrap_dashboard_data",
     "canonical_record_score_series",
+    "certified_record_best_so_far_series",
+    "certified_record_score_series",
     "dataset_num_rows_series",
     "evaluator_loss_series_by_name",
+    "filesystem_usage_for_path",
+    "format_num_bytes",
     "latest_tree_depth_distribution",
     "load_morpion_bootstrap_run_view",
     "record_total_points_series",
+    "recursive_path_num_bytes",
     "summarize_bootstrap_run",
     "summarize_evaluator_selection",
     "summarize_record_progress",
