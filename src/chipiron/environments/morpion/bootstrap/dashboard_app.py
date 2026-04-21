@@ -139,24 +139,41 @@ def run_dashboard_app(work_dir: Path) -> None:
         f"debug_rerun_count={rerun_count} time={debug_time_text} pid={process_id}"
     )
 
-    disable_certified_record_board = st.checkbox(
-        "DEBUG: Disable certified record board",
+    # TEMP DEBUG: session/memory isolation
+    disable_certified_record_board_rendering = st.checkbox(
+        "DEBUG: Disable certified record board rendering",
+        value=False,
+    )
+    disable_certified_record_board_build = st.checkbox(
+        "DEBUG: Disable certified record board build",
+        value=False,
+    )
+    disable_plots = st.checkbox(
+        "DEBUG: Disable plots",
+        value=False,
+    )
+    disable_tree_inspector = st.checkbox(
+        "DEBUG: Disable tree inspector",
+        value=False,
+    )
+    disable_data_tables = st.checkbox(
+        "DEBUG: Disable data tables",
         value=False,
     )
 
     board_view: MorpionBootstrapCertifiedRecordBoardView | None
     certified_record_board_duration: float | None
-    if disable_certified_record_board:
+    if disable_certified_record_board_build:
         board_view = None
         certified_record_board_duration = None
         print(
-            "[dashboard-debug] certified_record_board disabled by debug toggle",
+            "[dashboard-debug] certified_record_board build disabled by debug toggle",
             flush=True,
         )
     else:
         # TEMP DEBUG: rerun/memory investigation
         certified_record_board_start_time = time.perf_counter()
-        board_view = None #build_current_certified_record_board_view(paths.work_dir)
+        board_view = build_current_certified_record_board_view(paths.work_dir)
         certified_record_board_duration = (
             time.perf_counter() - certified_record_board_start_time
         )
@@ -178,7 +195,15 @@ def run_dashboard_app(work_dir: Path) -> None:
                 "pid": process_id,
                 "build_dashboard_data_seconds": dashboard_data_duration,
                 "build_certified_record_board_seconds": certified_record_board_duration,
-                "disable_certified_record_board": disable_certified_record_board,
+                "disable_certified_record_board_rendering": (
+                    disable_certified_record_board_rendering
+                ),
+                "disable_certified_record_board_build": (
+                    disable_certified_record_board_build
+                ),
+                "disable_plots": disable_plots,
+                "disable_tree_inspector": disable_tree_inspector,
+                "disable_data_tables": disable_data_tables,
             }
         )
 
@@ -194,7 +219,11 @@ def run_dashboard_app(work_dir: Path) -> None:
     status_columns[3].metric("Dataset Rows", _format_value(latest_dataset_rows))
 
     st.subheader("Disk Usage")
-    _render_disk_usage_section(st=st, summary=dashboard_data.disk_usage_summary)
+    _render_disk_usage_section(
+        st=st,
+        summary=dashboard_data.disk_usage_summary,
+        disable_data_tables=disable_data_tables,
+    )
 
     st.subheader("Record Status")
     _render_record_status_section(
@@ -207,6 +236,9 @@ def run_dashboard_app(work_dir: Path) -> None:
     _render_current_certified_record_board_section(
         st=st,
         board_view=board_view,
+        disable_certified_record_board_rendering=(
+            disable_certified_record_board_rendering
+        ),
     )
 
     _render_run_control_section(st=st, paths=paths)
@@ -352,61 +384,74 @@ def run_dashboard_app(work_dir: Path) -> None:
             save_bootstrap_control(next_control, paths.control_path)
             st.success("Saved control changes. They will apply at the next cycle boundary.")
 
-    st.subheader("Plots")
-    st.caption("Time-series plots use absolute UTC timestamps from bootstrap history.")
-    downsampled_tree_num_nodes = _downsample_series(dashboard_data.tree_num_nodes)
-    downsampled_canonical_record_score = _downsample_series(
-        dashboard_data.canonical_record_score
-    )
-    downsampled_dataset_num_rows = _downsample_series(dashboard_data.dataset_num_rows)
-    downsampled_active_evaluator = _downsample_series(dashboard_data.active_evaluator)
-    downsampled_evaluator_losses = _downsample_loss_series_by_name(
-        dashboard_data.evaluator_loss_by_name
-    )
-    downsampled_certified_record_score = _downsample_series(
-        dashboard_data.certified_record_score
-    )
-    plot_columns = st.columns(2)
-    with plot_columns[0]:
-        _render_plot(st, lambda: plot_tree_size(downsampled_tree_num_nodes))
-        _render_plot(
-            st,
-            lambda: plot_record_score(downsampled_canonical_record_score),
-        )
-        _render_plot(st, lambda: plot_dataset_size(downsampled_dataset_num_rows))
-    with plot_columns[1]:
-        _render_plot(st, lambda: plot_active_evaluator(downsampled_active_evaluator))
-        loss_log_scale = (
-            st.toggle("Log scale for loss", value=False)
-            if hasattr(st, "toggle")
-            else st.checkbox("Log scale for loss", value=False)
-        )
-        _render_plot(
-            st,
-            lambda: plot_evaluator_losses(
-                downsampled_evaluator_losses,
-                log_scale=loss_log_scale,
-            ),
-        )
-
-    st.subheader("Certified Record Progress")
-    if _has_known_optional_series_values(downsampled_certified_record_score):
-        _render_plot(
-            st,
-            lambda: plot_certified_record_score(downsampled_certified_record_score),
-        )
+    if disable_plots:
+        st.subheader("Plots")
+        st.caption("TEMP DEBUG: plot rendering disabled.")
     else:
-        st.caption("No certified record yet.")
+        st.subheader("Plots")
+        st.caption("Time-series plots use absolute UTC timestamps from bootstrap history.")
+        downsampled_tree_num_nodes = _downsample_series(dashboard_data.tree_num_nodes)
+        downsampled_canonical_record_score = _downsample_series(
+            dashboard_data.canonical_record_score
+        )
+        downsampled_dataset_num_rows = _downsample_series(dashboard_data.dataset_num_rows)
+        downsampled_active_evaluator = _downsample_series(dashboard_data.active_evaluator)
+        downsampled_evaluator_losses = _downsample_loss_series_by_name(
+            dashboard_data.evaluator_loss_by_name
+        )
+        downsampled_certified_record_score = _downsample_series(
+            dashboard_data.certified_record_score
+        )
+        plot_columns = st.columns(2)
+        with plot_columns[0]:
+            _render_plot(st, lambda: plot_tree_size(downsampled_tree_num_nodes))
+            _render_plot(
+                st,
+                lambda: plot_record_score(downsampled_canonical_record_score),
+            )
+            _render_plot(st, lambda: plot_dataset_size(downsampled_dataset_num_rows))
+        with plot_columns[1]:
+            _render_plot(st, lambda: plot_active_evaluator(downsampled_active_evaluator))
+            loss_log_scale = (
+                st.toggle("Log scale for loss", value=False)
+                if hasattr(st, "toggle")
+                else st.checkbox("Log scale for loss", value=False)
+            )
+            _render_plot(
+                st,
+                lambda: plot_evaluator_losses(
+                    downsampled_evaluator_losses,
+                    log_scale=loss_log_scale,
+                ),
+            )
+
+        st.subheader("Certified Record Progress")
+        if _has_known_optional_series_values(downsampled_certified_record_score):
+            _render_plot(
+                st,
+                lambda: plot_certified_record_score(downsampled_certified_record_score),
+            )
+        else:
+            st.caption("No certified record yet.")
 
     st.subheader("Tree Structure")
     _render_tree_structure_section(
         st=st,
         tree_status=dashboard_data.latest_tree_status,
         depth_distribution=dashboard_data.latest_tree_depth_distribution,
+        disable_plots=disable_plots,
+        disable_data_tables=disable_data_tables,
     )
 
     st.subheader("Tree / State Inspector")
-    _render_tree_inspector_section(st=st, paths=paths)
+    if disable_tree_inspector:
+        st.caption("TEMP DEBUG: tree inspector disabled.")
+    else:
+        _render_tree_inspector_section(
+            st=st,
+            paths=paths,
+            disable_data_tables=disable_data_tables,
+        )
 
     st.subheader("Debug Info")
     st.write(
@@ -466,7 +511,12 @@ def _render_plot(st: Any, build_plot: Any) -> None:
     plt.close(figure)
 
 
-def _render_disk_usage_section(*, st: Any, summary: DiskUsageSummary) -> None:
+def _render_disk_usage_section(
+    *,
+    st: Any,
+    summary: DiskUsageSummary,
+    disable_data_tables: bool = False,
+) -> None:
     """Render operator-facing run and device disk usage information."""
     metric_columns = st.columns(4)
     metric_columns[0].metric(
@@ -490,7 +540,10 @@ def _render_disk_usage_section(*, st: Any, summary: DiskUsageSummary) -> None:
         {"artifact_group": row.label, "size": format_num_bytes(row.num_bytes)}
         for row in summary.breakdown_rows
     ]
-    st.dataframe(breakdown_rows, use_container_width=True, hide_index=True)
+    if disable_data_tables:
+        st.caption("TEMP DEBUG: disk usage table disabled.")
+    else:
+        st.dataframe(breakdown_rows, use_container_width=True, hide_index=True)
     st.caption(
         "Run breakdown is sorted largest-first. Retention keeps only the latest "
         "checkpoint and tree export by default."
@@ -587,7 +640,12 @@ def _render_launcher_command_text(command: tuple[str, ...]) -> str:
     return " ".join(command)
 
 
-def _render_tree_inspector_section(*, st: Any, paths: MorpionBootstrapPaths) -> None:
+def _render_tree_inspector_section(
+    *,
+    st: Any,
+    paths: MorpionBootstrapPaths,
+    disable_data_tables: bool = False,
+) -> None:
     """Render the bounded runtime-tree inspector for the latest checkpoint."""
     state_key = f"morpion_bootstrap_selected_node::{paths.work_dir}"
     selected_node_id = st.session_state.get(state_key)
@@ -637,11 +695,14 @@ def _render_tree_inspector_section(*, st: Any, paths: MorpionBootstrapPaths) -> 
             st.code(snapshot.state_view.board_text)
 
     st.caption("Outgoing actions")
-    st.dataframe(
-        _tree_inspector_child_rows(snapshot),
-        use_container_width=True,
-        hide_index=True,
-    )
+    if disable_data_tables:
+        st.caption("TEMP DEBUG: tree inspector table disabled.")
+    else:
+        st.dataframe(
+            _tree_inspector_child_rows(snapshot),
+            use_container_width=True,
+            hide_index=True,
+        )
 
 
 def _render_tree_structure_section(
@@ -649,6 +710,8 @@ def _render_tree_structure_section(
     st: Any,
     tree_status: MorpionBootstrapTreeStatus | None,
     depth_distribution: tuple[TreeDepthDistributionRow, ...],
+    disable_plots: bool = False,
+    disable_data_tables: bool = False,
 ) -> None:
     """Render one compact tree-structure summary with per-depth counts."""
     if tree_status is None:
@@ -667,9 +730,15 @@ def _render_tree_structure_section(
     if not depth_distribution:
         st.caption("No tree depth distribution available yet.")
         return
-    _render_plot(st, lambda: plot_tree_depth_distribution(depth_distribution))
+    if disable_plots:
+        st.caption("TEMP DEBUG: tree structure plot disabled.")
+    else:
+        _render_plot(st, lambda: plot_tree_depth_distribution(depth_distribution))
     rows = _tree_structure_rows(depth_distribution)
-    st.dataframe(rows, use_container_width=True, hide_index=True)
+    if disable_data_tables:
+        st.caption("TEMP DEBUG: tree structure table disabled.")
+    else:
+        st.dataframe(rows, use_container_width=True, hide_index=True)
 
 
 def _render_record_status_section(
@@ -746,6 +815,7 @@ def _render_current_certified_record_board_section(
     *,
     st: Any,
     board_view: MorpionBootstrapCertifiedRecordBoardView | None,
+    disable_certified_record_board_rendering: bool = False,
 ) -> None:
     """Render the current strict certified Morpion record board when available."""
     if board_view is None:
@@ -758,7 +828,10 @@ def _render_current_certified_record_board_section(
     summary_columns[2].metric("Exact", _format_value(board_view.is_exact))
     summary_columns[3].metric("Terminal", _format_value(board_view.is_terminal))
     summary_columns[4].metric("Source", board_view.source)
-    st.components.v1.html(board_view.board_svg, height=760)
+    if disable_certified_record_board_rendering:
+        st.caption("TEMP DEBUG: certified record board rendering disabled.")
+    else:
+        st.components.v1.html(board_view.board_svg, height=760)
     if board_view.board_text is not None:
         st.code(board_view.board_text)
 
