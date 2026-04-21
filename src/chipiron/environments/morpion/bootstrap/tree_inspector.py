@@ -128,7 +128,6 @@ class _IndexedCheckpointTree:
 
     root_node_id: int
     nodes_by_id: dict[int, AlgorithmNodeCheckpointPayload]
-    states_by_id: dict[int, MorpionState]
     parent_ids_by_node_id: dict[int, tuple[int, ...]]
     child_links_by_node_id: dict[int, tuple[_IndexedChildLink, ...]]
 
@@ -183,7 +182,7 @@ def build_morpion_bootstrap_tree_inspector_snapshot(
         selected_node_id=selected_node_id,
     )
     node_payload = indexed_checkpoint.nodes_by_id[resolved_selected_node_id]
-    state = indexed_checkpoint.states_by_id[resolved_selected_node_id]
+    state = _decode_node_state(node_payload)
 
     node_summary = _build_node_summary(
         indexed_checkpoint=indexed_checkpoint,
@@ -294,7 +293,7 @@ def resolve_latest_runtime_checkpoint(
     )
 
 
-@lru_cache(maxsize=4)
+@lru_cache(maxsize=1)
 def _load_indexed_checkpoint_tree(
     checkpoint_path: Path,
 ) -> _IndexedCheckpointTree:
@@ -306,23 +305,16 @@ def _load_indexed_checkpoint_tree(
 def _index_checkpoint_payload(
     payload: SearchRuntimeCheckpointPayload,
 ) -> _IndexedCheckpointTree:
-    """Index checkpoint nodes, states, and reverse edges for navigation."""
+    """Index checkpoint nodes and reverse edges for navigation."""
     dynamics = MorpionDynamics()
-    state_codec = MorpionStateCheckpointCodec()
     nodes_by_id = {
         node_payload.node_id: node_payload for node_payload in payload.tree.nodes
-    }
-    states_by_id = {
-        node_payload.node_id: dynamics.wrap_atomheart_state(
-            state_codec.load_state_ref(node_payload.state_ref)
-        )
-        for node_payload in payload.tree.nodes
     }
     parent_ids_by_node_id = {node_id: [] for node_id in nodes_by_id}
     child_links_by_node_id: dict[int, tuple[_IndexedChildLink, ...]] = {}
 
     for node_payload in payload.tree.nodes:
-        state = states_by_id[node_payload.node_id]
+        state = _decode_node_state(node_payload)
         child_links: list[_IndexedChildLink] = []
         for linked_child in node_payload.linked_children:
             parent_ids_by_node_id.setdefault(linked_child.child_node_id, []).append(
@@ -342,7 +334,6 @@ def _index_checkpoint_payload(
     return _IndexedCheckpointTree(
         root_node_id=payload.tree.root_node_id,
         nodes_by_id=nodes_by_id,
-        states_by_id=states_by_id,
         parent_ids_by_node_id={
             node_id: tuple(sorted(parent_ids))
             for node_id, parent_ids in parent_ids_by_node_id.items()
@@ -446,7 +437,7 @@ def _build_child_summaries(
             )
             continue
         child_payload = indexed_checkpoint.nodes_by_id[child_node_id]
-        child_state = indexed_checkpoint.states_by_id[child_node_id]
+        child_state = _decode_node_state(child_payload)
         direct_value = _value_score(_direct_value_payload(child_payload.evaluation))
         backed_up_value = _value_score(_backed_up_value_payload(child_payload.evaluation))
         child_summaries.append(
@@ -525,6 +516,15 @@ def _build_state_view(
         is_terminal=state.is_terminal,
         board_text=state.pprint(),
         board_svg=render_result.svg_bytes.decode("utf-8"),
+    )
+
+
+def _decode_node_state(node_payload: AlgorithmNodeCheckpointPayload) -> MorpionState:
+    """Decode one checkpoint node state on demand."""
+    dynamics = MorpionDynamics()
+    state_codec = MorpionStateCheckpointCodec()
+    return dynamics.wrap_atomheart_state(
+        state_codec.load_state_ref(node_payload.state_ref)
     )
 
 

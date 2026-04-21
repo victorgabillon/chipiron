@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import argparse
 from importlib import import_module
-import os
 from pathlib import Path
-import time
 from typing import TYPE_CHECKING, Any
 
 from matplotlib import pyplot as plt
@@ -69,51 +67,16 @@ from .tree_inspector import build_morpion_bootstrap_tree_inspector_snapshot
 
 MAX_PLOT_POINTS = 2000
 
-# TEMP DEBUG: session/memory isolation
-DEBUG_DISABLE_CERTIFIED_RECORD_BOARD_RENDERING = True
-DEBUG_DISABLE_CERTIFIED_RECORD_BOARD_BUILD = True
-DEBUG_DISABLE_PLOTS = True
-DEBUG_DISABLE_TREE_INSPECTOR = False
-DEBUG_DISABLE_DATA_TABLES = True
-DEBUG_TREE_INSPECTOR_SNAPSHOT_ONLY = False
-DEBUG_TREE_INSPECTOR_RENDER_JSON_ONLY = False
-DEBUG_TREE_INSPECTOR_RENDER_BOARD_TEXT_ONLY = False
-DEBUG_TREE_INSPECTOR_RENDER_BOARD_SVG_ONLY = False
-
-
 def run_dashboard_app(work_dir: Path) -> None:
     """Render the local Streamlit dashboard for one bootstrap work directory."""
     st = _get_streamlit()
     st.set_page_config(page_title="Morpion Bootstrap Dashboard", layout="wide")
 
-    # TEMP DEBUG: rerun/memory investigation
-    rerun_count = int(st.session_state.get("debug_rerun_count", 0)) + 1
-    st.session_state["debug_rerun_count"] = rerun_count
-    debug_time_text = time.strftime("%H:%M:%S")
-    process_id = os.getpid()
-    debug_run_id = f"pid={process_id}:rerun={rerun_count}:t={time.time_ns():x}"
-    print(
-        "[dashboard-debug] "
-        f"run_id={debug_run_id} rerun count={rerun_count} "
-        f"time={debug_time_text} pid={process_id}",
-        flush=True,
-    )
-
     paths = MorpionBootstrapPaths.from_work_dir(work_dir)
     config = _load_bootstrap_config_or_none(paths)
     control = load_bootstrap_control(paths.control_path)
     applied_control = _load_applied_control(paths)
-
-    # TEMP DEBUG: rerun/memory investigation
-    dashboard_data_start_time = time.perf_counter()
     dashboard_data = build_morpion_bootstrap_dashboard_data(paths.work_dir)
-    dashboard_data_duration = time.perf_counter() - dashboard_data_start_time
-    st.session_state["debug_dashboard_data_duration_seconds"] = dashboard_data_duration
-    print(
-        "[dashboard-debug] "
-        f"run_id={debug_run_id} build_dashboard_data dt={dashboard_data_duration:.3f}s",
-        flush=True,
-    )
 
     run_state = _load_run_state(paths)
     pending_changes = _has_pending_control_changes(control, applied_control)
@@ -148,77 +111,7 @@ def run_dashboard_app(work_dir: Path) -> None:
     )
     st.title("Morpion Bootstrap Dashboard")
     st.caption(str(paths.work_dir))
-
-    # TEMP DEBUG: rerun/memory investigation
-    st.caption(
-        " ".join(
-            (
-                f"debug_rerun_count={rerun_count}",
-                f"time={debug_time_text}",
-                f"pid={process_id}",
-                f"debug_run_id={debug_run_id}",
-            )
-        )
-    )
-
-    # TEMP DEBUG: session/memory isolation
-    disable_certified_record_board_rendering = (
-        DEBUG_DISABLE_CERTIFIED_RECORD_BOARD_RENDERING
-    )
-    disable_certified_record_board_build = DEBUG_DISABLE_CERTIFIED_RECORD_BOARD_BUILD
-    disable_plots = DEBUG_DISABLE_PLOTS
-    disable_tree_inspector = DEBUG_DISABLE_TREE_INSPECTOR
-    disable_data_tables = DEBUG_DISABLE_DATA_TABLES
-
-    board_view: MorpionBootstrapCertifiedRecordBoardView | None
-    certified_record_board_duration: float | None
-    if disable_certified_record_board_build:
-        board_view = None
-        certified_record_board_duration = None
-        print(
-            "[dashboard-debug] "
-            f"run_id={debug_run_id} "
-            "certified_record_board build disabled by debug flag",
-            flush=True,
-        )
-    else:
-        # TEMP DEBUG: rerun/memory investigation
-        certified_record_board_start_time = time.perf_counter()
-        board_view = build_current_certified_record_board_view(paths.work_dir)
-        certified_record_board_duration = (
-            time.perf_counter() - certified_record_board_start_time
-        )
-        print(
-            "[dashboard-debug] "
-            f"run_id={debug_run_id} build_certified_record_board "
-            f"dt={certified_record_board_duration:.3f}s",
-            flush=True,
-        )
-    st.session_state["debug_certified_record_board_duration_seconds"] = (
-        certified_record_board_duration
-    )
-
-    # TEMP DEBUG: rerun/memory investigation
-    with st.expander("Debug instrumentation"):
-        st.write(
-            {
-                "rerun_count": rerun_count,
-                "time": debug_time_text,
-                "pid": process_id,
-                "debug_run_id": debug_run_id,
-                "build_dashboard_data_seconds": dashboard_data_duration,
-                "build_certified_record_board_seconds": certified_record_board_duration,
-                "disable_certified_record_board_rendering": (
-                    disable_certified_record_board_rendering
-                ),
-                "disable_certified_record_board_build": (
-                    disable_certified_record_board_build
-                ),
-                "disable_plots": disable_plots,
-                "disable_tree_inspector": disable_tree_inspector,
-                "disable_data_tables": disable_data_tables,
-            }
-        )
+    board_view = build_current_certified_record_board_view(paths.work_dir)
 
     summary = dashboard_data.run_summary
     latest_dataset_rows = _latest_optional_value(dashboard_data.dataset_num_rows)
@@ -232,11 +125,7 @@ def run_dashboard_app(work_dir: Path) -> None:
     status_columns[3].metric("Dataset Rows", _format_value(latest_dataset_rows))
 
     st.subheader("Disk Usage")
-    _render_disk_usage_section(
-        st=st,
-        summary=dashboard_data.disk_usage_summary,
-        disable_data_tables=disable_data_tables,
-    )
+    _render_disk_usage_section(st=st, summary=dashboard_data.disk_usage_summary)
 
     st.subheader("Record Status")
     _render_record_status_section(
@@ -249,9 +138,6 @@ def run_dashboard_app(work_dir: Path) -> None:
     _render_current_certified_record_board_section(
         st=st,
         board_view=board_view,
-        disable_certified_record_board_rendering=(
-            disable_certified_record_board_rendering
-        ),
     )
 
     _render_run_control_section(st=st, paths=paths)
@@ -397,74 +283,61 @@ def run_dashboard_app(work_dir: Path) -> None:
             save_bootstrap_control(next_control, paths.control_path)
             st.success("Saved control changes. They will apply at the next cycle boundary.")
 
-    if disable_plots:
-        st.subheader("Plots")
-        st.caption("TEMP DEBUG: plot rendering disabled.")
-    else:
-        st.subheader("Plots")
-        st.caption("Time-series plots use absolute UTC timestamps from bootstrap history.")
-        downsampled_tree_num_nodes = _downsample_series(dashboard_data.tree_num_nodes)
-        downsampled_canonical_record_score = _downsample_series(
-            dashboard_data.canonical_record_score
+    st.subheader("Plots")
+    st.caption("Time-series plots use absolute UTC timestamps from bootstrap history.")
+    downsampled_tree_num_nodes = _downsample_series(dashboard_data.tree_num_nodes)
+    downsampled_canonical_record_score = _downsample_series(
+        dashboard_data.canonical_record_score
+    )
+    downsampled_dataset_num_rows = _downsample_series(dashboard_data.dataset_num_rows)
+    downsampled_active_evaluator = _downsample_series(dashboard_data.active_evaluator)
+    downsampled_evaluator_losses = _downsample_loss_series_by_name(
+        dashboard_data.evaluator_loss_by_name
+    )
+    downsampled_certified_record_score = _downsample_series(
+        dashboard_data.certified_record_score
+    )
+    plot_columns = st.columns(2)
+    with plot_columns[0]:
+        _render_plot(st, lambda: plot_tree_size(downsampled_tree_num_nodes))
+        _render_plot(
+            st,
+            lambda: plot_record_score(downsampled_canonical_record_score),
         )
-        downsampled_dataset_num_rows = _downsample_series(dashboard_data.dataset_num_rows)
-        downsampled_active_evaluator = _downsample_series(dashboard_data.active_evaluator)
-        downsampled_evaluator_losses = _downsample_loss_series_by_name(
-            dashboard_data.evaluator_loss_by_name
+        _render_plot(st, lambda: plot_dataset_size(downsampled_dataset_num_rows))
+    with plot_columns[1]:
+        _render_plot(st, lambda: plot_active_evaluator(downsampled_active_evaluator))
+        loss_log_scale = (
+            st.toggle("Log scale for loss", value=False)
+            if hasattr(st, "toggle")
+            else st.checkbox("Log scale for loss", value=False)
         )
-        downsampled_certified_record_score = _downsample_series(
-            dashboard_data.certified_record_score
+        _render_plot(
+            st,
+            lambda: plot_evaluator_losses(
+                downsampled_evaluator_losses,
+                log_scale=loss_log_scale,
+            ),
         )
-        plot_columns = st.columns(2)
-        with plot_columns[0]:
-            _render_plot(st, lambda: plot_tree_size(downsampled_tree_num_nodes))
-            _render_plot(
-                st,
-                lambda: plot_record_score(downsampled_canonical_record_score),
-            )
-            _render_plot(st, lambda: plot_dataset_size(downsampled_dataset_num_rows))
-        with plot_columns[1]:
-            _render_plot(st, lambda: plot_active_evaluator(downsampled_active_evaluator))
-            loss_log_scale = (
-                st.toggle("Log scale for loss", value=False)
-                if hasattr(st, "toggle")
-                else st.checkbox("Log scale for loss", value=False)
-            )
-            _render_plot(
-                st,
-                lambda: plot_evaluator_losses(
-                    downsampled_evaluator_losses,
-                    log_scale=loss_log_scale,
-                ),
-            )
 
-        st.subheader("Certified Record Progress")
-        if _has_known_optional_series_values(downsampled_certified_record_score):
-            _render_plot(
-                st,
-                lambda: plot_certified_record_score(downsampled_certified_record_score),
-            )
-        else:
-            st.caption("No certified record yet.")
+    st.subheader("Certified Record Progress")
+    if _has_known_optional_series_values(downsampled_certified_record_score):
+        _render_plot(
+            st,
+            lambda: plot_certified_record_score(downsampled_certified_record_score),
+        )
+    else:
+        st.caption("No certified record yet.")
 
     st.subheader("Tree Structure")
     _render_tree_structure_section(
         st=st,
         tree_status=dashboard_data.latest_tree_status,
         depth_distribution=dashboard_data.latest_tree_depth_distribution,
-        disable_plots=disable_plots,
-        disable_data_tables=disable_data_tables,
     )
 
     st.subheader("Tree / State Inspector")
-    if disable_tree_inspector:
-        st.caption("TEMP DEBUG: tree inspector disabled.")
-    else:
-        _render_tree_inspector_section(
-            st=st,
-            paths=paths,
-            disable_data_tables=disable_data_tables,
-        )
+    _render_tree_inspector_section(st=st, paths=paths)
 
     st.subheader("Debug Info")
     st.write(
@@ -528,7 +401,6 @@ def _render_disk_usage_section(
     *,
     st: Any,
     summary: DiskUsageSummary,
-    disable_data_tables: bool = False,
 ) -> None:
     """Render operator-facing run and device disk usage information."""
     metric_columns = st.columns(4)
@@ -553,10 +425,7 @@ def _render_disk_usage_section(
         {"artifact_group": row.label, "size": format_num_bytes(row.num_bytes)}
         for row in summary.breakdown_rows
     ]
-    if disable_data_tables:
-        st.caption("TEMP DEBUG: disk usage table disabled.")
-    else:
-        st.dataframe(breakdown_rows, use_container_width=True, hide_index=True)
+    st.dataframe(breakdown_rows, width="stretch", hide_index=True)
     st.caption(
         "Run breakdown is sorted largest-first. Retention keeps only the latest "
         "checkpoint and tree export by default."
@@ -657,39 +526,14 @@ def _render_tree_inspector_section(
     *,
     st: Any,
     paths: MorpionBootstrapPaths,
-    disable_data_tables: bool = False,
 ) -> None:
     """Render the bounded runtime-tree inspector for the latest checkpoint."""
     state_key = f"morpion_bootstrap_selected_node::{paths.work_dir}"
     selected_node_id = st.session_state.get(state_key)
 
-    # TEMP DEBUG: tree inspector sub-isolation
-    include_child_summaries = True
-    include_local_tree_view = True
-    include_state_view = True
-    if DEBUG_TREE_INSPECTOR_SNAPSHOT_ONLY:
-        include_child_summaries = False
-        include_local_tree_view = False
-        include_state_view = False
-    elif DEBUG_TREE_INSPECTOR_RENDER_JSON_ONLY:
-        include_child_summaries = False
-        include_local_tree_view = True
-        include_state_view = False
-    elif DEBUG_TREE_INSPECTOR_RENDER_BOARD_TEXT_ONLY:
-        include_child_summaries = False
-        include_local_tree_view = False
-        include_state_view = True
-    elif DEBUG_TREE_INSPECTOR_RENDER_BOARD_SVG_ONLY:
-        include_child_summaries = False
-        include_local_tree_view = False
-        include_state_view = True
-
     snapshot = build_morpion_bootstrap_tree_inspector_snapshot(
         paths.work_dir,
         selected_node_id=selected_node_id,
-        include_child_summaries=include_child_summaries,
-        include_local_tree_view=include_local_tree_view,
-        include_state_view=include_state_view,
     )
 
     if snapshot.status_message is not None:
@@ -702,41 +546,6 @@ def _render_tree_inspector_section(
         return
     if snapshot.selection_warning is not None:
         st.warning(snapshot.selection_warning)
-
-    # TEMP DEBUG: tree inspector sub-isolation
-    if DEBUG_TREE_INSPECTOR_SNAPSHOT_ONLY:
-        st.caption("TEMP DEBUG: tree inspector snapshot-only mode active.")
-        st.write("Selected node id:", snapshot.selected_node_id)
-        st.write("Node summary exists:", snapshot.node_summary is not None)
-        st.write("Child summary count:", len(snapshot.child_summaries))
-        st.write("State view exists:", snapshot.state_view is not None)
-        st.write("Local tree view exists:", snapshot.local_tree_view is not None)
-        return
-
-    # TEMP DEBUG: tree inspector sub-isolation
-    if DEBUG_TREE_INSPECTOR_RENDER_JSON_ONLY:
-        st.caption("TEMP DEBUG: tree inspector JSON-only mode active.")
-        st.json(_tree_inspector_node_summary_dict(snapshot))
-        st.json(_tree_inspector_local_tree_dict(snapshot))
-        return
-
-    # TEMP DEBUG: tree inspector sub-isolation
-    if DEBUG_TREE_INSPECTOR_RENDER_BOARD_TEXT_ONLY:
-        st.caption("TEMP DEBUG: tree inspector board-text-only mode active.")
-        if snapshot.state_view is None:
-            st.caption("No Morpion state view available yet.")
-        else:
-            st.code(snapshot.state_view.board_text)
-        return
-
-    # TEMP DEBUG: tree inspector sub-isolation
-    if DEBUG_TREE_INSPECTOR_RENDER_BOARD_SVG_ONLY:
-        st.caption("TEMP DEBUG: tree inspector board-SVG-only mode active.")
-        if snapshot.state_view is None:
-            st.caption("No Morpion state view available yet.")
-        else:
-            st.components.v1.html(snapshot.state_view.board_svg, height=760)
-        return
 
     st.session_state[state_key] = snapshot.selected_node_id
     _render_tree_inspector_navigation(
@@ -768,14 +577,11 @@ def _render_tree_inspector_section(
             st.code(snapshot.state_view.board_text)
 
     st.caption("Outgoing actions")
-    if disable_data_tables:
-        st.caption("TEMP DEBUG: tree inspector table disabled.")
-    else:
-        st.dataframe(
-            _tree_inspector_child_rows(snapshot),
-            use_container_width=True,
-            hide_index=True,
-        )
+    st.dataframe(
+        _tree_inspector_child_rows(snapshot),
+        width="stretch",
+        hide_index=True,
+    )
 
 
 def _render_tree_structure_section(
@@ -783,8 +589,6 @@ def _render_tree_structure_section(
     st: Any,
     tree_status: MorpionBootstrapTreeStatus | None,
     depth_distribution: tuple[TreeDepthDistributionRow, ...],
-    disable_plots: bool = False,
-    disable_data_tables: bool = False,
 ) -> None:
     """Render one compact tree-structure summary with per-depth counts."""
     if tree_status is None:
@@ -803,15 +607,9 @@ def _render_tree_structure_section(
     if not depth_distribution:
         st.caption("No tree depth distribution available yet.")
         return
-    if disable_plots:
-        st.caption("TEMP DEBUG: tree structure plot disabled.")
-    else:
-        _render_plot(st, lambda: plot_tree_depth_distribution(depth_distribution))
+    _render_plot(st, lambda: plot_tree_depth_distribution(depth_distribution))
     rows = _tree_structure_rows(depth_distribution)
-    if disable_data_tables:
-        st.caption("TEMP DEBUG: tree structure table disabled.")
-    else:
-        st.dataframe(rows, use_container_width=True, hide_index=True)
+    st.dataframe(rows, width="stretch", hide_index=True)
 
 
 def _render_record_status_section(
@@ -888,7 +686,6 @@ def _render_current_certified_record_board_section(
     *,
     st: Any,
     board_view: MorpionBootstrapCertifiedRecordBoardView | None,
-    disable_certified_record_board_rendering: bool = False,
 ) -> None:
     """Render the current strict certified Morpion record board when available."""
     if board_view is None:
@@ -901,10 +698,7 @@ def _render_current_certified_record_board_section(
     summary_columns[2].metric("Exact", _format_value(board_view.is_exact))
     summary_columns[3].metric("Terminal", _format_value(board_view.is_terminal))
     summary_columns[4].metric("Source", board_view.source)
-    if disable_certified_record_board_rendering:
-        st.caption("TEMP DEBUG: certified record board rendering disabled.")
-    else:
-        st.components.v1.html(board_view.board_svg, height=760)
+    st.components.v1.html(board_view.board_svg, height=760)
     if board_view.board_text is not None:
         st.code(board_view.board_text)
 
