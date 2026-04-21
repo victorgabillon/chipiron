@@ -63,6 +63,7 @@ from .process_control import (
     stop_morpion_bootstrap_process,
 )
 from .run_state import initialize_bootstrap_run_state, load_bootstrap_run_state
+from .streamlit_morpion_clickable_board import render_clickable_morpion_board
 from .tree_inspector import build_morpion_bootstrap_tree_inspector_snapshot
 
 MAX_PLOT_POINTS = 2000
@@ -573,14 +574,38 @@ def _render_tree_inspector_section(
     with details_columns[1]:
         if snapshot.state_view is not None:
             st.caption("Selected Morpion State")
-            st.components.v1.html(snapshot.state_view.board_svg, height=760)
+            board_click_event = render_clickable_morpion_board(
+                svg=snapshot.state_view.board_svg,
+                click_targets=snapshot.state_view.board_click_targets,
+                click_radius=snapshot.state_view.board_click_radius,
+                height=760,
+                render_size=snapshot.state_view.board_render_size,
+                key=f"{state_key}::board::{snapshot.selected_node_id}",
+            )
+            if board_click_event is not None:
+                click_nonce = board_click_event.get("click_nonce")
+                click_nonce_key = f"{state_key}::board_click_nonce"
+                if click_nonce != st.session_state.get(click_nonce_key):
+                    st.session_state[click_nonce_key] = click_nonce
+                    clicked_action_name = board_click_event.get("action_name")
+                    if isinstance(clicked_action_name, str):
+                        selected_child_node_id = _selected_child_node_id_for_branch(
+                            snapshot.child_summaries,
+                            clicked_action_name,
+                        )
+                        if selected_child_node_id is not None:
+                            st.session_state[state_key] = selected_child_node_id
+                            st.rerun()
+                        st.caption(
+                            f"Action {_format_value(clicked_action_name)} is not expanded in this checkpoint."
+                        )
             st.code(snapshot.state_view.board_text)
 
     st.caption("Outgoing actions")
-    st.dataframe(
-        _tree_inspector_child_rows(snapshot),
-        width="stretch",
-        hide_index=True,
+    _render_tree_inspector_outgoing_actions(
+        st=st,
+        snapshot=snapshot,
+        state_key=state_key,
     )
 
 
@@ -834,11 +859,52 @@ def _tree_inspector_child_rows(snapshot: Any) -> list[dict[str, object]]:
             "backed_up_value": child_summary.backed_up_value_scalar,
             "direct_value": child_summary.direct_value_scalar,
             "visit_count": child_summary.visit_count,
-            "is_exact": child_summary.is_exact,
-            "is_terminal": child_summary.is_terminal,
+            "is_exact": _format_bool_icon(child_summary.is_exact),
+            "is_terminal": _format_bool_icon(child_summary.is_terminal),
         }
         for child_summary in snapshot.child_summaries
     ]
+
+
+def _render_tree_inspector_outgoing_actions(
+    *,
+    st: Any,
+    snapshot: Any,
+    state_key: str,
+) -> None:
+    """Render one compact outgoing-actions list with direct child navigation."""
+    child_rows = _tree_inspector_child_rows(snapshot)
+    if not child_rows:
+        st.caption("No outgoing actions available.")
+        return
+
+    row_columns = st.columns((4, 2, 2, 1, 1, 1))
+    row_columns[0].caption("Branch")
+    row_columns[1].caption("Child Node")
+    row_columns[2].caption("Value")
+    row_columns[3].caption("Exact")
+    row_columns[4].caption("Terminal")
+    row_columns[5].caption("Go")
+
+    for index, child_row in enumerate(child_rows):
+        child_node_id = child_row["child_node_id"]
+        branch = child_row["branch"]
+        row_columns = st.columns((4, 2, 2, 1, 1, 1))
+        row_columns[0].write(_format_value(branch))
+        row_columns[1].write(_format_value(child_node_id))
+        row_columns[2].write(_format_value(child_row["display_value"]))
+        row_columns[3].write(_format_value(child_row["is_exact"]))
+        row_columns[4].write(_format_value(child_row["is_terminal"]))
+        if row_columns[5].button(
+            "Go",
+            key=(
+                f"{state_key}::child_row::{index}::"
+                f"{_format_value(branch)}::{_format_value(child_node_id)}"
+            ),
+            disabled=child_node_id is None,
+        ):
+            st.session_state[state_key] = child_node_id
+            st.rerun()
 
 
 def _load_run_state(paths: MorpionBootstrapPaths) -> Any:
@@ -1410,6 +1476,15 @@ def _latest_optional_value(series: tuple[Any, ...]) -> object | None:
 def _format_value(value: object | None) -> str:
     """Render optional values consistently in the dashboard."""
     return "n/a" if value is None else str(value)
+
+
+def _format_bool_icon(value: bool | None) -> str:
+    """Render one optional boolean with compact visual icons."""
+    if value is True:
+        return "✔"
+    if value is False:
+        return "✖"
+    return "—"
 
 
 def _format_optional_runtime_override(value: int | None) -> str:

@@ -501,3 +501,12 @@ class MorpionSvgAdapter(SvgGameAdapter):
     def reset_interaction(self) -> None:
         """Reset transient click/selection interaction state."""
         self._click_targets = []
+
+    def click_targets_snapshot(self) -> tuple[tuple[str, float, float], ...]:
+        """Return the current clickable action targets in SVG coordinates."""
+        return tuple(self._click_targets)
+
+    @property
+    def click_radius(self) -> float:
+        """Return the current click-hit radius in SVG coordinates."""
+        return self._click_radius

@@ -75,6 +75,18 @@ class MorpionBootstrapStateView:
     is_terminal: bool
     board_text: str
     board_svg: str
+    board_click_targets: tuple["MorpionBootstrapBoardClickTarget", ...]
+    board_click_radius: float
+    board_render_size: int
+
+
+@dataclass(frozen=True, slots=True)
+class MorpionBootstrapBoardClickTarget:
+    """One clickable board target expressed in rendered SVG coordinates."""
+
+    action_name: str
+    center_x: float
+    center_y: float
 
 
 @dataclass(frozen=True, slots=True)
@@ -118,7 +130,7 @@ class _ResolvedCheckpointReference:
 class _IndexedChildLink:
     """Indexed branch edge from one node to one expanded child."""
 
-    branch_label: str
+    branch_key: object
     child_node_id: int
 
 
@@ -306,7 +318,6 @@ def _index_checkpoint_payload(
     payload: SearchRuntimeCheckpointPayload,
 ) -> _IndexedCheckpointTree:
     """Index checkpoint nodes and reverse edges for navigation."""
-    dynamics = MorpionDynamics()
     nodes_by_id = {
         node_payload.node_id: node_payload for node_payload in payload.tree.nodes
     }
@@ -314,22 +325,18 @@ def _index_checkpoint_payload(
     child_links_by_node_id: dict[int, tuple[_IndexedChildLink, ...]] = {}
 
     for node_payload in payload.tree.nodes:
-        state = _decode_node_state(node_payload)
         child_links: list[_IndexedChildLink] = []
         for linked_child in node_payload.linked_children:
             parent_ids_by_node_id.setdefault(linked_child.child_node_id, []).append(
                 node_payload.node_id
             )
-            branch_key = deserialize_checkpoint_atom(linked_child.branch_key)
             child_links.append(
                 _IndexedChildLink(
-                    branch_label=_render_branch_label(state, branch_key),
+                    branch_key=deserialize_checkpoint_atom(linked_child.branch_key),
                     child_node_id=linked_child.child_node_id,
                 )
             )
-        child_links_by_node_id[node_payload.node_id] = tuple(
-            sorted(child_links, key=lambda item: (item.branch_label, item.child_node_id))
-        )
+        child_links_by_node_id[node_payload.node_id] = tuple(child_links)
 
     return _IndexedCheckpointTree(
         root_node_id=payload.tree.root_node_id,
@@ -378,6 +385,7 @@ def _build_node_summary(
     best_child_id = _best_child_id(
         indexed_checkpoint=indexed_checkpoint,
         node_id=node_payload.node_id,
+        state=state,
         best_branch_label=best_branch_label,
     )
     child_ids = tuple(
@@ -412,14 +420,14 @@ def _build_child_summaries(
     node_payload: AlgorithmNodeCheckpointPayload,
     state: MorpionState,
 ) -> tuple[MorpionBootstrapChildSummary, ...]:
-    """Build one summary row per legal action from the selected node."""
+    """Build one summary row per symmetry-unique legal action from the selected node."""
     dynamics = MorpionDynamics()
     child_links = {
-        child_link.branch_label: child_link.child_node_id
+        _child_link_branch_label(state=state, child_link=child_link): child_link.child_node_id
         for child_link in indexed_checkpoint.child_links_by_node_id[node_payload.node_id]
     }
     child_summaries: list[MorpionBootstrapChildSummary] = []
-    for action in dynamics.all_legal_actions(state):
+    for action in _symmetry_unique_actions(state):
         branch_label = dynamics.action_name(state, action)
         child_node_id = child_links.get(branch_label)
         if child_node_id is None:
@@ -499,6 +507,7 @@ def _build_state_view(
 
     dynamics = MorpionDynamics()
     svg_adapter = MorpionSvgAdapter()
+    render_size = 720
     position = svg_adapter.position_from_update(
         state_tag=state.tag,
         adapter_payload=build_morpion_display_payload(
@@ -506,7 +515,7 @@ def _build_state_view(
             dynamics=dynamics,
         ),
     )
-    render_result = svg_adapter.render_svg(position, 720, margin=8)
+    render_result = svg_adapter.render_svg(position, render_size, margin=8)
     return MorpionBootstrapStateView(
         node_id=str(node_id),
         variant=state.variant.value,
@@ -516,6 +525,16 @@ def _build_state_view(
         is_terminal=state.is_terminal,
         board_text=state.pprint(),
         board_svg=render_result.svg_bytes.decode("utf-8"),
+        board_click_targets=tuple(
+            MorpionBootstrapBoardClickTarget(
+                action_name=action_name,
+                center_x=center_x,
+                center_y=center_y,
+            )
+            for action_name, center_x, center_y in svg_adapter.click_targets_snapshot()
+        ),
+        board_click_radius=svg_adapter.click_radius,
+        board_render_size=render_size,
     )
 
 
@@ -528,6 +547,16 @@ def _decode_node_state(node_payload: AlgorithmNodeCheckpointPayload) -> MorpionS
     )
 
 
+def _symmetry_unique_actions(state: MorpionState) -> tuple[object, ...]:
+    """Return one canonical representative per legal-action symmetry orbit."""
+    dynamics = MorpionDynamics()
+    return tuple(
+        dynamics.canonical_action_in_state(state, orbit[0])
+        for orbit in dynamics.legal_action_orbits(state)
+        if orbit
+    )
+
+
 def _render_branch_label(state: MorpionState, branch_key: object) -> str:
     """Render one branch label for the current state or fall back safely."""
     dynamics = MorpionDynamics()
@@ -535,6 +564,15 @@ def _render_branch_label(state: MorpionState, branch_key: object) -> str:
         return dynamics.action_name(state, branch_key)
     except Exception:
         return repr(branch_key)
+
+
+def _child_link_branch_label(
+    *,
+    state: MorpionState,
+    child_link: _IndexedChildLink,
+) -> str:
+    """Render one child-link branch label for the selected node only."""
+    return _render_branch_label(state, child_link.branch_key)
 
 
 def _direct_value_payload(
@@ -603,13 +641,14 @@ def _best_child_id(
     *,
     indexed_checkpoint: _IndexedCheckpointTree,
     node_id: int,
+    state: MorpionState,
     best_branch_label: str | None,
 ) -> str | None:
     """Resolve the expanded child id for the best known branch when present."""
     if best_branch_label is None:
         return None
     for child_link in indexed_checkpoint.child_links_by_node_id[node_id]:
-        if child_link.branch_label == best_branch_label:
+        if _child_link_branch_label(state=state, child_link=child_link) == best_branch_label:
             return str(child_link.child_node_id)
     return None
 
