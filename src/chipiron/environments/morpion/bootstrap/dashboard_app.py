@@ -662,9 +662,34 @@ def _render_tree_inspector_section(
     """Render the bounded runtime-tree inspector for the latest checkpoint."""
     state_key = f"morpion_bootstrap_selected_node::{paths.work_dir}"
     selected_node_id = st.session_state.get(state_key)
+
+    # TEMP DEBUG: tree inspector sub-isolation
+    include_child_summaries = True
+    include_local_tree_view = True
+    include_state_view = True
+    if DEBUG_TREE_INSPECTOR_SNAPSHOT_ONLY:
+        include_child_summaries = False
+        include_local_tree_view = False
+        include_state_view = False
+    elif DEBUG_TREE_INSPECTOR_RENDER_JSON_ONLY:
+        include_child_summaries = False
+        include_local_tree_view = True
+        include_state_view = False
+    elif DEBUG_TREE_INSPECTOR_RENDER_BOARD_TEXT_ONLY:
+        include_child_summaries = False
+        include_local_tree_view = False
+        include_state_view = True
+    elif DEBUG_TREE_INSPECTOR_RENDER_BOARD_SVG_ONLY:
+        include_child_summaries = False
+        include_local_tree_view = False
+        include_state_view = True
+
     snapshot = build_morpion_bootstrap_tree_inspector_snapshot(
         paths.work_dir,
         selected_node_id=selected_node_id,
+        include_child_summaries=include_child_summaries,
+        include_local_tree_view=include_local_tree_view,
+        include_state_view=include_state_view,
     )
 
     if snapshot.status_message is not None:

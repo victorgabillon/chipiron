@@ -137,6 +137,9 @@ def build_morpion_bootstrap_tree_inspector_snapshot(
     work_dir: str | Path,
     *,
     selected_node_id: str | None = None,
+    include_child_summaries: bool = True,
+    include_local_tree_view: bool = True,
+    include_state_view: bool = True,
 ) -> MorpionBootstrapTreeInspectorSnapshot:
     """Build one bounded dashboard snapshot from the latest runtime checkpoint."""
     paths = MorpionBootstrapPaths.from_work_dir(work_dir)
@@ -187,18 +190,30 @@ def build_morpion_bootstrap_tree_inspector_snapshot(
         node_payload=node_payload,
         state=state,
     )
-    child_summaries = _build_child_summaries(
-        indexed_checkpoint=indexed_checkpoint,
-        node_payload=node_payload,
-        state=state,
+    child_summaries = (
+        _build_child_summaries(
+            indexed_checkpoint=indexed_checkpoint,
+            node_payload=node_payload,
+            state=state,
+        )
+        if include_child_summaries
+        else ()
     )
-    local_tree_view = _build_local_tree_view(
-        indexed_checkpoint=indexed_checkpoint,
-        selected_node_id=resolved_selected_node_id,
+    local_tree_view = (
+        _build_local_tree_view(
+            indexed_checkpoint=indexed_checkpoint,
+            selected_node_id=resolved_selected_node_id,
+        )
+        if include_local_tree_view
+        else None
     )
-    state_view = _build_state_view(
-        node_id=resolved_selected_node_id,
-        state=state,
+    state_view = (
+        _build_state_view(
+            node_id=resolved_selected_node_id,
+            state=state,
+        )
+        if include_state_view
+        else None
     )
 
     return MorpionBootstrapTreeInspectorSnapshot(
