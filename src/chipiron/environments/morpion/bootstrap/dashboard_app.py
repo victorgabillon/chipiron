@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import argparse
 from importlib import import_module
+import os
 from pathlib import Path
+import time
 from typing import TYPE_CHECKING, Any
 
 from matplotlib import pyplot as plt
@@ -47,7 +49,9 @@ from .dashboard_plot import (
 from .evaluator_family import canonical_morpion_evaluator_names
 from .history_view import (
     DiskUsageSummary,
+    MorpionBootstrapCertifiedRecordBoardView,
     TreeDepthDistributionRow,
+    build_current_certified_record_board_view,
     build_morpion_bootstrap_dashboard_data,
     format_num_bytes,
 )
@@ -69,11 +73,33 @@ MAX_PLOT_POINTS = 2000
 def run_dashboard_app(work_dir: Path) -> None:
     """Render the local Streamlit dashboard for one bootstrap work directory."""
     st = _get_streamlit()
+    st.set_page_config(page_title="Morpion Bootstrap Dashboard", layout="wide")
+
+    # TEMP DEBUG: rerun/memory investigation
+    rerun_count = int(st.session_state.get("debug_rerun_count", 0)) + 1
+    st.session_state["debug_rerun_count"] = rerun_count
+    debug_time_text = time.strftime("%H:%M:%S")
+    process_id = os.getpid()
+    print(
+        f"[dashboard-debug] rerun count={rerun_count} time={debug_time_text} pid={process_id}",
+        flush=True,
+    )
+
     paths = MorpionBootstrapPaths.from_work_dir(work_dir)
     config = _load_bootstrap_config_or_none(paths)
     control = load_bootstrap_control(paths.control_path)
     applied_control = _load_applied_control(paths)
+
+    # TEMP DEBUG: rerun/memory investigation
+    dashboard_data_start_time = time.perf_counter()
     dashboard_data = build_morpion_bootstrap_dashboard_data(paths.work_dir)
+    dashboard_data_duration = time.perf_counter() - dashboard_data_start_time
+    st.session_state["debug_dashboard_data_duration_seconds"] = dashboard_data_duration
+    print(
+        f"[dashboard-debug] build_dashboard_data dt={dashboard_data_duration:.3f}s",
+        flush=True,
+    )
+
     run_state = _load_run_state(paths)
     pending_changes = _has_pending_control_changes(control, applied_control)
     configured_evaluator_names = _configured_evaluator_names(config)
@@ -105,10 +131,56 @@ def run_dashboard_app(work_dir: Path) -> None:
         effective_runtime_config=effective_runtime_config,
         effective_runtime_hash=effective_runtime_hash,
     )
-
-    st.set_page_config(page_title="Morpion Bootstrap Dashboard", layout="wide")
     st.title("Morpion Bootstrap Dashboard")
     st.caption(str(paths.work_dir))
+
+    # TEMP DEBUG: rerun/memory investigation
+    st.caption(
+        f"debug_rerun_count={rerun_count} time={debug_time_text} pid={process_id}"
+    )
+
+    disable_certified_record_board = st.checkbox(
+        "DEBUG: Disable certified record board",
+        value=False,
+    )
+
+    board_view: MorpionBootstrapCertifiedRecordBoardView | None
+    certified_record_board_duration: float | None
+    if disable_certified_record_board:
+        board_view = None
+        certified_record_board_duration = None
+        print(
+            "[dashboard-debug] certified_record_board disabled by debug toggle",
+            flush=True,
+        )
+    else:
+        # TEMP DEBUG: rerun/memory investigation
+        certified_record_board_start_time = time.perf_counter()
+        board_view = None #build_current_certified_record_board_view(paths.work_dir)
+        certified_record_board_duration = (
+            time.perf_counter() - certified_record_board_start_time
+        )
+        print(
+            "[dashboard-debug] build_certified_record_board "
+            f"dt={certified_record_board_duration:.3f}s",
+            flush=True,
+        )
+    st.session_state["debug_certified_record_board_duration_seconds"] = (
+        certified_record_board_duration
+    )
+
+    # TEMP DEBUG: rerun/memory investigation
+    with st.expander("Debug instrumentation"):
+        st.write(
+            {
+                "rerun_count": rerun_count,
+                "time": debug_time_text,
+                "pid": process_id,
+                "build_dashboard_data_seconds": dashboard_data_duration,
+                "build_certified_record_board_seconds": certified_record_board_duration,
+                "disable_certified_record_board": disable_certified_record_board,
+            }
+        )
 
     summary = dashboard_data.run_summary
     latest_dataset_rows = _latest_optional_value(dashboard_data.dataset_num_rows)
@@ -129,6 +201,12 @@ def run_dashboard_app(work_dir: Path) -> None:
         st=st,
         certified_status=dashboard_data.latest_certified_record_status,
         frontier_status=dashboard_data.latest_frontier_status,
+    )
+
+    st.subheader("Current Certified Record Board")
+    _render_current_certified_record_board_section(
+        st=st,
+        board_view=board_view,
     )
 
     _render_run_control_section(st=st, paths=paths)
@@ -298,9 +376,17 @@ def run_dashboard_app(work_dir: Path) -> None:
         _render_plot(st, lambda: plot_dataset_size(downsampled_dataset_num_rows))
     with plot_columns[1]:
         _render_plot(st, lambda: plot_active_evaluator(downsampled_active_evaluator))
+        loss_log_scale = (
+            st.toggle("Log scale for loss", value=False)
+            if hasattr(st, "toggle")
+            else st.checkbox("Log scale for loss", value=False)
+        )
         _render_plot(
             st,
-            lambda: plot_evaluator_losses(downsampled_evaluator_losses),
+            lambda: plot_evaluator_losses(
+                downsampled_evaluator_losses,
+                log_scale=loss_log_scale,
+            ),
         )
 
     st.subheader("Certified Record Progress")
@@ -654,6 +740,27 @@ def _render_record_status_section(
             None if frontier_status is None else frontier_status.current_best_source
         )
     )
+
+
+def _render_current_certified_record_board_section(
+    *,
+    st: Any,
+    board_view: MorpionBootstrapCertifiedRecordBoardView | None,
+) -> None:
+    """Render the current strict certified Morpion record board when available."""
+    if board_view is None:
+        st.caption("No certified record state available yet.")
+        return
+
+    summary_columns = st.columns(5)
+    summary_columns[0].metric("Total Points", str(board_view.total_points))
+    summary_columns[1].metric("Moves Since Start", str(board_view.moves_since_start))
+    summary_columns[2].metric("Exact", _format_value(board_view.is_exact))
+    summary_columns[3].metric("Terminal", _format_value(board_view.is_terminal))
+    summary_columns[4].metric("Source", board_view.source)
+    st.components.v1.html(board_view.board_svg, height=760)
+    if board_view.board_text is not None:
+        st.code(board_view.board_text)
 
 
 def _tree_structure_rows(
