@@ -69,6 +69,17 @@ from .tree_inspector import build_morpion_bootstrap_tree_inspector_snapshot
 
 MAX_PLOT_POINTS = 2000
 
+# TEMP DEBUG: session/memory isolation
+DEBUG_DISABLE_CERTIFIED_RECORD_BOARD_RENDERING = True
+DEBUG_DISABLE_CERTIFIED_RECORD_BOARD_BUILD = True
+DEBUG_DISABLE_PLOTS = True
+DEBUG_DISABLE_TREE_INSPECTOR = False
+DEBUG_DISABLE_DATA_TABLES = True
+DEBUG_TREE_INSPECTOR_SNAPSHOT_ONLY = False
+DEBUG_TREE_INSPECTOR_RENDER_JSON_ONLY = False
+DEBUG_TREE_INSPECTOR_RENDER_BOARD_TEXT_ONLY = False
+DEBUG_TREE_INSPECTOR_RENDER_BOARD_SVG_ONLY = False
+
 
 def run_dashboard_app(work_dir: Path) -> None:
     """Render the local Streamlit dashboard for one bootstrap work directory."""
@@ -80,8 +91,11 @@ def run_dashboard_app(work_dir: Path) -> None:
     st.session_state["debug_rerun_count"] = rerun_count
     debug_time_text = time.strftime("%H:%M:%S")
     process_id = os.getpid()
+    debug_run_id = f"pid={process_id}:rerun={rerun_count}:t={time.time_ns():x}"
     print(
-        f"[dashboard-debug] rerun count={rerun_count} time={debug_time_text} pid={process_id}",
+        "[dashboard-debug] "
+        f"run_id={debug_run_id} rerun count={rerun_count} "
+        f"time={debug_time_text} pid={process_id}",
         flush=True,
     )
 
@@ -96,7 +110,8 @@ def run_dashboard_app(work_dir: Path) -> None:
     dashboard_data_duration = time.perf_counter() - dashboard_data_start_time
     st.session_state["debug_dashboard_data_duration_seconds"] = dashboard_data_duration
     print(
-        f"[dashboard-debug] build_dashboard_data dt={dashboard_data_duration:.3f}s",
+        "[dashboard-debug] "
+        f"run_id={debug_run_id} build_dashboard_data dt={dashboard_data_duration:.3f}s",
         flush=True,
     )
 
@@ -136,30 +151,24 @@ def run_dashboard_app(work_dir: Path) -> None:
 
     # TEMP DEBUG: rerun/memory investigation
     st.caption(
-        f"debug_rerun_count={rerun_count} time={debug_time_text} pid={process_id}"
+        " ".join(
+            (
+                f"debug_rerun_count={rerun_count}",
+                f"time={debug_time_text}",
+                f"pid={process_id}",
+                f"debug_run_id={debug_run_id}",
+            )
+        )
     )
 
     # TEMP DEBUG: session/memory isolation
-    disable_certified_record_board_rendering = st.checkbox(
-        "DEBUG: Disable certified record board rendering",
-        value=False,
+    disable_certified_record_board_rendering = (
+        DEBUG_DISABLE_CERTIFIED_RECORD_BOARD_RENDERING
     )
-    disable_certified_record_board_build = st.checkbox(
-        "DEBUG: Disable certified record board build",
-        value=False,
-    )
-    disable_plots = st.checkbox(
-        "DEBUG: Disable plots",
-        value=False,
-    )
-    disable_tree_inspector = st.checkbox(
-        "DEBUG: Disable tree inspector",
-        value=False,
-    )
-    disable_data_tables = st.checkbox(
-        "DEBUG: Disable data tables",
-        value=False,
-    )
+    disable_certified_record_board_build = DEBUG_DISABLE_CERTIFIED_RECORD_BOARD_BUILD
+    disable_plots = DEBUG_DISABLE_PLOTS
+    disable_tree_inspector = DEBUG_DISABLE_TREE_INSPECTOR
+    disable_data_tables = DEBUG_DISABLE_DATA_TABLES
 
     board_view: MorpionBootstrapCertifiedRecordBoardView | None
     certified_record_board_duration: float | None
@@ -167,7 +176,9 @@ def run_dashboard_app(work_dir: Path) -> None:
         board_view = None
         certified_record_board_duration = None
         print(
-            "[dashboard-debug] certified_record_board build disabled by debug toggle",
+            "[dashboard-debug] "
+            f"run_id={debug_run_id} "
+            "certified_record_board build disabled by debug flag",
             flush=True,
         )
     else:
@@ -178,7 +189,8 @@ def run_dashboard_app(work_dir: Path) -> None:
             time.perf_counter() - certified_record_board_start_time
         )
         print(
-            "[dashboard-debug] build_certified_record_board "
+            "[dashboard-debug] "
+            f"run_id={debug_run_id} build_certified_record_board "
             f"dt={certified_record_board_duration:.3f}s",
             flush=True,
         )
@@ -193,6 +205,7 @@ def run_dashboard_app(work_dir: Path) -> None:
                 "rerun_count": rerun_count,
                 "time": debug_time_text,
                 "pid": process_id,
+                "debug_run_id": debug_run_id,
                 "build_dashboard_data_seconds": dashboard_data_duration,
                 "build_certified_record_board_seconds": certified_record_board_duration,
                 "disable_certified_record_board_rendering": (
@@ -664,6 +677,41 @@ def _render_tree_inspector_section(
         return
     if snapshot.selection_warning is not None:
         st.warning(snapshot.selection_warning)
+
+    # TEMP DEBUG: tree inspector sub-isolation
+    if DEBUG_TREE_INSPECTOR_SNAPSHOT_ONLY:
+        st.caption("TEMP DEBUG: tree inspector snapshot-only mode active.")
+        st.write("Selected node id:", snapshot.selected_node_id)
+        st.write("Node summary exists:", snapshot.node_summary is not None)
+        st.write("Child summary count:", len(snapshot.child_summaries))
+        st.write("State view exists:", snapshot.state_view is not None)
+        st.write("Local tree view exists:", snapshot.local_tree_view is not None)
+        return
+
+    # TEMP DEBUG: tree inspector sub-isolation
+    if DEBUG_TREE_INSPECTOR_RENDER_JSON_ONLY:
+        st.caption("TEMP DEBUG: tree inspector JSON-only mode active.")
+        st.json(_tree_inspector_node_summary_dict(snapshot))
+        st.json(_tree_inspector_local_tree_dict(snapshot))
+        return
+
+    # TEMP DEBUG: tree inspector sub-isolation
+    if DEBUG_TREE_INSPECTOR_RENDER_BOARD_TEXT_ONLY:
+        st.caption("TEMP DEBUG: tree inspector board-text-only mode active.")
+        if snapshot.state_view is None:
+            st.caption("No Morpion state view available yet.")
+        else:
+            st.code(snapshot.state_view.board_text)
+        return
+
+    # TEMP DEBUG: tree inspector sub-isolation
+    if DEBUG_TREE_INSPECTOR_RENDER_BOARD_SVG_ONLY:
+        st.caption("TEMP DEBUG: tree inspector board-SVG-only mode active.")
+        if snapshot.state_view is None:
+            st.caption("No Morpion state view available yet.")
+        else:
+            st.components.v1.html(snapshot.state_view.board_svg, height=760)
+        return
 
     st.session_state[state_key] = snapshot.selected_node_id
     _render_tree_inspector_navigation(
