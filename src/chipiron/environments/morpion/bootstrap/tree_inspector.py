@@ -144,6 +144,16 @@ class _IndexedCheckpointTree:
     child_links_by_node_id: dict[int, tuple[_IndexedChildLink, ...]]
 
 
+@dataclass(frozen=True, slots=True)
+class _SelectedNodeSnapshotParts:
+    """Cached selected-node inspector payload for one checkpoint node."""
+
+    node_summary: MorpionBootstrapNodeSummary
+    child_summaries: tuple[MorpionBootstrapChildSummary, ...]
+    local_tree_view: MorpionBootstrapLocalTreeView | None
+    state_view: MorpionBootstrapStateView | None
+
+
 def build_morpion_bootstrap_tree_inspector_snapshot(
     work_dir: str | Path,
     *,
@@ -193,38 +203,13 @@ def build_morpion_bootstrap_tree_inspector_snapshot(
         indexed_checkpoint=indexed_checkpoint,
         selected_node_id=selected_node_id,
     )
-    node_payload = indexed_checkpoint.nodes_by_id[resolved_selected_node_id]
-    state = _decode_node_state(node_payload)
-
-    node_summary = _build_node_summary(
-        indexed_checkpoint=indexed_checkpoint,
-        node_payload=node_payload,
-        state=state,
-    )
-    child_summaries = (
-        _build_child_summaries(
-            indexed_checkpoint=indexed_checkpoint,
-            node_payload=node_payload,
-            state=state,
-        )
-        if include_child_summaries
-        else ()
-    )
-    local_tree_view = (
-        _build_local_tree_view(
-            indexed_checkpoint=indexed_checkpoint,
-            selected_node_id=resolved_selected_node_id,
-        )
-        if include_local_tree_view
-        else None
-    )
-    state_view = (
-        _build_state_view(
-            node_id=resolved_selected_node_id,
-            state=state,
-        )
-        if include_state_view
-        else None
+    selected_node_parts = _build_selected_node_snapshot_parts(
+        checkpoint_path=resolved_checkpoint.checkpoint_path,
+        checkpoint_mtime_ns=_checkpoint_mtime_ns(resolved_checkpoint.checkpoint_path),
+        selected_node_id=resolved_selected_node_id,
+        include_child_summaries=include_child_summaries,
+        include_local_tree_view=include_local_tree_view,
+        include_state_view=include_state_view,
     )
 
     return MorpionBootstrapTreeInspectorSnapshot(
@@ -235,10 +220,10 @@ def build_morpion_bootstrap_tree_inspector_snapshot(
         status_message=resolved_checkpoint.status_message,
         error_message=None,
         selection_warning=selection_warning,
-        node_summary=node_summary,
-        child_summaries=child_summaries,
-        state_view=state_view,
-        local_tree_view=local_tree_view,
+        node_summary=selected_node_parts.node_summary,
+        child_summaries=selected_node_parts.child_summaries,
+        state_view=selected_node_parts.state_view,
+        local_tree_view=selected_node_parts.local_tree_view,
     )
 
 
@@ -305,6 +290,14 @@ def resolve_latest_runtime_checkpoint(
     )
 
 
+def _checkpoint_mtime_ns(checkpoint_path: Path) -> int:
+    """Return one stable checkpoint freshness token for cache invalidation."""
+    try:
+        return checkpoint_path.stat().st_mtime_ns
+    except OSError:
+        return 0
+
+
 @lru_cache(maxsize=1)
 def _load_indexed_checkpoint_tree(
     checkpoint_path: Path,
@@ -312,6 +305,60 @@ def _load_indexed_checkpoint_tree(
     """Load and index one runtime checkpoint for bounded local inspection."""
     payload = load_morpion_search_checkpoint_payload(checkpoint_path)
     return _index_checkpoint_payload(payload)
+
+
+@lru_cache(maxsize=128)
+def _build_selected_node_snapshot_parts(
+    *,
+    checkpoint_path: Path,
+    checkpoint_mtime_ns: int,
+    selected_node_id: int,
+    include_child_summaries: bool,
+    include_local_tree_view: bool,
+    include_state_view: bool,
+) -> _SelectedNodeSnapshotParts:
+    """Build and cache the selected-node inspector payload for one checkpoint."""
+    _ = checkpoint_mtime_ns
+    indexed_checkpoint = _load_indexed_checkpoint_tree(checkpoint_path)
+    node_payload = indexed_checkpoint.nodes_by_id[selected_node_id]
+    state = _decode_node_state(node_payload)
+
+    node_summary = _build_node_summary(
+        indexed_checkpoint=indexed_checkpoint,
+        node_payload=node_payload,
+        state=state,
+    )
+    child_summaries = (
+        _build_child_summaries(
+            indexed_checkpoint=indexed_checkpoint,
+            node_payload=node_payload,
+            state=state,
+        )
+        if include_child_summaries
+        else ()
+    )
+    local_tree_view = (
+        _build_local_tree_view(
+            indexed_checkpoint=indexed_checkpoint,
+            selected_node_id=selected_node_id,
+        )
+        if include_local_tree_view
+        else None
+    )
+    state_view = (
+        _build_state_view(
+            node_id=selected_node_id,
+            state=state,
+        )
+        if include_state_view
+        else None
+    )
+    return _SelectedNodeSnapshotParts(
+        node_summary=node_summary,
+        child_summaries=child_summaries,
+        local_tree_view=local_tree_view,
+        state_view=state_view,
+    )
 
 
 def _index_checkpoint_payload(

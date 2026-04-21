@@ -878,24 +878,28 @@ def _render_tree_inspector_outgoing_actions(
         st.caption("No outgoing actions available.")
         return
 
-    row_columns = st.columns((4, 2, 2, 1, 1, 1))
+    row_columns = st.columns((4, 2, 2, 2, 2, 1, 1, 1))
     row_columns[0].caption("Branch")
     row_columns[1].caption("Child Node")
-    row_columns[2].caption("Value")
-    row_columns[3].caption("Exact")
-    row_columns[4].caption("Terminal")
-    row_columns[5].caption("Go")
+    row_columns[2].caption("Display")
+    row_columns[3].caption("Direct")
+    row_columns[4].caption("Backed-up")
+    row_columns[5].caption("Exact")
+    row_columns[6].caption("Terminal")
+    row_columns[7].caption("Go")
 
     for index, child_row in enumerate(child_rows):
         child_node_id = child_row["child_node_id"]
         branch = child_row["branch"]
-        row_columns = st.columns((4, 2, 2, 1, 1, 1))
+        row_columns = st.columns((4, 2, 2, 2, 2, 1, 1, 1))
         row_columns[0].write(_format_value(branch))
         row_columns[1].write(_format_value(child_node_id))
         row_columns[2].write(_format_value(child_row["display_value"]))
-        row_columns[3].write(_format_value(child_row["is_exact"]))
-        row_columns[4].write(_format_value(child_row["is_terminal"]))
-        if row_columns[5].button(
+        row_columns[3].write(_format_value(child_row["direct_value"]))
+        row_columns[4].write(_format_value(child_row["backed_up_value"]))
+        row_columns[5].write(_format_value(child_row["is_exact"]))
+        row_columns[6].write(_format_value(child_row["is_terminal"]))
+        if row_columns[7].button(
             "Go",
             key=(
                 f"{state_key}::child_row::{index}::"
