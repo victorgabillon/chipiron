@@ -1402,9 +1402,20 @@ def _resolve_runtime_restore_path(
         seen_paths.add(candidate_path)
         if not candidate_path.is_file():
             continue
+        LOGGER.info(
+            "[checkpoint] candidate_validate_start source=%s path=%s",
+            source,
+            str(candidate_path),
+        )
         try:
             load_morpion_search_checkpoint_payload(candidate_path)
         except InvalidMorpionSearchCheckpointError as exc:
+            LOGGER.info(
+                "[checkpoint] candidate_validate_invalid source=%s path=%s reason=%s",
+                source,
+                str(candidate_path),
+                str(exc),
+            )
             if first_incompatible_error is None:
                 first_incompatible_error = IncompatibleMorpionResumeArtifactError(
                     source=source,
@@ -1412,6 +1423,11 @@ def _resolve_runtime_restore_path(
                     reason=str(exc),
                 )
             continue
+        LOGGER.info(
+            "[checkpoint] candidate_validate_done source=%s path=%s",
+            source,
+            str(candidate_path),
+        )
         return candidate_path
 
     if first_incompatible_error is not None:

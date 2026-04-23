@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import json
+import inspect
 import logging
+import resource
 import time
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from random import Random
@@ -57,6 +60,9 @@ from .control import MorpionBootstrapEffectiveRuntimeConfig
 from .history import MorpionBootstrapTreeStatus
 
 LOGGER = logging.getLogger(__name__)
+_CHECKPOINT_PAYLOAD_CACHE: dict[
+    Path, tuple[int, int, SearchRuntimeCheckpointPayload]
+] = {}
 
 try:
     import psutil
@@ -65,12 +71,15 @@ except ImportError:  # pragma: no cover - optional dependency for diagnostics on
 
 
 def _get_process_rss_mb() -> float | None:
-    """Return the current process RSS in MB when psutil is available."""
-    if psutil is None:
+    """Return the current process RSS in MB when psutil or resource is available."""
+    if psutil is not None:
+        process = psutil.Process()
+        rss_bytes = process.memory_info().rss
+        return rss_bytes / (1024 * 1024)
+    rss_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    if rss_kb <= 0:
         return None
-    process = psutil.Process()
-    rss_bytes = process.memory_info().rss
-    return rss_bytes / (1024 * 1024)
+    return rss_kb / 1024
 
 
 def _log_mem(logger: logging.Logger, tag: str) -> None:
@@ -80,6 +89,78 @@ def _log_mem(logger: logging.Logger, tag: str) -> None:
         logger.info("[mem] %s rss_mb=unavailable", tag)
         return
     logger.info("[mem] %s rss_mb=%.3f", tag, rss_mb)
+
+
+def _checkpoint_load_caller_summary() -> str:
+    """Return a concise caller summary for checkpoint load diagnostics."""
+    current_frame = inspect.currentframe()
+    if current_frame is None:
+        return "unknown"
+    frame = current_frame.f_back
+    this_module = __name__
+    while frame is not None:
+        module_name = frame.f_globals.get("__name__", "unknown")
+        if module_name != this_module:
+            return (
+                f"{module_name}:{frame.f_code.co_name}:{frame.f_lineno}"
+            )
+        frame = frame.f_back
+    return "unknown"
+
+
+@contextmanager
+def _instrument_checkpoint_runtime_rebuild() -> Any:
+    """Temporarily wrap Anemone checkpoint restore phases with timing logs."""
+    from anemone.checkpoints import load as checkpoint_load_module
+
+    phase_names = {
+        "assemble_search_runtime_dependencies": "dependency_assembly",
+        "_validate_payload": "payload_validate",
+        "_load_states": "state_restore",
+        "_create_nodes": "node_create",
+        "_link_nodes": "edge_link",
+        "_restore_node_runtime_state": "node_runtime_restore",
+        "_build_tree": "tree_build",
+        "create_stopping_criterion": "stopping_criterion_create",
+        "TreeExploration": "runtime_object_create",
+        "_restore_runtime_state": "runtime_state_restore",
+        "_restore_tree_expansions": "tree_expansions_restore",
+        "_restore_inferred_depth_selector_state": "selector_state_restore",
+    }
+    original_values: dict[str, object] = {}
+
+    def _make_wrapper(original: object, phase_name: str) -> Any:
+        def _wrapped(*args: object, **kwargs: object) -> object:
+            LOGGER.info("[runtime_rebuild] %s_start", phase_name)
+            _log_mem(LOGGER, f"before runtime_rebuild.{phase_name}")
+            started_at = time.perf_counter()
+            result = cast("Any", original)(*args, **kwargs)
+            elapsed_s = time.perf_counter() - started_at
+            LOGGER.info(
+                "[runtime_rebuild] %s_done elapsed=%.3fs",
+                phase_name,
+                elapsed_s,
+            )
+            _log_mem(LOGGER, f"after runtime_rebuild.{phase_name}")
+            return result
+
+        return _wrapped
+
+    try:
+        for attribute_name, phase_name in phase_names.items():
+            if not hasattr(checkpoint_load_module, attribute_name):
+                continue
+            original_value = getattr(checkpoint_load_module, attribute_name)
+            original_values[attribute_name] = original_value
+            setattr(
+                checkpoint_load_module,
+                attribute_name,
+                _make_wrapper(original_value, phase_name),
+            )
+        yield
+    finally:
+        for attribute_name, original_value in original_values.items():
+            setattr(checkpoint_load_module, attribute_name, original_value)
 
 
 def _default_search_args() -> SearchArgs:
@@ -439,17 +520,18 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         )
         _log_mem(LOGGER, "before runtime_rebuild")
         runtime_started_at = time.perf_counter()
-        runtime = load_search_from_checkpoint_payload(
-            payload,
-            state_codec=self._state_codec,
-            dynamics=self._dynamics,
-            args=search_args,
-            state_type=MorpionState,
-            master_state_value_evaluator=self._build_master_evaluator(None),
-            random_generator=self._random_generator,
-            state_representation_factory=None,
-            node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
-        )
+        with _instrument_checkpoint_runtime_rebuild():
+            runtime = load_search_from_checkpoint_payload(
+                payload,
+                state_codec=self._state_codec,
+                dynamics=self._dynamics,
+                args=search_args,
+                state_type=MorpionState,
+                master_state_value_evaluator=self._build_master_evaluator(None),
+                random_generator=self._random_generator,
+                state_representation_factory=None,
+                node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
+            )
         runtime_elapsed_s = time.perf_counter() - runtime_started_at
         LOGGER.info(
             "[checkpoint] runtime_rebuild_done path=%s elapsed=%.3fs",
@@ -585,6 +667,42 @@ def load_morpion_search_checkpoint_payload(
 ) -> SearchRuntimeCheckpointPayload:
     """Load a persisted search checkpoint payload from JSON and validate shape."""
     resolved_path = Path(path)
+    caller_summary = _checkpoint_load_caller_summary()
+    LOGGER.info(
+        "[checkpoint] load_request path=%s caller=%s",
+        str(resolved_path),
+        caller_summary,
+    )
+    try:
+        path_stat = resolved_path.stat()
+    except FileNotFoundError as exc:
+        _CHECKPOINT_PAYLOAD_CACHE.pop(resolved_path, None)
+        raise InvalidMorpionSearchCheckpointError(
+            resolved_path,
+            "file does not exist",
+        ) from exc
+
+    cache_entry = _CHECKPOINT_PAYLOAD_CACHE.get(resolved_path)
+    if cache_entry is not None:
+        cached_size, cached_mtime_ns, cached_payload = cache_entry
+        if (
+            cached_size == path_stat.st_size
+            and cached_mtime_ns == path_stat.st_mtime_ns
+        ):
+            LOGGER.info(
+                "[checkpoint] payload_cache_hit path=%s caller=%s bytes=%s",
+                str(resolved_path),
+                caller_summary,
+                path_stat.st_size,
+            )
+            _log_mem(LOGGER, "after payload_cache_hit")
+            return cached_payload
+    LOGGER.info(
+        "[checkpoint] payload_cache_miss path=%s caller=%s bytes=%s",
+        str(resolved_path),
+        caller_summary,
+        path_stat.st_size,
+    )
     try:
         LOGGER.info("[checkpoint] json_read_start path=%s", str(resolved_path))
         _log_mem(LOGGER, "before json_read")
@@ -625,6 +743,11 @@ def load_morpion_search_checkpoint_payload(
             payload_decode_elapsed_s,
         )
         _log_mem(LOGGER, "after payload_decode")
+        _CHECKPOINT_PAYLOAD_CACHE[resolved_path] = (
+            path_stat.st_size,
+            path_stat.st_mtime_ns,
+            payload,
+        )
         return payload
     except Exception as exc:
         raise InvalidMorpionSearchCheckpointError(
