@@ -58,6 +58,29 @@ from .history import MorpionBootstrapTreeStatus
 
 LOGGER = logging.getLogger(__name__)
 
+try:
+    import psutil
+except ImportError:  # pragma: no cover - optional dependency for diagnostics only.
+    psutil = None
+
+
+def _get_process_rss_mb() -> float | None:
+    """Return the current process RSS in MB when psutil is available."""
+    if psutil is None:
+        return None
+    process = psutil.Process()
+    rss_bytes = process.memory_info().rss
+    return rss_bytes / (1024 * 1024)
+
+
+def _log_mem(logger: logging.Logger, tag: str) -> None:
+    """Log the current process RSS in MB when available."""
+    rss_mb = _get_process_rss_mb()
+    if rss_mb is None:
+        logger.info("[mem] %s rss_mb=unavailable", tag)
+        return
+    logger.info("[mem] %s rss_mb=%.3f", tag, rss_mb)
+
 
 def _default_search_args() -> SearchArgs:
     """Build the default Morpion tree-search args used by the bootstrap runner."""
@@ -397,8 +420,25 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
     ) -> object:
         """Restore one live runtime from a persisted checkpoint JSON file."""
         LOGGER.info("[checkpoint] load_start path=%s", str(tree_snapshot_path))
+        _log_mem(LOGGER, "before total_load")
         started_at = time.perf_counter()
+        LOGGER.info("[checkpoint] payload_read_start path=%s", str(tree_snapshot_path))
+        _log_mem(LOGGER, "before payload_read")
+        payload_started_at = time.perf_counter()
         payload = load_morpion_search_checkpoint_payload(tree_snapshot_path)
+        payload_elapsed_s = time.perf_counter() - payload_started_at
+        LOGGER.info(
+            "[checkpoint] payload_read_done path=%s elapsed=%.3fs",
+            str(tree_snapshot_path),
+            payload_elapsed_s,
+        )
+        _log_mem(LOGGER, "after payload_read")
+        LOGGER.info(
+            "[checkpoint] runtime_rebuild_start path=%s",
+            str(tree_snapshot_path),
+        )
+        _log_mem(LOGGER, "before runtime_rebuild")
+        runtime_started_at = time.perf_counter()
         runtime = load_search_from_checkpoint_payload(
             payload,
             state_codec=self._state_codec,
@@ -410,8 +450,20 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             state_representation_factory=None,
             node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
         )
+        runtime_elapsed_s = time.perf_counter() - runtime_started_at
+        LOGGER.info(
+            "[checkpoint] runtime_rebuild_done path=%s elapsed=%.3fs",
+            str(tree_snapshot_path),
+            runtime_elapsed_s,
+        )
+        _log_mem(LOGGER, "after runtime_rebuild")
         elapsed_s = time.perf_counter() - started_at
-        LOGGER.info("[checkpoint] load_done path=%s elapsed=%.3fs", str(tree_snapshot_path), elapsed_s)
+        _log_mem(LOGGER, "after total_load")
+        LOGGER.info(
+            "[checkpoint] load_done path=%s elapsed=%.3fs",
+            str(tree_snapshot_path),
+            elapsed_s,
+        )
         return runtime
 
     def _build_master_evaluator(
@@ -472,18 +524,60 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
     def save_checkpoint(self, output_path: str | Path) -> None:
         """Persist the live Anemone runtime as a checkpoint JSON file."""
         runtime = self._require_runtime()
+        output = Path(output_path)
+
+        LOGGER.info("[checkpoint] save_start path=%s", str(output))
+        _log_mem(LOGGER, "before total_save")
+        save_started_at = time.perf_counter()
+        LOGGER.info("[checkpoint] payload_build_start path=%s", str(output_path))
+        _log_mem(LOGGER, "before payload_build")
+        payload_started_at = time.perf_counter()
         payload = build_search_checkpoint_payload(
             runtime,
             state_codec=self._state_codec,
         )
-        output = Path(output_path)
-        LOGGER.info("[checkpoint] save_start path=%s", str(output))
-        started_at = time.perf_counter()
+        payload_elapsed_s = time.perf_counter() - payload_started_at
+        LOGGER.info(
+            "[checkpoint] payload_build_done path=%s elapsed=%.3fs",
+            str(output),
+            payload_elapsed_s,
+        )
+        _log_mem(LOGGER, "after payload_build")
+
+        LOGGER.info("[checkpoint] asdict_start path=%s", str(output))
+        _log_mem(LOGGER, "before asdict")
+        asdict_started_at = time.perf_counter()
+        payload_dict = asdict(payload)
+        asdict_elapsed_s = time.perf_counter() - asdict_started_at
+        LOGGER.info(
+            "[checkpoint] asdict_done path=%s elapsed=%.3fs",
+            str(output),
+            asdict_elapsed_s,
+        )
+        _log_mem(LOGGER, "after asdict")
+
         output.parent.mkdir(parents=True, exist_ok=True)
+        LOGGER.info("[checkpoint] json_dump_start path=%s", str(output))
+        _log_mem(LOGGER, "before json_dump")
+        json_dump_started_at = time.perf_counter()
         with open(output, "w", encoding="utf-8") as handle:
-            json.dump(asdict(payload), handle, indent=2, sort_keys=True)
-        elapsed_s = time.perf_counter() - started_at
-        LOGGER.info("[checkpoint] save_done path=%s elapsed=%.3fs", str(output), elapsed_s)
+            json.dump(payload_dict, handle, indent=2, sort_keys=True)
+        json_dump_elapsed_s = time.perf_counter() - json_dump_started_at
+        bytes_written = output.stat().st_size
+        LOGGER.info(
+            "[checkpoint] json_dump_done path=%s elapsed=%.3fs bytes=%s",
+            str(output),
+            json_dump_elapsed_s,
+            bytes_written,
+        )
+        _log_mem(LOGGER, "after json_dump")
+        elapsed_s = time.perf_counter() - save_started_at
+        _log_mem(LOGGER, "after total_save")
+        LOGGER.info(
+            "[checkpoint] save_done path=%s elapsed=%.3fs",
+            str(output),
+            elapsed_s,
+        )
 
 
 def load_morpion_search_checkpoint_payload(
@@ -492,8 +586,18 @@ def load_morpion_search_checkpoint_payload(
     """Load a persisted search checkpoint payload from JSON and validate shape."""
     resolved_path = Path(path)
     try:
+        LOGGER.info("[checkpoint] json_read_start path=%s", str(resolved_path))
+        _log_mem(LOGGER, "before json_read")
+        json_read_started_at = time.perf_counter()
         with open(resolved_path, encoding="utf-8") as handle:
             raw_payload = json.load(handle)
+        json_read_elapsed_s = time.perf_counter() - json_read_started_at
+        LOGGER.info(
+            "[checkpoint] json_read_done path=%s elapsed=%.3fs",
+            str(resolved_path),
+            json_read_elapsed_s,
+        )
+        _log_mem(LOGGER, "after json_read")
     except FileNotFoundError as exc:
         raise InvalidMorpionSearchCheckpointError(
             resolved_path,
@@ -506,11 +610,22 @@ def load_morpion_search_checkpoint_payload(
         ) from exc
 
     try:
-        return from_dict(
+        LOGGER.info("[checkpoint] payload_decode_start path=%s", str(resolved_path))
+        _log_mem(LOGGER, "before payload_decode")
+        payload_decode_started_at = time.perf_counter()
+        payload = from_dict(
             data_class=SearchRuntimeCheckpointPayload,
             data=raw_payload,
             config=Config(cast=[tuple], check_types=False),
         )
+        payload_decode_elapsed_s = time.perf_counter() - payload_decode_started_at
+        LOGGER.info(
+            "[checkpoint] payload_decode_done path=%s elapsed=%.3fs",
+            str(resolved_path),
+            payload_decode_elapsed_s,
+        )
+        _log_mem(LOGGER, "after payload_decode")
+        return payload
     except Exception as exc:
         raise InvalidMorpionSearchCheckpointError(
             resolved_path,
