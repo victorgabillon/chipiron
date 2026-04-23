@@ -6,6 +6,7 @@ import argparse
 from functools import lru_cache
 from importlib import import_module
 from pathlib import Path
+import time
 from typing import TYPE_CHECKING, Any
 
 from matplotlib import pyplot as plt
@@ -68,6 +69,7 @@ from .streamlit_morpion_clickable_board import render_clickable_morpion_board
 from .tree_inspector import build_morpion_bootstrap_tree_inspector_snapshot
 
 MAX_PLOT_POINTS = 2000
+TREE_INSPECTOR_TIMING_PREFIX = "[tree-inspector-timing]"
 
 
 def _path_mtime_ns(path: Path) -> int:
@@ -422,7 +424,7 @@ def run_dashboard_app(work_dir: Path) -> None:
     )
 
     st.subheader("Tree / State Inspector")
-    _render_tree_inspector_section(st=st, paths=paths)
+    _render_tree_inspector_fragment(st=st, paths=paths)
 
     st.subheader("Debug Info")
     st.write(
@@ -607,18 +609,36 @@ def _render_launcher_command_text(command: tuple[str, ...]) -> str:
     return " ".join(command)
 
 
+def _tree_inspector_rerun(st: Any) -> None:
+    """Rerun only the tree-inspector fragment when supported."""
+    try:
+        st.rerun(scope="fragment")
+    except TypeError:
+        st.rerun()
+
+
 def _render_tree_inspector_section(
     *,
     st: Any,
     paths: MorpionBootstrapPaths,
 ) -> None:
     """Render the bounded runtime-tree inspector for the latest checkpoint."""
+    section_start_time = time.perf_counter()
     state_key = f"morpion_bootstrap_selected_node::{paths.work_dir}"
     selected_node_id = st.session_state.get(state_key)
 
+    snapshot_start_time = time.perf_counter()
     snapshot = build_morpion_bootstrap_tree_inspector_snapshot(
         paths.work_dir,
         selected_node_id=selected_node_id,
+    )
+    snapshot_duration = time.perf_counter() - snapshot_start_time
+    print(
+        f"{TREE_INSPECTOR_TIMING_PREFIX} build_snapshot "
+        f"work_dir={paths.work_dir.name} selected_node_id={selected_node_id!r} "
+        f"checkpoint={None if snapshot.checkpoint_path is None else snapshot.checkpoint_path.name} "
+        f"total_s={snapshot_duration:.6f}",
+        flush=True,
     )
 
     if snapshot.status_message is not None:
@@ -651,13 +671,14 @@ def _render_tree_inspector_section(
 
     details_columns = st.columns(2)
     with details_columns[0]:
-        st.caption("Node Summary")
-        st.json(_tree_inspector_node_summary_dict(snapshot))
-        st.caption("Local Tree")
-        st.json(_tree_inspector_local_tree_dict(snapshot))
+        with st.expander("Node Summary"):
+            st.json(_tree_inspector_node_summary_dict(snapshot))
+        with st.expander("Local Tree"):
+            st.json(_tree_inspector_local_tree_dict(snapshot))
     with details_columns[1]:
         if snapshot.state_view is not None:
             st.caption("Selected Morpion State")
+            clickable_board_start_time = time.perf_counter()
             board_click_event = render_clickable_morpion_board(
                 svg=snapshot.state_view.board_svg,
                 click_targets=snapshot.state_view.board_click_targets,
@@ -665,6 +686,13 @@ def _render_tree_inspector_section(
                 height=760,
                 render_size=snapshot.state_view.board_render_size,
                 key=f"{state_key}::board::{snapshot.selected_node_id}",
+            )
+            clickable_board_duration = time.perf_counter() - clickable_board_start_time
+            print(
+                f"{TREE_INSPECTOR_TIMING_PREFIX} render_clickable_board "
+                f"work_dir={paths.work_dir.name} selected_node_id={snapshot.selected_node_id!r} "
+                f"total_s={clickable_board_duration:.6f}",
+                flush=True,
             )
             if board_click_event is not None:
                 click_nonce = board_click_event.get("click_nonce")
@@ -679,11 +707,13 @@ def _render_tree_inspector_section(
                         )
                         if selected_child_node_id is not None:
                             st.session_state[state_key] = selected_child_node_id
-                            st.rerun()
-                        st.caption(
-                            f"Action {_format_value(clicked_action_name)} is not expanded in this checkpoint."
-                        )
-            st.code(snapshot.state_view.board_text)
+                            _tree_inspector_rerun(st)
+                        else:
+                            st.caption(
+                                f"Action {_format_value(clicked_action_name)} is not expanded in this checkpoint."
+                            )
+            with st.expander("ASCII Board"):
+                st.code(snapshot.state_view.board_text)
 
     st.caption("Outgoing actions")
     _render_tree_inspector_outgoing_actions(
@@ -691,6 +721,27 @@ def _render_tree_inspector_section(
         snapshot=snapshot,
         state_key=state_key,
     )
+    section_duration = time.perf_counter() - section_start_time
+    print(
+        f"{TREE_INSPECTOR_TIMING_PREFIX} render_tree_inspector_section "
+        f"work_dir={paths.work_dir.name} selected_node_id={snapshot.selected_node_id!r} "
+        f"total_s={section_duration:.6f}",
+        flush=True,
+    )
+
+
+def _render_tree_inspector_fragment(
+    *,
+    st: Any,
+    paths: MorpionBootstrapPaths,
+) -> None:
+    """Render the tree inspector in a fragment when supported by Streamlit."""
+    fragment_renderer = (
+        st.fragment(_render_tree_inspector_section)
+        if hasattr(st, "fragment")
+        else _render_tree_inspector_section
+    )
+    fragment_renderer(st=st, paths=paths)
 
 
 def _render_tree_structure_section(
@@ -846,7 +897,7 @@ def _render_tree_inspector_navigation(
     nav_columns = st.columns((1, 1, 2, 3))
     if nav_columns[0].button("Go to root", key=f"{state_key}::root"):
         st.session_state[state_key] = local_tree_view.root_node_id
-        st.rerun()
+        _tree_inspector_rerun(st)
     parent_disabled = not node_summary.parent_ids
     if nav_columns[1].button(
         "Go to parent",
@@ -854,7 +905,7 @@ def _render_tree_inspector_navigation(
         disabled=parent_disabled,
     ):
         st.session_state[state_key] = node_summary.parent_ids[0]
-        st.rerun()
+        _tree_inspector_rerun(st)
 
     child_options = [summary.branch_label for summary in snapshot.child_summaries]
     selected_branch = nav_columns[2].selectbox(
@@ -875,7 +926,7 @@ def _render_tree_inspector_navigation(
         )
         if selected_child_node_id is not None:
             st.session_state[state_key] = selected_child_node_id
-            st.rerun()
+            _tree_inspector_rerun(st)
 
     selected_node_input = st.text_input(
         "Node id",
@@ -885,7 +936,7 @@ def _render_tree_inspector_navigation(
     )
     if st.button("Go to node id", key=f"{state_key}::node_jump"):
         st.session_state[state_key] = selected_node_input.strip()
-        st.rerun()
+        _tree_inspector_rerun(st)
 
 
 def _selected_child_node_id_for_branch(
@@ -992,7 +1043,7 @@ def _render_tree_inspector_outgoing_actions(
             disabled=child_node_id is None,
         ):
             st.session_state[state_key] = child_node_id
-            st.rerun()
+            _tree_inspector_rerun(st)
 
 
 def _load_run_state(paths: MorpionBootstrapPaths) -> Any:
