@@ -172,7 +172,7 @@ def test_tree_inspector_snapshot_defaults_to_root_and_extracts_children(
     assert all(
         isinstance(
             node_payload.state_payload,
-            AnchorCheckpointStatePayload | DeltaCheckpointStatePayload,
+            (AnchorCheckpointStatePayload, DeltaCheckpointStatePayload),
         )
         for node_payload in payload.tree.nodes
     )

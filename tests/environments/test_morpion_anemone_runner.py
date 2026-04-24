@@ -275,7 +275,7 @@ def test_checkpoint_roundtrip_restores_and_continues_growth(tmp_path: Path) -> N
     assert all(
         isinstance(
             node_payload.state_payload,
-            AnchorCheckpointStatePayload | DeltaCheckpointStatePayload,
+            (AnchorCheckpointStatePayload, DeltaCheckpointStatePayload),
         )
         for node_payload in payload.tree.nodes
     )

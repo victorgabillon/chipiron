@@ -8,7 +8,7 @@ import logging
 import resource
 import time
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass, replace
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from random import Random
 from typing import Any, cast
@@ -186,6 +186,13 @@ def _default_search_args() -> SearchArgs:
     )
 
 
+def _opening_type_name(search_args: SearchArgs) -> str:
+    """Return a stable operator-facing opening-type label for logs."""
+    opening_type = search_args.opening_type
+    value = getattr(opening_type, "value", None)
+    return value if isinstance(value, str) else str(opening_type)
+
+
 class UninitializedMorpionSearchRunnerError(RuntimeError):
     """Raised when a runner method requires a live runtime that does not exist."""
 
@@ -243,7 +250,7 @@ class _ChipironMorpionStateCheckpointCodec:
         return self.inner.dump_delta_from_parent(
             parent_state=parent_state.to_atomheart_state(),
             child_state=child_state.to_atomheart_state(),
-            branch_from_parent=branch_from_parent,
+            branch_from_parent=None,
         )
 
     def load_anchor_ref(self, payload: object) -> MorpionState:
@@ -262,7 +269,7 @@ class _ChipironMorpionStateCheckpointCodec:
             self.inner.load_child_from_delta(
                 parent_state=parent_state.to_atomheart_state(),
                 delta_ref=delta_ref,
-                branch_from_parent=branch_from_parent,
+                branch_from_parent=None,
             )
         )
 
@@ -377,7 +384,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         LOGGER.info(
             "[search] selector=%s opening_type=%s",
             _selector_family_name(self._args.search_args),
-            self._args.search_args.opening_type,
+            _opening_type_name(self._args.search_args),
         )
         if tree_snapshot_path is None:
             LOGGER.info(

@@ -753,16 +753,11 @@ def _decode_node_state(
             indexed_checkpoint=indexed_checkpoint,
             decoded_states_by_node_id=decoded_states_by_node_id,
         )
-        branch_from_parent = (
-            None
-            if node_payload.branch_from_parent is None
-            else deserialize_checkpoint_atom(node_payload.branch_from_parent)
-        )
         decoded_state = dynamics.wrap_atomheart_state(
             state_codec.load_child_from_delta(
                 parent_state=parent_state.to_atomheart_state(),
                 delta_ref=state_payload.delta_ref,
-                branch_from_parent=branch_from_parent,
+                branch_from_parent=None,
             )
         )
     else:
