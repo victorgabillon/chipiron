@@ -8,9 +8,9 @@ __all__ = ["MainWindow"]
 
 
 def __getattr__(name: str) -> Any:
-	"""Load GUI exports lazily so display helpers can be imported independently."""
-	if name == "MainWindow":
-		from .gui import MainWindow
+    """Load GUI exports lazily so display helpers can be imported independently."""
+    if name == "MainWindow":
+        from .gui import MainWindow
 
-		return MainWindow
-	raise AttributeError(name)
+        return MainWindow
+    raise AttributeError(name)

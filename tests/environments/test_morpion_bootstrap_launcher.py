@@ -253,7 +253,10 @@ def test_fresh_run_startup_summary_reports_expected_state(tmp_path: Path) -> Non
     assert "run state: absent" in summary
     assert "history: absent" in summary
     assert f"work dir: {tmp_path.resolve()}" in summary
-    assert f"config: {MorpionBootstrapPaths.from_work_dir(tmp_path).bootstrap_config_path}" in summary
+    assert (
+        f"config: {MorpionBootstrapPaths.from_work_dir(tmp_path).bootstrap_config_path}"
+        in summary
+    )
 
 
 def test_resume_startup_summary_reports_resume_state(tmp_path: Path) -> None:
@@ -479,8 +482,7 @@ def test_startup_summary_renders_requested_evaluator_family_preset(
 
     assert (
         "evaluator family preset: "
-        f"{CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET} (explicit)"
-        in summary
+        f"{CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET} (explicit)" in summary
     )
 
 
@@ -501,7 +503,10 @@ def test_launcher_defaults_canonical_family_when_unset(tmp_path: Path) -> None:
         startup_status.resolved_evaluator_family_preset
         == CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET
     )
-    assert startup_status.bootstrap_config.evaluators == canonical_morpion_evaluator_family_config()
+    assert (
+        startup_status.bootstrap_config.evaluators
+        == canonical_morpion_evaluator_family_config()
+    )
 
 
 def test_launcher_preserves_explicit_evaluator_family_preset(tmp_path: Path) -> None:
@@ -602,13 +607,11 @@ def test_startup_summary_marks_launcher_default_family(tmp_path: Path) -> None:
 
     assert (
         "evaluator family preset: "
-        f"{CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET} (launcher default)"
-        in summary
+        f"{CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET} (launcher default)" in summary
     )
     assert (
         "configured evaluators: linear_10, linear_20, linear_41, linear_5, "
-        "mlp_10, mlp_20, mlp_41, mlp_5"
-        in summary
+        "mlp_10, mlp_20, mlp_41, mlp_5" in summary
     )
 
 
@@ -640,8 +643,12 @@ def test_launcher_main_registers_and_marks_process_state(
         calls.append(f"mark:{paths.work_dir}:{exit_code}:{reason}")
         return object()
 
-    monkeypatch.setattr(launcher_module, "register_current_launcher_process", _fake_register)
-    monkeypatch.setattr(launcher_module, "mark_current_launcher_process_stopped", _fake_mark)
+    monkeypatch.setattr(
+        launcher_module, "register_current_launcher_process", _fake_register
+    )
+    monkeypatch.setattr(
+        launcher_module, "mark_current_launcher_process_stopped", _fake_mark
+    )
     monkeypatch.setattr(
         launcher_module,
         "run_morpion_bootstrap_experiment",

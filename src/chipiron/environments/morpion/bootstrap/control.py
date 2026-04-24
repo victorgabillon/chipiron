@@ -5,12 +5,13 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import asdict, dataclass, field, replace
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .config import MorpionBootstrapConfig
+    from pathlib import Path
+
     from .bootstrap_loop import MorpionBootstrapArgs
+    from .config import MorpionBootstrapConfig
 
 BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY = "bootstrap_applied_control"
 BOOTSTRAP_APPLIED_RUNTIME_CONTROL_METADATA_KEY = "bootstrap_applied_runtime_control"
@@ -126,7 +127,9 @@ def bootstrap_control_from_metadata(value: object) -> MorpionBootstrapControl:
     if not isinstance(value, dict):
         return MorpionBootstrapControl()
     return MorpionBootstrapControl(
-        max_growth_steps_per_cycle=_optional_int(value.get("max_growth_steps_per_cycle")),
+        max_growth_steps_per_cycle=_optional_int(
+            value.get("max_growth_steps_per_cycle")
+        ),
         max_rows=_optional_int(value.get("max_rows")),
         use_backed_up_value=_optional_bool(value.get("use_backed_up_value")),
         save_after_seconds=_optional_float(value.get("save_after_seconds")),
@@ -251,8 +254,8 @@ __all__ = [
     "BOOTSTRAP_APPLIED_RUNTIME_CONTROL_METADATA_KEY",
     "BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY",
     "BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY",
-    "MorpionBootstrapEffectiveRuntimeConfig",
     "MorpionBootstrapControl",
+    "MorpionBootstrapEffectiveRuntimeConfig",
     "MorpionBootstrapRuntimeControl",
     "apply_control_to_args",
     "bootstrap_control_from_metadata",

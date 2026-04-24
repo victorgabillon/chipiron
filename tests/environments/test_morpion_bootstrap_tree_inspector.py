@@ -41,7 +41,10 @@ if "anemone" not in sys.modules:
     _anemone_stub.__path__ = [str(_ANEMONE_PACKAGE_ROOT)]
     sys.modules["anemone"] = _anemone_stub
 
-from anemone.checkpoints import AnchorCheckpointStatePayload, DeltaCheckpointStatePayload
+from anemone.checkpoints import (
+    AnchorCheckpointStatePayload,
+    DeltaCheckpointStatePayload,
+)
 
 from chipiron.environments.morpion.bootstrap import (
     AnemoneMorpionSearchRunner,
@@ -109,7 +112,9 @@ def test_resolve_latest_runtime_checkpoint_prefers_dedicated_run_state_path(
             last_save_unix_s=None,
             latest_runtime_checkpoint_path=paths.relative_to_work_dir(checkpoint_path),
             metadata={
-                RUNTIME_CHECKPOINT_METADATA_KEY: paths.relative_to_work_dir(checkpoint_path)
+                RUNTIME_CHECKPOINT_METADATA_KEY: paths.relative_to_work_dir(
+                    checkpoint_path
+                )
             },
         ),
         paths.run_state_path,
@@ -152,7 +157,9 @@ def test_resolve_latest_runtime_checkpoint_falls_back_to_newest_existing_checkpo
     assert resolved.checkpoint_path == second_checkpoint_path
     assert resolved.checkpoint_source == "runtime_checkpoint_dir"
     assert resolved.status_message is not None
-    assert "falling back to the latest checkpoint file on disk" in resolved.status_message
+    assert (
+        "falling back to the latest checkpoint file on disk" in resolved.status_message
+    )
 
 
 def test_display_value_priority_prefers_backed_up_then_direct_then_none() -> None:

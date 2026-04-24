@@ -15,12 +15,12 @@ from atomheart.games.morpion.state import (
     Variant as MorpionVariant,
 )
 
+from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
+    MORPION_CANONICAL_FEATURE_NAMES,
+)
 from chipiron.environments.morpion.types import (
     MorpionDynamics,
     MorpionState,
-)
-from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
-    MORPION_CANONICAL_FEATURE_NAMES,
 )
 
 DIRECTIONS: Final[tuple[Point, ...]] = (

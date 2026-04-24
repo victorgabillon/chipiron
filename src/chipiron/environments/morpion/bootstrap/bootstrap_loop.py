@@ -83,6 +83,39 @@ from .run_state import (
 
 LOGGER = logging.getLogger(__name__)
 
+_CURRENT_TREE_STATUS_TYPE_ERROR = (
+    "Morpion bootstrap runner current_tree_status() must return "
+    "MorpionBootstrapTreeStatus or a mapping."
+)
+
+
+def _tree_status_int_error(field_name: str) -> TypeError:
+    """Return the invalid optional-tree-int field error."""
+    return TypeError(
+        f"Morpion bootstrap tree-status field `{field_name}` must be an int or null."
+    )
+
+
+def _tree_status_mapping_error(field_name: str) -> TypeError:
+    """Return the invalid tree-status mapping field error."""
+    return TypeError(
+        f"Morpion bootstrap tree-status field `{field_name}` must be a mapping."
+    )
+
+
+def _tree_status_key_error(field_name: str) -> TypeError:
+    """Return the invalid tree-status mapping key error."""
+    return TypeError(
+        f"Morpion bootstrap tree-status field `{field_name}` must use integer-like keys."
+    )
+
+
+def _tree_status_value_error(field_name: str) -> TypeError:
+    """Return the invalid tree-status mapping value error."""
+    return TypeError(
+        f"Morpion bootstrap tree-status field `{field_name}` must use int values."
+    )
+
 
 def _empty_evaluator_specs() -> dict[str, MorpionEvaluatorSpec]:
     """Return a typed empty evaluator-spec mapping."""
@@ -122,7 +155,9 @@ class InvalidGenerationRetentionCountError(ValueError):
 
     def __init__(self, keep_latest: int) -> None:
         """Initialize the invalid-retention-count error."""
-        super().__init__(f"Retention keep_latest must be at least 1, got {keep_latest}.")
+        super().__init__(
+            f"Retention keep_latest must be at least 1, got {keep_latest}."
+        )
 
 
 class InconsistentMorpionEvaluatorSpecNameError(ValueError):
@@ -331,9 +366,7 @@ class MorpionBootstrapArgs:
         if self.evaluators_config is not None:
             return self.evaluators_config
         if self.evaluator_family_preset is not None:
-            return morpion_evaluators_config_from_preset(
-                self.evaluator_family_preset
-            )
+            return morpion_evaluators_config_from_preset(self.evaluator_family_preset)
         hidden_sizes = None if self.hidden_dim is None else (self.hidden_dim,)
         default_spec = MorpionEvaluatorSpec(
             name="default",
@@ -735,7 +768,9 @@ def run_one_bootstrap_cycle(
                 ),
                 metadata=_build_event_metadata(
                     active_evaluator_name=next_run_state.active_evaluator_name,
-                    config_hash=_bootstrap_config_hash_from_metadata(run_state.metadata),
+                    config_hash=_bootstrap_config_hash_from_metadata(
+                        run_state.metadata
+                    ),
                     forced_evaluator=resolved_control.force_evaluator,
                     runtime_control=resolved_control.runtime,
                     effective_runtime_config=effective_runtime_config,
@@ -863,7 +898,9 @@ def run_one_bootstrap_cycle(
                 record_status=record_status,
                 metadata=_build_event_metadata(
                     active_evaluator_name=next_run_state.active_evaluator_name,
-                    config_hash=_bootstrap_config_hash_from_metadata(run_state.metadata),
+                    config_hash=_bootstrap_config_hash_from_metadata(
+                        run_state.metadata
+                    ),
                     forced_evaluator=resolved_control.force_evaluator,
                     runtime_control=resolved_control.runtime,
                     effective_runtime_config=effective_runtime_config,
@@ -1299,10 +1336,7 @@ def _resolve_tree_status(
                     field_name="depth_node_counts",
                 ),
             )
-        raise TypeError(
-            "Morpion bootstrap runner current_tree_status() must return "
-            "MorpionBootstrapTreeStatus or a mapping."
-        )
+        raise TypeError(_CURRENT_TREE_STATUS_TYPE_ERROR)
     return MorpionBootstrapTreeStatus(num_nodes=current_tree_size)
 
 
@@ -1311,14 +1345,10 @@ def _optional_tree_int(value: object, *, field_name: str) -> int | None:
     if value is None:
         return None
     if isinstance(value, bool):
-        raise TypeError(
-            f"Morpion bootstrap tree-status field `{field_name}` must be an int or null."
-        )
+        raise _tree_status_int_error(field_name)
     if isinstance(value, int):
         return value
-    raise TypeError(
-        f"Morpion bootstrap tree-status field `{field_name}` must be an int or null."
-    )
+    raise _tree_status_int_error(field_name)
 
 
 def _optional_tree_int_mapping(
@@ -1330,25 +1360,17 @@ def _optional_tree_int_mapping(
     if value is None:
         return {}
     if not isinstance(value, Mapping):
-        raise TypeError(
-            f"Morpion bootstrap tree-status field `{field_name}` must be a mapping."
-        )
+        raise _tree_status_mapping_error(field_name)
     mapping: dict[int, int] = {}
     for raw_key, raw_item_value in value.items():
         if isinstance(raw_key, bool) or not isinstance(raw_key, int | str):
-            raise TypeError(
-                f"Morpion bootstrap tree-status field `{field_name}` must use integer-like keys."
-            )
+            raise _tree_status_key_error(field_name)
         if isinstance(raw_item_value, bool) or not isinstance(raw_item_value, int):
-            raise TypeError(
-                f"Morpion bootstrap tree-status field `{field_name}` must use int values."
-            )
+            raise _tree_status_value_error(field_name)
         try:
             coerced_key = int(raw_key)
         except ValueError as exc:
-            raise TypeError(
-                f"Morpion bootstrap tree-status field `{field_name}` must use integer-like keys."
-            ) from exc
+            raise _tree_status_key_error(field_name) from exc
         mapping[coerced_key] = raw_item_value
     return mapping
 
@@ -1505,7 +1527,9 @@ def _next_metadata(
     if relative_runtime_checkpoint_path is None:
         next_metadata.pop(RUNTIME_CHECKPOINT_METADATA_KEY, None)
     else:
-        next_metadata[RUNTIME_CHECKPOINT_METADATA_KEY] = relative_runtime_checkpoint_path
+        next_metadata[RUNTIME_CHECKPOINT_METADATA_KEY] = (
+            relative_runtime_checkpoint_path
+        )
     next_metadata[BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY] = bootstrap_control_to_dict(
         control
     )
@@ -1564,8 +1588,7 @@ def _validate_runtime_reconfiguration(
         > previous_effective_runtime_config.tree_branch_limit
     ):
         raise UnsupportedMorpionRuntimeReconfigurationError(
-            previous_tree_branch_limit=
-            previous_effective_runtime_config.tree_branch_limit,
+            previous_tree_branch_limit=previous_effective_runtime_config.tree_branch_limit,
             requested_tree_branch_limit=effective_runtime_config.tree_branch_limit,
         )
 

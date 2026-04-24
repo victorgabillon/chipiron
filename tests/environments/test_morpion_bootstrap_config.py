@@ -105,7 +105,9 @@ def _make_morpion_payload() -> dict[str, object]:
     return cast("dict[str, object]", codec.dump_state_ref(next_state))
 
 
-def _make_training_snapshot(*, target_value: float, root_node_id: str) -> TrainingTreeSnapshot:
+def _make_training_snapshot(
+    *, target_value: float, root_node_id: str
+) -> TrainingTreeSnapshot:
     """Build one minimal valid training snapshot for config-path tests."""
     node = TrainingNodeSnapshot(
         node_id=root_node_id,
@@ -131,7 +133,9 @@ def _make_training_snapshot(*, target_value: float, root_node_id: str) -> Traini
 class FakeMorpionSearchRunner:
     """Tiny deterministic runner satisfying the Morpion bootstrap protocol."""
 
-    def __init__(self, *, tree_sizes: tuple[int, ...], target_values: tuple[float, ...]) -> None:
+    def __init__(
+        self, *, tree_sizes: tuple[int, ...], target_values: tuple[float, ...]
+    ) -> None:
         """Initialize the fake runner with per-cycle tree sizes and targets."""
         self._tree_sizes = tree_sizes
         self._target_values = target_values
@@ -262,7 +266,9 @@ def test_bootstrap_config_from_args_contains_expected_fields(tmp_path: Path) -> 
     assert config.experiment.game == MORPION_BOOTSTRAP_GAME
     assert config.experiment.variant == MORPION_BOOTSTRAP_VARIANT
     assert config.experiment.initial_pattern == MORPION_BOOTSTRAP_INITIAL_PATTERN
-    assert config.experiment.initial_point_count == MORPION_BOOTSTRAP_INITIAL_POINT_COUNT
+    assert (
+        config.experiment.initial_point_count == MORPION_BOOTSTRAP_INITIAL_POINT_COUNT
+    )
     assert config.dataset.max_rows == 17
     assert config.dataset.use_backed_up_value is False
     assert config.runtime.tree_branch_limit == 96
@@ -497,7 +503,9 @@ def test_bootstrap_config_from_args_resolves_canonical_family_preset() -> None:
 
 def test_bootstrap_config_hash_differs_between_single_evaluator_and_family() -> None:
     """The canonical family should produce a different config hash than legacy defaults."""
-    single = bootstrap_config_from_args(MorpionBootstrapArgs(work_dir=Path("/tmp/single")))
+    single = bootstrap_config_from_args(
+        MorpionBootstrapArgs(work_dir=Path("/tmp/single"))
+    )
     family = bootstrap_config_from_args(
         MorpionBootstrapArgs(
             work_dir=Path("/tmp/family"),
@@ -520,7 +528,10 @@ def test_loop_stores_bootstrap_config_hash_in_metadata(tmp_path: Path) -> None:
     expected_hash = bootstrap_config_sha256(bootstrap_config_from_args(args))
 
     assert final_state.metadata[BOOTSTRAP_CONFIG_HASH_METADATA_KEY] == expected_hash
-    assert persisted_run_state.metadata[BOOTSTRAP_CONFIG_HASH_METADATA_KEY] == expected_hash
+    assert (
+        persisted_run_state.metadata[BOOTSTRAP_CONFIG_HASH_METADATA_KEY]
+        == expected_hash
+    )
     assert history[-1].metadata[BOOTSTRAP_CONFIG_HASH_METADATA_KEY] == expected_hash
 
 
@@ -546,17 +557,19 @@ def test_legacy_run_without_config_file_migrates_cleanly(tmp_path: Path) -> None
     final_state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
 
     assert paths.bootstrap_config_path.is_file()
-    assert load_bootstrap_config(paths.bootstrap_config_path) == bootstrap_config_from_args(args)
-    assert final_state.metadata[BOOTSTRAP_CONFIG_HASH_METADATA_KEY] == bootstrap_config_sha256(
-        bootstrap_config_from_args(args)
-    )
+    assert load_bootstrap_config(
+        paths.bootstrap_config_path
+    ) == bootstrap_config_from_args(args)
+    assert final_state.metadata[
+        BOOTSTRAP_CONFIG_HASH_METADATA_KEY
+    ] == bootstrap_config_sha256(bootstrap_config_from_args(args))
 
 
 def test_legacy_config_without_tree_branch_limit_uses_default(tmp_path: Path) -> None:
-        """Older persisted configs should pick up the default branch limit cleanly."""
-        config_path = tmp_path / "bootstrap_config.json"
-        config_path.write_text(
-                """
+    """Older persisted configs should pick up the default branch limit cleanly."""
+    config_path = tmp_path / "bootstrap_config.json"
+    config_path.write_text(
+        """
 {
     "dataset": {
         "max_rows": null,
@@ -591,10 +604,10 @@ def test_legacy_config_without_tree_branch_limit_uses_default(tmp_path: Path) ->
     }
 }
 """.strip()
-                + "\n",
-                encoding="utf-8",
-        )
+        + "\n",
+        encoding="utf-8",
+    )
 
-        assert load_bootstrap_config(config_path).runtime.tree_branch_limit == (
-                DEFAULT_MORPION_TREE_BRANCH_LIMIT
-        )
+    assert load_bootstrap_config(config_path).runtime.tree_branch_limit == (
+        DEFAULT_MORPION_TREE_BRANCH_LIMIT
+    )

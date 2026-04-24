@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from matplotlib import pyplot as plt
 
@@ -17,6 +17,9 @@ from .history_view import (
     MorpionBootstrapDashboardData,
     build_morpion_bootstrap_dashboard_data,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def run_dashboard_cli(work_dir: str | Path, *, plot: bool = True) -> None:
@@ -82,8 +85,7 @@ def _render_evaluator_selection_summary(
         usage_lines.append("  none")
     else:
         usage_lines.extend(
-            f"  {evaluator_name}: {count}"
-            for evaluator_name, count in sorted_counts
+            f"  {evaluator_name}: {count}" for evaluator_name, count in sorted_counts
         )
 
     return "\n".join(
@@ -99,7 +101,9 @@ def _render_evaluator_selection_summary(
 def _render_record_progress_summary(data: MorpionBootstrapDashboardData) -> str:
     """Render canonical record progression summary for terminal output."""
     summary = data.record_progress_summary
-    best_line = _format_best_record(summary.best_score, summary.first_cycle_reaching_best)
+    best_line = _format_best_record(
+        summary.best_score, summary.first_cycle_reaching_best
+    )
     return "\n".join(
         (
             "=== Certified Record Progress ===",

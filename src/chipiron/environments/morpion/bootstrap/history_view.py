@@ -278,7 +278,9 @@ def summarize_bootstrap_run(
         latest_frontier_source=None
         if latest_frontier_status is None
         else latest_frontier_status.current_best_source,
-        latest_timestamp_utc=None if latest_event is None else latest_event.timestamp_utc,
+        latest_timestamp_utc=None
+        if latest_event is None
+        else latest_event.timestamp_utc,
     )
 
 
@@ -461,12 +463,12 @@ def summarize_record_progress(
         first_cycle_reaching_best = None
     else:
         first_cycle_reaching_best = next(
-            point.cycle_index
-            for point in score_series
-            if point.value == best_score
+            point.cycle_index for point in score_series if point.value == best_score
         )
 
-    latest_total_points = None if not total_points_series else total_points_series[-1].value
+    latest_total_points = (
+        None if not total_points_series else total_points_series[-1].value
+    )
     best_total_points = max(
         (point.value for point in total_points_series if point.value is not None),
         default=None,
@@ -645,7 +647,9 @@ def build_disk_usage_summary(work_dir: str | Path) -> DiskUsageSummary:
         device_total_num_bytes = None
         run_dir_pct_of_device_total = None
     else:
-        device_free_num_bytes, device_used_num_bytes, device_total_num_bytes = device_usage
+        device_free_num_bytes, device_used_num_bytes, device_total_num_bytes = (
+            device_usage
+        )
         run_dir_pct_of_device_total = (
             None
             if run_dir_num_bytes is None or device_total_num_bytes <= 0

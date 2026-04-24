@@ -89,7 +89,9 @@ def test_bootstrap_args_can_resolve_canonical_family_preset() -> None:
         evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
     )
 
-    assert args.resolved_evaluators_config() == canonical_morpion_evaluator_family_config()
+    assert (
+        args.resolved_evaluators_config() == canonical_morpion_evaluator_family_config()
+    )
 
 
 def test_bootstrap_args_reject_preset_and_explicit_config_together() -> None:

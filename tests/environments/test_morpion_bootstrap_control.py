@@ -137,7 +137,9 @@ class FakeMorpionSearchRunner:
         self._control_path = control_path
         self._control_after_first_grow = control_after_first_grow
         self.load_calls: list[tuple[str | None, str | None]] = []
-        self.runtime_config_calls: list[MorpionBootstrapEffectiveRuntimeConfig | None] = []
+        self.runtime_config_calls: list[
+            MorpionBootstrapEffectiveRuntimeConfig | None
+        ] = []
         self.grow_calls: list[int] = []
 
     def load_or_create(

@@ -108,9 +108,7 @@ class MorpionNumberedPointReplayError(ValueError):
         )
 
     @classmethod
-    def invalid_new_point_delta(
-        cls, index: int
-    ) -> MorpionNumberedPointReplayError:
+    def invalid_new_point_delta(cls, index: int) -> MorpionNumberedPointReplayError:
         """Build the invalid-point-delta error."""
         return cls(
             "Morpion numbered-point replay expected exactly one new point for "
@@ -210,7 +208,9 @@ def build_morpion_display_payload(
         for action in all_actions
     )
     move_display_by_action = dict(zip(all_actions, all_legal_moves, strict=True))
-    unique_legal_moves = tuple(move_display_by_action[action] for action in unique_actions)
+    unique_legal_moves = tuple(
+        move_display_by_action[action] for action in unique_actions
+    )
     return MorpionDisplayPayload(
         variant=state.variant.value,
         moves=state.moves,
@@ -340,10 +340,14 @@ def _state_ref_payload_played_moves(
 
 def _state_ref_payload_move(payload: object, index: int) -> AtomMorpionMove:
     """Return one validated move tuple from serialized checkpoint data."""
-    if not isinstance(payload, Sequence) or isinstance(payload, str | bytes | bytearray):
+    if not isinstance(payload, Sequence) or isinstance(
+        payload, str | bytes | bytearray
+    ):
         raise MorpionNumberedPointReplayError.invalid_move_payload(index, payload)
     values = list(payload)
-    if len(values) != 4 or not all(isinstance(value, int) and not isinstance(value, bool) for value in values):
+    if len(values) != 4 or not all(
+        isinstance(value, int) and not isinstance(value, bool) for value in values
+    ):
         raise MorpionNumberedPointReplayError.invalid_move_payload(index, payload)
     x1, y1, x2, y2 = (int(value) for value in values)
     move = (x1, y1, x2, y2)

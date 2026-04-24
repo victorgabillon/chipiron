@@ -11,8 +11,10 @@ import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from .bootstrap_loop import MorpionBootstrapPaths
+if TYPE_CHECKING:
+    from .bootstrap_loop import MorpionBootstrapPaths
 
 
 @dataclass(frozen=True, slots=True)
@@ -48,6 +50,31 @@ class MorpionBootstrapStopResult:
 
 class MorpionBootstrapProcessControlError(RuntimeError):
     """Base error for Morpion launcher process-control failures."""
+
+    @classmethod
+    def exited_immediately(
+        cls, *, stdout_path: Path, stderr_path: Path
+    ) -> MorpionBootstrapProcessControlError:
+        """Return the launcher-start failure when the process exits immediately."""
+        return cls(
+            "Launcher process exited immediately after start. "
+            f"Check logs:\nstdout={stdout_path}\n"
+            f"stderr={stderr_path}"
+        )
+
+    @classmethod
+    def terminate_failed(
+        cls, *, pid: int, error: OSError
+    ) -> MorpionBootstrapProcessControlError:
+        """Return the launcher terminate failure."""
+        return cls(f"Failed to terminate launcher process {pid}: {error}")
+
+    @classmethod
+    def kill_failed(
+        cls, *, pid: int, error: OSError
+    ) -> MorpionBootstrapProcessControlError:
+        """Return the launcher kill failure."""
+        return cls(f"Failed to kill launcher process {pid}: {error}")
 
 
 class MorpionBootstrapProcessAlreadyRunningError(MorpionBootstrapProcessControlError):
@@ -128,9 +155,10 @@ def start_morpion_bootstrap_process(
 
     command = launcher_command_for_work_dir(paths.work_dir)
     paths.work_dir.mkdir(parents=True, exist_ok=True)
-    with paths.launcher_stdout_log_path.open("ab") as stdout_file, paths.launcher_stderr_log_path.open(
-        "ab"
-    ) as stderr_file:
+    with (
+        paths.launcher_stdout_log_path.open("ab") as stdout_file,
+        paths.launcher_stderr_log_path.open("ab") as stderr_file,
+    ):
         process = subprocess.Popen(
             command,
             stdout=stdout_file,
@@ -140,10 +168,9 @@ def start_morpion_bootstrap_process(
 
     time.sleep(0.2)
     if process.poll() is not None:
-        raise MorpionBootstrapProcessControlError(
-            "Launcher process exited immediately after start. "
-            f"Check logs:\nstdout={paths.launcher_stdout_log_path}\n"
-            f"stderr={paths.launcher_stderr_log_path}"
+        raise MorpionBootstrapProcessControlError.exited_immediately(
+            stdout_path=paths.launcher_stdout_log_path,
+            stderr_path=paths.launcher_stderr_log_path,
         )
 
     _write_pid_file(paths.launcher_pid_path, process.pid)
@@ -190,8 +217,8 @@ def stop_morpion_bootstrap_process(
     except ProcessLookupError:
         pass
     except OSError as exc:
-        raise MorpionBootstrapProcessControlError(
-            f"Failed to terminate launcher process {pid}: {exc}"
+        raise MorpionBootstrapProcessControlError.terminate_failed(
+            pid=pid, error=exc
         ) from exc
 
     deadline = time.monotonic() + timeout_s
@@ -205,8 +232,8 @@ def stop_morpion_bootstrap_process(
         except ProcessLookupError:
             pass
         except OSError as exc:
-            raise MorpionBootstrapProcessControlError(
-                f"Failed to kill launcher process {pid}: {exc}"
+            raise MorpionBootstrapProcessControlError.kill_failed(
+                pid=pid, error=exc
             ) from exc
         second_deadline = time.monotonic() + 1.0
         while time.monotonic() < second_deadline and _pid_is_alive(pid):

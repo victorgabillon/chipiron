@@ -11,11 +11,9 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.feature_sc
 )
 
 if TYPE_CHECKING:
-    from .bootstrap_loop import MorpionEvaluatorSpec, MorpionEvaluatorsConfig
+    from .bootstrap_loop import MorpionEvaluatorsConfig, MorpionEvaluatorSpec
 
-CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET: Final[str] = (
-    "canonical_8_linear_mlp_subsets"
-)
+CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET: Final[str] = "canonical_8_linear_mlp_subsets"
 
 _CANONICAL_MORPION_EVALUATOR_SPECS: Final[
     tuple[tuple[str, str, str, tuple[int, ...] | None], ...]
@@ -52,6 +50,8 @@ class _CanonicalFamilySpec:
     def feature_subset(self) -> MorpionFeatureSubset:
         """Return the built-in subset for this family member."""
         return morpion_feature_subset_from_name(self.feature_subset_name)
+
+
 def canonical_morpion_evaluator_specs() -> dict[str, MorpionEvaluatorSpec]:
     """Return the canonical eight-evaluator Morpion family specs by name."""
     from .bootstrap_loop import MorpionEvaluatorSpec
@@ -105,9 +105,9 @@ def _canonical_family_specs() -> tuple[_CanonicalFamilySpec, ...]:
 
 __all__ = [
     "CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET",
-    "canonical_morpion_evaluator_names",
     "UnknownMorpionEvaluatorFamilyPresetError",
     "canonical_morpion_evaluator_family_config",
+    "canonical_morpion_evaluator_names",
     "canonical_morpion_evaluator_specs",
     "morpion_evaluators_config_from_preset",
 ]

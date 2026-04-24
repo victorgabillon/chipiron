@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Final
+from typing import TYPE_CHECKING, Final
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 MORPION_FEATURE_SCHEMA: Final[str] = "morpion_handcrafted_v1"
 DEFAULT_MORPION_FEATURE_SUBSET_NAME: Final[str] = "handcrafted_41"
@@ -116,10 +118,26 @@ MORPION_BUILTIN_FEATURE_SUBSET_NAMES: Final[tuple[str, ...]] = tuple(
 class InvalidMorpionFeatureSubsetError(ValueError):
     """Raised when one Morpion feature subset is invalid."""
 
+    @classmethod
+    def invalid_order(cls) -> InvalidMorpionFeatureSubsetError:
+        """Return the invalid feature-order error."""
+        return cls(
+            "Morpion feature subset order must follow the canonical handcrafted "
+            "feature order."
+        )
 
-class InconsistentMorpionFeatureSubsetDefinitionError(
-    InvalidMorpionFeatureSubsetError
-):
+    @classmethod
+    def empty_context(cls, context: str) -> InvalidMorpionFeatureSubsetError:
+        """Return the empty feature-sequence error."""
+        return cls(f"Morpion {context} must contain at least one feature name.")
+
+    @classmethod
+    def non_string_context(cls, context: str) -> InvalidMorpionFeatureSubsetError:
+        """Return the non-string feature-name error."""
+        return cls(f"Morpion {context} feature names must all be strings.")
+
+
+class InconsistentMorpionFeatureSubsetDefinitionError(InvalidMorpionFeatureSubsetError):
     """Raised when a known subset name is paired with conflicting feature names."""
 
     def __init__(
@@ -274,11 +292,11 @@ def validate_morpion_feature_subset(
             "Morpion feature subset contains unknown feature names: "
             + ", ".join(missing_names)
         )
-    indices = tuple(index_by_name[feature_name] for feature_name in subset.feature_names)
+    indices = tuple(
+        index_by_name[feature_name] for feature_name in subset.feature_names
+    )
     if tuple(sorted(indices)) != indices:
-        raise InvalidMorpionFeatureSubsetError(
-            "Morpion feature subset order must follow the canonical handcrafted feature order."
-        )
+        raise InvalidMorpionFeatureSubsetError.invalid_order()
 
 
 def subset_indices(
@@ -311,16 +329,12 @@ def _validate_ordered_feature_names(
 ) -> None:
     """Validate one ordered sequence of Morpion feature names."""
     if not feature_names:
-        raise InvalidMorpionFeatureSubsetError(
-            f"Morpion {context} must contain at least one feature name."
-        )
+        raise InvalidMorpionFeatureSubsetError.empty_context(context)
     seen: set[str] = set()
     duplicates: list[str] = []
     for feature_name in feature_names:
         if not isinstance(feature_name, str):
-            raise InvalidMorpionFeatureSubsetError(
-                f"Morpion {context} feature names must all be strings."
-            )
+            raise InvalidMorpionFeatureSubsetError.non_string_context(context)
         if feature_name in seen:
             duplicates.append(feature_name)
         seen.add(feature_name)
@@ -333,14 +347,14 @@ def _validate_ordered_feature_names(
 
 __all__ = [
     "DEFAULT_MORPION_FEATURE_SUBSET_NAME",
+    "HANDCRAFTED_5_CORE_FEATURE_NAMES",
     "HANDCRAFTED_10_CORE_FEATURE_NAMES",
     "HANDCRAFTED_20_CORE_FEATURE_NAMES",
-    "HANDCRAFTED_5_CORE_FEATURE_NAMES",
-    "InconsistentMorpionFeatureSubsetDefinitionError",
-    "InvalidMorpionFeatureSubsetError",
     "MORPION_BUILTIN_FEATURE_SUBSET_NAMES",
     "MORPION_CANONICAL_FEATURE_NAMES",
     "MORPION_FEATURE_SCHEMA",
+    "InconsistentMorpionFeatureSubsetDefinitionError",
+    "InvalidMorpionFeatureSubsetError",
     "MorpionFeatureSchema",
     "MorpionFeatureSubset",
     "UnknownMorpionFeatureSubsetError",

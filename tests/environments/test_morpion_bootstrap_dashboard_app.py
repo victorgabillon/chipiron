@@ -199,9 +199,9 @@ def test_runtime_metadata_helpers_read_present_values() -> None:
     assert _applied_runtime_control(run_state) == MorpionBootstrapRuntimeControl(
         tree_branch_limit=64
     )
-    assert _effective_runtime_config(run_state) == MorpionBootstrapEffectiveRuntimeConfig(
-        tree_branch_limit=64
-    )
+    assert _effective_runtime_config(
+        run_state
+    ) == MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=64)
     assert _effective_runtime_hash(run_state) == "hash-64"
 
 
@@ -355,9 +355,7 @@ def test_pending_control_helpers_cover_expected_categories() -> None:
 
     forced_only = MorpionBootstrapControl(force_evaluator="mlp")
     assert _pending_control_fields(forced_only, applied) == ("force_evaluator",)
-    assert _pending_control_sections(forced_only, applied) == (
-        "evaluator selection",
-    )
+    assert _pending_control_sections(forced_only, applied) == ("evaluator selection",)
 
     mixed = MorpionBootstrapControl(
         max_rows=10,
@@ -427,20 +425,31 @@ def test_build_next_control_applies_runtime_override() -> None:
     ).runtime == MorpionBootstrapRuntimeControl(tree_branch_limit=64)
 
 
-def test_tree_branch_limit_input_value_prefers_override_then_baseline_then_default() -> None:
+def test_tree_branch_limit_input_value_prefers_override_then_baseline_then_default() -> (
+    None
+):
     """Dashboard runtime input default should prefer override, then baseline, then constant."""
-    assert _tree_branch_limit_input_value(
-        runtime_control=MorpionBootstrapRuntimeControl(tree_branch_limit=96),
-        baseline_tree_branch_limit=64,
-    ) == 96
-    assert _tree_branch_limit_input_value(
-        runtime_control=MorpionBootstrapRuntimeControl(),
-        baseline_tree_branch_limit=64,
-    ) == 64
-    assert _tree_branch_limit_input_value(
-        runtime_control=MorpionBootstrapRuntimeControl(),
-        baseline_tree_branch_limit=None,
-    ) == DEFAULT_MORPION_TREE_BRANCH_LIMIT
+    assert (
+        _tree_branch_limit_input_value(
+            runtime_control=MorpionBootstrapRuntimeControl(tree_branch_limit=96),
+            baseline_tree_branch_limit=64,
+        )
+        == 96
+    )
+    assert (
+        _tree_branch_limit_input_value(
+            runtime_control=MorpionBootstrapRuntimeControl(),
+            baseline_tree_branch_limit=64,
+        )
+        == 64
+    )
+    assert (
+        _tree_branch_limit_input_value(
+            runtime_control=MorpionBootstrapRuntimeControl(),
+            baseline_tree_branch_limit=None,
+        )
+        == DEFAULT_MORPION_TREE_BRANCH_LIMIT
+    )
 
 
 def test_baseline_tree_branch_limit_uses_config_or_default(tmp_path: Path) -> None:
@@ -452,7 +461,10 @@ def test_baseline_tree_branch_limit_uses_config_or_default(tmp_path: Path) -> No
     args = MorpionBootstrapArgs(work_dir=tmp_path, tree_branch_limit=96)
     save_bootstrap_config(bootstrap_config_from_args(args), paths.bootstrap_config_path)
 
-    assert _baseline_tree_branch_limit(load_bootstrap_config(paths.bootstrap_config_path)) == 96
+    assert (
+        _baseline_tree_branch_limit(load_bootstrap_config(paths.bootstrap_config_path))
+        == 96
+    )
 
 
 def test_stale_force_evaluator_helpers() -> None:
@@ -465,26 +477,41 @@ def test_stale_force_evaluator_helpers() -> None:
     assert not _is_stale_forced_evaluator(None, configured)
 
     assert _format_force_evaluator_option("") == "No configured evaluators"
-    assert _format_force_evaluator_option(
-        "linear",
-        configured_evaluator_names=configured,
-    ) == "linear"
-    assert _format_force_evaluator_option(
-        "old-model",
-        configured_evaluator_names=configured,
-    ) == "old-model (stale / not configured)"
-    assert _format_force_evaluator_option(
-        "old-model",
-        configured_evaluator_names=(),
-    ) == "old-model (stale / not configured)"
-    assert _format_force_evaluator_state(
-        None,
-        configured_evaluator_names=configured,
-    ) == "auto"
-    assert _format_force_evaluator_state(
-        "old-model",
-        configured_evaluator_names=configured,
-    ) == "old-model (stale / not configured)"
+    assert (
+        _format_force_evaluator_option(
+            "linear",
+            configured_evaluator_names=configured,
+        )
+        == "linear"
+    )
+    assert (
+        _format_force_evaluator_option(
+            "old-model",
+            configured_evaluator_names=configured,
+        )
+        == "old-model (stale / not configured)"
+    )
+    assert (
+        _format_force_evaluator_option(
+            "old-model",
+            configured_evaluator_names=(),
+        )
+        == "old-model (stale / not configured)"
+    )
+    assert (
+        _format_force_evaluator_state(
+            None,
+            configured_evaluator_names=configured,
+        )
+        == "auto"
+    )
+    assert (
+        _format_force_evaluator_state(
+            "old-model",
+            configured_evaluator_names=configured,
+        )
+        == "old-model (stale / not configured)"
+    )
 
 
 def test_section_status_summaries_are_stable(tmp_path: Path) -> None:
@@ -717,9 +744,9 @@ def test_evaluator_set_summary_labels_custom_family() -> None:
 
 def test_render_launcher_command_text_joins_parts() -> None:
     """Launcher command rendering should stay stable for the run-control panel."""
-    assert _render_launcher_command_text(("python", "-m", "pkg", "--work-dir", "/tmp/run")) == (
-        "python -m pkg --work-dir /tmp/run"
-    )
+    assert _render_launcher_command_text(
+        ("python", "-m", "pkg", "--work-dir", "/tmp/run")
+    ) == ("python -m pkg --work-dir /tmp/run")
 
 
 def test_format_helpers() -> None:

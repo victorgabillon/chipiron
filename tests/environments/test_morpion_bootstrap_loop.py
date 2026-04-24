@@ -337,7 +337,9 @@ def test_prune_generation_files_keeps_single_existing_file(tmp_path: Path) -> No
     bootstrap_loop_module.prune_generation_files(tmp_path)
 
     assert only_file.is_file()
-    assert sorted(path.name for path in tmp_path.iterdir()) == ["generation_000001.json"]
+    assert sorted(path.name for path in tmp_path.iterdir()) == [
+        "generation_000001.json"
+    ]
 
 
 def test_prune_generation_files_ignores_unrelated_files(tmp_path: Path) -> None:
@@ -364,12 +366,17 @@ def test_previous_effective_runtime_config_falls_back_to_persisted_baseline() ->
     )
 
     previous_config = bootstrap_loop_module._previous_effective_runtime_config(
-        {bootstrap_loop_module.RUNTIME_CHECKPOINT_METADATA_KEY: "search_checkpoints/generation_000001.json"},
+        {
+            bootstrap_loop_module.RUNTIME_CHECKPOINT_METADATA_KEY: "search_checkpoints/generation_000001.json"
+        },
         resolved_bootstrap_config=config,
     )
 
-    assert previous_config == bootstrap_loop_module.MorpionBootstrapEffectiveRuntimeConfig(
-        tree_branch_limit=96,
+    assert (
+        previous_config
+        == bootstrap_loop_module.MorpionBootstrapEffectiveRuntimeConfig(
+            tree_branch_limit=96,
+        )
     )
 
 
@@ -552,15 +559,18 @@ def test_run_one_cycle_without_save_does_not_train(tmp_path: Path) -> None:
         "linear": "models/generation_000002/linear"
     }
     assert next_state.active_evaluator_name == "linear"
-    assert next_state.latest_record_status == bootstrap_loop_module.MorpionBootstrapRecordStatus(
-        variant="5T",
-        initial_pattern="greek_cross",
-        initial_point_count=36,
-        current_best_moves_since_start=12,
-        current_best_total_points=48,
-        current_best_is_exact=True,
-        current_best_is_terminal=True,
-        current_best_source="certified_terminal_leaf",
+    assert (
+        next_state.latest_record_status
+        == bootstrap_loop_module.MorpionBootstrapRecordStatus(
+            variant="5T",
+            initial_pattern="greek_cross",
+            initial_point_count=36,
+            current_best_moves_since_start=12,
+            current_best_total_points=48,
+            current_best_is_exact=True,
+            current_best_is_terminal=True,
+            current_best_source="certified_terminal_leaf",
+        )
     )
     assert runner.export_calls == []
     assert (
@@ -606,15 +616,18 @@ def test_run_one_cycle_with_save_updates_artifacts(tmp_path: Path) -> None:
         "default": "models/generation_000001/default"
     }
     assert next_state.active_evaluator_name == "default"
-    assert next_state.latest_record_status == bootstrap_loop_module.MorpionBootstrapRecordStatus(
-        variant="5T",
-        initial_pattern="greek_cross",
-        initial_point_count=36,
-        current_best_moves_since_start=1,
-        current_best_total_points=37,
-        current_best_is_exact=True,
-        current_best_is_terminal=True,
-        current_best_source="certified_terminal_leaf",
+    assert (
+        next_state.latest_record_status
+        == bootstrap_loop_module.MorpionBootstrapRecordStatus(
+            variant="5T",
+            initial_pattern="greek_cross",
+            initial_point_count=36,
+            current_best_moves_since_start=1,
+            current_best_total_points=37,
+            current_best_is_exact=True,
+            current_best_is_terminal=True,
+            current_best_source="certified_terminal_leaf",
+        )
     )
     assert paths.resolve_work_dir_path(next_state.latest_tree_snapshot_path).is_file()
     assert paths.resolve_work_dir_path(next_state.latest_rows_path).is_file()
@@ -667,15 +680,18 @@ def test_run_one_cycle_with_multiple_evaluators_selects_lowest_loss(
         "mlp": "models/generation_000001/mlp",
     }
     assert next_state.active_evaluator_name == "mlp"
-    assert next_state.latest_record_status == bootstrap_loop_module.MorpionBootstrapRecordStatus(
-        variant="5T",
-        initial_pattern="greek_cross",
-        initial_point_count=36,
-        current_best_moves_since_start=1,
-        current_best_total_points=37,
-        current_best_is_exact=True,
-        current_best_is_terminal=True,
-        current_best_source="certified_terminal_leaf",
+    assert (
+        next_state.latest_record_status
+        == bootstrap_loop_module.MorpionBootstrapRecordStatus(
+            variant="5T",
+            initial_pattern="greek_cross",
+            initial_point_count=36,
+            current_best_moves_since_start=1,
+            current_best_total_points=37,
+            current_best_is_exact=True,
+            current_best_is_terminal=True,
+            current_best_source="certified_terminal_leaf",
+        )
     )
     assert paths.resolve_work_dir_path("models/generation_000001/linear").is_dir()
     assert paths.resolve_work_dir_path("models/generation_000001/mlp").is_dir()
@@ -758,8 +774,13 @@ def test_loop_prunes_old_checkpoints_and_tree_exports_after_new_save(
     assert first_state.generation == 1
     assert second_state.generation == 2
     assert third_state.generation == 3
-    assert third_state.latest_runtime_checkpoint_path == "search_checkpoints/generation_000003.json"
-    assert third_state.latest_tree_snapshot_path == "tree_exports/generation_000003.json"
+    assert (
+        third_state.latest_runtime_checkpoint_path
+        == "search_checkpoints/generation_000003.json"
+    )
+    assert (
+        third_state.latest_tree_snapshot_path == "tree_exports/generation_000003.json"
+    )
     assert sorted(
         path.name for path in paths.runtime_checkpoint_dir.glob("generation_*.json")
     ) == ["generation_000002.json", "generation_000003.json"]
@@ -872,7 +893,9 @@ def test_resume_uses_runtime_checkpoint_for_legacy_run_state_without_dedicated_f
 
     run_morpion_bootstrap_loop(args, runner, max_cycles=1)
 
-    assert first_state.latest_tree_snapshot_path == "tree_exports/generation_000001.json"
+    assert (
+        first_state.latest_tree_snapshot_path == "tree_exports/generation_000001.json"
+    )
     assert runner.load_calls[1] == (
         str(paths.runtime_checkpoint_path_for_generation(1)),
         str(
@@ -1016,9 +1039,7 @@ def test_resume_uses_single_saved_bundle_without_active_evaluator(
     assert event.metadata["bootstrap_applied_runtime_control"] == {
         "tree_branch_limit": None
     }
-    assert event.metadata["bootstrap_effective_runtime"] == {
-        "tree_branch_limit": 128
-    }
+    assert event.metadata["bootstrap_effective_runtime"] == {"tree_branch_limit": 128}
     assert isinstance(event.metadata["bootstrap_effective_runtime_hash"], str)
     assert event.record == bootstrap_loop_module.MorpionBootstrapRecordStatus(
         variant="5T",
@@ -1081,7 +1102,9 @@ def test_empty_dataset_first_cycle_skips_training_and_selection(
 
     def _unexpected_select(**kwargs: object) -> str:
         del kwargs
-        raise AssertionError("evaluator selection should not run for an empty extracted dataset")
+        raise AssertionError(
+            "evaluator selection should not run for an empty extracted dataset"
+        )
 
     monkeypatch.setattr(
         bootstrap_loop_module, "train_morpion_regressor", _unexpected_train
@@ -1101,9 +1124,9 @@ def test_empty_dataset_first_cycle_skips_training_and_selection(
     assert state.latest_model_bundle_paths is None
     assert state.latest_rows_path == "rows/generation_000001.json"
     assert state.latest_tree_snapshot_path == "tree_exports/generation_000001.json"
-    assert state.metadata[bootstrap_loop_module.TRAINING_SKIPPED_REASON_METADATA_KEY] == (
-        bootstrap_loop_module.EMPTY_DATASET_TRAINING_SKIPPED_REASON
-    )
+    assert state.metadata[
+        bootstrap_loop_module.TRAINING_SKIPPED_REASON_METADATA_KEY
+    ] == (bootstrap_loop_module.EMPTY_DATASET_TRAINING_SKIPPED_REASON)
     assert len(history) == 1
     event = history[0]
     assert event.dataset.num_rows == 0
@@ -1111,9 +1134,9 @@ def test_empty_dataset_first_cycle_skips_training_and_selection(
     assert not event.training.triggered
     assert event.evaluators == {}
     assert event.artifacts.model_bundle_paths == {}
-    assert event.metadata[bootstrap_loop_module.TRAINING_SKIPPED_REASON_METADATA_KEY] == (
-        bootstrap_loop_module.EMPTY_DATASET_TRAINING_SKIPPED_REASON
-    )
+    assert event.metadata[
+        bootstrap_loop_module.TRAINING_SKIPPED_REASON_METADATA_KEY
+    ] == (bootstrap_loop_module.EMPTY_DATASET_TRAINING_SKIPPED_REASON)
     assert "selected_evaluator_name" not in event.metadata
     assert latest_status.latest_event == event
     assert saved_rows.rows == ()
@@ -1165,15 +1188,15 @@ def test_empty_dataset_resume_preserves_previous_evaluator_state(
     assert next_state.active_evaluator_name == "linear"
     assert next_state.latest_model_bundle_paths == previous_bundle_paths
     assert next_state.latest_model_bundle_paths is not previous_bundle_paths
-    assert next_state.metadata[bootstrap_loop_module.TRAINING_SKIPPED_REASON_METADATA_KEY] == (
-        bootstrap_loop_module.EMPTY_DATASET_TRAINING_SKIPPED_REASON
-    )
+    assert next_state.metadata[
+        bootstrap_loop_module.TRAINING_SKIPPED_REASON_METADATA_KEY
+    ] == (bootstrap_loop_module.EMPTY_DATASET_TRAINING_SKIPPED_REASON)
     assert len(history) == 1
     event = history[0]
     assert event.metadata["active_evaluator_name"] == "linear"
-    assert event.metadata[bootstrap_loop_module.TRAINING_SKIPPED_REASON_METADATA_KEY] == (
-        bootstrap_loop_module.EMPTY_DATASET_TRAINING_SKIPPED_REASON
-    )
+    assert event.metadata[
+        bootstrap_loop_module.TRAINING_SKIPPED_REASON_METADATA_KEY
+    ] == (bootstrap_loop_module.EMPTY_DATASET_TRAINING_SKIPPED_REASON)
     assert "selected_evaluator_name" not in event.metadata
     assert event.evaluators == {}
     assert event.artifacts.model_bundle_paths == {}

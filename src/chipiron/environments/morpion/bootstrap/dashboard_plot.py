@@ -3,18 +3,21 @@
 from __future__ import annotations
 
 from datetime import datetime
-from collections.abc import Iterable, Mapping, Sequence
+from typing import TYPE_CHECKING
 
 from matplotlib import dates as mdates
 from matplotlib import pyplot as plt
 
-from .history_view import (
-    ActiveEvaluatorTimeSeriesPoint,
-    IntTimeSeriesPoint,
-    OptionalFloatTimeSeriesPoint,
-    OptionalIntTimeSeriesPoint,
-    TreeDepthDistributionRow,
-)
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping, Sequence
+
+    from .history_view import (
+        ActiveEvaluatorTimeSeriesPoint,
+        IntTimeSeriesPoint,
+        OptionalFloatTimeSeriesPoint,
+        OptionalIntTimeSeriesPoint,
+        TreeDepthDistributionRow,
+    )
 
 
 def plot_tree_size(series: tuple[IntTimeSeriesPoint, ...]) -> None:
@@ -98,7 +101,9 @@ def plot_evaluator_losses(
     axis.set_ylabel("loss")
     if not plotted_any_line:
         if log_scale:
-            _render_empty_message(axis, "No positive loss values available for log scale.")
+            _render_empty_message(
+                axis, "No positive loss values available for log scale."
+            )
             return
         _render_waiting_for_history(axis)
         return
@@ -117,8 +122,7 @@ def plot_active_evaluator(
         point.active_evaluator_name for point in series
     )
     name_to_y = {
-        evaluator_name: index
-        for index, evaluator_name in enumerate(evaluator_names)
+        evaluator_name: index for index, evaluator_name in enumerate(evaluator_names)
     }
     x_values = [
         parsed_timestamp
@@ -289,7 +293,9 @@ def _format_datetime_axis(
         (
             format_string
             if format_string is not None
-            else "%H:%M:%S" if span_seconds < 3600 else "%m-%d %H:%M"
+            else "%H:%M:%S"
+            if span_seconds < 3600
+            else "%m-%d %H:%M"
         ),
         tz=x_values[0].tzinfo,
     )

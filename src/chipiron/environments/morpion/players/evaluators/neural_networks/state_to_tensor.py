@@ -26,7 +26,9 @@ class MorpionFeatureTensorConverter:
     """Convert Morpion states into ordered handcrafted feature tensors."""
 
     dynamics: MorpionDynamics
-    feature_subset: MorpionFeatureSubset = field(default_factory=full_morpion_feature_subset)
+    feature_subset: MorpionFeatureSubset = field(
+        default_factory=full_morpion_feature_subset
+    )
 
     def feature_names(self) -> tuple[str, ...]:
         """Return the ordered Morpion feature names for this converter."""

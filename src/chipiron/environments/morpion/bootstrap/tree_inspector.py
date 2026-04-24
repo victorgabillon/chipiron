@@ -6,7 +6,6 @@ import logging
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-import time
 
 from anemone.checkpoints import (
     AlgorithmNodeCheckpointPayload,
@@ -29,9 +28,7 @@ from .bootstrap_loop import RUNTIME_CHECKPOINT_METADATA_KEY, MorpionBootstrapPat
 from .run_state import load_bootstrap_run_state
 
 LOGGER = logging.getLogger(__name__)
-TREE_INSPECTOR_TIMING_PREFIX = "[tree-inspector-timing]"
-TREE_INSPECTOR_CACHE_PREFIX = "[tree-inspector-cache]"
-_INDEXED_CHECKPOINT_TREE_CACHE: dict[tuple[str, int], "_IndexedCheckpointTree"] = {}
+_INDEXED_CHECKPOINT_TREE_CACHE: dict[tuple[str, int], _IndexedCheckpointTree] = {}
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,7 +75,7 @@ class MorpionBootstrapStateView:
     is_terminal: bool
     board_text: str
     board_svg: str
-    board_click_targets: tuple["MorpionBootstrapBoardClickTarget", ...]
+    board_click_targets: tuple[MorpionBootstrapBoardClickTarget, ...]
     board_click_radius: float
     board_render_size: int
 
@@ -166,7 +163,6 @@ def build_morpion_bootstrap_tree_inspector_snapshot(
     include_state_view: bool = True,
 ) -> MorpionBootstrapTreeInspectorSnapshot:
     """Build one bounded dashboard snapshot from the latest runtime checkpoint."""
-    snapshot_start_time = time.perf_counter()
     paths = MorpionBootstrapPaths.from_work_dir(work_dir)
     resolved_checkpoint = resolve_latest_runtime_checkpoint(paths)
     if resolved_checkpoint.checkpoint_path is None:
@@ -185,15 +181,8 @@ def build_morpion_bootstrap_tree_inspector_snapshot(
         )
 
     try:
-        load_index_start_time = time.perf_counter()
         indexed_checkpoint = _load_indexed_checkpoint_tree_cached(
             checkpoint_path=resolved_checkpoint.checkpoint_path,
-        )
-        load_index_duration = time.perf_counter() - load_index_start_time
-        print(
-            f"{TREE_INSPECTOR_TIMING_PREFIX} load_indexed_checkpoint_tree_call "
-            f"checkpoint={resolved_checkpoint.checkpoint_path.name} total_s={load_index_duration:.6f}",
-            flush=True,
         )
     except InvalidMorpionSearchCheckpointError as exc:
         return MorpionBootstrapTreeInspectorSnapshot(
@@ -214,7 +203,6 @@ def build_morpion_bootstrap_tree_inspector_snapshot(
         indexed_checkpoint=indexed_checkpoint,
         selected_node_id=selected_node_id,
     )
-    selected_parts_start_time = time.perf_counter()
     selected_node_parts = _build_selected_node_snapshot_parts(
         checkpoint_path=resolved_checkpoint.checkpoint_path,
         checkpoint_mtime_ns=_checkpoint_mtime_ns(resolved_checkpoint.checkpoint_path),
@@ -223,9 +211,8 @@ def build_morpion_bootstrap_tree_inspector_snapshot(
         include_local_tree_view=include_local_tree_view,
         include_state_view=include_state_view,
     )
-    selected_parts_duration = time.perf_counter() - selected_parts_start_time
 
-    snapshot_result = MorpionBootstrapTreeInspectorSnapshot(
+    return MorpionBootstrapTreeInspectorSnapshot(
         checkpoint_path=resolved_checkpoint.checkpoint_path,
         checkpoint_source=resolved_checkpoint.checkpoint_source,
         root_node_id=str(indexed_checkpoint.root_node_id),
@@ -238,15 +225,6 @@ def build_morpion_bootstrap_tree_inspector_snapshot(
         state_view=selected_node_parts.state_view,
         local_tree_view=selected_node_parts.local_tree_view,
     )
-    snapshot_duration = time.perf_counter() - snapshot_start_time
-    print(
-        f"{TREE_INSPECTOR_TIMING_PREFIX} build_morpion_bootstrap_tree_inspector_snapshot "
-        f"checkpoint={resolved_checkpoint.checkpoint_path.name} "
-        f"selected_node_id={resolved_selected_node_id} "
-        f"selected_parts_s={selected_parts_duration:.6f} total_s={snapshot_duration:.6f}",
-        flush=True,
-    )
-    return snapshot_result
 
 
 def resolve_latest_runtime_checkpoint(
@@ -280,7 +258,9 @@ def resolve_latest_runtime_checkpoint(
                 "available; falling back to the latest checkpoint file on disk if one exists."
             )
 
-    checkpoint_candidates = sorted(paths.runtime_checkpoint_dir.glob("generation_*.json"))
+    checkpoint_candidates = sorted(
+        paths.runtime_checkpoint_dir.glob("generation_*.json")
+    )
     if checkpoint_candidates:
         fallback_message = metadata_warning
         if fallback_message is None:
@@ -324,16 +304,8 @@ def _load_indexed_checkpoint_tree(
     checkpoint_path: Path,
 ) -> _IndexedCheckpointTree:
     """Load and index one runtime checkpoint for bounded local inspection."""
-    load_start_time = time.perf_counter()
     payload = load_morpion_search_checkpoint_payload(checkpoint_path)
-    indexed_tree = _index_checkpoint_payload(payload)
-    load_duration = time.perf_counter() - load_start_time
-    print(
-        f"{TREE_INSPECTOR_TIMING_PREFIX} _load_indexed_checkpoint_tree "
-        f"checkpoint={checkpoint_path.name} total_s={load_duration:.6f}",
-        flush=True,
-    )
-    return indexed_tree
+    return _index_checkpoint_payload(payload)
 
 
 def _load_indexed_checkpoint_tree_cached(
@@ -345,18 +317,8 @@ def _load_indexed_checkpoint_tree_cached(
     cache_key = (str(checkpoint_path), checkpoint_mtime_ns)
     cached_tree = _INDEXED_CHECKPOINT_TREE_CACHE.get(cache_key)
     if cached_tree is not None:
-        print(
-            f"{TREE_INSPECTOR_CACHE_PREFIX} indexed_checkpoint hit "
-            f"checkpoint={checkpoint_path.name}",
-            flush=True,
-        )
         return cached_tree
 
-    print(
-        f"{TREE_INSPECTOR_CACHE_PREFIX} indexed_checkpoint miss "
-        f"checkpoint={checkpoint_path.name}",
-        flush=True,
-    )
     indexed_tree = _load_indexed_checkpoint_tree(checkpoint_path)
     _INDEXED_CHECKPOINT_TREE_CACHE.clear()
     _INDEXED_CHECKPOINT_TREE_CACHE[cache_key] = indexed_tree
@@ -375,81 +337,44 @@ def _build_selected_node_snapshot_parts(
 ) -> _SelectedNodeSnapshotParts:
     """Build and cache the selected-node inspector payload for one checkpoint."""
     _ = checkpoint_mtime_ns
-    snapshot_parts_start_time = time.perf_counter()
     indexed_checkpoint = _load_indexed_checkpoint_tree_cached(checkpoint_path)
     node_payload = indexed_checkpoint.nodes_by_id[selected_node_id]
     decoded_states_by_node_id: dict[int, MorpionState] = {}
-    decode_start_time = time.perf_counter()
     state = _decode_node_state(
         node_payload,
         indexed_checkpoint=indexed_checkpoint,
         decoded_states_by_node_id=decoded_states_by_node_id,
     )
-    decode_duration = time.perf_counter() - decode_start_time
-
-    node_summary_start_time = time.perf_counter()
     node_summary = _build_node_summary(
         indexed_checkpoint=indexed_checkpoint,
         node_payload=node_payload,
         state=state,
     )
-    node_summary_duration = time.perf_counter() - node_summary_start_time
-    child_summaries_duration = 0.0
     child_summaries = (
-        (
-            lambda start_time: (
-                _build_child_summaries(
-                    indexed_checkpoint=indexed_checkpoint,
-                    node_payload=node_payload,
-                    state=state,
-                    decoded_states_by_node_id=decoded_states_by_node_id,
-                ),
-                time.perf_counter() - start_time,
-            )
-        )(time.perf_counter())
+        _build_child_summaries(
+            indexed_checkpoint=indexed_checkpoint,
+            node_payload=node_payload,
+            state=state,
+            decoded_states_by_node_id=decoded_states_by_node_id,
+        )
         if include_child_summaries
-        else ((), 0.0)
+        else ()
     )
-    child_summaries, child_summaries_duration = child_summaries
-    local_tree_view_duration = 0.0
     local_tree_view = (
-        (
-            lambda start_time: (
-                _build_local_tree_view(
-                    indexed_checkpoint=indexed_checkpoint,
-                    selected_node_id=selected_node_id,
-                ),
-                time.perf_counter() - start_time,
-            )
-        )(time.perf_counter())
+        _build_local_tree_view(
+            indexed_checkpoint=indexed_checkpoint,
+            selected_node_id=selected_node_id,
+        )
         if include_local_tree_view
-        else (None, 0.0)
+        else None
     )
-    local_tree_view, local_tree_view_duration = local_tree_view
-    state_view_duration = 0.0
     state_view = (
-        (
-            lambda start_time: (
-                _build_state_view(
-                    node_id=selected_node_id,
-                    state=state,
-                ),
-                time.perf_counter() - start_time,
-            )
-        )(time.perf_counter())
+        _build_state_view(
+            node_id=selected_node_id,
+            state=state,
+        )
         if include_state_view
-        else (None, 0.0)
-    )
-    state_view, state_view_duration = state_view
-    total_duration = time.perf_counter() - snapshot_parts_start_time
-    print(
-        f"{TREE_INSPECTOR_TIMING_PREFIX} _build_selected_node_snapshot_parts "
-        f"checkpoint={checkpoint_path.name} selected_node_id={selected_node_id} "
-        f"decode_s={decode_duration:.6f} node_summary_s={node_summary_duration:.6f} "
-        f"child_summaries_s={child_summaries_duration:.6f} "
-        f"local_tree_view_s={local_tree_view_duration:.6f} "
-        f"state_view_s={state_view_duration:.6f} total_s={total_duration:.6f}",
-        flush=True,
+        else None
     )
     return _SelectedNodeSnapshotParts(
         node_summary=node_summary,
@@ -535,7 +460,9 @@ def _build_node_summary(
     )
     child_ids = tuple(
         str(child_link.child_node_id)
-        for child_link in indexed_checkpoint.child_links_by_node_id[node_payload.node_id]
+        for child_link in indexed_checkpoint.child_links_by_node_id[
+            node_payload.node_id
+        ]
     )
     return MorpionBootstrapNodeSummary(
         node_id=str(node_payload.node_id),
@@ -567,11 +494,14 @@ def _build_child_summaries(
     decoded_states_by_node_id: dict[int, MorpionState],
 ) -> tuple[MorpionBootstrapChildSummary, ...]:
     """Build one summary row per symmetry-unique legal action from the selected node."""
-    child_summaries_start_time = time.perf_counter()
     dynamics = MorpionDynamics()
     child_links = {
-        _child_link_branch_label(state=state, child_link=child_link): child_link.child_node_id
-        for child_link in indexed_checkpoint.child_links_by_node_id[node_payload.node_id]
+        _child_link_branch_label(
+            state=state, child_link=child_link
+        ): child_link.child_node_id
+        for child_link in indexed_checkpoint.child_links_by_node_id[
+            node_payload.node_id
+        ]
     }
     child_summaries: list[MorpionBootstrapChildSummary] = []
     expanded_child_count = 0
@@ -601,7 +531,9 @@ def _build_child_summaries(
             decoded_states_by_node_id=decoded_states_by_node_id,
         )
         direct_value = _value_score(_direct_value_payload(child_payload.evaluation))
-        backed_up_value = _value_score(_backed_up_value_payload(child_payload.evaluation))
+        backed_up_value = _value_score(
+            _backed_up_value_payload(child_payload.evaluation)
+        )
         child_summaries.append(
             MorpionBootstrapChildSummary(
                 branch_label=branch_label,
@@ -617,13 +549,6 @@ def _build_child_summaries(
                 ),
             )
         )
-    total_duration = time.perf_counter() - child_summaries_start_time
-    print(
-        f"{TREE_INSPECTOR_TIMING_PREFIX} _build_child_summaries "
-        f"selected_node_id={node_payload.node_id} unique_actions={len(unique_actions)} "
-        f"expanded_children={expanded_child_count} total_s={total_duration:.6f}",
-        flush=True,
-    )
     return tuple(child_summaries)
 
 
@@ -666,26 +591,19 @@ def _build_state_view(
         build_morpion_display_payload,
     )
 
-    state_view_start_time = time.perf_counter()
     dynamics = MorpionDynamics()
     svg_adapter = MorpionSvgAdapter()
     render_size = 720
-    payload_start_time = time.perf_counter()
     adapter_payload = build_morpion_display_payload(
         state=state,
         dynamics=dynamics,
     )
-    payload_duration = time.perf_counter() - payload_start_time
-    position_start_time = time.perf_counter()
     position = svg_adapter.position_from_update(
         state_tag=state.tag,
         adapter_payload=adapter_payload,
     )
-    position_duration = time.perf_counter() - position_start_time
-    render_start_time = time.perf_counter()
     render_result = svg_adapter.render_svg(position, render_size, margin=8)
-    render_duration = time.perf_counter() - render_start_time
-    state_view = MorpionBootstrapStateView(
+    return MorpionBootstrapStateView(
         node_id=str(node_id),
         variant=state.variant.value,
         moves=state.moves,
@@ -705,15 +623,6 @@ def _build_state_view(
         board_click_radius=svg_adapter.click_radius,
         board_render_size=render_size,
     )
-    total_duration = time.perf_counter() - state_view_start_time
-    print(
-        f"{TREE_INSPECTOR_TIMING_PREFIX} _build_state_view "
-        f"selected_node_id={node_id} payload_s={payload_duration:.6f} "
-        f"position_s={position_duration:.6f} render_svg_s={render_duration:.6f} "
-        f"total_s={total_duration:.6f}",
-        flush=True,
-    )
-    return state_view
 
 
 def _decode_node_state(
@@ -723,7 +632,6 @@ def _decode_node_state(
     decoded_states_by_node_id: dict[int, MorpionState],
 ) -> MorpionState:
     """Decode one checkpoint node state on demand from Anemone state payloads."""
-    decode_start_time = time.perf_counter()
     cached_state = decoded_states_by_node_id.get(node_payload.node_id)
     if cached_state is not None:
         return cached_state
@@ -736,29 +644,13 @@ def _decode_node_state(
             state_codec.load_anchor_ref(state_payload.anchor_ref)
         )
     elif isinstance(state_payload, DeltaCheckpointStatePayload):
-        if node_payload.parent_node_id is None:
-            raise InvalidMorpionSearchCheckpointError(
-                Path("<in-memory>"),
-                f"delta node {node_payload.node_id} is missing its parent node id",
-            )
-        parent_payload = indexed_checkpoint.nodes_by_id.get(node_payload.parent_node_id)
-        if parent_payload is None:
-            raise InvalidMorpionSearchCheckpointError(
-                Path("<in-memory>"),
-                f"delta node {node_payload.node_id} references unknown parent "
-                f"{node_payload.parent_node_id}",
-            )
-        parent_state = _decode_node_state(
-            parent_payload,
+        decoded_state = _decode_delta_checkpoint_state(
+            node_payload=node_payload,
+            state_payload=state_payload,
             indexed_checkpoint=indexed_checkpoint,
             decoded_states_by_node_id=decoded_states_by_node_id,
-        )
-        decoded_state = dynamics.wrap_atomheart_state(
-            state_codec.load_child_from_delta(
-                parent_state=parent_state.to_atomheart_state(),
-                delta_ref=state_payload.delta_ref,
-                branch_from_parent=None,
-            )
+            state_codec=state_codec,
+            dynamics=dynamics,
         )
     else:
         raise InvalidMorpionSearchCheckpointError(
@@ -767,13 +659,47 @@ def _decode_node_state(
             f"{type(state_payload).__name__}",
         )
     decoded_states_by_node_id[node_payload.node_id] = decoded_state
-    decode_duration = time.perf_counter() - decode_start_time
-    print(
-        f"{TREE_INSPECTOR_TIMING_PREFIX} _decode_node_state "
-        f"node_id={node_payload.node_id} total_s={decode_duration:.6f}",
-        flush=True,
-    )
     return decoded_state
+
+
+def _decode_delta_checkpoint_state(
+    *,
+    node_payload: AlgorithmNodeCheckpointPayload,
+    state_payload: DeltaCheckpointStatePayload,
+    indexed_checkpoint: _IndexedCheckpointTree,
+    decoded_states_by_node_id: dict[int, MorpionState],
+    state_codec: MorpionStateCheckpointCodec,
+    dynamics: MorpionDynamics,
+) -> MorpionState:
+    """Decode one delta checkpoint node from its already-restored parent chain."""
+    if node_payload.parent_node_id is None:
+        raise InvalidMorpionSearchCheckpointError(
+            Path("<in-memory>"),
+            f"delta node {node_payload.node_id} is missing its parent node id",
+        )
+
+    parent_payload = indexed_checkpoint.nodes_by_id.get(node_payload.parent_node_id)
+    if parent_payload is None:
+        raise InvalidMorpionSearchCheckpointError(
+            Path("<in-memory>"),
+            f"delta node {node_payload.node_id} references unknown parent "
+            f"{node_payload.parent_node_id}",
+        )
+
+    parent_state = _decode_node_state(
+        parent_payload,
+        indexed_checkpoint=indexed_checkpoint,
+        decoded_states_by_node_id=decoded_states_by_node_id,
+    )
+    return dynamics.wrap_atomheart_state(
+        state_codec.load_child_from_delta(
+            parent_state=parent_state.to_atomheart_state(),
+            delta_ref=state_payload.delta_ref,
+            # Chipiron branch keys may differ in orientation from Atomheart move
+            # encoding; delta payload carries the canonical move already.
+            branch_from_parent=None,
+        )
+    )
 
 
 def _symmetry_unique_actions(state: MorpionState) -> tuple[object, ...]:
@@ -836,7 +762,10 @@ def _node_is_exact(
     """Return whether the node has a non-estimate or terminal value."""
     if state.is_terminal:
         return True
-    for value_payload in (_backed_up_value_payload(evaluation), _direct_value_payload(evaluation)):
+    for value_payload in (
+        _backed_up_value_payload(evaluation),
+        _direct_value_payload(evaluation),
+    ):
         if value_payload is None:
             continue
         return value_payload.certainty != "ESTIMATE"
@@ -877,7 +806,10 @@ def _best_child_id(
     if best_branch_label is None:
         return None
     for child_link in indexed_checkpoint.child_links_by_node_id[node_id]:
-        if _child_link_branch_label(state=state, child_link=child_link) == best_branch_label:
+        if (
+            _child_link_branch_label(state=state, child_link=child_link)
+            == best_branch_label
+        ):
             return str(child_link.child_node_id)
     return None
 

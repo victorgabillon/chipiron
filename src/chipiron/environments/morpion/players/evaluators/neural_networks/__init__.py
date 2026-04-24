@@ -12,16 +12,21 @@ from .bundle import (
     load_morpion_regressor_for_inference,
     save_morpion_model_bundle,
 )
+from .feature_extractor import (
+    CandidateSegment,
+    extract_morpion_features,
+    morpion_feature_names,
+)
 from .feature_schema import (
     DEFAULT_MORPION_FEATURE_SUBSET_NAME,
+    HANDCRAFTED_5_CORE_FEATURE_NAMES,
     HANDCRAFTED_10_CORE_FEATURE_NAMES,
     HANDCRAFTED_20_CORE_FEATURE_NAMES,
-    HANDCRAFTED_5_CORE_FEATURE_NAMES,
-    InconsistentMorpionFeatureSubsetDefinitionError,
-    InvalidMorpionFeatureSubsetError,
     MORPION_BUILTIN_FEATURE_SUBSET_NAMES,
     MORPION_CANONICAL_FEATURE_NAMES,
     MORPION_FEATURE_SCHEMA,
+    InconsistentMorpionFeatureSubsetDefinitionError,
+    InvalidMorpionFeatureSubsetError,
     MorpionFeatureSchema,
     MorpionFeatureSubset,
     UnknownMorpionFeatureSubsetError,
@@ -32,11 +37,6 @@ from .feature_schema import (
     resolve_morpion_feature_subset,
     subset_indices,
     validate_morpion_feature_subset,
-)
-from .feature_extractor import (
-    CandidateSegment,
-    extract_morpion_features,
-    morpion_feature_names,
 )
 from .model import (
     MORPION_INPUT_DIM,
@@ -56,11 +56,9 @@ from .state_to_tensor import (
 
 __all__ = [
     "DEFAULT_MORPION_FEATURE_SUBSET_NAME",
+    "HANDCRAFTED_5_CORE_FEATURE_NAMES",
     "HANDCRAFTED_10_CORE_FEATURE_NAMES",
     "HANDCRAFTED_20_CORE_FEATURE_NAMES",
-    "HANDCRAFTED_5_CORE_FEATURE_NAMES",
-    "InconsistentMorpionFeatureSubsetDefinitionError",
-    "InvalidMorpionFeatureSubsetError",
     "MORPION_BUILTIN_FEATURE_SUBSET_NAMES",
     "MORPION_CANONICAL_FEATURE_NAMES",
     "MORPION_FEATURE_SCHEMA",
@@ -71,12 +69,14 @@ __all__ = [
     "MORPION_MODEL_WEIGHTS_FILE_NAME",
     "CandidateSegment",
     "IncompatibleMorpionModelBundleError",
+    "InconsistentMorpionFeatureSubsetDefinitionError",
+    "InvalidMorpionFeatureSubsetError",
     "InvalidMorpionModelBundleError",
     "MissingMorpionHiddenDimError",
     "MissingMorpionHiddenSizesError",
-    "MorpionFeatureTensorConverter",
     "MorpionFeatureSchema",
     "MorpionFeatureSubset",
+    "MorpionFeatureTensorConverter",
     "MorpionModelManifest",
     "MorpionNNInput",
     "MorpionRegressor",

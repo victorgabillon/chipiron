@@ -46,7 +46,10 @@ if "anemone" not in sys.modules:
     sys.modules["anemone"] = _anemone_stub
 
 from anemone.training_export import load_training_tree_snapshot
-from anemone.checkpoints import AnchorCheckpointStatePayload, DeltaCheckpointStatePayload
+from anemone.checkpoints import (
+    AnchorCheckpointStatePayload,
+    DeltaCheckpointStatePayload,
+)
 from anemone.factory import SearchArgs
 from anemone.node_selector.composed.args import ComposedNodeSelectorArgs
 from anemone.node_selector.linoo import LinooArgs
@@ -365,9 +368,7 @@ def test_restore_with_evaluator_bundle_skips_reevaluation(
     first_runner.save_checkpoint(checkpoint_path)
 
     reevaluation_calls: list[tuple[Path, bool]] = []
-    real_refresh = (
-        anemone_runner_module.AnemoneMorpionSearchRunner._set_runtime_evaluator_from_bundle
-    )
+    real_refresh = anemone_runner_module.AnemoneMorpionSearchRunner._set_runtime_evaluator_from_bundle
 
     def _patched_set_runtime_evaluator_from_bundle(
         self: object,
@@ -515,9 +516,9 @@ def test_bootstrap_loop_works_with_real_runner(
     runner = AnemoneMorpionSearchRunner()
 
     first_state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
-    first_tree_path = MorpionBootstrapPaths.from_work_dir(tmp_path).resolve_work_dir_path(
-        first_state.latest_tree_snapshot_path
-    )
+    first_tree_path = MorpionBootstrapPaths.from_work_dir(
+        tmp_path
+    ).resolve_work_dir_path(first_state.latest_tree_snapshot_path)
     assert first_tree_path is not None and first_tree_path.is_file()
     first_saved_tree_size = first_state.tree_size_at_last_save
 

@@ -27,7 +27,9 @@ def test_full_subset_resolution_is_stable() -> None:
 
     assert full_subset.name == DEFAULT_MORPION_FEATURE_SUBSET_NAME
     assert full_subset.feature_names == MORPION_CANONICAL_FEATURE_NAMES
-    assert subset_indices(full_subset) == tuple(range(len(MORPION_CANONICAL_FEATURE_NAMES)))
+    assert subset_indices(full_subset) == tuple(
+        range(len(MORPION_CANONICAL_FEATURE_NAMES))
+    )
 
 
 def test_named_full_subset_aliases_normalize_to_canonical_full_subset() -> None:

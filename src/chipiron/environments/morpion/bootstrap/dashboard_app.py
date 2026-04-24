@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import argparse
+import time
 from functools import lru_cache
 from importlib import import_module
 from pathlib import Path
-import time
 from typing import TYPE_CHECKING, Any
 
 from matplotlib import pyplot as plt
@@ -91,7 +91,9 @@ def _cached_dashboard_data_freshness_tokens(
 ) -> tuple[int, ...]:
     """Return freshness tokens for dashboard-wide data rebuilds."""
     latest_tree_snapshot_path = _latest_generation_json_path(paths.tree_snapshot_dir)
-    latest_runtime_checkpoint_path = _latest_generation_json_path(paths.runtime_checkpoint_dir)
+    latest_runtime_checkpoint_path = _latest_generation_json_path(
+        paths.runtime_checkpoint_dir
+    )
     return (
         _path_mtime_ns(paths.work_dir),
         _path_mtime_ns(paths.bootstrap_config_path),
@@ -107,7 +109,9 @@ def _cached_dashboard_data_freshness_tokens(
         _path_mtime_ns(paths.runtime_checkpoint_dir),
         _path_mtime_ns(paths.rows_dir),
         _path_mtime_ns(paths.model_dir),
-        0 if latest_tree_snapshot_path is None else _path_mtime_ns(latest_tree_snapshot_path),
+        0
+        if latest_tree_snapshot_path is None
+        else _path_mtime_ns(latest_tree_snapshot_path),
         (
             0
             if latest_runtime_checkpoint_path is None
@@ -125,7 +129,9 @@ def _cached_certified_record_board_freshness_tokens(
         _path_mtime_ns(paths.run_state_path),
         _path_mtime_ns(paths.history_jsonl_path),
         _path_mtime_ns(paths.tree_snapshot_dir),
-        0 if latest_tree_snapshot_path is None else _path_mtime_ns(latest_tree_snapshot_path),
+        0
+        if latest_tree_snapshot_path is None
+        else _path_mtime_ns(latest_tree_snapshot_path),
     )
 
 
@@ -147,6 +153,7 @@ def _cached_build_current_certified_record_board_view(
     """Cache the certified-record board view until its source artifacts change."""
     _ = freshness_tokens
     return build_current_certified_record_board_view(work_dir)
+
 
 def run_dashboard_app(work_dir: Path) -> None:
     """Render the local Streamlit dashboard for one bootstrap work directory."""
@@ -272,7 +279,9 @@ def run_dashboard_app(work_dir: Path) -> None:
         )
         use_backed_up_value = st.checkbox(
             "Use backed-up value",
-            value=False if control.use_backed_up_value is None else control.use_backed_up_value,
+            value=False
+            if control.use_backed_up_value is None
+            else control.use_backed_up_value,
             disabled=not override_use_backed_up_value,
         )
 
@@ -305,7 +314,9 @@ def run_dashboard_app(work_dir: Path) -> None:
         save_after_tree_growth_factor = st.number_input(
             "Save after tree growth factor",
             min_value=0.0,
-            value=_control_float_value(control.save_after_tree_growth_factor, default=2.0),
+            value=_control_float_value(
+                control.save_after_tree_growth_factor, default=2.0
+            ),
             step=0.1,
             disabled=not override_save_after_tree_growth_factor,
         )
@@ -328,10 +339,7 @@ def run_dashboard_app(work_dir: Path) -> None:
                 selectable_force_evaluator_options,
                 control.force_evaluator,
             ),
-            disabled=(
-                force_evaluator_mode != "forced"
-                or not force_evaluator_options
-            ),
+            disabled=(force_evaluator_mode != "forced" or not force_evaluator_options),
             format_func=lambda value: _format_force_evaluator_option(
                 value,
                 configured_evaluator_names=configured_evaluator_names,
@@ -368,7 +376,9 @@ def run_dashboard_app(work_dir: Path) -> None:
                 force_evaluator=force_evaluator,
             )
             save_bootstrap_control(next_control, paths.control_path)
-            st.success("Saved control changes. They will apply at the next cycle boundary.")
+            st.success(
+                "Saved control changes. They will apply at the next cycle boundary."
+            )
 
     st.subheader("Plots")
     st.caption("Time-series plots use absolute UTC timestamps from bootstrap history.")
@@ -440,7 +450,9 @@ def run_dashboard_app(work_dir: Path) -> None:
     )
     st.write(
         "Effective runtime hash:",
-        _format_value(run_state.metadata.get(BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY)),
+        _format_value(
+            run_state.metadata.get(BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY)
+        ),
     )
     st.write("Applied control:")
     st.json(bootstrap_control_to_dict(applied_control))
@@ -781,7 +793,9 @@ def _render_record_status_section(
     """Render a strict certified record summary alongside the frontier best."""
     certified_columns = st.columns(4)
     if certified_status is None or certified_status.current_best_total_points is None:
-        certified_columns[0].metric("Certified record total points", "No certified record yet")
+        certified_columns[0].metric(
+            "Certified record total points", "No certified record yet"
+        )
         certified_columns[1].metric("Certified record moves", "n/a")
         certified_columns[2].metric("Certified exact", "n/a")
         certified_columns[3].metric("Certified terminal", "n/a")
@@ -1082,7 +1096,9 @@ def _baseline_tree_branch_limit(config: MorpionBootstrapConfig | None) -> int:
 def _applied_runtime_control(run_state: Any) -> MorpionBootstrapRuntimeControl:
     """Return the last applied runtime-control subsection from run-state metadata."""
     return bootstrap_runtime_control_from_metadata(
-        getattr(run_state, "metadata", {}).get(BOOTSTRAP_APPLIED_RUNTIME_CONTROL_METADATA_KEY)
+        getattr(run_state, "metadata", {}).get(
+            BOOTSTRAP_APPLIED_RUNTIME_CONTROL_METADATA_KEY
+        )
     )
 
 
@@ -1097,7 +1113,9 @@ def _effective_runtime_config(
 
 def _effective_runtime_hash(run_state: Any) -> str | None:
     """Return the effective-runtime hash from run-state metadata when present."""
-    value = getattr(run_state, "metadata", {}).get(BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY)
+    value = getattr(run_state, "metadata", {}).get(
+        BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY
+    )
     return value if isinstance(value, str) else None
 
 
@@ -1177,8 +1195,12 @@ def _scheduling_status_summary(
     applied_control: MorpionBootstrapControl,
 ) -> dict[str, dict[str, object | None]]:
     """Return one stable scheduling-control status summary."""
-    baseline_growth_steps = None if config is None else config.runtime.max_growth_steps_per_cycle
-    baseline_save_after_seconds = None if config is None else config.runtime.save_after_seconds
+    baseline_growth_steps = (
+        None if config is None else config.runtime.max_growth_steps_per_cycle
+    )
+    baseline_save_after_seconds = (
+        None if config is None else config.runtime.save_after_seconds
+    )
     baseline_growth_factor = (
         None if config is None else config.runtime.save_after_tree_growth_factor
     )
@@ -1289,10 +1311,7 @@ def _pending_control_fields(
         pending_fields.append("max_rows")
     if control.use_backed_up_value != applied_control.use_backed_up_value:
         pending_fields.append("use_backed_up_value")
-    if (
-        control.max_growth_steps_per_cycle
-        != applied_control.max_growth_steps_per_cycle
-    ):
+    if control.max_growth_steps_per_cycle != applied_control.max_growth_steps_per_cycle:
         pending_fields.append("max_growth_steps_per_cycle")
     if control.save_after_seconds != applied_control.save_after_seconds:
         pending_fields.append("save_after_seconds")
@@ -1303,10 +1322,7 @@ def _pending_control_fields(
         pending_fields.append("save_after_tree_growth_factor")
     if control.force_evaluator != applied_control.force_evaluator:
         pending_fields.append("force_evaluator")
-    if (
-        control.runtime.tree_branch_limit
-        != applied_control.runtime.tree_branch_limit
-    ):
+    if control.runtime.tree_branch_limit != applied_control.runtime.tree_branch_limit:
         pending_fields.append("runtime.tree_branch_limit")
     return tuple(pending_fields)
 
@@ -1368,9 +1384,7 @@ def _effective_state_summary(
         "configured_evaluator_names": evaluator_set_summary[
             "configured_evaluator_names"
         ],
-        "is_canonical_evaluator_family": evaluator_set_summary[
-            "is_canonical_family"
-        ],
+        "is_canonical_evaluator_family": evaluator_set_summary["is_canonical_family"],
         "latest_dataset_rows": latest_dataset_rows,
         "control_pending_application": pending_changes,
     }
@@ -1381,7 +1395,10 @@ def _summary_layer(
     layer: str,
 ) -> dict[str, object | None]:
     """Return one stable status layer extracted from a field summary."""
-    return {field_name: field_summary[layer] for field_name, field_summary in summary.items()}
+    return {
+        field_name: field_summary[layer]
+        for field_name, field_summary in summary.items()
+    }
 
 
 def _render_pending_changes_section(
@@ -1488,7 +1505,9 @@ def _render_scheduling_control_section(
 ) -> None:
     """Render the cycle-scheduling control summary block."""
     st.subheader("Cycle Scheduling")
-    st.caption("Scheduling overrides are persisted in the control file and apply at cycle boundaries.")
+    st.caption(
+        "Scheduling overrides are persisted in the control file and apply at cycle boundaries."
+    )
     _render_status_layers(st=st, summary=summary)
 
 
@@ -1499,7 +1518,9 @@ def _render_evaluator_control_section(
 ) -> None:
     """Render the evaluator-selection control summary block."""
     st.subheader("Evaluator Selection")
-    st.caption("Auto keeps normal evaluator selection. Forced persists one explicit evaluator name.")
+    st.caption(
+        "Auto keeps normal evaluator selection. Forced persists one explicit evaluator name."
+    )
     _render_status_layers(
         st=st,
         summary={
@@ -1532,10 +1553,14 @@ def _render_runtime_control_section(
         st=st,
         summary={"tree_branch_limit": summary["tree_branch_limit"]},
     )
-    st.write("Effective runtime hash:", _format_value(summary["effective_runtime_hash"]))
+    st.write(
+        "Effective runtime hash:", _format_value(summary["effective_runtime_hash"])
+    )
 
 
-def _configured_evaluator_names(config: MorpionBootstrapConfig | None) -> tuple[str, ...]:
+def _configured_evaluator_names(
+    config: MorpionBootstrapConfig | None,
+) -> tuple[str, ...]:
     """Return configured evaluator names from persisted bootstrap config."""
     if config is None:
         return ()
@@ -1549,10 +1574,7 @@ def _force_evaluator_options(
 ) -> tuple[str, ...]:
     """Return selectable forced evaluators from config, preserving any stale current value."""
     options = list(configured_evaluator_names)
-    if (
-        current_force_evaluator is not None
-        and current_force_evaluator not in options
-    ):
+    if current_force_evaluator is not None and current_force_evaluator not in options:
         options.append(current_force_evaluator)
     return tuple(options)
 

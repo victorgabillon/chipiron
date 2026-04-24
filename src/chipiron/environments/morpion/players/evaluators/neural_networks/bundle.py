@@ -191,9 +191,7 @@ class IncompatibleMorpionModelBundleError(ValueError):
         actual_input_dim: int,
     ) -> IncompatibleMorpionModelBundleError:
         """Return the incompatible-input-dimension error."""
-        return cls(
-            f"Expected input_dim={expected_input_dim}, got {actual_input_dim}."
-        )
+        return cls(f"Expected input_dim={expected_input_dim}, got {actual_input_dim}.")
 
     @classmethod
     def wrong_feature_names(

@@ -279,7 +279,9 @@ def resolve_record_status_for_cycle(
     if snapshot is None:
         return previous_status
 
-    snapshot_status = extract_morpion_record_status_from_training_tree_snapshot(snapshot)
+    snapshot_status = extract_morpion_record_status_from_training_tree_snapshot(
+        snapshot
+    )
     if snapshot_status.current_best_total_points is None:
         LOGGER.info("[record] no_certified_candidate_in_snapshot")
         return previous_status
@@ -302,7 +304,9 @@ def resolve_frontier_status_for_cycle(
     previous_status = carried_forward_morpion_frontier_status(previous_frontier_status)
     if snapshot is None:
         return previous_status
-    snapshot_status = extract_morpion_frontier_status_from_training_tree_snapshot(snapshot)
+    snapshot_status = extract_morpion_frontier_status_from_training_tree_snapshot(
+        snapshot
+    )
     return _max_frontier_status(previous_status, snapshot_status)
 
 
@@ -316,7 +320,9 @@ def persist_certified_leaderboard_candidates(
     leaderboard_path: str | Path | None = None,
 ) -> None:
     """Update the persistent all-time certified leaderboard from one snapshot."""
-    candidates = extract_certified_record_candidates_from_training_tree_snapshot(snapshot)
+    candidates = extract_certified_record_candidates_from_training_tree_snapshot(
+        snapshot
+    )
     if not candidates:
         return
     resolved_path = (
@@ -361,10 +367,12 @@ def persist_certified_leaderboard_candidates(
         )
         if existing_index is not None:
             existing_entry = entries[existing_index]
-            if _leaderboard_entry_sort_key(existing_entry) <= _leaderboard_entry_sort_key(
-                new_entry
-            ):
-                LOGGER.info("[leaderboard] skipped_duplicate fingerprint=%s", fingerprint)
+            if _leaderboard_entry_sort_key(
+                existing_entry
+            ) <= _leaderboard_entry_sort_key(new_entry):
+                LOGGER.info(
+                    "[leaderboard] skipped_duplicate fingerprint=%s", fingerprint
+                )
                 continue
             entries[existing_index] = new_entry
         else:
@@ -465,7 +473,9 @@ def _max_frontier_status(
 def _record_status_rank(status: MorpionBootstrapRecordStatus) -> tuple[int, int, int]:
     """Return a stable rank tuple for one certified record status."""
     return (
-        -1 if status.current_best_total_points is None else status.current_best_total_points,
+        -1
+        if status.current_best_total_points is None
+        else status.current_best_total_points,
         -1
         if status.current_best_moves_since_start is None
         else status.current_best_moves_since_start,
@@ -478,7 +488,9 @@ def _frontier_status_rank(
 ) -> tuple[int, int, int, int]:
     """Return a stable rank tuple for one frontier/debug status."""
     return (
-        -1 if status.current_best_total_points is None else status.current_best_total_points,
+        -1
+        if status.current_best_total_points is None
+        else status.current_best_total_points,
         -1
         if status.current_best_moves_since_start is None
         else status.current_best_moves_since_start,

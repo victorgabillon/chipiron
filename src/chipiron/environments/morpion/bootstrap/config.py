@@ -7,7 +7,7 @@ import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field, fields
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, cast
 
 from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
     DEFAULT_MORPION_FEATURE_SUBSET_NAME,
@@ -83,6 +83,11 @@ class MalformedMorpionBootstrapConfigError(TypeError):
     """Raised when one persisted bootstrap config payload is malformed."""
 
     @classmethod
+    def invalid_json(cls, path: str | Path) -> MalformedMorpionBootstrapConfigError:
+        """Return the invalid persisted JSON config error."""
+        return cls(f"Morpion bootstrap config at {path!s} is not valid JSON.")
+
+    @classmethod
     def invalid_top_level_mapping(cls) -> MalformedMorpionBootstrapConfigError:
         """Return the malformed top-level payload error."""
         return cls("Morpion bootstrap config must be a mapping with string keys.")
@@ -117,9 +122,7 @@ class MalformedMorpionBootstrapConfigError(TypeError):
     @classmethod
     def invalid_float(cls, field_name: str) -> MalformedMorpionBootstrapConfigError:
         """Return one malformed float-like field error."""
-        return cls(
-            f"Morpion bootstrap config field `{field_name}` must be float-like."
-        )
+        return cls(f"Morpion bootstrap config field `{field_name}` must be float-like.")
 
     @classmethod
     def invalid_metadata(cls) -> MalformedMorpionBootstrapConfigError:
@@ -212,7 +215,9 @@ def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
         raise MalformedMorpionBootstrapConfigError.invalid_top_level_mapping()
 
     payload = cast("Mapping[str, object]", data)
-    experiment = _require_section_mapping(payload.get("experiment"), section_name="experiment")
+    experiment = _require_section_mapping(
+        payload.get("experiment"), section_name="experiment"
+    )
     runtime = _require_section_mapping(payload.get("runtime"), section_name="runtime")
     dataset = _require_section_mapping(payload.get("dataset"), section_name="dataset")
     evaluators_data = _require_section_mapping(
@@ -229,38 +234,62 @@ def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
             evaluators={
                 evaluator_name: MorpionEvaluatorSpec(
                     name=_required_str(
-                        _require_section_mapping(spec_payload, section_name=f"evaluators.evaluators.{evaluator_name}").get("name"),
+                        _require_section_mapping(
+                            spec_payload,
+                            section_name=f"evaluators.evaluators.{evaluator_name}",
+                        ).get("name"),
                         field_name=f"evaluators.evaluators.{evaluator_name}.name",
                     ),
                     model_type=_required_str(
-                        _require_section_mapping(spec_payload, section_name=f"evaluators.evaluators.{evaluator_name}").get("model_type"),
+                        _require_section_mapping(
+                            spec_payload,
+                            section_name=f"evaluators.evaluators.{evaluator_name}",
+                        ).get("model_type"),
                         field_name=f"evaluators.evaluators.{evaluator_name}.model_type",
                     ),
                     hidden_sizes=_optional_int_tuple(
-                        _require_section_mapping(spec_payload, section_name=f"evaluators.evaluators.{evaluator_name}").get("hidden_sizes"),
+                        _require_section_mapping(
+                            spec_payload,
+                            section_name=f"evaluators.evaluators.{evaluator_name}",
+                        ).get("hidden_sizes"),
                         field_name=f"evaluators.evaluators.{evaluator_name}.hidden_sizes",
                     ),
                     num_epochs=_coerce_int(
-                        _require_section_mapping(spec_payload, section_name=f"evaluators.evaluators.{evaluator_name}").get("num_epochs"),
+                        _require_section_mapping(
+                            spec_payload,
+                            section_name=f"evaluators.evaluators.{evaluator_name}",
+                        ).get("num_epochs"),
                         field_name=f"evaluators.evaluators.{evaluator_name}.num_epochs",
                     ),
                     batch_size=_coerce_int(
-                        _require_section_mapping(spec_payload, section_name=f"evaluators.evaluators.{evaluator_name}").get("batch_size"),
+                        _require_section_mapping(
+                            spec_payload,
+                            section_name=f"evaluators.evaluators.{evaluator_name}",
+                        ).get("batch_size"),
                         field_name=f"evaluators.evaluators.{evaluator_name}.batch_size",
                     ),
                     learning_rate=_coerce_float(
-                        _require_section_mapping(spec_payload, section_name=f"evaluators.evaluators.{evaluator_name}").get("learning_rate"),
+                        _require_section_mapping(
+                            spec_payload,
+                            section_name=f"evaluators.evaluators.{evaluator_name}",
+                        ).get("learning_rate"),
                         field_name=f"evaluators.evaluators.{evaluator_name}.learning_rate",
                     ),
                     feature_subset_name=_required_str(
-                        _require_section_mapping(spec_payload, section_name=f"evaluators.evaluators.{evaluator_name}").get(
+                        _require_section_mapping(
+                            spec_payload,
+                            section_name=f"evaluators.evaluators.{evaluator_name}",
+                        ).get(
                             "feature_subset_name",
                             DEFAULT_MORPION_FEATURE_SUBSET_NAME,
                         ),
                         field_name=f"evaluators.evaluators.{evaluator_name}.feature_subset_name",
                     ),
                     feature_names=_optional_str_tuple(
-                        _require_section_mapping(spec_payload, section_name=f"evaluators.evaluators.{evaluator_name}").get("feature_names"),
+                        _require_section_mapping(
+                            spec_payload,
+                            section_name=f"evaluators.evaluators.{evaluator_name}",
+                        ).get("feature_names"),
                         field_name=f"evaluators.evaluators.{evaluator_name}.feature_names",
                     ),
                 )
@@ -339,9 +368,7 @@ def load_bootstrap_config(path: str | Path) -> MorpionBootstrapConfig:
     try:
         loaded = json.loads(Path(path).read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
-        raise MalformedMorpionBootstrapConfigError(
-            f"Morpion bootstrap config at {path!s} is not valid JSON."
-        ) from exc
+        raise MalformedMorpionBootstrapConfigError.invalid_json(path) from exc
     return bootstrap_config_from_dict(loaded)
 
 
@@ -378,7 +405,9 @@ def diff_bootstrap_configs(
     """Return a stable list of changed config field paths."""
     differences: list[str] = []
     differences.extend(
-        _diff_dataclass_section(previous.experiment, current.experiment, prefix="experiment")
+        _diff_dataclass_section(
+            previous.experiment, current.experiment, prefix="experiment"
+        )
     )
     differences.extend(
         _diff_dataclass_section(previous.runtime, current.runtime, prefix="runtime")
@@ -410,7 +439,7 @@ def validate_bootstrap_config_change(
         return
 
     rendered_changes = "; ".join(
-        f"{field_name}: { _resolve_diff_value(previous, field_name)!r } -> { _resolve_diff_value(current, field_name)!r }"
+        f"{field_name}: {_resolve_diff_value(previous, field_name)!r} -> {_resolve_diff_value(current, field_name)!r}"
         for field_name in unsafe_changes
     )
     raise UnsafeMorpionBootstrapConfigChangeError(
@@ -418,7 +447,9 @@ def validate_bootstrap_config_change(
     )
 
 
-def _diff_dataclass_section(previous: object, current: object, *, prefix: str) -> list[str]:
+def _diff_dataclass_section(
+    previous: object, current: object, *, prefix: str
+) -> list[str]:
     """Return changed field paths for one flat dataclass section."""
     return [
         f"{prefix}.{field_info.name}"
@@ -427,7 +458,9 @@ def _diff_dataclass_section(previous: object, current: object, *, prefix: str) -
     ]
 
 
-def _resolve_diff_value(config: MorpionBootstrapConfig, dotted_field_name: str) -> object:
+def _resolve_diff_value(
+    config: MorpionBootstrapConfig, dotted_field_name: str
+) -> object:
     """Resolve one dotted config field path against one config object."""
     section_name, field_name = dotted_field_name.split(".", maxsplit=1)
     return getattr(getattr(config, section_name), field_name)
@@ -527,8 +560,7 @@ def _optional_int_tuple(value: object, *, field_name: str) -> tuple[int, ...] | 
         return None
     if not isinstance(value, list | tuple):
         raise MalformedMorpionBootstrapConfigError.invalid_int(field_name)
-    items = tuple(_coerce_int(item, field_name=field_name) for item in value)
-    return items
+    return tuple(_coerce_int(item, field_name=field_name) for item in value)
 
 
 def _optional_str_tuple(value: object, *, field_name: str) -> tuple[str, ...]:

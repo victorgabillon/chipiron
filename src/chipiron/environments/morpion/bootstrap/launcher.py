@@ -7,7 +7,7 @@ import logging
 import shlex
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Literal, Sequence
+from typing import TYPE_CHECKING, Literal
 
 from .anemone_runner import (
     AnemoneMorpionSearchRunner,
@@ -19,7 +19,6 @@ from .bootstrap_loop import (
     MorpionBootstrapPaths,
     run_morpion_bootstrap_loop,
 )
-from .evaluator_family import CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET
 from .config import (
     DEFAULT_MORPION_TREE_BRANCH_LIMIT,
     MorpionBootstrapConfig,
@@ -31,12 +30,16 @@ from .control import (
     effective_runtime_config_from_config_and_control,
     load_bootstrap_control,
 )
+from .evaluator_family import CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET
 from .history import MorpionBootstrapLatestStatus, load_latest_bootstrap_status
 from .process_control import (
     mark_current_launcher_process_stopped,
     register_current_launcher_process,
 )
 from .run_state import MorpionBootstrapRunState, load_bootstrap_run_state
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 LOGGER = logging.getLogger(__name__)
 
@@ -54,7 +57,9 @@ class MorpionBootstrapLauncherArgs:
     @property
     def work_dir(self) -> Path:
         """Return the resolved launcher work directory."""
-        return MorpionBootstrapPaths.from_work_dir(self.bootstrap_args.work_dir).work_dir
+        return MorpionBootstrapPaths.from_work_dir(
+            self.bootstrap_args.work_dir
+        ).work_dir
 
 
 @dataclass(frozen=True, slots=True)
@@ -181,9 +186,7 @@ def _collect_launcher_startup_status(
 
     control = load_bootstrap_control(paths.control_path)
     run_state = (
-        load_bootstrap_run_state(paths.run_state_path)
-        if run_state_exists
-        else None
+        load_bootstrap_run_state(paths.run_state_path) if run_state_exists else None
     )
     latest_status = (
         load_latest_bootstrap_status(paths.latest_status_path)
@@ -207,9 +210,7 @@ def _collect_launcher_startup_status(
         latest_status=latest_status,
         resolved_evaluator_family_preset=resolved_bootstrap_args.evaluator_family_preset,
         evaluator_family_source=resolved_evaluator_family_source,
-        resolved_evaluator_names=tuple(
-            sorted(bootstrap_config.evaluators.evaluators)
-        ),
+        resolved_evaluator_names=tuple(sorted(bootstrap_config.evaluators.evaluators)),
         config_exists=config_exists,
         control_exists=control_exists,
         run_state_exists=run_state_exists,
@@ -243,13 +244,13 @@ def _render_launcher_startup_summary(
         startup_status.bootstrap_config,
         startup_status.control,
     )
-    baseline_tree_branch_limit = startup_status.bootstrap_config.runtime.tree_branch_limit
+    baseline_tree_branch_limit = (
+        startup_status.bootstrap_config.runtime.tree_branch_limit
+    )
     control_tree_branch_limit = startup_status.control.runtime.tree_branch_limit
     evaluators = ", ".join(startup_status.resolved_evaluator_names)
     control_fragment = (
-        "none"
-        if control_tree_branch_limit is None
-        else str(control_tree_branch_limit)
+        "none" if control_tree_branch_limit is None else str(control_tree_branch_limit)
     )
     return "\n".join(
         (
@@ -263,8 +264,7 @@ def _render_launcher_startup_summary(
             f"latest status: {_render_presence(startup_status.latest_status_exists)}",
             f"latest generation: {_render_optional_int(_latest_generation(startup_status))}",
             f"latest cycle: {_render_optional_int(_latest_cycle_index(startup_status))}",
-            "evaluator family preset: "
-            f"{_render_evaluator_family_line(startup_status)}",
+            f"evaluator family preset: {_render_evaluator_family_line(startup_status)}",
             f"configured evaluators: {evaluators}",
             f"forced evaluator control: {_render_optional_text(startup_status.control.force_evaluator)}",
             "tree_branch_limit: "
@@ -362,7 +362,9 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def launcher_args_from_cli(argv: Sequence[str] | None = None) -> MorpionBootstrapLauncherArgs:
+def launcher_args_from_cli(
+    argv: Sequence[str] | None = None,
+) -> MorpionBootstrapLauncherArgs:
     """Parse CLI arguments into the canonical launcher dataclass."""
     parsed = build_launcher_argument_parser().parse_args(argv)
     bootstrap_args = MorpionBootstrapArgs(
@@ -396,10 +398,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     exit_code = 0
     try:
         run_morpion_bootstrap_experiment(launcher_args)
-        return exit_code
     except BaseException:
         exit_code = 1
         raise
+    else:
+        return exit_code
     finally:
         mark_current_launcher_process_stopped(paths, exit_code=exit_code)
 

@@ -355,11 +355,9 @@ class MorpionSvgAdapter(SvgGameAdapter):
         segment_width = _clamp(scale * 0.10, 1.5, 2.6)
         preview_width = _clamp(scale * 0.11, 1.8, 3.0)
         self._click_radius = max(12.0, preview_radius * 1.6)
-        max_numbered_label = (
-            max(
-                (len(str(point.move_index)) for point in payload.numbered_added_points),
-                default=1,
-            )
+        max_numbered_label = max(
+            (len(str(point.move_index)) for point in payload.numbered_added_points),
+            default=1,
         )
         numbered_label_font = fit_font_size(
             text="8" * max_numbered_label,

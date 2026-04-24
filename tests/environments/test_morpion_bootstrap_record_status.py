@@ -258,7 +258,9 @@ def test_frontier_best_can_update_without_affecting_certified_record() -> None:
     assert frontier_status.current_best_source == "snapshot_nonterminal_node"
 
 
-def test_leaderboard_deduplicates_identical_states_by_fingerprint(tmp_path: Path) -> None:
+def test_leaderboard_deduplicates_identical_states_by_fingerprint(
+    tmp_path: Path,
+) -> None:
     """Certified leaderboard entries should be deduplicated by state fingerprint."""
     snapshot = TrainingTreeSnapshot(
         root_node_id="node-2",
@@ -328,7 +330,9 @@ def test_leaderboard_keeps_only_top_100_per_variant(tmp_path: Path) -> None:
     assert loaded[-1]["total_points"] == 37
 
 
-def test_old_run_state_without_frontier_field_still_loads_safely(tmp_path: Path) -> None:
+def test_old_run_state_without_frontier_field_still_loads_safely(
+    tmp_path: Path,
+) -> None:
     """Legacy run-state payloads should still load cleanly without frontier status."""
     path = tmp_path / "run_state.json"
     path.write_text(

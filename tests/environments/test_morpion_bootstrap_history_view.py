@@ -141,7 +141,9 @@ def _make_event(
             current_best_total_points=total_points,
             current_best_is_exact=True if record_score is not None else None,
             current_best_is_terminal=True if record_score is not None else None,
-            current_best_source="certified_terminal_leaf" if record_score is not None else None,
+            current_best_source="certified_terminal_leaf"
+            if record_score is not None
+            else None,
         ),
         artifacts=MorpionBootstrapArtifacts(
             tree_snapshot_path=None,
@@ -290,7 +292,9 @@ def test_build_current_certified_record_board_view_renders_numbered_points(
         ),
         root_node_id="certified-2",
     )
-    save_training_tree_snapshot(snapshot, paths.tree_snapshot_dir / "generation_000001.json")
+    save_training_tree_snapshot(
+        snapshot, paths.tree_snapshot_dir / "generation_000001.json"
+    )
 
     board_view = build_current_certified_record_board_view(tmp_path)
 
@@ -342,7 +346,10 @@ def test_build_disk_usage_summary_collects_expected_breakdown(tmp_path: Path) ->
     assert isinstance(summary, DiskUsageSummary)
     assert summary.run_dir_num_bytes == 22
     assert summary.device_total_num_bytes is None or summary.device_total_num_bytes > 0
-    assert summary.run_dir_pct_of_device_total is None or summary.run_dir_pct_of_device_total >= 0.0
+    assert (
+        summary.run_dir_pct_of_device_total is None
+        or summary.run_dir_pct_of_device_total >= 0.0
+    )
     assert summary.breakdown_rows[:5] == (
         DiskUsageRow("history_logs_status", 7),
         DiskUsageRow("models", 6),
@@ -795,7 +802,9 @@ def test_dashboard_data_bundles_everything(tmp_path: Path) -> None:
     assert dashboard_data.latest_tree_status is not None
     assert dashboard_data.latest_tree_status.max_depth_present == 2
     assert dashboard_data.run_summary.latest_record_score == 14
-    assert dashboard_data.evaluator_selection_summary.latest_active_evaluator_name == "mlp"
+    assert (
+        dashboard_data.evaluator_selection_summary.latest_active_evaluator_name == "mlp"
+    )
     assert dashboard_data.record_progress_summary.best_score == 14
     assert len(dashboard_data.tree_num_nodes) == 2
     assert len(dashboard_data.canonical_record_score) == 2
@@ -826,11 +835,15 @@ def test_dashboard_data_bundles_everything(tmp_path: Path) -> None:
             triggered=False,
         ),
     )
-    assert tuple(point.value for point in tree_num_nodes_series((first_event, second_event))) == (
+    assert tuple(
+        point.value for point in tree_num_nodes_series((first_event, second_event))
+    ) == (
         10,
         15,
     )
-    assert tuple(point.value for point in dataset_num_rows_series((first_event, second_event))) == (
+    assert tuple(
+        point.value for point in dataset_num_rows_series((first_event, second_event))
+    ) == (
         10,
         None,
     )

@@ -502,9 +502,7 @@ def test_bootstrap_loop_writes_history_on_no_save_cycle(tmp_path: Path) -> None:
     assert event.metadata["bootstrap_applied_runtime_control"] == {
         "tree_branch_limit": None
     }
-    assert event.metadata["bootstrap_effective_runtime"] == {
-        "tree_branch_limit": 128
-    }
+    assert event.metadata["bootstrap_effective_runtime"] == {"tree_branch_limit": 128}
     assert isinstance(event.metadata["bootstrap_effective_runtime_hash"], str)
     assert latest_status.latest_generation == 2
     assert latest_status.latest_cycle_index == 9
@@ -572,9 +570,7 @@ def test_bootstrap_loop_writes_history_on_save_train_cycle(tmp_path: Path) -> No
     assert event.metadata["bootstrap_applied_runtime_control"] == {
         "tree_branch_limit": None
     }
-    assert event.metadata["bootstrap_effective_runtime"] == {
-        "tree_branch_limit": 128
-    }
+    assert event.metadata["bootstrap_effective_runtime"] == {"tree_branch_limit": 128}
     assert isinstance(event.metadata["bootstrap_effective_runtime_hash"], str)
     assert set(event.evaluators) == {"default"}
     assert event.evaluators["default"].final_loss is not None
@@ -656,9 +652,7 @@ def test_bootstrap_loop_records_selected_winner_on_multi_evaluator_save_cycle(
     assert event.metadata["bootstrap_applied_runtime_control"] == {
         "tree_branch_limit": None
     }
-    assert event.metadata["bootstrap_effective_runtime"] == {
-        "tree_branch_limit": 128
-    }
+    assert event.metadata["bootstrap_effective_runtime"] == {"tree_branch_limit": 128}
     assert isinstance(event.metadata["bootstrap_effective_runtime_hash"], str)
     assert event.record.variant == event.metadata["variant"]
     assert event.record.initial_pattern == event.metadata["initial_pattern"]

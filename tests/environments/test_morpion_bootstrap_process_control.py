@@ -151,7 +151,9 @@ def test_start_when_already_running_is_idempotent(
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     paths.work_dir.mkdir(parents=True, exist_ok=True)
     paths.launcher_pid_path.write_text("1234\n", encoding="utf-8")
-    monkeypatch.setattr(process_control_module, "_pid_is_alive", lambda pid: pid == 1234)
+    monkeypatch.setattr(
+        process_control_module, "_pid_is_alive", lambda pid: pid == 1234
+    )
 
     result = process_control_module.start_morpion_bootstrap_process(paths)
 
@@ -211,7 +213,9 @@ def test_restart_calls_stop_then_start(
     def _fake_stop(*args: object, **kwargs: object) -> object:
         del args, kwargs
         call_order.append("stop")
-        return SimpleNamespace(state=SimpleNamespace(is_running=False), was_running=True)
+        return SimpleNamespace(
+            state=SimpleNamespace(is_running=False), was_running=True
+        )
 
     def _fake_start(*args: object, **kwargs: object) -> object:
         del args, kwargs
@@ -227,8 +231,12 @@ def test_restart_calls_stop_then_start(
             already_running=False,
         )
 
-    monkeypatch.setattr(process_control_module, "stop_morpion_bootstrap_process", _fake_stop)
-    monkeypatch.setattr(process_control_module, "start_morpion_bootstrap_process", _fake_start)
+    monkeypatch.setattr(
+        process_control_module, "stop_morpion_bootstrap_process", _fake_stop
+    )
+    monkeypatch.setattr(
+        process_control_module, "start_morpion_bootstrap_process", _fake_start
+    )
 
     state = process_control_module.restart_morpion_bootstrap_process(paths)
 
