@@ -38,6 +38,25 @@ from anemone.training_export import (
     save_training_tree_snapshot,
 )
 from atomheart.games.morpion import MorpionStateCheckpointCodec, initial_state
+from atomheart.games.morpion.checkpoints import (
+    _action_for_move as _checkpoint_action_for_move,
+)
+from atomheart.games.morpion.checkpoints import (
+    _load_move as _checkpoint_load_move,
+)
+from atomheart.games.morpion.checkpoints import (
+    _payload_mapping as _checkpoint_payload_mapping,
+)
+from atomheart.games.morpion.checkpoints import (
+    _payload_played_moves as _checkpoint_payload_played_moves,
+)
+from atomheart.games.morpion.checkpoints import (
+    _payload_variant as _checkpoint_payload_variant,
+)
+from atomheart.games.morpion.checkpoints import (
+    _transition_next_state as _checkpoint_transition_next_state,
+)
+from atomheart.games.morpion.dynamics import MorpionDynamics as AtomheartMorpionDynamics
 from dacite import Config, from_dict
 from valanga.evaluations import Certainty, Value
 
@@ -209,6 +228,22 @@ class _ChipironMorpionStateCheckpointCodec:
 
     inner: MorpionStateCheckpointCodec
     dynamics: MorpionDynamics
+    _replay_dynamics: AtomheartMorpionDynamics = field(
+        default_factory=AtomheartMorpionDynamics,
+        init=False,
+        repr=False,
+    )
+    _replay_roots: dict[str, "_ReplayStateCacheNode"] = field(
+        default_factory=dict,
+        init=False,
+        repr=False,
+    )
+    _restore_session_active: bool = field(default=False, init=False, repr=False)
+    _restore_state_calls: int = field(default=0, init=False, repr=False)
+    _restore_exact_cache_hits: int = field(default=0, init=False, repr=False)
+    _restore_steps_reused: int = field(default=0, init=False, repr=False)
+    _restore_steps_replayed: int = field(default=0, init=False, repr=False)
+    _restore_max_depth: int = field(default=0, init=False, repr=False)
 
     def dump_state_ref(self, state: MorpionState) -> object:
         """Serialize one Chipiron Morpion state via the atomheart checkpoint codec."""
@@ -216,8 +251,94 @@ class _ChipironMorpionStateCheckpointCodec:
 
     def load_state_ref(self, payload: object) -> MorpionState:
         """Restore one Chipiron Morpion state from a persisted checkpoint payload."""
+        if self._restore_session_active:
+            return self._load_state_ref_with_prefix_cache(payload)
         atomheart_state = self.inner.load_state_ref(payload)
         return self.dynamics.wrap_atomheart_state(atomheart_state)
+
+    def begin_restore_session(self) -> None:
+        """Start one restore session with fresh replay-cache diagnostics."""
+        self._replay_roots.clear()
+        self._restore_session_active = True
+        self._restore_state_calls = 0
+        self._restore_exact_cache_hits = 0
+        self._restore_steps_reused = 0
+        self._restore_steps_replayed = 0
+        self._restore_max_depth = 0
+
+    def finish_restore_session(self, logger: logging.Logger) -> None:
+        """Log restore-cache diagnostics and release transient replay state."""
+        if not self._restore_session_active:
+            return
+        logger.info(
+            "[state_restore] codec_cache_stats calls=%s exact_cache_hits=%s reused_steps=%s replayed_steps=%s max_depth=%s variants=%s",
+            self._restore_state_calls,
+            self._restore_exact_cache_hits,
+            self._restore_steps_reused,
+            self._restore_steps_replayed,
+            self._restore_max_depth,
+            len(self._replay_roots),
+        )
+        self._replay_roots.clear()
+        self._restore_session_active = False
+
+    def _load_state_ref_with_prefix_cache(self, payload: object) -> MorpionState:
+        """Restore one Morpion state by reusing already-replayed prefixes."""
+        self._restore_state_calls += 1
+        data = _checkpoint_payload_mapping(payload)
+        variant = _checkpoint_payload_variant(data)
+        serialized_moves = _checkpoint_payload_played_moves(data)
+        self._restore_max_depth = max(self._restore_max_depth, len(serialized_moves))
+
+        variant_key = variant.value
+        root = self._replay_roots.get(variant_key)
+        if root is None:
+            root = _ReplayStateCacheNode(
+                state=self.dynamics.wrap_atomheart_state(initial_state(variant))
+            )
+            self._replay_roots[variant_key] = root
+
+        node = root
+        exact_cache_hit = True
+        for index, serialized_move in enumerate(serialized_moves):
+            move = _checkpoint_load_move(serialized_move, index=index)
+            cached_child = node.children.get(move)
+            if cached_child is not None:
+                self._restore_steps_reused += 1
+                node = cached_child
+                continue
+
+            exact_cache_hit = False
+            self._restore_steps_replayed += 1
+            atomheart_state = node.state.to_atomheart_state()
+            action = _checkpoint_action_for_move(atomheart_state, move)
+            transition_object = cast(
+                "object",
+                self._replay_dynamics.step(atomheart_state, action),
+            )
+            next_atomheart_state = _checkpoint_transition_next_state(transition_object)
+            cached_child = _ReplayStateCacheNode(
+                state=self.dynamics.wrap_atomheart_state(
+                    next_atomheart_state,
+                    is_terminal=bool(getattr(transition_object, "is_over", False)),
+                )
+            )
+            node.children[move] = cached_child
+            node = cached_child
+
+        if exact_cache_hit:
+            self._restore_exact_cache_hits += 1
+        return node.state
+
+
+@dataclass(slots=True)
+class _ReplayStateCacheNode:
+    """One replay-prefix cache node keyed by the next checkpointed move."""
+
+    state: MorpionState
+    children: dict[tuple[int, int, int, int], "_ReplayStateCacheNode"] = field(
+        default_factory=dict
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -520,18 +641,22 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         )
         _log_mem(LOGGER, "before runtime_rebuild")
         runtime_started_at = time.perf_counter()
-        with _instrument_checkpoint_runtime_rebuild():
-            runtime = load_search_from_checkpoint_payload(
-                payload,
-                state_codec=self._state_codec,
-                dynamics=self._dynamics,
-                args=search_args,
-                state_type=MorpionState,
-                master_state_value_evaluator=self._build_master_evaluator(None),
-                random_generator=self._random_generator,
-                state_representation_factory=None,
-                node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
-            )
+        self._state_codec.begin_restore_session()
+        try:
+            with _instrument_checkpoint_runtime_rebuild():
+                runtime = load_search_from_checkpoint_payload(
+                    payload,
+                    state_codec=self._state_codec,
+                    dynamics=self._dynamics,
+                    args=search_args,
+                    state_type=MorpionState,
+                    master_state_value_evaluator=self._build_master_evaluator(None),
+                    random_generator=self._random_generator,
+                    state_representation_factory=None,
+                    node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
+                )
+        finally:
+            self._state_codec.finish_restore_session(LOGGER)
         runtime_elapsed_s = time.perf_counter() - runtime_started_at
         LOGGER.info(
             "[checkpoint] runtime_rebuild_done path=%s elapsed=%.3fs",
