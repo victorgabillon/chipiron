@@ -5,14 +5,13 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from functools import lru_cache
+from pathlib import Path
 import time
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 from anemone.checkpoints import (
     AlgorithmNodeCheckpointPayload,
+    AnchorCheckpointStatePayload,
+    DeltaCheckpointStatePayload,
     NodeEvaluationCheckpointPayload,
     SearchRuntimeCheckpointPayload,
     SerializedValuePayload,
@@ -379,8 +378,13 @@ def _build_selected_node_snapshot_parts(
     snapshot_parts_start_time = time.perf_counter()
     indexed_checkpoint = _load_indexed_checkpoint_tree_cached(checkpoint_path)
     node_payload = indexed_checkpoint.nodes_by_id[selected_node_id]
+    decoded_states_by_node_id: dict[int, MorpionState] = {}
     decode_start_time = time.perf_counter()
-    state = _decode_node_state(node_payload)
+    state = _decode_node_state(
+        node_payload,
+        indexed_checkpoint=indexed_checkpoint,
+        decoded_states_by_node_id=decoded_states_by_node_id,
+    )
     decode_duration = time.perf_counter() - decode_start_time
 
     node_summary_start_time = time.perf_counter()
@@ -398,6 +402,7 @@ def _build_selected_node_snapshot_parts(
                     indexed_checkpoint=indexed_checkpoint,
                     node_payload=node_payload,
                     state=state,
+                    decoded_states_by_node_id=decoded_states_by_node_id,
                 ),
                 time.perf_counter() - start_time,
             )
@@ -559,6 +564,7 @@ def _build_child_summaries(
     indexed_checkpoint: _IndexedCheckpointTree,
     node_payload: AlgorithmNodeCheckpointPayload,
     state: MorpionState,
+    decoded_states_by_node_id: dict[int, MorpionState],
 ) -> tuple[MorpionBootstrapChildSummary, ...]:
     """Build one summary row per symmetry-unique legal action from the selected node."""
     child_summaries_start_time = time.perf_counter()
@@ -589,7 +595,11 @@ def _build_child_summaries(
             continue
         child_payload = indexed_checkpoint.nodes_by_id[child_node_id]
         expanded_child_count += 1
-        child_state = _decode_node_state(child_payload)
+        child_state = _decode_node_state(
+            child_payload,
+            indexed_checkpoint=indexed_checkpoint,
+            decoded_states_by_node_id=decoded_states_by_node_id,
+        )
         direct_value = _value_score(_direct_value_payload(child_payload.evaluation))
         backed_up_value = _value_score(_backed_up_value_payload(child_payload.evaluation))
         child_summaries.append(
@@ -706,14 +716,62 @@ def _build_state_view(
     return state_view
 
 
-def _decode_node_state(node_payload: AlgorithmNodeCheckpointPayload) -> MorpionState:
-    """Decode one checkpoint node state on demand."""
+def _decode_node_state(
+    node_payload: AlgorithmNodeCheckpointPayload,
+    *,
+    indexed_checkpoint: _IndexedCheckpointTree,
+    decoded_states_by_node_id: dict[int, MorpionState],
+) -> MorpionState:
+    """Decode one checkpoint node state on demand from Anemone state payloads."""
     decode_start_time = time.perf_counter()
+    cached_state = decoded_states_by_node_id.get(node_payload.node_id)
+    if cached_state is not None:
+        return cached_state
+
     dynamics = MorpionDynamics()
     state_codec = MorpionStateCheckpointCodec()
-    decoded_state = dynamics.wrap_atomheart_state(
-        state_codec.load_state_ref(node_payload.state_ref)
-    )
+    state_payload = node_payload.state_payload
+    if isinstance(state_payload, AnchorCheckpointStatePayload):
+        decoded_state = dynamics.wrap_atomheart_state(
+            state_codec.load_anchor_ref(state_payload.anchor_ref)
+        )
+    elif isinstance(state_payload, DeltaCheckpointStatePayload):
+        if node_payload.parent_node_id is None:
+            raise InvalidMorpionSearchCheckpointError(
+                Path("<in-memory>"),
+                f"delta node {node_payload.node_id} is missing its parent node id",
+            )
+        parent_payload = indexed_checkpoint.nodes_by_id.get(node_payload.parent_node_id)
+        if parent_payload is None:
+            raise InvalidMorpionSearchCheckpointError(
+                Path("<in-memory>"),
+                f"delta node {node_payload.node_id} references unknown parent "
+                f"{node_payload.parent_node_id}",
+            )
+        parent_state = _decode_node_state(
+            parent_payload,
+            indexed_checkpoint=indexed_checkpoint,
+            decoded_states_by_node_id=decoded_states_by_node_id,
+        )
+        branch_from_parent = (
+            None
+            if node_payload.branch_from_parent is None
+            else deserialize_checkpoint_atom(node_payload.branch_from_parent)
+        )
+        decoded_state = dynamics.wrap_atomheart_state(
+            state_codec.load_child_from_delta(
+                parent_state=parent_state.to_atomheart_state(),
+                delta_ref=state_payload.delta_ref,
+                branch_from_parent=branch_from_parent,
+            )
+        )
+    else:
+        raise InvalidMorpionSearchCheckpointError(
+            Path("<in-memory>"),
+            f"node {node_payload.node_id} has unsupported state payload "
+            f"{type(state_payload).__name__}",
+        )
+    decoded_states_by_node_id[node_payload.node_id] = decoded_state
     decode_duration = time.perf_counter() - decode_start_time
     print(
         f"{TREE_INSPECTOR_TIMING_PREFIX} _decode_node_state "

@@ -8,12 +8,15 @@ import logging
 import resource
 import time
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass, field, replace
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from random import Random
 from typing import Any, cast
 
 from anemone.checkpoints import (
+    AnchorCheckpointStatePayload,
+    CheckpointNodeStatePayload,
+    DeltaCheckpointStatePayload,
     SearchRuntimeCheckpointPayload,
     build_search_checkpoint_payload,
     load_search_from_checkpoint_payload,
@@ -38,25 +41,6 @@ from anemone.training_export import (
     save_training_tree_snapshot,
 )
 from atomheart.games.morpion import MorpionStateCheckpointCodec, initial_state
-from atomheart.games.morpion.checkpoints import (
-    _action_for_move as _checkpoint_action_for_move,
-)
-from atomheart.games.morpion.checkpoints import (
-    _load_move as _checkpoint_load_move,
-)
-from atomheart.games.morpion.checkpoints import (
-    _payload_mapping as _checkpoint_payload_mapping,
-)
-from atomheart.games.morpion.checkpoints import (
-    _payload_played_moves as _checkpoint_payload_played_moves,
-)
-from atomheart.games.morpion.checkpoints import (
-    _payload_variant as _checkpoint_payload_variant,
-)
-from atomheart.games.morpion.checkpoints import (
-    _transition_next_state as _checkpoint_transition_next_state,
-)
-from atomheart.games.morpion.dynamics import MorpionDynamics as AtomheartMorpionDynamics
 from dacite import Config, from_dict
 from valanga.evaluations import Certainty, Value
 
@@ -224,121 +208,67 @@ class InvalidMorpionSearchCheckpointError(ValueError):
 
 @dataclass(slots=True)
 class _ChipironMorpionStateCheckpointCodec:
-    """Bridge the atomheart Morpion checkpoint codec to Chipiron wrapper states."""
+    """Minimal adapter from atomheart checkpoints to Chipiron Morpion states.
+
+    Chipiron still runs its search on ``chipiron.environments.morpion.types.
+    MorpionState`` while Atomheart's incremental codec operates on the lower
+    layer ``atomheart.games.morpion.MorpionState``. This bridge keeps the
+    active runtime on the new lower-layer checkpoint architecture without
+    reimplementing restore mechanics locally.
+    """
 
     inner: MorpionStateCheckpointCodec
     dynamics: MorpionDynamics
-    _replay_dynamics: AtomheartMorpionDynamics = field(
-        default_factory=AtomheartMorpionDynamics,
-        init=False,
-        repr=False,
-    )
-    _replay_roots: dict[str, "_ReplayStateCacheNode"] = field(
-        default_factory=dict,
-        init=False,
-        repr=False,
-    )
-    _restore_session_active: bool = field(default=False, init=False, repr=False)
-    _restore_state_calls: int = field(default=0, init=False, repr=False)
-    _restore_exact_cache_hits: int = field(default=0, init=False, repr=False)
-    _restore_steps_reused: int = field(default=0, init=False, repr=False)
-    _restore_steps_replayed: int = field(default=0, init=False, repr=False)
-    _restore_max_depth: int = field(default=0, init=False, repr=False)
 
     def dump_state_ref(self, state: MorpionState) -> object:
-        """Serialize one Chipiron Morpion state via the atomheart checkpoint codec."""
+        """Serialize one legacy state-ref payload through the atomheart codec."""
         return self.inner.dump_state_ref(state.to_atomheart_state())
 
     def load_state_ref(self, payload: object) -> MorpionState:
-        """Restore one Chipiron Morpion state from a persisted checkpoint payload."""
-        if self._restore_session_active:
-            return self._load_state_ref_with_prefix_cache(payload)
-        atomheart_state = self.inner.load_state_ref(payload)
-        return self.dynamics.wrap_atomheart_state(atomheart_state)
+        """Restore one legacy state-ref payload into Chipiron state form."""
+        return self.dynamics.wrap_atomheart_state(self.inner.load_state_ref(payload))
 
-    def begin_restore_session(self) -> None:
-        """Start one restore session with fresh replay-cache diagnostics."""
-        self._replay_roots.clear()
-        self._restore_session_active = True
-        self._restore_state_calls = 0
-        self._restore_exact_cache_hits = 0
-        self._restore_steps_reused = 0
-        self._restore_steps_replayed = 0
-        self._restore_max_depth = 0
+    def dump_anchor_ref(self, state: MorpionState) -> object:
+        """Serialize one full anchor snapshot for the incremental checkpoint path."""
+        return self.inner.dump_anchor_ref(state.to_atomheart_state())
 
-    def finish_restore_session(self, logger: logging.Logger) -> None:
-        """Log restore-cache diagnostics and release transient replay state."""
-        if not self._restore_session_active:
-            return
-        logger.info(
-            "[state_restore] codec_cache_stats calls=%s exact_cache_hits=%s reused_steps=%s replayed_steps=%s max_depth=%s variants=%s",
-            self._restore_state_calls,
-            self._restore_exact_cache_hits,
-            self._restore_steps_reused,
-            self._restore_steps_replayed,
-            self._restore_max_depth,
-            len(self._replay_roots),
+    def dump_delta_from_parent(
+        self,
+        *,
+        parent_state: MorpionState,
+        child_state: MorpionState,
+        branch_from_parent: object | None = None,
+    ) -> object:
+        """Serialize one child state as a delta from its parent."""
+        return self.inner.dump_delta_from_parent(
+            parent_state=parent_state.to_atomheart_state(),
+            child_state=child_state.to_atomheart_state(),
+            branch_from_parent=branch_from_parent,
         )
-        self._replay_roots.clear()
-        self._restore_session_active = False
 
-    def _load_state_ref_with_prefix_cache(self, payload: object) -> MorpionState:
-        """Restore one Morpion state by reusing already-replayed prefixes."""
-        self._restore_state_calls += 1
-        data = _checkpoint_payload_mapping(payload)
-        variant = _checkpoint_payload_variant(data)
-        serialized_moves = _checkpoint_payload_played_moves(data)
-        self._restore_max_depth = max(self._restore_max_depth, len(serialized_moves))
+    def load_anchor_ref(self, payload: object) -> MorpionState:
+        """Restore one anchor snapshot through Atomheart, then wrap it for Chipiron."""
+        return self.dynamics.wrap_atomheart_state(self.inner.load_anchor_ref(payload))
 
-        variant_key = variant.value
-        root = self._replay_roots.get(variant_key)
-        if root is None:
-            root = _ReplayStateCacheNode(
-                state=self.dynamics.wrap_atomheart_state(initial_state(variant))
+    def load_child_from_delta(
+        self,
+        *,
+        parent_state: MorpionState,
+        delta_ref: object,
+        branch_from_parent: object | None = None,
+    ) -> MorpionState:
+        """Restore one child state from its parent's concrete Chipiron state."""
+        return self.dynamics.wrap_atomheart_state(
+            self.inner.load_child_from_delta(
+                parent_state=parent_state.to_atomheart_state(),
+                delta_ref=delta_ref,
+                branch_from_parent=branch_from_parent,
             )
-            self._replay_roots[variant_key] = root
+        )
 
-        node = root
-        exact_cache_hit = True
-        for index, serialized_move in enumerate(serialized_moves):
-            move = _checkpoint_load_move(serialized_move, index=index)
-            cached_child = node.children.get(move)
-            if cached_child is not None:
-                self._restore_steps_reused += 1
-                node = cached_child
-                continue
-
-            exact_cache_hit = False
-            self._restore_steps_replayed += 1
-            atomheart_state = node.state.to_atomheart_state()
-            action = _checkpoint_action_for_move(atomheart_state, move)
-            transition_object = cast(
-                "object",
-                self._replay_dynamics.step(atomheart_state, action),
-            )
-            next_atomheart_state = _checkpoint_transition_next_state(transition_object)
-            cached_child = _ReplayStateCacheNode(
-                state=self.dynamics.wrap_atomheart_state(
-                    next_atomheart_state,
-                    is_terminal=bool(getattr(transition_object, "is_over", False)),
-                )
-            )
-            node.children[move] = cached_child
-            node = cached_child
-
-        if exact_cache_hit:
-            self._restore_exact_cache_hits += 1
-        return node.state
-
-
-@dataclass(slots=True)
-class _ReplayStateCacheNode:
-    """One replay-prefix cache node keyed by the next checkpointed move."""
-
-    state: MorpionState
-    children: dict[tuple[int, int, int, int], "_ReplayStateCacheNode"] = field(
-        default_factory=dict
-    )
+    def dump_state_summary(self, state: MorpionState) -> object:
+        """Serialize optional lightweight checkpoint summary metadata."""
+        return self.inner.dump_state_summary(state.to_atomheart_state())
 
 
 @dataclass(frozen=True, slots=True)
@@ -641,22 +571,18 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         )
         _log_mem(LOGGER, "before runtime_rebuild")
         runtime_started_at = time.perf_counter()
-        self._state_codec.begin_restore_session()
-        try:
-            with _instrument_checkpoint_runtime_rebuild():
-                runtime = load_search_from_checkpoint_payload(
-                    payload,
-                    state_codec=self._state_codec,
-                    dynamics=self._dynamics,
-                    args=search_args,
-                    state_type=MorpionState,
-                    master_state_value_evaluator=self._build_master_evaluator(None),
-                    random_generator=self._random_generator,
-                    state_representation_factory=None,
-                    node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
-                )
-        finally:
-            self._state_codec.finish_restore_session(LOGGER)
+        with _instrument_checkpoint_runtime_rebuild():
+            runtime = load_search_from_checkpoint_payload(
+                payload,
+                state_codec=self._state_codec,
+                dynamics=self._dynamics,
+                args=search_args,
+                state_type=MorpionState,
+                master_state_value_evaluator=self._build_master_evaluator(None),
+                random_generator=self._random_generator,
+                state_representation_factory=None,
+                node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
+            )
         runtime_elapsed_s = time.perf_counter() - runtime_started_at
         LOGGER.info(
             "[checkpoint] runtime_rebuild_done path=%s elapsed=%.3fs",
@@ -856,9 +782,10 @@ def load_morpion_search_checkpoint_payload(
         LOGGER.info("[checkpoint] payload_decode_start path=%s", str(resolved_path))
         _log_mem(LOGGER, "before payload_decode")
         payload_decode_started_at = time.perf_counter()
+        normalized_payload = _normalize_search_checkpoint_payload_for_dacite(raw_payload)
         payload = from_dict(
             data_class=SearchRuntimeCheckpointPayload,
-            data=raw_payload,
+            data=normalized_payload,
             config=Config(cast=[tuple], check_types=False),
         )
         payload_decode_elapsed_s = time.perf_counter() - payload_decode_started_at
@@ -879,6 +806,61 @@ def load_morpion_search_checkpoint_payload(
             resolved_path,
             f"payload shape is invalid: {exc}",
         ) from exc
+
+
+def _normalize_search_checkpoint_payload_for_dacite(
+    raw_payload: object,
+) -> object:
+    """Normalize union payload fields so dacite can rebuild checkpoint dataclasses."""
+    if not isinstance(raw_payload, dict):
+        return raw_payload
+    raw_tree = raw_payload.get("tree")
+    if not isinstance(raw_tree, dict):
+        return raw_payload
+    raw_nodes = raw_tree.get("nodes")
+    if not isinstance(raw_nodes, list):
+        return raw_payload
+
+    normalized_payload = dict(raw_payload)
+    normalized_tree = dict(raw_tree)
+    normalized_tree["nodes"] = [
+        _normalize_algorithm_node_payload_for_dacite(node_payload)
+        for node_payload in raw_nodes
+    ]
+    normalized_payload["tree"] = normalized_tree
+    return normalized_payload
+
+
+def _normalize_algorithm_node_payload_for_dacite(node_payload: object) -> object:
+    """Normalize one algorithm-node payload before dacite reconstruction."""
+    if not isinstance(node_payload, dict):
+        return node_payload
+    normalized_node_payload = dict(node_payload)
+    normalized_node_payload["state_payload"] = _checkpoint_state_payload_from_dict(
+        node_payload.get("state_payload")
+    )
+    return normalized_node_payload
+
+
+def _checkpoint_state_payload_from_dict(
+    raw_state_payload: object,
+) -> CheckpointNodeStatePayload | object:
+    """Decode the explicit state-payload union used by Anemone checkpoints."""
+    if not isinstance(raw_state_payload, dict):
+        return raw_state_payload
+    if "anchor_ref" in raw_state_payload:
+        return from_dict(
+            data_class=AnchorCheckpointStatePayload,
+            data=raw_state_payload,
+            config=Config(cast=[tuple], check_types=False),
+        )
+    if "delta_ref" in raw_state_payload:
+        return from_dict(
+            data_class=DeltaCheckpointStatePayload,
+            data=raw_state_payload,
+            config=Config(cast=[tuple], check_types=False),
+        )
+    return raw_state_payload
 
 
 def apply_runtime_control_to_runner_args(

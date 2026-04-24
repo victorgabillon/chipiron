@@ -41,6 +41,8 @@ if "anemone" not in sys.modules:
     _anemone_stub.__path__ = [str(_ANEMONE_PACKAGE_ROOT)]
     sys.modules["anemone"] = _anemone_stub
 
+from anemone.checkpoints import AnchorCheckpointStatePayload, DeltaCheckpointStatePayload
+
 from chipiron.environments.morpion.bootstrap import (
     AnemoneMorpionSearchRunner,
     MorpionBootstrapPaths,
@@ -167,6 +169,13 @@ def test_tree_inspector_snapshot_defaults_to_root_and_extracts_children(
     checkpoint_path = _create_runtime_checkpoint(tmp_path)
     payload = load_morpion_search_checkpoint_payload(checkpoint_path)
     indexed = _index_checkpoint_payload(payload)
+    assert all(
+        isinstance(
+            node_payload.state_payload,
+            AnchorCheckpointStatePayload | DeltaCheckpointStatePayload,
+        )
+        for node_payload in payload.tree.nodes
+    )
 
     snapshot = build_morpion_bootstrap_tree_inspector_snapshot(tmp_path)
 

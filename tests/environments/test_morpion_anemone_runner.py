@@ -46,6 +46,7 @@ if "anemone" not in sys.modules:
     sys.modules["anemone"] = _anemone_stub
 
 from anemone.training_export import load_training_tree_snapshot
+from anemone.checkpoints import AnchorCheckpointStatePayload, DeltaCheckpointStatePayload
 from anemone.factory import SearchArgs
 from anemone.node_selector.composed.args import ComposedNodeSelectorArgs
 from anemone.node_selector.linoo import LinooArgs
@@ -182,6 +183,20 @@ def test_default_search_args_use_linoo_selector() -> None:
     assert node_selector.base.type == NodeSelectorType.LINOO
 
 
+def test_runner_state_codec_exposes_incremental_checkpoint_protocol() -> None:
+    """The runner should bridge Chipiron state to the new incremental codec API."""
+    runner = AnemoneMorpionSearchRunner()
+    state_codec = runner._state_codec
+
+    assert hasattr(state_codec, "dump_anchor_ref")
+    assert hasattr(state_codec, "dump_delta_from_parent")
+    assert hasattr(state_codec, "load_anchor_ref")
+    assert hasattr(state_codec, "load_child_from_delta")
+    assert hasattr(state_codec, "dump_state_summary")
+    assert not hasattr(state_codec, "begin_restore_session")
+    assert not hasattr(state_codec, "finish_restore_session")
+
+
 def test_fresh_runtime_with_evaluator_bundle(tmp_path: Path) -> None:
     """The runner should create a fresh runtime with a saved Morpion evaluator."""
     bundle_path = _make_model_bundle(tmp_path / "bundle")
@@ -253,6 +268,17 @@ def test_checkpoint_roundtrip_restores_and_continues_growth(tmp_path: Path) -> N
 
     assert restored_size == size_before_save
     assert second_runner.current_tree_size() >= restored_size
+
+    payload = anemone_runner_module.load_morpion_search_checkpoint_payload(
+        checkpoint_path
+    )
+    assert all(
+        isinstance(
+            node_payload.state_payload,
+            AnchorCheckpointStatePayload | DeltaCheckpointStatePayload,
+        )
+        for node_payload in payload.tree.nodes
+    )
 
 
 def test_checkpoint_roundtrip_continues_growth_when_branch_budget_remains(
