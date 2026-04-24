@@ -35,21 +35,16 @@ from atomheart.games.morpion import initial_state as morpion_initial_state
 from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
 from chipiron.environments.morpion.bootstrap import (
-    MorpionBootstrapFrontierStatus,
     MorpionBootstrapArtifacts,
     MorpionBootstrapDatasetStatus,
     MorpionBootstrapEvent,
-    MorpionCertifiedRecordCandidate,
-    MorpionLeaderboardEntry,
+    MorpionBootstrapFrontierStatus,
     MorpionBootstrapRecordStatus,
     MorpionBootstrapRunState,
     MorpionBootstrapTrainingStatus,
     MorpionBootstrapTreeStatus,
     bootstrap_event_from_dict,
     bootstrap_event_to_dict,
-    extract_certified_record_candidates_from_training_tree_snapshot,
-    extract_morpion_frontier_status_from_training_tree_snapshot,
-    fingerprint_morpion_state_payload,
     current_record_score,
     extract_morpion_record_status_from_training_tree_snapshot,
     load_bootstrap_run_state,

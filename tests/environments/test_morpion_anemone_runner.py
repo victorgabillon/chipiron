@@ -45,7 +45,6 @@ if "anemone" not in sys.modules:
     _anemone_stub.__path__ = [str(_ANEMONE_PACKAGE_ROOT)]
     sys.modules["anemone"] = _anemone_stub
 
-from anemone.training_export import load_training_tree_snapshot
 from anemone.checkpoints import (
     AnchorCheckpointStatePayload,
     DeltaCheckpointStatePayload,
@@ -58,16 +57,17 @@ from anemone.node_selector.opening_instructions import OpeningType
 from anemone.node_selector.priority_check.noop_args import NoPriorityCheckArgs
 from anemone.progress_monitor.progress_monitor import TreeBranchLimitArgs
 from anemone.recommender_rule.recommender_rule import AlmostEqualLogistic
+from anemone.training_export import load_training_tree_snapshot
 
 import chipiron.environments.morpion.bootstrap.anemone_runner as anemone_runner_module
 from chipiron.environments.morpion.bootstrap import (
     BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY,
     AnemoneMorpionSearchRunner,
     AnemoneMorpionSearchRunnerArgs,
-    MorpionBootstrapControl,
-    MorpionBootstrapEffectiveRuntimeConfig,
     InvalidMorpionSearchCheckpointError,
     MorpionBootstrapArgs,
+    MorpionBootstrapControl,
+    MorpionBootstrapEffectiveRuntimeConfig,
     MorpionBootstrapPaths,
     MorpionBootstrapRuntimeControl,
     MorpionEvaluatorsConfig,
@@ -152,7 +152,7 @@ def _patch_reported_losses(
 
     def _patched_train(train_args: object) -> object:
         _model, metrics = real_train(train_args)
-        evaluator_name = Path(str(getattr(train_args, "output_dir"))).name
+        evaluator_name = Path(str(train_args.output_dir)).name
         metrics["final_loss"] = loss_by_evaluator_name[evaluator_name]
         return _model, metrics
 
@@ -282,6 +282,36 @@ def test_checkpoint_roundtrip_restores_and_continues_growth(tmp_path: Path) -> N
         )
         for node_payload in payload.tree.nodes
     )
+
+
+def test_checkpoint_metrics_logs_for_save_load_and_restore(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Checkpoint save/load should emit stable parseable metrics summary logs."""
+    checkpoint_path = tmp_path / "tree_checkpoint.json"
+    caplog.set_level(logging.INFO)
+
+    first_runner = AnemoneMorpionSearchRunner()
+    first_runner.load_or_create(None, None)
+    first_runner.grow(3)
+    first_runner.save_checkpoint(checkpoint_path)
+
+    second_runner = AnemoneMorpionSearchRunner()
+    second_runner.load_or_create(checkpoint_path, None)
+
+    metrics_lines = [
+        record.getMessage()
+        for record in caplog.records
+        if "[checkpoint-metrics]" in record.getMessage()
+    ]
+    assert any("operation=save" in line for line in metrics_lines)
+    assert any("operation=payload_load" in line for line in metrics_lines)
+    assert any("operation=runtime_restore" in line for line in metrics_lines)
+    assert any("bytes=" in line for line in metrics_lines)
+    assert any("nodes=" in line for line in metrics_lines)
+    assert any("anchors=" in line for line in metrics_lines)
+    assert any("deltas=" in line for line in metrics_lines)
 
 
 def test_checkpoint_roundtrip_continues_growth_when_branch_budget_remains(

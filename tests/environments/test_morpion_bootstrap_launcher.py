@@ -53,9 +53,10 @@ from atomheart.games.morpion import MorpionDynamics as AtomMorpionDynamics
 from atomheart.games.morpion import initial_state as morpion_initial_state
 from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
+import chipiron.environments.morpion.bootstrap.launcher as launcher_module
 from chipiron.environments.morpion.bootstrap import (
-    AnemoneMorpionSearchRunnerArgs,
     CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+    AnemoneMorpionSearchRunnerArgs,
     MorpionBootstrapArgs,
     MorpionBootstrapControl,
     MorpionBootstrapLauncherArgs,
@@ -74,7 +75,6 @@ from chipiron.environments.morpion.bootstrap.config import bootstrap_config_from
 from chipiron.environments.morpion.bootstrap.evaluator_family import (
     canonical_morpion_evaluator_family_config,
 )
-import chipiron.environments.morpion.bootstrap.launcher as launcher_module
 
 
 def _make_morpion_payload() -> dict[str, object]:

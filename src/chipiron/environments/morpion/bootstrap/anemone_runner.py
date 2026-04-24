@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import logging
+import resource
+import sys
 import time
 from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
@@ -76,6 +78,27 @@ _LIVE_TREE_BRANCH_LIMIT_REQUIRED_MESSAGE = (
 _LIVE_TREE_REQUIRED_MESSAGE = "Anemone runtime must expose a live tree."
 
 
+@dataclass(frozen=True, slots=True)
+class CheckpointIoMetrics:
+    """Compact checkpoint I/O metrics for stable structured logging."""
+
+    path: str
+    bytes: int | None = None
+    payload_build_s: float | None = None
+    asdict_s: float | None = None
+    json_dump_s: float | None = None
+    json_load_s: float | None = None
+    payload_decode_s: float | None = None
+    runtime_rebuild_s: float | None = None
+    total_s: float | None = None
+    rss_before_mb: float | None = None
+    rss_after_mb: float | None = None
+    node_count: int | None = None
+    anchor_count: int | None = None
+    delta_count: int | None = None
+    cache: str | None = None
+
+
 def _default_search_args() -> SearchArgs:
     """Build the default Morpion tree-search args used by the bootstrap runner."""
     return SearchArgs(
@@ -101,6 +124,74 @@ def _opening_type_name(search_args: SearchArgs) -> str:
     opening_type = search_args.opening_type
     value = getattr(opening_type, "value", None)
     return value if isinstance(value, str) else str(opening_type)
+
+
+def _current_rss_mb() -> float | None:
+    """Return current process RSS in MB when available."""
+    try:
+        rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    except (AttributeError, OSError, ValueError):
+        return None
+    if rss <= 0:
+        return None
+    if sys.platform == "darwin":
+        return rss / (1024 * 1024)
+    return rss / 1024
+
+
+def _checkpoint_node_counts(
+    payload: SearchRuntimeCheckpointPayload,
+) -> tuple[int, int, int]:
+    """Return total, anchor, and delta node counts for one checkpoint payload."""
+    nodes = payload.tree.nodes
+    anchor_count = sum(
+        1
+        for node_payload in nodes
+        if isinstance(node_payload.state_payload, AnchorCheckpointStatePayload)
+    )
+    delta_count = sum(
+        1
+        for node_payload in nodes
+        if isinstance(node_payload.state_payload, DeltaCheckpointStatePayload)
+    )
+    return len(nodes), anchor_count, delta_count
+
+
+def _metric_value(value: object) -> str:
+    """Render one metric field as a stable log token."""
+    if value is None:
+        return "none"
+    if isinstance(value, float):
+        return f"{value:.6f}"
+    return str(value)
+
+
+def _log_checkpoint_metrics(operation: str, metrics: CheckpointIoMetrics) -> None:
+    """Emit one stable checkpoint metrics log line."""
+    parts = [
+        f"operation={operation}",
+        f"path={metrics.path}",
+        f"bytes={_metric_value(metrics.bytes)}",
+        f"nodes={_metric_value(metrics.node_count)}",
+        f"anchors={_metric_value(metrics.anchor_count)}",
+        f"deltas={_metric_value(metrics.delta_count)}",
+    ]
+    if metrics.cache is not None:
+        parts.append(f"cache={metrics.cache}")
+    parts.extend(
+        [
+            f"payload_build_s={_metric_value(metrics.payload_build_s)}",
+            f"asdict_s={_metric_value(metrics.asdict_s)}",
+            f"json_dump_s={_metric_value(metrics.json_dump_s)}",
+            f"json_load_s={_metric_value(metrics.json_load_s)}",
+            f"payload_decode_s={_metric_value(metrics.payload_decode_s)}",
+            f"runtime_rebuild_s={_metric_value(metrics.runtime_rebuild_s)}",
+            f"total_s={_metric_value(metrics.total_s)}",
+            f"rss_before_mb={_metric_value(metrics.rss_before_mb)}",
+            f"rss_after_mb={_metric_value(metrics.rss_after_mb)}",
+        ]
+    )
+    LOGGER.info("[checkpoint-metrics] %s", " ".join(parts))
 
 
 class UninitializedMorpionSearchRunnerError(RuntimeError):
@@ -467,14 +558,9 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         """Restore one live runtime from a persisted checkpoint JSON file."""
         LOGGER.info("[checkpoint] load_start path=%s", str(tree_snapshot_path))
         started_at = time.perf_counter()
-        payload_started_at = time.perf_counter()
         payload = load_morpion_search_checkpoint_payload(tree_snapshot_path)
-        payload_elapsed_s = time.perf_counter() - payload_started_at
-        LOGGER.info(
-            "[checkpoint] payload_decode_done path=%s elapsed=%.3fs",
-            str(tree_snapshot_path),
-            payload_elapsed_s,
-        )
+        node_count, anchor_count, delta_count = _checkpoint_node_counts(payload)
+        rss_before_mb = _current_rss_mb()
         runtime_started_at = time.perf_counter()
         runtime = load_search_from_checkpoint_payload(
             payload,
@@ -488,12 +574,26 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
         )
         runtime_elapsed_s = time.perf_counter() - runtime_started_at
+        rss_after_mb = _current_rss_mb()
         LOGGER.info(
             "[checkpoint] runtime_rebuild_done path=%s elapsed=%.3fs",
             str(tree_snapshot_path),
             runtime_elapsed_s,
         )
         elapsed_s = time.perf_counter() - started_at
+        _log_checkpoint_metrics(
+            "runtime_restore",
+            CheckpointIoMetrics(
+                path=str(tree_snapshot_path),
+                runtime_rebuild_s=runtime_elapsed_s,
+                total_s=elapsed_s,
+                rss_before_mb=rss_before_mb,
+                rss_after_mb=rss_after_mb,
+                node_count=node_count,
+                anchor_count=anchor_count,
+                delta_count=delta_count,
+            ),
+        )
         LOGGER.info(
             "[checkpoint] load_done path=%s elapsed=%.3fs",
             str(tree_snapshot_path),
@@ -564,6 +664,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         output = Path(output_path)
 
         LOGGER.info("[checkpoint] save_start path=%s", str(output))
+        rss_before_mb = _current_rss_mb()
         save_started_at = time.perf_counter()
         payload_started_at = time.perf_counter()
         payload = build_search_checkpoint_payload(
@@ -576,6 +677,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             str(output),
             payload_elapsed_s,
         )
+        node_count, anchor_count, delta_count = _checkpoint_node_counts(payload)
         asdict_started_at = time.perf_counter()
         payload_dict = asdict(payload)
         asdict_elapsed_s = time.perf_counter() - asdict_started_at
@@ -598,6 +700,23 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             bytes_written,
         )
         elapsed_s = time.perf_counter() - save_started_at
+        rss_after_mb = _current_rss_mb()
+        _log_checkpoint_metrics(
+            "save",
+            CheckpointIoMetrics(
+                path=str(output),
+                bytes=bytes_written,
+                payload_build_s=payload_elapsed_s,
+                asdict_s=asdict_elapsed_s,
+                json_dump_s=json_dump_elapsed_s,
+                total_s=elapsed_s,
+                rss_before_mb=rss_before_mb,
+                rss_after_mb=rss_after_mb,
+                node_count=node_count,
+                anchor_count=anchor_count,
+                delta_count=delta_count,
+            ),
+        )
         LOGGER.info(
             "[checkpoint] save_done path=%s elapsed=%.3fs",
             str(output),
@@ -611,6 +730,8 @@ def load_morpion_search_checkpoint_payload(
     """Load a persisted search checkpoint payload from JSON and validate shape."""
     resolved_path = Path(path)
     LOGGER.info("[checkpoint] load_start path=%s", str(resolved_path))
+    rss_before_mb = _current_rss_mb()
+    started_at = time.perf_counter()
     try:
         path_stat = resolved_path.stat()
     except FileNotFoundError as exc:
@@ -628,6 +749,22 @@ def load_morpion_search_checkpoint_payload(
             and cached_mtime_ns == path_stat.st_mtime_ns
         ):
             LOGGER.info("[checkpoint] load_cache_hit path=%s", str(resolved_path))
+            total_s = time.perf_counter() - started_at
+            node_count, anchor_count, delta_count = _checkpoint_node_counts(
+                cached_payload
+            )
+            _log_checkpoint_metrics(
+                "payload_load",
+                CheckpointIoMetrics(
+                    path=str(resolved_path),
+                    bytes=path_stat.st_size,
+                    total_s=total_s,
+                    node_count=node_count,
+                    anchor_count=anchor_count,
+                    delta_count=delta_count,
+                    cache="hit",
+                ),
+            )
             return cached_payload
     try:
         json_read_started_at = time.perf_counter()
@@ -665,6 +802,25 @@ def load_morpion_search_checkpoint_payload(
             "[checkpoint] payload_decode_done path=%s elapsed=%.3fs",
             str(resolved_path),
             payload_decode_elapsed_s,
+        )
+        total_s = time.perf_counter() - started_at
+        rss_after_mb = _current_rss_mb()
+        node_count, anchor_count, delta_count = _checkpoint_node_counts(payload)
+        _log_checkpoint_metrics(
+            "payload_load",
+            CheckpointIoMetrics(
+                path=str(resolved_path),
+                bytes=path_stat.st_size,
+                json_load_s=json_read_elapsed_s,
+                payload_decode_s=payload_decode_elapsed_s,
+                total_s=total_s,
+                rss_before_mb=rss_before_mb,
+                rss_after_mb=rss_after_mb,
+                node_count=node_count,
+                anchor_count=anchor_count,
+                delta_count=delta_count,
+                cache="miss",
+            ),
         )
         _CHECKPOINT_PAYLOAD_CACHE[resolved_path] = (
             path_stat.st_size,
