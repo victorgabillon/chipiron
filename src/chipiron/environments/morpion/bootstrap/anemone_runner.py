@@ -879,7 +879,11 @@ def _normalize_algorithm_node_payload_for_dacite(node_payload: object) -> object
 def _checkpoint_state_payload_from_dict(
     raw_state_payload: object,
 ) -> CheckpointNodeStatePayload | object:
-    """Decode the explicit state-payload union used by Anemone checkpoints."""
+    """Decode the explicit state-payload union used by Anemone checkpoints.
+
+    Delta payloads carry their own state-parent edge fields; those are distinct
+    from the graph/debug representative parent fields on algorithm nodes.
+    """
     normalized_state_payload = _mapping(raw_state_payload)
     if normalized_state_payload is None:
         return raw_state_payload

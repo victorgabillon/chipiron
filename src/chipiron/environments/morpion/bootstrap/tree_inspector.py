@@ -671,19 +671,20 @@ def _decode_delta_checkpoint_state(
     state_codec: MorpionStateCheckpointCodec,
     dynamics: MorpionDynamics,
 ) -> MorpionState:
-    """Decode one delta checkpoint node from its already-restored parent chain."""
-    if node_payload.parent_node_id is None:
+    """Decode one delta checkpoint node from its explicit state-parent chain."""
+    state_parent_node_id = state_payload.state_parent_node_id
+    if state_parent_node_id == node_payload.node_id:
         raise InvalidMorpionSearchCheckpointError(
             Path("<in-memory>"),
-            f"delta node {node_payload.node_id} is missing its parent node id",
+            f"delta node {node_payload.node_id} cannot reference itself as state parent",
         )
 
-    parent_payload = indexed_checkpoint.nodes_by_id.get(node_payload.parent_node_id)
+    parent_payload = indexed_checkpoint.nodes_by_id.get(state_parent_node_id)
     if parent_payload is None:
         raise InvalidMorpionSearchCheckpointError(
             Path("<in-memory>"),
-            f"delta node {node_payload.node_id} references unknown parent "
-            f"{node_payload.parent_node_id}",
+            f"delta node {node_payload.node_id} references unknown state parent "
+            f"{state_parent_node_id}",
         )
 
     parent_state = _decode_node_state(

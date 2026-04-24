@@ -7,6 +7,8 @@ import sys
 from pathlib import Path
 from types import ModuleType
 
+import pytest
+
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
 _ATOMHEART_PACKAGE_ROOT = _REPO_ROOT.parent / "atomheart" / "src" / "atomheart"
@@ -42,10 +44,13 @@ if "anemone" not in sys.modules:
     sys.modules["anemone"] = _anemone_stub
 
 from anemone.checkpoints import (
+    AlgorithmNodeCheckpointPayload,
     AnchorCheckpointStatePayload,
     DeltaCheckpointStatePayload,
 )
+from atomheart.games.morpion import MorpionStateCheckpointCodec, initial_state
 
+import chipiron.environments.morpion.bootstrap.tree_inspector as tree_inspector_module
 from chipiron.environments.morpion.bootstrap import (
     AnemoneMorpionSearchRunner,
     MorpionBootstrapPaths,
@@ -60,8 +65,10 @@ from chipiron.environments.morpion.bootstrap.control import (
     MorpionBootstrapEffectiveRuntimeConfig,
 )
 from chipiron.environments.morpion.bootstrap.tree_inspector import (
+    _decode_node_state,
     _display_value_scalar,
     _index_checkpoint_payload,
+    _IndexedCheckpointTree,
     build_morpion_bootstrap_tree_inspector_snapshot,
     resolve_latest_runtime_checkpoint,
 )
@@ -233,3 +240,136 @@ def test_tree_inspector_snapshot_supports_parent_child_navigation(
     assert child_snapshot.node_summary is not None
     assert child_snapshot.node_summary.parent_ids
     assert root_snapshot.selected_node_id in child_snapshot.node_summary.parent_ids
+
+
+def test_decode_node_state_uses_delta_state_parent_not_graph_parent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Delta state reconstruction should follow explicit state-parent fields."""
+    root_atom_state = initial_state()
+    root_payload = AlgorithmNodeCheckpointPayload(
+        node_id=1,
+        parent_node_id=None,
+        branch_from_parent=None,
+        depth=0,
+        state_payload=AnchorCheckpointStatePayload(anchor_ref={"anchor": "root"}),
+        generated_all_branches=False,
+    )
+    graph_parent_payload = AlgorithmNodeCheckpointPayload(
+        node_id=2,
+        parent_node_id=1,
+        branch_from_parent=None,
+        depth=1,
+        state_payload=AnchorCheckpointStatePayload(anchor_ref={"anchor": "graph-parent"}),
+        generated_all_branches=False,
+    )
+    state_parent_payload = AlgorithmNodeCheckpointPayload(
+        node_id=3,
+        parent_node_id=1,
+        branch_from_parent=None,
+        depth=1,
+        state_payload=AnchorCheckpointStatePayload(anchor_ref={"anchor": "state-parent"}),
+        generated_all_branches=False,
+    )
+    child_payload = AlgorithmNodeCheckpointPayload(
+        node_id=4,
+        parent_node_id=2,
+        branch_from_parent=None,
+        depth=2,
+        state_payload=DeltaCheckpointStatePayload(
+            state_parent_node_id=3,
+            state_parent_branch=None,
+            delta_ref={"delta": "child"},
+        ),
+        generated_all_branches=False,
+    )
+    indexed_checkpoint = _IndexedCheckpointTree(
+        root_node_id=1,
+        nodes_by_id={
+            1: root_payload,
+            2: graph_parent_payload,
+            3: state_parent_payload,
+            4: child_payload,
+        },
+        parent_ids_by_node_id={
+            1: (),
+            2: (1,),
+            3: (1,),
+            4: (2,),
+        },
+        child_links_by_node_id={
+            1: (),
+            2: (),
+            3: (),
+            4: (),
+        },
+    )
+    decoded_states_by_node_id: dict[int, object] = {}
+    anchor_refs_seen: list[object] = []
+    parent_states_seen: list[object] = []
+
+    def _patched_load_anchor_ref(self: object, payload: object) -> object:
+        anchor_refs_seen.append(payload)
+        return root_atom_state
+
+    def _patched_load_child_from_delta(
+        self: object,
+        *,
+        parent_state: object,
+        delta_ref: object,
+        branch_from_parent: object | None = None,
+    ) -> object:
+        parent_states_seen.append(parent_state)
+        return root_atom_state
+
+    monkeypatch.setattr(
+        MorpionStateCheckpointCodec,
+        "load_anchor_ref",
+        _patched_load_anchor_ref,
+    )
+    monkeypatch.setattr(
+        MorpionStateCheckpointCodec,
+        "load_child_from_delta",
+        _patched_load_child_from_delta,
+    )
+
+    _decode_node_state(
+        child_payload,
+        indexed_checkpoint=indexed_checkpoint,
+        decoded_states_by_node_id=decoded_states_by_node_id,
+    )
+
+    assert anchor_refs_seen == [{"anchor": "state-parent"}]
+    assert len(parent_states_seen) == 1
+
+
+def test_decode_node_state_rejects_self_referential_state_parent() -> None:
+    """Delta state parents must not point back to the same node id."""
+    child_payload = AlgorithmNodeCheckpointPayload(
+        node_id=4,
+        parent_node_id=1,
+        branch_from_parent=None,
+        depth=1,
+        state_payload=DeltaCheckpointStatePayload(
+            state_parent_node_id=4,
+            state_parent_branch=None,
+            delta_ref={"delta": "child"},
+        ),
+        generated_all_branches=False,
+    )
+    indexed_checkpoint = _IndexedCheckpointTree(
+        root_node_id=4,
+        nodes_by_id={4: child_payload},
+        parent_ids_by_node_id={4: ()},
+        child_links_by_node_id={4: ()},
+    )
+
+    with pytest.raises(
+        tree_inspector_module.InvalidMorpionSearchCheckpointError,
+        match="cannot reference itself as state parent",
+    ):
+        _decode_node_state(
+            child_payload,
+            indexed_checkpoint=indexed_checkpoint,
+            decoded_states_by_node_id={},
+        )
