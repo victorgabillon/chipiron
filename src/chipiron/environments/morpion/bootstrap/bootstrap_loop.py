@@ -85,6 +85,7 @@ from .record_status import (
     morpion_bootstrap_experiment_metadata,
     persist_certified_leaderboard_candidates,
     resolve_frontier_status_for_cycle,
+    resolve_frontier_status_for_cycle_with_metadata,
     resolve_record_status_for_cycle,
 )
 from .run_state import (
@@ -846,19 +847,21 @@ def run_one_bootstrap_cycle(
             else record_status.current_best_total_points,
         )
     LOGGER.info("[frontier] resolve_start nodes=%s", len(snapshot.nodes))
-    frontier_candidate_count = min(100, len(snapshot.nodes))
     frontier_started_at = time.perf_counter()
     try:
-        frontier_status = resolve_frontier_status_for_cycle(
+        frontier_resolution = resolve_frontier_status_for_cycle_with_metadata(
             snapshot=snapshot,
             previous_frontier_status=run_state.latest_frontier_status,
         )
+        frontier_status = frontier_resolution.status
     finally:
         LOGGER.info(
             "[frontier] resolve_done elapsed=%.3fs candidates=%s "
             "best_total_points=%s method=depth_metadata",
             time.perf_counter() - frontier_started_at,
-            frontier_candidate_count if "frontier_status" in locals() else 0,
+            0
+            if "frontier_resolution" not in locals()
+            else frontier_resolution.candidate_count,
             None
             if "frontier_status" not in locals()
             else frontier_status.current_best_total_points,
@@ -1049,7 +1052,9 @@ def run_one_bootstrap_cycle(
     training_duration_s = time.perf_counter() - training_started_at
     cycle_duration_s = time.perf_counter() - cycle_started_at
     LOGGER.info("[train] done elapsed=%.3fs", training_duration_s)
-    LOGGER.info("[leaderboard] persist_start generation=%s cycle=%s", generation, cycle_index)
+    LOGGER.info(
+        "[leaderboard] persist_start generation=%s cycle=%s", generation, cycle_index
+    )
     leaderboard_started_at = time.perf_counter()
     try:
         persist_certified_leaderboard_candidates(

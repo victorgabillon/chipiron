@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
@@ -54,6 +54,7 @@ from chipiron.environments.morpion.bootstrap import (
     load_bootstrap_run_state,
     persist_certified_leaderboard_candidates,
     resolve_frontier_status_for_cycle,
+    resolve_frontier_status_for_cycle_with_metadata,
     resolve_record_status_for_cycle,
     save_bootstrap_run_state,
 )
@@ -376,6 +377,37 @@ def test_top_frontier_candidates_respect_100_cap() -> None:
     assert candidates[-1].node_id == "node-025"
 
 
+def test_frontier_resolution_reports_actual_candidate_count() -> None:
+    """Resolver metadata should report the actual extracted top-candidate count."""
+    snapshot = TrainingTreeSnapshot(
+        root_node_id="root",
+        nodes=(
+            _make_metadata_only_training_node(
+                node_id="terminal",
+                depth=3,
+                is_terminal=True,
+            ),
+            _make_metadata_only_training_node(
+                node_id="fallback-a",
+                depth=5,
+            ),
+            _make_metadata_only_training_node(
+                node_id="fallback-b",
+                depth=4,
+            ),
+        ),
+        metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+    )
+
+    resolution = resolve_frontier_status_for_cycle_with_metadata(
+        snapshot=snapshot,
+        previous_frontier_status=None,
+    )
+
+    assert resolution.candidate_count == 3
+    assert resolution.status.current_best_moves_since_start == 3
+
+
 def test_top_frontier_candidates_have_deterministic_tie_ordering() -> None:
     """Tied metadata frontier candidates should sort stably by terminal/exact/id."""
     snapshot = TrainingTreeSnapshot(
@@ -461,18 +493,42 @@ def test_leaderboard_deduplicates_identical_states_by_fingerprint(
     assert len(lines) == 1
 
 
-def test_leaderboard_keeps_only_top_100_per_variant(tmp_path: Path) -> None:
+def test_leaderboard_keeps_only_top_100_per_variant(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Certified leaderboard should keep only the best 100 entries per variant."""
+    import chipiron.environments.morpion.bootstrap.record_status as record_status
+
+    def decode_payload(payload: dict[str, object]) -> object:
+        return SimpleNamespace(
+            variant=SimpleNamespace(value="5T"),
+            moves=int(payload["moves"]),
+        )
+
+    monkeypatch.setattr(
+        record_status,
+        "decode_morpion_state_ref_payload",
+        decode_payload,
+    )
     leaderboard_path = tmp_path / "leaderboard.jsonl"
     for move_count in range(101):
         snapshot = TrainingTreeSnapshot(
             root_node_id=f"node-{move_count}",
             nodes=(
-                _make_training_node(
+                TrainingNodeSnapshot(
                     node_id=f"node-{move_count}",
-                    move_count=move_count,
+                    parent_ids=(),
+                    child_ids=(),
+                    depth=move_count,
+                    state_ref_payload={"moves": move_count},
+                    direct_value_scalar=float(move_count),
+                    backed_up_value_scalar=float(move_count),
                     is_exact=True,
                     is_terminal=True,
+                    over_event_label=None,
+                    visit_count=move_count + 1,
+                    metadata={"source": "record-status-test"},
                 ),
             ),
             metadata={"format_kind": "training_tree_snapshot", "format_version": 1},

@@ -81,6 +81,14 @@ class MorpionFrontierNodeCandidate:
 
 
 @dataclass(frozen=True, slots=True)
+class MorpionFrontierResolution:
+    """Resolved frontier status plus metadata-only candidate count."""
+
+    status: MorpionBootstrapFrontierStatus
+    candidate_count: int
+
+
+@dataclass(frozen=True, slots=True)
 class MorpionLeaderboardEntry:
     """One persisted certified Morpion leaderboard entry."""
 
@@ -189,7 +197,11 @@ def extract_certified_record_candidates_from_training_tree_snapshot(
     candidates: list[MorpionCertifiedRecordCandidate] = []
     try:
         for node in snapshot.nodes:
-            if node.state_ref_payload is None or not node.is_terminal or not node.is_exact:
+            if (
+                node.state_ref_payload is None
+                or not node.is_terminal
+                or not node.is_exact
+            ):
                 continue
             try:
                 normalized_payload, moves_since_start = _decoded_payload_and_moves(
@@ -274,6 +286,22 @@ def extract_morpion_frontier_status_from_training_tree_snapshot(
         initial_point_count=initial_point_count,
         root_moves_offset=root_moves_offset,
     )
+    return _frontier_status_from_candidates(
+        candidates,
+        variant=variant,
+        initial_pattern=initial_pattern,
+        initial_point_count=initial_point_count,
+    )
+
+
+def _frontier_status_from_candidates(
+    candidates: tuple[MorpionFrontierNodeCandidate, ...],
+    *,
+    variant: str,
+    initial_pattern: str,
+    initial_point_count: int,
+) -> MorpionBootstrapFrontierStatus:
+    """Return the compact status representation for ordered frontier candidates."""
     if not candidates:
         return MorpionBootstrapFrontierStatus(
             variant=variant,
@@ -378,6 +406,31 @@ def resolve_frontier_status_for_cycle(
         snapshot
     )
     return _max_frontier_status(previous_status, snapshot_status)
+
+
+def resolve_frontier_status_for_cycle_with_metadata(
+    *,
+    snapshot: TrainingTreeSnapshot | None,
+    previous_frontier_status: MorpionBootstrapFrontierStatus | None,
+) -> MorpionFrontierResolution:
+    """Resolve frontier status and report actual top-candidate count."""
+    previous_status = carried_forward_morpion_frontier_status(previous_frontier_status)
+    if snapshot is None:
+        return MorpionFrontierResolution(status=previous_status, candidate_count=0)
+
+    candidates = extract_top_morpion_frontier_nodes_from_training_tree_snapshot(
+        snapshot
+    )
+    snapshot_status = _frontier_status_from_candidates(
+        candidates,
+        variant=MORPION_BOOTSTRAP_VARIANT,
+        initial_pattern=MORPION_BOOTSTRAP_INITIAL_PATTERN,
+        initial_point_count=MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
+    )
+    return MorpionFrontierResolution(
+        status=_max_frontier_status(previous_status, snapshot_status),
+        candidate_count=len(candidates),
+    )
 
 
 def persist_certified_leaderboard_candidates(
@@ -723,6 +776,7 @@ __all__ = [
     "MorpionBootstrapRecordStatus",
     "MorpionCertifiedRecordCandidate",
     "MorpionFrontierNodeCandidate",
+    "MorpionFrontierResolution",
     "MorpionLeaderboardEntry",
     "carried_forward_morpion_frontier_status",
     "carried_forward_morpion_record_status",
@@ -739,6 +793,7 @@ __all__ = [
     "morpion_score_from_snapshot_depth",
     "persist_certified_leaderboard_candidates",
     "resolve_frontier_status_for_cycle",
+    "resolve_frontier_status_for_cycle_with_metadata",
     "resolve_record_status_for_cycle",
     "select_best_certified_record_candidate_from_training_tree_snapshot",
 ]

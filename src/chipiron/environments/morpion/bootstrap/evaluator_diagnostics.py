@@ -34,9 +34,7 @@ DIAGNOSTICS_DIRECTORY_NAME = "evaluator_diagnostics"
 _WORST_EXAMPLE_LIMIT = 20
 _REPRESENTATIVE_WINDOW_SIZE = 10
 _EXPECTED_JSON_OBJECT_MAPPING_ERROR = TypeError("Expected a JSON object mapping.")
-_EXPECTED_JSON_ARRAY_OF_OBJECTS_ERROR = TypeError(
-    "Expected a JSON array of objects."
-)
+_EXPECTED_JSON_ARRAY_OF_OBJECTS_ERROR = TypeError("Expected a JSON array of objects.")
 
 
 @dataclass(frozen=True, slots=True)
@@ -158,16 +156,12 @@ def build_evaluator_training_diagnostics(
     worst_examples = _worst_examples(indexed_examples)
     abs_errors_before = [
         error
-        for error in (
-            example.abs_error_before for example in indexed_examples
-        )
+        for error in (example.abs_error_before for example in indexed_examples)
         if error is not None
     ]
     abs_errors_after = [
         error
-        for error in (
-            example.abs_error_after for example in indexed_examples
-        )
+        for error in (example.abs_error_after for example in indexed_examples)
         if error is not None
     ]
 

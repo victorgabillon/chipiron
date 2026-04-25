@@ -260,7 +260,9 @@ def test_decode_node_state_uses_delta_state_parent_not_graph_parent(
         parent_node_id=1,
         branch_from_parent=None,
         depth=1,
-        state_payload=AnchorCheckpointStatePayload(anchor_ref={"anchor": "graph-parent"}),
+        state_payload=AnchorCheckpointStatePayload(
+            anchor_ref={"anchor": "graph-parent"}
+        ),
         generated_all_branches=False,
     )
     state_parent_payload = AlgorithmNodeCheckpointPayload(
@@ -268,7 +270,9 @@ def test_decode_node_state_uses_delta_state_parent_not_graph_parent(
         parent_node_id=1,
         branch_from_parent=None,
         depth=1,
-        state_payload=AnchorCheckpointStatePayload(anchor_ref={"anchor": "state-parent"}),
+        state_payload=AnchorCheckpointStatePayload(
+            anchor_ref={"anchor": "state-parent"}
+        ),
         generated_all_branches=False,
     )
     child_payload = AlgorithmNodeCheckpointPayload(

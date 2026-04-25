@@ -1350,6 +1350,7 @@ def test_bootstrap_cycle_logs_phase_boundaries(
     assert "[record] resolve_done elapsed=" in log_text
     assert "[frontier] resolve_start" in log_text
     assert "[frontier] resolve_done elapsed=" in log_text
+    assert "candidates=1" in log_text
     assert "method=depth_metadata" in log_text
     assert "[dataset] extract_start" in log_text
     assert "[dataset] extract_done rows=" in log_text

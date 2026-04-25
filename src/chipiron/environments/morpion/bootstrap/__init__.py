@@ -157,6 +157,7 @@ from .record_status import (
     MORPION_BOOTSTRAP_VARIANT,
     MorpionBootstrapFrontierStatus,
     MorpionFrontierNodeCandidate,
+    MorpionFrontierResolution,
     carried_forward_morpion_frontier_status,
     carried_forward_morpion_record_status,
     current_frontier_score,
@@ -172,6 +173,7 @@ from .record_status import (
     morpion_score_from_snapshot_depth,
     persist_certified_leaderboard_candidates,
     resolve_frontier_status_for_cycle,
+    resolve_frontier_status_for_cycle_with_metadata,
     resolve_record_status_for_cycle,
 )
 from .run_state import (
@@ -261,6 +263,7 @@ __all__ = [
     "MorpionEvaluatorSpec",
     "MorpionEvaluatorsConfig",
     "MorpionFrontierNodeCandidate",
+    "MorpionFrontierResolution",
     "MorpionRecordProgressSummary",
     "MorpionSearchRunner",
     "NoSelectableMorpionEvaluatorError",
@@ -340,6 +343,7 @@ __all__ = [
     "record_total_points_series",
     "register_current_launcher_process",
     "resolve_frontier_status_for_cycle",
+    "resolve_frontier_status_for_cycle_with_metadata",
     "resolve_latest_runtime_checkpoint",
     "resolve_record_status_for_cycle",
     "restart_morpion_bootstrap_process",

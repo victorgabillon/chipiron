@@ -866,8 +866,8 @@ def _render_record_status_section(
 
 def _render_evaluator_training_diagnostics_section(*, st: Any, work_dir: Path) -> None:
     """Render the latest persisted evaluator diagnostics for one work directory."""
-    diagnostics_by_evaluator = _load_latest_evaluator_training_diagnostics_for_dashboard(
-        work_dir
+    diagnostics_by_evaluator = (
+        _load_latest_evaluator_training_diagnostics_for_dashboard(work_dir)
     )
     if not diagnostics_by_evaluator:
         st.caption("No evaluator diagnostics have been saved yet.")
@@ -904,7 +904,9 @@ def _render_evaluator_training_diagnostics_section(*, st: Any, work_dir: Path) -
     if worst_rows:
         st.dataframe(worst_rows, width="stretch", hide_index=True)
     else:
-        st.caption("No post-training predictions were available for worst-error ranking.")
+        st.caption(
+            "No post-training predictions were available for worst-error ranking."
+        )
 
 
 def _render_current_certified_record_board_section(
