@@ -6,9 +6,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 from types import ModuleType
-from typing import cast
-
-import pytest
+from typing import TYPE_CHECKING, cast
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
@@ -75,6 +73,9 @@ from chipiron.environments.morpion.bootstrap.config import bootstrap_config_from
 from chipiron.environments.morpion.bootstrap.evaluator_family import (
     canonical_morpion_evaluator_family_config,
 )
+
+if TYPE_CHECKING:
+    import pytest
 
 
 def _make_morpion_payload() -> dict[str, object]:

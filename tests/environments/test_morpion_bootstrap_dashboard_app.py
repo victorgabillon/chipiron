@@ -69,6 +69,7 @@ from chipiron.environments.morpion.bootstrap.dashboard_app import (
     _build_next_control,
     _configured_evaluator_names,
     _dataset_status_summary,
+    _diagnostic_examples_rows,
     _downsample_loss_series_by_name,
     _downsample_series,
     _effective_runtime_config,
@@ -84,6 +85,7 @@ from chipiron.environments.morpion.bootstrap.dashboard_app import (
     _has_pending_control_changes,
     _is_stale_forced_evaluator,
     _load_applied_control,
+    _load_latest_evaluator_training_diagnostics_for_dashboard,
     _pending_control_fields,
     _pending_control_sections,
     _render_launcher_command_text,
@@ -93,6 +95,11 @@ from chipiron.environments.morpion.bootstrap.dashboard_app import (
     _tree_branch_limit_input_value,
     _tree_inspector_child_rows,
     _tree_structure_rows,
+)
+from chipiron.environments.morpion.bootstrap.evaluator_diagnostics import (
+    MorpionEvaluatorDiagnosticExample,
+    MorpionEvaluatorTrainingDiagnostics,
+    save_evaluator_training_diagnostics,
 )
 from chipiron.environments.morpion.bootstrap.tree_inspector import (
     MorpionBootstrapChildSummary,
@@ -794,8 +801,8 @@ def test_tree_inspector_child_rows_are_stable() -> None:
             "backed_up_value": 0.5,
             "direct_value": 0.2,
             "visit_count": None,
-            "is_exact": False,
-            "is_terminal": False,
+            "is_exact": "✖",
+            "is_terminal": "✖",
         }
     ]
 
@@ -828,3 +835,80 @@ def test_selected_child_node_id_for_branch_returns_matching_child() -> None:
     assert _selected_child_node_id_for_branch(child_summaries, "a") == "1"
     assert _selected_child_node_id_for_branch(child_summaries, "b") is None
     assert _selected_child_node_id_for_branch(child_summaries, "missing") is None
+
+
+def test_dashboard_diagnostics_loader_is_graceful_when_artifacts_are_absent(
+    tmp_path: Path,
+) -> None:
+    """Dashboard diagnostics helpers should tolerate missing run artifacts."""
+    assert _load_latest_evaluator_training_diagnostics_for_dashboard(tmp_path) == {}
+
+
+def test_dashboard_diagnostics_rows_and_loader_use_latest_generation(
+    tmp_path: Path,
+) -> None:
+    """Dashboard diagnostics helpers should expose the newest persisted generation."""
+    older = MorpionEvaluatorTrainingDiagnostics(
+        generation=4,
+        evaluator_name="linear",
+        dataset_size=10,
+        created_at="2026-04-24T10:00:00Z",
+        representative_examples=[],
+        worst_examples=[],
+        mae_before=None,
+        mae_after=0.3,
+        max_abs_error_before=None,
+        max_abs_error_after=0.6,
+    )
+    latest = MorpionEvaluatorTrainingDiagnostics(
+        generation=5,
+        evaluator_name="mlp",
+        dataset_size=12,
+        created_at="2026-04-24T10:05:00Z",
+        representative_examples=[
+            MorpionEvaluatorDiagnosticExample(
+                row_index=7,
+                node_id="node-7",
+                state_tag=21,
+                depth=3,
+                target_value=1.5,
+                prediction_before=0.5,
+                prediction_after=1.25,
+                abs_error_before=1.0,
+                abs_error_after=0.25,
+            )
+        ],
+        worst_examples=[],
+        mae_before=0.9,
+        mae_after=0.2,
+        max_abs_error_before=1.0,
+        max_abs_error_after=0.25,
+    )
+
+    save_evaluator_training_diagnostics(
+        older,
+        tmp_path / "evaluator_diagnostics" / "generation_000004" / "linear.json",
+    )
+    save_evaluator_training_diagnostics(
+        latest,
+        tmp_path / "evaluator_diagnostics" / "generation_000005" / "mlp.json",
+    )
+
+    loaded = _load_latest_evaluator_training_diagnostics_for_dashboard(tmp_path)
+    rows = _diagnostic_examples_rows(latest.representative_examples)
+
+    assert tuple(loaded) == ("mlp",)
+    assert loaded["mlp"] == latest
+    assert rows == [
+        {
+            "row_index": 7,
+            "node_id": "node-7",
+            "state_tag": 21,
+            "depth": 3,
+            "target_value": 1.5,
+            "prediction_before": 0.5,
+            "prediction_after": 1.25,
+            "abs_error_before": 1.0,
+            "abs_error_after": 0.25,
+        }
+    ]

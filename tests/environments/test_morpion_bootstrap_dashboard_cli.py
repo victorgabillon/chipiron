@@ -10,7 +10,6 @@ from types import ModuleType
 os.environ.setdefault("MPLBACKEND", "Agg")
 
 import matplotlib.pyplot as plt
-import pytest
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
@@ -46,6 +45,8 @@ if "anemone" not in sys.modules:
     _anemone_stub.__path__ = [str(_ANEMONE_PACKAGE_ROOT)]
     sys.modules["anemone"] = _anemone_stub
 
+from typing import TYPE_CHECKING
+
 from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapArtifacts,
     MorpionBootstrapDatasetStatus,
@@ -63,6 +64,9 @@ from chipiron.environments.morpion.bootstrap import (
     plot_tree_size,
     run_dashboard_cli,
 )
+
+if TYPE_CHECKING:
+    import pytest
 
 
 def _make_event(

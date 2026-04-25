@@ -9,11 +9,12 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from anemone.training_export import load_training_tree_snapshot
 
 from chipiron.environments.morpion.learning import (
+    MorpionSupervisedRows,
     save_morpion_supervised_rows,
     training_tree_snapshot_to_morpion_supervised_rows,
 )
@@ -26,6 +27,11 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.train impo
     MorpionTrainingArgs,
     train_morpion_regressor,
 )
+
+if TYPE_CHECKING:
+    from chipiron.environments.morpion.players.evaluators.neural_networks.model import (
+        MorpionRegressor,
+    )
 
 from .config import (
     BOOTSTRAP_CONFIG_HASH_METADATA_KEY,
@@ -52,6 +58,13 @@ from .control import (
     effective_runtime_config_sha256,
     effective_runtime_config_to_dict,
     load_bootstrap_control,
+)
+from .evaluator_diagnostics import (
+    append_evaluator_training_diagnostics_history,
+    build_evaluator_training_diagnostics,
+    diagnostics_path,
+    load_previous_evaluator_for_diagnostics,
+    save_evaluator_training_diagnostics,
 )
 from .evaluator_family import morpion_evaluators_config_from_preset
 from .history import (
@@ -927,9 +940,16 @@ def run_one_bootstrap_cycle(
         model_bundle_path = paths.model_bundle_path_for_generation(
             generation, evaluator_name
         )
+        previous_model = load_previous_evaluator_for_diagnostics(
+            _resolve_previous_model_bundle_path(
+                paths=paths,
+                run_state=run_state,
+                evaluator_name=evaluator_name,
+            )
+        )
         LOGGER.info("[train] evaluator_start name=%s", evaluator_name)
         evaluator_started_at = time.perf_counter()
-        _model, metrics = train_morpion_regressor(
+        trained_model, metrics = train_morpion_regressor(
             MorpionTrainingArgs(
                 dataset_file=rows_path,
                 output_dir=model_bundle_path,
@@ -957,6 +977,16 @@ def run_one_bootstrap_cycle(
         )
         model_bundle_paths[evaluator_name] = paths.relative_to_work_dir(
             model_bundle_path
+        )
+        _persist_evaluator_training_diagnostics(
+            paths=paths,
+            generation=generation,
+            evaluator_name=evaluator_name,
+            rows=rows,
+            created_at=timestamp_utc,
+            spec=spec,
+            model_before=previous_model,
+            model_after=trained_model,
         )
     selected_evaluator_name = _select_active_evaluator_name(
         evaluator_metrics=evaluator_metrics,
@@ -1250,6 +1280,63 @@ def select_active_evaluator_name(
         selectable_losses,
         key=lambda evaluator_name: selectable_losses[evaluator_name],
     )
+
+
+def _resolve_previous_model_bundle_path(
+    *,
+    paths: MorpionBootstrapPaths,
+    run_state: MorpionBootstrapRunState,
+    evaluator_name: str,
+) -> Path | None:
+    """Return the previous evaluator bundle path when one exists."""
+    if run_state.latest_model_bundle_paths is None:
+        return None
+    relative_path = run_state.latest_model_bundle_paths.get(evaluator_name)
+    if relative_path is None:
+        return None
+    return paths.resolve_work_dir_path(relative_path)
+
+
+def _persist_evaluator_training_diagnostics(
+    *,
+    paths: MorpionBootstrapPaths,
+    generation: int,
+    evaluator_name: str,
+    rows: MorpionSupervisedRows,
+    created_at: str,
+    spec: MorpionEvaluatorSpec,
+    model_before: MorpionRegressor | None,
+    model_after: MorpionRegressor,
+) -> None:
+    """Persist evaluator diagnostics without changing bootstrap semantics."""
+    try:
+        diagnostics = build_evaluator_training_diagnostics(
+            generation=generation,
+            evaluator_name=evaluator_name,
+            rows=rows,
+            created_at=created_at,
+            feature_subset_name=spec.feature_subset_name,
+            feature_names=spec.feature_names,
+            model_before=model_before,
+            model_after=model_after,
+        )
+        output_path = diagnostics_path(paths.work_dir, generation, evaluator_name)
+        save_evaluator_training_diagnostics(diagnostics, output_path)
+        append_evaluator_training_diagnostics_history(diagnostics, paths.work_dir)
+        LOGGER.info(
+            "[diagnostics] saved generation=%s evaluator=%s path=%s examples=%s worst=%s",
+            generation,
+            evaluator_name,
+            output_path,
+            len(diagnostics.representative_examples),
+            len(diagnostics.worst_examples),
+        )
+    except Exception:
+        LOGGER.exception(
+            "[diagnostics] save_failed generation=%s evaluator=%s",
+            generation,
+            evaluator_name,
+        )
 
 
 def _build_event_metadata(

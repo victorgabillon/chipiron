@@ -306,7 +306,6 @@ def test_decode_node_state_uses_delta_state_parent_not_graph_parent(
     )
     decoded_states_by_node_id: dict[int, object] = {}
     anchor_refs_seen: list[object] = []
-    parent_states_seen: list[object] = []
 
     def _patched_load_anchor_ref(self: object, payload: object) -> object:
         anchor_refs_seen.append(payload)
@@ -319,7 +318,6 @@ def test_decode_node_state_uses_delta_state_parent_not_graph_parent(
         delta_ref: object,
         branch_from_parent: object | None = None,
     ) -> object:
-        parent_states_seen.append(parent_state)
         return root_atom_state
 
     monkeypatch.setattr(
@@ -340,7 +338,8 @@ def test_decode_node_state_uses_delta_state_parent_not_graph_parent(
     )
 
     assert anchor_refs_seen == [{"anchor": "state-parent"}]
-    assert len(parent_states_seen) == 1
+    assert 2 not in decoded_states_by_node_id
+    assert 3 in decoded_states_by_node_id
 
 
 def test_decode_node_state_rejects_self_referential_state_parent() -> None:

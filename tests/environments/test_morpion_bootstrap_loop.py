@@ -86,6 +86,10 @@ from chipiron.environments.morpion.bootstrap import (
     select_active_evaluator_name,
     should_save_progress,
 )
+from chipiron.environments.morpion.bootstrap.evaluator_diagnostics import (
+    diagnostics_path,
+    load_evaluator_training_diagnostics,
+)
 from chipiron.environments.morpion.learning import (
     MorpionSupervisedRows,
     load_morpion_supervised_rows,
@@ -98,6 +102,17 @@ from chipiron.environments.morpion.players.evaluators.neural_networks import (
     MORPION_CANONICAL_FEATURE_NAMES,
     load_morpion_model_bundle,
 )
+
+_EMPTY_DATASET_TRAINING_ERROR = AssertionError(
+    "training should not run for an empty extracted dataset"
+)
+_EMPTY_DATASET_SELECTION_ERROR = AssertionError(
+    "evaluator selection should not run for an empty extracted dataset"
+)
+_EMPTY_CYCLE_SELECTION_ERROR = AssertionError(
+    "selection should not be called on an empty dataset cycle"
+)
+_SECOND_EVALUATOR_FAILED_ERROR = RuntimeError("second evaluator failed")
 
 
 def _feature_subset(width: int) -> tuple[str, tuple[str, ...]]:
@@ -245,12 +260,31 @@ def _patch_reported_losses(
 
     def _patched_train(train_args: object) -> object:
         _model, metrics = real_train(train_args)
-        evaluator_name = Path(str(getattr(train_args, "output_dir"))).name
+        evaluator_name = Path(str(train_args.output_dir)).name
         metrics["final_loss"] = loss_by_evaluator_name[evaluator_name]
         return _model, metrics
 
     monkeypatch.setattr(
         bootstrap_loop_module, "train_morpion_regressor", _patched_train
+    )
+
+
+@pytest.fixture(autouse=True)
+def _patch_certified_leaderboard_path(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Keep loop tests sandbox-local by redirecting the certified leaderboard."""
+    real_persist = bootstrap_loop_module.persist_certified_leaderboard_candidates
+
+    def _persist_to_tmp(*args: object, **kwargs: object) -> None:
+        kwargs.setdefault("leaderboard_path", tmp_path / "morpion_leaderboard.jsonl")
+        real_persist(*args, **kwargs)
+
+    monkeypatch.setattr(
+        bootstrap_loop_module,
+        "persist_certified_leaderboard_candidates",
+        _persist_to_tmp,
     )
 
 
@@ -1048,6 +1082,7 @@ def test_resume_uses_single_saved_bundle_without_active_evaluator(
         current_best_moves_since_start=None,
         current_best_total_points=None,
         current_best_is_exact=None,
+        current_best_is_terminal=None,
         current_best_source=None,
     )
 
@@ -1098,13 +1133,11 @@ def test_empty_dataset_first_cycle_skips_training_and_selection(
 
     def _unexpected_train(train_args: object) -> object:
         del train_args
-        raise AssertionError("training should not run for an empty extracted dataset")
+        raise _EMPTY_DATASET_TRAINING_ERROR
 
     def _unexpected_select(**kwargs: object) -> str:
         del kwargs
-        raise AssertionError(
-            "evaluator selection should not run for an empty extracted dataset"
-        )
+        raise _EMPTY_DATASET_SELECTION_ERROR
 
     monkeypatch.setattr(
         bootstrap_loop_module, "train_morpion_regressor", _unexpected_train
@@ -1224,7 +1257,7 @@ def test_empty_dataset_cycle_does_not_call_evaluator_selection(
 
     def _unexpected_select(**kwargs: object) -> str:
         del kwargs
-        raise AssertionError("selection should not be called on an empty dataset cycle")
+        raise _EMPTY_CYCLE_SELECTION_ERROR
 
     monkeypatch.setattr(
         bootstrap_loop_module, "_select_active_evaluator_name", _unexpected_select
@@ -1269,6 +1302,31 @@ def test_saved_dataset_batches_after_cycle(tmp_path: Path) -> None:
     assert batch.get_target_value().dtype == torch.float32
 
 
+def test_training_cycle_persists_evaluator_diagnostics(tmp_path: Path) -> None:
+    """One saved training cycle should persist lightweight diagnostics artifacts."""
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        max_growth_steps_per_cycle=5,
+        num_epochs=1,
+        batch_size=1,
+        shuffle=False,
+    )
+    runner = FakeMorpionSearchRunner(tree_sizes=(10,), target_values=(1.25,))
+
+    state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    assert state.active_evaluator_name is not None
+    diagnostics = load_evaluator_training_diagnostics(
+        diagnostics_path(paths.work_dir, 1, state.active_evaluator_name)
+    )
+
+    assert diagnostics.generation == 1
+    assert diagnostics.evaluator_name == state.active_evaluator_name
+    assert diagnostics.dataset_size == 1
+    assert diagnostics.representative_examples
+    assert diagnostics.representative_examples[0].prediction_after is not None
+
+
 def test_multi_evaluator_failure_propagates_without_history_event(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -1290,7 +1348,7 @@ def test_multi_evaluator_failure_propagates_without_history_event(
         nonlocal call_count
         call_count += 1
         if call_count == 2:
-            raise RuntimeError("second evaluator failed")
+            raise _SECOND_EVALUATOR_FAILED_ERROR
         return real_train(cast("object", args))
 
     monkeypatch.setattr(
