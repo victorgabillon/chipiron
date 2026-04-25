@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -1325,6 +1326,42 @@ def test_training_cycle_persists_evaluator_diagnostics(tmp_path: Path) -> None:
     assert diagnostics.dataset_size == 1
     assert diagnostics.representative_examples
     assert diagnostics.representative_examples[0].prediction_after is not None
+
+
+def test_bootstrap_cycle_logs_phase_boundaries(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A save cycle should explain expensive pre-training phases in the logs."""
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        max_growth_steps_per_cycle=5,
+        num_epochs=1,
+        batch_size=1,
+        shuffle=False,
+    )
+    runner = FakeMorpionSearchRunner(tree_sizes=(10,), target_values=(1.25,))
+
+    with caplog.at_level(logging.INFO):
+        run_morpion_bootstrap_loop(args, runner, max_cycles=1)
+
+    log_text = caplog.text
+    assert "[record] resolve_start" in log_text
+    assert "[record] resolve_done elapsed=" in log_text
+    assert "[frontier] resolve_start" in log_text
+    assert "[frontier] resolve_done elapsed=" in log_text
+    assert "method=depth_metadata" in log_text
+    assert "[dataset] extract_start" in log_text
+    assert "[dataset] extract_done rows=" in log_text
+    assert "[dataset] save_start path=" in log_text
+    assert "[dataset] save_done elapsed=" in log_text
+    assert "[leaderboard] persist_start" in log_text
+    assert "[leaderboard] persist_done elapsed=" in log_text
+    assert "[record] scan_start" in log_text
+    assert "[record] scan_done elapsed=" in log_text
+    assert "[train] start evaluators=" in log_text
+    assert "[train] selection_start evaluators=" in log_text
+    assert "[train] selection_done elapsed=" in log_text
 
 
 def test_multi_evaluator_failure_propagates_without_history_event(

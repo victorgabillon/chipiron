@@ -830,16 +830,67 @@ def run_one_bootstrap_cycle(
             artifact_path=tree_snapshot_path,
         )
     snapshot = load_training_tree_snapshot(tree_snapshot_path)
-    rows = training_tree_snapshot_to_morpion_supervised_rows(
-        snapshot,
-        require_exact_or_terminal=args.require_exact_or_terminal,
-        min_depth=args.min_depth,
-        min_visit_count=args.min_visit_count,
-        max_rows=args.max_rows,
-        use_backed_up_value=args.use_backed_up_value,
-        metadata={"bootstrap_generation": generation},
-    )
-    save_morpion_supervised_rows(rows, rows_path)
+    LOGGER.info("[record] resolve_start nodes=%s", len(snapshot.nodes))
+    record_started_at = time.perf_counter()
+    try:
+        record_status = resolve_record_status_for_cycle(
+            snapshot=snapshot,
+            previous_record_status=run_state.latest_record_status,
+        )
+    finally:
+        LOGGER.info(
+            "[record] resolve_done elapsed=%.3fs best_total_points=%s",
+            time.perf_counter() - record_started_at,
+            None
+            if "record_status" not in locals()
+            else record_status.current_best_total_points,
+        )
+    LOGGER.info("[frontier] resolve_start nodes=%s", len(snapshot.nodes))
+    frontier_candidate_count = min(100, len(snapshot.nodes))
+    frontier_started_at = time.perf_counter()
+    try:
+        frontier_status = resolve_frontier_status_for_cycle(
+            snapshot=snapshot,
+            previous_frontier_status=run_state.latest_frontier_status,
+        )
+    finally:
+        LOGGER.info(
+            "[frontier] resolve_done elapsed=%.3fs candidates=%s "
+            "best_total_points=%s method=depth_metadata",
+            time.perf_counter() - frontier_started_at,
+            frontier_candidate_count if "frontier_status" in locals() else 0,
+            None
+            if "frontier_status" not in locals()
+            else frontier_status.current_best_total_points,
+        )
+
+    LOGGER.info("[dataset] extract_start snapshot_nodes=%s", len(snapshot.nodes))
+    extract_started_at = time.perf_counter()
+    try:
+        rows = training_tree_snapshot_to_morpion_supervised_rows(
+            snapshot,
+            require_exact_or_terminal=args.require_exact_or_terminal,
+            min_depth=args.min_depth,
+            min_visit_count=args.min_visit_count,
+            max_rows=args.max_rows,
+            use_backed_up_value=args.use_backed_up_value,
+            metadata={"bootstrap_generation": generation},
+        )
+    finally:
+        LOGGER.info(
+            "[dataset] extract_done rows=%s elapsed=%.3fs",
+            None if "rows" not in locals() else len(rows.rows),
+            time.perf_counter() - extract_started_at,
+        )
+    LOGGER.info("[dataset] save_start path=%s", str(rows_path))
+    rows_save_started_at = time.perf_counter()
+    try:
+        save_morpion_supervised_rows(rows, rows_path)
+    finally:
+        LOGGER.info(
+            "[dataset] save_done elapsed=%.3fs",
+            time.perf_counter() - rows_save_started_at,
+        )
     num_rows = len(rows.rows)
     dataset_elapsed_s = time.perf_counter() - dataset_started_at
     LOGGER.info(
@@ -847,14 +898,6 @@ def run_one_bootstrap_cycle(
         num_rows,
         str(rows_path),
         dataset_elapsed_s,
-    )
-    record_status = resolve_record_status_for_cycle(
-        snapshot=snapshot,
-        previous_record_status=run_state.latest_record_status,
-    )
-    frontier_status = resolve_frontier_status_for_cycle(
-        snapshot=snapshot,
-        previous_frontier_status=run_state.latest_frontier_status,
     )
 
     relative_tree_snapshot_path = paths.relative_to_work_dir(tree_snapshot_path)
@@ -988,24 +1031,39 @@ def run_one_bootstrap_cycle(
             model_before=previous_model,
             model_after=trained_model,
         )
-    selected_evaluator_name = _select_active_evaluator_name(
-        evaluator_metrics=evaluator_metrics,
-        force_evaluator=resolved_control.force_evaluator,
-    )
+    LOGGER.info("[train] selection_start evaluators=%s", len(evaluator_metrics))
+    selection_started_at = time.perf_counter()
+    try:
+        selected_evaluator_name = _select_active_evaluator_name(
+            evaluator_metrics=evaluator_metrics,
+            force_evaluator=resolved_control.force_evaluator,
+        )
+    finally:
+        LOGGER.info(
+            "[train] selection_done elapsed=%.3fs selected=%s policy=lowest_final_loss",
+            time.perf_counter() - selection_started_at,
+            None
+            if "selected_evaluator_name" not in locals()
+            else selected_evaluator_name,
+        )
     training_duration_s = time.perf_counter() - training_started_at
     cycle_duration_s = time.perf_counter() - cycle_started_at
-    LOGGER.info(
-        "[train] selection_done selected=%s policy=lowest_final_loss",
-        selected_evaluator_name,
-    )
     LOGGER.info("[train] done elapsed=%.3fs", training_duration_s)
-    persist_certified_leaderboard_candidates(
-        snapshot=snapshot,
-        run_work_dir=paths.work_dir,
-        generation=generation,
-        cycle_index=cycle_index,
-        timestamp_utc=timestamp_utc,
-    )
+    LOGGER.info("[leaderboard] persist_start generation=%s cycle=%s", generation, cycle_index)
+    leaderboard_started_at = time.perf_counter()
+    try:
+        persist_certified_leaderboard_candidates(
+            snapshot=snapshot,
+            run_work_dir=paths.work_dir,
+            generation=generation,
+            cycle_index=cycle_index,
+            timestamp_utc=timestamp_utc,
+        )
+    finally:
+        LOGGER.info(
+            "[leaderboard] persist_done elapsed=%.3fs",
+            time.perf_counter() - leaderboard_started_at,
+        )
     LOGGER.info(
         "[timing] cycle_done growth=%.3fs dataset=%.3fs training=%.3fs total_cycle=%.3fs",
         growth_duration_s,

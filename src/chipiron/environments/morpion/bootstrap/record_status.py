@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -65,6 +66,18 @@ class MorpionCertifiedRecordCandidate:
     moves_since_start: int
     total_points: int
     state_ref_payload: dict[str, object]
+
+
+@dataclass(frozen=True, slots=True)
+class MorpionFrontierNodeCandidate:
+    """Cheap metadata-only Morpion frontier/status candidate."""
+
+    node_id: str
+    moves_since_start: int
+    total_points: int
+    is_terminal: bool
+    is_exact: bool
+    source: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -137,6 +150,14 @@ def current_frontier_score(
     return status.current_best_moves_since_start
 
 
+def morpion_score_from_snapshot_depth(
+    depth: int,
+    root_moves_offset: int = 0,
+) -> int:
+    """Return Morpion moves played from cheap snapshot depth metadata."""
+    return root_moves_offset + depth
+
+
 def carried_forward_morpion_record_status(
     previous: MorpionBootstrapRecordStatus | None,
 ) -> MorpionBootstrapRecordStatus:
@@ -163,32 +184,41 @@ def extract_certified_record_candidates_from_training_tree_snapshot(
     initial_point_count: int = MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
 ) -> tuple[MorpionCertifiedRecordCandidate, ...]:
     """Extract every certified Morpion candidate from one training snapshot."""
+    scan_started_at = time.perf_counter()
+    LOGGER.info("[record] scan_start nodes=%s", len(snapshot.nodes))
     candidates: list[MorpionCertifiedRecordCandidate] = []
-    for node in snapshot.nodes:
-        if node.state_ref_payload is None or not node.is_terminal or not node.is_exact:
-            continue
-        try:
-            normalized_payload, moves_since_start = _decoded_payload_and_moves(
-                node=node,
+    try:
+        for node in snapshot.nodes:
+            if node.state_ref_payload is None or not node.is_terminal or not node.is_exact:
+                continue
+            try:
+                normalized_payload, moves_since_start = _decoded_payload_and_moves(
+                    node=node,
+                    variant=variant,
+                )
+            except InvalidMorpionStateRefPayloadError:
+                continue
+            candidate = MorpionCertifiedRecordCandidate(
+                node_id=node.node_id,
                 variant=variant,
+                initial_pattern=initial_pattern,
+                initial_point_count=initial_point_count,
+                moves_since_start=moves_since_start,
+                total_points=initial_point_count + moves_since_start,
+                state_ref_payload=normalized_payload,
             )
-        except InvalidMorpionStateRefPayloadError:
-            continue
-        candidate = MorpionCertifiedRecordCandidate(
-            node_id=node.node_id,
-            variant=variant,
-            initial_pattern=initial_pattern,
-            initial_point_count=initial_point_count,
-            moves_since_start=moves_since_start,
-            total_points=initial_point_count + moves_since_start,
-            state_ref_payload=normalized_payload,
-        )
+            LOGGER.info(
+                "[record] certified_candidate_found total_points=%s node_id=%s",
+                candidate.total_points,
+                candidate.node_id,
+            )
+            candidates.append(candidate)
+    finally:
         LOGGER.info(
-            "[record] certified_candidate_found total_points=%s node_id=%s",
-            candidate.total_points,
-            candidate.node_id,
+            "[record] scan_done elapsed=%.3fs num_candidates=%s",
+            time.perf_counter() - scan_started_at,
+            len(candidates),
         )
-        candidates.append(candidate)
     return tuple(candidates)
 
 
@@ -235,38 +265,78 @@ def extract_morpion_frontier_status_from_training_tree_snapshot(
     variant: str = MORPION_BOOTSTRAP_VARIANT,
     initial_pattern: str = MORPION_BOOTSTRAP_INITIAL_PATTERN,
     initial_point_count: int = MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
+    root_moves_offset: int = 0,
 ) -> MorpionBootstrapFrontierStatus:
     """Extract the best permissive frontier/debug Morpion status from one snapshot."""
-    best_status = default_morpion_frontier_status()
-    best_rank: tuple[int, int, int] | None = None
-
-    for node in snapshot.nodes:
-        try:
-            _normalized_payload, moves_since_start = _decoded_payload_and_moves(
-                node=node,
-                variant=variant,
-            )
-        except InvalidMorpionStateRefPayloadError:
-            continue
-        candidate_rank = (
-            moves_since_start,
-            1 if node.is_terminal else 0,
-            1 if node.is_exact else 0,
-        )
-        if best_rank is not None and candidate_rank <= best_rank:
-            continue
-        best_rank = candidate_rank
-        best_status = MorpionBootstrapFrontierStatus(
+    candidates = extract_top_morpion_frontier_nodes_from_training_tree_snapshot(
+        snapshot,
+        limit=1,
+        initial_point_count=initial_point_count,
+        root_moves_offset=root_moves_offset,
+    )
+    if not candidates:
+        return MorpionBootstrapFrontierStatus(
             variant=variant,
             initial_pattern=initial_pattern,
             initial_point_count=initial_point_count,
-            current_best_moves_since_start=moves_since_start,
-            current_best_total_points=initial_point_count + moves_since_start,
-            current_best_is_exact=node.is_exact,
-            current_best_is_terminal=node.is_terminal,
-            current_best_source=_snapshot_source_for_node(node),
+            current_best_moves_since_start=None,
+            current_best_total_points=None,
+            current_best_is_exact=None,
+            current_best_is_terminal=None,
+            current_best_source=None,
         )
-    return best_status
+    best_candidate = candidates[0]
+    return MorpionBootstrapFrontierStatus(
+        variant=variant,
+        initial_pattern=initial_pattern,
+        initial_point_count=initial_point_count,
+        current_best_moves_since_start=best_candidate.moves_since_start,
+        current_best_total_points=best_candidate.total_points,
+        current_best_is_exact=best_candidate.is_exact,
+        current_best_is_terminal=best_candidate.is_terminal,
+        current_best_source=best_candidate.source,
+    )
+
+
+def extract_top_morpion_frontier_nodes_from_training_tree_snapshot(
+    snapshot: TrainingTreeSnapshot,
+    *,
+    limit: int = 100,
+    initial_point_count: int = MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
+    root_moves_offset: int = 0,
+) -> tuple[MorpionFrontierNodeCandidate, ...]:
+    """Return top metadata-only frontier candidates without decoding node states."""
+    if limit <= 0:
+        return ()
+
+    terminal_candidates: list[MorpionFrontierNodeCandidate] = []
+    fallback_candidates: list[MorpionFrontierNodeCandidate] = []
+    for node in snapshot.nodes:
+        moves_since_start = morpion_score_from_snapshot_depth(
+            node.depth,
+            root_moves_offset=root_moves_offset,
+        )
+        candidate = MorpionFrontierNodeCandidate(
+            node_id=node.node_id,
+            moves_since_start=moves_since_start,
+            total_points=initial_point_count + moves_since_start,
+            is_terminal=node.is_terminal,
+            is_exact=node.is_exact,
+            source=_snapshot_source_for_node(node),
+        )
+        if node.is_terminal:
+            terminal_candidates.append(candidate)
+        else:
+            fallback_candidates.append(candidate)
+
+    selected = sorted(terminal_candidates, key=_frontier_candidate_sort_key)[:limit]
+    if len(selected) < limit:
+        selected.extend(
+            sorted(fallback_candidates, key=_frontier_candidate_sort_key)[
+                : limit - len(selected)
+            ]
+        )
+    return tuple(selected)
 
 
 def resolve_record_status_for_cycle(
@@ -499,6 +569,18 @@ def _frontier_status_rank(
     )
 
 
+def _frontier_candidate_sort_key(
+    candidate: MorpionFrontierNodeCandidate,
+) -> tuple[int, int, int, str]:
+    """Return deterministic strongest-first metadata frontier ordering."""
+    return (
+        -candidate.moves_since_start,
+        -int(candidate.is_terminal),
+        -int(candidate.is_exact),
+        candidate.node_id,
+    )
+
+
 def _normalized_record_status(
     status: MorpionBootstrapRecordStatus,
 ) -> MorpionBootstrapRecordStatus:
@@ -640,6 +722,7 @@ __all__ = [
     "MorpionBootstrapFrontierStatus",
     "MorpionBootstrapRecordStatus",
     "MorpionCertifiedRecordCandidate",
+    "MorpionFrontierNodeCandidate",
     "MorpionLeaderboardEntry",
     "carried_forward_morpion_frontier_status",
     "carried_forward_morpion_record_status",
@@ -650,8 +733,10 @@ __all__ = [
     "extract_certified_record_candidates_from_training_tree_snapshot",
     "extract_morpion_frontier_status_from_training_tree_snapshot",
     "extract_morpion_record_status_from_training_tree_snapshot",
+    "extract_top_morpion_frontier_nodes_from_training_tree_snapshot",
     "fingerprint_morpion_state_payload",
     "morpion_bootstrap_experiment_metadata",
+    "morpion_score_from_snapshot_depth",
     "persist_certified_leaderboard_candidates",
     "resolve_frontier_status_for_cycle",
     "resolve_record_status_for_cycle",

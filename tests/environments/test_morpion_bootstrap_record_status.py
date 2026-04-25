@@ -7,7 +7,10 @@ import json
 import sys
 from pathlib import Path
 from types import ModuleType
-from typing import cast
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    import pytest
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
@@ -47,6 +50,7 @@ from chipiron.environments.morpion.bootstrap import (
     bootstrap_event_to_dict,
     current_record_score,
     extract_morpion_record_status_from_training_tree_snapshot,
+    extract_top_morpion_frontier_nodes_from_training_tree_snapshot,
     load_bootstrap_run_state,
     persist_certified_leaderboard_candidates,
     resolve_frontier_status_for_cycle,
@@ -87,6 +91,30 @@ def _make_training_node(
         over_event_label=None,
         visit_count=move_count + 1,
         metadata={"source": "record-status-test"},
+    )
+
+
+def _make_metadata_only_training_node(
+    *,
+    node_id: str,
+    depth: int,
+    is_exact: bool = False,
+    is_terminal: bool = False,
+) -> TrainingNodeSnapshot:
+    """Build one training node whose state payload must not be decoded."""
+    return TrainingNodeSnapshot(
+        node_id=node_id,
+        parent_ids=(),
+        child_ids=(),
+        depth=depth,
+        state_ref_payload={"must_not_decode": True},
+        direct_value_scalar=None,
+        backed_up_value_scalar=None,
+        is_terminal=is_terminal,
+        is_exact=is_exact,
+        over_event_label=None,
+        visit_count=None,
+        metadata={"source": "metadata-only-frontier-test"},
     )
 
 
@@ -251,6 +279,147 @@ def test_frontier_best_can_update_without_affecting_certified_record() -> None:
     assert certified_status.current_best_total_points is None
     assert frontier_status.current_best_total_points == 40
     assert frontier_status.current_best_source == "snapshot_nonterminal_node"
+
+
+def test_frontier_status_uses_depth_metadata_without_decoding(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Permissive frontier status should not decode every node state payload."""
+    import chipiron.environments.morpion.bootstrap.record_status as record_status
+
+    def fail_decode(_payload: dict[str, object]) -> object:
+        raise AssertionError
+
+    monkeypatch.setattr(record_status, "decode_morpion_state_ref_payload", fail_decode)
+    snapshot = TrainingTreeSnapshot(
+        root_node_id="node-7",
+        nodes=(
+            _make_metadata_only_training_node(
+                node_id="node-7",
+                depth=7,
+                is_exact=True,
+                is_terminal=True,
+            ),
+        ),
+        metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+    )
+
+    frontier_status = resolve_frontier_status_for_cycle(
+        snapshot=snapshot,
+        previous_frontier_status=None,
+    )
+
+    assert frontier_status.current_best_moves_since_start == 7
+    assert frontier_status.current_best_total_points == 43
+    assert frontier_status.current_best_source == "certified_terminal_leaf"
+
+
+def test_deepest_terminal_frontier_node_wins() -> None:
+    """Frontier status should prefer the deepest terminal metadata candidate."""
+    snapshot = TrainingTreeSnapshot(
+        root_node_id="root",
+        nodes=(
+            _make_metadata_only_training_node(
+                node_id="terminal-shallow",
+                depth=5,
+                is_terminal=True,
+                is_exact=True,
+            ),
+            _make_metadata_only_training_node(
+                node_id="terminal-deep",
+                depth=8,
+                is_terminal=True,
+                is_exact=False,
+            ),
+            _make_metadata_only_training_node(
+                node_id="nonterminal-deeper",
+                depth=20,
+                is_terminal=False,
+                is_exact=True,
+            ),
+        ),
+        metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+    )
+
+    frontier_status = resolve_frontier_status_for_cycle(
+        snapshot=snapshot,
+        previous_frontier_status=None,
+    )
+
+    assert frontier_status.current_best_moves_since_start == 8
+    assert frontier_status.current_best_is_terminal is True
+    assert frontier_status.current_best_source == "snapshot_terminal_node"
+
+
+def test_top_frontier_candidates_respect_100_cap() -> None:
+    """Metadata frontier extraction should cap its reported candidates."""
+    snapshot = TrainingTreeSnapshot(
+        root_node_id="root",
+        nodes=tuple(
+            _make_metadata_only_training_node(
+                node_id=f"node-{index:03d}",
+                depth=index,
+                is_terminal=True,
+                is_exact=True,
+            )
+            for index in range(125)
+        ),
+        metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+    )
+
+    candidates = extract_top_morpion_frontier_nodes_from_training_tree_snapshot(
+        snapshot
+    )
+
+    assert len(candidates) == 100
+    assert candidates[0].node_id == "node-124"
+    assert candidates[-1].node_id == "node-025"
+
+
+def test_top_frontier_candidates_have_deterministic_tie_ordering() -> None:
+    """Tied metadata frontier candidates should sort stably by terminal/exact/id."""
+    snapshot = TrainingTreeSnapshot(
+        root_node_id="root",
+        nodes=(
+            _make_metadata_only_training_node(
+                node_id="b-exact",
+                depth=6,
+                is_terminal=True,
+                is_exact=True,
+            ),
+            _make_metadata_only_training_node(
+                node_id="a-exact",
+                depth=6,
+                is_terminal=True,
+                is_exact=True,
+            ),
+            _make_metadata_only_training_node(
+                node_id="c-estimated",
+                depth=6,
+                is_terminal=True,
+                is_exact=False,
+            ),
+            _make_metadata_only_training_node(
+                node_id="d-fallback",
+                depth=20,
+                is_terminal=False,
+                is_exact=True,
+            ),
+        ),
+        metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+    )
+
+    candidates = extract_top_morpion_frontier_nodes_from_training_tree_snapshot(
+        snapshot,
+        limit=4,
+    )
+
+    assert [candidate.node_id for candidate in candidates] == [
+        "a-exact",
+        "b-exact",
+        "c-estimated",
+        "d-fallback",
+    ]
 
 
 def test_leaderboard_deduplicates_identical_states_by_fingerprint(
