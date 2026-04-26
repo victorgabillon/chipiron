@@ -159,6 +159,19 @@ def test_terminal_path_extraction_follows_parent_ids_to_root() -> None:
     assert rows.rows[-1].metadata["target_source"] == "direct_value_scalar"
 
 
+def test_path_extraction_can_prefer_direct_values() -> None:
+    """Path datasets should honor the direct-value target option."""
+    rows = build_sanity_dataset_rows(
+        snapshot=_branching_snapshot(),
+        dataset_mode="terminal_path",
+        use_backed_up_value=False,
+    )
+
+    assert rows.rows[0].node_id == "root"
+    assert rows.rows[0].target_value == 0.5
+    assert rows.rows[0].metadata["target_source"] == "direct_value_scalar"
+
+
 def test_top_terminal_paths_deduplicates_shared_ancestors() -> None:
     """Top-terminal path extraction should not duplicate common parents."""
     snapshot = _branching_snapshot()
@@ -235,13 +248,14 @@ def test_sanity_check_writes_rows_diagnostics_and_summary(tmp_path: Path) -> Non
             generation=1,
             dataset_mode="terminal_path",
             evaluator_name="linear_5",
+            run_name="test_run",
             num_epochs=1,
             batch_size=2,
             shuffle=False,
         )
     )
 
-    output_dir = tmp_path / "evaluator_sanity" / "generation_000001"
+    output_dir = tmp_path / "evaluator_sanity" / "test_run"
     rows_path = output_dir / "rows.json"
     diagnostics_path = output_dir / "diagnostics" / "linear_5.json"
     summary_path = output_dir / "summary.json"
@@ -259,4 +273,5 @@ def test_sanity_check_writes_rows_diagnostics_and_summary(tmp_path: Path) -> Non
     assert diagnostics_data["evaluator_name"] == "linear_5"
     assert diagnostics_data["dataset_size"] == 3
     assert summary["num_rows"] == 3
+    assert summary["run_name"] == "test_run"
     assert summary_data["evaluators"]["linear_5"]["num_samples"] == 3

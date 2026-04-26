@@ -95,6 +95,32 @@ http://localhost:8501
 
 ---
 
+## 🧪 5. Run evaluator sanity checks
+
+Use this when a bootstrap evaluator looks unable to learn from saved data. The
+sanity check requires an existing tree export in `tree_exports/`.
+
+```bash
+python -m chipiron.environments.morpion.bootstrap.evaluator_sanity_check \
+  --work-dir ~/oldata/victor/morpion_runs/big_run_01 \
+  --generation 1 \
+  --dataset-mode terminal_path \
+  --evaluator-name mlp_41 \
+  --num-epochs 50 \
+  --batch-size 32
+```
+
+Artifacts are written under:
+
+```text
+<work_dir>/evaluator_sanity/<run_name>/
+```
+
+Use `--run-name my_debug_run` for a stable output directory, or omit it to get a
+timestamped directory.
+
+---
+
 ## ⚠️ Known issues
 
 ### Inotify watch limit (Linux)

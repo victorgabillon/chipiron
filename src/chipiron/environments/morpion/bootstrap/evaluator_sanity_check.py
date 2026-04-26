@@ -27,7 +27,7 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.train impo
     train_morpion_regressor,
 )
 
-from .bootstrap_loop import MorpionBootstrapPaths, MorpionEvaluatorSpec
+from .bootstrap_loop import MorpionBootstrapPaths
 from .evaluator_diagnostics import (
     build_evaluator_training_diagnostics,
     load_previous_evaluator_for_diagnostics,
@@ -41,6 +41,8 @@ from .evaluator_family import (
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from .bootstrap_loop import MorpionEvaluatorSpec
+
 LOGGER = logging.getLogger(__name__)
 
 MorpionSanityDatasetMode = Literal[
@@ -51,14 +53,14 @@ MorpionSanityDatasetMode = Literal[
 
 
 class MissingMorpionSanitySnapshotError(FileNotFoundError):
-    """Raised when no usable tree export or runtime checkpoint can be found."""
+    """Raised when no usable tree export can be found."""
 
     def __init__(self, work_dir: Path, generation: int | None) -> None:
         """Initialize the missing-snapshot error."""
         generation_text = "latest" if generation is None else str(generation)
         super().__init__(
-            "No Morpion bootstrap tree export or runtime checkpoint found in "
-            f"{work_dir} for generation {generation_text}."
+            "No Morpion bootstrap tree export found in "
+            f"{work_dir}/tree_exports for generation {generation_text}."
         )
 
 
@@ -96,6 +98,14 @@ class NoMorpionSanityTerminalNodeError(ValueError):
         )
 
 
+class EmptyMorpionSanityDatasetError(ValueError):
+    """Raised when extraction produces no supervised sanity rows."""
+
+    def __init__(self) -> None:
+        """Initialize the empty-dataset error."""
+        super().__init__("Morpion evaluator sanity dataset is empty.")
+
+
 class UnknownMorpionSanityDatasetModeError(ValueError):
     """Raised when the requested dataset mode is not supported."""
 
@@ -127,6 +137,7 @@ class MorpionEvaluatorSanityArgs:
     learning_rate: float = 1e-3
     evaluator_name: str | None = None
     evaluator_family_preset: str = CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET
+    run_name: str | None = None
     top_terminal_path_count: int = 5
     require_exact_or_terminal: bool = False
     min_depth: int | None = None
@@ -138,7 +149,11 @@ class MorpionEvaluatorSanityArgs:
 def run_evaluator_sanity_check(args: MorpionEvaluatorSanityArgs) -> dict[str, object]:
     """Run the standalone sanity-check pipeline and return the summary payload."""
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
-    output_dir = _sanity_output_dir(paths.work_dir, args.generation)
+    output_dir = _sanity_output_dir(
+        paths.work_dir,
+        generation=args.generation,
+        run_name=args.run_name,
+    )
     rows_path = output_dir / "rows.json"
     models_dir = output_dir / "models"
     diagnostics_dir = output_dir / "diagnostics"
@@ -148,7 +163,6 @@ def run_evaluator_sanity_check(args: MorpionEvaluatorSanityArgs) -> dict[str, ob
     snapshot_path = _resolve_snapshot_path(
         paths=paths,
         generation=args.generation,
-        output_dir=output_dir,
     )
     snapshot = load_training_tree_snapshot(snapshot_path)
     LOGGER.info(
@@ -178,6 +192,8 @@ def run_evaluator_sanity_check(args: MorpionEvaluatorSanityArgs) -> dict[str, ob
         len(rows.rows),
         str(rows_path),
     )
+    if not rows.rows:
+        raise EmptyMorpionSanityDatasetError
 
     created_at = datetime.now(UTC).isoformat()
     evaluator_summaries: dict[str, dict[str, object]] = {}
@@ -246,6 +262,7 @@ def run_evaluator_sanity_check(args: MorpionEvaluatorSanityArgs) -> dict[str, ob
         "created_at": created_at,
         "work_dir": str(paths.work_dir),
         "generation": args.generation,
+        "run_name": output_dir.name,
         "dataset_mode": args.dataset_mode,
         "snapshot_path": str(snapshot_path),
         "rows_path": str(rows_path),
@@ -297,7 +314,12 @@ def build_sanity_dataset_rows(
     if max_rows is not None:
         selected_nodes = selected_nodes[:max_rows]
     rows = tuple(
-        _path_node_to_row(node, dataset_mode=dataset_mode) for node in selected_nodes
+        _path_node_to_row(
+            node,
+            dataset_mode=dataset_mode,
+            use_backed_up_value=use_backed_up_value,
+        )
+        for node in selected_nodes
     )
     return MorpionSupervisedRows(
         rows=rows,
@@ -374,6 +396,7 @@ def _parse_args(argv: list[str] | None) -> MorpionEvaluatorSanityArgs:
         "--evaluator-family-preset",
         default=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
     )
+    parser.add_argument("--run-name")
     parser.add_argument("--top-terminal-path-count", type=int, default=5)
     parser.add_argument("--require-exact-or-terminal", action="store_true")
     parser.add_argument("--min-depth", type=int)
@@ -391,6 +414,7 @@ def _parse_args(argv: list[str] | None) -> MorpionEvaluatorSanityArgs:
         learning_rate=namespace.learning_rate,
         evaluator_name=namespace.evaluator_name,
         evaluator_family_preset=namespace.evaluator_family_preset,
+        run_name=namespace.run_name,
         top_terminal_path_count=namespace.top_terminal_path_count,
         require_exact_or_terminal=namespace.require_exact_or_terminal,
         min_depth=namespace.min_depth,
@@ -400,22 +424,27 @@ def _parse_args(argv: list[str] | None) -> MorpionEvaluatorSanityArgs:
     )
 
 
-def _sanity_output_dir(work_dir: Path, generation: int | None) -> Path:
+def _sanity_output_dir(
+    work_dir: Path,
+    *,
+    generation: int | None,
+    run_name: str | None,
+) -> Path:
     """Return the artifact directory for one sanity run."""
-    if generation is not None:
-        run_name = f"generation_{generation:06d}"
-    else:
-        run_name = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-    return work_dir / "evaluator_sanity" / run_name
+    if run_name is not None:
+        return work_dir / "evaluator_sanity" / run_name
+    timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ")
+    if generation is None:
+        return work_dir / "evaluator_sanity" / timestamp
+    return work_dir / "evaluator_sanity" / f"generation_{generation:06d}_{timestamp}"
 
 
 def _resolve_snapshot_path(
     *,
     paths: MorpionBootstrapPaths,
     generation: int | None,
-    output_dir: Path,
 ) -> Path:
-    """Return a tree-export path, exporting from a runtime checkpoint if needed."""
+    """Return an existing tree-export path for one generation."""
     tree_snapshot_path = _generation_artifact_path(
         directory=paths.tree_snapshot_dir,
         generation=generation,
@@ -424,21 +453,7 @@ def _resolve_snapshot_path(
     if tree_snapshot_path is not None:
         return tree_snapshot_path
 
-    checkpoint_path = _generation_artifact_path(
-        directory=paths.runtime_checkpoint_dir,
-        generation=generation,
-        suffix=".json",
-    )
-    if checkpoint_path is None:
-        raise MissingMorpionSanitySnapshotError(paths.work_dir, generation)
-
-    from .anemone_runner import AnemoneMorpionSearchRunner
-
-    exported_snapshot_path = output_dir / "snapshot_from_runtime_checkpoint.json"
-    runner = AnemoneMorpionSearchRunner()
-    runner.load_or_create(checkpoint_path, None)
-    runner.export_training_tree_snapshot(exported_snapshot_path)
-    return exported_snapshot_path
+    raise MissingMorpionSanitySnapshotError(paths.work_dir, generation)
 
 
 def _generation_artifact_path(
@@ -556,23 +571,30 @@ def _path_node_to_row(
     node: TrainingNodeSnapshot,
     *,
     dataset_mode: MorpionSanityDatasetMode,
+    use_backed_up_value: bool,
 ) -> MorpionSupervisedRow:
     """Convert one path-selected snapshot node into a supervised row."""
     if node.state_ref_payload is None:
         raise MissingMorpionSanityStatePayloadError(node.node_id)
-    use_backed_up_value = node.backed_up_value_scalar is not None
     if node.backed_up_value_scalar is None and node.direct_value_scalar is None:
         raise MissingMorpionSanityTargetError(node.node_id)
+    resolved_use_backed_up_value = (
+        node.backed_up_value_scalar is not None
+        if use_backed_up_value
+        else node.direct_value_scalar is None
+    )
 
     row = training_node_to_morpion_supervised_row(
         node,
-        use_backed_up_value=use_backed_up_value,
+        use_backed_up_value=resolved_use_backed_up_value,
     )
     if row is None:
         raise MissingMorpionSanityTargetError(node.node_id)
 
     target_source = (
-        "backed_up_value_scalar" if use_backed_up_value else "direct_value_scalar"
+        "backed_up_value_scalar"
+        if resolved_use_backed_up_value
+        else "direct_value_scalar"
     )
     return MorpionSupervisedRow(
         node_id=row.node_id,
@@ -597,6 +619,7 @@ if __name__ == "__main__":
 
 
 __all__ = [
+    "EmptyMorpionSanityDatasetError",
     "MissingMorpionSanitySnapshotError",
     "MissingMorpionSanityStatePayloadError",
     "MissingMorpionSanityTargetError",
