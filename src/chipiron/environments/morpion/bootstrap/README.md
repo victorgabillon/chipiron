@@ -145,18 +145,22 @@ python -m chipiron.environments.morpion.bootstrap.evaluator_fitted_backup_sanity
   --work-dir ~/oldata/victor/morpion_runs/big_run_01 \
   --dataset-mode bootstrap_like \
   --max-rows 200 \
+  --max-backup-nodes 5000 \
   --evaluator-name mlp_41 \
-  --num-iterations 20 \
+  --num-iterations 5 \
   --num-epochs 100 \
   --batch-size 200 \
   --learning-rate 0.001 \
-  --no-shuffle
+  --no-shuffle \
+  --run-name fitted_backup_200x5_5k
 ```
 
 This freezes one tree export, recomputes backed-up labels from exact/terminal
 ground truth plus evaluator predictions, trains, and repeats. Watch
 `mean_abs_target_change` and `max_abs_target_change` in `summary.json`; stable
-backup targets are the convergence signal.
+backup targets are the convergence signal. `--max-backup-nodes` limits the
+frozen-tree prefix used for prediction and backup, which keeps early diagnostic
+runs cheap on large snapshots.
 
 ---
 

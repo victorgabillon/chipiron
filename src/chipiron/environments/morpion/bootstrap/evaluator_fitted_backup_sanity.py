@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
@@ -120,6 +121,7 @@ class MorpionFittedBackupSanityArgs:
     shuffle: bool = True
     run_name: str | None = None
     top_terminal_path_count: int = 5
+    max_backup_nodes: int | None = None
 
 
 def run_fitted_backup_sanity(
@@ -129,14 +131,22 @@ def run_fitted_backup_sanity(
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     snapshot_path = _resolve_snapshot_path(paths=paths, generation=args.generation)
     snapshot = load_training_tree_snapshot(snapshot_path)
+    source_snapshot_nodes = len(snapshot.nodes)
+    snapshot = _truncate_snapshot(snapshot, max_backup_nodes=args.max_backup_nodes)
     spec = _selected_evaluator_spec(args)
-    run_dir = _run_output_dir(paths.work_dir, generation=args.generation, run_name=args.run_name)
+    run_dir = _run_output_dir(
+        paths.work_dir,
+        generation=args.generation,
+        run_name=args.run_name,
+    )
     run_dir.mkdir(parents=True, exist_ok=True)
 
     LOGGER.info(
-        "[fitted_backup] snapshot_loaded path=%s nodes=%s",
+        "[fitted_backup] snapshot_loaded path=%s nodes=%s backup_nodes=%s max_backup_nodes=%s",
         str(snapshot_path),
+        source_snapshot_nodes,
         len(snapshot.nodes),
+        args.max_backup_nodes,
     )
     selected_node_ids = _selected_node_ids(
         snapshot=snapshot,
@@ -164,11 +174,18 @@ def run_fitted_backup_sanity(
         diagnostics_path = iteration_dir / "diagnostics" / f"{args.evaluator_name}.json"
         target_diagnostics_path = iteration_dir / "target_diagnostics.json"
 
+        backup_started_at = time.perf_counter()
         node_values = fitted_backup_node_values(
             snapshot=snapshot,
             model=current_model,
             spec=spec,
             previous_targets=previous_targets,
+        )
+        LOGGER.info(
+            "[fitted_backup] backup_node_values_done iteration=%s nodes=%s elapsed=%.3fs",
+            iteration,
+            len(node_values),
+            time.perf_counter() - backup_started_at,
         )
         rows = _rows_from_fitted_values(
             snapshot=snapshot,
@@ -179,6 +196,7 @@ def run_fitted_backup_sanity(
         save_morpion_supervised_rows(rows, rows_path)
 
         created_at = datetime.now(UTC).isoformat()
+        diagnostics_started_at = time.perf_counter()
         target_diagnostics = build_backup_target_diagnostics(
             snapshot=_snapshot_with_fitted_backups(snapshot, node_values),
             rows=rows,
@@ -188,8 +206,14 @@ def run_fitted_backup_sanity(
             json.dumps(target_diagnostics, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
+        LOGGER.info(
+            "[fitted_backup] target_diagnostics_done iteration=%s elapsed=%.3fs",
+            iteration,
+            time.perf_counter() - diagnostics_started_at,
+        )
 
         previous_predictions = _predict_rows(current_model, rows=rows, spec=spec)
+        train_started_at = time.perf_counter()
         trained_model, metrics = train_morpion_regressor(
             MorpionTrainingArgs(
                 dataset_file=rows_path,
@@ -204,6 +228,13 @@ def run_fitted_backup_sanity(
                 hidden_sizes=spec.hidden_sizes,
             )
         )
+        LOGGER.info(
+            "[fitted_backup] train_done iteration=%s final_loss=%s elapsed=%.3fs",
+            iteration,
+            metrics.get("final_loss"),
+            time.perf_counter() - train_started_at,
+        )
+        diagnostics_started_at = time.perf_counter()
         diagnostics = build_evaluator_training_diagnostics(
             generation=iteration,
             evaluator_name=args.evaluator_name,
@@ -215,6 +246,11 @@ def run_fitted_backup_sanity(
             model_after=trained_model,
         )
         save_evaluator_training_diagnostics(diagnostics, diagnostics_path)
+        LOGGER.info(
+            "[fitted_backup] diagnostics_done iteration=%s elapsed=%.3fs",
+            iteration,
+            time.perf_counter() - diagnostics_started_at,
+        )
 
         next_predictions = _predict_rows(trained_model, rows=rows, spec=spec)
         iteration_summary = _iteration_summary(
@@ -249,6 +285,9 @@ def run_fitted_backup_sanity(
         "created_at": datetime.now(UTC).isoformat(),
         "work_dir": str(paths.work_dir),
         "snapshot_path": str(snapshot_path),
+        "source_snapshot_nodes": source_snapshot_nodes,
+        "backup_nodes": len(snapshot.nodes),
+        "max_backup_nodes": args.max_backup_nodes,
         "generation": args.generation,
         "run_name": run_dir.name,
         "dataset_mode": args.dataset_mode,
@@ -274,7 +313,13 @@ def fitted_backup_node_values(
 ) -> dict[str, FittedBackupNodeValue]:
     """Evaluate non-exact leaves and max-backup values through a frozen tree."""
     nodes_by_id = {node.node_id: node for node in snapshot.nodes}
+    direct_started_at = time.perf_counter()
     direct_values = _direct_values_before_backup(snapshot=snapshot, model=model, spec=spec)
+    LOGGER.info(
+        "[fitted_backup] direct_values_done nodes=%s elapsed=%.3fs",
+        len(direct_values),
+        time.perf_counter() - direct_started_at,
+    )
     backed_targets: dict[str, float] = {}
     target_sources: dict[str, str] = {}
 
@@ -352,6 +397,7 @@ def _parse_args(argv: list[str] | None) -> MorpionFittedBackupSanityArgs:
     parser.add_argument("--no-shuffle", action="store_true")
     parser.add_argument("--run-name")
     parser.add_argument("--top-terminal-path-count", type=int, default=5)
+    parser.add_argument("--max-backup-nodes", type=int)
     namespace = parser.parse_args(argv)
     return MorpionFittedBackupSanityArgs(
         work_dir=namespace.work_dir,
@@ -367,6 +413,7 @@ def _parse_args(argv: list[str] | None) -> MorpionFittedBackupSanityArgs:
         shuffle=not namespace.no_shuffle,
         run_name=namespace.run_name,
         top_terminal_path_count=namespace.top_terminal_path_count,
+        max_backup_nodes=namespace.max_backup_nodes,
     )
 
 
@@ -385,6 +432,49 @@ def _resolve_snapshot_path(
     if not candidates:
         raise FileNotFoundError(paths.tree_snapshot_dir)
     return candidates[-1]
+
+
+def _truncate_snapshot(
+    snapshot: TrainingTreeSnapshot,
+    *,
+    max_backup_nodes: int | None,
+) -> TrainingTreeSnapshot:
+    """Return a prefix-limited diagnostic snapshot with internal links filtered."""
+    if max_backup_nodes is None or len(snapshot.nodes) <= max_backup_nodes:
+        return snapshot
+
+    kept_nodes = snapshot.nodes[:max_backup_nodes]
+    kept_node_ids = {node.node_id for node in kept_nodes}
+    filtered_nodes = tuple(
+        TrainingNodeSnapshot(
+            node_id=node.node_id,
+            parent_ids=tuple(
+                parent_id for parent_id in node.parent_ids if parent_id in kept_node_ids
+            ),
+            child_ids=tuple(
+                child_id for child_id in node.child_ids if child_id in kept_node_ids
+            ),
+            depth=node.depth,
+            state_ref_payload=node.state_ref_payload,
+            direct_value_scalar=node.direct_value_scalar,
+            backed_up_value_scalar=node.backed_up_value_scalar,
+            is_terminal=node.is_terminal,
+            is_exact=node.is_exact,
+            over_event_label=node.over_event_label,
+            visit_count=node.visit_count,
+            metadata=dict(node.metadata),
+        )
+        for node in kept_nodes
+    )
+    return TrainingTreeSnapshot(
+        root_node_id=snapshot.root_node_id,
+        nodes=filtered_nodes,
+        metadata={
+            **dict(snapshot.metadata),
+            "fitted_backup_source_node_count": len(snapshot.nodes),
+            "fitted_backup_max_backup_nodes": max_backup_nodes,
+        },
+    )
 
 
 def _run_output_dir(
@@ -518,6 +608,7 @@ def _predict_snapshot_nodes(
     spec: MorpionEvaluatorSpec,
 ) -> dict[str, float]:
     """Predict values for snapshot nodes that have Morpion state payloads."""
+    started_at = time.perf_counter()
     dynamics = MorpionDynamics()
     converter = MorpionFeatureTensorConverter(
         dynamics=dynamics,
@@ -534,16 +625,28 @@ def _predict_snapshot_nodes(
         node_ids.append(node.node_id)
         tensors.append(converter.state_to_tensor(state))
     if not tensors:
+        LOGGER.info(
+            "[fitted_backup] predict_snapshot_nodes_done nodes=%s predicted=0 elapsed=%.3fs",
+            len(snapshot.nodes),
+            time.perf_counter() - started_at,
+        )
         return {}
     model.eval()
     with torch.no_grad():
         raw_predictions = model(torch.stack(tensors)).squeeze(-1).detach().cpu().tolist()
     if isinstance(raw_predictions, float):
         raw_predictions = [raw_predictions]
-    return {
+    predictions = {
         node_id: float(prediction)
         for node_id, prediction in zip(node_ids, raw_predictions, strict=True)
     }
+    LOGGER.info(
+        "[fitted_backup] predict_snapshot_nodes_done nodes=%s predicted=%s elapsed=%.3fs",
+        len(snapshot.nodes),
+        len(predictions),
+        time.perf_counter() - started_at,
+    )
+    return predictions
 
 
 def _rows_from_fitted_values(

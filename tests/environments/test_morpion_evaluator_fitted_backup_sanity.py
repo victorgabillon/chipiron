@@ -235,6 +235,14 @@ def test_two_tiny_iterations_write_summary_and_artifacts(
     model = _model()
 
     monkeypatch.setattr(fitted_module, "_initial_model", lambda **_kwargs: model)
+    monkeypatch.setattr(
+        fitted_module,
+        "_predict_snapshot_nodes",
+        lambda snapshot, **_kwargs: {
+            node.node_id: float(node.direct_value_scalar or 0.0)
+            for node in snapshot.nodes
+        },
+    )
     monkeypatch.setattr(fitted_module, "_predict_rows", lambda *_args, **_kwargs: [0.0, 0.0])
 
     def _fake_train(_args: object) -> tuple[MorpionRegressor, dict[str, float]]:
@@ -276,6 +284,7 @@ def test_two_tiny_iterations_write_summary_and_artifacts(
             num_epochs=1,
             batch_size=2,
             run_name="test_run",
+            max_backup_nodes=1,
         )
     )
 
@@ -290,6 +299,8 @@ def test_two_tiny_iterations_write_summary_and_artifacts(
 
     summary_data = json.loads((run_dir / "summary.json").read_text(encoding="utf-8"))
     assert summary["num_iterations"] == 2
+    assert summary["backup_nodes"] == 1
+    assert summary["max_backup_nodes"] == 1
     assert len(summary_data["iterations"]) == 2
     assert summary_data["iterations"][1]["mean_abs_target_change"] == 0.0
     assert snapshot.nodes is original_nodes
