@@ -105,6 +105,14 @@ class FittedBackupNodeValue:
 
 
 @dataclass(frozen=True, slots=True)
+class SnapshotFeatureCache:
+    """Decoded feature tensors for one frozen snapshot and evaluator feature set."""
+
+    node_ids: tuple[str, ...]
+    input_tensor: torch.Tensor
+
+
+@dataclass(frozen=True, slots=True)
 class MorpionFittedBackupSanityArgs:
     """Arguments for one fixed-tree fitted-backup sanity run."""
 
@@ -157,6 +165,7 @@ def run_fitted_backup_sanity(
     if not selected_node_ids:
         raise EmptyMorpionSanityDatasetError
 
+    feature_cache = build_snapshot_feature_cache(snapshot=snapshot, spec=spec)
     current_model = _initial_model(
         paths=paths,
         generation=args.generation,
@@ -180,6 +189,7 @@ def run_fitted_backup_sanity(
             model=current_model,
             spec=spec,
             previous_targets=previous_targets,
+            feature_cache=feature_cache,
         )
         LOGGER.info(
             "[fitted_backup] backup_node_values_done iteration=%s nodes=%s elapsed=%.3fs",
@@ -288,6 +298,7 @@ def run_fitted_backup_sanity(
         "source_snapshot_nodes": source_snapshot_nodes,
         "backup_nodes": len(snapshot.nodes),
         "max_backup_nodes": args.max_backup_nodes,
+        "feature_cache_nodes": len(feature_cache.node_ids),
         "generation": args.generation,
         "run_name": run_dir.name,
         "dataset_mode": args.dataset_mode,
@@ -310,11 +321,17 @@ def fitted_backup_node_values(
     model: MorpionRegressor,
     spec: MorpionEvaluatorSpec,
     previous_targets: dict[str, float] | None = None,
+    feature_cache: SnapshotFeatureCache | None = None,
 ) -> dict[str, FittedBackupNodeValue]:
     """Evaluate non-exact leaves and max-backup values through a frozen tree."""
     nodes_by_id = {node.node_id: node for node in snapshot.nodes}
     direct_started_at = time.perf_counter()
-    direct_values = _direct_values_before_backup(snapshot=snapshot, model=model, spec=spec)
+    direct_values = _direct_values_before_backup(
+        snapshot=snapshot,
+        model=model,
+        spec=spec,
+        feature_cache=feature_cache,
+    )
     LOGGER.info(
         "[fitted_backup] direct_values_done nodes=%s elapsed=%.3fs",
         len(direct_values),
@@ -581,14 +598,54 @@ def _ground_truth_value(node: TrainingNodeSnapshot) -> float | None:
     return node.direct_value_scalar
 
 
+def build_snapshot_feature_cache(
+    *,
+    snapshot: TrainingTreeSnapshot,
+    spec: MorpionEvaluatorSpec,
+) -> SnapshotFeatureCache:
+    """Decode and convert frozen snapshot states into reusable feature tensors."""
+    started_at = time.perf_counter()
+    dynamics = MorpionDynamics()
+    converter = MorpionFeatureTensorConverter(
+        dynamics=dynamics,
+        feature_subset=spec.feature_subset,
+    )
+    node_ids: list[str] = []
+    tensors: list[torch.Tensor] = []
+    for node in snapshot.nodes:
+        if node.state_ref_payload is None:
+            continue
+        state = dynamics.wrap_atomheart_state(
+            decode_morpion_state_ref_payload(node.state_ref_payload)
+        )
+        node_ids.append(node.node_id)
+        tensors.append(converter.state_to_tensor(state))
+    input_tensor = (
+        torch.stack(tensors)
+        if tensors
+        else torch.empty((0, spec.feature_subset.dimension), dtype=torch.float32)
+    )
+    LOGGER.info(
+        "[fitted_backup] feature_cache_build_done nodes=%s elapsed=%.3fs",
+        len(node_ids),
+        time.perf_counter() - started_at,
+    )
+    return SnapshotFeatureCache(node_ids=tuple(node_ids), input_tensor=input_tensor)
+
+
 def _direct_values_before_backup(
     *,
     snapshot: TrainingTreeSnapshot,
     model: MorpionRegressor,
     spec: MorpionEvaluatorSpec,
+    feature_cache: SnapshotFeatureCache | None = None,
 ) -> dict[str, float]:
     """Return exact ground truth or evaluator predictions before backup."""
-    predictions = _predict_snapshot_nodes(snapshot=snapshot, model=model, spec=spec)
+    predictions = (
+        _predict_from_cache(model=model, feature_cache=feature_cache)
+        if feature_cache is not None
+        else _predict_snapshot_nodes(snapshot=snapshot, model=model, spec=spec)
+    )
     values: dict[str, float] = {}
     for node in snapshot.nodes:
         ground_truth = _ground_truth_value(node)
@@ -643,6 +700,42 @@ def _predict_snapshot_nodes(
     LOGGER.info(
         "[fitted_backup] predict_snapshot_nodes_done nodes=%s predicted=%s elapsed=%.3fs",
         len(snapshot.nodes),
+        len(predictions),
+        time.perf_counter() - started_at,
+    )
+    return predictions
+
+
+def _predict_from_cache(
+    *,
+    model: MorpionRegressor,
+    feature_cache: SnapshotFeatureCache,
+) -> dict[str, float]:
+    """Predict current model values from cached frozen-snapshot feature tensors."""
+    started_at = time.perf_counter()
+    if not feature_cache.node_ids:
+        LOGGER.info(
+            "[fitted_backup] predict_from_cache_done nodes=0 elapsed=%.3fs",
+            time.perf_counter() - started_at,
+        )
+        return {}
+    model.eval()
+    with torch.no_grad():
+        raw_predictions = (
+            model(feature_cache.input_tensor).squeeze(-1).detach().cpu().tolist()
+        )
+    if isinstance(raw_predictions, float):
+        raw_predictions = [raw_predictions]
+    predictions = {
+        node_id: float(prediction)
+        for node_id, prediction in zip(
+            feature_cache.node_ids,
+            raw_predictions,
+            strict=True,
+        )
+    }
+    LOGGER.info(
+        "[fitted_backup] predict_from_cache_done nodes=%s elapsed=%.3fs",
         len(predictions),
         time.perf_counter() - started_at,
     )
@@ -834,6 +927,8 @@ if __name__ == "__main__":
 __all__ = [
     "FittedBackupNodeValue",
     "MorpionFittedBackupSanityArgs",
+    "SnapshotFeatureCache",
+    "build_snapshot_feature_cache",
     "fitted_backup_node_values",
     "main",
     "run_fitted_backup_sanity",

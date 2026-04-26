@@ -9,6 +9,8 @@ from pathlib import Path
 from types import ModuleType
 from typing import TYPE_CHECKING, cast
 
+import torch
+
 if TYPE_CHECKING:
     from pytest import MonkeyPatch
 
@@ -235,13 +237,19 @@ def test_two_tiny_iterations_write_summary_and_artifacts(
     model = _model()
 
     monkeypatch.setattr(fitted_module, "_initial_model", lambda **_kwargs: model)
+    feature_cache_builds: list[int] = []
+
+    def _fake_feature_cache(snapshot: TrainingTreeSnapshot, **_kwargs: object) -> object:
+        feature_cache_builds.append(len(snapshot.nodes))
+        return fitted_module.SnapshotFeatureCache(
+            node_ids=(),
+            input_tensor=torch.empty((0, 5)),
+        )
+
     monkeypatch.setattr(
         fitted_module,
-        "_predict_snapshot_nodes",
-        lambda snapshot, **_kwargs: {
-            node.node_id: float(node.direct_value_scalar or 0.0)
-            for node in snapshot.nodes
-        },
+        "build_snapshot_feature_cache",
+        _fake_feature_cache,
     )
     monkeypatch.setattr(fitted_module, "_predict_rows", lambda *_args, **_kwargs: [0.0, 0.0])
 
@@ -301,6 +309,7 @@ def test_two_tiny_iterations_write_summary_and_artifacts(
     assert summary["num_iterations"] == 2
     assert summary["backup_nodes"] == 1
     assert summary["max_backup_nodes"] == 1
+    assert feature_cache_builds == [1]
     assert len(summary_data["iterations"]) == 2
     assert summary_data["iterations"][1]["mean_abs_target_change"] == 0.0
     assert snapshot.nodes is original_nodes
