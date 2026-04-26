@@ -59,6 +59,7 @@ import chipiron.environments.morpion.bootstrap.evaluator_sanity_check as sanity_
 from chipiron.environments.morpion.bootstrap.bootstrap_loop import MorpionBootstrapPaths
 from chipiron.environments.morpion.bootstrap.evaluator_sanity_check import (
     MorpionEvaluatorSanityArgs,
+    build_backup_target_diagnostics,
     build_sanity_dataset_rows,
     run_evaluator_sanity_check,
     terminal_path_nodes,
@@ -181,6 +182,30 @@ def test_top_terminal_paths_deduplicates_shared_ancestors() -> None:
     assert tuple(node.node_id for node in selected) == ("root", "a", "a2", "a1")
 
 
+def test_backup_target_diagnostics_summarize_direct_vs_backed_up() -> None:
+    """Target diagnostics should quantify backed-up/direct disagreement."""
+    snapshot = _branching_snapshot()
+    rows = build_sanity_dataset_rows(
+        snapshot=snapshot,
+        dataset_mode="top_terminal_paths",
+    )
+
+    diagnostics = build_backup_target_diagnostics(
+        snapshot=snapshot,
+        rows=rows,
+        created_at="2026-04-26T10:00:00Z",
+    )
+
+    assert diagnostics["dataset_size"] == 4
+    assert diagnostics["comparable_direct_and_backed_up_count"] == 3
+    assert diagnostics["summary"]["mse_backed_up_vs_direct"] == 2.25
+    assert diagnostics["backed_up_row_status"]["frontier_estimate_rows"] == 2
+    assert diagnostics["backed_up_row_status"]["exact_or_terminal_rows"] == 1
+    worst = diagnostics["top_worst_deltas"][0]
+    assert worst["node_id"] == "a1"
+    assert worst["delta"] == 2.5
+
+
 def test_bootstrap_like_mode_delegates_to_existing_extractor(
     monkeypatch: MonkeyPatch,
 ) -> None:
@@ -258,20 +283,27 @@ def test_sanity_check_writes_rows_diagnostics_and_summary(tmp_path: Path) -> Non
     output_dir = tmp_path / "evaluator_sanity" / "test_run"
     rows_path = output_dir / "rows.json"
     diagnostics_path = output_dir / "diagnostics" / "linear_5.json"
+    target_diagnostics_path = output_dir / "target_diagnostics.json"
     summary_path = output_dir / "summary.json"
 
     assert rows_path.is_file()
     assert diagnostics_path.is_file()
+    assert target_diagnostics_path.is_file()
     assert summary_path.is_file()
     assert (output_dir / "models" / "linear_5").is_dir()
 
     rows = load_morpion_supervised_rows(rows_path)
     diagnostics_data = json.loads(diagnostics_path.read_text(encoding="utf-8"))
+    target_diagnostics_data = json.loads(
+        target_diagnostics_path.read_text(encoding="utf-8")
+    )
     summary_data = json.loads(summary_path.read_text(encoding="utf-8"))
 
     assert tuple(row.node_id for row in rows.rows) == ("root", "a", "a2")
     assert diagnostics_data["evaluator_name"] == "linear_5"
     assert diagnostics_data["dataset_size"] == 3
+    assert target_diagnostics_data["dataset_size"] == 3
     assert summary["num_rows"] == 3
     assert summary["run_name"] == "test_run"
+    assert summary_data["target_diagnostics_path"] == str(target_diagnostics_path)
     assert summary_data["evaluators"]["linear_5"]["num_samples"] == 3

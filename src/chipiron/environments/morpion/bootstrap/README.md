@@ -119,6 +119,25 @@ Artifacts are written under:
 Use `--run-name my_debug_run` for a stable output directory, or omit it to get a
 timestamped directory.
 
+Each run also writes `target_diagnostics.json`, which compares `direct_value` and
+`backed_up_value` for the extracted rows with delta quantiles, histogram,
+correlation, MSE, depth summaries, visit-count summaries, and worst deltas.
+
+Exact/terminal-only overfit probe:
+
+```bash
+python -m chipiron.environments.morpion.bootstrap.evaluator_sanity_check \
+  --work-dir ~/oldata/victor/morpion_runs/big_run_01 \
+  --dataset-mode bootstrap_like \
+  --max-rows 200 \
+  --require-exact-or-terminal \
+  --evaluator-name mlp_41 \
+  --num-epochs 1000 \
+  --batch-size 200 \
+  --learning-rate 0.001 \
+  --no-shuffle
+```
+
 ---
 
 ## ⚠️ Known issues
