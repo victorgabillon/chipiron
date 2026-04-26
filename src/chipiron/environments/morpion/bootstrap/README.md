@@ -138,6 +138,26 @@ python -m chipiron.environments.morpion.bootstrap.evaluator_sanity_check \
   --no-shuffle
 ```
 
+Fixed-tree fitted-backup probe:
+
+```bash
+python -m chipiron.environments.morpion.bootstrap.evaluator_fitted_backup_sanity \
+  --work-dir ~/oldata/victor/morpion_runs/big_run_01 \
+  --dataset-mode bootstrap_like \
+  --max-rows 200 \
+  --evaluator-name mlp_41 \
+  --num-iterations 20 \
+  --num-epochs 100 \
+  --batch-size 200 \
+  --learning-rate 0.001 \
+  --no-shuffle
+```
+
+This freezes one tree export, recomputes backed-up labels from exact/terminal
+ground truth plus evaluator predictions, trains, and repeats. Watch
+`mean_abs_target_change` and `max_abs_target_change` in `summary.json`; stable
+backup targets are the convergence signal.
+
 ---
 
 ## ⚠️ Known issues
