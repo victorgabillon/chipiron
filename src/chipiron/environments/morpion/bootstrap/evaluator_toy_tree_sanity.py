@@ -702,9 +702,10 @@ def run_toy_tree_sanity(config: ToyRunConfig) -> ToyRunResult:
         _print_header()
     for iteration in range(config.num_iterations):
         prediction_before = predict_all_nodes(model, tree)
-        backup_predictions = dict(prediction_before)
         if iteration == 0:
-            backup_predictions.update(overrides)
+            prediction_before = dict(prediction_before)
+            prediction_before.update(overrides)
+        backup_predictions = dict(prediction_before)
 
         backed_up = compute_backed_up_values(
             tree,

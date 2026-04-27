@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import sys
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from types import ModuleType
 from typing import TYPE_CHECKING, cast
@@ -16,6 +17,10 @@ if TYPE_CHECKING:
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
+_ENVIRONMENTS_PACKAGE_ROOT = _CHIPIRON_PACKAGE_ROOT / "environments"
+_MORPION_PACKAGE_ROOT = _ENVIRONMENTS_PACKAGE_ROOT / "morpion"
+_BOOTSTRAP_PACKAGE_ROOT = _MORPION_PACKAGE_ROOT / "bootstrap"
+_MORPION_PLAYERS_PACKAGE_ROOT = _MORPION_PACKAGE_ROOT / "players"
 _ATOMHEART_PACKAGE_ROOT = _REPO_ROOT.parent / "atomheart" / "src" / "atomheart"
 _ANEMONE_PACKAGE_ROOT = _REPO_ROOT.parent / "anemone" / "src" / "anemone"
 _MORPION_EVALUATORS_PACKAGE_ROOT = (
@@ -27,16 +32,384 @@ _MORPION_EVALUATORS_PACKAGE_ROOT = (
     / "players"
     / "evaluators"
 )
+_MORPION_NN_PACKAGE_ROOT = _MORPION_EVALUATORS_PACKAGE_ROOT / "neural_networks"
 
 if "chipiron" not in sys.modules:
     _chipiron_stub = ModuleType("chipiron")
     _chipiron_stub.__path__ = [str(_CHIPIRON_PACKAGE_ROOT)]
     sys.modules["chipiron"] = _chipiron_stub
 
+if "chipiron.environments" not in sys.modules:
+    _environments_stub = ModuleType("chipiron.environments")
+    _environments_stub.__path__ = [str(_ENVIRONMENTS_PACKAGE_ROOT)]
+    sys.modules["chipiron.environments"] = _environments_stub
+
+if "chipiron.environments.morpion" not in sys.modules:
+    _morpion_stub = ModuleType("chipiron.environments.morpion")
+    _morpion_stub.__path__ = [str(_MORPION_PACKAGE_ROOT)]
+    sys.modules["chipiron.environments.morpion"] = _morpion_stub
+
+if "chipiron.environments.morpion.bootstrap" not in sys.modules:
+    _bootstrap_stub = ModuleType("chipiron.environments.morpion.bootstrap")
+    _bootstrap_stub.__path__ = [str(_BOOTSTRAP_PACKAGE_ROOT)]
+    sys.modules["chipiron.environments.morpion.bootstrap"] = _bootstrap_stub
+
+if "chipiron.environments.morpion.bootstrap.bootstrap_loop" not in sys.modules:
+    _bootstrap_loop_stub = ModuleType(
+        "chipiron.environments.morpion.bootstrap.bootstrap_loop"
+    )
+
+    @dataclass(frozen=True, slots=True)
+    class _MorpionEvaluatorSpec:
+        name: str
+        model_type: str
+        hidden_sizes: tuple[int, ...] | None
+        num_epochs: int
+        batch_size: int
+        learning_rate: float
+        feature_subset_name: str
+        feature_names: tuple[str, ...] | None = None
+
+        @property
+        def feature_subset(self) -> object:
+            class _FeatureSubset:
+                dimension = 5
+
+            return _FeatureSubset()
+
+    @dataclass(frozen=True, slots=True)
+    class _MorpionBootstrapPaths:
+        work_dir: Path
+
+        @classmethod
+        def from_work_dir(cls, work_dir: Path | str) -> _MorpionBootstrapPaths:
+            return cls(Path(work_dir))
+
+        @property
+        def tree_snapshot_dir(self) -> Path:
+            return self.work_dir / "tree_exports"
+
+        @property
+        def model_dir(self) -> Path:
+            return self.work_dir / "models"
+
+        def ensure_directories(self) -> None:
+            self.tree_snapshot_dir.mkdir(parents=True, exist_ok=True)
+            self.model_dir.mkdir(parents=True, exist_ok=True)
+
+        def tree_snapshot_path_for_generation(self, generation: int) -> Path:
+            return self.tree_snapshot_dir / f"generation_{generation:06d}.json"
+
+        def model_bundle_path_for_generation(
+            self,
+            generation: int,
+            evaluator_name: str,
+        ) -> Path:
+            return self.model_dir / f"generation_{generation:06d}" / evaluator_name
+
+    _bootstrap_loop_stub.MorpionBootstrapPaths = _MorpionBootstrapPaths
+    _bootstrap_loop_stub.MorpionEvaluatorSpec = _MorpionEvaluatorSpec
+    sys.modules["chipiron.environments.morpion.bootstrap.bootstrap_loop"] = (
+        _bootstrap_loop_stub
+    )
+
+if "chipiron.environments.morpion.bootstrap.evaluator_diagnostics" not in sys.modules:
+    _diagnostics_stub = ModuleType(
+        "chipiron.environments.morpion.bootstrap.evaluator_diagnostics"
+    )
+
+    @dataclass(frozen=True, slots=True)
+    class _MorpionEvaluatorTrainingDiagnostics:
+        generation: int
+        evaluator_name: str
+        dataset_size: int
+        created_at: str
+        representative_examples: list[object]
+        worst_examples: list[object]
+        mae_before: float | None
+        mae_after: float | None
+        max_abs_error_before: float | None
+        max_abs_error_after: float | None
+
+    def _build_evaluator_training_diagnostics(
+        **_kwargs: object,
+    ) -> _MorpionEvaluatorTrainingDiagnostics:
+        return _MorpionEvaluatorTrainingDiagnostics(
+            generation=0,
+            evaluator_name="stub",
+            dataset_size=0,
+            created_at="",
+            representative_examples=[],
+            worst_examples=[],
+            mae_before=None,
+            mae_after=None,
+            max_abs_error_before=None,
+            max_abs_error_after=None,
+        )
+
+    def _save_evaluator_training_diagnostics(
+        diagnostics: _MorpionEvaluatorTrainingDiagnostics,
+        path: Path,
+    ) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(asdict(diagnostics)) + "\n", encoding="utf-8")
+
+    _diagnostics_stub.MorpionEvaluatorTrainingDiagnostics = (
+        _MorpionEvaluatorTrainingDiagnostics
+    )
+    _diagnostics_stub.build_evaluator_training_diagnostics = (
+        _build_evaluator_training_diagnostics
+    )
+    _diagnostics_stub.save_evaluator_training_diagnostics = (
+        _save_evaluator_training_diagnostics
+    )
+    sys.modules["chipiron.environments.morpion.bootstrap.evaluator_diagnostics"] = (
+        _diagnostics_stub
+    )
+
+if "chipiron.environments.morpion.bootstrap.evaluator_family" not in sys.modules:
+    _family_stub = ModuleType("chipiron.environments.morpion.bootstrap.evaluator_family")
+
+    @dataclass(frozen=True, slots=True)
+    class _MorpionEvaluatorsConfig:
+        evaluators: dict[str, _MorpionEvaluatorSpec]
+
+    def _morpion_evaluators_config_from_preset(
+        _preset: str,
+    ) -> _MorpionEvaluatorsConfig:
+        spec = _MorpionEvaluatorSpec(
+            name="linear_5",
+            model_type="linear",
+            hidden_sizes=None,
+            num_epochs=1,
+            batch_size=1,
+            learning_rate=1e-3,
+            feature_subset_name="handcrafted_5_core",
+        )
+        return _MorpionEvaluatorsConfig(evaluators={"linear_5": spec})
+
+    _family_stub.CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET = "canonical"
+    _family_stub.morpion_evaluators_config_from_preset = (
+        _morpion_evaluators_config_from_preset
+    )
+    sys.modules["chipiron.environments.morpion.bootstrap.evaluator_family"] = (
+        _family_stub
+    )
+
+if "chipiron.environments.morpion.bootstrap.evaluator_sanity_check" not in sys.modules:
+    _sanity_stub = ModuleType(
+        "chipiron.environments.morpion.bootstrap.evaluator_sanity_check"
+    )
+
+    class _EmptyMorpionSanityDatasetError(ValueError):
+        pass
+
+    def _build_backup_target_diagnostics(**_kwargs: object) -> dict[str, object]:
+        return {}
+
+    def _terminal_path_nodes(snapshot: object) -> tuple[object, ...]:
+        return tuple(getattr(snapshot, "nodes", ()))
+
+    def _top_terminal_path_nodes(
+        snapshot: object,
+        *,
+        max_terminal_nodes: int,
+    ) -> tuple[object, ...]:
+        terminal_nodes = [
+            node
+            for node in getattr(snapshot, "nodes", ())
+            if getattr(node, "is_terminal", False) or getattr(node, "is_exact", False)
+        ]
+        terminal_nodes.sort(key=lambda node: getattr(node, "depth", 0), reverse=True)
+        return tuple(terminal_nodes[:max_terminal_nodes])
+
+    _sanity_stub.EmptyMorpionSanityDatasetError = _EmptyMorpionSanityDatasetError
+    _sanity_stub.MorpionSanityDatasetMode = str
+    _sanity_stub.build_backup_target_diagnostics = _build_backup_target_diagnostics
+    _sanity_stub.terminal_path_nodes = _terminal_path_nodes
+    _sanity_stub.top_terminal_path_nodes = _top_terminal_path_nodes
+    sys.modules["chipiron.environments.morpion.bootstrap.evaluator_sanity_check"] = (
+        _sanity_stub
+    )
+
+if "chipiron.environments.morpion.learning" not in sys.modules:
+    _learning_stub = ModuleType("chipiron.environments.morpion.learning")
+
+    @dataclass(frozen=True, slots=True)
+    class _MorpionSupervisedRow:
+        node_id: str
+        state_ref_payload: dict[str, object]
+        target_value: float
+        is_terminal: bool
+        is_exact: bool
+        depth: int
+        visit_count: int | None
+        direct_value: float | None
+        over_event_label: str | None
+        metadata: dict[str, object]
+
+    @dataclass(frozen=True, slots=True)
+    class _MorpionSupervisedRows:
+        rows: tuple[_MorpionSupervisedRow, ...]
+        metadata: dict[str, object]
+
+    def _decode_morpion_state_ref_payload(
+        payload: dict[str, object],
+    ) -> dict[str, object]:
+        return payload
+
+    def _save_morpion_supervised_rows(
+        rows: _MorpionSupervisedRows,
+        path: Path,
+    ) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "rows": [asdict(row) for row in rows.rows],
+            "metadata": rows.metadata,
+        }
+        path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    _learning_stub.MorpionSupervisedRow = _MorpionSupervisedRow
+    _learning_stub.MorpionSupervisedRows = _MorpionSupervisedRows
+    _learning_stub.decode_morpion_state_ref_payload = _decode_morpion_state_ref_payload
+    _learning_stub.save_morpion_supervised_rows = _save_morpion_supervised_rows
+    sys.modules["chipiron.environments.morpion.learning"] = _learning_stub
+
+if "chipiron.environments.morpion.types" not in sys.modules:
+    _types_stub = ModuleType("chipiron.environments.morpion.types")
+
+    class _MorpionDynamics:
+        def wrap_atomheart_state(self, state: object) -> object:
+            return state
+
+    _types_stub.MorpionDynamics = _MorpionDynamics
+    sys.modules["chipiron.environments.morpion.types"] = _types_stub
+
+if "chipiron.environments.morpion.players" not in sys.modules:
+    _players_stub = ModuleType("chipiron.environments.morpion.players")
+    _players_stub.__path__ = [str(_MORPION_PLAYERS_PACKAGE_ROOT)]
+    sys.modules["chipiron.environments.morpion.players"] = _players_stub
+
 if "chipiron.environments.morpion.players.evaluators" not in sys.modules:
     _evaluators_stub = ModuleType("chipiron.environments.morpion.players.evaluators")
     _evaluators_stub.__path__ = [str(_MORPION_EVALUATORS_PACKAGE_ROOT)]
     sys.modules["chipiron.environments.morpion.players.evaluators"] = _evaluators_stub
+
+if (
+    "chipiron.environments.morpion.players.evaluators.neural_networks"
+    not in sys.modules
+):
+    _nn_stub = ModuleType(
+        "chipiron.environments.morpion.players.evaluators.neural_networks"
+    )
+    _nn_stub.__path__ = [str(_MORPION_NN_PACKAGE_ROOT)]
+    sys.modules[
+        "chipiron.environments.morpion.players.evaluators.neural_networks"
+    ] = _nn_stub
+
+if (
+    "chipiron.environments.morpion.players.evaluators.neural_networks.model"
+    not in sys.modules
+):
+    _model_stub = ModuleType(
+        "chipiron.environments.morpion.players.evaluators.neural_networks.model"
+    )
+
+    @dataclass(frozen=True, slots=True)
+    class _MorpionRegressorArgs:
+        model_kind: str = "linear"
+        feature_subset_name: str | None = None
+        feature_names: tuple[str, ...] | None = None
+        hidden_sizes: tuple[int, ...] | None = None
+
+    class _MorpionRegressor(torch.nn.Module):
+        def __init__(self, _args: _MorpionRegressorArgs) -> None:
+            super().__init__()
+
+        def forward(self, features: torch.Tensor) -> torch.Tensor:
+            return torch.zeros((features.shape[0],), dtype=torch.float32)
+
+    def _build_morpion_regressor(
+        args: _MorpionRegressorArgs,
+    ) -> _MorpionRegressor:
+        return _MorpionRegressor(args)
+
+    _model_stub.MorpionRegressor = _MorpionRegressor
+    _model_stub.MorpionRegressorArgs = _MorpionRegressorArgs
+    _model_stub.build_morpion_regressor = _build_morpion_regressor
+    sys.modules[
+        "chipiron.environments.morpion.players.evaluators.neural_networks.model"
+    ] = _model_stub
+
+if (
+    "chipiron.environments.morpion.players.evaluators.neural_networks.bundle"
+    not in sys.modules
+):
+    _bundle_stub = ModuleType(
+        "chipiron.environments.morpion.players.evaluators.neural_networks.bundle"
+    )
+
+    def _load_morpion_regressor_for_inference(_path: Path) -> object:
+        return _MorpionRegressor(_MorpionRegressorArgs())
+
+    _bundle_stub.load_morpion_regressor_for_inference = (
+        _load_morpion_regressor_for_inference
+    )
+    sys.modules[
+        "chipiron.environments.morpion.players.evaluators.neural_networks.bundle"
+    ] = _bundle_stub
+
+if (
+    "chipiron.environments.morpion.players.evaluators.neural_networks.state_to_tensor"
+    not in sys.modules
+):
+    _state_to_tensor_stub = ModuleType(
+        "chipiron.environments.morpion.players.evaluators.neural_networks.state_to_tensor"
+    )
+
+    class _MorpionFeatureTensorConverter:
+        def __init__(self, **_kwargs: object) -> None:
+            pass
+
+        def state_to_tensor(self, _state: object) -> torch.Tensor:
+            return torch.zeros((5,), dtype=torch.float32)
+
+    _state_to_tensor_stub.MorpionFeatureTensorConverter = _MorpionFeatureTensorConverter
+    sys.modules[
+        "chipiron.environments.morpion.players.evaluators.neural_networks.state_to_tensor"
+    ] = _state_to_tensor_stub
+
+if (
+    "chipiron.environments.morpion.players.evaluators.neural_networks.train"
+    not in sys.modules
+):
+    _train_stub = ModuleType(
+        "chipiron.environments.morpion.players.evaluators.neural_networks.train"
+    )
+
+    @dataclass(frozen=True, slots=True)
+    class _MorpionTrainingArgs:
+        dataset_file: Path
+        output_dir: Path
+        batch_size: int
+        num_epochs: int
+        learning_rate: float
+        shuffle: bool
+        model_kind: str
+        feature_subset_name: str | None = None
+        feature_names: tuple[str, ...] | None = None
+        hidden_sizes: tuple[int, ...] | None = None
+
+    def _train_morpion_regressor(
+        _args: _MorpionTrainingArgs,
+    ) -> tuple[object, dict[str, float]]:
+        return _MorpionRegressor(_MorpionRegressorArgs()), {"final_loss": 0.0}
+
+    _train_stub.MorpionTrainingArgs = _MorpionTrainingArgs
+    _train_stub.train_morpion_regressor = _train_morpion_regressor
+    sys.modules[
+        "chipiron.environments.morpion.players.evaluators.neural_networks.train"
+    ] = _train_stub
 
 if "atomheart" not in sys.modules:
     _atomheart_stub = ModuleType("atomheart")
@@ -64,7 +437,9 @@ from chipiron.environments.morpion.bootstrap.evaluator_diagnostics import (
 )
 from chipiron.environments.morpion.bootstrap.evaluator_fitted_backup_sanity import (
     MorpionFittedBackupSanityArgs,
+    family_adjusted_targets,
     fitted_backup_node_values,
+    principal_variation_families_from_selected_child,
     run_fitted_backup_sanity,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.model import (
@@ -202,8 +577,10 @@ def test_non_terminal_parent_receives_max_child_backed_up_value() -> None:
 
     assert values["left"].backed_up_target == 7.0
     assert values["left"].target_source == "child_backup"
+    assert values["left"].selected_child_id == "left_leaf"
     assert values["root"].backed_up_target == 7.0
     assert values["root"].target_source == "child_backup"
+    assert values["root"].selected_child_id == "left"
 
 
 def test_leaf_non_exact_node_uses_direct_or_evaluator_prediction() -> None:
@@ -231,6 +608,66 @@ def test_target_change_metrics_are_computed_between_iterations() -> None:
     assert values["left"].abs_target_change == 0.0
     assert values["right"].abs_target_change == 2.0
     assert values["left_leaf"].abs_target_change == 6.0
+
+
+def test_principal_variation_families_from_selected_child() -> None:
+    """PV families should group nodes by final selected-child representative."""
+    families = principal_variation_families_from_selected_child(
+        {
+            "0": "2",
+            "1": None,
+            "2": "3",
+            "3": None,
+        }
+    )
+
+    assert families["3"] == ("0", "2", "3")
+    assert families["1"] == ("1",)
+
+
+def test_pv_mean_prediction_family_target() -> None:
+    """PV mean prediction should use prediction values along each family."""
+    family_targets = family_adjusted_targets(
+        raw_targets={"0": 10.0, "1": 1.0, "2": 10.0, "3": 10.0},
+        prediction_values={"0": 0.0, "1": 1.0, "2": 0.0, "3": 10.0},
+        exact_or_terminal_node_ids=set(),
+        selected_child_by_node={"0": "2", "1": None, "2": "3", "3": None},
+        family_target_policy="pv_mean_prediction",
+    )
+
+    assert family_targets.effective_targets["0"] == 10.0 / 3.0
+    assert family_targets.effective_targets["2"] == 10.0 / 3.0
+    assert family_targets.effective_targets["3"] == 10.0 / 3.0
+
+
+def test_family_smoothing_preserves_exact_terminal_target() -> None:
+    """Exact/terminal nodes should remain hard ground-truth anchors."""
+    family_targets = family_adjusted_targets(
+        raw_targets={"0": 10.0, "1": 1.0, "2": 10.0, "3": 10.0},
+        prediction_values={"0": 0.0, "1": 99.0, "2": 0.0, "3": 10.0},
+        exact_or_terminal_node_ids={"1"},
+        selected_child_by_node={"0": "2", "1": None, "2": "3", "3": None},
+        family_target_policy="pv_mean_prediction",
+    )
+
+    assert family_targets.effective_targets["1"] == 1.0
+
+
+def test_pv_blend_mean_prediction_mixes_raw_and_family_prediction() -> None:
+    """PV blend should mix raw backup target with family prediction mean."""
+    family_targets = family_adjusted_targets(
+        raw_targets={"0": 10.0, "1": 1.0, "2": 10.0, "3": 10.0},
+        prediction_values={"0": 0.0, "1": 1.0, "2": 0.0, "3": 10.0},
+        exact_or_terminal_node_ids=set(),
+        selected_child_by_node={"0": "2", "1": None, "2": "3", "3": None},
+        family_target_policy="pv_blend_mean_prediction",
+        family_prediction_blend=0.25,
+    )
+
+    expected = 0.75 * 10.0 + 0.25 * (10.0 / 3.0)
+    assert family_targets.effective_targets["0"] == expected
+    assert family_targets.effective_targets["2"] == expected
+    assert family_targets.effective_targets["3"] == expected
 
 
 def test_exact_terminal_plus_prefix_preserves_anchors_beyond_prefix() -> None:
@@ -383,5 +820,16 @@ def test_two_tiny_iterations_write_summary_and_artifacts(
     assert feature_cache_builds == [1]
     assert len(summary_data["iterations"]) == 2
     assert summary_data["iterations"][1]["mean_abs_target_change"] == 0.0
+    assert summary_data["iterations"][1]["raw_target_change_mean"] == 0.0
+    assert summary_data["iterations"][1]["effective_target_change_mean"] == 0.0
+    assert summary_data["iterations"][1]["effective_minus_raw_mean_abs"] == 0.0
+    assert summary_data["family_target_policy"] == "none"
+    rows_data = json.loads(
+        (run_dir / "iteration_000" / "rows.json").read_text(encoding="utf-8")
+    )
+    row_metadata = rows_data["rows"][0]["metadata"]
+    assert row_metadata["raw_target"] == row_metadata["effective_target"]
+    assert row_metadata["family_representative_node_id"] == "root"
+    assert row_metadata["family_size"] == 1
     assert snapshot.nodes is original_nodes
     assert cast("TrainingNodeSnapshot", snapshot.nodes[0]).backed_up_value_scalar is None

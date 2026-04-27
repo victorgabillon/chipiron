@@ -69,6 +69,11 @@ FittedBackupSelectionMode = Literal[
     "exact_terminal_plus_prefix",
     "top_terminal_paths",
 ]
+FittedBackupFamilyTargetPolicy = Literal[
+    "none",
+    "pv_mean_prediction",
+    "pv_blend_mean_prediction",
+]
 
 
 class MissingFittedBackupTargetError(ValueError):
@@ -116,8 +121,21 @@ class FittedBackupNodeValue:
     direct_value_before_backup: float
     backed_up_target: float
     target_source: str
+    selected_child_id: str | None = None
     previous_backed_up_target: float | None = None
     abs_target_change: float | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class FittedBackupFamilyTargets:
+    """Effective targets and PV-family diagnostics for one fitted-backup iteration."""
+
+    effective_targets: dict[str, float]
+    representative_by_node: dict[str, str]
+    family_size_by_node: dict[str, int]
+    num_families: int
+    mean_family_size: float | None
+    max_family_size: int | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -147,12 +165,15 @@ class MorpionFittedBackupSanityArgs:
     top_terminal_path_count: int = 5
     max_backup_nodes: int | None = None
     backup_selection: FittedBackupSelectionMode = "prefix"
+    family_target_policy: FittedBackupFamilyTargetPolicy = "none"
+    family_prediction_blend: float = 0.25
 
 
 def run_fitted_backup_sanity(
     args: MorpionFittedBackupSanityArgs,
 ) -> dict[str, object]:
     """Run fitted value iteration on one frozen Morpion tree snapshot."""
+    _validate_family_target_args(args)
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     snapshot_path = _resolve_snapshot_path(paths=paths, generation=args.generation)
     snapshot = load_training_tree_snapshot(snapshot_path)
@@ -203,7 +224,8 @@ def run_fitted_backup_sanity(
         evaluator_name=args.evaluator_name,
         spec=spec,
     )
-    previous_targets: dict[str, float] | None = None
+    previous_raw_targets: dict[str, float] | None = None
+    previous_effective_targets: dict[str, float] | None = None
     iteration_summaries: list[dict[str, object]] = []
 
     for iteration in range(args.num_iterations):
@@ -219,7 +241,7 @@ def run_fitted_backup_sanity(
             snapshot=snapshot,
             model=current_model,
             spec=spec,
-            previous_targets=previous_targets,
+            previous_targets=previous_raw_targets,
             feature_cache=feature_cache,
         )
         LOGGER.info(
@@ -228,9 +250,31 @@ def run_fitted_backup_sanity(
             len(node_values),
             time.perf_counter() - backup_started_at,
         )
+        family_targets = family_adjusted_targets(
+            raw_targets={
+                node_id: node_value.backed_up_target
+                for node_id, node_value in node_values.items()
+            },
+            prediction_values={
+                node_id: node_value.direct_value_before_backup
+                for node_id, node_value in node_values.items()
+            },
+            exact_or_terminal_node_ids={
+                node_id
+                for node_id, node_value in node_values.items()
+                if node_value.is_exact or node_value.is_terminal
+            },
+            selected_child_by_node={
+                node_id: node_value.selected_child_id
+                for node_id, node_value in node_values.items()
+            },
+            family_target_policy=args.family_target_policy,
+            family_prediction_blend=args.family_prediction_blend,
+        )
         rows = _rows_from_fitted_values(
             snapshot=snapshot,
             node_values=node_values,
+            family_targets=family_targets,
             selected_node_ids=selected_node_ids,
             iteration=iteration,
         )
@@ -298,7 +342,9 @@ def run_fitted_backup_sanity(
             iteration=iteration,
             rows=rows,
             node_values=node_values,
+            family_targets=family_targets,
             selected_node_ids=selected_node_ids,
+            previous_effective_targets=previous_effective_targets,
             final_loss=float(metrics["final_loss"]),
             mae_after=diagnostics.mae_after,
             max_abs_error_after=diagnostics.max_abs_error_after,
@@ -310,10 +356,11 @@ def run_fitted_backup_sanity(
             target_diagnostics_path=target_diagnostics_path,
         )
         iteration_summaries.append(iteration_summary)
-        previous_targets = {
+        previous_raw_targets = {
             node_id: node_value.backed_up_target
             for node_id, node_value in node_values.items()
         }
+        previous_effective_targets = dict(family_targets.effective_targets)
         current_model = trained_model
         LOGGER.info(
             "[fitted_backup] iteration_done iteration=%s final_loss=%s mean_abs_target_change=%s",
@@ -330,6 +377,8 @@ def run_fitted_backup_sanity(
         "backup_nodes": len(snapshot.nodes),
         "max_backup_nodes": args.max_backup_nodes,
         "backup_selection": args.backup_selection,
+        "family_target_policy": args.family_target_policy,
+        "family_prediction_blend": args.family_prediction_blend,
         "exact_or_terminal_backup_nodes": exact_or_terminal_backup_nodes,
         "feature_cache_nodes": len(feature_cache.node_ids),
         "generation": args.generation,
@@ -372,28 +421,36 @@ def fitted_backup_node_values(
     )
     backed_targets: dict[str, float] = {}
     target_sources: dict[str, str] = {}
+    selected_child_ids: dict[str, str | None] = {}
 
     for node in sorted(snapshot.nodes, key=lambda item: item.depth, reverse=True):
         ground_truth = _ground_truth_value(node)
         if ground_truth is not None:
             backed_targets[node.node_id] = ground_truth
             target_sources[node.node_id] = "ground_truth_exact_or_terminal"
+            selected_child_ids[node.node_id] = None
             continue
 
         child_values = [
-            backed_targets[child_id]
+            (child_id, backed_targets[child_id])
             for child_id in node.child_ids
             if child_id in backed_targets
         ]
         if child_values:
-            backed_targets[node.node_id] = max(child_values)
+            selected_child_id, selected_child_value = max(
+                child_values,
+                key=lambda item: item[1],
+            )
+            backed_targets[node.node_id] = selected_child_value
             target_sources[node.node_id] = "child_backup"
+            selected_child_ids[node.node_id] = selected_child_id
             continue
 
         if node.node_id not in direct_values:
             raise MissingFittedBackupTargetError(node.node_id)
         backed_targets[node.node_id] = direct_values[node.node_id]
         target_sources[node.node_id] = "frontier_prediction"
+        selected_child_ids[node.node_id] = None
 
     return {
         node_id: FittedBackupNodeValue(
@@ -404,6 +461,7 @@ def fitted_backup_node_values(
             direct_value_before_backup=direct_values[node_id],
             backed_up_target=backed_targets[node_id],
             target_source=target_sources[node_id],
+            selected_child_id=selected_child_ids[node_id],
             previous_backed_up_target=None
             if previous_targets is None
             else previous_targets.get(node_id),
@@ -435,6 +493,12 @@ def _parse_args(argv: list[str] | None) -> MorpionFittedBackupSanityArgs:
         default="bootstrap_like",
     )
     parser.add_argument("--max-rows", type=int)
+    parser.add_argument(
+        "--family-target-policy",
+        choices=("none", "pv_mean_prediction", "pv_blend_mean_prediction"),
+        default="none",
+    )
+    parser.add_argument("--family-prediction-blend", type=float, default=0.25)
     parser.add_argument("--evaluator-name", default="mlp_41")
     parser.add_argument(
         "--evaluator-family-preset",
@@ -470,6 +534,8 @@ def _parse_args(argv: list[str] | None) -> MorpionFittedBackupSanityArgs:
         top_terminal_path_count=namespace.top_terminal_path_count,
         max_backup_nodes=namespace.max_backup_nodes,
         backup_selection=namespace.backup_selection,
+        family_target_policy=namespace.family_target_policy,
+        family_prediction_blend=namespace.family_prediction_blend,
     )
 
 
@@ -613,6 +679,118 @@ def _filtered_snapshot(
 def _count_exact_or_terminal_nodes(snapshot: TrainingTreeSnapshot) -> int:
     """Return exact or terminal node count in one snapshot."""
     return sum(1 for node in snapshot.nodes if node.is_exact or node.is_terminal)
+
+
+def _validate_family_target_args(args: MorpionFittedBackupSanityArgs) -> None:
+    """Validate PV-family smoothing arguments."""
+    if not 0.0 <= args.family_prediction_blend <= 1.0:
+        raise ValueError("family_prediction_blend must be between 0 and 1.")  # noqa: TRY003
+
+
+def principal_variation_families_from_selected_child(
+    selected_child_by_node: dict[str, str | None],
+) -> dict[str, tuple[str, ...]]:
+    """Group nodes by the representative reached by following selected children."""
+    known_node_ids = set(selected_child_by_node)
+    known_node_ids.update(
+        child_id
+        for child_id in selected_child_by_node.values()
+        if child_id is not None
+    )
+    families: dict[str, list[str]] = {}
+    for node_id in sorted(known_node_ids):
+        representative = _principal_variation_representative(
+            node_id,
+            selected_child_by_node,
+        )
+        families.setdefault(representative, []).append(node_id)
+    return {
+        representative: tuple(node_ids)
+        for representative, node_ids in families.items()
+    }
+
+
+def family_adjusted_targets(
+    *,
+    raw_targets: dict[str, float],
+    prediction_values: dict[str, float],
+    exact_or_terminal_node_ids: set[str],
+    selected_child_by_node: dict[str, str | None],
+    family_target_policy: FittedBackupFamilyTargetPolicy,
+    family_prediction_blend: float = 0.25,
+) -> FittedBackupFamilyTargets:
+    """Return effective targets after optional PV-family prediction smoothing."""
+    if not 0.0 <= family_prediction_blend <= 1.0:
+        raise ValueError("family_prediction_blend must be between 0 and 1.")  # noqa: TRY003
+    families = principal_variation_families_from_selected_child(
+        selected_child_by_node,
+    )
+    representative_by_node: dict[str, str] = {}
+    family_size_by_node: dict[str, int] = {}
+    effective_targets: dict[str, float] = {}
+
+    for representative, node_ids in families.items():
+        family_size = len(node_ids)
+        family_mean = _mean(
+            [
+                prediction_values[node_id]
+                for node_id in node_ids
+                if node_id in prediction_values
+            ]
+        )
+        if family_mean is None:
+            family_mean = 0.0
+        for node_id in node_ids:
+            representative_by_node[node_id] = representative
+            family_size_by_node[node_id] = family_size
+            if node_id in exact_or_terminal_node_ids or family_target_policy == "none":
+                effective_targets[node_id] = raw_targets[node_id]
+            elif family_target_policy == "pv_mean_prediction":
+                effective_targets[node_id] = family_mean
+            elif family_target_policy == "pv_blend_mean_prediction":
+                effective_targets[node_id] = (
+                    (1.0 - family_prediction_blend) * raw_targets[node_id]
+                    + family_prediction_blend * family_mean
+                )
+            else:
+                raise ValueError(  # noqa: TRY003
+                    f"Unknown family target policy: {family_target_policy!r}."
+                )
+
+    for node_id, raw_target in raw_targets.items():
+        if node_id in effective_targets:
+            continue
+        effective_targets[node_id] = raw_target
+        representative_by_node[node_id] = node_id
+        family_size_by_node[node_id] = 1
+    family_sizes = [len(node_ids) for node_ids in families.values()]
+    return FittedBackupFamilyTargets(
+        effective_targets=effective_targets,
+        representative_by_node=representative_by_node,
+        family_size_by_node=family_size_by_node,
+        num_families=len(families),
+        mean_family_size=_mean([float(size) for size in family_sizes]),
+        max_family_size=max(family_sizes, default=None),
+    )
+
+
+def _principal_variation_representative(
+    node_id: str,
+    selected_child_by_node: dict[str, str | None],
+) -> str:
+    """Return the final node reached by following selected-child links."""
+    seen: set[str] = set()
+    current_id = node_id
+    while True:
+        if current_id in seen:
+            raise ValueError(  # noqa: TRY003
+                "Principal-variation family traversal found a cycle."
+            )
+        seen.add(current_id)
+        next_id = selected_child_by_node.get(current_id)
+        if next_id is None:
+            return current_id
+        current_id = next_id
 
 
 def _run_output_dir(
@@ -867,6 +1045,7 @@ def _rows_from_fitted_values(
     *,
     snapshot: TrainingTreeSnapshot,
     node_values: dict[str, FittedBackupNodeValue],
+    family_targets: FittedBackupFamilyTargets,
     selected_node_ids: tuple[str, ...],
     iteration: int,
 ) -> MorpionSupervisedRows:
@@ -878,11 +1057,12 @@ def _rows_from_fitted_values(
         if node.state_ref_payload is None:
             continue
         node_value = node_values[node_id]
+        effective_target = family_targets.effective_targets[node_id]
         rows.append(
             MorpionSupervisedRow(
                 node_id=node.node_id,
                 state_ref_payload=dict(node.state_ref_payload),
-                target_value=node_value.backed_up_target,
+                target_value=effective_target,
                 is_terminal=node.is_terminal,
                 is_exact=node.is_exact,
                 depth=node.depth,
@@ -893,6 +1073,12 @@ def _rows_from_fitted_values(
                     **dict(node.metadata),
                     "fitted_backup_iteration": iteration,
                     "target_source": node_value.target_source,
+                    "raw_target": node_value.backed_up_target,
+                    "effective_target": effective_target,
+                    "family_representative_node_id": (
+                        family_targets.representative_by_node.get(node_id)
+                    ),
+                    "family_size": family_targets.family_size_by_node.get(node_id),
                     "previous_backed_up_target": node_value.previous_backed_up_target,
                     "abs_target_change": node_value.abs_target_change,
                 },
@@ -904,6 +1090,7 @@ def _rows_from_fitted_values(
             "dataset_kind": "morpion_fitted_backup_sanity_rows",
             "iteration": iteration,
             "num_rows": len(rows),
+            "root_node_id": snapshot.root_node_id,
         },
     )
 
@@ -974,7 +1161,9 @@ def _iteration_summary(
     iteration: int,
     rows: MorpionSupervisedRows,
     node_values: dict[str, FittedBackupNodeValue],
+    family_targets: FittedBackupFamilyTargets,
     selected_node_ids: tuple[str, ...],
+    previous_effective_targets: dict[str, float] | None,
     final_loss: float,
     mae_after: float | None,
     max_abs_error_after: float | None,
@@ -987,16 +1176,45 @@ def _iteration_summary(
 ) -> dict[str, object]:
     """Build one per-iteration summary."""
     selected_values = [node_values[node_id] for node_id in selected_node_ids]
-    targets = [value.backed_up_target for value in selected_values]
-    target_changes = [
+    raw_targets = [value.backed_up_target for value in selected_values]
+    effective_targets = [
+        family_targets.effective_targets[node_id] for node_id in selected_node_ids
+    ]
+    raw_target_changes = [
         value.abs_target_change
         for value in selected_values
         if value.abs_target_change is not None
     ]
+    effective_target_changes = (
+        []
+        if previous_effective_targets is None
+        else [
+            abs(family_targets.effective_targets[node_id] - previous_effective_targets[node_id])
+            for node_id in selected_node_ids
+            if node_id in previous_effective_targets
+        ]
+    )
     prediction_changes = [
         abs(after - before)
         for before, after in zip(previous_predictions, next_predictions, strict=True)
     ]
+    row_effective_minus_raw = [
+        abs(float(row.metadata.get("effective_target", row.target_value)) - float(row.metadata["raw_target"]))
+        for row in rows.rows
+        if "raw_target" in row.metadata
+    ]
+    changed_row_count = sum(value > 1e-12 for value in row_effective_minus_raw)
+    root_raw_target = (
+        node_values[rows.metadata["root_node_id"]].backed_up_target
+        if "root_node_id" in rows.metadata and rows.metadata["root_node_id"] in node_values
+        else None
+    )
+    root_effective_target = (
+        family_targets.effective_targets[rows.metadata["root_node_id"]]
+        if "root_node_id" in rows.metadata
+        and rows.metadata["root_node_id"] in family_targets.effective_targets
+        else None
+    )
     return {
         "iteration": iteration,
         "num_rows": len(rows.rows),
@@ -1012,13 +1230,34 @@ def _iteration_summary(
         "final_loss": final_loss,
         "mae_after": mae_after,
         "max_abs_error_after": max_abs_error_after,
-        "mean_abs_target_change": _mean(target_changes),
-        "max_abs_target_change": max(target_changes, default=None),
+        "raw_target_change_mean": _mean(raw_target_changes),
+        "raw_target_change_max": max(raw_target_changes, default=None),
+        "effective_target_change_mean": _mean(effective_target_changes),
+        "effective_target_change_max": max(effective_target_changes, default=None),
+        "prediction_change_mean": _mean(prediction_changes),
+        "prediction_change_max": max(prediction_changes, default=None),
+        "effective_minus_raw_mean_abs": _mean(row_effective_minus_raw),
+        "effective_minus_raw_max_abs": max(row_effective_minus_raw, default=None),
+        "num_pv_families": family_targets.num_families,
+        "mean_pv_family_size": family_targets.mean_family_size,
+        "max_pv_family_size": family_targets.max_family_size,
+        "fraction_rows_effective_target_changed_by_family_smoothing": (
+            changed_row_count / float(len(row_effective_minus_raw))
+            if row_effective_minus_raw
+            else None
+        ),
+        "root_raw_target": root_raw_target,
+        "root_effective_target": root_effective_target,
+        "mean_abs_target_change": _mean(effective_target_changes),
+        "max_abs_target_change": max(effective_target_changes, default=None),
         "mean_prediction_change": _mean(prediction_changes),
-        "mean_backed_up_target": _mean(targets),
-        "min_backed_up_target": min(targets, default=None),
-        "max_backed_up_target": max(targets, default=None),
-        "target_std": _std(targets),
+        "mean_backed_up_target": _mean(raw_targets),
+        "min_backed_up_target": min(raw_targets, default=None),
+        "max_backed_up_target": max(raw_targets, default=None),
+        "mean_effective_target": _mean(effective_targets),
+        "min_effective_target": min(effective_targets, default=None),
+        "max_effective_target": max(effective_targets, default=None),
+        "target_std": _std(effective_targets),
         "rows_path": str(rows_path),
         "model_dir": str(model_dir),
         "diagnostics_path": str(diagnostics_path),

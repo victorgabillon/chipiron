@@ -267,6 +267,7 @@ def test_family_targets_flow_into_training_rows() -> None:
     tree = built_in_toy_tree("F_linear_compositional_vicious_circle")
     backed_up = compute_backed_up_values(tree, {3: 10.0}, "max")
     predictions = {node_id: 0.0 for node_id in tree.nodes}
+    predictions[3] = 10.0
     targets = family_adjusted_targets(
         tree=tree,
         backed_up_values=backed_up,
@@ -283,10 +284,30 @@ def test_family_targets_flow_into_training_rows() -> None:
     )
 
     row_targets = {row.node_id: row.target for row in rows}
-    assert row_targets[0] == 0.0
-    assert row_targets[2] == 0.0
-    assert row_targets[3] == 0.0
+    assert row_targets[0] == 10.0 / 3.0
+    assert row_targets[2] == 10.0 / 3.0
+    assert row_targets[3] == 10.0 / 3.0
     assert row_targets[1] == 1.0
+
+
+def test_iteration_zero_override_flows_into_family_prediction_targets() -> None:
+    """The A override should be visible to prediction-family smoothing."""
+    result = run_toy_tree_sanity(
+        ToyRunConfig(
+            case="F_linear_compositional_vicious_circle",
+            model_kind="linear_no_bias",
+            family_target_policy="pv_mean_prediction",
+            num_iterations=1,
+            train_epochs=1,
+            print_every=0,
+        )
+    )
+
+    assert result.metrics[0].root_target == 10.0 / 3.0
+    first_a_history = next(
+        row for row in result.node_history if row.iteration == 0 and row.node_id == 3
+    )
+    assert first_a_history.prediction_before == 10.0
 
 
 def test_pv_blend_mean_prediction_mixes_backup_with_family_prediction() -> None:
