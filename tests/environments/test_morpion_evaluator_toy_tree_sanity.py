@@ -40,6 +40,8 @@ from chipiron.environments.morpion.bootstrap.evaluator_toy_tree_sanity import (
     build_training_rows,
     built_in_toy_tree,
     compute_backed_up_values,
+    make_toy_model,
+    predict_all_nodes,
     run_toy_tree_sanity,
     train_weighted_regressor,
 )
@@ -147,3 +149,64 @@ def test_output_dir_writes_plotting_artifacts(tmp_path: Path) -> None:
     assert (tmp_path / "node_history.csv").is_file()
     assert (tmp_path / "metrics_copy.csv").is_file()
     assert (tmp_path / "summary.json").is_file()
+
+
+def test_case_f_tree_features_and_topology() -> None:
+    """Case F should expose the intended compositional linear features."""
+    tree = built_in_toy_tree("F_linear_compositional_vicious_circle")
+
+    assert tree.nodes[0].feature == (0.0, 1.0, 0.0)
+    assert tree.nodes[0].child_ids == (1, 2)
+    assert tree.nodes[1].feature == (1.0, 0.0, 0.0)
+    assert tree.nodes[1].is_terminal
+    assert tree.nodes[1].exact_value == 1.0
+    assert tree.nodes[2].feature == (0.0, 0.0, 1.0)
+    assert tree.nodes[2].child_ids == (3,)
+    assert tree.nodes[3].feature == (0.0, 1.0, 1.0)
+
+
+def test_case_f_initial_hard_max_with_a_override_is_ten() -> None:
+    """The initial A override should back up through the path and root."""
+    tree = built_in_toy_tree("F_linear_compositional_vicious_circle")
+
+    backed_up = compute_backed_up_values(tree, {3: 10.0}, "max")
+
+    assert backed_up[3].value == 10.0
+    assert backed_up[2].value == 10.0
+    assert backed_up[0].value == 10.0
+
+
+def test_linear_no_bias_initial_predictions_are_zero() -> None:
+    """The transparent linear model should start with zero predictions."""
+    tree = built_in_toy_tree("F_linear_compositional_vicious_circle")
+    model = make_toy_model(
+        ToyRunConfig(model_kind="linear_no_bias"),
+        tree.feature_dim,
+    )
+
+    predictions = predict_all_nodes(model, tree)
+
+    assert all(prediction == 0.0 for prediction in predictions.values())
+
+
+def test_linear_no_bias_run_writes_linear_weights(tmp_path: Path) -> None:
+    """A short linear run should expose weights in metrics and CSV output."""
+    result = run_toy_tree_sanity(
+        ToyRunConfig(
+            case="F_linear_compositional_vicious_circle",
+            model_kind="linear_no_bias",
+            num_iterations=1,
+            train_epochs=1,
+            print_every=0,
+            output_dir=tmp_path,
+        )
+    )
+
+    metric = result.metrics[0]
+    assert metric.linear_w0 is not None
+    assert metric.linear_w1 is not None
+    assert metric.linear_w2 is not None
+    assert metric.linear_a_value_from_weights is not None
+    assert "linear_w0" in (tmp_path / "iteration_metrics.csv").read_text(
+        encoding="utf-8"
+    )

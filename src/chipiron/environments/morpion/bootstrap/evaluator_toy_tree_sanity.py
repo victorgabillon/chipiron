@@ -1,4 +1,23 @@
-"""Tiny controlled tree laboratory for bootstrap value-learning dynamics."""
+"""Tiny controlled tree laboratory for bootstrap value-learning dynamics.
+
+Linear vicious-circle example:
+
+```
+python -m chipiron.environments.morpion.bootstrap.evaluator_toy_tree_sanity \
+  --case F_linear_compositional_vicious_circle \
+  --model-kind linear_no_bias \
+  --backup-operator max \
+  --train-targets all \
+  --frontier-weight 1.0 \
+  --child-backup-weight 1.0 \
+  --exact-weight 1.0 \
+  --num-iterations 20 \
+  --train-epochs 500 \
+  --learning-rate 0.01 \
+  --seed 0 \
+  --output-dir /tmp/morpion_toy_F_linear_vicious
+```
+"""
 # ruff: noqa: TRY003
 
 from __future__ import annotations
@@ -23,10 +42,12 @@ ToyCaseName = Literal[
     "C_many_frontier_outliers",
     "D_deep_terminal_vs_frontier",
     "E_two_level_mixed",
+    "F_linear_compositional_vicious_circle",
 ]
 BackupOperator = Literal["max", "softmax", "clipped_max"]
 TrainTargets = Literal["exact_only", "exact_plus_child", "all"]
 InitMode = Literal["zero", "random", "optimistic_feature"]
+ModelKind = Literal["mlp", "linear_no_bias"]
 TargetSource = Literal[
     "ground_truth_exact_or_terminal",
     "child_backup",
@@ -184,6 +205,10 @@ class ToyIterationMetric:
     mae_frontier: float | None
     max_abs_prediction: float
     diverged: bool
+    linear_w0: float | None
+    linear_w1: float | None
+    linear_w2: float | None
+    linear_a_value_from_weights: float | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -216,6 +241,7 @@ class ToyRunConfig:
     batch_size: int | None = None
     seed: int = 0
     init_mode: InitMode = "zero"
+    model_kind: ModelKind = "mlp"
     frontier_initial_overrides: dict[int, float] | None = None
     backup_operator: BackupOperator = "max"
     backup_temperature: float = 1.0
@@ -306,6 +332,32 @@ class ToyValueNet(nn.Module):
         final.weight.data[0, 0] = 10.0
 
 
+class ToyLinearNoBiasNet(nn.Module):
+    """Transparent linear evaluator ``V(x) = w0*x0 + w1*x1 + w2*x2``."""
+
+    def __init__(self, feature_dim: int) -> None:
+        """Initialize a zero-prediction linear evaluator with no bias."""
+        super().__init__()
+        self.linear = nn.Linear(feature_dim, 1, bias=False)
+        nn.init.zeros_(self.linear.weight)
+
+    def forward(self, features: torch.Tensor) -> torch.Tensor:
+        """Predict scalar values for a batch of feature vectors."""
+        return self.linear(features).squeeze(-1)
+
+
+def make_toy_model(config: ToyRunConfig, feature_dim: int) -> nn.Module:
+    """Build the configured toy evaluator."""
+    if config.model_kind == "linear_no_bias":
+        return ToyLinearNoBiasNet(feature_dim)
+    return ToyValueNet(
+        feature_dim=feature_dim,
+        hidden_dim=config.hidden_dim,
+        num_layers=config.num_layers,
+        init_mode=config.init_mode,
+    )
+
+
 def built_in_toy_tree(case: ToyCaseName) -> ToyTree:
     """Build one of the controlled toy tree cases."""
     if case == "A_stable_terminal_wins":
@@ -357,6 +409,15 @@ def built_in_toy_tree(case: ToyCaseName) -> ToyTree:
                 ToyNode(5, 1, (), (0.0, 0.0, 1.0)),
                 ToyNode(6, 2, (), (0.0, 1.0, 0.0), is_terminal=True, exact_value=-1.0),
                 ToyNode(7, 2, (), (0.0, 1.0, 0.0), is_terminal=True, exact_value=0.5),
+            )
+        )
+    if case == "F_linear_compositional_vicious_circle":
+        return _make_tree(
+            (
+                ToyNode(0, None, (1, 2), (0.0, 1.0, 0.0)),
+                ToyNode(1, 0, (), (1.0, 0.0, 0.0), is_terminal=True, exact_value=1.0),
+                ToyNode(2, 0, (3,), (0.0, 0.0, 1.0)),
+                ToyNode(3, 2, (), (0.0, 1.0, 1.0)),
             )
         )
     raise ValueError(f"Unknown toy tree case: {case!r}.")
@@ -502,7 +563,7 @@ def build_training_rows(
 
 
 def train_weighted_regressor(
-    model: ToyValueNet,
+    model: nn.Module,
     rows: tuple[ToyTrainingRow, ...],
     *,
     learning_rate: float = 1e-3,
@@ -549,12 +610,7 @@ def run_toy_tree_sanity(config: ToyRunConfig) -> ToyRunResult:
     """Run repeated fitted backup and evaluator updates on a toy tree."""
     set_deterministic_seeds(config.seed)
     tree = built_in_toy_tree(config.case)
-    model = ToyValueNet(
-        feature_dim=tree.feature_dim,
-        hidden_dim=config.hidden_dim,
-        num_layers=config.num_layers,
-        init_mode=config.init_mode,
-    )
+    model = make_toy_model(config, tree.feature_dim)
     overrides = _effective_frontier_initial_overrides(config)
     previous_targets: dict[int, float] | None = None
     metrics: list[ToyIterationMetric] = []
@@ -599,6 +655,7 @@ def run_toy_tree_sanity(config: ToyRunConfig) -> ToyRunResult:
             batch_size=config.batch_size,
         )
         prediction_after = predict_all_nodes(model, tree)
+        weights_after = _linear_weights(model)
         metric = _iteration_metric(
             iteration=iteration,
             tree=tree,
@@ -609,6 +666,7 @@ def run_toy_tree_sanity(config: ToyRunConfig) -> ToyRunResult:
             previous_targets=previous_targets,
             final_loss=final_loss,
             divergence_threshold=config.divergence_threshold,
+            weights_after=weights_after,
         )
         metrics.append(metric)
         node_history.extend(
@@ -656,7 +714,7 @@ def set_deterministic_seeds(seed: int) -> None:
     torch.use_deterministic_algorithms(True)
 
 
-def predict_all_nodes(model: ToyValueNet, tree: ToyTree) -> dict[int, float]:
+def predict_all_nodes(model: nn.Module, tree: ToyTree) -> dict[int, float]:
     """Run model predictions for every toy node."""
     model.eval()
     node_ids = tree.node_ids_by_depth()
@@ -782,8 +840,14 @@ def _parse_args(argv: list[str] | None) -> tuple[ToyRunConfig, bool]:
             "C_many_frontier_outliers",
             "D_deep_terminal_vs_frontier",
             "E_two_level_mixed",
+            "F_linear_compositional_vicious_circle",
         ),
         default="B_optimistic_frontier_poison",
+    )
+    parser.add_argument(
+        "--model-kind",
+        choices=("mlp", "linear_no_bias"),
+        default="mlp",
     )
     parser.add_argument("--hidden-dim", type=int, default=16)
     parser.add_argument("--num-layers", type=int, default=2)
@@ -839,6 +903,7 @@ def _parse_args(argv: list[str] | None) -> tuple[ToyRunConfig, bool]:
         batch_size=namespace.batch_size,
         seed=namespace.seed,
         init_mode=namespace.init_mode,
+        model_kind=namespace.model_kind,
         frontier_initial_overrides=_parse_overrides(
             namespace.frontier_initial_override
         ),
@@ -889,6 +954,27 @@ def _backup_child_value(
     return min(child.value, frontier_clip) if pure_frontier else child.value
 
 
+def _linear_weights(model: nn.Module) -> tuple[float, ...] | None:
+    if not isinstance(model, ToyLinearNoBiasNet):
+        return None
+    return tuple(
+        float(value)
+        for value in model.linear.weight.detach().cpu().flatten().tolist()
+    )
+
+
+def _linear_weight_at(weights: tuple[float, ...] | None, index: int) -> float | None:
+    if weights is None or index >= len(weights):
+        return None
+    return weights[index]
+
+
+def _linear_a_value_from_weights(weights: tuple[float, ...] | None) -> float | None:
+    if weights is None or len(weights) < 3:
+        return None
+    return weights[1] + weights[2]
+
+
 def _temperature_logsumexp(values: tuple[float, ...], *, temperature: float) -> float:
     scaled = tuple(value / temperature for value in values)
     maximum = max(scaled)
@@ -922,6 +1008,8 @@ def _effective_frontier_initial_overrides(config: ToyRunConfig) -> dict[int, flo
         return {17: 10.0}
     if config.case == "E_two_level_mixed":
         return {3: 10.0, 5: 6.0}
+    if config.case == "F_linear_compositional_vicious_circle":
+        return {3: 10.0}
     return {}
 
 
@@ -936,6 +1024,7 @@ def _iteration_metric(
     previous_targets: dict[int, float] | None,
     final_loss: float,
     divergence_threshold: float,
+    weights_after: tuple[float, ...] | None,
 ) -> ToyIterationMetric:
     root_value = backed_up[tree.root_id]
     prediction_drifts = [
@@ -992,6 +1081,10 @@ def _iteration_metric(
             abs(root_value.value) > divergence_threshold
             or max_abs_prediction > divergence_threshold
         ),
+        linear_w0=_linear_weight_at(weights_after, 0),
+        linear_w1=_linear_weight_at(weights_after, 1),
+        linear_w2=_linear_weight_at(weights_after, 2),
+        linear_a_value_from_weights=_linear_a_value_from_weights(weights_after),
     )
 
 
@@ -1080,6 +1173,7 @@ def _summary(
     return {
         "status": status,
         "case": config.case,
+        "model_kind": config.model_kind,
         "backup_operator": config.backup_operator,
         "train_targets": config.train_targets,
         "final_root_target": final.root_target,
@@ -1097,13 +1191,23 @@ def _summary(
         "frontier_max_prediction_after_history": [
             metric.max_frontier_prediction_after for metric in metrics
         ],
+        "linear_weight_history": [
+            (metric.linear_w0, metric.linear_w1, metric.linear_w2)
+            for metric in metrics
+            if metric.linear_w0 is not None
+        ],
+        "linear_a_value_from_weights_history": [
+            metric.linear_a_value_from_weights
+            for metric in metrics
+            if metric.linear_a_value_from_weights is not None
+        ],
     }
 
 
 def _print_header() -> None:
     print(
         "iter root_t root_pred_b root_pred_a max_front_b max_front_a "
-        "pred_drift target_drift root_argmax rows loss mae"
+        "pred_drift target_drift root_argmax rows loss mae linear"
     )
 
 
@@ -1120,7 +1224,8 @@ def _print_metric(metric: ToyIterationMetric) -> None:
         f"{metric.argmax_child_id_at_root!s:>11} "
         f"{metric.num_rows:>4} "
         f"{metric.weighted_train_loss_final:>8.4f} "
-        f"{metric.unweighted_mae_all_rows:>8.4f}"
+        f"{metric.unweighted_mae_all_rows:>8.4f} "
+        f"{_linear_weight_text(metric)}"
     )
 
 
@@ -1134,6 +1239,21 @@ def _print_summary(summary: dict[str, object]) -> None:
     print(
         "frontier_max_prediction_after_history: "
         f"{summary.get('frontier_max_prediction_after_history')}"
+    )
+    if summary.get("linear_weight_history"):
+        print(f"linear_weight_history: {summary.get('linear_weight_history')}")
+        print(
+            "linear_a_value_from_weights_history: "
+            f"{summary.get('linear_a_value_from_weights_history')}"
+        )
+
+
+def _linear_weight_text(metric: ToyIterationMetric) -> str:
+    if metric.linear_w0 is None:
+        return "w=-"
+    return (
+        f"w=[{metric.linear_w0:.3f},{metric.linear_w1:.3f},{metric.linear_w2:.3f}] "
+        f"A={metric.linear_a_value_from_weights:.3f}"
     )
 
 
