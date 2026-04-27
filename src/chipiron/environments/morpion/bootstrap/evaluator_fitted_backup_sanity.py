@@ -8,7 +8,7 @@ import logging
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import torch
 from anemone.training_export import (
@@ -64,6 +64,12 @@ if TYPE_CHECKING:
 
 LOGGER = logging.getLogger(__name__)
 
+FittedBackupSelectionMode = Literal[
+    "prefix",
+    "exact_terminal_plus_prefix",
+    "top_terminal_paths",
+]
+
 
 class MissingFittedBackupTargetError(ValueError):
     """Raised when a snapshot node cannot receive a fitted backup target."""
@@ -87,6 +93,16 @@ class UnknownFittedBackupEvaluatorError(ValueError):
     def __init__(self, evaluator_name: str) -> None:
         """Initialize the unknown evaluator error."""
         super().__init__(f"Unknown Morpion fitted-backup evaluator: {evaluator_name!r}.")
+
+
+class UnknownFittedBackupSelectionModeError(ValueError):
+    """Raised when the backup node selection mode is not supported."""
+
+    def __init__(self, backup_selection: str) -> None:
+        """Initialize the unknown backup-selection error."""
+        super().__init__(
+            f"Unknown Morpion fitted-backup selection mode: {backup_selection!r}."
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -130,6 +146,7 @@ class MorpionFittedBackupSanityArgs:
     run_name: str | None = None
     top_terminal_path_count: int = 5
     max_backup_nodes: int | None = None
+    backup_selection: FittedBackupSelectionMode = "prefix"
 
 
 def run_fitted_backup_sanity(
@@ -140,7 +157,14 @@ def run_fitted_backup_sanity(
     snapshot_path = _resolve_snapshot_path(paths=paths, generation=args.generation)
     snapshot = load_training_tree_snapshot(snapshot_path)
     source_snapshot_nodes = len(snapshot.nodes)
-    snapshot = _truncate_snapshot(snapshot, max_backup_nodes=args.max_backup_nodes)
+    kept_node_ids = _select_backup_node_ids(
+        snapshot=snapshot,
+        max_backup_nodes=args.max_backup_nodes,
+        backup_selection=args.backup_selection,
+        top_terminal_path_count=args.top_terminal_path_count,
+    )
+    snapshot = _filtered_snapshot(snapshot, kept_node_ids=kept_node_ids)
+    exact_or_terminal_backup_nodes = _count_exact_or_terminal_nodes(snapshot)
     spec = _selected_evaluator_spec(args)
     run_dir = _run_output_dir(
         paths.work_dir,
@@ -155,6 +179,13 @@ def run_fitted_backup_sanity(
         source_snapshot_nodes,
         len(snapshot.nodes),
         args.max_backup_nodes,
+    )
+    LOGGER.info(
+        "[fitted_backup] backup_snapshot_selected source_nodes=%s backup_nodes=%s exact_or_terminal_backup_nodes=%s selection=%s",
+        source_snapshot_nodes,
+        len(snapshot.nodes),
+        exact_or_terminal_backup_nodes,
+        args.backup_selection,
     )
     selected_node_ids = _selected_node_ids(
         snapshot=snapshot,
@@ -298,6 +329,8 @@ def run_fitted_backup_sanity(
         "source_snapshot_nodes": source_snapshot_nodes,
         "backup_nodes": len(snapshot.nodes),
         "max_backup_nodes": args.max_backup_nodes,
+        "backup_selection": args.backup_selection,
+        "exact_or_terminal_backup_nodes": exact_or_terminal_backup_nodes,
         "feature_cache_nodes": len(feature_cache.node_ids),
         "generation": args.generation,
         "run_name": run_dir.name,
@@ -415,6 +448,11 @@ def _parse_args(argv: list[str] | None) -> MorpionFittedBackupSanityArgs:
     parser.add_argument("--run-name")
     parser.add_argument("--top-terminal-path-count", type=int, default=5)
     parser.add_argument("--max-backup-nodes", type=int)
+    parser.add_argument(
+        "--backup-selection",
+        choices=("prefix", "exact_terminal_plus_prefix", "top_terminal_paths"),
+        default="prefix",
+    )
     namespace = parser.parse_args(argv)
     return MorpionFittedBackupSanityArgs(
         work_dir=namespace.work_dir,
@@ -431,6 +469,7 @@ def _parse_args(argv: list[str] | None) -> MorpionFittedBackupSanityArgs:
         run_name=namespace.run_name,
         top_terminal_path_count=namespace.top_terminal_path_count,
         max_backup_nodes=namespace.max_backup_nodes,
+        backup_selection=namespace.backup_selection,
     )
 
 
@@ -451,17 +490,94 @@ def _resolve_snapshot_path(
     return candidates[-1]
 
 
-def _truncate_snapshot(
+def _select_backup_node_ids(
     snapshot: TrainingTreeSnapshot,
     *,
     max_backup_nodes: int | None,
+    backup_selection: FittedBackupSelectionMode,
+    top_terminal_path_count: int,
+) -> set[str]:
+    """Select node IDs for a fitted-backup diagnostic snapshot."""
+    if max_backup_nodes is None:
+        return {node.node_id for node in snapshot.nodes}
+
+    prefix_node_ids = {
+        node.node_id for node in snapshot.nodes[: max(max_backup_nodes, 0)]
+    }
+    if backup_selection == "prefix":
+        return prefix_node_ids
+
+    nodes_by_id = {node.node_id: node for node in snapshot.nodes}
+    if backup_selection == "exact_terminal_plus_prefix":
+        kept_node_ids = set(prefix_node_ids)
+        exact_or_terminal_node_ids = {
+            node.node_id
+            for node in snapshot.nodes
+            if node.is_exact or node.is_terminal
+        }
+        kept_node_ids.update(exact_or_terminal_node_ids)
+        _add_ancestors(
+            kept_node_ids=kept_node_ids,
+            node_ids=exact_or_terminal_node_ids,
+            nodes_by_id=nodes_by_id,
+        )
+        return kept_node_ids
+
+    if backup_selection == "top_terminal_paths":
+        path_node_ids = {
+            node.node_id
+            for node in top_terminal_path_nodes(
+                snapshot,
+                max_terminal_nodes=top_terminal_path_count,
+            )
+        }
+        kept_node_ids = set(path_node_ids)
+        _add_ancestors(
+            kept_node_ids=kept_node_ids,
+            node_ids=path_node_ids,
+            nodes_by_id=nodes_by_id,
+        )
+        for node in snapshot.nodes:
+            if len(kept_node_ids) >= max_backup_nodes:
+                break
+            kept_node_ids.add(node.node_id)
+        return kept_node_ids
+
+    raise UnknownFittedBackupSelectionModeError(backup_selection)
+
+
+def _add_ancestors(
+    *,
+    kept_node_ids: set[str],
+    node_ids: set[str],
+    nodes_by_id: dict[str, TrainingNodeSnapshot],
+) -> None:
+    """Add all available ancestors of ``node_ids`` to ``kept_node_ids``."""
+    stack = list(node_ids)
+    while stack:
+        node_id = stack.pop()
+        node = nodes_by_id.get(node_id)
+        if node is None:
+            continue
+        for parent_id in node.parent_ids:
+            if parent_id in kept_node_ids:
+                continue
+            if parent_id not in nodes_by_id:
+                continue
+            kept_node_ids.add(parent_id)
+            stack.append(parent_id)
+
+
+def _filtered_snapshot(
+    snapshot: TrainingTreeSnapshot,
+    *,
+    kept_node_ids: set[str],
 ) -> TrainingTreeSnapshot:
-    """Return a prefix-limited diagnostic snapshot with internal links filtered."""
-    if max_backup_nodes is None or len(snapshot.nodes) <= max_backup_nodes:
+    """Return a filtered diagnostic snapshot with internal links only."""
+    if len(kept_node_ids) == len(snapshot.nodes):
         return snapshot
 
-    kept_nodes = snapshot.nodes[:max_backup_nodes]
-    kept_node_ids = {node.node_id for node in kept_nodes}
+    kept_nodes = tuple(node for node in snapshot.nodes if node.node_id in kept_node_ids)
     filtered_nodes = tuple(
         TrainingNodeSnapshot(
             node_id=node.node_id,
@@ -489,9 +605,14 @@ def _truncate_snapshot(
         metadata={
             **dict(snapshot.metadata),
             "fitted_backup_source_node_count": len(snapshot.nodes),
-            "fitted_backup_max_backup_nodes": max_backup_nodes,
+            "fitted_backup_filtered_node_count": len(filtered_nodes),
         },
     )
+
+
+def _count_exact_or_terminal_nodes(snapshot: TrainingTreeSnapshot) -> int:
+    """Return exact or terminal node count in one snapshot."""
+    return sum(1 for node in snapshot.nodes if node.is_exact or node.is_terminal)
 
 
 def _run_output_dir(
@@ -928,6 +1049,7 @@ __all__ = [
     "FittedBackupNodeValue",
     "MorpionFittedBackupSanityArgs",
     "SnapshotFeatureCache",
+    "UnknownFittedBackupSelectionModeError",
     "build_snapshot_feature_cache",
     "fitted_backup_node_values",
     "main",

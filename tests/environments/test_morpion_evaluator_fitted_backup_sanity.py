@@ -133,6 +133,32 @@ def _backup_snapshot() -> TrainingTreeSnapshot:
     )
 
 
+def _terminal_beyond_prefix_snapshot() -> TrainingTreeSnapshot:
+    """Build a tree where exact/terminal anchors sit beyond a small prefix."""
+    root = _node("root", child_ids=("a", "b"), depth=0)
+    node_a = _node("a", parent_ids=("root",), child_ids=("a_leaf",), depth=1)
+    node_b = _node("b", parent_ids=("root",), child_ids=("b_leaf",), depth=1)
+    node_a_leaf = _node(
+        "a_leaf",
+        parent_ids=("a",),
+        depth=2,
+        is_terminal=True,
+        backed_up_value_scalar=9.0,
+    )
+    node_b_leaf = _node(
+        "b_leaf",
+        parent_ids=("b",),
+        depth=3,
+        is_exact=True,
+        backed_up_value_scalar=12.0,
+    )
+    return TrainingTreeSnapshot(
+        root_node_id="root",
+        nodes=(root, node_a, node_b, node_a_leaf, node_b_leaf),
+        metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+    )
+
+
 def _spec() -> MorpionEvaluatorSpec:
     """Return a minimal evaluator spec for tests."""
     return MorpionEvaluatorSpec(
@@ -205,6 +231,48 @@ def test_target_change_metrics_are_computed_between_iterations() -> None:
     assert values["left"].abs_target_change == 0.0
     assert values["right"].abs_target_change == 2.0
     assert values["left_leaf"].abs_target_change == 6.0
+
+
+def test_exact_terminal_plus_prefix_preserves_anchors_beyond_prefix() -> None:
+    """Exact/terminal selection should keep anchors and ancestors beyond prefix."""
+    snapshot = _terminal_beyond_prefix_snapshot()
+    kept_node_ids = fitted_module._select_backup_node_ids(
+        snapshot=snapshot,
+        max_backup_nodes=2,
+        backup_selection="exact_terminal_plus_prefix",
+        top_terminal_path_count=1,
+    )
+
+    assert kept_node_ids == {"root", "a", "b", "a_leaf", "b_leaf"}
+
+
+def test_top_terminal_paths_selection_keeps_paths_beyond_prefix() -> None:
+    """Top-terminal path mode should keep full terminal path even over cap."""
+    snapshot = _terminal_beyond_prefix_snapshot()
+    kept_node_ids = fitted_module._select_backup_node_ids(
+        snapshot=snapshot,
+        max_backup_nodes=1,
+        backup_selection="top_terminal_paths",
+        top_terminal_path_count=1,
+    )
+
+    assert kept_node_ids == {"root", "b", "b_leaf"}
+
+
+def test_filtered_snapshot_links_only_reference_kept_nodes() -> None:
+    """Filtered snapshots should remove parent/child links to dropped nodes."""
+    snapshot = _terminal_beyond_prefix_snapshot()
+    filtered = fitted_module._filtered_snapshot(
+        snapshot,
+        kept_node_ids={"root", "b", "b_leaf"},
+    )
+
+    assert tuple(node.node_id for node in filtered.nodes) == ("root", "b", "b_leaf")
+    by_id = {node.node_id: node for node in filtered.nodes}
+    assert by_id["root"].child_ids == ("b",)
+    assert by_id["b"].parent_ids == ("root",)
+    assert by_id["b"].child_ids == ("b_leaf",)
+    assert by_id["b_leaf"].parent_ids == ("b",)
 
 
 def test_two_tiny_iterations_write_summary_and_artifacts(
@@ -293,6 +361,7 @@ def test_two_tiny_iterations_write_summary_and_artifacts(
             batch_size=2,
             run_name="test_run",
             max_backup_nodes=1,
+            backup_selection="prefix",
         )
     )
 
@@ -309,6 +378,8 @@ def test_two_tiny_iterations_write_summary_and_artifacts(
     assert summary["num_iterations"] == 2
     assert summary["backup_nodes"] == 1
     assert summary["max_backup_nodes"] == 1
+    assert summary["backup_selection"] == "prefix"
+    assert summary["exact_or_terminal_backup_nodes"] == 0
     assert feature_cache_builds == [1]
     assert len(summary_data["iterations"]) == 2
     assert summary_data["iterations"][1]["mean_abs_target_change"] == 0.0
