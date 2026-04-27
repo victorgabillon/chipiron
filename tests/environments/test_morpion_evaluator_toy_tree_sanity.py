@@ -40,8 +40,10 @@ from chipiron.environments.morpion.bootstrap.evaluator_toy_tree_sanity import (
     build_training_rows,
     built_in_toy_tree,
     compute_backed_up_values,
+    family_adjusted_targets,
     make_toy_model,
     predict_all_nodes,
+    principal_variation_families,
     run_toy_tree_sanity,
     train_weighted_regressor,
 )
@@ -210,3 +212,99 @@ def test_linear_no_bias_run_writes_linear_weights(tmp_path: Path) -> None:
     assert "linear_w0" in (tmp_path / "iteration_metrics.csv").read_text(
         encoding="utf-8"
     )
+
+
+def test_case_f_principal_variation_family_groups_root_path_and_a() -> None:
+    """Case F should put root, path, and A in the same PV family."""
+    tree = built_in_toy_tree("F_linear_compositional_vicious_circle")
+    backed_up = compute_backed_up_values(tree, {3: 10.0}, "max")
+
+    families = principal_variation_families(tree, backed_up)
+
+    assert families[3] == (0, 2, 3)
+    assert families[1] == (1,)
+
+
+def test_pv_mean_prediction_replaces_case_f_family_targets() -> None:
+    """PV mean prediction should damp Case F's compositional family target."""
+    tree = built_in_toy_tree("F_linear_compositional_vicious_circle")
+    backed_up = compute_backed_up_values(tree, {3: 10.0}, "max")
+    predictions = {0: 4.0, 1: 1.0, 2: 4.0, 3: 8.0}
+
+    targets = family_adjusted_targets(
+        tree=tree,
+        backed_up_values=backed_up,
+        prediction_before=predictions,
+        family_target_policy="pv_mean_prediction",
+    )
+
+    assert targets[0] == 16.0 / 3.0
+    assert targets[2] == 16.0 / 3.0
+    assert targets[3] == 16.0 / 3.0
+    assert targets[1] == 1.0
+
+
+def test_pv_min_prediction_replaces_case_f_family_targets_conservatively() -> None:
+    """PV min prediction should use the minimum value along the PV family."""
+    tree = built_in_toy_tree("F_linear_compositional_vicious_circle")
+    backed_up = compute_backed_up_values(tree, {3: 10.0}, "max")
+    predictions = {0: 4.0, 1: 1.0, 2: 4.0, 3: 8.0}
+
+    targets = family_adjusted_targets(
+        tree=tree,
+        backed_up_values=backed_up,
+        prediction_before=predictions,
+        family_target_policy="pv_min_prediction",
+    )
+
+    assert targets[0] == 4.0
+    assert targets[2] == 4.0
+    assert targets[3] == 4.0
+
+
+def test_family_targets_flow_into_training_rows() -> None:
+    """Training rows should use the PV-family target instead of raw backup."""
+    tree = built_in_toy_tree("F_linear_compositional_vicious_circle")
+    backed_up = compute_backed_up_values(tree, {3: 10.0}, "max")
+    predictions = {node_id: 0.0 for node_id in tree.nodes}
+    targets = family_adjusted_targets(
+        tree=tree,
+        backed_up_values=backed_up,
+        prediction_before=predictions,
+        family_target_policy="pv_mean_prediction",
+    )
+
+    rows = build_training_rows(
+        tree=tree,
+        backed_up_values=backed_up,
+        train_targets="all",
+        prediction_before=predictions,
+        effective_targets=targets,
+    )
+
+    row_targets = {row.node_id: row.target for row in rows}
+    assert row_targets[0] == 0.0
+    assert row_targets[2] == 0.0
+    assert row_targets[3] == 0.0
+    assert row_targets[1] == 1.0
+
+
+def test_pv_blend_mean_prediction_mixes_backup_with_family_prediction() -> None:
+    """Blended policy should mix raw backup with prediction-family smoothing."""
+    tree = built_in_toy_tree("F_linear_compositional_vicious_circle")
+    backed_up = compute_backed_up_values(tree, {3: 10.0}, "max")
+    predictions = {0: 4.0, 1: 1.0, 2: 4.0, 3: 8.0}
+
+    targets = family_adjusted_targets(
+        tree=tree,
+        backed_up_values=backed_up,
+        prediction_before=predictions,
+        family_target_policy="pv_blend_mean_prediction",
+        family_prediction_blend=0.5,
+    )
+
+    expected = 0.5 * 10.0 + 0.5 * (16.0 / 3.0)
+    assert targets[0] == expected
+    assert targets[2] == expected
+    assert targets[3] == expected
+    assert targets[1] == 1.0

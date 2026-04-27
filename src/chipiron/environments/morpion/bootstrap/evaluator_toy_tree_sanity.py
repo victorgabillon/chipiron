@@ -48,6 +48,15 @@ BackupOperator = Literal["max", "softmax", "clipped_max"]
 TrainTargets = Literal["exact_only", "exact_plus_child", "all"]
 InitMode = Literal["zero", "random", "optimistic_feature"]
 ModelKind = Literal["mlp", "linear_no_bias"]
+FamilyTargetPolicy = Literal[
+    "none",
+    "pv_mean_prediction",
+    "pv_min_prediction",
+    "pv_quantile_prediction",
+    "pv_blend_mean_prediction",
+    "pv_blend_min_prediction",
+    "pv_blend_quantile_prediction",
+]
 TargetSource = Literal[
     "ground_truth_exact_or_terminal",
     "child_backup",
@@ -246,6 +255,9 @@ class ToyRunConfig:
     backup_operator: BackupOperator = "max"
     backup_temperature: float = 1.0
     frontier_clip: float = 2.0
+    family_target_policy: FamilyTargetPolicy = "none"
+    family_quantile: float = 0.25
+    family_prediction_blend: float = 0.5
     train_targets: TrainTargets = "all"
     frontier_weight: float = 0.1
     child_backup_weight: float = 0.5
@@ -522,6 +534,7 @@ def build_training_rows(
     include_root: bool = True,
     include_frontier_targets: bool = True,
     use_direct_targets: bool = False,
+    effective_targets: dict[int, float] | None = None,
 ) -> tuple[ToyTrainingRow, ...]:
     """Construct weighted supervised rows from backed-up toy targets."""
     rows: list[ToyTrainingRow] = []
@@ -542,7 +555,7 @@ def build_training_rows(
         if train_targets not in {"exact_only", "exact_plus_child", "all"}:
             raise ValueError(f"Unknown toy train target selection: {train_targets!r}.")
 
-        target = backed.value
+        target = backed.value if effective_targets is None else effective_targets[node_id]
         if use_direct_targets and backed.source != "ground_truth_exact_or_terminal":
             target = prediction_before[node_id]
         rows.append(
@@ -560,6 +573,71 @@ def build_training_rows(
             )
         )
     return tuple(rows)
+
+
+def principal_variation_families(
+    tree: ToyTree,
+    backed_up_values: dict[int, ToyBackedUpValue],
+) -> dict[int, tuple[int, ...]]:
+    """Group nodes by the leaf reached by repeatedly following argmax children."""
+    families: dict[int, list[int]] = {}
+    for node_id in tree.node_ids_by_depth():
+        representative = _principal_variation_representative(
+            node_id,
+            backed_up_values,
+        )
+        families.setdefault(representative, []).append(node_id)
+    return {
+        representative: tuple(node_ids)
+        for representative, node_ids in families.items()
+    }
+
+
+def family_adjusted_targets(
+    *,
+    tree: ToyTree,
+    backed_up_values: dict[int, ToyBackedUpValue],
+    prediction_before: dict[int, float],
+    family_target_policy: FamilyTargetPolicy,
+    family_quantile: float = 0.25,
+    family_prediction_blend: float = 0.5,
+) -> dict[int, float]:
+    """Return effective supervised targets after optional PV-family smoothing."""
+    if family_target_policy == "none":
+        return {
+            node_id: backed_up.value for node_id, backed_up in backed_up_values.items()
+        }
+    if not 0.0 <= family_quantile <= 1.0:
+        raise ValueError("Family quantile must be between 0 and 1.")
+    if not 0.0 <= family_prediction_blend <= 1.0:
+        raise ValueError("Family prediction blend must be between 0 and 1.")
+
+    targets: dict[int, float] = {}
+    for family_node_ids in principal_variation_families(tree, backed_up_values).values():
+        family_values = [
+            _family_policy_value(
+                node_id=node_id,
+                tree=tree,
+                backed_up_values=backed_up_values,
+                prediction_before=prediction_before,
+                family_target_policy=family_target_policy,
+            )
+            for node_id in family_node_ids
+        ]
+        family_target = _family_aggregate(
+            family_values,
+            family_target_policy=family_target_policy,
+            family_quantile=family_quantile,
+        )
+        for node_id in family_node_ids:
+            if family_target_policy.startswith("pv_blend_"):
+                targets[node_id] = (
+                    (1.0 - family_prediction_blend) * backed_up_values[node_id].value
+                    + family_prediction_blend * family_target
+                )
+            else:
+                targets[node_id] = family_target
+    return targets
 
 
 def train_weighted_regressor(
@@ -635,6 +713,14 @@ def run_toy_tree_sanity(config: ToyRunConfig) -> ToyRunResult:
             backup_temperature=config.backup_temperature,
             frontier_clip=config.frontier_clip,
         )
+        effective_targets = family_adjusted_targets(
+            tree=tree,
+            backed_up_values=backed_up,
+            prediction_before=prediction_before,
+            family_target_policy=config.family_target_policy,
+            family_quantile=config.family_quantile,
+            family_prediction_blend=config.family_prediction_blend,
+        )
         rows = build_training_rows(
             tree=tree,
             backed_up_values=backed_up,
@@ -646,6 +732,7 @@ def run_toy_tree_sanity(config: ToyRunConfig) -> ToyRunResult:
             include_root=config.include_root,
             include_frontier_targets=config.include_frontier_targets,
             use_direct_targets=config.use_direct_targets,
+            effective_targets=effective_targets,
         )
         final_loss = train_weighted_regressor(
             model,
@@ -664,6 +751,7 @@ def run_toy_tree_sanity(config: ToyRunConfig) -> ToyRunResult:
             prediction_before=prediction_before,
             prediction_after=prediction_after,
             previous_targets=previous_targets,
+            effective_targets=effective_targets,
             final_loss=final_loss,
             divergence_threshold=config.divergence_threshold,
             weights_after=weights_after,
@@ -677,11 +765,12 @@ def run_toy_tree_sanity(config: ToyRunConfig) -> ToyRunResult:
                 rows=rows,
                 prediction_before=prediction_before,
                 prediction_after=prediction_after,
+                effective_targets=effective_targets,
             )
         )
         if config.print_every > 0 and iteration % config.print_every == 0:
             _print_metric(metric)
-        previous_targets = {node_id: backed.value for node_id, backed in backed_up.items()}
+        previous_targets = effective_targets
 
     result = ToyRunResult(
         config=config,
@@ -792,6 +881,46 @@ def compare_strategies(base_config: ToyRunConfig) -> tuple[dict[str, object], ..
                 print_every=0,
             ),
         ),
+        (
+            "max_all_pv_mean_pred",
+            replace(
+                base_config,
+                backup_operator="max",
+                train_targets="all",
+                family_target_policy="pv_mean_prediction",
+                output_dir=None,
+                save_csv=None,
+                save_json=None,
+                print_every=0,
+            ),
+        ),
+        (
+            "max_all_pv_min_pred",
+            replace(
+                base_config,
+                backup_operator="max",
+                train_targets="all",
+                family_target_policy="pv_min_prediction",
+                output_dir=None,
+                save_csv=None,
+                save_json=None,
+                print_every=0,
+            ),
+        ),
+        (
+            "max_all_pv_blend_mean",
+            replace(
+                base_config,
+                backup_operator="max",
+                train_targets="all",
+                family_target_policy="pv_blend_mean_prediction",
+                family_prediction_blend=0.5,
+                output_dir=None,
+                save_csv=None,
+                save_json=None,
+                print_every=0,
+            ),
+        ),
     )
     comparison: list[dict[str, object]] = []
     for strategy_name, config in strategies:
@@ -874,6 +1003,21 @@ def _parse_args(argv: list[str] | None) -> tuple[ToyRunConfig, bool]:
     parser.add_argument("--backup-temperature", type=float, default=1.0)
     parser.add_argument("--frontier-clip", type=float, default=2.0)
     parser.add_argument(
+        "--family-target-policy",
+        choices=(
+            "none",
+            "pv_mean_prediction",
+            "pv_min_prediction",
+            "pv_quantile_prediction",
+            "pv_blend_mean_prediction",
+            "pv_blend_min_prediction",
+            "pv_blend_quantile_prediction",
+        ),
+        default="none",
+    )
+    parser.add_argument("--family-quantile", type=float, default=0.25)
+    parser.add_argument("--family-prediction-blend", type=float, default=0.5)
+    parser.add_argument(
         "--train-targets",
         choices=("exact_only", "exact_plus_child", "all"),
         default="all",
@@ -910,6 +1054,9 @@ def _parse_args(argv: list[str] | None) -> tuple[ToyRunConfig, bool]:
         backup_operator=namespace.backup_operator,
         backup_temperature=namespace.backup_temperature,
         frontier_clip=namespace.frontier_clip,
+        family_target_policy=namespace.family_target_policy,
+        family_quantile=namespace.family_quantile,
+        family_prediction_blend=namespace.family_prediction_blend,
         train_targets=namespace.train_targets,
         frontier_weight=namespace.frontier_weight,
         child_backup_weight=namespace.child_backup_weight,
@@ -952,6 +1099,57 @@ def _backup_child_value(
         or (child.support_frontier_count > 0 and child.support_exact_count == 0)
     )
     return min(child.value, frontier_clip) if pure_frontier else child.value
+
+
+def _principal_variation_representative(
+    node_id: int,
+    backed_up_values: dict[int, ToyBackedUpValue],
+) -> int:
+    seen: set[int] = set()
+    current_id = node_id
+    while True:
+        if current_id in seen:
+            raise ValueError("Principal-variation family traversal found a cycle.")
+        seen.add(current_id)
+        next_id = backed_up_values[current_id].argmax_child_id
+        if next_id is None:
+            return current_id
+        current_id = next_id
+
+
+def _family_policy_value(
+    *,
+    node_id: int,
+    tree: ToyTree,
+    backed_up_values: dict[int, ToyBackedUpValue],
+    prediction_before: dict[int, float],
+    family_target_policy: FamilyTargetPolicy,
+) -> float:
+    if family_target_policy.endswith("_backup"):
+        return backed_up_values[node_id].value
+    if family_target_policy.endswith("_prediction"):
+        node = tree.nodes[node_id]
+        if (node.is_terminal or node.is_exact) and node.exact_value is not None:
+            return node.exact_value
+        return prediction_before[node_id]
+    raise ValueError(f"Unknown family target policy: {family_target_policy!r}.")
+
+
+def _family_aggregate(
+    values: list[float],
+    *,
+    family_target_policy: FamilyTargetPolicy,
+    family_quantile: float,
+) -> float:
+    if not values:
+        raise ValueError("Cannot aggregate an empty PV family.")
+    if "_mean_" in family_target_policy:
+        return _mean(values)
+    if "_min_" in family_target_policy:
+        return min(values)
+    if "_quantile_" in family_target_policy:
+        return float(np.quantile(np.asarray(values, dtype=np.float64), family_quantile))
+    raise ValueError(f"Unknown family target policy: {family_target_policy!r}.")
 
 
 def _linear_weights(model: nn.Module) -> tuple[float, ...] | None:
@@ -1022,6 +1220,7 @@ def _iteration_metric(
     prediction_before: dict[int, float],
     prediction_after: dict[int, float],
     previous_targets: dict[int, float] | None,
+    effective_targets: dict[int, float],
     final_loss: float,
     divergence_threshold: float,
     weights_after: tuple[float, ...] | None,
@@ -1035,7 +1234,7 @@ def _iteration_metric(
         [0.0 for _ in tree.nodes]
         if previous_targets is None
         else [
-            abs(backed_up[node_id].value - previous_targets[node_id])
+            abs(effective_targets[node_id] - previous_targets[node_id])
             for node_id in tree.nodes
         ]
     )
@@ -1048,7 +1247,7 @@ def _iteration_metric(
     max_abs_prediction = max(abs(value) for value in prediction_after.values())
     return ToyIterationMetric(
         iteration=iteration,
-        root_target=root_value.value,
+        root_target=effective_targets[tree.root_id],
         root_prediction_before=prediction_before[tree.root_id],
         root_prediction_after=prediction_after[tree.root_id],
         max_frontier_prediction_before=max(
@@ -1078,7 +1277,7 @@ def _iteration_metric(
         mae_frontier=_row_mae(rows, prediction_after, source="frontier_prediction"),
         max_abs_prediction=max_abs_prediction,
         diverged=(
-            abs(root_value.value) > divergence_threshold
+            abs(effective_targets[tree.root_id]) > divergence_threshold
             or max_abs_prediction > divergence_threshold
         ),
         linear_w0=_linear_weight_at(weights_after, 0),
@@ -1096,6 +1295,7 @@ def _node_history_rows(
     rows: tuple[ToyTrainingRow, ...],
     prediction_before: dict[int, float],
     prediction_after: dict[int, float],
+    effective_targets: dict[int, float],
 ) -> tuple[ToyNodeHistoryRow, ...]:
     row_by_node = {row.node_id: row for row in rows}
     history: list[ToyNodeHistoryRow] = []
@@ -1108,7 +1308,7 @@ def _node_history_rows(
                 node_id=node_id,
                 prediction_before=prediction_before[node_id],
                 prediction_after=prediction_after[node_id],
-                target=backed.value if row is None else row.target,
+                target=effective_targets[node_id] if row is None else row.target,
                 source=backed.source,
                 weight=0.0 if row is None else row.weight,
                 support_exact_count=backed.support_exact_count,
@@ -1175,6 +1375,8 @@ def _summary(
         "case": config.case,
         "model_kind": config.model_kind,
         "backup_operator": config.backup_operator,
+        "family_target_policy": config.family_target_policy,
+        "family_prediction_blend": config.family_prediction_blend,
         "train_targets": config.train_targets,
         "final_root_target": final.root_target,
         "final_root_prediction": final.root_prediction_after,
