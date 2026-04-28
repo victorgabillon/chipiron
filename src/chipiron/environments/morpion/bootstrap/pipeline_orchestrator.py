@@ -29,6 +29,11 @@ LOGGER = logging.getLogger(__name__)
 _GENERATION_DIR_RE = re.compile(r"^generation_(\d{6})$")
 
 
+def _negative_max_growth_cycles_error() -> ValueError:
+    """Build the stable invalid growth-cycle count error."""
+    return ValueError("max_growth_cycles must be >= 0")
+
+
 @dataclass(frozen=True, slots=True)
 class MorpionPipelineOrchestratorResult:
     """Summary of one sequential artifact-pipeline orchestration pass."""
@@ -93,6 +98,8 @@ def run_morpion_artifact_pipeline_once(
 ) -> MorpionPipelineOrchestratorResult:
     """Run growth, dataset, and training stages sequentially via artifacts."""
     _require_artifact_pipeline_mode(args)
+    if max_growth_cycles < 0:
+        raise _negative_max_growth_cycles_error()
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
 

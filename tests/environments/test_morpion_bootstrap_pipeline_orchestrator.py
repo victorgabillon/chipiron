@@ -6,7 +6,9 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, cast
+from typing import cast
+
+import pytest
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
@@ -52,6 +54,7 @@ from atomheart.games.morpion import initial_state as morpion_initial_state
 from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
 import chipiron.environments.morpion.bootstrap.launcher as launcher_module
+import chipiron.environments.morpion.bootstrap.pipeline_orchestrator as pipeline_orchestrator_module
 from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapArgs,
     MorpionBootstrapPaths,
@@ -61,6 +64,7 @@ from chipiron.environments.morpion.bootstrap import (
     dataset_stage_is_pending,
     initialize_bootstrap_run_state,
     list_pipeline_manifest_generations,
+    load_available_pipeline_manifests,
     load_pipeline_active_model,
     load_pipeline_manifest,
     run_morpion_artifact_pipeline_once,
@@ -73,9 +77,6 @@ from chipiron.environments.morpion.learning import (
     MorpionSupervisedRows,
     save_morpion_supervised_rows,
 )
-
-if TYPE_CHECKING:
-    import pytest
 
 
 class FakeMorpionSearchRunner:
@@ -224,6 +225,38 @@ def test_list_pipeline_manifest_generations_ignores_malformed_entries(
     assert list_pipeline_manifest_generations(paths) == (1, 3)
 
 
+def test_load_available_pipeline_manifests_reads_discovered_manifests(
+    tmp_path: Path,
+) -> None:
+    """Manifest loader should return every discovered persisted manifest by generation."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    save_pipeline_manifest(
+        MorpionPipelineGenerationManifest(
+            generation=3,
+            created_at_utc="2026-04-28T12:03:00Z",
+            dataset_status="failed",
+        ),
+        paths.pipeline_manifest_path_for_generation(3),
+    )
+    save_pipeline_manifest(
+        MorpionPipelineGenerationManifest(
+            generation=1,
+            created_at_utc="2026-04-28T12:01:00Z",
+            training_status="done",
+        ),
+        paths.pipeline_manifest_path_for_generation(1),
+    )
+
+    manifests = load_available_pipeline_manifests(paths)
+
+    assert tuple(manifests) == (1, 3)
+    assert manifests[1].generation == 1
+    assert manifests[1].training_status == "done"
+    assert manifests[3].generation == 3
+    assert manifests[3].dataset_status == "failed"
+
+
 def test_pending_stage_predicates_cover_dataset_and_training_cases() -> None:
     """Pending predicates should track exactly the persisted manifest contract."""
     assert dataset_stage_is_pending(
@@ -362,6 +395,8 @@ def test_orchestrator_processes_all_pending_generations_in_sorted_order(
 
     assert result.growth_run_state is None
     assert result.dataset_generations == (1,)
+    # Generation 1 becomes training-pending after its dataset stage completes,
+    # so the same orchestration pass should train both generations in order.
     assert result.training_generations == (1, 2)
     assert (
         load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(1)).training_status
@@ -432,3 +467,25 @@ def test_single_process_loop_keeps_using_full_bootstrap_loop(
 
     assert result == initialize_bootstrap_run_state()
     assert loop_calls == [(expected_args, sentinel_runner, 2)]
+
+
+def test_orchestrator_rejects_negative_max_growth_cycles(tmp_path: Path) -> None:
+    """Negative growth-cycle counts should fail clearly instead of silently skipping growth."""
+    with pytest.raises(ValueError, match="max_growth_cycles must be >= 0"):
+        run_morpion_artifact_pipeline_once(
+            _artifact_pipeline_args(tmp_path),
+            FakeMorpionSearchRunner(tree_sizes=(5,), target_values=(1.0,)),
+            max_growth_cycles=-1,
+        )
+
+
+def test_package_root_reexports_pipeline_orchestrator_helpers() -> None:
+    """Package root should expose the shared pipeline orchestrator helpers."""
+    assert (
+        load_available_pipeline_manifests
+        is pipeline_orchestrator_module.load_available_pipeline_manifests
+    )
+    assert (
+        run_morpion_artifact_pipeline_once
+        is pipeline_orchestrator_module.run_morpion_artifact_pipeline_once
+    )
