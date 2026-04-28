@@ -20,6 +20,8 @@ import tracemalloc
 import warnings
 from collections import Counter
 from dataclasses import dataclass
+from fnmatch import fnmatchcase
+from types import FrameType
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -27,6 +29,14 @@ if TYPE_CHECKING:
 
 LOGGER = logging.getLogger(__name__)
 BYTES_PER_MIB = 1024 * 1024
+MAX_REFERRER_REPR_CHARS = 300
+DEFAULT_REFERRER_TYPE_PATTERNS = (
+    "anemone.checkpoints.payloads.AlgorithmNodeCheckpointPayload",
+    "anemone.checkpoints.payloads.LinkedChildCheckpointPayload",
+    "anemone.checkpoints.payloads.NodeEvaluationCheckpointPayload",
+    "anemone.checkpoints.payloads.BackupRuntimeCheckpointPayload",
+    "anemone.checkpoints.payloads.SerializedValuePayload",
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,6 +47,11 @@ class MemoryDiagnosticsConfig:
     gc_growth: bool = False
     tracemalloc: bool = False
     torch_tensors: bool = False
+    referrers: bool = False
+    referrer_type_patterns: tuple[str, ...] = ()
+    referrer_max_objects_per_type: int = 2
+    referrer_max_depth: int = 2
+    referrer_top_n: int = 20
     top_n: int = 20
 
 
@@ -81,6 +96,8 @@ class MemoryDiagnostics:
                 self._log_gc_growth(tag)
             if self._config.torch_tensors:
                 self._log_torch_tensors(tag)
+            if self._config.referrers:
+                self._log_referrers(tag)
             if self._config.tracemalloc:
                 self._log_tracemalloc(tag)
         except Exception:
@@ -196,6 +213,152 @@ class MemoryDiagnostics:
                 byte_count / BYTES_PER_MIB,
             )
 
+    def _log_referrers(self, tag: str) -> None:
+        try:
+            self._log_referrers_impl(tag)
+        except Exception:
+            LOGGER.exception("[memory_referrers] tag=%s diagnostics_failed=true", tag)
+
+    def _log_referrers_impl(self, tag: str) -> None:
+        patterns = (
+            self._config.referrer_type_patterns or DEFAULT_REFERRER_TYPE_PATTERNS
+        )
+        max_objects_per_type = max(self._config.referrer_max_objects_per_type, 0)
+        max_depth = max(self._config.referrer_max_depth, 0)
+        top_n = max(self._config.referrer_top_n, 0)
+        if max_objects_per_type == 0 or top_n == 0:
+            LOGGER.info(
+                "[memory_referrers] tag=%s skipped=true reason=empty_limits",
+                tag,
+            )
+            return
+
+        gc.collect()
+        objects_by_type: dict[str, list[object]] = {}
+        type_counts: Counter[str] = Counter()
+        objects = gc.get_objects()
+        try:
+            diagnostic_container_ids = {
+                id(objects),
+                id(objects_by_type),
+                id(type_counts),
+                id(patterns),
+            }
+            for obj in objects:
+                type_name = _object_type_key(obj)
+                if not _matches_type_patterns(type_name, patterns):
+                    continue
+                type_counts[type_name] += 1
+                examples = objects_by_type.setdefault(type_name, [])
+                if len(examples) < max_objects_per_type:
+                    examples.append(obj)
+
+            LOGGER.info(
+                "[memory_referrers] tag=%s matched_types=%s matched_objects=%s "
+                "patterns=%s max_objects_per_type=%s max_depth=%s",
+                tag,
+                len(type_counts),
+                sum(type_counts.values()),
+                patterns,
+                max_objects_per_type,
+                max_depth,
+            )
+            for type_name, count in type_counts.most_common(top_n):
+                examples = objects_by_type.get(type_name, [])
+                diagnostic_container_ids.add(id(examples))
+                LOGGER.info(
+                    "[memory_referrer_type] tag=%s type=%s count=%s inspected=%s",
+                    tag,
+                    type_name,
+                    count,
+                    len(examples),
+                )
+                for index, obj in enumerate(examples, start=1):
+                    object_path = f"{type_name}[{index}]"
+                    LOGGER.info(
+                        "[memory_referrer_object] tag=%s path=%s object_id=%s "
+                        "repr=%s",
+                        tag,
+                        object_path,
+                        hex(id(obj)),
+                        _safe_repr(obj),
+                    )
+                    self._log_referrer_tree(
+                        tag=tag,
+                        target=obj,
+                        path=object_path,
+                        depth=1,
+                        max_depth=max_depth,
+                        top_n=top_n,
+                        seen_ids={id(obj)},
+                        diagnostic_container_ids=diagnostic_container_ids,
+                    )
+        finally:
+            for examples in objects_by_type.values():
+                examples.clear()
+            objects_by_type.clear()
+            type_counts.clear()
+            objects.clear()
+
+    def _log_referrer_tree(
+        self,
+        *,
+        tag: str,
+        target: object,
+        path: str,
+        depth: int,
+        max_depth: int,
+        top_n: int,
+        seen_ids: set[int],
+        diagnostic_container_ids: set[int],
+    ) -> None:
+        if depth > max_depth:
+            return
+        referrers = gc.get_referrers(target)
+        local_container_ids = {
+            *diagnostic_container_ids,
+            id(referrers),
+            id(seen_ids),
+        }
+        logged_count = 0
+        try:
+            for referrer in referrers:
+                if _should_skip_referrer(referrer, local_container_ids):
+                    continue
+                referrer_id = id(referrer)
+                if referrer_id in seen_ids:
+                    continue
+                logged_count += 1
+                referrer_path = f"{path}.ref{logged_count}"
+                LOGGER.info(
+                    "[memory_referrer] tag=%s path=%s depth=%s ref_type=%s "
+                    "ref_id=%s repr=%s",
+                    tag,
+                    referrer_path,
+                    depth,
+                    _object_type_key(referrer),
+                    hex(referrer_id),
+                    _safe_repr(referrer),
+                )
+                seen_ids.add(referrer_id)
+                try:
+                    self._log_referrer_tree(
+                        tag=tag,
+                        target=referrer,
+                        path=referrer_path,
+                        depth=depth + 1,
+                        max_depth=max_depth,
+                        top_n=top_n,
+                        seen_ids=seen_ids,
+                        diagnostic_container_ids=local_container_ids,
+                    )
+                finally:
+                    seen_ids.discard(referrer_id)
+                if logged_count >= top_n:
+                    break
+        finally:
+            referrers.clear()
+
     def _log_tracemalloc(self, tag: str) -> None:
         if not tracemalloc.is_tracing():
             tracemalloc.start()
@@ -226,4 +389,37 @@ def _object_type_key(obj: object) -> str:
     return f"{obj_type.__module__}.{obj_type.__qualname__}"
 
 
-__all__ = ["MemoryDiagnostics", "MemoryDiagnosticsConfig"]
+def _matches_type_patterns(type_name: str, patterns: tuple[str, ...]) -> bool:
+    return any(
+        pattern == type_name
+        or pattern in type_name
+        or fnmatchcase(type_name, pattern)
+        for pattern in patterns
+    )
+
+
+def _should_skip_referrer(
+    referrer: object,
+    diagnostic_container_ids: set[int],
+) -> bool:
+    if id(referrer) in diagnostic_container_ids:
+        return True
+    return isinstance(referrer, FrameType)
+
+
+def _safe_repr(obj: object, max_chars: int = MAX_REFERRER_REPR_CHARS) -> str:
+    try:
+        rendered = repr(obj)
+    except Exception as exc:
+        rendered = f"<repr_failed {type(exc).__module__}.{type(exc).__qualname__}>"
+    rendered = " ".join(rendered.splitlines())
+    if len(rendered) <= max_chars:
+        return rendered
+    return f"{rendered[: max_chars - 3]}..."
+
+
+__all__ = [
+    "DEFAULT_REFERRER_TYPE_PATTERNS",
+    "MemoryDiagnostics",
+    "MemoryDiagnosticsConfig",
+]

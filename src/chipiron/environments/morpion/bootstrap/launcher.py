@@ -397,6 +397,32 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         help="Also log aggregate live torch.Tensor counts and storage bytes.",
     )
     parser.add_argument(
+        "--memory-diagnostics-referrers",
+        action="store_true",
+        help="Also log bounded referrer chains for selected live GC object types.",
+    )
+    parser.add_argument(
+        "--memory-diagnostics-referrer-type-pattern",
+        action="append",
+        default=[],
+        help=(
+            "Fully qualified type name, substring, or glob for referrer diagnostics. "
+            "May be passed multiple times."
+        ),
+    )
+    parser.add_argument(
+        "--memory-diagnostics-referrer-max-objects-per-type",
+        type=int,
+        default=2,
+        help="Number of matching objects to inspect per type for referrer diagnostics.",
+    )
+    parser.add_argument(
+        "--memory-diagnostics-referrer-max-depth",
+        type=int,
+        default=2,
+        help="Maximum recursive referrer depth to log.",
+    )
+    parser.add_argument(
         "--memory-diagnostics-top-n",
         type=int,
         default=20,
@@ -432,6 +458,16 @@ def launcher_args_from_cli(
         memory_diagnostics_gc_growth=parsed.memory_diagnostics_gc_growth,
         memory_diagnostics_tracemalloc=parsed.memory_diagnostics_tracemalloc,
         memory_diagnostics_torch_tensors=parsed.memory_diagnostics_torch_tensors,
+        memory_diagnostics_referrers=parsed.memory_diagnostics_referrers,
+        memory_diagnostics_referrer_type_patterns=tuple(
+            parsed.memory_diagnostics_referrer_type_pattern
+        ),
+        memory_diagnostics_referrer_max_objects_per_type=(
+            parsed.memory_diagnostics_referrer_max_objects_per_type
+        ),
+        memory_diagnostics_referrer_max_depth=(
+            parsed.memory_diagnostics_referrer_max_depth
+        ),
         memory_diagnostics_top_n=parsed.memory_diagnostics_top_n,
         tree_branch_limit=parsed.tree_branch_limit,
     )

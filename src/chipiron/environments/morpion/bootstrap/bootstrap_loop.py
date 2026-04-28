@@ -376,6 +376,10 @@ class MorpionBootstrapArgs:
     memory_diagnostics_gc_growth: bool = False
     memory_diagnostics_tracemalloc: bool = False
     memory_diagnostics_torch_tensors: bool = False
+    memory_diagnostics_referrers: bool = False
+    memory_diagnostics_referrer_type_patterns: tuple[str, ...] = ()
+    memory_diagnostics_referrer_max_objects_per_type: int = 2
+    memory_diagnostics_referrer_max_depth: int = 2
     memory_diagnostics_top_n: int = 20
     tree_branch_limit: int = DEFAULT_MORPION_TREE_BRANCH_LIMIT
     batch_size: int = 64
@@ -910,6 +914,13 @@ def _memory_diagnostics_config_from_args(
         gc_growth=args.memory_diagnostics_gc_growth,
         tracemalloc=args.memory_diagnostics_tracemalloc,
         torch_tensors=args.memory_diagnostics_torch_tensors,
+        referrers=args.memory_diagnostics_referrers,
+        referrer_type_patterns=args.memory_diagnostics_referrer_type_patterns,
+        referrer_max_objects_per_type=(
+            args.memory_diagnostics_referrer_max_objects_per_type
+        ),
+        referrer_max_depth=args.memory_diagnostics_referrer_max_depth,
+        referrer_top_n=args.memory_diagnostics_top_n,
         top_n=args.memory_diagnostics_top_n,
     )
 
@@ -1016,6 +1027,7 @@ def _run_one_bootstrap_cycle_impl(
         resolved_active_model.model_bundle_path,
         effective_runtime_config,
     )
+    memory.log("after_runtime_restore")
     memory.log("before_tree_growth")
     growth_started_at = time.perf_counter()
     tree_size_before_growth = runner.current_tree_size()
