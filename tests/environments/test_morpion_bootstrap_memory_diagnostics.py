@@ -11,6 +11,8 @@ from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import TYPE_CHECKING
 
+import torch
+
 if TYPE_CHECKING:
     import pytest
 
@@ -157,6 +159,40 @@ def test_memory_diagnostics_tracemalloc_logs_diffs(
     assert _allocated
 
 
+def test_memory_diagnostics_torch_tensors_logs_retained_tensor_summary(
+    caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Torch tensor diagnostics should log tensor counts without retaining tensors."""
+
+    class _FakeProcess:
+        def __init__(self, pid: int) -> None:
+            self.pid = pid
+
+        def memory_info(self) -> SimpleNamespace:
+            return SimpleNamespace(rss=1, vms=1)
+
+    monkeypatch.setitem(
+        sys.modules,
+        "psutil",
+        SimpleNamespace(Process=_FakeProcess),
+    )
+    caplog.set_level(logging.INFO)
+    diagnostics = MemoryDiagnostics(
+        MemoryDiagnosticsConfig(enabled=True, torch_tensors=True, top_n=3)
+    )
+    tensor = torch.ones(4, dtype=torch.float32)
+
+    diagnostics.log("torch")
+    del tensor
+    diagnostics.close()
+
+    assert any("[memory_torch] tag=torch" in record.message for record in caplog.records)
+    assert any(
+        "[memory_torch_kind] tag=torch" in record.message for record in caplog.records
+    )
+
+
 def test_launcher_parser_accepts_memory_diagnostics_flags(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -173,6 +209,7 @@ def test_launcher_parser_accepts_memory_diagnostics_flags(
                 "--memory-diagnostics",
                 "--memory-diagnostics-gc-growth",
                 "--memory-diagnostics-tracemalloc",
+                "--memory-diagnostics-torch-tensors",
                 "--memory-diagnostics-top-n",
                 "7",
             ]
@@ -183,6 +220,7 @@ def test_launcher_parser_accepts_memory_diagnostics_flags(
     assert parsed.bootstrap_args.memory_diagnostics is True
     assert parsed.bootstrap_args.memory_diagnostics_gc_growth is True
     assert parsed.bootstrap_args.memory_diagnostics_tracemalloc is True
+    assert parsed.bootstrap_args.memory_diagnostics_torch_tensors is True
     assert parsed.bootstrap_args.memory_diagnostics_top_n == 7
 
 

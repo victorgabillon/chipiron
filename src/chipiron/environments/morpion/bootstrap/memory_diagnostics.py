@@ -17,6 +17,7 @@ import gc
 import logging
 import os
 import tracemalloc
+import warnings
 from collections import Counter
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -35,6 +36,7 @@ class MemoryDiagnosticsConfig:
     enabled: bool = False
     gc_growth: bool = False
     tracemalloc: bool = False
+    torch_tensors: bool = False
     top_n: int = 20
 
 
@@ -77,6 +79,8 @@ class MemoryDiagnostics:
             self._log_process_memory(tag)
             if self._config.gc_growth:
                 self._log_gc_growth(tag)
+            if self._config.torch_tensors:
+                self._log_torch_tensors(tag)
             if self._config.tracemalloc:
                 self._log_tracemalloc(tag)
         except Exception:
@@ -135,6 +139,61 @@ class MemoryDiagnostics:
                 type_name,
                 count,
                 delta,
+            )
+
+    def _log_torch_tensors(self, tag: str) -> None:
+        try:
+            import torch
+        except ImportError:
+            LOGGER.warning("[memory_torch] tag=%s torch_unavailable=true", tag)
+            return
+
+        gc.collect()
+        tensor_count = 0
+        total_bytes = 0
+        storage_ptrs: set[tuple[str, int]] = set()
+        storage_bytes = 0
+        by_kind: Counter[str] = Counter()
+        for obj in gc.get_objects():
+            try:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", FutureWarning)
+                    is_tensor = torch.is_tensor(obj)
+            except Exception:
+                continue
+            if not is_tensor:
+                continue
+            tensor = obj
+            tensor_count += 1
+            try:
+                tensor_bytes = tensor.numel() * tensor.element_size()
+                total_bytes += tensor_bytes
+                by_kind[
+                    f"device={tensor.device} dtype={tensor.dtype} "
+                    f"requires_grad={tensor.requires_grad}"
+                ] += tensor_bytes
+                storage = tensor.untyped_storage()
+                storage_key = (str(tensor.device), int(storage.data_ptr()))
+                if storage_key not in storage_ptrs:
+                    storage_ptrs.add(storage_key)
+                    storage_bytes += storage.nbytes()
+            except Exception:
+                by_kind["uninspectable"] += 1
+        LOGGER.info(
+            "[memory_torch] tag=%s tensors=%s tensor_bytes_mb=%.3f "
+            "unique_storages=%s storage_bytes_mb=%.3f",
+            tag,
+            tensor_count,
+            total_bytes / BYTES_PER_MIB,
+            len(storage_ptrs),
+            storage_bytes / BYTES_PER_MIB,
+        )
+        for kind, byte_count in by_kind.most_common(max(self._config.top_n, 0)):
+            LOGGER.info(
+                "[memory_torch_kind] tag=%s kind=%s bytes_mb=%.3f",
+                tag,
+                kind,
+                byte_count / BYTES_PER_MIB,
             )
 
     def _log_tracemalloc(self, tag: str) -> None:

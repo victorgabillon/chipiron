@@ -375,6 +375,7 @@ class MorpionBootstrapArgs:
     memory_diagnostics: bool = False
     memory_diagnostics_gc_growth: bool = False
     memory_diagnostics_tracemalloc: bool = False
+    memory_diagnostics_torch_tensors: bool = False
     memory_diagnostics_top_n: int = 20
     tree_branch_limit: int = DEFAULT_MORPION_TREE_BRANCH_LIMIT
     batch_size: int = 64
@@ -908,13 +909,18 @@ def _memory_diagnostics_config_from_args(
         enabled=args.memory_diagnostics,
         gc_growth=args.memory_diagnostics_gc_growth,
         tracemalloc=args.memory_diagnostics_tracemalloc,
+        torch_tensors=args.memory_diagnostics_torch_tensors,
         top_n=args.memory_diagnostics_top_n,
     )
 
 
-def _log_after_cycle_gc(memory: MemoryDiagnostics) -> None:
+def _log_after_cycle_gc(
+    memory: MemoryDiagnostics,
+    *,
+    tag: str = "after_cycle_gc",
+) -> None:
     gc.collect()
-    memory.log("after_cycle_gc")
+    memory.log(tag)
 
 
 def run_one_bootstrap_cycle(
@@ -947,6 +953,7 @@ def run_one_bootstrap_cycle(
             memory=memory,
         )
     finally:
+        _log_after_cycle_gc(memory)
         memory.close()
 
 
@@ -1115,7 +1122,6 @@ def _run_one_bootstrap_cycle_impl(
             cycle_index,
             next_run_state.generation,
         )
-        _log_after_cycle_gc(memory)
         return next_run_state
 
     generation = run_state.generation + 1
@@ -1318,7 +1324,6 @@ def _run_one_bootstrap_cycle_impl(
         )
         del rows
         del snapshot
-        _log_after_cycle_gc(memory)
         return next_run_state
 
     evaluator_metrics: dict[str, MorpionEvaluatorMetrics] = {}
@@ -1386,6 +1391,7 @@ def _run_one_bootstrap_cycle_impl(
         memory.log("after_diagnostics")
         del previous_model
         del trained_model
+        _log_after_cycle_gc(memory, tag=f"after_evaluator:{evaluator_name}")
     LOGGER.info("[train] selection_start evaluators=%s", len(evaluator_metrics))
     selection_started_at = time.perf_counter()
     try:
@@ -1483,7 +1489,6 @@ def _run_one_bootstrap_cycle_impl(
     )
     del rows
     del snapshot
-    _log_after_cycle_gc(memory)
     return next_run_state
 
 

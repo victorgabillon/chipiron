@@ -392,6 +392,11 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         help="Also log tracemalloc allocation diffs between memory checkpoints.",
     )
     parser.add_argument(
+        "--memory-diagnostics-torch-tensors",
+        action="store_true",
+        help="Also log aggregate live torch.Tensor counts and storage bytes.",
+    )
+    parser.add_argument(
         "--memory-diagnostics-top-n",
         type=int,
         default=20,
@@ -426,6 +431,7 @@ def launcher_args_from_cli(
         memory_diagnostics=parsed.memory_diagnostics,
         memory_diagnostics_gc_growth=parsed.memory_diagnostics_gc_growth,
         memory_diagnostics_tracemalloc=parsed.memory_diagnostics_tracemalloc,
+        memory_diagnostics_torch_tensors=parsed.memory_diagnostics_torch_tensors,
         memory_diagnostics_top_n=parsed.memory_diagnostics_top_n,
         tree_branch_limit=parsed.tree_branch_limit,
     )
