@@ -377,6 +377,27 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         default=0.25,
     )
     parser.add_argument(
+        "--memory-diagnostics",
+        action="store_true",
+        help="Log lightweight process memory diagnostics at bootstrap cycle phases.",
+    )
+    parser.add_argument(
+        "--memory-diagnostics-gc-growth",
+        action="store_true",
+        help="Also log aggregate Python GC object counts by type.",
+    )
+    parser.add_argument(
+        "--memory-diagnostics-tracemalloc",
+        action="store_true",
+        help="Also log tracemalloc allocation diffs between memory checkpoints.",
+    )
+    parser.add_argument(
+        "--memory-diagnostics-top-n",
+        type=int,
+        default=20,
+        help="Number of GC/tracemalloc entries to log per memory checkpoint.",
+    )
+    parser.add_argument(
         "--tree-branch-limit",
         type=int,
         default=DEFAULT_MORPION_TREE_BRANCH_LIMIT,
@@ -402,6 +423,10 @@ def launcher_args_from_cli(
             parsed.dataset_family_target_policy,
         ),
         dataset_family_prediction_blend=parsed.dataset_family_prediction_blend,
+        memory_diagnostics=parsed.memory_diagnostics,
+        memory_diagnostics_gc_growth=parsed.memory_diagnostics_gc_growth,
+        memory_diagnostics_tracemalloc=parsed.memory_diagnostics_tracemalloc,
+        memory_diagnostics_top_n=parsed.memory_diagnostics_top_n,
         tree_branch_limit=parsed.tree_branch_limit,
     )
     return MorpionBootstrapLauncherArgs(

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import gc
 import logging
 import math
 import time
@@ -80,6 +81,7 @@ from .history import (
     MorpionBootstrapTreeStatus,
     MorpionEvaluatorMetrics,
 )
+from .memory_diagnostics import MemoryDiagnostics, MemoryDiagnosticsConfig
 from .pv_family_targets import (
     PvFamilyTargetPolicy,
     PvFamilyTargets,
@@ -370,6 +372,10 @@ class MorpionBootstrapArgs:
     use_backed_up_value: bool = True
     dataset_family_target_policy: PvFamilyTargetPolicy = "none"
     dataset_family_prediction_blend: float = 0.25
+    memory_diagnostics: bool = False
+    memory_diagnostics_gc_growth: bool = False
+    memory_diagnostics_tracemalloc: bool = False
+    memory_diagnostics_top_n: int = 20
     tree_branch_limit: int = DEFAULT_MORPION_TREE_BRANCH_LIMIT
     batch_size: int = 64
     num_epochs: int = 5
@@ -895,6 +901,22 @@ def _validate_dataset_family_target_args(args: MorpionBootstrapArgs) -> None:
         raise ValueError("dataset_family_prediction_blend must be between 0 and 1.")  # noqa: TRY003
 
 
+def _memory_diagnostics_config_from_args(
+    args: MorpionBootstrapArgs,
+) -> MemoryDiagnosticsConfig:
+    return MemoryDiagnosticsConfig(
+        enabled=args.memory_diagnostics,
+        gc_growth=args.memory_diagnostics_gc_growth,
+        tracemalloc=args.memory_diagnostics_tracemalloc,
+        top_n=args.memory_diagnostics_top_n,
+    )
+
+
+def _log_after_cycle_gc(memory: MemoryDiagnostics) -> None:
+    gc.collect()
+    memory.log("after_cycle_gc")
+
+
 def run_one_bootstrap_cycle(
     *,
     args: MorpionBootstrapArgs,
@@ -911,6 +933,35 @@ def run_one_bootstrap_cycle(
     implementations should support reload/restart-style semantics from the
     latest saved artifacts.
     """
+    memory = MemoryDiagnostics(_memory_diagnostics_config_from_args(args))
+    memory.log("cycle_start")
+    try:
+        return _run_one_bootstrap_cycle_impl(
+            args=args,
+            paths=paths,
+            runner=runner,
+            run_state=run_state,
+            control=control,
+            bootstrap_config=bootstrap_config,
+            now_unix_s=now_unix_s,
+            memory=memory,
+        )
+    finally:
+        memory.close()
+
+
+def _run_one_bootstrap_cycle_impl(
+    *,
+    args: MorpionBootstrapArgs,
+    paths: MorpionBootstrapPaths,
+    runner: MorpionSearchRunner,
+    run_state: MorpionBootstrapRunState,
+    memory: MemoryDiagnostics,
+    control: MorpionBootstrapControl | None = None,
+    bootstrap_config: MorpionBootstrapConfig | None = None,
+    now_unix_s: float | None = None,
+) -> MorpionBootstrapRunState:
+    """Run one grow/export/train/save bootstrap cycle with memory hooks."""
     cycle_started_at = time.perf_counter()
     paths.ensure_directories()
     resolved_control = MorpionBootstrapControl() if control is None else control
@@ -958,11 +1009,13 @@ def run_one_bootstrap_cycle(
         resolved_active_model.model_bundle_path,
         effective_runtime_config,
     )
+    memory.log("before_tree_growth")
     growth_started_at = time.perf_counter()
     tree_size_before_growth = runner.current_tree_size()
     runner.grow(args.max_growth_steps_per_cycle)
     growth_duration_s = time.perf_counter() - growth_started_at
     current_tree_size = runner.current_tree_size()
+    memory.log("after_tree_growth")
     LOGGER.info(
         "[growth] cycle_done elapsed=%.3fs nodes_before=%s nodes_after=%s delta=%s",
         growth_duration_s,
@@ -1062,6 +1115,7 @@ def run_one_bootstrap_cycle(
             cycle_index,
             next_run_state.generation,
         )
+        _log_after_cycle_gc(memory)
         return next_run_state
 
     generation = run_state.generation + 1
@@ -1090,6 +1144,7 @@ def run_one_bootstrap_cycle(
 
     dataset_started_at = time.perf_counter()
     LOGGER.info("[dataset] build_start snapshot=%s", str(tree_snapshot_path))
+    memory.log("before_snapshot_load_or_export")
     runner.export_training_tree_snapshot(tree_snapshot_path)
     if not tree_snapshot_path.is_file():
         raise MissingSavedBootstrapArtifactError(
@@ -1097,6 +1152,7 @@ def run_one_bootstrap_cycle(
             artifact_path=tree_snapshot_path,
         )
     snapshot = load_training_tree_snapshot(tree_snapshot_path)
+    memory.log("after_snapshot_load_or_export")
     LOGGER.info("[record] resolve_start nodes=%s", len(snapshot.nodes))
     record_started_at = time.perf_counter()
     try:
@@ -1134,6 +1190,7 @@ def run_one_bootstrap_cycle(
         )
 
     LOGGER.info("[dataset] extract_start snapshot_nodes=%s", len(snapshot.nodes))
+    memory.log("before_dataset_extract")
     extract_started_at = time.perf_counter()
     try:
         rows = training_tree_snapshot_to_morpion_supervised_rows(
@@ -1145,6 +1202,7 @@ def run_one_bootstrap_cycle(
             use_backed_up_value=args.use_backed_up_value,
             metadata={"bootstrap_generation": generation},
         )
+        memory.log("after_dataset_extract")
         rows = apply_dataset_family_target_policy(
             snapshot=snapshot,
             rows=rows,
@@ -1152,6 +1210,7 @@ def run_one_bootstrap_cycle(
             family_prediction_blend=args.dataset_family_prediction_blend,
             use_backed_up_value=args.use_backed_up_value,
         )
+        memory.log("after_dataset_family_target_policy")
     finally:
         LOGGER.info(
             "[dataset] extract_done rows=%s elapsed=%.3fs",
@@ -1178,6 +1237,7 @@ def run_one_bootstrap_cycle(
             "[dataset] save_done elapsed=%.3fs",
             time.perf_counter() - rows_save_started_at,
         )
+    memory.log("after_rows_save")
     num_rows = len(rows.rows)
     dataset_elapsed_s = time.perf_counter() - dataset_started_at
     LOGGER.info(
@@ -1256,11 +1316,15 @@ def run_one_bootstrap_cycle(
             cycle_index,
             next_run_state.generation,
         )
+        del rows
+        del snapshot
+        _log_after_cycle_gc(memory)
         return next_run_state
 
     evaluator_metrics: dict[str, MorpionEvaluatorMetrics] = {}
     model_bundle_paths: dict[str, str] = {}
     training_started_at = time.perf_counter()
+    memory.log("before_training")
     LOGGER.info(
         "[train] start evaluators=%s rows=%s",
         len(resolved_evaluators_config.evaluators),
@@ -1293,6 +1357,7 @@ def run_one_bootstrap_cycle(
                 hidden_sizes=spec.hidden_sizes,
             )
         )
+        memory.log("after_model_save")
         evaluator_metrics[evaluator_name] = MorpionEvaluatorMetrics(
             final_loss=float(metrics["final_loss"]),
             num_epochs=int(metrics["num_epochs"]),
@@ -1318,6 +1383,9 @@ def run_one_bootstrap_cycle(
             model_before=previous_model,
             model_after=trained_model,
         )
+        memory.log("after_diagnostics")
+        del previous_model
+        del trained_model
     LOGGER.info("[train] selection_start evaluators=%s", len(evaluator_metrics))
     selection_started_at = time.perf_counter()
     try:
@@ -1335,6 +1403,7 @@ def run_one_bootstrap_cycle(
         )
     training_duration_s = time.perf_counter() - training_started_at
     cycle_duration_s = time.perf_counter() - cycle_started_at
+    memory.log("after_training")
     LOGGER.info("[train] done elapsed=%.3fs", training_duration_s)
     LOGGER.info(
         "[leaderboard] persist_start generation=%s cycle=%s", generation, cycle_index
@@ -1412,6 +1481,9 @@ def run_one_bootstrap_cycle(
         next_run_state.generation,
         selected_evaluator_name,
     )
+    del rows
+    del snapshot
+    _log_after_cycle_gc(memory)
     return next_run_state
 
 
