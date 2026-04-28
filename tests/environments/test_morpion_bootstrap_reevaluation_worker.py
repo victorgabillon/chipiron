@@ -4,10 +4,15 @@
 from __future__ import annotations
 
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
+from typing import TYPE_CHECKING, cast
 
 import pytest
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
@@ -54,6 +59,7 @@ from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
 import chipiron.environments.morpion.bootstrap.reevaluation_worker as reevaluation_worker_module
 from chipiron.environments.morpion.bootstrap import (
+    MorpionActiveModelNodeReevaluationEvaluator,
     MorpionBootstrapArgs,
     MorpionBootstrapPaths,
     MorpionNodeReevaluationEvaluator,
@@ -63,6 +69,7 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionReevaluationPatch,
     MorpionReevaluationPatchRow,
     MorpionReevaluationWorkerResult,
+    build_active_model_reevaluation_evaluator,
     cursor_matches_active_model,
     load_reevaluation_cursor,
     load_reevaluation_patch,
@@ -75,6 +82,44 @@ from chipiron.environments.morpion.bootstrap import (
     select_reevaluation_node_window,
     snapshot_values_to_patch_rows,
 )
+
+
+class FakeNodeReevaluationEvaluator:
+    """Deterministic test double for injected reevaluation worker paths."""
+
+    def evaluate_patch_rows(
+        self,
+        snapshot: TrainingTreeSnapshot,
+        node_ids: Sequence[str],
+    ) -> tuple[MorpionReevaluationPatchRow, ...]:
+        """Return deterministic patch rows for the selected node ids."""
+        del snapshot
+        return tuple(
+            MorpionReevaluationPatchRow(
+                node_id=node_id,
+                direct_value=100.0 + float(index),
+                backed_up_value=None,
+                metadata={"source": "fake_injected_evaluator"},
+            )
+            for index, node_id in enumerate(node_ids)
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class _StubValue:
+    score: float
+
+
+class _StubLoadedEvaluator:
+    """Tiny state evaluator used to test the real adapter without model inference."""
+
+    def __init__(self, scores: Sequence[float]) -> None:
+        self._scores = tuple(scores)
+        self.calls: list[object] = []
+
+    def evaluate(self, state: object) -> _StubValue:
+        self.calls.append(state)
+        return _StubValue(score=self._scores[len(self.calls) - 1])
 
 
 def _make_morpion_payload() -> dict[str, object]:
@@ -260,6 +305,7 @@ def test_worker_writes_patch_and_cursor(tmp_path: Path) -> None:
         max_nodes_per_patch=2,
         now_unix_s=1_777_377_600.0,
         patch_id="patch-1",
+        use_snapshot_value_fallback=True,
     )
 
     patch = load_reevaluation_patch(paths.pipeline_reevaluation_patch_path)
@@ -285,6 +331,127 @@ def test_worker_writes_patch_and_cursor(tmp_path: Path) -> None:
     assert cursor.next_node_cursor == "node-c"
     assert cursor.completed_full_pass_count == 0
     assert cursor.last_patch_id == "patch-1"
+
+
+def test_build_active_model_reevaluation_evaluator_resolves_relative_path(
+    tmp_path: Path,
+) -> None:
+    """The real reevaluation adapter builder should resolve model paths from work dir."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    active_model = _write_active_model(paths)
+    expected_bundle_path = cast(
+        "Path",
+        paths.resolve_work_dir_path(active_model.model_bundle_path),
+    )
+    expected_bundle_path.mkdir(parents=True)
+
+    evaluator = build_active_model_reevaluation_evaluator(
+        paths=paths,
+        active_model=active_model,
+    )
+
+    assert isinstance(evaluator, MorpionActiveModelNodeReevaluationEvaluator)
+    assert evaluator.model_bundle_path == expected_bundle_path
+
+
+def test_build_active_model_reevaluation_evaluator_rejects_missing_bundle(
+    tmp_path: Path,
+) -> None:
+    """The real reevaluation adapter builder should fail loudly for missing bundles."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    active_model = _write_active_model(
+        paths,
+        model_bundle_path="models/generation_000002/missing-default",
+    )
+
+    with pytest.raises(
+        FileNotFoundError,
+        match="models/generation_000002/missing-default",
+    ):
+        build_active_model_reevaluation_evaluator(
+            paths=paths,
+            active_model=active_model,
+        )
+
+
+def test_active_model_reevaluation_evaluator_uses_model_and_terminal_values(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The real adapter should preserve exact terminal values and model-evaluate others."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    active_model = _write_active_model(paths)
+    bundle_path = cast("Path", paths.resolve_work_dir_path(active_model.model_bundle_path))
+    bundle_path.mkdir(parents=True)
+    snapshot = _make_training_snapshot(("a", "b"))
+    stub_evaluator = _StubLoadedEvaluator((42.5,))
+
+    monkeypatch.setattr(
+        reevaluation_worker_module,
+        "load_morpion_evaluator_from_model_bundle",
+        lambda model_bundle_path: stub_evaluator,
+    )
+
+    evaluator = build_active_model_reevaluation_evaluator(
+        paths=paths,
+        active_model=active_model,
+    )
+    rows = evaluator.evaluate_patch_rows(snapshot, ("a", "b"))
+
+    assert rows[0].direct_value == pytest.approx(0.5)
+    assert rows[0].backed_up_value is None
+    assert rows[0].metadata["source"] == "terminal_existing_value"
+    assert rows[0].metadata["model_bundle_path"] == str(bundle_path)
+    assert rows[1].direct_value == pytest.approx(42.5)
+    assert rows[1].metadata["source"] == "active_model_reevaluation"
+    assert rows[1].metadata["model_bundle_path"] == str(bundle_path)
+    assert len(stub_evaluator.calls) == 1
+
+
+def test_worker_uses_injected_evaluator(tmp_path: Path) -> None:
+    """Injected reevaluation evaluators should override the default active-model path."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    active_model = _write_active_model(paths)
+    _write_manifest_with_snapshot(
+        paths,
+        generation=7,
+        snapshot=_make_training_snapshot(("node-c", "node-a", "node-b")),
+    )
+
+    result = run_morpion_reevaluation_worker_once(
+        _artifact_pipeline_args(tmp_path),
+        evaluator=FakeNodeReevaluationEvaluator(),
+        max_nodes_per_patch=2,
+        now_unix_s=1_777_377_600.0,
+        patch_id="patch-fake",
+    )
+
+    patch = load_reevaluation_patch(paths.pipeline_reevaluation_patch_path)
+
+    assert result.patch_written
+    assert result.evaluator_generation == active_model.generation
+    assert tuple(row.node_id for row in patch.rows) == ("node-a", "node-b")
+    assert tuple(row.direct_value for row in patch.rows) == (100.0, 101.0)
+    assert patch.rows[0].metadata["source"] == "fake_injected_evaluator"
+
+
+def test_worker_default_path_fails_loudly_for_missing_bundle(tmp_path: Path) -> None:
+    """The default worker path should use the active-model adapter, not silent fallback."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    _write_active_model(paths, model_bundle_path="models/generation_000002/missing")
+    _write_manifest_with_snapshot(
+        paths,
+        generation=7,
+        snapshot=_make_training_snapshot(("a", "b", "c")),
+    )
+
+    with pytest.raises(FileNotFoundError, match="models/generation_000002/missing"):
+        run_morpion_reevaluation_worker_once(_artifact_pipeline_args(tmp_path))
 
 
 def test_worker_does_not_overwrite_pending_patch(tmp_path: Path) -> None:
@@ -341,6 +508,77 @@ def test_worker_does_not_overwrite_pending_patch(tmp_path: Path) -> None:
     assert load_reevaluation_cursor(paths.pipeline_reevaluation_cursor_path) == existing_cursor
 
 
+def test_worker_does_not_advance_cursor_when_patch_race_is_lost(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A late competing patch should win without advancing this worker's cursor."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    active_model = _write_active_model(paths)
+    _write_manifest_with_snapshot(
+        paths,
+        generation=7,
+        snapshot=_make_training_snapshot(("a", "b", "c")),
+    )
+    existing_cursor = MorpionReevaluationCursor(
+        evaluator_generation=active_model.generation,
+        evaluator_name=active_model.evaluator_name,
+        model_bundle_path=active_model.model_bundle_path,
+        next_node_cursor="b",
+        updated_at_utc="2026-04-28T12:00:00Z",
+        tree_generation=7,
+        completed_full_pass_count=2,
+        last_patch_id="old-patch",
+        metadata={"source": "existing"},
+    )
+    save_reevaluation_cursor(existing_cursor, paths.pipeline_reevaluation_cursor_path)
+    competing_patch = MorpionReevaluationPatch(
+        patch_id="competing-patch",
+        created_at_utc="2026-04-28T12:00:00Z",
+        evaluator_generation=active_model.generation,
+        evaluator_name=active_model.evaluator_name,
+        model_bundle_path=active_model.model_bundle_path,
+        rows=(
+            MorpionReevaluationPatchRow(
+                node_id="b",
+                direct_value=1.25,
+                metadata={"source": "competing"},
+            ),
+        ),
+        tree_generation=7,
+        start_cursor="b",
+        end_cursor="b",
+        metadata={"source": "competing"},
+    )
+
+    def lose_race(
+        patch: MorpionReevaluationPatch,
+        path: Path,
+    ) -> bool:
+        assert patch.patch_id == "new-patch"
+        save_reevaluation_patch(competing_patch, path)
+        return False
+
+    monkeypatch.setattr(
+        reevaluation_worker_module,
+        "_save_reevaluation_patch_exclusive",
+        lose_race,
+    )
+
+    result = run_morpion_reevaluation_worker_once(
+        _artifact_pipeline_args(tmp_path),
+        max_nodes_per_patch=2,
+        patch_id="new-patch",
+        use_snapshot_value_fallback=True,
+    )
+
+    assert not result.patch_written
+    assert result.reason == "pending_patch_exists"
+    assert load_reevaluation_patch(paths.pipeline_reevaluation_patch_path) == competing_patch
+    assert load_reevaluation_cursor(paths.pipeline_reevaluation_cursor_path) == existing_cursor
+
+
 def test_worker_continues_from_cursor_and_wraps(tmp_path: Path) -> None:
     """The worker should continue from the persisted cursor and wrap cleanly."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
@@ -371,6 +609,7 @@ def test_worker_continues_from_cursor_and_wraps(tmp_path: Path) -> None:
         max_nodes_per_patch=3,
         now_unix_s=1_777_377_600.0,
         patch_id="patch-2",
+        use_snapshot_value_fallback=True,
     )
 
     patch = load_reevaluation_patch(paths.pipeline_reevaluation_patch_path)
@@ -415,6 +654,7 @@ def test_worker_resets_cursor_when_active_model_changes(tmp_path: Path) -> None:
         max_nodes_per_patch=1,
         now_unix_s=1_777_377_600.0,
         patch_id="patch-3",
+        use_snapshot_value_fallback=True,
     )
 
     patch = load_reevaluation_patch(paths.pipeline_reevaluation_patch_path)
@@ -478,8 +718,16 @@ def test_package_root_reexports_reevaluation_worker_api() -> None:
         is reevaluation_worker_module.MorpionReevaluationWorkerResult
     )
     assert (
+        MorpionActiveModelNodeReevaluationEvaluator
+        is reevaluation_worker_module.MorpionActiveModelNodeReevaluationEvaluator
+    )
+    assert (
         MorpionNodeReevaluationEvaluator
         is reevaluation_worker_module.MorpionNodeReevaluationEvaluator
+    )
+    assert (
+        build_active_model_reevaluation_evaluator
+        is reevaluation_worker_module.build_active_model_reevaluation_evaluator
     )
     assert (
         run_morpion_reevaluation_worker_once

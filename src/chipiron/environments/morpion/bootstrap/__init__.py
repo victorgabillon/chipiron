@@ -247,8 +247,10 @@ from .record_status import (
     resolve_record_status_for_cycle,
 )
 from .reevaluation_worker import (
+    MorpionActiveModelNodeReevaluationEvaluator,
     MorpionNodeReevaluationEvaluator,
     MorpionReevaluationWorkerResult,
+    build_active_model_reevaluation_evaluator,
     cursor_matches_active_model,
     resolve_latest_reevaluation_tree_snapshot,
     run_morpion_reevaluation_worker_once,
@@ -308,6 +310,7 @@ __all__ = [
     "MissingActiveMorpionEvaluatorError",
     "MissingForcedMorpionEvaluatorBundleError",
     "MissingMorpionPipelineArtifactError",
+    "MorpionActiveModelNodeReevaluationEvaluator",
     "MorpionBootstrapArgs",
     "MorpionBootstrapArtifacts",
     "MorpionBootstrapChildSummary",
@@ -386,6 +389,7 @@ __all__ = [
     "bootstrap_event_to_dict",
     "bootstrap_runtime_control_from_metadata",
     "bootstrap_runtime_control_to_dict",
+    "build_active_model_reevaluation_evaluator",
     "build_bootstrap_event",
     "build_morpion_bootstrap_dashboard_data",
     "build_morpion_bootstrap_tree_inspector_snapshot",
