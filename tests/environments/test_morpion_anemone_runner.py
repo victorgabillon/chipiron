@@ -296,22 +296,19 @@ def test_checkpoint_restore_does_not_retain_full_payload_graph(tmp_path: Path) -
     first_runner.grow(4)
     first_runner.save_checkpoint(checkpoint_path)
     gc.collect()
-    payload_counts_before_restore = _checkpoint_payload_type_counts()
 
     second_runner = AnemoneMorpionSearchRunner()
     second_runner.load_or_create(checkpoint_path, None)
     restored_size = second_runner.current_tree_size()
+    first_runner = None
+    second_runner = None
     gc.collect()
 
     assert restored_size > 0
-    assert all(
-        after <= before
-        for after, before in zip(
-            _checkpoint_payload_type_counts(),
-            payload_counts_before_restore,
-            strict=True,
-        )
-    )
+    search_count, tree_count, algo_count = _checkpoint_payload_type_counts()
+    assert search_count == 0
+    assert tree_count == 0
+    assert algo_count == 0
 
 
 def test_checkpoint_metrics_logs_for_save_load_and_restore(
