@@ -6,9 +6,8 @@ import logging
 import math
 import time
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import TYPE_CHECKING, Protocol, cast
 
 from anemone.training_export import load_training_tree_snapshot
@@ -18,17 +17,14 @@ from chipiron.environments.morpion.learning import (
     save_morpion_supervised_rows,
     training_tree_snapshot_to_morpion_supervised_rows,
 )
-from chipiron.environments.morpion.players.evaluators.neural_networks.feature_schema import (
-    DEFAULT_MORPION_FEATURE_SUBSET_NAME,
-    MorpionFeatureSubset,
-    resolve_morpion_feature_subset,
-)
 from chipiron.environments.morpion.players.evaluators.neural_networks.train import (
     MorpionTrainingArgs,
     train_morpion_regressor,
 )
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from anemone.training_export import TrainingTreeSnapshot
 
     from chipiron.environments.morpion.players.evaluators.neural_networks.model import (
@@ -37,7 +33,30 @@ if TYPE_CHECKING:
 
     from .pv_family_targets import PvFamilyTargetPolicy
 
+from .bootstrap_errors import (
+    ConflictingMorpionEvaluatorConfigurationError,
+    EmptyMorpionEvaluatorsConfigError,
+    IncompatibleMorpionResumeArtifactError,
+    InconsistentMorpionEvaluatorSpecNameError,
+    MissingActiveMorpionEvaluatorError,
+    MissingBootstrapDatasetRowsError,
+    MissingBootstrapFrontierStatusError,
+    MissingBootstrapRecordStatusError,
+    MissingBootstrapSelectedEvaluatorError,
+    MissingForcedMorpionEvaluatorBundleError,
+    MissingSavedBootstrapArtifactError,
+    NoSelectableMorpionEvaluatorError,
+    UnknownActiveMorpionEvaluatorError,
+    UnknownForcedMorpionEvaluatorError,
+    UnsupportedMorpionRuntimeReconfigurationError,
+)
 from .bootstrap_memory import log_after_cycle_gc, memory_diagnostics_config_from_args
+from .bootstrap_paths import (
+    DEFAULT_KEEP_LATEST_RUNTIME_CHECKPOINTS,
+    DEFAULT_KEEP_LATEST_TREE_EXPORTS,
+    MorpionBootstrapPaths,
+    prune_generation_files,
+)
 from .config import (
     BOOTSTRAP_CONFIG_HASH_METADATA_KEY,
     DEFAULT_MORPION_TREE_BRANCH_LIMIT,
@@ -66,6 +85,7 @@ from .control import (
     load_bootstrap_control,
 )
 from .dataset_family_targets import apply_dataset_family_target_policy
+from .evaluator_config import MorpionEvaluatorsConfig, MorpionEvaluatorSpec
 from .evaluator_diagnostics import (
     append_evaluator_training_diagnostics_history,
     build_evaluator_training_diagnostics,
@@ -78,7 +98,6 @@ from .history import (
     MorpionBootstrapArtifacts,
     MorpionBootstrapDatasetStatus,
     MorpionBootstrapEvent,
-    MorpionBootstrapHistoryPaths,
     MorpionBootstrapHistoryRecorder,
     MorpionBootstrapTrainingStatus,
     MorpionBootstrapTreeStatus,
@@ -138,271 +157,9 @@ def _tree_status_value_error(field_name: str) -> TypeError:
         f"Morpion bootstrap tree-status field `{field_name}` must use int values."
     )
 
-
-def _empty_evaluator_specs() -> dict[str, MorpionEvaluatorSpec]:
-    """Return a typed empty evaluator-spec mapping."""
-    return {}
-
-
 RUNTIME_CHECKPOINT_METADATA_KEY = "runtime_checkpoint_path"
 TRAINING_SKIPPED_REASON_METADATA_KEY = "training_skipped_reason"
 EMPTY_DATASET_TRAINING_SKIPPED_REASON = "empty_dataset"
-DEFAULT_KEEP_LATEST_RUNTIME_CHECKPOINTS = 2
-DEFAULT_KEEP_LATEST_TREE_EXPORTS = 2
-
-
-class EmptyMorpionEvaluatorsConfigError(ValueError):
-    """Raised when the bootstrap loop is configured with zero evaluators."""
-
-    def __init__(self) -> None:
-        """Initialize the empty-evaluators-config error."""
-        super().__init__(
-            "Morpion bootstrap evaluators_config must contain at least one evaluator."
-        )
-
-
-class InvalidBootstrapArtifactPathError(ValueError):
-    """Raised when a persisted bootstrap artifact path escapes the work directory."""
-
-    def __init__(self, artifact_path: Path, work_dir: Path) -> None:
-        """Initialize the invalid-artifact-path error."""
-        super().__init__(
-            f"Bootstrap artifact path {artifact_path} must be inside work_dir "
-            f"{work_dir} to be persisted relatively."
-        )
-
-
-class InvalidGenerationRetentionCountError(ValueError):
-    """Raised when retention configuration requests fewer than one artifact."""
-
-    def __init__(self, keep_latest: int) -> None:
-        """Initialize the invalid-retention-count error."""
-        super().__init__(
-            f"Retention keep_latest must be at least 1, got {keep_latest}."
-        )
-
-
-class InconsistentMorpionEvaluatorSpecNameError(ValueError):
-    """Raised when one evaluator spec name does not match its config key."""
-
-    def __init__(self, key: str, spec_name: str) -> None:
-        """Initialize the mismatched-evaluator-name error."""
-        super().__init__(
-            "Morpion bootstrap evaluator config keys must match spec names, got "
-            f"key={key!r} and spec.name={spec_name!r}."
-        )
-
-
-class NoSelectableMorpionEvaluatorError(ValueError):
-    """Raised when no evaluator can be selected as the active search model."""
-
-    def __init__(self) -> None:
-        """Initialize the missing-selectable-evaluator error."""
-        super().__init__(
-            "Morpion bootstrap could not select an active evaluator because no "
-            "trained evaluator reported a finite final_loss."
-        )
-
-
-class UnknownActiveMorpionEvaluatorError(ValueError):
-    """Raised when persisted active evaluator state does not match saved bundles."""
-
-    def __init__(self, evaluator_name: str) -> None:
-        """Initialize the missing-active-evaluator error."""
-        super().__init__(
-            "Morpion bootstrap run state refers to active evaluator "
-            f"{evaluator_name!r}, but no saved model bundle path exists for it."
-        )
-
-
-class IncompatibleMorpionResumeArtifactError(ValueError):
-    """Raised when bootstrap resume selects an artifact that is not a checkpoint."""
-
-    def __init__(
-        self,
-        *,
-        source: str,
-        artifact_path: Path,
-        reason: str,
-    ) -> None:
-        """Initialize the incompatible-resume-artifact error."""
-        super().__init__(
-            "Morpion bootstrap resume selected an incompatible artifact from "
-            f"{source}: {artifact_path}. Runtime resume requires a search checkpoint "
-            "from `search_checkpoints/...`, while tree exports in "
-            "`tree_exports/...` are only for dataset extraction and analysis. "
-            f"Details: {reason}"
-        )
-
-
-class MissingActiveMorpionEvaluatorError(ValueError):
-    """Raised when persisted multi-evaluator state has no selected active evaluator."""
-
-    def __init__(self) -> None:
-        """Initialize the missing-active-evaluator error."""
-        super().__init__(
-            "Morpion bootstrap run state contains multiple saved evaluator bundles "
-            "but no active_evaluator_name, so resume is ambiguous."
-        )
-
-
-class UnknownForcedMorpionEvaluatorError(ValueError):
-    """Raised when one control file forces an evaluator name that is unavailable."""
-
-    def __init__(self, evaluator_name: str) -> None:
-        """Initialize the forced-evaluator validation error."""
-        super().__init__(
-            f"Morpion bootstrap control refers to unknown evaluator {evaluator_name!r}."
-        )
-
-
-class UnsupportedMorpionRuntimeReconfigurationError(ValueError):
-    """Raised when a requested runtime change is outside the supported safe subset."""
-
-    def __init__(
-        self,
-        *,
-        previous_tree_branch_limit: int,
-        requested_tree_branch_limit: int,
-    ) -> None:
-        """Initialize the unsupported runtime reconfiguration error."""
-        super().__init__(
-            "Morpion bootstrap supports only non-increasing tree_branch_limit "
-            "changes on an existing persisted tree. Requested "
-            f"{requested_tree_branch_limit} after {previous_tree_branch_limit}."
-        )
-
-
-class MissingForcedMorpionEvaluatorBundleError(ValueError):
-    """Raised when a forced evaluator has no saved bundle at restore time."""
-
-    def __init__(self, evaluator_name: str) -> None:
-        """Initialize the missing-forced-bundle error."""
-        super().__init__(
-            "Morpion bootstrap control forces evaluator "
-            f"{evaluator_name!r}, but no saved model bundle path exists for it."
-        )
-
-
-class ConflictingMorpionEvaluatorConfigurationError(ValueError):
-    """Raised when bootstrap args specify both explicit config and a family preset."""
-
-    def __init__(self) -> None:
-        """Initialize the ambiguous-evaluator-configuration error."""
-        super().__init__(
-            "Morpion bootstrap args cannot specify both `evaluators_config` and "
-            "`evaluator_family_preset`; choose one configuration path."
-        )
-
-
-class MissingSavedBootstrapArtifactError(FileNotFoundError):
-    """Raised when a save hook returns without producing its expected artifact."""
-
-    def __init__(self, *, action: str, artifact_path: Path) -> None:
-        """Initialize the missing-saved-artifact error."""
-        super().__init__(
-            f"Morpion bootstrap {action} did not create expected artifact: {artifact_path}"
-        )
-
-
-class UnexpectedBootstrapInvariantError(RuntimeError):
-    """Raised when an internal bootstrap helper returns an impossible result."""
-
-
-class MissingBootstrapRecordStatusError(UnexpectedBootstrapInvariantError):
-    """Raised when record-status resolution unexpectedly returns ``None``."""
-
-    def __init__(self) -> None:
-        """Initialize the missing-record-status error."""
-        super().__init__(
-            "Bootstrap invariant violation: record status resolution returned None "
-            "after resolve_record_status_for_cycle()."
-        )
-
-
-class MissingBootstrapFrontierStatusError(UnexpectedBootstrapInvariantError):
-    """Raised when frontier-status resolution unexpectedly returns ``None``."""
-
-    def __init__(self) -> None:
-        """Initialize the missing-frontier-status error."""
-        super().__init__(
-            "Bootstrap invariant violation: frontier status resolution returned "
-            "None after resolve_frontier_status_for_cycle_with_metadata()."
-        )
-
-
-class MissingBootstrapDatasetRowsError(UnexpectedBootstrapInvariantError):
-    """Raised when dataset extraction unexpectedly returns ``None``."""
-
-    def __init__(self) -> None:
-        """Initialize the missing-dataset-rows error."""
-        super().__init__(
-            "Bootstrap invariant violation: dataset extraction returned None "
-            "after training_tree_snapshot_to_morpion_supervised_rows()."
-        )
-
-
-class MissingBootstrapSelectedEvaluatorError(UnexpectedBootstrapInvariantError):
-    """Raised when evaluator selection unexpectedly returns ``None``."""
-
-    def __init__(self) -> None:
-        """Initialize the missing-selected-evaluator error."""
-        super().__init__(
-            "Bootstrap invariant violation: evaluator selection returned None "
-            "after _select_active_evaluator_name()."
-        )
-
-
-@dataclass(frozen=True, slots=True)
-class MorpionEvaluatorSpec:
-    """Training spec for one named Morpion evaluator."""
-
-    name: str
-    model_type: str
-    hidden_sizes: tuple[int, ...] | None
-    num_epochs: int
-    batch_size: int
-    learning_rate: float
-    feature_subset_name: str = DEFAULT_MORPION_FEATURE_SUBSET_NAME
-    feature_names: tuple[str, ...] = field(default_factory=tuple)
-
-    def __post_init__(self) -> None:
-        """Normalize feature subset metadata into a canonical explicit form."""
-        subset = resolve_morpion_feature_subset(
-            feature_subset_name=self.feature_subset_name,
-            feature_names=None if not self.feature_names else self.feature_names,
-        )
-        object.__setattr__(self, "feature_subset_name", subset.name)
-        object.__setattr__(self, "feature_names", subset.feature_names)
-
-    @property
-    def feature_subset(self) -> MorpionFeatureSubset:
-        """Return the resolved Morpion feature subset for this evaluator."""
-        return MorpionFeatureSubset(
-            name=self.feature_subset_name,
-            feature_names=self.feature_names,
-        )
-
-
-@dataclass(frozen=True, slots=True)
-class MorpionEvaluatorsConfig:
-    """Deterministic collection of evaluator specs for one bootstrap run."""
-
-    evaluators: dict[str, MorpionEvaluatorSpec] = field(
-        default_factory=_empty_evaluator_specs
-    )
-
-    def __post_init__(self) -> None:
-        """Copy and validate the evaluator mapping eagerly."""
-        copied: dict[str, MorpionEvaluatorSpec] = dict(self.evaluators)
-        if not copied:
-            raise EmptyMorpionEvaluatorsConfigError
-        for key, spec in copied.items():
-            if key != spec.name:
-                raise InconsistentMorpionEvaluatorSpecNameError(key, spec.name)
-        object.__setattr__(self, "evaluators", copied)
-
-
 @dataclass(frozen=True, slots=True)
 class MorpionBootstrapArgs:
     """Top-level arguments for the restartable Morpion bootstrap loop."""
@@ -458,148 +215,6 @@ class MorpionBootstrapArgs:
             learning_rate=self.learning_rate,
         )
         return MorpionEvaluatorsConfig(evaluators={"default": default_spec})
-
-
-@dataclass(frozen=True, slots=True)
-class MorpionBootstrapPaths:
-    """Canonical artifact locations for one Morpion bootstrap work directory."""
-
-    work_dir: Path
-    bootstrap_config_path: Path
-    control_path: Path
-    run_state_path: Path
-    history_jsonl_path: Path
-    latest_status_path: Path
-    launcher_pid_path: Path
-    launcher_process_state_path: Path
-    launcher_stdout_log_path: Path
-    launcher_stderr_log_path: Path
-    tree_snapshot_dir: Path
-    runtime_checkpoint_dir: Path
-    rows_dir: Path
-    model_dir: Path
-
-    @classmethod
-    def from_work_dir(
-        cls,
-        work_dir: str | Path,
-    ) -> MorpionBootstrapPaths:
-        """Build canonical bootstrap paths for one work directory."""
-        root = Path(work_dir).resolve()
-        return cls(
-            work_dir=root,
-            bootstrap_config_path=root / "bootstrap_config.json",
-            control_path=root / "control.json",
-            run_state_path=root / "run_state.json",
-            history_jsonl_path=root / "history.jsonl",
-            latest_status_path=root / "latest_status.json",
-            launcher_pid_path=root / "launcher.pid",
-            launcher_process_state_path=root / "launcher_process_state.json",
-            launcher_stdout_log_path=root / "launcher.out.log",
-            launcher_stderr_log_path=root / "launcher.err.log",
-            tree_snapshot_dir=root / "tree_exports",
-            runtime_checkpoint_dir=root / "search_checkpoints",
-            rows_dir=root / "rows",
-            model_dir=root / "models",
-        )
-
-    def ensure_directories(self) -> None:
-        """Create the canonical bootstrap directories if they do not exist."""
-        self.work_dir.mkdir(parents=True, exist_ok=True)
-        self.tree_snapshot_dir.mkdir(parents=True, exist_ok=True)
-        self.runtime_checkpoint_dir.mkdir(parents=True, exist_ok=True)
-        self.rows_dir.mkdir(parents=True, exist_ok=True)
-        self.model_dir.mkdir(parents=True, exist_ok=True)
-
-    def tree_snapshot_path_for_generation(self, generation: int) -> Path:
-        """Return the tree export path for one saved generation."""
-        return self.tree_snapshot_dir / f"generation_{generation:06d}.json"
-
-    def rows_path_for_generation(self, generation: int) -> Path:
-        """Return the raw Morpion rows path for one saved generation."""
-        return self.rows_dir / f"generation_{generation:06d}.json"
-
-    def runtime_checkpoint_path_for_generation(self, generation: int) -> Path:
-        """Return the runtime checkpoint path for one saved generation."""
-        return self.runtime_checkpoint_dir / f"generation_{generation:06d}.json"
-
-    def model_generation_dir_for_generation(self, generation: int) -> Path:
-        """Return the model root directory for one saved generation."""
-        return self.model_dir / f"generation_{generation:06d}"
-
-    def model_bundle_path_for_generation(
-        self,
-        generation: int,
-        evaluator_name: str,
-    ) -> Path:
-        """Return the model bundle directory for one evaluator and generation."""
-        return self.model_generation_dir_for_generation(generation) / evaluator_name
-
-    def history_paths(self) -> MorpionBootstrapHistoryPaths:
-        """Return the canonical bootstrap history artifact paths."""
-        return MorpionBootstrapHistoryPaths(
-            work_dir=self.work_dir,
-            history_jsonl_path=self.history_jsonl_path,
-            latest_status_path=self.latest_status_path,
-        )
-
-    def relative_to_work_dir(self, path: str | Path) -> str:
-        """Return one persisted path relative to ``work_dir`` or fail clearly."""
-        raw_path = Path(path)
-        if not raw_path.is_absolute():
-            return raw_path.as_posix()
-        try:
-            return raw_path.relative_to(self.work_dir).as_posix()
-        except ValueError as exc:
-            raise InvalidBootstrapArtifactPathError(raw_path, self.work_dir) from exc
-
-    def resolve_work_dir_path(self, path: str | Path | None) -> Path | None:
-        """Resolve one possibly-relative persisted path against ``work_dir``."""
-        if path is None:
-            return None
-        raw_path = Path(path)
-        if raw_path.is_absolute():
-            return raw_path
-        return self.work_dir / raw_path
-
-
-def _generation_file_sort_key(path: Path) -> int | None:
-    """Return the parsed generation index for ``generation_XXXXXX.json`` files."""
-    stem = path.stem
-    prefix = "generation_"
-    if path.suffix != ".json" or not stem.startswith(prefix):
-        return None
-    generation_text = stem.removeprefix(prefix)
-    if not generation_text.isdigit():
-        return None
-    return int(generation_text)
-
-
-def prune_generation_files(directory: Path, keep_latest: int = 1) -> None:
-    """Delete old ``generation_*.json`` files while keeping the newest ones."""
-    if keep_latest < 1:
-        raise InvalidGenerationRetentionCountError(keep_latest)
-
-    generation_files = [
-        (generation, path)
-        for path in directory.iterdir()
-        if path.is_file()
-        for generation in [_generation_file_sort_key(path)]
-        if generation is not None
-    ]
-    generation_files.sort(key=lambda item: item[0], reverse=True)
-    deleted_count = 0
-    for _generation, path in generation_files[keep_latest:]:
-        path.unlink()
-        deleted_count += 1
-        LOGGER.info("[retention] deleted path=%s", str(path))
-    LOGGER.info(
-        "[retention] prune_done kept=%s deleted=%s",
-        min(keep_latest, len(generation_files)),
-        deleted_count,
-    )
-
-
 class MorpionSearchRunner(Protocol):
     """Thin search-runner boundary for the Morpion bootstrap loop."""
 
