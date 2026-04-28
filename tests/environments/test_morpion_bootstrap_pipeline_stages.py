@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import sys
+import time
 from pathlib import Path
 from types import ModuleType
 from typing import TYPE_CHECKING
@@ -57,12 +58,16 @@ import chipiron.environments.morpion.bootstrap.launcher as launcher_module
 from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapArgs,
     MorpionBootstrapPaths,
+    MorpionBootstrapRunState,
     MorpionPipelineGenerationManifest,
+    load_bootstrap_run_state,
     load_pipeline_active_model,
     load_pipeline_manifest,
     run_morpion_bootstrap_experiment,
     run_pipeline_dataset_stage,
+    run_pipeline_growth_stage,
     run_pipeline_training_stage,
+    save_bootstrap_run_state,
     save_pipeline_manifest,
 )
 from chipiron.environments.morpion.learning import (
@@ -73,6 +78,68 @@ from chipiron.environments.morpion.learning import (
 
 if TYPE_CHECKING:
     from _pytest.capture import CaptureFixture
+
+
+class FakeMorpionSearchRunner:
+    """Tiny deterministic runner satisfying the bootstrap stage protocol."""
+
+    def __init__(
+        self,
+        *,
+        tree_sizes: tuple[int, ...],
+        target_values: tuple[float, ...],
+    ) -> None:
+        """Initialize the fake runner with per-cycle tree sizes and targets."""
+        self._tree_sizes = tree_sizes
+        self._target_values = target_values
+        self._cycle_index = -1
+        self.load_calls: list[tuple[str | None, str | None]] = []
+        self.grow_calls: list[int] = []
+
+    def load_or_create(
+        self,
+        tree_snapshot_path: str | Path | None,
+        model_bundle_path: str | Path | None,
+        effective_runtime_config: object | None = None,
+        *,
+        reevaluate_tree: bool = False,
+    ) -> None:
+        """Record restore inputs without mutating external state."""
+        del effective_runtime_config, reevaluate_tree
+        self.load_calls.append(
+            (
+                None if tree_snapshot_path is None else str(tree_snapshot_path),
+                None if model_bundle_path is None else str(model_bundle_path),
+            )
+        )
+
+    def grow(self, max_growth_steps: int) -> None:
+        """Advance the fake runner to the next predefined tree size."""
+        self.grow_calls.append(max_growth_steps)
+        if self._cycle_index + 1 < len(self._tree_sizes):
+            self._cycle_index += 1
+
+    def export_training_tree_snapshot(self, output_path: str | Path) -> None:
+        """Write one real training snapshot to the requested path."""
+        index = max(self._cycle_index, 0)
+        save_training_tree_snapshot(
+            _make_training_snapshot(
+                target_value=self._target_values[index],
+                root_node_id=f"node-{index}",
+            ),
+            output_path,
+        )
+
+    def save_checkpoint(self, output_path: str | Path) -> None:
+        """Write one placeholder checkpoint so manifests can point to it."""
+        path = Path(output_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text('{"checkpoint": true}\n', encoding="utf-8")
+
+    def current_tree_size(self) -> int:
+        """Return the current predefined tree size."""
+        index = max(self._cycle_index, 0)
+        return self._tree_sizes[index]
 
 
 def _make_morpion_payload() -> dict[str, object]:
@@ -146,6 +213,93 @@ def _artifact_pipeline_args(work_dir: Path) -> MorpionBootstrapArgs:
     )
 
 
+def _unexpected_full_loop_error() -> AssertionError:
+    """Build the assertion used when growth dispatch falls into the full loop."""
+    return AssertionError("full loop should not run for artifact-pipeline growth")
+
+
+def test_pipeline_growth_stage_writes_growth_only_manifest(tmp_path: Path) -> None:
+    """Growth stage should export only checkpoint/tree artifacts and manifest state."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    runner = FakeMorpionSearchRunner(tree_sizes=(5,), target_values=(1.0,))
+
+    run_state = run_pipeline_growth_stage(
+        _artifact_pipeline_args(tmp_path),
+        runner,
+        max_cycles=1,
+    )
+    manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(1))
+
+    assert run_state.generation == 1
+    assert manifest.tree_snapshot_path == "tree_exports/generation_000001.json"
+    assert manifest.runtime_checkpoint_path == "search_checkpoints/generation_000001.json"
+    assert manifest.rows_path is None
+    assert manifest.dataset_status == "not_started"
+    assert manifest.training_status == "not_started"
+    assert manifest.model_bundle_paths == {}
+    assert manifest.selected_evaluator_name is None
+    assert not paths.rows_path_for_generation(1).exists()
+    assert not paths.pipeline_active_model_path.exists()
+    assert not paths.model_generation_dir_for_generation(1).exists()
+
+
+def test_pipeline_growth_stage_then_dataset_then_training(tmp_path: Path) -> None:
+    """Staged growth, dataset, and training should hand off purely through artifacts."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    runner = FakeMorpionSearchRunner(tree_sizes=(5,), target_values=(1.0,))
+    args = _artifact_pipeline_args(tmp_path)
+
+    run_pipeline_growth_stage(args, runner, max_cycles=1)
+    manifest_after_dataset = run_pipeline_dataset_stage(args, generation=1)
+    manifest_after_training = run_pipeline_training_stage(args, generation=1)
+
+    assert manifest_after_dataset.dataset_status == "done"
+    assert manifest_after_dataset.rows_path == "rows/generation_000001.json"
+    assert manifest_after_dataset.training_status == "not_started"
+    assert paths.rows_path_for_generation(1).is_file()
+    assert manifest_after_training.training_status == "done"
+    assert manifest_after_training.selected_evaluator_name is not None
+    assert paths.pipeline_active_model_path.is_file()
+
+
+def test_pipeline_growth_stage_no_save_only_advances_cycle(tmp_path: Path) -> None:
+    """No-save growth cycles should update run state without writing a new manifest."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    save_bootstrap_run_state(
+        MorpionBootstrapRunState(
+            generation=1,
+            cycle_index=3,
+            latest_tree_snapshot_path=None,
+            latest_rows_path=None,
+            latest_model_bundle_paths=None,
+            active_evaluator_name=None,
+            tree_size_at_last_save=100,
+            last_save_unix_s=time.time(),
+        ),
+        paths.run_state_path,
+    )
+
+    runner = FakeMorpionSearchRunner(tree_sizes=(101,), target_values=(1.0,))
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        pipeline_mode="artifact_pipeline",
+        max_growth_steps_per_cycle=5,
+        save_after_tree_growth_factor=10.0,
+        save_after_seconds=1_000_000.0,
+        batch_size=1,
+        num_epochs=1,
+        shuffle=False,
+    )
+
+    run_pipeline_growth_stage(args, runner, max_cycles=1)
+
+    persisted_state = load_bootstrap_run_state(paths.run_state_path)
+    assert persisted_state.cycle_index == 4
+    assert persisted_state.generation == 1
+    assert not paths.pipeline_manifest_path_for_generation(2).exists()
+
+
 def test_dataset_stage_extracts_rows_from_manifest_tree_snapshot(tmp_path: Path) -> None:
     """Dataset stage should extract rows and mark the manifest done."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
@@ -189,7 +343,10 @@ def test_dataset_stage_marks_failed_on_exception(tmp_path: Path) -> None:
         paths.pipeline_manifest_path_for_generation(1),
     )
 
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(
+        FileNotFoundError,
+        match=r"Pipeline tree snapshot does not exist: .*generation_000001.json",
+    ):
         run_pipeline_dataset_stage(_artifact_pipeline_args(tmp_path), generation=1)
 
     manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(1))
@@ -244,6 +401,28 @@ def test_training_stage_requires_done_dataset(tmp_path: Path) -> None:
         run_pipeline_training_stage(_artifact_pipeline_args(tmp_path), generation=1)
 
 
+def test_training_stage_missing_rows_reports_path(tmp_path: Path) -> None:
+    """Training stage should surface the missing rows path in its file error."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    save_pipeline_manifest(
+        MorpionPipelineGenerationManifest(
+            generation=1,
+            created_at_utc="2026-04-28T12:00:00Z",
+            rows_path="rows/generation_000001.json",
+            dataset_status="done",
+            training_status="not_started",
+        ),
+        paths.pipeline_manifest_path_for_generation(1),
+    )
+
+    with pytest.raises(
+        FileNotFoundError,
+        match=r"Pipeline rows file does not exist: .*generation_000001.json",
+    ):
+        run_pipeline_training_stage(_artifact_pipeline_args(tmp_path), generation=1)
+
+
 def test_launcher_dispatches_dataset_stage(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -274,6 +453,48 @@ def test_launcher_dispatches_dataset_stage(
             "dataset",
             "--pipeline-generation",
             "1",
+            "--no-print-startup-summary",
+            "--no-print-dashboard-hint",
+        ]
+    )
+    run_morpion_bootstrap_experiment(launcher_args)
+
+    assert len(captured) == 1
+    assert captured[0][0].pipeline_mode == "artifact_pipeline"
+    assert captured[0][1] == 1
+
+
+def test_launcher_dispatches_growth_stage(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Artifact-pipeline growth CLI dispatch should call the growth stage only."""
+    captured: list[tuple[MorpionBootstrapArgs, int]] = []
+
+    def _fake_growth_stage(
+        args: MorpionBootstrapArgs,
+        runner: object,
+        *,
+        max_cycles: int = 1,
+    ) -> object:
+        del runner
+        captured.append((args, max_cycles))
+        return object()
+
+    def _unexpected_full_loop(*args: object, **kwargs: object) -> object:
+        raise _unexpected_full_loop_error()
+
+    monkeypatch.setattr(launcher_module, "run_pipeline_growth_stage", _fake_growth_stage)
+    monkeypatch.setattr(launcher_module, "run_morpion_bootstrap_loop", _unexpected_full_loop)
+
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--pipeline-mode",
+            "artifact_pipeline",
+            "--pipeline-stage",
+            "growth",
             "--no-print-startup-summary",
             "--no-print-dashboard-hint",
         ]

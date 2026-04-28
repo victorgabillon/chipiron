@@ -358,17 +358,6 @@ def _validate_pipeline_mode(args: MorpionBootstrapArgs) -> None:
     raise _unknown_pipeline_mode_error(args.pipeline_mode)
 
 
-def _require_artifact_pipeline_mode(args: MorpionBootstrapArgs) -> None:
-    """Require explicit artifact-pipeline mode for stage entrypoints."""
-    if args.pipeline_mode != "artifact_pipeline":
-        raise _artifact_pipeline_mode_required_error()
-
-
-def _artifact_pipeline_mode_required_error() -> ValueError:
-    """Build the canonical stage-mode mismatch error."""
-    return ValueError("artifact_pipeline mode required")
-
-
 def _require_single_process_mode(args: MorpionBootstrapArgs) -> None:
     """Require explicit single-process mode for the canonical loop entrypoint."""
     if args.pipeline_mode != "single_process":
@@ -808,8 +797,7 @@ def _run_one_bootstrap_cycle_impl(
     """Run one grow/export/train/save bootstrap cycle with memory hooks."""
     cycle_started_at = time.perf_counter()
     _validate_pipeline_mode(args)
-    if args.pipeline_mode == "artifact_pipeline":
-        _require_artifact_pipeline_mode(args)
+    _require_single_process_mode(args)
     reevaluate_tree = _reevaluate_tree_for_policy(args.evaluator_update_policy)
     paths.ensure_directories()
     resolved_control = MorpionBootstrapControl() if control is None else control
@@ -1556,14 +1544,14 @@ def _write_pipeline_manifest_for_generation(
     timestamp_utc: str,
     relative_runtime_checkpoint_path: str | None,
     relative_tree_snapshot_path: str,
-    relative_rows_path: str,
+    relative_rows_path: str | None,
     model_bundle_paths: Mapping[str, str],
     selected_evaluator_name: str | None,
     dataset_status: MorpionPipelineDatasetStatus,
     training_status: MorpionPipelineTrainingStatus,
     metadata: Mapping[str, object],
 ) -> None:
-    """Persist one pipeline manifest mirroring saved single-process artifacts."""
+    """Persist one pipeline manifest mirroring saved bootstrap artifacts."""
     save_pipeline_manifest(
         MorpionPipelineGenerationManifest(
             generation=generation,
