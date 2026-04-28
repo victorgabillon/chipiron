@@ -390,17 +390,13 @@ def test_runtime_control_widening_fails_loudly(tmp_path: Path) -> None:
         run_morpion_bootstrap_loop(args, runner, max_cycles=2)
 
 
-@pytest.mark.parametrize("cycle_index", [-1, 0])
-def test_runtime_reconfiguration_allows_fresh_run_with_any_limit(
-    cycle_index: int,
-) -> None:
+def test_runtime_reconfiguration_allows_fresh_run_with_any_limit() -> None:
     """A fresh run with no persisted runtime config should accept any limit."""
     bootstrap_loop_module._validate_runtime_reconfiguration(
         previous_effective_runtime_config=None,
         effective_runtime_config=MorpionBootstrapEffectiveRuntimeConfig(
             tree_branch_limit=512
         ),
-        cycle_index=cycle_index,
     )
 
 
@@ -413,7 +409,6 @@ def test_runtime_reconfiguration_allows_same_limit_on_resume() -> None:
         effective_runtime_config=MorpionBootstrapEffectiveRuntimeConfig(
             tree_branch_limit=64
         ),
-        cycle_index=0,
     )
 
 
@@ -426,14 +421,10 @@ def test_runtime_reconfiguration_allows_lower_limit_on_resume() -> None:
         effective_runtime_config=MorpionBootstrapEffectiveRuntimeConfig(
             tree_branch_limit=32
         ),
-        cycle_index=3,
     )
 
 
-@pytest.mark.parametrize("cycle_index", [-1, 0])
-def test_runtime_reconfiguration_rejects_higher_limit_on_persisted_runtime(
-    cycle_index: int,
-) -> None:
+def test_runtime_reconfiguration_rejects_higher_limit_on_persisted_runtime() -> None:
     """A persisted runtime config should reject widening, even with legacy cycles."""
     previous_config = MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=64)
 
@@ -443,7 +434,6 @@ def test_runtime_reconfiguration_rejects_higher_limit_on_persisted_runtime(
             effective_runtime_config=MorpionBootstrapEffectiveRuntimeConfig(
                 tree_branch_limit=128
             ),
-            cycle_index=cycle_index,
         )
 
 

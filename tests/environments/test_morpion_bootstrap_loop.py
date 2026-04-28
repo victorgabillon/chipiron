@@ -1045,6 +1045,92 @@ def test_resume_uses_runtime_checkpoint_for_legacy_run_state_without_dedicated_f
     )
 
 
+def test_resolve_runtime_restore_path_prefers_runtime_checkpoint(tmp_path: Path) -> None:
+    """Runtime restore should prefer a real checkpoint over a tree export fallback."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    checkpoint_runner = AnemoneMorpionSearchRunner()
+    checkpoint_runner.load_or_create(None, None)
+    checkpoint_runner.grow(1)
+    runtime_checkpoint_path = paths.runtime_checkpoint_path_for_generation(1)
+    checkpoint_runner.save_checkpoint(runtime_checkpoint_path)
+    save_training_tree_snapshot(
+        _make_training_snapshot(target_value=1.25, root_node_id="legacy-tree"),
+        paths.tree_snapshot_path_for_generation(1),
+    )
+
+    resolved_path = bootstrap_loop_module._resolve_runtime_restore_path(
+        paths=paths,
+        run_state=MorpionBootstrapRunState(
+            generation=1,
+            cycle_index=0,
+            latest_tree_snapshot_path="tree_exports/generation_000001.json",
+            latest_rows_path="rows/generation_000001.json",
+            latest_model_bundle_paths=None,
+            active_evaluator_name=None,
+            tree_size_at_last_save=10,
+            last_save_unix_s=100.0,
+        ),
+    )
+
+    assert resolved_path == runtime_checkpoint_path
+
+
+def test_resolve_runtime_restore_path_skips_tree_export_when_model_bundle_exists(
+    tmp_path: Path,
+) -> None:
+    """Model-only restart should not treat a tree export as a runtime checkpoint."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    save_training_tree_snapshot(
+        _make_training_snapshot(target_value=1.25, root_node_id="legacy-tree"),
+        paths.tree_snapshot_path_for_generation(1),
+    )
+
+    resolved_path = bootstrap_loop_module._resolve_runtime_restore_path(
+        paths=paths,
+        run_state=MorpionBootstrapRunState(
+            generation=1,
+            cycle_index=0,
+            latest_tree_snapshot_path="tree_exports/generation_000001.json",
+            latest_rows_path="rows/generation_000001.json",
+            latest_model_bundle_paths={"default": "models/generation_000001/default"},
+            active_evaluator_name="default",
+            tree_size_at_last_save=10,
+            last_save_unix_s=100.0,
+        ),
+    )
+
+    assert resolved_path is None
+
+
+def test_resolve_runtime_restore_path_rejects_tree_export_without_model_bundle(
+    tmp_path: Path,
+) -> None:
+    """Legacy tree-export fallback should still fail loudly without a checkpoint."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    save_training_tree_snapshot(
+        _make_training_snapshot(target_value=1.25, root_node_id="legacy-tree"),
+        paths.tree_snapshot_path_for_generation(1),
+    )
+
+    with pytest.raises(IncompatibleMorpionResumeArtifactError):
+        bootstrap_loop_module._resolve_runtime_restore_path(
+            paths=paths,
+            run_state=MorpionBootstrapRunState(
+                generation=1,
+                cycle_index=0,
+                latest_tree_snapshot_path="tree_exports/generation_000001.json",
+                latest_rows_path="rows/generation_000001.json",
+                latest_model_bundle_paths=None,
+                active_evaluator_name=None,
+                tree_size_at_last_save=10,
+                last_save_unix_s=100.0,
+            ),
+        )
+
+
 def test_resume_rejects_tree_export_when_no_runtime_checkpoint_is_available(
     tmp_path: Path,
 ) -> None:

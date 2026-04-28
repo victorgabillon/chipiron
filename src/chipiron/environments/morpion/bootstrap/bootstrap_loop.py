@@ -305,6 +305,54 @@ class MissingSavedBootstrapArtifactError(FileNotFoundError):
         )
 
 
+class UnexpectedBootstrapInvariantError(RuntimeError):
+    """Raised when an internal bootstrap helper returns an impossible result."""
+
+
+class MissingBootstrapRecordStatusError(UnexpectedBootstrapInvariantError):
+    """Raised when record-status resolution unexpectedly returns ``None``."""
+
+    def __init__(self) -> None:
+        """Initialize the missing-record-status error."""
+        super().__init__(
+            "Bootstrap invariant violation: record status resolution returned None "
+            "after resolve_record_status_for_cycle()."
+        )
+
+
+class MissingBootstrapFrontierStatusError(UnexpectedBootstrapInvariantError):
+    """Raised when frontier-status resolution unexpectedly returns ``None``."""
+
+    def __init__(self) -> None:
+        """Initialize the missing-frontier-status error."""
+        super().__init__(
+            "Bootstrap invariant violation: frontier status resolution returned "
+            "None after resolve_frontier_status_for_cycle_with_metadata()."
+        )
+
+
+class MissingBootstrapDatasetRowsError(UnexpectedBootstrapInvariantError):
+    """Raised when dataset extraction unexpectedly returns ``None``."""
+
+    def __init__(self) -> None:
+        """Initialize the missing-dataset-rows error."""
+        super().__init__(
+            "Bootstrap invariant violation: dataset extraction returned None "
+            "after training_tree_snapshot_to_morpion_supervised_rows()."
+        )
+
+
+class MissingBootstrapSelectedEvaluatorError(UnexpectedBootstrapInvariantError):
+    """Raised when evaluator selection unexpectedly returns ``None``."""
+
+    def __init__(self) -> None:
+        """Initialize the missing-selected-evaluator error."""
+        super().__init__(
+            "Bootstrap invariant violation: evaluator selection returned None "
+            "after _select_active_evaluator_name()."
+        )
+
+
 @dataclass(frozen=True, slots=True)
 class MorpionEvaluatorSpec:
     """Training spec for one named Morpion evaluator."""
@@ -751,7 +799,8 @@ def _build_and_save_dataset_for_generation(
             if record_status is None
             else record_status.current_best_total_points,
         )
-    assert record_status is not None
+    if record_status is None:
+        raise MissingBootstrapRecordStatusError
     LOGGER.info("[frontier] resolve_start nodes=%s", len(snapshot.nodes))
     frontier_started_at = time.perf_counter()
     frontier_candidate_count = 0
@@ -773,7 +822,8 @@ def _build_and_save_dataset_for_generation(
             if frontier_status is None
             else frontier_status.current_best_total_points,
         )
-    assert frontier_status is not None
+    if frontier_status is None:
+        raise MissingBootstrapFrontierStatusError
 
     LOGGER.info("[dataset] extract_start snapshot_nodes=%s", len(snapshot.nodes))
     memory.log("before_dataset_extract")
@@ -804,7 +854,8 @@ def _build_and_save_dataset_for_generation(
             None if rows is None else len(rows.rows),
             time.perf_counter() - extract_started_at,
         )
-    assert rows is not None
+    if rows is None:
+        raise MissingBootstrapDatasetRowsError
     LOGGER.info(
         "[dataset] family_targets policy=%s blend=%.3f "
         "rows_in_exact_family=%s num_exact_families=%s "
@@ -945,7 +996,8 @@ def _train_and_select_evaluators(
             time.perf_counter() - selection_started_at,
             selected_evaluator_name,
         )
-    assert selected_evaluator_name is not None
+    if selected_evaluator_name is None:
+        raise MissingBootstrapSelectedEvaluatorError
     training_duration_s = time.perf_counter() - training_started_at
     memory.log("after_training")
     LOGGER.info("[train] done elapsed=%.3fs", training_duration_s)
@@ -1061,7 +1113,6 @@ def _run_one_bootstrap_cycle_impl(
     _validate_runtime_reconfiguration(
         previous_effective_runtime_config=previous_effective_runtime_config,
         effective_runtime_config=effective_runtime_config,
-        cycle_index=run_state.cycle_index,
     )
     resolved_evaluators_config = args.resolved_evaluators_config()
     _validate_forced_evaluator(
@@ -1972,7 +2023,6 @@ def _validate_runtime_reconfiguration(
     *,
     previous_effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig | None,
     effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig,
-    cycle_index: int,
 ) -> None:
     """Validate that the requested runtime change stays within the supported subset.
 
@@ -1981,7 +2031,6 @@ def _validate_runtime_reconfiguration(
     limit only constrains future growth, while widening would retroactively allow
     expansions that the earlier runtime configuration may have pruned away.
     """
-    _ = cycle_index
     if previous_effective_runtime_config is None:
         return
     if (
