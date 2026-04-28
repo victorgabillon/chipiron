@@ -11,15 +11,41 @@ from .memory_diagnostics import MemoryDiagnostics, MemoryDiagnosticsConfig
 class MemoryDiagnosticsArgs(Protocol):
     """Small argument surface needed to configure memory diagnostics."""
 
-    memory_diagnostics: bool
-    memory_diagnostics_gc_growth: bool
-    memory_diagnostics_tracemalloc: bool
-    memory_diagnostics_torch_tensors: bool
-    memory_diagnostics_referrers: bool
-    memory_diagnostics_referrer_type_patterns: tuple[str, ...]
-    memory_diagnostics_referrer_max_objects_per_type: int
-    memory_diagnostics_referrer_max_depth: int
-    memory_diagnostics_top_n: int
+    @property
+    def memory_diagnostics(self) -> bool:
+        ...
+
+    @property
+    def memory_diagnostics_gc_growth(self) -> bool:
+        ...
+
+    @property
+    def memory_diagnostics_tracemalloc(self) -> bool:
+        ...
+
+    @property
+    def memory_diagnostics_torch_tensors(self) -> bool:
+        ...
+
+    @property
+    def memory_diagnostics_referrers(self) -> bool:
+        ...
+
+    @property
+    def memory_diagnostics_referrer_type_patterns(self) -> tuple[str, ...]:
+        ...
+
+    @property
+    def memory_diagnostics_referrer_max_objects_per_type(self) -> int:
+        ...
+
+    @property
+    def memory_diagnostics_referrer_max_depth(self) -> int:
+        ...
+
+    @property
+    def memory_diagnostics_top_n(self) -> int:
+        ...
 
 
 def memory_diagnostics_config_from_args(

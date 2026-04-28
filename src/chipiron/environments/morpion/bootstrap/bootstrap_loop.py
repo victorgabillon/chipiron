@@ -9,7 +9,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Protocol, cast
 
 from anemone.training_export import load_training_tree_snapshot
 
@@ -29,6 +29,8 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.train impo
 )
 
 if TYPE_CHECKING:
+    from anemone.training_export import TrainingTreeSnapshot
+
     from chipiron.environments.morpion.players.evaluators.neural_networks.model import (
         MorpionRegressor,
     )
@@ -53,6 +55,7 @@ from .control import (
     BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY,
     MorpionBootstrapControl,
     MorpionBootstrapEffectiveRuntimeConfig,
+    MorpionBootstrapRuntimeControl,
     apply_control_to_args,
     bootstrap_control_to_dict,
     bootstrap_runtime_control_to_dict,
@@ -685,6 +688,347 @@ def run_one_bootstrap_cycle(
         memory.close()
 
 
+@dataclass(frozen=True, slots=True)
+class BootstrapDatasetBuildResult:
+    """Artifacts and statuses produced by the bootstrap dataset build phase."""
+
+    snapshot: TrainingTreeSnapshot
+    rows: MorpionSupervisedRows
+    record_status: MorpionBootstrapRecordStatus
+    frontier_status: MorpionBootstrapFrontierStatus
+    relative_tree_snapshot_path: str
+    relative_rows_path: str
+    dataset_elapsed_s: float
+    num_rows: int
+
+
+@dataclass(frozen=True, slots=True)
+class BootstrapTrainingResult:
+    """Metrics and selected evaluator produced by bootstrap model training."""
+
+    evaluator_metrics: dict[str, MorpionEvaluatorMetrics]
+    model_bundle_paths: dict[str, str]
+    selected_evaluator_name: str
+    training_duration_s: float
+
+
+def _build_and_save_dataset_for_generation(
+    *,
+    args: MorpionBootstrapArgs,
+    paths: MorpionBootstrapPaths,
+    runner: MorpionSearchRunner,
+    run_state: MorpionBootstrapRunState,
+    generation: int,
+    memory: MemoryDiagnostics,
+) -> BootstrapDatasetBuildResult:
+    """Build, annotate, and persist the supervised rows for one generation."""
+    training_snapshot_path = paths.tree_snapshot_path_for_generation(generation)
+    rows_path = paths.rows_path_for_generation(generation)
+    dataset_started_at = time.perf_counter()
+    LOGGER.info("[dataset] build_start snapshot=%s", str(training_snapshot_path))
+    memory.log("before_snapshot_load_or_export")
+    runner.export_training_tree_snapshot(training_snapshot_path)
+    if not training_snapshot_path.is_file():
+        raise MissingSavedBootstrapArtifactError(
+            action="runner.export_training_tree_snapshot()",
+            artifact_path=training_snapshot_path,
+        )
+    snapshot = load_training_tree_snapshot(training_snapshot_path)
+    memory.log("after_snapshot_load_or_export")
+    LOGGER.info("[record] resolve_start nodes=%s", len(snapshot.nodes))
+    record_started_at = time.perf_counter()
+    record_status: MorpionBootstrapRecordStatus | None = None
+    try:
+        record_status = resolve_record_status_for_cycle(
+            snapshot=snapshot,
+            previous_record_status=run_state.latest_record_status,
+        )
+    finally:
+        LOGGER.info(
+            "[record] resolve_done elapsed=%.3fs best_total_points=%s",
+            time.perf_counter() - record_started_at,
+            None
+            if record_status is None
+            else record_status.current_best_total_points,
+        )
+    assert record_status is not None
+    LOGGER.info("[frontier] resolve_start nodes=%s", len(snapshot.nodes))
+    frontier_started_at = time.perf_counter()
+    frontier_candidate_count = 0
+    frontier_status: MorpionBootstrapFrontierStatus | None = None
+    try:
+        frontier_resolution = resolve_frontier_status_for_cycle_with_metadata(
+            snapshot=snapshot,
+            previous_frontier_status=run_state.latest_frontier_status,
+        )
+        frontier_candidate_count = frontier_resolution.candidate_count
+        frontier_status = frontier_resolution.status
+    finally:
+        LOGGER.info(
+            "[frontier] resolve_done elapsed=%.3fs candidates=%s "
+            "best_total_points=%s method=depth_metadata",
+            time.perf_counter() - frontier_started_at,
+            frontier_candidate_count,
+            None
+            if frontier_status is None
+            else frontier_status.current_best_total_points,
+        )
+    assert frontier_status is not None
+
+    LOGGER.info("[dataset] extract_start snapshot_nodes=%s", len(snapshot.nodes))
+    memory.log("before_dataset_extract")
+    extract_started_at = time.perf_counter()
+    rows: MorpionSupervisedRows | None = None
+    try:
+        rows = training_tree_snapshot_to_morpion_supervised_rows(
+            snapshot,
+            require_exact_or_terminal=args.require_exact_or_terminal,
+            min_depth=args.min_depth,
+            min_visit_count=args.min_visit_count,
+            max_rows=args.max_rows,
+            use_backed_up_value=args.use_backed_up_value,
+            metadata={"bootstrap_generation": generation},
+        )
+        memory.log("after_dataset_extract")
+        rows = apply_dataset_family_target_policy(
+            snapshot=snapshot,
+            rows=rows,
+            family_target_policy=args.dataset_family_target_policy,
+            family_prediction_blend=args.dataset_family_prediction_blend,
+            use_backed_up_value=args.use_backed_up_value,
+        )
+        memory.log("after_dataset_family_target_policy")
+    finally:
+        LOGGER.info(
+            "[dataset] extract_done rows=%s elapsed=%.3fs",
+            None if rows is None else len(rows.rows),
+            time.perf_counter() - extract_started_at,
+        )
+    assert rows is not None
+    LOGGER.info(
+        "[dataset] family_targets policy=%s blend=%.3f "
+        "rows_in_exact_family=%s num_exact_families=%s "
+        "effective_minus_raw_mean_abs=%s effective_minus_raw_max_abs=%s",
+        rows.metadata.get("dataset_family_target_policy"),
+        rows.metadata.get("dataset_family_prediction_blend"),
+        rows.metadata.get("fraction_rows_in_exact_family"),
+        rows.metadata.get("num_exact_families"),
+        rows.metadata.get("effective_minus_raw_mean_abs"),
+        rows.metadata.get("effective_minus_raw_max_abs"),
+    )
+    LOGGER.info("[dataset] save_start path=%s", str(rows_path))
+    rows_save_started_at = time.perf_counter()
+    try:
+        save_morpion_supervised_rows(rows, rows_path)
+    finally:
+        LOGGER.info(
+            "[dataset] save_done elapsed=%.3fs",
+            time.perf_counter() - rows_save_started_at,
+        )
+    memory.log("after_rows_save")
+    num_rows = len(rows.rows)
+    dataset_elapsed_s = time.perf_counter() - dataset_started_at
+    LOGGER.info(
+        "[dataset] build_done rows=%s output=%s elapsed=%.3fs",
+        num_rows,
+        str(rows_path),
+        dataset_elapsed_s,
+    )
+
+    relative_training_snapshot_path = paths.relative_to_work_dir(
+        training_snapshot_path
+    )
+    relative_rows_path = paths.relative_to_work_dir(rows_path)
+    return BootstrapDatasetBuildResult(
+        snapshot=snapshot,
+        rows=rows,
+        record_status=record_status,
+        frontier_status=frontier_status,
+        relative_tree_snapshot_path=relative_training_snapshot_path,
+        relative_rows_path=relative_rows_path,
+        dataset_elapsed_s=dataset_elapsed_s,
+        num_rows=num_rows,
+    )
+
+
+def _train_and_select_evaluators(
+    *,
+    args: MorpionBootstrapArgs,
+    paths: MorpionBootstrapPaths,
+    run_state: MorpionBootstrapRunState,
+    rows: MorpionSupervisedRows,
+    rows_path: Path,
+    generation: int,
+    timestamp_utc: str,
+    resolved_evaluators_config: MorpionEvaluatorsConfig,
+    resolved_control: MorpionBootstrapControl,
+    memory: MemoryDiagnostics,
+) -> BootstrapTrainingResult:
+    """Train configured evaluators and select the active evaluator for search."""
+    evaluator_metrics: dict[str, MorpionEvaluatorMetrics] = {}
+    model_bundle_paths: dict[str, str] = {}
+    training_started_at = time.perf_counter()
+    memory.log("before_training")
+    LOGGER.info(
+        "[train] start evaluators=%s rows=%s",
+        len(resolved_evaluators_config.evaluators),
+        len(rows.rows),
+    )
+    for evaluator_name, spec in resolved_evaluators_config.evaluators.items():
+        model_bundle_path = paths.model_bundle_path_for_generation(
+            generation, evaluator_name
+        )
+        previous_model = load_previous_evaluator_for_diagnostics(
+            _resolve_previous_model_bundle_path(
+                paths=paths,
+                run_state=run_state,
+                evaluator_name=evaluator_name,
+            )
+        )
+        LOGGER.info("[train] evaluator_start name=%s", evaluator_name)
+        evaluator_started_at = time.perf_counter()
+        trained_model, metrics = train_morpion_regressor(
+            MorpionTrainingArgs(
+                dataset_file=rows_path,
+                output_dir=model_bundle_path,
+                batch_size=spec.batch_size,
+                num_epochs=spec.num_epochs,
+                learning_rate=spec.learning_rate,
+                shuffle=args.shuffle,
+                model_kind=spec.model_type,
+                feature_subset_name=spec.feature_subset_name,
+                feature_names=spec.feature_names,
+                hidden_sizes=spec.hidden_sizes,
+            )
+        )
+        memory.log("after_model_save")
+        evaluator_metrics[evaluator_name] = MorpionEvaluatorMetrics(
+            final_loss=float(metrics["final_loss"]),
+            num_epochs=int(metrics["num_epochs"]),
+            num_samples=int(metrics["num_samples"]),
+        )
+        evaluator_elapsed_s = time.perf_counter() - evaluator_started_at
+        LOGGER.info(
+            "[train] evaluator_done name=%s final_loss=%s elapsed=%.3fs",
+            evaluator_name,
+            evaluator_metrics[evaluator_name].final_loss,
+            evaluator_elapsed_s,
+        )
+        model_bundle_paths[evaluator_name] = paths.relative_to_work_dir(
+            model_bundle_path
+        )
+        _persist_evaluator_training_diagnostics(
+            paths=paths,
+            generation=generation,
+            evaluator_name=evaluator_name,
+            rows=rows,
+            created_at=timestamp_utc,
+            spec=spec,
+            model_before=previous_model,
+            model_after=trained_model,
+        )
+        memory.log("after_diagnostics")
+        del previous_model
+        del trained_model
+        log_after_cycle_gc(memory, tag=f"after_evaluator:{evaluator_name}")
+    LOGGER.info("[train] selection_start evaluators=%s", len(evaluator_metrics))
+    selection_started_at = time.perf_counter()
+    selected_evaluator_name: str | None = None
+    try:
+        selected_evaluator_name = _select_active_evaluator_name(
+            evaluator_metrics=evaluator_metrics,
+            force_evaluator=resolved_control.force_evaluator,
+        )
+    finally:
+        LOGGER.info(
+            "[train] selection_done elapsed=%.3fs selected=%s policy=lowest_final_loss",
+            time.perf_counter() - selection_started_at,
+            selected_evaluator_name,
+        )
+    assert selected_evaluator_name is not None
+    training_duration_s = time.perf_counter() - training_started_at
+    memory.log("after_training")
+    LOGGER.info("[train] done elapsed=%.3fs", training_duration_s)
+    return BootstrapTrainingResult(
+        evaluator_metrics=evaluator_metrics,
+        model_bundle_paths=model_bundle_paths,
+        selected_evaluator_name=selected_evaluator_name,
+        training_duration_s=training_duration_s,
+    )
+
+
+def _build_no_save_run_state(
+    *,
+    run_state: MorpionBootstrapRunState,
+    resolved_active_model: ResolvedActiveMorpionModelBundle,
+    resolved_control: MorpionBootstrapControl,
+    effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig,
+    cycle_index: int,
+) -> MorpionBootstrapRunState:
+    """Build the carried-forward run state for a no-save cycle."""
+    return MorpionBootstrapRunState(
+        generation=run_state.generation,
+        cycle_index=cycle_index,
+        latest_tree_snapshot_path=run_state.latest_tree_snapshot_path,
+        latest_rows_path=run_state.latest_rows_path,
+        latest_model_bundle_paths=None
+        if run_state.latest_model_bundle_paths is None
+        else dict(run_state.latest_model_bundle_paths),
+        active_evaluator_name=resolved_active_model.active_evaluator_name,
+        tree_size_at_last_save=run_state.tree_size_at_last_save,
+        last_save_unix_s=run_state.last_save_unix_s,
+        latest_runtime_checkpoint_path=run_state.latest_runtime_checkpoint_path,
+        latest_record_status=run_state.latest_record_status,
+        latest_frontier_status=run_state.latest_frontier_status,
+        metadata=_next_metadata(
+            run_state.metadata,
+            relative_runtime_checkpoint_path=None,
+            control=resolved_control,
+            effective_runtime_config=effective_runtime_config,
+        ),
+    )
+
+
+def _record_no_save_cycle_event(
+    *,
+    history_recorder: MorpionBootstrapHistoryRecorder,
+    cycle_index: int,
+    timestamp_utc: str,
+    tree_status: MorpionBootstrapTreeStatus,
+    frontier_status: MorpionBootstrapFrontierStatus,
+    run_state: MorpionBootstrapRunState,
+    next_run_state: MorpionBootstrapRunState,
+    resolved_control: MorpionBootstrapControl,
+    effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig,
+) -> None:
+    """Record the history event for a no-save cycle."""
+    history_recorder.record(
+        build_bootstrap_event(
+            cycle_index=cycle_index,
+            generation=next_run_state.generation,
+            timestamp_utc=timestamp_utc,
+            tree_status=tree_status,
+            tree_snapshot_path=None,
+            rows_path=None,
+            dataset_num_rows=None,
+            dataset_num_samples=None,
+            training_triggered=False,
+            frontier_status=frontier_status,
+            record_status=resolve_record_status_for_cycle(
+                snapshot=None,
+                previous_record_status=run_state.latest_record_status,
+            ),
+            metadata=_build_event_metadata(
+                active_evaluator_name=next_run_state.active_evaluator_name,
+                config_hash=_bootstrap_config_hash_from_metadata(run_state.metadata),
+                forced_evaluator=resolved_control.force_evaluator,
+                runtime_control=resolved_control.runtime,
+                effective_runtime_config=effective_runtime_config,
+            ),
+        )
+    )
+
+
 def _run_one_bootstrap_cycle_impl(
     *,
     args: MorpionBootstrapArgs,
@@ -798,53 +1142,23 @@ def _run_one_bootstrap_cycle_impl(
             0.0,
             cycle_duration_s,
         )
-        next_run_state = MorpionBootstrapRunState(
-            generation=run_state.generation,
+        next_run_state = _build_no_save_run_state(
+            run_state=run_state,
+            resolved_active_model=resolved_active_model,
+            resolved_control=resolved_control,
+            effective_runtime_config=effective_runtime_config,
             cycle_index=cycle_index,
-            latest_tree_snapshot_path=run_state.latest_tree_snapshot_path,
-            latest_rows_path=run_state.latest_rows_path,
-            latest_model_bundle_paths=None
-            if run_state.latest_model_bundle_paths is None
-            else dict(run_state.latest_model_bundle_paths),
-            active_evaluator_name=resolved_active_model.active_evaluator_name,
-            tree_size_at_last_save=run_state.tree_size_at_last_save,
-            last_save_unix_s=run_state.last_save_unix_s,
-            latest_runtime_checkpoint_path=run_state.latest_runtime_checkpoint_path,
-            latest_record_status=run_state.latest_record_status,
-            latest_frontier_status=run_state.latest_frontier_status,
-            metadata=_next_metadata(
-                run_state.metadata,
-                relative_runtime_checkpoint_path=None,
-                control=resolved_control,
-                effective_runtime_config=effective_runtime_config,
-            ),
         )
-        history_recorder.record(
-            build_bootstrap_event(
-                cycle_index=cycle_index,
-                generation=next_run_state.generation,
-                timestamp_utc=timestamp_utc,
-                tree_status=tree_status,
-                tree_snapshot_path=None,
-                rows_path=None,
-                dataset_num_rows=None,
-                dataset_num_samples=None,
-                training_triggered=False,
-                frontier_status=frontier_status,
-                record_status=resolve_record_status_for_cycle(
-                    snapshot=None,
-                    previous_record_status=run_state.latest_record_status,
-                ),
-                metadata=_build_event_metadata(
-                    active_evaluator_name=next_run_state.active_evaluator_name,
-                    config_hash=_bootstrap_config_hash_from_metadata(
-                        run_state.metadata
-                    ),
-                    forced_evaluator=resolved_control.force_evaluator,
-                    runtime_control=resolved_control.runtime,
-                    effective_runtime_config=effective_runtime_config,
-                ),
-            )
+        _record_no_save_cycle_event(
+            history_recorder=history_recorder,
+            cycle_index=cycle_index,
+            timestamp_utc=timestamp_utc,
+            tree_status=tree_status,
+            frontier_status=frontier_status,
+            run_state=run_state,
+            next_run_state=next_run_state,
+            resolved_control=resolved_control,
+            effective_runtime_config=effective_runtime_config,
         )
         LOGGER.info(
             "[cycle] done cycle=%s generation=%s saved=false training=false",
@@ -858,9 +1172,7 @@ def _run_one_bootstrap_cycle_impl(
         "[save] decision_done triggered=true reason=%s",
         save_reason or "unknown",
     )
-    tree_snapshot_path = paths.tree_snapshot_path_for_generation(generation)
     runtime_checkpoint_path = paths.runtime_checkpoint_path_for_generation(generation)
-    rows_path = paths.rows_path_for_generation(generation)
 
     relative_runtime_checkpoint_path: str | None = None
     save_checkpoint = getattr(runner, "save_checkpoint", None)
@@ -877,113 +1189,24 @@ def _run_one_bootstrap_cycle_impl(
     else:
         LOGGER.info("[checkpoint] skipped reason=runner_has_no_save_checkpoint")
 
-    dataset_started_at = time.perf_counter()
-    LOGGER.info("[dataset] build_start snapshot=%s", str(tree_snapshot_path))
-    memory.log("before_snapshot_load_or_export")
-    runner.export_training_tree_snapshot(tree_snapshot_path)
-    if not tree_snapshot_path.is_file():
-        raise MissingSavedBootstrapArtifactError(
-            action="runner.export_training_tree_snapshot()",
-            artifact_path=tree_snapshot_path,
-        )
-    snapshot = load_training_tree_snapshot(tree_snapshot_path)
-    memory.log("after_snapshot_load_or_export")
-    LOGGER.info("[record] resolve_start nodes=%s", len(snapshot.nodes))
-    record_started_at = time.perf_counter()
-    try:
-        record_status = resolve_record_status_for_cycle(
-            snapshot=snapshot,
-            previous_record_status=run_state.latest_record_status,
-        )
-    finally:
-        LOGGER.info(
-            "[record] resolve_done elapsed=%.3fs best_total_points=%s",
-            time.perf_counter() - record_started_at,
-            None
-            if "record_status" not in locals()
-            else record_status.current_best_total_points,
-        )
-    LOGGER.info("[frontier] resolve_start nodes=%s", len(snapshot.nodes))
-    frontier_started_at = time.perf_counter()
-    try:
-        frontier_resolution = resolve_frontier_status_for_cycle_with_metadata(
-            snapshot=snapshot,
-            previous_frontier_status=run_state.latest_frontier_status,
-        )
-        frontier_status = frontier_resolution.status
-    finally:
-        LOGGER.info(
-            "[frontier] resolve_done elapsed=%.3fs candidates=%s "
-            "best_total_points=%s method=depth_metadata",
-            time.perf_counter() - frontier_started_at,
-            0
-            if "frontier_resolution" not in locals()
-            else frontier_resolution.candidate_count,
-            None
-            if "frontier_status" not in locals()
-            else frontier_status.current_best_total_points,
-        )
-
-    LOGGER.info("[dataset] extract_start snapshot_nodes=%s", len(snapshot.nodes))
-    memory.log("before_dataset_extract")
-    extract_started_at = time.perf_counter()
-    try:
-        rows = training_tree_snapshot_to_morpion_supervised_rows(
-            snapshot,
-            require_exact_or_terminal=args.require_exact_or_terminal,
-            min_depth=args.min_depth,
-            min_visit_count=args.min_visit_count,
-            max_rows=args.max_rows,
-            use_backed_up_value=args.use_backed_up_value,
-            metadata={"bootstrap_generation": generation},
-        )
-        memory.log("after_dataset_extract")
-        rows = apply_dataset_family_target_policy(
-            snapshot=snapshot,
-            rows=rows,
-            family_target_policy=args.dataset_family_target_policy,
-            family_prediction_blend=args.dataset_family_prediction_blend,
-            use_backed_up_value=args.use_backed_up_value,
-        )
-        memory.log("after_dataset_family_target_policy")
-    finally:
-        LOGGER.info(
-            "[dataset] extract_done rows=%s elapsed=%.3fs",
-            None if "rows" not in locals() else len(rows.rows),
-            time.perf_counter() - extract_started_at,
-        )
-    LOGGER.info(
-        "[dataset] family_targets policy=%s blend=%.3f "
-        "rows_in_exact_family=%s num_exact_families=%s "
-        "effective_minus_raw_mean_abs=%s effective_minus_raw_max_abs=%s",
-        rows.metadata.get("dataset_family_target_policy"),
-        rows.metadata.get("dataset_family_prediction_blend"),
-        rows.metadata.get("fraction_rows_in_exact_family"),
-        rows.metadata.get("num_exact_families"),
-        rows.metadata.get("effective_minus_raw_mean_abs"),
-        rows.metadata.get("effective_minus_raw_max_abs"),
+    dataset_result = _build_and_save_dataset_for_generation(
+        args=args,
+        paths=paths,
+        runner=runner,
+        run_state=run_state,
+        generation=generation,
+        memory=memory,
     )
-    LOGGER.info("[dataset] save_start path=%s", str(rows_path))
-    rows_save_started_at = time.perf_counter()
-    try:
-        save_morpion_supervised_rows(rows, rows_path)
-    finally:
-        LOGGER.info(
-            "[dataset] save_done elapsed=%.3fs",
-            time.perf_counter() - rows_save_started_at,
-        )
-    memory.log("after_rows_save")
-    num_rows = len(rows.rows)
-    dataset_elapsed_s = time.perf_counter() - dataset_started_at
-    LOGGER.info(
-        "[dataset] build_done rows=%s output=%s elapsed=%.3fs",
-        num_rows,
-        str(rows_path),
-        dataset_elapsed_s,
-    )
-
-    relative_tree_snapshot_path = paths.relative_to_work_dir(tree_snapshot_path)
-    relative_rows_path = paths.relative_to_work_dir(rows_path)
+    snapshot = dataset_result.snapshot
+    rows = dataset_result.rows
+    record_status = dataset_result.record_status
+    frontier_status = dataset_result.frontier_status
+    relative_tree_snapshot_path = dataset_result.relative_tree_snapshot_path
+    relative_rows_path = dataset_result.relative_rows_path
+    dataset_elapsed_s = dataset_result.dataset_elapsed_s
+    num_rows = dataset_result.num_rows
+    rows_path = paths.rows_path_for_generation(generation)
+    del dataset_result
 
     if num_rows == 0:
         cycle_duration_s = time.perf_counter() - cycle_started_at
@@ -1055,91 +1278,24 @@ def _run_one_bootstrap_cycle_impl(
         del snapshot
         return next_run_state
 
-    evaluator_metrics: dict[str, MorpionEvaluatorMetrics] = {}
-    model_bundle_paths: dict[str, str] = {}
-    training_started_at = time.perf_counter()
-    memory.log("before_training")
-    LOGGER.info(
-        "[train] start evaluators=%s rows=%s",
-        len(resolved_evaluators_config.evaluators),
-        num_rows,
+    training_result = _train_and_select_evaluators(
+        args=args,
+        paths=paths,
+        run_state=run_state,
+        rows=rows,
+        rows_path=rows_path,
+        generation=generation,
+        timestamp_utc=timestamp_utc,
+        resolved_evaluators_config=resolved_evaluators_config,
+        resolved_control=resolved_control,
+        memory=memory,
     )
-    for evaluator_name, spec in resolved_evaluators_config.evaluators.items():
-        model_bundle_path = paths.model_bundle_path_for_generation(
-            generation, evaluator_name
-        )
-        previous_model = load_previous_evaluator_for_diagnostics(
-            _resolve_previous_model_bundle_path(
-                paths=paths,
-                run_state=run_state,
-                evaluator_name=evaluator_name,
-            )
-        )
-        LOGGER.info("[train] evaluator_start name=%s", evaluator_name)
-        evaluator_started_at = time.perf_counter()
-        trained_model, metrics = train_morpion_regressor(
-            MorpionTrainingArgs(
-                dataset_file=rows_path,
-                output_dir=model_bundle_path,
-                batch_size=spec.batch_size,
-                num_epochs=spec.num_epochs,
-                learning_rate=spec.learning_rate,
-                shuffle=args.shuffle,
-                model_kind=spec.model_type,
-                feature_subset_name=spec.feature_subset_name,
-                feature_names=spec.feature_names,
-                hidden_sizes=spec.hidden_sizes,
-            )
-        )
-        memory.log("after_model_save")
-        evaluator_metrics[evaluator_name] = MorpionEvaluatorMetrics(
-            final_loss=float(metrics["final_loss"]),
-            num_epochs=int(metrics["num_epochs"]),
-            num_samples=int(metrics["num_samples"]),
-        )
-        evaluator_elapsed_s = time.perf_counter() - evaluator_started_at
-        LOGGER.info(
-            "[train] evaluator_done name=%s final_loss=%s elapsed=%.3fs",
-            evaluator_name,
-            evaluator_metrics[evaluator_name].final_loss,
-            evaluator_elapsed_s,
-        )
-        model_bundle_paths[evaluator_name] = paths.relative_to_work_dir(
-            model_bundle_path
-        )
-        _persist_evaluator_training_diagnostics(
-            paths=paths,
-            generation=generation,
-            evaluator_name=evaluator_name,
-            rows=rows,
-            created_at=timestamp_utc,
-            spec=spec,
-            model_before=previous_model,
-            model_after=trained_model,
-        )
-        memory.log("after_diagnostics")
-        del previous_model
-        del trained_model
-        log_after_cycle_gc(memory, tag=f"after_evaluator:{evaluator_name}")
-    LOGGER.info("[train] selection_start evaluators=%s", len(evaluator_metrics))
-    selection_started_at = time.perf_counter()
-    try:
-        selected_evaluator_name = _select_active_evaluator_name(
-            evaluator_metrics=evaluator_metrics,
-            force_evaluator=resolved_control.force_evaluator,
-        )
-    finally:
-        LOGGER.info(
-            "[train] selection_done elapsed=%.3fs selected=%s policy=lowest_final_loss",
-            time.perf_counter() - selection_started_at,
-            None
-            if "selected_evaluator_name" not in locals()
-            else selected_evaluator_name,
-        )
-    training_duration_s = time.perf_counter() - training_started_at
+    evaluator_metrics = training_result.evaluator_metrics
+    model_bundle_paths = training_result.model_bundle_paths
+    selected_evaluator_name = training_result.selected_evaluator_name
+    training_duration_s = training_result.training_duration_s
+    del training_result
     cycle_duration_s = time.perf_counter() - cycle_started_at
-    memory.log("after_training")
-    LOGGER.info("[train] done elapsed=%.3fs", training_duration_s)
     LOGGER.info(
         "[leaderboard] persist_start generation=%s cycle=%s", generation, cycle_index
     )
@@ -1337,10 +1493,11 @@ def _cycle_start_tree_metrics(
             if tree_size is None:
                 tree_size = raw_tree_status.num_nodes
         elif isinstance(raw_tree_status, Mapping):
-            raw_expanded_nodes = raw_tree_status.get("num_expanded_nodes")
+            tree_status_mapping = cast("Mapping[str, object]", raw_tree_status)
+            raw_expanded_nodes = tree_status_mapping.get("num_expanded_nodes")
             if isinstance(raw_expanded_nodes, int):
                 expanded_nodes = raw_expanded_nodes
-            raw_num_nodes = raw_tree_status.get("num_nodes")
+            raw_num_nodes = tree_status_mapping.get("num_nodes")
             if tree_size is None and isinstance(raw_num_nodes, int):
                 tree_size = raw_num_nodes
     if tree_size is None:
@@ -1498,7 +1655,7 @@ def _build_event_metadata(
     selected_evaluator_name: str | None = None,
     config_hash: str | None = None,
     forced_evaluator: str | None = None,
-    runtime_control: object | None = None,
+    runtime_control: MorpionBootstrapRuntimeControl | None = None,
     effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig | None = None,
     training_skipped_reason: str | None = None,
 ) -> dict[str, object]:
@@ -1549,30 +1706,31 @@ def _resolve_tree_status(
                 depth_node_counts=dict(raw_status.depth_node_counts),
             )
         if isinstance(raw_status, Mapping):
+            status_mapping = cast("Mapping[str, object]", raw_status)
             return MorpionBootstrapTreeStatus(
                 num_nodes=current_tree_size,
                 num_expanded_nodes=_optional_tree_int(
-                    raw_status.get("num_expanded_nodes"),
+                    status_mapping.get("num_expanded_nodes"),
                     field_name="num_expanded_nodes",
                 ),
                 num_simulations=_optional_tree_int(
-                    raw_status.get("num_simulations"),
+                    status_mapping.get("num_simulations"),
                     field_name="num_simulations",
                 ),
                 root_visit_count=_optional_tree_int(
-                    raw_status.get("root_visit_count"),
+                    status_mapping.get("root_visit_count"),
                     field_name="root_visit_count",
                 ),
                 min_depth_present=_optional_tree_int(
-                    raw_status.get("min_depth_present"),
+                    status_mapping.get("min_depth_present"),
                     field_name="min_depth_present",
                 ),
                 max_depth_present=_optional_tree_int(
-                    raw_status.get("max_depth_present"),
+                    status_mapping.get("max_depth_present"),
                     field_name="max_depth_present",
                 ),
                 depth_node_counts=_optional_tree_int_mapping(
-                    raw_status.get("depth_node_counts"),
+                    status_mapping.get("depth_node_counts"),
                     field_name="depth_node_counts",
                 ),
             )
@@ -1602,7 +1760,8 @@ def _optional_tree_int_mapping(
     if not isinstance(value, Mapping):
         raise _tree_status_mapping_error(field_name)
     mapping: dict[int, int] = {}
-    for raw_key, raw_item_value in value.items():
+    raw_mapping = cast("Mapping[object, object]", value)
+    for raw_key, raw_item_value in raw_mapping.items():
         if isinstance(raw_key, bool) or not isinstance(raw_key, int | str):
             raise _tree_status_key_error(field_name)
         if isinstance(raw_item_value, bool) or not isinstance(raw_item_value, int):
@@ -1649,12 +1808,13 @@ def _resolve_runtime_restore_path(
                 paths.runtime_checkpoint_path_for_generation(run_state.generation),
             )
         )
-    candidates.append(
-        (
-            "run_state.latest_tree_snapshot_path",
-            paths.resolve_work_dir_path(run_state.latest_tree_snapshot_path),
+    if not run_state.latest_model_bundle_paths:
+        candidates.append(
+            (
+                "run_state.latest_tree_snapshot_path",
+                paths.resolve_work_dir_path(run_state.latest_tree_snapshot_path),
+            )
         )
-    )
 
     seen_paths: set[Path] = set()
     first_incompatible_error: IncompatibleMorpionResumeArtifactError | None = None
@@ -1821,7 +1981,8 @@ def _validate_runtime_reconfiguration(
     limit only constrains future growth, while widening would retroactively allow
     expansions that the earlier runtime configuration may have pruned away.
     """
-    if previous_effective_runtime_config is None or cycle_index < 0:
+    _ = cycle_index
+    if previous_effective_runtime_config is None:
         return
     if (
         effective_runtime_config.tree_branch_limit

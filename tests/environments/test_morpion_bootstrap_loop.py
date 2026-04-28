@@ -87,6 +87,9 @@ from chipiron.environments.morpion.bootstrap import (
     select_active_evaluator_name,
     should_save_progress,
 )
+from chipiron.environments.morpion.bootstrap.dataset_family_targets import (
+    apply_dataset_family_target_policy,
+)
 from chipiron.environments.morpion.bootstrap.evaluator_diagnostics import (
     diagnostics_path,
     load_evaluator_training_diagnostics,
@@ -359,7 +362,7 @@ def test_dataset_family_policy_none_preserves_existing_targets() -> None:
     snapshot = _make_family_target_training_snapshot()
     rows = training_tree_snapshot_to_morpion_supervised_rows(snapshot)
 
-    adjusted = bootstrap_loop_module.apply_dataset_family_target_policy(
+    adjusted = apply_dataset_family_target_policy(
         snapshot=snapshot,
         rows=rows,
         family_target_policy="none",
@@ -380,7 +383,7 @@ def test_dataset_exact_then_mean_family_sets_ancestors_to_exact_target() -> None
     snapshot = _make_family_target_training_snapshot()
     rows = training_tree_snapshot_to_morpion_supervised_rows(snapshot)
 
-    adjusted = bootstrap_loop_module.apply_dataset_family_target_policy(
+    adjusted = apply_dataset_family_target_policy(
         snapshot=snapshot,
         rows=rows,
         family_target_policy="pv_exact_then_mean_prediction",

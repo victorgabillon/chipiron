@@ -108,6 +108,8 @@ from .history import (
 )
 from .history_view import (
     ActiveEvaluatorTimeSeriesPoint,
+    DiskUsageRow,
+    DiskUsageSummary,
     EvaluatorSelectionSummary,
     IntTimeSeriesPoint,
     MorpionBootstrapDashboardData,

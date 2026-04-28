@@ -222,7 +222,9 @@ def _patch_reported_losses(
 
     def _patched_train(train_args: object) -> object:
         _model, metrics = real_train(train_args)
-        evaluator_name = Path(str(getattr(train_args, "output_dir"))).name
+        evaluator_name = Path(
+            str(cast("bootstrap_loop_module.MorpionTrainingArgs", train_args).output_dir)
+        ).name
         metrics["final_loss"] = loss_by_evaluator_name[evaluator_name]
         return _model, metrics
 
@@ -386,6 +388,63 @@ def test_runtime_control_widening_fails_loudly(tmp_path: Path) -> None:
 
     with pytest.raises(UnsupportedMorpionRuntimeReconfigurationError):
         run_morpion_bootstrap_loop(args, runner, max_cycles=2)
+
+
+@pytest.mark.parametrize("cycle_index", [-1, 0])
+def test_runtime_reconfiguration_allows_fresh_run_with_any_limit(
+    cycle_index: int,
+) -> None:
+    """A fresh run with no persisted runtime config should accept any limit."""
+    bootstrap_loop_module._validate_runtime_reconfiguration(
+        previous_effective_runtime_config=None,
+        effective_runtime_config=MorpionBootstrapEffectiveRuntimeConfig(
+            tree_branch_limit=512
+        ),
+        cycle_index=cycle_index,
+    )
+
+
+def test_runtime_reconfiguration_allows_same_limit_on_resume() -> None:
+    """A resumed tree may keep the same runtime branch limit."""
+    previous_config = MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=64)
+
+    bootstrap_loop_module._validate_runtime_reconfiguration(
+        previous_effective_runtime_config=previous_config,
+        effective_runtime_config=MorpionBootstrapEffectiveRuntimeConfig(
+            tree_branch_limit=64
+        ),
+        cycle_index=0,
+    )
+
+
+def test_runtime_reconfiguration_allows_lower_limit_on_resume() -> None:
+    """A resumed tree may tighten the runtime branch limit."""
+    previous_config = MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=64)
+
+    bootstrap_loop_module._validate_runtime_reconfiguration(
+        previous_effective_runtime_config=previous_config,
+        effective_runtime_config=MorpionBootstrapEffectiveRuntimeConfig(
+            tree_branch_limit=32
+        ),
+        cycle_index=3,
+    )
+
+
+@pytest.mark.parametrize("cycle_index", [-1, 0])
+def test_runtime_reconfiguration_rejects_higher_limit_on_persisted_runtime(
+    cycle_index: int,
+) -> None:
+    """A persisted runtime config should reject widening, even with legacy cycles."""
+    previous_config = MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=64)
+
+    with pytest.raises(UnsupportedMorpionRuntimeReconfigurationError):
+        bootstrap_loop_module._validate_runtime_reconfiguration(
+            previous_effective_runtime_config=previous_config,
+            effective_runtime_config=MorpionBootstrapEffectiveRuntimeConfig(
+                tree_branch_limit=128
+            ),
+            cycle_index=cycle_index,
+        )
 
 
 def test_force_evaluator(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
