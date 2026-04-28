@@ -26,6 +26,7 @@ if TYPE_CHECKING:
         MorpionEvaluatorsConfig,
         MorpionEvaluatorSpec,
     )
+    from .pv_family_targets import PvFamilyTargetPolicy
 
 
 BOOTSTRAP_CONFIG_HASH_METADATA_KEY = "bootstrap_config_hash"
@@ -56,6 +57,8 @@ class MorpionBootstrapDatasetConfig:
     min_visit_count: int | None
     max_rows: int | None
     use_backed_up_value: bool
+    family_target_policy: PvFamilyTargetPolicy = "none"
+    family_prediction_blend: float = 0.25
 
 
 @dataclass(frozen=True, slots=True)
@@ -175,6 +178,8 @@ def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapCo
             min_visit_count=args.min_visit_count,
             max_rows=args.max_rows,
             use_backed_up_value=args.use_backed_up_value,
+            family_target_policy=args.dataset_family_target_policy,
+            family_prediction_blend=args.dataset_family_prediction_blend,
         ),
         evaluators=args.resolved_evaluators_config(),
     )
@@ -201,6 +206,8 @@ def bootstrap_config_to_dict(config: MorpionBootstrapConfig) -> dict[str, object
             "min_visit_count": config.dataset.min_visit_count,
             "max_rows": config.dataset.max_rows,
             "use_backed_up_value": config.dataset.use_backed_up_value,
+            "family_target_policy": config.dataset.family_target_policy,
+            "family_prediction_blend": config.dataset.family_prediction_blend,
         },
         "evaluators": _evaluators_config_to_dict(config.evaluators),
         "metadata": dict(config.metadata),
@@ -356,6 +363,17 @@ def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
             use_backed_up_value=_required_bool(
                 dataset.get("use_backed_up_value"),
                 field_name="dataset.use_backed_up_value",
+            ),
+            family_target_policy=cast(
+                "PvFamilyTargetPolicy",
+                _required_str(
+                    dataset.get("family_target_policy", "none"),
+                    field_name="dataset.family_target_policy",
+                ),
+            ),
+            family_prediction_blend=_coerce_float(
+                dataset.get("family_prediction_blend", 0.25),
+                field_name="dataset.family_prediction_blend",
             ),
         ),
         evaluators=evaluators,

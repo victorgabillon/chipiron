@@ -7,7 +7,7 @@ import logging
 import shlex
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, cast
 
 from .anemone_runner import (
     AnemoneMorpionSearchRunner,
@@ -40,6 +40,8 @@ from .run_state import MorpionBootstrapRunState, load_bootstrap_run_state
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+
+    from .pv_family_targets import PvFamilyTargetPolicy
 
 LOGGER = logging.getLogger(__name__)
 
@@ -355,6 +357,26 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         default=True,
     )
     parser.add_argument(
+        "--dataset-family-target-policy",
+        choices=(
+            "none",
+            "pv_mean_prediction",
+            "pv_min_prediction",
+            "pv_blend_mean_prediction",
+            "pv_blend_min_prediction",
+            "pv_exact_then_mean_prediction",
+            "pv_exact_then_min_prediction",
+            "pv_exact_then_blend_mean_prediction",
+            "pv_exact_then_blend_min_prediction",
+        ),
+        default="none",
+    )
+    parser.add_argument(
+        "--dataset-family-prediction-blend",
+        type=float,
+        default=0.25,
+    )
+    parser.add_argument(
         "--tree-branch-limit",
         type=int,
         default=DEFAULT_MORPION_TREE_BRANCH_LIMIT,
@@ -375,6 +397,11 @@ def launcher_args_from_cli(
         save_after_tree_growth_factor=parsed.save_after_tree_growth_factor,
         max_rows=parsed.max_rows,
         use_backed_up_value=parsed.use_backed_up_value,
+        dataset_family_target_policy=cast(
+            "PvFamilyTargetPolicy",
+            parsed.dataset_family_target_policy,
+        ),
+        dataset_family_prediction_blend=parsed.dataset_family_prediction_blend,
         tree_branch_limit=parsed.tree_branch_limit,
     )
     return MorpionBootstrapLauncherArgs(

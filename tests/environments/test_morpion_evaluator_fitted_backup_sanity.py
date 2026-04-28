@@ -437,10 +437,12 @@ from chipiron.environments.morpion.bootstrap.evaluator_diagnostics import (
 )
 from chipiron.environments.morpion.bootstrap.evaluator_fitted_backup_sanity import (
     MorpionFittedBackupSanityArgs,
-    family_adjusted_targets,
     fitted_backup_node_values,
-    principal_variation_families_from_selected_child,
     run_fitted_backup_sanity,
+)
+from chipiron.environments.morpion.bootstrap.pv_family_targets import (
+    family_adjusted_targets,
+    principal_variation_families_from_selected_child,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks.model import (
     MorpionRegressor,

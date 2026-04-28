@@ -94,6 +94,7 @@ from chipiron.environments.morpion.bootstrap.evaluator_diagnostics import (
 from chipiron.environments.morpion.learning import (
     MorpionSupervisedRows,
     load_morpion_supervised_rows,
+    training_tree_snapshot_to_morpion_supervised_rows,
 )
 from chipiron.environments.morpion.players.evaluators.datasets import (
     MorpionSupervisedDataset,
@@ -157,6 +158,59 @@ def _make_training_snapshot(
     return TrainingTreeSnapshot(
         root_node_id=root_node_id,
         nodes=(node,),
+        metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+    )
+
+
+def _make_family_target_training_snapshot() -> TrainingTreeSnapshot:
+    """Build a small chain snapshot for launcher dataset-family tests."""
+    payload = _make_morpion_payload()
+    return TrainingTreeSnapshot(
+        root_node_id="0",
+        nodes=(
+            TrainingNodeSnapshot(
+                node_id="0",
+                parent_ids=(),
+                child_ids=("2",),
+                depth=0,
+                state_ref_payload=payload,
+                direct_value_scalar=5.0,
+                backed_up_value_scalar=40.0,
+                is_terminal=False,
+                is_exact=False,
+                over_event_label=None,
+                visit_count=7,
+                metadata={},
+            ),
+            TrainingNodeSnapshot(
+                node_id="2",
+                parent_ids=("0",),
+                child_ids=("3",),
+                depth=1,
+                state_ref_payload=payload,
+                direct_value_scalar=10.0,
+                backed_up_value_scalar=50.0,
+                is_terminal=False,
+                is_exact=False,
+                over_event_label=None,
+                visit_count=5,
+                metadata={},
+            ),
+            TrainingNodeSnapshot(
+                node_id="3",
+                parent_ids=("2",),
+                child_ids=(),
+                depth=2,
+                state_ref_payload=payload,
+                direct_value_scalar=20.0,
+                backed_up_value_scalar=72.0,
+                is_terminal=True,
+                is_exact=True,
+                over_event_label=None,
+                visit_count=3,
+                metadata={},
+            ),
+        ),
         metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
     )
 
@@ -298,6 +352,53 @@ def _empty_rows_bundle(*, generation: int = 1) -> MorpionSupervisedRows:
             "num_rows": 0,
         },
     )
+
+
+def test_dataset_family_policy_none_preserves_existing_targets() -> None:
+    """Policy none should leave launcher dataset target values unchanged."""
+    snapshot = _make_family_target_training_snapshot()
+    rows = training_tree_snapshot_to_morpion_supervised_rows(snapshot)
+
+    adjusted = bootstrap_loop_module.apply_dataset_family_target_policy(
+        snapshot=snapshot,
+        rows=rows,
+        family_target_policy="none",
+        family_prediction_blend=0.25,
+    )
+
+    assert [row.target_value for row in adjusted.rows] == [
+        row.target_value for row in rows.rows
+    ]
+    root = next(row for row in adjusted.rows if row.node_id == "0")
+    assert root.metadata["raw_target"] == 40.0
+    assert root.metadata["effective_target"] == 40.0
+    assert root.metadata["selected_child_id"] == "2"
+
+
+def test_dataset_exact_then_mean_family_sets_ancestors_to_exact_target() -> None:
+    """Exact PV families should replace non-exact ancestor row targets."""
+    snapshot = _make_family_target_training_snapshot()
+    rows = training_tree_snapshot_to_morpion_supervised_rows(snapshot)
+
+    adjusted = bootstrap_loop_module.apply_dataset_family_target_policy(
+        snapshot=snapshot,
+        rows=rows,
+        family_target_policy="pv_exact_then_mean_prediction",
+        family_prediction_blend=0.25,
+    )
+    by_id = {row.node_id: row for row in adjusted.rows}
+
+    assert by_id["0"].target_value == 72.0
+    assert by_id["2"].target_value == 72.0
+    assert by_id["3"].target_value == 72.0
+    assert by_id["0"].metadata["raw_target"] == 40.0
+    assert by_id["0"].metadata["effective_target"] == 72.0
+    assert by_id["0"].metadata["family_representative_node_id"] == "3"
+    assert by_id["0"].metadata["family_size"] == 3
+    assert by_id["0"].metadata["family_has_exact_or_terminal"] is True
+    assert by_id["0"].metadata["family_exact_target"] == 72.0
+    assert by_id["0"].metadata["family_target_rule"] == "pv_exact_family"
+    assert by_id["0"].metadata["family_num_exact_or_terminal"] == 1
 
 
 def test_should_save_progress_helper() -> None:
