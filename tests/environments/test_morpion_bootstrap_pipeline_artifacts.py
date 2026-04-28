@@ -54,23 +54,40 @@ from atomheart.games.morpion import initial_state as morpion_initial_state
 from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
 import chipiron.environments.morpion.bootstrap.cycle_dataset as cycle_dataset_module
+import chipiron.environments.morpion.bootstrap.pipeline_artifacts as pipeline_artifacts_module
 from chipiron.environments.morpion.bootstrap import (
     EMPTY_DATASET_TRAINING_SKIPPED_REASON,
     TRAINING_SKIPPED_REASON_METADATA_KEY,
     InvalidMorpionPipelineArtifactError,
+    MissingMorpionPipelineArtifactError,
     MorpionBootstrapArgs,
     MorpionBootstrapPaths,
     MorpionPipelineActiveModel,
     MorpionPipelineGenerationManifest,
     MorpionPipelineStageClaim,
+    MorpionReevaluationCursor,
+    MorpionReevaluationPatch,
+    MorpionReevaluationPatchRow,
+    delete_reevaluation_cursor,
+    delete_reevaluation_patch,
     load_pipeline_active_model,
     load_pipeline_manifest,
     load_pipeline_stage_claim,
+    load_reevaluation_cursor,
+    load_reevaluation_patch,
     pipeline_manifest_from_dict,
+    reevaluation_cursor_from_dict,
+    reevaluation_cursor_to_dict,
+    reevaluation_patch_from_dict,
+    reevaluation_patch_row_from_dict,
+    reevaluation_patch_row_to_dict,
+    reevaluation_patch_to_dict,
     run_morpion_bootstrap_loop,
     save_pipeline_active_model,
     save_pipeline_manifest,
     save_pipeline_stage_claim,
+    save_reevaluation_cursor,
+    save_reevaluation_patch,
 )
 from chipiron.environments.morpion.learning import MorpionSupervisedRows
 
@@ -320,6 +337,14 @@ def test_pipeline_path_helpers_and_directory_creation(tmp_path: Path) -> None:
         paths.pipeline_active_model_path
         == tmp_path.resolve() / "pipeline" / "active_model.json"
     )
+    assert (
+        paths.pipeline_reevaluation_patch_path
+        == tmp_path.resolve() / "pipeline" / "reevaluation_patch.json"
+    )
+    assert (
+        paths.pipeline_reevaluation_cursor_path
+        == tmp_path.resolve() / "pipeline" / "reevaluation_cursor.json"
+    )
     assert paths.pipeline_dir.is_dir()
 
 
@@ -339,6 +364,192 @@ def test_pipeline_stage_claim_roundtrip(tmp_path: Path) -> None:
     save_pipeline_stage_claim(claim, path)
 
     assert load_pipeline_stage_claim(path) == claim
+
+
+def test_reevaluation_patch_row_roundtrip() -> None:
+    """One reevaluation patch row should round-trip through dict form unchanged."""
+    row = MorpionReevaluationPatchRow(
+        node_id="node-1",
+        direct_value=0.25,
+        backed_up_value=0.5,
+        is_exact=True,
+        is_terminal=False,
+        metadata={"depth": 3},
+    )
+
+    assert reevaluation_patch_row_from_dict(reevaluation_patch_row_to_dict(row)) == row
+
+
+def test_reevaluation_patch_roundtrip(tmp_path: Path) -> None:
+    """One reevaluation patch should round-trip through JSON unchanged."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    row_1 = MorpionReevaluationPatchRow(
+        node_id="node-1",
+        direct_value=0.25,
+        backed_up_value=0.5,
+        is_exact=True,
+        is_terminal=False,
+        metadata={"depth": 3},
+    )
+    row_2 = MorpionReevaluationPatchRow(
+        node_id="node-2",
+        direct_value=-0.75,
+        backed_up_value=None,
+        is_exact=None,
+        is_terminal=None,
+        metadata={"depth": 4},
+    )
+    patch = MorpionReevaluationPatch(
+        patch_id="patch-1",
+        created_at_utc="2026-04-28T12:00:00Z",
+        evaluator_generation=3,
+        evaluator_name="default",
+        model_bundle_path="models/generation_000003/default",
+        rows=(row_1, row_2),
+        tree_generation=7,
+        start_cursor="node-000000",
+        end_cursor="node-009999",
+        metadata={"max_nodes": 10000},
+    )
+
+    save_reevaluation_patch(patch, paths.pipeline_reevaluation_patch_path)
+
+    assert load_reevaluation_patch(paths.pipeline_reevaluation_patch_path) == patch
+    assert paths.pipeline_reevaluation_patch_path.is_file()
+
+    delete_reevaluation_patch(paths.pipeline_reevaluation_patch_path)
+
+    assert not paths.pipeline_reevaluation_patch_path.exists()
+
+
+def test_empty_reevaluation_patch_rows_allowed() -> None:
+    """Reevaluation patches should allow explicit empty row batches."""
+    patch = MorpionReevaluationPatch(
+        patch_id="patch-1",
+        created_at_utc="2026-04-28T12:00:00Z",
+        evaluator_generation=3,
+        evaluator_name="default",
+        model_bundle_path="models/generation_000003/default",
+        rows=(),
+    )
+
+    loaded = reevaluation_patch_from_dict(reevaluation_patch_to_dict(patch))
+
+    assert loaded == patch
+    assert loaded.rows == ()
+
+
+def test_reevaluation_cursor_roundtrip(tmp_path: Path) -> None:
+    """One reevaluation cursor should round-trip through JSON unchanged."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    cursor = MorpionReevaluationCursor(
+        evaluator_generation=3,
+        evaluator_name="default",
+        model_bundle_path="models/generation_000003/default",
+        next_node_cursor="node-010000",
+        updated_at_utc="2026-04-28T12:05:00Z",
+        tree_generation=7,
+        completed_full_pass_count=1,
+        last_patch_id="patch-1",
+        metadata={"policy": "all_nodes"},
+    )
+
+    assert reevaluation_cursor_from_dict(reevaluation_cursor_to_dict(cursor)) == cursor
+
+    save_reevaluation_cursor(cursor, paths.pipeline_reevaluation_cursor_path)
+
+    assert load_reevaluation_cursor(paths.pipeline_reevaluation_cursor_path) == cursor
+    assert paths.pipeline_reevaluation_cursor_path.is_file()
+
+    delete_reevaluation_cursor(paths.pipeline_reevaluation_cursor_path)
+
+    assert not paths.pipeline_reevaluation_cursor_path.exists()
+
+
+def test_invalid_reevaluation_patch_json(tmp_path: Path) -> None:
+    """Malformed reevaluation patch JSON should fail loudly."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    paths.pipeline_reevaluation_patch_path.write_text("{not json", encoding="utf-8")
+
+    with pytest.raises(
+        InvalidMorpionPipelineArtifactError,
+        match=r"reevaluation patch artifact .* not valid JSON",
+    ):
+        load_reevaluation_patch(paths.pipeline_reevaluation_patch_path)
+
+
+def test_missing_reevaluation_patch(tmp_path: Path) -> None:
+    """Missing reevaluation patch artifacts should fail loudly."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+
+    with pytest.raises(
+        MissingMorpionPipelineArtifactError,
+        match="reevaluation patch artifact does not exist",
+    ):
+        load_reevaluation_patch(paths.pipeline_reevaluation_patch_path)
+
+
+@pytest.mark.parametrize(
+    ("builder", "match"),
+    [
+        (
+            lambda: MorpionReevaluationPatchRow(node_id="node-1", direct_value=True),
+            "direct_value",
+        ),
+        (
+            lambda: MorpionReevaluationPatchRow(
+                node_id="node-1",
+                direct_value=float("inf"),
+            ),
+            "direct_value",
+        ),
+        (
+            lambda: MorpionReevaluationPatchRow(node_id="", direct_value=0.25),
+            "node_id",
+        ),
+        (
+            lambda: MorpionReevaluationPatch(
+                patch_id="patch-1",
+                created_at_utc="2026-04-28T12:00:00Z",
+                evaluator_generation=3,
+                evaluator_name="default",
+                model_bundle_path="models/generation_000003/default",
+                rows="not rows",
+            ),
+            "rows",
+        ),
+        (
+            lambda: MorpionReevaluationCursor(
+                evaluator_generation=3,
+                evaluator_name="default",
+                model_bundle_path="models/generation_000003/default",
+                next_node_cursor=None,
+                updated_at_utc="2026-04-28T12:05:00Z",
+                completed_full_pass_count=-1,
+            ),
+            "completed_full_pass_count",
+        ),
+    ],
+)
+def test_invalid_reevaluation_artifacts_reject(
+    builder: object,
+    match: str,
+) -> None:
+    """Malformed reevaluation artifacts should fail with field-specific errors."""
+    with pytest.raises(InvalidMorpionPipelineArtifactError, match=match):
+        assert callable(builder)
+        builder()
+
+
+def test_package_root_reexports_reevaluation_artifacts() -> None:
+    """Package root should re-export the reevaluation artifact public API."""
+    assert MorpionReevaluationPatch is pipeline_artifacts_module.MorpionReevaluationPatch
+    assert save_reevaluation_patch is pipeline_artifacts_module.save_reevaluation_patch
+    assert (
+        load_reevaluation_cursor
+        is pipeline_artifacts_module.load_reevaluation_cursor
+    )
 
 
 def test_single_process_cycle_writes_manifest_and_active_model(tmp_path: Path) -> None:

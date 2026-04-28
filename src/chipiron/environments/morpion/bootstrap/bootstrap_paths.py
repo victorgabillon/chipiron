@@ -134,6 +134,16 @@ class MorpionBootstrapPaths:
             / "training_claim.json"
         )
 
+    @property
+    def pipeline_reevaluation_patch_path(self) -> Path:
+        """Return the singleton reevaluation-patch artifact path."""
+        return self.pipeline_dir / "reevaluation_patch.json"
+
+    @property
+    def pipeline_reevaluation_cursor_path(self) -> Path:
+        """Return the singleton reevaluation-cursor artifact path."""
+        return self.pipeline_dir / "reevaluation_cursor.json"
+
     def history_paths(self) -> MorpionBootstrapHistoryPaths:
         """Return the canonical bootstrap history artifact paths."""
         return MorpionBootstrapHistoryPaths(

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal, cast
@@ -122,6 +123,14 @@ def _require_str(value: object, *, field_name: str) -> str:
     return value
 
 
+def _require_non_empty_str(value: object, *, field_name: str) -> str:
+    """Return one required non-empty string field."""
+    normalized = _require_str(value, field_name=field_name)
+    if normalized == "":
+        raise _invalid_field_error(field_name, "must be a non-empty string")
+    return normalized
+
+
 def _optional_path_str(value: object, *, field_name: str) -> str | None:
     """Return one optional persisted-path field."""
     if value is None:
@@ -137,6 +146,44 @@ def _optional_str(value: object, *, field_name: str) -> str | None:
         return None
     if not isinstance(value, str):
         raise _invalid_field_error(field_name, "must be a string or null")
+    return value
+
+
+def _non_negative_int(value: object, *, field_name: str) -> int:
+    """Return one validated non-negative integer field."""
+    return _require_generation(value, field_name=field_name)
+
+
+def _optional_generation(value: object, *, field_name: str) -> int | None:
+    """Return one optional non-negative generation index."""
+    if value is None:
+        return None
+    return _require_generation(value, field_name=field_name)
+
+
+def _float_value(value: object, *, field_name: str) -> float:
+    """Return one validated finite float field."""
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        raise _invalid_field_error(field_name, "must be a finite number")
+    normalized = float(value)
+    if not math.isfinite(normalized):
+        raise _invalid_field_error(field_name, "must be a finite number")
+    return normalized
+
+
+def _optional_float_value(value: object, *, field_name: str) -> float | None:
+    """Return one optional finite float field."""
+    if value is None:
+        return None
+    return _float_value(value, field_name=field_name)
+
+
+def _optional_bool(value: object, *, field_name: str) -> bool | None:
+    """Return one optional boolean field."""
+    if value is None:
+        return None
+    if not isinstance(value, bool):
+        raise _invalid_field_error(field_name, "must be a boolean or null")
     return value
 
 
@@ -356,6 +403,211 @@ class MorpionPipelineStageClaim:
         object.__setattr__(self, "metadata", _metadata_dict(self.metadata))
 
 
+@dataclass(frozen=True, slots=True)
+class MorpionReevaluationPatchRow:
+    """Immutable bounded node-value update for reevaluation patch artifacts."""
+
+    node_id: str
+    direct_value: float
+    backed_up_value: float | None = None
+    is_exact: bool | None = None
+    is_terminal: bool | None = None
+    metadata: dict[str, object] = field(default_factory=_empty_metadata)
+
+    def __post_init__(self) -> None:
+        """Validate and normalize reevaluation-patch row fields eagerly."""
+        object.__setattr__(
+            self,
+            "node_id",
+            _require_non_empty_str(self.node_id, field_name="node_id"),
+        )
+        object.__setattr__(
+            self,
+            "direct_value",
+            _float_value(self.direct_value, field_name="direct_value"),
+        )
+        object.__setattr__(
+            self,
+            "backed_up_value",
+            _optional_float_value(
+                self.backed_up_value,
+                field_name="backed_up_value",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "is_exact",
+            _optional_bool(self.is_exact, field_name="is_exact"),
+        )
+        object.__setattr__(
+            self,
+            "is_terminal",
+            _optional_bool(self.is_terminal, field_name="is_terminal"),
+        )
+        object.__setattr__(self, "metadata", _metadata_dict(self.metadata))
+
+
+def _reevaluation_patch_rows_tuple(
+    value: object,
+) -> tuple[MorpionReevaluationPatchRow, ...]:
+    """Return one validated immutable reevaluation-patch row sequence."""
+    if not isinstance(value, list | tuple):
+        raise _invalid_field_error("rows", "must be a list or tuple of patch rows")
+    return tuple(
+        item
+        if isinstance(item, MorpionReevaluationPatchRow)
+        else reevaluation_patch_row_from_dict(item)
+        for item in value
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class MorpionReevaluationPatch:
+    """Immutable reevaluation patch artifact for future tree-value updates."""
+
+    patch_id: str
+    created_at_utc: str
+    evaluator_generation: int
+    evaluator_name: str
+    model_bundle_path: str
+    rows: tuple[MorpionReevaluationPatchRow, ...]
+    tree_generation: int | None = None
+    start_cursor: str | None = None
+    end_cursor: str | None = None
+    metadata: dict[str, object] = field(default_factory=_empty_metadata)
+
+    def __post_init__(self) -> None:
+        """Validate and normalize reevaluation-patch fields eagerly."""
+        object.__setattr__(
+            self,
+            "patch_id",
+            _require_non_empty_str(self.patch_id, field_name="patch_id"),
+        )
+        object.__setattr__(
+            self,
+            "created_at_utc",
+            _require_non_empty_str(
+                self.created_at_utc,
+                field_name="created_at_utc",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "evaluator_generation",
+            _require_generation(
+                self.evaluator_generation,
+                field_name="evaluator_generation",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "evaluator_name",
+            _require_non_empty_str(
+                self.evaluator_name,
+                field_name="evaluator_name",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "model_bundle_path",
+            _require_non_empty_str(
+                self.model_bundle_path,
+                field_name="model_bundle_path",
+            ),
+        )
+        object.__setattr__(self, "rows", _reevaluation_patch_rows_tuple(self.rows))
+        object.__setattr__(
+            self,
+            "tree_generation",
+            _optional_generation(self.tree_generation, field_name="tree_generation"),
+        )
+        object.__setattr__(
+            self,
+            "start_cursor",
+            _optional_str(self.start_cursor, field_name="start_cursor"),
+        )
+        object.__setattr__(
+            self,
+            "end_cursor",
+            _optional_str(self.end_cursor, field_name="end_cursor"),
+        )
+        object.__setattr__(self, "metadata", _metadata_dict(self.metadata))
+
+
+@dataclass(frozen=True, slots=True)
+class MorpionReevaluationCursor:
+    """Immutable reevaluation cursor artifact tracking bounded patch progress."""
+
+    evaluator_generation: int
+    evaluator_name: str
+    model_bundle_path: str
+    next_node_cursor: str | None
+    updated_at_utc: str
+    tree_generation: int | None = None
+    completed_full_pass_count: int = 0
+    last_patch_id: str | None = None
+    metadata: dict[str, object] = field(default_factory=_empty_metadata)
+
+    def __post_init__(self) -> None:
+        """Validate and normalize reevaluation-cursor fields eagerly."""
+        object.__setattr__(
+            self,
+            "evaluator_generation",
+            _require_generation(
+                self.evaluator_generation,
+                field_name="evaluator_generation",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "evaluator_name",
+            _require_non_empty_str(
+                self.evaluator_name,
+                field_name="evaluator_name",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "model_bundle_path",
+            _require_non_empty_str(
+                self.model_bundle_path,
+                field_name="model_bundle_path",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "next_node_cursor",
+            _optional_str(self.next_node_cursor, field_name="next_node_cursor"),
+        )
+        object.__setattr__(
+            self,
+            "updated_at_utc",
+            _require_non_empty_str(
+                self.updated_at_utc,
+                field_name="updated_at_utc",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "tree_generation",
+            _optional_generation(self.tree_generation, field_name="tree_generation"),
+        )
+        object.__setattr__(
+            self,
+            "completed_full_pass_count",
+            _non_negative_int(
+                self.completed_full_pass_count,
+                field_name="completed_full_pass_count",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "last_patch_id",
+            _optional_str(self.last_patch_id, field_name="last_patch_id"),
+        )
+        object.__setattr__(self, "metadata", _metadata_dict(self.metadata))
+
+
 def pipeline_manifest_to_dict(
     manifest: MorpionPipelineGenerationManifest,
 ) -> dict[str, object]:
@@ -468,6 +720,149 @@ def pipeline_stage_claim_from_dict(data: object) -> MorpionPipelineStageClaim:
     )
 
 
+def reevaluation_patch_row_to_dict(
+    row: MorpionReevaluationPatchRow,
+) -> dict[str, object]:
+    """Serialize one reevaluation-patch row into JSON-friendly data."""
+    return {
+        "backed_up_value": row.backed_up_value,
+        "direct_value": row.direct_value,
+        "is_exact": row.is_exact,
+        "is_terminal": row.is_terminal,
+        "metadata": dict(row.metadata),
+        "node_id": row.node_id,
+    }
+
+
+def reevaluation_patch_row_from_dict(data: object) -> MorpionReevaluationPatchRow:
+    """Deserialize one reevaluation-patch row from JSON-friendly data."""
+    payload = _top_level_mapping(data)
+    return MorpionReevaluationPatchRow(
+        node_id=_require_non_empty_str(payload.get("node_id"), field_name="node_id"),
+        direct_value=_float_value(
+            payload.get("direct_value"),
+            field_name="direct_value",
+        ),
+        backed_up_value=_optional_float_value(
+            payload.get("backed_up_value"),
+            field_name="backed_up_value",
+        ),
+        is_exact=_optional_bool(payload.get("is_exact"), field_name="is_exact"),
+        is_terminal=_optional_bool(
+            payload.get("is_terminal"),
+            field_name="is_terminal",
+        ),
+        metadata=_metadata_dict(payload.get("metadata")),
+    )
+
+
+def reevaluation_patch_to_dict(
+    patch: MorpionReevaluationPatch,
+) -> dict[str, object]:
+    """Serialize one reevaluation patch into JSON-friendly data."""
+    return {
+        "created_at_utc": patch.created_at_utc,
+        "end_cursor": patch.end_cursor,
+        "evaluator_generation": patch.evaluator_generation,
+        "evaluator_name": patch.evaluator_name,
+        "metadata": dict(patch.metadata),
+        "model_bundle_path": patch.model_bundle_path,
+        "patch_id": patch.patch_id,
+        "rows": [reevaluation_patch_row_to_dict(row) for row in patch.rows],
+        "start_cursor": patch.start_cursor,
+        "tree_generation": patch.tree_generation,
+    }
+
+
+def reevaluation_patch_from_dict(data: object) -> MorpionReevaluationPatch:
+    """Deserialize one reevaluation patch from JSON-friendly data."""
+    payload = _top_level_mapping(data)
+    return MorpionReevaluationPatch(
+        patch_id=_require_non_empty_str(payload.get("patch_id"), field_name="patch_id"),
+        created_at_utc=_require_non_empty_str(
+            payload.get("created_at_utc"),
+            field_name="created_at_utc",
+        ),
+        evaluator_generation=_require_generation(
+            payload.get("evaluator_generation"),
+            field_name="evaluator_generation",
+        ),
+        evaluator_name=_require_non_empty_str(
+            payload.get("evaluator_name"),
+            field_name="evaluator_name",
+        ),
+        model_bundle_path=_require_non_empty_str(
+            payload.get("model_bundle_path"),
+            field_name="model_bundle_path",
+        ),
+        rows=_reevaluation_patch_rows_tuple(payload.get("rows")),
+        tree_generation=_optional_generation(
+            payload.get("tree_generation"),
+            field_name="tree_generation",
+        ),
+        start_cursor=_optional_str(payload.get("start_cursor"), field_name="start_cursor"),
+        end_cursor=_optional_str(payload.get("end_cursor"), field_name="end_cursor"),
+        metadata=_metadata_dict(payload.get("metadata")),
+    )
+
+
+def reevaluation_cursor_to_dict(
+    cursor: MorpionReevaluationCursor,
+) -> dict[str, object]:
+    """Serialize one reevaluation cursor into JSON-friendly data."""
+    return {
+        "completed_full_pass_count": cursor.completed_full_pass_count,
+        "evaluator_generation": cursor.evaluator_generation,
+        "evaluator_name": cursor.evaluator_name,
+        "last_patch_id": cursor.last_patch_id,
+        "metadata": dict(cursor.metadata),
+        "model_bundle_path": cursor.model_bundle_path,
+        "next_node_cursor": cursor.next_node_cursor,
+        "tree_generation": cursor.tree_generation,
+        "updated_at_utc": cursor.updated_at_utc,
+    }
+
+
+def reevaluation_cursor_from_dict(data: object) -> MorpionReevaluationCursor:
+    """Deserialize one reevaluation cursor from JSON-friendly data."""
+    payload = _top_level_mapping(data)
+    return MorpionReevaluationCursor(
+        evaluator_generation=_require_generation(
+            payload.get("evaluator_generation"),
+            field_name="evaluator_generation",
+        ),
+        evaluator_name=_require_non_empty_str(
+            payload.get("evaluator_name"),
+            field_name="evaluator_name",
+        ),
+        model_bundle_path=_require_non_empty_str(
+            payload.get("model_bundle_path"),
+            field_name="model_bundle_path",
+        ),
+        next_node_cursor=_optional_str(
+            payload.get("next_node_cursor"),
+            field_name="next_node_cursor",
+        ),
+        updated_at_utc=_require_non_empty_str(
+            payload.get("updated_at_utc"),
+            field_name="updated_at_utc",
+        ),
+        tree_generation=_optional_generation(
+            payload.get("tree_generation"),
+            field_name="tree_generation",
+        ),
+        completed_full_pass_count=_non_negative_int(
+            payload.get("completed_full_pass_count", 0),
+            field_name="completed_full_pass_count",
+        ),
+        last_patch_id=_optional_str(
+            payload.get("last_patch_id"),
+            field_name="last_patch_id",
+        ),
+        metadata=_metadata_dict(payload.get("metadata")),
+    )
+
+
 def _atomic_write_json(payload: Mapping[str, object], path: Path) -> None:
     """Atomically write one JSON payload to disk in a human-readable form."""
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -530,6 +925,42 @@ def _invalid_stage_claim_json_error(path: Path) -> InvalidMorpionPipelineArtifac
     )
 
 
+def _missing_reevaluation_patch_error(
+    path: Path,
+) -> MissingMorpionPipelineArtifactError:
+    """Return the stable missing-reevaluation-patch error."""
+    return MissingMorpionPipelineArtifactError(
+        f"Morpion reevaluation patch artifact does not exist: {path}"
+    )
+
+
+def _invalid_reevaluation_patch_json_error(
+    path: Path,
+) -> InvalidMorpionPipelineArtifactError:
+    """Return the stable invalid-reevaluation-patch-json error."""
+    return InvalidMorpionPipelineArtifactError(
+        f"Morpion reevaluation patch artifact at {path} is not valid JSON."
+    )
+
+
+def _missing_reevaluation_cursor_error(
+    path: Path,
+) -> MissingMorpionPipelineArtifactError:
+    """Return the stable missing-reevaluation-cursor error."""
+    return MissingMorpionPipelineArtifactError(
+        f"Morpion reevaluation cursor artifact does not exist: {path}"
+    )
+
+
+def _invalid_reevaluation_cursor_json_error(
+    path: Path,
+) -> InvalidMorpionPipelineArtifactError:
+    """Return the stable invalid-reevaluation-cursor-json error."""
+    return InvalidMorpionPipelineArtifactError(
+        f"Morpion reevaluation cursor artifact at {path} is not valid JSON."
+    )
+
+
 def save_pipeline_stage_claim(
     claim: MorpionPipelineStageClaim,
     path: Path,
@@ -551,6 +982,54 @@ def load_pipeline_stage_claim(path: Path) -> MorpionPipelineStageClaim:
 
 def delete_pipeline_stage_claim(path: Path) -> None:
     """Delete one persisted pipeline stage-claim if it exists."""
+    path.unlink(missing_ok=True)
+
+
+def save_reevaluation_patch(
+    patch: MorpionReevaluationPatch,
+    path: Path,
+) -> None:
+    """Persist one reevaluation patch atomically."""
+    _atomic_write_json(reevaluation_patch_to_dict(patch), path)
+
+
+def load_reevaluation_patch(path: Path) -> MorpionReevaluationPatch:
+    """Load one reevaluation patch from disk."""
+    if not path.is_file():
+        raise _missing_reevaluation_patch_error(path)
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise _invalid_reevaluation_patch_json_error(path) from exc
+    return reevaluation_patch_from_dict(payload)
+
+
+def delete_reevaluation_patch(path: Path) -> None:
+    """Delete one persisted reevaluation patch if it exists."""
+    path.unlink(missing_ok=True)
+
+
+def save_reevaluation_cursor(
+    cursor: MorpionReevaluationCursor,
+    path: Path,
+) -> None:
+    """Persist one reevaluation cursor atomically."""
+    _atomic_write_json(reevaluation_cursor_to_dict(cursor), path)
+
+
+def load_reevaluation_cursor(path: Path) -> MorpionReevaluationCursor:
+    """Load one reevaluation cursor from disk."""
+    if not path.is_file():
+        raise _missing_reevaluation_cursor_error(path)
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise _invalid_reevaluation_cursor_json_error(path) from exc
+    return reevaluation_cursor_from_dict(payload)
+
+
+def delete_reevaluation_cursor(path: Path) -> None:
+    """Delete one persisted reevaluation cursor if it exists."""
     path.unlink(missing_ok=True)
 
 
@@ -621,20 +1100,35 @@ __all__ = [
     "MorpionPipelineStageClaim",
     "MorpionPipelineStageName",
     "MorpionPipelineTrainingStatus",
+    "MorpionReevaluationCursor",
+    "MorpionReevaluationPatch",
+    "MorpionReevaluationPatchRow",
     "delete_pipeline_stage_claim",
+    "delete_reevaluation_cursor",
+    "delete_reevaluation_patch",
     "load_pipeline_active_model",
     "load_pipeline_manifest",
     "load_pipeline_stage_claim",
+    "load_reevaluation_cursor",
+    "load_reevaluation_patch",
     "pipeline_active_model_from_dict",
     "pipeline_active_model_to_dict",
     "pipeline_manifest_from_dict",
     "pipeline_manifest_to_dict",
     "pipeline_stage_claim_from_dict",
     "pipeline_stage_claim_to_dict",
+    "reevaluation_cursor_from_dict",
+    "reevaluation_cursor_to_dict",
+    "reevaluation_patch_from_dict",
+    "reevaluation_patch_row_from_dict",
+    "reevaluation_patch_row_to_dict",
+    "reevaluation_patch_to_dict",
     "save_pipeline_active_model",
     "save_pipeline_dataset_status_file",
     "save_pipeline_manifest",
     "save_pipeline_stage_claim",
     "save_pipeline_stage_status_file",
     "save_pipeline_training_status_file",
+    "save_reevaluation_cursor",
+    "save_reevaluation_patch",
 ]
