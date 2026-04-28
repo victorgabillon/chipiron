@@ -110,8 +110,9 @@ from .pipeline_artifacts import (
     MorpionPipelineGenerationManifest,
     MorpionPipelineTrainingStatus,
     save_pipeline_active_model,
+    save_pipeline_dataset_status_file,
     save_pipeline_manifest,
-    save_pipeline_stage_status_file,
+    save_pipeline_training_status_file,
 )
 from .pipeline_config import (
     DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
@@ -353,11 +354,28 @@ def _validate_pipeline_mode(args: MorpionBootstrapArgs) -> None:
     if args.pipeline_mode == "single_process":
         return
     if args.pipeline_mode == "artifact_pipeline":
-        raise NotImplementedError(
-            "Morpion artifact_pipeline mode is reserved for the future multi-process "
-            "artifact pipeline. Use pipeline_mode='single_process' for now."
-        )
+        return
     raise _unknown_pipeline_mode_error(args.pipeline_mode)
+
+
+def _require_artifact_pipeline_mode(args: MorpionBootstrapArgs) -> None:
+    """Require explicit artifact-pipeline mode for stage entrypoints."""
+    if args.pipeline_mode != "artifact_pipeline":
+        raise _artifact_pipeline_mode_required_error()
+
+
+def _artifact_pipeline_mode_required_error() -> ValueError:
+    """Build the canonical stage-mode mismatch error."""
+    return ValueError("artifact_pipeline mode required")
+
+
+def _require_single_process_mode(args: MorpionBootstrapArgs) -> None:
+    """Require explicit single-process mode for the canonical loop entrypoint."""
+    if args.pipeline_mode != "single_process":
+        raise NotImplementedError(
+            "run_morpion_bootstrap_loop only supports pipeline_mode='single_process'. "
+            "Use the dedicated artifact-pipeline stage entrypoints instead."
+        )
 
 
 def _reevaluate_tree_for_policy(policy: MorpionEvaluatorUpdatePolicy) -> bool:
@@ -430,6 +448,31 @@ class BootstrapTrainingResult:
     model_bundle_paths: dict[str, str]
     selected_evaluator_name: str
     training_duration_s: float
+
+
+def _extract_rows_from_training_snapshot(
+    *,
+    args: MorpionBootstrapArgs,
+    snapshot: TrainingTreeSnapshot,
+    generation: int,
+) -> MorpionSupervisedRows:
+    """Extract and post-process supervised rows from one training snapshot."""
+    rows = training_tree_snapshot_to_morpion_supervised_rows(
+        snapshot,
+        require_exact_or_terminal=args.require_exact_or_terminal,
+        min_depth=args.min_depth,
+        min_visit_count=args.min_visit_count,
+        max_rows=args.max_rows,
+        use_backed_up_value=args.use_backed_up_value,
+        metadata={"bootstrap_generation": generation},
+    )
+    return apply_dataset_family_target_policy(
+        snapshot=snapshot,
+        rows=rows,
+        family_target_policy=args.dataset_family_target_policy,
+        family_prediction_blend=args.dataset_family_prediction_blend,
+        use_backed_up_value=args.use_backed_up_value,
+    )
 
 
 def _build_and_save_dataset_for_generation(
@@ -508,29 +551,12 @@ def _build_and_save_dataset_for_generation(
     extract_started_at = time.perf_counter()
     rows: MorpionSupervisedRows | None = None
     try:
-        rows = cast(
-            "MorpionSupervisedRows | None",
-            training_tree_snapshot_to_morpion_supervised_rows(
-                snapshot,
-                require_exact_or_terminal=args.require_exact_or_terminal,
-                min_depth=args.min_depth,
-                min_visit_count=args.min_visit_count,
-                max_rows=args.max_rows,
-                use_backed_up_value=args.use_backed_up_value,
-                metadata={"bootstrap_generation": generation},
-            ),
+        rows = _extract_rows_from_training_snapshot(
+            args=args,
+            snapshot=snapshot,
+            generation=generation,
         )
         memory.log("after_dataset_extract")
-        rows = cast(
-            "MorpionSupervisedRows | None",
-            apply_dataset_family_target_policy(
-                snapshot=snapshot,
-                rows=cast("MorpionSupervisedRows", rows),
-                family_target_policy=args.dataset_family_target_policy,
-                family_prediction_blend=args.dataset_family_prediction_blend,
-                use_backed_up_value=args.use_backed_up_value,
-            ),
-        )
         memory.log("after_dataset_family_target_policy")
     finally:
         LOGGER.info(
@@ -782,6 +808,8 @@ def _run_one_bootstrap_cycle_impl(
     """Run one grow/export/train/save bootstrap cycle with memory hooks."""
     cycle_started_at = time.perf_counter()
     _validate_pipeline_mode(args)
+    if args.pipeline_mode == "artifact_pipeline":
+        _require_artifact_pipeline_mode(args)
     reevaluate_tree = _reevaluate_tree_for_policy(args.evaluator_update_policy)
     paths.ensure_directories()
     resolved_control = MorpionBootstrapControl() if control is None else control
@@ -1166,9 +1194,20 @@ def run_morpion_bootstrap_loop(
     max_cycles: int | None = None,
 ) -> MorpionBootstrapRunState:
     """Run the Morpion bootstrap loop for a bounded number of cycles or forever."""
+    _validate_pipeline_mode(args)
+    _require_single_process_mode(args)
+    return _run_bootstrap_loop_impl(args, runner, max_cycles=max_cycles)
+
+
+def _run_bootstrap_loop_impl(
+    args: MorpionBootstrapArgs,
+    runner: MorpionSearchRunner,
+    *,
+    max_cycles: int | None,
+) -> MorpionBootstrapRunState:
+    """Run the shared bootstrap loop body for one validated execution mode."""
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
-    _validate_pipeline_mode(args)
 
     current_config = bootstrap_config_from_args(args)
     if paths.bootstrap_config_path.is_file():
@@ -1494,16 +1533,16 @@ def _write_pipeline_status_files(
     metadata: Mapping[str, object],
 ) -> None:
     """Persist lightweight pipeline stage-status files for one generation."""
-    save_pipeline_stage_status_file(
+    save_pipeline_dataset_status_file(
         generation=generation,
-        status=dataset_status,
+        dataset_status=dataset_status,
         updated_at_utc=timestamp_utc,
         metadata=metadata,
         path=paths.pipeline_dataset_status_path_for_generation(generation),
     )
-    save_pipeline_stage_status_file(
+    save_pipeline_training_status_file(
         generation=generation,
-        status=training_status,
+        training_status=training_status,
         updated_at_utc=timestamp_utc,
         metadata=metadata,
         path=paths.pipeline_training_status_path_for_generation(generation),

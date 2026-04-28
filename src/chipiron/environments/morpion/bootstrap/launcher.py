@@ -36,6 +36,11 @@ from .pipeline_config import (
     DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
     DEFAULT_MORPION_PIPELINE_MODE,
 )
+from .pipeline_stages import (
+    run_pipeline_dataset_stage,
+    run_pipeline_growth_stage,
+    run_pipeline_training_stage,
+)
 from .process_control import (
     mark_current_launcher_process_stopped,
     register_current_launcher_process,
@@ -45,9 +50,15 @@ from .run_state import MorpionBootstrapRunState, load_bootstrap_run_state
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from .pipeline_artifacts import MorpionPipelineGenerationManifest
     from .pv_family_targets import PvFamilyTargetPolicy
 
 LOGGER = logging.getLogger(__name__)
+
+
+def _non_loop_stage_requires_artifact_pipeline_error() -> ValueError:
+    """Build the canonical launcher mode mismatch error."""
+    return ValueError("artifact_pipeline mode required for non-loop stages")
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,6 +67,8 @@ class MorpionBootstrapLauncherArgs:
 
     bootstrap_args: MorpionBootstrapArgs
     max_cycles: int | None = None
+    pipeline_stage: Literal["loop", "growth", "dataset", "training"] = "loop"
+    pipeline_generation: int | None = None
     open_dashboard: bool = False
     print_startup_summary: bool = True
     print_dashboard_hint: bool = True
@@ -96,7 +109,7 @@ class _LauncherStartupStatus:
 
 def run_morpion_bootstrap_experiment(
     launcher_args: MorpionBootstrapLauncherArgs,
-) -> MorpionBootstrapRunState:
+) -> MorpionBootstrapRunState | MorpionPipelineGenerationManifest:
     """Run one persistent Morpion bootstrap experiment end to end.
 
     This launcher is the canonical human/operator entrypoint for one real
@@ -127,12 +140,41 @@ def run_morpion_bootstrap_experiment(
             )
         )
 
+    if startup_status.resolved_bootstrap_args.pipeline_mode == "single_process":
+        if launcher_args.pipeline_stage != "loop":
+            raise _non_loop_stage_requires_artifact_pipeline_error()
+        runner = _build_launcher_runner(startup_status)
+        LOGGER.info("[launcher] runner_ready")
+        return run_morpion_bootstrap_loop(
+            startup_status.resolved_bootstrap_args,
+            runner,
+            max_cycles=launcher_args.max_cycles,
+        )
+
+    if launcher_args.pipeline_stage == "loop":
+        raise NotImplementedError(
+            "artifact_pipeline with --pipeline-stage loop is not implemented yet. "
+            "Use --pipeline-stage growth, dataset, or training."
+        )
+    if launcher_args.pipeline_stage == "dataset":
+        assert launcher_args.pipeline_generation is not None
+        return run_pipeline_dataset_stage(
+            startup_status.resolved_bootstrap_args,
+            generation=launcher_args.pipeline_generation,
+        )
+    if launcher_args.pipeline_stage == "training":
+        assert launcher_args.pipeline_generation is not None
+        return run_pipeline_training_stage(
+            startup_status.resolved_bootstrap_args,
+            generation=launcher_args.pipeline_generation,
+        )
+
     runner = _build_launcher_runner(startup_status)
     LOGGER.info("[launcher] runner_ready")
-    return run_morpion_bootstrap_loop(
+    return run_pipeline_growth_stage(
         startup_status.resolved_bootstrap_args,
         runner,
-        max_cycles=launcher_args.max_cycles,
+        max_cycles=1 if launcher_args.max_cycles is None else launcher_args.max_cycles,
     )
 
 
@@ -397,8 +439,23 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         default=DEFAULT_MORPION_PIPELINE_MODE,
         help=(
             "Bootstrap execution mode. 'single_process' is the current in-process loop. "
-            "'artifact_pipeline' is reserved for future multi-process artifact pipeline mode."
+            "'artifact_pipeline' enables the Phase 3 file-driven stage entrypoints."
         ),
+    )
+    parser.add_argument(
+        "--pipeline-stage",
+        choices=["loop", "growth", "dataset", "training"],
+        default="loop",
+        help=(
+            "Pipeline dispatch target. 'loop' preserves the current launcher behavior. "
+            "Artifact-pipeline mode also supports 'growth', 'dataset', and 'training'."
+        ),
+    )
+    parser.add_argument(
+        "--pipeline-generation",
+        type=int,
+        default=None,
+        help="Generation index required by the dataset and training pipeline stages.",
     )
     parser.add_argument(
         "--memory-diagnostics",
@@ -460,11 +517,44 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _validate_pipeline_stage_cli(
+    *,
+    parser: argparse.ArgumentParser,
+    pipeline_mode: str,
+    pipeline_stage: str,
+    pipeline_generation: int | None,
+) -> None:
+    """Validate CLI stage selection against the chosen pipeline mode."""
+    if pipeline_mode == "single_process" and pipeline_stage != "loop":
+        parser.error(
+            "--pipeline-stage is only valid with 'loop' when --pipeline-mode is single_process."
+        )
+    if pipeline_generation is not None and pipeline_stage not in {"dataset", "training"}:
+        parser.error(
+            "--pipeline-generation is only valid with --pipeline-stage dataset or training."
+        )
+    if (
+        pipeline_mode == "artifact_pipeline"
+        and pipeline_stage in {"dataset", "training"}
+        and pipeline_generation is None
+    ):
+        parser.error(
+            "--pipeline-generation is required for --pipeline-stage dataset and training."
+        )
+
+
 def launcher_args_from_cli(
     argv: Sequence[str] | None = None,
 ) -> MorpionBootstrapLauncherArgs:
     """Parse CLI arguments into the canonical launcher dataclass."""
-    parsed = build_launcher_argument_parser().parse_args(argv)
+    parser = build_launcher_argument_parser()
+    parsed = parser.parse_args(argv)
+    _validate_pipeline_stage_cli(
+        parser=parser,
+        pipeline_mode=parsed.pipeline_mode,
+        pipeline_stage=parsed.pipeline_stage,
+        pipeline_generation=parsed.pipeline_generation,
+    )
     bootstrap_args = MorpionBootstrapArgs(
         work_dir=parsed.work_dir,
         evaluator_family_preset=parsed.evaluator_family,
@@ -500,6 +590,11 @@ def launcher_args_from_cli(
     return MorpionBootstrapLauncherArgs(
         bootstrap_args=bootstrap_args,
         max_cycles=parsed.max_cycles,
+        pipeline_stage=cast(
+            'Literal["loop", "growth", "dataset", "training"]',
+            parsed.pipeline_stage,
+        ),
+        pipeline_generation=parsed.pipeline_generation,
         open_dashboard=parsed.open_dashboard,
         print_startup_summary=parsed.print_startup_summary,
         print_dashboard_hint=parsed.print_dashboard_hint,

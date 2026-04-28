@@ -425,14 +425,13 @@ def test_validate_pipeline_mode_accepts_single_process(tmp_path: Path) -> None:
     bootstrap_loop_module._validate_pipeline_mode(MorpionBootstrapArgs(work_dir=tmp_path))
 
 
-def test_validate_pipeline_mode_artifact_pipeline_is_not_implemented(
+def test_validate_pipeline_mode_accepts_artifact_pipeline(
     tmp_path: Path,
 ) -> None:
-    """Artifact pipeline mode should parse but fail loudly for now."""
+    """Artifact pipeline mode should be accepted as a valid config value."""
     args = MorpionBootstrapArgs(work_dir=tmp_path, pipeline_mode="artifact_pipeline")
 
-    with pytest.raises(NotImplementedError, match="artifact_pipeline mode is reserved"):
-        bootstrap_loop_module._validate_pipeline_mode(args)
+    bootstrap_loop_module._validate_pipeline_mode(args)
 
 
 def test_validate_pipeline_mode_invalid_value_raises(tmp_path: Path) -> None:
@@ -518,11 +517,11 @@ def test_run_one_cycle_reevaluate_frontier_fails_before_artifact_changes(
 def test_run_bootstrap_loop_artifact_pipeline_fails_before_writing_config(
     tmp_path: Path,
 ) -> None:
-    """Reserved artifact-pipeline mode should fail before persistent side effects."""
+    """Public loop entrypoint should still reject artifact-pipeline mode."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     runner = FakeMorpionSearchRunner(tree_sizes=(5,), target_values=(1.0,))
 
-    with pytest.raises(NotImplementedError, match="artifact_pipeline mode is reserved"):
+    with pytest.raises(NotImplementedError, match="only supports pipeline_mode='single_process'"):
         run_morpion_bootstrap_loop(
             MorpionBootstrapArgs(
                 work_dir=tmp_path,

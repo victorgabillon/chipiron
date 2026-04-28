@@ -152,13 +152,21 @@ from .pipeline_artifacts import (
     pipeline_manifest_from_dict,
     pipeline_manifest_to_dict,
     save_pipeline_active_model,
+    save_pipeline_dataset_status_file,
     save_pipeline_manifest,
+    save_pipeline_stage_status_file,
+    save_pipeline_training_status_file,
 )
 from .pipeline_config import (
     DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
     DEFAULT_MORPION_PIPELINE_MODE,
     MorpionEvaluatorUpdatePolicy,
     MorpionPipelineMode,
+)
+from .pipeline_stages import (
+    run_pipeline_dataset_stage,
+    run_pipeline_growth_stage,
+    run_pipeline_training_stage,
 )
 from .process_control import (
     MorpionBootstrapProcessAlreadyRunningError,
@@ -393,11 +401,17 @@ __all__ = [
     "run_morpion_bootstrap_experiment",
     "run_morpion_bootstrap_loop",
     "run_one_bootstrap_cycle",
+    "run_pipeline_dataset_stage",
+    "run_pipeline_growth_stage",
+    "run_pipeline_training_stage",
     "save_bootstrap_config",
     "save_bootstrap_control",
     "save_bootstrap_run_state",
     "save_pipeline_active_model",
+    "save_pipeline_dataset_status_file",
     "save_pipeline_manifest",
+    "save_pipeline_stage_status_file",
+    "save_pipeline_training_status_file",
     "select_active_evaluator_name",
     "should_save_progress",
     "start_morpion_bootstrap_process",

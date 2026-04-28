@@ -440,6 +440,42 @@ def save_pipeline_stage_status_file(
     )
 
 
+def save_pipeline_dataset_status_file(
+    *,
+    generation: int,
+    dataset_status: MorpionPipelineDatasetStatus,
+    updated_at_utc: str,
+    metadata: Mapping[str, object] | None,
+    path: Path,
+) -> None:
+    """Persist one validated dataset-stage status artifact atomically."""
+    save_pipeline_stage_status_file(
+        generation=generation,
+        status=_dataset_status(dataset_status),
+        updated_at_utc=updated_at_utc,
+        metadata=metadata,
+        path=path,
+    )
+
+
+def save_pipeline_training_status_file(
+    *,
+    generation: int,
+    training_status: MorpionPipelineTrainingStatus,
+    updated_at_utc: str,
+    metadata: Mapping[str, object] | None,
+    path: Path,
+) -> None:
+    """Persist one validated training-stage status artifact atomically."""
+    save_pipeline_stage_status_file(
+        generation=generation,
+        status=_training_status(training_status),
+        updated_at_utc=updated_at_utc,
+        metadata=metadata,
+        path=path,
+    )
+
+
 __all__ = [
     "InvalidMorpionPipelineArtifactError",
     "MissingMorpionPipelineArtifactError",
@@ -454,5 +490,8 @@ __all__ = [
     "pipeline_manifest_from_dict",
     "pipeline_manifest_to_dict",
     "save_pipeline_active_model",
+    "save_pipeline_dataset_status_file",
     "save_pipeline_manifest",
+    "save_pipeline_stage_status_file",
+    "save_pipeline_training_status_file",
 ]
