@@ -64,6 +64,8 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapRunState,
     MorpionPipelineGenerationManifest,
     MorpionSearchRunner,
+    PipelineStageAlreadyClaimedError,
+    claim_pipeline_stage,
     load_bootstrap_run_state,
     load_pipeline_active_model,
     load_pipeline_manifest,
@@ -330,6 +332,41 @@ def test_dataset_stage_extracts_rows_from_manifest_tree_snapshot(tmp_path: Path)
     assert paths.rows_path_for_generation(1).is_file()
     assert manifest.dataset_status == "done"
     assert manifest.training_status == "not_started"
+    assert not paths.pipeline_dataset_claim_path_for_generation(1).exists()
+
+
+def test_dataset_stage_blocked_by_active_claim(tmp_path: Path) -> None:
+    """Dataset stage should not mutate status when another worker owns the claim."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    snapshot_path = paths.tree_snapshot_path_for_generation(1)
+    save_training_tree_snapshot(
+        _make_training_snapshot(target_value=1.25, root_node_id="node-0"),
+        snapshot_path,
+    )
+    save_pipeline_manifest(
+        MorpionPipelineGenerationManifest(
+            generation=1,
+            created_at_utc="2026-04-28T12:00:00Z",
+            tree_snapshot_path=paths.relative_to_work_dir(snapshot_path),
+            dataset_status="not_started",
+            training_status="not_started",
+        ),
+        paths.pipeline_manifest_path_for_generation(1),
+    )
+    claim_pipeline_stage(
+        generation=1,
+        stage="dataset",
+        claim_path=paths.pipeline_dataset_claim_path_for_generation(1),
+        claim_id="first",
+        owner="worker-a",
+    )
+
+    with pytest.raises(PipelineStageAlreadyClaimedError, match="claim_id=first"):
+        run_pipeline_dataset_stage(_artifact_pipeline_args(tmp_path), generation=1)
+
+    manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(1))
+    assert manifest.dataset_status == "not_started"
 
 
 def test_dataset_stage_marks_failed_on_exception(tmp_path: Path) -> None:
@@ -355,6 +392,7 @@ def test_dataset_stage_marks_failed_on_exception(tmp_path: Path) -> None:
 
     manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(1))
     assert manifest.dataset_status == "failed"
+    assert not paths.pipeline_dataset_claim_path_for_generation(1).exists()
 
 
 def test_training_stage_trains_and_updates_active_model(tmp_path: Path) -> None:
@@ -385,6 +423,7 @@ def test_training_stage_trains_and_updates_active_model(tmp_path: Path) -> None:
         active_model.model_bundle_path
         == manifest.model_bundle_paths[manifest.selected_evaluator_name]
     )
+    assert not paths.pipeline_training_claim_path_for_generation(1).exists()
 
 
 def test_training_stage_requires_done_dataset(tmp_path: Path) -> None:
@@ -425,6 +464,41 @@ def test_training_stage_missing_rows_reports_path(tmp_path: Path) -> None:
         match=r"Pipeline rows file does not exist: .*generation_000001.json",
     ):
         run_pipeline_training_stage(_artifact_pipeline_args(tmp_path), generation=1)
+
+    manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(1))
+    assert manifest.training_status == "failed"
+    assert not paths.pipeline_training_claim_path_for_generation(1).exists()
+
+
+def test_training_stage_blocked_by_active_claim(tmp_path: Path) -> None:
+    """Training stage should not mutate status when another worker owns the claim."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    rows_path = paths.rows_path_for_generation(1)
+    save_morpion_supervised_rows(_make_rows(), rows_path)
+    save_pipeline_manifest(
+        MorpionPipelineGenerationManifest(
+            generation=1,
+            created_at_utc="2026-04-28T12:00:00Z",
+            rows_path=paths.relative_to_work_dir(rows_path),
+            dataset_status="done",
+            training_status="not_started",
+        ),
+        paths.pipeline_manifest_path_for_generation(1),
+    )
+    claim_pipeline_stage(
+        generation=1,
+        stage="training",
+        claim_path=paths.pipeline_training_claim_path_for_generation(1),
+        claim_id="first",
+        owner="worker-a",
+    )
+
+    with pytest.raises(PipelineStageAlreadyClaimedError, match="claim_id=first"):
+        run_pipeline_training_stage(_artifact_pipeline_args(tmp_path), generation=1)
+
+    manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(1))
+    assert manifest.training_status == "not_started"
 
 
 def test_launcher_dispatches_dataset_stage(

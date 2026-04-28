@@ -62,12 +62,15 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapPaths,
     MorpionPipelineActiveModel,
     MorpionPipelineGenerationManifest,
+    MorpionPipelineStageClaim,
     load_pipeline_active_model,
     load_pipeline_manifest,
+    load_pipeline_stage_claim,
     pipeline_manifest_from_dict,
     run_morpion_bootstrap_loop,
     save_pipeline_active_model,
     save_pipeline_manifest,
+    save_pipeline_stage_claim,
 )
 from chipiron.environments.morpion.learning import MorpionSupervisedRows
 
@@ -300,10 +303,42 @@ def test_pipeline_path_helpers_and_directory_creation(tmp_path: Path) -> None:
         / "training_status.json"
     )
     assert (
+        paths.pipeline_dataset_claim_path_for_generation(1)
+        == tmp_path.resolve()
+        / "pipeline"
+        / "generation_000001"
+        / "dataset_claim.json"
+    )
+    assert (
+        paths.pipeline_training_claim_path_for_generation(1)
+        == tmp_path.resolve()
+        / "pipeline"
+        / "generation_000001"
+        / "training_claim.json"
+    )
+    assert (
         paths.pipeline_active_model_path
         == tmp_path.resolve() / "pipeline" / "active_model.json"
     )
     assert paths.pipeline_dir.is_dir()
+
+
+def test_pipeline_stage_claim_roundtrip(tmp_path: Path) -> None:
+    """One saved stage claim should round-trip through JSON unchanged."""
+    claim = MorpionPipelineStageClaim(
+        generation=1,
+        stage="dataset",
+        claim_id="claim-1",
+        claimed_at_utc="2026-04-28T12:00:00Z",
+        expires_at_utc="2026-04-28T13:00:00Z",
+        owner="worker-a",
+        metadata={"entrypoint": "test"},
+    )
+    path = tmp_path / "pipeline" / "generation_000001" / "dataset_claim.json"
+
+    save_pipeline_stage_claim(claim, path)
+
+    assert load_pipeline_stage_claim(path) == claim
 
 
 def test_single_process_cycle_writes_manifest_and_active_model(tmp_path: Path) -> None:

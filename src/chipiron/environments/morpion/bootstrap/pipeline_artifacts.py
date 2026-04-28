@@ -26,6 +26,8 @@ MorpionPipelineTrainingStatus = Literal[
     "failed",
 ]
 
+MorpionPipelineStageName = Literal["dataset", "training"]
+
 _DATASET_STATUSES: frozenset[str] = frozenset(
     {
         "not_started",
@@ -38,6 +40,7 @@ _DATASET_STATUSES: frozenset[str] = frozenset(
 _TRAINING_STATUSES: frozenset[str] = frozenset(
     {"not_started", "training", "selecting", "done", "failed"}
 )
+_STAGE_NAMES: frozenset[str] = frozenset({"dataset", "training"})
 
 
 def _empty_metadata() -> dict[str, object]:
@@ -128,6 +131,15 @@ def _optional_path_str(value: object, *, field_name: str) -> str | None:
     return value
 
 
+def _optional_str(value: object, *, field_name: str) -> str | None:
+    """Return one optional string field."""
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise _invalid_field_error(field_name, "must be a string or null")
+    return value
+
+
 def _metadata_dict(value: object, *, field_name: str = "metadata") -> dict[str, object]:
     """Return one shallow-copied metadata mapping."""
     if value is None:
@@ -179,6 +191,16 @@ def _training_status(value: object) -> MorpionPipelineTrainingStatus:
             f"must be one of {sorted(_TRAINING_STATUSES)!r}",
         )
     return cast("MorpionPipelineTrainingStatus", value)
+
+
+def _stage_name(value: object) -> MorpionPipelineStageName:
+    """Return one validated pipeline stage name."""
+    if not isinstance(value, str) or value not in _STAGE_NAMES:
+        raise _invalid_field_error(
+            "stage",
+            f"must be one of {sorted(_STAGE_NAMES)!r}",
+        )
+    return cast("MorpionPipelineStageName", value)
 
 
 def _top_level_mapping(data: object) -> Mapping[str, object]:
@@ -291,6 +313,49 @@ class MorpionPipelineActiveModel:
         object.__setattr__(self, "metadata", _metadata_dict(self.metadata))
 
 
+@dataclass(frozen=True, slots=True)
+class MorpionPipelineStageClaim:
+    """Immutable temporary ownership record for one pipeline stage."""
+
+    generation: int
+    stage: MorpionPipelineStageName
+    claim_id: str
+    claimed_at_utc: str
+    expires_at_utc: str
+    owner: str | None = None
+    metadata: dict[str, object] = field(default_factory=_empty_metadata)
+
+    def __post_init__(self) -> None:
+        """Validate and normalize stage-claim fields eagerly."""
+        object.__setattr__(
+            self,
+            "generation",
+            _require_generation(self.generation, field_name="generation"),
+        )
+        object.__setattr__(self, "stage", _stage_name(self.stage))
+        object.__setattr__(
+            self,
+            "claim_id",
+            _require_str(self.claim_id, field_name="claim_id"),
+        )
+        object.__setattr__(
+            self,
+            "claimed_at_utc",
+            _require_str(self.claimed_at_utc, field_name="claimed_at_utc"),
+        )
+        object.__setattr__(
+            self,
+            "expires_at_utc",
+            _require_str(self.expires_at_utc, field_name="expires_at_utc"),
+        )
+        object.__setattr__(
+            self,
+            "owner",
+            _optional_str(self.owner, field_name="owner"),
+        )
+        object.__setattr__(self, "metadata", _metadata_dict(self.metadata))
+
+
 def pipeline_manifest_to_dict(
     manifest: MorpionPipelineGenerationManifest,
 ) -> dict[str, object]:
@@ -370,6 +435,39 @@ def pipeline_active_model_from_dict(data: object) -> MorpionPipelineActiveModel:
     )
 
 
+def pipeline_stage_claim_to_dict(
+    claim: MorpionPipelineStageClaim,
+) -> dict[str, object]:
+    """Serialize one stage-claim record into JSON-friendly data."""
+    return {
+        "claim_id": claim.claim_id,
+        "claimed_at_utc": claim.claimed_at_utc,
+        "expires_at_utc": claim.expires_at_utc,
+        "generation": claim.generation,
+        "metadata": dict(claim.metadata),
+        "owner": claim.owner,
+        "stage": claim.stage,
+    }
+
+
+def pipeline_stage_claim_from_dict(data: object) -> MorpionPipelineStageClaim:
+    """Deserialize one stage-claim record from JSON-friendly data."""
+    payload = _top_level_mapping(data)
+    return MorpionPipelineStageClaim(
+        generation=_require_generation(payload.get("generation"), field_name="generation"),
+        stage=_stage_name(payload.get("stage")),
+        claim_id=_require_str(payload.get("claim_id"), field_name="claim_id"),
+        claimed_at_utc=_require_str(
+            payload.get("claimed_at_utc"), field_name="claimed_at_utc"
+        ),
+        expires_at_utc=_require_str(
+            payload.get("expires_at_utc"), field_name="expires_at_utc"
+        ),
+        owner=_optional_str(payload.get("owner"), field_name="owner"),
+        metadata=_metadata_dict(payload.get("metadata")),
+    )
+
+
 def _atomic_write_json(payload: Mapping[str, object], path: Path) -> None:
     """Atomically write one JSON payload to disk in a human-readable form."""
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -416,6 +514,44 @@ def load_pipeline_active_model(path: Path) -> MorpionPipelineActiveModel:
     except json.JSONDecodeError as exc:
         raise _invalid_active_model_json_error(path) from exc
     return pipeline_active_model_from_dict(payload)
+
+
+def _missing_stage_claim_error(path: Path) -> MissingMorpionPipelineArtifactError:
+    """Return the stable missing-stage-claim error."""
+    return MissingMorpionPipelineArtifactError(
+        f"Morpion pipeline stage-claim artifact does not exist: {path}"
+    )
+
+
+def _invalid_stage_claim_json_error(path: Path) -> InvalidMorpionPipelineArtifactError:
+    """Return the stable invalid-stage-claim-json error."""
+    return InvalidMorpionPipelineArtifactError(
+        f"Morpion pipeline stage-claim artifact at {path} is not valid JSON."
+    )
+
+
+def save_pipeline_stage_claim(
+    claim: MorpionPipelineStageClaim,
+    path: Path,
+) -> None:
+    """Persist one pipeline stage-claim atomically."""
+    _atomic_write_json(pipeline_stage_claim_to_dict(claim), path)
+
+
+def load_pipeline_stage_claim(path: Path) -> MorpionPipelineStageClaim:
+    """Load one pipeline stage-claim from disk."""
+    if not path.is_file():
+        raise _missing_stage_claim_error(path)
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise _invalid_stage_claim_json_error(path) from exc
+    return pipeline_stage_claim_from_dict(payload)
+
+
+def delete_pipeline_stage_claim(path: Path) -> None:
+    """Delete one persisted pipeline stage-claim if it exists."""
+    path.unlink(missing_ok=True)
 
 
 def save_pipeline_stage_status_file(
@@ -482,16 +618,23 @@ __all__ = [
     "MorpionPipelineActiveModel",
     "MorpionPipelineDatasetStatus",
     "MorpionPipelineGenerationManifest",
+    "MorpionPipelineStageClaim",
+    "MorpionPipelineStageName",
     "MorpionPipelineTrainingStatus",
+    "delete_pipeline_stage_claim",
     "load_pipeline_active_model",
     "load_pipeline_manifest",
+    "load_pipeline_stage_claim",
     "pipeline_active_model_from_dict",
     "pipeline_active_model_to_dict",
     "pipeline_manifest_from_dict",
     "pipeline_manifest_to_dict",
+    "pipeline_stage_claim_from_dict",
+    "pipeline_stage_claim_to_dict",
     "save_pipeline_active_model",
     "save_pipeline_dataset_status_file",
     "save_pipeline_manifest",
+    "save_pipeline_stage_claim",
     "save_pipeline_stage_status_file",
     "save_pipeline_training_status_file",
 ]

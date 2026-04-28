@@ -113,11 +113,25 @@ class MorpionBootstrapPaths:
             / "dataset_status.json"
         )
 
+    def pipeline_dataset_claim_path_for_generation(self, generation: int) -> Path:
+        """Return the dataset-stage claim path for one saved generation."""
+        return (
+            self.pipeline_generation_dir_for_generation(generation)
+            / "dataset_claim.json"
+        )
+
     def pipeline_training_status_path_for_generation(self, generation: int) -> Path:
         """Return the training-stage status path for one saved generation."""
         return (
             self.pipeline_generation_dir_for_generation(generation)
             / "training_status.json"
+        )
+
+    def pipeline_training_claim_path_for_generation(self, generation: int) -> Path:
+        """Return the training-stage claim path for one saved generation."""
+        return (
+            self.pipeline_generation_dir_for_generation(generation)
+            / "training_claim.json"
         )
 
     def history_paths(self) -> MorpionBootstrapHistoryPaths:

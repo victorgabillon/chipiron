@@ -75,6 +75,10 @@ from .pipeline_artifacts import (
     save_pipeline_manifest,
     save_pipeline_training_status_file,
 )
+from .pipeline_claims import (
+    claim_pipeline_stage,
+    release_pipeline_stage_claim,
+)
 from .record_status import (
     resolve_frontier_status_for_cycle,
     resolve_record_status_for_cycle,
@@ -539,12 +543,22 @@ def run_pipeline_dataset_stage(
     args: MorpionBootstrapArgs,
     *,
     generation: int,
+    claim_ttl_seconds: float = 3600.0,
+    claim_owner: str | None = None,
 ) -> MorpionPipelineGenerationManifest:
     """Extract supervised rows for one persisted pipeline generation."""
     _require_artifact_pipeline_mode(args)
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
     manifest = _load_generation_manifest(paths=paths, generation=generation)
+    claim = claim_pipeline_stage(
+        generation=generation,
+        stage="dataset",
+        claim_path=paths.pipeline_dataset_claim_path_for_generation(generation),
+        ttl_seconds=claim_ttl_seconds,
+        owner=claim_owner,
+        metadata={"entrypoint": "run_pipeline_dataset_stage"},
+    )
     timestamp_utc = _now_timestamp_utc()
     LOGGER.info("[pipeline] dataset_start generation=%s", generation)
     manifest = _save_dataset_manifest_status(
@@ -606,12 +620,19 @@ def run_pipeline_dataset_stage(
         raise
     else:
         return manifest
+    finally:
+        release_pipeline_stage_claim(
+            claim_path=paths.pipeline_dataset_claim_path_for_generation(generation),
+            claim_id=claim.claim_id,
+        )
 
 
 def run_pipeline_training_stage(
     args: MorpionBootstrapArgs,
     *,
     generation: int,
+    claim_ttl_seconds: float = 3600.0,
+    claim_owner: str | None = None,
 ) -> MorpionPipelineGenerationManifest:
     """Train evaluators and select the active model for one pipeline generation."""
     _require_artifact_pipeline_mode(args)
@@ -620,6 +641,14 @@ def run_pipeline_training_stage(
     manifest = _load_generation_manifest(paths=paths, generation=generation)
     if manifest.dataset_status != "done":
         raise _dataset_stage_requires_done_status_error()
+    claim = claim_pipeline_stage(
+        generation=generation,
+        stage="training",
+        claim_path=paths.pipeline_training_claim_path_for_generation(generation),
+        ttl_seconds=claim_ttl_seconds,
+        owner=claim_owner,
+        metadata={"entrypoint": "run_pipeline_training_stage"},
+    )
     timestamp_utc = _now_timestamp_utc()
     LOGGER.info("[pipeline] training_start generation=%s", generation)
     manifest = _save_training_manifest_status(
@@ -700,6 +729,11 @@ def run_pipeline_training_stage(
         raise
     else:
         return manifest
+    finally:
+        release_pipeline_stage_claim(
+            claim_path=paths.pipeline_training_claim_path_for_generation(generation),
+            claim_id=claim.claim_id,
+        )
 
 
 __all__ = [
