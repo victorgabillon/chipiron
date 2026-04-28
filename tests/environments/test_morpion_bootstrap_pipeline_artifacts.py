@@ -54,6 +54,7 @@ from atomheart.games.morpion import initial_state as morpion_initial_state
 from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
 import chipiron.environments.morpion.bootstrap.bootstrap_loop as bootstrap_loop_module
+import chipiron.environments.morpion.bootstrap.cycle_dataset as cycle_dataset_module
 from chipiron.environments.morpion.bootstrap import (
     InvalidMorpionPipelineArtifactError,
     MorpionBootstrapArgs,
@@ -355,7 +356,7 @@ def test_empty_dataset_save_writes_manifest_without_active_model(
     """Empty saved datasets should produce a done/not-started manifest only."""
     runner = FakeMorpionSearchRunner(tree_sizes=(10,), target_values=(1.25,))
     monkeypatch.setattr(
-        bootstrap_loop_module,
+        cycle_dataset_module,
         "training_tree_snapshot_to_morpion_supervised_rows",
         lambda *args, **kwargs: _empty_rows_bundle(generation=1),
     )

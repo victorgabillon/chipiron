@@ -14,8 +14,8 @@ from .anemone_runner import (
     AnemoneMorpionSearchRunnerArgs,
     apply_runtime_control_to_runner_args,
 )
+from .bootstrap_args import MorpionBootstrapArgs
 from .bootstrap_loop import (
-    MorpionBootstrapArgs,
     MorpionBootstrapPaths,
     run_morpion_bootstrap_loop,
 )

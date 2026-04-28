@@ -5,108 +5,10 @@ from __future__ import annotations
 import logging
 import time
 from collections.abc import Mapping
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
-from chipiron.environments.morpion.learning import (
-    training_tree_snapshot_to_morpion_supervised_rows,
-)
-from chipiron.environments.morpion.players.evaluators.neural_networks.train import (
-    MorpionTrainingArgs,
-    train_morpion_regressor,
-)
-
-if TYPE_CHECKING:
-    from pathlib import Path
-
-    from .pv_family_targets import PvFamilyTargetPolicy
-
-from . import bootstrap_cycle_core as bootstrap_cycle_core_module
-from .bootstrap_cycle_core import (
-    EMPTY_DATASET_TRAINING_SKIPPED_REASON,
-    RUNTIME_CHECKPOINT_METADATA_KEY,
-    TRAINING_SKIPPED_REASON_METADATA_KEY,
-    build_bootstrap_event,
-    select_active_evaluator_name,
-    should_save_progress,
-)
-from .bootstrap_cycle_core import (
-    bootstrap_config_hash_from_metadata as _bootstrap_config_hash_from_metadata,
-)
-from .bootstrap_cycle_core import (
-    build_and_save_dataset_for_generation as _build_and_save_dataset_for_generation,
-)
-from .bootstrap_cycle_core import (
-    build_event_metadata as _build_event_metadata,
-)
-from .bootstrap_cycle_core import (
-    build_no_save_run_state as _build_no_save_run_state,
-)
-from .bootstrap_cycle_core import (
-    next_metadata as _next_metadata,
-)
-from .bootstrap_cycle_core import (
-    pipeline_metadata as _pipeline_metadata,
-)
-from .bootstrap_cycle_core import (
-    previous_effective_runtime_config as _previous_effective_runtime_config,
-)
-from .bootstrap_cycle_core import (
-    prune_saved_generation_artifacts as _prune_saved_generation_artifacts,
-)
-from .bootstrap_cycle_core import (
-    record_no_save_cycle_event as _record_no_save_cycle_event,
-)
-from .bootstrap_cycle_core import (
-    reevaluate_tree_for_policy as _reevaluate_tree_for_policy,
-)
-from .bootstrap_cycle_core import (
-    require_single_process_mode as _require_single_process_mode,
-)
-from .bootstrap_cycle_core import (
-    resolve_active_model_bundle as _resolve_active_model_bundle,
-)
-from .bootstrap_cycle_core import (
-    resolve_runtime_restore_path as _resolve_runtime_restore_path,
-)
-from .bootstrap_cycle_core import (
-    resolve_tree_status as _resolve_tree_status,
-)
-from .bootstrap_cycle_core import (
-    save_trigger_reason as _save_trigger_reason,
-)
-from .bootstrap_cycle_core import (
-    select_or_force_active_evaluator_name as _select_active_evaluator_name,
-)
-from .bootstrap_cycle_core import (
-    timestamp_utc_from_unix_s as _timestamp_utc_from_unix_s,
-)
-from .bootstrap_cycle_core import (
-    train_and_select_evaluators as _train_and_select_evaluators,
-)
-from .bootstrap_cycle_core import (
-    validate_dataset_family_target_args as _validate_dataset_family_target_args,
-)
-from .bootstrap_cycle_core import (
-    validate_forced_evaluator as _validate_forced_evaluator,
-)
-from .bootstrap_cycle_core import (
-    validate_pipeline_mode as _validate_pipeline_mode,
-)
-from .bootstrap_cycle_core import (
-    validate_runtime_reconfiguration as _validate_runtime_reconfiguration,
-)
-from .bootstrap_cycle_core import (
-    with_config_hash_metadata as _with_config_hash_metadata,
-)
-from .bootstrap_cycle_core import (
-    write_pipeline_active_model as _write_pipeline_active_model,
-)
-from .bootstrap_cycle_core import (
-    write_pipeline_manifest_for_generation as _write_pipeline_manifest_for_generation,
-)
+from .bootstrap_args import MorpionBootstrapArgs
 from .bootstrap_errors import (
-    ConflictingMorpionEvaluatorConfigurationError,
     EmptyMorpionEvaluatorsConfigError,
     IncompatibleMorpionResumeArtifactError,
     InconsistentMorpionEvaluatorSpecNameError,
@@ -119,9 +21,8 @@ from .bootstrap_errors import (
     UnsupportedMorpionRuntimeReconfigurationError,
 )
 from .bootstrap_memory import log_after_cycle_gc, memory_diagnostics_config_from_args
-from .bootstrap_paths import MorpionBootstrapPaths, prune_generation_files
+from .bootstrap_paths import MorpionBootstrapPaths
 from .config import (
-    DEFAULT_MORPION_TREE_BRANCH_LIMIT,
     MorpionBootstrapConfig,
     bootstrap_config_from_args,
     bootstrap_config_sha256,
@@ -136,8 +37,83 @@ from .control import (
     effective_runtime_config_from_config_and_control,
     load_bootstrap_control,
 )
+from .cycle_dataset import (
+    build_and_save_dataset_for_generation as _build_and_save_dataset_for_generation,
+)
+from .cycle_metadata import (
+    EMPTY_DATASET_TRAINING_SKIPPED_REASON,
+    RUNTIME_CHECKPOINT_METADATA_KEY,
+    TRAINING_SKIPPED_REASON_METADATA_KEY,
+    build_bootstrap_event,
+)
+from .cycle_metadata import (
+    bootstrap_config_hash_from_metadata as _bootstrap_config_hash_from_metadata,
+)
+from .cycle_metadata import (
+    build_event_metadata as _build_event_metadata,
+)
+from .cycle_metadata import (
+    next_metadata as _next_metadata,
+)
+from .cycle_metadata import (
+    pipeline_metadata as _pipeline_metadata,
+)
+from .cycle_metadata import (
+    record_no_save_cycle_event as _record_no_save_cycle_event,
+)
+from .cycle_metadata import (
+    with_config_hash_metadata as _with_config_hash_metadata,
+)
+from .cycle_pipeline_manifest import (
+    write_pipeline_active_model as _write_pipeline_active_model,
+)
+from .cycle_pipeline_manifest import (
+    write_pipeline_manifest_for_generation as _write_pipeline_manifest_for_generation,
+)
+from .cycle_runtime import (
+    build_no_save_run_state as _build_no_save_run_state,
+)
+from .cycle_runtime import (
+    prune_saved_generation_artifacts as _prune_saved_generation_artifacts,
+)
+from .cycle_runtime import (
+    resolve_active_model_bundle as _resolve_active_model_bundle,
+)
+from .cycle_runtime import (
+    resolve_runtime_restore_path as _resolve_runtime_restore_path,
+)
+from .cycle_runtime import (
+    resolve_tree_status as _resolve_tree_status,
+)
+from .cycle_timing import (
+    save_trigger_reason as _save_trigger_reason,
+)
+from .cycle_timing import (
+    should_save_progress,
+)
+from .cycle_timing import (
+    timestamp_utc_from_unix_s as _timestamp_utc_from_unix_s,
+)
+from .cycle_training import select_active_evaluator_name
+from .cycle_training import (
+    train_and_select_evaluators as _train_and_select_evaluators,
+)
+from .cycle_validation import (
+    previous_effective_runtime_config as _previous_effective_runtime_config,
+)
+from .cycle_validation import reevaluate_tree_for_policy as _reevaluate_tree_for_policy
+from .cycle_validation import (
+    require_single_process_mode as _require_single_process_mode,
+)
+from .cycle_validation import (
+    validate_dataset_family_target_args as _validate_dataset_family_target_args,
+)
+from .cycle_validation import validate_forced_evaluator as _validate_forced_evaluator
+from .cycle_validation import validate_pipeline_mode as _validate_pipeline_mode
+from .cycle_validation import (
+    validate_runtime_reconfiguration as _validate_runtime_reconfiguration,
+)
 from .evaluator_config import MorpionEvaluatorsConfig, MorpionEvaluatorSpec
-from .evaluator_family import morpion_evaluators_config_from_preset
 from .history import (
     MorpionBootstrapHistoryRecorder,
     MorpionBootstrapRecordStatus,
@@ -166,78 +142,6 @@ from .search_runner_protocol import MorpionSearchRunner
 LOGGER = logging.getLogger(__name__)
 
 
-def _sync_bootstrap_cycle_core_compat_aliases() -> None:
-    """Keep moved core helpers patchable through the legacy bootstrap_loop module."""
-    bootstrap_cycle_core_module.training_tree_snapshot_to_morpion_supervised_rows = (
-        training_tree_snapshot_to_morpion_supervised_rows
-    )
-    bootstrap_cycle_core_module.train_morpion_regressor = train_morpion_regressor
-    bootstrap_cycle_core_module.select_or_force_active_evaluator_name = (
-        _select_active_evaluator_name
-    )
-
-
-@dataclass(frozen=True, slots=True)
-class MorpionBootstrapArgs:
-    """Top-level arguments for the restartable Morpion bootstrap loop."""
-
-    work_dir: str | Path
-    max_growth_steps_per_cycle: int = 1000
-    save_after_tree_growth_factor: float = 2.0
-    save_after_seconds: float = 3600.0
-    require_exact_or_terminal: bool = False
-    min_depth: int | None = None
-    min_visit_count: int | None = None
-    max_rows: int | None = None
-    use_backed_up_value: bool = True
-    dataset_family_target_policy: PvFamilyTargetPolicy = "none"
-    dataset_family_prediction_blend: float = 0.25
-    memory_diagnostics: bool = False
-    memory_diagnostics_gc_growth: bool = False
-    memory_diagnostics_tracemalloc: bool = False
-    memory_diagnostics_torch_tensors: bool = False
-    memory_diagnostics_referrers: bool = False
-    memory_diagnostics_referrer_type_patterns: tuple[str, ...] = ()
-    memory_diagnostics_referrer_max_objects_per_type: int = 2
-    memory_diagnostics_referrer_max_depth: int = 2
-    memory_diagnostics_top_n: int = 20
-    tree_branch_limit: int = DEFAULT_MORPION_TREE_BRANCH_LIMIT
-    batch_size: int = 64
-    num_epochs: int = 5
-    learning_rate: float = 1e-3
-    shuffle: bool = True
-    model_kind: str = "linear"
-    hidden_dim: int | None = None
-    evaluator_update_policy: MorpionEvaluatorUpdatePolicy = (
-        DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY
-    )
-    pipeline_mode: MorpionPipelineMode = DEFAULT_MORPION_PIPELINE_MODE
-    evaluators_config: MorpionEvaluatorsConfig | None = None
-    evaluator_family_preset: str | None = None
-
-    def resolved_evaluators_config(self) -> MorpionEvaluatorsConfig:
-        """Resolve the explicit or legacy single-evaluator config."""
-        if (
-            self.evaluators_config is not None
-            and self.evaluator_family_preset is not None
-        ):
-            raise ConflictingMorpionEvaluatorConfigurationError
-        if self.evaluators_config is not None:
-            return self.evaluators_config
-        if self.evaluator_family_preset is not None:
-            return morpion_evaluators_config_from_preset(self.evaluator_family_preset)
-        hidden_sizes = None if self.hidden_dim is None else (self.hidden_dim,)
-        default_spec = MorpionEvaluatorSpec(
-            name="default",
-            model_type=self.model_kind,
-            hidden_sizes=hidden_sizes,
-            num_epochs=self.num_epochs,
-            batch_size=self.batch_size,
-            learning_rate=self.learning_rate,
-        )
-        return MorpionEvaluatorsConfig(evaluators={"default": default_spec})
-
-
 def run_one_bootstrap_cycle(
     *,
     args: MorpionBootstrapArgs,
@@ -254,7 +158,6 @@ def run_one_bootstrap_cycle(
     implementations should support reload/restart-style semantics from the
     latest saved artifacts.
     """
-    _sync_bootstrap_cycle_core_compat_aliases()
     memory = MemoryDiagnostics(memory_diagnostics_config_from_args(args))
     memory.log("cycle_start")
     try:
@@ -782,7 +685,6 @@ __all__ = [
     "DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY",
     "DEFAULT_MORPION_PIPELINE_MODE",
     "EMPTY_DATASET_TRAINING_SKIPPED_REASON",
-    "MorpionBootstrapEffectiveRuntimeConfig",
     "RUNTIME_CHECKPOINT_METADATA_KEY",
     "TRAINING_SKIPPED_REASON_METADATA_KEY",
     "EmptyMorpionEvaluatorsConfigError",
@@ -791,6 +693,7 @@ __all__ = [
     "MissingActiveMorpionEvaluatorError",
     "MissingForcedMorpionEvaluatorBundleError",
     "MorpionBootstrapArgs",
+    "MorpionBootstrapEffectiveRuntimeConfig",
     "MorpionBootstrapPaths",
     "MorpionBootstrapRecordStatus",
     "MorpionEvaluatorMetrics",
@@ -799,7 +702,6 @@ __all__ = [
     "MorpionEvaluatorsConfig",
     "MorpionPipelineMode",
     "MorpionSearchRunner",
-    "MorpionTrainingArgs",
     "NoSelectableMorpionEvaluatorError",
     "UnknownActiveMorpionEvaluatorError",
     "UnknownForcedMorpionEvaluatorError",
@@ -807,11 +709,8 @@ __all__ = [
     "_reevaluate_tree_for_policy",
     "_validate_pipeline_mode",
     "build_bootstrap_event",
-    "prune_generation_files",
     "run_morpion_bootstrap_loop",
     "run_one_bootstrap_cycle",
     "select_active_evaluator_name",
     "should_save_progress",
-    "train_morpion_regressor",
-    "training_tree_snapshot_to_morpion_supervised_rows",
 ]

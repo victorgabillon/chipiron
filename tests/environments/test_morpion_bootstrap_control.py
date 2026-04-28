@@ -6,7 +6,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 from types import ModuleType
-from typing import cast
+from typing import Any, cast
 
 import pytest
 
@@ -54,6 +54,7 @@ from atomheart.games.morpion import initial_state as morpion_initial_state
 from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
 import chipiron.environments.morpion.bootstrap.bootstrap_loop as bootstrap_loop_module
+import chipiron.environments.morpion.bootstrap.cycle_training as cycle_training_module
 from chipiron.environments.morpion.bootstrap import (
     BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY,
     BOOTSTRAP_APPLIED_RUNTIME_CONTROL_METADATA_KEY,
@@ -221,20 +222,16 @@ def _patch_reported_losses(
     loss_by_evaluator_name: dict[str, float],
 ) -> None:
     """Patch training so evaluator selection is deterministic while bundles still exist."""
-    real_train = bootstrap_loop_module.train_morpion_regressor
+    real_train = cycle_training_module.train_morpion_regressor
 
     def _patched_train(train_args: object) -> object:
         _model, metrics = real_train(train_args)
-        evaluator_name = Path(
-            str(
-                cast("bootstrap_loop_module.MorpionTrainingArgs", train_args).output_dir
-            )
-        ).name
+        evaluator_name = Path(str(cast("Any", train_args).output_dir)).name
         metrics["final_loss"] = loss_by_evaluator_name[evaluator_name]
         return _model, metrics
 
     monkeypatch.setattr(
-        bootstrap_loop_module, "train_morpion_regressor", _patched_train
+        cycle_training_module, "train_morpion_regressor", _patched_train
     )
 
 

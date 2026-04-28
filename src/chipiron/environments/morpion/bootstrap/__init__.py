@@ -21,10 +21,10 @@ from .bootstrap_errors import (
     UnknownForcedMorpionEvaluatorError,
     UnsupportedMorpionRuntimeReconfigurationError,
 )
+from .bootstrap_args import MorpionBootstrapArgs
 from .bootstrap_loop import (
     EMPTY_DATASET_TRAINING_SKIPPED_REASON,
     TRAINING_SKIPPED_REASON_METADATA_KEY,
-    MorpionBootstrapArgs,
     build_bootstrap_event,
     run_morpion_bootstrap_loop,
     run_one_bootstrap_cycle,

@@ -8,7 +8,7 @@ import logging
 import sys
 from pathlib import Path
 from types import ModuleType
-from typing import cast
+from typing import Any, cast
 
 import pytest
 import torch
@@ -58,6 +58,9 @@ from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 from torch.utils.data import DataLoader
 
 import chipiron.environments.morpion.bootstrap.bootstrap_loop as bootstrap_loop_module
+import chipiron.environments.morpion.bootstrap.bootstrap_paths as bootstrap_paths_module
+import chipiron.environments.morpion.bootstrap.cycle_dataset as cycle_dataset_module
+import chipiron.environments.morpion.bootstrap.cycle_training as cycle_training_module
 from chipiron.environments.morpion.bootstrap import (
     CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
     DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
@@ -320,16 +323,16 @@ def _patch_reported_losses(
     loss_by_evaluator_name: dict[str, float],
 ) -> None:
     """Patch training so evaluator selection is deterministic while bundles still exist."""
-    real_train = bootstrap_loop_module.train_morpion_regressor
+    real_train = cycle_training_module.train_morpion_regressor
 
     def _patched_train(train_args: object) -> object:
         _model, metrics = real_train(train_args)
-        evaluator_name = Path(str(train_args.output_dir)).name
+        evaluator_name = Path(str(cast("Any", train_args).output_dir)).name
         metrics["final_loss"] = loss_by_evaluator_name[evaluator_name]
         return _model, metrics
 
     monkeypatch.setattr(
-        bootstrap_loop_module, "train_morpion_regressor", _patched_train
+        cycle_training_module, "train_morpion_regressor", _patched_train
     )
 
 
@@ -604,7 +607,7 @@ def test_prune_generation_files_keeps_only_newest_file(tmp_path: Path) -> None:
             encoding="utf-8",
         )
 
-    bootstrap_loop_module.prune_generation_files(tmp_path)
+    bootstrap_paths_module.prune_generation_files(tmp_path)
 
     remaining = sorted(path.name for path in tmp_path.iterdir())
     assert remaining == ["generation_000003.json"]
@@ -618,7 +621,7 @@ def test_prune_generation_files_keeps_newest_two_files(tmp_path: Path) -> None:
             encoding="utf-8",
         )
 
-    bootstrap_loop_module.prune_generation_files(tmp_path, keep_latest=2)
+    bootstrap_paths_module.prune_generation_files(tmp_path, keep_latest=2)
 
     remaining = sorted(path.name for path in tmp_path.iterdir())
     assert remaining == ["generation_000003.json", "generation_000004.json"]
@@ -629,7 +632,7 @@ def test_prune_generation_files_keeps_single_existing_file(tmp_path: Path) -> No
     only_file = tmp_path / "generation_000001.json"
     only_file.write_text("gen=1\n", encoding="utf-8")
 
-    bootstrap_loop_module.prune_generation_files(tmp_path)
+    bootstrap_paths_module.prune_generation_files(tmp_path)
 
     assert only_file.is_file()
     assert sorted(path.name for path in tmp_path.iterdir()) == [
@@ -644,7 +647,7 @@ def test_prune_generation_files_ignores_unrelated_files(tmp_path: Path) -> None:
     (tmp_path / "notes.txt").write_text("keep me\n", encoding="utf-8")
     (tmp_path / "generation_latest.json").write_text("keep me too\n", encoding="utf-8")
 
-    bootstrap_loop_module.prune_generation_files(tmp_path)
+    bootstrap_paths_module.prune_generation_files(tmp_path)
 
     remaining = sorted(path.name for path in tmp_path.iterdir())
     assert remaining == [
@@ -1475,7 +1478,7 @@ def test_empty_dataset_first_cycle_skips_training_and_selection(
     runner = FakeMorpionSearchRunner(tree_sizes=(10,), target_values=(1.25,))
 
     monkeypatch.setattr(
-        bootstrap_loop_module,
+        cycle_dataset_module,
         "training_tree_snapshot_to_morpion_supervised_rows",
         lambda *args, **kwargs: _empty_rows_bundle(generation=1),
     )
@@ -1489,10 +1492,12 @@ def test_empty_dataset_first_cycle_skips_training_and_selection(
         raise _EMPTY_DATASET_SELECTION_ERROR
 
     monkeypatch.setattr(
-        bootstrap_loop_module, "train_morpion_regressor", _unexpected_train
+        cycle_training_module, "train_morpion_regressor", _unexpected_train
     )
     monkeypatch.setattr(
-        bootstrap_loop_module, "_select_active_evaluator_name", _unexpected_select
+        cycle_training_module,
+        "select_or_force_active_evaluator_name",
+        _unexpected_select,
     )
 
     state = run_morpion_bootstrap_loop(args, runner, max_cycles=1)
@@ -1551,7 +1556,7 @@ def test_empty_dataset_resume_preserves_previous_evaluator_state(
     runner = FakeMorpionSearchRunner(tree_sizes=(20,), target_values=(0.5,))
 
     monkeypatch.setattr(
-        bootstrap_loop_module,
+        cycle_dataset_module,
         "training_tree_snapshot_to_morpion_supervised_rows",
         lambda *args, **kwargs: _empty_rows_bundle(generation=2),
     )
@@ -1599,7 +1604,7 @@ def test_empty_dataset_cycle_does_not_call_evaluator_selection(
     runner = FakeMorpionSearchRunner(tree_sizes=(10,), target_values=(1.25,))
 
     monkeypatch.setattr(
-        bootstrap_loop_module,
+        cycle_dataset_module,
         "training_tree_snapshot_to_morpion_supervised_rows",
         lambda *args, **kwargs: _empty_rows_bundle(generation=1),
     )
@@ -1609,7 +1614,9 @@ def test_empty_dataset_cycle_does_not_call_evaluator_selection(
         raise _EMPTY_CYCLE_SELECTION_ERROR
 
     monkeypatch.setattr(
-        bootstrap_loop_module, "_select_active_evaluator_name", _unexpected_select
+        cycle_training_module,
+        "select_or_force_active_evaluator_name",
+        _unexpected_select,
     )
 
     next_state = run_one_bootstrap_cycle(
@@ -1728,7 +1735,7 @@ def test_multi_evaluator_failure_propagates_without_history_event(
     runner = FakeMorpionSearchRunner(tree_sizes=(10,), target_values=(1.25,))
 
     call_count = 0
-    real_train = bootstrap_loop_module.train_morpion_regressor
+    real_train = cycle_training_module.train_morpion_regressor
 
     def _failing_train(args: object) -> object:
         nonlocal call_count
@@ -1738,7 +1745,7 @@ def test_multi_evaluator_failure_propagates_without_history_event(
         return real_train(cast("object", args))
 
     monkeypatch.setattr(
-        bootstrap_loop_module, "train_morpion_regressor", _failing_train
+        cycle_training_module, "train_morpion_regressor", _failing_train
     )
 
     with pytest.raises(RuntimeError, match="second evaluator failed"):

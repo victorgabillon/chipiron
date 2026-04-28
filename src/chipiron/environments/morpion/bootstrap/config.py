@@ -21,11 +21,8 @@ from .record_status import (
 )
 
 if TYPE_CHECKING:
-    from .bootstrap_loop import (
-        MorpionBootstrapArgs,
-        MorpionEvaluatorsConfig,
-        MorpionEvaluatorSpec,
-    )
+    from .bootstrap_args import MorpionBootstrapArgs
+    from .evaluator_config import MorpionEvaluatorsConfig, MorpionEvaluatorSpec
     from .pipeline_config import (
         MorpionEvaluatorUpdatePolicy,
         MorpionPipelineMode,

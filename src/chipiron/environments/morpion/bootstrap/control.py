@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from .bootstrap_loop import MorpionBootstrapArgs
+    from .bootstrap_args import MorpionBootstrapArgs
     from .config import MorpionBootstrapConfig
 
 BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY = "bootstrap_applied_control"
