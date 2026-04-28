@@ -104,6 +104,15 @@ from .history import (
     MorpionEvaluatorMetrics,
 )
 from .memory_diagnostics import MemoryDiagnostics
+from .pipeline_artifacts import (
+    MorpionPipelineActiveModel,
+    MorpionPipelineDatasetStatus,
+    MorpionPipelineGenerationManifest,
+    MorpionPipelineTrainingStatus,
+    save_pipeline_active_model,
+    save_pipeline_manifest,
+    save_pipeline_stage_status_file,
+)
 from .pipeline_config import (
     DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
     DEFAULT_MORPION_PIPELINE_MODE,
@@ -981,6 +990,22 @@ def _run_one_bootstrap_cycle_impl(
             latest_frontier_status=frontier_status,
             metadata=next_metadata,
         )
+        _write_pipeline_manifest_for_generation(
+            paths=paths,
+            generation=generation,
+            timestamp_utc=timestamp_utc,
+            relative_runtime_checkpoint_path=relative_runtime_checkpoint_path,
+            relative_tree_snapshot_path=relative_tree_snapshot_path,
+            relative_rows_path=relative_rows_path,
+            model_bundle_paths={},
+            selected_evaluator_name=None,
+            dataset_status="done",
+            training_status="not_started",
+            metadata=_pipeline_metadata(
+                args=args,
+                training_skipped_reason=EMPTY_DATASET_TRAINING_SKIPPED_REASON,
+            ),
+        )
         history_recorder.record(
             build_bootstrap_event(
                 cycle_index=cycle_index,
@@ -1077,6 +1102,26 @@ def _run_one_bootstrap_cycle_impl(
         latest_record_status=record_status,
         latest_frontier_status=frontier_status,
         metadata=next_metadata,
+    )
+    _write_pipeline_manifest_for_generation(
+        paths=paths,
+        generation=generation,
+        timestamp_utc=timestamp_utc,
+        relative_runtime_checkpoint_path=relative_runtime_checkpoint_path,
+        relative_tree_snapshot_path=relative_tree_snapshot_path,
+        relative_rows_path=relative_rows_path,
+        model_bundle_paths=model_bundle_paths,
+        selected_evaluator_name=selected_evaluator_name,
+        dataset_status="done",
+        training_status="done",
+        metadata=_pipeline_metadata(args=args),
+    )
+    _write_pipeline_active_model(
+        paths=paths,
+        generation=generation,
+        selected_evaluator_name=selected_evaluator_name,
+        model_bundle_paths=model_bundle_paths,
+        timestamp_utc=timestamp_utc,
     )
     history_recorder.record(
         build_bootstrap_event(
@@ -1422,6 +1467,108 @@ def _build_event_metadata(
     if training_skipped_reason is not None:
         metadata[TRAINING_SKIPPED_REASON_METADATA_KEY] = training_skipped_reason
     return metadata
+
+
+def _pipeline_metadata(
+    *,
+    args: MorpionBootstrapArgs,
+    training_skipped_reason: str | None = None,
+) -> dict[str, object]:
+    """Build pipeline-manifest metadata mirrored from the current loop config."""
+    metadata: dict[str, object] = {
+        "pipeline_mode": args.pipeline_mode,
+        "evaluator_update_policy": args.evaluator_update_policy,
+    }
+    if training_skipped_reason is not None:
+        metadata[TRAINING_SKIPPED_REASON_METADATA_KEY] = training_skipped_reason
+    return metadata
+
+
+def _write_pipeline_status_files(
+    *,
+    paths: MorpionBootstrapPaths,
+    generation: int,
+    timestamp_utc: str,
+    dataset_status: MorpionPipelineDatasetStatus,
+    training_status: MorpionPipelineTrainingStatus,
+    metadata: Mapping[str, object],
+) -> None:
+    """Persist lightweight pipeline stage-status files for one generation."""
+    save_pipeline_stage_status_file(
+        generation=generation,
+        status=dataset_status,
+        updated_at_utc=timestamp_utc,
+        metadata=metadata,
+        path=paths.pipeline_dataset_status_path_for_generation(generation),
+    )
+    save_pipeline_stage_status_file(
+        generation=generation,
+        status=training_status,
+        updated_at_utc=timestamp_utc,
+        metadata=metadata,
+        path=paths.pipeline_training_status_path_for_generation(generation),
+    )
+
+
+def _write_pipeline_manifest_for_generation(
+    *,
+    paths: MorpionBootstrapPaths,
+    generation: int,
+    timestamp_utc: str,
+    relative_runtime_checkpoint_path: str | None,
+    relative_tree_snapshot_path: str,
+    relative_rows_path: str,
+    model_bundle_paths: Mapping[str, str],
+    selected_evaluator_name: str | None,
+    dataset_status: MorpionPipelineDatasetStatus,
+    training_status: MorpionPipelineTrainingStatus,
+    metadata: Mapping[str, object],
+) -> None:
+    """Persist one pipeline manifest mirroring saved single-process artifacts."""
+    save_pipeline_manifest(
+        MorpionPipelineGenerationManifest(
+            generation=generation,
+            created_at_utc=timestamp_utc,
+            runtime_checkpoint_path=relative_runtime_checkpoint_path,
+            tree_snapshot_path=relative_tree_snapshot_path,
+            rows_path=relative_rows_path,
+            model_bundle_paths=dict(model_bundle_paths),
+            selected_evaluator_name=selected_evaluator_name,
+            dataset_status=dataset_status,
+            training_status=training_status,
+            metadata=dict(metadata),
+        ),
+        paths.pipeline_manifest_path_for_generation(generation),
+    )
+    _write_pipeline_status_files(
+        paths=paths,
+        generation=generation,
+        timestamp_utc=timestamp_utc,
+        dataset_status=dataset_status,
+        training_status=training_status,
+        metadata=metadata,
+    )
+
+
+def _write_pipeline_active_model(
+    *,
+    paths: MorpionBootstrapPaths,
+    generation: int,
+    selected_evaluator_name: str,
+    model_bundle_paths: Mapping[str, str],
+    timestamp_utc: str,
+) -> None:
+    """Persist the currently selected active model for pipeline consumers."""
+    save_pipeline_active_model(
+        MorpionPipelineActiveModel(
+            generation=generation,
+            evaluator_name=selected_evaluator_name,
+            model_bundle_path=model_bundle_paths[selected_evaluator_name],
+            updated_at_utc=timestamp_utc,
+            metadata={"selection_policy": "lowest_final_loss"},
+        ),
+        paths.pipeline_active_model_path,
+    )
 
 
 def _resolve_tree_status(

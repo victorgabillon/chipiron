@@ -36,6 +36,8 @@ class MorpionBootstrapPaths:
     runtime_checkpoint_dir: Path
     rows_dir: Path
     model_dir: Path
+    pipeline_dir: Path
+    pipeline_active_model_path: Path
 
     @classmethod
     def from_work_dir(
@@ -59,6 +61,8 @@ class MorpionBootstrapPaths:
             runtime_checkpoint_dir=root / "search_checkpoints",
             rows_dir=root / "rows",
             model_dir=root / "models",
+            pipeline_dir=root / "pipeline",
+            pipeline_active_model_path=root / "pipeline" / "active_model.json",
         )
 
     def ensure_directories(self) -> None:
@@ -68,6 +72,7 @@ class MorpionBootstrapPaths:
         self.runtime_checkpoint_dir.mkdir(parents=True, exist_ok=True)
         self.rows_dir.mkdir(parents=True, exist_ok=True)
         self.model_dir.mkdir(parents=True, exist_ok=True)
+        self.pipeline_dir.mkdir(parents=True, exist_ok=True)
 
     def tree_snapshot_path_for_generation(self, generation: int) -> Path:
         """Return the tree export path for one saved generation."""
@@ -92,6 +97,28 @@ class MorpionBootstrapPaths:
     ) -> Path:
         """Return the model bundle directory for one evaluator and generation."""
         return self.model_generation_dir_for_generation(generation) / evaluator_name
+
+    def pipeline_generation_dir_for_generation(self, generation: int) -> Path:
+        """Return the pipeline artifact directory for one saved generation."""
+        return self.pipeline_dir / f"generation_{generation:06d}"
+
+    def pipeline_manifest_path_for_generation(self, generation: int) -> Path:
+        """Return the pipeline manifest path for one saved generation."""
+        return self.pipeline_generation_dir_for_generation(generation) / "manifest.json"
+
+    def pipeline_dataset_status_path_for_generation(self, generation: int) -> Path:
+        """Return the dataset-stage status path for one saved generation."""
+        return (
+            self.pipeline_generation_dir_for_generation(generation)
+            / "dataset_status.json"
+        )
+
+    def pipeline_training_status_path_for_generation(self, generation: int) -> Path:
+        """Return the training-stage status path for one saved generation."""
+        return (
+            self.pipeline_generation_dir_for_generation(generation)
+            / "training_status.json"
+        )
 
     def history_paths(self) -> MorpionBootstrapHistoryPaths:
         """Return the canonical bootstrap history artifact paths."""
