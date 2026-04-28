@@ -329,3 +329,21 @@ def test_pv_blend_mean_prediction_mixes_backup_with_family_prediction() -> None:
     assert targets[2] == expected
     assert targets[3] == expected
     assert targets[1] == 1.0
+
+
+def test_toy_pv_exact_then_mean_exact_family_dominates() -> None:
+    """Toy exact-then policies should anchor the whole exact PV family."""
+    tree = built_in_toy_tree("A_stable_terminal_wins")
+    backed_up = compute_backed_up_values(tree, {2: 0.0}, "max")
+    predictions = {0: 20.0, 1: -5.0, 2: 0.0}
+
+    targets = family_adjusted_targets(
+        tree=tree,
+        backed_up_values=backed_up,
+        prediction_before=predictions,
+        family_target_policy="pv_exact_then_blend_mean_prediction",
+        family_prediction_blend=0.5,
+    )
+
+    assert targets[0] == 1.0
+    assert targets[1] == 1.0

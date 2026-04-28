@@ -670,6 +670,90 @@ def test_pv_blend_mean_prediction_mixes_raw_and_family_prediction() -> None:
     assert family_targets.effective_targets["3"] == expected
 
 
+def test_pv_exact_then_mean_prediction_exact_family_dominates() -> None:
+    """Exact-family policies should set the whole PV family to exact target."""
+    family_targets = family_adjusted_targets(
+        raw_targets={"0": 72.0, "2": 72.0, "3": 72.0},
+        prediction_values={"0": 5.0, "2": 10.0, "3": 20.0},
+        exact_or_terminal_node_ids={"3"},
+        selected_child_by_node={"0": "2", "2": "3", "3": None},
+        family_target_policy="pv_exact_then_mean_prediction",
+    )
+
+    assert family_targets.effective_targets["0"] == 72.0
+    assert family_targets.effective_targets["2"] == 72.0
+    assert family_targets.effective_targets["3"] == 72.0
+    assert family_targets.family_has_exact_by_node["0"]
+    assert family_targets.family_exact_target_by_node["0"] == 72.0
+    assert family_targets.family_target_rule_by_node["0"] == "pv_exact_family"
+    assert family_targets.family_num_exact_by_node["0"] == 1
+
+
+def test_pv_exact_then_mean_prediction_non_exact_family_uses_mean() -> None:
+    """Exact-then mean should fall back to prediction mean without anchors."""
+    family_targets = family_adjusted_targets(
+        raw_targets={"0": 72.0, "2": 72.0, "3": 72.0},
+        prediction_values={"0": 5.0, "2": 10.0, "3": 20.0},
+        exact_or_terminal_node_ids=set(),
+        selected_child_by_node={"0": "2", "2": "3", "3": None},
+        family_target_policy="pv_exact_then_mean_prediction",
+    )
+
+    expected = 35.0 / 3.0
+    assert family_targets.effective_targets["0"] == expected
+    assert family_targets.effective_targets["2"] == expected
+    assert family_targets.effective_targets["3"] == expected
+
+
+def test_pv_exact_then_min_prediction_non_exact_family_uses_min() -> None:
+    """Exact-then min should fall back to prediction min without anchors."""
+    family_targets = family_adjusted_targets(
+        raw_targets={"0": 72.0, "2": 72.0, "3": 72.0},
+        prediction_values={"0": 5.0, "2": 10.0, "3": 20.0},
+        exact_or_terminal_node_ids=set(),
+        selected_child_by_node={"0": "2", "2": "3", "3": None},
+        family_target_policy="pv_exact_then_min_prediction",
+    )
+
+    assert family_targets.effective_targets["0"] == 5.0
+    assert family_targets.effective_targets["2"] == 5.0
+    assert family_targets.effective_targets["3"] == 5.0
+
+
+def test_pv_exact_then_blend_mean_prediction_exact_family_not_blended() -> None:
+    """Exact-family policies should not blend exact families with predictions."""
+    family_targets = family_adjusted_targets(
+        raw_targets={"0": 72.0, "2": 72.0, "3": 72.0},
+        prediction_values={"0": 5.0, "2": 10.0, "3": 20.0},
+        exact_or_terminal_node_ids={"3"},
+        selected_child_by_node={"0": "2", "2": "3", "3": None},
+        family_target_policy="pv_exact_then_blend_mean_prediction",
+        family_prediction_blend=0.25,
+    )
+
+    assert family_targets.effective_targets["0"] == 72.0
+    assert family_targets.effective_targets["2"] == 72.0
+    assert family_targets.effective_targets["3"] == 72.0
+
+
+def test_pv_exact_family_multiple_exact_values_uses_max() -> None:
+    """Multiple exact values in one family should use max for this max backup diagnostic."""
+    family_targets = family_adjusted_targets(
+        raw_targets={"0": 72.0, "2": 72.0, "3": 70.0, "4": 72.0},
+        prediction_values={"0": 5.0, "2": 10.0, "3": 20.0, "4": 30.0},
+        exact_or_terminal_node_ids={"3", "4"},
+        selected_child_by_node={"0": "2", "2": "3", "3": "4", "4": None},
+        family_target_policy="pv_exact_then_mean_prediction",
+    )
+
+    assert family_targets.effective_targets["0"] == 72.0
+    assert family_targets.effective_targets["2"] == 72.0
+    assert family_targets.effective_targets["3"] == 72.0
+    assert family_targets.effective_targets["4"] == 72.0
+    assert family_targets.family_num_exact_by_node["0"] == 2
+    assert family_targets.family_target_rule_by_node["0"] == "pv_exact_family_multi_max"
+
+
 def test_exact_terminal_plus_prefix_preserves_anchors_beyond_prefix() -> None:
     """Exact/terminal selection should keep anchors and ancestors beyond prefix."""
     snapshot = _terminal_beyond_prefix_snapshot()

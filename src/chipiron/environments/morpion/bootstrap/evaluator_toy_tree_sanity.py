@@ -56,6 +56,10 @@ FamilyTargetPolicy = Literal[
     "pv_blend_mean_prediction",
     "pv_blend_min_prediction",
     "pv_blend_quantile_prediction",
+    "pv_exact_then_mean_prediction",
+    "pv_exact_then_min_prediction",
+    "pv_exact_then_blend_mean_prediction",
+    "pv_exact_then_blend_min_prediction",
 ]
 TargetSource = Literal[
     "ground_truth_exact_or_terminal",
@@ -614,6 +618,15 @@ def family_adjusted_targets(
 
     targets: dict[int, float] = {}
     for family_node_ids in principal_variation_families(tree, backed_up_values).values():
+        exact_node_ids = [
+            node_id
+            for node_id in family_node_ids
+            if tree.nodes[node_id].is_exact or tree.nodes[node_id].is_terminal
+        ]
+        exact_family_target = max(
+            (backed_up_values[node_id].value for node_id in exact_node_ids),
+            default=None,
+        )
         family_values = [
             _family_policy_value(
                 node_id=node_id,
@@ -630,7 +643,12 @@ def family_adjusted_targets(
             family_quantile=family_quantile,
         )
         for node_id in family_node_ids:
-            if family_target_policy.startswith("pv_blend_"):
+            if (
+                family_target_policy.startswith("pv_exact_then_")
+                and exact_family_target is not None
+            ):
+                targets[node_id] = exact_family_target
+            elif _is_blend_family_policy(family_target_policy):
                 targets[node_id] = (
                     (1.0 - family_prediction_blend) * backed_up_values[node_id].value
                     + family_prediction_blend * family_target
@@ -1013,6 +1031,10 @@ def _parse_args(argv: list[str] | None) -> tuple[ToyRunConfig, bool]:
             "pv_blend_mean_prediction",
             "pv_blend_min_prediction",
             "pv_blend_quantile_prediction",
+            "pv_exact_then_mean_prediction",
+            "pv_exact_then_min_prediction",
+            "pv_exact_then_blend_mean_prediction",
+            "pv_exact_then_blend_min_prediction",
         ),
         default="none",
     )
@@ -1134,6 +1156,10 @@ def _family_policy_value(
             return node.exact_value
         return prediction_before[node_id]
     raise ValueError(f"Unknown family target policy: {family_target_policy!r}.")
+
+
+def _is_blend_family_policy(family_target_policy: FamilyTargetPolicy) -> bool:
+    return "_blend_" in family_target_policy
 
 
 def _family_aggregate(

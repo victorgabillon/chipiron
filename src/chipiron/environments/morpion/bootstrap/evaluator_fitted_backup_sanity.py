@@ -72,7 +72,13 @@ FittedBackupSelectionMode = Literal[
 FittedBackupFamilyTargetPolicy = Literal[
     "none",
     "pv_mean_prediction",
+    "pv_min_prediction",
     "pv_blend_mean_prediction",
+    "pv_blend_min_prediction",
+    "pv_exact_then_mean_prediction",
+    "pv_exact_then_min_prediction",
+    "pv_exact_then_blend_mean_prediction",
+    "pv_exact_then_blend_min_prediction",
 ]
 
 
@@ -133,6 +139,10 @@ class FittedBackupFamilyTargets:
     effective_targets: dict[str, float]
     representative_by_node: dict[str, str]
     family_size_by_node: dict[str, int]
+    family_has_exact_by_node: dict[str, bool]
+    family_exact_target_by_node: dict[str, float | None]
+    family_target_rule_by_node: dict[str, str]
+    family_num_exact_by_node: dict[str, int]
     num_families: int
     mean_family_size: float | None
     max_family_size: int | None
@@ -495,7 +505,17 @@ def _parse_args(argv: list[str] | None) -> MorpionFittedBackupSanityArgs:
     parser.add_argument("--max-rows", type=int)
     parser.add_argument(
         "--family-target-policy",
-        choices=("none", "pv_mean_prediction", "pv_blend_mean_prediction"),
+        choices=(
+            "none",
+            "pv_mean_prediction",
+            "pv_min_prediction",
+            "pv_blend_mean_prediction",
+            "pv_blend_min_prediction",
+            "pv_exact_then_mean_prediction",
+            "pv_exact_then_min_prediction",
+            "pv_exact_then_blend_mean_prediction",
+            "pv_exact_then_blend_min_prediction",
+        ),
         default="none",
     )
     parser.add_argument("--family-prediction-blend", type=float, default=0.25)
@@ -727,31 +747,89 @@ def family_adjusted_targets(
     )
     representative_by_node: dict[str, str] = {}
     family_size_by_node: dict[str, int] = {}
+    family_has_exact_by_node: dict[str, bool] = {}
+    family_exact_target_by_node: dict[str, float | None] = {}
+    family_target_rule_by_node: dict[str, str] = {}
+    family_num_exact_by_node: dict[str, int] = {}
     effective_targets: dict[str, float] = {}
 
     for representative, node_ids in families.items():
         family_size = len(node_ids)
-        family_mean = _mean(
-            [
-                prediction_values[node_id]
-                for node_id in node_ids
-                if node_id in prediction_values
-            ]
-        )
+        family_predictions = [
+            prediction_values[node_id]
+            for node_id in node_ids
+            if node_id in prediction_values
+        ]
+        family_mean = _mean(family_predictions)
         if family_mean is None:
             family_mean = 0.0
+        family_min = min(family_predictions, default=0.0)
+        exact_node_ids = [
+            node_id for node_id in node_ids if node_id in exact_or_terminal_node_ids
+        ]
+        exact_targets = [raw_targets[node_id] for node_id in exact_node_ids]
+        exact_family_target = max(exact_targets, default=None)
+        has_exact_family = bool(exact_node_ids)
+        exact_family_rule = (
+            "pv_exact_family_multi_max"
+            if len(set(exact_targets)) > 1
+            else "pv_exact_family"
+        )
         for node_id in node_ids:
             representative_by_node[node_id] = representative
             family_size_by_node[node_id] = family_size
-            if node_id in exact_or_terminal_node_ids or family_target_policy == "none":
+            family_has_exact_by_node[node_id] = has_exact_family
+            family_exact_target_by_node[node_id] = exact_family_target
+            family_num_exact_by_node[node_id] = len(exact_node_ids)
+
+            if (
+                _uses_exact_family_rule(family_target_policy)
+                and exact_family_target is not None
+            ):
+                effective_targets[node_id] = exact_family_target
+                family_target_rule_by_node[node_id] = exact_family_rule
+            elif node_id in exact_or_terminal_node_ids:
                 effective_targets[node_id] = raw_targets[node_id]
+                family_target_rule_by_node[node_id] = "hard_exact_anchor"
+            elif family_target_policy == "none":
+                effective_targets[node_id] = raw_targets[node_id]
+                family_target_rule_by_node[node_id] = "raw_backup"
             elif family_target_policy == "pv_mean_prediction":
                 effective_targets[node_id] = family_mean
+                family_target_rule_by_node[node_id] = "pv_mean_prediction"
+            elif family_target_policy == "pv_min_prediction":
+                effective_targets[node_id] = family_min
+                family_target_rule_by_node[node_id] = "pv_min_prediction"
             elif family_target_policy == "pv_blend_mean_prediction":
                 effective_targets[node_id] = (
                     (1.0 - family_prediction_blend) * raw_targets[node_id]
                     + family_prediction_blend * family_mean
                 )
+                family_target_rule_by_node[node_id] = "pv_blend_mean_prediction"
+            elif family_target_policy == "pv_blend_min_prediction":
+                effective_targets[node_id] = (
+                    (1.0 - family_prediction_blend) * raw_targets[node_id]
+                    + family_prediction_blend * family_min
+                )
+                family_target_rule_by_node[node_id] = "pv_blend_min_prediction"
+            elif family_target_policy == "pv_exact_then_mean_prediction":
+                effective_targets[node_id] = family_mean
+                family_target_rule_by_node[node_id] = "pv_mean_prediction"
+            elif family_target_policy == "pv_exact_then_min_prediction":
+                effective_targets[node_id] = family_min
+                family_target_rule_by_node[node_id] = "pv_min_prediction"
+            elif family_target_policy == "pv_exact_then_blend_mean_prediction":
+                effective_targets[node_id] = (
+                    (1.0 - family_prediction_blend) * raw_targets[node_id]
+                    + family_prediction_blend * family_mean
+                )
+                family_target_rule_by_node[node_id] = "pv_blend_mean_prediction"
+            elif family_target_policy == "pv_exact_then_blend_min_prediction":
+                effective_targets[node_id] = (
+                    (1.0 - family_prediction_blend) * raw_targets[node_id]
+                    + family_prediction_blend * family_min
+                )
+                family_target_rule_by_node[node_id] = "pv_blend_min_prediction"
             else:
                 raise ValueError(  # noqa: TRY003
                     f"Unknown family target policy: {family_target_policy!r}."
@@ -763,11 +841,23 @@ def family_adjusted_targets(
         effective_targets[node_id] = raw_target
         representative_by_node[node_id] = node_id
         family_size_by_node[node_id] = 1
+        family_has_exact_by_node[node_id] = node_id in exact_or_terminal_node_ids
+        family_exact_target_by_node[node_id] = (
+            raw_target if node_id in exact_or_terminal_node_ids else None
+        )
+        family_target_rule_by_node[node_id] = (
+            "hard_exact_anchor" if node_id in exact_or_terminal_node_ids else "raw_backup"
+        )
+        family_num_exact_by_node[node_id] = int(node_id in exact_or_terminal_node_ids)
     family_sizes = [len(node_ids) for node_ids in families.values()]
     return FittedBackupFamilyTargets(
         effective_targets=effective_targets,
         representative_by_node=representative_by_node,
         family_size_by_node=family_size_by_node,
+        family_has_exact_by_node=family_has_exact_by_node,
+        family_exact_target_by_node=family_exact_target_by_node,
+        family_target_rule_by_node=family_target_rule_by_node,
+        family_num_exact_by_node=family_num_exact_by_node,
         num_families=len(families),
         mean_family_size=_mean([float(size) for size in family_sizes]),
         max_family_size=max(family_sizes, default=None),
@@ -791,6 +881,12 @@ def _principal_variation_representative(
         if next_id is None:
             return current_id
         current_id = next_id
+
+
+def _uses_exact_family_rule(
+    family_target_policy: FittedBackupFamilyTargetPolicy,
+) -> bool:
+    return family_target_policy.startswith("pv_exact_then_")
 
 
 def _run_output_dir(
@@ -1075,11 +1171,21 @@ def _rows_from_fitted_values(
                     "target_source": node_value.target_source,
                     "raw_target": node_value.backed_up_target,
                     "effective_target": effective_target,
-                    "family_representative_node_id": (
-                        family_targets.representative_by_node.get(node_id)
-                    ),
-                    "family_size": family_targets.family_size_by_node.get(node_id),
-                    "previous_backed_up_target": node_value.previous_backed_up_target,
+            "family_representative_node_id": (
+                family_targets.representative_by_node.get(node_id)
+            ),
+            "family_size": family_targets.family_size_by_node.get(node_id),
+            "family_has_exact_or_terminal": (
+                family_targets.family_has_exact_by_node.get(node_id, False)
+            ),
+            "family_exact_target": (
+                family_targets.family_exact_target_by_node.get(node_id)
+            ),
+            "family_target_rule": family_targets.family_target_rule_by_node.get(node_id),
+            "family_num_exact_or_terminal": (
+                family_targets.family_num_exact_by_node.get(node_id, 0)
+            ),
+            "previous_backed_up_target": node_value.previous_backed_up_target,
                     "abs_target_change": node_value.abs_target_change,
                 },
             )
@@ -1203,7 +1309,29 @@ def _iteration_summary(
         for row in rows.rows
         if "raw_target" in row.metadata
     ]
+    row_effective_minus_raw_exact_families = [
+        abs(float(row.metadata.get("effective_target", row.target_value)) - float(row.metadata["raw_target"]))
+        for row in rows.rows
+        if "raw_target" in row.metadata
+        and bool(row.metadata.get("family_has_exact_or_terminal"))
+    ]
+    row_effective_minus_raw_non_exact_families = [
+        abs(float(row.metadata.get("effective_target", row.target_value)) - float(row.metadata["raw_target"]))
+        for row in rows.rows
+        if "raw_target" in row.metadata
+        and not bool(row.metadata.get("family_has_exact_or_terminal"))
+    ]
     changed_row_count = sum(value > 1e-12 for value in row_effective_minus_raw)
+    exact_family_row_count = sum(
+        bool(row.metadata.get("family_has_exact_or_terminal"))
+        for row in rows.rows
+    )
+    exact_family_representatives = {
+        str(row.metadata.get("family_representative_node_id"))
+        for row in rows.rows
+        if row.metadata.get("family_has_exact_or_terminal")
+        and row.metadata.get("family_representative_node_id") is not None
+    }
     root_raw_target = (
         node_values[rows.metadata["root_node_id"]].backed_up_target
         if "root_node_id" in rows.metadata and rows.metadata["root_node_id"] in node_values
@@ -1238,6 +1366,16 @@ def _iteration_summary(
         "prediction_change_max": max(prediction_changes, default=None),
         "effective_minus_raw_mean_abs": _mean(row_effective_minus_raw),
         "effective_minus_raw_max_abs": max(row_effective_minus_raw, default=None),
+        "fraction_rows_in_exact_family": (
+            exact_family_row_count / float(len(rows.rows)) if rows.rows else None
+        ),
+        "num_exact_families": len(exact_family_representatives),
+        "mean_abs_effective_minus_raw_on_exact_families": _mean(
+            row_effective_minus_raw_exact_families
+        ),
+        "mean_abs_effective_minus_raw_on_non_exact_families": _mean(
+            row_effective_minus_raw_non_exact_families
+        ),
         "num_pv_families": family_targets.num_families,
         "mean_pv_family_size": family_targets.mean_family_size,
         "max_pv_family_size": family_targets.max_family_size,
