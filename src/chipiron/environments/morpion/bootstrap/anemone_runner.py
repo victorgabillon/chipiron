@@ -58,10 +58,10 @@ from chipiron.environments.morpion.players.evaluators.neural_networks.state_to_t
 )
 from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
 
-from .bootstrap_loop import MorpionSearchRunner
 from .config import DEFAULT_MORPION_TREE_BRANCH_LIMIT
 from .control import MorpionBootstrapEffectiveRuntimeConfig
 from .history import MorpionBootstrapTreeStatus
+from .search_runner_protocol import MorpionSearchRunner
 
 LOGGER = logging.getLogger(__name__)
 _TREE_BRANCH_LIMIT_ARGS_REQUIRED_MESSAGE = (

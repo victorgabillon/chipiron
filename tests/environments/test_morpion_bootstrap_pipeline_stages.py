@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import ast
 import sys
 import time
 from pathlib import Path
@@ -55,11 +56,14 @@ from atomheart.games.morpion import initial_state as morpion_initial_state
 from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
 import chipiron.environments.morpion.bootstrap.launcher as launcher_module
+import chipiron.environments.morpion.bootstrap.pipeline_stages as pipeline_stages_module
+import chipiron.environments.morpion.bootstrap.search_runner_protocol as search_runner_protocol_module
 from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapArgs,
     MorpionBootstrapPaths,
     MorpionBootstrapRunState,
     MorpionPipelineGenerationManifest,
+    MorpionSearchRunner,
     load_bootstrap_run_state,
     load_pipeline_active_model,
     load_pipeline_manifest,
@@ -541,3 +545,26 @@ def test_artifact_pipeline_loop_still_fails_loudly(tmp_path: Path) -> None:
 
     with pytest.raises(NotImplementedError, match="artifact_pipeline with --pipeline-stage loop"):
         run_morpion_bootstrap_experiment(launcher_args)
+
+
+def test_pipeline_stages_imports_bootstrap_loop_only_for_args() -> None:
+    """Pipeline stages should not depend on private bootstrap-loop helpers."""
+    source = Path(pipeline_stages_module.__file__).read_text(encoding="utf-8")
+    module = ast.parse(source)
+
+    bootstrap_loop_imports: set[str] = set()
+    protocol_imports: set[str] = set()
+    for node in ast.walk(module):
+        if isinstance(node, ast.ImportFrom) and node.level == 1:
+            if node.module == "bootstrap_loop":
+                bootstrap_loop_imports.update(alias.name for alias in node.names)
+            if node.module == "search_runner_protocol":
+                protocol_imports.update(alias.name for alias in node.names)
+
+    assert bootstrap_loop_imports <= {"MorpionBootstrapArgs"}
+    assert "MorpionSearchRunner" in protocol_imports
+
+
+def test_package_root_reexports_search_runner_protocol() -> None:
+    """Package root should expose the dedicated shared search-runner protocol."""
+    assert MorpionSearchRunner is search_runner_protocol_module.MorpionSearchRunner

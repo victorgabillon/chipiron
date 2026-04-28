@@ -12,37 +12,78 @@ from chipiron.environments.morpion.learning import (
     save_morpion_supervised_rows,
 )
 
-from .bootstrap_errors import MissingSavedBootstrapArtifactError
-from .bootstrap_loop import (
-    MorpionBootstrapArgs,
-    MorpionSearchRunner,
-    _build_event_metadata,
-    _build_no_save_run_state,
-    _extract_rows_from_training_snapshot,
-    _next_metadata,
-    _pipeline_metadata,
-    _previous_effective_runtime_config,
-    _prune_saved_generation_artifacts,
-    _record_no_save_cycle_event,
-    _reevaluate_tree_for_policy,
-    _resolve_active_model_bundle,
-    _resolve_runtime_restore_path,
-    _resolve_tree_status,
-    _save_trigger_reason,
-    _timestamp_utc_from_unix_s,
-    _train_and_select_evaluators,
-    _validate_dataset_family_target_args,
-    _validate_forced_evaluator,
-    _validate_pipeline_mode,
-    _validate_runtime_reconfiguration,
-    _with_config_hash_metadata,
-    _write_pipeline_manifest_for_generation,
+from .bootstrap_cycle_core import (
     build_bootstrap_event,
     should_save_progress,
 )
+from .bootstrap_cycle_core import (
+    build_event_metadata as _build_event_metadata,
+)
+from .bootstrap_cycle_core import (
+    build_no_save_run_state as _build_no_save_run_state,
+)
+from .bootstrap_cycle_core import (
+    extract_rows_from_training_snapshot as _extract_rows_from_training_snapshot,
+)
+from .bootstrap_cycle_core import (
+    next_metadata as _next_metadata,
+)
+from .bootstrap_cycle_core import (
+    pipeline_metadata as _pipeline_metadata,
+)
+from .bootstrap_cycle_core import (
+    previous_effective_runtime_config as _previous_effective_runtime_config,
+)
+from .bootstrap_cycle_core import (
+    prune_saved_generation_artifacts as _prune_saved_generation_artifacts,
+)
+from .bootstrap_cycle_core import (
+    record_no_save_cycle_event as _record_no_save_cycle_event,
+)
+from .bootstrap_cycle_core import (
+    reevaluate_tree_for_policy as _reevaluate_tree_for_policy,
+)
+from .bootstrap_cycle_core import (
+    resolve_active_model_bundle as _resolve_active_model_bundle,
+)
+from .bootstrap_cycle_core import (
+    resolve_runtime_restore_path as _resolve_runtime_restore_path,
+)
+from .bootstrap_cycle_core import (
+    resolve_tree_status as _resolve_tree_status,
+)
+from .bootstrap_cycle_core import (
+    save_trigger_reason as _save_trigger_reason,
+)
+from .bootstrap_cycle_core import (
+    timestamp_utc_from_unix_s as _timestamp_utc_from_unix_s,
+)
+from .bootstrap_cycle_core import (
+    train_and_select_evaluators as _train_and_select_evaluators,
+)
+from .bootstrap_cycle_core import (
+    validate_dataset_family_target_args as _validate_dataset_family_target_args,
+)
+from .bootstrap_cycle_core import (
+    validate_forced_evaluator as _validate_forced_evaluator,
+)
+from .bootstrap_cycle_core import (
+    validate_pipeline_mode as _validate_pipeline_mode,
+)
+from .bootstrap_cycle_core import (
+    validate_runtime_reconfiguration as _validate_runtime_reconfiguration,
+)
+from .bootstrap_cycle_core import (
+    with_config_hash_metadata as _with_config_hash_metadata,
+)
+from .bootstrap_cycle_core import (
+    write_pipeline_manifest_for_generation as _write_pipeline_manifest_for_generation,
+)
+from .bootstrap_errors import MissingSavedBootstrapArtifactError
 from .bootstrap_memory import log_after_cycle_gc, memory_diagnostics_config_from_args
 from .bootstrap_paths import MorpionBootstrapPaths
 from .config import (
+    MorpionBootstrapConfig,
     bootstrap_config_from_args,
     bootstrap_config_sha256,
     load_bootstrap_config,
@@ -80,13 +121,21 @@ from .run_state import (
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from .bootstrap_loop import MorpionBootstrapArgs
+    from .search_runner_protocol import MorpionSearchRunner
+
 LOGGER = logging.getLogger(__name__)
+
+
+def _artifact_pipeline_mode_required_error() -> ValueError:
+    """Build the canonical artifact-pipeline mode requirement error."""
+    return ValueError("artifact_pipeline mode required")
 
 
 def _require_artifact_pipeline_mode(args: MorpionBootstrapArgs) -> None:
     """Require explicit artifact-pipeline mode for stage entrypoints."""
     if args.pipeline_mode != "artifact_pipeline":
-        raise ValueError("artifact_pipeline mode required")
+        raise _artifact_pipeline_mode_required_error()
 
 
 class MissingPipelineTreeSnapshotFileError(FileNotFoundError):
@@ -272,7 +321,7 @@ def _run_one_pipeline_growth_cycle(
     run_state: MorpionBootstrapRunState,
     control: MorpionBootstrapControl | None,
     config_hash: str,
-    bootstrap_config: object,
+    bootstrap_config: MorpionBootstrapConfig,
     now_unix_s: float | None = None,
 ) -> MorpionBootstrapRunState:
     """Run one growth-only artifact-pipeline cycle with memory hooks."""
@@ -303,7 +352,7 @@ def _run_one_pipeline_growth_cycle_impl(
     run_state: MorpionBootstrapRunState,
     control: MorpionBootstrapControl | None,
     config_hash: str,
-    bootstrap_config: object,
+    bootstrap_config: MorpionBootstrapConfig,
     now_unix_s: float | None,
     memory: MemoryDiagnostics,
 ) -> MorpionBootstrapRunState:

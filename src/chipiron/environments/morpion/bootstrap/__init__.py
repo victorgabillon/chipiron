@@ -25,7 +25,6 @@ from .bootstrap_loop import (
     EMPTY_DATASET_TRAINING_SKIPPED_REASON,
     TRAINING_SKIPPED_REASON_METADATA_KEY,
     MorpionBootstrapArgs,
-    MorpionSearchRunner,
     build_bootstrap_event,
     run_morpion_bootstrap_loop,
     run_one_bootstrap_cycle,
@@ -216,6 +215,7 @@ from .run_state import (
     load_bootstrap_run_state,
     save_bootstrap_run_state,
 )
+from .search_runner_protocol import MorpionSearchRunner
 from .tree_inspector import (
     MorpionBootstrapChildSummary,
     MorpionBootstrapLocalTreeView,
