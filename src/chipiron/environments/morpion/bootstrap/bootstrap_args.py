@@ -66,7 +66,8 @@ class MorpionBootstrapArgs:
             self.evaluators_config is not None
             and self.evaluator_family_preset is not None
         ):
-            raise ConflictingMorpionEvaluatorConfigurationError
+            conflict_error = ConflictingMorpionEvaluatorConfigurationError()
+            raise conflict_error
         if self.evaluators_config is not None:
             return self.evaluators_config
         if self.evaluator_family_preset is not None:

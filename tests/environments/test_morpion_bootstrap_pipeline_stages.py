@@ -528,8 +528,29 @@ def test_single_process_rejects_non_loop_pipeline_stage(
     assert "only valid with 'loop'" in capsys.readouterr().err
 
 
-def test_artifact_pipeline_loop_still_fails_loudly(tmp_path: Path) -> None:
-    """Artifact-pipeline loop dispatch should still fail loudly for now."""
+def test_artifact_pipeline_loop_dispatches_orchestrator(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Artifact-pipeline loop CLI dispatch should reach the orchestrator."""
+    captured: list[tuple[MorpionBootstrapArgs, int]] = []
+
+    def _fake_orchestrator(
+        args: MorpionBootstrapArgs,
+        runner: object,
+        *,
+        max_growth_cycles: int = 1,
+    ) -> object:
+        del runner
+        captured.append((args, max_growth_cycles))
+        return object()
+
+    monkeypatch.setattr(
+        launcher_module,
+        "run_morpion_artifact_pipeline_once",
+        _fake_orchestrator,
+    )
+
     launcher_args = launcher_module.launcher_args_from_cli(
         [
             "--work-dir",
@@ -538,13 +559,18 @@ def test_artifact_pipeline_loop_still_fails_loudly(tmp_path: Path) -> None:
             "artifact_pipeline",
             "--pipeline-stage",
             "loop",
+            "--max-cycles",
+            "2",
             "--no-print-startup-summary",
             "--no-print-dashboard-hint",
         ]
     )
 
-    with pytest.raises(NotImplementedError, match="artifact_pipeline with --pipeline-stage loop"):
-        run_morpion_bootstrap_experiment(launcher_args)
+    run_morpion_bootstrap_experiment(launcher_args)
+
+    assert len(captured) == 1
+    assert captured[0][0].pipeline_mode == "artifact_pipeline"
+    assert captured[0][1] == 2
 
 
 def test_pipeline_stages_imports_bootstrap_loop_only_for_args() -> None:

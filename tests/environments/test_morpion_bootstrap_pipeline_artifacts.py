@@ -53,9 +53,10 @@ from atomheart.games.morpion import MorpionDynamics as AtomMorpionDynamics
 from atomheart.games.morpion import initial_state as morpion_initial_state
 from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
-import chipiron.environments.morpion.bootstrap.bootstrap_loop as bootstrap_loop_module
 import chipiron.environments.morpion.bootstrap.cycle_dataset as cycle_dataset_module
 from chipiron.environments.morpion.bootstrap import (
+    EMPTY_DATASET_TRAINING_SKIPPED_REASON,
+    TRAINING_SKIPPED_REASON_METADATA_KEY,
     InvalidMorpionPipelineArtifactError,
     MorpionBootstrapArgs,
     MorpionBootstrapPaths,
@@ -385,8 +386,8 @@ def test_empty_dataset_save_writes_manifest_without_active_model(
     assert manifest.training_status == "not_started"
     assert manifest.selected_evaluator_name is None
     assert manifest.model_bundle_paths == {}
-    assert manifest.metadata[bootstrap_loop_module.TRAINING_SKIPPED_REASON_METADATA_KEY] == (
-        bootstrap_loop_module.EMPTY_DATASET_TRAINING_SKIPPED_REASON
+    assert manifest.metadata[TRAINING_SKIPPED_REASON_METADATA_KEY] == (
+        EMPTY_DATASET_TRAINING_SKIPPED_REASON
     )
     assert dataset_status_payload["status"] == "done"
     assert training_status_payload["status"] == "not_started"

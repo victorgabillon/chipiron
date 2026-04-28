@@ -122,7 +122,8 @@ def build_and_save_dataset_for_generation(
             None if record_status is None else record_status.current_best_total_points,
         )
     if record_status is None:
-        raise MissingBootstrapRecordStatusError
+        record_error = MissingBootstrapRecordStatusError()
+        raise record_error
 
     LOGGER.info("[frontier] resolve_start nodes=%s", len(snapshot.nodes))
     frontier_started_at = time.perf_counter()
@@ -146,7 +147,8 @@ def build_and_save_dataset_for_generation(
             None if frontier_status is None else frontier_status.current_best_total_points,
         )
     if frontier_status is None:
-        raise MissingBootstrapFrontierStatusError
+        frontier_error = MissingBootstrapFrontierStatusError()
+        raise frontier_error
 
     LOGGER.info("[dataset] extract_start snapshot_nodes=%s", len(snapshot.nodes))
     memory.log("before_dataset_extract")
@@ -167,7 +169,8 @@ def build_and_save_dataset_for_generation(
             time.perf_counter() - extract_started_at,
         )
     if rows is None:
-        raise MissingBootstrapDatasetRowsError
+        dataset_rows_error = MissingBootstrapDatasetRowsError()
+        raise dataset_rows_error
 
     LOGGER.info(
         "[dataset] family_targets policy=%s blend=%.3f rows_in_exact_family=%s num_exact_families=%s effective_minus_raw_mean_abs=%s effective_minus_raw_max_abs=%s",

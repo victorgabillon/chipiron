@@ -36,6 +36,10 @@ from .pipeline_config import (
     DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
     DEFAULT_MORPION_PIPELINE_MODE,
 )
+from .pipeline_orchestrator import (
+    MorpionPipelineOrchestratorResult,
+    run_morpion_artifact_pipeline_once,
+)
 from .pipeline_stages import (
     run_pipeline_dataset_stage,
     run_pipeline_growth_stage,
@@ -109,7 +113,11 @@ class _LauncherStartupStatus:
 
 def run_morpion_bootstrap_experiment(
     launcher_args: MorpionBootstrapLauncherArgs,
-) -> MorpionBootstrapRunState | MorpionPipelineGenerationManifest:
+) -> (
+    MorpionBootstrapRunState
+    | MorpionPipelineGenerationManifest
+    | MorpionPipelineOrchestratorResult
+):
     """Run one persistent Morpion bootstrap experiment end to end.
 
     This launcher is the canonical human/operator entrypoint for one real
@@ -152,9 +160,14 @@ def run_morpion_bootstrap_experiment(
         )
 
     if launcher_args.pipeline_stage == "loop":
-        raise NotImplementedError(
-            "artifact_pipeline with --pipeline-stage loop is not implemented yet. "
-            "Use --pipeline-stage growth, dataset, or training."
+        runner = _build_launcher_runner(startup_status)
+        LOGGER.info("[launcher] runner_ready")
+        return run_morpion_artifact_pipeline_once(
+            startup_status.resolved_bootstrap_args,
+            runner,
+            max_growth_cycles=1
+            if launcher_args.max_cycles is None
+            else launcher_args.max_cycles,
         )
     if launcher_args.pipeline_stage == "dataset":
         assert launcher_args.pipeline_generation is not None

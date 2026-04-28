@@ -9,6 +9,7 @@ from .anemone_runner import (
     load_morpion_evaluator_from_model_bundle,
     load_morpion_search_checkpoint_payload,
 )
+from .bootstrap_args import MorpionBootstrapArgs
 from .bootstrap_errors import (
     ConflictingMorpionEvaluatorConfigurationError,
     EmptyMorpionEvaluatorsConfigError,
@@ -21,7 +22,6 @@ from .bootstrap_errors import (
     UnknownForcedMorpionEvaluatorError,
     UnsupportedMorpionRuntimeReconfigurationError,
 )
-from .bootstrap_args import MorpionBootstrapArgs
 from .bootstrap_loop import (
     EMPTY_DATASET_TRAINING_SKIPPED_REASON,
     TRAINING_SKIPPED_REASON_METADATA_KEY,
@@ -161,6 +161,14 @@ from .pipeline_config import (
     DEFAULT_MORPION_PIPELINE_MODE,
     MorpionEvaluatorUpdatePolicy,
     MorpionPipelineMode,
+)
+from .pipeline_orchestrator import (
+    MorpionPipelineOrchestratorResult,
+    dataset_stage_is_pending,
+    list_pipeline_manifest_generations,
+    load_available_pipeline_manifests,
+    run_morpion_artifact_pipeline_once,
+    training_stage_is_pending,
 )
 from .pipeline_stages import (
     run_pipeline_dataset_stage,
@@ -306,6 +314,7 @@ __all__ = [
     "MorpionPipelineDatasetStatus",
     "MorpionPipelineGenerationManifest",
     "MorpionPipelineMode",
+    "MorpionPipelineOrchestratorResult",
     "MorpionPipelineTrainingStatus",
     "MorpionRecordProgressSummary",
     "MorpionSearchRunner",
@@ -343,6 +352,7 @@ __all__ = [
     "current_frontier_score",
     "current_record_score",
     "dataset_num_rows_series",
+    "dataset_stage_is_pending",
     "default_morpion_frontier_status",
     "default_morpion_record_status",
     "effective_runtime_config_from_config_and_control",
@@ -361,6 +371,8 @@ __all__ = [
     "latest_status_to_dict",
     "latest_tree_depth_distribution",
     "launcher_command_for_work_dir",
+    "list_pipeline_manifest_generations",
+    "load_available_pipeline_manifests",
     "load_bootstrap_config",
     "load_bootstrap_control",
     "load_bootstrap_history",
@@ -398,6 +410,7 @@ __all__ = [
     "restart_morpion_bootstrap_process",
     "run_dashboard_app",
     "run_dashboard_cli",
+    "run_morpion_artifact_pipeline_once",
     "run_morpion_bootstrap_experiment",
     "run_morpion_bootstrap_loop",
     "run_one_bootstrap_cycle",
@@ -419,6 +432,7 @@ __all__ = [
     "summarize_bootstrap_run",
     "summarize_evaluator_selection",
     "summarize_record_progress",
+    "training_stage_is_pending",
     "training_triggered_series",
     "tree_num_nodes_series",
     "validate_bootstrap_config_change",
