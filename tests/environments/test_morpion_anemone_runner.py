@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import gc
 import logging
 import sys
 from pathlib import Path
@@ -46,8 +47,11 @@ if "anemone" not in sys.modules:
     sys.modules["anemone"] = _anemone_stub
 
 from anemone.checkpoints import (
+    AlgorithmNodeCheckpointPayload,
     AnchorCheckpointStatePayload,
     DeltaCheckpointStatePayload,
+    SearchRuntimeCheckpointPayload,
+    TreeCheckpointPayload,
 )
 from anemone.factory import SearchArgs
 from anemone.node_selector.composed.args import ComposedNodeSelectorArgs
@@ -284,6 +288,32 @@ def test_checkpoint_roundtrip_restores_and_continues_growth(tmp_path: Path) -> N
     )
 
 
+def test_checkpoint_restore_does_not_retain_full_payload_graph(tmp_path: Path) -> None:
+    """Runtime restore should not keep the decoded checkpoint DTO graph alive."""
+    checkpoint_path = tmp_path / "tree_checkpoint.json"
+    first_runner = AnemoneMorpionSearchRunner()
+    first_runner.load_or_create(None, None)
+    first_runner.grow(4)
+    first_runner.save_checkpoint(checkpoint_path)
+    gc.collect()
+    payload_counts_before_restore = _checkpoint_payload_type_counts()
+
+    second_runner = AnemoneMorpionSearchRunner()
+    second_runner.load_or_create(checkpoint_path, None)
+    restored_size = second_runner.current_tree_size()
+    gc.collect()
+
+    assert restored_size > 0
+    assert all(
+        after <= before
+        for after, before in zip(
+            _checkpoint_payload_type_counts(),
+            payload_counts_before_restore,
+            strict=True,
+        )
+    )
+
+
 def test_checkpoint_metrics_logs_for_save_load_and_restore(
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
@@ -312,6 +342,18 @@ def test_checkpoint_metrics_logs_for_save_load_and_restore(
     assert any("nodes=" in line for line in metrics_lines)
     assert any("anchors=" in line for line in metrics_lines)
     assert any("deltas=" in line for line in metrics_lines)
+
+
+def _checkpoint_payload_type_counts() -> tuple[int, int, int]:
+    payload_types = (
+        SearchRuntimeCheckpointPayload,
+        TreeCheckpointPayload,
+        AlgorithmNodeCheckpointPayload,
+    )
+    return tuple(
+        sum(1 for obj in gc.get_objects() if isinstance(obj, payload_type))
+        for payload_type in payload_types
+    )
 
 
 def test_checkpoint_roundtrip_continues_growth_when_branch_budget_remains(

@@ -64,9 +64,6 @@ from .control import MorpionBootstrapEffectiveRuntimeConfig
 from .history import MorpionBootstrapTreeStatus
 
 LOGGER = logging.getLogger(__name__)
-_CHECKPOINT_PAYLOAD_CACHE: dict[
-    Path, tuple[int, int, SearchRuntimeCheckpointPayload]
-] = {}
 _TREE_BRANCH_LIMIT_ARGS_REQUIRED_MESSAGE = (
     "Morpion bootstrap runtime reconfiguration currently supports only "
     "TreeBranchLimitArgs stopping criteria."
@@ -562,17 +559,20 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         node_count, anchor_count, delta_count = _checkpoint_node_counts(payload)
         rss_before_mb = _current_rss_mb()
         runtime_started_at = time.perf_counter()
-        runtime = load_search_from_checkpoint_payload(
-            payload,
-            state_codec=self._state_codec,
-            dynamics=self._dynamics,
-            args=search_args,
-            state_type=MorpionState,
-            master_state_value_evaluator=self._build_master_evaluator(None),
-            random_generator=self._random_generator,
-            state_representation_factory=None,
-            node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
-        )
+        try:
+            runtime = load_search_from_checkpoint_payload(
+                payload,
+                state_codec=self._state_codec,
+                dynamics=self._dynamics,
+                args=search_args,
+                state_type=MorpionState,
+                master_state_value_evaluator=self._build_master_evaluator(None),
+                random_generator=self._random_generator,
+                state_representation_factory=None,
+                node_tree_evaluation_factory=NodeMaxEvaluationFactory(),
+            )
+        finally:
+            payload = None
         runtime_elapsed_s = time.perf_counter() - runtime_started_at
         rss_after_mb = _current_rss_mb()
         LOGGER.info(
@@ -735,37 +735,11 @@ def load_morpion_search_checkpoint_payload(
     try:
         path_stat = resolved_path.stat()
     except FileNotFoundError as exc:
-        _CHECKPOINT_PAYLOAD_CACHE.pop(resolved_path, None)
         raise InvalidMorpionSearchCheckpointError(
             resolved_path,
             "file does not exist",
         ) from exc
 
-    cache_entry = _CHECKPOINT_PAYLOAD_CACHE.get(resolved_path)
-    if cache_entry is not None:
-        cached_size, cached_mtime_ns, cached_payload = cache_entry
-        if (
-            cached_size == path_stat.st_size
-            and cached_mtime_ns == path_stat.st_mtime_ns
-        ):
-            LOGGER.info("[checkpoint] load_cache_hit path=%s", str(resolved_path))
-            total_s = time.perf_counter() - started_at
-            node_count, anchor_count, delta_count = _checkpoint_node_counts(
-                cached_payload
-            )
-            _log_checkpoint_metrics(
-                "payload_load",
-                CheckpointIoMetrics(
-                    path=str(resolved_path),
-                    bytes=path_stat.st_size,
-                    total_s=total_s,
-                    node_count=node_count,
-                    anchor_count=anchor_count,
-                    delta_count=delta_count,
-                    cache="hit",
-                ),
-            )
-            return cached_payload
     try:
         json_read_started_at = time.perf_counter()
         with open(resolved_path, encoding="utf-8") as handle:
@@ -822,11 +796,8 @@ def load_morpion_search_checkpoint_payload(
                 cache="miss",
             ),
         )
-        _CHECKPOINT_PAYLOAD_CACHE[resolved_path] = (
-            path_stat.st_size,
-            path_stat.st_mtime_ns,
-            payload,
-        )
+        raw_payload = None
+        normalized_payload = None
     except Exception as exc:
         raise InvalidMorpionSearchCheckpointError(
             resolved_path,
