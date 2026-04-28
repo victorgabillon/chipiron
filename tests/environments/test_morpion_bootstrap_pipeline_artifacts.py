@@ -7,6 +7,10 @@ import json
 import sys
 from pathlib import Path
 from types import ModuleType
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 import pytest
 
@@ -533,12 +537,11 @@ def test_missing_reevaluation_patch(tmp_path: Path) -> None:
     ],
 )
 def test_invalid_reevaluation_artifacts_reject(
-    builder: object,
+    builder: Callable[[], object],
     match: str,
 ) -> None:
     """Malformed reevaluation artifacts should fail with field-specific errors."""
     with pytest.raises(InvalidMorpionPipelineArtifactError, match=match):
-        assert callable(builder)
         builder()
 
 

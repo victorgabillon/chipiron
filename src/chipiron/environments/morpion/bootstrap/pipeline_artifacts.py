@@ -151,7 +151,11 @@ def _optional_str(value: object, *, field_name: str) -> str | None:
 
 def _non_negative_int(value: object, *, field_name: str) -> int:
     """Return one validated non-negative integer field."""
-    return _require_generation(value, field_name=field_name)
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise _invalid_field_error(field_name, "must be a non-negative integer")
+    if value < 0:
+        raise _invalid_field_error(field_name, "must be a non-negative integer")
+    return value
 
 
 def _optional_generation(value: object, *, field_name: str) -> int | None:
