@@ -399,7 +399,9 @@ def build_backup_target_diagnostics(
     }
 
 
-def terminal_path_nodes(snapshot: TrainingTreeSnapshot) -> tuple[TrainingNodeSnapshot, ...]:
+def terminal_path_nodes(
+    snapshot: TrainingTreeSnapshot,
+) -> tuple[TrainingNodeSnapshot, ...]:
     """Return the root-to-node chain for the deepest terminal/exact snapshot node."""
     terminal_nodes = _terminal_or_exact_nodes(snapshot)
     if not terminal_nodes:
@@ -655,8 +657,7 @@ def _numeric_summary(values: list[float]) -> dict[str, object]:
         "max": sorted_values[-1],
         "mean": sum(values) / float(len(values)),
         "quantiles": {
-            str(quantile): _quantile(sorted_values, quantile)
-            for quantile in quantiles
+            str(quantile): _quantile(sorted_values, quantile) for quantile in quantiles
         },
     }
 
@@ -735,9 +736,7 @@ def _mean_squared_error(
 def _backed_up_row_status(rows: list[dict[str, object]]) -> dict[str, object]:
     """Summarize backed-up rows by exact/terminal versus frontier-like status."""
     backed_up_rows = [row for row in rows if row["has_backed_up_value"] is True]
-    exact_rows = [
-        row for row in backed_up_rows if row["is_exact_or_terminal"] is True
-    ]
+    exact_rows = [row for row in backed_up_rows if row["is_exact_or_terminal"] is True]
     frontier_rows = [
         row for row in backed_up_rows if row["is_exact_or_terminal"] is False
     ]

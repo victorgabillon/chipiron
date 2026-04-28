@@ -149,7 +149,9 @@ class MemoryDiagnostics:
             len(type_counts),
         )
         for type_name, count in type_counts.most_common(max(self._config.top_n, 0)):
-            delta = None if previous_counts is None else count - previous_counts[type_name]
+            delta = (
+                None if previous_counts is None else count - previous_counts[type_name]
+            )
             LOGGER.info(
                 "[memory_gc_type] tag=%s type=%s count=%s delta=%s",
                 tag,
@@ -220,9 +222,7 @@ class MemoryDiagnostics:
             LOGGER.exception("[memory_referrers] tag=%s diagnostics_failed=true", tag)
 
     def _log_referrers_impl(self, tag: str) -> None:
-        patterns = (
-            self._config.referrer_type_patterns or DEFAULT_REFERRER_TYPE_PATTERNS
-        )
+        patterns = self._config.referrer_type_patterns or DEFAULT_REFERRER_TYPE_PATTERNS
         max_objects_per_type = max(self._config.referrer_max_objects_per_type, 0)
         max_depth = max(self._config.referrer_max_depth, 0)
         top_n = max(self._config.referrer_top_n, 0)
@@ -276,8 +276,7 @@ class MemoryDiagnostics:
                 for index, obj in enumerate(examples, start=1):
                     object_path = f"{type_name}[{index}]"
                     LOGGER.info(
-                        "[memory_referrer_object] tag=%s path=%s object_id=%s "
-                        "repr=%s",
+                        "[memory_referrer_object] tag=%s path=%s object_id=%s repr=%s",
                         tag,
                         object_path,
                         hex(id(obj)),
@@ -391,9 +390,7 @@ def _object_type_key(obj: object) -> str:
 
 def _matches_type_patterns(type_name: str, patterns: tuple[str, ...]) -> bool:
     return any(
-        pattern == type_name
-        or pattern in type_name
-        or fnmatchcase(type_name, pattern)
+        pattern == type_name or pattern in type_name or fnmatchcase(type_name, pattern)
         for pattern in patterns
     )
 

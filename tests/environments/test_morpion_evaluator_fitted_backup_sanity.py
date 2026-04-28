@@ -168,7 +168,9 @@ if "chipiron.environments.morpion.bootstrap.evaluator_diagnostics" not in sys.mo
     )
 
 if "chipiron.environments.morpion.bootstrap.evaluator_family" not in sys.modules:
-    _family_stub = ModuleType("chipiron.environments.morpion.bootstrap.evaluator_family")
+    _family_stub = ModuleType(
+        "chipiron.environments.morpion.bootstrap.evaluator_family"
+    )
 
     @dataclass(frozen=True, slots=True)
     class _MorpionEvaluatorsConfig:
@@ -303,9 +305,9 @@ if (
         "chipiron.environments.morpion.players.evaluators.neural_networks"
     )
     _nn_stub.__path__ = [str(_MORPION_NN_PACKAGE_ROOT)]
-    sys.modules[
-        "chipiron.environments.morpion.players.evaluators.neural_networks"
-    ] = _nn_stub
+    sys.modules["chipiron.environments.morpion.players.evaluators.neural_networks"] = (
+        _nn_stub
+    )
 
 if (
     "chipiron.environments.morpion.players.evaluators.neural_networks.model"
@@ -830,7 +832,9 @@ def test_two_tiny_iterations_write_summary_and_artifacts(
     monkeypatch.setattr(fitted_module, "_initial_model", lambda **_kwargs: model)
     feature_cache_builds: list[int] = []
 
-    def _fake_feature_cache(snapshot: TrainingTreeSnapshot, **_kwargs: object) -> object:
+    def _fake_feature_cache(
+        snapshot: TrainingTreeSnapshot, **_kwargs: object
+    ) -> object:
         feature_cache_builds.append(len(snapshot.nodes))
         return fitted_module.SnapshotFeatureCache(
             node_ids=(),
@@ -842,7 +846,9 @@ def test_two_tiny_iterations_write_summary_and_artifacts(
         "build_snapshot_feature_cache",
         _fake_feature_cache,
     )
-    monkeypatch.setattr(fitted_module, "_predict_rows", lambda *_args, **_kwargs: [0.0, 0.0])
+    monkeypatch.setattr(
+        fitted_module, "_predict_rows", lambda *_args, **_kwargs: [0.0, 0.0]
+    )
 
     def _fake_train(_args: object) -> tuple[MorpionRegressor, dict[str, float]]:
         return model, {"final_loss": 0.25, "num_epochs": 1.0, "num_samples": 2.0}
@@ -893,9 +899,7 @@ def test_two_tiny_iterations_write_summary_and_artifacts(
     assert (run_dir / "iteration_000" / "rows.json").is_file()
     assert (run_dir / "iteration_001" / "rows.json").is_file()
     assert (run_dir / "iteration_000" / "target_diagnostics.json").is_file()
-    assert (
-        run_dir / "iteration_001" / "diagnostics" / "linear_5.json"
-    ).is_file()
+    assert (run_dir / "iteration_001" / "diagnostics" / "linear_5.json").is_file()
 
     summary_data = json.loads((run_dir / "summary.json").read_text(encoding="utf-8"))
     assert summary["num_iterations"] == 2
@@ -918,4 +922,6 @@ def test_two_tiny_iterations_write_summary_and_artifacts(
     assert row_metadata["family_representative_node_id"] == "root"
     assert row_metadata["family_size"] == 1
     assert snapshot.nodes is original_nodes
-    assert cast("TrainingNodeSnapshot", snapshot.nodes[0]).backed_up_value_scalar is None
+    assert (
+        cast("TrainingNodeSnapshot", snapshot.nodes[0]).backed_up_value_scalar is None
+    )

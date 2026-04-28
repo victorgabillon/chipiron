@@ -75,6 +75,7 @@ FittedBackupSelectionMode = Literal[
     "top_terminal_paths",
 ]
 
+
 class MissingFittedBackupTargetError(ValueError):
     """Raised when a snapshot node cannot receive a fitted backup target."""
 
@@ -96,7 +97,9 @@ class UnknownFittedBackupEvaluatorError(ValueError):
 
     def __init__(self, evaluator_name: str) -> None:
         """Initialize the unknown evaluator error."""
-        super().__init__(f"Unknown Morpion fitted-backup evaluator: {evaluator_name!r}.")
+        super().__init__(
+            f"Unknown Morpion fitted-backup evaluator: {evaluator_name!r}."
+        )
 
 
 class UnknownFittedBackupSelectionModeError(ValueError):
@@ -574,9 +577,7 @@ def _select_backup_node_ids(
     if backup_selection == "exact_terminal_plus_prefix":
         kept_node_ids = set(prefix_node_ids)
         exact_or_terminal_node_ids = {
-            node.node_id
-            for node in snapshot.nodes
-            if node.is_exact or node.is_terminal
+            node.node_id for node in snapshot.nodes if node.is_exact or node.is_terminal
         }
         kept_node_ids.update(exact_or_terminal_node_ids)
         _add_ancestors(
@@ -693,7 +694,9 @@ def _run_output_dir(
     """Return the fitted-backup output directory."""
     if run_name is None:
         timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ")
-        generation_text = "latest" if generation is None else f"generation_{generation:06d}"
+        generation_text = (
+            "latest" if generation is None else f"generation_{generation:06d}"
+        )
         run_name = f"{generation_text}_{timestamp}"
     return work_dir / "evaluator_fitted_backup_sanity" / run_name
 
@@ -880,7 +883,9 @@ def _predict_snapshot_nodes(
         return {}
     model.eval()
     with torch.no_grad():
-        raw_predictions = model(torch.stack(tensors)).squeeze(-1).detach().cpu().tolist()
+        raw_predictions = (
+            model(torch.stack(tensors)).squeeze(-1).detach().cpu().tolist()
+        )
     if isinstance(raw_predictions, float):
         raw_predictions = [raw_predictions]
     predictions = {
@@ -966,21 +971,23 @@ def _rows_from_fitted_values(
                     "target_source": node_value.target_source,
                     "raw_target": node_value.backed_up_target,
                     "effective_target": effective_target,
-            "family_representative_node_id": (
-                family_targets.representative_by_node.get(node_id)
-            ),
-            "family_size": family_targets.family_size_by_node.get(node_id),
-            "family_has_exact_or_terminal": (
-                family_targets.family_has_exact_by_node.get(node_id, False)
-            ),
-            "family_exact_target": (
-                family_targets.family_exact_target_by_node.get(node_id)
-            ),
-            "family_target_rule": family_targets.family_target_rule_by_node.get(node_id),
-            "family_num_exact_or_terminal": (
-                family_targets.family_num_exact_by_node.get(node_id, 0)
-            ),
-            "previous_backed_up_target": node_value.previous_backed_up_target,
+                    "family_representative_node_id": (
+                        family_targets.representative_by_node.get(node_id)
+                    ),
+                    "family_size": family_targets.family_size_by_node.get(node_id),
+                    "family_has_exact_or_terminal": (
+                        family_targets.family_has_exact_by_node.get(node_id, False)
+                    ),
+                    "family_exact_target": (
+                        family_targets.family_exact_target_by_node.get(node_id)
+                    ),
+                    "family_target_rule": family_targets.family_target_rule_by_node.get(
+                        node_id
+                    ),
+                    "family_num_exact_or_terminal": (
+                        family_targets.family_num_exact_by_node.get(node_id, 0)
+                    ),
+                    "previous_backed_up_target": node_value.previous_backed_up_target,
                     "abs_target_change": node_value.abs_target_change,
                 },
             )
@@ -1053,7 +1060,9 @@ def _predict_rows(
         ),
         metadata={},
     )
-    predictions_by_id = _predict_snapshot_nodes(snapshot=snapshot, model=model, spec=spec)
+    predictions_by_id = _predict_snapshot_nodes(
+        snapshot=snapshot, model=model, spec=spec
+    )
     return [predictions_by_id[row.node_id] for row in rows.rows]
 
 
@@ -1090,7 +1099,10 @@ def _iteration_summary(
         []
         if previous_effective_targets is None
         else [
-            abs(family_targets.effective_targets[node_id] - previous_effective_targets[node_id])
+            abs(
+                family_targets.effective_targets[node_id]
+                - previous_effective_targets[node_id]
+            )
             for node_id in selected_node_ids
             if node_id in previous_effective_targets
         ]
@@ -1100,26 +1112,34 @@ def _iteration_summary(
         for before, after in zip(previous_predictions, next_predictions, strict=True)
     ]
     row_effective_minus_raw = [
-        abs(float(row.metadata.get("effective_target", row.target_value)) - float(row.metadata["raw_target"]))
+        abs(
+            float(row.metadata.get("effective_target", row.target_value))
+            - float(row.metadata["raw_target"])
+        )
         for row in rows.rows
         if "raw_target" in row.metadata
     ]
     row_effective_minus_raw_exact_families = [
-        abs(float(row.metadata.get("effective_target", row.target_value)) - float(row.metadata["raw_target"]))
+        abs(
+            float(row.metadata.get("effective_target", row.target_value))
+            - float(row.metadata["raw_target"])
+        )
         for row in rows.rows
         if "raw_target" in row.metadata
         and bool(row.metadata.get("family_has_exact_or_terminal"))
     ]
     row_effective_minus_raw_non_exact_families = [
-        abs(float(row.metadata.get("effective_target", row.target_value)) - float(row.metadata["raw_target"]))
+        abs(
+            float(row.metadata.get("effective_target", row.target_value))
+            - float(row.metadata["raw_target"])
+        )
         for row in rows.rows
         if "raw_target" in row.metadata
         and not bool(row.metadata.get("family_has_exact_or_terminal"))
     ]
     changed_row_count = sum(value > 1e-12 for value in row_effective_minus_raw)
     exact_family_row_count = sum(
-        bool(row.metadata.get("family_has_exact_or_terminal"))
-        for row in rows.rows
+        bool(row.metadata.get("family_has_exact_or_terminal")) for row in rows.rows
     )
     exact_family_representatives = {
         str(row.metadata.get("family_representative_node_id"))
@@ -1129,7 +1149,8 @@ def _iteration_summary(
     }
     root_raw_target = (
         node_values[rows.metadata["root_node_id"]].backed_up_target
-        if "root_node_id" in rows.metadata and rows.metadata["root_node_id"] in node_values
+        if "root_node_id" in rows.metadata
+        and rows.metadata["root_node_id"] in node_values
         else None
     )
     root_effective_target = (
@@ -1142,10 +1163,14 @@ def _iteration_summary(
         "iteration": iteration,
         "num_rows": len(rows.rows),
         "exact_or_terminal_count": sum(
-            1 for value in selected_values if value.target_source == "ground_truth_exact_or_terminal"
+            1
+            for value in selected_values
+            if value.target_source == "ground_truth_exact_or_terminal"
         ),
         "frontier_prediction_count": sum(
-            1 for value in selected_values if value.target_source == "frontier_prediction"
+            1
+            for value in selected_values
+            if value.target_source == "frontier_prediction"
         ),
         "child_backup_count": sum(
             1 for value in selected_values if value.target_source == "child_backup"

@@ -112,9 +112,7 @@ def test_memory_diagnostics_gc_growth_does_not_retain_objects(
 
     assert marker_ref() is None
     assert any("[memory_gc] tag=gc" in record.message for record in caplog.records)
-    assert any(
-        "[memory_gc_type] tag=gc" in record.message for record in caplog.records
-    )
+    assert any("[memory_gc_type] tag=gc" in record.message for record in caplog.records)
 
 
 def test_memory_diagnostics_tracemalloc_logs_diffs(
@@ -185,7 +183,9 @@ def test_memory_diagnostics_torch_tensors_logs_retained_tensor_summary(
     del tensor
     diagnostics.close()
 
-    assert any("[memory_torch] tag=torch" in record.message for record in caplog.records)
+    assert any(
+        "[memory_torch] tag=torch" in record.message for record in caplog.records
+    )
     assert any(
         "[memory_torch_kind] tag=torch" in record.message for record in caplog.records
     )

@@ -1045,7 +1045,9 @@ def test_resume_uses_runtime_checkpoint_for_legacy_run_state_without_dedicated_f
     )
 
 
-def test_resolve_runtime_restore_path_prefers_runtime_checkpoint(tmp_path: Path) -> None:
+def test_resolve_runtime_restore_path_prefers_runtime_checkpoint(
+    tmp_path: Path,
+) -> None:
     """Runtime restore should prefer a real checkpoint over a tree export fallback."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     paths.ensure_directories()

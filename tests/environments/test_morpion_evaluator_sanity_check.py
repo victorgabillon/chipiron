@@ -265,7 +265,9 @@ def test_sanity_check_writes_rows_diagnostics_and_summary(tmp_path: Path) -> Non
     """A tiny real snapshot should produce the expected sanity artifacts."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     paths.ensure_directories()
-    save_training_tree_snapshot(_branching_snapshot(), paths.tree_snapshot_path_for_generation(1))
+    save_training_tree_snapshot(
+        _branching_snapshot(), paths.tree_snapshot_path_for_generation(1)
+    )
 
     summary = run_evaluator_sanity_check(
         MorpionEvaluatorSanityArgs(

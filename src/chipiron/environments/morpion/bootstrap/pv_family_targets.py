@@ -40,9 +40,7 @@ def principal_variation_families_from_selected_child(
     """Group nodes by the representative reached by following selected children."""
     known_node_ids = set(selected_child_by_node)
     known_node_ids.update(
-        child_id
-        for child_id in selected_child_by_node.values()
-        if child_id is not None
+        child_id for child_id in selected_child_by_node.values() if child_id is not None
     )
     families: dict[str, list[str]] = {}
     for node_id in sorted(known_node_ids):
@@ -52,8 +50,7 @@ def principal_variation_families_from_selected_child(
         )
         families.setdefault(representative, []).append(node_id)
     return {
-        representative: tuple(node_ids)
-        for representative, node_ids in families.items()
+        representative: tuple(node_ids) for representative, node_ids in families.items()
     }
 
 
@@ -129,15 +126,13 @@ def family_adjusted_targets(
                 family_target_rule_by_node[node_id] = "pv_min_prediction"
             elif family_target_policy == "pv_blend_mean_prediction":
                 effective_targets[node_id] = (
-                    (1.0 - family_prediction_blend) * raw_targets[node_id]
-                    + family_prediction_blend * family_mean
-                )
+                    1.0 - family_prediction_blend
+                ) * raw_targets[node_id] + family_prediction_blend * family_mean
                 family_target_rule_by_node[node_id] = "pv_blend_mean_prediction"
             elif family_target_policy == "pv_blend_min_prediction":
                 effective_targets[node_id] = (
-                    (1.0 - family_prediction_blend) * raw_targets[node_id]
-                    + family_prediction_blend * family_min
-                )
+                    1.0 - family_prediction_blend
+                ) * raw_targets[node_id] + family_prediction_blend * family_min
                 family_target_rule_by_node[node_id] = "pv_blend_min_prediction"
             elif family_target_policy == "pv_exact_then_mean_prediction":
                 effective_targets[node_id] = family_mean
@@ -147,15 +142,13 @@ def family_adjusted_targets(
                 family_target_rule_by_node[node_id] = "pv_min_prediction"
             elif family_target_policy == "pv_exact_then_blend_mean_prediction":
                 effective_targets[node_id] = (
-                    (1.0 - family_prediction_blend) * raw_targets[node_id]
-                    + family_prediction_blend * family_mean
-                )
+                    1.0 - family_prediction_blend
+                ) * raw_targets[node_id] + family_prediction_blend * family_mean
                 family_target_rule_by_node[node_id] = "pv_blend_mean_prediction"
             elif family_target_policy == "pv_exact_then_blend_min_prediction":
                 effective_targets[node_id] = (
-                    (1.0 - family_prediction_blend) * raw_targets[node_id]
-                    + family_prediction_blend * family_min
-                )
+                    1.0 - family_prediction_blend
+                ) * raw_targets[node_id] + family_prediction_blend * family_min
                 family_target_rule_by_node[node_id] = "pv_blend_min_prediction"
             else:
                 raise ValueError(  # noqa: TRY003
@@ -173,7 +166,9 @@ def family_adjusted_targets(
             raw_target if node_id in exact_or_terminal_node_ids else None
         )
         family_target_rule_by_node[node_id] = (
-            "hard_exact_anchor" if node_id in exact_or_terminal_node_ids else "raw_backup"
+            "hard_exact_anchor"
+            if node_id in exact_or_terminal_node_ids
+            else "raw_backup"
         )
         family_num_exact_by_node[node_id] = int(node_id in exact_or_terminal_node_ids)
     family_sizes = [len(node_ids) for node_ids in families.values()]

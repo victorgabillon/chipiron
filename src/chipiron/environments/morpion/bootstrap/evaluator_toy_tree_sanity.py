@@ -93,7 +93,9 @@ class ToyTree:
         if self.root_id not in self.nodes:
             raise ValueError(f"Toy tree root {self.root_id} does not exist.")
         if len(self.nodes) >= 50:
-            raise ValueError("Toy tree diagnostics are intended for fewer than 50 nodes.")
+            raise ValueError(
+                "Toy tree diagnostics are intended for fewer than 50 nodes."
+            )
 
         root = self.nodes[self.root_id]
         if root.parent_id is not None:
@@ -153,7 +155,9 @@ class ToyTree:
     def node_ids_by_depth(self, *, reverse: bool = False) -> tuple[int, ...]:
         """Return node IDs sorted by tree depth."""
         depths = self.depths()
-        return tuple(sorted(self.nodes, key=lambda node_id: depths[node_id], reverse=reverse))
+        return tuple(
+            sorted(self.nodes, key=lambda node_id: depths[node_id], reverse=reverse)
+        )
 
     def depths(self) -> dict[int, int]:
         """Return depth for every node."""
@@ -471,7 +475,9 @@ def compute_backed_up_values(
 
         if not node.child_ids:
             if node_id not in evaluator_predictions:
-                raise ValueError(f"Missing evaluator prediction for frontier node {node_id}.")
+                raise ValueError(
+                    f"Missing evaluator prediction for frontier node {node_id}."
+                )
             backed_up[node_id] = ToyBackedUpValue(
                 value=evaluator_predictions[node_id],
                 source="frontier_prediction",
@@ -495,9 +501,13 @@ def compute_backed_up_values(
         argmax_child_id = node.child_ids[argmax_offset]
 
         if backup_operator == "softmax":
-            value = _temperature_logsumexp(backup_values, temperature=backup_temperature)
+            value = _temperature_logsumexp(
+                backup_values, temperature=backup_temperature
+            )
             support_exact_count = sum(child.support_exact_count for child in children)
-            support_frontier_count = sum(child.support_frontier_count for child in children)
+            support_frontier_count = sum(
+                child.support_frontier_count for child in children
+            )
             exact_distances = [
                 child.distance_to_exact + 1
                 for child in children
@@ -546,9 +556,15 @@ def build_training_rows(
         if node_id == tree.root_id and not include_root:
             continue
         backed = backed_up_values[node_id]
-        if train_targets == "exact_only" and backed.source != "ground_truth_exact_or_terminal":
+        if (
+            train_targets == "exact_only"
+            and backed.source != "ground_truth_exact_or_terminal"
+        ):
             continue
-        if train_targets == "exact_plus_child" and backed.source == "frontier_prediction":
+        if (
+            train_targets == "exact_plus_child"
+            and backed.source == "frontier_prediction"
+        ):
             continue
         if (
             train_targets == "all"
@@ -559,7 +575,9 @@ def build_training_rows(
         if train_targets not in {"exact_only", "exact_plus_child", "all"}:
             raise ValueError(f"Unknown toy train target selection: {train_targets!r}.")
 
-        target = backed.value if effective_targets is None else effective_targets[node_id]
+        target = (
+            backed.value if effective_targets is None else effective_targets[node_id]
+        )
         if use_direct_targets and backed.source != "ground_truth_exact_or_terminal":
             target = prediction_before[node_id]
         rows.append(
@@ -592,8 +610,7 @@ def principal_variation_families(
         )
         families.setdefault(representative, []).append(node_id)
     return {
-        representative: tuple(node_ids)
-        for representative, node_ids in families.items()
+        representative: tuple(node_ids) for representative, node_ids in families.items()
     }
 
 
@@ -617,7 +634,9 @@ def family_adjusted_targets(
         raise ValueError("Family prediction blend must be between 0 and 1.")
 
     targets: dict[int, float] = {}
-    for family_node_ids in principal_variation_families(tree, backed_up_values).values():
+    for family_node_ids in principal_variation_families(
+        tree, backed_up_values
+    ).values():
         exact_node_ids = [
             node_id
             for node_id in family_node_ids
@@ -649,10 +668,9 @@ def family_adjusted_targets(
             ):
                 targets[node_id] = exact_family_target
             elif _is_blend_family_policy(family_target_policy):
-                targets[node_id] = (
-                    (1.0 - family_prediction_blend) * backed_up_values[node_id].value
-                    + family_prediction_blend * family_target
-                )
+                targets[node_id] = (1.0 - family_prediction_blend) * backed_up_values[
+                    node_id
+                ].value + family_prediction_blend * family_target
             else:
                 targets[node_id] = family_target
     return targets
@@ -1117,9 +1135,8 @@ def _backup_child_value(
 ) -> float:
     if backup_operator != "clipped_max":
         return child.value
-    pure_frontier = (
-        child.source == "frontier_prediction"
-        or (child.support_frontier_count > 0 and child.support_exact_count == 0)
+    pure_frontier = child.source == "frontier_prediction" or (
+        child.support_frontier_count > 0 and child.support_exact_count == 0
     )
     return min(child.value, frontier_clip) if pure_frontier else child.value
 
@@ -1183,8 +1200,7 @@ def _linear_weights(model: nn.Module) -> tuple[float, ...] | None:
     if not isinstance(model, ToyLinearNoBiasNet):
         return None
     return tuple(
-        float(value)
-        for value in model.linear.weight.detach().cpu().flatten().tolist()
+        float(value) for value in model.linear.weight.detach().cpu().flatten().tolist()
     )
 
 
@@ -1266,9 +1282,9 @@ def _iteration_metric(
         ]
     )
     frontier_node_ids = [
-        node_id for node_id, node in tree.nodes.items() if not node.child_ids and not (
-            node.is_terminal or node.is_exact
-        )
+        node_id
+        for node_id, node in tree.nodes.items()
+        if not node.child_ids and not (node.is_terminal or node.is_exact)
     ]
     row_counts = _row_source_counts(rows)
     max_abs_prediction = max(abs(value) for value in prediction_after.values())
@@ -1299,7 +1315,9 @@ def _iteration_metric(
         num_frontier_rows=row_counts["frontier_prediction"],
         weighted_train_loss_final=final_loss,
         unweighted_mae_all_rows=_row_mae(rows, prediction_after),
-        mae_exact=_row_mae(rows, prediction_after, source="ground_truth_exact_or_terminal"),
+        mae_exact=_row_mae(
+            rows, prediction_after, source="ground_truth_exact_or_terminal"
+        ),
         mae_child_backup=_row_mae(rows, prediction_after, source="child_backup"),
         mae_frontier=_row_mae(rows, prediction_after, source="frontier_prediction"),
         max_abs_prediction=max_abs_prediction,
@@ -1393,9 +1411,9 @@ def _summary(
     elif status == "stable" and final.max_abs_target_drift_all < 1e-3:
         status = "converged"
     frontier_node_ids = [
-        node_id for node_id, node in tree.nodes.items() if not node.child_ids and not (
-            node.is_terminal or node.is_exact
-        )
+        node_id
+        for node_id, node in tree.nodes.items()
+        if not node.child_ids and not (node.is_terminal or node.is_exact)
     ]
     return {
         "status": status,
@@ -1519,7 +1537,9 @@ def _write_tree_config(path: Path, tree: ToyTree, config: ToyRunConfig) -> None:
         "root_id": tree.root_id,
         "nodes": [asdict(tree.nodes[node_id]) for node_id in tree.node_ids_by_depth()],
     }
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
 
 
 def _write_csv(path: Path, rows: tuple[object, ...]) -> None:

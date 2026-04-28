@@ -223,7 +223,9 @@ def _patch_reported_losses(
     def _patched_train(train_args: object) -> object:
         _model, metrics = real_train(train_args)
         evaluator_name = Path(
-            str(cast("bootstrap_loop_module.MorpionTrainingArgs", train_args).output_dir)
+            str(
+                cast("bootstrap_loop_module.MorpionTrainingArgs", train_args).output_dir
+            )
         ).name
         metrics["final_loss"] = loss_by_evaluator_name[evaluator_name]
         return _model, metrics

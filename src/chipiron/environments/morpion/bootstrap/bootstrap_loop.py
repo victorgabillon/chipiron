@@ -795,12 +795,11 @@ def _build_and_save_dataset_for_generation(
         LOGGER.info(
             "[record] resolve_done elapsed=%.3fs best_total_points=%s",
             time.perf_counter() - record_started_at,
-            None
-            if record_status is None
-            else record_status.current_best_total_points,
+            None if record_status is None else record_status.current_best_total_points,
         )
     if record_status is None:
-        raise MissingBootstrapRecordStatusError
+        missing_record_status_error = MissingBootstrapRecordStatusError()
+        raise missing_record_status_error
     LOGGER.info("[frontier] resolve_start nodes=%s", len(snapshot.nodes))
     frontier_started_at = time.perf_counter()
     frontier_candidate_count = 0
@@ -823,7 +822,8 @@ def _build_and_save_dataset_for_generation(
             else frontier_status.current_best_total_points,
         )
     if frontier_status is None:
-        raise MissingBootstrapFrontierStatusError
+        missing_frontier_status_error = MissingBootstrapFrontierStatusError()
+        raise missing_frontier_status_error
 
     LOGGER.info("[dataset] extract_start snapshot_nodes=%s", len(snapshot.nodes))
     memory.log("before_dataset_extract")
@@ -855,7 +855,8 @@ def _build_and_save_dataset_for_generation(
             time.perf_counter() - extract_started_at,
         )
     if rows is None:
-        raise MissingBootstrapDatasetRowsError
+        missing_dataset_rows_error = MissingBootstrapDatasetRowsError()
+        raise missing_dataset_rows_error
     LOGGER.info(
         "[dataset] family_targets policy=%s blend=%.3f "
         "rows_in_exact_family=%s num_exact_families=%s "
@@ -886,9 +887,7 @@ def _build_and_save_dataset_for_generation(
         dataset_elapsed_s,
     )
 
-    relative_training_snapshot_path = paths.relative_to_work_dir(
-        training_snapshot_path
-    )
+    relative_training_snapshot_path = paths.relative_to_work_dir(training_snapshot_path)
     relative_rows_path = paths.relative_to_work_dir(rows_path)
     return BootstrapDatasetBuildResult(
         snapshot=snapshot,
@@ -997,7 +996,8 @@ def _train_and_select_evaluators(
             selected_evaluator_name,
         )
     if selected_evaluator_name is None:
-        raise MissingBootstrapSelectedEvaluatorError
+        missing_selected_evaluator_error = MissingBootstrapSelectedEvaluatorError()
+        raise missing_selected_evaluator_error
     training_duration_s = time.perf_counter() - training_started_at
     memory.log("after_training")
     LOGGER.info("[train] done elapsed=%.3fs", training_duration_s)
