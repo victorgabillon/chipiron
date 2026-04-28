@@ -138,6 +138,12 @@ from .history_view import (
     tree_num_nodes_series,
 )
 from .launcher import MorpionBootstrapLauncherArgs, run_morpion_bootstrap_experiment
+from .pipeline_config import (
+    DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
+    DEFAULT_MORPION_PIPELINE_MODE,
+    MorpionEvaluatorUpdatePolicy,
+    MorpionPipelineMode,
+)
 from .process_control import (
     MorpionBootstrapProcessAlreadyRunningError,
     MorpionBootstrapProcessControlError,
@@ -203,6 +209,8 @@ __all__ = [
     "BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY",
     "BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY",
     "CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET",
+    "DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY",
+    "DEFAULT_MORPION_PIPELINE_MODE",
     "DEFAULT_MORPION_TREE_BRANCH_LIMIT",
     "EMPTY_DATASET_TRAINING_SKIPPED_REASON",
     "MORPION_BOOTSTRAP_GAME",
@@ -264,9 +272,11 @@ __all__ = [
     "MorpionBootstrapTreeStatus",
     "MorpionEvaluatorMetrics",
     "MorpionEvaluatorSpec",
+    "MorpionEvaluatorUpdatePolicy",
     "MorpionEvaluatorsConfig",
     "MorpionFrontierNodeCandidate",
     "MorpionFrontierResolution",
+    "MorpionPipelineMode",
     "MorpionRecordProgressSummary",
     "MorpionSearchRunner",
     "NoSelectableMorpionEvaluatorError",

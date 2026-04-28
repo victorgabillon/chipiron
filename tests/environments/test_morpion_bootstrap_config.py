@@ -56,6 +56,8 @@ from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 from chipiron.environments.morpion.bootstrap import (
     BOOTSTRAP_CONFIG_HASH_METADATA_KEY,
     CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+    DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
+    DEFAULT_MORPION_PIPELINE_MODE,
     DEFAULT_MORPION_TREE_BRANCH_LIMIT,
     MORPION_BOOTSTRAP_GAME,
     MORPION_BOOTSTRAP_INITIAL_PATTERN,
@@ -147,9 +149,11 @@ class FakeMorpionSearchRunner:
         tree_snapshot_path: str | Path | None,
         model_bundle_path: str | Path | None,
         effective_runtime_config: object | None = None,
+        *,
+        reevaluate_tree: bool = False,
     ) -> None:
         """Record the latest tree/model inputs used to initialize the runner."""
-        _ = effective_runtime_config
+        _ = effective_runtime_config, reevaluate_tree
         self.load_calls.append(
             (
                 None if tree_snapshot_path is None else str(tree_snapshot_path),
@@ -245,6 +249,8 @@ def _make_config() -> MorpionBootstrapConfig:
             use_backed_up_value=True,
         ),
         evaluators=_multi_evaluator_config(),
+        evaluator_update_policy="future_only",
+        pipeline_mode="single_process",
         metadata={"owner": "test"},
     )
 
@@ -273,6 +279,63 @@ def test_bootstrap_config_from_args_contains_expected_fields(tmp_path: Path) -> 
     assert config.dataset.use_backed_up_value is False
     assert config.runtime.tree_branch_limit == 96
     assert set(config.evaluators.evaluators) == {"linear", "mlp"}
+    assert config.evaluator_update_policy == DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY
+    assert config.pipeline_mode == DEFAULT_MORPION_PIPELINE_MODE
+
+
+def test_bootstrap_config_from_dict_defaults_missing_phase1_fields() -> None:
+    """Older persisted configs should load with phase-1 defaults."""
+    config = _make_config()
+    payload = {
+        "experiment": {
+            "game": config.experiment.game,
+            "variant": config.experiment.variant,
+            "initial_pattern": config.experiment.initial_pattern,
+            "initial_point_count": config.experiment.initial_point_count,
+        },
+        "runtime": {
+            "save_after_tree_growth_factor": config.runtime.save_after_tree_growth_factor,
+            "save_after_seconds": config.runtime.save_after_seconds,
+            "max_growth_steps_per_cycle": config.runtime.max_growth_steps_per_cycle,
+            "tree_branch_limit": config.runtime.tree_branch_limit,
+        },
+        "dataset": {
+            "require_exact_or_terminal": config.dataset.require_exact_or_terminal,
+            "min_depth": config.dataset.min_depth,
+            "min_visit_count": config.dataset.min_visit_count,
+            "max_rows": config.dataset.max_rows,
+            "use_backed_up_value": config.dataset.use_backed_up_value,
+            "family_target_policy": config.dataset.family_target_policy,
+            "family_prediction_blend": config.dataset.family_prediction_blend,
+        },
+        "evaluators": {
+            "evaluators": {
+                name: {
+                    "name": spec.name,
+                    "model_type": spec.model_type,
+                    "hidden_sizes": None if spec.hidden_sizes is None else list(spec.hidden_sizes),
+                    "num_epochs": spec.num_epochs,
+                    "batch_size": spec.batch_size,
+                    "learning_rate": spec.learning_rate,
+                    "feature_subset_name": spec.feature_subset_name,
+                    "feature_names": list(spec.feature_names),
+                }
+                for name, spec in config.evaluators.evaluators.items()
+            }
+        },
+        "metadata": dict(config.metadata),
+    }
+
+    loaded = cast(
+        "MorpionBootstrapConfig",
+        __import__(
+            "chipiron.environments.morpion.bootstrap.config",
+            fromlist=["bootstrap_config_from_dict"],
+        ).bootstrap_config_from_dict(payload),
+    )
+
+    assert loaded.evaluator_update_policy == "future_only"
+    assert loaded.pipeline_mode == "single_process"
 
 
 def test_first_run_writes_bootstrap_config(tmp_path: Path) -> None:

@@ -32,6 +32,10 @@ from .control import (
 )
 from .evaluator_family import CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET
 from .history import MorpionBootstrapLatestStatus, load_latest_bootstrap_status
+from .pipeline_config import (
+    DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
+    DEFAULT_MORPION_PIPELINE_MODE,
+)
 from .process_control import (
     mark_current_launcher_process_stopped,
     register_current_launcher_process,
@@ -377,6 +381,26 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         default=0.25,
     )
     parser.add_argument(
+        "--evaluator-update-policy",
+        choices=["future_only", "reevaluate_all", "reevaluate_frontier"],
+        default=DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
+        help=(
+            "How restored trees should use a newly selected evaluator. "
+            "'future_only' keeps existing node values and uses the evaluator only for future expansions. "
+            "'reevaluate_all' reevaluates existing nodes when supported. "
+            "'reevaluate_frontier' is reserved for future partial reevaluation."
+        ),
+    )
+    parser.add_argument(
+        "--pipeline-mode",
+        choices=["single_process", "artifact_pipeline"],
+        default=DEFAULT_MORPION_PIPELINE_MODE,
+        help=(
+            "Bootstrap execution mode. 'single_process' is the current in-process loop. "
+            "'artifact_pipeline' is reserved for future multi-process artifact pipeline mode."
+        ),
+    )
+    parser.add_argument(
         "--memory-diagnostics",
         action="store_true",
         help="Log lightweight process memory diagnostics at bootstrap cycle phases.",
@@ -449,6 +473,8 @@ def launcher_args_from_cli(
         save_after_tree_growth_factor=parsed.save_after_tree_growth_factor,
         max_rows=parsed.max_rows,
         use_backed_up_value=parsed.use_backed_up_value,
+        evaluator_update_policy=parsed.evaluator_update_policy,
+        pipeline_mode=parsed.pipeline_mode,
         dataset_family_target_policy=cast(
             "PvFamilyTargetPolicy",
             parsed.dataset_family_target_policy,

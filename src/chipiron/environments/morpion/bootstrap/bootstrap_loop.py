@@ -104,6 +104,12 @@ from .history import (
     MorpionEvaluatorMetrics,
 )
 from .memory_diagnostics import MemoryDiagnostics
+from .pipeline_config import (
+    DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
+    DEFAULT_MORPION_PIPELINE_MODE,
+    MorpionEvaluatorUpdatePolicy,
+    MorpionPipelineMode,
+)
 from .record_status import (
     MorpionBootstrapFrontierStatus,
     MorpionBootstrapRecordStatus,
@@ -157,6 +163,16 @@ def _tree_status_value_error(field_name: str) -> TypeError:
         f"Morpion bootstrap tree-status field `{field_name}` must use int values."
     )
 
+
+def _unknown_pipeline_mode_error(pipeline_mode: object) -> ValueError:
+    """Return the unknown-pipeline-mode validation error."""
+    return ValueError(f"Unknown Morpion pipeline mode: {pipeline_mode!r}")
+
+
+def _unknown_evaluator_update_policy_error(policy: object) -> ValueError:
+    """Return the unknown evaluator-update-policy validation error."""
+    return ValueError(f"Unknown Morpion evaluator update policy: {policy!r}")
+
 RUNTIME_CHECKPOINT_METADATA_KEY = "runtime_checkpoint_path"
 TRAINING_SKIPPED_REASON_METADATA_KEY = "training_skipped_reason"
 EMPTY_DATASET_TRAINING_SKIPPED_REASON = "empty_dataset"
@@ -191,6 +207,10 @@ class MorpionBootstrapArgs:
     shuffle: bool = True
     model_kind: str = "linear"
     hidden_dim: int | None = None
+    evaluator_update_policy: MorpionEvaluatorUpdatePolicy = (
+        DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY
+    )
+    pipeline_mode: MorpionPipelineMode = DEFAULT_MORPION_PIPELINE_MODE
     evaluators_config: MorpionEvaluatorsConfig | None = None
     evaluator_family_preset: str | None = None
 
@@ -223,6 +243,8 @@ class MorpionSearchRunner(Protocol):
         tree_snapshot_path: str | Path | None,
         model_bundle_path: str | Path | None,
         effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig | None = None,
+        *,
+        reevaluate_tree: bool = False,
     ) -> None:
         """Load existing search state or initialize a fresh one."""
         ...
@@ -317,6 +339,32 @@ def _validate_dataset_family_target_args(args: MorpionBootstrapArgs) -> None:
         raise ValueError("dataset_family_prediction_blend must be between 0 and 1.")  # noqa: TRY003
 
 
+def _validate_pipeline_mode(args: MorpionBootstrapArgs) -> None:
+    """Validate the configured bootstrap pipeline mode."""
+    if args.pipeline_mode == "single_process":
+        return
+    if args.pipeline_mode == "artifact_pipeline":
+        raise NotImplementedError(
+            "Morpion artifact_pipeline mode is reserved for the future multi-process "
+            "artifact pipeline. Use pipeline_mode='single_process' for now."
+        )
+    raise _unknown_pipeline_mode_error(args.pipeline_mode)
+
+
+def _reevaluate_tree_for_policy(policy: MorpionEvaluatorUpdatePolicy) -> bool:
+    """Resolve whether the runner should reevaluate existing tree nodes."""
+    if policy == "future_only":
+        return False
+    if policy == "reevaluate_all":
+        return True
+    if policy == "reevaluate_frontier":
+        raise NotImplementedError(
+            "Morpion evaluator_update_policy='reevaluate_frontier' is reserved "
+            "for future partial tree reevaluation."
+        )
+    raise _unknown_evaluator_update_policy_error(policy)
+
+
 def run_one_bootstrap_cycle(
     *,
     args: MorpionBootstrapArgs,
@@ -402,9 +450,12 @@ def _build_and_save_dataset_for_generation(
     record_started_at = time.perf_counter()
     record_status: MorpionBootstrapRecordStatus | None = None
     try:
-        record_status = resolve_record_status_for_cycle(
-            snapshot=snapshot,
-            previous_record_status=run_state.latest_record_status,
+        record_status = cast(
+            "MorpionBootstrapRecordStatus | None",
+            resolve_record_status_for_cycle(
+                snapshot=snapshot,
+                previous_record_status=run_state.latest_record_status,
+            ),
         )
     finally:
         LOGGER.info(
@@ -425,7 +476,10 @@ def _build_and_save_dataset_for_generation(
             previous_frontier_status=run_state.latest_frontier_status,
         )
         frontier_candidate_count = frontier_resolution.candidate_count
-        frontier_status = frontier_resolution.status
+        frontier_status = cast(
+            "MorpionBootstrapFrontierStatus | None",
+            frontier_resolution.status,
+        )
     finally:
         LOGGER.info(
             "[frontier] resolve_done elapsed=%.3fs candidates=%s "
@@ -445,22 +499,28 @@ def _build_and_save_dataset_for_generation(
     extract_started_at = time.perf_counter()
     rows: MorpionSupervisedRows | None = None
     try:
-        rows = training_tree_snapshot_to_morpion_supervised_rows(
-            snapshot,
-            require_exact_or_terminal=args.require_exact_or_terminal,
-            min_depth=args.min_depth,
-            min_visit_count=args.min_visit_count,
-            max_rows=args.max_rows,
-            use_backed_up_value=args.use_backed_up_value,
-            metadata={"bootstrap_generation": generation},
+        rows = cast(
+            "MorpionSupervisedRows | None",
+            training_tree_snapshot_to_morpion_supervised_rows(
+                snapshot,
+                require_exact_or_terminal=args.require_exact_or_terminal,
+                min_depth=args.min_depth,
+                min_visit_count=args.min_visit_count,
+                max_rows=args.max_rows,
+                use_backed_up_value=args.use_backed_up_value,
+                metadata={"bootstrap_generation": generation},
+            ),
         )
         memory.log("after_dataset_extract")
-        rows = apply_dataset_family_target_policy(
-            snapshot=snapshot,
-            rows=rows,
-            family_target_policy=args.dataset_family_target_policy,
-            family_prediction_blend=args.dataset_family_prediction_blend,
-            use_backed_up_value=args.use_backed_up_value,
+        rows = cast(
+            "MorpionSupervisedRows | None",
+            apply_dataset_family_target_policy(
+                snapshot=snapshot,
+                rows=cast("MorpionSupervisedRows", rows),
+                family_target_policy=args.dataset_family_target_policy,
+                family_prediction_blend=args.dataset_family_prediction_blend,
+                use_backed_up_value=args.use_backed_up_value,
+            ),
         )
         memory.log("after_dataset_family_target_policy")
     finally:
@@ -600,9 +660,12 @@ def _train_and_select_evaluators(
     selection_started_at = time.perf_counter()
     selected_evaluator_name: str | None = None
     try:
-        selected_evaluator_name = _select_active_evaluator_name(
-            evaluator_metrics=evaluator_metrics,
-            force_evaluator=resolved_control.force_evaluator,
+        selected_evaluator_name = cast(
+            "str | None",
+            _select_active_evaluator_name(
+                evaluator_metrics=evaluator_metrics,
+                force_evaluator=resolved_control.force_evaluator,
+            ),
         )
     finally:
         LOGGER.info(
@@ -709,6 +772,8 @@ def _run_one_bootstrap_cycle_impl(
 ) -> MorpionBootstrapRunState:
     """Run one grow/export/train/save bootstrap cycle with memory hooks."""
     cycle_started_at = time.perf_counter()
+    _validate_pipeline_mode(args)
+    reevaluate_tree = _reevaluate_tree_for_policy(args.evaluator_update_policy)
     paths.ensure_directories()
     resolved_control = MorpionBootstrapControl() if control is None else control
     _validate_dataset_family_target_args(args)
@@ -748,11 +813,17 @@ def _run_one_bootstrap_cycle_impl(
         force_evaluator=resolved_control.force_evaluator,
     )
     restore_tree_path = _resolve_runtime_restore_path(paths=paths, run_state=run_state)
+    LOGGER.info(
+        "[runtime] evaluator_update_policy policy=%s reevaluate_tree=%s",
+        args.evaluator_update_policy,
+        reevaluate_tree,
+    )
 
     runner.load_or_create(
         restore_tree_path,
         resolved_active_model.model_bundle_path,
         effective_runtime_config,
+        reevaluate_tree=reevaluate_tree,
     )
     memory.log("after_runtime_restore")
     memory.log("before_tree_growth")
@@ -1052,6 +1123,7 @@ def run_morpion_bootstrap_loop(
     """Run the Morpion bootstrap loop for a bounded number of cycles or forever."""
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
+    _validate_pipeline_mode(args)
 
     current_config = bootstrap_config_from_args(args)
     if paths.bootstrap_config_path.is_file():
@@ -1659,6 +1731,8 @@ def _validate_runtime_reconfiguration(
 
 
 __all__ = [
+    "DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY",
+    "DEFAULT_MORPION_PIPELINE_MODE",
     "EMPTY_DATASET_TRAINING_SKIPPED_REASON",
     "TRAINING_SKIPPED_REASON_METADATA_KEY",
     "EmptyMorpionEvaluatorsConfigError",
@@ -1669,12 +1743,16 @@ __all__ = [
     "MorpionBootstrapArgs",
     "MorpionBootstrapPaths",
     "MorpionEvaluatorSpec",
+    "MorpionEvaluatorUpdatePolicy",
     "MorpionEvaluatorsConfig",
+    "MorpionPipelineMode",
     "MorpionSearchRunner",
     "NoSelectableMorpionEvaluatorError",
     "UnknownActiveMorpionEvaluatorError",
     "UnknownForcedMorpionEvaluatorError",
     "UnsupportedMorpionRuntimeReconfigurationError",
+    "_reevaluate_tree_for_policy",
+    "_validate_pipeline_mode",
     "build_bootstrap_event",
     "run_morpion_bootstrap_loop",
     "run_one_bootstrap_cycle",

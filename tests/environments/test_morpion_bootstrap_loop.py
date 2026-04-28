@@ -60,6 +60,8 @@ from torch.utils.data import DataLoader
 import chipiron.environments.morpion.bootstrap.bootstrap_loop as bootstrap_loop_module
 from chipiron.environments.morpion.bootstrap import (
     CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+    DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
+    DEFAULT_MORPION_PIPELINE_MODE,
     MORPION_BOOTSTRAP_INITIAL_PATTERN,
     MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
     MORPION_BOOTSTRAP_VARIANT,
@@ -232,6 +234,7 @@ class FakeMorpionSearchRunner:
         self._target_values = target_values
         self._cycle_index = -1
         self.load_calls: list[tuple[str | None, str | None]] = []
+        self.reevaluate_tree_calls: list[bool] = []
         self.grow_calls: list[int] = []
         self.export_calls: list[str] = []
         self.checkpoint_calls: list[str] = []
@@ -241,6 +244,8 @@ class FakeMorpionSearchRunner:
         tree_snapshot_path: str | Path | None,
         model_bundle_path: str | Path | None,
         effective_runtime_config: object | None = None,
+        *,
+        reevaluate_tree: bool = False,
     ) -> None:
         """Record the latest tree/model inputs used to initialize the runner."""
         _ = effective_runtime_config
@@ -250,6 +255,7 @@ class FakeMorpionSearchRunner:
                 None if model_bundle_path is None else str(model_bundle_path),
             )
         )
+        self.reevaluate_tree_calls.append(reevaluate_tree)
 
     def grow(self, max_growth_steps: int) -> None:
         """Advance the fake runner to the next predefined tree size."""
@@ -376,6 +382,157 @@ def test_dataset_family_policy_none_preserves_existing_targets() -> None:
     assert root.metadata["raw_target"] == 40.0
     assert root.metadata["effective_target"] == 40.0
     assert root.metadata["selected_child_id"] == "2"
+
+
+def test_default_bootstrap_args_use_explicit_future_only_single_process(
+    tmp_path: Path,
+) -> None:
+    """Default bootstrap args should preserve current single-process attach semantics."""
+    args = MorpionBootstrapArgs(work_dir=tmp_path)
+
+    assert args.evaluator_update_policy == DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY
+    assert args.pipeline_mode == DEFAULT_MORPION_PIPELINE_MODE
+
+
+def test_reevaluate_tree_for_policy_future_only_is_false() -> None:
+    """Future-only policy should keep restored trees attach-only."""
+    assert bootstrap_loop_module._reevaluate_tree_for_policy("future_only") is False
+
+
+def test_reevaluate_tree_for_policy_reevaluate_all_is_true() -> None:
+    """Reevaluate-all policy should request tree reevaluation."""
+    assert bootstrap_loop_module._reevaluate_tree_for_policy("reevaluate_all") is True
+
+
+def test_reevaluate_tree_for_policy_reevaluate_frontier_is_not_implemented() -> None:
+    """Frontier-only reevaluation is reserved for later work."""
+    with pytest.raises(NotImplementedError):
+        bootstrap_loop_module._reevaluate_tree_for_policy("reevaluate_frontier")
+
+
+def test_reevaluate_tree_for_policy_invalid_value_raises() -> None:
+    """Unknown reevaluation policies should fail loudly."""
+    invalid_policy = cast("object", "not_a_policy")
+
+    with pytest.raises(ValueError, match="Unknown Morpion evaluator update policy"):
+        bootstrap_loop_module._reevaluate_tree_for_policy(
+            cast("bootstrap_loop_module.MorpionEvaluatorUpdatePolicy", invalid_policy)
+        )
+
+
+def test_validate_pipeline_mode_accepts_single_process(tmp_path: Path) -> None:
+    """Single-process mode should preserve current bootstrap behavior."""
+    bootstrap_loop_module._validate_pipeline_mode(MorpionBootstrapArgs(work_dir=tmp_path))
+
+
+def test_validate_pipeline_mode_artifact_pipeline_is_not_implemented(
+    tmp_path: Path,
+) -> None:
+    """Artifact pipeline mode should parse but fail loudly for now."""
+    args = MorpionBootstrapArgs(work_dir=tmp_path, pipeline_mode="artifact_pipeline")
+
+    with pytest.raises(NotImplementedError, match="artifact_pipeline mode is reserved"):
+        bootstrap_loop_module._validate_pipeline_mode(args)
+
+
+def test_validate_pipeline_mode_invalid_value_raises(tmp_path: Path) -> None:
+    """Unknown pipeline modes should fail loudly."""
+    invalid_mode = cast("object", "not_a_mode")
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        pipeline_mode=cast("bootstrap_loop_module.MorpionPipelineMode", invalid_mode),
+    )
+
+    with pytest.raises(ValueError, match="Unknown Morpion pipeline mode"):
+        bootstrap_loop_module._validate_pipeline_mode(args)
+
+
+def test_run_one_cycle_default_policy_passes_reevaluate_tree_false(
+    tmp_path: Path,
+) -> None:
+    """Default cycle restore should keep the current attach-without-reeval behavior."""
+    runner = FakeMorpionSearchRunner(tree_sizes=(5,), target_values=(1.0,))
+
+    run_one_bootstrap_cycle(
+        args=MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            max_growth_steps_per_cycle=1,
+            save_after_tree_growth_factor=10.0,
+            save_after_seconds=3600.0,
+        ),
+        paths=MorpionBootstrapPaths.from_work_dir(tmp_path),
+        runner=runner,
+        run_state=initialize_bootstrap_run_state(),
+        now_unix_s=0.0,
+    )
+
+    assert runner.reevaluate_tree_calls == [False]
+
+
+def test_run_one_cycle_reevaluate_all_passes_reevaluate_tree_true(
+    tmp_path: Path,
+) -> None:
+    """Explicit reevaluate-all policy should reach the runner boundary."""
+    runner = FakeMorpionSearchRunner(tree_sizes=(5,), target_values=(1.0,))
+
+    run_one_bootstrap_cycle(
+        args=MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            max_growth_steps_per_cycle=1,
+            save_after_tree_growth_factor=10.0,
+            save_after_seconds=3600.0,
+            evaluator_update_policy="reevaluate_all",
+        ),
+        paths=MorpionBootstrapPaths.from_work_dir(tmp_path),
+        runner=runner,
+        run_state=initialize_bootstrap_run_state(),
+        now_unix_s=0.0,
+    )
+
+    assert runner.reevaluate_tree_calls == [True]
+
+
+def test_run_one_cycle_reevaluate_frontier_fails_before_artifact_changes(
+    tmp_path: Path,
+) -> None:
+    """Reserved frontier reevaluation should fail before cycle side effects."""
+    runner = FakeMorpionSearchRunner(tree_sizes=(5,), target_values=(1.0,))
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+
+    with pytest.raises(NotImplementedError, match="reevaluate_frontier"):
+        run_one_bootstrap_cycle(
+            args=MorpionBootstrapArgs(
+                work_dir=tmp_path,
+                evaluator_update_policy="reevaluate_frontier",
+            ),
+            paths=paths,
+            runner=runner,
+            run_state=initialize_bootstrap_run_state(),
+            now_unix_s=0.0,
+        )
+
+    assert runner.load_calls == []
+    assert not paths.tree_snapshot_dir.exists()
+
+
+def test_run_bootstrap_loop_artifact_pipeline_fails_before_writing_config(
+    tmp_path: Path,
+) -> None:
+    """Reserved artifact-pipeline mode should fail before persistent side effects."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    runner = FakeMorpionSearchRunner(tree_sizes=(5,), target_values=(1.0,))
+
+    with pytest.raises(NotImplementedError, match="artifact_pipeline mode is reserved"):
+        run_morpion_bootstrap_loop(
+            MorpionBootstrapArgs(
+                work_dir=tmp_path,
+                pipeline_mode="artifact_pipeline",
+            ),
+            runner,
+            max_cycles=1,
+        )
+
+    assert not paths.bootstrap_config_path.exists()
 
 
 def test_dataset_exact_then_mean_family_sets_ancestors_to_exact_target() -> None:

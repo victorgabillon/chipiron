@@ -54,6 +54,8 @@ from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 import chipiron.environments.morpion.bootstrap.launcher as launcher_module
 from chipiron.environments.morpion.bootstrap import (
     CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+    DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
+    DEFAULT_MORPION_PIPELINE_MODE,
     AnemoneMorpionSearchRunnerArgs,
     MorpionBootstrapArgs,
     MorpionBootstrapControl,
@@ -134,9 +136,11 @@ class FakeMorpionSearchRunner:
         tree_snapshot_path: str | Path | None,
         model_bundle_path: str | Path | None,
         effective_runtime_config: object | None = None,
+        *,
+        reevaluate_tree: bool = False,
     ) -> None:
         """Accept launcher loop restore inputs without side effects."""
-        del tree_snapshot_path, model_bundle_path, effective_runtime_config
+        del tree_snapshot_path, model_bundle_path, effective_runtime_config, reevaluate_tree
 
     def grow(self, max_growth_steps: int) -> None:
         """Advance the fake runner to the next predefined tree size."""
@@ -394,6 +398,10 @@ def test_launcher_cli_main_parses_and_dispatches(
             "--max-rows",
             "33",
             "--no-use-backed-up-value",
+            "--evaluator-update-policy",
+            "reevaluate_all",
+            "--pipeline-mode",
+            "single_process",
             "--tree-branch-limit",
             "48",
         ]
@@ -413,7 +421,20 @@ def test_launcher_cli_main_parses_and_dispatches(
     assert launcher_args.bootstrap_args.save_after_tree_growth_factor == 1.5
     assert launcher_args.bootstrap_args.max_rows == 33
     assert launcher_args.bootstrap_args.use_backed_up_value is False
+    assert launcher_args.bootstrap_args.evaluator_update_policy == "reevaluate_all"
+    assert launcher_args.bootstrap_args.pipeline_mode == "single_process"
     assert launcher_args.bootstrap_args.tree_branch_limit == 48
+
+
+def test_launcher_args_from_cli_defaults_phase1_flags(tmp_path: Path) -> None:
+    """CLI defaults should preserve current attach-only single-process behavior."""
+    launcher_args = launcher_module.launcher_args_from_cli(["--work-dir", str(tmp_path)])
+
+    assert (
+        launcher_args.bootstrap_args.evaluator_update_policy
+        == DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY
+    )
+    assert launcher_args.bootstrap_args.pipeline_mode == DEFAULT_MORPION_PIPELINE_MODE
 
 
 def test_launcher_constructs_real_runner_in_normal_path(

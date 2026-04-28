@@ -26,8 +26,16 @@ if TYPE_CHECKING:
         MorpionEvaluatorsConfig,
         MorpionEvaluatorSpec,
     )
+    from .pipeline_config import (
+        MorpionEvaluatorUpdatePolicy,
+        MorpionPipelineMode,
+    )
     from .pv_family_targets import PvFamilyTargetPolicy
 
+from .pipeline_config import (
+    DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
+    DEFAULT_MORPION_PIPELINE_MODE,
+)
 
 BOOTSTRAP_CONFIG_HASH_METADATA_KEY = "bootstrap_config_hash"
 DEFAULT_MORPION_TREE_BRANCH_LIMIT = 128
@@ -79,6 +87,10 @@ class MorpionBootstrapConfig:
     runtime: MorpionBootstrapRuntimeConfig
     dataset: MorpionBootstrapDatasetConfig
     evaluators: MorpionEvaluatorsConfig
+    evaluator_update_policy: MorpionEvaluatorUpdatePolicy = (
+        DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY
+    )
+    pipeline_mode: MorpionPipelineMode = DEFAULT_MORPION_PIPELINE_MODE
     metadata: dict[str, object] = field(default_factory=_empty_metadata)
 
 
@@ -182,6 +194,8 @@ def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapCo
             family_prediction_blend=args.dataset_family_prediction_blend,
         ),
         evaluators=args.resolved_evaluators_config(),
+        evaluator_update_policy=args.evaluator_update_policy,
+        pipeline_mode=args.pipeline_mode,
     )
 
 
@@ -210,6 +224,8 @@ def bootstrap_config_to_dict(config: MorpionBootstrapConfig) -> dict[str, object
             "family_prediction_blend": config.dataset.family_prediction_blend,
         },
         "evaluators": _evaluators_config_to_dict(config.evaluators),
+        "evaluator_update_policy": config.evaluator_update_policy,
+        "pipeline_mode": config.pipeline_mode,
         "metadata": dict(config.metadata),
     }
 
@@ -377,6 +393,23 @@ def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
             ),
         ),
         evaluators=evaluators,
+        evaluator_update_policy=cast(
+            "MorpionEvaluatorUpdatePolicy",
+            _required_str(
+                payload.get(
+                    "evaluator_update_policy",
+                    DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
+                ),
+                field_name="evaluator_update_policy",
+            ),
+        ),
+        pipeline_mode=cast(
+            "MorpionPipelineMode",
+            _required_str(
+                payload.get("pipeline_mode", DEFAULT_MORPION_PIPELINE_MODE),
+                field_name="pipeline_mode",
+            ),
+        ),
         metadata=_metadata_dict(payload.get("metadata")),
     )
 
@@ -435,6 +468,10 @@ def diff_bootstrap_configs(
     )
     if previous.evaluators != current.evaluators:
         differences.append("evaluators")
+    if previous.evaluator_update_policy != current.evaluator_update_policy:
+        differences.append("evaluator_update_policy")
+    if previous.pipeline_mode != current.pipeline_mode:
+        differences.append("pipeline_mode")
     if previous.metadata != current.metadata:
         differences.append("metadata")
     return tuple(differences)
@@ -466,7 +503,18 @@ def validate_bootstrap_config_change(
 
 
 def _diff_dataclass_section(
-    previous: object, current: object, *, prefix: str
+    previous: (
+        MorpionBootstrapExperimentIdentityConfig
+        | MorpionBootstrapRuntimeConfig
+        | MorpionBootstrapDatasetConfig
+    ),
+    current: (
+        MorpionBootstrapExperimentIdentityConfig
+        | MorpionBootstrapRuntimeConfig
+        | MorpionBootstrapDatasetConfig
+    ),
+    *,
+    prefix: str,
 ) -> list[str]:
     """Return changed field paths for one flat dataclass section."""
     return [
@@ -480,6 +528,8 @@ def _resolve_diff_value(
     config: MorpionBootstrapConfig, dotted_field_name: str
 ) -> object:
     """Resolve one dotted config field path against one config object."""
+    if "." not in dotted_field_name:
+        return getattr(config, dotted_field_name)
     section_name, field_name = dotted_field_name.split(".", maxsplit=1)
     return getattr(getattr(config, section_name), field_name)
 

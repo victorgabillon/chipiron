@@ -465,6 +465,68 @@ def test_restore_with_evaluator_bundle_skips_reevaluation(
     assert second_runner.current_tree_size() >= 1
 
 
+def test_restore_with_evaluator_bundle_reevaluates_when_requested(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Explicit reevaluate-all should refresh existing nodes on restore."""
+    checkpoint_path = tmp_path / "tree_checkpoint.json"
+    bundle_path = _make_model_bundle(tmp_path / "bundle")
+    first_runner = AnemoneMorpionSearchRunner()
+    first_runner.load_or_create(None, None)
+    first_runner.grow(3)
+    first_runner.save_checkpoint(checkpoint_path)
+
+    refresh_calls: list[str] = []
+    real_set = anemone_runner_module.AnemoneMorpionSearchRunner._set_runtime_evaluator_from_bundle
+
+    def _patched_set_runtime_evaluator_from_bundle(
+        self: object,
+        model_bundle_path: Path,
+        *,
+        reevaluate_tree: bool = True,
+    ) -> None:
+        refresh_calls.append(f"{model_bundle_path}:{reevaluate_tree}")
+        real_set(self, model_bundle_path, reevaluate_tree=reevaluate_tree)
+
+    monkeypatch.setattr(
+        anemone_runner_module.AnemoneMorpionSearchRunner,
+        "_set_runtime_evaluator_from_bundle",
+        _patched_set_runtime_evaluator_from_bundle,
+    )
+    caplog.set_level(logging.INFO)
+
+    second_runner = AnemoneMorpionSearchRunner()
+    second_runner.load_or_create(checkpoint_path, bundle_path, reevaluate_tree=True)
+
+    assert refresh_calls == [f"{bundle_path}:True"]
+    assert "[reeval] start bundle=" in caplog.text
+    assert "[runtime] evaluator bundle attached without reevaluation" not in caplog.text
+
+
+def test_load_or_create_reevaluate_all_fails_loudly_when_runtime_lacks_support(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Reevaluate-all should never be silently downgraded when unsupported."""
+    bundle_path = _make_model_bundle(tmp_path / "bundle")
+    runner = AnemoneMorpionSearchRunner()
+
+    class _RuntimeWithoutRefresh:
+        def set_evaluator(self, evaluator: object) -> None:
+            _ = evaluator
+
+    monkeypatch.setattr(
+        runner,
+        "_require_runtime",
+        lambda: _RuntimeWithoutRefresh(),
+    )
+
+    with pytest.raises(NotImplementedError, match="does not yet support full tree reevaluation"):
+        runner._set_runtime_evaluator_from_bundle(bundle_path, reevaluate_tree=True)
+
+
 def test_explicit_evaluator_change_still_reevaluates_tree(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

@@ -356,6 +356,8 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         tree_snapshot_path: str | Path | None,
         model_bundle_path: str | Path | None,
         effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig | None = None,
+        *,
+        reevaluate_tree: bool = False,
     ) -> None:
         """Load a persisted runtime or create a fresh one for Morpion bootstrap.
 
@@ -393,10 +395,11 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             elapsed_s = time.perf_counter() - started_at
             LOGGER.info("[runtime] create_done elapsed=%.3fs", elapsed_s)
             if resolved_bundle_path is not None:
-                LOGGER.info("[reeval] skipped reason=fresh_runtime_attach")
+                if not reevaluate_tree:
+                    LOGGER.info("[reeval] skipped reason=fresh_runtime_attach")
                 self._set_runtime_evaluator_from_bundle(
                     resolved_bundle_path,
-                    reevaluate_tree=False,
+                    reevaluate_tree=reevaluate_tree,
                 )
             else:
                 self._current_evaluator_bundle_path = resolved_bundle_path
@@ -418,10 +421,11 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         LOGGER.info("[runtime] restore_done elapsed=%.3fs", elapsed_s)
         self._current_evaluator_bundle_path = None
         if resolved_bundle_path is not None:
-            LOGGER.info("[reeval] skipped reason=resume_restore")
+            if not reevaluate_tree:
+                LOGGER.info("[reeval] skipped reason=resume_restore")
             self._set_runtime_evaluator_from_bundle(
                 resolved_bundle_path,
-                reevaluate_tree=False,
+                reevaluate_tree=reevaluate_tree,
             )
         else:
             LOGGER.info("[runtime] evaluator_attach_skipped reason=no_bundle")
@@ -629,6 +633,12 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         started_at = time.perf_counter()
         evaluator = load_morpion_evaluator_from_model_bundle(model_bundle_path)
         if reevaluate_tree:
+            if not hasattr(runtime, "refresh_with_evaluator"):
+                raise NotImplementedError(
+                    "evaluator_update_policy='reevaluate_all' requested, but "
+                    "AnemoneMorpionSearchRunner does not yet support full tree "
+                    "reevaluation on restore."
+                )
             LOGGER.info("[reeval] start bundle=%s", str(model_bundle_path))
             reeval_started_at = time.perf_counter()
             runtime.refresh_with_evaluator(

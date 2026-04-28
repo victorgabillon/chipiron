@@ -144,9 +144,11 @@ class FakeMorpionSearchRunner:
         tree_snapshot_path: str | Path | None,
         model_bundle_path: str | Path | None,
         effective_runtime_config: object | None = None,
+        *,
+        reevaluate_tree: bool = False,
     ) -> None:
         """Ignore inputs for the fake runner."""
-        _ = tree_snapshot_path, model_bundle_path, effective_runtime_config
+        _ = tree_snapshot_path, model_bundle_path, effective_runtime_config, reevaluate_tree
 
     def grow(self, max_growth_steps: int) -> None:
         """Advance the fake runner to the next predefined tree size."""
@@ -206,7 +208,7 @@ def _patch_reported_losses(
 
     def _patched_train(train_args: object) -> object:
         _model, metrics = real_train(train_args)
-        evaluator_name = Path(str(getattr(train_args, "output_dir"))).name
+        evaluator_name = Path(str(train_args.output_dir)).name
         metrics["final_loss"] = loss_by_evaluator_name[evaluator_name]
         return _model, metrics
 

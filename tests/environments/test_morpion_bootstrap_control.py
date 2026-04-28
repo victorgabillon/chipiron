@@ -147,8 +147,11 @@ class FakeMorpionSearchRunner:
         tree_snapshot_path: str | Path | None,
         model_bundle_path: str | Path | None,
         effective_runtime_config: MorpionBootstrapEffectiveRuntimeConfig | None = None,
+        *,
+        reevaluate_tree: bool = False,
     ) -> None:
         """Record the latest tree/model inputs used to initialize the runner."""
+        _ = reevaluate_tree
         self.load_calls.append(
             (
                 None if tree_snapshot_path is None else str(tree_snapshot_path),
