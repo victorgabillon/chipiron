@@ -15,6 +15,14 @@ MorpionPipelineMode = Literal[
     "artifact_pipeline",
 ]
 
+MorpionPipelineStage = Literal[
+    "loop",
+    "growth",
+    "dataset",
+    "training",
+    "reevaluation",
+]
+
 DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY: MorpionEvaluatorUpdatePolicy = "future_only"
 DEFAULT_MORPION_PIPELINE_MODE: MorpionPipelineMode = "single_process"
 
@@ -23,4 +31,5 @@ __all__ = [
     "DEFAULT_MORPION_PIPELINE_MODE",
     "MorpionEvaluatorUpdatePolicy",
     "MorpionPipelineMode",
+    "MorpionPipelineStage",
 ]

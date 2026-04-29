@@ -38,6 +38,47 @@ python -m chipiron.environments.morpion.bootstrap.launcher \
 * Make sure this directory is on a **large partition** (e.g. `~/oldata`)
 * Logs are saved to `launcher_console.log`
 
+### Artifact-pipeline workers
+
+Artifact-pipeline mode splits growth, dataset extraction, training, and
+reevaluation into file-driven stages. The `loop` stage is still the current
+orchestrator: one launcher invocation runs growth, then all pending dataset and
+training work once.
+
+```bash
+# Terminal 1: orchestrated growth + pending dataset/training work
+python -m chipiron.environments.morpion.bootstrap.launcher \
+  --work-dir ~/oldata/victor/morpion_runs/big_run_01 \
+  --pipeline-mode artifact_pipeline \
+  --pipeline-stage loop
+
+# Terminal 2: one dataset stage for a known generation
+python -m chipiron.environments.morpion.bootstrap.launcher \
+  --work-dir ~/oldata/victor/morpion_runs/big_run_01 \
+  --pipeline-mode artifact_pipeline \
+  --pipeline-stage dataset \
+  --pipeline-generation <N>
+
+# Terminal 3: one training stage for a known generation
+python -m chipiron.environments.morpion.bootstrap.launcher \
+  --work-dir ~/oldata/victor/morpion_runs/big_run_01 \
+  --pipeline-mode artifact_pipeline \
+  --pipeline-stage training \
+  --pipeline-generation <N>
+
+# Terminal 4: one reevaluation pass producing at most one pending patch
+python -m chipiron.environments.morpion.bootstrap.launcher \
+  --work-dir ~/oldata/victor/morpion_runs/big_run_01 \
+  --pipeline-mode artifact_pipeline \
+  --pipeline-stage reevaluation \
+  --reevaluation-max-nodes-per-patch 10000
+```
+
+The reevaluation stage exits after one pass. A shell loop or supervisor can
+repeat it. If a pending reevaluation patch already exists, the worker skips
+without overwriting it; the growth stage consumes one pending patch before
+calling `grow()`.
+
 ---
 
 ## 🔄 3. Restart from scratch

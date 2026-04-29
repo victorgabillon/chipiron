@@ -65,6 +65,7 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionPipelineGenerationManifest,
     MorpionReevaluationPatch,
     MorpionReevaluationPatchRow,
+    MorpionReevaluationWorkerResult,
     MorpionSearchRunner,
     PipelineStageAlreadyClaimedError,
     claim_pipeline_stage,
@@ -262,6 +263,31 @@ def _artifact_pipeline_args(work_dir: Path) -> MorpionBootstrapArgs:
 def _unexpected_full_loop_error() -> AssertionError:
     """Build the assertion used when growth dispatch falls into the full loop."""
     return AssertionError("full loop should not run for artifact-pipeline growth")
+
+
+def _unexpected_reevaluation_runner_error() -> AssertionError:
+    """Build the assertion used when reevaluation dispatch builds a runner."""
+    return AssertionError("reevaluation stage should not build a runner")
+
+
+def _negative_max_nodes_per_patch_error() -> ValueError:
+    """Build the stable worker-style negative batch-size error."""
+    return ValueError("max_nodes_per_patch must be >= 0")
+
+
+def _make_reevaluation_worker_result() -> MorpionReevaluationWorkerResult:
+    """Build a representative reevaluation worker result for launcher tests."""
+    return MorpionReevaluationWorkerResult(
+        patch_written=False,
+        reason="test",
+        patch_id=None,
+        num_rows=0,
+        evaluator_generation=None,
+        evaluator_name=None,
+        start_cursor=None,
+        end_cursor=None,
+        completed_full_pass_count=None,
+    )
 
 
 def test_pipeline_growth_stage_writes_growth_only_manifest(tmp_path: Path) -> None:
@@ -675,9 +701,177 @@ def test_launcher_dispatches_growth_stage(
     assert captured[0][1] == 1
 
 
+def test_artifact_pipeline_reevaluation_stage_dispatches_worker(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Reevaluation CLI dispatch should call the one-shot worker."""
+    captured: list[tuple[MorpionBootstrapArgs, int]] = []
+    fake_result = _make_reevaluation_worker_result()
+
+    def _fake_worker(
+        args: MorpionBootstrapArgs,
+        *,
+        max_nodes_per_patch: int = 10_000,
+    ) -> MorpionReevaluationWorkerResult:
+        captured.append((args, max_nodes_per_patch))
+        return fake_result
+
+    monkeypatch.setattr(
+        launcher_module,
+        "run_morpion_reevaluation_worker_once",
+        _fake_worker,
+    )
+
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--pipeline-mode",
+            "artifact_pipeline",
+            "--pipeline-stage",
+            "reevaluation",
+            "--reevaluation-max-nodes-per-patch",
+            "123",
+            "--no-print-startup-summary",
+            "--no-print-dashboard-hint",
+        ]
+    )
+    result = run_morpion_bootstrap_experiment(launcher_args)
+
+    assert result is fake_result
+    assert len(captured) == 1
+    assert captured[0][0].pipeline_mode == "artifact_pipeline"
+    assert captured[0][1] == 123
+
+
+def test_artifact_pipeline_reevaluation_stage_uses_default_batch_size(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Reevaluation CLI dispatch should default to 10000 nodes per patch."""
+    captured: list[int] = []
+    fake_result = _make_reevaluation_worker_result()
+
+    def _fake_worker(
+        args: MorpionBootstrapArgs,
+        *,
+        max_nodes_per_patch: int = 10_000,
+    ) -> MorpionReevaluationWorkerResult:
+        del args
+        captured.append(max_nodes_per_patch)
+        return fake_result
+
+    monkeypatch.setattr(
+        launcher_module,
+        "run_morpion_reevaluation_worker_once",
+        _fake_worker,
+    )
+
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--pipeline-mode",
+            "artifact_pipeline",
+            "--pipeline-stage",
+            "reevaluation",
+            "--no-print-startup-summary",
+            "--no-print-dashboard-hint",
+        ]
+    )
+    result = run_morpion_bootstrap_experiment(launcher_args)
+
+    assert result is fake_result
+    assert captured == [10_000]
+
+
+def test_artifact_pipeline_reevaluation_stage_does_not_build_runner(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Reevaluation dispatch should not construct the Anemone search runner."""
+    fake_result = _make_reevaluation_worker_result()
+
+    def _unexpected_runner(*args: object, **kwargs: object) -> object:
+        raise _unexpected_reevaluation_runner_error()
+
+    monkeypatch.setattr(
+        launcher_module,
+        "AnemoneMorpionSearchRunner",
+        _unexpected_runner,
+    )
+    monkeypatch.setattr(
+        launcher_module,
+        "run_morpion_reevaluation_worker_once",
+        lambda args, *, max_nodes_per_patch=10_000: fake_result,
+    )
+
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--pipeline-mode",
+            "artifact_pipeline",
+            "--pipeline-stage",
+            "reevaluation",
+            "--no-print-startup-summary",
+            "--no-print-dashboard-hint",
+        ]
+    )
+
+    assert run_morpion_bootstrap_experiment(launcher_args) is fake_result
+
+
+def test_artifact_pipeline_reevaluation_negative_batch_size_propagates(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Negative reevaluation batch sizes should reach the worker validation."""
+
+    def _fake_worker(
+        args: MorpionBootstrapArgs,
+        *,
+        max_nodes_per_patch: int = 10_000,
+    ) -> MorpionReevaluationWorkerResult:
+        del args
+        if max_nodes_per_patch < 0:
+            raise _negative_max_nodes_per_patch_error()
+        return _make_reevaluation_worker_result()
+
+    monkeypatch.setattr(
+        launcher_module,
+        "run_morpion_reevaluation_worker_once",
+        _fake_worker,
+    )
+
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--pipeline-mode",
+            "artifact_pipeline",
+            "--pipeline-stage",
+            "reevaluation",
+            "--reevaluation-max-nodes-per-patch",
+            "-1",
+            "--no-print-startup-summary",
+            "--no-print-dashboard-hint",
+        ]
+    )
+
+    with pytest.raises(ValueError, match="max_nodes_per_patch must be >= 0"):
+        run_morpion_bootstrap_experiment(launcher_args)
+
+
+@pytest.mark.parametrize(
+    "pipeline_stage",
+    ["growth", "dataset", "training", "reevaluation"],
+)
 def test_single_process_rejects_non_loop_pipeline_stage(
     tmp_path: Path,
     capsys: CaptureFixture[str],
+    pipeline_stage: str,
 ) -> None:
     """Single-process CLI mode should reject non-loop pipeline stages."""
     with pytest.raises(SystemExit):
@@ -686,7 +880,7 @@ def test_single_process_rejects_non_loop_pipeline_stage(
                 "--work-dir",
                 str(tmp_path),
                 "--pipeline-stage",
-                "dataset",
+                pipeline_stage,
             ]
         )
 

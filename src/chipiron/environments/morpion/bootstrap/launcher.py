@@ -35,6 +35,7 @@ from .history import MorpionBootstrapLatestStatus, load_latest_bootstrap_status
 from .pipeline_config import (
     DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
     DEFAULT_MORPION_PIPELINE_MODE,
+    MorpionPipelineStage,
 )
 from .pipeline_orchestrator import (
     MorpionPipelineOrchestratorResult,
@@ -48,6 +49,10 @@ from .pipeline_stages import (
 from .process_control import (
     mark_current_launcher_process_stopped,
     register_current_launcher_process,
+)
+from .reevaluation_worker import (
+    MorpionReevaluationWorkerResult,
+    run_morpion_reevaluation_worker_once,
 )
 from .run_state import MorpionBootstrapRunState, load_bootstrap_run_state
 
@@ -71,8 +76,9 @@ class MorpionBootstrapLauncherArgs:
 
     bootstrap_args: MorpionBootstrapArgs
     max_cycles: int | None = None
-    pipeline_stage: Literal["loop", "growth", "dataset", "training"] = "loop"
+    pipeline_stage: MorpionPipelineStage = "loop"
     pipeline_generation: int | None = None
+    reevaluation_max_nodes_per_patch: int = 10_000
     open_dashboard: bool = False
     print_startup_summary: bool = True
     print_dashboard_hint: bool = True
@@ -117,6 +123,7 @@ def run_morpion_bootstrap_experiment(
     MorpionBootstrapRunState
     | MorpionPipelineGenerationManifest
     | MorpionPipelineOrchestratorResult
+    | MorpionReevaluationWorkerResult
 ):
     """Run one persistent Morpion bootstrap experiment end to end.
 
@@ -168,6 +175,11 @@ def run_morpion_bootstrap_experiment(
             max_growth_cycles=1
             if launcher_args.max_cycles is None
             else launcher_args.max_cycles,
+        )
+    if launcher_args.pipeline_stage == "reevaluation":
+        return run_morpion_reevaluation_worker_once(
+            startup_status.resolved_bootstrap_args,
+            max_nodes_per_patch=launcher_args.reevaluation_max_nodes_per_patch,
         )
     if launcher_args.pipeline_stage == "dataset":
         assert launcher_args.pipeline_generation is not None
@@ -457,11 +469,12 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--pipeline-stage",
-        choices=["loop", "growth", "dataset", "training"],
+        choices=["loop", "growth", "dataset", "training", "reevaluation"],
         default="loop",
         help=(
             "Pipeline dispatch target. 'loop' preserves the current launcher behavior. "
-            "Artifact-pipeline mode also supports 'growth', 'dataset', and 'training'."
+            "Artifact-pipeline mode also supports 'growth', 'dataset', 'training', "
+            "and 'reevaluation'."
         ),
     )
     parser.add_argument(
@@ -469,6 +482,12 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         help="Generation index required by the dataset and training pipeline stages.",
+    )
+    parser.add_argument(
+        "--reevaluation-max-nodes-per-patch",
+        type=int,
+        default=10_000,
+        help="Maximum nodes to include in one reevaluation patch.",
     )
     parser.add_argument(
         "--memory-diagnostics",
@@ -603,11 +622,9 @@ def launcher_args_from_cli(
     return MorpionBootstrapLauncherArgs(
         bootstrap_args=bootstrap_args,
         max_cycles=parsed.max_cycles,
-        pipeline_stage=cast(
-            'Literal["loop", "growth", "dataset", "training"]',
-            parsed.pipeline_stage,
-        ),
+        pipeline_stage=cast("MorpionPipelineStage", parsed.pipeline_stage),
         pipeline_generation=parsed.pipeline_generation,
+        reevaluation_max_nodes_per_patch=parsed.reevaluation_max_nodes_per_patch,
         open_dashboard=parsed.open_dashboard,
         print_startup_summary=parsed.print_startup_summary,
         print_dashboard_hint=parsed.print_dashboard_hint,
