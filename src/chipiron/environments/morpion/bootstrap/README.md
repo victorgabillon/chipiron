@@ -48,62 +48,134 @@ mode by default.
 launcher invocations and adds autonomous dataset, training, and reevaluation
 workers. This is the recommended mode for multiprocess or large runs.
 
+For production artifact-pipeline runs, do not use `--pipeline-stage loop`; it is only a local/debug mini-orchestrator. Use the four autonomous stages: `growth`, `dataset_worker`, `training_worker`, and `reevaluation`.
+
 All artifact-pipeline workers must share the same `--work-dir` on a filesystem
 visible to every worker.
 
-### Recommended artifact-pipeline launch
+### Recommended 4-process artifact-pipeline launch
 
-Run four supervised shell loops, one per worker. Each launcher invocation does
-one pass and exits, so keep it alive with a shell loop, `systemd`, or another
-supervisor.
+First launch creates `<work_dir>/bootstrap_config.json`. After that, all workers
+must use the same bootstrap config. To change dataset/training/growth parameters,
+edit the persisted config intentionally or start a new `work_dir`.
 
-Terminal or machine 1: growth worker.
+### Recommended startup order
+
+Start workers in this order:
+
+1. `growth` (creates initial artifacts and bootstrap_config.json)
+2. `dataset_worker`
+3. `training_worker`
+4. `reevaluation`
+
+Reevaluation may idle until an active evaluator exists.
+Dataset/training workers may initially report `no_pending_work`; this is normal.
+
+Use one shared work directory visible to all workers:
+
+```bash
+export MORPION_WORK_DIR=~/oldata/victor/morpion_runs/big_run_01
+```
+
+#### 1. Growth worker
+
+Owns the live tree/checkpoint. Usually CPU/RAM-heavy. Run only one.
 
 ```bash
 while true; do
   python -m chipiron.environments.morpion.bootstrap.launcher \
-    --work-dir ~/oldata/victor/morpion_runs/big_run_01 \
+    --work-dir "$MORPION_WORK_DIR" \
     --pipeline-mode artifact_pipeline \
     --pipeline-stage growth
   sleep 2
 done
 ```
 
-Terminal or machine 2: dataset worker.
+#### 2. Dataset worker
+
+Extracts supervised rows from saved tree snapshots.
 
 ```bash
 while true; do
   python -m chipiron.environments.morpion.bootstrap.launcher \
-    --work-dir ~/oldata/victor/morpion_runs/big_run_01 \
+    --work-dir "$MORPION_WORK_DIR" \
     --pipeline-mode artifact_pipeline \
     --pipeline-stage dataset_worker
   sleep 2
 done
 ```
 
-Terminal or machine 3: training worker.
+#### 3. Training worker
+
+Trains evaluators and updates `pipeline/active_model.json`. Prefer a GPU.
 
 ```bash
 while true; do
-  python -m chipiron.environments.morpion.bootstrap.launcher \
-    --work-dir ~/oldata/victor/morpion_runs/big_run_01 \
+  CUDA_VISIBLE_DEVICES=0 python -m chipiron.environments.morpion.bootstrap.launcher \
+    --work-dir "$MORPION_WORK_DIR" \
     --pipeline-mode artifact_pipeline \
     --pipeline-stage training_worker
   sleep 2
 done
 ```
 
-Terminal or machine 4: reevaluation worker.
+#### 4. Reevaluation worker
+
+Uses the active evaluator to produce bounded reevaluation patches. Prefer a GPU.
 
 ```bash
 while true; do
-  python -m chipiron.environments.morpion.bootstrap.launcher \
-    --work-dir ~/oldata/victor/morpion_runs/big_run_01 \
+  CUDA_VISIBLE_DEVICES=1 python -m chipiron.environments.morpion.bootstrap.launcher \
+    --work-dir "$MORPION_WORK_DIR" \
     --pipeline-mode artifact_pipeline \
     --pipeline-stage reevaluation \
     --reevaluation-max-nodes-per-patch 10000
   sleep 2
 done
+```
+
+### Important config rule
+
+Pass your intended experiment hyperparameters on the very first launch, for example:
+
+```bash
+python -m chipiron.environments.morpion.bootstrap.launcher \
+  --work-dir "$MORPION_WORK_DIR" \
+  --pipeline-mode artifact_pipeline \
+  --pipeline-stage growth \
+  --max-growth-steps-per-cycle 1000 \
+  --save-after-tree-growth-factor 2.0 \
+  --save-after-seconds 3600 \
+  --require-exact-or-terminal \
+  --min-depth 2 \
+  --min-visit-count 3 \
+  --max-rows 100000 \
+  --use-backed-up-value \
+  --dataset-family-target-policy none \
+  --dataset-family-prediction-blend 0.25 \
+  --num-epochs 5 \
+  --batch-size 64 \
+  --learning-rate 0.001
+```
+
+After `bootstrap_config.json` exists, later workers must match it. Any later CLI hyperparameter drift against the persisted bootstrap config is rejected.
+
+### Healthy pipeline signs
+
+After startup you should observe:
+
+- `growth` produces new `generation_XXXXXX/manifest.json`
+- `dataset_worker` creates dataset rows artifacts
+- `training_worker` periodically updates `pipeline/active_model.json`
+- `reevaluation` occasionally creates and growth consumes
+  `pipeline/reevaluation_patch.json`
+
+Quick checks:
+
+```bash
+watch ls pipeline/
+watch find pipeline -name manifest.json | wc -l
+watch find pipeline -name '*claim.json'
 ```
 
 ### Where to place workers
