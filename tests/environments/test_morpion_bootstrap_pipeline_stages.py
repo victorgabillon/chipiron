@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import ast
+import logging
 import sys
 import time
 from dataclasses import replace
@@ -447,7 +448,10 @@ def test_pipeline_growth_stage_no_save_only_advances_cycle(tmp_path: Path) -> No
     assert not paths.pipeline_manifest_path_for_generation(2).exists()
 
 
-def test_dataset_stage_extracts_rows_from_manifest_tree_snapshot(tmp_path: Path) -> None:
+def test_dataset_stage_extracts_rows_from_manifest_tree_snapshot(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """Dataset stage should extract rows and mark the manifest done."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     paths.ensure_directories()
@@ -467,13 +471,21 @@ def test_dataset_stage_extracts_rows_from_manifest_tree_snapshot(tmp_path: Path)
         paths.pipeline_manifest_path_for_generation(1),
     )
 
-    manifest = run_pipeline_dataset_stage(_artifact_pipeline_args(tmp_path), generation=1)
+    with caplog.at_level(logging.INFO):
+        manifest = run_pipeline_dataset_stage(_artifact_pipeline_args(tmp_path), generation=1)
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
 
     assert manifest.rows_path == "rows/generation_000001.json"
     assert paths.rows_path_for_generation(1).is_file()
     assert manifest.dataset_status == "done"
     assert manifest.training_status == "not_started"
     assert not paths.pipeline_dataset_claim_path_for_generation(1).exists()
+    assert manifest.metadata["dataset_rows"] == 1
+    assert "[pipeline] dataset_claim_created generation=1" in messages
+    assert "[pipeline] dataset_export_start generation=1" in messages
+    assert "[pipeline] dataset_export_done generation=1 rows=1" in messages
+    assert "[pipeline] dataset_manifest_written generation=1" in messages
 
 
 def test_dataset_stage_blocked_by_active_claim(tmp_path: Path) -> None:
@@ -510,7 +522,10 @@ def test_dataset_stage_blocked_by_active_claim(tmp_path: Path) -> None:
     assert manifest.dataset_status == "not_started"
 
 
-def test_dataset_stage_marks_failed_on_exception(tmp_path: Path) -> None:
+def test_dataset_stage_marks_failed_on_exception(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """Dataset stage should mark the manifest failed before re-raising."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     paths.ensure_directories()
@@ -525,15 +540,19 @@ def test_dataset_stage_marks_failed_on_exception(tmp_path: Path) -> None:
         paths.pipeline_manifest_path_for_generation(1),
     )
 
-    with pytest.raises(
-        FileNotFoundError,
-        match=r"Pipeline tree snapshot does not exist: .*generation_000001.json",
-    ):
-        run_pipeline_dataset_stage(_artifact_pipeline_args(tmp_path), generation=1)
+    with caplog.at_level(logging.INFO):
+        with pytest.raises(
+            FileNotFoundError,
+            match=r"Pipeline tree snapshot does not exist: .*generation_000001.json",
+        ):
+            run_pipeline_dataset_stage(_artifact_pipeline_args(tmp_path), generation=1)
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
 
     manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(1))
     assert manifest.dataset_status == "failed"
     assert not paths.pipeline_dataset_claim_path_for_generation(1).exists()
+    assert "dataset_skip generation=1 reason=missing_tree_export" in messages
 
 
 def test_training_stage_trains_and_updates_active_model(tmp_path: Path) -> None:
@@ -1022,7 +1041,7 @@ def test_dataset_worker_rejects_owned_persisted_config_difference(
 def test_dataset_worker_rejects_foreign_persisted_config_difference(
     tmp_path: Path,
 ) -> None:
-    """Dataset workers should reject growth-owned config drift."""
+    """Dataset workers should ignore growth-only runtime config drift."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     persisted_args = MorpionBootstrapArgs(
         work_dir=tmp_path,
@@ -1049,11 +1068,18 @@ def test_dataset_worker_rejects_foreign_persisted_config_difference(
         ]
     )
 
-    with pytest.raises(
-        IncompatibleStageBootstrapConfigError,
-        match="tree_branch_limit",
-    ):
-        run_morpion_bootstrap_experiment(launcher_args)
+    fake_result = _make_pipeline_worker_result("dataset")
+
+    monkeypatch = pytest.MonkeyPatch()
+    try:
+        monkeypatch.setattr(
+            launcher_module,
+            "run_next_pipeline_dataset_stage_once",
+            lambda args: fake_result,
+        )
+        assert run_morpion_bootstrap_experiment(launcher_args) is fake_result
+    finally:
+        monkeypatch.undo()
 
 
 def test_growth_stage_uses_requested_runtime_batch_size(
@@ -1116,6 +1142,71 @@ def test_growth_stage_uses_requested_runtime_batch_size(
 
     assert len(captured) == 1
     assert captured[0].max_growth_steps_per_cycle == 10
+
+
+def test_growth_stage_uses_requested_tree_branch_limit(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Growth relaunches should keep the requested tree branch limit."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    persisted_args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        pipeline_mode="artifact_pipeline",
+        evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+        tree_branch_limit=1_000_000,
+    )
+    save_bootstrap_config(
+        bootstrap_config_from_args(persisted_args),
+        paths.bootstrap_config_path,
+    )
+    captured_runner_args: list[object] = []
+
+    monkeypatch.setattr(
+        launcher_module,
+        "AnemoneMorpionSearchRunner",
+        lambda runner_args: captured_runner_args.append(runner_args) or object(),
+    )
+
+    def _fake_growth_stage(
+        args: MorpionBootstrapArgs,
+        runner: object,
+        *,
+        max_cycles: int,
+    ) -> MorpionBootstrapRunState:
+        del runner, max_cycles
+        return MorpionBootstrapRunState(
+            generation=0,
+            cycle_index=0,
+            latest_tree_snapshot_path=None,
+            latest_rows_path=None,
+            latest_model_bundle_paths=None,
+            active_evaluator_name=None,
+            tree_size_at_last_save=0,
+            last_save_unix_s=None,
+        )
+
+    monkeypatch.setattr(launcher_module, "run_pipeline_growth_stage", _fake_growth_stage)
+
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--pipeline-mode",
+            "artifact_pipeline",
+            "--pipeline-stage",
+            "growth",
+            "--tree-branch-limit",
+            "128",
+            "--no-print-startup-summary",
+            "--no-print-dashboard-hint",
+        ]
+    )
+
+    run_morpion_bootstrap_experiment(launcher_args)
+
+    assert len(captured_runner_args) == 1
+    assert getattr(captured_runner_args[0], "search_args").stopping_criterion.tree_branch_limit == 128
 
 
 def test_artifact_pipeline_training_worker_dispatches_autonomous_worker(

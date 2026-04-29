@@ -550,6 +550,7 @@ def run_pipeline_dataset_stage(
 ) -> MorpionPipelineGenerationManifest:
     """Extract supervised rows for one persisted pipeline generation."""
     _require_artifact_pipeline_mode(args)
+    stage_started_at = time.perf_counter()
     paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
     paths.ensure_directories()
     manifest = _load_generation_manifest(paths=paths, generation=generation)
@@ -560,6 +561,13 @@ def run_pipeline_dataset_stage(
         ttl_seconds=claim_ttl_seconds,
         owner=claim_owner,
         metadata={"entrypoint": "run_pipeline_dataset_stage"},
+    )
+    LOGGER.info(
+        "[pipeline] dataset_claim_created generation=%s claim_path=%s owner=%s expires_at=%s",
+        generation,
+        paths.pipeline_dataset_claim_path_for_generation(generation),
+        "none" if claim.owner is None else claim.owner,
+        claim.expires_at_utc,
     )
     timestamp_utc = _now_timestamp_utc()
     LOGGER.info("[pipeline] dataset_start generation=%s", generation)
@@ -573,16 +581,6 @@ def run_pipeline_dataset_stage(
         tree_snapshot_path = paths.resolve_work_dir_path(
             _require_manifest_tree_snapshot_path(manifest)
         )
-        if tree_snapshot_path is None or not tree_snapshot_path.is_file():
-            _raise_missing_tree_snapshot_file_error(tree_snapshot_path)
-        from anemone.training_export import load_training_tree_snapshot
-
-        snapshot = load_training_tree_snapshot(tree_snapshot_path)
-        rows = _extract_rows_from_training_snapshot(
-            args=args,
-            snapshot=snapshot,
-            generation=generation,
-        )
         rows_path = (
             paths.resolve_work_dir_path(manifest.rows_path)
             if manifest.rows_path is not None
@@ -590,12 +588,56 @@ def run_pipeline_dataset_stage(
         )
         if rows_path is None:
             rows_path = paths.rows_path_for_generation(generation)
+        LOGGER.info(
+            "[pipeline] dataset_export_start generation=%s tree_export=%s rows_output=%s config={min_depth=%s, min_visit_count=%s, max_rows=%s, target_policy=%s, use_backed_up_value=%s, require_exact_or_terminal=%s}",
+            generation,
+            tree_snapshot_path,
+            rows_path,
+            args.min_depth,
+            args.min_visit_count,
+            args.max_rows,
+            args.dataset_family_target_policy,
+            args.use_backed_up_value,
+            args.require_exact_or_terminal,
+        )
+        if tree_snapshot_path is None or not tree_snapshot_path.is_file():
+            LOGGER.info(
+                "[pipeline] dataset_skip generation=%s reason=missing_tree_export tree_export=%s manifest=%s",
+                generation,
+                tree_snapshot_path,
+                _pipeline_manifest_path(paths, generation),
+            )
+            _raise_missing_tree_snapshot_file_error(tree_snapshot_path)
+        from anemone.training_export import load_training_tree_snapshot
+
+        export_started_at = time.perf_counter()
+        snapshot = load_training_tree_snapshot(tree_snapshot_path)
+        rows = _extract_rows_from_training_snapshot(
+            args=args,
+            snapshot=snapshot,
+            generation=generation,
+        )
         save_morpion_supervised_rows(rows, rows_path)
+        rows_bytes = rows_path.stat().st_size if rows_path.is_file() else 0
+        export_elapsed_s = time.perf_counter() - export_started_at
+        LOGGER.info(
+            "[pipeline] dataset_export_done generation=%s rows=%s output=%s elapsed=%.3fs bytes=%s",
+            generation,
+            len(rows.rows),
+            rows_path,
+            export_elapsed_s,
+            rows_bytes,
+        )
         timestamp_utc = _now_timestamp_utc()
+        manifest_metadata = dict(manifest.metadata)
+        manifest_metadata["dataset_completed_at_utc"] = timestamp_utc
+        manifest_metadata["dataset_rows"] = len(rows.rows)
+        manifest_metadata["dataset_rows_bytes"] = rows_bytes
         manifest = replace(
             manifest,
             rows_path=paths.relative_to_work_dir(rows_path),
             dataset_status="done",
+            metadata=manifest_metadata,
         )
         save_pipeline_manifest(manifest, _pipeline_manifest_path(paths, generation))
         save_pipeline_dataset_status_file(
@@ -604,6 +646,13 @@ def run_pipeline_dataset_stage(
             updated_at_utc=timestamp_utc,
             metadata=manifest.metadata,
             path=paths.pipeline_dataset_status_path_for_generation(generation),
+        )
+        LOGGER.info(
+            "[pipeline] dataset_manifest_written generation=%s manifest=%s created_at=%s rows=%s",
+            generation,
+            _pipeline_manifest_path(paths, generation),
+            timestamp_utc,
+            len(rows.rows),
         )
         LOGGER.info(
             "[pipeline] dataset_done generation=%s rows=%s",
@@ -621,6 +670,11 @@ def run_pipeline_dataset_stage(
         LOGGER.exception("[pipeline] dataset_fail generation=%s", generation)
         raise
     else:
+        LOGGER.info(
+            "[pipeline] dataset_worker_done action=exported generation=%s elapsed=%.3fs",
+            generation,
+            time.perf_counter() - stage_started_at,
+        )
         return manifest
     finally:
         release_pipeline_stage_claim(

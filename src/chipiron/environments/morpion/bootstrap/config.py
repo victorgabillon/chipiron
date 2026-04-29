@@ -195,10 +195,23 @@ class IncompatibleStageBootstrapConfigError(ValueError):
         )
 
 
-# This knob changes how much growth work one launcher invocation batches, not the
-# persisted experiment semantics shared across workers.
-RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS = frozenset(
-    {"max_growth_steps_per_cycle"}
+# tree_branch_limit and max_growth_steps_per_cycle control growth worker
+# batching/stop conditions. They affect how much search work a process does,
+# but not the persisted experiment protocol used by dataset/training/reevaluation.
+GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS = frozenset(
+    {"max_growth_steps_per_cycle", "tree_branch_limit"}
+)
+
+STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS: dict[str, frozenset[str]] = {
+    "dataset": GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
+    "dataset_worker": GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
+    "training": GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
+    "training_worker": GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
+    "reevaluation": GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
+}
+
+RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS = (
+    GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
 )
 
 
@@ -605,12 +618,15 @@ def validate_stage_bootstrap_config_compatibility(
 ) -> None:
     """Validate that one stage matches the persisted bootstrap config."""
     owned_fields = set(bootstrap_fields_owned_by_stage(stage))
+    irrelevant_fields = STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS.get(stage, frozenset())
     persisted_values = _stage_bootstrap_config_field_values(persisted_config)
     requested_values = _stage_bootstrap_config_field_values(requested_config)
     for field_name in sorted(persisted_values):
         persisted_value = persisted_values[field_name]
         requested_value = requested_values[field_name]
-        if field_name in RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS:
+        if field_name in GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS:
+            continue
+        if field_name in irrelevant_fields:
             continue
         if persisted_value != requested_value:
             raise IncompatibleStageBootstrapConfigError.for_field(
@@ -826,6 +842,7 @@ def _metadata_dict(value: object) -> dict[str, object]:
 __all__ = [
     "BOOTSTRAP_CONFIG_HASH_METADATA_KEY",
     "DEFAULT_MORPION_TREE_BRANCH_LIMIT",
+    "GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS",
     "IncompatibleStageBootstrapConfigError",
     "MalformedMorpionBootstrapConfigError",
     "MorpionBootstrapConfig",
@@ -833,6 +850,7 @@ __all__ = [
     "MorpionBootstrapExperimentIdentityConfig",
     "MorpionBootstrapRuntimeConfig",
     "RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS",
+    "STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS",
     "UnsafeMorpionBootstrapConfigChangeError",
     "bootstrap_config_from_args",
     "bootstrap_config_from_dict",

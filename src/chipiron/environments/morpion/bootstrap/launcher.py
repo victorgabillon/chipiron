@@ -29,6 +29,7 @@ from .config import (
 )
 from .control import (
     MorpionBootstrapControl,
+    MorpionBootstrapEffectiveRuntimeConfig,
     effective_runtime_config_from_config_and_control,
     load_bootstrap_control,
 )
@@ -328,7 +329,6 @@ def _bootstrap_args_with_persisted_config(
         args,
         save_after_tree_growth_factor=persisted_config.runtime.save_after_tree_growth_factor,
         save_after_seconds=persisted_config.runtime.save_after_seconds,
-        tree_branch_limit=persisted_config.runtime.tree_branch_limit,
         require_exact_or_terminal=persisted_config.dataset.require_exact_or_terminal,
         min_depth=persisted_config.dataset.min_depth,
         min_visit_count=persisted_config.dataset.min_visit_count,
@@ -351,6 +351,10 @@ def _build_launcher_runner(
         startup_status.bootstrap_config,
         startup_status.control,
     )
+    if startup_status.control.runtime.tree_branch_limit is None:
+        effective_runtime_config = MorpionBootstrapEffectiveRuntimeConfig(
+            tree_branch_limit=startup_status.resolved_bootstrap_args.tree_branch_limit,
+        )
     runner_args = apply_runtime_control_to_runner_args(
         AnemoneMorpionSearchRunnerArgs(),
         effective_runtime_config,

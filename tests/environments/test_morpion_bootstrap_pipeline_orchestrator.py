@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import logging
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -494,9 +495,15 @@ def test_select_next_claimable_training_generation_skips_active_claim(
     assert selected == 2
 
 
-def test_dataset_worker_returns_no_work(tmp_path: Path) -> None:
+def test_dataset_worker_returns_no_work(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """Autonomous dataset worker should exit cleanly when no manifests exist."""
-    result = run_next_pipeline_dataset_stage_once(_artifact_pipeline_args(tmp_path))
+    with caplog.at_level(logging.INFO):
+        result = run_next_pipeline_dataset_stage_once(_artifact_pipeline_args(tmp_path))
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
 
     assert result == MorpionPipelineWorkerResult(
         stage="dataset",
@@ -504,6 +511,40 @@ def test_dataset_worker_returns_no_work(tmp_path: Path) -> None:
         ran_stage=False,
         reason="no_pending_work",
     )
+    assert "[pipeline] dataset_worker_start" in messages
+    assert "latest_dataset_generation=none" in messages
+    assert "dataset_selection_start latest_tree_generation=none" in messages
+    assert "dataset_worker_idle reason=no_claimable_generation" in messages
+    assert "dataset_worker_done action=idle generation=none" in messages
+
+
+def test_dataset_worker_logs_latest_completed_dataset_summary(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Autonomous dataset worker should report the latest completed dataset summary."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    save_pipeline_manifest(
+        MorpionPipelineGenerationManifest(
+            generation=1,
+            created_at_utc="2026-04-28T12:00:00Z",
+            rows_path="rows/generation_000001.json",
+            dataset_status="done",
+            metadata={"dataset_rows": 12, "dataset_completed_at_utc": "2026-04-28T12:03:00Z"},
+        ),
+        paths.pipeline_manifest_path_for_generation(1),
+    )
+
+    with caplog.at_level(logging.INFO):
+        result = run_next_pipeline_dataset_stage_once(_artifact_pipeline_args(tmp_path))
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+
+    assert result.reason == "no_pending_work"
+    assert "dataset_skip generation=1 reason=dataset_already_exists" in messages
+    assert "latest_dataset_generation=1" in messages
+    assert "latest_dataset_rows=12" in messages
 
 
 def test_training_worker_returns_no_work(tmp_path: Path) -> None:
@@ -597,6 +638,7 @@ def test_training_worker_runs_oldest_claimable_generation(
 def test_dataset_worker_skips_actively_claimed_oldest_generation(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Autonomous dataset worker should skip active claims during selection."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
@@ -629,14 +671,19 @@ def test_dataset_worker_skips_actively_claimed_oldest_generation(
         _fake_dataset_stage,
     )
 
-    result = run_next_pipeline_dataset_stage_once(
-        _artifact_pipeline_args(tmp_path),
-        now_unix_s=1001.0,
-    )
+    with caplog.at_level(logging.INFO):
+        result = run_next_pipeline_dataset_stage_once(
+            _artifact_pipeline_args(tmp_path),
+            now_unix_s=1001.0,
+        )
+
+    messages = "\n".join(record.getMessage() for record in caplog.records)
 
     assert captured == [2]
     assert result.generation == 2
     assert result.ran_stage is True
+    assert "dataset_skip generation=1 reason=active_claim_exists" in messages
+    assert "dataset_selection_done selected_generation=2 reason=oldest_claimable" in messages
 
 
 def test_training_worker_skips_actively_claimed_oldest_generation(

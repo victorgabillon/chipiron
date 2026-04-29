@@ -60,6 +60,7 @@ from chipiron.environments.morpion.bootstrap import (
     DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
     DEFAULT_MORPION_PIPELINE_MODE,
     DEFAULT_MORPION_TREE_BRANCH_LIMIT,
+    GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
     MORPION_BOOTSTRAP_GAME,
     MORPION_BOOTSTRAP_INITIAL_PATTERN,
     MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
@@ -75,6 +76,7 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionEvaluatorSpec,
     UnsafeMorpionBootstrapConfigChangeError,
     RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
+    STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS,
     bootstrap_config_from_args,
     bootstrap_config_sha256,
     bootstrap_fields_owned_by_stage,
@@ -281,6 +283,19 @@ def test_growth_worker_allows_runtime_relaunch_batch_size_drift(tmp_path: Path) 
     )
 
 
+def test_growth_worker_allows_runtime_tree_branch_limit_drift(tmp_path: Path) -> None:
+    """Growth workers may vary the tree branch limit between relaunches."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(replace(args, tree_branch_limit=1_000_000))
+    requested = bootstrap_config_from_args(replace(args, tree_branch_limit=128))
+
+    validate_stage_bootstrap_config_compatibility(
+        stage="growth",
+        persisted_config=persisted,
+        requested_config=requested,
+    )
+
+
 def test_loop_stage_allows_runtime_relaunch_batch_size_drift(tmp_path: Path) -> None:
     """Loop stage should allow the same runtime batching override."""
     args = _make_args(tmp_path)
@@ -297,22 +312,48 @@ def test_loop_stage_allows_runtime_relaunch_batch_size_drift(tmp_path: Path) -> 
 
 
 def test_dataset_worker_rejects_tree_branch_limit_drift(tmp_path: Path) -> None:
-    """Dataset workers must still reject frozen runtime policy drift."""
+    """Dataset workers should ignore growth-only runtime policy drift."""
     args = _make_args(tmp_path)
-    persisted = bootstrap_config_from_args(args)
+    persisted = bootstrap_config_from_args(replace(args, tree_branch_limit=1_000_000))
     requested = bootstrap_config_from_args(
-        replace(args, tree_branch_limit=args.tree_branch_limit + 1)
+        replace(args, tree_branch_limit=DEFAULT_MORPION_TREE_BRANCH_LIMIT)
     )
 
-    with pytest.raises(
-        IncompatibleStageBootstrapConfigError,
-        match="tree_branch_limit",
-    ):
-        validate_stage_bootstrap_config_compatibility(
-            stage="dataset_worker",
-            persisted_config=persisted,
-            requested_config=requested,
-        )
+    validate_stage_bootstrap_config_compatibility(
+        stage="dataset_worker",
+        persisted_config=persisted,
+        requested_config=requested,
+    )
+
+
+def test_training_worker_ignores_growth_runtime_drift(tmp_path: Path) -> None:
+    """Training workers should ignore growth-only runtime fields."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(replace(args, tree_branch_limit=1_000_000))
+    requested = bootstrap_config_from_args(
+        replace(args, tree_branch_limit=DEFAULT_MORPION_TREE_BRANCH_LIMIT)
+    )
+
+    validate_stage_bootstrap_config_compatibility(
+        stage="training_worker",
+        persisted_config=persisted,
+        requested_config=requested,
+    )
+
+
+def test_reevaluation_ignores_growth_runtime_drift(tmp_path: Path) -> None:
+    """Reevaluation workers should ignore growth-only runtime fields."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(replace(args, tree_branch_limit=1_000_000))
+    requested = bootstrap_config_from_args(
+        replace(args, tree_branch_limit=DEFAULT_MORPION_TREE_BRANCH_LIMIT)
+    )
+
+    validate_stage_bootstrap_config_compatibility(
+        stage="reevaluation",
+        persisted_config=persisted,
+        requested_config=requested,
+    )
 
 def test_bootstrap_config_from_args_contains_expected_fields(tmp_path: Path) -> None:
     """Args should normalize into one canonical persisted config object."""
@@ -522,8 +563,16 @@ def test_package_root_reexports_stage_config_ownership_helpers() -> None:
         is config_module.reevaluation_stage_owned_bootstrap_fields
     )
     assert (
+        bootstrap_package.GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
+        is config_module.GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
+    )
+    assert (
         bootstrap_package.bootstrap_fields_owned_by_stage
         is config_module.bootstrap_fields_owned_by_stage
+    )
+    assert (
+        bootstrap_package.STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS
+        is config_module.STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS
     )
     assert (
         bootstrap_package.RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
@@ -540,12 +589,24 @@ def test_stage_owned_field_helpers_are_stable() -> None:
     assert "min_visit_count" in dataset_stage_owned_bootstrap_fields()
     assert "num_epochs" in training_stage_owned_bootstrap_fields()
     assert "max_growth_steps_per_cycle" in growth_stage_owned_bootstrap_fields()
+    assert "tree_branch_limit" in growth_stage_owned_bootstrap_fields()
+    assert "tree_branch_limit" not in dataset_stage_owned_bootstrap_fields()
+    assert "tree_branch_limit" not in training_stage_owned_bootstrap_fields()
     assert reevaluation_stage_owned_bootstrap_fields() == ()
     assert bootstrap_fields_owned_by_stage("dataset_worker") == (
         dataset_stage_owned_bootstrap_fields()
     )
+    assert GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS == {
+        "max_growth_steps_per_cycle",
+        "tree_branch_limit",
+    }
     assert RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS == {
-        "max_growth_steps_per_cycle"
+        "max_growth_steps_per_cycle",
+        "tree_branch_limit",
+    }
+    assert STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS["dataset_worker"] == {
+        "max_growth_steps_per_cycle",
+        "tree_branch_limit",
     }
 
 
