@@ -39,7 +39,10 @@ from .pipeline_config import (
 )
 from .pipeline_orchestrator import (
     MorpionPipelineOrchestratorResult,
+    MorpionPipelineWorkerResult,
     run_morpion_artifact_pipeline_once,
+    run_next_pipeline_dataset_stage_once,
+    run_next_pipeline_training_stage_once,
 )
 from .pipeline_stages import (
     run_pipeline_dataset_stage,
@@ -123,6 +126,7 @@ def run_morpion_bootstrap_experiment(
     MorpionBootstrapRunState
     | MorpionPipelineGenerationManifest
     | MorpionPipelineOrchestratorResult
+    | MorpionPipelineWorkerResult
     | MorpionReevaluationWorkerResult
 ):
     """Run one persistent Morpion bootstrap experiment end to end.
@@ -180,6 +184,14 @@ def run_morpion_bootstrap_experiment(
         return run_morpion_reevaluation_worker_once(
             startup_status.resolved_bootstrap_args,
             max_nodes_per_patch=launcher_args.reevaluation_max_nodes_per_patch,
+        )
+    if launcher_args.pipeline_stage == "dataset_worker":
+        return run_next_pipeline_dataset_stage_once(
+            startup_status.resolved_bootstrap_args
+        )
+    if launcher_args.pipeline_stage == "training_worker":
+        return run_next_pipeline_training_stage_once(
+            startup_status.resolved_bootstrap_args
         )
     if launcher_args.pipeline_stage == "dataset":
         assert launcher_args.pipeline_generation is not None
@@ -469,12 +481,20 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--pipeline-stage",
-        choices=["loop", "growth", "dataset", "training", "reevaluation"],
+        choices=[
+            "loop",
+            "growth",
+            "dataset",
+            "dataset_worker",
+            "training",
+            "training_worker",
+            "reevaluation",
+        ],
         default="loop",
         help=(
             "Pipeline dispatch target. 'loop' preserves the current launcher behavior. "
-            "Artifact-pipeline mode also supports 'growth', 'dataset', 'training', "
-            "and 'reevaluation'."
+            "Artifact-pipeline mode also supports 'growth', 'dataset', "
+            "'dataset_worker', 'training', 'training_worker', and 'reevaluation'."
         ),
     )
     parser.add_argument(

@@ -61,6 +61,7 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapRunState,
     MorpionPipelineGenerationManifest,
     MorpionPipelineOrchestratorResult,
+    MorpionPipelineWorkerResult,
     claim_pipeline_stage,
     dataset_stage_is_pending,
     initialize_bootstrap_run_state,
@@ -70,6 +71,8 @@ from chipiron.environments.morpion.bootstrap import (
     load_pipeline_manifest,
     run_morpion_artifact_pipeline_once,
     run_morpion_bootstrap_experiment,
+    run_next_pipeline_dataset_stage_once,
+    run_next_pipeline_training_stage_once,
     save_pipeline_manifest,
     select_next_claimable_dataset_generation,
     select_next_claimable_training_generation,
@@ -491,6 +494,240 @@ def test_select_next_claimable_training_generation_skips_active_claim(
     assert selected == 2
 
 
+def test_dataset_worker_returns_no_work(tmp_path: Path) -> None:
+    """Autonomous dataset worker should exit cleanly when no manifests exist."""
+    result = run_next_pipeline_dataset_stage_once(_artifact_pipeline_args(tmp_path))
+
+    assert result == MorpionPipelineWorkerResult(
+        stage="dataset",
+        generation=None,
+        ran_stage=False,
+        reason="no_pending_work",
+    )
+
+
+def test_training_worker_returns_no_work(tmp_path: Path) -> None:
+    """Autonomous training worker should exit cleanly when no manifests exist."""
+    result = run_next_pipeline_training_stage_once(_artifact_pipeline_args(tmp_path))
+
+    assert result == MorpionPipelineWorkerResult(
+        stage="training",
+        generation=None,
+        ran_stage=False,
+        reason="no_pending_work",
+    )
+
+
+def test_dataset_worker_runs_oldest_claimable_generation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Autonomous dataset worker should run one oldest claimable generation."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_manifest(_dataset_manifest(2), paths.pipeline_manifest_path_for_generation(2))
+    save_pipeline_manifest(_dataset_manifest(1), paths.pipeline_manifest_path_for_generation(1))
+    captured: list[int] = []
+
+    def _fake_dataset_stage(
+        args: MorpionBootstrapArgs,
+        *,
+        generation: int,
+        claim_ttl_seconds: float = 3600.0,
+        claim_owner: str | None = None,
+    ) -> MorpionPipelineGenerationManifest:
+        del args, claim_ttl_seconds, claim_owner
+        captured.append(generation)
+        return _dataset_manifest(generation, dataset_status="done")
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_dataset_stage",
+        _fake_dataset_stage,
+    )
+
+    result = run_next_pipeline_dataset_stage_once(_artifact_pipeline_args(tmp_path))
+
+    assert captured == [1]
+    assert result == MorpionPipelineWorkerResult(
+        stage="dataset",
+        generation=1,
+        ran_stage=True,
+        reason=None,
+    )
+
+
+def test_training_worker_runs_oldest_claimable_generation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Autonomous training worker should run one oldest claimable generation."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_manifest(_training_manifest(2), paths.pipeline_manifest_path_for_generation(2))
+    save_pipeline_manifest(_training_manifest(1), paths.pipeline_manifest_path_for_generation(1))
+    captured: list[int] = []
+
+    def _fake_training_stage(
+        args: MorpionBootstrapArgs,
+        *,
+        generation: int,
+        claim_ttl_seconds: float = 3600.0,
+        claim_owner: str | None = None,
+    ) -> MorpionPipelineGenerationManifest:
+        del args, claim_ttl_seconds, claim_owner
+        captured.append(generation)
+        return _training_manifest(generation, training_status="done")
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_training_stage",
+        _fake_training_stage,
+    )
+
+    result = run_next_pipeline_training_stage_once(_artifact_pipeline_args(tmp_path))
+
+    assert captured == [1]
+    assert result == MorpionPipelineWorkerResult(
+        stage="training",
+        generation=1,
+        ran_stage=True,
+        reason=None,
+    )
+
+
+def test_dataset_worker_skips_actively_claimed_oldest_generation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Autonomous dataset worker should skip active claims during selection."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_manifest(_dataset_manifest(1), paths.pipeline_manifest_path_for_generation(1))
+    save_pipeline_manifest(_dataset_manifest(2), paths.pipeline_manifest_path_for_generation(2))
+    claim_pipeline_stage(
+        stage="dataset",
+        generation=1,
+        claim_path=paths.pipeline_dataset_claim_path_for_generation(1),
+        now_unix_s=1000.0,
+        ttl_seconds=100.0,
+        claim_id="dataset-claim-1",
+    )
+    captured: list[int] = []
+
+    def _fake_dataset_stage(
+        args: MorpionBootstrapArgs,
+        *,
+        generation: int,
+        claim_ttl_seconds: float = 3600.0,
+        claim_owner: str | None = None,
+    ) -> MorpionPipelineGenerationManifest:
+        del args, claim_ttl_seconds, claim_owner
+        captured.append(generation)
+        return _dataset_manifest(generation, dataset_status="done")
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_dataset_stage",
+        _fake_dataset_stage,
+    )
+
+    result = run_next_pipeline_dataset_stage_once(
+        _artifact_pipeline_args(tmp_path),
+        now_unix_s=1001.0,
+    )
+
+    assert captured == [2]
+    assert result.generation == 2
+    assert result.ran_stage is True
+
+
+def test_training_worker_skips_actively_claimed_oldest_generation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Autonomous training worker should skip active claims during selection."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_manifest(_training_manifest(1), paths.pipeline_manifest_path_for_generation(1))
+    save_pipeline_manifest(_training_manifest(2), paths.pipeline_manifest_path_for_generation(2))
+    claim_pipeline_stage(
+        stage="training",
+        generation=1,
+        claim_path=paths.pipeline_training_claim_path_for_generation(1),
+        now_unix_s=1000.0,
+        ttl_seconds=100.0,
+        claim_id="training-claim-1",
+    )
+    captured: list[int] = []
+
+    def _fake_training_stage(
+        args: MorpionBootstrapArgs,
+        *,
+        generation: int,
+        claim_ttl_seconds: float = 3600.0,
+        claim_owner: str | None = None,
+    ) -> MorpionPipelineGenerationManifest:
+        del args, claim_ttl_seconds, claim_owner
+        captured.append(generation)
+        return _training_manifest(generation, training_status="done")
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_training_stage",
+        _fake_training_stage,
+    )
+
+    result = run_next_pipeline_training_stage_once(
+        _artifact_pipeline_args(tmp_path),
+        now_unix_s=1001.0,
+    )
+
+    assert captured == [2]
+    assert result.generation == 2
+    assert result.ran_stage is True
+
+
+def test_dataset_worker_allows_expired_claim(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Autonomous dataset worker should treat expired claims as claimable."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_pipeline_manifest(_dataset_manifest(1), paths.pipeline_manifest_path_for_generation(1))
+    claim_pipeline_stage(
+        stage="dataset",
+        generation=1,
+        claim_path=paths.pipeline_dataset_claim_path_for_generation(1),
+        now_unix_s=1000.0,
+        ttl_seconds=10.0,
+        claim_id="dataset-claim-1",
+    )
+    captured: list[int] = []
+
+    def _fake_dataset_stage(
+        args: MorpionBootstrapArgs,
+        *,
+        generation: int,
+        claim_ttl_seconds: float = 3600.0,
+        claim_owner: str | None = None,
+    ) -> MorpionPipelineGenerationManifest:
+        del args, claim_ttl_seconds, claim_owner
+        captured.append(generation)
+        return _dataset_manifest(generation, dataset_status="done")
+
+    monkeypatch.setattr(
+        pipeline_orchestrator_module,
+        "run_pipeline_dataset_stage",
+        _fake_dataset_stage,
+    )
+
+    result = run_next_pipeline_dataset_stage_once(
+        _artifact_pipeline_args(tmp_path),
+        now_unix_s=1011.0,
+    )
+
+    assert captured == [1]
+    assert result.generation == 1
+    assert result.ran_stage is True
+
+
 def test_orchestrator_runs_full_sequential_pipeline_for_new_generation(
     tmp_path: Path,
 ) -> None:
@@ -642,8 +879,20 @@ def test_orchestrator_rejects_negative_max_growth_cycles(tmp_path: Path) -> None
 def test_package_root_reexports_pipeline_orchestrator_helpers() -> None:
     """Package root should expose the shared pipeline orchestrator helpers."""
     assert (
+        MorpionPipelineWorkerResult
+        is pipeline_orchestrator_module.MorpionPipelineWorkerResult
+    )
+    assert (
         load_available_pipeline_manifests
         is pipeline_orchestrator_module.load_available_pipeline_manifests
+    )
+    assert (
+        run_next_pipeline_dataset_stage_once
+        is pipeline_orchestrator_module.run_next_pipeline_dataset_stage_once
+    )
+    assert (
+        run_next_pipeline_training_stage_once
+        is pipeline_orchestrator_module.run_next_pipeline_training_stage_once
     )
     assert (
         run_morpion_artifact_pipeline_once

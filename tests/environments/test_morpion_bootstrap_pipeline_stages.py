@@ -8,7 +8,7 @@ import sys
 import time
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import pytest
 
@@ -63,6 +63,7 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapPaths,
     MorpionBootstrapRunState,
     MorpionPipelineGenerationManifest,
+    MorpionPipelineWorkerResult,
     MorpionReevaluationPatch,
     MorpionReevaluationPatchRow,
     MorpionReevaluationWorkerResult,
@@ -270,6 +271,11 @@ def _unexpected_reevaluation_runner_error() -> AssertionError:
     return AssertionError("reevaluation stage should not build a runner")
 
 
+def _unexpected_pipeline_worker_runner_error() -> AssertionError:
+    """Build the assertion used when worker dispatch builds a runner."""
+    return AssertionError("pipeline worker stage should not build a runner")
+
+
 def _negative_max_nodes_per_patch_error() -> ValueError:
     """Build the stable worker-style negative batch-size error."""
     return ValueError("max_nodes_per_patch must be >= 0")
@@ -287,6 +293,18 @@ def _make_reevaluation_worker_result() -> MorpionReevaluationWorkerResult:
         start_cursor=None,
         end_cursor=None,
         completed_full_pass_count=None,
+    )
+
+
+def _make_pipeline_worker_result(
+    stage: Literal["dataset", "training"],
+) -> MorpionPipelineWorkerResult:
+    """Build a representative pipeline worker result for launcher tests."""
+    return MorpionPipelineWorkerResult(
+        stage=stage,
+        generation=None,
+        ran_stage=False,
+        reason="test",
     )
 
 
@@ -864,9 +882,91 @@ def test_artifact_pipeline_reevaluation_negative_batch_size_propagates(
         run_morpion_bootstrap_experiment(launcher_args)
 
 
+def test_artifact_pipeline_dataset_worker_dispatches_autonomous_worker(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Dataset-worker CLI dispatch should call the autonomous worker only."""
+    captured: list[MorpionBootstrapArgs] = []
+    fake_result = _make_pipeline_worker_result("dataset")
+
+    def _fake_worker(args: MorpionBootstrapArgs) -> MorpionPipelineWorkerResult:
+        captured.append(args)
+        return fake_result
+
+    def _unexpected_runner(*args: object, **kwargs: object) -> object:
+        raise _unexpected_pipeline_worker_runner_error()
+
+    monkeypatch.setattr(launcher_module, "AnemoneMorpionSearchRunner", _unexpected_runner)
+    monkeypatch.setattr(
+        launcher_module,
+        "run_next_pipeline_dataset_stage_once",
+        _fake_worker,
+    )
+
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--pipeline-mode",
+            "artifact_pipeline",
+            "--pipeline-stage",
+            "dataset_worker",
+            "--no-print-startup-summary",
+            "--no-print-dashboard-hint",
+        ]
+    )
+    result = run_morpion_bootstrap_experiment(launcher_args)
+
+    assert result is fake_result
+    assert len(captured) == 1
+    assert captured[0].pipeline_mode == "artifact_pipeline"
+
+
+def test_artifact_pipeline_training_worker_dispatches_autonomous_worker(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Training-worker CLI dispatch should call the autonomous worker only."""
+    captured: list[MorpionBootstrapArgs] = []
+    fake_result = _make_pipeline_worker_result("training")
+
+    def _fake_worker(args: MorpionBootstrapArgs) -> MorpionPipelineWorkerResult:
+        captured.append(args)
+        return fake_result
+
+    def _unexpected_runner(*args: object, **kwargs: object) -> object:
+        raise _unexpected_pipeline_worker_runner_error()
+
+    monkeypatch.setattr(launcher_module, "AnemoneMorpionSearchRunner", _unexpected_runner)
+    monkeypatch.setattr(
+        launcher_module,
+        "run_next_pipeline_training_stage_once",
+        _fake_worker,
+    )
+
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--pipeline-mode",
+            "artifact_pipeline",
+            "--pipeline-stage",
+            "training_worker",
+            "--no-print-startup-summary",
+            "--no-print-dashboard-hint",
+        ]
+    )
+    result = run_morpion_bootstrap_experiment(launcher_args)
+
+    assert result is fake_result
+    assert len(captured) == 1
+    assert captured[0].pipeline_mode == "artifact_pipeline"
+
+
 @pytest.mark.parametrize(
     "pipeline_stage",
-    ["growth", "dataset", "training", "reevaluation"],
+    ["growth", "dataset", "dataset_worker", "training", "training_worker", "reevaluation"],
 )
 def test_single_process_rejects_non_loop_pipeline_stage(
     tmp_path: Path,

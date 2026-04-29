@@ -19,7 +19,9 @@ MorpionPipelineStage = Literal[
     "loop",
     "growth",
     "dataset",
+    "dataset_worker",
     "training",
+    "training_worker",
     "reevaluation",
 ]
 

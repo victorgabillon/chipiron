@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 from .bootstrap_paths import MorpionBootstrapPaths
 from .pipeline_artifacts import (
     MorpionPipelineGenerationManifest,
+    MorpionPipelineStageName,
     load_pipeline_manifest,
 )
 from .pipeline_claims import load_active_pipeline_stage_claim
@@ -44,6 +45,16 @@ class MorpionPipelineOrchestratorResult:
     growth_run_state: MorpionBootstrapRunState | None
     dataset_generations: tuple[int, ...]
     training_generations: tuple[int, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class MorpionPipelineWorkerResult:
+    """Summary of one autonomous one-shot artifact-pipeline worker pass."""
+
+    stage: MorpionPipelineStageName
+    generation: int | None
+    ran_stage: bool
+    reason: str | None
 
 
 def list_pipeline_manifest_generations(paths: MorpionBootstrapPaths) -> tuple[int, ...]:
@@ -151,6 +162,84 @@ def select_next_claimable_training_generation(
     return None
 
 
+def run_next_pipeline_dataset_stage_once(
+    args: MorpionBootstrapArgs,
+    *,
+    claim_ttl_seconds: float = 3600.0,
+    claim_owner: str | None = None,
+    now_unix_s: float | None = None,
+) -> MorpionPipelineWorkerResult:
+    """Run the oldest claimable pending dataset generation once, if any."""
+    _require_artifact_pipeline_mode(args)
+    paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
+    paths.ensure_directories()
+    manifests = load_available_pipeline_manifests(paths)
+    generation = select_next_claimable_dataset_generation(
+        paths,
+        manifests,
+        now_unix_s=now_unix_s,
+    )
+    if generation is None:
+        return MorpionPipelineWorkerResult(
+            stage="dataset",
+            generation=None,
+            ran_stage=False,
+            reason="no_pending_work",
+        )
+
+    run_pipeline_dataset_stage(
+        args,
+        generation=generation,
+        claim_ttl_seconds=claim_ttl_seconds,
+        claim_owner=claim_owner,
+    )
+    return MorpionPipelineWorkerResult(
+        stage="dataset",
+        generation=generation,
+        ran_stage=True,
+        reason=None,
+    )
+
+
+def run_next_pipeline_training_stage_once(
+    args: MorpionBootstrapArgs,
+    *,
+    claim_ttl_seconds: float = 3600.0,
+    claim_owner: str | None = None,
+    now_unix_s: float | None = None,
+) -> MorpionPipelineWorkerResult:
+    """Run the oldest claimable pending training generation once, if any."""
+    _require_artifact_pipeline_mode(args)
+    paths = MorpionBootstrapPaths.from_work_dir(args.work_dir)
+    paths.ensure_directories()
+    manifests = load_available_pipeline_manifests(paths)
+    generation = select_next_claimable_training_generation(
+        paths,
+        manifests,
+        now_unix_s=now_unix_s,
+    )
+    if generation is None:
+        return MorpionPipelineWorkerResult(
+            stage="training",
+            generation=None,
+            ran_stage=False,
+            reason="no_pending_work",
+        )
+
+    run_pipeline_training_stage(
+        args,
+        generation=generation,
+        claim_ttl_seconds=claim_ttl_seconds,
+        claim_owner=claim_owner,
+    )
+    return MorpionPipelineWorkerResult(
+        stage="training",
+        generation=generation,
+        ran_stage=True,
+        reason=None,
+    )
+
+
 def run_morpion_artifact_pipeline_once(
     args: MorpionBootstrapArgs,
     runner: MorpionSearchRunner,
@@ -217,10 +306,13 @@ def run_morpion_artifact_pipeline_once(
 
 __all__ = [
     "MorpionPipelineOrchestratorResult",
+    "MorpionPipelineWorkerResult",
     "dataset_stage_is_pending",
     "list_pipeline_manifest_generations",
     "load_available_pipeline_manifests",
     "run_morpion_artifact_pipeline_once",
+    "run_next_pipeline_dataset_stage_once",
+    "run_next_pipeline_training_stage_once",
     "select_next_claimable_dataset_generation",
     "select_next_claimable_training_generation",
     "select_next_dataset_generation",
