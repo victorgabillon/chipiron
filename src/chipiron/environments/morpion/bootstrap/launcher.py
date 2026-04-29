@@ -23,7 +23,6 @@ from .config import (
     DEFAULT_MORPION_TREE_BRANCH_LIMIT,
     MorpionBootstrapConfig,
     bootstrap_config_from_args,
-    bootstrap_fields_owned_by_stage,
     load_bootstrap_config,
     save_bootstrap_config,
     validate_stage_bootstrap_config_compatibility,
@@ -280,7 +279,6 @@ def _collect_launcher_startup_status(
         resolved_bootstrap_args = _bootstrap_args_with_persisted_config(
             resolved_bootstrap_args,
             persisted_config=bootstrap_config,
-            stage=launcher_args.pipeline_stage,
         )
     else:
         save_bootstrap_config(bootstrap_config, paths.bootstrap_config_path)
@@ -324,59 +322,26 @@ def _bootstrap_args_with_persisted_config(
     args: MorpionBootstrapArgs,
     *,
     persisted_config: MorpionBootstrapConfig,
-    stage: MorpionPipelineStage,
 ) -> MorpionBootstrapArgs:
-    """Apply persisted non-owned config fields to one stage's runtime args."""
-    owned_fields = set(bootstrap_fields_owned_by_stage(stage))
-    replacements: dict[str, object] = {}
-
-    def use_persisted(field_name: str, value: object) -> None:
-        if field_name not in owned_fields:
-            replacements[field_name] = value
-
-    use_persisted(
-        "max_growth_steps_per_cycle",
-        persisted_config.runtime.max_growth_steps_per_cycle,
+    """Apply the persisted bootstrap config to one stage's runtime args."""
+    return replace(
+        args,
+        max_growth_steps_per_cycle=persisted_config.runtime.max_growth_steps_per_cycle,
+        save_after_tree_growth_factor=persisted_config.runtime.save_after_tree_growth_factor,
+        save_after_seconds=persisted_config.runtime.save_after_seconds,
+        tree_branch_limit=persisted_config.runtime.tree_branch_limit,
+        require_exact_or_terminal=persisted_config.dataset.require_exact_or_terminal,
+        min_depth=persisted_config.dataset.min_depth,
+        min_visit_count=persisted_config.dataset.min_visit_count,
+        max_rows=persisted_config.dataset.max_rows,
+        use_backed_up_value=persisted_config.dataset.use_backed_up_value,
+        dataset_family_target_policy=persisted_config.dataset.family_target_policy,
+        dataset_family_prediction_blend=persisted_config.dataset.family_prediction_blend,
+        evaluator_update_policy=persisted_config.evaluator_update_policy,
+        pipeline_mode=persisted_config.pipeline_mode,
+        evaluators_config=persisted_config.evaluators,
+        evaluator_family_preset=None,
     )
-    use_persisted(
-        "save_after_tree_growth_factor",
-        persisted_config.runtime.save_after_tree_growth_factor,
-    )
-    use_persisted("save_after_seconds", persisted_config.runtime.save_after_seconds)
-    use_persisted("tree_branch_limit", persisted_config.runtime.tree_branch_limit)
-    use_persisted(
-        "require_exact_or_terminal",
-        persisted_config.dataset.require_exact_or_terminal,
-    )
-    use_persisted("min_depth", persisted_config.dataset.min_depth)
-    use_persisted("min_visit_count", persisted_config.dataset.min_visit_count)
-    use_persisted("max_rows", persisted_config.dataset.max_rows)
-    use_persisted("use_backed_up_value", persisted_config.dataset.use_backed_up_value)
-    use_persisted(
-        "dataset_family_target_policy",
-        persisted_config.dataset.family_target_policy,
-    )
-    use_persisted(
-        "dataset_family_prediction_blend",
-        persisted_config.dataset.family_prediction_blend,
-    )
-    use_persisted("evaluator_update_policy", persisted_config.evaluator_update_policy)
-    use_persisted("pipeline_mode", persisted_config.pipeline_mode)
-    if not (
-        {
-            "batch_size",
-            "num_epochs",
-            "learning_rate",
-            "model_kind",
-            "hidden_dim",
-            "evaluators_config",
-            "evaluator_family_preset",
-        }
-        & owned_fields
-    ):
-        replacements["evaluators_config"] = persisted_config.evaluators
-        replacements["evaluator_family_preset"] = None
-    return replace(args, **replacements)
 
 
 def _build_launcher_runner(

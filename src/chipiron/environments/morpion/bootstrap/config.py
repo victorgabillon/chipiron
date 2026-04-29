@@ -168,7 +168,7 @@ class UnsafeMorpionBootstrapConfigChangeError(ValueError):
 
 
 class IncompatibleStageBootstrapConfigError(ValueError):
-    """Raised when one worker changes fields owned by another pipeline stage."""
+    """Raised when one worker drifts from the persisted bootstrap config."""
 
     @classmethod
     def for_field(
@@ -178,12 +178,20 @@ class IncompatibleStageBootstrapConfigError(ValueError):
         field_name: str,
         persisted_value: object,
         requested_value: object,
+        stage_uses_field: bool,
     ) -> IncompatibleStageBootstrapConfigError:
         """Build one deterministic stage/config compatibility error."""
+        stage_message = (
+            f"field {field_name!r} is used by {stage}"
+            if stage_uses_field
+            else f"field {field_name!r} differs from the persisted bootstrap config"
+        )
         return cls(
             "Incompatible Morpion bootstrap config for "
-            f"pipeline stage {stage!r}: field {field_name!r} is not owned by this "
-            f"stage (persisted={persisted_value!r}, requested={requested_value!r})."
+            f"pipeline stage {stage!r}: {stage_message}, but bootstrap config is "
+            "already persisted. Change bootstrap_config.json intentionally or start "
+            "a new work_dir "
+            f"(persisted={persisted_value!r}, requested={requested_value!r})."
         )
 
 
@@ -588,13 +596,11 @@ def validate_stage_bootstrap_config_compatibility(
     persisted_config: MorpionBootstrapConfig,
     requested_config: MorpionBootstrapConfig,
 ) -> None:
-    """Validate that one stage only changes bootstrap fields it owns."""
+    """Validate that one stage matches the persisted bootstrap config."""
     owned_fields = set(bootstrap_fields_owned_by_stage(stage))
     persisted_values = _stage_bootstrap_config_field_values(persisted_config)
     requested_values = _stage_bootstrap_config_field_values(requested_config)
     for field_name in sorted(persisted_values):
-        if _config_field_is_owned_by_stage(field_name, owned_fields):
-            continue
         persisted_value = persisted_values[field_name]
         requested_value = requested_values[field_name]
         if persisted_value != requested_value:
@@ -603,6 +609,10 @@ def validate_stage_bootstrap_config_compatibility(
                 field_name=field_name,
                 persisted_value=persisted_value,
                 requested_value=requested_value,
+                stage_uses_field=_config_field_is_owned_by_stage(
+                    field_name,
+                    owned_fields,
+                ),
             )
 
 

@@ -969,11 +969,11 @@ def test_artifact_pipeline_worker_first_run_writes_bootstrap_config(
     )
 
 
-def test_dataset_worker_accepts_owned_persisted_config_difference(
+def test_dataset_worker_rejects_owned_persisted_config_difference(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Dataset workers should be allowed to vary dataset-owned fields."""
+    """Dataset workers should reject persisted dataset config drift."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     persisted_args = MorpionBootstrapArgs(
         work_dir=tmp_path,
@@ -1013,8 +1013,10 @@ def test_dataset_worker_accepts_owned_persisted_config_difference(
         ]
     )
 
-    assert run_morpion_bootstrap_experiment(launcher_args) is fake_result
-    assert captured[0].min_visit_count == 99
+    with pytest.raises(IncompatibleStageBootstrapConfigError, match="min_visit_count"):
+        run_morpion_bootstrap_experiment(launcher_args)
+
+    assert captured == []
 
 
 def test_dataset_worker_rejects_foreign_persisted_config_difference(

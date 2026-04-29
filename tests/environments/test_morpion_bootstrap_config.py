@@ -394,17 +394,18 @@ def test_safe_bootstrap_config_change_is_allowed() -> None:
     validate_bootstrap_config_change(previous, current)
 
 
-def test_dataset_worker_can_vary_owned_bootstrap_fields(tmp_path: Path) -> None:
-    """Dataset workers may own dataset extraction knobs."""
+def test_dataset_worker_rejects_owned_bootstrap_field_drift(tmp_path: Path) -> None:
+    """Dataset workers must match persisted dataset extraction knobs."""
     args = _make_args(tmp_path)
     persisted = bootstrap_config_from_args(args)
     requested = bootstrap_config_from_args(replace(args, min_visit_count=99))
 
-    validate_stage_bootstrap_config_compatibility(
-        stage="dataset_worker",
-        persisted_config=persisted,
-        requested_config=requested,
-    )
+    with pytest.raises(IncompatibleStageBootstrapConfigError, match="min_visit_count"):
+        validate_stage_bootstrap_config_compatibility(
+            stage="dataset_worker",
+            persisted_config=persisted,
+            requested_config=requested,
+        )
 
 
 def test_dataset_worker_rejects_growth_config_drift(tmp_path: Path) -> None:
@@ -426,8 +427,8 @@ def test_dataset_worker_rejects_growth_config_drift(tmp_path: Path) -> None:
         )
 
 
-def test_training_worker_can_vary_owned_bootstrap_fields(tmp_path: Path) -> None:
-    """Training workers may own existing evaluator/training knobs."""
+def test_training_worker_rejects_owned_bootstrap_field_drift(tmp_path: Path) -> None:
+    """Training workers must match persisted evaluator/training knobs."""
     args = MorpionBootstrapArgs(
         work_dir=tmp_path,
         pipeline_mode="artifact_pipeline",
@@ -437,11 +438,12 @@ def test_training_worker_can_vary_owned_bootstrap_fields(tmp_path: Path) -> None
     persisted = bootstrap_config_from_args(args)
     requested = bootstrap_config_from_args(replace(args, num_epochs=3, batch_size=4))
 
-    validate_stage_bootstrap_config_compatibility(
-        stage="training_worker",
-        persisted_config=persisted,
-        requested_config=requested,
-    )
+    with pytest.raises(IncompatibleStageBootstrapConfigError, match="evaluators"):
+        validate_stage_bootstrap_config_compatibility(
+            stage="training_worker",
+            persisted_config=persisted,
+            requested_config=requested,
+        )
 
 
 def test_growth_worker_rejects_dataset_config_drift(tmp_path: Path) -> None:
