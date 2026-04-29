@@ -43,8 +43,11 @@ if "anemone" not in sys.modules:
     _anemone_stub.__path__ = [str(_ANEMONE_PACKAGE_ROOT)]
     sys.modules["anemone"] = _anemone_stub
 
+from anemone.value_updates import NodeValueUpdate, NodeValueUpdateResult
+
 import chipiron.environments.morpion.bootstrap.reevaluation_patch_consumer as reevaluation_patch_consumer_module
 from chipiron.environments.morpion.bootstrap import (
+    AnemoneMorpionSearchRunner,
     MorpionBootstrapPaths,
     MorpionReevaluationPatch,
     MorpionReevaluationPatchConsumptionResult,
@@ -94,6 +97,34 @@ class _FailingRunner:
         """Raise the configured error when patch application is attempted."""
         del patch
         raise self.error
+
+
+class _FakeAnemoneRuntime:
+    """Fake live Anemone runtime for consumer-to-runner adapter tests."""
+
+    def __init__(self) -> None:
+        """Initialize captured call fields."""
+        self.received_updates: tuple[NodeValueUpdate, ...] | None = None
+        self.recompute_backups: bool | None = None
+        self.allow_missing: bool | None = None
+
+    def apply_node_value_updates(
+        self,
+        updates: object,
+        *,
+        recompute_backups: bool,
+        allow_missing: bool,
+    ) -> NodeValueUpdateResult:
+        """Capture updates and report one applied row plus one missing row."""
+        self.received_updates = tuple(updates)  # type: ignore[arg-type]
+        self.recompute_backups = recompute_backups
+        self.allow_missing = allow_missing
+        return NodeValueUpdateResult(
+            requested_count=len(self.received_updates),
+            applied_count=1,
+            missing_node_ids=("node-b",),
+            recomputed_count=3,
+        )
 
 
 def _make_patch(*, patch_id: str = "patch-1") -> MorpionReevaluationPatch:
@@ -160,6 +191,70 @@ def test_patch_is_applied_and_deleted(tmp_path: Path) -> None:
     )
     assert runner.received_patches == [patch]
     assert not paths.pipeline_reevaluation_patch_path.exists()
+
+
+def test_patch_consumer_applies_patch_through_anemone_runner_adapter(
+    tmp_path: Path,
+) -> None:
+    """Consumer should reach the real Anemone runner patch adapter."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    patch = MorpionReevaluationPatch(
+        patch_id="patch-anemone-runner",
+        created_at_utc="2026-04-28T12:00:00Z",
+        evaluator_generation=2,
+        evaluator_name="default",
+        model_bundle_path="models/generation_000002/default",
+        rows=(
+            MorpionReevaluationPatchRow(
+                node_id="node-a",
+                direct_value=1.25,
+                backed_up_value=None,
+                is_exact=False,
+                is_terminal=False,
+                metadata={"source": "test"},
+            ),
+            MorpionReevaluationPatchRow(
+                node_id="node-b",
+                direct_value=2.5,
+                backed_up_value=2.75,
+                is_exact=True,
+                is_terminal=None,
+                metadata={"source": "test"},
+            ),
+        ),
+    )
+    save_reevaluation_patch(patch, paths.pipeline_reevaluation_patch_path)
+    runner = AnemoneMorpionSearchRunner()
+    fake_runtime = _FakeAnemoneRuntime()
+    runner._runtime = fake_runtime
+
+    result = apply_pending_reevaluation_patch_to_runner(paths=paths, runner=runner)
+
+    assert result == MorpionReevaluationPatchConsumptionResult(
+        patch_found=True,
+        patch_applied=True,
+        patch_id="patch-anemone-runner",
+        num_rows=1,
+        reason=None,
+    )
+    assert not paths.pipeline_reevaluation_patch_path.exists()
+    assert fake_runtime.recompute_backups is True
+    assert fake_runtime.allow_missing is True
+    assert fake_runtime.received_updates is not None
+    assert len(fake_runtime.received_updates) == 2
+    first, second = fake_runtime.received_updates
+    assert first.node_id == "node-a"
+    assert first.direct_value == 1.25
+    assert first.backed_up_value is None
+    assert first.is_exact is False
+    assert first.is_terminal is False
+    assert first.metadata == {"source": "test"}
+    assert second.node_id == "node-b"
+    assert second.direct_value == 2.5
+    assert second.backed_up_value == 2.75
+    assert second.is_exact is True
+    assert second.is_terminal is None
 
 
 def test_patch_not_deleted_when_runner_fails(tmp_path: Path) -> None:

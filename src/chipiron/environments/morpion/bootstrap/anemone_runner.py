@@ -41,6 +41,7 @@ from anemone.training_export import (
     build_training_tree_snapshot,
     save_training_tree_snapshot,
 )
+from anemone.value_updates import NodeValueUpdate
 from atomheart.games.morpion import MorpionStateCheckpointCodec, initial_state
 from dacite import Config, from_dict
 from valanga.evaluations import Certainty, Value
@@ -202,6 +203,13 @@ class UninitializedMorpionSearchRunnerError(RuntimeError):
         super().__init__(
             "AnemoneMorpionSearchRunner has no live runtime. Call load_or_create() first."
         )
+
+
+def _uninitialized_reevaluation_patch_runtime_error() -> RuntimeError:
+    """Build the stable missing-runtime error for live patch application."""
+    return RuntimeError(
+        "Cannot apply Morpion reevaluation patch before the Anemone search runtime is initialized."
+    )
 
 
 class InvalidMorpionSearchCheckpointError(ValueError):
@@ -532,10 +540,41 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
 
     def apply_reevaluation_patch(self, patch: MorpionReevaluationPatch) -> int:
         """Apply one reevaluation patch to the live runtime tree."""
-        del patch
-        raise NotImplementedError(
-            "AnemoneMorpionSearchRunner.apply_reevaluation_patch() is not implemented yet."
+        runtime = self._runtime
+        if runtime is None:
+            raise _uninitialized_reevaluation_patch_runtime_error()
+        runtime = cast("Any", runtime)
+        updates = tuple(
+            NodeValueUpdate(
+                node_id=row.node_id,
+                direct_value=row.direct_value,
+                backed_up_value=row.backed_up_value,
+                is_exact=row.is_exact,
+                is_terminal=row.is_terminal,
+                metadata=row.metadata,
+            )
+            for row in patch.rows
         )
+        LOGGER.info(
+            "[reevaluation-patch] runner_apply_start patch_id=%s rows=%s",
+            patch.patch_id,
+            len(updates),
+        )
+        result = runtime.apply_node_value_updates(
+            updates,
+            recompute_backups=True,
+            allow_missing=True,
+        )
+        LOGGER.info(
+            "[reevaluation-patch] runner_apply_done "
+            "patch_id=%s requested=%s applied=%s missing=%s recomputed=%s",
+            patch.patch_id,
+            result.requested_count,
+            result.applied_count,
+            len(result.missing_node_ids),
+            result.recomputed_count,
+        )
+        return result.applied_count
 
     def current_runtime_config(self) -> MorpionBootstrapEffectiveRuntimeConfig:
         """Return the effective runtime config used to build the live runtime."""

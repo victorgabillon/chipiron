@@ -62,6 +62,7 @@ from anemone.node_selector.priority_check.noop_args import NoPriorityCheckArgs
 from anemone.progress_monitor.progress_monitor import TreeBranchLimitArgs
 from anemone.recommender_rule.recommender_rule import AlmostEqualLogistic
 from anemone.training_export import load_training_tree_snapshot
+from anemone.value_updates import NodeValueUpdate, NodeValueUpdateResult
 
 import chipiron.environments.morpion.bootstrap.anemone_runner as anemone_runner_module
 from chipiron.environments.morpion.bootstrap import (
@@ -76,6 +77,8 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapRuntimeControl,
     MorpionEvaluatorsConfig,
     MorpionEvaluatorSpec,
+    MorpionReevaluationPatch,
+    MorpionReevaluationPatchRow,
     UnsupportedMorpionRuntimeReconfigurationError,
     load_bootstrap_history,
     run_morpion_bootstrap_loop,
@@ -144,6 +147,63 @@ def _multi_evaluator_config() -> MorpionEvaluatorsConfig:
     )
 
 
+class FakeAnemoneRuntime:
+    """Tiny fake for live Anemone node-value update application."""
+
+    def __init__(self) -> None:
+        """Initialize captured call fields."""
+        self.received_updates: tuple[NodeValueUpdate, ...] | None = None
+        self.recompute_backups: bool | None = None
+        self.allow_missing: bool | None = None
+
+    def apply_node_value_updates(
+        self,
+        updates: object,
+        *,
+        recompute_backups: bool,
+        allow_missing: bool,
+    ) -> NodeValueUpdateResult:
+        """Capture updates and return a representative partial-application result."""
+        self.received_updates = tuple(updates)  # type: ignore[arg-type]
+        self.recompute_backups = recompute_backups
+        self.allow_missing = allow_missing
+        return NodeValueUpdateResult(
+            requested_count=len(self.received_updates),
+            applied_count=1,
+            missing_node_ids=("missing-node",),
+            recomputed_count=3,
+        )
+
+
+def _make_reevaluation_patch() -> MorpionReevaluationPatch:
+    """Build one representative reevaluation patch for runner adapter tests."""
+    return MorpionReevaluationPatch(
+        patch_id="patch-1",
+        created_at_utc="2026-04-28T12:00:00Z",
+        evaluator_generation=2,
+        evaluator_name="default",
+        model_bundle_path="models/generation_000002/default",
+        rows=(
+            MorpionReevaluationPatchRow(
+                node_id="node-a",
+                direct_value=1.25,
+                backed_up_value=None,
+                is_exact=False,
+                is_terminal=False,
+                metadata={"source": "test"},
+            ),
+            MorpionReevaluationPatchRow(
+                node_id="node-b",
+                direct_value=2.5,
+                backed_up_value=2.75,
+                is_exact=True,
+                is_terminal=None,
+                metadata={"source": "test"},
+            ),
+        ),
+    )
+
+
 def _patch_reported_losses(
     monkeypatch: pytest.MonkeyPatch,
     *,
@@ -202,6 +262,59 @@ def test_runner_state_codec_exposes_incremental_checkpoint_protocol() -> None:
     assert hasattr(state_codec, "dump_state_summary")
     assert not hasattr(state_codec, "begin_restore_session")
     assert not hasattr(state_codec, "finish_restore_session")
+
+
+def test_apply_reevaluation_patch_converts_rows_to_anemone_updates(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """The runner hook should adapt patch rows into live Anemone updates."""
+    runner = AnemoneMorpionSearchRunner()
+    fake_runtime = FakeAnemoneRuntime()
+    runner._runtime = fake_runtime
+    patch = _make_reevaluation_patch()
+    caplog.set_level(logging.INFO)
+
+    applied = runner.apply_reevaluation_patch(patch)
+
+    assert applied == 1
+    assert fake_runtime.recompute_backups is True
+    assert fake_runtime.allow_missing is True
+    assert fake_runtime.received_updates is not None
+    assert len(fake_runtime.received_updates) == 2
+
+    first, second = fake_runtime.received_updates
+    assert first.node_id == "node-a"
+    assert first.direct_value == 1.25
+    assert first.backed_up_value is None
+    assert first.is_exact is False
+    assert first.is_terminal is False
+    assert first.metadata == {"source": "test"}
+
+    assert second.node_id == "node-b"
+    assert second.direct_value == 2.5
+    assert second.backed_up_value == 2.75
+    assert second.is_exact is True
+    assert second.is_terminal is None
+    assert (
+        "[reevaluation-patch] runner_apply_start patch_id=patch-1 rows=2"
+        in caplog.text
+    )
+    done_log = (
+        "[reevaluation-patch] runner_apply_done "
+        "patch_id=patch-1 requested=2 applied=1 missing=1 recomputed=3"
+    )
+    assert done_log in caplog.text
+
+
+def test_apply_reevaluation_patch_requires_initialized_runtime() -> None:
+    """The runner hook should fail clearly before a live runtime exists."""
+    runner = AnemoneMorpionSearchRunner()
+
+    with pytest.raises(
+        RuntimeError,
+        match=r"reevaluation patch.*runtime.*initialized|before.*initialized",
+    ):
+        runner.apply_reevaluation_patch(_make_reevaluation_patch())
 
 
 def test_fresh_runtime_with_evaluator_bundle(tmp_path: Path) -> None:
