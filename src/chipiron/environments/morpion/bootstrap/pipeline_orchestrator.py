@@ -12,6 +12,7 @@ from .pipeline_artifacts import (
     MorpionPipelineGenerationManifest,
     load_pipeline_manifest,
 )
+from .pipeline_claims import load_active_pipeline_stage_claim
 from .pipeline_stages import (
     _require_artifact_pipeline_mode,
     run_pipeline_dataset_stage,
@@ -20,6 +21,8 @@ from .pipeline_stages import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from .bootstrap_args import MorpionBootstrapArgs
     from .run_state import MorpionBootstrapRunState
     from .search_runner_protocol import MorpionSearchRunner
@@ -88,6 +91,64 @@ def training_stage_is_pending(manifest: MorpionPipelineGenerationManifest) -> bo
         and manifest.dataset_status == "done"
         and manifest.training_status in {"not_started", "failed"}
     )
+
+
+def select_next_dataset_generation(
+    manifests: Mapping[int, MorpionPipelineGenerationManifest],
+) -> int | None:
+    """Return the oldest generation whose dataset stage is pending."""
+    for generation in sorted(manifests):
+        if dataset_stage_is_pending(manifests[generation]):
+            return generation
+    return None
+
+
+def select_next_training_generation(
+    manifests: Mapping[int, MorpionPipelineGenerationManifest],
+) -> int | None:
+    """Return the oldest generation whose training stage is pending."""
+    for generation in sorted(manifests):
+        if training_stage_is_pending(manifests[generation]):
+            return generation
+    return None
+
+
+def select_next_claimable_dataset_generation(
+    paths: MorpionBootstrapPaths,
+    manifests: Mapping[int, MorpionPipelineGenerationManifest],
+    *,
+    now_unix_s: float | None = None,
+) -> int | None:
+    """Return the oldest pending dataset generation without an active claim."""
+    for generation in sorted(manifests):
+        if not dataset_stage_is_pending(manifests[generation]):
+            continue
+        claim = load_active_pipeline_stage_claim(
+            paths.pipeline_dataset_claim_path_for_generation(generation),
+            now_unix_s=now_unix_s,
+        )
+        if claim is None:
+            return generation
+    return None
+
+
+def select_next_claimable_training_generation(
+    paths: MorpionBootstrapPaths,
+    manifests: Mapping[int, MorpionPipelineGenerationManifest],
+    *,
+    now_unix_s: float | None = None,
+) -> int | None:
+    """Return the oldest pending training generation without an active claim."""
+    for generation in sorted(manifests):
+        if not training_stage_is_pending(manifests[generation]):
+            continue
+        claim = load_active_pipeline_stage_claim(
+            paths.pipeline_training_claim_path_for_generation(generation),
+            now_unix_s=now_unix_s,
+        )
+        if claim is None:
+            return generation
+    return None
 
 
 def run_morpion_artifact_pipeline_once(
@@ -160,5 +221,9 @@ __all__ = [
     "list_pipeline_manifest_generations",
     "load_available_pipeline_manifests",
     "run_morpion_artifact_pipeline_once",
+    "select_next_claimable_dataset_generation",
+    "select_next_claimable_training_generation",
+    "select_next_dataset_generation",
+    "select_next_training_generation",
     "training_stage_is_pending",
 ]

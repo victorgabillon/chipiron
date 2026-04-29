@@ -61,6 +61,7 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapRunState,
     MorpionPipelineGenerationManifest,
     MorpionPipelineOrchestratorResult,
+    claim_pipeline_stage,
     dataset_stage_is_pending,
     initialize_bootstrap_run_state,
     list_pipeline_manifest_generations,
@@ -70,6 +71,10 @@ from chipiron.environments.morpion.bootstrap import (
     run_morpion_artifact_pipeline_once,
     run_morpion_bootstrap_experiment,
     save_pipeline_manifest,
+    select_next_claimable_dataset_generation,
+    select_next_claimable_training_generation,
+    select_next_dataset_generation,
+    select_next_training_generation,
     training_stage_is_pending,
 )
 from chipiron.environments.morpion.learning import (
@@ -210,6 +215,38 @@ def _write_manifest(path: Path) -> None:
     path.write_text("{}\n", encoding="utf-8")
 
 
+def _dataset_manifest(
+    generation: int,
+    *,
+    tree_snapshot_path: str | None = "tree_exports/generation_000001.json",
+    dataset_status: str = "not_started",
+) -> MorpionPipelineGenerationManifest:
+    """Build one manifest with dataset-stage fields for selection tests."""
+    return MorpionPipelineGenerationManifest(
+        generation=generation,
+        created_at_utc="2026-04-28T12:00:00Z",
+        tree_snapshot_path=tree_snapshot_path,
+        dataset_status=dataset_status,
+    )
+
+
+def _training_manifest(
+    generation: int,
+    *,
+    rows_path: str | None = "rows/generation_000001.json",
+    dataset_status: str = "done",
+    training_status: str = "not_started",
+) -> MorpionPipelineGenerationManifest:
+    """Build one manifest with training-stage fields for selection tests."""
+    return MorpionPipelineGenerationManifest(
+        generation=generation,
+        created_at_utc="2026-04-28T12:00:00Z",
+        rows_path=rows_path,
+        dataset_status=dataset_status,
+        training_status=training_status,
+    )
+
+
 def test_list_pipeline_manifest_generations_ignores_malformed_entries(
     tmp_path: Path,
 ) -> None:
@@ -329,6 +366,129 @@ def test_pending_stage_predicates_cover_dataset_and_training_cases() -> None:
             training_status="done",
         )
     )
+
+
+def test_select_next_dataset_generation_returns_oldest_pending() -> None:
+    """Dataset selection should use ascending numeric generation order."""
+    manifests = {
+        3: _dataset_manifest(3),
+        1: _dataset_manifest(1, dataset_status="done"),
+        2: _dataset_manifest(2),
+    }
+
+    assert select_next_dataset_generation(manifests) == 2
+
+
+def test_select_next_dataset_generation_returns_none_without_pending() -> None:
+    """Dataset selection should return None when no manifest is ready."""
+    manifests = {
+        1: _dataset_manifest(1, tree_snapshot_path=None),
+        2: _dataset_manifest(2, dataset_status="done"),
+        3: _dataset_manifest(3, dataset_status="exporting_tree"),
+    }
+
+    assert select_next_dataset_generation(manifests) is None
+
+
+def test_select_next_training_generation_returns_oldest_pending() -> None:
+    """Training selection should use ascending numeric generation order."""
+    manifests = {
+        3: _training_manifest(3, training_status="failed"),
+        1: _training_manifest(1, training_status="done"),
+        2: _training_manifest(2, training_status="not_started"),
+    }
+
+    assert select_next_training_generation(manifests) == 2
+
+
+def test_select_next_training_generation_returns_none_without_pending() -> None:
+    """Training selection should return None when no manifest is ready."""
+    manifests = {
+        1: _training_manifest(1, dataset_status="not_started"),
+        2: _training_manifest(2, rows_path=None),
+        3: _training_manifest(3, training_status="done"),
+    }
+
+    assert select_next_training_generation(manifests) is None
+
+
+def test_select_next_claimable_dataset_generation_skips_active_claim(
+    tmp_path: Path,
+) -> None:
+    """Claim-aware dataset selection should skip actively claimed generations."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    manifests = {
+        1: _dataset_manifest(1),
+        2: _dataset_manifest(2),
+    }
+    claim_pipeline_stage(
+        stage="dataset",
+        generation=1,
+        claim_path=paths.pipeline_dataset_claim_path_for_generation(1),
+        now_unix_s=1000.0,
+        ttl_seconds=100.0,
+        claim_id="dataset-claim-1",
+    )
+
+    selected = select_next_claimable_dataset_generation(
+        paths,
+        manifests,
+        now_unix_s=1001.0,
+    )
+
+    assert selected == 2
+
+
+def test_select_next_claimable_dataset_generation_allows_expired_claim(
+    tmp_path: Path,
+) -> None:
+    """Claim-aware dataset selection should treat expired claims as claimable."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    manifests = {1: _dataset_manifest(1)}
+    claim_path = paths.pipeline_dataset_claim_path_for_generation(1)
+    claim_pipeline_stage(
+        stage="dataset",
+        generation=1,
+        claim_path=claim_path,
+        now_unix_s=1000.0,
+        ttl_seconds=10.0,
+        claim_id="dataset-claim-1",
+    )
+
+    selected = select_next_claimable_dataset_generation(
+        paths,
+        manifests,
+        now_unix_s=1011.0,
+    )
+
+    assert selected == 1
+
+
+def test_select_next_claimable_training_generation_skips_active_claim(
+    tmp_path: Path,
+) -> None:
+    """Claim-aware training selection should skip actively claimed generations."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    manifests = {
+        1: _training_manifest(1),
+        2: _training_manifest(2),
+    }
+    claim_pipeline_stage(
+        stage="training",
+        generation=1,
+        claim_path=paths.pipeline_training_claim_path_for_generation(1),
+        now_unix_s=1000.0,
+        ttl_seconds=100.0,
+        claim_id="training-claim-1",
+    )
+
+    selected = select_next_claimable_training_generation(
+        paths,
+        manifests,
+        now_unix_s=1001.0,
+    )
+
+    assert selected == 2
 
 
 def test_orchestrator_runs_full_sequential_pipeline_for_new_generation(
@@ -488,4 +648,24 @@ def test_package_root_reexports_pipeline_orchestrator_helpers() -> None:
     assert (
         run_morpion_artifact_pipeline_once
         is pipeline_orchestrator_module.run_morpion_artifact_pipeline_once
+    )
+
+
+def test_package_root_reexports_pending_work_selection_helpers() -> None:
+    """Package root should expose pending-work selection helpers."""
+    assert (
+        select_next_dataset_generation
+        is pipeline_orchestrator_module.select_next_dataset_generation
+    )
+    assert (
+        select_next_training_generation
+        is pipeline_orchestrator_module.select_next_training_generation
+    )
+    assert (
+        select_next_claimable_dataset_generation
+        is pipeline_orchestrator_module.select_next_claimable_dataset_generation
+    )
+    assert (
+        select_next_claimable_training_generation
+        is pipeline_orchestrator_module.select_next_claimable_training_generation
     )

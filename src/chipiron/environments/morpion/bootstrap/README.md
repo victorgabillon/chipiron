@@ -38,35 +38,107 @@ python -m chipiron.environments.morpion.bootstrap.launcher \
 * Make sure this directory is on a **large partition** (e.g. `~/oldata`)
 * Logs are saved to `launcher_console.log`
 
-### Artifact-pipeline workers
+### Run modes
 
-Artifact-pipeline mode splits growth, dataset extraction, training, and
-reevaluation into file-driven stages. The `loop` stage is still the current
-orchestrator: one launcher invocation runs growth, then all pending dataset and
-training work once.
+`single_process` is the simplest legacy mode. It runs search, dataset export,
+training, and checkpointing in one in-process loop. The command above uses this
+mode by default.
+
+`artifact_pipeline` is the Phase 8 file-driven mode. It splits work into staged
+launcher invocations and adds a reevaluation patch producer. The recommended
+operator setup is two supervised shell loops:
+
+* one loop for `--pipeline-stage loop`
+* one loop for `--pipeline-stage reevaluation`
+
+The `loop` stage performs growth and all pending dataset/training work once per
+invocation. The `reevaluation` stage produces at most one bounded patch per
+invocation. Both commands exit after one pass, so use a shell loop, `systemd`,
+or another supervisor to keep them running.
+
+### Recommended artifact-pipeline launch
+
+Terminal 1: growth plus pending dataset/training work.
 
 ```bash
-# Terminal 1: orchestrated growth + pending dataset/training work
+while true; do
+  python -m chipiron.environments.morpion.bootstrap.launcher \
+    --work-dir ~/oldata/victor/morpion_runs/big_run_01 \
+    --pipeline-mode artifact_pipeline \
+    --pipeline-stage loop
+  sleep 5
+done
+```
+
+Terminal 2: reevaluation patch producer.
+
+```bash
+while true; do
+  python -m chipiron.environments.morpion.bootstrap.launcher \
+    --work-dir ~/oldata/victor/morpion_runs/big_run_01 \
+    --pipeline-mode artifact_pipeline \
+    --pipeline-stage reevaluation \
+    --reevaluation-max-nodes-per-patch 10000
+  sleep 2
+done
+```
+
+### Reevaluation patch contract
+
+The reevaluation worker writes only one pending patch at a time:
+`pipeline/reevaluation_patch.json`. If that file already exists, reevaluation
+skips instead of overwriting it. Growth consumes the pending patch before tree
+growth and deletes it only after successful application. If patch application
+fails, the patch remains on disk for diagnosis and retry.
+
+This singleton contract avoids multiple huge checkpoint copies and keeps one
+checkpoint/tree runtime owner: the growth process.
+
+### Reevaluation batch size
+
+`--reevaluation-max-nodes-per-patch` bounds one patch artifact. The default is
+`10000`.
+
+* Smaller values reduce patch size and application latency.
+* Larger values improve throughput but can create large JSON artifacts.
+* The worker uses `pipeline/reevaluation_cursor.json`, so repeated passes should
+  eventually cover the whole tree instead of looping forever on the first N
+  nodes.
+
+### Active evaluator behavior
+
+Training writes and updates `pipeline/active_model.json`. Reevaluation uses the
+current active model. If the active model changes, the reevaluation cursor
+resets so the next pass starts over for that evaluator. The best selected
+evaluator remains the source for both future growth and reevaluation.
+
+### Manual/debug stages
+
+Manual stage commands are useful for debugging specific generations, but they
+are not the recommended normal operator pattern.
+
+```bash
+# One growth pass
 python -m chipiron.environments.morpion.bootstrap.launcher \
   --work-dir ~/oldata/victor/morpion_runs/big_run_01 \
   --pipeline-mode artifact_pipeline \
-  --pipeline-stage loop
+  --pipeline-stage growth
 
-# Terminal 2: one dataset stage for a known generation
+# One dataset stage for a known generation
 python -m chipiron.environments.morpion.bootstrap.launcher \
   --work-dir ~/oldata/victor/morpion_runs/big_run_01 \
   --pipeline-mode artifact_pipeline \
   --pipeline-stage dataset \
-  --pipeline-generation <N>
+  --pipeline-generation N
 
-# Terminal 3: one training stage for a known generation
+# One training stage for a known generation
 python -m chipiron.environments.morpion.bootstrap.launcher \
   --work-dir ~/oldata/victor/morpion_runs/big_run_01 \
   --pipeline-mode artifact_pipeline \
   --pipeline-stage training \
-  --pipeline-generation <N>
+  --pipeline-generation N
 
-# Terminal 4: one reevaluation pass producing at most one pending patch
+# One reevaluation pass
 python -m chipiron.environments.morpion.bootstrap.launcher \
   --work-dir ~/oldata/victor/morpion_runs/big_run_01 \
   --pipeline-mode artifact_pipeline \
@@ -74,10 +146,36 @@ python -m chipiron.environments.morpion.bootstrap.launcher \
   --reevaluation-max-nodes-per-patch 10000
 ```
 
-The reevaluation stage exits after one pass. A shell loop or supervisor can
-repeat it. If a pending reevaluation patch already exists, the worker skips
-without overwriting it; the growth stage consumes one pending patch before
-calling `grow()`.
+### Artifact files to inspect
+
+Inside `<work_dir>`:
+
+* `pipeline/active_model.json`
+* `pipeline/reevaluation_patch.json`
+* `pipeline/reevaluation_cursor.json`
+* `pipeline/generation_000001/manifest.json`
+* `pipeline/generation_000001/dataset_status.json`
+* `pipeline/generation_000001/training_status.json`
+* `pipeline/generation_000001/dataset_claim.json`
+* `pipeline/generation_000001/training_claim.json`
+
+### Troubleshooting artifact-pipeline runs
+
+* Reevaluation keeps skipping: check whether
+  `pipeline/reevaluation_patch.json` exists. Growth may not be running, or patch
+  application may be failing.
+* No reevaluation patch is produced: check that `pipeline/active_model.json`
+  exists and that at least one manifest has a usable tree snapshot.
+* Dataset/training blocked: inspect the claim files. Stale claims expire by TTL.
+* Patch too large: lower `--reevaluation-max-nodes-per-patch`.
+* Growth fails on patch application: do not delete the patch immediately.
+  Inspect logs and the patch content first.
+
+### Dependency expectation
+
+Chipiron must run with an Anemone version that provides
+`anemone.value_updates.NodeValueUpdate` and
+`TreeExploration.apply_node_value_updates`.
 
 ---
 

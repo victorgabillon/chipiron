@@ -198,6 +198,10 @@ from .pipeline_orchestrator import (
     list_pipeline_manifest_generations,
     load_available_pipeline_manifests,
     run_morpion_artifact_pipeline_once,
+    select_next_claimable_dataset_generation,
+    select_next_claimable_training_generation,
+    select_next_dataset_generation,
+    select_next_training_generation,
     training_stage_is_pending,
 )
 from .pipeline_stages import (
@@ -508,6 +512,10 @@ __all__ = [
     "save_reevaluation_cursor",
     "save_reevaluation_patch",
     "select_active_evaluator_name",
+    "select_next_claimable_dataset_generation",
+    "select_next_claimable_training_generation",
+    "select_next_dataset_generation",
+    "select_next_training_generation",
     "select_reevaluation_node_window",
     "should_save_progress",
     "snapshot_values_to_patch_rows",
