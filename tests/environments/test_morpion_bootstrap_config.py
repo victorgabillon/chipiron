@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import sys
+from dataclasses import replace
 from pathlib import Path
 from types import ModuleType
 from typing import cast
@@ -63,6 +64,7 @@ from chipiron.environments.morpion.bootstrap import (
     MORPION_BOOTSTRAP_INITIAL_PATTERN,
     MORPION_BOOTSTRAP_INITIAL_POINT_COUNT,
     MORPION_BOOTSTRAP_VARIANT,
+    IncompatibleStageBootstrapConfigError,
     MorpionBootstrapArgs,
     MorpionBootstrapConfig,
     MorpionBootstrapDatasetConfig,
@@ -74,14 +76,20 @@ from chipiron.environments.morpion.bootstrap import (
     UnsafeMorpionBootstrapConfigChangeError,
     bootstrap_config_from_args,
     bootstrap_config_sha256,
+    bootstrap_fields_owned_by_stage,
     canonical_morpion_evaluator_family_config,
+    dataset_stage_owned_bootstrap_fields,
+    growth_stage_owned_bootstrap_fields,
     load_bootstrap_config,
     load_bootstrap_history,
     load_bootstrap_run_state,
+    reevaluation_stage_owned_bootstrap_fields,
     run_morpion_bootstrap_loop,
     save_bootstrap_config,
     save_bootstrap_run_state,
+    training_stage_owned_bootstrap_fields,
     validate_bootstrap_config_change,
+    validate_stage_bootstrap_config_compatibility,
 )
 from chipiron.environments.morpion.bootstrap.run_state import MorpionBootstrapRunState
 from chipiron.environments.morpion.players.evaluators.neural_networks import (
@@ -384,6 +392,130 @@ def test_safe_bootstrap_config_change_is_allowed() -> None:
     )
 
     validate_bootstrap_config_change(previous, current)
+
+
+def test_dataset_worker_can_vary_owned_bootstrap_fields(tmp_path: Path) -> None:
+    """Dataset workers may own dataset extraction knobs."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(args)
+    requested = bootstrap_config_from_args(replace(args, min_visit_count=99))
+
+    validate_stage_bootstrap_config_compatibility(
+        stage="dataset_worker",
+        persisted_config=persisted,
+        requested_config=requested,
+    )
+
+
+def test_dataset_worker_rejects_growth_config_drift(tmp_path: Path) -> None:
+    """Dataset workers must not silently change growth-owned fields."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(args)
+    requested = bootstrap_config_from_args(
+        replace(args, max_growth_steps_per_cycle=args.max_growth_steps_per_cycle + 1)
+    )
+
+    with pytest.raises(
+        IncompatibleStageBootstrapConfigError,
+        match="max_growth_steps_per_cycle",
+    ):
+        validate_stage_bootstrap_config_compatibility(
+            stage="dataset_worker",
+            persisted_config=persisted,
+            requested_config=requested,
+        )
+
+
+def test_training_worker_can_vary_owned_bootstrap_fields(tmp_path: Path) -> None:
+    """Training workers may own existing evaluator/training knobs."""
+    args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        pipeline_mode="artifact_pipeline",
+        num_epochs=1,
+        batch_size=2,
+    )
+    persisted = bootstrap_config_from_args(args)
+    requested = bootstrap_config_from_args(replace(args, num_epochs=3, batch_size=4))
+
+    validate_stage_bootstrap_config_compatibility(
+        stage="training_worker",
+        persisted_config=persisted,
+        requested_config=requested,
+    )
+
+
+def test_growth_worker_rejects_dataset_config_drift(tmp_path: Path) -> None:
+    """Growth workers must not silently change dataset-owned fields."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(args)
+    requested = bootstrap_config_from_args(replace(args, min_depth=12))
+
+    with pytest.raises(IncompatibleStageBootstrapConfigError, match="min_depth"):
+        validate_stage_bootstrap_config_compatibility(
+            stage="growth",
+            persisted_config=persisted,
+            requested_config=requested,
+        )
+
+
+def test_reevaluation_worker_rejects_unrelated_config_drift(tmp_path: Path) -> None:
+    """Reevaluation workers should not own bootstrap config drift."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(args)
+    requested = bootstrap_config_from_args(replace(args, max_rows=1234))
+
+    with pytest.raises(IncompatibleStageBootstrapConfigError, match="max_rows"):
+        validate_stage_bootstrap_config_compatibility(
+            stage="reevaluation",
+            persisted_config=persisted,
+            requested_config=requested,
+        )
+
+
+def test_package_root_reexports_stage_config_ownership_helpers() -> None:
+    """The bootstrap package root should re-export public ownership helpers."""
+    import chipiron.environments.morpion.bootstrap as bootstrap_package
+    import chipiron.environments.morpion.bootstrap.config as config_module
+
+    assert (
+        bootstrap_package.IncompatibleStageBootstrapConfigError
+        is config_module.IncompatibleStageBootstrapConfigError
+    )
+    assert (
+        bootstrap_package.dataset_stage_owned_bootstrap_fields
+        is config_module.dataset_stage_owned_bootstrap_fields
+    )
+    assert (
+        bootstrap_package.training_stage_owned_bootstrap_fields
+        is config_module.training_stage_owned_bootstrap_fields
+    )
+    assert (
+        bootstrap_package.growth_stage_owned_bootstrap_fields
+        is config_module.growth_stage_owned_bootstrap_fields
+    )
+    assert (
+        bootstrap_package.reevaluation_stage_owned_bootstrap_fields
+        is config_module.reevaluation_stage_owned_bootstrap_fields
+    )
+    assert (
+        bootstrap_package.bootstrap_fields_owned_by_stage
+        is config_module.bootstrap_fields_owned_by_stage
+    )
+    assert (
+        bootstrap_package.validate_stage_bootstrap_config_compatibility
+        is config_module.validate_stage_bootstrap_config_compatibility
+    )
+
+
+def test_stage_owned_field_helpers_are_stable() -> None:
+    """Stage ownership helpers should expose deterministic bootstrap field names."""
+    assert "min_visit_count" in dataset_stage_owned_bootstrap_fields()
+    assert "num_epochs" in training_stage_owned_bootstrap_fields()
+    assert "max_growth_steps_per_cycle" in growth_stage_owned_bootstrap_fields()
+    assert reevaluation_stage_owned_bootstrap_fields() == ()
+    assert bootstrap_fields_owned_by_stage("dataset_worker") == (
+        dataset_stage_owned_bootstrap_fields()
+    )
 
 
 def test_unsafe_variant_change_is_rejected() -> None:

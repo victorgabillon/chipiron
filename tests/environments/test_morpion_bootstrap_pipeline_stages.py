@@ -6,6 +6,7 @@ from __future__ import annotations
 import ast
 import sys
 import time
+from dataclasses import replace
 from pathlib import Path
 from types import ModuleType
 from typing import TYPE_CHECKING, Literal
@@ -59,6 +60,8 @@ import chipiron.environments.morpion.bootstrap.launcher as launcher_module
 import chipiron.environments.morpion.bootstrap.pipeline_stages as pipeline_stages_module
 import chipiron.environments.morpion.bootstrap.search_runner_protocol as search_runner_protocol_module
 from chipiron.environments.morpion.bootstrap import (
+    CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+    IncompatibleStageBootstrapConfigError,
     MorpionBootstrapArgs,
     MorpionBootstrapPaths,
     MorpionBootstrapRunState,
@@ -69,7 +72,9 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionReevaluationWorkerResult,
     MorpionSearchRunner,
     PipelineStageAlreadyClaimedError,
+    bootstrap_config_from_args,
     claim_pipeline_stage,
+    load_bootstrap_config,
     load_bootstrap_run_state,
     load_pipeline_active_model,
     load_pipeline_manifest,
@@ -77,6 +82,7 @@ from chipiron.environments.morpion.bootstrap import (
     run_pipeline_dataset_stage,
     run_pipeline_growth_stage,
     run_pipeline_training_stage,
+    save_bootstrap_config,
     save_bootstrap_run_state,
     save_pipeline_manifest,
     save_reevaluation_patch,
@@ -921,6 +927,131 @@ def test_artifact_pipeline_dataset_worker_dispatches_autonomous_worker(
     assert result is fake_result
     assert len(captured) == 1
     assert captured[0].pipeline_mode == "artifact_pipeline"
+
+
+def test_artifact_pipeline_worker_first_run_writes_bootstrap_config(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A fresh worker launch should persist the canonical bootstrap config."""
+    fake_result = _make_pipeline_worker_result("dataset")
+    monkeypatch.setattr(
+        launcher_module,
+        "run_next_pipeline_dataset_stage_once",
+        lambda args: fake_result,
+    )
+
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--pipeline-mode",
+            "artifact_pipeline",
+            "--pipeline-stage",
+            "dataset_worker",
+            "--min-visit-count",
+            "7",
+            "--no-print-startup-summary",
+            "--no-print-dashboard-hint",
+        ]
+    )
+
+    assert run_morpion_bootstrap_experiment(launcher_args) is fake_result
+
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    assert paths.bootstrap_config_path.is_file()
+    expected_args = replace(
+        launcher_args.bootstrap_args,
+        evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+    )
+    assert load_bootstrap_config(paths.bootstrap_config_path) == bootstrap_config_from_args(
+        expected_args
+    )
+
+
+def test_dataset_worker_accepts_owned_persisted_config_difference(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Dataset workers should be allowed to vary dataset-owned fields."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    persisted_args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        pipeline_mode="artifact_pipeline",
+        evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+        min_visit_count=1,
+    )
+    save_bootstrap_config(
+        bootstrap_config_from_args(persisted_args),
+        paths.bootstrap_config_path,
+    )
+    captured: list[MorpionBootstrapArgs] = []
+    fake_result = _make_pipeline_worker_result("dataset")
+
+    def _fake_worker(args: MorpionBootstrapArgs) -> MorpionPipelineWorkerResult:
+        captured.append(args)
+        return fake_result
+
+    monkeypatch.setattr(
+        launcher_module,
+        "run_next_pipeline_dataset_stage_once",
+        _fake_worker,
+    )
+
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--pipeline-mode",
+            "artifact_pipeline",
+            "--pipeline-stage",
+            "dataset_worker",
+            "--min-visit-count",
+            "99",
+            "--no-print-startup-summary",
+            "--no-print-dashboard-hint",
+        ]
+    )
+
+    assert run_morpion_bootstrap_experiment(launcher_args) is fake_result
+    assert captured[0].min_visit_count == 99
+
+
+def test_dataset_worker_rejects_foreign_persisted_config_difference(
+    tmp_path: Path,
+) -> None:
+    """Dataset workers should reject growth-owned config drift."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    persisted_args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        pipeline_mode="artifact_pipeline",
+        evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+        max_growth_steps_per_cycle=1000,
+    )
+    save_bootstrap_config(
+        bootstrap_config_from_args(persisted_args),
+        paths.bootstrap_config_path,
+    )
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--pipeline-mode",
+            "artifact_pipeline",
+            "--pipeline-stage",
+            "dataset_worker",
+            "--max-growth-steps-per-cycle",
+            "1001",
+            "--no-print-startup-summary",
+            "--no-print-dashboard-hint",
+        ]
+    )
+
+    with pytest.raises(
+        IncompatibleStageBootstrapConfigError,
+        match="max_growth_steps_per_cycle",
+    ):
+        run_morpion_bootstrap_experiment(launcher_args)
 
 
 def test_artifact_pipeline_training_worker_dispatches_autonomous_worker(

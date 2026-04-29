@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from .pipeline_config import (
         MorpionEvaluatorUpdatePolicy,
         MorpionPipelineMode,
+        MorpionPipelineStage,
     )
     from .pv_family_targets import PvFamilyTargetPolicy
 
@@ -164,6 +165,26 @@ class MalformedMorpionBootstrapConfigError(TypeError):
 
 class UnsafeMorpionBootstrapConfigChangeError(ValueError):
     """Raised when one relaunch changes unsafe bootstrap config fields."""
+
+
+class IncompatibleStageBootstrapConfigError(ValueError):
+    """Raised when one worker changes fields owned by another pipeline stage."""
+
+    @classmethod
+    def for_field(
+        cls,
+        *,
+        stage: str,
+        field_name: str,
+        persisted_value: object,
+        requested_value: object,
+    ) -> IncompatibleStageBootstrapConfigError:
+        """Build one deterministic stage/config compatibility error."""
+        return cls(
+            "Incompatible Morpion bootstrap config for "
+            f"pipeline stage {stage!r}: field {field_name!r} is not owned by this "
+            f"stage (persisted={persisted_value!r}, requested={requested_value!r})."
+        )
 
 
 def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapConfig:
@@ -499,6 +520,92 @@ def validate_bootstrap_config_change(
     )
 
 
+def dataset_stage_owned_bootstrap_fields() -> tuple[str, ...]:
+    """Return bootstrap-args fields owned by dataset extraction workers."""
+    return (
+        "require_exact_or_terminal",
+        "use_backed_up_value",
+        "dataset_family_target_policy",
+        "dataset_family_prediction_blend",
+        "min_depth",
+        "min_visit_count",
+        "max_rows",
+    )
+
+
+def training_stage_owned_bootstrap_fields() -> tuple[str, ...]:
+    """Return bootstrap-args fields owned by training workers."""
+    return (
+        "batch_size",
+        "num_epochs",
+        "learning_rate",
+        "shuffle",
+        "model_kind",
+        "hidden_dim",
+        "evaluators_config",
+        "evaluator_family_preset",
+    )
+
+
+def growth_stage_owned_bootstrap_fields() -> tuple[str, ...]:
+    """Return bootstrap-args fields owned by growth/runtime workers."""
+    return (
+        "max_growth_steps_per_cycle",
+        "save_after_tree_growth_factor",
+        "save_after_seconds",
+        "tree_branch_limit",
+        "evaluator_update_policy",
+    )
+
+
+def reevaluation_stage_owned_bootstrap_fields() -> tuple[str, ...]:
+    """Return bootstrap-args fields owned by reevaluation workers."""
+    return ()
+
+
+def bootstrap_fields_owned_by_stage(stage: MorpionPipelineStage) -> tuple[str, ...]:
+    """Return bootstrap-args fields owned by one pipeline stage."""
+    if stage in {"dataset", "dataset_worker"}:
+        return dataset_stage_owned_bootstrap_fields()
+    if stage in {"training", "training_worker"}:
+        return training_stage_owned_bootstrap_fields()
+    if stage == "growth":
+        return growth_stage_owned_bootstrap_fields()
+    if stage == "reevaluation":
+        return reevaluation_stage_owned_bootstrap_fields()
+    if stage == "loop":
+        return (
+            *growth_stage_owned_bootstrap_fields(),
+            *dataset_stage_owned_bootstrap_fields(),
+            *training_stage_owned_bootstrap_fields(),
+        )
+    return ()
+
+
+def validate_stage_bootstrap_config_compatibility(
+    *,
+    stage: MorpionPipelineStage,
+    persisted_config: MorpionBootstrapConfig,
+    requested_config: MorpionBootstrapConfig,
+) -> None:
+    """Validate that one stage only changes bootstrap fields it owns."""
+    owned_fields = set(bootstrap_fields_owned_by_stage(stage))
+    persisted_values = _stage_bootstrap_config_field_values(persisted_config)
+    requested_values = _stage_bootstrap_config_field_values(requested_config)
+    for field_name in sorted(persisted_values):
+        if _config_field_is_owned_by_stage(field_name, owned_fields):
+            continue
+        persisted_value = persisted_values[field_name]
+        requested_value = requested_values[field_name]
+        if persisted_value != requested_value:
+            raise IncompatibleStageBootstrapConfigError.for_field(
+                stage=stage,
+                field_name=field_name,
+                persisted_value=persisted_value,
+                requested_value=requested_value,
+            )
+
+
 def _diff_dataclass_section(
     previous: (
         MorpionBootstrapExperimentIdentityConfig
@@ -529,6 +636,54 @@ def _resolve_diff_value(
         return getattr(config, dotted_field_name)
     section_name, field_name = dotted_field_name.split(".", maxsplit=1)
     return getattr(getattr(config, section_name), field_name)
+
+
+def _stage_bootstrap_config_field_values(
+    config: MorpionBootstrapConfig,
+) -> dict[str, object]:
+    """Return config values keyed by their closest bootstrap-args field name."""
+    return {
+        "experiment.game": config.experiment.game,
+        "experiment.variant": config.experiment.variant,
+        "experiment.initial_pattern": config.experiment.initial_pattern,
+        "experiment.initial_point_count": config.experiment.initial_point_count,
+        "max_growth_steps_per_cycle": config.runtime.max_growth_steps_per_cycle,
+        "save_after_tree_growth_factor": config.runtime.save_after_tree_growth_factor,
+        "save_after_seconds": config.runtime.save_after_seconds,
+        "tree_branch_limit": config.runtime.tree_branch_limit,
+        "require_exact_or_terminal": config.dataset.require_exact_or_terminal,
+        "min_depth": config.dataset.min_depth,
+        "min_visit_count": config.dataset.min_visit_count,
+        "max_rows": config.dataset.max_rows,
+        "use_backed_up_value": config.dataset.use_backed_up_value,
+        "dataset_family_target_policy": config.dataset.family_target_policy,
+        "dataset_family_prediction_blend": config.dataset.family_prediction_blend,
+        "evaluators": config.evaluators,
+        "evaluator_update_policy": config.evaluator_update_policy,
+        "pipeline_mode": config.pipeline_mode,
+    }
+
+
+def _config_field_is_owned_by_stage(
+    field_name: str, owned_fields: set[str]
+) -> bool:
+    """Return whether one persisted config field is represented by owned args."""
+    if field_name in owned_fields:
+        return True
+    if field_name == "evaluators":
+        return bool(
+            {
+                "batch_size",
+                "num_epochs",
+                "learning_rate",
+                "model_kind",
+                "hidden_dim",
+                "evaluators_config",
+                "evaluator_family_preset",
+            }
+            & owned_fields
+        )
+    return False
 
 
 def _evaluators_config_to_dict(config: MorpionEvaluatorsConfig) -> dict[str, object]:
@@ -652,6 +807,7 @@ def _metadata_dict(value: object) -> dict[str, object]:
 __all__ = [
     "BOOTSTRAP_CONFIG_HASH_METADATA_KEY",
     "DEFAULT_MORPION_TREE_BRANCH_LIMIT",
+    "IncompatibleStageBootstrapConfigError",
     "MalformedMorpionBootstrapConfigError",
     "MorpionBootstrapConfig",
     "MorpionBootstrapDatasetConfig",
@@ -663,8 +819,14 @@ __all__ = [
     "bootstrap_config_sha256",
     "bootstrap_config_to_canonical_json",
     "bootstrap_config_to_dict",
+    "bootstrap_fields_owned_by_stage",
+    "dataset_stage_owned_bootstrap_fields",
     "diff_bootstrap_configs",
+    "growth_stage_owned_bootstrap_fields",
     "load_bootstrap_config",
+    "reevaluation_stage_owned_bootstrap_fields",
     "save_bootstrap_config",
+    "training_stage_owned_bootstrap_fields",
     "validate_bootstrap_config_change",
+    "validate_stage_bootstrap_config_compatibility",
 ]
