@@ -195,6 +195,13 @@ class IncompatibleStageBootstrapConfigError(ValueError):
         )
 
 
+# This knob changes how much growth work one launcher invocation batches, not the
+# persisted experiment semantics shared across workers.
+RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS = frozenset(
+    {"max_growth_steps_per_cycle"}
+)
+
+
 def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapConfig:
     """Build the canonical persisted bootstrap config from current args."""
     return MorpionBootstrapConfig(
@@ -603,6 +610,8 @@ def validate_stage_bootstrap_config_compatibility(
     for field_name in sorted(persisted_values):
         persisted_value = persisted_values[field_name]
         requested_value = requested_values[field_name]
+        if field_name in RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS:
+            continue
         if persisted_value != requested_value:
             raise IncompatibleStageBootstrapConfigError.for_field(
                 stage=stage,
@@ -823,6 +832,7 @@ __all__ = [
     "MorpionBootstrapDatasetConfig",
     "MorpionBootstrapExperimentIdentityConfig",
     "MorpionBootstrapRuntimeConfig",
+    "RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS",
     "UnsafeMorpionBootstrapConfigChangeError",
     "bootstrap_config_from_args",
     "bootstrap_config_from_dict",

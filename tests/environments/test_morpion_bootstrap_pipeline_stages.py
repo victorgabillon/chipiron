@@ -1028,7 +1028,7 @@ def test_dataset_worker_rejects_foreign_persisted_config_difference(
         work_dir=tmp_path,
         pipeline_mode="artifact_pipeline",
         evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
-        max_growth_steps_per_cycle=1000,
+        tree_branch_limit=1000,
     )
     save_bootstrap_config(
         bootstrap_config_from_args(persisted_args),
@@ -1042,7 +1042,7 @@ def test_dataset_worker_rejects_foreign_persisted_config_difference(
             "artifact_pipeline",
             "--pipeline-stage",
             "dataset_worker",
-            "--max-growth-steps-per-cycle",
+            "--tree-branch-limit",
             "1001",
             "--no-print-startup-summary",
             "--no-print-dashboard-hint",
@@ -1051,9 +1051,71 @@ def test_dataset_worker_rejects_foreign_persisted_config_difference(
 
     with pytest.raises(
         IncompatibleStageBootstrapConfigError,
-        match="max_growth_steps_per_cycle",
+        match="tree_branch_limit",
     ):
         run_morpion_bootstrap_experiment(launcher_args)
+
+
+def test_growth_stage_uses_requested_runtime_batch_size(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Growth relaunches should keep the requested per-invocation batch size."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    persisted_args = MorpionBootstrapArgs(
+        work_dir=tmp_path,
+        pipeline_mode="artifact_pipeline",
+        evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+        max_growth_steps_per_cycle=1000,
+    )
+    save_bootstrap_config(
+        bootstrap_config_from_args(persisted_args),
+        paths.bootstrap_config_path,
+    )
+    captured: list[MorpionBootstrapArgs] = []
+
+    monkeypatch.setattr(launcher_module, "_build_launcher_runner", lambda _: object())
+
+    def _fake_growth_stage(
+        args: MorpionBootstrapArgs,
+        runner: object,
+        *,
+        max_cycles: int,
+    ) -> MorpionBootstrapRunState:
+        del runner, max_cycles
+        captured.append(args)
+        return MorpionBootstrapRunState(
+            generation=0,
+            cycle_index=0,
+            latest_tree_snapshot_path=None,
+            latest_rows_path=None,
+            latest_model_bundle_paths=None,
+            active_evaluator_name=None,
+            tree_size_at_last_save=0,
+            last_save_unix_s=None,
+        )
+
+    monkeypatch.setattr(launcher_module, "run_pipeline_growth_stage", _fake_growth_stage)
+
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--pipeline-mode",
+            "artifact_pipeline",
+            "--pipeline-stage",
+            "growth",
+            "--max-growth-steps-per-cycle",
+            "10",
+            "--no-print-startup-summary",
+            "--no-print-dashboard-hint",
+        ]
+    )
+
+    run_morpion_bootstrap_experiment(launcher_args)
+
+    assert len(captured) == 1
+    assert captured[0].max_growth_steps_per_cycle == 10
 
 
 def test_artifact_pipeline_training_worker_dispatches_autonomous_worker(

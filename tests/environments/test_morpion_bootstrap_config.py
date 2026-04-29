@@ -74,6 +74,7 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionEvaluatorsConfig,
     MorpionEvaluatorSpec,
     UnsafeMorpionBootstrapConfigChangeError,
+    RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
     bootstrap_config_from_args,
     bootstrap_config_sha256,
     bootstrap_fields_owned_by_stage,
@@ -255,6 +256,8 @@ def _make_config() -> MorpionBootstrapConfig:
             min_visit_count=5,
             max_rows=99,
             use_backed_up_value=True,
+            family_target_policy="none",
+            family_prediction_blend=0.25,
         ),
         evaluators=_multi_evaluator_config(),
         evaluator_update_policy="future_only",
@@ -263,15 +266,53 @@ def _make_config() -> MorpionBootstrapConfig:
     )
 
 
-def test_bootstrap_config_roundtrip(tmp_path: Path) -> None:
-    """One persisted bootstrap config should round-trip through JSON unchanged."""
-    config = _make_config()
-    config_path = tmp_path / "bootstrap_config.json"
+def test_growth_worker_allows_runtime_relaunch_batch_size_drift(tmp_path: Path) -> None:
+    """Growth workers may vary runtime batching without changing run semantics."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(args)
+    requested = bootstrap_config_from_args(
+        replace(args, max_growth_steps_per_cycle=args.max_growth_steps_per_cycle + 1)
+    )
 
-    save_bootstrap_config(config, config_path)
+    validate_stage_bootstrap_config_compatibility(
+        stage="growth",
+        persisted_config=persisted,
+        requested_config=requested,
+    )
 
-    assert load_bootstrap_config(config_path) == config
 
+def test_loop_stage_allows_runtime_relaunch_batch_size_drift(tmp_path: Path) -> None:
+    """Loop stage should allow the same runtime batching override."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(args)
+    requested = bootstrap_config_from_args(
+        replace(args, max_growth_steps_per_cycle=args.max_growth_steps_per_cycle + 1)
+    )
+
+    validate_stage_bootstrap_config_compatibility(
+        stage="loop",
+        persisted_config=persisted,
+        requested_config=requested,
+    )
+
+
+def test_dataset_worker_rejects_tree_branch_limit_drift(tmp_path: Path) -> None:
+    """Dataset workers must still reject frozen runtime policy drift."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(args)
+    requested = bootstrap_config_from_args(
+        replace(args, tree_branch_limit=args.tree_branch_limit + 1)
+    )
+
+    with pytest.raises(
+        IncompatibleStageBootstrapConfigError,
+        match="tree_branch_limit",
+    ):
+        validate_stage_bootstrap_config_compatibility(
+            stage="dataset_worker",
+            persisted_config=persisted,
+            requested_config=requested,
+        )
 
 def test_bootstrap_config_from_args_contains_expected_fields(tmp_path: Path) -> None:
     """Args should normalize into one canonical persisted config object."""
@@ -408,25 +449,6 @@ def test_dataset_worker_rejects_owned_bootstrap_field_drift(tmp_path: Path) -> N
         )
 
 
-def test_dataset_worker_rejects_growth_config_drift(tmp_path: Path) -> None:
-    """Dataset workers must not silently change growth-owned fields."""
-    args = _make_args(tmp_path)
-    persisted = bootstrap_config_from_args(args)
-    requested = bootstrap_config_from_args(
-        replace(args, max_growth_steps_per_cycle=args.max_growth_steps_per_cycle + 1)
-    )
-
-    with pytest.raises(
-        IncompatibleStageBootstrapConfigError,
-        match="max_growth_steps_per_cycle",
-    ):
-        validate_stage_bootstrap_config_compatibility(
-            stage="dataset_worker",
-            persisted_config=persisted,
-            requested_config=requested,
-        )
-
-
 def test_training_worker_rejects_owned_bootstrap_field_drift(tmp_path: Path) -> None:
     """Training workers must match persisted evaluator/training knobs."""
     args = MorpionBootstrapArgs(
@@ -504,6 +526,10 @@ def test_package_root_reexports_stage_config_ownership_helpers() -> None:
         is config_module.bootstrap_fields_owned_by_stage
     )
     assert (
+        bootstrap_package.RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
+        is config_module.RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS
+    )
+    assert (
         bootstrap_package.validate_stage_bootstrap_config_compatibility
         is config_module.validate_stage_bootstrap_config_compatibility
     )
@@ -518,6 +544,9 @@ def test_stage_owned_field_helpers_are_stable() -> None:
     assert bootstrap_fields_owned_by_stage("dataset_worker") == (
         dataset_stage_owned_bootstrap_fields()
     )
+    assert RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS == {
+        "max_growth_steps_per_cycle"
+    }
 
 
 def test_unsafe_variant_change_is_rejected() -> None:

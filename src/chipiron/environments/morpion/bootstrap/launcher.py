@@ -326,7 +326,6 @@ def _bootstrap_args_with_persisted_config(
     """Apply the persisted bootstrap config to one stage's runtime args."""
     return replace(
         args,
-        max_growth_steps_per_cycle=persisted_config.runtime.max_growth_steps_per_cycle,
         save_after_tree_growth_factor=persisted_config.runtime.save_after_tree_growth_factor,
         save_after_seconds=persisted_config.runtime.save_after_seconds,
         tree_branch_limit=persisted_config.runtime.tree_branch_limit,
