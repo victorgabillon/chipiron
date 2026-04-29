@@ -45,32 +45,55 @@ training, and checkpointing in one in-process loop. The command above uses this
 mode by default.
 
 `artifact_pipeline` is the Phase 8 file-driven mode. It splits work into staged
-launcher invocations and adds a reevaluation patch producer. The recommended
-operator setup is two supervised shell loops:
+launcher invocations and adds autonomous dataset, training, and reevaluation
+workers. This is the recommended mode for multiprocess or large runs.
 
-* one loop for `--pipeline-stage loop`
-* one loop for `--pipeline-stage reevaluation`
-
-The `loop` stage performs growth and all pending dataset/training work once per
-invocation. The `reevaluation` stage produces at most one bounded patch per
-invocation. Both commands exit after one pass, so use a shell loop, `systemd`,
-or another supervisor to keep them running.
+All artifact-pipeline workers must share the same `--work-dir` on a filesystem
+visible to every worker.
 
 ### Recommended artifact-pipeline launch
 
-Terminal 1: growth plus pending dataset/training work.
+Run four supervised shell loops, one per worker. Each launcher invocation does
+one pass and exits, so keep it alive with a shell loop, `systemd`, or another
+supervisor.
+
+Terminal or machine 1: growth worker.
 
 ```bash
 while true; do
   python -m chipiron.environments.morpion.bootstrap.launcher \
     --work-dir ~/oldata/victor/morpion_runs/big_run_01 \
     --pipeline-mode artifact_pipeline \
-    --pipeline-stage loop
-  sleep 5
+    --pipeline-stage growth
+  sleep 2
 done
 ```
 
-Terminal 2: reevaluation patch producer.
+Terminal or machine 2: dataset worker.
+
+```bash
+while true; do
+  python -m chipiron.environments.morpion.bootstrap.launcher \
+    --work-dir ~/oldata/victor/morpion_runs/big_run_01 \
+    --pipeline-mode artifact_pipeline \
+    --pipeline-stage dataset_worker
+  sleep 2
+done
+```
+
+Terminal or machine 3: training worker.
+
+```bash
+while true; do
+  python -m chipiron.environments.morpion.bootstrap.launcher \
+    --work-dir ~/oldata/victor/morpion_runs/big_run_01 \
+    --pipeline-mode artifact_pipeline \
+    --pipeline-stage training_worker
+  sleep 2
+done
+```
+
+Terminal or machine 4: reevaluation worker.
 
 ```bash
 while true; do
@@ -83,7 +106,36 @@ while true; do
 done
 ```
 
-### Reevaluation patch contract
+### Where to place workers
+
+* Growth worker: CPU-heavy and tree-memory-heavy; owns live tree/checkpoint
+  mutation.
+* Dataset worker: CPU/disk work; can run separately, ideally close to storage.
+* Training worker: GPU-preferred; trains evaluators and updates the active
+  model.
+* Reevaluation worker: GPU-preferred when model evaluation is expensive;
+  produces bounded patches and never mutates the checkpoint directly.
+
+Example GPU placement:
+
+* CPU node: `growth`
+* CPU node or storage-close machine: `dataset_worker`
+* GPU 0: `CUDA_VISIBLE_DEVICES=0 ... --pipeline-stage training_worker`
+* GPU 1: `CUDA_VISIBLE_DEVICES=1 ... --pipeline-stage reevaluation`
+
+### What each worker does
+
+* `growth`: loads/restores runtime, consumes a pending reevaluation patch if
+  present, grows the tree, then exports checkpoint/tree snapshot/manifest
+  artifacts.
+* `dataset_worker`: finds the oldest claimable pending dataset generation and
+  extracts rows once.
+* `training_worker`: finds the oldest claimable pending training generation and
+  trains/selects the active evaluator once.
+* `reevaluation`: reads `pipeline/active_model.json`, reevaluates up to N nodes,
+  and writes one singleton patch if no patch is pending.
+
+### Coordination contract
 
 The reevaluation worker writes only one pending patch at a time:
 `pipeline/reevaluation_patch.json`. If that file already exists, reevaluation
@@ -91,8 +143,14 @@ skips instead of overwriting it. Growth consumes the pending patch before tree
 growth and deletes it only after successful application. If patch application
 fails, the patch remains on disk for diagnosis and retry.
 
-This singleton contract avoids multiple huge checkpoint copies and keeps one
-checkpoint/tree runtime owner: the growth process.
+Dataset and training workers coordinate with claim files:
+`pipeline/generation_XXXXXX/dataset_claim.json` and
+`pipeline/generation_XXXXXX/training_claim.json`. Multiple workers should not
+process the same generation concurrently, and expired claims can be taken over.
+
+There is still only one live checkpoint/tree owner: the growth process. This
+avoids multiple huge checkpoint copies while reevaluation produces bounded patch
+artifacts.
 
 ### Reevaluation batch size
 
@@ -112,17 +170,26 @@ current active model. If the active model changes, the reevaluation cursor
 resets so the next pass starts over for that evaluator. The best selected
 evaluator remains the source for both future growth and reevaluation.
 
+### Scaling pattern
+
+It is safe to run multiple dataset workers and multiple training workers if
+needed; claim files prevent duplicate generation work. Usually start with one of
+each. Growth should normally be a singleton because it owns the live
+tree/checkpoint. Reevaluation should normally be a singleton because of the
+singleton patch file, though multiple reevaluation loops will mostly idle or
+skip while a patch exists.
+
 ### Manual/debug stages
 
 Manual stage commands are useful for debugging specific generations, but they
 are not the recommended normal operator pattern.
 
 ```bash
-# One growth pass
+# One local/debug mini-orchestrator pass: growth, then pending dataset/training
 python -m chipiron.environments.morpion.bootstrap.launcher \
   --work-dir ~/oldata/victor/morpion_runs/big_run_01 \
   --pipeline-mode artifact_pipeline \
-  --pipeline-stage growth
+  --pipeline-stage loop
 
 # One dataset stage for a known generation
 python -m chipiron.environments.morpion.bootstrap.launcher \
@@ -137,14 +204,12 @@ python -m chipiron.environments.morpion.bootstrap.launcher \
   --pipeline-mode artifact_pipeline \
   --pipeline-stage training \
   --pipeline-generation N
-
-# One reevaluation pass
-python -m chipiron.environments.morpion.bootstrap.launcher \
-  --work-dir ~/oldata/victor/morpion_runs/big_run_01 \
-  --pipeline-mode artifact_pipeline \
-  --pipeline-stage reevaluation \
-  --reevaluation-max-nodes-per-patch 10000
 ```
+
+`loop` is a one-shot sequential mini-orchestrator for a laptop/debug run.
+`dataset` and `training` with explicit generations are for debugging a specific
+generation. The production autonomous workers are `growth`, `dataset_worker`,
+`training_worker`, and `reevaluation`.
 
 ### Artifact files to inspect
 
