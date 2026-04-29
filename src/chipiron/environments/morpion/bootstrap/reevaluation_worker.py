@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from anemone.training_export import TrainingTreeSnapshot, load_training_tree_snapshot
-from atomheart.games.morpion import MorpionStateCheckpointCodec
+from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
 from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
 
@@ -58,10 +58,23 @@ def _non_finite_direct_value_error(node_id: str) -> ValueError:
 
 def _finite_direct_value(raw_value: object, *, node_id: str) -> float:
     """Coerce one evaluator output to a finite patch-row scalar."""
-    direct_value = float(raw_value)
+    try:
+        direct_value = float(raw_value)
+    except (TypeError, ValueError) as exc:
+        raise _non_finite_direct_value_error(node_id) from exc
     if not math.isfinite(direct_value):
         raise _non_finite_direct_value_error(node_id)
     return direct_value
+
+
+def _extract_score(raw_evaluation: object, *, node_id: str) -> float:
+    """Extract one scalar score from the evaluator's return value."""
+    if hasattr(raw_evaluation, "score"):
+        return _finite_direct_value(
+            cast("Any", raw_evaluation).score,
+            node_id=node_id,
+        )
+    return _finite_direct_value(raw_evaluation, node_id=node_id)
 
 
 def _save_reevaluation_patch_exclusive(
@@ -151,8 +164,8 @@ class MorpionActiveModelNodeReevaluationEvaluator:
                 source = "terminal_existing_value"
             else:
                 state = self._load_snapshot_state(node.state_ref_payload)
-                value = cast("Any", evaluator).evaluate(state)
-                direct_value = _finite_direct_value(value.score, node_id=node_id)
+                raw_evaluation = cast("Any", evaluator).evaluate(state)
+                direct_value = _extract_score(raw_evaluation, node_id=node_id)
                 source = "active_model_reevaluation"
             rows.append(
                 MorpionReevaluationPatchRow(
@@ -178,7 +191,11 @@ def build_active_model_reevaluation_evaluator(
     """Resolve one active-model bundle path into the default reevaluation adapter."""
     model_bundle_path = paths.resolve_work_dir_path(active_model.model_bundle_path)
     if model_bundle_path is None or not model_bundle_path.is_dir():
-        missing_path = active_model.model_bundle_path if model_bundle_path is None else model_bundle_path
+        missing_path = (
+            active_model.model_bundle_path
+            if model_bundle_path is None
+            else model_bundle_path
+        )
         raise _reevaluation_bundle_missing_error(missing_path)
     return MorpionActiveModelNodeReevaluationEvaluator(
         model_bundle_path=model_bundle_path,

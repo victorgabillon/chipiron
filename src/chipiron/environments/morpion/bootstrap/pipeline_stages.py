@@ -83,6 +83,7 @@ from .record_status import (
     resolve_frontier_status_for_cycle,
     resolve_record_status_for_cycle,
 )
+from .reevaluation_patch_consumer import apply_pending_reevaluation_patch_to_runner
 from .run_state import (
     MorpionBootstrapRunState,
     initialize_bootstrap_run_state,
@@ -373,6 +374,7 @@ def _run_one_pipeline_growth_cycle_impl(
         effective_runtime_config,
         reevaluate_tree=reevaluate_tree,
     )
+    apply_pending_reevaluation_patch_to_runner(paths=paths, runner=runner)
     memory.log("after_runtime_restore")
     memory.log("before_tree_growth")
     growth_started_at = time.perf_counter()

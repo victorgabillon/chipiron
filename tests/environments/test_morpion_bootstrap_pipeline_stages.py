@@ -63,6 +63,8 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapPaths,
     MorpionBootstrapRunState,
     MorpionPipelineGenerationManifest,
+    MorpionReevaluationPatch,
+    MorpionReevaluationPatchRow,
     MorpionSearchRunner,
     PipelineStageAlreadyClaimedError,
     claim_pipeline_stage,
@@ -75,6 +77,7 @@ from chipiron.environments.morpion.bootstrap import (
     run_pipeline_training_stage,
     save_bootstrap_run_state,
     save_pipeline_manifest,
+    save_reevaluation_patch,
 )
 from chipiron.environments.morpion.learning import (
     MorpionSupervisedRow,
@@ -94,13 +97,19 @@ class FakeMorpionSearchRunner:
         *,
         tree_sizes: tuple[int, ...],
         target_values: tuple[float, ...],
+        patch_apply_result: int | None = None,
+        patch_apply_error: Exception | None = None,
     ) -> None:
         """Initialize the fake runner with per-cycle tree sizes and targets."""
         self._tree_sizes = tree_sizes
         self._target_values = target_values
+        self._patch_apply_result = patch_apply_result
+        self._patch_apply_error = patch_apply_error
         self._cycle_index = -1
         self.load_calls: list[tuple[str | None, str | None]] = []
         self.grow_calls: list[int] = []
+        self.call_order: list[str] = []
+        self.received_patches: list[MorpionReevaluationPatch] = []
 
     def load_or_create(
         self,
@@ -121,9 +130,18 @@ class FakeMorpionSearchRunner:
 
     def grow(self, max_growth_steps: int) -> None:
         """Advance the fake runner to the next predefined tree size."""
+        self.call_order.append("grow")
         self.grow_calls.append(max_growth_steps)
         if self._cycle_index + 1 < len(self._tree_sizes):
             self._cycle_index += 1
+
+    def apply_reevaluation_patch(self, patch: MorpionReevaluationPatch) -> int | None:
+        """Record one reevaluation patch application before growth."""
+        self.call_order.append(f"apply_patch:{patch.patch_id}")
+        self.received_patches.append(patch)
+        if self._patch_apply_error is not None:
+            raise self._patch_apply_error
+        return self._patch_apply_result
 
     def export_training_tree_snapshot(self, output_path: str | Path) -> None:
         """Write one real training snapshot to the requested path."""
@@ -205,6 +223,28 @@ def _make_rows() -> MorpionSupervisedRows:
     )
 
 
+def _make_reevaluation_patch(*, patch_id: str) -> MorpionReevaluationPatch:
+    """Build one minimal reevaluation patch artifact for growth-stage tests."""
+    return MorpionReevaluationPatch(
+        patch_id=patch_id,
+        created_at_utc="2026-04-28T12:00:00Z",
+        evaluator_generation=2,
+        evaluator_name="default",
+        model_bundle_path="models/generation_000002/default",
+        rows=(
+            MorpionReevaluationPatchRow(
+                node_id="node-a",
+                direct_value=1.25,
+                metadata={"source": "pipeline-stage-test"},
+            ),
+        ),
+        tree_generation=1,
+        start_cursor="node-a",
+        end_cursor="node-a",
+        metadata={"source": "pipeline-stage-test"},
+    )
+
+
 def _artifact_pipeline_args(work_dir: Path) -> MorpionBootstrapArgs:
     """Build one small artifact-pipeline arg set for stage tests."""
     return MorpionBootstrapArgs(
@@ -266,6 +306,57 @@ def test_pipeline_growth_stage_then_dataset_then_training(tmp_path: Path) -> Non
     assert manifest_after_training.training_status == "done"
     assert manifest_after_training.selected_evaluator_name is not None
     assert paths.pipeline_active_model_path.is_file()
+
+
+def test_growth_stage_consumes_pending_reevaluation_patch_before_growth(
+    tmp_path: Path,
+) -> None:
+    """Growth stage should apply and delete one pending reevaluation patch before grow."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    patch = _make_reevaluation_patch(patch_id="patch-before-grow")
+    save_reevaluation_patch(patch, paths.pipeline_reevaluation_patch_path)
+    runner = FakeMorpionSearchRunner(
+        tree_sizes=(5,),
+        target_values=(1.0,),
+        patch_apply_result=1,
+    )
+
+    run_state = run_pipeline_growth_stage(
+        _artifact_pipeline_args(tmp_path),
+        runner,
+        max_cycles=1,
+    )
+    manifest = load_pipeline_manifest(paths.pipeline_manifest_path_for_generation(1))
+
+    assert runner.call_order == [f"apply_patch:{patch.patch_id}", "grow"]
+    assert runner.received_patches == [patch]
+    assert not paths.pipeline_reevaluation_patch_path.exists()
+    assert run_state.generation == 1
+    assert manifest.tree_snapshot_path == "tree_exports/generation_000001.json"
+    assert manifest.runtime_checkpoint_path == "search_checkpoints/generation_000001.json"
+
+
+def test_growth_stage_keeps_patch_when_patch_application_fails(tmp_path: Path) -> None:
+    """Growth stage should leave a pending patch in place when apply fails."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    patch = _make_reevaluation_patch(patch_id="patch-fail")
+    save_reevaluation_patch(patch, paths.pipeline_reevaluation_patch_path)
+    runner = FakeMorpionSearchRunner(
+        tree_sizes=(5,),
+        target_values=(1.0,),
+        patch_apply_error=RuntimeError("patch failed"),
+    )
+
+    with pytest.raises(RuntimeError, match="patch failed"):
+        run_pipeline_growth_stage(
+            _artifact_pipeline_args(tmp_path),
+            runner,
+            max_cycles=1,
+        )
+
+    assert runner.call_order == [f"apply_patch:{patch.patch_id}"]
+    assert paths.pipeline_reevaluation_patch_path.exists()
+    assert runner.grow_calls == []
 
 
 def test_pipeline_growth_stage_no_save_only_advances_cycle(tmp_path: Path) -> None:

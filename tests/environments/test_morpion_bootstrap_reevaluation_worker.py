@@ -59,6 +59,7 @@ from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
 
 import chipiron.environments.morpion.bootstrap.reevaluation_worker as reevaluation_worker_module
 from chipiron.environments.morpion.bootstrap import (
+    MissingMorpionPipelineArtifactError,
     MorpionActiveModelNodeReevaluationEvaluator,
     MorpionBootstrapArgs,
     MorpionBootstrapPaths,
@@ -367,7 +368,7 @@ def test_build_active_model_reevaluation_evaluator_rejects_missing_bundle(
     )
 
     with pytest.raises(
-        FileNotFoundError,
+        MissingMorpionPipelineArtifactError,
         match="models/generation_000002/missing-default",
     ):
         build_active_model_reevaluation_evaluator(
@@ -450,7 +451,10 @@ def test_worker_default_path_fails_loudly_for_missing_bundle(tmp_path: Path) -> 
         snapshot=_make_training_snapshot(("a", "b", "c")),
     )
 
-    with pytest.raises(FileNotFoundError, match="models/generation_000002/missing"):
+    with pytest.raises(
+        MissingMorpionPipelineArtifactError,
+        match="models/generation_000002/missing",
+    ):
         run_morpion_reevaluation_worker_once(_artifact_pipeline_args(tmp_path))
 
 

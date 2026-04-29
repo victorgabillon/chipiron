@@ -246,6 +246,10 @@ from .record_status import (
     resolve_frontier_status_for_cycle_with_metadata,
     resolve_record_status_for_cycle,
 )
+from .reevaluation_patch_consumer import (
+    MorpionReevaluationPatchConsumptionResult,
+    apply_pending_reevaluation_patch_to_runner,
+)
 from .reevaluation_worker import (
     MorpionActiveModelNodeReevaluationEvaluator,
     MorpionNodeReevaluationEvaluator,
@@ -364,6 +368,7 @@ __all__ = [
     "MorpionRecordProgressSummary",
     "MorpionReevaluationCursor",
     "MorpionReevaluationPatch",
+    "MorpionReevaluationPatchConsumptionResult",
     "MorpionReevaluationPatchRow",
     "MorpionReevaluationWorkerResult",
     "MorpionSearchRunner",
@@ -382,6 +387,7 @@ __all__ = [
     "UnsupportedMorpionRuntimeReconfigurationError",
     "active_evaluator_series",
     "apply_control_to_args",
+    "apply_pending_reevaluation_patch_to_runner",
     "apply_runtime_control_to_runner_args",
     "bootstrap_config_from_args",
     "bootstrap_config_sha256",

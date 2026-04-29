@@ -10,7 +10,7 @@ import time
 from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from random import Random
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from anemone.checkpoints import (
     AnchorCheckpointStatePayload,
@@ -62,6 +62,9 @@ from .config import DEFAULT_MORPION_TREE_BRANCH_LIMIT
 from .control import MorpionBootstrapEffectiveRuntimeConfig
 from .history import MorpionBootstrapTreeStatus
 from .search_runner_protocol import MorpionSearchRunner
+
+if TYPE_CHECKING:
+    from .pipeline_artifacts import MorpionReevaluationPatch
 
 LOGGER = logging.getLogger(__name__)
 _TREE_BRANCH_LIMIT_ARGS_REQUIRED_MESSAGE = (
@@ -525,6 +528,13 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             min_depth_present=None if not depths_present else depths_present[0],
             max_depth_present=None if not depths_present else depths_present[-1],
             depth_node_counts=depth_node_counts,
+        )
+
+    def apply_reevaluation_patch(self, patch: MorpionReevaluationPatch) -> int:
+        """Apply one reevaluation patch to the live runtime tree."""
+        del patch
+        raise NotImplementedError(
+            "AnemoneMorpionSearchRunner.apply_reevaluation_patch() is not implemented yet."
         )
 
     def current_runtime_config(self) -> MorpionBootstrapEffectiveRuntimeConfig:
