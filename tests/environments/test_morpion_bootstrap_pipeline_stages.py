@@ -80,6 +80,7 @@ from chipiron.environments.morpion.bootstrap import (
     load_bootstrap_config,
     load_bootstrap_run_state,
     load_pipeline_active_model,
+    load_pipeline_dataset_status_file,
     load_pipeline_manifest,
     load_pipeline_training_status_file,
     run_morpion_bootstrap_experiment,
@@ -542,8 +543,21 @@ def test_pipeline_growth_stage_no_save_only_advances_cycle(tmp_path: Path) -> No
 def test_dataset_stage_extracts_rows_from_manifest_tree_snapshot(
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Dataset stage should extract rows and mark the manifest done."""
+    leaderboard_calls: list[tuple[int, int]] = []
+
+    def _persist_leaderboard(**kwargs: object) -> None:
+        leaderboard_calls.append(
+            (int(kwargs["generation"]), int(kwargs["cycle_index"]))
+        )
+
+    monkeypatch.setattr(
+        pipeline_stages_module,
+        "persist_certified_leaderboard_candidates",
+        _persist_leaderboard,
+    )
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     paths.ensure_directories()
     snapshot_path = paths.tree_snapshot_path_for_generation(1)
@@ -566,6 +580,9 @@ def test_dataset_stage_extracts_rows_from_manifest_tree_snapshot(
         manifest = run_pipeline_dataset_stage(_artifact_pipeline_args(tmp_path), generation=1)
 
     messages = "\n".join(record.getMessage() for record in caplog.records)
+    dataset_status = load_pipeline_dataset_status_file(
+        paths.pipeline_dataset_status_path_for_generation(1)
+    )
 
     assert manifest.rows_path == "rows/generation_000001.json"
     assert paths.rows_path_for_generation(1).is_file()
@@ -573,6 +590,11 @@ def test_dataset_stage_extracts_rows_from_manifest_tree_snapshot(
     assert manifest.training_status == "not_started"
     assert not paths.pipeline_dataset_claim_path_for_generation(1).exists()
     assert manifest.metadata["dataset_rows"] == 1
+    assert dataset_status.record_status is not None
+    assert dataset_status.record_status.current_best_total_points == 37
+    assert dataset_status.frontier_status is not None
+    assert dataset_status.frontier_status.current_best_total_points == 38
+    assert leaderboard_calls == [(1, 1)]
     assert "[pipeline] dataset_claim_created generation=1" in messages
     assert "[pipeline] dataset_export_start generation=1" in messages
     assert "[pipeline] dataset_export_done generation=1 rows=1" in messages

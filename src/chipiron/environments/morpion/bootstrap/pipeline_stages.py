@@ -68,8 +68,10 @@ from .history import MorpionBootstrapHistoryRecorder
 from .memory_diagnostics import MemoryDiagnostics
 from .pipeline_artifacts import (
     MorpionPipelineActiveModel,
+    MorpionPipelineDatasetStatusArtifact,
     MorpionPipelineGenerationManifest,
     load_pipeline_active_model,
+    load_pipeline_dataset_status_file,
     load_pipeline_manifest,
     save_pipeline_active_model,
     save_pipeline_dataset_status_file,
@@ -81,7 +83,9 @@ from .pipeline_claims import (
     release_pipeline_stage_claim,
 )
 from .record_status import (
+    persist_certified_leaderboard_candidates,
     resolve_frontier_status_for_cycle,
+    resolve_frontier_status_for_cycle_with_metadata,
     resolve_record_status_for_cycle,
 )
 from .reevaluation_patch_consumer import apply_pending_reevaluation_patch_to_runner
@@ -175,6 +179,61 @@ def _load_generation_manifest(
 ) -> MorpionPipelineGenerationManifest:
     """Load the persisted pipeline manifest for one generation."""
     return load_pipeline_manifest(_pipeline_manifest_path(paths, generation))
+
+
+def _latest_prior_dataset_status_artifact(
+    *,
+    paths: MorpionBootstrapPaths,
+    generation: int,
+) -> MorpionPipelineDatasetStatusArtifact | None:
+    """Return the latest readable dataset-status artifact before one generation."""
+    for previous_generation in range(generation - 1, -1, -1):
+        status_path = paths.pipeline_dataset_status_path_for_generation(previous_generation)
+        if not status_path.is_file():
+            continue
+        try:
+            return load_pipeline_dataset_status_file(status_path)
+        except Exception:
+            LOGGER.warning(
+                "Skipping unreadable dataset status artifact: %s",
+                status_path,
+                exc_info=True,
+            )
+    return None
+
+
+def _resolve_previous_pipeline_record_status(
+    *,
+    paths: MorpionBootstrapPaths,
+    generation: int,
+):
+    """Return the previous record status for one pipeline dataset generation."""
+    latest_dataset_status = _latest_prior_dataset_status_artifact(
+        paths=paths,
+        generation=generation,
+    )
+    if latest_dataset_status is not None:
+        return latest_dataset_status.record_status
+    if paths.run_state_path.is_file():
+        return load_bootstrap_run_state(paths.run_state_path).latest_record_status
+    return None
+
+
+def _resolve_previous_pipeline_frontier_status(
+    *,
+    paths: MorpionBootstrapPaths,
+    generation: int,
+):
+    """Return the previous frontier status for one pipeline dataset generation."""
+    latest_dataset_status = _latest_prior_dataset_status_artifact(
+        paths=paths,
+        generation=generation,
+    )
+    if latest_dataset_status is not None:
+        return latest_dataset_status.frontier_status
+    if paths.run_state_path.is_file():
+        return load_bootstrap_run_state(paths.run_state_path).latest_frontier_status
+    return None
 
 
 def _save_dataset_manifest_status(
@@ -661,6 +720,42 @@ def run_pipeline_dataset_stage(
 
         export_started_at = time.perf_counter()
         snapshot = load_training_tree_snapshot(tree_snapshot_path)
+        previous_record_status = _resolve_previous_pipeline_record_status(
+            paths=paths,
+            generation=generation,
+        )
+        previous_frontier_status = _resolve_previous_pipeline_frontier_status(
+            paths=paths,
+            generation=generation,
+        )
+        LOGGER.info("[record] resolve_start nodes=%s", len(snapshot.nodes))
+        record_started_at = time.perf_counter()
+        record_status = resolve_record_status_for_cycle(
+            snapshot=snapshot,
+            previous_record_status=previous_record_status,
+        )
+        LOGGER.info(
+            "[record] resolve_done generation=%s elapsed=%.3fs best_total_points=%s",
+            generation,
+            time.perf_counter() - record_started_at,
+            None if record_status is None else record_status.current_best_total_points,
+        )
+        LOGGER.info("[frontier] resolve_start nodes=%s", len(snapshot.nodes))
+        frontier_started_at = time.perf_counter()
+        frontier_resolution = resolve_frontier_status_for_cycle_with_metadata(
+            snapshot=snapshot,
+            previous_frontier_status=previous_frontier_status,
+        )
+        frontier_status = frontier_resolution.status
+        LOGGER.info(
+            "[frontier] resolve_done generation=%s elapsed=%.3fs candidates=%s best_total_points=%s method=depth_metadata",
+            generation,
+            time.perf_counter() - frontier_started_at,
+            frontier_resolution.candidate_count,
+            None
+            if frontier_status is None
+            else frontier_status.current_best_total_points,
+        )
         rows = _extract_rows_from_training_snapshot(
             args=args,
             snapshot=snapshot,
@@ -689,11 +784,32 @@ def run_pipeline_dataset_stage(
             metadata=manifest_metadata,
         )
         save_pipeline_manifest(manifest, _pipeline_manifest_path(paths, generation))
+        LOGGER.info(
+            "[leaderboard] persist_start generation=%s cycle=%s",
+            generation,
+            generation,
+        )
+        leaderboard_started_at = time.perf_counter()
+        try:
+            persist_certified_leaderboard_candidates(
+                snapshot=snapshot,
+                run_work_dir=paths.work_dir,
+                generation=generation,
+                cycle_index=generation,
+                timestamp_utc=timestamp_utc,
+            )
+        finally:
+            LOGGER.info(
+                "[leaderboard] persist_done elapsed=%.3fs",
+                time.perf_counter() - leaderboard_started_at,
+            )
         save_pipeline_dataset_status_file(
             generation=generation,
             dataset_status=manifest.dataset_status,
             updated_at_utc=timestamp_utc,
             metadata=manifest.metadata,
+            record_status=record_status,
+            frontier_status=frontier_status,
             path=paths.pipeline_dataset_status_path_for_generation(generation),
         )
         LOGGER.info(

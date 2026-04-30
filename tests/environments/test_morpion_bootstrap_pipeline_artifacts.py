@@ -65,8 +65,11 @@ from chipiron.environments.morpion.bootstrap import (
     InvalidMorpionPipelineArtifactError,
     MissingMorpionPipelineArtifactError,
     MorpionBootstrapArgs,
+    MorpionBootstrapFrontierStatus,
     MorpionBootstrapPaths,
+    MorpionBootstrapRecordStatus,
     MorpionPipelineActiveModel,
+    MorpionPipelineDatasetStatusArtifact,
     MorpionPipelineEvaluatorTrainingResult,
     MorpionPipelineGenerationManifest,
     MorpionPipelineStageClaim,
@@ -77,11 +80,13 @@ from chipiron.environments.morpion.bootstrap import (
     delete_reevaluation_cursor,
     delete_reevaluation_patch,
     load_pipeline_active_model,
+    load_pipeline_dataset_status_file,
     load_pipeline_manifest,
     load_pipeline_stage_claim,
     load_pipeline_training_status_file,
     load_reevaluation_cursor,
     load_reevaluation_patch,
+    pipeline_dataset_status_from_dict,
     pipeline_manifest_from_dict,
     pipeline_training_status_from_dict,
     reevaluation_cursor_from_dict,
@@ -347,6 +352,66 @@ def test_pipeline_training_status_from_old_payload_defaults_evaluator_results() 
     assert loaded.status == "done"
     assert loaded.evaluator_results == {}
     assert loaded.selected_evaluator_name is None
+
+
+def test_pipeline_dataset_status_roundtrip(tmp_path: Path) -> None:
+    """One saved dataset-status artifact should round-trip through JSON unchanged."""
+    dataset_status = MorpionPipelineDatasetStatusArtifact(
+        generation=3,
+        status="done",
+        updated_at_utc="2026-04-28T12:00:00Z",
+        record_status=MorpionBootstrapRecordStatus(
+            variant="5T",
+            initial_pattern="greek_cross",
+            initial_point_count=36,
+            current_best_moves_since_start=18,
+            current_best_total_points=54,
+            current_best_is_exact=True,
+            current_best_is_terminal=True,
+            current_best_source="certified_terminal_leaf",
+        ),
+        frontier_status=MorpionBootstrapFrontierStatus(
+            variant="5T",
+            initial_pattern="greek_cross",
+            initial_point_count=36,
+            current_best_moves_since_start=19,
+            current_best_total_points=55,
+            current_best_is_exact=False,
+            current_best_is_terminal=False,
+            current_best_source="snapshot_nonterminal_node",
+        ),
+        metadata={"source": "test"},
+    )
+    path = tmp_path / "pipeline" / "generation_000003" / "dataset_status.json"
+
+    pipeline_artifacts_module.save_pipeline_dataset_status_file(
+        generation=dataset_status.generation,
+        dataset_status=dataset_status.status,
+        updated_at_utc=dataset_status.updated_at_utc,
+        metadata=dataset_status.metadata,
+        record_status=dataset_status.record_status,
+        frontier_status=dataset_status.frontier_status,
+        path=path,
+    )
+
+    assert load_pipeline_dataset_status_file(path) == dataset_status
+
+
+def test_pipeline_dataset_status_from_old_payload_defaults_optional_statuses() -> None:
+    """Older dataset-status payloads should load safely without record/frontier fields."""
+    loaded = pipeline_dataset_status_from_dict(
+        {
+            "generation": 1,
+            "status": "done",
+            "updated_at_utc": "2026-04-28T12:00:00Z",
+            "metadata": {"source": "old-format"},
+        }
+    )
+
+    assert loaded.generation == 1
+    assert loaded.status == "done"
+    assert loaded.record_status is None
+    assert loaded.frontier_status is None
 
 
 def test_pipeline_path_helpers_and_directory_creation(tmp_path: Path) -> None:

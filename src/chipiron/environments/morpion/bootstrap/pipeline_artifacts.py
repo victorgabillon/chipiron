@@ -8,6 +8,11 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal, cast
 
+from .record_status import (
+    MorpionBootstrapFrontierStatus,
+    MorpionBootstrapRecordStatus,
+)
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -450,6 +455,49 @@ class MorpionPipelineTrainingStatusArtifact:
         object.__setattr__(self, "metadata", _metadata_dict(self.metadata))
 
 
+@dataclass(frozen=True, slots=True)
+class MorpionPipelineDatasetStatusArtifact:
+    """Immutable persisted dataset-status artifact for one pipeline generation."""
+
+    generation: int
+    status: MorpionPipelineDatasetStatus
+    updated_at_utc: str
+    record_status: MorpionBootstrapRecordStatus | None = None
+    frontier_status: MorpionBootstrapFrontierStatus | None = None
+    metadata: dict[str, object] = field(default_factory=_empty_metadata)
+
+    def __post_init__(self) -> None:
+        """Validate and normalize dataset-status artifact fields eagerly."""
+        object.__setattr__(
+            self,
+            "generation",
+            _require_generation(self.generation, field_name="generation"),
+        )
+        object.__setattr__(self, "status", _dataset_status(self.status))
+        object.__setattr__(
+            self,
+            "updated_at_utc",
+            _require_non_empty_str(
+                self.updated_at_utc,
+                field_name="updated_at_utc",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "record_status",
+            _optional_record_status(self.record_status, field_name="record_status"),
+        )
+        object.__setattr__(
+            self,
+            "frontier_status",
+            _optional_frontier_status(
+                self.frontier_status,
+                field_name="frontier_status",
+            ),
+        )
+        object.__setattr__(self, "metadata", _metadata_dict(self.metadata))
+
+
 def _training_result_mapping(
     value: object,
 ) -> dict[str, MorpionPipelineEvaluatorTrainingResult]:
@@ -470,6 +518,152 @@ def _training_result_mapping(
             continue
         copied[key] = pipeline_evaluator_training_result_from_dict(raw_result)
     return copied
+
+
+def _record_status_to_dict(
+    status: MorpionBootstrapRecordStatus,
+) -> dict[str, object]:
+    """Serialize one Morpion record status into JSON-friendly data."""
+    return {
+        "variant": status.variant,
+        "initial_pattern": status.initial_pattern,
+        "initial_point_count": status.initial_point_count,
+        "current_best_moves_since_start": status.current_best_moves_since_start,
+        "current_best_total_points": status.current_best_total_points,
+        "current_best_is_exact": status.current_best_is_exact,
+        "current_best_is_terminal": status.current_best_is_terminal,
+        "current_best_source": status.current_best_source,
+    }
+
+
+def _frontier_status_to_dict(
+    status: MorpionBootstrapFrontierStatus,
+) -> dict[str, object]:
+    """Serialize one Morpion frontier status into JSON-friendly data."""
+    return {
+        "variant": status.variant,
+        "initial_pattern": status.initial_pattern,
+        "initial_point_count": status.initial_point_count,
+        "current_best_moves_since_start": status.current_best_moves_since_start,
+        "current_best_total_points": status.current_best_total_points,
+        "current_best_is_exact": status.current_best_is_exact,
+        "current_best_is_terminal": status.current_best_is_terminal,
+        "current_best_source": status.current_best_source,
+    }
+
+
+def _record_status_from_dict(
+    data: Mapping[str, object],
+    *,
+    field_name: str,
+) -> MorpionBootstrapRecordStatus:
+    """Deserialize one Morpion record status from JSON-friendly data."""
+    return MorpionBootstrapRecordStatus(
+        variant=_optional_str(data.get("variant"), field_name=f"{field_name}.variant"),
+        initial_pattern=_optional_str(
+            data.get("initial_pattern"),
+            field_name=f"{field_name}.initial_pattern",
+        ),
+        initial_point_count=_optional_generation(
+            data.get("initial_point_count"),
+            field_name=f"{field_name}.initial_point_count",
+        ),
+        current_best_moves_since_start=_optional_generation(
+            data.get("current_best_moves_since_start"),
+            field_name=f"{field_name}.current_best_moves_since_start",
+        ),
+        current_best_total_points=_optional_generation(
+            data.get("current_best_total_points"),
+            field_name=f"{field_name}.current_best_total_points",
+        ),
+        current_best_is_exact=_optional_bool(
+            data.get("current_best_is_exact"),
+            field_name=f"{field_name}.current_best_is_exact",
+        ),
+        current_best_is_terminal=_optional_bool(
+            data.get("current_best_is_terminal"),
+            field_name=f"{field_name}.current_best_is_terminal",
+        ),
+        current_best_source=_optional_str(
+            data.get("current_best_source"),
+            field_name=f"{field_name}.current_best_source",
+        ),
+    )
+
+
+def _frontier_status_from_dict(
+    data: Mapping[str, object],
+    *,
+    field_name: str,
+) -> MorpionBootstrapFrontierStatus:
+    """Deserialize one Morpion frontier status from JSON-friendly data."""
+    return MorpionBootstrapFrontierStatus(
+        variant=_optional_str(data.get("variant"), field_name=f"{field_name}.variant"),
+        initial_pattern=_optional_str(
+            data.get("initial_pattern"),
+            field_name=f"{field_name}.initial_pattern",
+        ),
+        initial_point_count=_optional_generation(
+            data.get("initial_point_count"),
+            field_name=f"{field_name}.initial_point_count",
+        ),
+        current_best_moves_since_start=_optional_generation(
+            data.get("current_best_moves_since_start"),
+            field_name=f"{field_name}.current_best_moves_since_start",
+        ),
+        current_best_total_points=_optional_generation(
+            data.get("current_best_total_points"),
+            field_name=f"{field_name}.current_best_total_points",
+        ),
+        current_best_is_exact=_optional_bool(
+            data.get("current_best_is_exact"),
+            field_name=f"{field_name}.current_best_is_exact",
+        ),
+        current_best_is_terminal=_optional_bool(
+            data.get("current_best_is_terminal"),
+            field_name=f"{field_name}.current_best_is_terminal",
+        ),
+        current_best_source=_optional_str(
+            data.get("current_best_source"),
+            field_name=f"{field_name}.current_best_source",
+        ),
+    )
+
+
+def _optional_record_status(
+    value: object,
+    *,
+    field_name: str,
+) -> MorpionBootstrapRecordStatus | None:
+    """Return one optional Morpion record status field."""
+    if value is None:
+        return None
+    if isinstance(value, MorpionBootstrapRecordStatus):
+        return value
+    if not isinstance(value, Mapping):
+        raise _invalid_field_error(field_name, "must be a mapping or null")
+    return _record_status_from_dict(
+        cast("Mapping[str, object]", value),
+        field_name=field_name,
+    )
+
+
+def _optional_frontier_status(
+    value: object,
+    *,
+    field_name: str,
+) -> MorpionBootstrapFrontierStatus | None:
+    """Return one optional Morpion frontier status field."""
+    if value is None:
+        return None
+    if isinstance(value, MorpionBootstrapFrontierStatus):
+        return value
+    if not isinstance(value, Mapping):
+        raise _invalid_field_error(field_name, "must be a mapping or null")
+    return _frontier_status_from_dict(
+        cast("Mapping[str, object]", value),
+        field_name=field_name,
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -868,6 +1062,48 @@ def pipeline_training_status_from_dict(
     )
 
 
+def pipeline_dataset_status_to_dict(
+    status: MorpionPipelineDatasetStatusArtifact,
+) -> dict[str, object]:
+    """Serialize one dataset-status artifact into JSON-friendly data."""
+    return {
+        "generation": status.generation,
+        "status": status.status,
+        "updated_at_utc": status.updated_at_utc,
+        "record_status": None
+        if status.record_status is None
+        else _record_status_to_dict(status.record_status),
+        "frontier_status": None
+        if status.frontier_status is None
+        else _frontier_status_to_dict(status.frontier_status),
+        "metadata": dict(status.metadata),
+    }
+
+
+def pipeline_dataset_status_from_dict(
+    data: object,
+) -> MorpionPipelineDatasetStatusArtifact:
+    """Deserialize one dataset-status artifact from JSON-friendly data."""
+    payload = _top_level_mapping(data)
+    return MorpionPipelineDatasetStatusArtifact(
+        generation=_require_generation(payload.get("generation"), field_name="generation"),
+        status=_dataset_status(payload.get("status", "not_started")),
+        updated_at_utc=_require_non_empty_str(
+            payload.get("updated_at_utc"),
+            field_name="updated_at_utc",
+        ),
+        record_status=_optional_record_status(
+            payload.get("record_status"),
+            field_name="record_status",
+        ),
+        frontier_status=_optional_frontier_status(
+            payload.get("frontier_status"),
+            field_name="frontier_status",
+        ),
+        metadata=_metadata_dict(payload.get("metadata")),
+    )
+
+
 def pipeline_stage_claim_to_dict(
     claim: MorpionPipelineStageClaim,
 ) -> dict[str, object]:
@@ -1103,6 +1339,17 @@ def load_pipeline_training_status_file(path: Path) -> MorpionPipelineTrainingSta
     return pipeline_training_status_from_dict(payload)
 
 
+def load_pipeline_dataset_status_file(path: Path) -> MorpionPipelineDatasetStatusArtifact:
+    """Load one dataset-status artifact from disk."""
+    if not path.is_file():
+        raise _missing_manifest_error(path)
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise _invalid_manifest_json_error(path) from exc
+    return pipeline_dataset_status_from_dict(payload)
+
+
 def _missing_stage_claim_error(path: Path) -> MissingMorpionPipelineArtifactError:
     """Return the stable missing-stage-claim error."""
     return MissingMorpionPipelineArtifactError(
@@ -1253,15 +1500,23 @@ def save_pipeline_dataset_status_file(
     dataset_status: MorpionPipelineDatasetStatus,
     updated_at_utc: str,
     metadata: Mapping[str, object] | None,
+    record_status: MorpionBootstrapRecordStatus | None = None,
+    frontier_status: MorpionBootstrapFrontierStatus | None = None,
     path: Path,
 ) -> None:
     """Persist one validated dataset-stage status artifact atomically."""
-    save_pipeline_stage_status_file(
-        generation=generation,
-        status=_dataset_status(dataset_status),
-        updated_at_utc=updated_at_utc,
-        metadata=metadata,
-        path=path,
+    _atomic_write_json(
+        pipeline_dataset_status_to_dict(
+            MorpionPipelineDatasetStatusArtifact(
+                generation=generation,
+                status=_dataset_status(dataset_status),
+                updated_at_utc=updated_at_utc,
+                record_status=record_status,
+                frontier_status=frontier_status,
+                metadata=_metadata_dict(metadata),
+            )
+        ),
+        path,
     )
 
 
@@ -1299,6 +1554,7 @@ __all__ = [
     "InvalidMorpionPipelineArtifactError",
     "MissingMorpionPipelineArtifactError",
     "MorpionPipelineActiveModel",
+    "MorpionPipelineDatasetStatusArtifact",
     "MorpionPipelineDatasetStatus",
     "MorpionPipelineEvaluatorTrainingResult",
     "MorpionPipelineGenerationManifest",
@@ -1313,6 +1569,7 @@ __all__ = [
     "delete_reevaluation_cursor",
     "delete_reevaluation_patch",
     "load_pipeline_active_model",
+    "load_pipeline_dataset_status_file",
     "load_pipeline_manifest",
     "load_pipeline_stage_claim",
     "load_pipeline_training_status_file",
@@ -1320,6 +1577,8 @@ __all__ = [
     "load_reevaluation_patch",
     "pipeline_active_model_from_dict",
     "pipeline_active_model_to_dict",
+    "pipeline_dataset_status_from_dict",
+    "pipeline_dataset_status_to_dict",
     "pipeline_evaluator_training_result_from_dict",
     "pipeline_evaluator_training_result_to_dict",
     "pipeline_manifest_from_dict",
