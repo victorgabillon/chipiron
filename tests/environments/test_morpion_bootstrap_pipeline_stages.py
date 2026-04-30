@@ -65,6 +65,8 @@ from chipiron.environments.morpion.bootstrap import (
     IncompatibleStageBootstrapConfigError,
     MorpionBootstrapArgs,
     MorpionBootstrapPaths,
+    MorpionPipelineActiveModel,
+    MorpionPipelineEvaluatorTrainingResult,
     MorpionBootstrapRunState,
     MorpionPipelineGenerationManifest,
     MorpionPipelineWorkerResult,
@@ -79,12 +81,14 @@ from chipiron.environments.morpion.bootstrap import (
     load_bootstrap_run_state,
     load_pipeline_active_model,
     load_pipeline_manifest,
+    load_pipeline_training_status_file,
     run_morpion_bootstrap_experiment,
     run_pipeline_dataset_stage,
     run_pipeline_growth_stage,
     run_pipeline_training_stage,
     save_bootstrap_config,
     save_bootstrap_run_state,
+    save_pipeline_active_model,
     save_pipeline_manifest,
     save_reevaluation_patch,
 )
@@ -340,6 +344,93 @@ def test_pipeline_growth_stage_writes_growth_only_manifest(tmp_path: Path) -> No
     assert not paths.model_generation_dir_for_generation(1).exists()
 
 
+def test_pipeline_growth_stage_without_active_model_uses_none(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Growth should start without an evaluator bundle when no active model exists."""
+    runner = FakeMorpionSearchRunner(tree_sizes=(5,), target_values=(1.0,))
+
+    with caplog.at_level(logging.INFO):
+        run_pipeline_growth_stage(_artifact_pipeline_args(tmp_path), runner, max_cycles=1)
+
+    assert runner.load_calls == [(None, None)]
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+    assert "[growth] active_model_status source=none evaluator=none model_bundle=none" in messages
+
+
+def test_pipeline_growth_stage_uses_pipeline_active_model_for_restore(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Growth should resolve the active model bundle from pipeline/active_model.json."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    model_bundle_path = paths.model_bundle_path_for_generation(8, "linear_5")
+    model_bundle_path.mkdir(parents=True, exist_ok=True)
+    save_pipeline_active_model(
+        MorpionPipelineActiveModel(
+            generation=8,
+            evaluator_name="linear_5",
+            model_bundle_path=paths.relative_to_work_dir(model_bundle_path),
+            updated_at_utc="2026-04-29T12:00:00Z",
+        ),
+        paths.pipeline_active_model_path,
+    )
+    save_bootstrap_run_state(
+        MorpionBootstrapRunState(
+            generation=0,
+            cycle_index=0,
+            latest_tree_snapshot_path=None,
+            latest_rows_path=None,
+            latest_model_bundle_paths={"stale": "models/generation_000001/stale"},
+            active_evaluator_name="stale",
+            tree_size_at_last_save=0,
+            last_save_unix_s=0.0,
+        ),
+        paths.run_state_path,
+    )
+    runner = FakeMorpionSearchRunner(tree_sizes=(5,), target_values=(1.0,))
+
+    with caplog.at_level(logging.INFO):
+        run_pipeline_growth_stage(_artifact_pipeline_args(tmp_path), runner, max_cycles=1)
+
+    assert runner.load_calls == [(None, str(model_bundle_path))]
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+    assert (
+        "[growth] active_model_status source=pipeline_active_model generation=8 evaluator=linear_5 "
+        f"model_bundle={model_bundle_path}"
+    ) in messages
+
+
+def test_pipeline_growth_stage_missing_active_model_bundle_logs_warning(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Growth should warn and skip attachment when the active bundle path is missing."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    missing_bundle_path = paths.model_bundle_path_for_generation(8, "linear_5")
+    save_pipeline_active_model(
+        MorpionPipelineActiveModel(
+            generation=8,
+            evaluator_name="linear_5",
+            model_bundle_path=paths.relative_to_work_dir(missing_bundle_path),
+            updated_at_utc="2026-04-29T12:00:00Z",
+        ),
+        paths.pipeline_active_model_path,
+    )
+    runner = FakeMorpionSearchRunner(tree_sizes=(5,), target_values=(1.0,))
+
+    with caplog.at_level(logging.INFO):
+        run_pipeline_growth_stage(_artifact_pipeline_args(tmp_path), runner, max_cycles=1)
+
+    assert runner.load_calls == [(None, None)]
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+    assert "[growth] active_model_missing_bundle source=pipeline_active_model generation=8 evaluator=linear_5" in messages
+    assert "[growth] active_model_status source=none evaluator=none model_bundle=none" in messages
+
+
 def test_pipeline_growth_stage_then_dataset_then_training(tmp_path: Path) -> None:
     """Staged growth, dataset, and training should hand off purely through artifacts."""
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
@@ -574,6 +665,9 @@ def test_training_stage_trains_and_updates_active_model(tmp_path: Path) -> None:
 
     manifest = run_pipeline_training_stage(_artifact_pipeline_args(tmp_path), generation=1)
     active_model = load_pipeline_active_model(paths.pipeline_active_model_path)
+    training_status = load_pipeline_training_status_file(
+        paths.pipeline_training_status_path_for_generation(1)
+    )
 
     assert manifest.training_status == "done"
     assert manifest.selected_evaluator_name is not None
@@ -581,6 +675,17 @@ def test_training_stage_trains_and_updates_active_model(tmp_path: Path) -> None:
     assert active_model.evaluator_name == manifest.selected_evaluator_name
     assert (
         active_model.model_bundle_path
+        == manifest.model_bundle_paths[manifest.selected_evaluator_name]
+    )
+    assert training_status.selected_evaluator_name == manifest.selected_evaluator_name
+    assert training_status.selection_policy == "lowest_final_loss"
+    assert set(training_status.evaluator_results) == set(manifest.model_bundle_paths)
+    assert isinstance(
+        training_status.evaluator_results[manifest.selected_evaluator_name],
+        MorpionPipelineEvaluatorTrainingResult,
+    )
+    assert (
+        training_status.evaluator_results[manifest.selected_evaluator_name].model_bundle_path
         == manifest.model_bundle_paths[manifest.selected_evaluator_name]
     )
     assert not paths.pipeline_training_claim_path_for_generation(1).exists()

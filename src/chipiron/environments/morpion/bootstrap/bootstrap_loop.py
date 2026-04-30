@@ -121,6 +121,7 @@ from .history import (
     MorpionEvaluatorMetrics,
 )
 from .memory_diagnostics import MemoryDiagnostics
+from .pipeline_artifacts import save_pipeline_training_status_file
 from .pipeline_config import (
     DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
     DEFAULT_MORPION_PIPELINE_MODE,
@@ -462,8 +463,10 @@ def _run_one_bootstrap_cycle_impl(
         memory=memory,
     )
     evaluator_metrics = training_result.evaluator_metrics
+    evaluator_results = training_result.evaluator_results
     model_bundle_paths = training_result.model_bundle_paths
     selected_evaluator_name = training_result.selected_evaluator_name
+    selection_policy = training_result.selection_policy
     training_duration_s = training_result.training_duration_s
     del training_result
     cycle_duration_s = time.perf_counter() - cycle_started_at
@@ -531,6 +534,16 @@ def _run_one_bootstrap_cycle_impl(
         selected_evaluator_name=selected_evaluator_name,
         model_bundle_paths=model_bundle_paths,
         timestamp_utc=timestamp_utc,
+    )
+    save_pipeline_training_status_file(
+        generation=generation,
+        training_status="done",
+        updated_at_utc=timestamp_utc,
+        metadata=_pipeline_metadata(args=args),
+        selected_evaluator_name=selected_evaluator_name,
+        selection_policy=selection_policy,
+        evaluator_results=evaluator_results,
+        path=paths.pipeline_training_status_path_for_generation(generation),
     )
     history_recorder.record(
         build_bootstrap_event(

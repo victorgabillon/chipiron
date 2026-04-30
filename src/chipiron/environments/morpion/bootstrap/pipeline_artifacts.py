@@ -54,6 +54,11 @@ def _empty_model_bundle_paths() -> dict[str, str]:
     return {}
 
 
+def _empty_evaluator_results() -> dict[str, MorpionPipelineEvaluatorTrainingResult]:
+    """Return a typed empty evaluator training-result mapping."""
+    return {}
+
+
 class InvalidMorpionPipelineArtifactError(ValueError):
     """Raised when one persisted pipeline artifact payload is malformed."""
 
@@ -362,6 +367,109 @@ class MorpionPipelineActiveModel:
             _require_str(self.updated_at_utc, field_name="updated_at_utc"),
         )
         object.__setattr__(self, "metadata", _metadata_dict(self.metadata))
+
+
+@dataclass(frozen=True, slots=True)
+class MorpionPipelineEvaluatorTrainingResult:
+    """Immutable per-evaluator training result persisted for dashboard consumption."""
+
+    final_loss: float
+    elapsed_s: float
+    model_bundle_path: str
+
+    def __post_init__(self) -> None:
+        """Validate and normalize per-evaluator training result fields eagerly."""
+        object.__setattr__(
+            self,
+            "final_loss",
+            _float_value(self.final_loss, field_name="final_loss"),
+        )
+        object.__setattr__(
+            self,
+            "elapsed_s",
+            _float_value(self.elapsed_s, field_name="elapsed_s"),
+        )
+        object.__setattr__(
+            self,
+            "model_bundle_path",
+            _require_non_empty_str(
+                self.model_bundle_path,
+                field_name="model_bundle_path",
+            ),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class MorpionPipelineTrainingStatusArtifact:
+    """Immutable persisted training-status artifact for one pipeline generation."""
+
+    generation: int
+    status: MorpionPipelineTrainingStatus
+    updated_at_utc: str
+    selected_evaluator_name: str | None = None
+    selection_policy: str | None = None
+    evaluator_results: dict[str, MorpionPipelineEvaluatorTrainingResult] = field(
+        default_factory=_empty_evaluator_results
+    )
+    metadata: dict[str, object] = field(default_factory=_empty_metadata)
+
+    def __post_init__(self) -> None:
+        """Validate and normalize training-status artifact fields eagerly."""
+        object.__setattr__(
+            self,
+            "generation",
+            _require_generation(self.generation, field_name="generation"),
+        )
+        object.__setattr__(self, "status", _training_status(self.status))
+        object.__setattr__(
+            self,
+            "updated_at_utc",
+            _require_non_empty_str(
+                self.updated_at_utc,
+                field_name="updated_at_utc",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "selected_evaluator_name",
+            _optional_str(
+                self.selected_evaluator_name,
+                field_name="selected_evaluator_name",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "selection_policy",
+            _optional_str(self.selection_policy, field_name="selection_policy"),
+        )
+        object.__setattr__(
+            self,
+            "evaluator_results",
+            _training_result_mapping(self.evaluator_results),
+        )
+        object.__setattr__(self, "metadata", _metadata_dict(self.metadata))
+
+
+def _training_result_mapping(
+    value: object,
+) -> dict[str, MorpionPipelineEvaluatorTrainingResult]:
+    """Return one shallow-copied evaluator training-result mapping."""
+    if value is None:
+        return {}
+    if not isinstance(value, Mapping):
+        raise _invalid_field_error("evaluator_results", "must be a mapping")
+    raw_mapping = cast("Mapping[object, object]", value)
+    copied: dict[str, MorpionPipelineEvaluatorTrainingResult] = {}
+    for key, raw_result in raw_mapping.items():
+        if not isinstance(key, str):
+            raise _invalid_field_error(
+                "evaluator_results", "must use string evaluator names"
+            )
+        if isinstance(raw_result, MorpionPipelineEvaluatorTrainingResult):
+            copied[key] = raw_result
+            continue
+        copied[key] = pipeline_evaluator_training_result_from_dict(raw_result)
+    return copied
 
 
 @dataclass(frozen=True, slots=True)
@@ -691,6 +799,75 @@ def pipeline_active_model_from_dict(data: object) -> MorpionPipelineActiveModel:
     )
 
 
+def pipeline_evaluator_training_result_to_dict(
+    result: MorpionPipelineEvaluatorTrainingResult,
+) -> dict[str, object]:
+    """Serialize one per-evaluator training result into JSON-friendly data."""
+    return {
+        "elapsed_s": result.elapsed_s,
+        "final_loss": result.final_loss,
+        "model_bundle_path": result.model_bundle_path,
+    }
+
+
+def pipeline_evaluator_training_result_from_dict(
+    data: object,
+) -> MorpionPipelineEvaluatorTrainingResult:
+    """Deserialize one per-evaluator training result from JSON-friendly data."""
+    payload = _top_level_mapping(data)
+    return MorpionPipelineEvaluatorTrainingResult(
+        final_loss=_float_value(payload.get("final_loss"), field_name="final_loss"),
+        elapsed_s=_float_value(payload.get("elapsed_s"), field_name="elapsed_s"),
+        model_bundle_path=_require_non_empty_str(
+            payload.get("model_bundle_path"),
+            field_name="model_bundle_path",
+        ),
+    )
+
+
+def pipeline_training_status_to_dict(
+    status: MorpionPipelineTrainingStatusArtifact,
+) -> dict[str, object]:
+    """Serialize one training-status artifact into JSON-friendly data."""
+    return {
+        "evaluator_results": {
+            evaluator_name: pipeline_evaluator_training_result_to_dict(result)
+            for evaluator_name, result in status.evaluator_results.items()
+        },
+        "generation": status.generation,
+        "metadata": dict(status.metadata),
+        "selected_evaluator_name": status.selected_evaluator_name,
+        "selection_policy": status.selection_policy,
+        "status": status.status,
+        "updated_at_utc": status.updated_at_utc,
+    }
+
+
+def pipeline_training_status_from_dict(
+    data: object,
+) -> MorpionPipelineTrainingStatusArtifact:
+    """Deserialize one training-status artifact from JSON-friendly data."""
+    payload = _top_level_mapping(data)
+    return MorpionPipelineTrainingStatusArtifact(
+        generation=_require_generation(payload.get("generation"), field_name="generation"),
+        status=_training_status(payload.get("status", "not_started")),
+        updated_at_utc=_require_non_empty_str(
+            payload.get("updated_at_utc"),
+            field_name="updated_at_utc",
+        ),
+        selected_evaluator_name=_optional_str(
+            payload.get("selected_evaluator_name"),
+            field_name="selected_evaluator_name",
+        ),
+        selection_policy=_optional_str(
+            payload.get("selection_policy"),
+            field_name="selection_policy",
+        ),
+        evaluator_results=_training_result_mapping(payload.get("evaluator_results")),
+        metadata=_metadata_dict(payload.get("metadata")),
+    )
+
+
 def pipeline_stage_claim_to_dict(
     claim: MorpionPipelineStageClaim,
 ) -> dict[str, object]:
@@ -915,6 +1092,17 @@ def load_pipeline_active_model(path: Path) -> MorpionPipelineActiveModel:
     return pipeline_active_model_from_dict(payload)
 
 
+def load_pipeline_training_status_file(path: Path) -> MorpionPipelineTrainingStatusArtifact:
+    """Load one training-status artifact from disk."""
+    if not path.is_file():
+        raise _missing_manifest_error(path)
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise _invalid_manifest_json_error(path) from exc
+    return pipeline_training_status_from_dict(payload)
+
+
 def _missing_stage_claim_error(path: Path) -> MissingMorpionPipelineArtifactError:
     """Return the stable missing-stage-claim error."""
     return MissingMorpionPipelineArtifactError(
@@ -1083,15 +1271,27 @@ def save_pipeline_training_status_file(
     training_status: MorpionPipelineTrainingStatus,
     updated_at_utc: str,
     metadata: Mapping[str, object] | None,
+    selected_evaluator_name: str | None = None,
+    selection_policy: str | None = None,
+    evaluator_results: Mapping[str, MorpionPipelineEvaluatorTrainingResult] | None = None,
     path: Path,
 ) -> None:
     """Persist one validated training-stage status artifact atomically."""
-    save_pipeline_stage_status_file(
-        generation=generation,
-        status=_training_status(training_status),
-        updated_at_utc=updated_at_utc,
-        metadata=metadata,
-        path=path,
+    _atomic_write_json(
+        pipeline_training_status_to_dict(
+            MorpionPipelineTrainingStatusArtifact(
+                generation=generation,
+                status=_training_status(training_status),
+                updated_at_utc=updated_at_utc,
+                selected_evaluator_name=selected_evaluator_name,
+                selection_policy=selection_policy,
+                evaluator_results={}
+                if evaluator_results is None
+                else dict(evaluator_results),
+                metadata=_metadata_dict(metadata),
+            )
+        ),
+        path,
     )
 
 
@@ -1100,9 +1300,11 @@ __all__ = [
     "MissingMorpionPipelineArtifactError",
     "MorpionPipelineActiveModel",
     "MorpionPipelineDatasetStatus",
+    "MorpionPipelineEvaluatorTrainingResult",
     "MorpionPipelineGenerationManifest",
     "MorpionPipelineStageClaim",
     "MorpionPipelineStageName",
+    "MorpionPipelineTrainingStatusArtifact",
     "MorpionPipelineTrainingStatus",
     "MorpionReevaluationCursor",
     "MorpionReevaluationPatch",
@@ -1113,14 +1315,19 @@ __all__ = [
     "load_pipeline_active_model",
     "load_pipeline_manifest",
     "load_pipeline_stage_claim",
+    "load_pipeline_training_status_file",
     "load_reevaluation_cursor",
     "load_reevaluation_patch",
     "pipeline_active_model_from_dict",
     "pipeline_active_model_to_dict",
+    "pipeline_evaluator_training_result_from_dict",
+    "pipeline_evaluator_training_result_to_dict",
     "pipeline_manifest_from_dict",
     "pipeline_manifest_to_dict",
     "pipeline_stage_claim_from_dict",
     "pipeline_stage_claim_to_dict",
+    "pipeline_training_status_from_dict",
+    "pipeline_training_status_to_dict",
     "reevaluation_cursor_from_dict",
     "reevaluation_cursor_to_dict",
     "reevaluation_patch_from_dict",

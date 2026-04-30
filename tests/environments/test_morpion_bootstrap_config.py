@@ -296,6 +296,40 @@ def test_growth_worker_allows_runtime_tree_branch_limit_drift(tmp_path: Path) ->
     )
 
 
+def test_growth_worker_allows_runtime_save_after_seconds_drift(
+    tmp_path: Path,
+) -> None:
+    """Growth workers may vary save cadence seconds between relaunches."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(replace(args, save_after_seconds=3600.0))
+    requested = bootstrap_config_from_args(replace(args, save_after_seconds=10.0))
+
+    validate_stage_bootstrap_config_compatibility(
+        stage="growth",
+        persisted_config=persisted,
+        requested_config=requested,
+    )
+
+
+def test_growth_worker_allows_runtime_save_after_tree_growth_factor_drift(
+    tmp_path: Path,
+) -> None:
+    """Growth workers may vary save cadence growth factor between relaunches."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(
+        replace(args, save_after_tree_growth_factor=2.0)
+    )
+    requested = bootstrap_config_from_args(
+        replace(args, save_after_tree_growth_factor=1.2)
+    )
+
+    validate_stage_bootstrap_config_compatibility(
+        stage="growth",
+        persisted_config=persisted,
+        requested_config=requested,
+    )
+
+
 def test_loop_stage_allows_runtime_relaunch_batch_size_drift(tmp_path: Path) -> None:
     """Loop stage should allow the same runtime batching override."""
     args = _make_args(tmp_path)
@@ -321,6 +355,34 @@ def test_dataset_worker_rejects_tree_branch_limit_drift(tmp_path: Path) -> None:
 
     validate_stage_bootstrap_config_compatibility(
         stage="dataset_worker",
+        persisted_config=persisted,
+        requested_config=requested,
+    )
+
+
+@pytest.mark.parametrize("stage", ["dataset_worker", "training_worker", "reevaluation"])
+def test_non_growth_workers_ignore_growth_save_cadence_drift(
+    tmp_path: Path, stage: str
+) -> None:
+    """Non-growth workers should ignore growth-only save cadence runtime drift."""
+    args = _make_args(tmp_path)
+    persisted = bootstrap_config_from_args(
+        replace(
+            args,
+            save_after_seconds=3600.0,
+            save_after_tree_growth_factor=2.0,
+        )
+    )
+    requested = bootstrap_config_from_args(
+        replace(
+            args,
+            save_after_seconds=10.0,
+            save_after_tree_growth_factor=1.2,
+        )
+    )
+
+    validate_stage_bootstrap_config_compatibility(
+        stage=cast("object", stage),
         persisted_config=persisted,
         requested_config=requested,
     )
@@ -599,14 +661,20 @@ def test_stage_owned_field_helpers_are_stable() -> None:
     assert GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS == {
         "max_growth_steps_per_cycle",
         "tree_branch_limit",
+        "save_after_seconds",
+        "save_after_tree_growth_factor",
     }
     assert RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS == {
         "max_growth_steps_per_cycle",
         "tree_branch_limit",
+        "save_after_seconds",
+        "save_after_tree_growth_factor",
     }
     assert STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS["dataset_worker"] == {
         "max_growth_steps_per_cycle",
         "tree_branch_limit",
+        "save_after_seconds",
+        "save_after_tree_growth_factor",
     }
 
 

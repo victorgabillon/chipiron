@@ -85,6 +85,25 @@ def _path_mtime_ns(path: Path) -> int:
         return 0
 
 
+def _loss_series_contains_points(
+    loss_by_name: Mapping[str, tuple[Any, ...]],
+) -> bool:
+    """Return whether any evaluator loss series contains at least one concrete point."""
+    return any(series for series in loss_by_name.values())
+
+
+def _checked_training_status_files_summary(paths: MorpionBootstrapPaths) -> str:
+    """Summarize the training-status files the dashboard inspected for loss data."""
+    checked_files = sorted(paths.pipeline_dir.glob("generation_*/training_status.json"))
+    if not checked_files:
+        return "none"
+    rendered = [paths.relative_to_work_dir(path) for path in checked_files[-5:]]
+    omitted_count = len(checked_files) - len(rendered)
+    if omitted_count > 0:
+        return ", ".join(rendered) + f" (+{omitted_count} more)"
+    return ", ".join(rendered)
+
+
 def _latest_generation_json_path(directory: Path) -> Path | None:
     """Return the newest generation JSON file in one directory when present."""
     candidates = sorted(directory.glob("generation_*.json"))
@@ -424,6 +443,11 @@ def run_dashboard_app(work_dir: Path) -> None:
                 log_scale=loss_log_scale,
             ),
         )
+        if not _loss_series_contains_points(dashboard_data.evaluator_loss_by_name):
+            st.caption(
+                "No evaluator loss data found yet. Checked training_status.json files: "
+                + _checked_training_status_files_summary(paths)
+            )
 
     st.subheader("Certified Record Progress")
     if _has_known_optional_series_values(downsampled_certified_record_score):

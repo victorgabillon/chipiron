@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -66,6 +67,7 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapTrainingStatus,
     MorpionBootstrapTreeStatus,
     MorpionEvaluatorMetrics,
+    MorpionPipelineEvaluatorTrainingResult,
     MorpionRecordProgressSummary,
     TrainingTriggeredTimeSeriesPoint,
     TreeDepthDistributionRow,
@@ -78,6 +80,7 @@ from chipiron.environments.morpion.bootstrap import (
     latest_tree_depth_distribution,
     load_morpion_bootstrap_run_view,
     record_total_points_series,
+    save_pipeline_training_status_file,
     save_bootstrap_run_state,
     summarize_bootstrap_run,
     summarize_evaluator_selection,
@@ -794,6 +797,22 @@ def test_dashboard_data_bundles_everything(tmp_path: Path) -> None:
     recorder.record(first_event)
     recorder.record(second_event)
     save_bootstrap_run_state(_make_run_state(), paths.run_state_path)
+    save_pipeline_training_status_file(
+        generation=1,
+        training_status="done",
+        updated_at_utc="2026-04-11T08:00:00Z",
+        metadata={"source": "test"},
+        selected_evaluator_name="linear",
+        selection_policy="lowest_final_loss",
+        evaluator_results={
+            "linear": MorpionPipelineEvaluatorTrainingResult(
+                final_loss=0.5,
+                elapsed_s=1.0,
+                model_bundle_path="models/generation_000001/linear",
+            )
+        },
+        path=paths.pipeline_training_status_path_for_generation(1),
+    )
 
     dashboard_data = build_morpion_bootstrap_dashboard_data(tmp_path)
 
@@ -848,6 +867,33 @@ def test_dashboard_data_bundles_everything(tmp_path: Path) -> None:
         None,
     )
 
+
+def test_dashboard_data_tolerates_old_training_status_without_evaluator_results(
+    tmp_path: Path,
+) -> None:
+    """Dashboard data loading should skip old training status payloads safely."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.pipeline_training_status_path_for_generation(1).parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+    paths.pipeline_training_status_path_for_generation(1).write_text(
+        json.dumps(
+            {
+                "generation": 1,
+                "status": "done",
+                "updated_at_utc": "2026-04-11T08:00:00Z",
+                "metadata": {"source": "old-format"},
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    save_bootstrap_run_state(_make_run_state(), paths.run_state_path)
+
+    dashboard_data = build_morpion_bootstrap_dashboard_data(tmp_path)
+
+    assert dashboard_data.evaluator_loss_by_name == {}
 
 def test_latest_tree_depth_distribution_falls_back_to_snapshot(tmp_path: Path) -> None:
     """Depth distribution should fall back to the latest saved tree snapshot."""

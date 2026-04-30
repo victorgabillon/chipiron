@@ -67,8 +67,10 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapArgs,
     MorpionBootstrapPaths,
     MorpionPipelineActiveModel,
+    MorpionPipelineEvaluatorTrainingResult,
     MorpionPipelineGenerationManifest,
     MorpionPipelineStageClaim,
+    MorpionPipelineTrainingStatusArtifact,
     MorpionReevaluationCursor,
     MorpionReevaluationPatch,
     MorpionReevaluationPatchRow,
@@ -77,9 +79,11 @@ from chipiron.environments.morpion.bootstrap import (
     load_pipeline_active_model,
     load_pipeline_manifest,
     load_pipeline_stage_claim,
+    load_pipeline_training_status_file,
     load_reevaluation_cursor,
     load_reevaluation_patch,
     pipeline_manifest_from_dict,
+    pipeline_training_status_from_dict,
     reevaluation_cursor_from_dict,
     reevaluation_cursor_to_dict,
     reevaluation_patch_from_dict,
@@ -293,6 +297,56 @@ def test_pipeline_active_model_roundtrip(tmp_path: Path) -> None:
     save_pipeline_active_model(active_model, path)
 
     assert load_pipeline_active_model(path) == active_model
+
+
+def test_pipeline_training_status_roundtrip(tmp_path: Path) -> None:
+    """One saved training-status artifact should round-trip through JSON unchanged."""
+    training_status = MorpionPipelineTrainingStatusArtifact(
+        generation=3,
+        status="done",
+        updated_at_utc="2026-04-28T12:00:00Z",
+        selected_evaluator_name="linear",
+        selection_policy="lowest_final_loss",
+        evaluator_results={
+            "linear": MorpionPipelineEvaluatorTrainingResult(
+                final_loss=1.25,
+                elapsed_s=0.75,
+                model_bundle_path="models/generation_000003/linear",
+            )
+        },
+        metadata={"source": "test"},
+    )
+    path = tmp_path / "pipeline" / "generation_000003" / "training_status.json"
+
+    pipeline_artifacts_module.save_pipeline_training_status_file(
+        generation=training_status.generation,
+        training_status=training_status.status,
+        updated_at_utc=training_status.updated_at_utc,
+        metadata=training_status.metadata,
+        selected_evaluator_name=training_status.selected_evaluator_name,
+        selection_policy=training_status.selection_policy,
+        evaluator_results=training_status.evaluator_results,
+        path=path,
+    )
+
+    assert load_pipeline_training_status_file(path) == training_status
+
+
+def test_pipeline_training_status_from_old_payload_defaults_evaluator_results() -> None:
+    """Older training-status payloads should load safely with empty evaluator results."""
+    loaded = pipeline_training_status_from_dict(
+        {
+            "generation": 1,
+            "status": "done",
+            "updated_at_utc": "2026-04-28T12:00:00Z",
+            "metadata": {"source": "old-format"},
+        }
+    )
+
+    assert loaded.generation == 1
+    assert loaded.status == "done"
+    assert loaded.evaluator_results == {}
+    assert loaded.selected_evaluator_name is None
 
 
 def test_pipeline_path_helpers_and_directory_creation(tmp_path: Path) -> None:
@@ -597,6 +651,13 @@ def test_single_process_cycle_writes_manifest_and_active_model(tmp_path: Path) -
     assert active_model.evaluator_name == manifest.selected_evaluator_name
     assert dataset_status_payload["status"] == "done"
     assert training_status_payload["status"] == "done"
+    assert training_status_payload["selected_evaluator_name"] == manifest.selected_evaluator_name
+    assert training_status_payload["selection_policy"] == "lowest_final_loss"
+    assert set(training_status_payload["evaluator_results"]) == set(manifest.model_bundle_paths)
+    assert (
+        training_status_payload["evaluator_results"][manifest.selected_evaluator_name]["model_bundle_path"]
+        == manifest.model_bundle_paths[manifest.selected_evaluator_name]
+    )
 
 
 def test_empty_dataset_save_writes_manifest_without_active_model(

@@ -36,6 +36,7 @@ from .history import (
     load_bootstrap_history,
     load_latest_bootstrap_status,
 )
+from .pipeline_artifacts import load_pipeline_training_status_file
 from .record_status import (
     MorpionBootstrapRecordStatus,
     current_frontier_score,
@@ -487,6 +488,7 @@ def build_morpion_bootstrap_dashboard_data(
     work_dir: str | Path,
 ) -> MorpionBootstrapDashboardData:
     """Load one bootstrap run and build the dashboard-ready data payload."""
+    paths = MorpionBootstrapPaths.from_work_dir(work_dir)
     run_view = load_morpion_bootstrap_run_view(work_dir)
     history = run_view.history
     resolved_tree_snapshot = _resolve_latest_tree_snapshot_reference(run_view)
@@ -504,10 +506,42 @@ def build_morpion_bootstrap_dashboard_data(
         certified_record_score=certified_record_best_so_far_series(history),
         record_total_points=record_total_points_series(history),
         dataset_num_rows=dataset_num_rows_series(history),
-        evaluator_loss_by_name=evaluator_loss_series_by_name(history),
+        evaluator_loss_by_name=_evaluator_loss_series_by_name_from_training_status(
+            paths
+        ),
         active_evaluator=active_evaluator_series(history),
         latest_tree_depth_distribution=latest_tree_depth_distribution(run_view),
     )
+
+
+def _evaluator_loss_series_by_name_from_training_status(
+    paths: MorpionBootstrapPaths,
+) -> Mapping[str, tuple[OptionalFloatTimeSeriesPoint, ...]]:
+    """Return evaluator loss series keyed by evaluator name from training artifacts."""
+    series_by_name: dict[str, list[OptionalFloatTimeSeriesPoint]] = {}
+    for status_path in sorted(paths.pipeline_dir.glob("generation_*/training_status.json")):
+        try:
+            status = load_pipeline_training_status_file(status_path)
+        except Exception:
+            LOGGER.warning(
+                "Skipping unreadable training status artifact: %s",
+                status_path,
+                exc_info=True,
+            )
+            continue
+        for evaluator_name, result in status.evaluator_results.items():
+            series_by_name.setdefault(evaluator_name, []).append(
+                OptionalFloatTimeSeriesPoint(
+                    cycle_index=status.generation,
+                    generation=status.generation,
+                    timestamp_utc=status.updated_at_utc,
+                    value=result.final_loss,
+                )
+            )
+    return {
+        evaluator_name: tuple(points)
+        for evaluator_name, points in series_by_name.items()
+    }
 
 
 def build_current_certified_record_board_view(

@@ -42,10 +42,10 @@ from .cycle_pipeline_manifest import (
     write_pipeline_manifest_for_generation as _write_pipeline_manifest_for_generation,
 )
 from .cycle_runtime import build_no_save_run_state as _build_no_save_run_state
+from .cycle_runtime import ResolvedActiveMorpionModelBundle
 from .cycle_runtime import (
     prune_saved_generation_artifacts as _prune_saved_generation_artifacts,
 )
-from .cycle_runtime import resolve_active_model_bundle as _resolve_active_model_bundle
 from .cycle_runtime import resolve_runtime_restore_path as _resolve_runtime_restore_path
 from .cycle_runtime import resolve_tree_status as _resolve_tree_status
 from .cycle_timing import save_trigger_reason as _save_trigger_reason
@@ -69,6 +69,7 @@ from .memory_diagnostics import MemoryDiagnostics
 from .pipeline_artifacts import (
     MorpionPipelineActiveModel,
     MorpionPipelineGenerationManifest,
+    load_pipeline_active_model,
     load_pipeline_manifest,
     save_pipeline_active_model,
     save_pipeline_dataset_status_file,
@@ -234,6 +235,56 @@ def _require_manifest_rows_path(
     return manifest.rows_path
 
 
+def _resolve_pipeline_active_model_for_growth(
+    *,
+    paths: MorpionBootstrapPaths,
+    force_evaluator: str | None,
+) -> ResolvedActiveMorpionModelBundle:
+    """Resolve the active model for artifact-pipeline growth from the pipeline artifact."""
+    if not paths.pipeline_active_model_path.is_file():
+        LOGGER.info("[growth] active_model_status source=none evaluator=none model_bundle=none")
+        return ResolvedActiveMorpionModelBundle(
+            active_evaluator_name=None,
+            model_bundle_path=None,
+        )
+
+    active_model = load_pipeline_active_model(paths.pipeline_active_model_path)
+    if (
+        force_evaluator is not None
+        and active_model.evaluator_name != force_evaluator
+    ):
+        LOGGER.warning(
+            "[growth] active_model_force_evaluator_mismatch requested=%s active=%s artifact=%s",
+            force_evaluator,
+            active_model.evaluator_name,
+            paths.pipeline_active_model_path,
+        )
+    model_bundle_path = paths.resolve_work_dir_path(active_model.model_bundle_path)
+    if model_bundle_path is None or not model_bundle_path.exists():
+        LOGGER.warning(
+            "[growth] active_model_missing_bundle source=pipeline_active_model generation=%s evaluator=%s model_bundle=%s artifact=%s",
+            active_model.generation,
+            active_model.evaluator_name,
+            model_bundle_path,
+            paths.pipeline_active_model_path,
+        )
+        LOGGER.info("[growth] active_model_status source=none evaluator=none model_bundle=none")
+        return ResolvedActiveMorpionModelBundle(
+            active_evaluator_name=None,
+            model_bundle_path=None,
+        )
+    LOGGER.info(
+        "[growth] active_model_status source=pipeline_active_model generation=%s evaluator=%s model_bundle=%s",
+        active_model.generation,
+        active_model.evaluator_name,
+        model_bundle_path,
+    )
+    return ResolvedActiveMorpionModelBundle(
+        active_evaluator_name=active_model.evaluator_name,
+        model_bundle_path=model_bundle_path,
+    )
+
+
 def run_pipeline_growth_stage(
     args: MorpionBootstrapArgs,
     runner: MorpionSearchRunner,
@@ -361,10 +412,8 @@ def _run_one_pipeline_growth_cycle_impl(
         run_state.generation,
     )
     history_recorder = MorpionBootstrapHistoryRecorder(paths.history_paths())
-    resolved_active_model = _resolve_active_model_bundle(
+    resolved_active_model = _resolve_pipeline_active_model_for_growth(
         paths=paths,
-        latest_model_bundle_paths=run_state.latest_model_bundle_paths,
-        active_evaluator_name=run_state.active_evaluator_name,
         force_evaluator=resolved_control.force_evaluator,
     )
     restore_tree_path = _resolve_runtime_restore_path(paths=paths, run_state=run_state)
@@ -754,6 +803,9 @@ def run_pipeline_training_stage(
             training_status=manifest.training_status,
             updated_at_utc=timestamp_utc,
             metadata=manifest.metadata,
+            selected_evaluator_name=training_result.selected_evaluator_name,
+            selection_policy=training_result.selection_policy,
+            evaluator_results=training_result.evaluator_results,
             path=paths.pipeline_training_status_path_for_generation(generation),
         )
         save_pipeline_active_model(
@@ -764,7 +816,7 @@ def run_pipeline_training_stage(
                     training_result.selected_evaluator_name
                 ],
                 updated_at_utc=timestamp_utc,
-                metadata={"selection_policy": "lowest_final_loss"},
+                metadata={"selection_policy": training_result.selection_policy},
             ),
             paths.pipeline_active_model_path,
         )

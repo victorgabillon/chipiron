@@ -85,9 +85,11 @@ def plot_evaluator_losses(
     """Plot sparse evaluator-loss series, grouped by evaluator name."""
     axis = _new_axis()
     plotted_any_line = False
+    saw_any_loss_value = False
     plotted_x_values: list[datetime] = []
     for evaluator_name, series in sorted(loss_by_name.items()):
         x_values, y_values = _non_none_optional_float_points(series)
+        saw_any_loss_value = saw_any_loss_value or bool(y_values)
         if log_scale:
             x_values, y_values = _positive_points(x_values, y_values)
         if len(x_values) < 2:
@@ -105,7 +107,10 @@ def plot_evaluator_losses(
                 axis, "No positive loss values available for log scale."
             )
             return
-        _render_waiting_for_history(axis)
+        if saw_any_loss_value:
+            _render_waiting_for_history(axis)
+            return
+        _render_empty_message(axis, "No evaluator loss data found yet.")
         return
     if log_scale:
         axis.set_yscale("log")

@@ -195,11 +195,17 @@ class IncompatibleStageBootstrapConfigError(ValueError):
         )
 
 
-# tree_branch_limit and max_growth_steps_per_cycle control growth worker
-# batching/stop conditions. They affect how much search work a process does,
-# but not the persisted experiment protocol used by dataset/training/reevaluation.
+# These fields control growth worker batching/checkpoint cadence and are
+# intentionally mutable between relaunches. They affect how much search work a
+# process does and when it checkpoints, but not the persisted experiment
+# protocol used by dataset/training/reevaluation.
 GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS = frozenset(
-    {"max_growth_steps_per_cycle", "tree_branch_limit"}
+    {
+        "max_growth_steps_per_cycle",
+        "tree_branch_limit",
+        "save_after_seconds",
+        "save_after_tree_growth_factor",
+    }
 )
 
 STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS: dict[str, frozenset[str]] = {

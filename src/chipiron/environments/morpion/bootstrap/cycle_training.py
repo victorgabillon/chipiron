@@ -27,6 +27,7 @@ from .evaluator_diagnostics import (
     save_evaluator_training_diagnostics,
 )
 from .history import MorpionEvaluatorMetrics
+from .pipeline_artifacts import MorpionPipelineEvaluatorTrainingResult
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -51,9 +52,12 @@ LOGGER = logging.getLogger(__name__)
 class BootstrapTrainingResult:
     """Metrics and selected evaluator produced by bootstrap model training."""
 
+    generation: int
     evaluator_metrics: dict[str, MorpionEvaluatorMetrics]
+    evaluator_results: dict[str, MorpionPipelineEvaluatorTrainingResult]
     model_bundle_paths: dict[str, str]
     selected_evaluator_name: str
+    selection_policy: str
     training_duration_s: float
 
 
@@ -159,6 +163,7 @@ def train_and_select_evaluators(
 ) -> BootstrapTrainingResult:
     """Train configured evaluators and select the active evaluator for search."""
     evaluator_metrics: dict[str, MorpionEvaluatorMetrics] = {}
+    evaluator_results: dict[str, MorpionPipelineEvaluatorTrainingResult] = {}
     model_bundle_paths: dict[str, str] = {}
     training_started_at = time.perf_counter()
     memory.log("before_training")
@@ -195,19 +200,25 @@ def train_and_select_evaluators(
             )
         )
         memory.log("after_model_save")
+        evaluator_elapsed_s = time.perf_counter() - evaluator_started_at
         evaluator_metrics[evaluator_name] = MorpionEvaluatorMetrics(
             final_loss=float(metrics["final_loss"]),
             num_epochs=int(metrics["num_epochs"]),
             num_samples=int(metrics["num_samples"]),
         )
+        model_bundle_paths[evaluator_name] = paths.relative_to_work_dir(
+            model_bundle_path
+        )
+        evaluator_results[evaluator_name] = MorpionPipelineEvaluatorTrainingResult(
+            final_loss=evaluator_metrics[evaluator_name].final_loss,
+            elapsed_s=evaluator_elapsed_s,
+            model_bundle_path=model_bundle_paths[evaluator_name],
+        )
         LOGGER.info(
             "[train] evaluator_done name=%s final_loss=%s elapsed=%.3fs",
             evaluator_name,
             evaluator_metrics[evaluator_name].final_loss,
-            time.perf_counter() - evaluator_started_at,
-        )
-        model_bundle_paths[evaluator_name] = paths.relative_to_work_dir(
-            model_bundle_path
+            evaluator_elapsed_s,
         )
         persist_evaluator_training_diagnostics(
             paths=paths,
@@ -227,6 +238,11 @@ def train_and_select_evaluators(
     LOGGER.info("[train] selection_start evaluators=%s", len(evaluator_metrics))
     selection_started_at = time.perf_counter()
     selected_evaluator_name: str | None = None
+    selection_policy = (
+        "forced_evaluator"
+        if resolved_control.force_evaluator is not None
+        else "lowest_final_loss"
+    )
     try:
         selected_evaluator_name = cast(
             "str | None",
@@ -237,9 +253,10 @@ def train_and_select_evaluators(
         )
     finally:
         LOGGER.info(
-            "[train] selection_done elapsed=%.3fs selected=%s policy=lowest_final_loss",
+            "[train] selection_done elapsed=%.3fs selected=%s policy=%s",
             time.perf_counter() - selection_started_at,
             selected_evaluator_name,
+            selection_policy,
         )
     if selected_evaluator_name is None:
         raise MissingBootstrapSelectedEvaluatorError
@@ -248,9 +265,12 @@ def train_and_select_evaluators(
     memory.log("after_training")
     LOGGER.info("[train] done elapsed=%.3fs", training_duration_s)
     return BootstrapTrainingResult(
+        generation=generation,
         evaluator_metrics=evaluator_metrics,
+        evaluator_results=evaluator_results,
         model_bundle_paths=model_bundle_paths,
         selected_evaluator_name=selected_evaluator_name,
+        selection_policy=selection_policy,
         training_duration_s=training_duration_s,
     )
 
