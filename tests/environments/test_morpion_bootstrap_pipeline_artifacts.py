@@ -354,6 +354,29 @@ def test_pipeline_training_status_from_old_payload_defaults_evaluator_results() 
     assert loaded.selected_evaluator_name is None
 
 
+def test_pipeline_training_status_old_evaluator_result_defaults_validation_fields() -> None:
+    """Old evaluator results without validation metrics should still deserialize."""
+    loaded = pipeline_training_status_from_dict(
+        {
+            "generation": 1,
+            "status": "done",
+            "updated_at_utc": "2026-04-28T12:00:00Z",
+            "evaluator_results": {
+                "linear": {
+                    "final_loss": 0.75,
+                    "elapsed_s": 1.25,
+                    "model_bundle_path": "models/generation_000001/linear",
+                }
+            },
+        }
+    )
+
+    result = loaded.evaluator_results["linear"]
+    assert result.final_loss == 0.75
+    assert result.validation_loss is None
+    assert result.train_loss is None
+
+
 def test_pipeline_dataset_status_roundtrip(tmp_path: Path) -> None:
     """One saved dataset-status artifact should round-trip through JSON unchanged."""
     dataset_status = MorpionPipelineDatasetStatusArtifact(

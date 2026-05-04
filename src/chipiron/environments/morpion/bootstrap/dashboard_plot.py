@@ -98,9 +98,9 @@ def plot_evaluator_losses(
         plotted_any_line = True
         plotted_x_values.extend(x_values)
 
-    axis.set_title("Evaluator Losses")
+    axis.set_title("Evaluator Validation Losses")
     axis.set_xlabel("UTC timestamp")
-    axis.set_ylabel("loss")
+    axis.set_ylabel("validation loss (MSE)")
     if not plotted_any_line:
         if log_scale:
             _render_empty_message(

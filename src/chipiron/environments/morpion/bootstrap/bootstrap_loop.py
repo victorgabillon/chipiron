@@ -558,6 +558,7 @@ def _run_one_bootstrap_cycle_impl(
         selected_evaluator_name=selected_evaluator_name,
         model_bundle_paths=model_bundle_paths,
         timestamp_utc=timestamp_utc,
+        selection_policy=selection_policy,
     )
     save_pipeline_training_status_file(
         generation=generation,
@@ -587,6 +588,7 @@ def _run_one_bootstrap_cycle_impl(
             metadata=_build_event_metadata(
                 active_evaluator_name=selected_evaluator_name,
                 selected_evaluator_name=selected_evaluator_name,
+                selection_policy=selection_policy,
                 config_hash=_bootstrap_config_hash_from_metadata(run_state.metadata),
                 forced_evaluator=resolved_control.force_evaluator,
                 runtime_control=resolved_control.runtime,

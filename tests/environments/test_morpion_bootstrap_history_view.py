@@ -924,6 +924,9 @@ def test_dashboard_data_bundles_everything(tmp_path: Path) -> None:
     assert len(dashboard_data.record_total_points) == 2
     assert len(dashboard_data.dataset_num_rows) == 2
     assert set(dashboard_data.evaluator_loss_by_name) == {"linear"}
+    assert tuple(
+        point.value for point in dashboard_data.evaluator_loss_by_name["linear"]
+    ) == (0.5,)
     assert len(dashboard_data.active_evaluator) == 2
     assert dashboard_data.latest_tree_depth_distribution == (
         TreeDepthDistributionRow(depth=0, num_nodes=1, cumulative_nodes=1),
@@ -1284,6 +1287,42 @@ def test_dashboard_data_tolerates_old_training_status_without_evaluator_results(
     dashboard_data = build_morpion_bootstrap_dashboard_data(tmp_path)
 
     assert dashboard_data.evaluator_loss_by_name == {}
+
+
+def test_dashboard_loss_series_falls_back_to_old_final_loss(
+    tmp_path: Path,
+) -> None:
+    """Old training status payloads without validation_loss should plot final_loss."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.pipeline_training_status_path_for_generation(1).parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+    paths.pipeline_training_status_path_for_generation(1).write_text(
+        json.dumps(
+            {
+                "generation": 1,
+                "status": "done",
+                "updated_at_utc": "2026-04-11T08:00:00Z",
+                "evaluator_results": {
+                    "linear": {
+                        "final_loss": 0.625,
+                        "elapsed_s": 1.0,
+                        "model_bundle_path": "models/generation_000001/linear",
+                    }
+                },
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    save_bootstrap_run_state(_make_run_state(), paths.run_state_path)
+
+    dashboard_data = build_morpion_bootstrap_dashboard_data(tmp_path)
+
+    assert tuple(
+        point.value for point in dashboard_data.evaluator_loss_by_name["linear"]
+    ) == (0.625,)
 
 
 def test_dashboard_data_tolerates_snapshot_nodes_without_exact_terminal_flags(

@@ -57,7 +57,7 @@ class NoSelectableMorpionEvaluatorError(ValueError):
         """Initialize the missing-selectable-evaluator error."""
         super().__init__(
             "Morpion bootstrap could not select an active evaluator because no "
-            "trained evaluator reported a finite final_loss."
+            "trained evaluator reported a finite validation_loss or final_loss."
         )
 
 

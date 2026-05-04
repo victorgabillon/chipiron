@@ -773,12 +773,17 @@ def _evaluator_loss_series_by_name_from_training_status(
             )
             continue
         for evaluator_name, result in status.evaluator_results.items():
+            loss_value = (
+                result.validation_loss
+                if result.validation_loss is not None
+                else result.final_loss
+            )
             series_by_name.setdefault(evaluator_name, []).append(
                 OptionalFloatTimeSeriesPoint(
                     cycle_index=status.generation,
                     generation=status.generation,
                     timestamp_utc=status.updated_at_utc,
-                    value=result.final_loss,
+                    value=loss_value,
                 )
             )
     return {

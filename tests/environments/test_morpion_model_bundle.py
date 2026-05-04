@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import random
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -312,6 +313,75 @@ def test_minimal_training_helper_runs_end_to_end(tmp_path: Path) -> None:
     sample_input, _ = dataset[0]
     output = model(sample_input)
     assert output.shape == (1, 1)
+
+
+def test_training_metrics_use_full_validation_mean_not_last_minibatch(
+    tmp_path: Path,
+) -> None:
+    """Validation loss should be the full split mean, not the final validation batch."""
+    dataset_file = _build_rows_file(tmp_path, target_values=(-1.0, 0.5, 2.0, 4.0))
+    output_dir = tmp_path / "trained_bundle"
+    validation_seed = 17
+
+    model, metrics = train_morpion_regressor(
+        MorpionTrainingArgs(
+            dataset_file=dataset_file,
+            output_dir=output_dir,
+            batch_size=1,
+            num_epochs=0,
+            learning_rate=1e-3,
+            shuffle=False,
+            validation_fraction=0.5,
+            validation_seed=validation_seed,
+        )
+    )
+
+    dataset = MorpionSupervisedDataset(
+        MorpionSupervisedDatasetArgs(file_name=dataset_file)
+    )
+    indices = list(range(len(dataset)))
+    random.Random(validation_seed).shuffle(indices)
+    validation_indices = indices[:2]
+    validation_errors: list[float] = []
+    with torch.no_grad():
+        for index in validation_indices:
+            sample_input, target = dataset[index]
+            prediction = model(sample_input)
+            validation_errors.append(float(torch.square(prediction - target).item()))
+    expected_validation_loss = sum(validation_errors) / len(validation_errors)
+
+    assert metrics["num_train_samples"] == 2.0
+    assert metrics["num_validation_samples"] == 2.0
+    assert metrics["validation_loss"] == pytest.approx(expected_validation_loss)
+    assert metrics["validation_loss"] != pytest.approx(validation_errors[-1])
+    assert metrics["final_loss"] == metrics["validation_loss"]
+    assert metrics["loss_name"] == "mse"
+    assert "validation_mae" in metrics
+
+
+def test_training_metrics_small_dataset_does_not_require_validation(
+    tmp_path: Path,
+) -> None:
+    """Single-row training should not crash and should fall back to train loss."""
+    dataset_file = _build_rows_file(tmp_path, target_values=(0.25,))
+    output_dir = tmp_path / "tiny_trained_bundle"
+
+    _, metrics = train_morpion_regressor(
+        MorpionTrainingArgs(
+            dataset_file=dataset_file,
+            output_dir=output_dir,
+            batch_size=2,
+            num_epochs=0,
+            learning_rate=1e-3,
+            shuffle=False,
+            validation_fraction=0.5,
+        )
+    )
+
+    assert metrics["num_train_samples"] == 1.0
+    assert metrics["num_validation_samples"] == 0.0
+    assert metrics["validation_loss"] is None
+    assert metrics["final_loss"] == metrics["train_loss"]
 
 
 def test_dataloader_batch_collation_shapes_are_stable(tmp_path: Path) -> None:

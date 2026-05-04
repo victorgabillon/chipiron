@@ -94,6 +94,7 @@ def write_pipeline_active_model(
     selected_evaluator_name: str,
     model_bundle_paths: Mapping[str, str],
     timestamp_utc: str,
+    selection_policy: str = "lowest_final_loss",
 ) -> None:
     """Persist the currently selected active model for pipeline consumers."""
     save_pipeline_active_model(
@@ -102,7 +103,7 @@ def write_pipeline_active_model(
             evaluator_name=selected_evaluator_name,
             model_bundle_path=model_bundle_paths[selected_evaluator_name],
             updated_at_utc=timestamp_utc,
-            metadata={"selection_policy": "lowest_final_loss"},
+            metadata={"selection_policy": selection_policy},
         ),
         paths.pipeline_active_model_path,
     )

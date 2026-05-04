@@ -95,6 +95,7 @@ def build_event_metadata(
     *,
     active_evaluator_name: str | None,
     selected_evaluator_name: str | None = None,
+    selection_policy: str | None = None,
     config_hash: str | None = None,
     forced_evaluator: str | None = None,
     runtime_control: MorpionBootstrapRuntimeControl | None = None,
@@ -107,7 +108,7 @@ def build_event_metadata(
         metadata["active_evaluator_name"] = active_evaluator_name
     if selected_evaluator_name is not None:
         metadata["selected_evaluator_name"] = selected_evaluator_name
-        metadata["selection_policy"] = "lowest_final_loss"
+        metadata["selection_policy"] = selection_policy or "lowest_final_loss"
     if config_hash is not None:
         metadata[BOOTSTRAP_CONFIG_HASH_METADATA_KEY] = config_hash
     if forced_evaluator is not None:

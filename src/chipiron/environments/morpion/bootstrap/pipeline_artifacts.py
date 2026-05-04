@@ -168,6 +168,13 @@ def _non_negative_int(value: object, *, field_name: str) -> int:
     return value
 
 
+def _optional_int_value(value: object, *, field_name: str) -> int | None:
+    """Return one optional non-negative integer field."""
+    if value is None:
+        return None
+    return _non_negative_int(value, field_name=field_name)
+
+
 def _optional_generation(value: object, *, field_name: str) -> int | None:
     """Return one optional non-negative generation index."""
     if value is None:
@@ -381,6 +388,16 @@ class MorpionPipelineEvaluatorTrainingResult:
     final_loss: float
     elapsed_s: float
     model_bundle_path: str
+    train_loss: float | None = None
+    validation_loss: float | None = None
+    train_mae: float | None = None
+    validation_mae: float | None = None
+    num_train_samples: int | None = None
+    num_validation_samples: int | None = None
+    num_epochs: int | None = None
+    batch_size: int | None = None
+    learning_rate: float | None = None
+    loss_name: str | None = None
 
     def __post_init__(self) -> None:
         """Validate and normalize per-evaluator training result fields eagerly."""
@@ -401,6 +418,68 @@ class MorpionPipelineEvaluatorTrainingResult:
                 self.model_bundle_path,
                 field_name="model_bundle_path",
             ),
+        )
+        object.__setattr__(
+            self,
+            "train_loss",
+            _optional_float_value(self.train_loss, field_name="train_loss"),
+        )
+        object.__setattr__(
+            self,
+            "validation_loss",
+            _optional_float_value(
+                self.validation_loss,
+                field_name="validation_loss",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "train_mae",
+            _optional_float_value(self.train_mae, field_name="train_mae"),
+        )
+        object.__setattr__(
+            self,
+            "validation_mae",
+            _optional_float_value(
+                self.validation_mae,
+                field_name="validation_mae",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "num_train_samples",
+            _optional_int_value(
+                self.num_train_samples,
+                field_name="num_train_samples",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "num_validation_samples",
+            _optional_int_value(
+                self.num_validation_samples,
+                field_name="num_validation_samples",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "num_epochs",
+            _optional_int_value(self.num_epochs, field_name="num_epochs"),
+        )
+        object.__setattr__(
+            self,
+            "batch_size",
+            _optional_int_value(self.batch_size, field_name="batch_size"),
+        )
+        object.__setattr__(
+            self,
+            "learning_rate",
+            _optional_float_value(self.learning_rate, field_name="learning_rate"),
+        )
+        object.__setattr__(
+            self,
+            "loss_name",
+            _optional_str(self.loss_name, field_name="loss_name"),
         )
 
 
@@ -1000,6 +1079,16 @@ def pipeline_evaluator_training_result_to_dict(
     return {
         "elapsed_s": result.elapsed_s,
         "final_loss": result.final_loss,
+        "train_loss": result.train_loss,
+        "validation_loss": result.validation_loss,
+        "train_mae": result.train_mae,
+        "validation_mae": result.validation_mae,
+        "num_train_samples": result.num_train_samples,
+        "num_validation_samples": result.num_validation_samples,
+        "num_epochs": result.num_epochs,
+        "batch_size": result.batch_size,
+        "learning_rate": result.learning_rate,
+        "loss_name": result.loss_name,
         "model_bundle_path": result.model_bundle_path,
     }
 
@@ -1016,6 +1105,43 @@ def pipeline_evaluator_training_result_from_dict(
             payload.get("model_bundle_path"),
             field_name="model_bundle_path",
         ),
+        train_loss=_optional_float_value(
+            payload.get("train_loss"),
+            field_name="train_loss",
+        ),
+        validation_loss=_optional_float_value(
+            payload.get("validation_loss"),
+            field_name="validation_loss",
+        ),
+        train_mae=_optional_float_value(
+            payload.get("train_mae"),
+            field_name="train_mae",
+        ),
+        validation_mae=_optional_float_value(
+            payload.get("validation_mae"),
+            field_name="validation_mae",
+        ),
+        num_train_samples=_optional_int_value(
+            payload.get("num_train_samples"),
+            field_name="num_train_samples",
+        ),
+        num_validation_samples=_optional_int_value(
+            payload.get("num_validation_samples"),
+            field_name="num_validation_samples",
+        ),
+        num_epochs=_optional_int_value(
+            payload.get("num_epochs"),
+            field_name="num_epochs",
+        ),
+        batch_size=_optional_int_value(
+            payload.get("batch_size"),
+            field_name="batch_size",
+        ),
+        learning_rate=_optional_float_value(
+            payload.get("learning_rate"),
+            field_name="learning_rate",
+        ),
+        loss_name=_optional_str(payload.get("loss_name"), field_name="loss_name"),
     )
 
 

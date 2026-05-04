@@ -66,6 +66,17 @@ class MorpionEvaluatorTrainingDiagnostics:
     mae_after: float | None
     max_abs_error_before: float | None
     max_abs_error_after: float | None
+    train_loss: float | None = None
+    validation_loss: float | None = None
+    final_loss: float | None = None
+    train_mae: float | None = None
+    validation_mae: float | None = None
+    num_train_samples: int | None = None
+    num_validation_samples: int | None = None
+    num_epochs: int | None = None
+    batch_size: int | None = None
+    learning_rate: float | None = None
+    loss_name: str | None = None
 
 
 def diagnostics_root_dir(work_dir: str | Path) -> Path:
@@ -127,6 +138,7 @@ def build_evaluator_training_diagnostics(
     feature_subset_name: str = DEFAULT_MORPION_FEATURE_SUBSET_NAME,
     feature_names: tuple[str, ...] = (),
     model_before: MorpionRegressor | None = None,
+    training_metrics: object | None = None,
 ) -> MorpionEvaluatorTrainingDiagnostics:
     """Build lightweight evaluator diagnostics from existing supervised rows."""
     row_examples, targets = _row_examples_and_targets(
@@ -176,6 +188,26 @@ def build_evaluator_training_diagnostics(
         mae_after=_mean(abs_errors_after),
         max_abs_error_before=max(abs_errors_before, default=None),
         max_abs_error_after=max(abs_errors_after, default=None),
+        train_loss=_diagnostic_optional_float(training_metrics, "train_loss"),
+        validation_loss=_diagnostic_optional_float(
+            training_metrics,
+            "validation_loss",
+        ),
+        final_loss=_diagnostic_optional_float(training_metrics, "final_loss"),
+        train_mae=_diagnostic_optional_float(training_metrics, "train_mae"),
+        validation_mae=_diagnostic_optional_float(training_metrics, "validation_mae"),
+        num_train_samples=_diagnostic_optional_int(
+            training_metrics,
+            "num_train_samples",
+        ),
+        num_validation_samples=_diagnostic_optional_int(
+            training_metrics,
+            "num_validation_samples",
+        ),
+        num_epochs=_diagnostic_optional_int(training_metrics, "num_epochs"),
+        batch_size=_diagnostic_optional_int(training_metrics, "batch_size"),
+        learning_rate=_diagnostic_optional_float(training_metrics, "learning_rate"),
+        loss_name=_diagnostic_optional_str(training_metrics, "loss_name"),
     )
 
 
@@ -226,6 +258,17 @@ def load_evaluator_training_diagnostics(
         mae_after=_optional_float(data.get("mae_after")),
         max_abs_error_before=_optional_float(data.get("max_abs_error_before")),
         max_abs_error_after=_optional_float(data.get("max_abs_error_after")),
+        train_loss=_optional_float(data.get("train_loss")),
+        validation_loss=_optional_float(data.get("validation_loss")),
+        final_loss=_optional_float(data.get("final_loss")),
+        train_mae=_optional_float(data.get("train_mae")),
+        validation_mae=_optional_float(data.get("validation_mae")),
+        num_train_samples=_optional_int(data.get("num_train_samples")),
+        num_validation_samples=_optional_int(data.get("num_validation_samples")),
+        num_epochs=_optional_int(data.get("num_epochs")),
+        batch_size=_optional_int(data.get("batch_size")),
+        learning_rate=_optional_float(data.get("learning_rate")),
+        loss_name=_optional_str(data.get("loss_name")),
     )
 
 
@@ -419,6 +462,22 @@ def _optional_str(value: object) -> str | None:
     if value is None:
         return None
     return str(value)
+
+
+def _diagnostic_mapping(value: object) -> dict[str, object]:
+    return value if isinstance(value, dict) else {}
+
+
+def _diagnostic_optional_float(value: object, key: str) -> float | None:
+    return _optional_float(_diagnostic_mapping(value).get(key))
+
+
+def _diagnostic_optional_int(value: object, key: str) -> int | None:
+    return _optional_int(_diagnostic_mapping(value).get(key))
+
+
+def _diagnostic_optional_str(value: object, key: str) -> str | None:
+    return _optional_str(_diagnostic_mapping(value).get(key))
 
 
 def _abs_error(target_value: float, prediction: float | None) -> float | None:

@@ -42,6 +42,15 @@ class MorpionEvaluatorMetrics:
     final_loss: float | None
     num_epochs: int | None
     num_samples: int | None
+    train_loss: float | None = None
+    validation_loss: float | None = None
+    train_mae: float | None = None
+    validation_mae: float | None = None
+    num_train_samples: int | None = None
+    num_validation_samples: int | None = None
+    batch_size: int | None = None
+    learning_rate: float | None = None
+    loss_name: str | None = None
     metadata: dict[str, Any] = field(default_factory=_empty_metadata)
 
 
@@ -436,8 +445,17 @@ def evaluator_metrics_to_dict(metrics: MorpionEvaluatorMetrics) -> dict[str, obj
     """Serialize one evaluator metrics record to JSON-friendly data."""
     return {
         "final_loss": metrics.final_loss,
+        "train_loss": metrics.train_loss,
+        "validation_loss": metrics.validation_loss,
+        "train_mae": metrics.train_mae,
+        "validation_mae": metrics.validation_mae,
         "num_epochs": metrics.num_epochs,
         "num_samples": metrics.num_samples,
+        "num_train_samples": metrics.num_train_samples,
+        "num_validation_samples": metrics.num_validation_samples,
+        "batch_size": metrics.batch_size,
+        "learning_rate": metrics.learning_rate,
+        "loss_name": metrics.loss_name,
         "metadata": dict(metrics.metadata),
     }
 
@@ -462,6 +480,39 @@ def evaluator_metrics_from_dict(
             data.get("num_samples"),
             field_name="num_samples",
         ),
+        train_loss=_optional_float(
+            data.get("train_loss"),
+            field_name="train_loss",
+        ),
+        validation_loss=_optional_float(
+            data.get("validation_loss"),
+            field_name="validation_loss",
+        ),
+        train_mae=_optional_float(
+            data.get("train_mae"),
+            field_name="train_mae",
+        ),
+        validation_mae=_optional_float(
+            data.get("validation_mae"),
+            field_name="validation_mae",
+        ),
+        num_train_samples=_optional_int(
+            data.get("num_train_samples"),
+            field_name="num_train_samples",
+        ),
+        num_validation_samples=_optional_int(
+            data.get("num_validation_samples"),
+            field_name="num_validation_samples",
+        ),
+        batch_size=_optional_int(
+            data.get("batch_size"),
+            field_name="batch_size",
+        ),
+        learning_rate=_optional_float(
+            data.get("learning_rate"),
+            field_name="learning_rate",
+        ),
+        loss_name=_optional_str(data.get("loss_name"), field_name="loss_name"),
         metadata=_metadata_dict(data.get("metadata")),
     )
 

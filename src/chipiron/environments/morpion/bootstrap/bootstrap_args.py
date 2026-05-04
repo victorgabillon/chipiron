@@ -51,6 +51,8 @@ class MorpionBootstrapArgs:
     num_epochs: int = 5
     learning_rate: float = 1e-3
     shuffle: bool = True
+    validation_fraction: float = 0.2
+    validation_seed: int = 0
     model_kind: str = "linear"
     hidden_dim: int | None = None
     evaluator_update_policy: MorpionEvaluatorUpdatePolicy = (

@@ -221,6 +221,7 @@ def _patch_reported_losses(
         _model, metrics = real_train(train_args)
         evaluator_name = Path(str(train_args.output_dir)).name
         metrics["final_loss"] = loss_by_evaluator_name[evaluator_name]
+        metrics["validation_loss"] = loss_by_evaluator_name[evaluator_name]
         return _model, metrics
 
     monkeypatch.setattr(

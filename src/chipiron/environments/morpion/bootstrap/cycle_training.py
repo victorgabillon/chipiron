@@ -86,6 +86,7 @@ def persist_evaluator_training_diagnostics(
     spec: MorpionEvaluatorSpec,
     model_before: MorpionRegressor | None,
     model_after: MorpionRegressor,
+    training_metrics: Mapping[str, object] | None = None,
 ) -> None:
     """Persist evaluator diagnostics without changing bootstrap semantics."""
     try:
@@ -98,6 +99,7 @@ def persist_evaluator_training_diagnostics(
             feature_names=spec.feature_names,
             model_before=model_before,
             model_after=model_after,
+            training_metrics=training_metrics,
         )
         output_path = diagnostics_path(paths.work_dir, generation, evaluator_name)
         save_evaluator_training_diagnostics(diagnostics, output_path)
@@ -121,11 +123,11 @@ def persist_evaluator_training_diagnostics(
 def select_active_evaluator_name(
     evaluator_metrics: Mapping[str, MorpionEvaluatorMetrics],
 ) -> str:
-    """Select the active evaluator using the lowest available final loss."""
+    """Select the active evaluator using validation loss, falling back to final loss."""
     selectable_losses = {
-        evaluator_name: metrics.final_loss
+        evaluator_name: _selection_loss(metrics)
         for evaluator_name, metrics in evaluator_metrics.items()
-        if metrics.final_loss is not None and math.isfinite(metrics.final_loss)
+        if _selection_loss(metrics) is not None
     }
     if not selectable_losses:
         raise NoSelectableMorpionEvaluatorError
@@ -133,6 +135,63 @@ def select_active_evaluator_name(
         selectable_losses,
         key=lambda evaluator_name: selectable_losses[evaluator_name],
     )
+
+
+def _selection_loss(metrics: MorpionEvaluatorMetrics) -> float | None:
+    """Return the finite loss used for evaluator selection."""
+    if metrics.validation_loss is not None and math.isfinite(metrics.validation_loss):
+        return metrics.validation_loss
+    if metrics.final_loss is not None and math.isfinite(metrics.final_loss):
+        return metrics.final_loss
+    return None
+
+
+def _has_validation_loss(
+    evaluator_metrics: Mapping[str, MorpionEvaluatorMetrics],
+) -> bool:
+    """Return whether any evaluator reports a finite validation loss."""
+    return any(
+        metrics.validation_loss is not None and math.isfinite(metrics.validation_loss)
+        for metrics in evaluator_metrics.values()
+    )
+
+
+def _metric_float(metrics: Mapping[str, object], key: str) -> float:
+    value = metrics[key]
+    if not isinstance(value, bool) and isinstance(value, int | float):
+        return float(value)
+    raise TypeError(f"Training metric {key!r} must be numeric.")
+
+
+def _metric_optional_float(metrics: Mapping[str, object], key: str) -> float | None:
+    value = metrics.get(key)
+    if value is None:
+        return None
+    if not isinstance(value, bool) and isinstance(value, int | float):
+        return float(value)
+    raise TypeError(f"Training metric {key!r} must be numeric or None.")
+
+
+def _metric_int(
+    metrics: Mapping[str, object],
+    key: str,
+    *,
+    default: int | None = None,
+) -> int:
+    if key not in metrics:
+        if default is None:
+            raise KeyError(key)
+        return default
+    return int(_metric_float(metrics, key))
+
+
+def _metric_optional_str(metrics: Mapping[str, object], key: str) -> str | None:
+    value = metrics.get(key)
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value
+    raise TypeError(f"Training metric {key!r} must be a string or None.")
 
 
 def select_or_force_active_evaluator_name(
@@ -197,26 +256,63 @@ def train_and_select_evaluators(
                 feature_subset_name=spec.feature_subset_name,
                 feature_names=spec.feature_names,
                 hidden_sizes=spec.hidden_sizes,
+                validation_fraction=args.validation_fraction,
+                validation_seed=args.validation_seed,
             )
         )
         memory.log("after_model_save")
         evaluator_elapsed_s = time.perf_counter() - evaluator_started_at
+        learning_rate = _metric_optional_float(metrics, "learning_rate")
         evaluator_metrics[evaluator_name] = MorpionEvaluatorMetrics(
-            final_loss=float(metrics["final_loss"]),
-            num_epochs=int(metrics["num_epochs"]),
-            num_samples=int(metrics["num_samples"]),
+            final_loss=_metric_float(metrics, "final_loss"),
+            train_loss=_metric_optional_float(metrics, "train_loss"),
+            validation_loss=_metric_optional_float(metrics, "validation_loss"),
+            train_mae=_metric_optional_float(metrics, "train_mae"),
+            validation_mae=_metric_optional_float(metrics, "validation_mae"),
+            num_epochs=_metric_int(metrics, "num_epochs"),
+            num_samples=_metric_int(metrics, "num_samples"),
+            num_train_samples=_metric_int(
+                metrics,
+                "num_train_samples",
+                default=_metric_int(metrics, "num_samples"),
+            ),
+            num_validation_samples=_metric_int(
+                metrics,
+                "num_validation_samples",
+                default=0,
+            ),
+            batch_size=_metric_int(metrics, "batch_size", default=spec.batch_size),
+            learning_rate=(
+                learning_rate if learning_rate is not None else spec.learning_rate
+            ),
+            loss_name=_metric_optional_str(metrics, "loss_name") or "mse",
         )
         model_bundle_paths[evaluator_name] = paths.relative_to_work_dir(
             model_bundle_path
         )
         evaluator_results[evaluator_name] = MorpionPipelineEvaluatorTrainingResult(
             final_loss=evaluator_metrics[evaluator_name].final_loss,
+            train_loss=evaluator_metrics[evaluator_name].train_loss,
+            validation_loss=evaluator_metrics[evaluator_name].validation_loss,
+            train_mae=evaluator_metrics[evaluator_name].train_mae,
+            validation_mae=evaluator_metrics[evaluator_name].validation_mae,
+            num_train_samples=evaluator_metrics[evaluator_name].num_train_samples,
+            num_validation_samples=(
+                evaluator_metrics[evaluator_name].num_validation_samples
+            ),
+            num_epochs=evaluator_metrics[evaluator_name].num_epochs,
+            batch_size=evaluator_metrics[evaluator_name].batch_size,
+            learning_rate=evaluator_metrics[evaluator_name].learning_rate,
+            loss_name=evaluator_metrics[evaluator_name].loss_name,
             elapsed_s=evaluator_elapsed_s,
             model_bundle_path=model_bundle_paths[evaluator_name],
         )
         LOGGER.info(
-            "[train] evaluator_done name=%s final_loss=%s elapsed=%.3fs",
+            "[train] evaluator_done name=%s train_loss=%s "
+            "validation_loss=%s final_loss=%s elapsed=%.3fs",
             evaluator_name,
+            evaluator_metrics[evaluator_name].train_loss,
+            evaluator_metrics[evaluator_name].validation_loss,
             evaluator_metrics[evaluator_name].final_loss,
             evaluator_elapsed_s,
         )
@@ -229,6 +325,7 @@ def train_and_select_evaluators(
             spec=spec,
             model_before=previous_model,
             model_after=trained_model,
+            training_metrics=metrics,
         )
         memory.log("after_diagnostics")
         del previous_model
@@ -241,7 +338,11 @@ def train_and_select_evaluators(
     selection_policy = (
         "forced_evaluator"
         if resolved_control.force_evaluator is not None
-        else "lowest_final_loss"
+        else (
+            "lowest_validation_loss"
+            if _has_validation_loss(evaluator_metrics)
+            else "lowest_final_loss"
+        )
     )
     try:
         selected_evaluator_name = cast(

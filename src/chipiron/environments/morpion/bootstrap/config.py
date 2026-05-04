@@ -85,6 +85,8 @@ class MorpionBootstrapConfig:
     runtime: MorpionBootstrapRuntimeConfig
     dataset: MorpionBootstrapDatasetConfig
     evaluators: MorpionEvaluatorsConfig
+    validation_fraction: float = 0.2
+    validation_seed: int = 0
     evaluator_update_policy: MorpionEvaluatorUpdatePolicy = (
         DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY
     )
@@ -246,6 +248,8 @@ def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapCo
             family_prediction_blend=args.dataset_family_prediction_blend,
         ),
         evaluators=args.resolved_evaluators_config(),
+        validation_fraction=args.validation_fraction,
+        validation_seed=args.validation_seed,
         evaluator_update_policy=args.evaluator_update_policy,
         pipeline_mode=args.pipeline_mode,
     )
@@ -276,6 +280,8 @@ def bootstrap_config_to_dict(config: MorpionBootstrapConfig) -> dict[str, object
             "family_prediction_blend": config.dataset.family_prediction_blend,
         },
         "evaluators": _evaluators_config_to_dict(config.evaluators),
+        "validation_fraction": config.validation_fraction,
+        "validation_seed": config.validation_seed,
         "evaluator_update_policy": config.evaluator_update_policy,
         "pipeline_mode": config.pipeline_mode,
         "metadata": dict(config.metadata),
@@ -445,6 +451,14 @@ def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
             ),
         ),
         evaluators=evaluators,
+        validation_fraction=_coerce_float(
+            payload.get("validation_fraction", 0.2),
+            field_name="validation_fraction",
+        ),
+        validation_seed=_coerce_int(
+            payload.get("validation_seed", 0),
+            field_name="validation_seed",
+        ),
         evaluator_update_policy=cast(
             "MorpionEvaluatorUpdatePolicy",
             _required_str(
@@ -520,6 +534,10 @@ def diff_bootstrap_configs(
     )
     if previous.evaluators != current.evaluators:
         differences.append("evaluators")
+    if previous.validation_fraction != current.validation_fraction:
+        differences.append("validation_fraction")
+    if previous.validation_seed != current.validation_seed:
+        differences.append("validation_seed")
     if previous.evaluator_update_policy != current.evaluator_update_policy:
         differences.append("evaluator_update_policy")
     if previous.pipeline_mode != current.pipeline_mode:
@@ -576,6 +594,8 @@ def training_stage_owned_bootstrap_fields() -> tuple[str, ...]:
         "shuffle",
         "model_kind",
         "hidden_dim",
+        "validation_fraction",
+        "validation_seed",
         "evaluators_config",
         "evaluator_family_preset",
     )
@@ -700,6 +720,8 @@ def _stage_bootstrap_config_field_values(
         "dataset_family_target_policy": config.dataset.family_target_policy,
         "dataset_family_prediction_blend": config.dataset.family_prediction_blend,
         "evaluators": config.evaluators,
+        "validation_fraction": config.validation_fraction,
+        "validation_seed": config.validation_seed,
         "evaluator_update_policy": config.evaluator_update_policy,
         "pipeline_mode": config.pipeline_mode,
     }
@@ -719,6 +741,8 @@ def _config_field_is_owned_by_stage(
                 "learning_rate",
                 "model_kind",
                 "hidden_dim",
+                "validation_fraction",
+                "validation_seed",
                 "evaluators_config",
                 "evaluator_family_preset",
             }

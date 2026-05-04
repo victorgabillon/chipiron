@@ -329,6 +329,7 @@ def _patch_reported_losses(
         _model, metrics = real_train(train_args)
         evaluator_name = Path(str(cast("Any", train_args).output_dir)).name
         metrics["final_loss"] = loss_by_evaluator_name[evaluator_name]
+        metrics["validation_loss"] = loss_by_evaluator_name[evaluator_name]
         return _model, metrics
 
     monkeypatch.setattr(
@@ -772,6 +773,30 @@ def test_select_active_evaluator_name_uses_lowest_loss() -> None:
     assert selected == "mlp"
 
 
+def test_select_active_evaluator_name_prefers_validation_loss() -> None:
+    """Selection should use validation loss ahead of train/final loss."""
+    selected = select_active_evaluator_name(
+        {
+            "overfit": bootstrap_loop_module.MorpionEvaluatorMetrics(
+                final_loss=0.1,
+                train_loss=0.1,
+                validation_loss=0.9,
+                num_epochs=1,
+                num_samples=4,
+            ),
+            "generalizes": bootstrap_loop_module.MorpionEvaluatorMetrics(
+                final_loss=0.4,
+                train_loss=0.4,
+                validation_loss=0.2,
+                num_epochs=1,
+                num_samples=4,
+            ),
+        }
+    )
+
+    assert selected == "generalizes"
+
+
 def test_select_active_evaluator_name_rejects_missing_losses() -> None:
     """Selection should fail loudly if no evaluator reports a usable loss."""
     with pytest.raises(NoSelectableMorpionEvaluatorError):
@@ -1006,7 +1031,7 @@ def test_run_one_cycle_with_multiple_evaluators_selects_lowest_loss(
     assert event.metadata["initial_point_count"] == 36
     assert event.metadata["active_evaluator_name"] == "mlp"
     assert event.metadata["selected_evaluator_name"] == "mlp"
-    assert event.metadata["selection_policy"] == "lowest_final_loss"
+    assert event.metadata["selection_policy"] == "lowest_validation_loss"
     assert event.record.variant == MORPION_BOOTSTRAP_VARIANT
     assert event.record.initial_pattern == MORPION_BOOTSTRAP_INITIAL_PATTERN
     assert event.record.initial_point_count == MORPION_BOOTSTRAP_INITIAL_POINT_COUNT
@@ -1679,6 +1704,10 @@ def test_training_cycle_persists_evaluator_diagnostics(tmp_path: Path) -> None:
     assert diagnostics.generation == 1
     assert diagnostics.evaluator_name == state.active_evaluator_name
     assert diagnostics.dataset_size == 1
+    assert diagnostics.loss_name == "mse"
+    assert diagnostics.train_loss is not None
+    assert diagnostics.validation_loss is None
+    assert diagnostics.final_loss == diagnostics.train_loss
     assert diagnostics.representative_examples
     assert diagnostics.representative_examples[0].prediction_after is not None
 

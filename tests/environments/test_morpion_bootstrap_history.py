@@ -210,6 +210,7 @@ def _patch_reported_losses(
         _model, metrics = real_train(train_args)
         evaluator_name = Path(str(cast("Any", train_args).output_dir)).name
         metrics["final_loss"] = loss_by_evaluator_name[evaluator_name]
+        metrics["validation_loss"] = loss_by_evaluator_name[evaluator_name]
         return _model, metrics
 
     monkeypatch.setattr(
@@ -652,7 +653,7 @@ def test_bootstrap_loop_records_selected_winner_on_multi_evaluator_save_cycle(
     assert event.metadata["initial_point_count"] == 36
     assert event.metadata["active_evaluator_name"] == "mlp"
     assert event.metadata["selected_evaluator_name"] == "mlp"
-    assert event.metadata["selection_policy"] == "lowest_final_loss"
+    assert event.metadata["selection_policy"] == "lowest_validation_loss"
     assert event.metadata["bootstrap_applied_runtime_control"] == {
         "tree_branch_limit": None
     }
