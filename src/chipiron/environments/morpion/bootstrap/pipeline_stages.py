@@ -172,6 +172,24 @@ def _now_timestamp_utc() -> str:
     return _timestamp_utc_from_unix_s(time.time())
 
 
+def _configure_linoo_selection_artifact_for_growth(
+    *,
+    runner: object,
+    paths: MorpionBootstrapPaths,
+    cycle_index: int,
+    generation: int,
+) -> None:
+    """Configure latest Linoo table persistence when the runner supports it."""
+    configure = getattr(runner, "configure_linoo_selection_table_artifact", None)
+    if not callable(configure):
+        return
+    configure(
+        path=paths.latest_linoo_selection_table_path,
+        cycle_index=cycle_index,
+        generation=generation,
+    )
+
+
 def _load_generation_manifest(
     *,
     paths: MorpionBootstrapPaths,
@@ -487,6 +505,12 @@ def _run_one_pipeline_growth_cycle_impl(
     memory.log("before_tree_growth")
     growth_started_at = time.perf_counter()
     tree_size_before_growth = runner.current_tree_size()
+    _configure_linoo_selection_artifact_for_growth(
+        runner=runner,
+        paths=paths,
+        cycle_index=cycle_index,
+        generation=run_state.generation,
+    )
     runner.grow(args.max_growth_steps_per_cycle)
     growth_duration_s = time.perf_counter() - growth_started_at
     current_tree_size = runner.current_tree_size()

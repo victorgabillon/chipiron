@@ -143,6 +143,24 @@ from .search_runner_protocol import MorpionSearchRunner
 LOGGER = logging.getLogger(__name__)
 
 
+def _configure_linoo_selection_artifact_for_growth(
+    *,
+    runner: object,
+    paths: MorpionBootstrapPaths,
+    cycle_index: int,
+    generation: int,
+) -> None:
+    """Configure latest Linoo table persistence when the runner supports it."""
+    configure = getattr(runner, "configure_linoo_selection_table_artifact", None)
+    if not callable(configure):
+        return
+    configure(
+        path=paths.latest_linoo_selection_table_path,
+        cycle_index=cycle_index,
+        generation=generation,
+    )
+
+
 def run_one_bootstrap_cycle(
     *,
     args: MorpionBootstrapArgs,
@@ -248,6 +266,12 @@ def _run_one_bootstrap_cycle_impl(
     memory.log("before_tree_growth")
     growth_started_at = time.perf_counter()
     tree_size_before_growth = runner.current_tree_size()
+    _configure_linoo_selection_artifact_for_growth(
+        runner=runner,
+        paths=paths,
+        cycle_index=cycle_index,
+        generation=run_state.generation,
+    )
     runner.grow(args.max_growth_steps_per_cycle)
     growth_duration_s = time.perf_counter() - growth_started_at
     current_tree_size = runner.current_tree_size()

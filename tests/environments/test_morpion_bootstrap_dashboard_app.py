@@ -84,6 +84,7 @@ from chipiron.environments.morpion.bootstrap.dashboard_app import (
     _format_value,
     _has_pending_control_changes,
     _is_stale_forced_evaluator,
+    _linoo_selection_table_rows,
     _load_applied_control,
     _load_latest_evaluator_training_diagnostics_for_dashboard,
     _pending_control_fields,
@@ -100,6 +101,10 @@ from chipiron.environments.morpion.bootstrap.evaluator_diagnostics import (
     MorpionEvaluatorDiagnosticExample,
     MorpionEvaluatorTrainingDiagnostics,
     save_evaluator_training_diagnostics,
+)
+from chipiron.environments.morpion.bootstrap.linoo_selection_table import (
+    LinooSelectionTable,
+    LinooSelectionTableRow,
 )
 from chipiron.environments.morpion.bootstrap.tree_inspector import (
     MorpionBootstrapChildSummary,
@@ -275,6 +280,43 @@ def test_tree_structure_rows_render_depth_counts_in_order() -> None:
         {"depth": 0, "num_nodes": 1, "cumulative_nodes": 1},
         {"depth": 1, "num_nodes": 5, "cumulative_nodes": 6},
         {"depth": 2, "num_nodes": 3, "cumulative_nodes": 9},
+    ]
+
+
+def test_linoo_selection_table_rows_expose_dashboard_columns() -> None:
+    """Dashboard should map persisted Linoo rows to display column names."""
+    rows = _linoo_selection_table_rows(
+        LinooSelectionTable(
+            updated_at_utc="2026-04-11T09:00:00Z",
+            cycle_index=4,
+            generation=6,
+            step=7,
+            selected_depth=4,
+            selected_node_id=1550,
+            rows=(
+                LinooSelectionTableRow(
+                    depth=4,
+                    opened=9,
+                    frontier=31,
+                    index=45,
+                    best_node=1550,
+                    best_value=0.38,
+                    selected=True,
+                ),
+            ),
+        )
+    )
+
+    assert rows == [
+        {
+            "depth": 4,
+            "opened_count": 9,
+            "frontier_count": 31,
+            "selection_index": 45,
+            "best_node_id": 1550,
+            "best_direct_value": 0.38,
+            "selected": True,
+        }
     ]
 
 

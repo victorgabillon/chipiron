@@ -9,6 +9,11 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, cast
 
+try:
+    from anemone.utils.logger import set_checkpoint_logger_level
+except ImportError:
+    set_checkpoint_logger_level = None
+
 from .anemone_runner import (
     AnemoneMorpionSearchRunner,
     AnemoneMorpionSearchRunnerArgs,
@@ -85,6 +90,7 @@ class MorpionBootstrapLauncherArgs:
     pipeline_stage: MorpionPipelineStage = "loop"
     pipeline_generation: int | None = None
     reevaluation_max_nodes_per_patch: int = 10_000
+    verbose_checkpoint_logs: bool = False
     open_dashboard: bool = False
     print_startup_summary: bool = True
     print_dashboard_hint: bool = True
@@ -362,6 +368,18 @@ def _build_launcher_runner(
     return AnemoneMorpionSearchRunner(runner_args)
 
 
+def _configure_anemone_checkpoint_logging(*, verbose_checkpoint_logs: bool) -> None:
+    """Set checkpoint-internals verbosity for normal versus debug launcher runs."""
+    if set_checkpoint_logger_level is None:
+        LOGGER.warning(
+            "[launcher] checkpoint_log_config_skipped reason=missing_anemone_setter"
+        )
+        return
+    set_checkpoint_logger_level(
+        logging.DEBUG if verbose_checkpoint_logs else logging.INFO
+    )
+
+
 def _render_launcher_startup_summary(
     startup_status: _LauncherStartupStatus,
     *,
@@ -560,6 +578,14 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         help="Maximum nodes to include in one reevaluation patch.",
     )
     parser.add_argument(
+        "--verbose-checkpoint-logs",
+        action="store_true",
+        help=(
+            "Enable detailed Anemone checkpoint restore/build internals such as "
+            "restore phases and delta-candidate rejection logs."
+        ),
+    )
+    parser.add_argument(
         "--memory-diagnostics",
         action="store_true",
         help="Log lightweight process memory diagnostics at bootstrap cycle phases.",
@@ -698,6 +724,7 @@ def launcher_args_from_cli(
         pipeline_stage=cast("MorpionPipelineStage", parsed.pipeline_stage),
         pipeline_generation=parsed.pipeline_generation,
         reevaluation_max_nodes_per_patch=parsed.reevaluation_max_nodes_per_patch,
+        verbose_checkpoint_logs=parsed.verbose_checkpoint_logs,
         open_dashboard=parsed.open_dashboard,
         print_startup_summary=parsed.print_startup_summary,
         print_dashboard_hint=parsed.print_dashboard_hint,
@@ -711,6 +738,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         format="%(asctime)s %(levelname)s %(name)s %(message)s",
     )
     launcher_args = launcher_args_from_cli(argv)
+    _configure_anemone_checkpoint_logging(
+        verbose_checkpoint_logs=launcher_args.verbose_checkpoint_logs
+    )
     paths = MorpionBootstrapPaths.from_work_dir(launcher_args.bootstrap_args.work_dir)
     register_current_launcher_process(paths)
     exit_code = 0

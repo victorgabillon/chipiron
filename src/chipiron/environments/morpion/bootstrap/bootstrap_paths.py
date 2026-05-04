@@ -144,6 +144,11 @@ class MorpionBootstrapPaths:
         """Return the singleton reevaluation-cursor artifact path."""
         return self.pipeline_dir / "reevaluation_cursor.json"
 
+    @property
+    def latest_linoo_selection_table_path(self) -> Path:
+        """Return the latest Linoo selection table artifact path."""
+        return self.pipeline_dir / "latest_linoo_selection_table.json"
+
     def history_paths(self) -> MorpionBootstrapHistoryPaths:
         """Return the canonical bootstrap history artifact paths."""
         return MorpionBootstrapHistoryPaths(

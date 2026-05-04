@@ -32,6 +32,10 @@ python -m chipiron.environments.morpion.bootstrap.launcher \
   2>&1 | tee ~/oldata/victor/morpion_runs/big_run_01/launcher_console.log
 ```
 
+Use `--verbose-checkpoint-logs` only when debugging Anemone checkpoint restore
+or build internals. Normal growth-worker runs keep those low-level restore
+phases and delta-candidate rejection logs suppressed.
+
 ### 📌 Notes
 
 * `--work-dir` is where all artifacts are stored (checkpoints, models, logs, etc.)

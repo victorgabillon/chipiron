@@ -42,7 +42,6 @@ from .dashboard_plot import (
     plot_certified_record_score,
     plot_dataset_size,
     plot_evaluator_losses,
-    plot_record_score,
     plot_tree_depth_distribution,
     plot_tree_size,
 )
@@ -133,6 +132,7 @@ def _cached_dashboard_data_freshness_tokens(
         _path_mtime_ns(paths.runtime_checkpoint_dir),
         _path_mtime_ns(paths.rows_dir),
         _path_mtime_ns(paths.model_dir),
+        _path_mtime_ns(paths.latest_linoo_selection_table_path),
         0
         if latest_tree_snapshot_path is None
         else _path_mtime_ns(latest_tree_snapshot_path),
@@ -410,9 +410,6 @@ def run_dashboard_app(work_dir: Path) -> None:
     st.subheader("Plots")
     st.caption("Time-series plots use absolute UTC timestamps from bootstrap history.")
     downsampled_tree_num_nodes = _downsample_series(dashboard_data.tree_num_nodes)
-    downsampled_canonical_record_score = _downsample_series(
-        dashboard_data.canonical_record_score
-    )
     downsampled_dataset_num_rows = _downsample_series(dashboard_data.dataset_num_rows)
     downsampled_active_evaluator = _downsample_series(dashboard_data.active_evaluator)
     downsampled_evaluator_losses = _downsample_loss_series_by_name(
@@ -424,10 +421,6 @@ def run_dashboard_app(work_dir: Path) -> None:
     plot_columns = st.columns(2)
     with plot_columns[0]:
         _render_plot(st, lambda: plot_tree_size(downsampled_tree_num_nodes))
-        _render_plot(
-            st,
-            lambda: plot_record_score(downsampled_canonical_record_score),
-        )
         _render_plot(st, lambda: plot_dataset_size(downsampled_dataset_num_rows))
     with plot_columns[1]:
         _render_plot(st, lambda: plot_active_evaluator(downsampled_active_evaluator))
@@ -450,6 +443,10 @@ def run_dashboard_app(work_dir: Path) -> None:
             )
 
     st.subheader("Certified Record Progress")
+    st.caption(
+        "Artifact-pipeline record progress is sourced from "
+        "pipeline/generation_*/dataset_status.json when available."
+    )
     if _has_known_optional_series_values(downsampled_certified_record_score):
         _render_plot(
             st,
@@ -466,7 +463,14 @@ def run_dashboard_app(work_dir: Path) -> None:
     )
 
     st.subheader("Tree / State Inspector")
-    _render_tree_inspector_fragment(st=st, paths=paths)
+    _render_tree_inspector_fragment(
+        st=st,
+        paths=paths,
+        latest_linoo_selection_table=dashboard_data.latest_linoo_selection_table,
+        tree_node_classification_summary=(
+            dashboard_data.latest_tree_node_classification_summary
+        ),
+    )
 
     st.subheader("Debug Info")
     st.write(
@@ -665,11 +669,22 @@ def _render_tree_inspector_section(
     *,
     st: Any,
     paths: MorpionBootstrapPaths,
+    latest_linoo_selection_table: Any,
+    tree_node_classification_summary: Any,
 ) -> None:
     """Render the bounded runtime-tree inspector for the latest checkpoint."""
     section_start_time = time.perf_counter()
     state_key = f"morpion_bootstrap_selected_node::{paths.work_dir}"
     selected_node_id = st.session_state.get(state_key)
+
+    _render_linoo_selection_table(
+        st=st,
+        latest_linoo_selection_table=latest_linoo_selection_table,
+    )
+    _render_tree_node_classification_summary(
+        st=st,
+        summary=tree_node_classification_summary,
+    )
 
     snapshot_start_time = time.perf_counter()
     snapshot = build_morpion_bootstrap_tree_inspector_snapshot(
@@ -778,6 +793,8 @@ def _render_tree_inspector_fragment(
     *,
     st: Any,
     paths: MorpionBootstrapPaths,
+    latest_linoo_selection_table: Any,
+    tree_node_classification_summary: Any,
 ) -> None:
     """Render the tree inspector in a fragment when supported by Streamlit."""
     fragment_renderer = (
@@ -785,7 +802,116 @@ def _render_tree_inspector_fragment(
         if hasattr(st, "fragment")
         else _render_tree_inspector_section
     )
-    fragment_renderer(st=st, paths=paths)
+    fragment_renderer(
+        st=st,
+        paths=paths,
+        latest_linoo_selection_table=latest_linoo_selection_table,
+        tree_node_classification_summary=tree_node_classification_summary,
+    )
+
+
+def _render_linoo_selection_table(
+    *,
+    st: Any,
+    latest_linoo_selection_table: Any,
+) -> None:
+    """Render the latest persisted Linoo depth-selection table."""
+    st.markdown("**Latest Linoo depth selection table**")
+    st.caption(
+        "Linoo selects the depth with minimal opened_count * (depth + 1), "
+        "tie-breaking by smaller depth."
+    )
+    rows = _linoo_selection_table_rows(latest_linoo_selection_table)
+    if not rows:
+        st.caption("No Linoo selection table available yet.")
+        return
+    st.dataframe(rows, width="stretch", hide_index=True)
+
+
+def _linoo_selection_table_rows(
+    latest_linoo_selection_table: Any,
+) -> list[dict[str, object]]:
+    """Return dashboard rows for the latest Linoo table artifact."""
+    rows = getattr(latest_linoo_selection_table, "rows", None)
+    if rows is None:
+        return []
+    return [
+        {
+            "depth": row.depth,
+            "opened_count": row.opened,
+            "frontier_count": row.frontier,
+            "selection_index": row.index,
+            "best_node_id": row.best_node,
+            "best_direct_value": row.best_value,
+            "selected": row.selected,
+        }
+        for row in rows
+    ]
+
+
+def _format_tree_node_classification_metric(
+    count: int,
+    *,
+    total_nodes: int,
+    percentages_available: bool,
+) -> str:
+    """Render one count and, when safe, its total-tree percentage."""
+    if not percentages_available or total_nodes <= 0:
+        return str(count)
+    return f"{count} ({(count / total_nodes) * 100.0:.1f}%)"
+
+
+def _render_tree_node_classification_summary(
+    *,
+    st: Any,
+    summary: Any,
+) -> None:
+    """Render compact exact and terminal node proportions for the latest tree."""
+    if summary is None:
+        st.caption("No latest tree snapshot classification summary available yet.")
+        return
+
+    unknown_nodes = getattr(summary, "unknown_classification_nodes", 0)
+    total_nodes = getattr(summary, "total_nodes", 0)
+    percentages_available = unknown_nodes == 0
+    summary_columns = st.columns(5)
+    summary_columns[0].metric("Total Nodes", str(total_nodes))
+    summary_columns[1].metric(
+        "Exact Nodes",
+        _format_tree_node_classification_metric(
+            getattr(summary, "exact_nodes", 0),
+            total_nodes=total_nodes,
+            percentages_available=percentages_available,
+        ),
+    )
+    summary_columns[2].metric(
+        "Terminal Nodes",
+        _format_tree_node_classification_metric(
+            getattr(summary, "terminal_nodes", 0),
+            total_nodes=total_nodes,
+            percentages_available=percentages_available,
+        ),
+    )
+    summary_columns[3].metric(
+        "Exact Terminal Nodes",
+        _format_tree_node_classification_metric(
+            getattr(summary, "exact_terminal_nodes", 0),
+            total_nodes=total_nodes,
+            percentages_available=percentages_available,
+        ),
+    )
+    summary_columns[4].metric(
+        "Non-Exact Non-Terminal",
+        _format_tree_node_classification_metric(
+            getattr(summary, "non_exact_non_terminal_nodes", 0),
+            total_nodes=total_nodes,
+            percentages_available=percentages_available,
+        ),
+    )
+    if unknown_nodes > 0:
+        st.caption(
+            "Some snapshot nodes lack exact/terminal flags; percentages are omitted."
+        )
 
 
 def _render_tree_structure_section(

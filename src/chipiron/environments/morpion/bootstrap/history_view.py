@@ -36,7 +36,15 @@ from .history import (
     load_bootstrap_history,
     load_latest_bootstrap_status,
 )
-from .pipeline_artifacts import load_pipeline_training_status_file
+from .linoo_selection_table import (
+    LinooSelectionTable,
+    load_linoo_selection_table,
+)
+from .pipeline_artifacts import (
+    MorpionPipelineDatasetStatusArtifact,
+    load_pipeline_dataset_status_file,
+    load_pipeline_training_status_file,
+)
 from .record_status import (
     MorpionBootstrapRecordStatus,
     current_frontier_score,
@@ -166,6 +174,18 @@ class TreeDepthDistributionRow:
 
 
 @dataclass(frozen=True, slots=True)
+class MorpionTreeNodeClassificationSummary:
+    """Compact exact and terminal classification summary for one saved tree."""
+
+    total_nodes: int
+    exact_nodes: int
+    terminal_nodes: int
+    exact_terminal_nodes: int
+    non_exact_non_terminal_nodes: int
+    unknown_classification_nodes: int = 0
+
+
+@dataclass(frozen=True, slots=True)
 class DiskUsageRow:
     """One dashboard-friendly disk-usage breakdown row."""
 
@@ -193,6 +213,7 @@ class MorpionBootstrapDashboardData:
     disk_usage_summary: DiskUsageSummary
     latest_tree_snapshot_status_message: str | None
     latest_tree_status: MorpionBootstrapTreeStatus | None
+    latest_tree_node_classification_summary: MorpionTreeNodeClassificationSummary | None
     latest_certified_record_status: MorpionBootstrapRecordStatus | None
     latest_frontier_status: MorpionBootstrapFrontierStatus | None
     evaluator_selection_summary: EvaluatorSelectionSummary
@@ -205,6 +226,7 @@ class MorpionBootstrapDashboardData:
     evaluator_loss_by_name: Mapping[str, tuple[OptionalFloatTimeSeriesPoint, ...]]
     active_evaluator: tuple[ActiveEvaluatorTimeSeriesPoint, ...]
     latest_tree_depth_distribution: tuple[TreeDepthDistributionRow, ...]
+    latest_linoo_selection_table: LinooSelectionTable | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -239,6 +261,69 @@ def load_morpion_bootstrap_run_view(
     )
 
 
+def load_latest_linoo_selection_table_for_dashboard(
+    work_dir: str | Path,
+) -> LinooSelectionTable | None:
+    """Load the latest Linoo selection table artifact when present."""
+    paths = MorpionBootstrapPaths.from_work_dir(work_dir)
+    return load_linoo_selection_table(paths.latest_linoo_selection_table_path)
+
+
+def _dataset_status_artifacts(
+    paths: MorpionBootstrapPaths,
+) -> tuple[MorpionPipelineDatasetStatusArtifact, ...]:
+    """Return readable dataset-status artifacts sorted by generation."""
+    statuses: list[MorpionPipelineDatasetStatusArtifact] = []
+    for status_path in sorted(paths.pipeline_dir.glob("generation_*/dataset_status.json")):
+        try:
+            statuses.append(load_pipeline_dataset_status_file(status_path))
+        except Exception:
+            LOGGER.warning(
+                "Skipping unreadable dataset status artifact: %s",
+                status_path,
+                exc_info=True,
+            )
+    return tuple(statuses)
+
+
+def _dataset_statuses_with_record(
+    dataset_statuses: Sequence[MorpionPipelineDatasetStatusArtifact],
+) -> tuple[MorpionPipelineDatasetStatusArtifact, ...]:
+    """Return dataset-status artifacts that contain a certified record status."""
+    return tuple(
+        status for status in dataset_statuses if status.record_status is not None
+    )
+
+
+def _dataset_statuses_with_frontier(
+    dataset_statuses: Sequence[MorpionPipelineDatasetStatusArtifact],
+) -> tuple[MorpionPipelineDatasetStatusArtifact, ...]:
+    """Return dataset-status artifacts that contain a frontier status."""
+    return tuple(
+        status for status in dataset_statuses if status.frontier_status is not None
+    )
+
+
+def _latest_dataset_record_status(
+    dataset_statuses: Sequence[MorpionPipelineDatasetStatusArtifact],
+) -> MorpionBootstrapRecordStatus | None:
+    """Return the latest non-null certified record status from dataset artifacts."""
+    for status in reversed(dataset_statuses):
+        if status.record_status is not None:
+            return status.record_status
+    return None
+
+
+def _latest_dataset_frontier_status(
+    dataset_statuses: Sequence[MorpionPipelineDatasetStatusArtifact],
+) -> MorpionBootstrapFrontierStatus | None:
+    """Return the latest non-null frontier status from dataset artifacts."""
+    for status in reversed(dataset_statuses):
+        if status.frontier_status is not None:
+            return status.frontier_status
+    return None
+
+
 def summarize_bootstrap_run(
     run_view: MorpionBootstrapRunView,
 ) -> MorpionBootstrapRunSummary:
@@ -249,12 +334,8 @@ def summarize_bootstrap_run(
 
     num_cycles = len(history)
     num_train_cycles = sum(1 for event in history if event.training.triggered)
-    latest_record_status = None if latest_event is None else latest_event.record
-    if latest_record_status is None and latest_run_state is not None:
-        latest_record_status = latest_run_state.latest_record_status
-    latest_frontier_status = None if latest_event is None else latest_event.frontier
-    if latest_frontier_status is None and latest_run_state is not None:
-        latest_frontier_status = latest_run_state.latest_frontier_status
+    latest_record_status = _latest_certified_record_status(run_view)
+    latest_frontier_status = _latest_frontier_status(run_view)
 
     return MorpionBootstrapRunSummary(
         num_cycles=num_cycles,
@@ -345,6 +426,33 @@ def certified_record_best_so_far_series(
     return tuple(points)
 
 
+def _dataset_status_certified_record_best_so_far_series(
+    dataset_statuses: Sequence[MorpionPipelineDatasetStatusArtifact],
+) -> tuple[OptionalIntTimeSeriesPoint, ...]:
+    """Return best-so-far certified record points keyed by dataset artifact."""
+    best_score: int | None = None
+    points: list[OptionalIntTimeSeriesPoint] = []
+    for status in dataset_statuses:
+        current_score = (
+            None
+            if status.record_status is None
+            else current_record_score(status.record_status)
+        )
+        if current_score is not None and (
+            best_score is None or current_score > best_score
+        ):
+            best_score = current_score
+        points.append(
+            OptionalIntTimeSeriesPoint(
+                cycle_index=status.generation,
+                generation=status.generation,
+                timestamp_utc=status.updated_at_utc,
+                value=best_score,
+            )
+        )
+    return tuple(points)
+
+
 def record_total_points_series(
     history: Sequence[MorpionBootstrapEvent],
 ) -> tuple[OptionalIntTimeSeriesPoint, ...]:
@@ -357,6 +465,23 @@ def record_total_points_series(
             value=event.record.current_best_total_points,
         )
         for event in history
+    )
+
+
+def _dataset_status_record_total_points_series(
+    dataset_statuses: Sequence[MorpionPipelineDatasetStatusArtifact],
+) -> tuple[OptionalIntTimeSeriesPoint, ...]:
+    """Return total occupied points derived from dataset-status artifacts."""
+    return tuple(
+        OptionalIntTimeSeriesPoint(
+            cycle_index=status.generation,
+            generation=status.generation,
+            timestamp_utc=status.updated_at_utc,
+            value=None
+            if status.record_status is None
+            else status.record_status.current_best_total_points,
+        )
+        for status in dataset_statuses
     )
 
 
@@ -373,6 +498,33 @@ def dataset_num_rows_series(
         )
         for event in history
     )
+
+
+def _dataset_status_dataset_num_rows_series(
+    dataset_statuses: Sequence[MorpionPipelineDatasetStatusArtifact],
+) -> tuple[OptionalIntTimeSeriesPoint, ...]:
+    """Return dataset-row counts derived from dataset-status artifact metadata."""
+    points: list[OptionalIntTimeSeriesPoint] = []
+    for status in dataset_statuses:
+        raw_dataset_rows = status.metadata.get("dataset_rows")
+        dataset_rows: int | None
+        if isinstance(raw_dataset_rows, bool):
+            dataset_rows = None
+        elif isinstance(raw_dataset_rows, int):
+            dataset_rows = raw_dataset_rows
+        elif isinstance(raw_dataset_rows, float) and raw_dataset_rows.is_integer():
+            dataset_rows = int(raw_dataset_rows)
+        else:
+            dataset_rows = None
+        points.append(
+            OptionalIntTimeSeriesPoint(
+                cycle_index=status.generation,
+                generation=status.generation,
+                timestamp_utc=status.updated_at_utc,
+                value=dataset_rows,
+            )
+        )
+    return tuple(points)
 
 
 def training_triggered_series(
@@ -449,11 +601,10 @@ def summarize_evaluator_selection(
 
 
 def summarize_record_progress(
-    history: Sequence[MorpionBootstrapEvent],
+    score_series: Sequence[OptionalIntTimeSeriesPoint],
+    total_points_series: Sequence[OptionalIntTimeSeriesPoint],
 ) -> MorpionRecordProgressSummary:
-    """Summarize canonical Morpion record progression across history."""
-    score_series = canonical_record_score_series(history)
-    total_points_series = record_total_points_series(history)
+    """Summarize canonical Morpion record progression across time series."""
 
     latest_score = None if not score_series else score_series[-1].value
     best_score = max(
@@ -491,27 +642,119 @@ def build_morpion_bootstrap_dashboard_data(
     paths = MorpionBootstrapPaths.from_work_dir(work_dir)
     run_view = load_morpion_bootstrap_run_view(work_dir)
     history = run_view.history
+    dataset_statuses = _dataset_status_artifacts(paths)
+    record_dataset_statuses = _dataset_statuses_with_record(dataset_statuses)
     resolved_tree_snapshot = _resolve_latest_tree_snapshot_reference(run_view)
+    latest_snapshot = _load_resolved_training_tree_snapshot(resolved_tree_snapshot)
+    certified_record_score = (
+        _dataset_status_certified_record_best_so_far_series(record_dataset_statuses)
+        if record_dataset_statuses
+        else certified_record_best_so_far_series(history)
+    )
+    record_total_points = (
+        _dataset_status_record_total_points_series(record_dataset_statuses)
+        if record_dataset_statuses
+        else record_total_points_series(history)
+    )
+    artifact_dataset_num_rows = _dataset_status_dataset_num_rows_series(dataset_statuses)
     return MorpionBootstrapDashboardData(
         run_summary=summarize_bootstrap_run(run_view),
         disk_usage_summary=build_disk_usage_summary(run_view.work_dir),
         latest_tree_snapshot_status_message=resolved_tree_snapshot.status_message,
-        latest_tree_status=_latest_tree_status(run_view),
+        latest_tree_status=_latest_tree_status(run_view, latest_snapshot=latest_snapshot),
+        latest_tree_node_classification_summary=summarize_tree_node_classification(
+            latest_snapshot
+        ),
         latest_certified_record_status=_latest_certified_record_status(run_view),
         latest_frontier_status=_latest_frontier_status(run_view),
         evaluator_selection_summary=summarize_evaluator_selection(history),
-        record_progress_summary=summarize_record_progress(history),
+        record_progress_summary=summarize_record_progress(
+            certified_record_score,
+            record_total_points,
+        ),
         tree_num_nodes=tree_num_nodes_series(history),
         canonical_record_score=canonical_record_score_series(history),
-        certified_record_score=certified_record_best_so_far_series(history),
-        record_total_points=record_total_points_series(history),
-        dataset_num_rows=dataset_num_rows_series(history),
+        certified_record_score=certified_record_score,
+        record_total_points=record_total_points,
+        dataset_num_rows=artifact_dataset_num_rows
+        if any(point.value is not None for point in artifact_dataset_num_rows)
+        else dataset_num_rows_series(history),
         evaluator_loss_by_name=_evaluator_loss_series_by_name_from_training_status(
             paths
         ),
         active_evaluator=active_evaluator_series(history),
-        latest_tree_depth_distribution=latest_tree_depth_distribution(run_view),
+        latest_tree_depth_distribution=latest_tree_depth_distribution(
+            run_view,
+            latest_snapshot=latest_snapshot,
+        ),
+        latest_linoo_selection_table=load_latest_linoo_selection_table_for_dashboard(
+            work_dir
+        ),
     )
+
+
+def summarize_tree_node_classification(
+    snapshot: object | None,
+) -> MorpionTreeNodeClassificationSummary | None:
+    """Return exact and terminal node counts for one latest tree snapshot."""
+    if snapshot is None:
+        return None
+    snapshot_nodes = getattr(snapshot, "nodes", None)
+    if snapshot_nodes is None:
+        return None
+
+    total_nodes = 0
+    exact_nodes = 0
+    terminal_nodes = 0
+    exact_terminal_nodes = 0
+    non_exact_non_terminal_nodes = 0
+    unknown_classification_nodes = 0
+    for node in snapshot_nodes:
+        total_nodes += 1
+        is_exact = _optional_node_flag(node, "is_exact")
+        is_terminal = _optional_node_flag(node, "is_terminal")
+        if is_exact is True:
+            exact_nodes += 1
+        if is_terminal is True:
+            terminal_nodes += 1
+        if is_exact is True and is_terminal is True:
+            exact_terminal_nodes += 1
+        elif is_exact is False and is_terminal is False:
+            non_exact_non_terminal_nodes += 1
+        elif is_exact is None or is_terminal is None:
+            unknown_classification_nodes += 1
+
+    return MorpionTreeNodeClassificationSummary(
+        total_nodes=total_nodes,
+        exact_nodes=exact_nodes,
+        terminal_nodes=terminal_nodes,
+        exact_terminal_nodes=exact_terminal_nodes,
+        non_exact_non_terminal_nodes=non_exact_non_terminal_nodes,
+        unknown_classification_nodes=unknown_classification_nodes,
+    )
+
+
+def _optional_node_flag(node: object, attribute_name: str) -> bool | None:
+    """Return one node boolean flag when present, else ``None``."""
+    value = getattr(node, attribute_name, None)
+    return value if isinstance(value, bool) else None
+
+
+def _load_resolved_training_tree_snapshot(
+    resolved_snapshot: _ResolvedTreeSnapshotReference,
+) -> object | None:
+    """Load the latest resolved training tree snapshot once for dashboard use."""
+    snapshot_path = resolved_snapshot.snapshot_path
+    if snapshot_path is None:
+        return None
+    try:
+        return load_training_tree_snapshot(snapshot_path)
+    except OSError:
+        LOGGER.exception(
+            "[dashboard] latest_tree_snapshot_load_failed path=%s",
+            str(snapshot_path),
+        )
+        return None
 
 
 def _evaluator_loss_series_by_name_from_training_status(
@@ -795,19 +1038,27 @@ def _latest_tree_num_nodes(run_view: MorpionBootstrapRunView) -> int | None:
 
 def _latest_tree_status(
     run_view: MorpionBootstrapRunView,
+    *,
+    latest_snapshot: object | None = None,
 ) -> MorpionBootstrapTreeStatus | None:
     """Return the latest known tree-structure status for one run view."""
     latest_event = _latest_known_event(run_view)
     if latest_event is not None:
         return latest_event.tree
-    resolved_snapshot = _resolve_latest_tree_snapshot_reference(run_view)
-    if resolved_snapshot.snapshot_path is not None:
-        snapshot = load_training_tree_snapshot(resolved_snapshot.snapshot_path)
+    snapshot = latest_snapshot
+    if snapshot is None:
+        resolved_snapshot = _resolve_latest_tree_snapshot_reference(run_view)
+        snapshot = _load_resolved_training_tree_snapshot(resolved_snapshot)
+    if snapshot is not None:
         depth_counts: dict[int, int] = {}
-        for node in snapshot.nodes:
-            depth_counts[node.depth] = depth_counts.get(node.depth, 0) + 1
+        snapshot_nodes = tuple(getattr(snapshot, "nodes", ()))
+        for node in snapshot_nodes:
+            depth = getattr(node, "depth", None)
+            if not isinstance(depth, int):
+                continue
+            depth_counts[depth] = depth_counts.get(depth, 0) + 1
         return MorpionBootstrapTreeStatus(
-            num_nodes=len(snapshot.nodes),
+            num_nodes=len(snapshot_nodes),
             min_depth_present=None if not depth_counts else min(depth_counts),
             max_depth_present=None if not depth_counts else max(depth_counts),
             depth_node_counts=depth_counts,
@@ -821,22 +1072,28 @@ def _latest_tree_status(
 
 def latest_tree_depth_distribution(
     run_view: MorpionBootstrapRunView,
+    *,
+    latest_snapshot: object | None = None,
 ) -> tuple[TreeDepthDistributionRow, ...]:
     """Return the latest persisted tree depth distribution for the dashboard."""
-    latest_tree_status = _latest_tree_status(run_view)
+    latest_tree_status = _latest_tree_status(run_view, latest_snapshot=latest_snapshot)
     if latest_tree_status is not None and latest_tree_status.depth_node_counts:
         return _tree_depth_distribution_rows_from_counts(
             latest_tree_status.depth_node_counts
         )
 
-    resolved_snapshot = _resolve_latest_tree_snapshot_reference(run_view)
-    snapshot_path = resolved_snapshot.snapshot_path
-    if snapshot_path is None:
+    snapshot = latest_snapshot
+    if snapshot is None:
+        resolved_snapshot = _resolve_latest_tree_snapshot_reference(run_view)
+        snapshot = _load_resolved_training_tree_snapshot(resolved_snapshot)
+    if snapshot is None:
         return ()
-    snapshot = load_training_tree_snapshot(snapshot_path)
     depth_counts: dict[int, int] = {}
-    for node in snapshot.nodes:
-        depth_counts[node.depth] = depth_counts.get(node.depth, 0) + 1
+    for node in getattr(snapshot, "nodes", ()):
+        depth = getattr(node, "depth", None)
+        if not isinstance(depth, int):
+            continue
+        depth_counts[depth] = depth_counts.get(depth, 0) + 1
     return _tree_depth_distribution_rows_from_counts(depth_counts)
 
 
@@ -844,6 +1101,11 @@ def _latest_certified_record_status(
     run_view: MorpionBootstrapRunView,
 ) -> MorpionBootstrapRecordStatus | None:
     """Return the latest known certified record status for one run view."""
+    paths = MorpionBootstrapPaths.from_work_dir(run_view.work_dir)
+    dataset_statuses = _dataset_status_artifacts(paths)
+    latest_dataset_record = _latest_dataset_record_status(dataset_statuses)
+    if latest_dataset_record is not None:
+        return latest_dataset_record
     latest_event = _latest_known_event(run_view)
     if latest_event is not None:
         return latest_event.record
@@ -856,6 +1118,11 @@ def _latest_frontier_status(
     run_view: MorpionBootstrapRunView,
 ) -> MorpionBootstrapFrontierStatus | None:
     """Return the latest known frontier/debug status for one run view."""
+    paths = MorpionBootstrapPaths.from_work_dir(run_view.work_dir)
+    dataset_statuses = _dataset_status_artifacts(paths)
+    latest_dataset_frontier = _latest_dataset_frontier_status(dataset_statuses)
+    if latest_dataset_frontier is not None:
+        return latest_dataset_frontier
     latest_event = _latest_known_event(run_view)
     if latest_event is not None:
         return latest_event.frontier
@@ -993,6 +1260,7 @@ __all__ = [
     "MorpionBootstrapRunSummary",
     "MorpionBootstrapRunView",
     "MorpionRecordProgressSummary",
+    "MorpionTreeNodeClassificationSummary",
     "OptionalFloatTimeSeriesPoint",
     "OptionalIntTimeSeriesPoint",
     "TrainingTriggeredTimeSeriesPoint",
@@ -1008,12 +1276,14 @@ __all__ = [
     "filesystem_usage_for_path",
     "format_num_bytes",
     "latest_tree_depth_distribution",
+    "load_latest_linoo_selection_table_for_dashboard",
     "load_morpion_bootstrap_run_view",
     "record_total_points_series",
     "recursive_path_num_bytes",
     "summarize_bootstrap_run",
     "summarize_evaluator_selection",
     "summarize_record_progress",
+    "summarize_tree_node_classification",
     "training_triggered_series",
     "tree_num_nodes_series",
 ]

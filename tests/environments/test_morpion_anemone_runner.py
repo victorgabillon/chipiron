@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import gc
+import json
 import logging
 import sys
 from pathlib import Path
@@ -62,6 +63,8 @@ from anemone.node_selector.priority_check.noop_args import NoPriorityCheckArgs
 from anemone.progress_monitor.progress_monitor import TreeBranchLimitArgs
 from anemone.recommender_rule.recommender_rule import AlmostEqualLogistic
 from anemone.training_export import load_training_tree_snapshot
+from anemone.tree_exploration import TreeGrowthStepReport
+from anemone.utils.logger import checkpoint_logger, set_checkpoint_logger_level
 from anemone.value_updates import NodeValueUpdate, NodeValueUpdateResult
 
 import chipiron.environments.morpion.bootstrap.anemone_runner as anemone_runner_module
@@ -454,6 +457,62 @@ def test_checkpoint_metrics_logs_for_save_load_and_restore(
     assert any("deltas=" in line for line in metrics_lines)
 
 
+def test_checkpoint_restore_phase_logs_are_suppressed_by_default(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Detailed checkpoint restore phases should stay out of normal INFO logs."""
+    checkpoint_path = tmp_path / "tree_checkpoint.json"
+    caplog.set_level(logging.INFO)
+
+    first_runner = AnemoneMorpionSearchRunner()
+    first_runner.load_or_create(None, None)
+    first_runner.grow(2)
+    first_runner.save_checkpoint(checkpoint_path)
+
+    second_runner = AnemoneMorpionSearchRunner()
+    second_runner.load_or_create(checkpoint_path, None)
+
+    assert "[checkpoint-restore]" not in caplog.text
+
+
+def test_checkpoint_restore_phase_logs_can_be_reenabled(
+    tmp_path: Path,
+) -> None:
+    """Checkpoint debug logging should re-enable detailed restore phase records."""
+    checkpoint_path = tmp_path / "tree_checkpoint.json"
+    messages: list[str] = []
+
+    class _ListHandler(logging.Handler):
+        def emit(self, record: logging.LogRecord) -> None:
+            messages.append(record.getMessage())
+
+    previous_level = checkpoint_logger.level
+    handler = _ListHandler(level=logging.DEBUG)
+    checkpoint_logger.addHandler(handler)
+    set_checkpoint_logger_level(logging.DEBUG)
+    try:
+        first_runner = AnemoneMorpionSearchRunner()
+        first_runner.load_or_create(None, None)
+        first_runner.grow(2)
+        first_runner.save_checkpoint(checkpoint_path)
+
+        second_runner = AnemoneMorpionSearchRunner()
+        second_runner.load_or_create(checkpoint_path, None)
+    finally:
+        checkpoint_logger.removeHandler(handler)
+        set_checkpoint_logger_level(previous_level)
+
+    assert any(
+        "[checkpoint-restore] phase=validate_payload status=start" in message
+        for message in messages
+    )
+    assert any(
+        "[checkpoint-restore] phase=restore_selector_state status=done" in message
+        for message in messages
+    )
+
+
 def _checkpoint_payload_type_counts() -> tuple[int, int, int]:
     payload_types = (
         SearchRuntimeCheckpointPayload,
@@ -534,6 +593,121 @@ def test_current_tree_status_reports_depth_counts() -> None:
     assert status.max_depth_present is not None
     assert status.depth_node_counts[0] == 1
     assert sum(status.depth_node_counts.values()) == status.num_nodes
+
+
+def test_runtime_step_returns_selected_node_growth_report() -> None:
+    """Anemone runtime steps should report the selected node and depth."""
+    runner = AnemoneMorpionSearchRunner(_runner_args_with_tree_branch_limit(4096))
+    runner.load_or_create(
+        None,
+        None,
+        MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=4096),
+    )
+    runtime = runner._require_runtime()
+    nodes_before = runtime.tree.nodes_count
+
+    report = runtime.step()
+
+    assert isinstance(report, TreeGrowthStepReport)
+    assert report.selected_node_id is not None
+    assert report.selected_depth is not None
+    assert report.nodes_before == nodes_before
+    assert report.nodes_after >= report.nodes_before
+    assert report.nodes_added == report.nodes_after - report.nodes_before
+
+
+def test_runner_growth_logs_selected_node_id_and_depth(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Growth logs should surface selected-node observability from Anemone."""
+    caplog.set_level(logging.INFO)
+    runner = AnemoneMorpionSearchRunner(_runner_args_with_tree_branch_limit(4096))
+    runner.load_or_create(
+        None,
+        None,
+        MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=4096),
+    )
+
+    runner.grow(1)
+
+    assert "selected_node_id=" in caplog.text
+    assert "selected_depth=" in caplog.text
+    assert "selected_depth=unknown" not in caplog.text
+    assert "[growth-selection-table] step=1" in caplog.text
+    assert (
+        "depth total opened frontier terminal exact non_openable "
+        "index best_node best_value selected"
+    ) in caplog.text
+
+
+def test_runner_growth_writes_latest_linoo_selection_table(tmp_path: Path) -> None:
+    """Growth should persist the latest structured Linoo depth table."""
+    artifact_path = tmp_path / "pipeline" / "latest_linoo_selection_table.json"
+    runner = AnemoneMorpionSearchRunner(_runner_args_with_tree_branch_limit(4096))
+    runner.configure_linoo_selection_table_artifact(
+        path=artifact_path,
+        cycle_index=3,
+        generation=5,
+    )
+    runner.load_or_create(
+        None,
+        None,
+        MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=4096),
+    )
+
+    runner.grow(1)
+
+    payload = json.loads(artifact_path.read_text(encoding="utf-8"))
+    runtime = runner._require_runtime()
+    step_report = runtime.latest_step_report
+    assert step_report is not None
+    selector_report = step_report.selector_report
+    assert selector_report is not None
+
+    assert payload["cycle_index"] == 3
+    assert payload["generation"] == 5
+    assert payload["step"] == 1
+    assert payload["selected_depth"] == selector_report.selected_depth
+    assert payload["selected_node_id"] == selector_report.selected_node_id
+    assert [row["depth"] for row in payload["rows"]] == [
+        row.depth for row in selector_report.depth_rows
+    ]
+    assert any(row["selected"] for row in payload["rows"])
+    assert sum(1 for row in payload["rows"] if row["selected"]) == 1
+    for row in payload["rows"]:
+        assert row["index"] == row["opened"] * (row["depth"] + 1)
+
+
+def test_runner_growth_falls_back_safely_when_step_report_is_unavailable(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Runner logs should remain safe when runtimes do not return a step report."""
+
+    class _FakeEvaluation:
+        def has_exact_value(self) -> bool:
+            return False
+
+    class _FakeRootNode:
+        tree_evaluation = _FakeEvaluation()
+
+    class _FakeTree:
+        root_node = _FakeRootNode()
+        nodes_count = 3
+        branch_count = 12
+
+    class _FakeRuntime:
+        tree = _FakeTree()
+
+        def step(self) -> None:
+            return None
+
+    caplog.set_level(logging.INFO)
+    runner = AnemoneMorpionSearchRunner()
+    runner._runtime = _FakeRuntime()
+
+    runner.grow(1)
+
+    assert "selected_node_id=unknown selected_depth=unknown" in caplog.text
 
 
 def test_restore_with_evaluator_bundle_skips_reevaluation(

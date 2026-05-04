@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import logging
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -312,6 +313,65 @@ def test_resume_startup_summary_reports_resume_state(tmp_path: Path) -> None:
     assert "latest cycle: 7" in summary
     assert "forced evaluator control: linear" in summary
     assert "tree_branch_limit: 64 (baseline 96, control override 64)" in summary
+
+
+def test_launcher_args_default_checkpoint_logging_is_concise(tmp_path: Path) -> None:
+    """Launcher CLI should keep checkpoint debug logs disabled by default."""
+    launcher_args = launcher_module.launcher_args_from_cli(
+        ["--work-dir", str(tmp_path)]
+    )
+
+    assert launcher_args.verbose_checkpoint_logs is False
+
+
+def test_launcher_args_can_enable_verbose_checkpoint_logs(tmp_path: Path) -> None:
+    """Launcher CLI should expose a checkpoint-debug flag for restore/build logs."""
+    launcher_args = launcher_module.launcher_args_from_cli(
+        ["--work-dir", str(tmp_path), "--verbose-checkpoint-logs"]
+    )
+
+    assert launcher_args.verbose_checkpoint_logs is True
+
+
+def test_launcher_configures_checkpoint_logger_level() -> None:
+    """Launcher logging config should toggle checkpoint-internals verbosity."""
+    received_levels: list[int] = []
+
+    def _fake_set_checkpoint_logger_level(level: int) -> None:
+        received_levels.append(level)
+
+    original_setter = launcher_module.set_checkpoint_logger_level
+    try:
+        launcher_module.set_checkpoint_logger_level = _fake_set_checkpoint_logger_level
+
+        launcher_module._configure_anemone_checkpoint_logging(
+            verbose_checkpoint_logs=False
+        )
+        launcher_module._configure_anemone_checkpoint_logging(
+            verbose_checkpoint_logs=True
+        )
+    finally:
+        launcher_module.set_checkpoint_logger_level = original_setter
+
+    assert received_levels == [logging.INFO, logging.DEBUG]
+
+
+def test_launcher_checkpoint_logging_noops_when_setter_unavailable(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Old installed Anemone should not crash launcher import-time logging config."""
+    original_setter = launcher_module.set_checkpoint_logger_level
+    caplog.set_level(logging.WARNING)
+    try:
+        launcher_module.set_checkpoint_logger_level = None
+
+        launcher_module._configure_anemone_checkpoint_logging(
+            verbose_checkpoint_logs=False
+        )
+    finally:
+        launcher_module.set_checkpoint_logger_level = original_setter
+
+    assert "checkpoint_log_config_skipped" in caplog.text
 
 
 def test_launcher_creates_artifacts_and_returns_final_run_state(

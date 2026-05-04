@@ -61,7 +61,12 @@ from chipiron.environments.morpion.types import MorpionDynamics, MorpionState
 
 from .config import DEFAULT_MORPION_TREE_BRANCH_LIMIT
 from .control import MorpionBootstrapEffectiveRuntimeConfig
+from .cycle_timing import timestamp_utc_from_unix_s as _timestamp_utc_from_unix_s
 from .history import MorpionBootstrapTreeStatus
+from .linoo_selection_table import (
+    linoo_selection_table_from_report,
+    save_linoo_selection_table,
+)
 from .search_runner_protocol import MorpionSearchRunner
 
 if TYPE_CHECKING:
@@ -361,6 +366,23 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         self._last_applied_runtime_config = _runtime_config_from_search_args(
             self._args.search_args
         )
+        self._linoo_selection_table_artifact_path: Path | None = None
+        self._linoo_selection_table_cycle_index: int | None = None
+        self._linoo_selection_table_generation: int | None = None
+
+    def configure_linoo_selection_table_artifact(
+        self,
+        *,
+        path: str | Path | None,
+        cycle_index: int | None = None,
+        generation: int | None = None,
+    ) -> None:
+        """Configure optional latest Linoo table persistence for growth steps."""
+        self._linoo_selection_table_artifact_path = (
+            None if path is None else Path(path)
+        )
+        self._linoo_selection_table_cycle_index = cycle_index
+        self._linoo_selection_table_generation = generation
 
     def load_or_create(
         self,
@@ -450,6 +472,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             max_growth_steps,
             initial_tree_size,
         )
+        self._clear_linoo_selection_table_artifact()
         steps_executed = 0
         stop_reason = "max_steps_reached"
         for _step_index in range(max_growth_steps):
@@ -459,20 +482,40 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             if not _runtime_can_step(runtime):
                 stop_reason = _runtime_stop_reason(runtime)
                 break
-            runtime.step()
+            step_report = runtime.step()
             steps_executed += 1
             current_tree_size = _live_tree_node_count(runtime)
             tree = getattr(runtime, "tree", None)
             branch_count = getattr(tree, "branch_count", None)
-            node_selector = getattr(runtime, "node_selector", None)
-            uniform_selector = getattr(node_selector, "base", node_selector)
-            selected_depth = getattr(uniform_selector, "current_depth_to_expand", None)
+            selected_node_id = None
+            selected_depth = None
+            if step_report is not None:
+                selected_node_id = getattr(step_report, "selected_node_id", None)
+                selected_depth = getattr(step_report, "selected_depth", None)
+                reported_nodes_after = getattr(step_report, "nodes_after", None)
+                if isinstance(reported_nodes_after, int):
+                    current_tree_size = reported_nodes_after
+                reported_branch_count = getattr(step_report, "branch_count", None)
+                if isinstance(reported_branch_count, int):
+                    branch_count = reported_branch_count
+            if not isinstance(selected_depth, int):
+                node_selector = getattr(runtime, "node_selector", None)
+                uniform_selector = getattr(node_selector, "base", node_selector)
+                selected_depth = getattr(uniform_selector, "current_depth_to_expand", None)
+            if step_report is not None:
+                self._log_and_persist_linoo_selection_table(
+                    step_report=step_report,
+                    step=steps_executed,
+                    selected_depth=selected_depth,
+                    selected_node_id=selected_node_id,
+                )
             LOGGER.info(
-                "[growth] step=%s node_count=%s nodes_added=%s branch_count=%s selected_depth=%s",
+                "[growth] step=%s node_count=%s nodes_added=%s branch_count=%s selected_node_id=%s selected_depth=%s",
                 steps_executed,
                 current_tree_size,
                 current_tree_size - initial_tree_size,
                 branch_count if isinstance(branch_count, int) else "unknown",
+                selected_node_id if isinstance(selected_node_id, int) else "unknown",
                 selected_depth if isinstance(selected_depth, int) else "unknown",
             )
         final_tree_size = _live_tree_node_count(runtime)
@@ -483,6 +526,58 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             final_tree_size,
             stop_reason,
         )
+
+    def _log_and_persist_linoo_selection_table(
+        self,
+        *,
+        step_report: object,
+        step: int,
+        selected_depth: object,
+        selected_node_id: object,
+    ) -> None:
+        """Log and optionally persist the latest Linoo selector table."""
+        selector_report = getattr(step_report, "selector_report", None)
+        if selector_report is None:
+            return
+        if hasattr(selector_report, "format_depth_table"):
+            LOGGER.info(
+                "[growth-selection-table] step=%s\n%s",
+                step,
+                selector_report.format_depth_table(),
+            )
+        table = linoo_selection_table_from_report(
+            report=selector_report,
+            updated_at_utc=_timestamp_utc_from_unix_s(time.time()),
+            cycle_index=self._linoo_selection_table_cycle_index,
+            generation=self._linoo_selection_table_generation,
+            step=step,
+            selected_depth=selected_depth if isinstance(selected_depth, int) else None,
+            selected_node_id=(
+                selected_node_id if isinstance(selected_node_id, int) else None
+            ),
+        )
+        if table is None:
+            return
+        if self._linoo_selection_table_artifact_path is not None:
+            save_linoo_selection_table(
+                table,
+                self._linoo_selection_table_artifact_path,
+            )
+
+    def _clear_linoo_selection_table_artifact(self) -> None:
+        """Remove stale latest Linoo table state before a new growth batch."""
+        artifact_path = self._linoo_selection_table_artifact_path
+        if artifact_path is None:
+            return
+        try:
+            artifact_path.unlink()
+        except FileNotFoundError:
+            return
+        except OSError:
+            LOGGER.exception(
+                "[growth-selection-table] stale_artifact_clear_failed path=%s",
+                str(artifact_path),
+            )
 
     def export_training_tree_snapshot(self, output_path: str | Path) -> None:
         """Persist a training-grade snapshot from the live tree."""
