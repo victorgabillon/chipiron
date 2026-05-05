@@ -41,7 +41,7 @@ from anemone.training_export import (
     build_training_tree_snapshot,
     save_training_tree_snapshot,
 )
-from anemone.value_updates import NodeValueUpdate
+from anemone.value_updates import NodeValueUpdate, NodeValueUpdateResult
 from atomheart.games.morpion import MorpionStateCheckpointCodec, initial_state
 from dacite import Config, from_dict
 from valanga.evaluations import Certainty, Value
@@ -103,6 +103,69 @@ class CheckpointIoMetrics:
     anchor_count: int | None = None
     delta_count: int | None = None
     cache: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class _ValidatedCheckpointPayloadCacheEntry:
+    """Decoded checkpoint payload retained briefly between validation and restore."""
+
+    path: Path
+    bytes: int
+    mtime_ns: int
+    payload: SearchRuntimeCheckpointPayload
+
+
+_VALIDATED_CHECKPOINT_PAYLOAD_CACHE: _ValidatedCheckpointPayloadCacheEntry | None = None
+
+
+@dataclass(slots=True)
+class _ReevaluationBlendMetrics:
+    """Aggregate diagnostics for smoothed reevaluation patch updates."""
+
+    count: int = 0
+    old_sum: float = 0.0
+    new_sum: float = 0.0
+    blended_sum: float = 0.0
+
+    def record(
+        self,
+        *,
+        old_value: float,
+        new_value: float,
+        blended_value: float,
+    ) -> None:
+        """Record one actually blended node update."""
+        self.count += 1
+        self.old_sum += old_value
+        self.new_sum += new_value
+        self.blended_sum += blended_value
+
+
+def _format_optional_seconds(value: object) -> str:
+    """Format one optional duration for stable timing logs."""
+    return f"{float(value):.6f}" if isinstance(value, int | float) else "unknown"
+
+
+def _format_optional_int_log(value: object) -> str:
+    """Format one optional integer for stable structured logs."""
+    return str(value) if isinstance(value, int) else "unknown"
+
+
+def _selector_report_row_count(selector_report: object | None) -> int | None:
+    """Return the selector report row count when exposed by the report."""
+    if selector_report is None:
+        return None
+    depth_row_count = getattr(selector_report, "depth_row_count", None)
+    if isinstance(depth_row_count, int):
+        return depth_row_count
+    depth_rows = getattr(selector_report, "depth_rows", None)
+    if depth_rows is None:
+        return None
+    try:
+        row_count = len(depth_rows)
+    except TypeError:
+        return None
+    return row_count if isinstance(row_count, int) else None
 
 
 def _default_search_args() -> SearchArgs:
@@ -198,6 +261,56 @@ def _log_checkpoint_metrics(operation: str, metrics: CheckpointIoMetrics) -> Non
         ]
     )
     LOGGER.info("[checkpoint-metrics] %s", " ".join(parts))
+
+
+def _checkpoint_payload_cache_identity(path: str | Path) -> tuple[Path, int, int]:
+    """Return the identity fields that make a cached payload safe to reuse."""
+    resolved_path = Path(path).resolve()
+    path_stat = resolved_path.stat()
+    return resolved_path, path_stat.st_size, path_stat.st_mtime_ns
+
+
+def cache_morpion_search_checkpoint_payload_for_restore(
+    path: str | Path,
+    payload: SearchRuntimeCheckpointPayload,
+) -> None:
+    """Retain one validated payload for an immediately following restore."""
+    global _VALIDATED_CHECKPOINT_PAYLOAD_CACHE
+    try:
+        resolved_path, bytes_loaded, mtime_ns = _checkpoint_payload_cache_identity(path)
+    except FileNotFoundError:
+        _VALIDATED_CHECKPOINT_PAYLOAD_CACHE = None
+        return
+    _VALIDATED_CHECKPOINT_PAYLOAD_CACHE = _ValidatedCheckpointPayloadCacheEntry(
+        path=resolved_path,
+        bytes=bytes_loaded,
+        mtime_ns=mtime_ns,
+        payload=payload,
+    )
+
+
+def _pop_cached_morpion_search_checkpoint_payload_for_restore(
+    path: str | Path,
+) -> tuple[SearchRuntimeCheckpointPayload, int] | None:
+    """Return and clear the matching validated payload cache entry, if any."""
+    global _VALIDATED_CHECKPOINT_PAYLOAD_CACHE
+    entry = _VALIDATED_CHECKPOINT_PAYLOAD_CACHE
+    if entry is None:
+        return None
+    try:
+        resolved_path, bytes_loaded, mtime_ns = _checkpoint_payload_cache_identity(path)
+    except FileNotFoundError:
+        _VALIDATED_CHECKPOINT_PAYLOAD_CACHE = None
+        return None
+    if (
+        entry.path != resolved_path
+        or entry.bytes != bytes_loaded
+        or entry.mtime_ns != mtime_ns
+    ):
+        _VALIDATED_CHECKPOINT_PAYLOAD_CACHE = None
+        return None
+    _VALIDATED_CHECKPOINT_PAYLOAD_CACHE = None
+    return entry.payload, entry.bytes
 
 
 class UninitializedMorpionSearchRunnerError(RuntimeError):
@@ -489,9 +602,11 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             branch_count = getattr(tree, "branch_count", None)
             selected_node_id = None
             selected_depth = None
+            selector_report = None
             if step_report is not None:
                 selected_node_id = getattr(step_report, "selected_node_id", None)
                 selected_depth = getattr(step_report, "selected_depth", None)
+                selector_report = getattr(step_report, "selector_report", None)
                 reported_nodes_after = getattr(step_report, "nodes_after", None)
                 if isinstance(reported_nodes_after, int):
                     current_tree_size = reported_nodes_after
@@ -502,6 +617,65 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 node_selector = getattr(runtime, "node_selector", None)
                 uniform_selector = getattr(node_selector, "base", node_selector)
                 selected_depth = getattr(uniform_selector, "current_depth_to_expand", None)
+            selector_report_rows = (
+                getattr(step_report, "selector_report_rows", None)
+                if step_report is not None
+                else None
+            )
+            if not isinstance(selector_report_rows, int):
+                selector_report_rows = _selector_report_row_count(selector_report)
+            LOGGER.info(
+                "[growth-timing] step=%s total_s=%s select_s=%s limit_s=%s expand_s=%s evaluate_s=%s propagate_s=%s selector_total_s=%s selector_collect_s=%s selector_choose_depth_s=%s selector_heap_update_s=%s selector_choose_node_s=%s selector_report_s=%s rows=%s nodes_scanned=%s frontier_scanned=%s selected_depth_frontier=%s heap_registered=%s stale_skipped=%s",
+                steps_executed,
+                _format_optional_seconds(
+                    getattr(step_report, "total_s", None) if step_report is not None else None
+                ),
+                _format_optional_seconds(
+                    getattr(step_report, "select_s", None) if step_report is not None else None
+                ),
+                _format_optional_seconds(
+                    getattr(step_report, "limit_s", None) if step_report is not None else None
+                ),
+                _format_optional_seconds(
+                    getattr(step_report, "expand_s", None) if step_report is not None else None
+                ),
+                _format_optional_seconds(
+                    getattr(step_report, "evaluate_s", None) if step_report is not None else None
+                ),
+                _format_optional_seconds(
+                    getattr(step_report, "propagate_s", None) if step_report is not None else None
+                ),
+                _format_optional_seconds(getattr(selector_report, "total_s", None)),
+                _format_optional_seconds(
+                    getattr(selector_report, "collect_frontier_state_s", None)
+                ),
+                _format_optional_seconds(
+                    getattr(selector_report, "choose_depth_s", None)
+                ),
+                _format_optional_seconds(
+                    getattr(selector_report, "heap_update_s", None)
+                ),
+                _format_optional_seconds(
+                    getattr(selector_report, "choose_node_s", None)
+                ),
+                _format_optional_seconds(getattr(selector_report, "make_report_s", None)),
+                _format_optional_int_log(selector_report_rows),
+                _format_optional_int_log(
+                    getattr(selector_report, "total_nodes_scanned", None)
+                ),
+                _format_optional_int_log(
+                    getattr(selector_report, "frontier_nodes_scanned", None)
+                ),
+                _format_optional_int_log(
+                    getattr(selector_report, "selected_depth_frontier_count", None)
+                ),
+                _format_optional_int_log(
+                    getattr(selector_report, "heap_candidates_registered", None)
+                ),
+                _format_optional_int_log(
+                    getattr(selector_report, "stale_candidates_skipped", None)
+                ),
+            )
             if step_report is not None:
                 self._log_and_persist_linoo_selection_table(
                     step_report=step_report,
@@ -539,12 +713,28 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         selector_report = getattr(step_report, "selector_report", None)
         if selector_report is None:
             return
+        row_count = _selector_report_row_count(selector_report)
+        formatted_table: str | None = None
+        format_elapsed_s: float | None = None
+        log_elapsed_s: float | None = None
         if hasattr(selector_report, "format_depth_table"):
+            format_started_at = time.perf_counter()
+            formatted_table = selector_report.format_depth_table()
+            format_elapsed_s = time.perf_counter() - format_started_at
+            log_started_at = time.perf_counter()
             LOGGER.info(
                 "[growth-selection-table] step=%s\n%s",
                 step,
-                selector_report.format_depth_table(),
+                formatted_table,
             )
+            log_elapsed_s = time.perf_counter() - log_started_at
+        LOGGER.info(
+            "[growth-selection-table-timing] step=%s rows=%s format_s=%s log_s=%s",
+            step,
+            _format_optional_int_log(row_count),
+            _format_optional_seconds(format_elapsed_s),
+            _format_optional_seconds(log_elapsed_s),
+        )
         table = linoo_selection_table_from_report(
             report=selector_report,
             updated_at_utc=_timestamp_utc_from_unix_s(time.time()),
@@ -639,27 +829,49 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         if runtime is None:
             raise _uninitialized_reevaluation_patch_runtime_error()
         runtime = cast("Any", runtime)
-        updates = tuple(
-            NodeValueUpdate(
-                node_id=row.node_id,
-                direct_value=row.direct_value,
-                backed_up_value=row.backed_up_value,
-                is_exact=row.is_exact,
-                is_terminal=row.is_terminal,
-                metadata=row.metadata,
-            )
-            for row in patch.rows
-        )
+        blend_alpha = self._last_applied_runtime_config.reevaluation_blend_alpha
         LOGGER.info(
             "[reevaluation-patch] runner_apply_start patch_id=%s rows=%s",
             patch.patch_id,
-            len(updates),
+            len(patch.rows),
         )
-        result = runtime.apply_node_value_updates(
-            updates,
-            recompute_backups=True,
-            allow_missing=True,
-        )
+        if blend_alpha >= 1.0:
+            updates = tuple(
+                NodeValueUpdate(
+                    node_id=row.node_id,
+                    direct_value=row.direct_value,
+                    backed_up_value=row.backed_up_value,
+                    is_exact=row.is_exact,
+                    is_terminal=row.is_terminal,
+                    metadata=row.metadata,
+                )
+                for row in patch.rows
+            )
+            result = runtime.apply_node_value_updates(
+                updates,
+                recompute_backups=True,
+                allow_missing=True,
+            )
+        else:
+            blend_metrics = _ReevaluationBlendMetrics()
+            result = _apply_blended_reevaluation_patch(
+                runtime=runtime,
+                patch=patch,
+                blend_alpha=blend_alpha,
+                blend_metrics=blend_metrics,
+            )
+            LOGGER.info(
+                "[reevaluation-blend] patch_id=%s alpha=%s count=%s "
+                "avg_old=%s avg_new=%s avg_blended=%s",
+                patch.patch_id,
+                _metric_value(blend_alpha),
+                blend_metrics.count,
+                _metric_value(_blend_average(blend_metrics.old_sum, blend_metrics)),
+                _metric_value(_blend_average(blend_metrics.new_sum, blend_metrics)),
+                _metric_value(
+                    _blend_average(blend_metrics.blended_sum, blend_metrics)
+                ),
+            )
         LOGGER.info(
             "[reevaluation-patch] runner_apply_done "
             "patch_id=%s requested=%s applied=%s missing=%s recomputed=%s",
@@ -703,8 +915,33 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         """Restore one live runtime from a persisted checkpoint JSON file."""
         LOGGER.info("[checkpoint] load_start path=%s", str(tree_snapshot_path))
         started_at = time.perf_counter()
-        payload = load_morpion_search_checkpoint_payload(tree_snapshot_path)
+        cached_payload = _pop_cached_morpion_search_checkpoint_payload_for_restore(
+            tree_snapshot_path
+        )
+        cache_state = "hit" if cached_payload is not None else "miss"
+        if cached_payload is None:
+            payload = load_morpion_search_checkpoint_payload(tree_snapshot_path)
+            bytes_loaded = tree_snapshot_path.stat().st_size
+        else:
+            payload, bytes_loaded = cached_payload
+            LOGGER.info(
+                "[checkpoint] candidate_reuse_for_restore path=%s",
+                str(tree_snapshot_path),
+            )
         node_count, anchor_count, delta_count = _checkpoint_node_counts(payload)
+        if cache_state == "hit":
+            _log_checkpoint_metrics(
+                "payload_load",
+                CheckpointIoMetrics(
+                    path=str(tree_snapshot_path),
+                    bytes=bytes_loaded,
+                    total_s=0.0,
+                    node_count=node_count,
+                    anchor_count=anchor_count,
+                    delta_count=delta_count,
+                    cache="hit",
+                ),
+            )
         rss_before_mb = _current_rss_mb()
         runtime_started_at = time.perf_counter()
         try:
@@ -740,6 +977,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 node_count=node_count,
                 anchor_count=anchor_count,
                 delta_count=delta_count,
+                cache=cache_state,
             ),
         )
         LOGGER.info(
@@ -1118,6 +1356,145 @@ def _runtime_depth_counts(runtime: Any) -> dict[int, int]:
     return counts_by_depth
 
 
+def _apply_blended_reevaluation_patch(
+    *,
+    runtime: Any,
+    patch: MorpionReevaluationPatch,
+    blend_alpha: float,
+    blend_metrics: _ReevaluationBlendMetrics,
+) -> NodeValueUpdateResult:
+    """Apply one smoothed patch using Anemone's existing single node lookup pass."""
+    nodes_by_id = runtime._nodes_by_public_id()
+    missing_node_ids = tuple(
+        row.node_id for row in patch.rows if row.node_id not in nodes_by_id
+    )
+    applied_nodes: list[object] = []
+    changed_nodes: list[object] = []
+    for row in patch.rows:
+        live_node = nodes_by_id.get(row.node_id)
+        if live_node is None:
+            continue
+        update = NodeValueUpdate(
+            node_id=row.node_id,
+            direct_value=_reevaluation_patch_direct_value(
+                row=row,
+                live_node=live_node,
+                blend_alpha=blend_alpha,
+                blend_metrics=blend_metrics,
+            ),
+            backed_up_value=row.backed_up_value,
+            is_exact=row.is_exact,
+            is_terminal=row.is_terminal,
+            metadata=row.metadata,
+        )
+        changed = bool(runtime._apply_node_value_update(node=live_node, update=update))
+        applied_nodes.append(live_node)
+        if changed:
+            changed_nodes.append(live_node)
+
+    recomputed_count = _recompute_after_blended_reevaluation(
+        runtime=runtime,
+        changed_nodes=changed_nodes,
+    )
+    return NodeValueUpdateResult(
+        requested_count=len(patch.rows),
+        applied_count=len(applied_nodes),
+        missing_node_ids=missing_node_ids,
+        recomputed_count=recomputed_count,
+    )
+
+
+def _recompute_after_blended_reevaluation(
+    *,
+    runtime: Any,
+    changed_nodes: list[object],
+) -> int:
+    """Refresh backups and exploration indices after local smoothed value writes."""
+    if not changed_nodes:
+        return 0
+    tree_manager = runtime.tree_manager
+    recomputed_nodes = (
+        tree_manager.value_propagator.propagate_after_local_value_changes(
+            changed_nodes
+        )
+    )
+    tree_manager.refresh_exploration_indices(tree=runtime.tree)
+    return len(recomputed_nodes)
+
+
+def _reevaluation_patch_direct_value(
+    *,
+    row: object,
+    live_node: object | None,
+    blend_alpha: float,
+    blend_metrics: _ReevaluationBlendMetrics,
+) -> float:
+    """Return the direct value to write for one reevaluation patch row."""
+    new_value = float(getattr(row, "direct_value"))
+    if blend_alpha >= 1.0 or live_node is None:
+        return new_value
+    if _patch_row_is_authoritative(row) or _live_node_is_authoritative(live_node):
+        return new_value
+
+    old_value = _live_node_direct_value_score(live_node)
+    if old_value is None:
+        return new_value
+
+    blended_value = ((1.0 - blend_alpha) * old_value) + (blend_alpha * new_value)
+    blend_metrics.record(
+        old_value=old_value,
+        new_value=new_value,
+        blended_value=blended_value,
+    )
+    return blended_value
+
+
+def _patch_row_is_authoritative(row: object) -> bool:
+    """Return whether one patch row should bypass smoothing."""
+    return (
+        getattr(row, "is_exact", None) is True
+        or getattr(row, "is_terminal", None) is True
+    )
+
+
+def _live_node_is_authoritative(node: object) -> bool:
+    """Return whether one live node has terminal or exact authoritative value state."""
+    tree_evaluation = getattr(node, "tree_evaluation", None)
+    has_exact_value = getattr(tree_evaluation, "has_exact_value", None)
+    if callable(has_exact_value) and bool(has_exact_value()):
+        return True
+
+    state = getattr(node, "state", None)
+    is_game_over = getattr(state, "is_game_over", None)
+    if callable(is_game_over) and bool(is_game_over()):
+        return True
+
+    is_terminal = getattr(tree_evaluation, "is_terminal", None)
+    return bool(is_terminal()) if callable(is_terminal) else False
+
+
+def _live_node_direct_value_score(node: object) -> float | None:
+    """Return one live node's direct-value score when present."""
+    tree_evaluation = getattr(node, "tree_evaluation", None)
+    direct_value = getattr(tree_evaluation, "direct_value", None)
+    if direct_value is None:
+        return None
+    score = getattr(direct_value, "score", direct_value)
+    if isinstance(score, bool) or not isinstance(score, int | float):
+        return None
+    return float(score)
+
+
+def _blend_average(
+    value_sum: float,
+    metrics: _ReevaluationBlendMetrics,
+) -> float | None:
+    """Return one blend aggregate average, or None when no rows were blended."""
+    if metrics.count == 0:
+        return None
+    return value_sum / metrics.count
+
+
 def _selector_family_name(search_args: SearchArgs) -> str:
     """Return the effective selector family name for concise logging."""
     node_selector = search_args.node_selector
@@ -1218,6 +1595,7 @@ __all__ = [
     "MorpionRegressorMasterEvaluator",
     "UninitializedMorpionSearchRunnerError",
     "apply_runtime_control_to_runner_args",
+    "cache_morpion_search_checkpoint_payload_for_restore",
     "load_morpion_evaluator_from_model_bundle",
     "load_morpion_search_checkpoint_payload",
 ]

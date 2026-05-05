@@ -430,6 +430,7 @@ def test_bootstrap_config_from_args_contains_expected_fields(tmp_path: Path) -> 
     assert config.dataset.max_rows == 17
     assert config.dataset.use_backed_up_value is False
     assert config.runtime.tree_branch_limit == 96
+    assert config.runtime.reevaluation_blend_alpha == 1.0
     assert set(config.evaluators.evaluators) == {"linear", "mlp"}
     assert config.evaluator_update_policy == DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY
     assert config.pipeline_mode == DEFAULT_MORPION_PIPELINE_MODE
@@ -488,6 +489,7 @@ def test_bootstrap_config_from_dict_defaults_missing_phase1_fields() -> None:
 
     assert loaded.evaluator_update_policy == "future_only"
     assert loaded.pipeline_mode == "single_process"
+    assert loaded.runtime.reevaluation_blend_alpha == 1.0
 
 
 def test_first_run_writes_bootstrap_config(tmp_path: Path) -> None:
@@ -652,6 +654,7 @@ def test_stage_owned_field_helpers_are_stable() -> None:
     assert "num_epochs" in training_stage_owned_bootstrap_fields()
     assert "max_growth_steps_per_cycle" in growth_stage_owned_bootstrap_fields()
     assert "tree_branch_limit" in growth_stage_owned_bootstrap_fields()
+    assert "reevaluation_blend_alpha" in growth_stage_owned_bootstrap_fields()
     assert "tree_branch_limit" not in dataset_stage_owned_bootstrap_fields()
     assert "tree_branch_limit" not in training_stage_owned_bootstrap_fields()
     assert reevaluation_stage_owned_bootstrap_fields() == ()
@@ -661,18 +664,21 @@ def test_stage_owned_field_helpers_are_stable() -> None:
     assert GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS == {
         "max_growth_steps_per_cycle",
         "tree_branch_limit",
+        "reevaluation_blend_alpha",
         "save_after_seconds",
         "save_after_tree_growth_factor",
     }
     assert RUNTIME_RELAUNCH_MUTABLE_BOOTSTRAP_CONFIG_FIELDS == {
         "max_growth_steps_per_cycle",
         "tree_branch_limit",
+        "reevaluation_blend_alpha",
         "save_after_seconds",
         "save_after_tree_growth_factor",
     }
     assert STAGE_IRRELEVANT_BOOTSTRAP_CONFIG_FIELDS["dataset_worker"] == {
         "max_growth_steps_per_cycle",
         "tree_branch_limit",
+        "reevaluation_blend_alpha",
         "save_after_seconds",
         "save_after_tree_growth_factor",
     }

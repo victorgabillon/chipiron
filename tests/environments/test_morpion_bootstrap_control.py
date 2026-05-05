@@ -245,7 +245,10 @@ def test_control_roundtrip(tmp_path: Path) -> None:
         save_after_seconds=12.5,
         save_after_tree_growth_factor=1.5,
         force_evaluator="linear",
-        runtime=MorpionBootstrapRuntimeControl(tree_branch_limit=256),
+        runtime=MorpionBootstrapRuntimeControl(
+            tree_branch_limit=256,
+            reevaluation_blend_alpha=0.25,
+        ),
     )
     control_path = tmp_path / "control.json"
 
@@ -285,7 +288,10 @@ def test_runtime_control_parsing_tolerates_malformed_fields(tmp_path: Path) -> N
     """Malformed runtime control fields should be ignored instead of breaking the loop."""
     control_path = tmp_path / "control.json"
     control_path.write_text(
-        '{"runtime": {"tree_branch_limit": "nope"}, "max_rows": 7}\n',
+        (
+            '{"runtime": {"tree_branch_limit": "nope", '
+            '"reevaluation_blend_alpha": 2.0}, "max_rows": 7}\n'
+        ),
         encoding="utf-8",
     )
 
@@ -293,24 +299,51 @@ def test_runtime_control_parsing_tolerates_malformed_fields(tmp_path: Path) -> N
 
     assert control.max_rows == 7
     assert control.runtime.tree_branch_limit is None
+    assert control.runtime.reevaluation_blend_alpha is None
 
 
 def test_effective_runtime_config_derivation(tmp_path: Path) -> None:
     """Runtime config derivation should use persisted defaults and control overrides."""
     config = bootstrap_config_from_args(
-        MorpionBootstrapArgs(work_dir=tmp_path, tree_branch_limit=96)
+        MorpionBootstrapArgs(
+            work_dir=tmp_path,
+            tree_branch_limit=96,
+            reevaluation_blend_alpha=0.75,
+        )
     )
 
     assert effective_runtime_config_from_config_and_control(
         config,
         MorpionBootstrapControl(),
-    ) == MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=96)
+    ) == MorpionBootstrapEffectiveRuntimeConfig(
+        tree_branch_limit=96,
+        reevaluation_blend_alpha=0.75,
+    )
     assert effective_runtime_config_from_config_and_control(
         config,
         MorpionBootstrapControl(
-            runtime=MorpionBootstrapRuntimeControl(tree_branch_limit=256)
+            runtime=MorpionBootstrapRuntimeControl(
+                tree_branch_limit=256,
+                reevaluation_blend_alpha=0.5,
+            )
         ),
-    ) == MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=256)
+    ) == MorpionBootstrapEffectiveRuntimeConfig(
+        tree_branch_limit=256,
+        reevaluation_blend_alpha=0.5,
+    )
+
+
+def test_reevaluation_blend_alpha_validation(tmp_path: Path) -> None:
+    """Reevaluation smoothing alpha should stay in the unit interval."""
+    with pytest.raises(ValueError, match="reevaluation_blend_alpha"):
+        MorpionBootstrapArgs(work_dir=tmp_path, reevaluation_blend_alpha=1.5)
+    with pytest.raises(ValueError, match="reevaluation_blend_alpha"):
+        MorpionBootstrapRuntimeControl(reevaluation_blend_alpha=-0.1)
+    with pytest.raises(ValueError, match="reevaluation_blend_alpha"):
+        MorpionBootstrapEffectiveRuntimeConfig(
+            tree_branch_limit=64,
+            reevaluation_blend_alpha=1.1,
+        )
 
 
 def test_loop_applies_control_between_cycles(tmp_path: Path) -> None:
@@ -332,7 +365,10 @@ def test_loop_applies_control_between_cycles(tmp_path: Path) -> None:
             max_growth_steps_per_cycle=9,
             max_rows=3,
             use_backed_up_value=False,
-            runtime=MorpionBootstrapRuntimeControl(tree_branch_limit=64),
+            runtime=MorpionBootstrapRuntimeControl(
+                tree_branch_limit=64,
+                reevaluation_blend_alpha=0.3,
+            ),
         ),
     )
 
@@ -343,33 +379,41 @@ def test_loop_applies_control_between_cycles(tmp_path: Path) -> None:
     assert runner.runtime_config_calls == [
         MorpionBootstrapEffectiveRuntimeConfig(
             tree_branch_limit=DEFAULT_MORPION_TREE_BRANCH_LIMIT,
+            reevaluation_blend_alpha=1.0,
         ),
-        MorpionBootstrapEffectiveRuntimeConfig(tree_branch_limit=64),
+        MorpionBootstrapEffectiveRuntimeConfig(
+            tree_branch_limit=64,
+            reevaluation_blend_alpha=0.3,
+        ),
     ]
     assert final_state.metadata[BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY] == {
         "force_evaluator": None,
         "max_growth_steps_per_cycle": 9,
         "max_rows": 3,
-        "runtime": {"tree_branch_limit": 64},
+        "runtime": {"reevaluation_blend_alpha": 0.3, "tree_branch_limit": 64},
         "save_after_seconds": None,
         "save_after_tree_growth_factor": None,
         "use_backed_up_value": False,
     }
     assert final_state.metadata[BOOTSTRAP_APPLIED_RUNTIME_CONTROL_METADATA_KEY] == {
-        "tree_branch_limit": 64
+        "reevaluation_blend_alpha": 0.3,
+        "tree_branch_limit": 64,
     }
     assert final_state.metadata[BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY] == {
-        "tree_branch_limit": 64
+        "reevaluation_blend_alpha": 0.3,
+        "tree_branch_limit": 64,
     }
     assert isinstance(
         final_state.metadata[BOOTSTRAP_EFFECTIVE_RUNTIME_HASH_METADATA_KEY],
         str,
     )
     assert history[-1].metadata[BOOTSTRAP_APPLIED_RUNTIME_CONTROL_METADATA_KEY] == {
-        "tree_branch_limit": 64
+        "reevaluation_blend_alpha": 0.3,
+        "tree_branch_limit": 64,
     }
     assert history[-1].metadata[BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY] == {
-        "tree_branch_limit": 64
+        "reevaluation_blend_alpha": 0.3,
+        "tree_branch_limit": 64,
     }
 
 

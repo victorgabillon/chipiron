@@ -505,9 +505,13 @@ def test_bootstrap_loop_writes_history_on_no_save_cycle(tmp_path: Path) -> None:
     assert event.metadata["initial_point_count"] == 36
     assert event.metadata["active_evaluator_name"] == "linear"
     assert event.metadata["bootstrap_applied_runtime_control"] == {
-        "tree_branch_limit": None
+        "reevaluation_blend_alpha": None,
+        "tree_branch_limit": None,
     }
-    assert event.metadata["bootstrap_effective_runtime"] == {"tree_branch_limit": 128}
+    assert event.metadata["bootstrap_effective_runtime"] == {
+        "reevaluation_blend_alpha": 1.0,
+        "tree_branch_limit": 128,
+    }
     assert isinstance(event.metadata["bootstrap_effective_runtime_hash"], str)
     assert latest_status.latest_generation == 2
     assert latest_status.latest_cycle_index == 9
@@ -573,9 +577,13 @@ def test_bootstrap_loop_writes_history_on_save_train_cycle(tmp_path: Path) -> No
     assert event.metadata["selected_evaluator_name"] == "default"
     assert event.metadata["selection_policy"] == "lowest_final_loss"
     assert event.metadata["bootstrap_applied_runtime_control"] == {
-        "tree_branch_limit": None
+        "reevaluation_blend_alpha": None,
+        "tree_branch_limit": None,
     }
-    assert event.metadata["bootstrap_effective_runtime"] == {"tree_branch_limit": 128}
+    assert event.metadata["bootstrap_effective_runtime"] == {
+        "reevaluation_blend_alpha": 1.0,
+        "tree_branch_limit": 128,
+    }
     assert isinstance(event.metadata["bootstrap_effective_runtime_hash"], str)
     assert set(event.evaluators) == {"default"}
     assert event.evaluators["default"].final_loss is not None
@@ -655,9 +663,13 @@ def test_bootstrap_loop_records_selected_winner_on_multi_evaluator_save_cycle(
     assert event.metadata["selected_evaluator_name"] == "mlp"
     assert event.metadata["selection_policy"] == "lowest_validation_loss"
     assert event.metadata["bootstrap_applied_runtime_control"] == {
-        "tree_branch_limit": None
+        "reevaluation_blend_alpha": None,
+        "tree_branch_limit": None,
     }
-    assert event.metadata["bootstrap_effective_runtime"] == {"tree_branch_limit": 128}
+    assert event.metadata["bootstrap_effective_runtime"] == {
+        "reevaluation_blend_alpha": 1.0,
+        "tree_branch_limit": 128,
+    }
     assert isinstance(event.metadata["bootstrap_effective_runtime_hash"], str)
     assert event.record.variant == event.metadata["variant"]
     assert event.record.initial_pattern == event.metadata["initial_pattern"]

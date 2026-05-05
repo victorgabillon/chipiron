@@ -8,7 +8,7 @@ import json
 import logging
 import sys
 from pathlib import Path
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
@@ -77,6 +77,7 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapControl,
     MorpionBootstrapEffectiveRuntimeConfig,
     MorpionBootstrapPaths,
+    MorpionBootstrapRunState,
     MorpionBootstrapRuntimeControl,
     MorpionEvaluatorsConfig,
     MorpionEvaluatorSpec,
@@ -86,6 +87,9 @@ from chipiron.environments.morpion.bootstrap import (
     load_bootstrap_history,
     run_morpion_bootstrap_loop,
     save_bootstrap_control,
+)
+from chipiron.environments.morpion.bootstrap.cycle_runtime import (
+    resolve_runtime_restore_path,
 )
 from chipiron.environments.morpion.players.evaluators.neural_networks import (
     MorpionRegressorArgs,
@@ -153,11 +157,34 @@ def _multi_evaluator_config() -> MorpionEvaluatorsConfig:
 class FakeAnemoneRuntime:
     """Tiny fake for live Anemone node-value update application."""
 
-    def __init__(self) -> None:
+    def __init__(self, nodes: tuple[object, ...] = ()) -> None:
         """Initialize captured call fields."""
+        self._nodes = nodes
+        self.tree = object()
+        self.tree_manager = _FakeTreeManager()
         self.received_updates: tuple[NodeValueUpdate, ...] | None = None
         self.recompute_backups: bool | None = None
         self.allow_missing: bool | None = None
+
+    def _all_nodes_in_tree_order(self) -> list[object]:
+        """Return fake live nodes for old-value lookup."""
+        return list(self._nodes)
+
+    def _nodes_by_public_id(self) -> dict[str, object]:
+        """Return fake live nodes by public id."""
+        return {str(getattr(node, "id")): node for node in self._nodes}
+
+    def _apply_node_value_update(
+        self,
+        *,
+        node: object,
+        update: NodeValueUpdate,
+    ) -> bool:
+        """Capture one private value update for smoothed patch application."""
+        del node
+        current_updates = self.received_updates or ()
+        self.received_updates = (*current_updates, update)
+        return True
 
     def apply_node_value_updates(
         self,
@@ -170,11 +197,82 @@ class FakeAnemoneRuntime:
         self.received_updates = tuple(updates)  # type: ignore[arg-type]
         self.recompute_backups = recompute_backups
         self.allow_missing = allow_missing
+        requested_count = len(self.received_updates)
+        missing_node_ids = ("missing-node",) if requested_count > 1 else ()
         return NodeValueUpdateResult(
-            requested_count=len(self.received_updates),
-            applied_count=1,
-            missing_node_ids=("missing-node",),
+            requested_count=requested_count,
+            applied_count=1 if requested_count else 0,
+            missing_node_ids=missing_node_ids,
             recomputed_count=3,
+        )
+
+
+class _FakeValuePropagator:
+    """Tiny value propagator for private smoothed patch application."""
+
+    def propagate_after_local_value_changes(
+        self,
+        changed_nodes: list[object],
+    ) -> list[object]:
+        """Return the changed nodes as the recomputation summary."""
+        return list(changed_nodes)
+
+
+class _FakeTreeManager:
+    """Tiny tree manager for private smoothed patch application."""
+
+    def __init__(self) -> None:
+        self.value_propagator = _FakeValuePropagator()
+
+    def refresh_exploration_indices(self, *, tree: object) -> None:
+        """Accept exploration-index refresh calls."""
+        del tree
+
+
+class _FakeValue:
+    """Tiny direct-value object with the Anemone ``score`` shape."""
+
+    def __init__(self, score: float) -> None:
+        self.score = score
+
+
+class _FakeTreeEvaluation:
+    """Tiny tree-evaluation object for smoothing tests."""
+
+    def __init__(
+        self,
+        direct_value: float | None,
+        *,
+        exact: bool = False,
+        terminal: bool = False,
+    ) -> None:
+        self.direct_value = None if direct_value is None else _FakeValue(direct_value)
+        self._exact = exact
+        self._terminal = terminal
+
+    def has_exact_value(self) -> bool:
+        return self._exact
+
+    def is_terminal(self) -> bool:
+        return self._terminal
+
+
+class _FakeNode:
+    """Tiny live node exposing the fields used by smoothing."""
+
+    def __init__(
+        self,
+        node_id: str,
+        direct_value: float | None,
+        *,
+        exact: bool = False,
+        terminal: bool = False,
+    ) -> None:
+        self.id = node_id
+        self.tree_evaluation = _FakeTreeEvaluation(
+            direct_value,
+            exact=exact,
+            terminal=terminal,
         )
 
 
@@ -213,9 +311,9 @@ def _patch_reported_losses(
     loss_by_evaluator_name: dict[str, float],
 ) -> None:
     """Patch training so evaluator selection is deterministic while bundles still exist."""
-    import chipiron.environments.morpion.bootstrap.bootstrap_loop as bootstrap_loop_module
+    import chipiron.environments.morpion.bootstrap.cycle_training as cycle_training_module
 
-    real_train = bootstrap_loop_module.train_morpion_regressor
+    real_train = cycle_training_module.train_morpion_regressor
 
     def _patched_train(train_args: object) -> object:
         _model, metrics = real_train(train_args)
@@ -225,7 +323,7 @@ def _patch_reported_losses(
         return _model, metrics
 
     monkeypatch.setattr(
-        bootstrap_loop_module, "train_morpion_regressor", _patched_train
+        cycle_training_module, "train_morpion_regressor", _patched_train
     )
 
 
@@ -308,6 +406,96 @@ def test_apply_reevaluation_patch_converts_rows_to_anemone_updates(
         "patch_id=patch-1 requested=2 applied=1 missing=1 recomputed=3"
     )
     assert done_log in caplog.text
+
+
+def test_apply_reevaluation_patch_blends_direct_value_when_configured(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Smoothing should blend old and new non-authoritative direct values."""
+    runner = AnemoneMorpionSearchRunner()
+    runner._last_applied_runtime_config = MorpionBootstrapEffectiveRuntimeConfig(
+        tree_branch_limit=4096,
+        reevaluation_blend_alpha=0.2,
+    )
+    fake_runtime = FakeAnemoneRuntime(nodes=(_FakeNode("node-a", 10.0),))
+    runner._runtime = fake_runtime
+    patch = MorpionReevaluationPatch(
+        patch_id="patch-blend",
+        created_at_utc="2026-04-28T12:00:00Z",
+        evaluator_generation=2,
+        evaluator_name="default",
+        model_bundle_path="models/generation_000002/default",
+        rows=(
+            MorpionReevaluationPatchRow(
+                node_id="node-a",
+                direct_value=0.0,
+            ),
+        ),
+    )
+    caplog.set_level(logging.INFO)
+
+    runner.apply_reevaluation_patch(patch)
+
+    assert fake_runtime.received_updates is not None
+    assert fake_runtime.received_updates[0].direct_value == pytest.approx(8.0)
+    assert "alpha=0.200000 count=1" in caplog.text
+    assert "avg_old=10.000000" in caplog.text
+    assert "avg_new=0.000000" in caplog.text
+    assert "avg_blended=8.000000" in caplog.text
+
+
+def test_apply_reevaluation_patch_alpha_one_replaces_direct_value() -> None:
+    """Default alpha should preserve exact replacement behavior."""
+    runner = AnemoneMorpionSearchRunner()
+    runner._last_applied_runtime_config = MorpionBootstrapEffectiveRuntimeConfig(
+        tree_branch_limit=4096,
+        reevaluation_blend_alpha=1.0,
+    )
+    fake_runtime = FakeAnemoneRuntime(nodes=(_FakeNode("node-a", 10.0),))
+    runner._runtime = fake_runtime
+    patch = MorpionReevaluationPatch(
+        patch_id="patch-replace",
+        created_at_utc="2026-04-28T12:00:00Z",
+        evaluator_generation=2,
+        evaluator_name="default",
+        model_bundle_path="models/generation_000002/default",
+        rows=(MorpionReevaluationPatchRow(node_id="node-a", direct_value=0.0),),
+    )
+
+    runner.apply_reevaluation_patch(patch)
+
+    assert fake_runtime.received_updates is not None
+    assert fake_runtime.received_updates[0].direct_value == 0.0
+
+
+def test_apply_reevaluation_patch_does_not_blend_terminal_rows() -> None:
+    """Terminal patch rows should remain authoritative under smoothing."""
+    runner = AnemoneMorpionSearchRunner()
+    runner._last_applied_runtime_config = MorpionBootstrapEffectiveRuntimeConfig(
+        tree_branch_limit=4096,
+        reevaluation_blend_alpha=0.2,
+    )
+    fake_runtime = FakeAnemoneRuntime(nodes=(_FakeNode("node-a", 10.0),))
+    runner._runtime = fake_runtime
+    patch = MorpionReevaluationPatch(
+        patch_id="patch-terminal",
+        created_at_utc="2026-04-28T12:00:00Z",
+        evaluator_generation=2,
+        evaluator_name="default",
+        model_bundle_path="models/generation_000002/default",
+        rows=(
+            MorpionReevaluationPatchRow(
+                node_id="node-a",
+                direct_value=0.0,
+                is_terminal=True,
+            ),
+        ),
+    )
+
+    runner.apply_reevaluation_patch(patch)
+
+    assert fake_runtime.received_updates is not None
+    assert fake_runtime.received_updates[0].direct_value == 0.0
 
 
 def test_apply_reevaluation_patch_requires_initialized_runtime() -> None:
@@ -456,6 +644,86 @@ def test_checkpoint_metrics_logs_for_save_load_and_restore(
     assert any("nodes=" in line for line in metrics_lines)
     assert any("anchors=" in line for line in metrics_lines)
     assert any("deltas=" in line for line in metrics_lines)
+
+
+def test_checkpoint_validation_payload_is_reused_for_immediate_restore(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Candidate validation should pass its decoded payload to runtime restore."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    paths.ensure_directories()
+    checkpoint_path = paths.runtime_checkpoint_path_for_generation(1)
+    checkpoint_path.write_text("{}", encoding="utf-8")
+    payload = SearchRuntimeCheckpointPayload(
+        evaluator_version=1,
+        tree=TreeCheckpointPayload(root_node_id=0),
+    )
+    load_calls: list[Path] = []
+
+    def _fake_payload_loader(path: str | Path) -> SearchRuntimeCheckpointPayload:
+        load_calls.append(Path(path))
+        return payload
+
+    fake_runtime = SimpleNamespace()
+    captured_payload: dict[str, SearchRuntimeCheckpointPayload] = {}
+
+    def _fake_runtime_restore(
+        payload_to_restore: SearchRuntimeCheckpointPayload,
+        **kwargs: object,
+    ) -> object:
+        del kwargs
+        captured_payload["payload"] = payload_to_restore
+        return fake_runtime
+
+    monkeypatch.setattr(
+        anemone_runner_module,
+        "_VALIDATED_CHECKPOINT_PAYLOAD_CACHE",
+        None,
+    )
+    monkeypatch.setattr(
+        anemone_runner_module,
+        "load_morpion_search_checkpoint_payload",
+        _fake_payload_loader,
+    )
+    monkeypatch.setattr(
+        anemone_runner_module,
+        "load_search_from_checkpoint_payload",
+        _fake_runtime_restore,
+    )
+    monkeypatch.setattr(
+        anemone_runner_module.AnemoneMorpionSearchRunner,
+        "_build_master_evaluator",
+        lambda self, model_bundle_path: object(),
+    )
+    run_state = MorpionBootstrapRunState(
+        generation=1,
+        cycle_index=0,
+        latest_tree_snapshot_path=None,
+        latest_rows_path=None,
+        latest_model_bundle_paths=None,
+        active_evaluator_name=None,
+        tree_size_at_last_save=0,
+        last_save_unix_s=None,
+        latest_runtime_checkpoint_path=paths.relative_to_work_dir(checkpoint_path),
+    )
+    caplog.set_level(logging.INFO)
+
+    resolved_path = resolve_runtime_restore_path(paths=paths, run_state=run_state)
+    assert resolved_path == checkpoint_path
+    runner = AnemoneMorpionSearchRunner()
+    restored_runtime = runner._load_runtime_from_checkpoint(
+        resolved_path,
+        search_args=AnemoneMorpionSearchRunnerArgs().search_args,
+    )
+
+    assert restored_runtime is fake_runtime
+    assert captured_payload["payload"] is payload
+    assert load_calls == [checkpoint_path]
+    assert "[checkpoint] candidate_reuse_for_restore" in caplog.text
+    assert "operation=payload_load" in caplog.text
+    assert "cache=hit" in caplog.text
 
 
 def test_checkpoint_restore_phase_logs_are_suppressed_by_default(
@@ -615,6 +883,13 @@ def test_runtime_step_returns_selected_node_growth_report() -> None:
     assert report.nodes_before == nodes_before
     assert report.nodes_after >= report.nodes_before
     assert report.nodes_added == report.nodes_after - report.nodes_before
+    assert report.select_s is not None and report.select_s >= 0.0
+    assert report.limit_s is not None and report.limit_s >= 0.0
+    assert report.expand_s is not None and report.expand_s >= 0.0
+    assert report.evaluate_s is not None and report.evaluate_s >= 0.0
+    assert report.propagate_s is not None and report.propagate_s >= 0.0
+    assert report.total_s is not None and report.total_s >= 0.0
+    assert report.selector_report_rows is not None and report.selector_report_rows >= 1
 
 
 def test_runner_growth_logs_selected_node_id_and_depth(
@@ -634,10 +909,13 @@ def test_runner_growth_logs_selected_node_id_and_depth(
     assert "selected_node_id=" in caplog.text
     assert "selected_depth=" in caplog.text
     assert "selected_depth=unknown" not in caplog.text
+    assert "[growth-timing] step=1" in caplog.text
+    assert "selector_total_s=" in caplog.text
     assert "[growth-selection-table] step=1" in caplog.text
+    assert "[growth-selection-table-timing] step=1" in caplog.text
     assert (
-        "depth total opened frontier terminal exact non_openable "
-        "index best_node best_value selected"
+        "depth total opened frontier terminal exact uncached_terminal "
+        "non_openable index selected"
     ) in caplog.text
 
 
@@ -709,6 +987,45 @@ def test_runner_growth_falls_back_safely_when_step_report_is_unavailable(
     runner.grow(1)
 
     assert "selected_node_id=unknown selected_depth=unknown" in caplog.text
+    assert "[growth-timing] step=1 total_s=unknown" in caplog.text
+
+
+def test_runner_growth_logs_unknown_timing_fields_without_crashing(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Growth timing logs should tolerate partial fake reports."""
+
+    class _FakeEvaluation:
+        def has_exact_value(self) -> bool:
+            return False
+
+    class _FakeRootNode:
+        tree_evaluation = _FakeEvaluation()
+
+    class _FakeTree:
+        root_node = _FakeRootNode()
+        nodes_count = 3
+        branch_count = 12
+
+    class _FakeRuntime:
+        tree = _FakeTree()
+
+        def step(self) -> object:
+            return SimpleNamespace(
+                selected_node_id=5,
+                selected_depth=2,
+                selector_report=SimpleNamespace(depth_rows=()),
+            )
+
+    caplog.set_level(logging.INFO)
+    runner = AnemoneMorpionSearchRunner()
+    runner._runtime = _FakeRuntime()
+
+    runner.grow(1)
+
+    assert "[growth-timing] step=1 total_s=unknown" in caplog.text
+    assert "rows=unknown" not in caplog.text
+    assert "[growth-selection-table-timing] step=1 rows=0 format_s=unknown log_s=unknown" in caplog.text
 
 
 def test_restore_with_evaluator_bundle_skips_reevaluation(
@@ -989,9 +1306,11 @@ def test_bootstrap_loop_reapplies_runtime_branch_limit_between_cycles(
     assert second_state.tree_size_at_last_save >= first_saved_tree_size
     assert runner.current_runtime_config().tree_branch_limit == 64
     assert second_state.metadata[BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY] == {
+        "reevaluation_blend_alpha": 1.0,
         "tree_branch_limit": 64
     }
     assert history[-1].metadata[BOOTSTRAP_EFFECTIVE_RUNTIME_METADATA_KEY] == {
+        "reevaluation_blend_alpha": 1.0,
         "tree_branch_limit": 64
     }
 

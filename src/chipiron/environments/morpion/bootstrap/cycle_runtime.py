@@ -258,6 +258,7 @@ def resolve_runtime_restore_path(
     """Resolve the best available persisted runtime restore path for one cycle."""
     from .anemone_runner import (
         InvalidMorpionSearchCheckpointError,
+        cache_morpion_search_checkpoint_payload_for_restore,
         load_morpion_search_checkpoint_payload,
     )
 
@@ -306,7 +307,7 @@ def resolve_runtime_restore_path(
             str(candidate_path),
         )
         try:
-            load_morpion_search_checkpoint_payload(candidate_path)
+            payload = load_morpion_search_checkpoint_payload(candidate_path)
         except InvalidMorpionSearchCheckpointError as exc:
             LOGGER.info(
                 "[checkpoint] candidate_validate_invalid source=%s path=%s reason=%s",
@@ -326,6 +327,7 @@ def resolve_runtime_restore_path(
             source,
             str(candidate_path),
         )
+        cache_morpion_search_checkpoint_payload_for_restore(candidate_path, payload)
         return candidate_path
 
     if first_incompatible_error is not None:

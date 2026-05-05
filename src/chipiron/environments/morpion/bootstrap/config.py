@@ -52,6 +52,14 @@ class MorpionBootstrapRuntimeConfig:
     save_after_seconds: float
     max_growth_steps_per_cycle: int
     tree_branch_limit: int
+    reevaluation_blend_alpha: float = 1.0
+
+    def __post_init__(self) -> None:
+        """Validate runtime scalar controls."""
+        if isinstance(self.reevaluation_blend_alpha, bool) or not (
+            0.0 <= self.reevaluation_blend_alpha <= 1.0
+        ):
+            raise ValueError("reevaluation_blend_alpha must be in [0.0, 1.0].")
 
 
 @dataclass(frozen=True, slots=True)
@@ -205,6 +213,7 @@ GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS = frozenset(
     {
         "max_growth_steps_per_cycle",
         "tree_branch_limit",
+        "reevaluation_blend_alpha",
         "save_after_seconds",
         "save_after_tree_growth_factor",
     }
@@ -237,6 +246,7 @@ def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapCo
             save_after_seconds=args.save_after_seconds,
             max_growth_steps_per_cycle=args.max_growth_steps_per_cycle,
             tree_branch_limit=args.tree_branch_limit,
+            reevaluation_blend_alpha=args.reevaluation_blend_alpha,
         ),
         dataset=MorpionBootstrapDatasetConfig(
             require_exact_or_terminal=args.require_exact_or_terminal,
@@ -269,6 +279,7 @@ def bootstrap_config_to_dict(config: MorpionBootstrapConfig) -> dict[str, object
             "save_after_seconds": config.runtime.save_after_seconds,
             "max_growth_steps_per_cycle": config.runtime.max_growth_steps_per_cycle,
             "tree_branch_limit": config.runtime.tree_branch_limit,
+            "reevaluation_blend_alpha": config.runtime.reevaluation_blend_alpha,
         },
         "dataset": {
             "require_exact_or_terminal": config.dataset.require_exact_or_terminal,
@@ -415,6 +426,10 @@ def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
                     DEFAULT_MORPION_TREE_BRANCH_LIMIT,
                 ),
                 field_name="runtime.tree_branch_limit",
+            ),
+            reevaluation_blend_alpha=_coerce_float(
+                runtime.get("reevaluation_blend_alpha", 1.0),
+                field_name="runtime.reevaluation_blend_alpha",
             ),
         ),
         dataset=MorpionBootstrapDatasetConfig(
@@ -608,6 +623,7 @@ def growth_stage_owned_bootstrap_fields() -> tuple[str, ...]:
         "save_after_tree_growth_factor",
         "save_after_seconds",
         "tree_branch_limit",
+        "reevaluation_blend_alpha",
         "evaluator_update_policy",
     )
 
@@ -712,6 +728,7 @@ def _stage_bootstrap_config_field_values(
         "save_after_tree_growth_factor": config.runtime.save_after_tree_growth_factor,
         "save_after_seconds": config.runtime.save_after_seconds,
         "tree_branch_limit": config.runtime.tree_branch_limit,
+        "reevaluation_blend_alpha": config.runtime.reevaluation_blend_alpha,
         "require_exact_or_terminal": config.dataset.require_exact_or_terminal,
         "min_depth": config.dataset.min_depth,
         "min_visit_count": config.dataset.min_visit_count,

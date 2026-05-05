@@ -1448,9 +1448,13 @@ def test_resume_uses_single_saved_bundle_without_active_evaluator(
     assert event.metadata["initial_point_count"] == 36
     assert event.metadata["active_evaluator_name"] == "linear"
     assert event.metadata["bootstrap_applied_runtime_control"] == {
-        "tree_branch_limit": None
+        "reevaluation_blend_alpha": None,
+        "tree_branch_limit": None,
     }
-    assert event.metadata["bootstrap_effective_runtime"] == {"tree_branch_limit": 128}
+    assert event.metadata["bootstrap_effective_runtime"] == {
+        "reevaluation_blend_alpha": 1.0,
+        "tree_branch_limit": 128,
+    }
     assert isinstance(event.metadata["bootstrap_effective_runtime_hash"], str)
     assert event.record == bootstrap_loop_module.MorpionBootstrapRecordStatus(
         variant="5T",

@@ -47,6 +47,7 @@ class MorpionBootstrapArgs:
     memory_diagnostics_referrer_max_depth: int = 2
     memory_diagnostics_top_n: int = 20
     tree_branch_limit: int = DEFAULT_MORPION_TREE_BRANCH_LIMIT
+    reevaluation_blend_alpha: float = 1.0
     batch_size: int = 64
     num_epochs: int = 5
     learning_rate: float = 1e-3
@@ -61,6 +62,13 @@ class MorpionBootstrapArgs:
     pipeline_mode: MorpionPipelineMode = DEFAULT_MORPION_PIPELINE_MODE
     evaluators_config: MorpionEvaluatorsConfig | None = None
     evaluator_family_preset: str | None = None
+
+    def __post_init__(self) -> None:
+        """Validate cross-cutting scalar controls."""
+        if isinstance(self.reevaluation_blend_alpha, bool) or not (
+            0.0 <= self.reevaluation_blend_alpha <= 1.0
+        ):
+            raise ValueError("reevaluation_blend_alpha must be in [0.0, 1.0].")
 
     def resolved_evaluators_config(self) -> MorpionEvaluatorsConfig:
         """Resolve the explicit or legacy single-evaluator config."""

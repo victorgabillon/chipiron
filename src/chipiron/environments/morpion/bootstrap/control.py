@@ -24,6 +24,18 @@ class MorpionBootstrapRuntimeControl:
     """Optional cycle-boundary overrides for supported Anemone runtime settings."""
 
     tree_branch_limit: int | None = None
+    reevaluation_blend_alpha: float | None = None
+
+    def __post_init__(self) -> None:
+        """Validate optional runtime-control scalars."""
+        if (
+            self.reevaluation_blend_alpha is not None
+            and (
+                isinstance(self.reevaluation_blend_alpha, bool)
+                or not 0.0 <= self.reevaluation_blend_alpha <= 1.0
+            )
+        ):
+            raise ValueError("reevaluation_blend_alpha must be in [0.0, 1.0].")
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,6 +43,14 @@ class MorpionBootstrapEffectiveRuntimeConfig:
     """Normalized runtime/search configuration applied for one bootstrap cycle."""
 
     tree_branch_limit: int
+    reevaluation_blend_alpha: float = 1.0
+
+    def __post_init__(self) -> None:
+        """Validate effective runtime scalars."""
+        if isinstance(self.reevaluation_blend_alpha, bool) or not (
+            0.0 <= self.reevaluation_blend_alpha <= 1.0
+        ):
+            raise ValueError("reevaluation_blend_alpha must be in [0.0, 1.0].")
 
 
 @dataclass(frozen=True, slots=True)
@@ -149,8 +169,12 @@ def effective_runtime_config_from_config_and_control(
     tree_branch_limit = control.runtime.tree_branch_limit
     if tree_branch_limit is None:
         tree_branch_limit = config.runtime.tree_branch_limit
+    reevaluation_blend_alpha = control.runtime.reevaluation_blend_alpha
+    if reevaluation_blend_alpha is None:
+        reevaluation_blend_alpha = config.runtime.reevaluation_blend_alpha
     return MorpionBootstrapEffectiveRuntimeConfig(
         tree_branch_limit=tree_branch_limit,
+        reevaluation_blend_alpha=reevaluation_blend_alpha,
     )
 
 
@@ -183,8 +207,14 @@ def effective_runtime_config_from_metadata(
     tree_branch_limit = _optional_int(value.get("tree_branch_limit"))
     if tree_branch_limit is None:
         return None
+    reevaluation_blend_alpha = _optional_unit_float(
+        value.get("reevaluation_blend_alpha")
+    )
+    if reevaluation_blend_alpha is None:
+        reevaluation_blend_alpha = 1.0
     return MorpionBootstrapEffectiveRuntimeConfig(
         tree_branch_limit=tree_branch_limit,
+        reevaluation_blend_alpha=reevaluation_blend_alpha,
     )
 
 
@@ -225,6 +255,16 @@ def _optional_float(value: object) -> float | None:
     return None
 
 
+def _optional_unit_float(value: object) -> float | None:
+    """Return one optional float in [0.0, 1.0], ignoring malformed values."""
+    normalized = _optional_float(value)
+    if normalized is None:
+        return None
+    if not 0.0 <= normalized <= 1.0:
+        return None
+    return normalized
+
+
 def _optional_bool(value: object) -> bool | None:
     """Return one optional bool control field."""
     return value if isinstance(value, bool) else None
@@ -246,6 +286,9 @@ def _optional_runtime_control(value: object) -> MorpionBootstrapRuntimeControl:
         return MorpionBootstrapRuntimeControl()
     return MorpionBootstrapRuntimeControl(
         tree_branch_limit=_optional_int(value.get("tree_branch_limit")),
+        reevaluation_blend_alpha=_optional_unit_float(
+            value.get("reevaluation_blend_alpha")
+        ),
     )
 
 

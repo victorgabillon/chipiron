@@ -358,7 +358,8 @@ def _build_launcher_runner(
         startup_status.control,
     )
     if startup_status.control.runtime.tree_branch_limit is None:
-        effective_runtime_config = MorpionBootstrapEffectiveRuntimeConfig(
+        effective_runtime_config = replace(
+            effective_runtime_config,
             tree_branch_limit=startup_status.resolved_bootstrap_args.tree_branch_limit,
         )
     runner_args = apply_runtime_control_to_runner_args(
@@ -642,6 +643,15 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         type=int,
         default=DEFAULT_MORPION_TREE_BRANCH_LIMIT,
     )
+    parser.add_argument(
+        "--reevaluation-blend-alpha",
+        type=float,
+        default=1.0,
+        help=(
+            "Blend new reevaluation direct values with existing live values. "
+            "1.0 replaces values exactly; lower values smooth updates."
+        ),
+    )
     return parser
 
 
@@ -717,6 +727,7 @@ def launcher_args_from_cli(
         ),
         memory_diagnostics_top_n=parsed.memory_diagnostics_top_n,
         tree_branch_limit=parsed.tree_branch_limit,
+        reevaluation_blend_alpha=parsed.reevaluation_blend_alpha,
     )
     return MorpionBootstrapLauncherArgs(
         bootstrap_args=bootstrap_args,
