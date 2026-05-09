@@ -202,6 +202,8 @@ def test_checkpoint_build_detail_log_includes_new_metrics(monkeypatch) -> None:
     metrics = checkpoint_build_module._CheckpointBuildMetrics(  # pylint: disable=protected-access
         node_evaluation_calls=4,
         node_evaluation_total_s=1.25,
+        evaluation_payload_reuse_candidates_missing_version=3,
+        evaluation_payload_reuse_blocked_missing_version=3,
         tree_evaluation_access_calls=4,
         tree_evaluation_access_s=0.125,
         direct_value_access_calls=4,
@@ -258,6 +260,14 @@ def test_checkpoint_build_detail_log_includes_new_metrics(monkeypatch) -> None:
     checkpoint_build_module._log_checkpoint_build_metrics(metrics)  # pylint: disable=protected-access
 
     assert any("[checkpoint-build-detail]" in message for message in messages)
+    assert any(
+        "evaluation_payload_reuse_candidates_missing_version=" in message
+        for message in messages
+    )
+    assert any(
+        "evaluation_payload_reuse_blocked_missing_version=" in message
+        for message in messages
+    )
     assert any("tree_evaluation_access_s=" in message for message in messages)
     assert any("serialize_value_calls=" in message for message in messages)
     assert any("value_semantic_validation_calls=" in message for message in messages)
