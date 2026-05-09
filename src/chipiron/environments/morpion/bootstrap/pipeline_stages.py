@@ -30,7 +30,9 @@ from .control import (
     load_bootstrap_control,
 )
 from .cycle_dataset import (
+    export_training_snapshot_for_generation as _export_training_snapshot_for_generation,
     extract_rows_from_training_snapshot as _extract_rows_from_training_snapshot,
+    load_training_snapshot_for_generation as _load_training_snapshot_for_generation,
 )
 from .cycle_metadata import build_bootstrap_event
 from .cycle_metadata import build_event_metadata as _build_event_metadata
@@ -593,11 +595,15 @@ def _run_one_pipeline_growth_cycle_impl(
     else:
         LOGGER.info("[checkpoint] skipped reason=runner_has_no_save_checkpoint")
 
-    tree_snapshot_path = paths.tree_snapshot_path_for_generation(generation)
-    runner.export_training_tree_snapshot(tree_snapshot_path)
+    tree_snapshot_path = _export_training_snapshot_for_generation(
+        args=args,
+        paths=paths,
+        runner=runner,
+        generation=generation,
+    )
     if not tree_snapshot_path.is_file():
         raise MissingSavedBootstrapArtifactError(
-            action="runner.export_training_tree_snapshot()",
+            action="export_training_snapshot_for_generation()",
             artifact_path=tree_snapshot_path,
         )
     relative_tree_snapshot_path = paths.relative_to_work_dir(tree_snapshot_path)
@@ -740,10 +746,11 @@ def run_pipeline_dataset_stage(
                 _pipeline_manifest_path(paths, generation),
             )
             _raise_missing_tree_snapshot_file_error(tree_snapshot_path)
-        from anemone.training_export import load_training_tree_snapshot
-
         export_started_at = time.perf_counter()
-        snapshot = load_training_tree_snapshot(tree_snapshot_path)
+        snapshot = _load_training_snapshot_for_generation(
+            args=args,
+            artifact_path=tree_snapshot_path,
+        )
         previous_record_status = _resolve_previous_pipeline_record_status(
             paths=paths,
             generation=generation,

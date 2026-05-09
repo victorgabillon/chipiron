@@ -12,8 +12,10 @@ from .evaluator_family import morpion_evaluators_config_from_preset
 from .pipeline_config import (
     DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
     DEFAULT_MORPION_PIPELINE_MODE,
+    DEFAULT_MORPION_TRAINING_EXPORT_MODE,
     MorpionEvaluatorUpdatePolicy,
     MorpionPipelineMode,
+    MorpionTrainingExportMode,
 )
 
 if TYPE_CHECKING:
@@ -60,6 +62,9 @@ class MorpionBootstrapArgs:
         DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY
     )
     pipeline_mode: MorpionPipelineMode = DEFAULT_MORPION_PIPELINE_MODE
+    training_export_mode: MorpionTrainingExportMode = (
+        DEFAULT_MORPION_TRAINING_EXPORT_MODE
+    )
     evaluators_config: MorpionEvaluatorsConfig | None = None
     evaluator_family_preset: str | None = None
 

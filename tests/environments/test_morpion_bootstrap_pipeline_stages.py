@@ -7,10 +7,10 @@ import ast
 import logging
 import sys
 import time
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, cast
 
 import pytest
 
@@ -93,6 +93,9 @@ from chipiron.environments.morpion.bootstrap import (
     save_pipeline_manifest,
     save_reevaluation_patch,
 )
+from chipiron.environments.morpion.bootstrap.sharded_training_export import (
+    save_morpion_sharded_training_tree_from_live_nodes,
+)
 from chipiron.environments.morpion.learning import (
     MorpionSupervisedRow,
     MorpionSupervisedRows,
@@ -166,6 +169,29 @@ class FakeMorpionSearchRunner:
                 root_node_id=f"node-{index}",
             ),
             output_path,
+        )
+
+    def export_sharded_training_tree_snapshot(
+        self,
+        output_dir: str | Path,
+        *,
+        generation: int,
+    ) -> Path:
+        """Write one sharded training export using the same deterministic snapshot."""
+        index = max(self._cycle_index, 0)
+        snapshot = _make_training_snapshot(
+            target_value=self._target_values[index],
+            root_node_id=f"node-{index}",
+        )
+        live_nodes = tuple(_TrainingSnapshotLiveNode(node) for node in snapshot.nodes)
+        return save_morpion_sharded_training_tree_from_live_nodes(
+            nodes=live_nodes,
+            root_node_id=snapshot.root_node_id,
+            output_dir=output_dir,
+            generation=generation,
+            state_ref_dumper=lambda state: cast("dict[str, object]", state),
+            direct_value_extractor=_float_or_none,
+            backed_up_value_extractor=_float_or_none,
         )
 
     def save_checkpoint(self, output_path: str | Path) -> None:
@@ -271,6 +297,68 @@ def _artifact_pipeline_args(work_dir: Path) -> MorpionBootstrapArgs:
         num_epochs=1,
         shuffle=False,
     )
+
+
+@dataclass(slots=True)
+class _TrainingSnapshotLiveNode:
+    """Live-node adapter that replays a persisted training snapshot node."""
+
+    node: TrainingNodeSnapshot
+
+    @property
+    def id(self) -> str:
+        return self.node.node_id
+
+    @property
+    def parent_ids(self) -> tuple[str, ...]:
+        return self.node.parent_ids
+
+    @property
+    def child_ids(self) -> tuple[str, ...]:
+        return self.node.child_ids
+
+    @property
+    def depth(self) -> int:
+        return self.node.depth
+
+    @property
+    def state(self) -> dict[str, object]:
+        return cast("dict[str, object]", self.node.state_ref_payload)
+
+    @property
+    def direct_value(self) -> float | None:
+        return self.node.direct_value_scalar
+
+    @property
+    def backed_up_value(self) -> float | None:
+        return self.node.backed_up_value_scalar
+
+    @property
+    def is_terminal(self) -> bool:
+        return self.node.is_terminal
+
+    @property
+    def is_exact(self) -> bool:
+        return self.node.is_exact
+
+    @property
+    def visit_count(self) -> int | None:
+        return self.node.visit_count
+
+    @property
+    def metadata(self) -> dict[str, object]:
+        return dict(self.node.metadata)
+
+    @property
+    def over_event_label(self) -> str | None:
+        return self.node.over_event_label
+
+
+def _float_or_none(value: object | None) -> float | None:
+    """Return float scalars for test live-node adapters."""
+    if value is None:
+        return None
+    return float(cast("int | float", value))
 
 
 def _unexpected_full_loop_error() -> AssertionError:
@@ -599,6 +687,27 @@ def test_dataset_stage_extracts_rows_from_manifest_tree_snapshot(
     assert "[pipeline] dataset_export_start generation=1" in messages
     assert "[pipeline] dataset_export_done generation=1 rows=1" in messages
     assert "[pipeline] dataset_manifest_written generation=1" in messages
+
+
+def test_pipeline_sharded_export_and_dataset_stage_round_trip(tmp_path: Path) -> None:
+    """Artifact-pipeline stages should round-trip through sharded tree exports."""
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    runner = FakeMorpionSearchRunner(tree_sizes=(5,), target_values=(1.0,))
+    args = replace(_artifact_pipeline_args(tmp_path), training_export_mode="sharded")
+
+    run_pipeline_growth_stage(args, runner, max_cycles=1)
+    manifest_after_growth = load_pipeline_manifest(
+        paths.pipeline_manifest_path_for_generation(1)
+    )
+    manifest_after_dataset = run_pipeline_dataset_stage(args, generation=1)
+
+    assert manifest_after_growth.tree_snapshot_path == (
+        "tree_exports_sharded/generation_000001.json"
+    )
+    assert paths.sharded_tree_snapshot_path_for_generation(1).is_file()
+    assert manifest_after_dataset.dataset_status == "done"
+    assert manifest_after_dataset.rows_path == "rows/generation_000001.json"
+    assert paths.rows_path_for_generation(1).is_file()
 
 
 def test_dataset_stage_blocked_by_active_claim(tmp_path: Path) -> None:

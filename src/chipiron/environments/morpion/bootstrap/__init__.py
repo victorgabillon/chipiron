@@ -213,8 +213,10 @@ from .pipeline_claims import (
 from .pipeline_config import (
     DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
     DEFAULT_MORPION_PIPELINE_MODE,
+    DEFAULT_MORPION_TRAINING_EXPORT_MODE,
     MorpionEvaluatorUpdatePolicy,
     MorpionPipelineMode,
+    MorpionTrainingExportMode,
 )
 from .pipeline_orchestrator import (
     MorpionPipelineOrchestratorResult,

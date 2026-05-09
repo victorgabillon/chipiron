@@ -74,6 +74,9 @@ from .linoo_selection_table import (
     save_linoo_selection_table,
 )
 from .search_runner_protocol import MorpionSearchRunner
+from .sharded_training_export import (
+    save_morpion_sharded_training_tree_from_live_nodes,
+)
 
 if TYPE_CHECKING:
     from .pipeline_artifacts import MorpionReevaluationPatch
@@ -1126,6 +1129,34 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             str(output_path),
             elapsed_s,
         )
+
+    def export_sharded_training_tree_snapshot(
+        self,
+        output_dir: str | Path,
+        *,
+        generation: int,
+    ) -> Path:
+        """Persist one additive sharded training export for the live tree."""
+        runtime = self._require_runtime()
+        ordered_nodes = runtime._all_nodes_in_tree_order()
+        started_at = time.perf_counter()
+        manifest_path = save_morpion_sharded_training_tree_from_live_nodes(
+            nodes=ordered_nodes,
+            root_node_id=str(runtime.tree.root_node.id),
+            output_dir=output_dir,
+            generation=generation,
+            state_ref_dumper=self._state_codec.dump_state_ref,
+            direct_value_extractor=_value_to_scalar,
+            backed_up_value_extractor=_value_to_scalar,
+        )
+        LOGGER.info(
+            "[save] sharded_tree_export_done output=%s generation=%s nodes=%s elapsed=%.3fs",
+            str(manifest_path),
+            generation,
+            len(ordered_nodes),
+            time.perf_counter() - started_at,
+        )
+        return manifest_path
 
     def build_training_tree_snapshot_payload(
         self,

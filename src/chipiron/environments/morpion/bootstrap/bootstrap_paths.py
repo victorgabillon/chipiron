@@ -33,6 +33,7 @@ class MorpionBootstrapPaths:
     launcher_stdout_log_path: Path
     launcher_stderr_log_path: Path
     tree_snapshot_dir: Path
+    sharded_tree_snapshot_dir: Path
     runtime_checkpoint_dir: Path
     rows_dir: Path
     model_dir: Path
@@ -58,6 +59,7 @@ class MorpionBootstrapPaths:
             launcher_stdout_log_path=root / "launcher.out.log",
             launcher_stderr_log_path=root / "launcher.err.log",
             tree_snapshot_dir=root / "tree_exports",
+            sharded_tree_snapshot_dir=root / "tree_exports_sharded",
             runtime_checkpoint_dir=root / "search_checkpoints",
             rows_dir=root / "rows",
             model_dir=root / "models",
@@ -69,6 +71,7 @@ class MorpionBootstrapPaths:
         """Create the canonical bootstrap directories if they do not exist."""
         self.work_dir.mkdir(parents=True, exist_ok=True)
         self.tree_snapshot_dir.mkdir(parents=True, exist_ok=True)
+        self.sharded_tree_snapshot_dir.mkdir(parents=True, exist_ok=True)
         self.runtime_checkpoint_dir.mkdir(parents=True, exist_ok=True)
         self.rows_dir.mkdir(parents=True, exist_ok=True)
         self.model_dir.mkdir(parents=True, exist_ok=True)
@@ -77,6 +80,14 @@ class MorpionBootstrapPaths:
     def tree_snapshot_path_for_generation(self, generation: int) -> Path:
         """Return the tree export path for one saved generation."""
         return self.tree_snapshot_dir / f"generation_{generation:06d}.json"
+
+    def sharded_tree_snapshot_manifest_path(self) -> Path:
+        """Return the root manifest path for additive sharded tree exports."""
+        return self.sharded_tree_snapshot_dir / "manifest.json"
+
+    def sharded_tree_snapshot_path_for_generation(self, generation: int) -> Path:
+        """Return the per-generation sharded export manifest path."""
+        return self.sharded_tree_snapshot_dir / f"generation_{generation:06d}.json"
 
     def rows_path_for_generation(self, generation: int) -> Path:
         """Return the raw Morpion rows path for one saved generation."""

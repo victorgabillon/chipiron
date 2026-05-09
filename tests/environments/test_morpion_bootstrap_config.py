@@ -59,6 +59,7 @@ from chipiron.environments.morpion.bootstrap import (
     CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
     DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
     DEFAULT_MORPION_PIPELINE_MODE,
+    DEFAULT_MORPION_TRAINING_EXPORT_MODE,
     DEFAULT_MORPION_TREE_BRANCH_LIMIT,
     GROWTH_RUNTIME_MUTABLE_BOOTSTRAP_CONFIG_FIELDS,
     MORPION_BOOTSTRAP_GAME,
@@ -434,6 +435,7 @@ def test_bootstrap_config_from_args_contains_expected_fields(tmp_path: Path) -> 
     assert set(config.evaluators.evaluators) == {"linear", "mlp"}
     assert config.evaluator_update_policy == DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY
     assert config.pipeline_mode == DEFAULT_MORPION_PIPELINE_MODE
+    assert config.training_export_mode == DEFAULT_MORPION_TRAINING_EXPORT_MODE
 
 
 def test_bootstrap_config_from_dict_defaults_missing_phase1_fields() -> None:
@@ -489,6 +491,7 @@ def test_bootstrap_config_from_dict_defaults_missing_phase1_fields() -> None:
 
     assert loaded.evaluator_update_policy == "future_only"
     assert loaded.pipeline_mode == "single_process"
+    assert loaded.training_export_mode == DEFAULT_MORPION_TRAINING_EXPORT_MODE
     assert loaded.runtime.reevaluation_blend_alpha == 1.0
 
 
@@ -655,6 +658,8 @@ def test_stage_owned_field_helpers_are_stable() -> None:
     assert "max_growth_steps_per_cycle" in growth_stage_owned_bootstrap_fields()
     assert "tree_branch_limit" in growth_stage_owned_bootstrap_fields()
     assert "reevaluation_blend_alpha" in growth_stage_owned_bootstrap_fields()
+    assert "training_export_mode" in dataset_stage_owned_bootstrap_fields()
+    assert "training_export_mode" in growth_stage_owned_bootstrap_fields()
     assert "tree_branch_limit" not in dataset_stage_owned_bootstrap_fields()
     assert "tree_branch_limit" not in training_stage_owned_bootstrap_fields()
     assert reevaluation_stage_owned_bootstrap_fields() == ()

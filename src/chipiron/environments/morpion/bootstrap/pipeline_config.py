@@ -15,6 +15,12 @@ MorpionPipelineMode = Literal[
     "artifact_pipeline",
 ]
 
+MorpionTrainingExportMode = Literal[
+    "flat",
+    "sharded",
+    "both",
+]
+
 MorpionPipelineStage = Literal[
     "loop",
     "growth",
@@ -27,11 +33,14 @@ MorpionPipelineStage = Literal[
 
 DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY: MorpionEvaluatorUpdatePolicy = "future_only"
 DEFAULT_MORPION_PIPELINE_MODE: MorpionPipelineMode = "single_process"
+DEFAULT_MORPION_TRAINING_EXPORT_MODE: MorpionTrainingExportMode = "flat"
 
 __all__ = [
     "DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY",
     "DEFAULT_MORPION_PIPELINE_MODE",
+    "DEFAULT_MORPION_TRAINING_EXPORT_MODE",
     "MorpionEvaluatorUpdatePolicy",
     "MorpionPipelineMode",
     "MorpionPipelineStage",
+    "MorpionTrainingExportMode",
 ]

@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 from anemone.training_export import load_training_tree_snapshot
@@ -27,6 +28,7 @@ from .record_status import (
     resolve_frontier_status_for_cycle_with_metadata,
     resolve_record_status_for_cycle,
 )
+from .sharded_training_export import load_morpion_sharded_training_tree_snapshot
 
 if TYPE_CHECKING:
     from anemone.training_export import TrainingTreeSnapshot
@@ -40,6 +42,14 @@ if TYPE_CHECKING:
     from .search_runner_protocol import MorpionSearchRunner
 
 LOGGER = logging.getLogger(__name__)
+
+
+def _unsupported_sharded_training_export_error() -> TypeError:
+    """Return the canonical missing sharded-export capability error."""
+    return TypeError(
+        "runner must implement export_sharded_training_tree_snapshot() when "
+        "training_export_mode is 'sharded' or 'both'."
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -81,6 +91,47 @@ def extract_rows_from_training_snapshot(
     )
 
 
+def export_training_snapshot_for_generation(
+    *,
+    args: MorpionBootstrapArgs,
+    paths: MorpionBootstrapPaths,
+    runner: MorpionSearchRunner,
+    generation: int,
+) -> Path:
+    """Export the configured training artifact and return the primary path."""
+    flat_path = paths.tree_snapshot_path_for_generation(generation)
+    if args.training_export_mode == "flat":
+        runner.export_training_tree_snapshot(flat_path)
+        return flat_path
+
+    export_sharded = getattr(runner, "export_sharded_training_tree_snapshot", None)
+    if not callable(export_sharded):
+        raise _unsupported_sharded_training_export_error()
+
+    sharded_path = Path(
+        export_sharded(
+            paths.sharded_tree_snapshot_dir,
+            generation=generation,
+        )
+    )
+    if args.training_export_mode == "sharded":
+        return sharded_path
+
+    runner.export_training_tree_snapshot(flat_path)
+    return flat_path
+
+
+def load_training_snapshot_for_generation(
+    *,
+    args: MorpionBootstrapArgs,
+    artifact_path: str | Path,
+) -> TrainingTreeSnapshot:
+    """Load the training snapshot represented by the configured artifact path."""
+    if args.training_export_mode == "sharded":
+        return load_morpion_sharded_training_tree_snapshot(artifact_path)
+    return load_training_tree_snapshot(artifact_path)
+
+
 def build_and_save_dataset_for_generation(
     *,
     args: MorpionBootstrapArgs,
@@ -91,18 +142,30 @@ def build_and_save_dataset_for_generation(
     memory: MemoryDiagnostics,
 ) -> BootstrapDatasetBuildResult:
     """Build, annotate, and persist the supervised rows for one generation."""
-    training_snapshot_path = paths.tree_snapshot_path_for_generation(generation)
+    training_snapshot_path = (
+        paths.tree_snapshot_path_for_generation(generation)
+        if args.training_export_mode != "sharded"
+        else paths.sharded_tree_snapshot_path_for_generation(generation)
+    )
     rows_path = paths.rows_path_for_generation(generation)
     dataset_started_at = time.perf_counter()
     LOGGER.info("[dataset] build_start snapshot=%s", str(training_snapshot_path))
     memory.log("before_snapshot_load_or_export")
-    runner.export_training_tree_snapshot(training_snapshot_path)
+    training_snapshot_path = export_training_snapshot_for_generation(
+        args=args,
+        paths=paths,
+        runner=runner,
+        generation=generation,
+    )
     if not training_snapshot_path.is_file():
         raise MissingSavedBootstrapArtifactError(
-            action="runner.export_training_tree_snapshot()",
+            action="export_training_snapshot_for_generation()",
             artifact_path=training_snapshot_path,
         )
-    snapshot = load_training_tree_snapshot(training_snapshot_path)
+    snapshot = load_training_snapshot_for_generation(
+        args=args,
+        artifact_path=training_snapshot_path,
+    )
     memory.log("after_snapshot_load_or_export")
     LOGGER.info("[record] resolve_start nodes=%s", len(snapshot.nodes))
     record_started_at = time.perf_counter()
@@ -215,5 +278,7 @@ def build_and_save_dataset_for_generation(
 __all__ = [
     "BootstrapDatasetBuildResult",
     "build_and_save_dataset_for_generation",
+    "export_training_snapshot_for_generation",
     "extract_rows_from_training_snapshot",
+    "load_training_snapshot_for_generation",
 ]

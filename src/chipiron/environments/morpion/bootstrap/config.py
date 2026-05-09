@@ -27,12 +27,14 @@ if TYPE_CHECKING:
         MorpionEvaluatorUpdatePolicy,
         MorpionPipelineMode,
         MorpionPipelineStage,
+        MorpionTrainingExportMode,
     )
     from .pv_family_targets import PvFamilyTargetPolicy
 
 from .pipeline_config import (
     DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
     DEFAULT_MORPION_PIPELINE_MODE,
+    DEFAULT_MORPION_TRAINING_EXPORT_MODE,
 )
 
 BOOTSTRAP_CONFIG_HASH_METADATA_KEY = "bootstrap_config_hash"
@@ -99,6 +101,9 @@ class MorpionBootstrapConfig:
         DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY
     )
     pipeline_mode: MorpionPipelineMode = DEFAULT_MORPION_PIPELINE_MODE
+    training_export_mode: MorpionTrainingExportMode = (
+        DEFAULT_MORPION_TRAINING_EXPORT_MODE
+    )
     metadata: dict[str, object] = field(default_factory=_empty_metadata)
 
 
@@ -262,6 +267,7 @@ def bootstrap_config_from_args(args: MorpionBootstrapArgs) -> MorpionBootstrapCo
         validation_seed=args.validation_seed,
         evaluator_update_policy=args.evaluator_update_policy,
         pipeline_mode=args.pipeline_mode,
+        training_export_mode=args.training_export_mode,
     )
 
 
@@ -295,6 +301,7 @@ def bootstrap_config_to_dict(config: MorpionBootstrapConfig) -> dict[str, object
         "validation_seed": config.validation_seed,
         "evaluator_update_policy": config.evaluator_update_policy,
         "pipeline_mode": config.pipeline_mode,
+        "training_export_mode": config.training_export_mode,
         "metadata": dict(config.metadata),
     }
 
@@ -491,6 +498,16 @@ def bootstrap_config_from_dict(data: object) -> MorpionBootstrapConfig:
                 field_name="pipeline_mode",
             ),
         ),
+        training_export_mode=cast(
+            "MorpionTrainingExportMode",
+            _required_str(
+                payload.get(
+                    "training_export_mode",
+                    DEFAULT_MORPION_TRAINING_EXPORT_MODE,
+                ),
+                field_name="training_export_mode",
+            ),
+        ),
         metadata=_metadata_dict(payload.get("metadata")),
     )
 
@@ -557,6 +574,8 @@ def diff_bootstrap_configs(
         differences.append("evaluator_update_policy")
     if previous.pipeline_mode != current.pipeline_mode:
         differences.append("pipeline_mode")
+    if previous.training_export_mode != current.training_export_mode:
+        differences.append("training_export_mode")
     if previous.metadata != current.metadata:
         differences.append("metadata")
     return tuple(differences)
@@ -597,6 +616,7 @@ def dataset_stage_owned_bootstrap_fields() -> tuple[str, ...]:
         "min_depth",
         "min_visit_count",
         "max_rows",
+        "training_export_mode",
     )
 
 
@@ -625,6 +645,7 @@ def growth_stage_owned_bootstrap_fields() -> tuple[str, ...]:
         "tree_branch_limit",
         "reevaluation_blend_alpha",
         "evaluator_update_policy",
+        "training_export_mode",
     )
 
 
@@ -741,6 +762,7 @@ def _stage_bootstrap_config_field_values(
         "validation_seed": config.validation_seed,
         "evaluator_update_policy": config.evaluator_update_policy,
         "pipeline_mode": config.pipeline_mode,
+        "training_export_mode": config.training_export_mode,
     }
 
 
