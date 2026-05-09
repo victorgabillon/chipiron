@@ -10,12 +10,14 @@ import time
 from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from random import Random
+from time import perf_counter
 from typing import TYPE_CHECKING, Any, cast
 
 from anemone.checkpoints import (
     AnchorCheckpointStatePayload,
     CheckpointNodeStatePayload,
     DeltaCheckpointStatePayload,
+    LinooSelectorCheckpointPayload,
     SearchRuntimeCheckpointPayload,
     build_search_checkpoint_payload,
     load_search_from_checkpoint_payload,
@@ -166,6 +168,61 @@ def _selector_report_row_count(selector_report: object | None) -> int | None:
     except TypeError:
         return None
     return row_count if isinstance(row_count, int) else None
+
+
+def _selector_growth_diagnostic_fields(
+    selector_report: object | None,
+) -> dict[str, object]:
+    """Return stable optional selector diagnostics for growth-step logs."""
+    return {
+        "selector_state_rebuilt": getattr(selector_report, "state_rebuilt", None),
+        "selector_nodes_incrementally_updated": getattr(
+            selector_report,
+            "nodes_incrementally_updated",
+            None,
+        ),
+        "selector_total_nodes_scanned": getattr(
+            selector_report,
+            "total_nodes_scanned",
+            None,
+        ),
+        "selector_frontier_nodes_scanned": getattr(
+            selector_report,
+            "frontier_nodes_scanned",
+            None,
+        ),
+    }
+
+
+def _checkpoint_selector_state_fields(
+    payload: object,
+    *,
+    prefix: str,
+) -> dict[str, object]:
+    """Return stable selector-state presence fields for checkpoint logs."""
+    selector_state = getattr(payload, "selector_state", None)
+    selector_state_type = getattr(selector_state, "type", None)
+    selector_state_version = getattr(selector_state, "version", None)
+    return {
+        f"{prefix}_selector_state_present": selector_state is not None,
+        f"{prefix}_selector_state_type": selector_state_type,
+        f"{prefix}_selector_state_version": selector_state_version,
+    }
+
+
+def _invalidate_selector_cache_if_supported(runtime: object) -> bool:
+    """Invalidate selector caches when the runtime or selector exposes a hook."""
+    invalidate_runtime = getattr(runtime, "_invalidate_selector_cache_if_supported", None)
+    if callable(invalidate_runtime):
+        return bool(invalidate_runtime())
+
+    selector = getattr(runtime, "node_selector", None)
+    invalidate_selector = getattr(selector, "invalidate", None)
+    if callable(invalidate_selector):
+        invalidate_selector()
+        return True
+
+    return False
 
 
 def _default_search_args() -> SearchArgs:
@@ -339,11 +396,28 @@ class InvalidMorpionSearchCheckpointError(ValueError):
 
 
 @dataclass(slots=True)
+class _CheckpointCodecProfile:
+    """Aggregate fallback profiling for Morpion checkpoint codec calls."""
+
+    anchor_calls: int = 0
+    anchor_total_s: float = 0.0
+    delta_calls: int = 0
+    delta_total_s: float = 0.0
+    summary_calls: int = 0
+    summary_total_s: float = 0.0
+
+
+@dataclass(slots=True)
 class _ChipironMorpionStateCheckpointCodec:
     """Thin adapter from Atomheart checkpoint codecs to Chipiron Morpion states."""
 
     inner: MorpionStateCheckpointCodec
     dynamics: MorpionDynamics
+    profile_checkpoint: bool = False
+    _profile: _CheckpointCodecProfile = field(
+        default_factory=_CheckpointCodecProfile,
+        init=False,
+    )
 
     def dump_state_ref(self, state: MorpionState) -> object:
         """Serialize a state-ref payload for training-export compatibility only."""
@@ -355,7 +429,14 @@ class _ChipironMorpionStateCheckpointCodec:
 
     def dump_anchor_ref(self, state: MorpionState) -> object:
         """Serialize one full anchor snapshot for the incremental checkpoint path."""
-        return self.inner.dump_anchor_ref(state.to_atomheart_state())
+        started_at = perf_counter()
+        result = self.inner.dump_anchor_ref(state.to_atomheart_state())
+        self._record_profile(
+            call_count_attr="anchor_calls",
+            total_s_attr="anchor_total_s",
+            started_at=started_at,
+        )
+        return result
 
     def dump_delta_from_parent(
         self,
@@ -365,13 +446,20 @@ class _ChipironMorpionStateCheckpointCodec:
         branch_from_parent: object | None = None,
     ) -> object:
         """Serialize one child state as a parent-relative delta."""
-        return self.inner.dump_delta_from_parent(
+        started_at = perf_counter()
+        result = self.inner.dump_delta_from_parent(
             parent_state=parent_state.to_atomheart_state(),
             child_state=child_state.to_atomheart_state(),
             # Chipiron branch keys may differ in orientation from Atomheart move
             # encoding; delta payload carries the canonical move already.
             branch_from_parent=None,
         )
+        self._record_profile(
+            call_count_attr="delta_calls",
+            total_s_attr="delta_total_s",
+            started_at=started_at,
+        )
+        return result
 
     def load_anchor_ref(self, payload: object) -> MorpionState:
         """Restore one anchor snapshot through Atomheart, then wrap it for Chipiron."""
@@ -397,7 +485,92 @@ class _ChipironMorpionStateCheckpointCodec:
 
     def dump_state_summary(self, state: MorpionState) -> object:
         """Serialize optional lightweight checkpoint summary metadata."""
-        return self.inner.dump_state_summary(state.to_atomheart_state())
+        started_at = perf_counter()
+        result = self.inner.dump_state_summary(state.to_atomheart_state())
+        self._record_profile(
+            call_count_attr="summary_calls",
+            total_s_attr="summary_total_s",
+            started_at=started_at,
+        )
+        return result
+
+    def checkpoint_profile_snapshot(self) -> dict[str, object]:
+        """Return aggregate checkpoint profiling from the inner codec or fallback."""
+        inner_snapshot = getattr(self.inner, "checkpoint_profile_snapshot", None)
+        if callable(inner_snapshot):
+            snapshot = inner_snapshot()
+            if isinstance(snapshot, dict):
+                return snapshot
+            return dict(snapshot)
+        return {
+            "morpion_anchor_avg_ms": _checkpoint_profile_average_ms(
+                self._profile.anchor_total_s,
+                self._profile.anchor_calls,
+            ),
+            "morpion_anchor_calls": self._profile.anchor_calls,
+            "morpion_anchor_total_s": self._profile.anchor_total_s,
+            "morpion_delta_avg_ms": _checkpoint_profile_average_ms(
+                self._profile.delta_total_s,
+                self._profile.delta_calls,
+            ),
+            "morpion_delta_calls": self._profile.delta_calls,
+            "morpion_delta_total_s": self._profile.delta_total_s,
+            "morpion_summary_avg_ms": _checkpoint_profile_average_ms(
+                self._profile.summary_total_s,
+                self._profile.summary_calls,
+            ),
+            "morpion_summary_calls": self._profile.summary_calls,
+            "morpion_summary_total_s": self._profile.summary_total_s,
+        }
+
+    def reset_checkpoint_profile(self) -> None:
+        """Clear aggregate checkpoint profiling counters between builds."""
+        inner_reset = getattr(self.inner, "reset_checkpoint_profile", None)
+        if callable(inner_reset):
+            inner_reset()
+            return
+        self._profile = _CheckpointCodecProfile()
+
+    def _record_profile(
+        self,
+        *,
+        call_count_attr: str,
+        total_s_attr: str,
+        started_at: float,
+    ) -> None:
+        """Record one fallback codec timing when Atomheart profiling is absent."""
+        if not self.profile_checkpoint:
+            return
+        if callable(getattr(self.inner, "checkpoint_profile_snapshot", None)):
+            return
+        elapsed_s = perf_counter() - started_at
+        setattr(
+            self._profile,
+            call_count_attr,
+            getattr(self._profile, call_count_attr) + 1,
+        )
+        setattr(
+            self._profile,
+            total_s_attr,
+            getattr(self._profile, total_s_attr) + elapsed_s,
+        )
+
+
+def _checkpoint_profile_average_ms(total_s: float, count: int) -> float:
+    """Return a stable milliseconds average for checkpoint profile logs."""
+    if count <= 0:
+        return 0.0
+    return 1000.0 * total_s / count
+
+
+def _new_morpion_state_checkpoint_codec(
+    *, profile_checkpoint: bool
+) -> MorpionStateCheckpointCodec:
+    """Create the Morpion checkpoint codec with optional profiling when supported."""
+    try:
+        return MorpionStateCheckpointCodec(profile_checkpoint=profile_checkpoint)
+    except TypeError:
+        return MorpionStateCheckpointCodec()
 
 
 @dataclass(frozen=True, slots=True)
@@ -472,8 +645,9 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         self._random_generator = Random(self._args.random_seed)
         self._dynamics = MorpionDynamics()
         self._state_codec = _ChipironMorpionStateCheckpointCodec(
-            inner=MorpionStateCheckpointCodec(),
+            inner=_new_morpion_state_checkpoint_codec(profile_checkpoint=True),
             dynamics=self._dynamics,
+            profile_checkpoint=True,
         )
         self._current_evaluator_bundle_path: Path | None = None
         self._last_applied_runtime_config = _runtime_config_from_search_args(
@@ -624,8 +798,9 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             )
             if not isinstance(selector_report_rows, int):
                 selector_report_rows = _selector_report_row_count(selector_report)
+            selector_diagnostics = _selector_growth_diagnostic_fields(selector_report)
             LOGGER.info(
-                "[growth-timing] step=%s total_s=%s select_s=%s limit_s=%s expand_s=%s evaluate_s=%s propagate_s=%s selector_total_s=%s selector_collect_s=%s selector_choose_depth_s=%s selector_heap_update_s=%s selector_choose_node_s=%s selector_report_s=%s rows=%s nodes_scanned=%s frontier_scanned=%s selected_depth_frontier=%s heap_registered=%s stale_skipped=%s",
+                "[growth-timing] step=%s total_s=%s select_s=%s limit_s=%s expand_s=%s evaluate_s=%s propagate_s=%s selector_total_s=%s selector_collect_s=%s selector_choose_depth_s=%s selector_heap_update_s=%s selector_choose_node_s=%s selector_report_s=%s rows=%s nodes_scanned=%s frontier_scanned=%s selected_depth_frontier=%s heap_registered=%s stale_skipped=%s selector_state_rebuilt=%s selector_nodes_incrementally_updated=%s selector_total_nodes_scanned=%s selector_frontier_nodes_scanned=%s",
                 steps_executed,
                 _format_optional_seconds(
                     getattr(step_report, "total_s", None) if step_report is not None else None
@@ -674,6 +849,14 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 ),
                 _format_optional_int_log(
                     getattr(selector_report, "stale_candidates_skipped", None)
+                ),
+                _metric_value(selector_diagnostics["selector_state_rebuilt"]),
+                _metric_value(
+                    selector_diagnostics["selector_nodes_incrementally_updated"]
+                ),
+                _metric_value(selector_diagnostics["selector_total_nodes_scanned"]),
+                _metric_value(
+                    selector_diagnostics["selector_frontier_nodes_scanned"]
                 ),
             )
             if step_report is not None:
@@ -852,9 +1035,10 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 recompute_backups=True,
                 allow_missing=True,
             )
+            selector_invalidated: bool | None = None
         else:
             blend_metrics = _ReevaluationBlendMetrics()
-            result = _apply_blended_reevaluation_patch(
+            result, selector_invalidated = _apply_blended_reevaluation_patch(
                 runtime=runtime,
                 patch=patch,
                 blend_alpha=blend_alpha,
@@ -862,7 +1046,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             )
             LOGGER.info(
                 "[reevaluation-blend] patch_id=%s alpha=%s count=%s "
-                "avg_old=%s avg_new=%s avg_blended=%s",
+                "avg_old=%s avg_new=%s avg_blended=%s selector_invalidated=%s",
                 patch.patch_id,
                 _metric_value(blend_alpha),
                 blend_metrics.count,
@@ -871,15 +1055,17 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 _metric_value(
                     _blend_average(blend_metrics.blended_sum, blend_metrics)
                 ),
+                _metric_value(selector_invalidated),
             )
         LOGGER.info(
             "[reevaluation-patch] runner_apply_done "
-            "patch_id=%s requested=%s applied=%s missing=%s recomputed=%s",
+            "patch_id=%s requested=%s applied=%s missing=%s recomputed=%s selector_invalidated=%s",
             patch.patch_id,
             result.requested_count,
             result.applied_count,
             len(result.missing_node_ids),
             result.recomputed_count,
+            _metric_value(selector_invalidated),
         )
         return result.applied_count
 
@@ -929,6 +1115,29 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 str(tree_snapshot_path),
             )
         node_count, anchor_count, delta_count = _checkpoint_node_counts(payload)
+        restore_selector_state_fields = _checkpoint_selector_state_fields(
+            payload,
+            prefix="restore_checkpoint",
+        )
+        LOGGER.info(
+            "[checkpoint] restore_selector_state path=%s restore_checkpoint_selector_state_present=%s restore_checkpoint_selector_state_type=%s restore_checkpoint_selector_state_version=%s",
+            str(tree_snapshot_path),
+            _metric_value(
+                restore_selector_state_fields[
+                    "restore_checkpoint_selector_state_present"
+                ]
+            ),
+            _metric_value(
+                restore_selector_state_fields[
+                    "restore_checkpoint_selector_state_type"
+                ]
+            ),
+            _metric_value(
+                restore_selector_state_fields[
+                    "restore_checkpoint_selector_state_version"
+                ]
+            ),
+        )
         if cache_state == "hit":
             _log_checkpoint_metrics(
                 "payload_load",
@@ -1063,11 +1272,32 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             runtime,
             state_codec=self._state_codec,
         )
+        checkpoint_selector_state_fields = _checkpoint_selector_state_fields(
+            payload,
+            prefix="checkpoint",
+        )
         payload_elapsed_s = time.perf_counter() - payload_started_at
         LOGGER.info(
             "[checkpoint] payload_build_done path=%s elapsed=%.3fs",
             str(output),
             payload_elapsed_s,
+        )
+        LOGGER.info(
+            "[checkpoint] payload_selector_state path=%s checkpoint_selector_state_present=%s checkpoint_selector_state_type=%s checkpoint_selector_state_version=%s",
+            str(output),
+            _metric_value(
+                checkpoint_selector_state_fields[
+                    "checkpoint_selector_state_present"
+                ]
+            ),
+            _metric_value(
+                checkpoint_selector_state_fields["checkpoint_selector_state_type"]
+            ),
+            _metric_value(
+                checkpoint_selector_state_fields[
+                    "checkpoint_selector_state_version"
+                ]
+            ),
         )
         node_count, anchor_count, delta_count = _checkpoint_node_counts(payload)
         asdict_started_at = time.perf_counter()
@@ -1211,6 +1441,14 @@ def _normalize_search_checkpoint_payload_for_dacite(
     normalized_payload = _mapping(raw_payload)
     if normalized_payload is None:
         return raw_payload
+
+    normalized_selector_state = _mapping(normalized_payload.get("selector_state"))
+    if normalized_selector_state is not None:
+        normalized_payload["selector_state"] = from_dict(
+            data_class=LinooSelectorCheckpointPayload,
+            data=normalized_selector_state,
+            config=Config(cast=[tuple], check_types=False),
+        )
 
     normalized_tree = _mapping(normalized_payload.get("tree"))
     if normalized_tree is None:
@@ -1362,7 +1600,7 @@ def _apply_blended_reevaluation_patch(
     patch: MorpionReevaluationPatch,
     blend_alpha: float,
     blend_metrics: _ReevaluationBlendMetrics,
-) -> NodeValueUpdateResult:
+) -> tuple[NodeValueUpdateResult, bool]:
     """Apply one smoothed patch using Anemone's existing single node lookup pass."""
     nodes_by_id = runtime._nodes_by_public_id()
     missing_node_ids = tuple(
@@ -1396,11 +1634,17 @@ def _apply_blended_reevaluation_patch(
         runtime=runtime,
         changed_nodes=changed_nodes,
     )
-    return NodeValueUpdateResult(
-        requested_count=len(patch.rows),
-        applied_count=len(applied_nodes),
-        missing_node_ids=missing_node_ids,
-        recomputed_count=recomputed_count,
+    selector_invalidated = False
+    if changed_nodes:
+        selector_invalidated = _invalidate_selector_cache_if_supported(runtime)
+    return (
+        NodeValueUpdateResult(
+            requested_count=len(patch.rows),
+            applied_count=len(applied_nodes),
+            missing_node_ids=missing_node_ids,
+            recomputed_count=recomputed_count,
+        ),
+        selector_invalidated,
     )
 
 

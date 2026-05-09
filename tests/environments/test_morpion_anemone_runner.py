@@ -223,10 +223,12 @@ class _FakeTreeManager:
 
     def __init__(self) -> None:
         self.value_propagator = _FakeValuePropagator()
+        self.refresh_calls = 0
 
     def refresh_exploration_indices(self, *, tree: object) -> None:
         """Accept exploration-index refresh calls."""
         del tree
+        self.refresh_calls += 1
 
 
 class _FakeValue:
@@ -274,6 +276,42 @@ class _FakeNode:
             exact=exact,
             terminal=terminal,
         )
+        self.state = SimpleNamespace(is_game_over=lambda: terminal)
+
+
+class _SelectorInvalidationSpy:
+    """Count selector invalidation requests from the blended patch path."""
+
+    def __init__(self) -> None:
+        self.invalidations = 0
+
+    def invalidate(self) -> None:
+        self.invalidations += 1
+
+
+class _NoopAwareFakeRuntime(FakeAnemoneRuntime):
+    """Fake runtime that reports changes only when direct values actually differ."""
+
+    def __init__(self, nodes: tuple[object, ...] = ()) -> None:
+        super().__init__(nodes)
+        self.node_selector = _SelectorInvalidationSpy()
+
+    def _apply_node_value_update(
+        self,
+        *,
+        node: object,
+        update: NodeValueUpdate,
+    ) -> bool:
+        node_eval = getattr(node, "tree_evaluation")
+        previous_direct_value = getattr(node_eval, "direct_value")
+        previous_score = (
+            None
+            if previous_direct_value is None
+            else getattr(previous_direct_value, "score", None)
+        )
+        changed = previous_score != update.direct_value
+        node_eval.direct_value = _FakeValue(update.direct_value)
+        return bool(changed)
 
 
 def _make_reevaluation_patch() -> MorpionReevaluationPatch:
@@ -403,7 +441,8 @@ def test_apply_reevaluation_patch_converts_rows_to_anemone_updates(
     )
     done_log = (
         "[reevaluation-patch] runner_apply_done "
-        "patch_id=patch-1 requested=2 applied=1 missing=1 recomputed=3"
+        "patch_id=patch-1 requested=2 applied=1 missing=1 recomputed=3 "
+        "selector_invalidated=none"
     )
     assert done_log in caplog.text
 
@@ -442,6 +481,59 @@ def test_apply_reevaluation_patch_blends_direct_value_when_configured(
     assert "avg_old=10.000000" in caplog.text
     assert "avg_new=0.000000" in caplog.text
     assert "avg_blended=8.000000" in caplog.text
+    assert "selector_invalidated=False" in caplog.text
+
+
+def test_blended_reevaluation_patch_invalidates_selector_when_values_change() -> None:
+    """Changed blended writes should invalidate selector caches once."""
+    runtime = _NoopAwareFakeRuntime(nodes=(_FakeNode("node-a", 10.0),))
+    patch = MorpionReevaluationPatch(
+        patch_id="patch-blend-change",
+        created_at_utc="2026-05-06T12:00:00Z",
+        evaluator_generation=2,
+        evaluator_name="default",
+        model_bundle_path="models/generation_000002/default",
+        rows=(MorpionReevaluationPatchRow(node_id="node-a", direct_value=0.0),),
+    )
+
+    result, selector_invalidated = anemone_runner_module._apply_blended_reevaluation_patch(
+        runtime=runtime,
+        patch=patch,
+        blend_alpha=0.2,
+        blend_metrics=anemone_runner_module._ReevaluationBlendMetrics(),
+    )
+
+    assert result.applied_count == 1
+    assert result.recomputed_count == 1
+    assert selector_invalidated is True
+    assert runtime.node_selector.invalidations == 1
+    assert runtime.tree_manager.refresh_calls == 1
+
+
+def test_blended_reevaluation_patch_does_not_invalidate_selector_for_noop() -> None:
+    """No-op blended writes should not invalidate selector caches."""
+    runtime = _NoopAwareFakeRuntime(nodes=(_FakeNode("node-a", 10.0),))
+    patch = MorpionReevaluationPatch(
+        patch_id="patch-blend-noop",
+        created_at_utc="2026-05-06T12:00:00Z",
+        evaluator_generation=2,
+        evaluator_name="default",
+        model_bundle_path="models/generation_000002/default",
+        rows=(MorpionReevaluationPatchRow(node_id="node-a", direct_value=10.0),),
+    )
+
+    result, selector_invalidated = anemone_runner_module._apply_blended_reevaluation_patch(
+        runtime=runtime,
+        patch=patch,
+        blend_alpha=0.2,
+        blend_metrics=anemone_runner_module._ReevaluationBlendMetrics(),
+    )
+
+    assert result.applied_count == 1
+    assert result.recomputed_count == 0
+    assert selector_invalidated is False
+    assert runtime.node_selector.invalidations == 0
+    assert runtime.tree_manager.refresh_calls == 0
 
 
 def test_apply_reevaluation_patch_alpha_one_replaces_direct_value() -> None:
@@ -619,6 +711,7 @@ def test_checkpoint_restore_does_not_retain_full_payload_graph(tmp_path: Path) -
 def test_checkpoint_metrics_logs_for_save_load_and_restore(
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     """Checkpoint save/load should emit stable parseable metrics summary logs."""
     checkpoint_path = tmp_path / "tree_checkpoint.json"
@@ -637,6 +730,7 @@ def test_checkpoint_metrics_logs_for_save_load_and_restore(
         for record in caplog.records
         if "[checkpoint-metrics]" in record.getMessage()
     ]
+    emitted_output = capsys.readouterr().out
     assert any("operation=save" in line for line in metrics_lines)
     assert any("operation=payload_load" in line for line in metrics_lines)
     assert any("operation=runtime_restore" in line for line in metrics_lines)
@@ -644,6 +738,18 @@ def test_checkpoint_metrics_logs_for_save_load_and_restore(
     assert any("nodes=" in line for line in metrics_lines)
     assert any("anchors=" in line for line in metrics_lines)
     assert any("deltas=" in line for line in metrics_lines)
+    assert "[checkpoint-profile]" in emitted_output
+    assert "anchor_state_total_s=" in emitted_output
+    assert "delta_state_total_s=" in emitted_output
+    assert "state_summary_total_s=" in emitted_output
+    assert "evaluation_payload_total_s=" in emitted_output
+    assert "linked_children_total_s=" in emitted_output
+    assert "unopened_branches_total_s=" in emitted_output
+    assert "[checkpoint-profile-rates]" in emitted_output
+    assert "[checkpoint-codec-profile]" in emitted_output
+    assert "morpion_anchor_calls=" in emitted_output
+    assert "checkpoint_selector_state_present=" in caplog.text
+    assert "restore_checkpoint_selector_state_present=" in caplog.text
 
 
 def test_checkpoint_validation_payload_is_reused_for_immediate_restore(
@@ -911,6 +1017,10 @@ def test_runner_growth_logs_selected_node_id_and_depth(
     assert "selected_depth=unknown" not in caplog.text
     assert "[growth-timing] step=1" in caplog.text
     assert "selector_total_s=" in caplog.text
+    assert "selector_state_rebuilt=" in caplog.text
+    assert "selector_nodes_incrementally_updated=" in caplog.text
+    assert "selector_total_nodes_scanned=" in caplog.text
+    assert "selector_frontier_nodes_scanned=" in caplog.text
     assert "[growth-selection-table] step=1" in caplog.text
     assert "[growth-selection-table-timing] step=1" in caplog.text
     assert (
@@ -1026,6 +1136,61 @@ def test_runner_growth_logs_unknown_timing_fields_without_crashing(
     assert "[growth-timing] step=1 total_s=unknown" in caplog.text
     assert "rows=unknown" not in caplog.text
     assert "[growth-selection-table-timing] step=1 rows=0 format_s=unknown log_s=unknown" in caplog.text
+
+
+def test_selector_growth_diagnostic_fields_extract_required_values() -> None:
+    """Growth log helpers should expose the stable selector diagnostic names."""
+    selector_report = SimpleNamespace(
+        state_rebuilt=False,
+        nodes_incrementally_updated=2,
+        total_nodes_scanned=2,
+        frontier_nodes_scanned=10,
+    )
+
+    fields = anemone_runner_module._selector_growth_diagnostic_fields(selector_report)
+
+    assert fields["selector_state_rebuilt"] is False
+    assert fields["selector_nodes_incrementally_updated"] == 2
+    assert fields["selector_total_nodes_scanned"] == 2
+    assert fields["selector_frontier_nodes_scanned"] == 10
+
+
+def test_selector_growth_diagnostic_fields_tolerate_missing_values() -> None:
+    """Growth log helpers should leave missing selector fields unset."""
+    fields = anemone_runner_module._selector_growth_diagnostic_fields(
+        SimpleNamespace()
+    )
+
+    assert fields["selector_state_rebuilt"] is None
+    assert fields["selector_nodes_incrementally_updated"] is None
+    assert fields["selector_total_nodes_scanned"] is None
+    assert fields["selector_frontier_nodes_scanned"] is None
+
+
+def test_checkpoint_selector_state_fields_report_presence() -> None:
+    """Checkpoint selector-state helpers should expose presence and metadata."""
+    payload = SimpleNamespace(selector_state=SimpleNamespace(type="linoo", version=1))
+
+    fields = anemone_runner_module._checkpoint_selector_state_fields(
+        payload,
+        prefix="checkpoint",
+    )
+
+    assert fields["checkpoint_selector_state_present"] is True
+    assert fields["checkpoint_selector_state_type"] == "linoo"
+    assert fields["checkpoint_selector_state_version"] == 1
+
+
+def test_checkpoint_selector_state_fields_handle_absence() -> None:
+    """Checkpoint selector-state helpers should stay safe when absent."""
+    fields = anemone_runner_module._checkpoint_selector_state_fields(
+        SimpleNamespace(selector_state=None),
+        prefix="restore_checkpoint",
+    )
+
+    assert fields["restore_checkpoint_selector_state_present"] is False
+    assert fields["restore_checkpoint_selector_state_type"] is None
+    assert fields["restore_checkpoint_selector_state_version"] is None
 
 
 def test_restore_with_evaluator_bundle_skips_reevaluation(
