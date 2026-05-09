@@ -503,24 +503,24 @@ class _ChipironMorpionStateCheckpointCodec:
                 return snapshot
             return dict(snapshot)
         return {
-            "morpion_anchor_avg_ms": _checkpoint_profile_average_ms(
+            "chipiron_morpion_anchor_avg_ms": _checkpoint_profile_average_ms(
                 self._profile.anchor_total_s,
                 self._profile.anchor_calls,
             ),
-            "morpion_anchor_calls": self._profile.anchor_calls,
-            "morpion_anchor_total_s": self._profile.anchor_total_s,
-            "morpion_delta_avg_ms": _checkpoint_profile_average_ms(
+            "chipiron_morpion_anchor_calls": self._profile.anchor_calls,
+            "chipiron_morpion_anchor_total_s": self._profile.anchor_total_s,
+            "chipiron_morpion_delta_avg_ms": _checkpoint_profile_average_ms(
                 self._profile.delta_total_s,
                 self._profile.delta_calls,
             ),
-            "morpion_delta_calls": self._profile.delta_calls,
-            "morpion_delta_total_s": self._profile.delta_total_s,
-            "morpion_summary_avg_ms": _checkpoint_profile_average_ms(
+            "chipiron_morpion_delta_calls": self._profile.delta_calls,
+            "chipiron_morpion_delta_total_s": self._profile.delta_total_s,
+            "chipiron_morpion_summary_avg_ms": _checkpoint_profile_average_ms(
                 self._profile.summary_total_s,
                 self._profile.summary_calls,
             ),
-            "morpion_summary_calls": self._profile.summary_calls,
-            "morpion_summary_total_s": self._profile.summary_total_s,
+            "chipiron_morpion_summary_calls": self._profile.summary_calls,
+            "chipiron_morpion_summary_total_s": self._profile.summary_total_s,
         }
 
     def reset_checkpoint_profile(self) -> None:

@@ -91,6 +91,12 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Optionally write a zstd-compressed JSON payload next to --output.",
     )
+    parser.add_argument(
+        "--log-level",
+        default="INFO",
+        choices=("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"),
+        help="Python logging level for the standalone profiler process.",
+    )
     profile_mode_group = parser.add_mutually_exclusive_group()
     profile_mode_group.add_argument(
         "--profile-build-only",
@@ -148,9 +154,9 @@ def _parse_generation_json_name(path: Path) -> int | None:
     return int(generation_text)
 
 
-def _configure_logging() -> None:
+def _configure_logging(log_level: str) -> None:
     """Enable plain INFO logs when the caller has not configured logging."""
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    logging.basicConfig(level=getattr(logging, log_level), format="%(message)s")
 
 
 def _load_runtime_modules() -> dict[str, Any]:
@@ -206,7 +212,10 @@ def _load_runner_for_mode(
         else:
             checkpoint_path = Path(args.checkpoint).resolve()
         print(f"[profile] mode=load checkpoint={checkpoint_path}")
-        runner.load_or_create(checkpoint_path, None)
+        runner.load_or_create(
+            tree_snapshot_path=checkpoint_path,
+            model_bundle_path=None,
+        )
         return runner, checkpoint_path
 
     if args.checkpoint is not None:
@@ -221,7 +230,10 @@ def _load_runner_for_mode(
             args.growth_steps_per_batch,
         )
     )
-    runner.load_or_create(None, None)
+    runner.load_or_create(
+        tree_snapshot_path=None,
+        model_bundle_path=None,
+    )
     _grow_runner_until_target(
         runner=runner,
         target_nodes=args.target_nodes,
@@ -416,7 +428,7 @@ def _profile_checkpoint_save(
 
 
 def _dump_json_payload(payload_dict: dict[str, Any] | None, output_path: Path) -> int:
-    """Write the payload dict as JSON and return the number of bytes written."""
+    """Write JSON with the same formatting used by production checkpoint saves."""
     if payload_dict is None:
         raise ValueError("Payload dict is required before JSON dumping.")
     with output_path.open("w", encoding="utf-8") as handle:
@@ -472,7 +484,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Run the standalone Morpion checkpoint profiler."""
     parser = build_parser()
     args = parser.parse_args(argv)
-    _configure_logging()
+    _configure_logging(args.log_level)
     modules = _load_runtime_modules()
     _print_module_paths(modules)
     runner, _checkpoint_path = _load_runner_for_mode(args, modules)

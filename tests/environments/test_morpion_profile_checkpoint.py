@@ -3,30 +3,15 @@
 from __future__ import annotations
 
 import importlib.util
-import sys
 from pathlib import Path
-from types import ModuleType
+
+import pytest
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
 _ATOMHEART_PACKAGE_ROOT = _REPO_ROOT.parent / "atomheart" / "src" / "atomheart"
 _ANEMONE_PACKAGE_ROOT = _REPO_ROOT.parent / "anemone" / "src" / "anemone"
 _SCRIPT_PATH = _REPO_ROOT / "scripts" / "profile_morpion_checkpoint.py"
-
-if "chipiron" not in sys.modules:
-    _chipiron_stub = ModuleType("chipiron")
-    _chipiron_stub.__path__ = [str(_CHIPIRON_PACKAGE_ROOT)]
-    sys.modules["chipiron"] = _chipiron_stub
-
-if "atomheart" not in sys.modules:
-    _atomheart_stub = ModuleType("atomheart")
-    _atomheart_stub.__path__ = [str(_ATOMHEART_PACKAGE_ROOT)]
-    sys.modules["atomheart"] = _atomheart_stub
-
-if "anemone" not in sys.modules:
-    _anemone_stub = ModuleType("anemone")
-    _anemone_stub.__path__ = [str(_ANEMONE_PACKAGE_ROOT)]
-    sys.modules["anemone"] = _anemone_stub
 
 _SPEC = importlib.util.spec_from_file_location(
     "profile_morpion_checkpoint",
@@ -36,6 +21,23 @@ assert _SPEC is not None
 assert _SPEC.loader is not None
 profile_module = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(profile_module)
+
+
+def _prepend_runtime_source_paths(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Expose sibling source trees for smoke tests without poisoning sys.modules."""
+    required_roots = (
+        _REPO_ROOT / "src",
+        _ATOMHEART_PACKAGE_ROOT.parent,
+        _ANEMONE_PACKAGE_ROOT.parent,
+    )
+    missing_roots = [path for path in required_roots if not path.is_dir()]
+    if missing_roots:
+        pytest.skip(
+            "Standalone profiler smoke test requires sibling source trees: "
+            + ", ".join(str(path) for path in missing_roots)
+        )
+    for path in required_roots:
+        monkeypatch.syspath_prepend(str(path))
 
 
 def test_resolve_latest_runtime_checkpoint_picks_highest_generation(
@@ -101,8 +103,10 @@ def test_profile_script_parser_accepts_required_cli_shape(tmp_path: Path) -> Non
 def test_profile_script_smoke_grow_mode_without_json_dump(
     tmp_path: Path,
     capsys,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A tiny grow-mode profiling run should complete and emit a .prof file."""
+    _prepend_runtime_source_paths(monkeypatch)
     profile_output = tmp_path / "morpion_checkpoint.prof"
 
     exit_code = profile_module.main(
