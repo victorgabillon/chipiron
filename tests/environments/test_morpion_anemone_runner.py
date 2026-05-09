@@ -50,6 +50,8 @@ if "anemone" not in sys.modules:
 from anemone.checkpoints import (
     AlgorithmNodeCheckpointPayload,
     AnchorCheckpointStatePayload,
+    CheckpointBackedStateHandle,
+    CheckpointStateResolver,
     DeltaCheckpointStatePayload,
     SearchRuntimeCheckpointPayload,
     TreeCheckpointPayload,
@@ -1355,6 +1357,74 @@ def test_export_training_snapshot_from_real_runner(tmp_path: Path) -> None:
     assert snapshot_path.is_file()
     assert snapshot.root_node_id is not None
     assert len(snapshot.nodes) >= 1
+
+
+def test_training_export_profile_logging_includes_state_and_reuse_metrics(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Aggregate training-export profile logs should expose the new split metrics."""
+    profile = anemone_runner_module.MorpionTrainingExportProfile(
+        node_count=11,
+        state_ref_count=10,
+        payload_build_s=12.5,
+        node_traversal_s=12.0,
+        state_ref_serialization_s=10.5,
+        node_payload_total_s=11.9,
+        node_metadata_total_s=0.5,
+        node_value_total_s=0.6,
+        node_children_total_s=0.4,
+        node_state_access_total_s=10.0,
+        state_ref_conversion_total_s=0.5,
+        checkpoint_backed_state_handles=9,
+        reusable_checkpoint_payloads=9,
+        plain_or_materialized_states=2,
+        state_access_calls=10,
+    )
+    caplog.set_level(logging.INFO)
+
+    anemone_runner_module._log_training_export_profile(profile)
+
+    assert "[training-export-profile]" in caplog.text
+    assert "node_state_access_total_s=" in caplog.text
+    assert "state_ref_conversion_total_s=" in caplog.text
+    assert "reusable_checkpoint_payloads=" in caplog.text
+    assert "[training-export-profile-rates]" in caplog.text
+    assert "state_ref_avg_ms=" in caplog.text
+
+
+def test_training_export_handle_classification_does_not_resolve_state() -> None:
+    """Raw-handle classification must not touch ``node.state`` during export."""
+
+    class _NeverResolveNode:
+        def __init__(self, state_handle: object) -> None:
+            self.state_handle = state_handle
+
+        @property
+        def state(self) -> object:
+            raise AssertionError(
+                "node.state should not be resolved during classification"
+            )
+
+    resolver = CheckpointStateResolver(
+        state_codec=Mock(),
+        state_payloads_by_node_id={
+            7: AnchorCheckpointStatePayload(anchor_ref={"anchor": 1})
+        },
+    )
+    node = _NeverResolveNode(
+        CheckpointBackedStateHandle(
+            resolver=resolver,
+            node_id=7,
+        )
+    )
+    profile = anemone_runner_module.MorpionTrainingExportProfile()
+
+    profile.observe_state_handle(node)
+
+    assert profile.checkpoint_backed_state_handles == 1
+    assert profile.reusable_checkpoint_payloads == 1
+    assert profile.plain_or_materialized_states == 0
+    assert profile.state_access_calls == 0
 
 
 def test_invalid_model_bundle_path_fails_loudly(tmp_path: Path) -> None:

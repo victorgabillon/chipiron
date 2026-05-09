@@ -16,12 +16,14 @@ from typing import TYPE_CHECKING, Any, cast
 from anemone.checkpoints import (
     AnchorCheckpointStatePayload,
     CheckpointNodeStatePayload,
+    CheckpointBackedStateHandle,
     DeltaCheckpointStatePayload,
     LinooSelectorCheckpointPayload,
     SearchRuntimeCheckpointPayload,
     build_search_checkpoint_payload,
     load_search_from_checkpoint_payload,
 )
+from anemone.checkpoints.state_handles import checkpoint_payload_for_reuse_or_none
 from anemone.factory import (
     SearchArgs,
     create_tree_and_value_exploration_with_tree_eval_factory,
@@ -143,9 +145,159 @@ class _ReevaluationBlendMetrics:
         self.blended_sum += blended_value
 
 
+@dataclass(slots=True)
+class MorpionTrainingExportProfile:
+    """Aggregate profiling for one Morpion training/tree export build."""
+
+    node_count: int = 0
+    state_ref_count: int = 0
+    payload_build_s: float = 0.0
+    node_traversal_s: float = 0.0
+    state_ref_serialization_s: float = 0.0
+    node_payload_total_s: float = 0.0
+    node_metadata_total_s: float = 0.0
+    node_value_total_s: float = 0.0
+    node_children_total_s: float = 0.0
+    node_state_access_total_s: float = 0.0
+    state_ref_conversion_total_s: float = 0.0
+    checkpoint_backed_state_handles: int = 0
+    reusable_checkpoint_payloads: int = 0
+    plain_or_materialized_states: int = 0
+    state_access_calls: int = 0
+
+    def observe_state_handle(self, node: object) -> None:
+        """Classify one raw state handle without forcing state resolution."""
+        raw_handle = getattr(node, "state_handle", None)
+        if isinstance(raw_handle, CheckpointBackedStateHandle):
+            self.checkpoint_backed_state_handles += 1
+        reusable_payload = checkpoint_payload_for_reuse_or_none(raw_handle)
+        if reusable_payload is not None:
+            self.reusable_checkpoint_payloads += 1
+            return
+        self.plain_or_materialized_states += 1
+
+    def record_state_access(self, elapsed_s: float, *, state_present: bool) -> None:
+        """Record one ``node.state`` access wall time."""
+        del state_present
+        self.state_access_calls += 1
+        self.node_state_access_total_s += elapsed_s
+        self.state_ref_serialization_s += elapsed_s
+
+    def record_state_ref_conversion(self, elapsed_s: float) -> None:
+        """Record one state-ref conversion wall time."""
+        self.state_ref_count += 1
+        self.state_ref_conversion_total_s += elapsed_s
+        self.state_ref_serialization_s += elapsed_s
+
+    def record_node_children(self, elapsed_s: float) -> None:
+        """Record linkage extraction wall time."""
+        self.node_children_total_s += elapsed_s
+
+    def record_node_value(self, elapsed_s: float) -> None:
+        """Record value payload extraction wall time."""
+        self.node_value_total_s += elapsed_s
+
+    def record_node_metadata(self, elapsed_s: float) -> None:
+        """Record metadata payload extraction wall time."""
+        self.node_metadata_total_s += elapsed_s
+
+    def record_node_payload(self, elapsed_s: float) -> None:
+        """Record one full node payload build wall time."""
+        self.node_count += 1
+        self.node_payload_total_s += elapsed_s
+
+    def record_node_traversal(self, elapsed_s: float) -> None:
+        """Record the total traversal wall time across all nodes."""
+        self.node_traversal_s += elapsed_s
+
+
 def _format_optional_seconds(value: object) -> str:
     """Format one optional duration for stable timing logs."""
     return f"{float(value):.6f}" if isinstance(value, int | float) else "unknown"
+
+
+def _value_to_scalar(value: object) -> float | None:
+    """Extract a raw numeric score from one Anemone value-like object."""
+    if value is None:
+        return None
+    score = getattr(value, "score", None)
+    return float(score) if isinstance(score, int | float) else None
+
+
+def _average_ms(total_s: float, count: int) -> float:
+    """Return a stable milliseconds average for non-empty sample counts."""
+    if count <= 0:
+        return 0.0
+    return total_s * 1000.0 / count
+
+
+def _format_training_export_profile(profile: MorpionTrainingExportProfile) -> str:
+    """Format one stable aggregate training-export profile log line."""
+    return " ".join(
+        (
+            f"node_count={profile.node_count}",
+            f"state_ref_count={profile.state_ref_count}",
+            f"payload_build_s={_metric_value(profile.payload_build_s)}",
+            f"node_traversal_s={_metric_value(profile.node_traversal_s)}",
+            (
+                "state_ref_serialization_s="
+                f"{_metric_value(profile.state_ref_serialization_s)}"
+            ),
+            f"node_payload_total_s={_metric_value(profile.node_payload_total_s)}",
+            f"node_metadata_total_s={_metric_value(profile.node_metadata_total_s)}",
+            f"node_value_total_s={_metric_value(profile.node_value_total_s)}",
+            f"node_children_total_s={_metric_value(profile.node_children_total_s)}",
+            (
+                "node_state_access_total_s="
+                f"{_metric_value(profile.node_state_access_total_s)}"
+            ),
+            (
+                "state_ref_conversion_total_s="
+                f"{_metric_value(profile.state_ref_conversion_total_s)}"
+            ),
+            (
+                "checkpoint_backed_state_handles="
+                f"{profile.checkpoint_backed_state_handles}"
+            ),
+            f"reusable_checkpoint_payloads={profile.reusable_checkpoint_payloads}",
+            f"plain_or_materialized_states={profile.plain_or_materialized_states}",
+            f"state_access_calls={profile.state_access_calls}",
+        )
+    )
+
+
+def _format_training_export_profile_rates(profile: MorpionTrainingExportProfile) -> str:
+    """Format one stable aggregate training-export profile rates log line."""
+    state_ref_avg_ms = _average_ms(
+        profile.state_ref_serialization_s,
+        profile.state_ref_count,
+    )
+    node_state_access_avg_ms = _average_ms(
+        profile.node_state_access_total_s,
+        profile.state_access_calls,
+    )
+    state_ref_conversion_avg_ms = _average_ms(
+        profile.state_ref_conversion_total_s,
+        profile.state_ref_count,
+    )
+    return " ".join(
+        (
+            f"state_ref_avg_ms={state_ref_avg_ms:.6f}",
+            f"state_access_avg_ms={node_state_access_avg_ms:.6f}",
+            f"node_state_access_avg_ms={node_state_access_avg_ms:.6f}",
+            f"conversion_avg_ms={state_ref_conversion_avg_ms:.6f}",
+            f"state_ref_conversion_avg_ms={state_ref_conversion_avg_ms:.6f}",
+        )
+    )
+
+
+def _log_training_export_profile(profile: MorpionTrainingExportProfile) -> None:
+    """Emit stable aggregate profile logs for one training export build."""
+    LOGGER.info("[training-export-profile] %s", _format_training_export_profile(profile))
+    LOGGER.info(
+        "[training-export-profile-rates] %s",
+        _format_training_export_profile_rates(profile),
+    )
 
 
 def _format_optional_int_log(value: object) -> str:
@@ -954,29 +1106,13 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
 
     def export_training_tree_snapshot(self, output_path: str | Path) -> None:
         """Persist a training-grade snapshot from the live tree."""
-        runtime = self._require_runtime()
-        ordered_nodes = runtime._all_nodes_in_tree_order()
+        snapshot, profile = self.build_training_tree_snapshot_payload()
         LOGGER.info(
             "[save] tree_export_start output=%s nodes=%s",
             str(output_path),
-            len(ordered_nodes),
+            profile.node_count,
         )
         started_at = time.perf_counter()
-
-        def _value_to_scalar(value: object) -> float | None:
-            if value is None:
-                return None
-            # anemone Value object: has .score
-            score = getattr(value, "score", None)
-            return float(score) if isinstance(score, int | float) else None
-
-        snapshot = build_training_tree_snapshot(
-            ordered_nodes,
-            root_node_id=str(runtime.tree.root_node.id),
-            state_ref_dumper=self._state_codec.dump_state_ref,
-            direct_value_extractor=_value_to_scalar,
-            backed_up_value_extractor=_value_to_scalar,
-        )
         save_training_tree_snapshot(snapshot, output_path)
         elapsed_s = time.perf_counter() - started_at
         LOGGER.info(
@@ -984,6 +1120,26 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             str(output_path),
             elapsed_s,
         )
+
+    def build_training_tree_snapshot_payload(
+        self,
+    ) -> tuple[object, MorpionTrainingExportProfile]:
+        """Build a training snapshot plus aggregate profiling for the live tree."""
+        runtime = self._require_runtime()
+        ordered_nodes = runtime._all_nodes_in_tree_order()
+        profile = MorpionTrainingExportProfile()
+        started_at = perf_counter()
+        snapshot = build_training_tree_snapshot(
+            ordered_nodes,
+            root_node_id=str(runtime.tree.root_node.id),
+            state_ref_dumper=self._state_codec.dump_state_ref,
+            direct_value_extractor=_value_to_scalar,
+            backed_up_value_extractor=_value_to_scalar,
+            profile=profile,
+        )
+        profile.payload_build_s = perf_counter() - started_at
+        _log_training_export_profile(profile)
+        return snapshot, profile
 
     def current_tree_size(self) -> int:
         """Return the number of nodes currently tracked by the live runtime."""
