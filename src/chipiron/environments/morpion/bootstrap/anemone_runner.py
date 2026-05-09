@@ -16,14 +16,16 @@ from typing import TYPE_CHECKING, Any, cast
 from anemone.checkpoints import (
     AnchorCheckpointStatePayload,
     CheckpointNodeStatePayload,
-    CheckpointBackedStateHandle,
     DeltaCheckpointStatePayload,
     LinooSelectorCheckpointPayload,
     SearchRuntimeCheckpointPayload,
     build_search_checkpoint_payload,
     load_search_from_checkpoint_payload,
 )
-from anemone.checkpoints.state_handles import checkpoint_payload_for_reuse_or_none
+from anemone.checkpoints.state_handles import (
+    CheckpointBackedStateHandle,
+    checkpoint_payload_for_reuse_or_none,
+)
 from anemone.factory import (
     SearchArgs,
     create_tree_and_value_exploration_with_tree_eval_factory,
@@ -170,6 +172,9 @@ class MorpionTrainingExportProfile:
         raw_handle = getattr(node, "state_handle", None)
         if isinstance(raw_handle, CheckpointBackedStateHandle):
             self.checkpoint_backed_state_handles += 1
+        # Profiling only for now: current Morpion training-export consumers decode
+        # state_ref_payload via the anchor-only load_state_ref path, so reusable
+        # checkpoint delta payloads are not yet drop-in compatible.
         reusable_payload = checkpoint_payload_for_reuse_or_none(raw_handle)
         if reusable_payload is not None:
             self.reusable_checkpoint_payloads += 1
@@ -1106,13 +1111,14 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
 
     def export_training_tree_snapshot(self, output_path: str | Path) -> None:
         """Persist a training-grade snapshot from the live tree."""
-        snapshot, profile = self.build_training_tree_snapshot_payload()
+        runtime = self._require_runtime()
         LOGGER.info(
             "[save] tree_export_start output=%s nodes=%s",
             str(output_path),
-            profile.node_count,
+            _live_tree_node_count(runtime),
         )
         started_at = time.perf_counter()
+        snapshot, _profile = self.build_training_tree_snapshot_payload()
         save_training_tree_snapshot(snapshot, output_path)
         elapsed_s = time.perf_counter() - started_at
         LOGGER.info(

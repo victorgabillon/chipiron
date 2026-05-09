@@ -50,11 +50,13 @@ if "anemone" not in sys.modules:
 from anemone.checkpoints import (
     AlgorithmNodeCheckpointPayload,
     AnchorCheckpointStatePayload,
-    CheckpointBackedStateHandle,
-    CheckpointStateResolver,
     DeltaCheckpointStatePayload,
     SearchRuntimeCheckpointPayload,
     TreeCheckpointPayload,
+)
+from anemone.checkpoints.state_handles import (
+    CheckpointBackedStateHandle,
+    CheckpointStateResolver,
 )
 from anemone.factory import SearchArgs
 from anemone.node_selector.composed.args import ComposedNodeSelectorArgs

@@ -33,6 +33,8 @@ if "anemone" not in sys.modules:
 from anemone.training_export import (
     TrainingNodeSnapshot,
     TrainingTreeSnapshot,
+    load_training_tree_snapshot,
+    save_training_tree_snapshot,
 )
 from atomheart.games.morpion import MorpionDynamics
 from atomheart.games.morpion import initial_state as morpion_initial_state
@@ -59,6 +61,22 @@ def _make_morpion_payload() -> dict[str, object]:
     next_state = dynamics.step(start_state, first_action).next_state
     codec = MorpionStateCheckpointCodec()
     return cast("dict[str, object]", codec.dump_state_ref(next_state))
+
+
+def _make_morpion_delta_payload() -> dict[str, object]:
+    """Build one real Morpion checkpoint-style delta payload."""
+    dynamics = MorpionDynamics()
+    parent_state = morpion_initial_state()
+    first_action = dynamics.all_legal_actions(parent_state)[0]
+    child_state = dynamics.step(parent_state, first_action).next_state
+    codec = MorpionStateCheckpointCodec()
+    return cast(
+        "dict[str, object]",
+        codec.dump_delta_from_parent(
+            parent_state=parent_state,
+            child_state=child_state,
+        ),
+    )
 
 
 def _make_training_node(
@@ -99,6 +117,36 @@ def test_morpion_payload_validation_and_decode_round_trip() -> None:
     codec = MorpionStateCheckpointCodec()
 
     assert codec.dump_state_ref(decoded_state) == payload
+
+
+def test_current_morpion_state_ref_shape_is_anchor_payload() -> None:
+    """Current exported Morpion state refs are full anchor payloads, not deltas."""
+    payload = _make_morpion_payload()
+
+    assert set(payload) == {"played_moves", "variant"}
+    assert isinstance(payload["variant"], str)
+    assert isinstance(payload["played_moves"], list)
+    assert len(cast("list[object]", payload["played_moves"])) >= 1
+
+
+def test_checkpoint_delta_payload_round_trips_snapshot_but_row_extraction_rejects_it(
+    tmp_path: Path,
+) -> None:
+    """Generic snapshot JSON can carry delta payloads, but Morpion row extraction cannot."""
+    delta_payload = _make_morpion_delta_payload()
+    snapshot_path = tmp_path / "delta_snapshot.json"
+    snapshot = TrainingTreeSnapshot(
+        root_node_id="root",
+        nodes=(_make_training_node(state_ref_payload=delta_payload),),
+        metadata={"format_kind": "training_tree_snapshot", "format_version": 1},
+    )
+
+    save_training_tree_snapshot(snapshot, snapshot_path)
+    restored = load_training_tree_snapshot(snapshot_path)
+
+    assert restored.nodes[0].state_ref_payload == delta_payload
+    with pytest.raises(InvalidMorpionStateRefPayloadError):
+        training_tree_snapshot_to_morpion_supervised_rows(restored)
 
 
 def test_single_training_node_converts_to_row() -> None:

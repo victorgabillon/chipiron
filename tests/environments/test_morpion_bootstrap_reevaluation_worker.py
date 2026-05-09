@@ -55,7 +55,10 @@ from anemone.training_export import (
 )
 from atomheart.games.morpion import MorpionDynamics as AtomMorpionDynamics
 from atomheart.games.morpion import initial_state as morpion_initial_state
-from atomheart.games.morpion.checkpoints import MorpionStateCheckpointCodec
+from atomheart.games.morpion.checkpoints import (
+    MorpionCheckpointError,
+    MorpionStateCheckpointCodec,
+)
 
 import chipiron.environments.morpion.bootstrap.reevaluation_worker as reevaluation_worker_module
 from chipiron.environments.morpion.bootstrap import (
@@ -131,6 +134,19 @@ def _make_morpion_payload() -> dict[str, object]:
     next_state = dynamics.step(start_state, first_action).next_state
     codec = MorpionStateCheckpointCodec()
     return codec.dump_state_ref(next_state)
+
+
+def _make_morpion_delta_payload() -> dict[str, object]:
+    """Build one real Morpion checkpoint-style delta payload."""
+    dynamics = AtomMorpionDynamics()
+    parent_state = morpion_initial_state()
+    first_action = dynamics.all_legal_actions(parent_state)[0]
+    child_state = dynamics.step(parent_state, first_action).next_state
+    codec = MorpionStateCheckpointCodec()
+    return codec.dump_delta_from_parent(
+        parent_state=parent_state,
+        child_state=child_state,
+    )
 
 
 def _make_training_snapshot(node_ids: tuple[str, ...]) -> TrainingTreeSnapshot:
@@ -410,6 +426,14 @@ def test_active_model_reevaluation_evaluator_uses_model_and_terminal_values(
     assert rows[1].metadata["source"] == "active_model_reevaluation"
     assert rows[1].metadata["model_bundle_path"] == str(bundle_path)
     assert len(stub_evaluator.calls) == 1
+
+
+def test_active_model_reevaluation_evaluator_rejects_delta_state_ref_payload() -> None:
+    """Current reevaluation consumers cannot decode checkpoint-style delta refs."""
+    evaluator = MorpionActiveModelNodeReevaluationEvaluator(model_bundle_path=Path("."))
+
+    with pytest.raises(MorpionCheckpointError):
+        evaluator._load_snapshot_state(_make_morpion_delta_payload())
 
 
 def test_worker_uses_injected_evaluator(tmp_path: Path) -> None:
