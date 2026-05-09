@@ -222,6 +222,7 @@ def _make_args(work_dir: Path) -> MorpionBootstrapArgs:
     """Build one representative bootstrap args object for config tests."""
     return MorpionBootstrapArgs(
         work_dir=work_dir,
+        training_export_mode="flat",
         max_growth_steps_per_cycle=5,
         save_after_tree_growth_factor=1.5,
         save_after_seconds=10.0,
@@ -435,7 +436,28 @@ def test_bootstrap_config_from_args_contains_expected_fields(tmp_path: Path) -> 
     assert set(config.evaluators.evaluators) == {"linear", "mlp"}
     assert config.evaluator_update_policy == DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY
     assert config.pipeline_mode == DEFAULT_MORPION_PIPELINE_MODE
-    assert config.training_export_mode == DEFAULT_MORPION_TRAINING_EXPORT_MODE
+    assert config.training_export_mode == "flat"
+
+
+def test_bootstrap_args_defaults_training_export_mode_to_default_constant(
+    tmp_path: Path,
+) -> None:
+    """Bootstrap args should inherit the canonical default export mode."""
+    args = MorpionBootstrapArgs(work_dir=tmp_path)
+
+    assert args.training_export_mode == DEFAULT_MORPION_TRAINING_EXPORT_MODE
+    assert args.training_export_mode == "sharded"
+
+
+def test_bootstrap_config_from_args_preserves_explicit_training_export_mode(
+    tmp_path: Path,
+) -> None:
+    """Explicit training export mode should persist into the canonical config."""
+    config = bootstrap_config_from_args(
+        replace(_make_args(tmp_path), training_export_mode="sharded")
+    )
+
+    assert config.training_export_mode == "sharded"
 
 
 def test_bootstrap_config_from_dict_defaults_missing_phase1_fields() -> None:
@@ -492,6 +514,7 @@ def test_bootstrap_config_from_dict_defaults_missing_phase1_fields() -> None:
     assert loaded.evaluator_update_policy == "future_only"
     assert loaded.pipeline_mode == "single_process"
     assert loaded.training_export_mode == DEFAULT_MORPION_TRAINING_EXPORT_MODE
+    assert loaded.training_export_mode == "sharded"
     assert loaded.runtime.reevaluation_blend_alpha == 1.0
 
 
@@ -505,6 +528,20 @@ def test_first_run_writes_bootstrap_config(tmp_path: Path) -> None:
     config_path = MorpionBootstrapPaths.from_work_dir(tmp_path).bootstrap_config_path
     assert config_path.is_file()
     assert load_bootstrap_config(config_path) == bootstrap_config_from_args(args)
+
+
+def test_bootstrap_config_round_trips_training_export_mode(tmp_path: Path) -> None:
+    """Persisted config should round-trip an explicit training export mode."""
+    config = bootstrap_config_from_args(
+        replace(_make_args(tmp_path), training_export_mode="sharded")
+    )
+    config_path = tmp_path / "bootstrap_config.json"
+
+    save_bootstrap_config(config, config_path)
+    loaded = load_bootstrap_config(config_path)
+
+    assert loaded.training_export_mode == "sharded"
+    assert loaded == config
 
 
 def test_safe_bootstrap_config_change_is_allowed() -> None:

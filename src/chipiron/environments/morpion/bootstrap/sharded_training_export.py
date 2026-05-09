@@ -47,6 +47,20 @@ class MorpionShardedTrainingGenerationManifest:
 
 
 @dataclass(frozen=True, slots=True)
+class MorpionShardedTrainingExportStats:
+    """Compact counters for one sharded training-export write."""
+
+    generation: int
+    node_count: int
+    new_node_count: int
+
+    @property
+    def reused_node_count(self) -> int:
+        """Return how many nodes reused existing immutable state payloads."""
+        return self.node_count - self.new_node_count
+
+
+@dataclass(frozen=True, slots=True)
 class MorpionShardedTrainingNodeRecord:
     """Immutable node data recorded only once at node creation generation.
 
@@ -99,7 +113,7 @@ def save_morpion_sharded_training_tree_from_live_nodes(
     state_ref_dumper: StateRefDumper,
     direct_value_extractor: ValueScalarExtractor | None = None,
     backed_up_value_extractor: ValueScalarExtractor | None = None,
-) -> Path:
+) -> tuple[Path, MorpionShardedTrainingExportStats]:
     """Persist one additive sharded training export from live ordered nodes."""
     root = Path(output_dir)
     node_shards_dir = root / "node_shards"
@@ -207,7 +221,11 @@ def save_morpion_sharded_training_tree_from_live_nodes(
             "node_id_to_creation_generation": node_index,
         },
     )
-    return generation_manifest_path
+    return generation_manifest_path, MorpionShardedTrainingExportStats(
+        generation=generation,
+        node_count=len(node_updates),
+        new_node_count=len(node_records),
+    )
 
 
 def load_morpion_sharded_training_tree_snapshot(
@@ -453,6 +471,7 @@ def _optional_str(value: object) -> str | None:
 __all__ = [
     "MORPION_SHARDED_TRAINING_EXPORT_FORMAT_KIND",
     "MORPION_SHARDED_TRAINING_EXPORT_FORMAT_VERSION",
+    "MorpionShardedTrainingExportStats",
     "MorpionShardedTrainingExportManifest",
     "MorpionShardedTrainingGenerationManifest",
     "MorpionShardedTrainingNodeRecord",

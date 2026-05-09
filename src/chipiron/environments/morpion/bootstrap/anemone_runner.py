@@ -75,6 +75,7 @@ from .linoo_selection_table import (
 )
 from .search_runner_protocol import MorpionSearchRunner
 from .sharded_training_export import (
+    MorpionShardedTrainingExportStats,
     save_morpion_sharded_training_tree_from_live_nodes,
 )
 
@@ -305,6 +306,19 @@ def _log_training_export_profile(profile: MorpionTrainingExportProfile) -> None:
     LOGGER.info(
         "[training-export-profile-rates] %s",
         _format_training_export_profile_rates(profile),
+    )
+
+
+def _log_sharded_training_export_stats(
+    stats: MorpionShardedTrainingExportStats,
+) -> None:
+    """Emit one stable summary line for sharded training-export writes."""
+    LOGGER.info(
+        "[sharded-training-export] generation=%s nodes=%s new_nodes=%s reused_nodes=%s",
+        stats.generation,
+        stats.node_count,
+        stats.new_node_count,
+        stats.reused_node_count,
     )
 
 
@@ -1140,7 +1154,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
         runtime = self._require_runtime()
         ordered_nodes = runtime._all_nodes_in_tree_order()
         started_at = time.perf_counter()
-        manifest_path = save_morpion_sharded_training_tree_from_live_nodes(
+        manifest_path, stats = save_morpion_sharded_training_tree_from_live_nodes(
             nodes=ordered_nodes,
             root_node_id=str(runtime.tree.root_node.id),
             output_dir=output_dir,
@@ -1149,6 +1163,7 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             direct_value_extractor=_value_to_scalar,
             backed_up_value_extractor=_value_to_scalar,
         )
+        _log_sharded_training_export_stats(stats)
         LOGGER.info(
             "[save] sharded_tree_export_done output=%s generation=%s nodes=%s elapsed=%.3fs",
             str(manifest_path),

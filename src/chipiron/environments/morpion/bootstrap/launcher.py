@@ -43,6 +43,7 @@ from .history import MorpionBootstrapLatestStatus, load_latest_bootstrap_status
 from .pipeline_config import (
     DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
     DEFAULT_MORPION_PIPELINE_MODE,
+    DEFAULT_MORPION_TRAINING_EXPORT_MODE,
     MorpionPipelineStage,
 )
 from .pipeline_orchestrator import (
@@ -91,6 +92,7 @@ class MorpionBootstrapLauncherArgs:
     pipeline_generation: int | None = None
     reevaluation_max_nodes_per_patch: int = 10_000
     verbose_checkpoint_logs: bool = False
+    training_export_mode_explicit: bool = False
     open_dashboard: bool = False
     print_startup_summary: bool = True
     print_dashboard_hint: bool = True
@@ -263,6 +265,7 @@ def _collect_launcher_startup_status(
 ) -> _LauncherStartupStatus:
     """Resolve the operator-facing bootstrap status before entering the loop."""
     resolved_bootstrap_args = _resolve_launcher_bootstrap_args(launcher_args)
+    requested_bootstrap_args = resolved_bootstrap_args
     resolved_evaluator_family_source = _launcher_evaluator_family_source(
         launcher_args.bootstrap_args,
         resolved_bootstrap_args,
@@ -274,20 +277,25 @@ def _collect_launcher_startup_status(
     history_exists = paths.history_jsonl_path.is_file()
     latest_status_exists = paths.latest_status_path.is_file()
 
-    requested_config = bootstrap_config_from_args(resolved_bootstrap_args)
-    bootstrap_config = requested_config
     if config_exists:
         bootstrap_config = load_bootstrap_config(paths.bootstrap_config_path)
+        if not launcher_args.training_export_mode_explicit:
+            requested_bootstrap_args = replace(
+                requested_bootstrap_args,
+                training_export_mode=bootstrap_config.training_export_mode,
+            )
+        requested_config = bootstrap_config_from_args(requested_bootstrap_args)
         validate_stage_bootstrap_config_compatibility(
             stage=launcher_args.pipeline_stage,
             persisted_config=bootstrap_config,
             requested_config=requested_config,
         )
         resolved_bootstrap_args = _bootstrap_args_with_persisted_config(
-            resolved_bootstrap_args,
+            requested_bootstrap_args,
             persisted_config=bootstrap_config,
         )
     else:
+        bootstrap_config = bootstrap_config_from_args(requested_bootstrap_args)
         save_bootstrap_config(bootstrap_config, paths.bootstrap_config_path)
 
     control = load_bootstrap_control(paths.control_path)
@@ -344,6 +352,7 @@ def _bootstrap_args_with_persisted_config(
         dataset_family_prediction_blend=persisted_config.dataset.family_prediction_blend,
         evaluator_update_policy=persisted_config.evaluator_update_policy,
         pipeline_mode=persisted_config.pipeline_mode,
+        training_export_mode=persisted_config.training_export_mode,
         evaluators_config=persisted_config.evaluators,
         evaluator_family_preset=None,
     )
@@ -549,6 +558,16 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--training-export-mode",
+        choices=["flat", "sharded", "both"],
+        default=DEFAULT_MORPION_TRAINING_EXPORT_MODE,
+        help=(
+            "Training export artifact format. 'flat' preserves the legacy single-file "
+            "export, 'sharded' writes and consumes only sharded artifacts, and 'both' "
+            "writes sharded artifacts alongside the flat compatibility export."
+        ),
+    )
+    parser.add_argument(
         "--pipeline-stage",
         choices=[
             "loop",
@@ -685,8 +704,16 @@ def launcher_args_from_cli(
     argv: Sequence[str] | None = None,
 ) -> MorpionBootstrapLauncherArgs:
     """Parse CLI arguments into the canonical launcher dataclass."""
+    argv_list = list(argv) if argv is not None else None
+    training_export_mode_explicit = False
+    if argv_list is not None:
+        training_export_mode_explicit = any(
+            argument == "--training-export-mode"
+            or argument.startswith("--training-export-mode=")
+            for argument in argv_list
+        )
     parser = build_launcher_argument_parser()
-    parsed = parser.parse_args(argv)
+    parsed = parser.parse_args(argv_list)
     _validate_pipeline_stage_cli(
         parser=parser,
         pipeline_mode=parsed.pipeline_mode,
@@ -706,6 +733,7 @@ def launcher_args_from_cli(
         use_backed_up_value=parsed.use_backed_up_value,
         evaluator_update_policy=parsed.evaluator_update_policy,
         pipeline_mode=parsed.pipeline_mode,
+        training_export_mode=parsed.training_export_mode,
         dataset_family_target_policy=cast(
             "PvFamilyTargetPolicy",
             parsed.dataset_family_target_policy,
@@ -736,6 +764,7 @@ def launcher_args_from_cli(
         pipeline_generation=parsed.pipeline_generation,
         reevaluation_max_nodes_per_patch=parsed.reevaluation_max_nodes_per_patch,
         verbose_checkpoint_logs=parsed.verbose_checkpoint_logs,
+        training_export_mode_explicit=training_export_mode_explicit,
         open_dashboard=parsed.open_dashboard,
         print_startup_summary=parsed.print_startup_summary,
         print_dashboard_hint=parsed.print_dashboard_hint,

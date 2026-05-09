@@ -1429,6 +1429,26 @@ def test_training_export_handle_classification_does_not_resolve_state() -> None:
     assert profile.state_access_calls == 0
 
 
+def test_sharded_training_export_logging_includes_reuse_counts(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Sharded export logs should expose new-versus-reused node counts."""
+    stats = anemone_runner_module.MorpionShardedTrainingExportStats(
+        generation=135,
+        node_count=227716,
+        new_node_count=1307,
+    )
+    caplog.set_level(logging.INFO)
+
+    anemone_runner_module._log_sharded_training_export_stats(stats)
+
+    assert "[sharded-training-export]" in caplog.text
+    assert "generation=135" in caplog.text
+    assert "nodes=227716" in caplog.text
+    assert "new_nodes=1307" in caplog.text
+    assert "reused_nodes=226409" in caplog.text
+
+
 def test_invalid_model_bundle_path_fails_loudly(tmp_path: Path) -> None:
     """Missing evaluator bundles should fail loudly instead of falling back."""
     runner = AnemoneMorpionSearchRunner()

@@ -33,7 +33,7 @@ MorpionPipelineStage = Literal[
 
 DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY: MorpionEvaluatorUpdatePolicy = "future_only"
 DEFAULT_MORPION_PIPELINE_MODE: MorpionPipelineMode = "single_process"
-DEFAULT_MORPION_TRAINING_EXPORT_MODE: MorpionTrainingExportMode = "flat"
+DEFAULT_MORPION_TRAINING_EXPORT_MODE: MorpionTrainingExportMode = "sharded"
 
 __all__ = [
     "DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY",

@@ -184,7 +184,7 @@ class FakeMorpionSearchRunner:
             root_node_id=f"node-{index}",
         )
         live_nodes = tuple(_TrainingSnapshotLiveNode(node) for node in snapshot.nodes)
-        return save_morpion_sharded_training_tree_from_live_nodes(
+        manifest_path, _stats = save_morpion_sharded_training_tree_from_live_nodes(
             nodes=live_nodes,
             root_node_id=snapshot.root_node_id,
             output_dir=output_dir,
@@ -193,6 +193,7 @@ class FakeMorpionSearchRunner:
             direct_value_extractor=_float_or_none,
             backed_up_value_extractor=_float_or_none,
         )
+        return manifest_path
 
     def save_checkpoint(self, output_path: str | Path) -> None:
         """Write one placeholder checkpoint so manifests can point to it."""
@@ -290,6 +291,7 @@ def _artifact_pipeline_args(work_dir: Path) -> MorpionBootstrapArgs:
     return MorpionBootstrapArgs(
         work_dir=work_dir,
         pipeline_mode="artifact_pipeline",
+        training_export_mode="flat",
         max_growth_steps_per_cycle=5,
         save_after_tree_growth_factor=1.0,
         save_after_seconds=0.0,

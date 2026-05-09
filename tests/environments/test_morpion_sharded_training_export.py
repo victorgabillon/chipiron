@@ -145,7 +145,7 @@ def test_sharded_generation_one_round_trips_rows_equivalently(tmp_path: Path) ->
     )
     nodes = (root_node, leaf_node)
 
-    generation_manifest_path = save_morpion_sharded_training_tree_from_live_nodes(
+    generation_manifest_path, stats = save_morpion_sharded_training_tree_from_live_nodes(
         nodes=nodes,
         root_node_id="root",
         output_dir=output_dir,
@@ -165,6 +165,9 @@ def test_sharded_generation_one_round_trips_rows_equivalently(tmp_path: Path) ->
     assert manifest_payload["new_node_count"] == 2
     assert manifest_payload["node_count"] == 2
     assert root_manifest_payload["latest_generation"] == 1
+    assert stats.node_count == 2
+    assert stats.new_node_count == 2
+    assert stats.reused_node_count == 0
     assert loaded_snapshot.root_node_id == expected_snapshot.root_node_id
     assert loaded_snapshot.nodes == expected_snapshot.nodes
     assert training_tree_snapshot_to_morpion_supervised_rows(loaded_snapshot) == (
@@ -201,7 +204,7 @@ def test_sharded_generation_two_reuses_old_nodes_without_state_access(tmp_path: 
             metadata={"tag": "gen1-b"},
         ),
     )
-    save_morpion_sharded_training_tree_from_live_nodes(
+    _generation_one_manifest_path, generation_one_stats = save_morpion_sharded_training_tree_from_live_nodes(
         nodes=generation_one_nodes,
         root_node_id="a",
         output_dir=output_dir,
@@ -251,7 +254,7 @@ def test_sharded_generation_two_reuses_old_nodes_without_state_access(tmp_path: 
     )
     generation_two_nodes = (old_a, new_c, old_b)
 
-    generation_manifest_path = save_morpion_sharded_training_tree_from_live_nodes(
+    generation_manifest_path, generation_two_stats = save_morpion_sharded_training_tree_from_live_nodes(
         nodes=generation_two_nodes,
         root_node_id="a",
         output_dir=output_dir,
@@ -274,6 +277,10 @@ def test_sharded_generation_two_reuses_old_nodes_without_state_access(tmp_path: 
         )
     )
 
+    assert generation_one_stats.reused_node_count == 0
+    assert generation_two_stats.node_count == 3
+    assert generation_two_stats.new_node_count == 1
+    assert generation_two_stats.reused_node_count == 2
     assert old_a.state_access_count == 0
     assert old_b.state_access_count == 0
     assert new_c.state_access_count == 1

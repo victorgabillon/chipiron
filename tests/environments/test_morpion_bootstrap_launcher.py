@@ -5,9 +5,12 @@ from __future__ import annotations
 
 import logging
 import sys
+from dataclasses import replace
 from pathlib import Path
 from types import ModuleType
 from typing import TYPE_CHECKING, cast
+
+import pytest
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CHIPIRON_PACKAGE_ROOT = _REPO_ROOT / "src" / "chipiron"
@@ -57,6 +60,7 @@ from chipiron.environments.morpion.bootstrap import (
     CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
     DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY,
     DEFAULT_MORPION_PIPELINE_MODE,
+    DEFAULT_MORPION_TRAINING_EXPORT_MODE,
     AnemoneMorpionSearchRunnerArgs,
     MorpionBootstrapArgs,
     MorpionBootstrapControl,
@@ -66,6 +70,7 @@ from chipiron.environments.morpion.bootstrap import (
     MorpionBootstrapRuntimeControl,
     MorpionEvaluatorsConfig,
     MorpionEvaluatorSpec,
+    IncompatibleStageBootstrapConfigError,
     initialize_bootstrap_run_state,
     run_morpion_bootstrap_experiment,
     save_bootstrap_config,
@@ -218,6 +223,7 @@ def _make_launcher_args(
     """Build representative launcher args for tests."""
     bootstrap_args = MorpionBootstrapArgs(
         work_dir=work_dir,
+        training_export_mode="flat",
         max_growth_steps_per_cycle=5,
         save_after_tree_growth_factor=1.5,
         save_after_seconds=10.0,
@@ -331,6 +337,21 @@ def test_launcher_args_can_enable_verbose_checkpoint_logs(tmp_path: Path) -> Non
     )
 
     assert launcher_args.verbose_checkpoint_logs is True
+
+
+def test_launcher_args_parse_training_export_mode(tmp_path: Path) -> None:
+    """Launcher CLI should expose the training export mode selector."""
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--training-export-mode",
+            "sharded",
+        ]
+    )
+
+    assert launcher_args.bootstrap_args.training_export_mode == "sharded"
+    assert launcher_args.training_export_mode_explicit is True
 
 
 def test_launcher_configures_checkpoint_logger_level() -> None:
@@ -462,6 +483,8 @@ def test_launcher_cli_main_parses_and_dispatches(
             "reevaluate_all",
             "--pipeline-mode",
             "single_process",
+            "--training-export-mode",
+            "both",
             "--tree-branch-limit",
             "48",
         ]
@@ -483,6 +506,7 @@ def test_launcher_cli_main_parses_and_dispatches(
     assert launcher_args.bootstrap_args.use_backed_up_value is False
     assert launcher_args.bootstrap_args.evaluator_update_policy == "reevaluate_all"
     assert launcher_args.bootstrap_args.pipeline_mode == "single_process"
+    assert launcher_args.bootstrap_args.training_export_mode == "both"
     assert launcher_args.bootstrap_args.tree_branch_limit == 48
 
 
@@ -495,6 +519,72 @@ def test_launcher_args_from_cli_defaults_phase1_flags(tmp_path: Path) -> None:
         == DEFAULT_MORPION_EVALUATOR_UPDATE_POLICY
     )
     assert launcher_args.bootstrap_args.pipeline_mode == DEFAULT_MORPION_PIPELINE_MODE
+    assert (
+        launcher_args.bootstrap_args.training_export_mode
+        == DEFAULT_MORPION_TRAINING_EXPORT_MODE
+    )
+    assert launcher_args.bootstrap_args.training_export_mode == "sharded"
+    assert launcher_args.training_export_mode_explicit is False
+
+
+@pytest.mark.parametrize("persisted_training_export_mode", ["flat", "both"])
+def test_resume_uses_persisted_training_export_mode_when_cli_omits_it(
+    tmp_path: Path,
+    persisted_training_export_mode: str,
+) -> None:
+    """Resume should keep the persisted export mode unless CLI explicitly overrides it."""
+    persisted_config = bootstrap_config_from_args(
+        replace(
+            MorpionBootstrapArgs(
+                work_dir=tmp_path,
+                evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+            ),
+            training_export_mode=cast("object", persisted_training_export_mode),
+        )
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
+
+    launcher_args = launcher_module.launcher_args_from_cli(["--work-dir", str(tmp_path)])
+    startup_status = launcher_module._collect_launcher_startup_status(launcher_args)
+
+    assert (
+        startup_status.bootstrap_config.training_export_mode
+        == persisted_training_export_mode
+    )
+    assert (
+        startup_status.resolved_bootstrap_args.training_export_mode
+        == persisted_training_export_mode
+    )
+
+
+def test_resume_explicit_training_export_mode_override_hits_compatibility_check(
+    tmp_path: Path,
+) -> None:
+    """Explicit CLI export-mode overrides should still follow config compatibility rules."""
+    persisted_config = bootstrap_config_from_args(
+        replace(
+            MorpionBootstrapArgs(
+                work_dir=tmp_path,
+                evaluator_family_preset=CANONICAL_MORPION_EVALUATOR_FAMILY_PRESET,
+            ),
+            training_export_mode="flat",
+        )
+    )
+    paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
+    save_bootstrap_config(persisted_config, paths.bootstrap_config_path)
+
+    launcher_args = launcher_module.launcher_args_from_cli(
+        [
+            "--work-dir",
+            str(tmp_path),
+            "--training-export-mode",
+            "sharded",
+        ]
+    )
+
+    with pytest.raises(IncompatibleStageBootstrapConfigError, match="training_export_mode"):
+        launcher_module._collect_launcher_startup_status(launcher_args)
 
 
 def test_launcher_constructs_real_runner_in_normal_path(
