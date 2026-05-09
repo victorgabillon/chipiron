@@ -742,11 +742,14 @@ def test_checkpoint_metrics_logs_for_save_load_and_restore(
     assert any("operation=runtime_restore" in line for line in metrics_lines)
     assert any("bytes=" in line for line in metrics_lines)
     assert any("format=" in line for line in metrics_lines)
+    assert any("encoder=" in line for line in metrics_lines)
     assert any("nodes=" in line for line in metrics_lines)
     assert any("anchors=" in line for line in metrics_lines)
     assert any("deltas=" in line for line in metrics_lines)
     assert any("jsonable_s=" in line for line in metrics_lines)
     assert any("json_encode_s=" in line for line in metrics_lines)
+    assert any("compress_s=" in line for line in metrics_lines)
+    assert any("write_s=" in line for line in metrics_lines)
     assert emitted_output == "" or "[checkpoint-profile]" in emitted_output
     assert "checkpoint_selector_state_present=" in caplog.text
     assert "restore_checkpoint_selector_state_present=" in caplog.text

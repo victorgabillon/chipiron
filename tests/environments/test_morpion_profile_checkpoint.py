@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -143,3 +144,82 @@ def test_profile_script_smoke_grow_mode_without_json_dump(
     assert "[profile] phase=payload_build" in captured.out
     assert "[profile] phase=checkpoint_write skipped=true" in captured.out
     assert "[profile] phase=cprofile_dump" in captured.out
+
+
+def test_profile_checkpoint_save_reports_encoder_compress_and_write_fields(
+    tmp_path: Path,
+    capsys,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Checkpoint profiling output should expose encoder/compress/write timings."""
+
+    class _FakeRunner:
+        _state_codec = object()
+
+        def current_tree_size(self) -> int:
+            return 3
+
+        def _require_runtime(self) -> object:
+            return SimpleNamespace(tree=SimpleNamespace(branch_count=2))
+
+    fake_runner_module = SimpleNamespace(
+        _current_rss_mb=lambda: 1.0,
+        _checkpoint_node_counts=lambda _payload: (3, 1, 2),
+        _log_checkpoint_metrics=lambda *_args, **_kwargs: None,
+        _checkpoint_selector_state_fields=lambda _payload, prefix: {
+            f"{prefix}_selector_state_present": False,
+            f"{prefix}_selector_state_type": "none",
+            f"{prefix}_selector_state_version": "none",
+        },
+        CheckpointIoMetrics=lambda **kwargs: SimpleNamespace(**kwargs),
+    )
+
+    monkeypatch.setattr(
+        profile_module,
+        "write_checkpoint_json_payload",
+        lambda _payload, output_path: SimpleNamespace(
+            output_path=Path(output_path),
+            file_format="json_zst",
+            encoder="orjson",
+            compressed_bytes=29,
+            uncompressed_bytes=941,
+            jsonable_s=None,
+            json_encode_s=1.25,
+            compress_s=0.75,
+            write_s=0.02,
+            compression_ratio=29 / 941,
+        ),
+    )
+
+    args = profile_module.build_parser().parse_args(
+        [
+            "--mode",
+            "grow",
+            "--work-dir",
+            str(tmp_path),
+            "--output",
+            str(tmp_path / f"profiled_checkpoint{default_checkpoint_file_suffix()}"),
+            "--dump-json",
+            "--profile-build-only",
+        ]
+    )
+    modules = {
+        "runner_module": fake_runner_module,
+        "build_search_checkpoint_payload": lambda runtime, state_codec: {
+            "runtime": runtime,
+            "state_codec": state_codec,
+        },
+    }
+
+    profile_module._profile_checkpoint_save(
+        args=args,
+        modules=modules,
+        runner=_FakeRunner(),
+    )
+
+    captured = capsys.readouterr()
+
+    assert "[profile] phase=payload_to_jsonable skipped=true" in captured.out
+    assert "encoder=orjson" in captured.out
+    assert "compress_s=0.750000" in captured.out
+    assert "write_s=0.020000" in captured.out

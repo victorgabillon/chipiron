@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
 from anemone.checkpoints import (
     checkpoint_path_for_generation,
@@ -12,6 +13,7 @@ from anemone.checkpoints import (
     resolve_latest_generation_checkpoint_path,
     write_checkpoint_json_payload,
 )
+import anemone.checkpoints.io as checkpoint_io_module
 from chipiron.environments.morpion.bootstrap.bootstrap_paths import prune_generation_files
 
 
@@ -36,6 +38,37 @@ def test_checkpoint_json_payload_roundtrip_supports_plain_and_compressed(
     assert plain_stats.compressed_bytes == plain_read_stats.compressed_bytes
     assert compressed_stats.compressed_bytes == compressed_read_stats.compressed_bytes
     assert compressed_stats.uncompressed_bytes == plain_stats.uncompressed_bytes
+    assert compressed_stats.encoder in ("orjson", "stdlib")
+
+
+def test_checkpoint_zstd_write_avoids_streaming_writer(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    """Compressed writes should encode once and compress once, without stream writes."""
+
+    class _FakeZstdCompressor:
+        def compress(self, data: bytes) -> bytes:
+            return b"zstd:" + data
+
+        def stream_writer(self, _handle: object) -> object:
+            raise AssertionError("stream_writer should not be used")
+
+    fake_zstandard = SimpleNamespace(
+        ZstdCompressor=lambda: _FakeZstdCompressor(),
+        ZstdDecompressor=lambda: None,
+    )
+
+    monkeypatch.setattr(checkpoint_io_module, "_zstandard", fake_zstandard)
+    output_path = tmp_path / "unused.json.zst"
+    compressed_stats = checkpoint_io_module.write_checkpoint_json_payload(
+        {"generation": 12, "nodes": [{"id": 1}]},
+        output_path,
+    )
+
+    assert compressed_stats.file_format == "json_zst"
+    assert compressed_stats.compress_s is not None
+    assert compressed_stats.write_s >= 0.0
 
 
 def test_latest_generation_checkpoint_resolution_handles_mixed_suffixes(

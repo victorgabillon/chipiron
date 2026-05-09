@@ -30,6 +30,7 @@ dependencies = [
   "mlflow",
   "parsley_coco>=0.1.34",
   "gdown",
+  "orjson",
   "zstandard",
   "rich",
   "valanga==0.2.5",

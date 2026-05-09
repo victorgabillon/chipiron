@@ -19,7 +19,6 @@ from anemone.checkpoints import (
     LinooSelectorCheckpointPayload,
     SearchRuntimeCheckpointPayload,
     build_search_checkpoint_payload,
-    checkpoint_payload_to_jsonable,
     load_checkpoint_json_payload,
     load_search_from_checkpoint_payload,
     write_checkpoint_json_payload,
@@ -103,10 +102,12 @@ class CheckpointIoMetrics:
     path: str
     bytes: int | None = None
     file_format: str | None = None
+    encoder: str | None = None
     payload_build_s: float | None = None
     jsonable_s: float | None = None
     json_encode_s: float | None = None
-    compressed_write_s: float | None = None
+    compress_s: float | None = None
+    write_s: float | None = None
     json_load_s: float | None = None
     payload_decode_s: float | None = None
     runtime_rebuild_s: float | None = None
@@ -484,6 +485,8 @@ def _log_checkpoint_metrics(operation: str, metrics: CheckpointIoMetrics) -> Non
     ]
     if metrics.file_format is not None:
         parts.append(f"format={metrics.file_format}")
+    if metrics.encoder is not None:
+        parts.append(f"encoder={metrics.encoder}")
     if metrics.cache is not None:
         parts.append(f"cache={metrics.cache}")
     parts.extend(
@@ -491,7 +494,8 @@ def _log_checkpoint_metrics(operation: str, metrics: CheckpointIoMetrics) -> Non
             f"payload_build_s={_metric_value(metrics.payload_build_s)}",
             f"jsonable_s={_metric_value(metrics.jsonable_s)}",
             f"json_encode_s={_metric_value(metrics.json_encode_s)}",
-            f"compressed_write_s={_metric_value(metrics.compressed_write_s)}",
+            f"compress_s={_metric_value(metrics.compress_s)}",
+            f"write_s={_metric_value(metrics.write_s)}",
             f"json_load_s={_metric_value(metrics.json_load_s)}",
             f"payload_decode_s={_metric_value(metrics.payload_decode_s)}",
             f"runtime_rebuild_s={_metric_value(metrics.runtime_rebuild_s)}",
@@ -1519,22 +1523,27 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
             ),
         )
         node_count, anchor_count, delta_count = _checkpoint_node_counts(payload)
-        jsonable_started_at = time.perf_counter()
-        payload_jsonable = checkpoint_payload_to_jsonable(payload)
-        jsonable_elapsed_s = time.perf_counter() - jsonable_started_at
+        write_stats = write_checkpoint_json_payload(payload, output)
+        if write_stats.jsonable_s is None:
+            LOGGER.info(
+                "[checkpoint] payload_jsonable_skipped path=%s encoder=%s",
+                str(write_stats.output_path),
+                write_stats.encoder,
+            )
+        else:
+            LOGGER.info(
+                "[checkpoint] payload_jsonable_done path=%s elapsed=%.3fs",
+                str(write_stats.output_path),
+                write_stats.jsonable_s,
+            )
         LOGGER.info(
-            "[checkpoint] payload_jsonable_done path=%s elapsed=%.3fs",
-            str(output),
-            jsonable_elapsed_s,
-        )
-
-        write_stats = write_checkpoint_json_payload(payload_jsonable, output)
-        LOGGER.info(
-            "[checkpoint] checkpoint_write_done path=%s format=%s json_encode_s=%.3fs compressed_write_s=%s bytes=%s uncompressed_bytes=%s compression_ratio=%s",
+            "[checkpoint] checkpoint_write_done path=%s format=%s encoder=%s json_encode_s=%.3fs compress_s=%s write_s=%.3fs bytes=%s uncompressed_bytes=%s compression_ratio=%s",
             str(write_stats.output_path),
             write_stats.file_format,
+            write_stats.encoder,
             write_stats.json_encode_s,
-            _metric_value(write_stats.compressed_write_s),
+            _metric_value(write_stats.compress_s),
+            write_stats.write_s,
             write_stats.compressed_bytes,
             write_stats.uncompressed_bytes,
             _metric_value(write_stats.compression_ratio),
@@ -1547,10 +1556,12 @@ class AnemoneMorpionSearchRunner(MorpionSearchRunner):
                 path=str(write_stats.output_path),
                 bytes=write_stats.compressed_bytes,
                 file_format=write_stats.file_format,
+                encoder=write_stats.encoder,
                 payload_build_s=payload_elapsed_s,
-                jsonable_s=jsonable_elapsed_s,
+                jsonable_s=write_stats.jsonable_s,
                 json_encode_s=write_stats.json_encode_s,
-                compressed_write_s=write_stats.compressed_write_s,
+                compress_s=write_stats.compress_s,
+                write_s=write_stats.write_s,
                 total_s=elapsed_s,
                 uncompressed_bytes=write_stats.uncompressed_bytes,
                 compression_ratio=write_stats.compression_ratio,

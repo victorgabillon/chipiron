@@ -16,7 +16,6 @@ from anemone.checkpoints import (
     checkpoint_cli_name,
     checkpoint_format_from_cli_name,
     checkpoint_output_path,
-    checkpoint_payload_to_jsonable,
     resolve_latest_generation_checkpoint_path,
     write_checkpoint_json_payload,
 )
@@ -304,16 +303,17 @@ def _profile_checkpoint_save(
     profile_output = Path(args.profile_output)
     profile_output.parent.mkdir(parents=True, exist_ok=True)
     profiler = cProfile.Profile()
-    payload_jsonable: object | None = None
     payload: Any
     payload_build_s: float
     jsonable_s: float | None = None
     output_bytes: int | None = None
     json_encode_s: float | None = None
-    compressed_write_s: float | None = None
+    compress_s: float | None = None
+    write_s: float | None = None
     uncompressed_bytes: int | None = None
     compression_ratio: float | None = None
     output_format: str | None = None
+    output_encoder: str | None = None
 
     rss_before_mb = runner_module._current_rss_mb()
     total_started_at = perf_counter()
@@ -330,35 +330,34 @@ def _profile_checkpoint_save(
     rss_after_payload_build_mb = runner_module._current_rss_mb()
     print(f"[profile] phase=payload_build elapsed_s={payload_build_s:.6f}")
 
-    needs_payload_jsonable = bool(args.dump_json)
-    if needs_payload_jsonable:
-        payload_jsonable, jsonable_s = _time_call(
-            lambda: checkpoint_payload_to_jsonable(payload)
-        )
-        rss_after_asdict_mb = runner_module._current_rss_mb()
-        print(f"[profile] phase=payload_to_jsonable elapsed_s={jsonable_s:.6f}")
-    else:
-        rss_after_asdict_mb = None
-        print("[profile] phase=payload_to_jsonable skipped=true")
-
     if args.dump_json:
         assert output_path is not None
         write_stats, write_elapsed_s = _time_call(
-            lambda: write_checkpoint_json_payload(payload_jsonable, output_path)
+            lambda: write_checkpoint_json_payload(payload, output_path)
         )
         output_bytes = write_stats.compressed_bytes
+        output_encoder = write_stats.encoder
+        jsonable_s = write_stats.jsonable_s
         json_encode_s = write_stats.json_encode_s
-        compressed_write_s = write_stats.compressed_write_s
+        compress_s = write_stats.compress_s
+        write_s = write_stats.write_s
         uncompressed_bytes = write_stats.uncompressed_bytes
         compression_ratio = write_stats.compression_ratio
         output_format = write_stats.file_format
+        rss_after_asdict_mb = runner_module._current_rss_mb()
+        if jsonable_s is None:
+            print("[profile] phase=payload_to_jsonable skipped=true")
+        else:
+            print(f"[profile] phase=payload_to_jsonable elapsed_s={jsonable_s:.6f}")
         print(
-            "[profile] phase=checkpoint_write elapsed_s=%.6f format=%s json_encode_s=%.6f compressed_write_s=%s bytes=%s uncompressed_bytes=%s compression_ratio=%s output=%s"
+            "[profile] phase=checkpoint_write elapsed_s=%.6f format=%s encoder=%s json_encode_s=%.6f compress_s=%s write_s=%s bytes=%s uncompressed_bytes=%s compression_ratio=%s output=%s"
             % (
                 write_elapsed_s,
                 write_stats.file_format,
+                write_stats.encoder,
                 write_stats.json_encode_s,
-                _format_optional_number(write_stats.compressed_write_s),
+                _format_optional_number(write_stats.compress_s),
+                _format_optional_number(write_stats.write_s),
                 write_stats.compressed_bytes,
                 write_stats.uncompressed_bytes,
                 _format_optional_number(write_stats.compression_ratio),
@@ -366,6 +365,8 @@ def _profile_checkpoint_save(
             )
         )
     else:
+        rss_after_asdict_mb = None
+        print("[profile] phase=payload_to_jsonable skipped=true")
         print("[profile] phase=checkpoint_write skipped=true")
 
     rss_after_json_dump_mb = runner_module._current_rss_mb()
@@ -398,10 +399,12 @@ def _profile_checkpoint_save(
             path=str(output_path) if output_path is not None else "none",
             bytes=output_bytes,
             file_format=output_format,
+            encoder=output_encoder,
             payload_build_s=payload_build_s,
             jsonable_s=jsonable_s,
             json_encode_s=json_encode_s,
-            compressed_write_s=compressed_write_s,
+            compress_s=compress_s,
+            write_s=write_s,
             total_s=total_s,
             uncompressed_bytes=uncompressed_bytes,
             compression_ratio=compression_ratio,
