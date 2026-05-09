@@ -9,6 +9,8 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, cast
 
+from anemone.checkpoints import DEFAULT_CHECKPOINT_FILE_FORMAT, checkpoint_cli_name
+
 try:
     from anemone.utils.logger import set_checkpoint_logger_level
 except ImportError:
@@ -408,6 +410,8 @@ def _render_launcher_startup_summary(
     control_fragment = (
         "none" if control_tree_branch_limit is None else str(control_tree_branch_limit)
     )
+    latest_runtime_checkpoint_path = _latest_runtime_checkpoint_path(startup_status)
+    latest_training_artifact_path = _latest_training_artifact_path(startup_status)
     return "\n".join(
         (
             "=== Morpion Bootstrap Launcher ===",
@@ -420,6 +424,18 @@ def _render_launcher_startup_summary(
             f"latest status: {_render_presence(startup_status.latest_status_exists)}",
             f"latest generation: {_render_optional_int(_latest_generation(startup_status))}",
             f"latest cycle: {_render_optional_int(_latest_cycle_index(startup_status))}",
+            (
+                "training export mode: "
+                f"{startup_status.bootstrap_config.training_export_mode} "
+                f"({_render_training_export_mode_note(startup_status.bootstrap_config.training_export_mode)})"
+            ),
+            (
+                "runtime checkpoint format: "
+                f"{checkpoint_cli_name(DEFAULT_CHECKPOINT_FILE_FORMAT)} "
+                "(default; legacy .json checkpoints still load)"
+            ),
+            f"latest runtime checkpoint: {_render_optional_text(latest_runtime_checkpoint_path)}",
+            f"latest training artifact: {_render_optional_text(latest_training_artifact_path)}",
             f"evaluator family preset: {_render_evaluator_family_line(startup_status)}",
             f"configured evaluators: {evaluators}",
             f"forced evaluator control: {_render_optional_text(startup_status.control.force_evaluator)}",
@@ -436,10 +452,44 @@ def _render_launcher_startup_summary(
             f"  latest status: {startup_status.paths.latest_status_path}",
             f"  runtime checkpoints: {startup_status.paths.runtime_checkpoint_dir}",
             f"  tree snapshots: {startup_status.paths.tree_snapshot_dir}",
+            f"  sharded tree snapshots: {startup_status.paths.sharded_tree_snapshot_dir}",
             f"  rows: {startup_status.paths.rows_dir}",
             f"  models: {startup_status.paths.model_dir}",
         )
     )
+
+
+def _render_training_export_mode_note(training_export_mode: str) -> str:
+    """Return one short operator-facing note for the current export mode."""
+    if training_export_mode == "sharded":
+        return "default"
+    if training_export_mode == "both":
+        return "compatibility/debug"
+    return "legacy compatibility/debug"
+
+
+def _latest_runtime_checkpoint_path(startup_status: _LauncherStartupStatus) -> str | None:
+    """Return the newest known runtime checkpoint path from persisted state."""
+    latest_event = startup_status.latest_status.latest_event if startup_status.latest_status else None
+    latest_event_path = (
+        None if latest_event is None else latest_event.artifacts.runtime_checkpoint_path
+    )
+    if latest_event_path is not None:
+        return latest_event_path
+    run_state = startup_status.run_state
+    return None if run_state is None else run_state.latest_runtime_checkpoint_path
+
+
+def _latest_training_artifact_path(startup_status: _LauncherStartupStatus) -> str | None:
+    """Return the newest known flat export or sharded generation manifest path."""
+    latest_event = startup_status.latest_status.latest_event if startup_status.latest_status else None
+    latest_event_path = (
+        None if latest_event is None else latest_event.artifacts.tree_snapshot_path
+    )
+    if latest_event_path is not None:
+        return latest_event_path
+    run_state = startup_status.run_state
+    return None if run_state is None else run_state.latest_tree_snapshot_path
 
 
 def _render_dashboard_hint(work_dir: Path, *, requested_open: bool) -> str:
@@ -562,9 +612,9 @@ def build_launcher_argument_parser() -> argparse.ArgumentParser:
         choices=["flat", "sharded", "both"],
         default=DEFAULT_MORPION_TRAINING_EXPORT_MODE,
         help=(
-            "Training export artifact format. 'flat' preserves the legacy single-file "
-            "export, 'sharded' writes and consumes only sharded artifacts, and 'both' "
-            "writes sharded artifacts alongside the flat compatibility export."
+            "Training export artifact format. 'sharded' is the normal/default mode. "
+            "'flat' preserves the legacy single-file compatibility export, and 'both' "
+            "writes sharded artifacts alongside a flat compatibility/debug export."
         ),
     )
     parser.add_argument(

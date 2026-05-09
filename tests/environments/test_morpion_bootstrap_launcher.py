@@ -264,6 +264,10 @@ def test_fresh_run_startup_summary_reports_expected_state(tmp_path: Path) -> Non
     assert "bootstrap config: absent; will be written from launcher args" in summary
     assert "run state: absent" in summary
     assert "history: absent" in summary
+    assert "training export mode: flat (legacy compatibility/debug)" in summary
+    assert "runtime checkpoint format: json-zst (default; legacy .json checkpoints still load)" in summary
+    assert "latest runtime checkpoint: none" in summary
+    assert "latest training artifact: none" in summary
     assert f"work dir: {tmp_path.resolve()}" in summary
     assert (
         f"config: {MorpionBootstrapPaths.from_work_dir(tmp_path).bootstrap_config_path}"
@@ -300,6 +304,7 @@ def test_resume_startup_summary_reports_resume_state(tmp_path: Path) -> None:
             active_evaluator_name="linear",
             tree_size_at_last_save=42,
             last_save_unix_s=123.0,
+            latest_runtime_checkpoint_path="search_checkpoints/generation_000003.json.zst",
         ),
         paths.run_state_path,
     )
@@ -317,6 +322,14 @@ def test_resume_startup_summary_reports_resume_state(tmp_path: Path) -> None:
     assert "history: present" in summary
     assert "latest generation: 3" in summary
     assert "latest cycle: 7" in summary
+    assert (
+        "training export mode: flat (legacy compatibility/debug)" in summary
+    )
+    assert (
+        "latest runtime checkpoint: search_checkpoints/generation_000003.json.zst"
+        in summary
+    )
+    assert "latest training artifact: tree_exports/generation_000003.json" in summary
     assert "forced evaluator control: linear" in summary
     assert "tree_branch_limit: 64 (baseline 96, control override 64)" in summary
 

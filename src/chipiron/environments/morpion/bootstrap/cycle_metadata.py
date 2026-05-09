@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from anemone.checkpoints import DEFAULT_CHECKPOINT_FILE_FORMAT, checkpoint_cli_name
+
 from .config import BOOTSTRAP_CONFIG_HASH_METADATA_KEY
 from .control import (
     BOOTSTRAP_APPLIED_CONTROL_METADATA_KEY,
@@ -53,6 +55,7 @@ def build_bootstrap_event(
     generation: int,
     timestamp_utc: str,
     tree_status: MorpionBootstrapTreeStatus,
+    runtime_checkpoint_path: str | None,
     tree_snapshot_path: str | None,
     rows_path: str | None,
     dataset_num_rows: int | None,
@@ -82,6 +85,7 @@ def build_bootstrap_event(
         else record_status,
         frontier=carried_forward_morpion_frontier_status(frontier_status),
         artifacts=MorpionBootstrapArtifacts(
+            runtime_checkpoint_path=runtime_checkpoint_path,
             tree_snapshot_path=tree_snapshot_path,
             rows_path=rows_path,
             model_bundle_paths=dict(model_bundle_paths or {}),
@@ -138,6 +142,10 @@ def pipeline_metadata(
     metadata: dict[str, object] = {
         "pipeline_mode": args.pipeline_mode,
         "evaluator_update_policy": args.evaluator_update_policy,
+        "training_export_mode": args.training_export_mode,
+        "runtime_checkpoint_format": checkpoint_cli_name(
+            DEFAULT_CHECKPOINT_FILE_FORMAT
+        ),
     }
     if training_skipped_reason is not None:
         metadata[TRAINING_SKIPPED_REASON_METADATA_KEY] = training_skipped_reason
@@ -228,6 +236,7 @@ def record_no_save_cycle_event(
             generation=next_run_state.generation,
             timestamp_utc=timestamp_utc,
             tree_status=tree_status,
+            runtime_checkpoint_path=next_run_state.latest_runtime_checkpoint_path,
             tree_snapshot_path=None,
             rows_path=None,
             dataset_num_rows=None,

@@ -102,6 +102,11 @@ def export_training_snapshot_for_generation(
     flat_path = paths.tree_snapshot_path_for_generation(generation)
     if args.training_export_mode == "flat":
         runner.export_training_tree_snapshot(flat_path)
+        LOGGER.info(
+            "[save] training_export_selected mode=%s output=%s",
+            args.training_export_mode,
+            str(flat_path),
+        )
         return flat_path
 
     export_sharded = getattr(runner, "export_sharded_training_tree_snapshot", None)
@@ -115,9 +120,20 @@ def export_training_snapshot_for_generation(
         )
     )
     if args.training_export_mode == "sharded":
+        LOGGER.info(
+            "[save] training_export_selected mode=%s output=%s",
+            args.training_export_mode,
+            str(sharded_path),
+        )
         return sharded_path
 
     runner.export_training_tree_snapshot(flat_path)
+    LOGGER.info(
+        "[save] training_export_selected mode=%s output=%s compatibility_output=%s",
+        args.training_export_mode,
+        str(flat_path),
+        str(sharded_path),
+    )
     return flat_path
 
 

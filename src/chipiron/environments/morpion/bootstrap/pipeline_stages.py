@@ -635,6 +635,7 @@ def _run_one_pipeline_growth_cycle_impl(
             generation=next_run_state.generation,
             timestamp_utc=timestamp_utc,
             tree_status=tree_status,
+            runtime_checkpoint_path=relative_runtime_checkpoint_path,
             tree_snapshot_path=relative_tree_snapshot_path,
             rows_path=None,
             dataset_num_rows=None,

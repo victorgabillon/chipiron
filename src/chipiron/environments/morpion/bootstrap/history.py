@@ -86,8 +86,9 @@ class MorpionBootstrapTrainingStatus:
 class MorpionBootstrapArtifacts:
     """Artifact paths produced by one bootstrap cycle."""
 
-    tree_snapshot_path: str | None
-    rows_path: str | None
+    runtime_checkpoint_path: str | None = None
+    tree_snapshot_path: str | None = None
+    rows_path: str | None = None
     model_bundle_paths: dict[str, str] = field(
         default_factory=_empty_model_bundle_paths
     )
@@ -121,6 +122,7 @@ class MorpionBootstrapEvent:
     )
     artifacts: MorpionBootstrapArtifacts = field(
         default_factory=lambda: MorpionBootstrapArtifacts(
+            runtime_checkpoint_path=None,
             tree_snapshot_path=None,
             rows_path=None,
         )
@@ -326,6 +328,7 @@ def bootstrap_event_to_dict(event: MorpionBootstrapEvent) -> dict[str, object]:
         "record": _record_status_to_dict(event.record),
         "frontier": _frontier_status_to_dict(event.frontier),
         "artifacts": {
+            "runtime_checkpoint_path": event.artifacts.runtime_checkpoint_path,
             "tree_snapshot_path": event.artifacts.tree_snapshot_path,
             "rows_path": event.artifacts.rows_path,
             "model_bundle_paths": dict(event.artifacts.model_bundle_paths),
@@ -420,6 +423,10 @@ def bootstrap_event_from_dict(data: dict[str, object]) -> MorpionBootstrapEvent:
             _require_section_mapping(frontier_data, section_name="frontier")
         ),
         artifacts=MorpionBootstrapArtifacts(
+            runtime_checkpoint_path=_optional_str(
+                artifacts_data.get("runtime_checkpoint_path"),
+                field_name="artifacts.runtime_checkpoint_path",
+            ),
             tree_snapshot_path=_optional_str(
                 artifacts_data.get("tree_snapshot_path"),
                 field_name="artifacts.tree_snapshot_path",

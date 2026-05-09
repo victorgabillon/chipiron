@@ -36,6 +36,23 @@ Use `--verbose-checkpoint-logs` only when debugging Anemone checkpoint restore
 or build internals. Normal growth-worker runs keep those low-level restore
 phases and delta-candidate rejection logs suppressed.
 
+### Persistence defaults
+
+Normal Morpion bootstrap runs now use this persistence layout by default:
+
+* runtime checkpoints: compressed Anemone checkpoints in `search_checkpoints/`
+* training export mode: `sharded`
+* tree export artifact consumed by dataset extraction: per-generation sharded
+  manifest in `tree_exports_sharded/`
+
+Compatibility modes remain available:
+
+* `flat`: legacy single-file tree export for compatibility/debug only
+* `both`: writes sharded artifacts plus the flat compatibility/debug export
+
+Old plain `.json` runtime checkpoints still load, but newly written runtime
+checkpoints use the compressed default checkpoint format.
+
 ### 📌 Notes
 
 * `--work-dir` is where all artifacts are stored (checkpoints, models, logs, etc.)
@@ -169,6 +186,9 @@ After `bootstrap_config.json` exists, later workers must match it. Any later CLI
 After startup you should observe:
 
 - `growth` produces new `generation_XXXXXX/manifest.json`
+- `growth` logs `training_export_mode`, checkpoint write format, latest runtime
+  checkpoint path, and the selected tree export or sharded manifest path
+- sharded exports log `[sharded-training-export] generation=... new_nodes=... reused_nodes=...`
 - `dataset_worker` creates dataset rows artifacts
 - `training_worker` periodically updates `pipeline/active_model.json`
 - `reevaluation` occasionally creates and growth consumes
@@ -254,6 +274,34 @@ each. Growth should normally be a singleton because it owns the live
 tree/checkpoint. Reevaluation should normally be a singleton because of the
 singleton patch file, though multiple reevaluation loops will mostly idle or
 skip while a patch exists.
+
+## Persistence stack
+
+Runtime checkpoints and training exports serve different purposes:
+
+* Runtime checkpoints are whole-runtime restore artifacts. They capture the full
+  Anemone search runtime needed to resume growth, selector state, and backup
+  state quickly and correctly.
+* Training exports are dataset-oriented artifacts. They only need the training
+  snapshot view of the tree, so sharding them avoids reserializing old node
+  state after the first sharded generation.
+
+This is why runtime checkpoints remain whole-runtime while training export is
+sharded.
+
+Current real-run timings from the recent generation 138 profiling pass:
+
+* checkpoint payload build: about `26.31s`
+* checkpoint write: about `3.47s`
+* total save: about `29.78s`
+* blocked evaluation-payload reuse candidates: `231332 / 231332`
+
+The remaining checkpoint build cost is acceptable for now. One future
+optimization is intentionally postponed: evaluation payload reuse across
+generations. That requires an explicit safe per-node evaluation payload version
+such as `evaluation_payload_generation`. It is not implemented yet because there
+is no safe existing dirty/version signal for the full serialized evaluation
+payload.
 
 ### Manual/debug stages
 

@@ -247,6 +247,7 @@ def _make_event(generation: int = 3, cycle_index: int = 5) -> MorpionBootstrapEv
             current_best_source="certified_terminal_leaf",
         ),
         artifacts=MorpionBootstrapArtifacts(
+            runtime_checkpoint_path="search_checkpoints/generation_000003.json.zst",
             tree_snapshot_path="tree_exports/generation_000003.json",
             rows_path="rows/generation_000003.json",
             model_bundle_paths={"default": "models/generation_000003/default"},
@@ -496,6 +497,7 @@ def test_bootstrap_loop_writes_history_on_no_save_cycle(tmp_path: Path) -> None:
         current_best_source="certified_terminal_leaf",
     )
     assert event.artifacts.tree_snapshot_path is None
+    assert event.artifacts.runtime_checkpoint_path is None
     assert event.artifacts.rows_path is None
     assert event.artifacts.model_bundle_paths == {}
     assert event.evaluators == {}
@@ -526,6 +528,7 @@ def test_bootstrap_loop_writes_history_on_save_train_cycle(tmp_path: Path) -> No
         num_epochs=1,
         batch_size=1,
         shuffle=False,
+        training_export_mode="flat",
     )
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     runner = FakeMorpionSearchRunner(tree_sizes=(10,), target_values=(1.25,))
@@ -564,6 +567,7 @@ def test_bootstrap_loop_writes_history_on_save_train_cycle(tmp_path: Path) -> No
     assert event.dataset.num_rows == 1
     assert event.dataset.num_samples == 1
     assert event.training.triggered
+    assert event.artifacts.runtime_checkpoint_path is None
     assert event.artifacts.tree_snapshot_path == "tree_exports/generation_000001.json"
     assert event.artifacts.rows_path == "rows/generation_000001.json"
     assert event.artifacts.model_bundle_paths == {
@@ -591,6 +595,7 @@ def test_bootstrap_loop_writes_history_on_save_train_cycle(tmp_path: Path) -> No
     assert event.evaluators["default"].num_samples == 1
     assert next_state.generation == 1
     assert next_state.cycle_index == 0
+    assert next_state.latest_runtime_checkpoint_path is None
     assert next_state.latest_tree_snapshot_path == event.artifacts.tree_snapshot_path
     assert next_state.latest_rows_path == event.artifacts.rows_path
     assert next_state.latest_model_bundle_paths == {
@@ -627,6 +632,7 @@ def test_bootstrap_loop_records_selected_winner_on_multi_evaluator_save_cycle(
         max_growth_steps_per_cycle=5,
         shuffle=False,
         evaluators_config=_multi_evaluator_config(),
+        training_export_mode="flat",
     )
     paths = MorpionBootstrapPaths.from_work_dir(tmp_path)
     runner = FakeMorpionSearchRunner(tree_sizes=(10,), target_values=(1.25,))
